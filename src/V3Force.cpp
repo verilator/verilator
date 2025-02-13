@@ -43,102 +43,118 @@
 
 #include "V3AstUserAllocator.h"
 
+#include <list>
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 // Convert force/release statements and signals marked 'forceable'
 
+static bool isRangedDType(AstNode* nodep) {
+    // If ranged we need a multibit enable to support bit-by-bit part-select forces,
+    // otherwise forcing a real or other opaque dtype and need a single bit enable.
+    const AstBasicDType* const basicp = nodep->dtypep()->skipRefp()->basicp();
+    return basicp && basicp->isRanged();
+}
+struct ForceComponentsVar final {
+    AstVar* const m_rdVarp;  // New variable to replace read references with
+    AstVar* const m_valVarp;  // Forced value
+    AstVar* const m_enVarp;  // Force enabled signal
+    explicit ForceComponentsVar(AstVar* varp)
+        : m_rdVarp{new AstVar{varp->fileline(), VVarType::WIRE, varp->name() + "__VforceRd",
+                              varp->dtypep()}}
+        , m_valVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceVal",
+                               varp->dtypep()}}
+        , m_enVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceEn",
+                              (isRangedDType(varp) ? varp->dtypep() : varp->findBitDType())}} {
+        m_rdVarp->addNext(m_enVarp);
+        m_rdVarp->addNext(m_valVarp);
+        varp->addNextHere(m_rdVarp);
+    }
+};
+
+struct ForceComponentsVarScope final {
+    AstVarScope* const m_rdVscp;  // New variable to replace read references with
+    AstVarScope* const m_valVscp;  // Forced value
+    AstVarScope* const m_enVscp;  // Force enabled signal
+    explicit ForceComponentsVarScope(AstVarScope* vscp, ForceComponentsVar& fcv)
+        : m_rdVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_rdVarp}}
+        , m_valVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_valVarp}}
+        , m_enVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_enVarp}} {
+        m_rdVscp->addNext(m_enVscp);
+        m_rdVscp->addNext(m_valVscp);
+        vscp->addNextHere(m_rdVscp);
+
+        FileLine* const flp = vscp->fileline();
+
+        {  // Add initialization of the enable signal
+            AstVarRef* const lhsp = new AstVarRef{flp, m_enVscp, VAccess::WRITE};
+            V3Number zero{m_enVscp, m_enVscp->width()};
+            zero.setAllBits0();
+            AstNodeExpr* const rhsp = new AstConst{flp, zero};
+            AstAssign* const assignp = new AstAssign{flp, lhsp, rhsp};
+            AstActive* const activep
+                = new AstActive{flp, "force-init",
+                                new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Initial{}}}};
+            activep->sensesStorep(activep->sensesp());
+
+            activep->addStmtsp(new AstInitial{flp, assignp});
+            vscp->scopep()->addBlocksp(activep);
+        }
+        {  // Add the combinational override
+            AstVarRef* const lhsp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
+            AstVarRef* const origp = new AstVarRef{flp, vscp, VAccess::READ};
+            origp->user2(1);  // Don't replace this read ref with the read signal
+            AstNodeExpr* rhsp;
+            if (isRangedDType(vscp)) {
+                rhsp = new AstOr{
+                    flp,
+                    new AstAnd{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
+                               new AstVarRef{flp, m_valVscp, VAccess::READ}},
+                    new AstAnd{flp, new AstNot{flp, new AstVarRef{flp, m_enVscp, VAccess::READ}},
+                               origp}};
+            } else {
+                rhsp = new AstCond{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
+                                   new AstVarRef{flp, m_valVscp, VAccess::READ}, origp};
+            }
+
+            // Explicitly list dependencies for update.
+            AstSenItem* const itemsp = new AstSenItem{flp, VEdgeType::ET_CHANGED,
+                                                      new AstVarRef{flp, m_rdVscp, VAccess::READ}};
+            itemsp->addNext(new AstSenItem{flp, VEdgeType::ET_CHANGED,
+                                           new AstVarRef{flp, m_valVscp, VAccess::READ}});
+            itemsp->addNext(new AstSenItem{flp, VEdgeType::ET_CHANGED,
+                                           new AstVarRef{flp, m_enVscp, VAccess::READ}});
+            itemsp->addNext(new AstSenItem{flp, VEdgeType::ET_CHANGED, origp->cloneTree(false)});
+            AstActive* const activep
+                = new AstActive{flp, "force-update", new AstSenTree{flp, itemsp}};
+            activep->sensesStorep(activep->sensesp());
+            activep->addStmtsp(
+                new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, new AstAssign{flp, lhsp, rhsp}});
+            vscp->scopep()->addBlocksp(activep);
+        }
+    }
+};
+
+struct ForceComponentsValUpdates final {
+    struct Args {
+        AstVarScope* const m_valVscp;
+        AstVarScope* const m_rhsp;
+    };
+    std::list<Args> m_assign;
+    void addValUpdate(const Args& args) { m_assign.emplace_back(args); }
+};
+
 class ForceConvertVisitor final : public VNVisitor {
-    // TYPES
-    struct ForceComponentsVar final {
-        AstVar* const m_rdVarp;  // New variable to replace read references with
-        AstVar* const m_valVarp;  // Forced value
-        AstVar* const m_enVarp;  // Force enabled signal
-        explicit ForceComponentsVar(AstVar* varp)
-            : m_rdVarp{new AstVar{varp->fileline(), VVarType::WIRE, varp->name() + "__VforceRd",
-                                  varp->dtypep()}}
-            , m_valVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceVal",
-                                   varp->dtypep()}}
-            , m_enVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceEn",
-                                  (isRangedDType(varp) ? varp->dtypep() : varp->findBitDType())}} {
-            m_rdVarp->addNext(m_enVarp);
-            m_rdVarp->addNext(m_valVarp);
-            varp->addNextHere(m_rdVarp);
-        }
-    };
-
-    struct ForceComponentsVarScope final {
-        AstVarScope* const m_rdVscp;  // New variable to replace read references with
-        AstVarScope* const m_enVscp;  // Force enabled signal
-        AstVarScope* const m_valVscp;  // Forced value
-        explicit ForceComponentsVarScope(AstVarScope* vscp, ForceComponentsVar& fcv)
-            : m_rdVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_rdVarp}}
-            , m_enVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_enVarp}}
-            , m_valVscp{new AstVarScope{vscp->fileline(), vscp->scopep(), fcv.m_valVarp}} {
-            m_rdVscp->addNext(m_enVscp);
-            m_rdVscp->addNext(m_valVscp);
-            vscp->addNextHere(m_rdVscp);
-
-            FileLine* const flp = vscp->fileline();
-
-            {  // Add initialization of the enable signal
-                AstVarRef* const lhsp = new AstVarRef{flp, m_enVscp, VAccess::WRITE};
-                V3Number zero{m_enVscp, m_enVscp->width()};
-                zero.setAllBits0();
-                AstNodeExpr* const rhsp = new AstConst{flp, zero};
-                AstAssign* const assignp = new AstAssign{flp, lhsp, rhsp};
-                AstActive* const activep = new AstActive{
-                    flp, "force-init",
-                    new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Initial{}}}};
-                activep->sensesStorep(activep->sensesp());
-                activep->addStmtsp(new AstInitial{flp, assignp});
-                vscp->scopep()->addBlocksp(activep);
-            }
-
-            {  // Add the combinational override
-                AstVarRef* const lhsp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
-                AstVarRef* const origp = new AstVarRef{flp, vscp, VAccess::READ};
-                origp->user2(1);  // Don't replace this read ref with the read signal
-                AstNodeExpr* rhsp;
-                if (isRangedDType(vscp)) {
-                    rhsp = new AstOr{
-                        flp,
-                        new AstAnd{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
-                                   new AstVarRef{flp, m_valVscp, VAccess::READ}},
-                        new AstAnd{flp,
-                                   new AstNot{flp, new AstVarRef{flp, m_enVscp, VAccess::READ}},
-                                   origp}};
-                } else {
-                    rhsp = new AstCond{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
-                                       new AstVarRef{flp, m_valVscp, VAccess::READ}, origp};
-                }
-
-                AstActive* const activep
-                    = new AstActive{flp, "force-comb",
-                                    new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}}};
-                activep->sensesStorep(activep->sensesp());
-                activep->addStmtsp(new AstAssignW{flp, lhsp, rhsp});
-                vscp->scopep()->addBlocksp(activep);
-            }
-        }
-    };
-
     // NODE STATE
     //  AstVar::user1p        -> ForceComponentsVar* instance (via m_forceComponentsVar)
     //  AstVarScope::user1p   -> ForceComponentsVarScope* instance (via m_forceComponentsVarScope)
     //  AstVarRef::user2      -> Flag indicating not to replace reference
-    const VNUser1InUse m_user1InUse;
-    const VNUser2InUse m_user2InUse;
     AstUser1Allocator<AstVar, ForceComponentsVar> m_forceComponentsVar;
-    AstUser1Allocator<AstVarScope, ForceComponentsVarScope> m_forceComponentsVarScope;
+    AstUser1Allocator<AstVarScope, ForceComponentsVarScope>& m_forceComponentsVarScope;
+    AstUser3Allocator<AstVarScope, ForceComponentsValUpdates>& m_forceComponentsValUpdates;
 
     // METHODS
-    static bool isRangedDType(AstNode* nodep) {
-        // If ranged we need a multibit enable to support bit-by-bit part-select forces,
-        // otherwise forcing a real or other opaque dtype and need a single bit enable.
-        const AstBasicDType* const basicp = nodep->dtypep()->skipRefp()->basicp();
-        return basicp && basicp->isRanged();
-    }
     const ForceComponentsVarScope& getForceComponents(AstVarScope* vscp) {
         AstVar* const varp = vscp->varp();
         return m_forceComponentsVarScope(vscp, vscp, m_forceComponentsVar(varp, varp));
@@ -182,11 +198,18 @@ class ForceConvertVisitor final : public VNVisitor {
         // Set corresponding value signals to the forced value
         AstAssign* const setValp
             = new AstAssign{flp, lhsp->cloneTreePure(false), rhsp->cloneTreePure(false)};
-        transformWritenVarScopes(setValp->lhsp(), [this](AstVarScope* vscp) {
-            return getForceComponents(vscp).m_valVscp;
+        transformWritenVarScopes(setValp->lhsp(), [this, rhsp](AstVarScope* vscp) {
+            AstVarScope* const valVscp = getForceComponents(vscp).m_valVscp;
+            // TODO handle case with multiple refs on RHS.
+            if (AstVarRef* const refp = VN_CAST(rhsp, VarRef)) {
+                m_forceComponentsValUpdates(refp->varScopep())
+                    .addValUpdate(ForceComponentsValUpdates::Args{valVscp, refp->varScopep()});
+            }
+            return valVscp;
         });
-        // Set corresponding read signal directly as well, in case something in the same process
-        // reads it later
+
+        // Set corresponding read signal directly as well, in case something in the same
+        // process reads it later
         AstAssign* const setRdp = new AstAssign{flp, lhsp->unlinkFrBack(), rhsp->unlinkFrBack()};
         transformWritenVarScopes(setRdp->lhsp(), [this](AstVarScope* vscp) {
             return getForceComponents(vscp).m_rdVscp;
@@ -278,44 +301,127 @@ class ForceConvertVisitor final : public VNVisitor {
     }
 
     // CONSTRUCTOR
-    explicit ForceConvertVisitor(AstNetlist* nodep) {
+    explicit ForceConvertVisitor(
+        AstNetlist* nodep,
+        AstUser1Allocator<AstVarScope, ForceComponentsVarScope>& forceComponentsVarScope,
+        AstUser3Allocator<AstVarScope, ForceComponentsValUpdates>& forceComponentsValUpdates)
+        : m_forceComponentsVarScope{forceComponentsVarScope}
+        , m_forceComponentsValUpdates{forceComponentsValUpdates} {
         // Transform all force and release statements
         iterateAndNextNull(nodep->modulesp());
-
-        // Replace references to forced signals
-        nodep->modulesp()->foreachAndNext([this](AstVarRef* nodep) {
-            if (ForceComponentsVarScope* const fcp
-                = m_forceComponentsVarScope.tryGet(nodep->varScopep())) {
-                switch (nodep->access()) {
-                case VAccess::READ:
-                    // Read references replaced to read the new, possibly forced signal
-                    if (!nodep->user2()) {
-                        nodep->varp(fcp->m_rdVscp->varp());
-                        nodep->varScopep(fcp->m_rdVscp);
-                    }
-                    break;
-                case VAccess::WRITE:
-                    // Write references use the original signal
-                    break;
-                default:
-                    nodep->v3error(
-                        "Unsupported: Signals used via read-write reference cannot be forced");
-                    break;
-                }
-            }
-        });
     }
 
 public:
-    static void apply(AstNetlist* nodep) { ForceConvertVisitor{nodep}; }
+    static void
+    apply(AstNetlist* nodep,
+          AstUser1Allocator<AstVarScope, ForceComponentsVarScope>& forceComponentsVarScope,
+          AstUser3Allocator<AstVarScope, ForceComponentsValUpdates>& forceComponentsValUpdates) {
+        { ForceConvertVisitor{nodep, forceComponentsVarScope, forceComponentsValUpdates}; }
+    }
 };
 
+class ForceReplaceVisitor final : public VNVisitor {
+    // NODE STATE
+    //  AstVarScope::user1p   -> ForceComponentsVarScope* instance (via m_forceComponentsVarScope)
+    //  AstVarRef::user2      -> Flag indicating not to replace reference
+    //  AstVarScope::user3p   -> ForceComponentsValUpdates* instance (via
+    //  m_forceComponentsValUpdates)
+    AstUser1Allocator<AstVarScope, ForceComponentsVarScope>& m_forceComponentsVarScope;
+    AstUser3Allocator<AstVarScope, ForceComponentsValUpdates>& m_forceComponentsValUpdates;
+
+    // STATE
+    AstNodeStmt* m_stmtp = nullptr;
+    bool m_inLogic = false;
+
+    // METHODS
+    void iterateLogic(AstNode* logicp) {
+        VL_RESTORER(m_inLogic);
+        m_inLogic = true;
+        iterateChildren(logicp);
+    }
+
+    // VISITORS
+    void visit(AstNodeStmt* nodep) override {
+        VL_RESTORER(m_stmtp);
+        m_stmtp = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstAlwaysPublic* nodep) override { iterateLogic(nodep); }
+    void visit(AstCFunc* nodep) override { iterateLogic(nodep); }
+    void visit(AstCoverToggle* nodep) override { iterateLogic(nodep); }
+    void visit(AstNodeProcedure* nodep) override { iterateLogic(nodep); }
+    void visit(AstSenItem* nodep) override { iterateLogic(nodep); }
+    void visit(AstVarRef* nodep) override {
+        if (!nodep->varScopep() || nodep->user2()) return;
+
+        switch (nodep->access()) {
+        case VAccess::READ: {
+            if (ForceComponentsVarScope* const fcp
+                = m_forceComponentsVarScope.tryGet(nodep->varScopep())) {
+                // Read references replaced to read the new, possibly forced signal
+                FileLine* const flp = nodep->fileline();
+                AstVarRef* const origp = new AstVarRef{flp, nodep->varScopep(), VAccess::READ};
+                origp->user2SetOnce();  // Don't replace this read ref with the read signal
+                nodep->varp(fcp->m_rdVscp->varp());
+                nodep->varScopep(fcp->m_rdVscp);
+            }
+            break;
+        }
+        case VAccess::WRITE: {
+            if (!m_inLogic) return;
+            if (ForceComponentsValUpdates* const fcvup
+                = m_forceComponentsValUpdates.tryGet(nodep->varScopep())) {
+                for (auto s : fcvup->m_assign) {
+                    FileLine* const flp = nodep->fileline();
+                    AstVarRef* const valp = new AstVarRef{flp, s.m_valVscp, VAccess::WRITE};
+                    AstVarRef* const rhsp = new AstVarRef{flp, s.m_rhsp, VAccess::READ};
+
+                    valp->user2SetOnce();
+                    rhsp->user2SetOnce();
+
+                    m_stmtp->addNextHere(new AstAssign{flp, valp, rhsp});
+                }
+            }
+            break;
+        }
+        default:
+            nodep->v3error("Unsupported: Signals used via read-write reference cannot be forced");
+            break;
+        }
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+    explicit ForceReplaceVisitor(
+        AstNetlist* nodep,
+        AstUser1Allocator<AstVarScope, ForceComponentsVarScope>& forceComponentsVarScope,
+        AstUser3Allocator<AstVarScope, ForceComponentsValUpdates>& forceComponentsValUpdates)
+        : m_forceComponentsVarScope{forceComponentsVarScope}
+        , m_forceComponentsValUpdates{forceComponentsValUpdates} {
+        iterateChildren(nodep);
+    }
+
+public:
+    static void
+    apply(AstNetlist* nodep,
+          AstUser1Allocator<AstVarScope, ForceComponentsVarScope>& forceComponentsVarScope,
+          AstUser3Allocator<AstVarScope, ForceComponentsValUpdates>& forceComponentsValUpdates) {
+        ForceReplaceVisitor{nodep, forceComponentsVarScope, forceComponentsValUpdates};
+    }
+};
 //######################################################################
 //
 
 void V3Force::forceAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     if (!v3Global.hasForceableSignals()) return;
-    ForceConvertVisitor::apply(nodep);
+    {
+        const VNUser1InUse m_user1InUse;
+        const VNUser2InUse m_user2InUse;
+        const VNUser3InUse m_user3InUse;
+        AstUser1Allocator<AstVarScope, ForceComponentsVarScope> forceComponentsVarScope;
+        AstUser3Allocator<AstVarScope, ForceComponentsValUpdates> forceComponentsValUpdates;
+        ForceConvertVisitor::apply(nodep, forceComponentsVarScope, forceComponentsValUpdates);
+        ForceReplaceVisitor::apply(nodep, forceComponentsVarScope, forceComponentsValUpdates);
+    }
     V3Global::dumpCheckGlobalTree("force", 0, dumpTreeEitherLevel() >= 3);
 }
