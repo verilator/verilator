@@ -261,15 +261,13 @@
             logic ta, tb, tc;
             initial begin
                 int q[5];
-                int qv;
+                int qv[$];
         
                 q = '{1, 2, 2, 4, 3};
                 // lambas not handled
                 // NB: there is a bug w/ tracing find_first (maybe lambdas in general?)
                 //     tracing_off does not work around the bug
-        `ifndef TEST_TRACE
                 qv = q.find_first with (item[0] & item[1]);
-        `endif
                 ta = '1;
                 tb = '0;
                 tc = '0;

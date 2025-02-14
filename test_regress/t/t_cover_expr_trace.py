@@ -13,7 +13,7 @@ from pathlib import Path
 test.scenarios('simulator')
 test.top_filename = "t/t_cover_expr.v"
 
-test.compile(verilator_flags2=['--cc', '--coverage-expr', '--trace', "-DTEST_TRACE"])
+test.compile(verilator_flags2=['--cc', '--coverage-expr', '--trace'])
 
 test.execute()
 
