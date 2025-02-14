@@ -1,7 +1,7 @@
 export PLATFORM               = asap7
 
 export DESIGN_NICKNAME        = saif_trace_example
-export DESIGN_NAME            = t
+export DESIGN_NAME            = gcd
 
 export VERILOG_FILES         = $(sort $(wildcard $(DESIGN_HOME)/src/$(DESIGN_NICKNAME)/*.v))
 export SDC_FILE              = $(DESIGN_HOME)/$(PLATFORM)/$(DESIGN_NICKNAME)/constraint.sdc
