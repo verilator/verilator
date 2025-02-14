@@ -7,6 +7,12 @@
 
 package Pkg;
    localparam PKG_PARAM = 1;
+
+   typedef enum int {
+      FOO = 0,
+      BAR,
+      BAZ
+   } enum_t;
 endpackage
 package PkgImp;
    import Pkg::*;
@@ -52,8 +58,18 @@ module t (/*AUTOARG*/
    us_t us;
    union_t unu;
 
+   integer i1;
    int array[3];
    initial array = '{1,2,3};
+   initial begin
+      if ($test$plusargs("HELLO")) $display("Hello argument found.");
+      if (Pkg::FOO == 0) $write("");
+      if (ZERO == 0) $write("");
+      if ($value$plusargs("TEST=%d", i1))
+         $display("value was %d", i1);
+      else
+         $display("+TEST= not found");
+   end
 
    bit [6:5][4:3][2:1] arraymanyd[10:11][12:13][14:15];
 
@@ -125,6 +141,8 @@ module t (/*AUTOARG*/
    int sum;
    real r;
    string str;
+   int mod_val;
+   int mod_res;
    always_ff @ (posedge clk) begin
       cyc <= cyc + 1;
       r <= r + 0.01;
@@ -194,6 +212,8 @@ module t (/*AUTOARG*/
 
       if (Pkg::PKG_PARAM != 1) $stop;
       sub.r = 62.0;
+
+      mod_res = mod_val % 5;
 
       $display("%g", $log10(r));
       $display("%g", $ln(r));
