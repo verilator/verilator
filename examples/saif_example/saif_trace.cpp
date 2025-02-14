@@ -11,7 +11,7 @@
 
 #include <memory>
 
-#include "Vcounter.h"
+#include "Vgcd.h"
 
 int errors = 0;
 
@@ -29,11 +29,11 @@ int main(int argc, char** argv) {
     Verilated::traceEverOn(true);
     Verilated::commandArgs(argc, argv);
 
-    std::unique_ptr<Vcounter> top{new Vcounter};
+    std::unique_ptr<Vgcd> top{new Vgcd};
 
     std::unique_ptr<VerilatedSaifC> tfp{new VerilatedSaifC};
 
-    static constexpr int SIMULATION_DURATION{199};
+    static constexpr int SIMULATION_DURATION{10000};
     top->trace(tfp.get(), SIMULATION_DURATION);
 
     tfp->open(trace_name());
@@ -42,14 +42,21 @@ int main(int argc, char** argv) {
 
     while (main_time < SIMULATION_DURATION) {
         top->clk = !top->clk;
+        top->req_msg = rand() & 0xffffffff;
+        top->req_val = rand() & 0x1;
+        top->reset = rand() & 0x1;
+        top->resp_rdy = rand() & 0x1;
+
         top->eval();
         tfp->dump(static_cast<unsigned int>(main_time));
         ++main_time;
     }
+    
     tfp->close();
     top->final();
     tfp.reset();
     top.reset();
     printf("*-* All Finished *-*\n");
+    
     return errors;
 }
