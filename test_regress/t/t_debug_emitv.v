@@ -61,6 +61,12 @@ module t (/*AUTOARG*/
    integer i1;
    int array[3];
    initial array = '{1,2,3};
+   logic [63:32] downto_32 = '0;
+
+   function automatic int ident(int value);
+       return value;
+   endfunction
+
    initial begin
       if ($test$plusargs("HELLO")) $display("Hello argument found.");
       if (Pkg::FOO == 0) $write("");
@@ -69,6 +75,11 @@ module t (/*AUTOARG*/
          $display("value was %d", i1);
       else
          $display("+TEST= not found");
+      if (downto_32[33]) $write("");
+      if (downto_32[ident(33)]) $write("");
+      if (|downto_32[48:40]) $write("");
+      if (|downto_32[55+:3]) $write("");
+      if (|downto_32[60-:7]) $write("");
    end
 
    bit [6:5][4:3][2:1] arraymanyd[10:11][12:13][14:15];

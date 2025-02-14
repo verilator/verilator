@@ -14,6 +14,9 @@ module t (/*AUTOARG*/
     integer cyc;
     initial cyc=1;
 
+    logic [63:32] cyc2;
+    always_comb cyc2 = cyc;
+
     integer some_int;
     integer other_int;
     logic some_bool;
@@ -37,6 +40,7 @@ module t (/*AUTOARG*/
     always @ (posedge clk) begin
         cyc <= cyc + 1;
         if ((~cyc[0] && cyc[1]) || (~cyc[2] && cyc[3])) $write("");
+        if ((~cyc2[32] && cyc2[33]) || (~cyc2[34] && cyc2[35])) $write("");
         if ((~t1 && t2) || (~t3 && t4)) $write("");
         if (t3 && (t1 == t2)) $write("");
         if (123 == (124 - 32'(t1 || t2))) $write("");
