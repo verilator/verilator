@@ -230,6 +230,7 @@ private:
     bool m_build = false;           // main switch: --build
     bool m_cmake = false;           // main switch: --make cmake
     bool m_context = true;          // main switch: --Wcontext
+    bool m_coverageExpr = false;    // main switch: --coverage-expr
     bool m_coverageLine = false;    // main switch: --coverage-block
     bool m_coverageToggle = false;  // main switch: --coverage-toggle
     bool m_coverageUnderscore = false;  // main switch: --coverage-underscore
@@ -305,6 +306,7 @@ private:
     bool m_xmlOnly = false;         // main switch: --xml-only
 
     int         m_buildJobs = -1;    // main switch: --build-jobs, -j
+    int         m_coverageExprMax = 32;    // main switch: --coverage-expr-max
     int         m_convergeLimit = 100;  // main switch: --converge-limit
     int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
     int         m_expandLimit = 64;  // main switch: --expand-limit
@@ -426,7 +428,9 @@ private:
     void addLibExtV(const string& libext);
     void optimize(int level);
     void showVersion(bool verbose);
-    void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
+    void coverage(bool flag) {
+        m_coverageLine = m_coverageToggle = m_coverageExpr = m_coverageUser = flag;
+    }
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);
     string filePathCheckOneDir(const string& modname, const string& dirname);
@@ -488,8 +492,9 @@ public:
     bool cmake() const { return m_cmake; }
     bool context() const VL_MT_SAFE { return m_context; }
     bool coverage() const VL_MT_SAFE {
-        return m_coverageLine || m_coverageToggle || m_coverageUser;
+        return m_coverageLine || m_coverageToggle || m_coverageExpr || m_coverageUser;
     }
+    bool coverageExpr() const { return m_coverageExpr; }
     bool coverageLine() const { return m_coverageLine; }
     bool coverageToggle() const { return m_coverageToggle; }
     bool coverageUnderscore() const { return m_coverageUnderscore; }
@@ -565,6 +570,7 @@ public:
 
     int buildJobs() const VL_MT_SAFE { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
+    int coverageExprMax() const { return m_coverageExprMax; }
     int coverageMaxWidth() const { return m_coverageMaxWidth; }
     bool dumpTreeAddrids() const VL_MT_SAFE;
     int expandLimit() const { return m_expandLimit; }

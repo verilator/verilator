@@ -328,6 +328,8 @@ detailed descriptions of these arguments.
     --compiler-include          Include additional header in the precompiled one
     --converge-limit <loops>    Tune convergence settle time
     --coverage                  Enable all coverage
+    --coverage-expr             Enable expression coverage
+    --coverage-expr-max <value>     Maximum permutations allowed for an expression
     --coverage-line             Enable line coverage
     --coverage-max-width <width>   Maximum array depth for coverage
     --coverage-toggle           Enable toggle coverage
