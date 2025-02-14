@@ -8,12 +8,26 @@ module t (/*AUTOARG*/
    );
 
    class Foo;
+      class InnerFoo;
+        int y = 10;
+        function int get_y;
+           return y;
+         endfunction
+        function int get_30;
+           return 30;
+         endfunction
+      endclass
+
       int x = 1;
+      InnerFoo foo = new;
       function int get_x;
          return x;
       endfunction
       function int get_3;
          return 3;
+      endfunction
+      function InnerFoo get_foo;
+        return foo;
       endfunction
    endclass
 
@@ -21,12 +35,25 @@ module t (/*AUTOARG*/
    endclass
 
    class Baz;
+      class InnerFoo;
+        int y = 20;
+        function int get_y;
+           return y;
+         endfunction
+        function int get_40;
+           return 40;
+         endfunction
+      endclass
       int x = 2;
+      InnerFoo foo = new;
       function int get_x;
          return x;
       endfunction
       function int get_4;
          return 4;
+      endfunction
+      function InnerFoo get_foo;
+        return foo;
       endfunction
    endclass
 
@@ -71,6 +98,9 @@ module t (/*AUTOARG*/
       function int get_x_of_item(int i);
          return q[i].x;
       endfunction
+      function int get_y_of_item(int i);
+        return q[i].get_foo().get_y();
+      endfunction
    endclass
 
    Bar #() bar_foo_i;
@@ -93,8 +123,12 @@ module t (/*AUTOARG*/
 
       if (bar_foo_i.get_x() != 1) $stop;
       if (bar_foo_i.get_3() != 3) $stop;
+      if (bar_foo_i.get_foo().get_y() != 10) $stop;
+      if (bar_foo_i.get_foo().get_30() != 30) $stop;
       if (bar_baz_i.get_x() != 2) $stop;
       if (bar_baz_i.get_4() != 4) $stop;
+      if (bar_baz_i.get_foo().get_y() != 20) $stop;
+      if (bar_baz_i.get_foo().get_40() != 40) $stop;
       if (extend_bar_i.get_x() != 1) $stop;
       if (extend_bar_i.get_6() != 6) $stop;
       if (extend_bar_i.get_x() != 1) $stop;
@@ -106,6 +140,7 @@ module t (/*AUTOARG*/
       if (extend_extend_bar_i.get_x() != 1) $stop;
       if (extend_extend_bar_i.get_12() != 12) $stop;
       if (extend_foo_dict_i.get_x_of_item(1) != 1) $stop;
+      if (extend_foo_dict_i.get_y_of_item(1) != 10) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

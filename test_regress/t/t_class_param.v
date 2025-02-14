@@ -42,6 +42,9 @@ class Cls #(parameter PBASE = 12);
       return PBASE;
    endfunction
    typedef enum { E_PBASE = PBASE } enum_t;
+   class ClsInner;
+      bit [PBASE-1:0] member;
+   endclass
 endclass
 
 typedef Cls#(8) Cls8_t;
@@ -136,6 +139,8 @@ module t (/*AUTOARG*/);
    Cls c12;
    Cls #(.PBASE(4)) c4;
    Cls8_t c8;
+   Cls#()::ClsInner ci;
+   Cls#(8)::ClsInner ci8;
    Wrap #(.P(16)) w16;
    Wrap2 #(.P(32)) w32;
    SelfRefClassTypeParam src_logic;
@@ -155,6 +160,8 @@ module t (/*AUTOARG*/);
       c12 = new;
       c4 = new;
       c8 = new;
+      ci = new;
+      ci8 = new;
       w16 = new;
       w32 = new;
       src_int = new;
@@ -195,6 +202,10 @@ module t (/*AUTOARG*/);
       c4.member = 32'haaaaaaaa;
       c8.member = 32'haaaaaaaa;
       // verilator lint_on WIDTH
+      ci.member = 12'haaa;
+      ci8.member = 8'hff;
+      if (ci.member != 12'haaa) $stop;
+      if (ci8.member != 8'hff) $stop;
       if (c12.member != 12'haaa) $stop;
       if (c4.member != 4'ha) $stop;
       if (c12.get_member() != 12'haaa) $stop;

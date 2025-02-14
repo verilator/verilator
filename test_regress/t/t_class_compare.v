@@ -11,6 +11,9 @@
 `define check_ne(lhs, rhs) `check_comp(lhs, rhs, ==, 1'b0) `check_comp(lhs, rhs, !=, 1'b1)
 
 class Cls;
+   class InnerCls;
+      int j;
+   endclass
    int i;
 endclass
 
@@ -22,14 +25,25 @@ module t;
       Cls a = new;
       Cls b = new;
       ExtendCls ext = new;
+      Cls::InnerCls ia = new;
+      Cls::InnerCls ib = new;
+      ExtendCls::InnerCls iext = new;
       `check_ne(a, b)
       `check_ne(a, ext)
       `check_ne(ext, a)
+      `check_ne(ia, ib)
+      `check_ne(ia, iext)
+      `check_ne(iext, ia)
       a = b;
+      ia = ib;
       `check_eq(a, b)
+      `check_eq(ia, ib)
       a = ext;
+      ia = iext;
       `check_eq(a, ext)
       `check_eq(ext, a)
+      `check_eq(ia, iext)
+      `check_eq(iext, ia)
       $write("*-* All Finished *-*\n");
       $finish;
    end

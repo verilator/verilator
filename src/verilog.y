@@ -7354,8 +7354,7 @@ class_item<nodep>:                      // ==IEEE: class_item
         |       class_method                            { $$ = $1; }
         |       class_constraint                        { $$ = $1; }
         //
-        |       class_declaration
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: class within class"); }
+        |       class_declaration                       { $$ = $1; }
         |       timeunits_declaration                   { $$ = $1; }
         |       covergroup_declaration
                         { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: covergroup within class"); }

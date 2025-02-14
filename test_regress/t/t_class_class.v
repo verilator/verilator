@@ -31,5 +31,8 @@ module t (/*AUTOARG*/);
       if (c.imemberb != 20) $stop;
       if (c.sc.smembera != 30) $stop;
       if (c.sc.smemberb != 40) $stop;
+
+      $write("*-* All Finished *-*\n");
+      $finish;
    end
 endmodule

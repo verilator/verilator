@@ -14,10 +14,18 @@ module test;
       if (enum_item.first().name() != "BAR_0")
         $stop;
     endfunction
+    class Inner1;
+      static function void print();
+        E enum_item;
+        if (enum_item.first().name() != "BAR_0")
+          $stop;
+      endfunction
+    endclass
   endclass
 
   initial begin
     baz#(bar_e)::print();
+    baz#(bar_e)::Inner1::print();
 
     $write("*-* All Finished *-*\n");
     $finish;
