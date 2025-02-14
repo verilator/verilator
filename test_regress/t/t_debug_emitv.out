@@ -23,9 +23,29 @@ module Vt_debug_emitv_t;
     union {
         logic a;
     } unu;
+    integer signed i1;
     int signed array[0:2];
     initial begin
         array = '{0:32'sh1, 1:32'sh2, 2:32'sh3};
+    end
+    initial begin
+        begin
+            if ($test$plusargs(40'h48454c4c4f)) begin
+                $display("Hello argument found.");
+            end
+            if ((Pkg::FOO == 'sh0)) begin
+                $write("");
+            end
+            if ((ZERO == 'sh0)) begin
+                $write("");
+            end
+            if ($value$plusargs(56'h544553543d2564i1)) begin
+                $display("value was %~", i1);
+            end
+            else begin
+                $display("+TEST= not found");
+            end
+        end
     end
     bit [6:5] [4:3] [2:1]  arraymanyd[10:11][12:13][14:15];
     logic [15:0]  pubflat;
@@ -120,6 +140,8 @@ module Vt_debug_emitv_t;
     int signed sum;
     real r;
     string str;
+    int signed mod_val;
+    int signed mod_res;
     always @(posedge clk) begin
         begin
             cyc <= (cyc + 'sh1);
@@ -240,6 +262,7 @@ module Vt_debug_emitv_t;
                 $stop;
             end
             sub.r = 62.0;
+            mod_res = (mod_val % 'sh5);
             $display("%g", $log10(r));
             $display("%g", $ln(r));
             $display("%g", $exp(r));
@@ -308,4 +331,9 @@ package Vt_debug_emitv_p;
 endpackage
 package Vt_debug_emitv_Pkg;
     logic signed [31:0]  PKG_PARAM;
+    typedef enum int signed{
+        FOO = 32'h0,
+        BAR = 32'h1,
+        BAZ = 32'h2
+    } enum_t;
 endpackage

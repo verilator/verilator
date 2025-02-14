@@ -235,6 +235,18 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     void visit(AstCoverInc*) override {}  // N/A
     void visit(AstCoverToggle*) override {}  // N/A
 
+    void visit(AstTestPlusArgs* nodep) override {
+        putfs(nodep, nodep->verilogKwd());
+        putbs("(");
+        iterateChildrenConst(nodep);
+        puts(")");
+    }
+    void visit(AstValuePlusArgs* nodep) override {
+        putfs(nodep, nodep->verilogKwd());
+        putbs("(");
+        iterateChildrenConst(nodep);
+        puts(")");
+    }
     void visitNodeDisplay(AstNode* nodep, AstNode* fileOrStrgp, const string& text,
                           AstNode* exprsp) {
         putfs(nodep, nodep->verilogKwd());
@@ -476,7 +488,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         bool inPct = false;
         putbs("");
         for (const char c : format) {
-            if (c == '%') {
+            if (!inPct && c == '%') {
                 inPct = true;
             } else if (!inPct) {  // Normal text
                 string s;
@@ -675,6 +687,13 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         puts("{\n");
         iterateAndNextConstNull(nodep->itemsp());
         puts("}");
+    }
+    void visit(AstEnumItemRef* nodep) override {
+        if (AstNodeModule* const classOrPackagep = nodep->classOrPackagep()) {
+            putfs(nodep, classOrPackagep->prettyName());
+            puts("::");
+        }
+        putfs(nodep, nodep->name());
     }
     void visit(AstEnumItem* nodep) override {
         putfs(nodep, nodep->name());
