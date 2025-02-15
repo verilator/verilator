@@ -15,12 +15,16 @@ Verilator 5.033 devel
 
 * Add `COVERIGN` warning, as a more specific UNSUPPORTED error.
 * Add `--public-ignore` to ignore public metacomments (#5716). [Andrew Nolte]
+* Add `--preproc-token-limit` (#5768). [Krzysztof Bieganski, Antmicro Ltd.]
 * Add lint error on importing package within a class (#5634) (#5679). [Nick Brereton]
 * Support multidimensional array access via VPI (#2812) (#5573). [Krzysztof Starecki]
+* Support VPI array accessors (#5612). [Moubarak Jeje]
+* Support unpacked structure constrained randomization (#5657) (#5759). [Yilou Wang]
 * Support generated classes (#5665). [Shou-Li Hsu]
 * Support constraints on associative array user-defined keys (#5671) (#5729). [Yilou Wang]
 * Support `+incdir` with multiple directories.
 * Support integer atom type ports in `--hierarchical` (#5748). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Support selects on arbitrary string expressions (#5773). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support side effects of form 'variable[index_function()]++'.
 * Improve hierarchical DPI wrapper scheduling performance (#2583) (#5734). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Improve VPI write errors (#5712). [Andrew Nolte]
@@ -43,6 +47,9 @@ Verilator 5.033 devel
 * Fix inlined expression with assignment under LHS of NBA (#5736) (#5740). [Geza Lore]
 * Fix duplicate-named class variable equivalence (#5737).
 * Fix `-j` ignored after `-f` (#5749). [Luca Colagrande]
+* Fix handling forced assigns in V3Life (#5757). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix VFileContent reference count (#5769) (#5771). [Dave Sargeant]
+* Fix ignoring joins in stringify in preprocessor (#5777). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix matching language extension options including dots.
 
 
