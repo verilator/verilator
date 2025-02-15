@@ -369,7 +369,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildrenConst(nodep);
-        if (nodep->isSigUserRdPublic() && !m_cfuncp) m_modVars.emplace_back(m_modp, nodep);
+        if ((nodep->isSigUserRdPublic() || nodep->isSigUserRWPublic()) && !m_cfuncp)
+            m_modVars.emplace_back(m_modp, nodep);
     }
     void visit(AstVarScope* nodep) override {
         iterateChildrenConst(nodep);

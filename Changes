@@ -28,6 +28,7 @@ Verilator 5.033 devel
 * Optimize labels as final `if` block statements (#5744).
 * Optimize empty function definition bodies (#5750).
 * Fix error message when call task as a function (#3089). [Matthew Ballance]
+* Fix force VPI public signal visibility (#5225). [Frédéric Requin]
 * Fix VPI iteration over hierarchy (#5314) (#5731). [Natan Kreimer]
 * Fix constrained random for > 64-bit associative arrays (#5670) (#5682). [Yilou Wang]
 * Fix mis-optimizing away `$urandom` (#5703). [Parker Schless]
