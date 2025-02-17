@@ -185,8 +185,8 @@ VM_SLOW += $(VM_CLASSES_SLOW) $(VM_SUPPORT_SLOW)
 # Precompiled header filename
 VK_PCH_H = $(VM_PREFIX)__pch.h
 # Compiler read-a-precompiled-header option for precompiled header filename
-VK_PCH_I_FAST = $(CFG_CXXFLAGS_PCH_I) $(VM_PREFIX)__pch.h.fast$(CFG_GCH_IF_CLANG)
-VK_PCH_I_SLOW = $(CFG_CXXFLAGS_PCH_I) $(VM_PREFIX)__pch.h.slow$(CFG_GCH_IF_CLANG)
+VK_PCH_I_FAST = $(CFG_CXXFLAGS_PCH_I) $(VK_PCH_H).fast$(CFG_GCH_IF_CLANG)
+VK_PCH_I_SLOW = $(CFG_CXXFLAGS_PCH_I) $(VK_PCH_H).slow$(CFG_GCH_IF_CLANG)
 
 #######################################################################
 ### Overall Objects Linking
@@ -271,10 +271,10 @@ ifneq ($(VM_DEFAULT_RULES),0)
 %.o: %.cpp
 	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
-$(VK_OBJS_FAST): %.o: %.cpp $(VK_PCH_H).fast.gch
+$(VK_OBJS_FAST): %.o: %.cpp $(VK_PCH_H).fast$(CFG_GCH_IF_CLANG)
 	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_FAST) -c -o $@ $<
 
-$(VK_OBJS_SLOW): %.o: %.cpp $(VK_PCH_H).slow.gch
+$(VK_OBJS_SLOW): %.o: %.cpp $(VK_PCH_H).slow$(CFG_GCH_IF_CLANG)
 	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_SLOW) -c -o $@ $<
 
 $(VK_GLOBAL_OBJS): %.o: %.cpp
@@ -283,9 +283,9 @@ $(VK_GLOBAL_OBJS): %.o: %.cpp
 # Precompile a header file
 # PCH's compiler flags must match exactly the rules' above FAST/SLOW
 # arguments used for the .cpp files, or the PCH file won't be used.
-%.fast.gch: %
+%.fast$(CFG_GCH_IF_CLANG): %
 	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
-%.slow.gch: %
+%.slow$(CFG_GCH_IF_CLANG): %
 	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
 
 endif
