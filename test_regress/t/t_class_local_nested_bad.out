@@ -1,0 +1,9 @@
+%Error-ENCAPSULATED: t/t_class_local_nested_bad.v:14:22: 'name' is hidden as 'local' within this context (IEEE 1800-2023 8.18)
+                                                       : ... note: In instance 't'
+   14 |         name = Node::name;
+      |                      ^~~~
+                     t/t_class_local_nested_bad.v:14:22: ... Location of definition
+    9 |         static local string name;
+      |                             ^~~~
+                     ... For error description see https://verilator.org/warn/ENCAPSULATED?v=latest
+%Error: Exiting due to
