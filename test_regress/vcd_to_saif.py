@@ -18,7 +18,7 @@ class SAIFSignalBit:
         self.last_val = new_val
 
 class SAIFSignal:
-    def __init__(self, signal_name, signal_width):
+    def __init__(self, signal_name, signal_width = 0):
         self.name = signal_name
         self.width = signal_width
         self.last_time = 0
@@ -27,16 +27,11 @@ class SAIFSignal:
         for _ in range(self.width):
             self.bits.append(SAIFSignalBit())
 
-    def __init__(self, signal_name):
-        self.name = signal_name
-        self.bits = []
-        self.last_time = 0
-        self.width = 0
-
 
 class VCDToSAIFParser:
     def __init__(self):
         self.signal_definitions = {}
+        self.signal_indirections = {}
         self.current_time = 0
 
     def parse(self, vcd_filename):
@@ -49,7 +44,8 @@ class VCDToSAIFParser:
                 match = re.match(r'\$var\s+(\w+)\s+(\d+)\s+(\S+)\s+(\S+)\s*(\S*)\s*\$end', line)
                 if match:
                     _, signal_width, signal_id, signal_name, _ = match.groups()
-                    self.signal_definitions[signal_id] = SAIFSignal(signal_name, int(signal_width))
+                    self.signal_indirections[signal_id] = signal_name
+                    self.signal_definitions[signal_name] = SAIFSignal(signal_name, int(signal_width))
                     continue
 
                 match = re.match(r'\#(\d+)', line)
@@ -62,12 +58,12 @@ class VCDToSAIFParser:
                 if match:
                     value, signal_id = match.groups()
 
-                    dt = self.current_time - self.signal_definitions[signal_id].last_time
-                    self.signal_definitions[signal_id].last_time = self.current_time
+                    dt = self.current_time - self.signal_definitions[self.signal_indirections[signal_id]].last_time
+                    self.signal_definitions[self.signal_indirections[signal_id]].last_time = self.current_time
 
                     index = 0
                     for bit in reversed(value):
-                        self.signal_definitions[signal_id].bits[index].aggregate(dt, int(bit))
+                        self.signal_definitions[self.signal_indirections[signal_id]].bits[index].aggregate(dt, int(bit))
                         index += 1
 
                     continue
@@ -76,15 +72,17 @@ class VCDToSAIFParser:
                 if match:
                     value, signal_id = match.groups()
                     
-                    dt = self.current_time - self.signal_definitions[signal_id].last_time
-                    self.signal_definitions[signal_id].last_time = self.current_time
+                    dt = self.current_time - self.signal_definitions[self.signal_indirections[signal_id]].last_time
+                    self.signal_definitions[self.signal_indirections[signal_id]].last_time = self.current_time
 
-                    self.signal_definitions[signal_id].bits[0].aggregate(dt, int(value))
+                    self.signal_definitions[self.signal_indirections[signal_id]].bits[0].aggregate(dt, int(value))
 
             for _, signal in self.signal_definitions.items():
                 for i in range(signal.width):
                     if signal.bits[i].last_val == 1:
                         signal.bits[i].high_time += self.current_time - signal.last_time
+
+                    signal.bits[i].low_time = self.current_time - signal.bits[i].high_time
 
 
 class SAIFParser:
@@ -131,10 +129,20 @@ class SAIFParser:
                         
                         self.signal_definitions[signal_name].bits[int(bit_index)].transitions = toggle_count
 
+vcd_to_saif_parser = VCDToSAIFParser()
+vcd_to_saif_parser.parse("simx.vcd")
 
 saif_parser = SAIFParser()
 saif_parser.parse("simx.saif")
 
+print("From VCD")
+for signal_name, signal in vcd_to_saif_parser.signal_definitions.items():
+    for bit in range(signal.width):
+        print(f"{signal.name}[{bit}] (T0 {signal.bits[bit].low_time}) (T1 {signal.bits[bit].high_time}) (TC {signal.bits[bit].transitions})")
+
+print()
+
+print("From SAIF")
 for signal_name, signal in saif_parser.signal_definitions.items():
     for bit in range(signal.width):
         print(f"{signal.name}[{bit}] (T0 {signal.bits[bit].low_time}) (T1 {signal.bits[bit].high_time}) (TC {signal.bits[bit].transitions})")
