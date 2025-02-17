@@ -719,21 +719,10 @@ void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bit
         fprintf(stdout, "Trying to emit more bits than activity width\n");
     }
 
-    const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
-    int numOfWords = VL_WORDS_I(bits);
-
-    fprintf(stdout, "Number of bits in most significant word: %d\n", bitsInMSW);
-    fprintf(stdout, "Number of bits in a word: %d\n", VL_EDATASIZE);
-    fprintf(stdout, "Number of words: %d\n", numOfWords);
-
     auto dt = m_owner.m_time - activity.lastTime;
 
-    for (std::size_t i = 0; i < bitsInMSW; ++i) {
-        activity.bits[i].aggregateVal(dt, (newvalp[0] >> VL_BITBIT_E(i)) & 1);
-    }
-
-    for (std::size_t i = bitsInMSW; i < activity.width; ++i) {
-        size_t wordIndex = VL_WORDS_I(i);
+    for (std::size_t i = 0; i < activity.width; ++i) {
+        size_t wordIndex = i / VL_EDATASIZE;
         activity.bits[i].aggregateVal(dt, (newvalp[wordIndex] >> VL_BITBIT_E(i)) & 1);
     }
 
