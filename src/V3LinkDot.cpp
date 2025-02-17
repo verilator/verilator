@@ -1013,6 +1013,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         VL_RESTORER(m_modBlockNum);
         VL_RESTORER(m_modWithNum);
         VL_RESTORER(m_modArgNum);
+        VL_RESTORER(m_explicitNew);
         {
             UINFO(4, "     Link Class: " << nodep << endl);
             VSymEnt* const upperSymp = m_curSymp;
@@ -1176,12 +1177,39 @@ class LinkDotFindVisitor final : public VNVisitor {
             }
             // Change to appropriate package if extern declaration (vs definition)
             if (nodep->classOrPackagep()) {
+                // class-in-class
+                AstDot* const dotp = VN_CAST(nodep->classOrPackagep(), Dot);
                 AstClassOrPackageRef* const cpackagerefp
                     = VN_CAST(nodep->classOrPackagep(), ClassOrPackageRef);
-                if (!cpackagerefp) {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: extern function definition with class-in-class");
-                } else {
+                if (dotp) {
+                    AstClassOrPackageRef* const lhsp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
+                    m_statep->resolveClassOrPackage(m_curSymp, lhsp, false,
+                                                    "External definition :: reference");
+                    AstClass* const lhsclassp = VN_CAST(lhsp->classOrPackageSkipp(), Class);
+                    if (!lhsclassp) {
+                        nodep->v3error("Extern declaration's scope is not a defined class");
+                    } else {
+                        m_curSymp = m_statep->getNodeSym(lhsclassp);
+                        upSymp = m_curSymp;
+                        AstClassOrPackageRef* const rhsp = VN_AS(dotp->rhsp(), ClassOrPackageRef);
+                        m_statep->resolveClassOrPackage(m_curSymp, rhsp, false,
+                                                        "External definition :: reference");
+                        AstClass* const rhsclassp = VN_CAST(rhsp->classOrPackageSkipp(), Class);
+                        if (!rhsclassp) {
+                            nodep->v3error("Extern declaration's scope is not a defined class");
+                        } else {
+                            m_curSymp = m_statep->getNodeSym(rhsclassp);
+                            upSymp = m_curSymp;
+                            if (!nodep->isExternDef()) {
+                                // Move it to proper spot under the target class
+                                nodep->unlinkFrBack();
+                                rhsclassp->addStmtsp(nodep);
+                                nodep->isExternDef(true);  // So we check there's a matching extern
+                                nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
+                            }
+                        }
+                    }
+                } else if (cpackagerefp) {
                     if (!cpackagerefp->classOrPackageSkipp()) {
                         m_statep->resolveClassOrPackage(m_curSymp, cpackagerefp, false,
                                                         "External definition :: reference");
@@ -1200,6 +1228,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                             nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
                         }
                     }
+                } else {
+                    v3fatalSrc("Unhandled extern function definition package");
                 }
             }
             // Set the class as package for iteration
@@ -4007,6 +4037,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep << endl);
         checkNoDot(nodep);
+        AstClass* const topclassp = VN_CAST(m_modp, Class);
+        if (nodep->isInterfaceClass() && topclassp && topclassp->isInterfaceClass()) {
+            nodep->v3error("Interface class shall not be nested within another interface class."
+                           " (IEEE 1800-2023 8.26)");
+        }
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_modp);
