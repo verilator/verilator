@@ -270,6 +270,25 @@ A :option:`/*verilator&32;coverage_off*/`
 signals that do not need toggle analysis, such as RAMs and register files.
 
 
+.. _Expression Coverage:
+
+Expression Coverage
+-------------
+
+With :vlopt:`--coverage` or :vlopt:`--coverage-expr`, Verilator will
+automatically add coverage analysis at each expression, indicating with
+a truth table how every Boolean truth-table possiblity in the expression occurred.
+
+Multi-bit expressions are ignored, but sub-expressions with are entirely
+Boolean are analyzed.  Expression coverage does not fully explore the truth
+table of an expression, rather is looks at each term's contribution.  E.g.
+an AND operation will check coverage for TT, XF and FX.
+
+Some expressions may produce too many cover points.  Verilator limits the
+maximum number of cover poitns per expression to 32, but this may be
+controlled with :vlopt:`--coverage-expr-max`.
+
+
 .. _Suppressing Coverage:
 
 Suppressing Coverage
