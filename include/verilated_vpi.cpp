@@ -2779,7 +2779,6 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             }
             return object;
         } else if (valuep->format == vpiOctStrVal) {
-            const int chars = (varBits + 2) / 3;
             const int len = std::strlen(valuep->value.str);
             for (int i = 0; i < len; ++i) {
                 char digit = valuep->value.str[len - i - 1] - '0';
@@ -3127,7 +3126,6 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_INT
         arrayvalue_p->value.shortints = shortintsp;
 
         if (varp->vltype() == VLVT_UINT8) {
-            const CData* ptr = reinterpret_cast<CData*>(vop->varDatap());
             vl_get_value_array_integrals(index, num, size, varp->entBits(), leftIsLow,
                                          vop->varCDatap(), shortintsp);
         } else if (varp->vltype() == VLVT_UINT16) {
@@ -3304,8 +3302,6 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
                       VerilatedVpiError::strFromVpiObjType(vop->type()));
         return;
     }
-
-    const VerilatedVar* const varp = vop->varp();
 
     int lowRange = vop->rangep()->low();
     int highRange = vop->rangep()->high();

@@ -640,12 +640,11 @@ class ConstraintExprVisitor final : public VNVisitor {
                 = new AstVarRef{varp->fileline(), classp, varp, VAccess::WRITE};
             varRefp->classOrPackagep(classOrPackagep);
             methodp->addPinsp(varRefp);
-            size_t width = varp->width();
             AstNodeDType* tmpDtypep = varp->dtypep();
             while (VN_IS(tmpDtypep, UnpackArrayDType) || VN_IS(tmpDtypep, DynArrayDType)
                    || VN_IS(tmpDtypep, QueueDType) || VN_IS(tmpDtypep, AssocArrayDType))
                 tmpDtypep = tmpDtypep->subDTypep();
-            width = tmpDtypep->width();
+            const size_t width = tmpDtypep->width();
             methodp->addPinsp(
                 new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, width});
             AstNodeExpr* const varnamep

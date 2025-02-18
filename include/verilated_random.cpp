@@ -481,13 +481,14 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
             }
             const std::string indexed_name = oss.str();
 
-            const auto it = std::find_if(m_arr_vars.begin(), m_arr_vars.end(),
-                                         [&indexed_name](const auto& entry) {
-                                             return entry.second->m_name == indexed_name;
-                                         });
-            if (it != m_arr_vars.end()) {
+            const auto iti = std::find_if(m_arr_vars.begin(), m_arr_vars.end(),
+                                          [&indexed_name](const auto& entry) {
+                                              return entry.second->m_name == indexed_name;
+                                          });
+            if (iti != m_arr_vars.end()) {
                 std::ostringstream ss;
-                ss << "#x" << std::hex << std::setw(8) << std::setfill('0') << it->second->m_index;
+                ss << "#x" << std::hex << std::setw(8) << std::setfill('0')
+                   << iti->second->m_index;
                 idx = ss.str();
             } else {
                 VL_FATAL_MT(__FILE__, __LINE__, "randomize",
