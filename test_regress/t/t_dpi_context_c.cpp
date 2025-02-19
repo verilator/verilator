@@ -152,9 +152,7 @@ unsigned dpic_getcontext() {
     return (unsigned)(uintptr_t)scope;
 }
 
-unsigned dpic_get1() {
-    return 1;
-}
+unsigned dpic_get1() { return 1; }
 
 void dpic_final() {
     static int s_once = 0;
