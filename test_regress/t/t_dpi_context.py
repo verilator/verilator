@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(v_flags2=["t/t_dpi_context_c.cpp"])
+test.compile(v_flags2=["t/t_dpi_context_c.cpp", "--debug"])
 
 test.execute()
 
