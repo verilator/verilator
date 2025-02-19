@@ -229,19 +229,49 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     printStr(std::to_string(m_time).c_str());
     printStr(")\n");
 
+    incrementIndent();
+    printInstance(0);
+    decrementIndent();
+    
+    printStr(")\n");  // SAIFILE
+
+    // This function is on the flush() call path
+    const VerilatedLockGuard lock{m_mutex};
+    if (!isOpen()) return;
+    closePrev();
+    // closePrev() called Super::flush(), so we just
+    // need to shut down the tracing thread here.
+    Super::closeBase();
+}
+
+void VerilatedSaif::printInstance(uint32_t scopeIndex) {
+    const SaifScope& saifScope = m_scopes.at(scopeIndex);
+
+    printIndent();
+    printStr("(INSTANCE ");
+    printStr(saifScope.scopeName.c_str());
+    printStr("\n");
+
     //NOTE: for now only care about NET, also PORT will be added
-    printStr("(INSTANCE foo (NET\n");
-    for (auto& [code, activity] : m_activity) {
+    incrementIndent();
+    printIndent();
+    printStr("(NET\n");
+
+    incrementIndent();
+    for (auto& childSignalCode : saifScope.childSignalCodes) {
+        ActivityVar& activity = m_activity.at(childSignalCode);
         for (size_t i = 0; i < activity.width; i++) {
             auto& bit = activity.bits[i];
             if (bit.lastVal && activity.lastTime < m_time) {
                 bit.highTime += m_time - activity.lastTime;
             }
-            if (!bit.transitions) {
-		        // Skip bits with no transitions
+            if (bit.transitions <= 0) {
+                // Skip bits with no transitions
                 continue;
             }
             assert(m_time >= bit.highTime);
+
+            printIndent();
             printStr("(");
             printStr(activity.name.c_str());
             if (activity.width > 1) {
@@ -262,15 +292,18 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
         }
         activity.lastTime = m_time;
     }
-    printStr("))");  // INSTANCE/NET
-    printStr(")\n");  // SAIFILE
-    // This function is on the flush() call path
-    const VerilatedLockGuard lock{m_mutex};
-    if (!isOpen()) return;
-    closePrev();
-    // closePrev() called Super::flush(), so we just
-    // need to shut down the tracing thread here.
-    Super::closeBase();
+    decrementIndent();
+    
+    printIndent();
+    printStr(")\n"); // NET
+
+    for (uint32_t childScopeIndex : saifScope.childScopesIndices) {
+        printInstance(childScopeIndex);
+    }
+
+    decrementIndent();
+    printIndent();
+    printStr(")\n"); // INSTANCE
 }
 
 void VerilatedSaif::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
@@ -331,10 +364,36 @@ void VerilatedSaif::bufferFlush() VL_MT_UNSAFE_ONE {
 //=============================================================================
 // Definitions
 
+void VerilatedSaif::incrementIndent()
+{
+    m_indent += 1;
+}
+
+void VerilatedSaif::decrementIndent()
+{
+    m_indent -= 1;
+}
+
+void VerilatedSaif::printIndent() {
+    for (int i = 0; i < m_indent; ++i) printStr(" ");
+}
+
 void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType type) {
     fprintf(stdout, "Pushing prefix: %s\n", name.c_str());
     assert(!m_prefixStack.empty());  // Constructor makes an empty entry
     std::string pname = name;
+
+    int32_t newScopeIndex = m_scopes.size();
+    m_scopes.emplace_back();
+    SaifScope& newScope = m_scopes.back();
+    newScope.scopeName = name;
+
+    if (m_currentScope >= 0) {
+        m_scopes.at(m_currentScope).childScopesIndices.emplace_back(newScopeIndex);
+        newScope.parentScopeIndex = m_currentScope;
+    }
+    m_currentScope = newScopeIndex;
+
     // An empty name means this is the root of a model created with name()=="".  The
     // tools get upset if we try to pass this as empty, so we put the signals under a
     // new scope, but the signals further down will be peers, not children (as usual
@@ -376,6 +435,8 @@ void VerilatedSaif::popPrefix() {
     fprintf(stdout, "Popping prefix: %s\n", m_prefixStack.back().first.c_str());
     m_prefixStack.pop_back();
     assert(!m_prefixStack.empty());  // Always one left, the constructor's initial one
+
+    m_currentScope = m_scopes.at(m_currentScope).parentScopeIndex;
 }
 
 void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, bool array,
@@ -387,7 +448,7 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
     
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
-    const std::string hierarchicalName = m_prefixStack.back().first + name;
+    std::string hierarchicalName = m_prefixStack.back().first + name;
 
     const bool enabled = Super::declCode(code, hierarchicalName, bits);
     if (!enabled) return;
@@ -406,6 +467,9 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
         finalName += std::to_string(arraynum);
         finalName += ']';
     }
+
+    assert(m_currentScope >= 0);
+    m_scopes.at(m_currentScope).childSignalCodes.emplace_back(code);
 
     m_activity.emplace(code, ActivityVar{
         finalName,
@@ -427,6 +491,7 @@ void VerilatedSaif::declEvent(
 
 void VerilatedSaif::printSignalDirection(VerilatedTraceSigDirection signalDirection)
 {
+    return;
     switch (signalDirection) {
         case VerilatedTraceSigDirection::INPUT:
         {
@@ -453,6 +518,7 @@ void VerilatedSaif::printSignalDirection(VerilatedTraceSigDirection signalDirect
 
 void VerilatedSaif::printSignalKind(VerilatedTraceSigKind signalKind)
 {
+    return;
     switch (signalKind) {
         case VerilatedTraceSigKind::PARAMETER:
         {
@@ -498,6 +564,7 @@ void VerilatedSaif::printSignalKind(VerilatedTraceSigKind signalKind)
 
 void VerilatedSaif::printSignalType(VerilatedTraceSigType signalType)
 {
+    return;
     switch (signalType) {
         case VerilatedTraceSigType::DOUBLE:
         {
@@ -700,7 +767,7 @@ void VerilatedSaifBuffer::emitQData(uint32_t code, QData newval, int bits) {
     if (bits > activity.width) {
         fprintf(stdout, "Trying to emit more bits than activity width\n");
     }
-    
+
     auto dt = m_owner.m_time - activity.lastTime;
     for (size_t i = 0; i < activity.width; i++) {
         activity.bits[i].aggregateVal(dt, (newval >> i) & 1);
