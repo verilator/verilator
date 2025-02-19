@@ -288,6 +288,22 @@ Some expressions may produce too many cover points.  Verilator limits the
 maximum number of cover poitns per expression to 32, but this may be
 controlled with :vlopt:`--coverage-expr-max`.
 
+Below is an example showing expression coverage produced from `verilator_coverage`
+as applied to the condition expression inside an if statement.  Each line
+shows the minimum number of terms and their values (e.g. `(t1==0 && t2==1)`) needed
+to reach a result for the overall expression (e.g. `=> 1`).  Each line also
+shows the number of times this combination was hit.  Note that individual lines
+are not mutually exclusive.
+
+.. code-block::
+
+   %000004         if ((~t1 && t2) || (~t3 && t4)) $write("");
+   -000002  point: comment=(t1==0 && t2==1) => 1 hier=top.t
+   -000002  point: comment=(t1==1 && t3==1) => 0 hier=top.t
+   -000004  point: comment=(t1==1 && t4==0) => 0 hier=top.t
+   -000002  point: comment=(t2==0 && t3==1) => 0 hier=top.t
+   -000003  point: comment=(t2==0 && t4==0) => 0 hier=top.t
+   -000002  point: comment=(t3==0 && t4==1) => 1 hier=top.t
 
 .. _Suppressing Coverage:
 

@@ -51,7 +51,7 @@ class CoverageVisitor final : public VNVisitor {
             , m_objective{objective}
             , m_emitV(emitV) {}
     };
-    using CoverExpr = std::list<CoverTerm>;
+    using CoverExpr = std::deque<CoverTerm>;
     using CoverExprs = std::list<CoverExpr>;
 
     struct ToggleEnt final {
@@ -101,8 +101,8 @@ class CoverageVisitor final : public VNVisitor {
     CheckState m_state;  // State save-restored on each new coverage scope/block
     AstNodeModule* m_modp = nullptr;  // Current module to add statement to
     AstNode* m_exprStmtsp = nullptr;  // Node to add expr coverage to
-    bool m_then;  // Whether we're iterating the then or else branch
-                  // when m_exprStmtps is an AstIf
+    bool m_then = false;  // Whether we're iterating the then or else branch
+                          // when m_exprStmtps is an AstIf
     CoverExprs m_exprs;  // List of expressions that can reach objective
     Objective m_seeking = NONE;  // Seeking objective for expression coverage
     bool m_objective = false;  // Expression objective
@@ -679,8 +679,8 @@ class CoverageVisitor final : public VNVisitor {
     void exprEither(AstNodeBiop* nodep, bool overrideObjective = false, bool lObjective = false,
                     bool rObjective = false) {
         VL_RESTORER(m_objective);
-        AstNodeExpr* lhsp = nodep->lhsp();
-        AstNodeExpr* rhsp = nodep->rhsp();
+        AstNodeExpr* const lhsp = nodep->lhsp();
+        AstNodeExpr* const rhsp = nodep->rhsp();
 
         if (overrideObjective) m_objective = lObjective;
         iterate(lhsp);
@@ -696,8 +696,8 @@ class CoverageVisitor final : public VNVisitor {
     void exprBoth(AstNodeBiop* nodep, bool overrideObjective = false, bool lObjective = false,
                   bool rObjective = false) {
         VL_RESTORER(m_objective);
-        AstNodeExpr* lhsp = nodep->lhsp();
-        AstNodeExpr* rhsp = nodep->rhsp();
+        AstNodeExpr* const lhsp = nodep->lhsp();
+        AstNodeExpr* const rhsp = nodep->rhsp();
 
         if (overrideObjective) m_objective = lObjective;
         iterate(lhsp);
@@ -831,7 +831,7 @@ class CoverageVisitor final : public VNVisitor {
                 AstSel* const selp = new AstSel{fl, lhsp->cloneTree(true),
                                                 new AstConst{fl, static_cast<uint32_t>(bit)},
                                                 new AstConst{fl, 1}};
-                unrolledp = new T_Oper(fl, selp, unrolledp);
+                unrolledp = new T_Oper{fl, selp, unrolledp};
             }
             iterate(unrolledp);
             pushDeletep(unrolledp);
@@ -867,7 +867,6 @@ class CoverageVisitor final : public VNVisitor {
     }
 
     void visit(AstCond* nodep) override {
-        // TODO -- fully unroll single bit results?
         if (m_seeking == NONE) coverExprs(nodep->condp());
         lineTrack(nodep);
     }
