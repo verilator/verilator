@@ -219,6 +219,7 @@ private:
     V3StringSet m_fDfgPeepholeDisabled; // argument: -f[no-]dfg-peephole-<name>
 
     bool m_preprocOnly = false;     // main switch: -E
+    bool m_preprocResolve = false;  // main switch: --preproc-resolve
     bool m_makePhony = false;       // main switch: -MP
     bool m_preprocNoLine = false;   // main switch: -P
     bool m_assert = false;          // main switch: --assert
@@ -470,6 +471,7 @@ public:
     bool preprocOnly() const { return m_preprocOnly; }
     bool makePhony() const { return m_makePhony; }
     bool preprocNoLine() const { return m_preprocNoLine; }
+    bool preprocResolve() const { return m_preprocResolve; }
     int preprocTokenLimit() const { return m_preprocTokenLimit; }
     bool underlineZero() const { return m_underlineZero; }
     string flags() const { return m_flags; }

@@ -490,8 +490,8 @@ Summary:
    out.  Beware of enabling debugging messages, as they will also go to
    standard out. See :vlopt:`--no-std`, which is implied by this.
 
-   See also :vlopt:`--dump-defines`, :vlopt:`-P`, and
-   :vlopt:`--pp-comments` options.
+   See also :vlopt:`--dump-defines`, :vlopt:`-P`, :vlopt:`--pp-comments`
+   and :vlopt:`--preproc-resolve` options.
 
 .. option:: --emit-accessors
 
@@ -1151,6 +1151,14 @@ Summary:
    Specifies the name of the top-level class and makefile.  Defaults to V
    prepended to the name of the :vlopt:`--top` option, or V prepended to
    the first Verilog filename passed on the command line.
+
+.. option:: --preproc-resolve
+
+   With :vlopt:`-E`, include preprocessed output of submodules defined
+   in included files. Gives you a way of converting a multifile design
+   into a single file using include directory option.
+
+   See :vlopt:`-E`.
 
 .. option:: --preproc-token-limit
 
