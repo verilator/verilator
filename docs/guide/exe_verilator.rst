@@ -237,7 +237,7 @@ Summary:
 .. option:: --coverage
 
    Enables all forms of coverage, an alias for :vlopt:`--coverage-line`
-   :vlopt:`--coverage-toggle :vlopt:`--coverage-expr`` :vlopt:`--coverage-user`.
+   :vlopt:`--coverage-toggle` :vlopt:`--coverage-expr` :vlopt:`--coverage-user`.
 
 .. option:: --coverage-expr
 

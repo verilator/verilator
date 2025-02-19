@@ -11,6 +11,10 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 5.033 devel
 ==========================
 
+**Major:**
+
+* Add expression coverage (#5719). [Todd Strader]
+
 **Minor:**
 
 * Add `COVERIGN` warning, as a more specific UNSUPPORTED error.
