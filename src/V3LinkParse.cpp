@@ -718,6 +718,7 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->name(newName);
             nodep->origName(newName);
         }
+        iterateChildren(nodep);
     }
     void visit(AstGenCase* nodep) override {
         ++m_genblkNum;
