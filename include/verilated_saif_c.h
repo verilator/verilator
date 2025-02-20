@@ -55,7 +55,7 @@ struct ActivityVar {
 struct SaifScope {
     std::string scopeName{};
     std::vector<int32_t> childScopesIndices{};
-    std::vector<uint32_t> childSignalCodes{};
+    std::vector<std::pair<uint32_t, const char*>> childSignals{};
     int32_t parentScopeIndex{-1};
 };
 
