@@ -135,12 +135,11 @@ class SAIFParser:
                     instance.parent_instance = self.current_instance
                     self.current_instance = instance
 
-                line = line.replace('\\', '')
-                match = re.search(r'(\w+)\[*(\d*)\]*\s+(\(T(.+)\))+', line)
+                match = re.search(r'((?:[\w\[\]])+)(?:\\\[(\d+)\\\])*\s+(\(T.+\))+', line)
                 if match:
-                    signal_name, bit_index, bit_values, _ = match.groups()
+                    signal_name, bit_index, bit_values = match.groups()
 
-                    if bit_index == '':
+                    if bit_index == None:
                         bit_index = 0
 
                     if signal_name not in self.current_instance.nets:
