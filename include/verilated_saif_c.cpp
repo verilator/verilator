@@ -230,10 +230,10 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     printStr(")\n");
 
     incrementIndent();
-    printInstance(0);
+    recursivelyPrintScopes(TOP_SCOPE_INDEX);
     decrementIndent();
     
-    printStr(")\n");  // SAIFILE
+    printStr(")\n"); // SAIFILE
 
     // This function is on the flush() call path
     const VerilatedLockGuard lock{m_mutex};
@@ -244,7 +244,7 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     Super::closeBase();
 }
 
-void VerilatedSaif::printInstance(uint32_t scopeIndex) {
+void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
     const SaifScope& saifScope = m_scopes.at(scopeIndex);
 
     printIndent();
@@ -252,12 +252,11 @@ void VerilatedSaif::printInstance(uint32_t scopeIndex) {
     printStr(saifScope.scopeName.c_str());
     printStr("\n");
 
-    //NOTE: for now only care about NET, also PORT will be added
     incrementIndent();
-    printIndent();
-    printStr("(NET\n");
 
-    incrementIndent();
+    bool anyNetValid{true};
+
+    //NOTE: for now only care about NET, also PORT will be added
     for (auto& childSignalCode : saifScope.childSignalCodes) {
         ActivityVar& activity = m_activity.at(childSignalCode);
         for (size_t i = 0; i < activity.width; i++) {
@@ -270,6 +269,14 @@ void VerilatedSaif::printInstance(uint32_t scopeIndex) {
                 continue;
             }
             assert(m_time >= bit.highTime);
+
+            if (!anyNetValid) {
+                printIndent();
+                printStr("(NET\n");
+                anyNetValid = true;
+                
+                incrementIndent();
+            }
 
             printIndent();
             printStr("(");
@@ -292,13 +299,16 @@ void VerilatedSaif::printInstance(uint32_t scopeIndex) {
         }
         activity.lastTime = m_time;
     }
-    decrementIndent();
     
-    printIndent();
-    printStr(")\n"); // NET
+    if (anyNetValid) {
+        decrementIndent();
+    
+        printIndent();
+        printStr(")\n"); // NET
+    }
 
     for (uint32_t childScopeIndex : saifScope.childScopesIndices) {
-        printInstance(childScopeIndex);
+        recursivelyPrintScopes(childScopeIndex);
     }
 
     decrementIndent();

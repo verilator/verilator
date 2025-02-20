@@ -93,9 +93,9 @@ private:
     size_t m_maxSignalBytes = 0;  // Upper bound on number of bytes a single signal can generate
     uint64_t m_wroteBytes = 0;  // Number of bytes written to this file
 
-    std::vector<SaifScope> m_scopes{};
-    std::vector<uint32_t> m_topScopes{};
+    static constexpr int32_t TOP_SCOPE_INDEX{0};
     int32_t m_currentScope{-1};
+    std::vector<SaifScope> m_scopes{};
 
     std::unordered_map<uint32_t, ActivityVar> m_activity;
     std::vector<std::vector<ActivityBit>> m_activityArena;
@@ -123,7 +123,7 @@ private:
     void declare(uint32_t code, const char* name, const char* wirep, bool array, int arraynum,
                  bool bussed, int msb, int lsb);
 
-    void printInstance(uint32_t scopeIndex);
+    void recursivelyPrintScopes(uint32_t scopeIndex);
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedSaif);
