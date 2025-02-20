@@ -257,8 +257,8 @@ void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
     bool anyNetValid{true};
 
     //NOTE: for now only care about NET, also PORT will be added
-    for (auto& childSignalCode : saifScope.childSignalCodes) {
-        ActivityVar& activity = m_activity.at(childSignalCode);
+    for (auto& [code, signalName] : saifScope.childSignals) {
+        ActivityVar& activity = m_activity.at(code);
         for (size_t i = 0; i < activity.width; i++) {
             auto& bit = activity.bits[i];
             if (bit.lastVal && activity.lastTime < m_time) {
@@ -280,7 +280,7 @@ void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
 
             printIndent();
             printStr("(");
-            printStr(activity.name.c_str());
+            printStr(signalName);
             if (activity.width > 1) {
                 printStr("[");
                 printStr(std::to_string(activity.lsb + i).c_str());
@@ -451,6 +451,9 @@ void VerilatedSaif::popPrefix() {
 
 void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, bool array,
                             int arraynum, bool bussed, int msb, int lsb) {
+    assert(m_currentScope >= 0);
+    m_scopes.at(m_currentScope).childSignals.emplace_back(code, name);
+
     // check if already declared to avoid duplicates
     if (m_activity.count(code)) {
         return;
@@ -477,9 +480,6 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
         finalName += std::to_string(arraynum);
         finalName += ']';
     }
-
-    assert(m_currentScope >= 0);
-    m_scopes.at(m_currentScope).childSignalCodes.emplace_back(code);
 
     m_activity.emplace(code, ActivityVar{
         finalName,
