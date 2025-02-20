@@ -280,7 +280,7 @@ void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
 
             printIndent();
             printStr("(");
-            printStr(signalName);
+            printStr(signalName.c_str());
             if (activity.width > 1) {
                 printStr("[");
                 printStr(std::to_string(activity.lsb + i).c_str());
@@ -451,14 +451,6 @@ void VerilatedSaif::popPrefix() {
 
 void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, bool array,
                             int arraynum, bool bussed, int msb, int lsb) {
-    assert(m_currentScope >= 0);
-    m_scopes.at(m_currentScope).childSignals.emplace_back(code, name);
-
-    // check if already declared to avoid duplicates
-    if (m_activity.count(code)) {
-        return;
-    }
-    
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
     std::string hierarchicalName = m_prefixStack.back().first + name;
@@ -480,6 +472,9 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
         finalName += std::to_string(arraynum);
         finalName += ']';
     }
+
+    assert(m_currentScope >= 0);
+    m_scopes.at(m_currentScope).childSignals.emplace_back(code, std::move(finalName));
 
     m_activity.emplace(code, ActivityVar{
         static_cast<uint32_t>(lsb),
