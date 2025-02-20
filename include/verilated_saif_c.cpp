@@ -283,7 +283,7 @@ void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
             printStr(signalName.c_str());
             if (activity.width > 1) {
                 printStr("\\[");
-                printStr(std::to_string(activity.lsb + i).c_str());
+                printStr(std::to_string(i).c_str());
                 printStr("\\]");
             }
             printStr(" (T0 ");
