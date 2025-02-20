@@ -11,8 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 test.top_filename = "t/t_trace_complex.v"
+test.golden_filename = "t/t_trace_complex_saif.out"
 
-test.compile(verilator_flags2=['--cc --trace'])
+test.compile(verilator_flags2=['--cc --trace-saif'])
 
 test.execute()
 
