@@ -2482,6 +2482,17 @@ class VlTest:
             if signal_name not in second.nets:
                 self.error(f"Signal {signal_name} doesn't exist in the second object\n")
 
+            other_signal = second.nets[signal_name]
+            if other_signal.width != signal.width:
+                self.error(f"Incompatible signal width in {signal_name}!\n")
+
+            for bit_index in range(signal.width):
+                signal_bit = signal.bits[bit_index]
+                other_signal_bit = other_signal.bits[bit_index]
+
+                if signal_bit.high_time != other_signal_bit.high_time or signal_bit.low_time != other_signal_bit.low_time or signal_bit.transitions != other_signal_bit.transitions:
+                    self.error(f"Incompatible signal bit parameters in {signal_name}[{bit_index}]!\n")
+
         for instance_name, instance in first.child_instances.items():
             if instance_name not in second.child_instances:
                 self.error(f"Instance {instance_name} doesn't exist in the second object\n")
