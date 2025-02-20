@@ -28,6 +28,15 @@ module Vt_debug_emitv_t;
     initial begin
         array = '{0:32'sh1, 1:32'sh2, 2:32'sh3};
     end
+    logic [63:32]  downto_32;
+    downto_32 = 32'h0;
+    function ident;
+        input int signed value;
+        begin : label0
+            ident = value;
+            disable label0;
+        end
+    endfunction
     initial begin
         begin
             if ($test$plusargs(40'h48454c4c4f)) begin
@@ -44,6 +53,22 @@ module Vt_debug_emitv_t;
             end
             else begin
                 $display("+TEST= not found");
+            end
+            if (downto_32[33]) begin
+                $write("");
+            end
+            if (downto_32[(ident('sh21) - 'h20)[5:0] + 32
+                +:'h1]]) begin
+                $write("");
+            end
+            if ((| downto_32[48:40])) begin
+                $write("");
+            end
+            if ((| downto_32[57:55])) begin
+                $write("");
+            end
+            if ((| downto_32[60:54])) begin
+                $write("");
             end
         end
     end

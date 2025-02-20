@@ -602,22 +602,28 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     }
     void visit(AstSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
+        int offset = 0;
+        AstNodeDType* const dtypep = nodep->fromp()->dtypep();
+        if (VN_IS(dtypep, BasicDType)) {
+            AstBasicDType* const basicDtypep = VN_AS(dtypep, BasicDType);
+            offset = basicDtypep->lo();
+        }
         puts("[");
         if (VN_IS(nodep->lsbp(), Const)) {
             if (nodep->widthp()->isOne()) {
-                if (VN_IS(nodep->lsbp(), Const)) {
-                    puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt()));
-                } else {
-                    iterateAndNextConstNull(nodep->lsbp());
-                }
+                puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt() + offset));
             } else {
                 puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt()
-                              + VN_AS(nodep->widthp(), Const)->toSInt() - 1));
+                              + VN_AS(nodep->widthp(), Const)->toSInt() + offset - 1));
                 puts(":");
-                puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt()));
+                puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt() + offset));
             }
         } else {
             iterateAndNextConstNull(nodep->lsbp());
+            if (offset != 0) {
+                puts(" + ");
+                puts(cvtToStr(offset));
+            }
             putfs(nodep, "+:");
             iterateAndNextConstNull(nodep->widthp());
             puts("]");
