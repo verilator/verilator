@@ -11,12 +11,12 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 test.top_filename = "t/t_trace_counter.v"
+test.golden_filename = "t/t_trace_counter_saif.out"
 
 test.compile(verilator_flags2=['--cc --trace-saif'])
 
 test.execute()
 
-#TODO: add function checking if two SAIF files are identical
-#test.saif_identical(test.trace_filename, test.golden_filename)
+test.saif_identical(test.trace_filename, test.golden_filename)
 
 test.passes()
