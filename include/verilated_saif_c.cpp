@@ -254,7 +254,7 @@ void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
 
     incrementIndent();
 
-    bool anyNetValid{true};
+    bool anyNetValid{false};
 
     //NOTE: for now only care about NET, also PORT will be added
     for (auto& [code, signalName] : saifScope.childSignals) {
