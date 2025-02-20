@@ -389,20 +389,23 @@ void VerilatedSaif::printIndent() {
 }
 
 void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType type) {
-    fprintf(stdout, "Pushing prefix: %s\n", name.c_str());
-    assert(!m_prefixStack.empty());  // Constructor makes an empty entry
+    assert(!m_prefixStack.empty());
+
     std::string pname = name;
 
-    int32_t newScopeIndex = m_scopes.size();
-    m_scopes.emplace_back();
-    SaifScope& newScope = m_scopes.back();
-    newScope.scopeName = name;
+    if (type != VerilatedTracePrefixType::ARRAY_UNPACKED && type != VerilatedTracePrefixType::ARRAY_PACKED)
+    {
+        int32_t newScopeIndex = m_scopes.size();
+        m_scopes.emplace_back();
+        SaifScope& newScope = m_scopes.back();
+        newScope.scopeName = name;
 
-    if (m_currentScope >= 0) {
-        m_scopes.at(m_currentScope).childScopesIndices.emplace_back(newScopeIndex);
-        newScope.parentScopeIndex = m_currentScope;
+        if (m_currentScope >= 0) {
+            m_scopes.at(m_currentScope).childScopesIndices.emplace_back(newScopeIndex);
+            newScope.parentScopeIndex = m_currentScope;
+        }
+        m_currentScope = newScopeIndex;
     }
-    m_currentScope = newScopeIndex;
 
     // An empty name means this is the root of a model created with name()=="".  The
     // tools get upset if we try to pass this as empty, so we put the signals under a
@@ -415,39 +418,25 @@ void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType
         m_prefixStack.emplace_back("", VerilatedTracePrefixType::ROOTIO_WRAPPER);
         type = VerilatedTracePrefixType::ROOTIO_MODULE;
     }
+
     std::string newPrefix = m_prefixStack.back().first + pname;
-    switch (type) {
-    case VerilatedTracePrefixType::ROOTIO_MODULE:
-    case VerilatedTracePrefixType::SCOPE_MODULE:
-    case VerilatedTracePrefixType::SCOPE_INTERFACE:
-    case VerilatedTracePrefixType::STRUCT_PACKED:
-    case VerilatedTracePrefixType::STRUCT_UNPACKED:
-    case VerilatedTracePrefixType::UNION_PACKED: {
+    if (type != VerilatedTracePrefixType::ARRAY_UNPACKED && type != VerilatedTracePrefixType::ARRAY_PACKED) {
         newPrefix += ' ';
-        break;
     }
-    default: break;
-    }
+    
     m_prefixStack.emplace_back(newPrefix, type);
 }
 
 void VerilatedSaif::popPrefix() {
-    assert(!m_prefixStack.empty());
-    switch (m_prefixStack.back().second) {
-    case VerilatedTracePrefixType::ROOTIO_MODULE:
-    case VerilatedTracePrefixType::SCOPE_MODULE:
-    case VerilatedTracePrefixType::SCOPE_INTERFACE:
-    case VerilatedTracePrefixType::STRUCT_PACKED:
-    case VerilatedTracePrefixType::STRUCT_UNPACKED:
-    case VerilatedTracePrefixType::UNION_PACKED: break;
-    default: break;
-    }
-    fprintf(stdout, "Popping prefix: %s\n", m_prefixStack.back().first.c_str());
-    m_prefixStack.pop_back();
-    assert(!m_prefixStack.empty());  // Always one left, the constructor's initial one
+    assert(m_prefixStack.size() > 1);
 
-    m_currentScope = m_scopes.at(m_currentScope).parentScopeIndex;
+    if (m_prefixStack.back().second != VerilatedTracePrefixType::ARRAY_UNPACKED && m_prefixStack.back().second != VerilatedTracePrefixType::ARRAY_PACKED) {
+        m_currentScope = m_scopes.at(m_currentScope).parentScopeIndex;
+    }
+
+    m_prefixStack.pop_back();
 }
+
 
 void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, bool array,
                             int arraynum, bool bussed, int msb, int lsb) {
