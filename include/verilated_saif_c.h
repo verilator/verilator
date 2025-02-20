@@ -45,7 +45,6 @@ struct ActivityBit {
 };
 
 struct ActivityVar {
-    std::string name;
     uint32_t lsb;
     uint32_t width;
     ActivityBit* bits;
