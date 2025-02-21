@@ -1787,7 +1787,7 @@ void AstClocking::dumpJson(std::ostream& str) const {
 }
 void AstDisplay::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
-    // str << " " << displayType().ascii();
+    str << " [" << displayType().ascii() << "]";
 }
 void AstDisplay::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstEnumDType::dump(std::ostream& str) const {

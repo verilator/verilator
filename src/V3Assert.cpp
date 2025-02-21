@@ -534,8 +534,9 @@ class AssertVisitor final : public VNVisitor {
             while (monExprsp) {
                 if (AstNodeVarRef* varrefp = VN_CAST(monExprsp, NodeVarRef)) {
                     AstSenItem* const senItemp
-                        = new AstSenItem(fl, VEdgeType::ET_CHANGED,
-                                         new AstVarRef{fl, varrefp->varp(), VAccess::READ});
+                        = new AstSenItem{fl, VEdgeType::ET_CHANGED,
+                                         // Clone so get VarRef or VarXRef as needed
+                                         varrefp->cloneTree(false)};
                     if (!monSenItemsp) {
                         monSenItemsp = senItemp;
                     } else {
