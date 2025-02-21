@@ -2,6 +2,7 @@
     7 | `pragma
       | ^~~~~~~
                      ... For error description see https://verilator.org/warn/BADSTDPRAGMA?v=latest
+`begin_keywords "1800-2023"
 `line 1 "t/t_pp_pragma_bad.v" 1
  
 
