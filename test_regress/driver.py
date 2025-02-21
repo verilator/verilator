@@ -127,7 +127,7 @@ class SAIFParser:
                     
                     instance = SAIFInstance(instance_name)
 
-                    if instance_name.startswith("top"):
+                    if self.current_instance == None:
                         self.top_instances[instance_name] = instance
                     else:
                         self.current_instance.child_instances[instance_name] = instance
@@ -172,7 +172,7 @@ class SAIFParser:
                         current_signal.bits[int(bit_index)].transitions = int(toggle_count)
 
                 match = re.match(r'\s+\)\s+', line)
-                if match and self.current_instance != self.top_instance:
+                if match:
                     self.current_instance = self.current_instance.parent_instance
 
 
@@ -2478,6 +2478,7 @@ class VlTest:
         self.vcd_identical(tmp, fn2)
 
     def compare_saif_instances(self, first: SAIFInstance, second: SAIFInstance):
+        print(f"Entering {first.scope_name}")
         for signal_name, signal in first.nets.items():
             if signal_name not in second.nets:
                 self.error(f"Signal {signal_name} doesn't exist in the second object\n")
@@ -2501,7 +2502,6 @@ class VlTest:
 
     def compare_saif_contents(self, first: SAIFParser, second: SAIFParser):
         """Test if second SAIF file has the same values as the first"""
-        
         for top_instance_name, top_instance in first.top_instances.items():
             if top_instance_name not in second.top_instances:
                 self.error(f"Top instance {top_instance_name} missing in other SAIF")
