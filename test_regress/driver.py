@@ -113,6 +113,7 @@ class SAIFParser:
     def __init__(self):
         self.top_instances = {}
         self.current_instance = None
+        self.traversing_nets = False
 
     def parse(self, saif_filename):
         with open(saif_filename, 'r') as saif_file:
@@ -134,6 +135,10 @@ class SAIFParser:
 
                     instance.parent_instance = self.current_instance
                     self.current_instance = instance
+
+                match = re.search(r'NET', line)
+                if match:
+                    self.traversing_nets = True
 
                 match = re.search(r'((?:[\w\[\]])+)(?:\\\[(\d+)\\\])*\s+(\(T.+\))+', line)
                 if match:
@@ -173,7 +178,10 @@ class SAIFParser:
 
                 match = re.match(r'\s+\)\s+', line)
                 if match:
-                    self.current_instance = self.current_instance.parent_instance
+                    if self.traversing_nets:
+                        self.traversing_nets = False
+                    else:
+                        self.current_instance = self.current_instance.parent_instance
 
 
 #######################################################################
