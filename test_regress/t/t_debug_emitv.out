@@ -37,6 +37,7 @@ module Vt_debug_emitv_t;
             disable label0;
         end
     endfunction
+    Iface the_ifaces[3:0] ();
     initial begin
         begin
             if ($test$plusargs(40'h48454c4c4f)) begin
@@ -68,6 +69,9 @@ module Vt_debug_emitv_t;
                 $write("");
             end
             if ((| downto_32[60:54])) begin
+                $write("");
+            end
+            if (the_ifaces[2].ifsig) begin
                 $write("");
             end
         end
@@ -332,7 +336,15 @@ package Vt_debug_emitv___024unit;
         endfunction
     endclass
 endpackage
+interface Vt_debug_emitv_Iface;
+    input logic clk;
+    logic ifsig;
+    modport mp (
+        input logic ifsig
+    );
+endinterface
 module Vt_debug_emitv_sub;
+    input logic clk;
     task inc;
         input int signed i;
         output int signed o;

@@ -1252,6 +1252,7 @@ public:
         , m_name{name} {
         this->addVarsp(varsp);
     }
+    string verilogKwd() const override { return "modport"; }
     string name() const override VL_MT_STABLE { return m_name; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     ASTGEN_MEMBERS_AstModport;
