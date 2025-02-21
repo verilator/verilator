@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 test.top_filename = "t/t_hier_block.v"
+test.golden_filename = "t/t_hier_block_trace_saif.out"
 
 # CI environment offers 2 VCPUs, 2 thread setting causes the following warning.
 # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
