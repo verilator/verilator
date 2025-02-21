@@ -274,7 +274,9 @@ class EmitCHeader final : public EmitCConstInit {
                         || VN_IS(itemp->dtypep(), QueueDType)
                         || VN_IS(itemp->dtypep(), AssocArrayDType))) {
                     AstNodeDType* dtype = itemp->dtypep();
-                    while (VN_IS(dtype, NodeArrayDType) && dtype->isCompound()) { dtype = dtype->subDTypep(); }
+                    while (VN_IS(dtype, NodeArrayDType) && dtype->isCompound()) {
+                        dtype = dtype->subDTypep();
+                    }
                     putns(itemp, std::to_string(dtype->width()));
                     //putns(itemp, std::to_string(itemp->dtypep()->subDTypep()->width()));
                 } else if (itemp->isConstrainedRand())
