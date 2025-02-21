@@ -111,7 +111,7 @@ class SAIFInstance:
 
 class SAIFParser:
     def __init__(self):
-        self.top_instance = None
+        self.top_instances = {}
         self.current_instance = None
 
     def parse(self, saif_filename):
@@ -127,8 +127,8 @@ class SAIFParser:
                     
                     instance = SAIFInstance(instance_name)
 
-                    if instance_name == "top":
-                        self.top_instance = instance
+                    if instance_name.startswith("top"):
+                        self.top_instances[instance_name] = instance
                     else:
                         self.current_instance.child_instances[instance_name] = instance
 
@@ -2501,7 +2501,12 @@ class VlTest:
 
     def compare_saif_contents(self, first: SAIFParser, second: SAIFParser):
         """Test if second SAIF file has the same values as the first"""
-        self.compare_saif_instances(first.top_instance, second.top_instance)
+        
+        for top_instance_name, top_instance in first.top_instances.items():
+            if top_instance_name not in second.top_instances:
+                self.error(f"Top instance {top_instance_name} missing in other SAIF")
+
+            self.compare_saif_instances(top_instance, second.top_instances[top_instance_name])
         
     def print_saif_instance_tree(self, saif_instance: SAIFInstance):
         print(f"INSTANCE: {saif_instance.scope_name}")
