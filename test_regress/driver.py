@@ -119,7 +119,7 @@ class SAIFParser:
                 if not line:
                     continue
 
-                match = re.search(r'INSTANCE\s+(\w*)', line)
+                match = re.search(r'INSTANCE\s+([\w.]*)', line)
                 if match:
                     instance_name = match.groups()[0]
                     
