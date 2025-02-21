@@ -230,7 +230,9 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     printStr(")\n");
 
     incrementIndent();
-    recursivelyPrintScopes(TOP_SCOPE_INDEX);
+    for (uint32_t topScopeIndex : m_topScopes) {
+        recursivelyPrintScopes(topScopeIndex);
+    }
     decrementIndent();
     
     printStr(")\n"); // SAIFILE
@@ -403,6 +405,8 @@ void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType
         if (m_currentScope >= 0) {
             m_scopes.at(m_currentScope).childScopesIndices.emplace_back(newScopeIndex);
             newScope.parentScopeIndex = m_currentScope;
+        } else {
+            m_topScopes.emplace_back(newScopeIndex);
         }
         m_currentScope = newScopeIndex;
     }
