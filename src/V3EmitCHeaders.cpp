@@ -269,17 +269,15 @@ class EmitCHeader final : public EmitCConstInit {
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 if (itemp->isConstrainedRand()
-                    && (VN_IS(itemp->dtypep(), UnpackArrayDType) || VN_IS(itemp->dtypep(), DynArrayDType) || VN_IS(itemp->dtypep(), QueueDType)
-                        || VN_IS(itemp->dtypep(), AssocArrayDType))){
-                    AstNodeDType * dtype = itemp->dtypep();
-                    while (dtype->isCompound())
-                    {
-                        dtype = dtype->subDTypep();
-                    }
+                    && (VN_IS(itemp->dtypep(), UnpackArrayDType)
+                        || VN_IS(itemp->dtypep(), DynArrayDType)
+                        || VN_IS(itemp->dtypep(), QueueDType)
+                        || VN_IS(itemp->dtypep(), AssocArrayDType))) {
+                    AstNodeDType* dtype = itemp->dtypep();
+                    while (dtype->isCompound()) { dtype = dtype->subDTypep(); }
                     putns(itemp, std::to_string(dtype->width()));
                     //putns(itemp, std::to_string(itemp->dtypep()->subDTypep()->width()));
-                }
-                else if (itemp->isConstrainedRand())
+                } else if (itemp->isConstrainedRand())
                     putns(itemp, std::to_string(itemp->width()));
 
                 if (itemp->nextp() && VN_AS(itemp->nextp(), MemberDType)->isConstrainedRand())
@@ -292,7 +290,9 @@ class EmitCHeader final : public EmitCConstInit {
             for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
                 if (itemp->isConstrainedRand()
-                    && (VN_IS(itemp->dtypep(), UnpackArrayDType) || VN_IS(itemp->dtypep(), DynArrayDType) || VN_IS(itemp->dtypep(), QueueDType)
+                    && (VN_IS(itemp->dtypep(), UnpackArrayDType)
+                        || VN_IS(itemp->dtypep(), DynArrayDType)
+                        || VN_IS(itemp->dtypep(), QueueDType)
                         || VN_IS(itemp->dtypep(), AssocArrayDType)))
                     putns(itemp, std::to_string(itemp->dtypep()->dimensions(true).second));
                 else if (itemp->isConstrainedRand())
@@ -302,7 +302,6 @@ class EmitCHeader final : public EmitCConstInit {
                     puts(",\n");
             }
             puts("};\n}\n");
-
 
             putns(sdtypep, "\nauto memberIndices(void) const {\n");
             puts("return std::index_sequence_for<");
