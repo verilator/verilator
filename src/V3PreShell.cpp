@@ -95,17 +95,15 @@ protected:
         if (modfilename.empty()) return false;
 
         // Set language standard up front
-        if (!v3Global.opt.preprocOnly()) {
-            // Letting lex parse this saves us from having to specially en/decode
-            // from the V3LangCode to the various Lex BEGIN states. The language
-            // of this source file is updated here, in case there have been any
-            // intervening +<lang>ext+ options since it was first encountered.
-            FileLine* const modfileline = new FileLine{modfilename};
-            modfileline->language(v3Global.opt.fileLanguage(modfilename));
-            V3Parse::ppPushText(
-                parsep, ("`begin_keywords \""s + modfileline->language().ascii() + "\"\n"));
-            // FileLine tracks and frees modfileline
-        }
+        // Letting lex parse this saves us from having to specially en/decode
+        // from the V3LangCode to the various Lex BEGIN states. The language
+        // of this source file is updated here, in case there have been any
+        // intervening +<lang>ext+ options since it was first encountered.
+        FileLine* const modfileline = new FileLine{modfilename};
+        modfileline->language(v3Global.opt.fileLanguage(modfilename));
+        V3Parse::ppPushText(parsep,
+                            ("`begin_keywords \""s + modfileline->language().ascii() + "\"\n"));
+        // FileLine tracks and frees modfileline
 
         while (!s_preprocp->isEof()) {
             const string line = s_preprocp->getline();
