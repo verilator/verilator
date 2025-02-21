@@ -16,7 +16,9 @@ stdout_filename = os.path.join(test.obj_dir, test.name + ".out")
 test.compile(
     # Override default flags
     v_flags=[''],
-    verilator_flags=["-E -P --preproc-resolve -y t/t_preproc_resolve"],
+    verilator_flags=[
+        "-E -P --preproc-resolve t/t_preproc_resolve_config.vlt -y t/t_preproc_resolve"
+    ],
     verilator_flags2=[''],
     verilator_flags3=[''],
     verilator_make_gmake=False,
