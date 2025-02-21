@@ -1,0 +1,26 @@
+`timescale 1ns/1ps
+module top( 
+   input logic clk,
+   input logic rst,
+   output logic top_out
+);
+   submod u_submod ( 
+      .clk (clk),
+      .rst (rst),
+      .out_signal(top_out)
+   );
+endmodule
+`timescale 1ns/1ps
+module submod( 
+   input logic clk,
+   input logic rst,
+   output logic out_signal
+);
+   always_ff @(posedge clk or posedge rst) begin
+      if (rst) begin
+         out_signal <= 1'b0;
+      end else begin
+         out_signal <= ~out_signal;
+      end
+   end
+endmodule

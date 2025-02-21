@@ -104,7 +104,7 @@ void V3Global::readFiles() {
     // v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("parse.tree"));
     V3Error::abortIfErrors();
 
-    if (!v3Global.opt.preprocOnly()) {
+    if (!v3Global.opt.preprocOnly() || v3Global.opt.preprocResolve()) {
         // Resolve all modules cells refer to
         V3LinkCells::link(v3Global.rootp(), &filter, &parseSyms);
     }

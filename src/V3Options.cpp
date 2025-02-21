@@ -1504,6 +1504,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         validateIdentifier(fl, valp, "--prefix");
         m_prefix = valp;
     });
+    DECL_OPTION("-preproc-resolve", OnOff, &m_preprocResolve);
     DECL_OPTION("-preproc-token-limit", CbVal, [this, fl](const char* valp) {
         m_preprocTokenLimit = std::atoi(valp);
         if (m_preprocTokenLimit <= 0) fl->v3error("--preproc-token-limit must be > 0: " << valp);

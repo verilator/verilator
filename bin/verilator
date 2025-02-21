@@ -428,6 +428,7 @@ detailed descriptions of these arguments.
     --pipe-filter <command>     Filter all input through a script
     --pp-comments               Show preprocessor comments with -E
     --prefix <topname>          Name of top-level class
+    --preproc-resolve           Include all found modules in the output with -E
     --preproc-token-limit       Maximum tokens on a line allowed by preprocessor
     --private                   Debugging; see docs
     --prof-c                    Compile C++ code with profiling
