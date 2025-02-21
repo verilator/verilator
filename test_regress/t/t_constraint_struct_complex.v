@@ -37,29 +37,29 @@ class BigStructClass;
 
     // Self-test function to verify constraints
     function void self_test();
-        foreach (big.unpacked_arr[i]) if (!(big.unpacked_arr[i] inside {1, 2, 3, 4})) 
+        foreach (big.unpacked_arr[i]) if (!(big.unpacked_arr[i] inside {1, 2, 3, 4}))
             $stop;
-        if (big.dynamic_arr.size() != 3) 
+        if (big.dynamic_arr.size() != 3)
             $stop;
-        foreach (big.dynamic_arr[i]) if (!(big.dynamic_arr[i] inside {[10:20]})) 
+        foreach (big.dynamic_arr[i]) if (!(big.dynamic_arr[i] inside {[10:20]}))
             $stop;
-        if (!(big.queue_arr.size() inside {[2:5]})) 
+        if (!(big.queue_arr.size() inside {[2:5]}))
             $stop;
-        foreach (big.queue_arr[i]) if (!(big.queue_arr[i] inside {[100:200]})) 
+        foreach (big.queue_arr[i]) if (!(big.queue_arr[i] inside {[100:200]}))
             $stop;
-        if (big.assoc_arr.num() != 3) 
+        if (big.assoc_arr.num() != 3)
+            $stop
+        if (!big.assoc_arr.exists("one") || !(big.assoc_arr["one"] inside {[10:50]}))
             $stop;
-        if (!big.assoc_arr.exists("one") || !(big.assoc_arr["one"] inside {[10:50]})) 
+        if (!big.assoc_arr.exists("two") || !(big.assoc_arr["two"] inside {[51:100]}))
             $stop;
-        if (!big.assoc_arr.exists("two") || !(big.assoc_arr["two"] inside {[51:100]})) 
+        if (!big.assoc_arr.exists("three") || !(big.assoc_arr["three"] inside {[101:150]}))
             $stop;
-        if (!big.assoc_arr.exists("three") || !(big.assoc_arr["three"] inside {[101:150]})) 
+        foreach (big.multi_dim_arr[i, j]) if (!(big.multi_dim_arr[i][j] inside {[0:9]}))
             $stop;
-        foreach (big.multi_dim_arr[i, j]) if (!(big.multi_dim_arr[i][j] inside {[0:9]})) 
+        foreach (big.mix_arr[i]) if (!(big.mix_arr[i].size() inside {[1:4]}))
             $stop;
-        foreach (big.mix_arr[i]) if (!(big.mix_arr[i].size() inside {[1:4]})) 
-            $stop;
-        foreach (big.mix_arr[i, j]) if (!(big.mix_arr[i][j] inside {[50:100]})) 
+        foreach (big.mix_arr[i, j]) if (!(big.mix_arr[i][j] inside {[50:100]}))
             $stop;
     endfunction
 endclass
@@ -69,7 +69,7 @@ module t_constraint_struct_complex;
     BigStructClass big_struct_inst = new();
 
     repeat (5) begin // Run multiple randomizations
-        if (!big_struct_inst.randomize()) 
+        if (!big_struct_inst.randomize())
         $stop;  // Stop if randomization fails
 
         $display("\n===== Randomized Test =====");
@@ -79,7 +79,7 @@ module t_constraint_struct_complex;
         $display("Associative Array: %p", big_struct_inst.big.assoc_arr);
         $display("Multi-Dimensional Array: %p", big_struct_inst.big.multi_dim_arr);
         $display("Mixed Array:");
-        foreach (big_struct_inst.big.mix_arr[i]) 
+        foreach (big_struct_inst.big.mix_arr[i])
         $display("  mix_arr[%0d] = %p", i, big_struct_inst.big.mix_arr[i]);
 
         // Perform self-test
