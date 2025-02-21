@@ -12,6 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 
 test.top_filename = "t/t_trace_saif.v"
+test.golden_filename = "t/t_trace_saif.out"
 
 test.compile(v_flags2=["--trace-saif"])
 
