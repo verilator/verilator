@@ -62,7 +62,6 @@
 #include <utility>
 
 #include <sys/stat.h>  // mkdir
-
 // clang-format off
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
