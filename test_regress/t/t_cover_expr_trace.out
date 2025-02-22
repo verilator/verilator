@@ -43,6 +43,13 @@
 -000005  point: comment=(b==0) => 0 hier=top.t
             endfunction
         
+            localparam int num_intfs = 4;
+            intf the_intfs [num_intfs-1:0] ();
+            genvar intf_i;
+            for (intf_i = 0; intf_i < num_intfs; intf_i++) begin
+                always_comb the_intfs[intf_i].t = cyc[intf_i];
+            end
+        
             always @ (posedge clk) begin
                 cyc <= cyc + 1;
 %000004         if ((~cyc[0] && cyc[1]) || (~cyc[2] && cyc[3])) $write("");
@@ -59,6 +66,13 @@
 -000002  point: comment=(cyc2[33]==0 && cyc2[34]==1) => 0 hier=top.t
 -000003  point: comment=(cyc2[33]==0 && cyc2[35]==0) => 0 hier=top.t
 -000002  point: comment=(cyc2[34]==0 && cyc2[35]==1) => 1 hier=top.t
+%000004         if ((~the_intfs[0].t && the_intfs[1].t) || (~the_intfs[2].t && the_intfs[3].t)) $write("");
+-000002  point: comment=(the_intfs[0].t==0 && the_intfs[1].t==1) => 1 hier=top.t
+-000002  point: comment=(the_intfs[0].t==1 && the_intfs[2].t==1) => 0 hier=top.t
+-000004  point: comment=(the_intfs[0].t==1 && the_intfs[3].t==0) => 0 hier=top.t
+-000002  point: comment=(the_intfs[1].t==0 && the_intfs[2].t==1) => 0 hier=top.t
+-000003  point: comment=(the_intfs[1].t==0 && the_intfs[3].t==0) => 0 hier=top.t
+-000002  point: comment=(the_intfs[2].t==0 && the_intfs[3].t==1) => 1 hier=top.t
 %000004         if ((~t1 && t2) || (~t3 && t4)) $write("");
 -000002  point: comment=(t1==0 && t2==1) => 1 hier=top.t
 -000002  point: comment=(t1==1 && t3==1) => 0 hier=top.t
@@ -324,4 +338,8 @@
             end
         
         endmodule
+        
+        interface intf();
+            logic t;
+        endinterface
         

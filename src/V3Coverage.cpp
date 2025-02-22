@@ -726,7 +726,7 @@ class CoverageVisitor final : public VNVisitor {
                 // not be flagged as redundant or impossible, however the results will
                 // still be valid, albeit messier
                 for (CoverTerm& term : l) {
-                    if (AstNodeVarRef* const refp = VN_CAST(term.m_exprp, NodeVarRef)) {
+                    if (AstVarRef* const refp = VN_CAST(term.m_exprp, VarRef)) {
                         varps[term.m_objective].insert(refp->varp());
                     } else {
                         strs[term.m_objective].insert(term.m_emitV);
