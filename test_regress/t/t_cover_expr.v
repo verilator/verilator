@@ -37,10 +37,18 @@ module t (/*AUTOARG*/
         return a & b;
     endfunction
 
+    localparam int num_intfs = 4;
+    intf the_intfs [num_intfs-1:0] ();
+    genvar intf_i;
+    for (intf_i = 0; intf_i < num_intfs; intf_i++) begin
+        always_comb the_intfs[intf_i].t = cyc[intf_i];
+    end
+
     always @ (posedge clk) begin
         cyc <= cyc + 1;
         if ((~cyc[0] && cyc[1]) || (~cyc[2] && cyc[3])) $write("");
         if ((~cyc2[32] && cyc2[33]) || (~cyc2[34] && cyc2[35])) $write("");
+        if ((~the_intfs[0].t && the_intfs[1].t) || (~the_intfs[2].t && the_intfs[3].t)) $write("");
         if ((~t1 && t2) || (~t3 && t4)) $write("");
         if (t3 && (t1 == t2)) $write("");
         if (123 == (124 - 32'(t1 || t2))) $write("");
@@ -163,3 +171,7 @@ module sub (
     end
 
 endmodule
+
+interface intf();
+    logic t;
+endinterface
