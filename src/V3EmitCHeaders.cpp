@@ -243,10 +243,9 @@ class EmitCHeader final : public EmitCConstInit {
     enum class AttributeType { Width, Dimension };
     // Get member attribute based on type
     int getNodeAttribute(const AstMemberDType* itemp, AttributeType type) {
-        const bool isArrayType = VN_IS(itemp->dtypep(), UnpackArrayDType)
-                            || VN_IS(itemp->dtypep(), DynArrayDType)
-                            || VN_IS(itemp->dtypep(), QueueDType)
-                            || VN_IS(itemp->dtypep(), AssocArrayDType);
+        const bool isArrayType
+            = VN_IS(itemp->dtypep(), UnpackArrayDType) || VN_IS(itemp->dtypep(), DynArrayDType)
+              || VN_IS(itemp->dtypep(), QueueDType) || VN_IS(itemp->dtypep(), AssocArrayDType);
         switch (type) {
         case AttributeType::Width: {
             if (isArrayType) {
@@ -272,7 +271,7 @@ class EmitCHeader final : public EmitCConstInit {
         puts("return {");
         bool needComma = false;
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-            itemp = VN_AS(itemp->nextp(), MemberDType)) {
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
             if (!itemp->isConstrainedRand()) continue;
             // Comma handling: add before element except first
             if (needComma) puts(",\n");
