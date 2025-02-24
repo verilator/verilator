@@ -240,6 +240,47 @@ class EmitCHeader final : public EmitCConstInit {
             emitUnpackedUOrSBody(sdtypep);
         }
     }
+    enum class AttributeType { Width, Dimension };
+    // Get member attribute based on type
+    int getNodeAttribute(const AstMemberDType* itemp, AttributeType type) {
+        const bool isArrayType = VN_IS(itemp->dtypep(), UnpackArrayDType)
+                            || VN_IS(itemp->dtypep(), DynArrayDType)
+                            || VN_IS(itemp->dtypep(), QueueDType)
+                            || VN_IS(itemp->dtypep(), AssocArrayDType);
+        switch (type) {
+        case AttributeType::Width: {
+            if (isArrayType) {
+                // For arrays, get innermost element width
+                AstNodeDType* dtype = itemp->dtypep();
+                while (dtype->subDTypep()) dtype = dtype->subDTypep();
+                return dtype->width();
+            }
+            return itemp->width();
+        }
+        case AttributeType::Dimension: {
+            // Return array dimension or 0 for non-arrays
+            return isArrayType ? itemp->dtypep()->dimensions(true).second : 0;
+        }
+        default: {
+            v3error("Unknown attribute type");
+            return 0;
+        }
+        }
+    }
+    template <AttributeType T>
+    void emitMemberVector(const AstNodeUOrStructDType* sdtypep) {
+        puts("return {");
+        bool needComma = false;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+            itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            if (!itemp->isConstrainedRand()) continue;
+            // Comma handling: add before element except first
+            if (needComma) puts(",\n");
+            putns(itemp, std::to_string(getNodeAttribute(itemp, T)));
+            needComma = true;
+        }
+        puts("};\n}\n");
+    }
     void emitUnpackedUOrSBody(AstNodeUOrStructDType* sdtypep) {
         putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
         puts(" " + EmitCBase::prefixNameProtect(sdtypep) + " {\n");
@@ -266,43 +307,10 @@ class EmitCHeader final : public EmitCConstInit {
             puts("};\n}\n");
 
             putns(sdtypep, "\nstd::vector<int> memberWidth(void) const {\n");
-            puts("return {");
-            for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
-                if (itemp->isConstrainedRand()
-                    && (VN_IS(itemp->dtypep(), UnpackArrayDType)
-                        || VN_IS(itemp->dtypep(), DynArrayDType)
-                        || VN_IS(itemp->dtypep(), QueueDType)
-                        || VN_IS(itemp->dtypep(), AssocArrayDType))) {
-                    AstNodeDType* dtype = itemp->dtypep();
-                    // Traverse to the innermost sub-dtype to get the width
-                    while (dtype->subDTypep()) { dtype = dtype->subDTypep(); }
-                    putns(itemp, std::to_string(dtype->width()));
-                } else if (itemp->isConstrainedRand())
-                    putns(itemp, std::to_string(itemp->width()));
-                // Add comma if there is a next constrained random member
-                if (itemp->nextp() && VN_AS(itemp->nextp(), MemberDType)->isConstrainedRand())
-                    puts(",\n");
-            }
-            puts("};\n}\n");
+            emitMemberVector<AttributeType::Width>(sdtypep);
 
             putns(sdtypep, "\nstd::vector<int> memberDimension(void) const {\n");
-            puts("return {");
-            for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
-                if (itemp->isConstrainedRand()
-                    && (VN_IS(itemp->dtypep(), UnpackArrayDType)
-                        || VN_IS(itemp->dtypep(), DynArrayDType)
-                        || VN_IS(itemp->dtypep(), QueueDType)
-                        || VN_IS(itemp->dtypep(), AssocArrayDType)))
-                    putns(itemp, std::to_string(itemp->dtypep()->dimensions(true).second));
-                else if (itemp->isConstrainedRand())
-                    putns(itemp, std::to_string(0));
-                // Add comma if there is a next constrained random member
-                if (itemp->nextp() && VN_AS(itemp->nextp(), MemberDType)->isConstrainedRand())
-                    puts(",\n");
-            }
-            puts("};\n}\n");
+            emitMemberVector<AttributeType::Dimension>(sdtypep);
 
             putns(sdtypep, "\nauto memberIndices(void) const {\n");
             puts("return std::index_sequence_for<");
