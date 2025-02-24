@@ -47,9 +47,9 @@ class ArrayStruct;
     rand multi_dim_struct_t s5;
     rand mixed_struct_t s6;
 
-    constraint c_unpacked { 
+    constraint c_unpacked {
         foreach (s1.arr[i]) s1.arr[i] inside {1, 2, 3, 4};
-        foreach (s1.arr_3[i]) s1.arr_3[i] inside {11, 22, 33, 44, 55};     
+        foreach (s1.arr_3[i]) s1.arr_3[i] inside {11, 22, 33, 44, 55};
     }
     constraint c_dynamic { foreach (s2.arr[i]) s2.arr[i] inside {[10:20]}; }
     constraint c_queue { foreach (s3.arr[i]) s3.arr[i] inside {[100:200]}; }
