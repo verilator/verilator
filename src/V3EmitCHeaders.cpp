@@ -240,6 +240,45 @@ class EmitCHeader final : public EmitCConstInit {
             emitUnpackedUOrSBody(sdtypep);
         }
     }
+    enum class AttributeType { Width, Dimension };
+    // Get member attribute based on type
+    int getNodeAttribute(const AstMemberDType* itemp, AttributeType type) {
+        const bool isArrayType
+            = VN_IS(itemp->dtypep(), UnpackArrayDType) || VN_IS(itemp->dtypep(), DynArrayDType)
+              || VN_IS(itemp->dtypep(), QueueDType) || VN_IS(itemp->dtypep(), AssocArrayDType);
+        switch (type) {
+        case AttributeType::Width: {
+            if (isArrayType) {
+                // For arrays, get innermost element width
+                AstNodeDType* dtype = itemp->dtypep();
+                while (dtype->subDTypep()) dtype = dtype->subDTypep();
+                return dtype->width();
+            }
+            return itemp->width();
+        }
+        case AttributeType::Dimension: {
+            // Return array dimension or 0 for non-arrays
+            return isArrayType ? itemp->dtypep()->dimensions(true).second : 0;
+        }
+        default: {
+            return 0;
+        }
+        }
+    }
+    template <AttributeType T>
+    void emitMemberVector(const AstNodeUOrStructDType* sdtypep) {
+        puts("return {");
+        bool needComma = false;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            if (!itemp->isConstrainedRand()) continue;
+            // Comma handling: add before element except first
+            if (needComma) puts(",\n");
+            putns(itemp, std::to_string(getNodeAttribute(itemp, T)));
+            needComma = true;
+        }
+        puts("};\n}\n");
+    }
     void emitUnpackedUOrSBody(AstNodeUOrStructDType* sdtypep) {
         putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
         puts(" " + EmitCBase::prefixNameProtect(sdtypep) + " {\n");
@@ -252,6 +291,8 @@ class EmitCHeader final : public EmitCConstInit {
         // - memberNames: Get member names
         // - getMembers: Access member references
         // - memberIndices: Retrieve member indices
+        // - memberWidth: Retrieve member width
+        // - memberDimension: Retrieve member dimension
         if (sdtypep->isConstrainedRand()) {
             putns(sdtypep, "\nstd::vector<std::string> memberNames(void) const {\n");
             puts("return {");
@@ -262,6 +303,12 @@ class EmitCHeader final : public EmitCConstInit {
                     puts(",\n");
             }
             puts("};\n}\n");
+
+            putns(sdtypep, "\nstd::vector<int> memberWidth(void) const {\n");
+            emitMemberVector<AttributeType::Width>(sdtypep);
+
+            putns(sdtypep, "\nstd::vector<int> memberDimension(void) const {\n");
+            emitMemberVector<AttributeType::Dimension>(sdtypep);
 
             putns(sdtypep, "\nauto memberIndices(void) const {\n");
             puts("return std::index_sequence_for<");

@@ -954,7 +954,7 @@ public:
     VlAssocArray& operator=(VlAssocArray&&) = default;
     bool operator==(const VlAssocArray& rhs) const { return m_map == rhs.m_map; }
     bool operator!=(const VlAssocArray& rhs) const { return m_map != rhs.m_map; }
-
+    bool operator<(const VlAssocArray& rhs) const { return m_map < rhs.m_map; }
     // METHODS
     T_Value& atDefault() { return m_defaultValue; }
     const T_Value& atDefault() const { return m_defaultValue; }
