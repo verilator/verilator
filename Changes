@@ -58,6 +58,7 @@ Verilator 5.033 devel
 * Fix unpacked split_var (#5782) (#5785). [Yutetsu TAKATSUKASA]
 * Fix time import error on time parameters (#5786). [Luca Colagrande]
 * Fix `$monitor` with dotted references (#5794). [Ahmed Elzeftawi]
+* Fix parsing input wire with default and range (#5800). [RJ Cunningham]
 * Fix matching language extension options including dots.
 
 

@@ -1479,13 +1479,13 @@ portsStarE<nodep>:              // IEEE: .* + list_of_ports + list_of_port_decla
         ;
 
 list_of_portsE<nodep>:          // IEEE: [ list_of_ports + list_of_port_declarations ]
-                portAndTagE                     { $$ = $1; }
+                portAndTagE                             { $$ = $1; }
         |       list_of_portsE ',' portAndTagE          { $$ = addNextNull($1, $3); }
         ;
 
 list_of_ports<nodep>:           // IEEE: list_of_ports + list_of_port_declarations
-                portAndTag                      { $$ = $1; }
-        |       list_of_portsE ',' portAndTagE  { $$ = addNextNull($1, $3); }
+                portAndTag                              { $$ = $1; }
+        |       list_of_portsE ',' portAndTagE          { $$ = addNextNull($1, $3); }
         ;
 
 portAndTagE<nodep>:
@@ -1584,33 +1584,43 @@ port<nodep>:                    // ==IEEE: port
         //
         |       portDirNetE data_type           portSig variable_dimensionListE sigAttrListE
                         { $$ = $3; VARDTYPE($2); VARIOANSI(); addNextNull($$, VARDONEP($$, $4, $5)); }
+        |       portDirNetE data_type           portSig variable_dimensionListE sigAttrListE '=' constExpr
+                        { $$ = $3; VARDTYPE($2); VARIOANSI();
+                          if (AstVar* vp = VARDONEP($$, $4, $5)) { addNextNull($$, vp); vp->valuep($7); } }
         |       portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE
                         { $$ = $4; VARDTYPE($3); VARIOANSI(); addNextNull($$, VARDONEP($$, $5, $6)); }
+        |       portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE '=' constExpr
+                        { $$ = $4; VARDTYPE($3); VARIOANSI();
+                          if (AstVar* vp = VARDONEP($$, $5, $6)) { addNextNull($$, vp); vp->valuep($8); } }
         |       portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE
                         { $$ = $4; VARDTYPE($3); VARIOANSI(); addNextNull($$, VARDONEP($$, $5, $6)); }
+        |       portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE '=' constExpr
+                        { $$ = $4; VARDTYPE($3); VARIOANSI();
+                          if (AstVar* vp = VARDONEP($$, $5, $6)) { addNextNull($$, vp); vp->valuep($8); } }
         |       portDirNetE signing             portSig variable_dimensionListE sigAttrListE
                         { $$ = $3;
                           AstNodeDType* const dtp = new AstBasicDType{$3->fileline(), LOGIC_IMPLICIT, $2};
                           VARDTYPE_NDECL(dtp); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $4, $5)); }
+        |       portDirNetE signing             portSig variable_dimensionListE sigAttrListE '=' constExpr
+                        { $$ = $3;
+                          AstNodeDType* const dtp = new AstBasicDType{$3->fileline(), LOGIC_IMPLICIT, $2};
+                          VARDTYPE_NDECL(dtp); VARIOANSI();
+                          if (AstVar* vp = VARDONEP($$, $4, $5)) { addNextNull($$, vp); vp->valuep($7); } }
         |       portDirNetE signingE rangeList  portSig variable_dimensionListE sigAttrListE
                         { $$ = $4;
                           AstNodeDType* const dtp = GRAMMARP->addRange(
                                     new AstBasicDType{$3->fileline(), LOGIC_IMPLICIT, $2}, $3, true);
                           VARDTYPE_NDECL(dtp);
                           addNextNull($$, VARDONEP($$, $5, $6)); }
+        |       portDirNetE signingE rangeList  portSig variable_dimensionListE sigAttrListE '=' constExpr
+                        { $$ = $4;
+                          AstNodeDType* const dtp = GRAMMARP->addRange(
+                                    new AstBasicDType{$3->fileline(), LOGIC_IMPLICIT, $2}, $3, true);
+                          VARDTYPE_NDECL(dtp);
+                          if (AstVar* vp = VARDONEP($$, $5, $6)) { addNextNull($$, vp); vp->valuep($8); } }
         |       portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE
                         { $$ = $2; /*VARDTYPE-same*/ addNextNull($$, VARDONEP($$, $3, $4)); }
-        //
-        |       portDirNetE data_type           portSig variable_dimensionListE sigAttrListE '=' constExpr
-                        { $$ = $3; VARDTYPE($2); VARIOANSI();
-                          if (AstVar* vp = VARDONEP($$, $4, $5)) { addNextNull($$, vp); vp->valuep($7); } }
-        |       portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE '=' constExpr
-                        { $$ = $4; VARDTYPE($3); VARIOANSI();
-                          if (AstVar* vp = VARDONEP($$, $5, $6)) { addNextNull($$, vp); vp->valuep($8); } }
-        |       portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE '=' constExpr
-                        { $$ = $4; VARDTYPE($3); VARIOANSI();
-                          if (AstVar* vp = VARDONEP($$, $5, $6)) { addNextNull($$, vp); vp->valuep($8); } }
         |       portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE '=' constExpr
                         { $$ = $2; /*VARDTYPE-same*/
                           if (AstVar* vp = VARDONEP($$, $3, $4)) { addNextNull($$, vp); vp->valuep($6); } }
