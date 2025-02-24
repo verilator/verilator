@@ -7,7 +7,11 @@
 class ArrayStruct;
     /* verilator lint_off SIDEEFFECT */
     // Struct with an unpacked array
+    typedef int arr_3_t[3];
+    typedef int arr_4_t[4];
     typedef struct {
+        rand arr_3_t arr_3;
+        arr_4_t arr_4;
         rand int arr[3];
     } unpacked_struct_t;
 
@@ -43,7 +47,10 @@ class ArrayStruct;
     rand multi_dim_struct_t s5;
     rand mixed_struct_t s6;
 
-    constraint c_unpacked { foreach (s1.arr[i]) s1.arr[i] inside {1, 2, 3, 4}; }
+    constraint c_unpacked { 
+        foreach (s1.arr[i]) s1.arr[i] inside {1, 2, 3, 4};
+        foreach (s1.arr_3[i]) s1.arr_3[i] inside {11, 22, 33, 44, 55};     
+    }
     constraint c_dynamic { foreach (s2.arr[i]) s2.arr[i] inside {[10:20]}; }
     constraint c_queue { foreach (s3.arr[i]) s3.arr[i] inside {[100:200]}; }
     constraint c_assoc {
@@ -58,6 +65,8 @@ class ArrayStruct;
 
     function new();
         s1.arr = '{1, 2, 3};
+        s1.arr_3 = '{1, 2, 3};
+        s1.arr_4 = '{0, 2, 3, 4};
         s2.arr = new[3];
         foreach(s2.arr[i]) begin
             s2.arr[i] = 'h0 + i;
@@ -76,6 +85,8 @@ class ArrayStruct;
 
     function void print();
         foreach (s1.arr[i]) $display("s1.arr[%0d] = %0d", i, s1.arr[i]);
+        foreach (s1.arr_3[i]) $display("s1.arr_3[%0d] = %0d", i, s1.arr_3[i]);
+        foreach (s1.arr_4[i]) $display("s1.arr_4[%0d] = %0d", i, s1.arr_4[i]);
         foreach (s2.arr[i]) $display("s2.arr[%0d] = %0d", i, s2.arr[i]);
         foreach (s3.arr[i]) $display("s3.arr[%0d] = %0d", i, s3.arr[i]);
         foreach (s4.arr[i]) $display("s4.arr[\"%s\"] = %0d", i, s4.arr[i]);
@@ -86,6 +97,9 @@ class ArrayStruct;
     // Self-test function to verify constraints
     function void self_test();
         foreach (s1.arr[i]) if (!(s1.arr[i] inside {1, 2, 3, 4})) $stop;
+        foreach (s1.arr_3[i]) if (!(s1.arr_3[i] inside {11, 22, 33, 44, 55})) $stop;
+        // Note: s1.arr_4[0] is not rand
+        if ((s1.arr_4[0] != 0) || (s1.arr_4[1] != 2) || (s1.arr_4[2] != 3) || (s1.arr_4[3] != 4)) $stop;
         foreach (s2.arr[i]) if (!(s2.arr[i] inside {[10:20]})) $stop;
         foreach (s3.arr[i]) if (!(s3.arr[i] inside {[100:200]})) $stop;
         if (!(s4.arr["one"] inside {[10:50]})) $stop;

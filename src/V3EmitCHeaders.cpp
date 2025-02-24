@@ -261,7 +261,6 @@ class EmitCHeader final : public EmitCConstInit {
             return isArrayType ? itemp->dtypep()->dimensions(true).second : 0;
         }
         default: {
-            v3error("Unknown attribute type");
             return 0;
         }
         }
