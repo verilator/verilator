@@ -31,6 +31,7 @@ Verilator 5.033 devel
 * Support constraints on associative array user-defined keys (#5671) (#5729). [Yilou Wang]
 * Support `+incdir` with multiple directories.
 * Support integer atom type ports in `--hierarchical` (#5748). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Support constrained random for arrays in structs (#5765) (#5802). [Yilou Wang]
 * Support selects on arbitrary string expressions (#5773). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support side effects of form 'variable[index_function()]++'.
 * Improve hierarchical DPI wrapper scheduling performance (#2583) (#5734). [Bartłomiej Chmiel, Antmicro Ltd.]
