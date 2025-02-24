@@ -253,6 +253,7 @@ class EmitCHeader final : public EmitCConstInit {
         // - getMembers: Access member references
         // - memberIndices: Retrieve member indices
         // - memberWidth: Retrieve member width
+        // - memberDimension: Retrieve member dimension
         if (sdtypep->isConstrainedRand()) {
             putns(sdtypep, "\nstd::vector<std::string> memberNames(void) const {\n");
             puts("return {");
@@ -274,12 +275,12 @@ class EmitCHeader final : public EmitCConstInit {
                         || VN_IS(itemp->dtypep(), QueueDType)
                         || VN_IS(itemp->dtypep(), AssocArrayDType))) {
                     AstNodeDType* dtype = itemp->dtypep();
+                    // Traverse to the innermost sub-dtype to get the width
                     while (dtype->subDTypep()) { dtype = dtype->subDTypep(); }
                     putns(itemp, std::to_string(dtype->width()));
-                    //putns(itemp, std::to_string(itemp->dtypep()->subDTypep()->width()));
                 } else if (itemp->isConstrainedRand())
                     putns(itemp, std::to_string(itemp->width()));
-
+                // Add comma if there is a next constrained random member
                 if (itemp->nextp() && VN_AS(itemp->nextp(), MemberDType)->isConstrainedRand())
                     puts(",\n");
             }
@@ -297,7 +298,7 @@ class EmitCHeader final : public EmitCConstInit {
                     putns(itemp, std::to_string(itemp->dtypep()->dimensions(true).second));
                 else if (itemp->isConstrainedRand())
                     putns(itemp, std::to_string(0));
-
+                // Add comma if there is a next constrained random member
                 if (itemp->nextp() && VN_AS(itemp->nextp(), MemberDType)->isConstrainedRand())
                     puts(",\n");
             }

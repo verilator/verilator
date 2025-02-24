@@ -151,7 +151,7 @@ class StructConstraintClass;
     function new();
         s1.arr = '{1, 2, 3};
         s2.arr = new[3];
-        //s2.arr = '{default:0};
+        s2.arr = '{default:0};
         s3.arr.push_back(100);
         s3.arr.push_back(200);
         s3.arr.push_back(300);
