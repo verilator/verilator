@@ -297,7 +297,7 @@ int _mon_check_var() {
         d = vpi_get(vpiVector, vh4);
         CHECK_RESULT(d, 1);
         p = vpi_get_str(vpiType, vh4);
-        CHECK_RESULT_CSTR(p, "vpiMemory");
+        CHECK_RESULT_CSTR(p, "vpiRegArray");
     }
 
     t_vpi_value tmpValue;
@@ -320,14 +320,14 @@ int _mon_check_var() {
         CHECK_RESULT_CSTR(p, "vpiConstant");
     }
     {
-        TestVpiHandle vh10 = vpi_iterate(vpiMemoryWord, vh4);
+        TestVpiHandle vh10 = vpi_iterate(vpiReg, vh4);
         CHECK_RESULT_NZ(vh10);
         p = vpi_get_str(vpiType, vh10);
         CHECK_RESULT_CSTR(p, "vpiIterator");
         TestVpiHandle vh11 = vpi_scan(vh10);
         CHECK_RESULT_NZ(vh11);
         p = vpi_get_str(vpiType, vh11);
-        CHECK_RESULT_CSTR(p, "vpiMemoryWord");
+        CHECK_RESULT_CSTR(p, "vpiReg");
         TestVpiHandle vh12 = vpi_handle(vpiLeftRange, vh11);
         CHECK_RESULT_NZ(vh12);
         vpi_get_value(vh12, &tmpValue);
@@ -643,15 +643,15 @@ int _mon_check_quad() {
     TestVpiHandle vhidx3 = vpi_handle_by_index(vh2, 3);
     CHECK_RESULT_NZ(vhidx3);
 
-    // Memory words should not be indexable
+    // Packed words should be indexable
     TestVpiHandle vhidx3idx0 = vpi_handle_by_index(vhidx3, 0);
-    CHECK_RESULT(vhidx3idx0, 0);
+    CHECK_RESULT_NZ(vhidx3idx0);
     TestVpiHandle vhidx2idx2 = vpi_handle_by_index(vhidx2, 2);
-    CHECK_RESULT(vhidx2idx2, 0);
+    CHECK_RESULT_NZ(vhidx2idx2);
     TestVpiHandle vhidx3idx3 = vpi_handle_by_index(vhidx3, 3);
-    CHECK_RESULT(vhidx3idx3, 0);
+    CHECK_RESULT_NZ(vhidx3idx3);
     TestVpiHandle vhidx2idx61 = vpi_handle_by_index(vhidx2, 61);
-    CHECK_RESULT(vhidx2idx61, 0);
+    CHECK_RESULT_NZ(vhidx2idx61);
 
     v.format = vpiVectorVal;
     v.value.vector = vv;
@@ -702,6 +702,7 @@ int _mon_check_delayed() {
     CHECK_RESULT_Z(vpi_chk_error(nullptr));
 
     // test unsupported vpiInertialDelay cases
+    // - should these also throw vpi errors?
     v.format = vpiStringVal;
     v.value.str = nullptr;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
@@ -712,9 +713,11 @@ int _mon_check_delayed() {
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
     CHECK_RESULT_NZ(vpi_chk_error(nullptr));
 
+    // This format throws an error now
+    Verilated::fatalOnVpiError(false);
     v.format = vpiObjTypeVal;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
-    CHECK_RESULT_NZ(vpi_chk_error(nullptr));
+    Verilated::fatalOnVpiError(true);
 
     return 0;
 }

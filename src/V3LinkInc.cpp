@@ -27,12 +27,19 @@
 //          Create a temporary __VIncrementX variable, assign the value of
 //          of the current variable (after the operation) to it. Substitute
 //          The original variable with the temporary one in the statement.
+//
 //      prepost_stmt_visit
 //        PREADD/PRESUB/POSTADD/POSTSUB
 //          Increment/decrement the current variable by the given value.
 //          The order (pre/post) doesn't matter outside statements thus
 //          the pre/post operations are treated equally and there is no
 //          need for a temporary variable.
+//
+//      prepost_stmt_sel_visit
+//        For e.g. 'array[something_with_side_eff]++', common in UVM etc
+//        PREADD/PRESUB/POSTADD/POSTSUB
+//          Create temporary with array index.
+//          Increment/decrement using index of the temporary.
 //
 //*************************************************************************
 
@@ -205,11 +212,68 @@ class LinkIncVisitor final : public VNVisitor {
     void visit(AstPropSpec* nodep) override { unsupported_visit(nodep); }
     void prepost_visit(AstNodeTriop* nodep) {
         // Check if we are underneath a statement
-        if (!m_insStmtp) {
-            prepost_stmt_visit(nodep);
+        AstSelBit* const selbitp = VN_CAST(nodep->thsp(), SelBit);
+        if (!m_insStmtp && selbitp && VN_IS(selbitp->fromp(), NodeVarRef)
+            && !selbitp->bitp()->isPure()) {
+            prepost_stmt_sel_visit(nodep);
         } else {
-            prepost_expr_visit(nodep);
+            // Purity check was deferred at creation in verilog.y, check now
+            nodep->thsp()->purityCheck();
+            if (!m_insStmtp) {
+                prepost_stmt_visit(nodep);
+            } else {
+                prepost_expr_visit(nodep);
+            }
         }
+    }
+    void prepost_stmt_sel_visit(AstNodeTriop* nodep) {
+        // Special case array[something]++, see comments at file top
+        // if (debug() >= 9) nodep->dumpTree("-pp-stmt-sel-in:  ");
+        iterateChildren(nodep);
+        AstConst* const constp = VN_AS(nodep->lhsp(), Const);
+        UASSERT_OBJ(nodep, constp, "Expecting CONST");
+        AstConst* const newconstp = constp->cloneTree(true);
+
+        AstSelBit* const rdSelbitp = VN_CAST(nodep->rhsp(), SelBit);
+        AstNodeExpr* const rdFromp = rdSelbitp->fromp()->unlinkFrBack();
+        AstNodeExpr* const rdBitp = rdSelbitp->bitp()->unlinkFrBack();
+        AstSelBit* const wrSelbitp = VN_CAST(nodep->thsp(), SelBit);
+        AstNodeExpr* const wrFromp = wrSelbitp->fromp()->unlinkFrBack();
+
+        // Prepare a temporary variable
+        FileLine* const fl = nodep->fileline();
+        const string name = "__VincIndex"s + cvtToStr(++m_modIncrementsNum);
+        AstVar* const varp = new AstVar{
+            fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
+            new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{}, rdBitp->cloneTree(true)}};
+        if (m_ftaskp) varp->funcLocal(true);
+
+        // Declare the variable
+        insertOnTop(varp);
+
+        // Define what operation will we be doing
+        AstAssign* const varAssignp
+            = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, rdBitp};
+        AstNode* const newp = varAssignp;
+
+        AstNodeExpr* const valuep
+            = new AstSelBit{fl, rdFromp, new AstVarRef{fl, varp, VAccess::READ}};
+        AstNodeExpr* const storeTop
+            = new AstSelBit{fl, wrFromp, new AstVarRef{fl, varp, VAccess::READ}};
+
+        AstAssign* assignp;
+        if (VN_IS(nodep, PreSub) || VN_IS(nodep, PostSub)) {
+            assignp = new AstAssign{nodep->fileline(), storeTop,
+                                    new AstSub{nodep->fileline(), valuep, newconstp}};
+        } else {
+            assignp = new AstAssign{nodep->fileline(), storeTop,
+                                    new AstAdd{nodep->fileline(), valuep, newconstp}};
+        }
+        newp->addNext(assignp);
+
+        // if (debug() >= 9) newp->dumpTreeAndNext("-pp-stmt-sel-new: ");
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void prepost_stmt_visit(AstNodeTriop* nodep) {
         iterateChildren(nodep);

@@ -49,7 +49,7 @@ static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int 
     CHECK_RESULT(vpisize, size);
 
     // icarus verilog does not support vpiScalar, vpiVector or vpi*Range
-    if (TestSimulator::has_get_scalar()) {
+    if (TestSimulator::has_get_scalar() && type != vpiParameter) {
         int vpiscalar = vpi_get(vpiScalar, handle);
         CHECK_RESULT((bool)vpiscalar, (bool)scalar);
         int vpivector = vpi_get(vpiVector, handle);
@@ -57,23 +57,29 @@ static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int 
     }
 
     // Icarus only supports ranges on memories
-    if (!scalar && !(TestSimulator::is_icarus() && type != vpiMemory)) {
-        TestVpiHandle left_h, right_h;
-
+    if (!scalar && type != vpiIntVar && type != vpiParameter
+        && !(TestSimulator::is_icarus() && type != vpiMemory)) {
         // check coherency for vectors
-        // get left hand side of range
-        left_h = vpi_handle(vpiLeftRange, handle);
-        CHECK_RESULT_NZ(left_h);
-        vpi_get_value(left_h, &value);
-        int coherency = value.value.integer;
-        // get right hand side of range
-        right_h = vpi_handle(vpiRightRange, handle);
-        CHECK_RESULT_NZ(right_h);
-        vpi_get_value(right_h, &value);
-        TEST_MSG("%d:%d\n", coherency, value.value.integer);
-        coherency -= value.value.integer;
-        // calculate size & check
-        coherency = abs(coherency) + 1;
+
+        int coherency = 1;
+        TestVpiHandle iter_h = vpi_iterate(vpiRange, handle);
+        while (TestVpiHandle range_h = vpi_scan(iter_h)) {
+            int rangeSize;
+            TestVpiHandle left_h, right_h;
+            // get left hand side of range
+            left_h = vpi_handle(vpiLeftRange, range_h);
+            CHECK_RESULT_NZ(left_h);
+            vpi_get_value(left_h, &value);
+            rangeSize = value.value.integer;
+            // get right hand side of range
+            right_h = vpi_handle(vpiRightRange, range_h);
+            CHECK_RESULT_NZ(right_h);
+            vpi_get_value(right_h, &value);
+            rangeSize = abs(rangeSize - value.value.integer) + 1;
+            coherency *= rangeSize;
+        }
+        iter_h.freed();
+
         CHECK_RESULT(coherency, size);
     }
 
@@ -83,12 +89,13 @@ static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int 
         int vpidir = vpi_get(vpiDirection, handle);
         // Don't check port directions in verilator
         // See issue #681
-        if (!TestSimulator::is_verilator()) CHECK_RESULT(vpidir, direction);
+        if (!TestSimulator::is_verilator() && !TestSimulator::is_questa())
+            CHECK_RESULT(vpidir, direction);
     }
 
     // check type of object
     int vpitype = vpi_get(vpiType, handle);
-    if (!(TestSimulator::is_verilator() && type == vpiPort)) {
+    if (!TestSimulator::is_verilator() && !TestSimulator::is_questa() && type == vpiPort) {
         // Don't check for ports in verilator
         // See issue #681
         CHECK_RESULT(vpitype, type);
@@ -114,27 +121,25 @@ int mon_check_props() {
     // the code that sets up the VerilatedAssertOneThread() check in
     // verilated_vpi.cc, it was causing the check to falsely fail
     // (due to m_threadid within the check not being initted yet.)
-    static struct params values[]
-        = {{"onebit", {1, vpiNoDirection, 1, vpiReg}, {0, 0, 0, 0}},
-           {"twoone", {2, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
-           {"onetwo",
-            {2, vpiNoDirection, 0, TestSimulator::is_verilator() ? vpiReg : vpiMemory},
-            {0, 0, 0, 0}},
-           {"fourthreetwoone",
-            {2, vpiNoDirection, 0, vpiMemory},
-            {2, vpiNoDirection, 0, vpiMemoryWord}},
-           {"theint", {32, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
-           {"clk", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
-           {"testin", {16, vpiInput, 0, vpiPort}, {0, 0, 0, 0}},
-           {"testout", {24, vpiOutput, 0, vpiPort}, {0, 0, 0, 0}},
-           {"sub.subin", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
-           {"sub.subout", {1, vpiOutput, 1, vpiPort}, {0, 0, 0, 0}},
-           {"sub.subparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
-           {"sub.the_intf.bytesig", {8, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
-           {"sub.the_intf.param", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
-           {"sub.the_intf.lparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
-           {"twobytwo", {4, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
-           {NULL, {0, 0, 0, 0}, {0, 0, 0, 0}}};
+    static struct params values[] = {
+        {"onebit", {1, vpiNoDirection, 1, vpiReg}, {0, 0, 0, 0}},
+        {"twoone", {2, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
+        {"onetwo", {2, vpiNoDirection, 1, vpiRegArray}, {0, 0, 0, 0}},
+        {"fourthreetwoone", {2, vpiNoDirection, 0, vpiRegArray}, {2, vpiNoDirection, 0, vpiReg}},
+        {"theint",
+         {32, vpiNoDirection, 0, TestSimulator::is_verilator() ? vpiReg : vpiIntVar},
+         {0, 0, 0, 0}},
+        {"clk", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
+        {"testin", {16, vpiInput, 0, vpiPort}, {0, 0, 0, 0}},
+        {"testout", {24, vpiOutput, 0, vpiPort}, {0, 0, 0, 0}},
+        {"sub.subin", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
+        {"sub.subout", {1, vpiOutput, 1, vpiPort}, {0, 0, 0, 0}},
+        {"sub.subparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
+        {"sub.the_intf.bytesig", {8, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
+        {"sub.the_intf.param", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
+        {"sub.the_intf.lparam", {32, vpiNoDirection, 0, vpiParameter}, {0, 0, 0, 0}},
+        {"twobytwo", {4, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
+        {NULL, {0, 0, 0, 0}, {0, 0, 0, 0}}};
     struct params* value = values;
     while (value->signal) {
         TestVpiHandle h = VPI_HANDLE(value->signal);
@@ -145,7 +150,7 @@ int mon_check_props() {
             return status;
         if (value->children.size) {
             int size = 0;
-            TestVpiHandle iter_h = vpi_iterate(vpiMemoryWord, h);
+            TestVpiHandle iter_h = vpi_iterate(vpiReg, h);
             while (TestVpiHandle word_h = vpi_scan(iter_h)) {
                 // check size and range
                 if (int status

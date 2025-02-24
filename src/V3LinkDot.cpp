@@ -986,8 +986,8 @@ class LinkDotFindVisitor final : public VNVisitor {
             if (nodep->hierParams()) {
                 UINFO(1, "Found module with hier type parameters" << endl);
                 m_hierParamsName = nodep->name();
-                for (const AstNode* node = nodep->op2p(); node; node = node->nextp()) {
-                    if (const AstTypedef* const tdef = VN_CAST(node, Typedef)) {
+                for (const AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                    if (const AstTypedef* const tdef = VN_CAST(stmtp, Typedef)) {
                         UINFO(1, "Inserting hier type parameter typedef: " << tdef << endl);
                         VSymEnt* const upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
                         m_curSymp = m_modSymp = m_statep->insertBlock(upperSymp, nodep->name(),
@@ -1013,6 +1013,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         VL_RESTORER(m_modBlockNum);
         VL_RESTORER(m_modWithNum);
         VL_RESTORER(m_modArgNum);
+        VL_RESTORER(m_explicitNew);
         {
             UINFO(4, "     Link Class: " << nodep << endl);
             VSymEnt* const upperSymp = m_curSymp;
@@ -1176,12 +1177,39 @@ class LinkDotFindVisitor final : public VNVisitor {
             }
             // Change to appropriate package if extern declaration (vs definition)
             if (nodep->classOrPackagep()) {
+                // class-in-class
+                AstDot* const dotp = VN_CAST(nodep->classOrPackagep(), Dot);
                 AstClassOrPackageRef* const cpackagerefp
                     = VN_CAST(nodep->classOrPackagep(), ClassOrPackageRef);
-                if (!cpackagerefp) {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: extern function definition with class-in-class");
-                } else {
+                if (dotp) {
+                    AstClassOrPackageRef* const lhsp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
+                    m_statep->resolveClassOrPackage(m_curSymp, lhsp, false,
+                                                    "External definition :: reference");
+                    AstClass* const lhsclassp = VN_CAST(lhsp->classOrPackageSkipp(), Class);
+                    if (!lhsclassp) {
+                        nodep->v3error("Extern declaration's scope is not a defined class");
+                    } else {
+                        m_curSymp = m_statep->getNodeSym(lhsclassp);
+                        upSymp = m_curSymp;
+                        AstClassOrPackageRef* const rhsp = VN_AS(dotp->rhsp(), ClassOrPackageRef);
+                        m_statep->resolveClassOrPackage(m_curSymp, rhsp, false,
+                                                        "External definition :: reference");
+                        AstClass* const rhsclassp = VN_CAST(rhsp->classOrPackageSkipp(), Class);
+                        if (!rhsclassp) {
+                            nodep->v3error("Extern declaration's scope is not a defined class");
+                        } else {
+                            m_curSymp = m_statep->getNodeSym(rhsclassp);
+                            upSymp = m_curSymp;
+                            if (!nodep->isExternDef()) {
+                                // Move it to proper spot under the target class
+                                nodep->unlinkFrBack();
+                                rhsclassp->addStmtsp(nodep);
+                                nodep->isExternDef(true);  // So we check there's a matching extern
+                                nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
+                            }
+                        }
+                    }
+                } else if (cpackagerefp) {
                     if (!cpackagerefp->classOrPackageSkipp()) {
                         m_statep->resolveClassOrPackage(m_curSymp, cpackagerefp, false,
                                                         "External definition :: reference");
@@ -1200,6 +1228,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                             nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
                         }
                     }
+                } else {
+                    v3fatalSrc("Unhandled extern function definition package");
                 }
             }
             // Set the class as package for iteration
@@ -1501,9 +1531,9 @@ class LinkDotFindVisitor final : public VNVisitor {
             if (const VSymEnt* const typedefEntp = m_curSymp->findIdFallback(m_hierParamsName)) {
                 const AstModule* modp = VN_CAST(typedefEntp->nodep(), Module);
 
-                for (const AstNode* node = modp ? modp->stmtsp() : nullptr; node;
-                     node = node->nextp()) {
-                    const AstTypedef* tdefp = VN_CAST(node, Typedef);
+                for (const AstNode* stmtp = modp ? modp->stmtsp() : nullptr; stmtp;
+                     stmtp = stmtp->nextp()) {
+                    const AstTypedef* tdefp = VN_CAST(stmtp, Typedef);
 
                     if (tdefp && tdefp->name() == nodep->name() && m_statep->forPrimary()) {
                         UINFO(8, "Replacing type of" << nodep << endl
@@ -2335,11 +2365,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // There were no statements
         nodep->addStmtsp(superNewStmtp);
         return superNewStmtp;
-    }
-    void taskFuncSwapCheck(AstNodeFTaskRef* nodep) {
-        if (nodep->taskp() && VN_IS(nodep->taskp(), Task) && VN_IS(nodep, FuncRef)) {
-            nodep->v3error("Illegal call of a task as a function: " << nodep->prettyNameQ());
-        }
     }
     void checkNoDot(AstNode* nodep) {
         if (VL_UNLIKELY(m_ds.m_dotPos != DP_NONE)) {
@@ -3779,7 +3804,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     okSymp->cellErrorScopes(nodep);
                 }
             }
-            taskFuncSwapCheck(nodep);
         }
     }
     void visit(AstSelBit* nodep) override {
@@ -4013,6 +4037,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep << endl);
         checkNoDot(nodep);
+        AstClass* const topclassp = VN_CAST(m_modp, Class);
+        if (nodep->isInterfaceClass() && topclassp && topclassp->isInterfaceClass()) {
+            nodep->v3error("Interface class shall not be nested within another interface class."
+                           " (IEEE 1800-2023 8.26)");
+        }
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_modp);

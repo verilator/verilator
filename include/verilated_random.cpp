@@ -282,6 +282,7 @@ std::string parseNestedSelect(const std::string& nested_select_expr,
     indices.push_back(idx);
     return name;
 }
+
 //======================================================================
 // VlRandomizer:: Methods
 
@@ -467,17 +468,27 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
                                 "hex_index contains invalid format");
                     continue;
                 }
-                const long long index = std::stoll(hex_index.substr(start + 2), nullptr, 16);
-                oss << "[" << index << "]";
+                std::string trimmed_hex = hex_index.substr(start + 2);
+
+                if (trimmed_hex.size() <= 8) {  // Small numbers: <= 32 bits
+                    // Convert to decimal and output directly
+                    oss << "[" << std::to_string(std::stoll(trimmed_hex, nullptr, 16)) << "]";
+                } else {  // Large numbers: > 32 bits
+                    // Trim leading zeros and handle empty case
+                    trimmed_hex.erase(0, trimmed_hex.find_first_not_of('0'));
+                    oss << "[" << (trimmed_hex.empty() ? "0" : trimmed_hex) << "]";
+                }
             }
             const std::string indexed_name = oss.str();
-            const auto it = std::find_if(m_arr_vars.begin(), m_arr_vars.end(),
-                                         [&indexed_name](const auto& entry) {
-                                             return entry.second->m_name == indexed_name;
-                                         });
-            if (it != m_arr_vars.end()) {
+
+            const auto iti = std::find_if(m_arr_vars.begin(), m_arr_vars.end(),
+                                          [&indexed_name](const auto& entry) {
+                                              return entry.second->m_name == indexed_name;
+                                          });
+            if (iti != m_arr_vars.end()) {
                 std::ostringstream ss;
-                ss << "#x" << std::hex << std::setw(8) << std::setfill('0') << it->second->m_index;
+                ss << "#x" << std::hex << std::setw(8) << std::setfill('0')
+                   << iti->second->m_index;
                 idx = ss.str();
             } else {
                 VL_FATAL_MT(__FILE__, __LINE__, "randomize",
@@ -498,7 +509,7 @@ void VlRandomizer::clear() { m_constraints.clear(); }
 #ifdef VL_DEBUG
 void VlRandomizer::dump() const {
     for (const auto& var : m_vars) {
-        VL_PRINTF("Variable (%d): %s\n", var.second->width(), var.second->name());
+        VL_PRINTF("Variable (%d): %s\n", var.second->width(), var.second->name().c_str());
     }
     for (const std::string& c : m_constraints) VL_PRINTF("Constraint: %s\n", c.c_str());
 }

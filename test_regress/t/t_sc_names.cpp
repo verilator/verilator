@@ -14,7 +14,7 @@ int sc_main(int argc, char* argv[]) {
     std::vector<sc_object*> ch = tb->get_child_objects();
     bool found = false;
 
-    /* We expect to find clk in here. */
+    // We expect to find clk in here
     for (int i = 0; i < ch.size(); ++i) {
         if (!std::strcmp(ch[i]->basename(), "clk")) found = true;
     }

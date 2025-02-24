@@ -106,7 +106,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     std::vector<ModVarPair> m_modVars;  // Each public {mod,var}
     std::map<const std::string, ScopeFuncData> m_scopeFuncs;  // Each {scope,dpi-export-func}
     std::map<const std::string, ScopeVarData> m_scopeVars;  // Each {scope,public-var}
-    ScopeNames m_scopeNames;  // Each unique AstScopeName
+    ScopeNames m_scopeNames;  // Each unique AstScopeName. Dpi scopes added later
+    ScopeNames m_dpiScopeNames;  // Each unique AstScopeName for DPI export
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
     ScopeNameHierarchy m_vpiScopeHierarchy;  // The actual hierarchy of scopes
     int m_coverBins = 0;  // Coverage bin number
@@ -181,7 +182,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     /// Then add/update entry in m_scopeNames if not already there
     void varHierarchyScopes(string scp) {
 
-        // we want no result to be -1, so use ints
         string::size_type prd_pos = scp.rfind('.');
         string::size_type dot_pos = scp.rfind("__DOT__");
 
@@ -195,7 +195,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             }
 
             // resize and advance pointers
-            if (prd_pos < dot_pos && dot_pos != string::npos) {
+            if ((prd_pos < dot_pos || prd_pos == string::npos) && dot_pos != string::npos) {
                 scp.resize(dot_pos);
                 dot_pos = scp.rfind("__DOT__");
             } else {
@@ -209,7 +209,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void varsExpand() {
         // We didn't have all m_scopes loaded when we encountered variables, so expand them now
         // It would be less code if each module inserted its own variables.
-        // Someday.  For now public isn't common.
+        // Someday.
         for (std::vector<ScopeModPair>::iterator itsc = m_scopes.begin(); itsc != m_scopes.end();
              ++itsc) {
             AstScope* const scopep = itsc->first;
@@ -283,6 +283,15 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
         if (v3Global.opt.vpi()) buildVpiHierarchy();
 
+        if (v3Global.dpi()) {
+            // add dpi scopes to m_scopeNames if not already there
+            for (const auto& scp : m_dpiScopeNames) {
+                if (m_scopeNames.find(scp.first) == m_scopeNames.end()) {
+                    m_scopeNames.emplace(scp.first, scp.second);
+                }
+            }
+        }
+
         // Sort by names, so line/process order matters less
         stable_sort(m_scopes.begin(), m_scopes.end(), CmpName());
         stable_sort(m_dpis.begin(), m_dpis.end(), CmpDpi());
@@ -331,7 +340,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.emplace(scopeSymString(nodep->name()),
                                          ScopeData{nodep, scopeSymString(nodep->name()),
-                                                   name_pretty, "<null>", timeunit, type});
+                                                   name_pretty, nodep->modp()->origName(),
+                                                   timeunit, type});
         }
         iterateChildrenConst(nodep);
     }
@@ -340,26 +350,27 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         // UINFO(9, "scnameins sp " << nodep->name() << " sp " << nodep->scopePrettySymName()
         // << " ss" << name << endl);
         const int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
-        m_scopeNames.emplace(name, ScopeData{nodep, name, nodep->scopePrettySymName(), "<null>",
-                                             timeunit, "SCOPE_OTHER"});
+        m_dpiScopeNames.emplace(name, ScopeData{nodep, name, nodep->scopePrettySymName(), "<null>",
+                                                timeunit, "SCOPE_OTHER"});
         if (nodep->dpiExport()) {
             UASSERT_OBJ(m_cfuncp, nodep, "ScopeName not under DPI function");
             m_scopeFuncs.emplace(name + " " + m_cfuncp->name(),
                                  ScopeFuncData(nodep, m_cfuncp, m_modp));
         } else {
-            if (m_scopeNames.find(nodep->scopeDpiName()) == m_scopeNames.end()) {
+            if (m_dpiScopeNames.find(nodep->scopeDpiName()) == m_dpiScopeNames.end()) {
                 // cppcheck-suppress stlFindInsert
-                m_scopeNames.emplace(nodep->scopeDpiName(),
-                                     ScopeData{nodep, nodep->scopeDpiName(),
-                                               nodep->scopePrettyDpiName(), "<null>", timeunit,
-                                               "SCOPE_OTHER"});
+                m_dpiScopeNames.emplace(nodep->scopeDpiName(),
+                                        ScopeData{nodep, nodep->scopeDpiName(),
+                                                  nodep->scopePrettyDpiName(), "<null>", timeunit,
+                                                  "SCOPE_OTHER"});
             }
         }
     }
     void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildrenConst(nodep);
-        if (nodep->isSigUserRdPublic() && !m_cfuncp) m_modVars.emplace_back(m_modp, nodep);
+        if ((nodep->isSigUserRdPublic() || nodep->isSigUserRWPublic()) && !m_cfuncp)
+            m_modVars.emplace_back(m_modp, nodep);
     }
     void visit(AstVarScope* nodep) override {
         iterateChildrenConst(nodep);
@@ -929,21 +940,11 @@ void EmitCSyms::emitSymImp() {
             checkSplit(true);
             AstScope* const scopep = it->second.m_scopep;
             AstVar* const varp = it->second.m_varp;
-            //
-            int pwidth = 1;
             int pdim = 0;
             int udim = 0;
             string bounds;
             if (AstBasicDType* const basicp = varp->basicp()) {
                 // Range is always first, it's not in "C" order
-                if (basicp->isRanged()) {
-                    bounds += " ,";
-                    bounds += cvtToStr(basicp->hi());
-                    bounds += ",";
-                    bounds += cvtToStr(basicp->lo());
-                    pdim++;
-                    pwidth *= basicp->elements();
-                }
                 for (AstNodeDType* dtypep = varp->dtypep(); dtypep;) {
                     dtypep
                         = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
@@ -952,28 +953,24 @@ void EmitCSyms::emitSymImp() {
                         bounds += cvtToStr(adtypep->left());
                         bounds += ",";
                         bounds += cvtToStr(adtypep->right());
-                        if (VN_IS(dtypep, PackArrayDType)) {
+                        if (VN_IS(dtypep, PackArrayDType))
                             pdim++;
-                            pwidth *= adtypep->elementsConst();
-                        } else {
+                        else
                             udim++;
-                        }
                         dtypep = adtypep->subDTypep();
                     } else {
+                        if (basicp->isRanged()) {
+                            bounds += " ,";
+                            bounds += cvtToStr(basicp->hi());
+                            bounds += ",";
+                            bounds += cvtToStr(basicp->lo());
+                            pdim++;
+                        }
                         break;  // AstBasicDType - nothing below, 1
                     }
                 }
             }
-            // TODO: actually expose packed arrays as vpiRegArray
-            if (pdim > 1 && udim == 0) {
-                bounds = ", ";
-                bounds += cvtToStr(pwidth - 1);
-                bounds += ",0";
-                pdim = 1;
-            }
-            if (pdim > 1 || udim > 1) {
-                puts("//UNSUP ");  // VerilatedImp can't deal with >2d or packed arrays
-            }
+
             putns(scopep, protect("__Vscope_" + it->second.m_scopeName));
             putns(varp, ".varInsert(__Vfinal,");
             putsQuoted(protect(it->second.m_varBasePretty));
@@ -983,7 +980,8 @@ void EmitCSyms::emitSymImp() {
             varName += protect(varp->name());
 
             if (varp->isParam()) {
-                if (varp->vlEnumType() == "VLVT_STRING") {
+                if (varp->vlEnumType() == "VLVT_STRING"
+                    && !VN_IS(varp->subDTypep(), UnpackArrayDType)) {
                     puts(", const_cast<void*>(static_cast<const void*>(");
                     puts(varName);
                     puts(".c_str())), ");
@@ -1004,7 +1002,9 @@ void EmitCSyms::emitSymImp() {
             puts(",");
             puts(varp->vlEnumDir());  // VLVD_IN etc
             puts(",");
-            puts(cvtToStr(pdim + udim));
+            puts(cvtToStr(udim));
+            puts(",");
+            puts(cvtToStr(pdim));
             puts(bounds);
             puts(");\n");
             ++m_numStmts;

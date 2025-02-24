@@ -8,6 +8,65 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
+Verilator 5.034 2025-02-24
+==========================
+
+**Important:**
+
+* This is likely the last version to support Ubuntu 20.04, which is at end-of-life.
+* Add expression coverage (#4677) (#5719). [Todd Strader]
+
+**Other:**
+
+* Add `COVERIGN` warning, as a more specific UNSUPPORTED error.
+* Add `--public-ignore` to ignore public metacomments (#5716). [Andrew Nolte]
+* Add `--preproc-token-limit` (#5768). [Krzysztof Bieganski, Antmicro Ltd.]
+* Add lint error on importing package within a class (#5634) (#5679). [Nick Brereton]
+* Add `--preproc-resolve` for modules in preprocessor output (#5789). [Kamil Rakoczy, Antmicro Ltd.]
+* Support multidimensional array access via VPI (#2812) (#5573). [Krzysztof Starecki]
+* Support nested classes (#4178) (#5778). [Kamil Rakoczy, Antmicro Ltd.]
+* Support VPI array accessors (#5612). [Moubarak Jeje]
+* Support unpacked structure constrained randomization (#5657) (#5759). [Yilou Wang]
+* Support generated classes (#5665). [Shou-Li Hsu]
+* Support constraints on associative array user-defined keys (#5671) (#5729). [Yilou Wang]
+* Support `+incdir` with multiple directories.
+* Support integer atom type ports in `--hierarchical` (#5748). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Support constrained random for arrays in structs (#5765) (#5802). [Yilou Wang]
+* Support selects on arbitrary string expressions (#5773). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support side effects of form 'variable[index_function()]++'.
+* Improve hierarchical DPI wrapper scheduling performance (#2583) (#5734). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Improve VPI write errors (#5712). [Andrew Nolte]
+* Improve `resetall support (#5728) (#5730). [Ethan Sifferman]
+* Optimize labels as final `if` block statements (#5744).
+* Optimize empty function definition bodies (#5750).
+* Optimize splitting trigger computation and dump (#5798). [Geza Lore]
+* Fix error message when call task as a function (#3089). [Matthew Ballance]
+* Fix force VPI public signal visibility (#5225). [Frédéric Requin]
+* Fix VPI iteration over hierarchy (#5314) (#5731). [Natan Kreimer]
+* Fix constrained random for > 64-bit associative arrays (#5670) (#5682). [Yilou Wang]
+* Fix mis-optimizing away `$urandom` (#5703). [Parker Schless]
+* Fix packages with `--public-depth 1` (#5708). [Andrew Nolte]
+* Fix V3Simulate constant reuse (#5709). [Geza Lore]
+* Fix man pages what-is section (#5710). [Ahmed El-Mahmoudy]
+* Fix pattern assignment to real inside struct (#5713).
+* Fix %p format output for real inside struct (#5713).
+* Fix segfault when only enum value referenced in package (#5714). [Dan Katz]
+* Fix `BLKSEQ` on suspendable processes (#5722). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix vpiDefName issues with non-inlined scopes and dpi conflicts (#5732). [Andrew Nolte]
+* Fix inlined expression with assignment under LHS of NBA (#5736) (#5740). [Geza Lore]
+* Fix duplicate-named class variable equivalence (#5737).
+* Fix `-j` ignored after `-f` (#5749). [Luca Colagrande]
+* Fix handling forced assigns in V3Life (#5757). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix VFileContent reference count (#5769) (#5771). [Dave Sargeant]
+* Fix ignoring joins in stringify in preprocessor (#5777). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix unpacked split_var (#5782) (#5785). [Yutetsu TAKATSUKASA]
+* Fix time import error on time parameters (#5786). [Luca Colagrande]
+* Fix dpi context functions (#5788). [Ryszard Rozak, Antmicro Ltd.]
+* Fix `$monitor` with dotted references (#5794). [Ahmed Elzeftawi]
+* Fix parsing input wire with default and range (#5800). [RJ Cunningham]
+* Fix matching language extension options including dots.
+
+
 Verilator 5.032 2025-01-01
 ==========================
 

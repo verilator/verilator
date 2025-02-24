@@ -2077,6 +2077,7 @@ private:
     string instanceStr() const;
 
 public:
+    void purityCheck();
     static void relinkOneLink(AstNode*& pointpr, AstNode* newp);
     // cppcheck-suppress functionConst
     static void debugTreeChange(const AstNode* nodep, const char* prefix, int lineno, bool next);

@@ -230,13 +230,14 @@
 %Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:126:7: Unsupported: first_match (in sequence expression)
   126 |       first_match (a, res0 = 1, res1 = 2);
       |       ^~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:129:10: Unsupported: cover sequence
+%Warning-COVERIGN: t/t_sequence_sexpr_unsup.v:129:10: Ignoring unsupported: cover sequence
   129 |    cover sequence (s_a) $display("");
       |          ^~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:130:10: Unsupported: cover sequence
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_sequence_sexpr_unsup.v:130:10: Ignoring unsupported: cover sequence
   130 |    cover sequence (@(posedge a) disable iff (b) s_a) $display("");
       |          ^~~~~~~~
-%Error-UNSUPPORTED: t/t_sequence_sexpr_unsup.v:131:10: Unsupported: cover sequence
+%Warning-COVERIGN: t/t_sequence_sexpr_unsup.v:131:10: Ignoring unsupported: cover sequence
   131 |    cover sequence (disable iff (b) s_a) $display("");
       |          ^~~~~~~~
 %Error: Exiting due to

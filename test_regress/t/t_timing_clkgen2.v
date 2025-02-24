@@ -17,24 +17,18 @@ module t;
    int   cnt2 = 0;
 
    always #4 clk = ~clk;
-   always @(negedge clk) begin
-       cnt1++;
-       `WRITE_VERBOSE(("[%0t] NEG clk (%b)\n", $time, clk));
-   end
    always @(posedge clk) begin
-       cnt1++;
-       `WRITE_VERBOSE(("[%0t] POS clk (%b)\n", $time, clk));
+       cnt1 <= cnt1 + 1;
+       `WRITE_VERBOSE(("[%0t] clk (%b)\n", $time, clk));
    end
 
    assign #2 clk_inv = ~clk;
    initial forever begin
        @(posedge clk_inv) cnt2++;
-       `WRITE_VERBOSE(("[%0t] POS clk_inv (%b)\n", $time, clk_inv));
-       @(negedge clk_inv) cnt2++;
-       `WRITE_VERBOSE(("[%0t] NEG clk_inv (%b)\n", $time, clk_inv));
+       `WRITE_VERBOSE(("[%0t] clk_inv (%b)\n", $time, clk_inv));
    end
 
-   initial #41 begin
+   initial #81 begin
        if (cnt1 != 10 && cnt2 != 10) $stop;
        $write("*-* All Finished *-*\n");
        $finish;

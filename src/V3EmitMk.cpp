@@ -96,7 +96,7 @@ private:
         std::sort(sortedScores.begin(), sortedScores.end());
 
         const int64_t topScore = sortedScores.back();
-        os << "Top score: " << topScore << endl;
+        os << "Top score: " << topScore << '\n';
         const int maxScoreWidth = std::to_string(topScore).length();
 
         const int64_t intervalsNum = std::min<int64_t>(topScore + 1, MAX_INTERVALS_NUM);
@@ -123,7 +123,7 @@ private:
         for (const Interval& iv : intervals)
             topIntervalSize = std::max(topIntervalSize, iv.m_size);
 
-        os << "Input files' scores histogram:" << endl;
+        os << "Input files' scores histogram:\n";
 
         for (const Interval& iv : intervals) {
             const int scaledSize = iv.m_size * (MAX_BAR_LENGTH + 1) / topIntervalSize;
@@ -132,14 +132,14 @@ private:
             os << std::setw(maxScoreWidth) << iv.m_lowerBound << line << "  " << iv.m_size << '\n';
         }
         os << std::setw(maxScoreWidth) << (topScore + 1) << '\n';
-        os << endl;
+        os << '\n';
     }
 
     // PRIVATE METHODS
 
     // Debug logging: dumps Work Lists and their lists of files
     void dumpWorkLists(std::ostream& os) {
-        os << "Initial Work Lists with their concatenation eligibility status:" << endl;
+        os << "Initial Work Lists with their concatenation eligibility status:\n";
         for (const WorkList& list : m_workLists) {
             os << "+ [" << (list.m_isConcatenable ? 'x' : ' ') << "] Work List #" << list.m_dbgId
                << "  (num of files: " << list.m_files.size()
@@ -157,13 +157,13 @@ private:
                 os << "| + " << last.m_filename << "  (score: " << last.m_score << ")\n";
             }
         }
-        os << endl;
+        os << '\n';
     }
 
     // Debug logging: dumps list of output files. List of grouped files is additionally printed
     // for each concatenating file.
     void dumpOutputList(std::ostream& os) const {
-        os << "List of output files after execution of concatenation:" << endl;
+        os << "List of output files after execution of concatenation:\n";
 
         for (const FileOrConcatenatedFilesList& entry : m_outputFiles) {
             if (entry.isConcatenatingFile()) {
@@ -182,15 +182,16 @@ private:
         const int totalBucketsNum = v3Global.opt.outputGroups();
         // Return early if there's nothing to do.
         bool groupingRedundant = false;
-        if (inputFilesCount < MIN_FILES_COUNT) {
-            UINFO(4, "File concatenation skipped: Too few files ("
-                         << m_inputFiles.size() << " < " << MIN_FILES_COUNT << ")" << endl);
+        if (inputFilesCount < MIN_FILES_COUNT
+            && inputFilesCount <= static_cast<size_t>(totalBucketsNum)) {
+            UINFO(4, "File concatenation skipped: Too few files (" << m_inputFiles.size() << " < "
+                                                                   << MIN_FILES_COUNT << ")\n");
             groupingRedundant = true;
         }
         if (inputFilesCount < (MIN_FILES_PER_BUCKET * totalBucketsNum)) {
             UINFO(4, "File concatenation skipped: Too few files per bucket ("
                          << m_inputFiles.size() << " < " << MIN_FILES_PER_BUCKET << " - "
-                         << totalBucketsNum << ")" << endl);
+                         << totalBucketsNum << ")\n");
             groupingRedundant = true;
         }
         if (!groupingRedundant) return false;
@@ -212,13 +213,12 @@ private:
         V3Stats::addStat("Concatenation max score", concatenableFileMaxScore);
         int nextWorkListId = 0;
 
-        if (m_logp) *m_logp << "Input files with their concatenation eligibility status:" << endl;
+        if (m_logp) *m_logp << "Input files with their concatenation eligibility status:\n";
         for (const FilenameWithScore& inputFile : m_inputFiles) {
             const bool fileIsConcatenable = (inputFile.m_score <= concatenableFileMaxScore);
             if (m_logp)
                 *m_logp << " + [" << (fileIsConcatenable ? 'x' : ' ') << "] "
-                        << inputFile.m_filename << "  (score: " << inputFile.m_score << ")"
-                        << endl;
+                        << inputFile.m_filename << "  (score: " << inputFile.m_score << ")\n";
             V3Stats::addStatSum(fileIsConcatenable ? "Concatenation total grouped score"
                                                    : "Concatenation total non-grouped score",
                                 inputFile.m_score);
@@ -233,7 +233,7 @@ private:
             list.m_files.push_back({inputFile.m_filename, inputFile.m_score});
             list.m_totalScore += inputFile.m_score;
         }
-        if (m_logp) *m_logp << endl;
+        if (m_logp) *m_logp << '\n';
     }
 
     void assignBuckets(uint64_t concatenableFilesTotalScore) {
@@ -248,8 +248,7 @@ private:
             // Debugging: Log which work lists will be kept
             if (m_logp) {
                 *m_logp << "More Work Lists than buckets; "
-                           "Work Lists with statuses indicating whether the list will be kept:"
-                        << endl;
+                           "Work Lists with statuses indicating whether the list will be kept:\n";
                 // Only lists that will be kept. List that will be removed are logged below.
                 std::for_each(m_concatenableListsByDescSize.begin(),
                               m_concatenableListsByDescSize.begin() + totalBucketsNum,
@@ -269,7 +268,7 @@ private:
                                           << "  (num of files: " << listp->m_files.size()
                                           << "; total score: " << listp->m_totalScore << ")\n";
                           });
-            if (m_logp) *m_logp << endl;
+            if (m_logp) *m_logp << '\n';
 
             m_concatenableListsByDescSize.resize(totalBucketsNum);
             // Recalculate stats
@@ -283,7 +282,7 @@ private:
 
         V3Stats::addStat("Concatenation ideal bucket score", idealBucketScore);
 
-        if (m_logp) *m_logp << "Buckets assigned to Work Lists:" << endl;
+        if (m_logp) *m_logp << "Buckets assigned to Work Lists:\n";
         int availableBuckets = v3Global.opt.outputGroups();
         for (WorkList* listp : m_concatenableListsByDescSize) {
             if (availableBuckets > 0) {
@@ -301,7 +300,7 @@ private:
                             << std::right << " (excluding from concatenation)\n";
             }
         }
-        if (m_logp) *m_logp << endl;
+        if (m_logp) *m_logp << '\n';
     }
 
     void buildOutputList() {
@@ -395,19 +394,19 @@ private:
     }
 
     void process() {
-        UINFO(4, __FUNCTION__ << ":" << endl);
-        UINFO(5, "Number of input files: " << m_inputFiles.size() << endl);
-        UINFO(5, "Total score: " << m_totalScore << endl);
-        UINFO(5, "Group file prefix: " << m_groupFilePrefix << endl);
+        UINFO(4, __FUNCTION__ << " group file prefix: " << m_groupFilePrefix << '\n');
+        UINFO(5, "Number of input files: " << m_inputFiles.size() << '\n');
+        UINFO(5, "Total score: " << m_totalScore << '\n');
 
         const int totalBucketsNum = v3Global.opt.outputGroups();
-        UINFO(5, "Number of buckets: " << totalBucketsNum << endl);
+        UINFO(5, "Number of buckets: " << totalBucketsNum << '\n');
         UASSERT(totalBucketsNum > 0, "More than 0 buckets required");
 
         if (fallbackNoGrouping(m_inputFiles.size())) return;
 
-        if (dumpLevel() >= 6) {
+        if (debug() >= 6 || dumpLevel() >= 6) {
             const string filename = v3Global.debugFilename("outputgroup") + ".txt";
+            UINFO(5, "Dumping " << filename << endl);
             m_logp = std::unique_ptr<std::ofstream>{V3File::new_ofstream(filename)};
             if (m_logp->fail()) v3fatal("Can't write " << filename);
         }
@@ -417,7 +416,6 @@ private:
         createWorkLists();
 
         // Collect stats and mark lists with only one file as non-concatenable
-
         size_t concatenableFilesCount = 0;
         int64_t concatenableFilesTotalScore = 0;
 
@@ -479,6 +477,9 @@ class EmitMk final {
     using FileOrConcatenatedFilesList = EmitGroup::FileOrConcatenatedFilesList;
     using FilenameWithScore = EmitGroup::FilenameWithScore;
 
+    // MEMBERS
+    double m_putClassCount = 0;  // Number of classEntries printed
+
 public:
     // METHODS
 
@@ -494,6 +495,7 @@ public:
 
     void putMakeClassEntry(V3OutMkFile& of, const string& name) {
         of.puts("\t" + V3Os::filenameNonDirExt(name) + " \\\n");
+        ++m_putClassCount;
     }
 
     void emitClassMake() {
@@ -577,9 +579,12 @@ public:
                 } else {
                     of.puts(", fast-path, compile with highest optimization\n");
                 }
-                of.puts(support == 2 ? "VM_GLOBAL" : support == 1 ? "VM_SUPPORT" : "VM_CLASSES");
-                of.puts(slow ? "_SLOW" : "_FAST");
-                of.puts(" += \\\n");
+                const string targetVar = (support == 2   ? "VM_GLOBAL"s
+                                          : support == 1 ? "VM_SUPPORT"s
+                                                         : "VM_CLASSES"s)
+                                         + (slow ? "_SLOW" : "_FAST");
+                m_putClassCount = 0;
+                of.puts(targetVar + " += \\\n");
                 if (support == 2 && v3Global.opt.hierChild()) {
                     // Do nothing because VM_GLOBAL is necessary per executable. Top module will
                     // have them.
@@ -605,7 +610,7 @@ public:
                     const std::vector<FileOrConcatenatedFilesList>& list
                         = slow ? vmClassesSlowList : vmClassesFastList;
                     for (const FileOrConcatenatedFilesList& entry : list) {
-                        if (entry.isConcatenatingFile()) { emitConcatenatingFile(entry); }
+                        if (entry.isConcatenatingFile()) emitConcatenatingFile(entry);
                         putMakeClassEntry(of, entry.m_filename);
                     }
                 } else {
@@ -619,6 +624,7 @@ public:
                     }
                 }
                 of.puts("\n");
+                V3Stats::addStat("Makefile targets, " + targetVar, m_putClassCount);
             }
         }
 
@@ -808,6 +814,7 @@ public:
 };
 
 //######################################################################
+
 class EmitMkHierVerilation final {
     const V3HierBlockPlan* const m_planp;
     const string m_makefile;  // path of this makefile

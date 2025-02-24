@@ -182,16 +182,11 @@ class SenExprBuilder final {
         case VEdgeType::ET_EVENT: {
             UASSERT_OBJ(v3Global.hasEvents(), senItemp, "Inconsistent");
             {
-                // If the event is fired, set up the clearing process
-                AstCMethodHard* const callp = new AstCMethodHard{flp, currp(), "isFired"};
-                callp->dtypeSetBit();
-                AstIf* const ifp = new AstIf{flp, callp};
-                m_postUpdates.push_back(ifp);
-
                 // Clear 'fired' state when done
+                // No need to check if the event was fired, we need the flag clear regardless
                 AstCMethodHard* const clearp = new AstCMethodHard{flp, currp(), "clearFired"};
                 clearp->dtypeSetVoid();
-                ifp->addThensp(clearp->makeStmt());
+                m_postUpdates.push_back(clearp->makeStmt());
             }
 
             // Get 'fired' state

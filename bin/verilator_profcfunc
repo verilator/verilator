@@ -164,7 +164,7 @@ def profcfunc(filename):
 parser = argparse.ArgumentParser(
     allow_abbrev=False,
     formatter_class=argparse.RawDescriptionHelpFormatter,
-    description="""Read gprof report created with --prof-cfuncs.
+    description="""Read gprof report created with Verilator --prof-cfuncs
 
 Verilator_profcfunc reads a profile report created by gprof.  The names of
 the functions are then transformed, assuming the user used Verilator's

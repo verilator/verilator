@@ -87,6 +87,7 @@ test.compile(v_flags2=["--trace",
                        "--output-groups 2",
                        "--output-split-cfuncs 1",
                        "--exe",
+                       "--stats",
                        "../" + test.main_filename],
              verilator_make_gmake=False)  # yapf:disable
 
@@ -121,5 +122,10 @@ test.file_grep(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_classes_
 test.file_grep(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_classes_1")
 test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_classes_Slow_2")
 test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_classes_2")
+
+# Check combine count
+test.file_grep(test.stats, r'Node count, CFILE + (\d+)', (191 if test.vltmt else 173))
+test.file_grep(test.stats, r'Makefile targets, VM_CLASSES_FAST + (\d+)', 2)
+test.file_grep(test.stats, r'Makefile targets, VM_CLASSES_SLOW + (\d+)', 2)
 
 test.passes()

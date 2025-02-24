@@ -32,6 +32,7 @@ module sub (input integer inst);
    import "DPI-C" context function int dpic_save(int value);
    import "DPI-C" context function int dpic_restore();
    import "DPI-C" context function int unsigned dpic_getcontext();
+   import "DPI-C" context function int unsigned dpic_get1();
 
    int result;
 
@@ -63,6 +64,11 @@ module sub (input integer inst);
       if (dpic_restore() != 23+inst) $stop;
    endtask
 
+   function automatic int call_dpic_get1;
+      int res = dpic_get1();
+      return res;
+   endfunction
+
    int unsigned cntxt1;
    int unsigned cntxt2;
 
@@ -74,6 +80,7 @@ module sub (input integer inst);
      end
      // svContext should be the context of the function declaration, not the context of the function call
      if (cntxt1 != cntxt2) $stop;
+     if (call_dpic_get1() != 1) $stop;
    end
 
 endmodule

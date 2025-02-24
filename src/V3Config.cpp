@@ -533,11 +533,13 @@ public:
 // Resolve modules and files in the design
 
 class V3ConfigResolver final {
+    enum ProfileDataMode : uint8_t { NONE = 0, MTASK = 1, HIER_DPI = 2 };
     V3ConfigModuleResolver m_modules;  // Access to module names (with wildcards)
     V3ConfigFileResolver m_files;  // Access to file names (with wildcards)
     V3ConfigScopeTraceResolver m_scopeTraces;  // Regexp to trace enables
     std::unordered_map<string, std::unordered_map<string, uint64_t>>
         m_profileData;  // Access to profile_data records
+    uint8_t m_mode = NONE;
     FileLine* m_profileFileLine = nullptr;
 
     V3ConfigResolver() = default;
@@ -552,10 +554,21 @@ public:
     V3ConfigFileResolver& files() { return m_files; }
     V3ConfigScopeTraceResolver& scopeTraces() { return m_scopeTraces; }
 
-    void addProfileData(FileLine* fl, const string& model, const string& key, uint64_t cost) {
+    void addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost) {
+        // Empty key for hierarchical DPI wrapper costs.
+        addProfileData(fl, hierDpi, "", cost, HIER_DPI);
+    }
+    void addProfileData(FileLine* fl, const string& model, const string& key, uint64_t cost,
+                        ProfileDataMode mode = MTASK) {
         if (!m_profileFileLine) m_profileFileLine = fl;
         if (cost == 0) cost = 1;  // Cost 0 means delete (or no data)
         m_profileData[model][key] += cost;
+        m_mode |= mode;
+    }
+    bool containsMTaskProfileData() const { return m_mode & MTASK; }
+    uint64_t getProfileData(const string& hierDpi) const {
+        // Empty key for hierarchical DPI wrapper costs.
+        return getProfileData(hierDpi, "");
     }
     uint64_t getProfileData(const string& model, const string& key) const {
         const auto mit = m_profileData.find(model);
@@ -617,6 +630,10 @@ void V3Config::addInline(FileLine* fl, const string& module, const string& ftask
 
 void V3Config::addModulePragma(const string& module, VPragmaType pragma) {
     V3ConfigResolver::s().modules().at(module).addModulePragma(pragma);
+}
+
+void V3Config::addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost) {
+    V3ConfigResolver::s().addProfileData(fl, hierDpi, cost);
 }
 
 void V3Config::addProfileData(FileLine* fl, const string& model, const string& key,
@@ -724,6 +741,9 @@ void V3Config::applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar
     if (vp) vp->apply(varp);
 }
 
+uint64_t V3Config::getProfileData(const string& hierDpi) {
+    return V3ConfigResolver::s().getProfileData(hierDpi);
+}
 uint64_t V3Config::getProfileData(const string& model, const string& key) {
     return V3ConfigResolver::s().getProfileData(model, key);
 }
@@ -735,6 +755,10 @@ bool V3Config::getScopeTraceOn(const string& scope) {
 }
 
 void V3Config::contentsPushText(const string& text) { return WildcardContents::pushText(text); }
+
+bool V3Config::containsMTaskProfileData() {
+    return V3ConfigResolver::s().containsMTaskProfileData();
+}
 
 bool V3Config::waive(FileLine* filelinep, V3ErrorCode code, const string& message) {
     V3ConfigFile* filep = V3ConfigResolver::s().files().resolve(filelinep->filename());

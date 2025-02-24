@@ -70,6 +70,7 @@ AstCFunc* makeSubFunction(AstNetlist* netlistp, const string& name, bool slow) {
 AstCFunc* makeTopFunction(AstNetlist* netlistp, const string& name, bool slow) {
     AstCFunc* const funcp = makeSubFunction(netlistp, name, slow);
     funcp->entryPoint(true);
+    funcp->keepIfEmpty(true);
     return funcp;
 }
 
@@ -787,6 +788,10 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
     // The debug code might leak signal names, so simply delete it when using --protect-ids
     if (v3Global.opt.protectIds()) dumpp->stmtsp()->unlinkFrBackWithNext()->deleteTree();
+
+    // These might get large when we have a lot of triggers, so split if necessary
+    splitCheck(funcp);
+    splitCheck(dumpp);
 
     return {vscp, funcp, dumpp, map};
 }

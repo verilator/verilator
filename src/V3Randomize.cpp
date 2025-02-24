@@ -629,18 +629,22 @@ class ConstraintExprVisitor final : public VNVisitor {
                 const uint32_t unpackedDimensions = dims.second;
                 dimension = unpackedDimensions;
             }
+            if (VN_IS(varp->dtypeSkipRefp(), StructDType)
+                && !VN_AS(varp->dtypeSkipRefp(), StructDType)->packed()) {
+                VN_AS(varp->dtypeSkipRefp(), StructDType)->markConstrainedRand(true);
+                dimension = 1;
+            }
             methodp->dtypeSetVoid();
             AstClass* const classp = VN_AS(varp->user2p(), Class);
             AstVarRef* const varRefp
                 = new AstVarRef{varp->fileline(), classp, varp, VAccess::WRITE};
             varRefp->classOrPackagep(classOrPackagep);
             methodp->addPinsp(varRefp);
-            size_t width = varp->width();
             AstNodeDType* tmpDtypep = varp->dtypep();
             while (VN_IS(tmpDtypep, UnpackArrayDType) || VN_IS(tmpDtypep, DynArrayDType)
                    || VN_IS(tmpDtypep, QueueDType) || VN_IS(tmpDtypep, AssocArrayDType))
                 tmpDtypep = tmpDtypep->subDTypep();
-            width = tmpDtypep->width();
+            const size_t width = tmpDtypep->width();
             methodp->addPinsp(
                 new AstConst{varp->dtypep()->fileline(), AstConst::Unsized64{}, width});
             AstNodeExpr* const varnamep
@@ -706,42 +710,73 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
     }
+    void visit(AstStructSel* nodep) override {
+        if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), StructDType)) {
+            AstNodeExpr* const fromp = nodep->fromp();
+            if (VN_IS(fromp, StructSel)) {
+                VN_AS(fromp->dtypep()->skipRefp(), StructDType)->markConstrainedRand(true);
+            }
+            AstMemberDType* memberp = VN_AS(fromp->dtypep()->skipRefp(), StructDType)->membersp();
+            while (memberp) {
+                if (memberp->name() == nodep->name()) {
+                    memberp->markConstrainedRand(true);
+                    break;
+                } else
+                    memberp = VN_CAST(memberp->nextp(), MemberDType);
+            }
+        }
+        iterateChildren(nodep);
+        if (editFormat(nodep)) return;
+        FileLine* const fl = nodep->fileline();
+        AstSFormatF* const newp
+            = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false, nullptr};
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstAssocSel* nodep) override {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
-        if (VN_IS(nodep->bitp(), CvtPackString)) {
-            // Extract and truncate the string index to fit within 64 bits
+        if (VN_IS(nodep->bitp(), CvtPackString) && VN_IS(nodep->bitp()->dtypep(), BasicDType)) {
             AstCvtPackString* const stringp = VN_AS(nodep->bitp(), CvtPackString);
-            VNRelinker handle;
-            AstNodeExpr* const strIdxp = new AstSFormatF{
-                fl, "#x%16x", false,
-                new AstAnd{fl, stringp->lhsp()->unlinkFrBack(&handle),
-                           new AstConst(fl, AstConst::Unsized64{}, 0xFFFFFFFFFFFFFFFF)}};
-            handle.relink(strIdxp);
-            editSMT(nodep, nodep->fromp(), strIdxp);
-        } else {
-            VNRelinker handle;
-            const int actual_width = nodep->bitp()->width();
-            std::string fmt;
-            // Normalize to standard bit width
-            if (actual_width <= 8) {
-                fmt = "#x%2x";
-            } else if (actual_width <= 16) {
-                fmt = "#x%4x";
-            } else if (actual_width <= 32) {
-                fmt = "#x%8x";
-            } else if (actual_width <= 64) {
-                fmt = "#x%16x";
-            } else {
-                nodep->v3warn(CONSTRAINTIGN,
-                              "Unsupported: Associative array index "
-                              "widths of more than 64 bits during constraint randomization.");
-                return;
+            const size_t stringSize = VN_AS(stringp->lhsp(), Const)->width();
+            if (stringSize > 128) {
+                stringp->v3warn(
+                    CONSTRAINTIGN,
+                    "Unsupported: Constrained randomization of associative array keys of "
+                        << stringSize << "bits, limit is 128 bits");
             }
+            VNRelinker handle;
             AstNodeExpr* const idxp
-                = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
+                = new AstSFormatF{fl, "#x%32x", false, stringp->lhsp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
+        } else {
+            if (VN_IS(nodep->bitp()->dtypep(), BasicDType)
+                || (VN_IS(nodep->bitp()->dtypep(), StructDType)
+                    && VN_AS(nodep->bitp()->dtypep(), StructDType)->packed())
+                || VN_IS(nodep->bitp()->dtypep(), EnumDType)
+                || VN_IS(nodep->bitp()->dtypep(), PackArrayDType)) {
+                VNRelinker handle;
+                const int actual_width = nodep->bitp()->width();
+                std::string fmt;
+                // Normalize to standard bit width
+                if (actual_width <= 8) {
+                    fmt = "#x%2x";
+                } else if (actual_width <= 16) {
+                    fmt = "#x%4x";
+                } else {
+                    fmt = "#x%" + std::to_string(VL_WORDS_I(actual_width) * 8) + "x";
+                }
+
+                AstNodeExpr* const idxp
+                    = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
+                handle.relink(idxp);
+                editSMT(nodep, nodep->fromp(), idxp);
+            } else {
+                nodep->bitp()->v3error(
+                    "Illegal non-integral expression or subexpression in random constraint."
+                    " (IEEE 1800-2023 18.3)");
+            }
         }
     }
     void visit(AstArraySel* nodep) override {
@@ -1450,11 +1485,8 @@ class RandomizeVisitor final : public VNVisitor {
         AstNodeStmt* stmtsp = nullptr;
         auto createLoopIndex = [&](AstNodeDType* tempDTypep) {
             if (VN_IS(tempDTypep, AssocArrayDType)) {
-                return new AstVar{
-                    fl, VVarType::VAR, uniqueNamep->get(""),
-                    dtypep->findBasicDType(
-                        ((AstBasicDType*)VN_AS(tempDTypep, AssocArrayDType)->keyDTypep())
-                            ->keyword())};
+                return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
+                                  VN_AS(tempDTypep, AssocArrayDType)->keyDTypep()};
             }
             return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
                               dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};

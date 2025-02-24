@@ -154,7 +154,7 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
     }
     // Suppress duplicate messages
     if (!m_messages.insert(msg).second) return;
-    if (!extra.empty()) {
+    if (!extra.empty() && !m_errorSuppressed) {
         const string extraMsg = warnMore() + extra + "\n";
         const size_t pos = msg.find('\n');
         msg.insert(pos + 1, extraMsg);

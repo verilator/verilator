@@ -900,8 +900,9 @@ public:
     const AstBasicDType* basicp() const { return m_basicp; }
     // Make a plan for variables after split
     // when skipUnused==true, split variable for unread bits will not be created.
-    std::vector<SplitNewVar> splitPlan(bool skipUnused) const {
+    std::vector<SplitNewVar> splitPlan(const AstVar* varp, bool skipUnused) const {
         UASSERT(m_dedupDone, "dedup() must be called before");
+        AstNodeDType* const dtypep = varp->dtypeSkipRefp();
         std::vector<SplitNewVar> plan;
         std::vector<std::pair<int, bool>> points;  // <bit location, is end>
         points.reserve(m_lhs.size() * 2 + 2);  // 2 points will be added per one PackedVarRefEntry
@@ -909,9 +910,17 @@ public:
             points.emplace_back(ref.lsb(), false);  // Start of a region
             points.emplace_back(ref.msb() + 1, true);  // End of a region
         }
+        int bit_hi, bit_lo;
+        if (basicp() == dtypep) {
+            bit_hi = basicp()->hi();
+            bit_lo = basicp()->lo();
+        } else {  // packed struct, packed array. lo is 0
+            bit_hi = dtypep->width() - 1;
+            bit_lo = 0;
+        }
         if (skipUnused && !m_rhs.empty()) {  // Range to be read must be kept, so add points here
-            int lsb = m_basicp->hi() + 1;
-            int msb = m_basicp->lo() - 1;
+            int lsb = bit_hi + 1;
+            int msb = bit_lo - 1;
             for (const PackedVarRefEntry& ref : m_rhs) {
                 lsb = std::min(lsb, ref.lsb());
                 msb = std::max(msb, ref.msb());
@@ -921,8 +930,8 @@ public:
             points.emplace_back(msb + 1, true);
         }
         if (!skipUnused) {  // All bits are necessary
-            points.emplace_back(m_basicp->lo(), false);
-            points.emplace_back(m_basicp->hi() + 1, true);
+            points.emplace_back(bit_lo, false);
+            points.emplace_back(bit_hi + 1, true);
         }
         std::sort(points.begin(), points.end(), SortByFirst());
 
@@ -1154,7 +1163,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                                   << " which has " << ref.lhs().size() << " lhs refs and "
                                   << ref.rhs().size() << " rhs refs will be split.\n");
             std::vector<SplitNewVar> vars
-                = ref.splitPlan(!varp->isTrace());  // If traced, all bit must be kept
+                = ref.splitPlan(varp, !varp->isTrace());  // If traced, all bit must be kept
             if (vars.empty()) continue;
             if (vars.size() == 1 && vars.front().bitwidth() == varp->width())
                 continue;  // No split

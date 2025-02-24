@@ -196,6 +196,11 @@ string AstNode::prettyName(const string& namein) VL_PURE {
                 pos += 7;
                 continue;
             }
+            if (0 == std::strncmp(pos, "__Viftop", 8)) {
+                pretty += "";
+                pos += 8;
+                continue;
+            }
             if (pos[0] == '_' && pos[1] == '_' && pos[2] == '0' && std::isxdigit(pos[3])
                 && std::isxdigit(pos[4])) {
                 char value = 0;
@@ -797,13 +802,7 @@ void AstNode::swapWith(AstNode* bp) {
 
 AstNode* AstNode::cloneTreeIter(bool needPure) {
     // private: Clone single node and children
-    if (VL_UNLIKELY(needPure && !isPure())) {
-        this->v3warn(SIDEEFFECT,
-                     "Expression side effect may be mishandled\n"
-                         << this->warnMore()
-                         << "... Suggest use a temporary variable in place of this expression");
-        // this->v3fatalSrc("cloneTreePure debug backtrace");  // Comment in to debug where caused
-    }
+    if (needPure) purityCheck();
     AstNode* const newp = this->clone();
     if (this->m_op1p) newp->op1p(this->m_op1p->cloneTreeIterList(needPure));
     if (this->m_op2p) newp->op2p(this->m_op2p->cloneTreeIterList(needPure));
@@ -848,6 +847,16 @@ AstNode* AstNode::cloneTree(bool cloneNextLink, bool needPure) {
     newp->cloneRelinkTree();
     debugTreeChange(newp, "-cloneOut: ", __LINE__, true);
     return newp;
+}
+
+void AstNode::purityCheck() {
+    if (VL_UNLIKELY(!isPure())) {
+        this->v3warn(SIDEEFFECT,
+                     "Expression side effect may be mishandled\n"
+                         << this->warnMore()
+                         << "... Suggest use a temporary variable in place of this expression");
+        // this->v3fatalSrc("cloneTreePure debug backtrace");  // Comment in to debug where caused
+    }
 }
 
 //======================================================================

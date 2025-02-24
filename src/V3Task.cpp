@@ -27,6 +27,7 @@
 
 #include "V3Task.h"
 
+#include "V3Config.h"
 #include "V3Const.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
@@ -372,6 +373,7 @@ class TaskVisitor final : public VNVisitor {
     // STATE - across all visitors
     DpiCFuncs m_dpiNames;  // Map of all created DPI functions
     VDouble0 m_statInlines;  // Statistic tracking
+    VDouble0 m_statHierDpisWithCosts;  // Statistic tracking
 
     // METHODS
 
@@ -980,6 +982,11 @@ class TaskVisitor final : public VNVisitor {
         funcp->isMethod(false);
         funcp->protect(false);
         funcp->dpiPure(nodep->dpiPure());
+
+        const int cost = static_cast<int>(V3Config::getProfileData(funcp->name()));
+        m_statHierDpisWithCosts += (cost != 0);
+        funcp->cost(cost);
+
         // Add DPI Import to top, since it's a global function
         m_topScopep->scopep()->addBlocksp(funcp);
         makePortList(nodep, funcp);
@@ -1258,6 +1265,8 @@ class TaskVisitor final : public VNVisitor {
         cfuncp->dpiPure(nodep->dpiPure());
         if (nodep->name() == "new") cfuncp->isConstructor(true);
         if (cfuncp->dpiExportImpl()) cfuncp->cname(nodep->cname());
+
+        if (cfuncp->dpiImportWrapper()) cfuncp->cname(nodep->cname());
 
         if (!nodep->dpiImport() && !nodep->taskPublic()) {
             // Need symbol table
@@ -1613,7 +1622,11 @@ public:
         : m_statep{statep} {
         iterate(nodep);
     }
-    ~TaskVisitor() { V3Stats::addStat("Optimizations, Functions inlined", m_statInlines); }
+    ~TaskVisitor() {
+        V3Stats::addStat("Optimizations, Functions inlined", m_statInlines);
+        V3Stats::addStat("Optimizations, Hierarchical DPI wrappers with costs",
+                         m_statHierDpisWithCosts);
+    }
 };
 
 //######################################################################

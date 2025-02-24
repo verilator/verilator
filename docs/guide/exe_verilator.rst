@@ -237,7 +237,17 @@ Summary:
 .. option:: --coverage
 
    Enables all forms of coverage, an alias for :vlopt:`--coverage-line`
-   :vlopt:`--coverage-toggle` :vlopt:`--coverage-user`.
+   :vlopt:`--coverage-toggle` :vlopt:`--coverage-expr` :vlopt:`--coverage-user`.
+
+.. option:: --coverage-expr
+
+   Enables expression coverage analysis. See :ref:`Expression Coverage`.
+
+.. option:: --coverage-expr-max <value>
+
+   Rarely needed.  Specifies the maximum number of permutations able to be
+   covered for a given expression.  Defaults to 32.  Increasing may slow
+   coverage simulations and make analyzing the results unwieldy.
 
 .. option:: --coverage-line
 
@@ -480,8 +490,8 @@ Summary:
    out.  Beware of enabling debugging messages, as they will also go to
    standard out. See :vlopt:`--no-std`, which is implied by this.
 
-   See also :vlopt:`--dump-defines`, :vlopt:`-P`, and
-   :vlopt:`--pp-comments` options.
+   See also :vlopt:`--dump-defines`, :vlopt:`-P`, :vlopt:`--pp-comments`
+   and :vlopt:`--preproc-resolve` options.
 
 .. option:: --emit-accessors
 
@@ -751,7 +761,10 @@ Summary:
 
 .. option:: +incdir+<dir>
 
-   See :vlopt:`-y`.
+   See :vlopt:`-y`.  Unlike with :vlopt:`-y`, multiple directories may be
+   specified separated with a `+` symbol; this is for Verilog-XL
+   compatibility and is not recommended usage as this is not supported by
+   some third-party tools.
 
 .. option:: --inline-mult <value>
 
@@ -778,6 +791,38 @@ Summary:
    of Verilator if :vlopt:`--verilate-jobs` isn't provided. If zero, uses
    the number of threads in the current hardware. Otherwise, must be a
    positive integer specifying the maximum number of parallel build jobs.
+
+.. option:: --json-only
+
+   Create JSON output only, do not create any other output.
+
+   The JSON format is intended to be used to leverage Verilator's parser and
+   elaboration to feed to other downstream tools. For details on the format, see
+   the Verilator Internals manual. Be aware that the JSON
+   format is still evolving; there will be some changes in future versions.
+
+   This option disables some more aggressive transformations and dumps only
+   the final state of the AST. For more granular and unaltered dumps, meant
+   mainly for debugging see :vlopt:`--dump-tree-json`.
+
+.. option:: --json-only-meta-output <filename>
+
+   Specifies the filename for the metadata output file (`.tree.meta.json`) of --json-only.
+   Using this option automatically sets :vlopt:`--json-only`.
+
+.. option:: --json-only-output <filename>
+
+   Specifies the filename for the main output file (`.tree.json`) of --json-only.
+   Using this option automatically sets :vlopt:`--json-only`.
+
+.. option:: --no-json-edit-nums
+
+   Don't dump edit number in .tree.json files.  This may make the file more
+   run-to-run stable for easier comparison.
+
+.. option:: --no-json-ids
+
+   Don't use short identifiers instead of addresses/paths in .tree.json.
 
 .. option:: --l2-name <value>
 
@@ -1107,6 +1152,20 @@ Summary:
    prepended to the name of the :vlopt:`--top` option, or V prepended to
    the first Verilog filename passed on the command line.
 
+.. option:: --preproc-resolve
+
+   With :vlopt:`-E`, resolve referenced instance modules, to include
+   preprocessed output of submodules.  Used to convert a multi-file design
+   into a single output file.
+
+   See :vlopt:`-E`.
+
+.. option:: --preproc-token-limit <value>
+
+   Rarely needed. Configure the limit of the number of tokens Verilator
+   can process on a single line to prevent infinite loops and other hangs.
+   Defaults to 40000 tokens.
+
 .. option:: --private
 
    Opposite of :vlopt:`--public`.  This is the default; this option exists for
@@ -1208,6 +1267,13 @@ Summary:
    module specifically enabled it with
    :option:`/*verilator&32;inline_module*/`.
 
+
+.. option:: --public-depth <level>
+
+   Enables public as with :vlopt:`--public-flat-rw`, but only to the specified depth of modules.
+   It operates at the module maximum level, so if a module's cells are A.B.X and A.X, the
+   a --public-depth 3 must be used to make module X public, and both A.B.X and A.X will be public.
+
 .. option:: --public-flat-rw
 
    Declares all variables, ports, and wires public as if they had
@@ -1219,17 +1285,19 @@ Summary:
    marking only those signals that need public_flat_rw is typically
    significantly better performing.
 
-.. option:: --public-depth <level>
+.. option:: --public-ignore
 
-   Enables public as with :vlopt:`--public-flat-rw`, but only to the specified depth of modules.
-   It operates at the module maximum level, so if a module's cells are A.B.X and A.X, the
-   a --public-depth 3 must be used to make module X public, and both A.B.X and A.X will be public.
+   Ignore all :code:`/*verilator public* */` metacomments. This is useful
+   for speed-optimizing VPI builds where VPI is not being used.  This only
+   affects metacomments; options such as :vlopt:`--public`,
+   :vlopt:`--public-depth`, etc. work normally.
 
 .. option:: --public-params
 
    Declares all parameters public as if they had
    :code:`/*verilator public_flat_rd*/`
    metacomments.
+
 
 .. option:: -pvalue+<name>=<value>
 
@@ -1881,38 +1949,6 @@ Summary:
       iterations. This may be another indication of problems with the
       modeled design that should be addressed.
 
-.. option:: --json-only
-
-   Create JSON output only, do not create any other output.
-
-   The JSON format is intended to be used to leverage Verilator's parser and
-   elaboration to feed to other downstream tools. For details on the format, see
-   the Verilator Internals manual. Be aware that the JSON
-   format is still evolving; there will be some changes in future versions.
-
-   This option disables some more aggressive transformations and dumps only
-   the final state of the AST. For more granular and unaltered dumps, meant
-   mainly for debugging see :vlopt:`--dump-tree-json`.
-
-.. option:: --json-only-meta-output <filename>
-
-   Specifies the filename for the metadata output file (`.tree.meta.json`) of --json-only.
-   Using this option automatically sets :vlopt:`--json-only`.
-
-.. option:: --json-only-output <filename>
-
-   Specifies the filename for the main output file (`.tree.json`) of --json-only.
-   Using this option automatically sets :vlopt:`--json-only`.
-
-.. option:: --no-json-edit-nums
-
-   Don't dump edit number in .tree.json files.  This may make the file more
-   run-to-run stable for easier comparison.
-
-.. option:: --no-json-ids
-
-   Don't use short identifiers instead of addresses/paths in .tree.json.
-
 .. option:: --xml-only
 
    Create XML output only, do not create any other output.
@@ -2141,6 +2177,13 @@ The grammar of configuration commands is as follows:
    :option:`/*verilator&32;public*/` or
    :option:`/*verilator&32;public_flat*/`, etc., metacomments. See
    also :ref:`VPI Example`.
+
+.. option:: profile_data -hier-dpi "<function_name>" -cost <cost_value>
+
+   Internal profiling data inserted during :vlopt:`--hierarchical`; specifies
+   execution cost of a hierarchical DPI wrappers for modules with
+   :option:`/*verilator&32;hier_block*/` metacomment. See
+   :ref:`Hierarchical Verilation`.
 
 .. option:: profile_data -mtask "<mtask_hash>" -cost <cost_value>
 

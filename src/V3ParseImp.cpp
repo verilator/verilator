@@ -356,7 +356,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
         dumpInputsFile();
 
     // Parse it
-    if (!v3Global.opt.preprocOnly()) {
+    if (!v3Global.opt.preprocOnly() || v3Global.opt.preprocResolve()) {
         lexFile(modfilename);
     } else {
         m_ppBuffers.clear();

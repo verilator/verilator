@@ -625,6 +625,7 @@ class AstCFunc final : public AstNode {
     bool m_isTrace : 1;  // Function is related to tracing
     bool m_dontCombine : 1;  // V3Combine shouldn't compare this func tree, it's special
     bool m_declPrivate : 1;  // Declare it private
+    bool m_keepIfEmpty : 1;  // Keep declaration and definition separate, even if empty
     bool m_slow : 1;  // Slow routine, called once or just at init time
     bool m_funcPublic : 1;  // From user public task/function
     bool m_isConstructor : 1;  // Is C class constructor
@@ -643,6 +644,7 @@ class AstCFunc final : public AstNode {
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
     bool m_needProcess : 1;  // Needs access to VlProcess of the caller
     bool m_recursive : 1;  // Recursive or part of recursion
+    int m_cost;  // Function call cost
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")
         : ASTGEN_SUPER_CFunc(fl) {
@@ -654,6 +656,7 @@ public:
         m_isTrace = false;
         m_dontCombine = false;
         m_declPrivate = false;
+        m_keepIfEmpty = false;
         m_slow = false;
         m_funcPublic = false;
         m_isConstructor = false;
@@ -671,6 +674,7 @@ public:
         m_dpiImportPrototype = false;
         m_dpiImportWrapper = false;
         m_recursive = false;
+        m_cost = v3Global.opt.instrCountDpi();  // As proxy for unknown general DPI cost
     }
     ASTGEN_MEMBERS_AstCFunc;
     string name() const override VL_MT_STABLE { return m_name; }
@@ -685,9 +689,7 @@ public:
     }
     //
     void name(const string& name) override { m_name = name; }
-    int instrCount() const override {
-        return dpiImportPrototype() ? v3Global.opt.instrCountDpi() : 0;
-    }
+    int instrCount() const override { return m_cost; }
     VBoolOrUnknown isConst() const { return m_isConst; }
     void isConst(bool flag) { m_isConst.setTrueOrFalse(flag); }
     void isConst(VBoolOrUnknown flag) { m_isConst = flag; }
@@ -706,6 +708,8 @@ public:
     bool dontInline() const { return dontCombine() || slow() || funcPublic(); }
     bool declPrivate() const { return m_declPrivate; }
     void declPrivate(bool flag) { m_declPrivate = flag; }
+    bool keepIfEmpty() const VL_MT_SAFE { return m_keepIfEmpty; }
+    void keepIfEmpty(bool flag) { m_keepIfEmpty = flag; }
     bool slow() const VL_MT_SAFE { return m_slow; }
     void slow(bool flag) { m_slow = flag; }
     bool funcPublic() const { return m_funcPublic; }
@@ -746,10 +750,10 @@ public:
     bool isCoroutine() const { return m_rtnType == "VlCoroutine"; }
     void recursive(bool flag) { m_recursive = flag; }
     bool recursive() const { return m_recursive; }
+    void cost(int cost) { m_cost = cost; }
     // Special methods
     bool emptyBody() const {
-        return argsp() == nullptr && initsp() == nullptr && stmtsp() == nullptr
-               && finalsp() == nullptr;
+        return !keepIfEmpty() && !argsp() && !initsp() && !stmtsp() && !finalsp();
     }
 };
 class AstCLocalScope final : public AstNode {
@@ -1248,6 +1252,7 @@ public:
         , m_name{name} {
         this->addVarsp(varsp);
     }
+    string verilogKwd() const override { return "modport"; }
     string name() const override VL_MT_STABLE { return m_name; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     ASTGEN_MEMBERS_AstModport;

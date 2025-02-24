@@ -1,5 +1,0 @@
-%Error-UNSUPPORTED: t/t_class_class.v:12:4: Unsupported: class within class
-   12 |    class SubCls;
-      |    ^~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to

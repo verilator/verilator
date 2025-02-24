@@ -1668,7 +1668,7 @@ class AstParseHolder final : public AstNodeExpr {
     // A reference to something soon to replace, used in a select at parse time
     // that needs conversion to pull the upper lvalue later
 public:
-    AstParseHolder(FileLine* fl)
+    explicit AstParseHolder(FileLine* fl)
         : ASTGEN_SUPER_ParseHolder(fl) {}
     ASTGEN_MEMBERS_AstParseHolder;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -1820,7 +1820,6 @@ public:
                 return "VL_RANDOM_SEEDED_%nq%lq(%li)";
             }
         }
-
         if (isWide()) {
             return "VL_RANDOM_%nq(%nw, %P)";
         } else {
@@ -1830,6 +1829,7 @@ public:
     bool cleanOut() const override { return false; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
+    bool isPure() override { return !m_reset && !seedp(); }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool combinable(const AstRand* samep) const {
@@ -4151,7 +4151,7 @@ public:
         return new AstArraySel{fileline(), lhsp, rhsp};
     }
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
-        V3ERROR_NA; /* How can from be a const? */
+        V3ERROR_NA;  // How can from be a const?
     }
     string emitVerilog() override { return "%k(%l%f[%r])"; }
     string emitC() override { return "%li%k[%ri]"; }
@@ -4511,7 +4511,7 @@ public:
 // === AstNodeTermop ===
 class AstInferredDisable final : public AstNodeTermop {
 public:
-    AstInferredDisable(FileLine* fl)
+    explicit AstInferredDisable(FileLine* fl)
         : ASTGEN_SUPER_InferredDisable(fl) {
         dtypeSetLogicSized(1, VSigning::UNSIGNED);
     }

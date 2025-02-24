@@ -88,6 +88,7 @@ public:
         COMBDLY,        // Combinatorial delayed assignment
         CONSTRAINTIGN,  // Constraint ignored
         CONTASSREG,     // Continuous assignment on reg
+        COVERIGN,       // Coverage ignored
         DECLFILENAME,   // Declaration doesn't match filename
         DEFPARAM,       // Style: Defparam
         DEPRECATED,     // Feature will be deprecated
@@ -194,7 +195,7 @@ public:
             "ALWCOMBORDER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
-            "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG",
+            "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG", "COVERIGN",
             "DECLFILENAME", "DEFPARAM", "DEPRECATED",
             "ENCAPSULATED", "ENDLABEL", "ENUMVALUE", "EOFNEWLINE", "GENCLK",
             "GENUNNAMED", "HIERBLOCK",

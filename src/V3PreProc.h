@@ -42,7 +42,6 @@ public:
     // CONSTANTS
     enum MiscConsts {
         DEFINE_RECURSION_LEVEL_MAX = 1000,  // How many `def substitutions before an error
-        LINE_TOKEN_MAX = 40000,  // How many tokens on a line before an error
         INCLUDE_DEPTH_MAX = 500,  // How many `includes deep before an error
         // Streams deep (sometimes `def deep) before an error.
         // Set more than DEFINE_RECURSION_LEVEL_MAX or INCLUDE_DEPTH_MAX.

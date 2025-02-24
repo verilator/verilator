@@ -340,21 +340,19 @@ class LinkParseVisitor final : public VNVisitor {
         // Maybe this variable has a signal attribute
         V3Config::applyVarAttr(m_modp, m_ftaskp, nodep);
 
-        if (v3Global.opt.publicFlatRW()
-            || (v3Global.opt.publicDepth() && m_modp
-                && (m_modp->level() - 1) <= v3Global.opt.publicDepth())) {
-
-            switch (nodep->varType()) {
-            case VVarType::VAR:  // FALLTHRU
-            case VVarType::GPARAM:  // FALLTHRU
-            case VVarType::LPARAM:  // FALLTHRU
-            case VVarType::PORT:  // FALLTHRU
-            case VVarType::WIRE: nodep->sigUserRWPublic(true); break;
-            default: break;
+        if (v3Global.opt.anyPublicFlat() && nodep->varType().isVPIAccessible()) {
+            if (v3Global.opt.publicFlatRW()) {
+                nodep->sigUserRWPublic(true);
+            } else if (v3Global.opt.publicParams() && nodep->isParam()) {
+                nodep->sigUserRWPublic(true);
+            } else if (m_modp && v3Global.opt.publicDepth()) {
+                if ((m_modp->level() - 1) <= v3Global.opt.publicDepth()) {
+                    nodep->sigUserRWPublic(true);
+                } else if (VN_IS(m_modp, Package) && nodep->isParam()) {
+                    nodep->sigUserRWPublic(true);
+                }
             }
         }
-
-        if (v3Global.opt.publicParams() && nodep->isParam()) nodep->sigUserRWPublic(true);
 
         // We used modTrace before leveling, and we may now
         // want to turn it off now that we know the levelizations
@@ -720,6 +718,7 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->name(newName);
             nodep->origName(newName);
         }
+        iterateChildren(nodep);
     }
     void visit(AstGenCase* nodep) override {
         ++m_genblkNum;
@@ -892,6 +891,13 @@ class LinkParseVisitor final : public VNVisitor {
                     nodep->skewp(new AstConst{nodep->fileline(), AstConst::OneStep{}});
                 }
             }
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstPackageImport* nodep) override {
+        cleanFileline(nodep);
+        if (m_modp && !m_ftaskp && VN_IS(m_modp, Class)) {
+            nodep->v3error("Import statement directly within a class scope is illegal");
         }
         iterateChildren(nodep);
     }

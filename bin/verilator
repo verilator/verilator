@@ -269,8 +269,7 @@ __END__
 
 =head1 NAME
 
-Verilator - Translate and simulate SystemVerilog code using C++/SystemC
-
+Verilator - Lint, compile and simulate SystemVerilog code using C++/SystemC
 
 =head1 SYNOPSIS
 
@@ -329,6 +328,8 @@ detailed descriptions of these arguments.
     --compiler-include          Include additional header in the precompiled one
     --converge-limit <loops>    Tune convergence settle time
     --coverage                  Enable all coverage
+    --coverage-expr             Enable expression coverage
+    --coverage-expr-max <value>     Maximum permutations allowed for an expression
     --coverage-line             Enable line coverage
     --coverage-max-width <width>   Maximum array depth for coverage
     --coverage-toggle           Enable toggle coverage
@@ -375,8 +376,8 @@ detailed descriptions of these arguments.
     --gdb                       Run Verilator under GDB interactively
     --gdbbt                     Run Verilator under GDB for backtrace
     --generate-key              Create random key for --protect-key
-    --getenv <var>              Get environment variable with defaults
     --get-supported <feature>   Get if feature is supported
+    --getenv <var>              Get environment variable with defaults
     --help                      Show this help
     --hierarchical              Enable hierarchical Verilation
     --hierarchical-params-file <name> Internal option that specifies parameters file for hier blocks
@@ -386,6 +387,11 @@ detailed descriptions of these arguments.
     --inline-mult <value>       Tune module inlining
     --instr-count-dpi <value>   Assumed dynamic instruction count of DPI imports
      -j <jobs>                  Parallelism for --build-jobs/--verilate-jobs
+    --no-json-edit-nums         Don't dump editNum in .tree.json files
+    --no-json-ids               Don't use short identifiers instead of adresses/paths in .tree.json
+    --json-only                 Create JSON parser output (.tree.json and .meta.json)
+    --json-only-output          .tree.json output filename
+    --json-only-meta-output     .tree.meta.json output filename
     --l2-name <value>           Verilog scope name of the top module
     --language <lang>           Default language standard to parse
      -LDFLAGS <flags>           Linker pre-object arguments for makefile
@@ -422,6 +428,8 @@ detailed descriptions of these arguments.
     --pipe-filter <command>     Filter all input through a script
     --pp-comments               Show preprocessor comments with -E
     --prefix <topname>          Name of top-level class
+    --preproc-resolve           Include all found modules in the output with -E
+    --preproc-token-limit       Maximum tokens on a line allowed by preprocessor
     --private                   Debugging; see docs
     --prof-c                    Compile C++ code with profiling
     --prof-cfuncs               Name functions for profiling
@@ -432,8 +440,9 @@ detailed descriptions of these arguments.
     --protect-lib <name>        Create a DPI protected library
     --public                    Mark signals as public; see docs
     --public-depth <level>      Mark public to specified module depth
-    --public-params             Mark all parameters as public_flat
     --public-flat-rw            Mark all variables, etc as public_flat_rw
+    --public-ignore             Ignore all public comment markings
+    --public-params             Mark all parameters as public_flat
      -pvalue+<name>=<value>     Overwrite toplevel parameter
     --quiet                     Minimize additional printing
     --quiet-exit                Don't print the command on failure
@@ -506,11 +515,6 @@ detailed descriptions of these arguments.
     --x-assign <mode>           Assign non-initial Xs to this value
     --x-initial <mode>          Assign initial Xs to this value
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers
-    --no-json-edit-nums         Don't dump editNum in .tree.json files
-    --no-json-ids               Don't use short identifiers instead of adresses/paths in .tree.json
-    --json-only                 Create JSON parser output (.tree.json and .meta.json)
-    --json-only-output          .tree.json output filename
-    --json-only-meta-output     .tree.meta.json output filename
     --xml-only                  Create XML parser output
     --xml-output                XML output filename
      -y <dir>                   Directory to search for modules

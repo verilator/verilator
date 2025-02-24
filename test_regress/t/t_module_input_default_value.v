@@ -43,6 +43,15 @@ module dut_default_input_logic32
 endmodule
 
 
+module dut_default_input_wire32
+  (
+  input wire [31:0] i = 32'h12345678,
+  output logic [31:0] o
+   );
+  assign o = i;
+endmodule
+
+
 module t
   (/*AUTOARG*/
    // Inputs
@@ -104,6 +113,11 @@ module t
     (.i(),  // open
      .o(dut_logic32_o_open));
 
+  logic [31:0] dut_wire32_o_open;
+  dut_default_input_wire32 u_dut_wire32_open
+    (.i(),  // open
+     .o(dut_wire32_o_open));
+
 
   // 3. DUT instances with overriden values
   // instance names are u_dut*_overriden
@@ -153,6 +167,7 @@ module t
       if (dut0_o_open != 0) $error;
       if (dut1_o_open != 1) $error;
       if (dut_logic32_o_open != 32'h1234_5678) $error;
+      if (dut_wire32_o_open != 32'h1234_5678) $error;
 
       // despite the port map override. At least the parameter goes through?
       $display("%t %m: outputs  - overrides got {%0d %0d %0x} want {1 0 %0x}",

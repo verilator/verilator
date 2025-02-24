@@ -219,6 +219,7 @@ private:
     V3StringSet m_fDfgPeepholeDisabled; // argument: -f[no-]dfg-peephole-<name>
 
     bool m_preprocOnly = false;     // main switch: -E
+    bool m_preprocResolve = false;  // main switch: --preproc-resolve
     bool m_makePhony = false;       // main switch: -MP
     bool m_preprocNoLine = false;   // main switch: -P
     bool m_assert = false;          // main switch: --assert
@@ -230,6 +231,7 @@ private:
     bool m_build = false;           // main switch: --build
     bool m_cmake = false;           // main switch: --make cmake
     bool m_context = true;          // main switch: --Wcontext
+    bool m_coverageExpr = false;    // main switch: --coverage-expr
     bool m_coverageLine = false;    // main switch: --coverage-block
     bool m_coverageToggle = false;  // main switch: --coverage-toggle
     bool m_coverageUnderscore = false;  // main switch: --coverage-underscore
@@ -255,6 +257,7 @@ private:
     bool m_flatten = false;         // main switch: --flatten
     bool m_hierarchical = false;    // main switch: --hierarchical
     bool m_ignc = false;            // main switch: --ignc
+    bool m_jsonOnly = false;        // main switch: --json-only
     bool m_lintOnly = false;        // main switch: --lint-only
     bool m_gmake = false;           // main switch: --make gmake
     bool m_main = false;            // main switch: --main
@@ -273,7 +276,8 @@ private:
     bool m_protectIds = false;      // main switch: --protect-ids
     bool m_public = false;          // main switch: --public
     bool m_publicFlatRW = false;    // main switch: --public-flat-rw
-    bool m_public_params = false;   // main switch: --public-params
+    bool m_publicIgnore = false;    // main switch: --public-ignore
+    bool m_publicParams = false;    // main switch: --public-params
     bool m_quietExit = false;       // main switch: --quiet-exit
     bool m_quietStats = false;      // main switch: --quiet-stats
     bool m_relativeIncludes = false;  // main switch: --relative-includes
@@ -301,9 +305,9 @@ private:
     bool m_waiverMultiline = false;  // main switch: --waiver-multiline
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
     bool m_xmlOnly = false;         // main switch: --xml-only
-    bool m_jsonOnly = false;        // main switch: --json-only
 
     int         m_buildJobs = -1;    // main switch: --build-jobs, -j
+    int         m_coverageExprMax = 32;    // main switch: --coverage-expr-max
     int         m_convergeLimit = 100;  // main switch: --converge-limit
     int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
     int         m_expandLimit = 64;  // main switch: --expand-limit
@@ -323,6 +327,7 @@ private:
     int         m_outputSplitCFuncs = -1;  // main switch: --output-split-cfuncs
     int         m_outputSplitCTrace = -1;  // main switch: --output-split-ctrace
     int         m_pinsBv = 65;       // main switch: --pins-bv
+    int         m_preprocTokenLimit = 40000; // main switch: --preproc-token-limit
     int         m_publicDepth = 0;   // main switch: --public-depth
     int         m_reloopLimit = 40; // main switch: --reloop-limit
     VOptionBool m_skipIdentical;  // main switch: --skip-identical
@@ -350,6 +355,8 @@ private:
     string      m_exeName;      // main switch: -o {name}
     string      m_flags;        // main switch: -f {name}
     string      m_hierParamsFile; // main switch: --hierarchical-params-file
+    string      m_jsonOnlyOutput;    // main switch: --json-only-output
+    string      m_jsonOnlyMetaOutput;    // main switch: --json-only-meta-output
     string      m_l2Name;       // main switch: --l2name; "" for top-module's name
     string      m_libCreate;    // main switch: --lib-create {lib_name}
     string      m_mainTopName;  // main switch: --main-top-name
@@ -364,8 +371,6 @@ private:
     string      m_xAssign;      // main switch: --x-assign
     string      m_xInitial;     // main switch: --x-initial
     string      m_xmlOutput;    // main switch: --xml-output
-    string      m_jsonOnlyOutput;    // main switch: --json-only-output
-    string      m_jsonOnlyMetaOutput;    // main switch: --json-only-meta-output
 
     // Language is now held in FileLine, on a per-node basis. However we still
     // have a concept of the default language at a global level.
@@ -424,7 +429,9 @@ private:
     void addLibExtV(const string& libext);
     void optimize(int level);
     void showVersion(bool verbose);
-    void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
+    void coverage(bool flag) {
+        m_coverageLine = m_coverageToggle = m_coverageExpr = m_coverageUser = flag;
+    }
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);
     string filePathCheckOneDir(const string& modname, const string& dirname);
@@ -464,6 +471,8 @@ public:
     bool preprocOnly() const { return m_preprocOnly; }
     bool makePhony() const { return m_makePhony; }
     bool preprocNoLine() const { return m_preprocNoLine; }
+    bool preprocResolve() const { return m_preprocResolve; }
+    int preprocTokenLimit() const { return m_preprocTokenLimit; }
     bool underlineZero() const { return m_underlineZero; }
     string flags() const { return m_flags; }
     bool systemC() const VL_MT_SAFE { return m_systemC; }
@@ -485,8 +494,9 @@ public:
     bool cmake() const { return m_cmake; }
     bool context() const VL_MT_SAFE { return m_context; }
     bool coverage() const VL_MT_SAFE {
-        return m_coverageLine || m_coverageToggle || m_coverageUser;
+        return m_coverageLine || m_coverageToggle || m_coverageExpr || m_coverageUser;
     }
+    bool coverageExpr() const { return m_coverageExpr; }
     bool coverageLine() const { return m_coverageLine; }
     bool coverageToggle() const { return m_coverageToggle; }
     bool coverageUnderscore() const { return m_coverageUnderscore; }
@@ -526,6 +536,7 @@ public:
     bool traceUnderscore() const { return m_traceUnderscore; }
     bool main() const { return m_main; }
     bool outFormatOk() const { return m_outFormatOk; }
+    bool jsonOnly() const { return m_jsonOnly; }
     bool keepTempFiles() const { return (V3Error::debugDefault() != 0); }
     bool pedantic() const { return m_pedantic; }
     bool pinsInoutEnables() const { return m_pinsInoutEnables; }
@@ -541,8 +552,11 @@ public:
     bool usesProfiler() const { return profExec() || profPgo(); }
     bool protectIds() const VL_MT_SAFE { return m_protectIds; }
     bool allPublic() const { return m_public; }
-    bool publicParams() const { return m_public_params; }
+    bool publicParams() const { return m_publicParams; }
+    bool publicOff() const { return m_publicIgnore; }
     bool publicFlatRW() const { return m_publicFlatRW; }
+    int publicDepth() const { return m_publicDepth; }
+    bool anyPublicFlat() const { return m_publicParams || m_publicFlatRW || m_publicDepth; }
     bool lintOnly() const VL_MT_SAFE { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
     bool quietExit() const VL_MT_SAFE { return m_quietExit; }
@@ -553,12 +567,12 @@ public:
     bool waiverMultiline() const { return m_waiverMultiline; }
     bool xInitialEdge() const { return m_xInitialEdge; }
     bool xmlOnly() const { return m_xmlOnly; }
-    bool jsonOnly() const { return m_jsonOnly; }
     bool serializeOnly() const { return m_xmlOnly || m_jsonOnly; }
     bool topIfacesSupported() const { return lintOnly() && !hierarchical(); }
 
     int buildJobs() const VL_MT_SAFE { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
+    int coverageExprMax() const { return m_coverageExprMax; }
     int coverageMaxWidth() const { return m_coverageMaxWidth; }
     bool dumpTreeAddrids() const VL_MT_SAFE;
     int expandLimit() const { return m_expandLimit; }
@@ -577,7 +591,6 @@ public:
     int outputSplitCTrace() const { return m_outputSplitCTrace; }
     int outputGroups() const { return m_outputGroups; }
     int pinsBv() const VL_MT_SAFE { return m_pinsBv; }
-    int publicDepth() const { return m_publicDepth; }
     int reloopLimit() const { return m_reloopLimit; }
     VOptionBool skipIdentical() const { return m_skipIdentical; }
     bool stopFail() const { return m_stopFail; }
@@ -614,6 +627,8 @@ public:
 
     string exeName() const { return m_exeName != "" ? m_exeName : prefix(); }
     string hierParamFile() const { return m_hierParamsFile; }
+    string jsonOnlyOutput() const { return m_jsonOnlyOutput; }
+    string jsonOnlyMetaOutput() const { return m_jsonOnlyMetaOutput; }
     string l2Name() const { return m_l2Name; }
     string libCreate() const { return m_libCreate; }
     string libCreateName(bool shared) {
@@ -641,8 +656,6 @@ public:
     string xAssign() const { return m_xAssign; }
     string xInitial() const { return m_xInitial; }
     string xmlOutput() const { return m_xmlOutput; }
-    string jsonOnlyOutput() const { return m_jsonOnlyOutput; }
-    string jsonOnlyMetaOutput() const { return m_jsonOnlyMetaOutput; }
 
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringList& cFlags() const { return m_cFlags; }

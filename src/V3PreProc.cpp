@@ -486,7 +486,7 @@ void V3PreProcImp::comment(const string& text) {
             //}
             // else ignore the comment we don't recognize
         }  // else no assertions
-    } else if (vlcomment) {
+    } else if (vlcomment && !(v3Global.opt.publicOff() && VString::startsWith(cmd, "public"))) {
         if (VString::startsWith(cmd, "public_flat_rw")) {
             // "/*verilator public_flat_rw @(foo) */" -> "/*verilator public_flat_rw*/ @(foo)"
             string::size_type endOfCmd = std::strlen("public_flat_rw");
@@ -963,9 +963,9 @@ int V3PreProcImp::getRawToken() {
         if (m_lastLineno != m_lexp->m_tokFilelinep->lineno()) {
             m_lastLineno = m_lexp->m_tokFilelinep->lineno();
             m_tokensOnLine = 0;
-        } else if (++m_tokensOnLine > LINE_TOKEN_MAX) {
-            error("Too many preprocessor tokens on a line (>" + cvtToStr(LINE_TOKEN_MAX)
-                  + "); perhaps recursive `define");
+        } else if (++m_tokensOnLine > v3Global.opt.preprocTokenLimit()) {
+            error("Too many preprocessor tokens on a line (>"
+                  + cvtToStr(v3Global.opt.preprocTokenLimit()) + "); perhaps recursive `define");
             tok = VP_EOF_ERROR;
         }
 
@@ -1064,6 +1064,11 @@ int V3PreProcImp::getStateToken() {
                 UINFO(5, "```: define " << name << " doesn't exist, join first\n");
                 // FALLTHRU, handle as with VP_SYMBOL_JOIN
             }
+        }
+        if (state() == ps_STRIFY) {
+            // Ignore joins and symbol joins in stringify as they don't affect the final string
+            if (tok == VP_JOIN) goto next_tok;
+            if (tok == VP_SYMBOL_JOIN) tok = VP_SYMBOL;
         }
         if (tok == VP_SYMBOL_JOIN  // not else if, can fallthru from above if()
             || tok == VP_DEFREF_JOIN || tok == VP_JOIN) {

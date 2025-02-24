@@ -7,8 +7,8 @@ This contributing document contains some suggestions that may make
 contributions flow more efficiently.
 
 
-Did you find a bug?
--------------------
+Did you find a Verilator bug?
+-----------------------------
 
 - Please **ensure the bug was not already reported** by searching
   `Verilator Issues <https://verilator.org/issues>`__.
@@ -28,8 +28,8 @@ Did you find a bug?
     <https://github.com/verilator/verilator/blob/master/docs/internals.rst>`__.
 
 
-Did you write a patch that fixes a bug?
----------------------------------------
+Did you write a patch that fixes a Verilator bug?
+-------------------------------------------------
 
 - Please `Open a new Verilator issue <https://verilator.org/issues/new>`__
   if there is not one already describing the bug.
@@ -72,8 +72,8 @@ Did you write a patch that fixes a bug?
 - Most important is we get your patch.
 
 
-Do you have questions?
-----------------------
+Do you have questions on Verilator?
+-----------------------------------
 
 - Please see FAQ section and rest of the `Verilator
   manual <https://verilator.org/verilator_doc.html>`__, or `Verilator

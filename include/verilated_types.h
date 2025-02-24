@@ -451,6 +451,7 @@ struct VlWide final {
     // METHODS
     const EData& at(size_t index) const { return m_storage[index]; }
     EData& at(size_t index) { return m_storage[index]; }
+    size_t size() const { return N_Words; }
     WData* data() { return &m_storage[0]; }
     const WData* data() const { return &m_storage[0]; }
     bool operator<(const VlWide<N_Words>& rhs) const {
@@ -504,6 +505,12 @@ public:
     VlQueue& operator=(VlQueue&&) = default;
     bool operator==(const VlQueue& rhs) const { return m_deque == rhs.m_deque; }
     bool operator!=(const VlQueue& rhs) const { return m_deque != rhs.m_deque; }
+    bool operator<(const VlQueue& rhs) const {
+        for (int index = 0; index < m_deque.size(); ++index) {
+            if (m_deque[index] < rhs.m_deque[index]) return true;
+        }
+        return false;
+    }
 
     // Standard copy constructor works. Verilog: assoca = assocb
     // Also must allow conversion from a different N_MaxSize queue
@@ -947,7 +954,7 @@ public:
     VlAssocArray& operator=(VlAssocArray&&) = default;
     bool operator==(const VlAssocArray& rhs) const { return m_map == rhs.m_map; }
     bool operator!=(const VlAssocArray& rhs) const { return m_map != rhs.m_map; }
-
+    bool operator<(const VlAssocArray& rhs) const { return m_map < rhs.m_map; }
     // METHODS
     T_Value& atDefault() { return m_defaultValue; }
     const T_Value& atDefault() const { return m_defaultValue; }
@@ -1312,7 +1319,7 @@ public:
     WData* data() { return &m_storage[0]; }
     const WData* data() const { return &m_storage[0]; }
 
-    std::size_t size() const { return N_Depth; }
+    constexpr std::size_t size() const { return N_Depth; }
     // To fit C++14
     template <std::size_t N_CurrentDimension = 0, typename U = T_Value>
     int find_length(int dimension, std::false_type) const {
@@ -1350,7 +1357,7 @@ public:
     }
 
     T_Value& operator[](size_t index) { return m_storage[index]; }
-    const T_Value& operator[](size_t index) const { return m_storage[index]; }
+    constexpr const T_Value& operator[](size_t index) const { return m_storage[index]; }
 
     // *this != that, which might be used for change detection/trigger computation, but avoid
     // operator overloading in VlUnpacked for safety in other contexts.
@@ -1363,6 +1370,12 @@ public:
     bool neq(const T_Value that[N_Depth]) const { return neq(*this, that); }
     void assign(const T_Value that[N_Depth]) { std::copy_n(that, N_Depth, m_storage); }
     void operator=(const T_Value that[N_Depth]) { assign(that); }
+    bool operator<(const VlUnpacked<T_Value, N_Depth>& that) const {
+        for (int index = 0; index < N_Depth; ++index) {
+            if (m_storage[index] < that.m_storage[index]) return true;
+        }
+        return false;
+    }
 
     // inside (set membership operator)
     bool inside(const T_Value& value) const {

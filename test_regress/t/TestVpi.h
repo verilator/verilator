@@ -12,6 +12,8 @@
 #include "sv_vpi_user.h"
 #include "vpi_user.h"
 
+#include <iostream>
+
 // Avoid C++11 in this file as not all simulators allow it
 
 //======================================================================

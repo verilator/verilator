@@ -192,7 +192,7 @@ examples: all_nomsg
 # Docs
 
 .PHONY: docs
-docs: info
+docs: info $(VL_INST_MAN_FILES)
 
 info: $(INFOS)
 
@@ -201,7 +201,8 @@ verilator.1: ${srcdir}/bin/verilator
 verilator_coverage.1: ${srcdir}/bin/verilator_coverage
 	pod2man $< $@
 %.1: ${srcdir}/bin/%
-	help2man --no-info --no-discard-stderr --version-string=- $< -o $@
+	help2man --no-info --no-discard-stderr --version-string=- \
+		-n "$(shell $< --help | head -n 3 | tail -n 1)" $< -o $@
 
 .PHONY: verilator.html
 verilator.html:
