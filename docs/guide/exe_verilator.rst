@@ -1154,13 +1154,13 @@ Summary:
 
 .. option:: --preproc-resolve
 
-   With :vlopt:`-E`, include preprocessed output of submodules defined
-   in included files. Gives you a way of converting a multifile design
-   into a single file using include directory option.
+   With :vlopt:`-E`, resolve referenced instance modules, to include
+   preprocessed output of submodules.  Used to convert a multi-file design
+   into a single output file.
 
    See :vlopt:`-E`.
 
-.. option:: --preproc-token-limit
+.. option:: --preproc-token-limit <value>
 
    Rarely needed. Configure the limit of the number of tokens Verilator
    can process on a single line to prevent infinite loops and other hangs.

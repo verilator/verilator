@@ -11,16 +11,18 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 5.033 devel
 ==========================
 
-**Major:**
+**Important:**
 
+* This is likely the last version to support Ubuntu 20.04, which is at end-of-life.
 * Add expression coverage (#4677) (#5719). [Todd Strader]
 
-**Minor:**
+**Other:**
 
 * Add `COVERIGN` warning, as a more specific UNSUPPORTED error.
 * Add `--public-ignore` to ignore public metacomments (#5716). [Andrew Nolte]
 * Add `--preproc-token-limit` (#5768). [Krzysztof Bieganski, Antmicro Ltd.]
 * Add lint error on importing package within a class (#5634) (#5679). [Nick Brereton]
+* Add `--preproc-resolve` for modules in preprocessor output (#5789). [Kamil Rakoczy, Antmicro Ltd.]
 * Support multidimensional array access via VPI (#2812) (#5573). [Krzysztof Starecki]
 * Support nested classes (#4178) (#5778). [Kamil Rakoczy, Antmicro Ltd.]
 * Support VPI array accessors (#5612). [Moubarak Jeje]
@@ -36,6 +38,7 @@ Verilator 5.033 devel
 * Improve `resetall support (#5728) (#5730). [Ethan Sifferman]
 * Optimize labels as final `if` block statements (#5744).
 * Optimize empty function definition bodies (#5750).
+* Optimize splitting trigger computation and dump (#5798). [Geza Lore]
 * Fix error message when call task as a function (#3089). [Matthew Ballance]
 * Fix force VPI public signal visibility (#5225). [Frédéric Requin]
 * Fix VPI iteration over hierarchy (#5314) (#5731). [Natan Kreimer]
@@ -57,6 +60,7 @@ Verilator 5.033 devel
 * Fix ignoring joins in stringify in preprocessor (#5777). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix unpacked split_var (#5782) (#5785). [Yutetsu TAKATSUKASA]
 * Fix time import error on time parameters (#5786). [Luca Colagrande]
+* Fix dpi context functions (#5788). [Ryszard Rozak, Antmicro Ltd.]
 * Fix `$monitor` with dotted references (#5794). [Ahmed Elzeftawi]
 * Fix parsing input wire with default and range (#5800). [RJ Cunningham]
 * Fix matching language extension options including dots.
