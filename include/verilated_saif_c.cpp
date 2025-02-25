@@ -224,7 +224,6 @@ void VerilatedSaif::closeErr() {
 }
 
 void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
-    assert(m_time > 0);
     printStr("(DURATION ");
     printStr(std::to_string(m_time).c_str());
     printStr(")\n");
@@ -236,6 +235,8 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     decrementIndent();
     
     printStr(")\n"); // SAIFILE
+
+    clearCurrentlyCollectedData();
 
     // This function is on the flush() call path
     const VerilatedLockGuard lock{m_mutex};
@@ -316,6 +317,16 @@ void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
     decrementIndent();
     printIndent();
     printStr(")\n"); // INSTANCE
+}
+
+void VerilatedSaif::clearCurrentlyCollectedData()
+{
+    m_currentScope = -1;
+    m_scopes.clear();
+    m_topScopes.clear();
+    m_activity.clear();
+    m_activityArena.clear();
+    m_time = 0;
 }
 
 void VerilatedSaif::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
