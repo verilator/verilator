@@ -1,0 +1,4 @@
+%Error: t/t_specparam_unsup.v:16:8: Can't find definition of variable: 'tdevice_PU'
+   16 |       #tdevice_PU PoweredUp = 1'b1;
+      |        ^~~~~~~~~~
+%Error: Exiting due to
