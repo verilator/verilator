@@ -451,17 +451,17 @@ disable
 force, release
   Verilator supports the procedural `force` (and corresponding `release`)
   statement. However, the behavior of the `force` statement does not
-  entirely comply with IEEE 1800. According to the standard, when a
-  procedural statement of the form `force a = b;` is executed, the
-  simulation should behave as if, from that point forwards, a continuous
-  assignment `assign a = b;` has been added to override the drivers of `a`.
-  More specifically: the value of `a` should be updated whenever the value
-  of `b` changes, until a `release a;` statement is executed.  Verilator
-  instead evaluates the current value of `b` when the `force` statement is
-  executed, and forces `a` to that value, without updating it until a new
-  `force` or `release` statement is encountered that applies to `a`. This
-  non-standard behavior is nevertheless consistent with some other
-  simulators.
+  entirely comply with IEEE 1800:
+  1. Using forced variable as a value to another force statement is currently
+     not supported. Force statement that depends on the other one is ignored.
+  2. Function calls on the RHS of force statements are not reevaluated when
+     their dependencies change. Value from first call is forced.
+  3. Forcing at time 0 from different active block immediately updates
+     forced variable.
+  4. Force/release with procedural continuous assignment is not supported.
+     Assignment is treated as procedural one.
+  5. Expressions using multiple VarRefs on forced RHS are not sensitive to
+     dependency changes.
 
 inside
   Inside expressions may not include unpacked array traversal or $ as an
