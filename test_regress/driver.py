@@ -114,6 +114,8 @@ class SAIFParser:
         self.top_instances = {}
         self.current_instance = None
         self.traversing_nets = False
+        self.duration = 0
+        self.divider = ''
 
     def parse(self, saif_filename):
         with open(saif_filename, 'r') as saif_file:
@@ -121,6 +123,14 @@ class SAIFParser:
                 line = line.strip()
                 if not line:
                     continue
+
+                match = re.search(r'\(DIVIDER\s+(.)', line)
+                if match:
+                    self.divider = match.groups()[0]
+
+                match = re.search(r'\s*\(DURATION\s+(\d+)', line)
+                if match:
+                    self.duration = int(match.groups()[0])
 
                 match = re.search(r'INSTANCE\s+([\w.]*)', line)
                 if match:
@@ -2510,6 +2520,13 @@ class VlTest:
 
     def compare_saif_contents(self, first: SAIFParser, second: SAIFParser):
         """Test if second SAIF file has the same values as the first"""
+
+        if first.duration != second.duration:
+            self.error(f"Duration of trace doesn't match: {first.duration} != {second.duration}")
+
+        if first.divider != second.divider:
+            self.error(f"Dividers don't match: {first.divider} != {second.divider}")
+
         for top_instance_name, top_instance in first.top_instances.items():
             if top_instance_name not in second.top_instances:
                 self.error(f"Top instance {top_instance_name} missing in other SAIF")
