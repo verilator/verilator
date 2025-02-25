@@ -916,6 +916,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_ROSE_GCLK    "$rose_gclk"
 %token<fl>              yD_RTOI         "$rtoi"
 %token<fl>              yD_SAMPLED      "$sampled"
+%token<fl>              yD_SETUPHOLD    "$setuphold"
 %token<fl>              yD_SFORMAT      "$sformat"
 %token<fl>              yD_SFORMATF     "$sformatf"
 %token<fl>              yD_SHORTREALTOBITS "$shortrealtobits"
@@ -3108,6 +3109,11 @@ delayExpr<nodeExprp>:
 minTypMax<nodeExprp>:           // IEEE: mintypmax_expression and constant_mintypmax_expression
                 delayExpr                               { $$ = $1; }
         |       delayExpr ':' delayExpr ':' delayExpr   { $$ = $3; MINTYPMAXDLYUNSUP($3); DEL($1); DEL($5); }
+        ;
+
+minTypMaxE<nodeExprp>:
+                /*empty*/                               { $$ = nullptr; }
+        |       minTypMax                               { $$ = $1; }
         ;
 
 netSigList<varp>:               // IEEE: list_of_port_identifiers
@@ -5759,9 +5765,25 @@ tableEntry<udpTableLinep>:      // IEEE: combinational_entry + sequential_entry
 // Specify
 
 specify_block<nodep>:           // ==IEEE: specify_block
-                ySPECIFY specifyJunkList yENDSPECIFY    { $$ = nullptr; }
+                ySPECIFY yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ')' ';' yENDSPECIFY  { $$ = nullptr; }
+        |       ySPECIFY yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ')' ';' yENDSPECIFY  { $$ = nullptr; }
+        |       ySPECIFY yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ',' minTypMaxE ')' ';' yENDSPECIFY  { $$ = nullptr; }
+        |       ySPECIFY yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ')' ';' yENDSPECIFY  { $$ = nullptr; }
+        |       ySPECIFY yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' senitemE ')' ';' yENDSPECIFY  { $$ = new AstSetuphold{$2, $4, $6, $18}; }
+        |       ySPECIFY yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' senitemE ',' senitemE ')' ';' yENDSPECIFY  { $$ = new AstSetuphold{$2, $4, $6, $18, $20}; }
         |       ySPECIFY yENDSPECIFY                    { $$ = nullptr; }
         ;
+
+idAnyE<strp>:
+                /*empty*/                               { $$ = nullptr; }
+        |       idAny                                   { $$ = $1; }
+        ;
+
+senitemE<senItemp>:
+                /*empty*/                               { $$ = nullptr; }
+        |       senitem                                   { $$ = $1; }
+        ;
+
 
 specifyJunkList:
                 specifyJunk                             { } /* ignored */
