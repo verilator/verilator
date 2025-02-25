@@ -116,6 +116,7 @@ class SAIFParser:
         self.traversing_nets = False
         self.duration = 0
         self.divider = ''
+        self.timescale = ''
 
     def parse(self, saif_filename):
         with open(saif_filename, 'r') as saif_file:
@@ -127,6 +128,10 @@ class SAIFParser:
                 match = re.search(r'\(DIVIDER\s+(.)', line)
                 if match:
                     self.divider = match.groups()[0]
+
+                match = re.search(r'\(TIMESCALE\s+(\d+\s*\w+)', line)
+                if match:
+                    self.timescale = match.groups()[0]
 
                 match = re.search(r'\s*\(DURATION\s+(\d+)', line)
                 if match:
@@ -2526,6 +2531,9 @@ class VlTest:
 
         if first.divider != second.divider:
             self.error(f"Dividers don't match: {first.divider} != {second.divider}")
+
+        if first.timescale != second.timescale:
+            self.error(f"Timescale doesn't match: {first.timescale} != {second.timescale}")
 
         for top_instance_name, top_instance in first.top_instances.items():
             if top_instance_name not in second.top_instances:
