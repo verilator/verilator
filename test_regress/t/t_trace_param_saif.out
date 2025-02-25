@@ -1,0 +1,24 @@
+(SAIFILE
+(SAIFVERSION "2.0")
+(DIRECTION "backward")
+(DESIGN "t")
+(DIVIDER / )
+(TIMESCALE 1ps)
+(DURATION 0)
+(INSTANCE top
+  (NET
+  )
+  (INSTANCE my_module_types
+    (NET
+      (MY_PARAM\[0\] (T0 0) (T1 0) (TX 0) (TC 1))
+      (MY_PARAM\[1\] (T0 0) (T1 0) (TX 0) (TC 1))
+      (MY_PARAM2\[2\] (T0 0) (T1 0) (TX 0) (TC 1))
+      (MY_PARAM2\[3\] (T0 0) (T1 0) (TX 0) (TC 1))
+    )
+  )
+  (INSTANCE t
+    (NET
+    )
+  )
+)
+)
