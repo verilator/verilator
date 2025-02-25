@@ -3,8 +3,8 @@
 (DIRECTION "backward")
 (DESIGN "t")
 (DIVIDER / )
-(TIMESCALE 1 ps)
-(DURATION 999)
+(TIMESCALE 1ps)
+(DURATION 1000)
 (INSTANCE top
   (NET
     (clk (T0 505) (T1 495) (TX 0) (TC 199))

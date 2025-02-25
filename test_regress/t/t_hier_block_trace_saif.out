@@ -1,10 +1,9 @@
 (SAIFILE
-(SAIFVERSION "2.0")
 (DIRECTION "backward")
 (DESIGN "t")
 (DIVIDER / )
-(TIMESCALE 1 ps)
-(DURATION 169)
+(TIMESCALE 1ps)
+(DURATION 170)
 (INSTANCE top
   (NET
     (clk (T0 90) (T1 80) (TX 0) (TC 33))
