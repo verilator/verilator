@@ -3,7 +3,7 @@
 (DIRECTION "backward")
 (DESIGN "t")
 (DIVIDER / )
-(TIMESCALE 1 ps)
+(TIMESCALE 1ps)
 (DURATION 210)
 (INSTANCE top
   (NET
