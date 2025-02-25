@@ -3262,6 +3262,12 @@ if(xc)
         }
 }
 
+int fstWriterWillFlushContextOnTimeChange(void* ctx) {
+        struct fstWriterContext* xc = (struct fstWriterContext*)ctx;
+        return xc
+                && !xc->is_initial_time
+                && ((xc->vchg_siz >= xc->fst_break_size) || (xc->flush_context_pending));
+}
 
 void fstWriterEmitDumpActive(void *ctx, int enable)
 {
