@@ -4,8 +4,6 @@
 // any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-// FIXME
-
 module t ();
    reg PoweredUp;
    specify
