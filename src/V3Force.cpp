@@ -19,22 +19,27 @@
 //      add 3 extra signals:
 //          - <name>__VforceRd: a net with same type as signal
 //          - <name>__VforceEn: a var with same type as signal, which is the bitwise force enable
-//          - <name>__VforceVl: a var with same type as signal, which is the forced value
+//          - <name>__VforceVal: a var with same type as signal, which is the forced value
 //      add an initial statement:
 //          initial <name>__VforceEn = 0;
 //      add a continuous assignment:
-//          assign <name>__VforceRd = <name>__VforceEn ? <name>__VforceVl : <name>;
+//          assign <name>__VforceRd = <name>__VforceEn ? <name>__VforceVal : <name>;
 //      replace all READ references to <name> with a read reference to <name>_VforceRd
 //
 //  Replace each AstAssignForce with 3 assignments:
 //      - <lhs>__VforceEn = 1
-//      - <lhs>__VforceVl = <rhs>
+//      - <lhs>__VforceVal = <rhs>
 //      - <lhs>__VforceRd = <rhs>
 //
 //  Replace each AstRelease with 1 or 2 assignments:
 //      - <lhs>__VforceEn = 0
 //      - <lhs>__VforceRd = <lhs> // iff lhs is a net
 //
+//  After each WRITE of forced LHS
+//      reevaluate <lhs>__VforceRd to support immediate force/release
+//
+//  After each WRITE of forced RHS
+//      reevaluate <lhs>__VforceVal to support VarRef rollback after release
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
@@ -42,8 +47,6 @@
 #include "V3Force.h"
 
 #include "V3AstUserAllocator.h"
-
-#include <list>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 

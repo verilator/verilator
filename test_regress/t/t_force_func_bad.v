@@ -4,8 +4,7 @@
 // any use, without warranty, 2025 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
-`define stop $stop
-`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); end while(0)
 
 function bit [1:0] get_arg (bit [1:0] x);
    return x;
@@ -27,6 +26,7 @@ module t;
 
     #1 a = 2;
     `checkh(a, 2);
+    // TODO
     // IEEE 1800-2023 10.6
     // Assignment shall be reevaluated while the assign or force is in effect.
     `checkh(b, 1);
