@@ -1,0 +1,26 @@
+(SAIFILE
+(SAIFVERSION "2.0")
+(DIRECTION "backward")
+(DESIGN "t")
+(DATE "02-25-2025 13:59:21")
+(VENDOR "AxPy Inc")
+(PROGRAM_NAME "open_vcd2saif")
+(VERSION "v0")
+(DIVIDER / )
+(TIMESCALE 1ps)
+(DURATION 10)
+(INSTANCE top
+  (NET
+    (clk (T0 10) (T1 0) (TX 0) (TC 1))
+  )
+  (INSTANCE t
+    (NET
+      (clk (T0 10) (T1 0) (TX 0) (TC 1))
+    )
+    (INSTANCE sink
+      (NET
+      )
+    )
+  )
+)
+)
