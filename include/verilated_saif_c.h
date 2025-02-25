@@ -92,6 +92,8 @@ private:
     size_t m_maxSignalBytes = 0;  // Upper bound on number of bytes a single signal can generate
     uint64_t m_wroteBytes = 0;  // Number of bytes written to this file
 
+    void clearCurrentlyCollectedData();
+
     int32_t m_currentScope{-1};
     std::vector<SaifScope> m_scopes{};
     std::vector<uint32_t> m_topScopes{};
