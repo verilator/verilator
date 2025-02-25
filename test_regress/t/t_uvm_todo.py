@@ -8,14 +8,11 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
-import multiprocessing
 
 test.scenarios('vlt')
 
-test.compile(v_flags2=["--timing", "+incdir+t/uvm", "t/t_uvm_todo.vlt"],
-             make_flags=['-k -j ' + str(multiprocessing.cpu_count())],
+test.compile(v_flags2=["--timing", "+incdir+t/uvm", "t/t_uvm_todo.vlt", "-j 0"],
+             make_flags=['-k'],
              verilator_make_gmake=False)
-
-#test.execute()
 
 test.passes()

@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=['--output-groups -1'],
+test.lint(verilator_flags2=['--output-groups -2'],
           fails=True,
           expect_filename=test.golden_filename)
 

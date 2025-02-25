@@ -146,12 +146,15 @@ Summary:
 
    This option was named `--bin` before version 4.228.
 
-.. option:: --build-jobs [<value>]
+.. option:: --build-jobs <value>
 
    Specify the level of parallelism for :vlopt:`--build`. If zero, uses the
    number of threads in the current hardware. Otherwise, the <value> must
    be a positive integer specifying the maximum number of parallel build
    jobs.
+
+   If not provided, and :vlopt:`-j` is provided, the :vlopt:`-j` value is
+   used.
 
    This forms the :command:`make` option ``-j`` value, unless the
    :option:`MAKEFLAGS` environment variable contains ``-jobserver-auth``,
@@ -788,9 +791,12 @@ Summary:
 
    Specify the level of parallelism for :vlopt:`--build` if
    :vlopt:`--build-jobs` isn't provided, and the internal compilation steps
-   of Verilator if :vlopt:`--verilate-jobs` isn't provided. If zero, uses
-   the number of threads in the current hardware. Otherwise, must be a
-   positive integer specifying the maximum number of parallel build jobs.
+   of Verilator if :vlopt:`--verilate-jobs` isn't provided. Also sets
+   :vlopt:`--output-groups` if isn't provided.
+
+   If zero, uses the number of threads in the current hardware. Otherwise,
+   must be a positive integer specifying the maximum number of parallel
+   build jobs.
 
 .. option:: --json-only
 
@@ -1016,18 +1022,24 @@ Summary:
 .. option:: --output-groups <numfiles>
 
    Enables concatenating the output .cpp files into the given number of
-   effective output .cpp files.  This is useful if the compiler startup
-   overhead from compiling many small files becomes unacceptable,
-   which can happen in designs making extensive use of SystemVerilog classes,
-   templates or generate blocks.
+   effective output .cpp files.  This minimizes the compiler startup
+   overhead from compiling many small files, which can happen in designs
+   making extensive use of SystemVerilog classes, templates or generate
+   blocks.
 
    Using :vlopt:`--output-groups` can adversely impact caching and stability
    (as in reproducibility) of compiled code.  Compilation of larger .cpp
    files also has higher memory requirements.  Too low values might result in
-   swap thrashing with large designs, high values give no benefits.  The
-   value should range from 2 to 20 for small to medium designs.
+   swap thrashing with large designs, high values give no benefits.
 
-   Default is zero, which disables this feature.
+   Typically setting the number of files to the hardware thread count,
+   corresponding to number of compiler jobs that can run in parallel, will
+   lead to fastest build times. (e.g. for small to medium designs the value
+   should range from 2 to 20.)
+
+   Zero disables this feature.  Negative one, the default, sets the groups
+   to the value from :vlopt:`--build-jobs`, or from :vlopt:`-j`, or zero in
+   that priority.
 
 .. option:: --output-split <statements>
 
@@ -1700,12 +1712,15 @@ Summary:
    execute only the build. This can be useful for rebuilding the Verilated code
    produced by a previous invocation of Verilator.
 
-.. option:: --verilate-jobs [<value>]
+.. option:: --verilate-jobs <value>
 
    Specify the level of parallelism for the internal compilation steps of
    Verilator. If zero, uses the number of threads in the current hardware.
    Otherwise, must be a positive integer specifying the maximum number of
    parallel build jobs.
+
+   If not provided, and :vlopt:`-j` is provided, the :vlopt:`-j` value is
+   used.
 
    See also :vlopt:`-j`.
 

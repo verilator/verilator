@@ -1,2 +1,2 @@
-%Error: --output-groups must be >= 0: -1
+%Error: --output-groups must be >= -1: -2
 %Error: Exiting due to

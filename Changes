@@ -13,6 +13,9 @@ Verilator 5.035 devel
 
 **Other:**
 
+* Change `--output-groups` to default to value of `--build-jobs`.
+  Those using build farms may need to now use `--output-groups 0` or otherwise.
+
 
 Verilator 5.034 2025-02-24
 ==========================

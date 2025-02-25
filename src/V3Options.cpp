@@ -962,6 +962,7 @@ void V3Options::notify() VL_MT_DISABLED {
 
     // Sanity check of expected configuration
     UASSERT(threads() >= 1, "'threads()' must return a value >= 1");
+    if (m_outputGroups == -1) m_outputGroups = (m_buildJobs != -1) ? m_buildJobs : 0;
     if (m_buildJobs == -1) m_buildJobs = 1;
     if (m_verilateJobs == -1) m_verilateJobs = 1;
 
@@ -1464,7 +1465,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-output-groups", CbVal, [this, fl](const char* valp) {
         m_outputGroups = std::atoi(valp);
-        if (m_outputGroups < 0) { fl->v3error("--output-groups must be >= 0: " << valp); }
+        if (m_outputGroups < -1) fl->v3error("--output-groups must be >= -1: " << valp);
     });
     DECL_OPTION("-output-split", Set, &m_outputSplit);
     DECL_OPTION("-output-split-cfuncs", CbVal, [this, fl](const char* valp) {
@@ -1834,6 +1835,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             }
             if (m_buildJobs == -1) m_buildJobs = val;
             if (m_verilateJobs == -1) m_verilateJobs = val;
+            if (m_outputGroups == -1) m_outputGroups = val;
         } else if (argv[i][0] == '-' || argv[i][0] == '+') {
             const char* argvNoDashp = (argv[i][1] == '-') ? (argv[i] + 2) : (argv[i] + 1);
             if (const int consumed = parser.parse(i, argc, argv)) {

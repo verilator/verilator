@@ -13,7 +13,7 @@ test.scenarios('vlt')
 
 test.compile(
     v_flags2=[
-        "--binary --timing +incdir+t/uvm",  #
+        "--binary --timing -j 0 +incdir+t/uvm",  #
         "--error-limit 200 --debug-exit-uvm"
     ],
     verilator_make_gmake=False)
