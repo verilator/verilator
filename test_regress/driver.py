@@ -137,7 +137,7 @@ class SAIFParser:
                 if match:
                     self.duration = int(match.groups()[0])
 
-                match = re.search(r'INSTANCE\s+([\w.]*)', line)
+                match = re.search(r'INSTANCE\s+([\w\.\$]+)', line)
                 if match:
                     instance_name = match.groups()[0]
                     
