@@ -11,8 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 test.top_filename = "t/t_trace_abort.v"
+test.golden_filename = "t/t_trace_abort_saif.out"
 
-test.compile(verilator_flags2=['--cc --trace'])
+test.compile(verilator_flags2=['--cc --trace-saif'])
 
 test.execute(fails=True)
 
