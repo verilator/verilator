@@ -123,7 +123,7 @@ void VerilatedSaif::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     printStr("(PROGRAM_NAME \"Verilator\")\n");
     //printStr("(PROGRAM_VERSION \"foo\")\n");
     printStr("(VERSION \"5.032\")\n");
-    printStr("(DIVIDER .)\n");
+    printStr("(DIVIDER / )\n");
     printStr("(TIMESCALE ");
     printStr(timeResStr().c_str());
     printStr(")\n");
