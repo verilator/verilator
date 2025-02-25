@@ -372,6 +372,7 @@ void            fstWriterEmitValueChangeVec64(void *ctx, fstHandle handle,
 void            fstWriterEmitVariableLengthValueChange(void *ctx, fstHandle handle, const void *val, uint32_t len);
 void            fstWriterEmitTimeChange(void *ctx, uint64_t tim);
 void            fstWriterFlushContext(void *ctx);
+int             fstWriterWillFlushContextOnTimeChange(void* ctx);
 int             fstWriterGetDumpSizeLimitReached(void *ctx);
 int             fstWriterGetFseekFailed(void *ctx);
 void            fstWriterSetAttrBegin(void *ctx, enum fstAttrType attrtype, int subtype,
