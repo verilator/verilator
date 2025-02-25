@@ -1,0 +1,27 @@
+(SAIFILE
+(SAIFVERSION "2.0")
+(DIRECTION "backward")
+(DESIGN "t")
+(DIVIDER / )
+(TIMESCALE 1ps)
+(DURATION 99)
+(INSTANCE top
+  (NET
+    (clk (T0 49) (T1 50) (TX 0) (TC 100))
+  )
+  (INSTANCE t
+    (NET
+      (clk (T0 49) (T1 50) (TX 0) (TC 100))
+      (cyc\[0\] (T0 50) (T1 49) (TX 0) (TC 49))
+      (cyc\[1\] (T0 51) (T1 48) (TX 0) (TC 24))
+      (cyc\[2\] (T0 51) (T1 48) (TX 0) (TC 12))
+      (cyc\[3\] (T0 51) (T1 48) (TX 0) (TC 6))
+      (cyc\[4\] (T0 64) (T1 35) (TX 0) (TC 3))
+      (cyc\[5\] (T0 64) (T1 35) (TX 0) (TC 1))
+      (unchanged\[1\] (T0 0) (T1 99) (TX 0) (TC 1))
+      (unchanged\[3\] (T0 0) (T1 99) (TX 0) (TC 1))
+      (unchanged\[5\] (T0 0) (T1 99) (TX 0) (TC 1))
+    )
+  )
+)
+)
