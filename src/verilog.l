@@ -271,7 +271,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$rtoi"               { FL; return yD_RTOI; }
   "$sampled"            { FL; return yD_SAMPLED; }
   "$setup"              { FL; return yaTIMINGSPEC; }
-  "$setuphold"          { FL; return yaTIMINGSPEC; }
+  "$setuphold"          { FL; return yD_SETUPHOLD; }
   "$sformat"            { FL; return yD_SFORMAT; }
   "$sformatf"           { FL; return yD_SFORMATF; }
   "$shortrealtobits"    { FL; return yD_SHORTREALTOBITS; }

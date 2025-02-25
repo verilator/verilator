@@ -3339,6 +3339,24 @@ public:
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
+class AstSetuphold final : public AstNodeStmt {
+    // Verilog $setuphold
+    // @astgen op1 := refevp : AstSenItem
+    // @astgen op2 := dataevp : AstSenItem
+    // @astgen op3 := delrefp : Optional[AstSenItem]
+    // @astgen op4 := deldatap : Optional[AstSenItem]
+public:
+    AstSetuphold(FileLine* fl, AstSenItem* refevp, AstSenItem* dataevp,
+                 AstSenItem* delrefp = nullptr, AstSenItem* deldatap = nullptr)
+        : ASTGEN_SUPER_Setuphold(fl) {
+        this->refevp(refevp);
+        this->dataevp(dataevp);
+        this->delrefp(delrefp);
+        this->deldatap(deldatap);
+    }
+    ASTGEN_MEMBERS_AstSetuphold;
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
 class AstStackTraceT final : public AstNodeStmt {
     // $stacktrace used as task
 public:
