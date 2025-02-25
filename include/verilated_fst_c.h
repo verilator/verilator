@@ -26,12 +26,14 @@
 
 #include <list>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 typedef uint32_t vlFstHandle;
 typedef uint32_t vlFstEnumHandle;
 
+class VerilatedFstWriter;
 class VerilatedFstBuffer;
 
 //=============================================================================
@@ -49,11 +51,11 @@ private:
     //=========================================================================
     // FST-specific internals
 
-    void* m_fst = nullptr;
+    std::vector<VerilatedFstWriter*> m_writerps;
     std::map<uint32_t, vlFstHandle> m_code2symbol;
     std::map<int, vlFstEnumHandle> m_local2fstdtype;
     vlFstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array
-    char* m_strbufp = nullptr;  // String buffer long enough to hold maxBits() chars
+    std::vector<std::unique_ptr<char[]>> m_strbufps;  // Buffers able to hold maxBits() chars
 
     bool m_useFstWriterThread = false;  // Whether to use the separate FST writer thread
 
@@ -63,9 +65,9 @@ private:
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
-    void declare(uint32_t code, const char* name, int dtypenum, VerilatedTraceSigDirection,
-                 VerilatedTraceSigKind, VerilatedTraceSigType, bool array, int arraynum,
-                 bool bussed, int msb, int lsb);
+    void declare(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+                 VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+                 bool array, int arraynum, bool bussed, int msb, int lsb);
 
 protected:
     //=========================================================================
@@ -101,7 +103,7 @@ public:
     // Flush any remaining data to this file
     void flush() VL_MT_SAFE_EXCLUDES(m_mutex);
     // Return if file is open
-    bool isOpen() const VL_MT_SAFE { return m_fst != nullptr; }
+    bool isOpen() const VL_MT_SAFE { return !m_writerps.empty(); }
 
     //=========================================================================
     // Internal interface to Verilator generated code
@@ -161,15 +163,17 @@ class VerilatedFstBuffer VL_NOT_FINAL {
     VerilatedFst& m_owner;  // Trace file owning this buffer. Required by subclasses.
 
     // The FST file handle
-    void* const m_fst = m_owner.m_fst;
+    VerilatedFstWriter& m_writer;
     // code to fstHande map, as an array
     const vlFstHandle* const m_symbolp = m_owner.m_symbolp;
     // String buffer long enough to hold maxBits() chars
-    char* const m_strbufp = m_owner.m_strbufp;
+    char* const m_strbufp;
 
     // CONSTRUCTOR
-    explicit VerilatedFstBuffer(VerilatedFst& owner)
-        : m_owner{owner} {}
+    explicit VerilatedFstBuffer(VerilatedFst& owner, uint32_t fidx)
+        : m_owner{owner}
+        , m_writer{*m_owner.m_writerps.at(fidx)}
+        , m_strbufp{m_owner.m_strbufps.at(fidx).get()} {}
     virtual ~VerilatedFstBuffer() = default;
 
     //=========================================================================

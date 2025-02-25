@@ -206,7 +206,7 @@ class VerilatedVcdBuffer VL_NOT_FINAL {
     void finishLine(uint32_t code, char* writep);
 
     // CONSTRUCTOR
-    explicit VerilatedVcdBuffer(VerilatedVcd& owner)
+    explicit VerilatedVcdBuffer(VerilatedVcd& owner, uint32_t fidx)
         : m_owner{owner} {}
     virtual ~VerilatedVcdBuffer() = default;
 

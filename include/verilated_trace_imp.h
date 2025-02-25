@@ -27,6 +27,7 @@
 #include "verilated_intrinsics.h"
 #include "verilated_trace.h"
 #include "verilated_threads.h"
+#include <algorithm>
 #include <list>
 
 #if 0
@@ -468,26 +469,31 @@ VL_ATTR_NOINLINE void VerilatedTrace<VL_SUB_T, VL_BUF_T>::ParallelWorkerData::wa
 
 template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runCallbacks(const std::vector<CallbackRecord>& cbVec) {
-    if (parallel()) {
+    if (parallel() || split()) {
         // If tracing in parallel, dispatch to the thread pool
         VlThreadPool* threadPoolp = static_cast<VlThreadPool*>(m_contextp->threadPoolp());
         // List of work items for thread (std::list, as ParallelWorkerData is not movable)
         std::list<ParallelWorkerData> workerData;
         // We use the whole pool + the main thread
-        const unsigned threads = threadPoolp->numThreads() + 1;
+        const unsigned threads = [&]() {
+            const unsigned maxThreads = threadPoolp->numThreads() + 1;
+            if (split()) return std::min(maxThreads, nSplits());
+            return maxThreads;
+        }();
         // Main thread executes all jobs with index % threads == 0
         std::vector<ParallelWorkerData*> mainThreadWorkerData;
         // Enqueue all the jobs
         for (const CallbackRecord& cbr : cbVec) {
+            const unsigned idx = cbr.m_fidx % threads;
             // Always get the trace buffer on the main thread
-            Buffer* const bufp = getTraceBuffer(cbr.m_fidx);
+            Buffer* const bufp = getTraceBuffer(idx);
             // Create new work item
             workerData.emplace_back(cbr.m_dumpCb, cbr.m_userp, bufp);
             // Grab the new work item
             ParallelWorkerData* const itemp = &workerData.back();
             // Enqueue task to thread pool, or main thread
-            if (unsigned rem = cbr.m_fidx % threads) {
-                threadPoolp->workerp(rem - 1)->addTask(parallelWorkerTask, itemp);
+            if (idx) {
+                threadPoolp->workerp(idx - 1)->addTask(parallelWorkerTask, itemp);
             } else {
                 mainThreadWorkerData.push_back(itemp);
             }
@@ -507,6 +513,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runCallbacks(const std::vector<Callback
         // Done
         return;
     }
+
     // Fall back on sequential execution
     for (const CallbackRecord& cbr : cbVec) {
         Buffer* const traceBufferp = getTraceBuffer(cbr.m_fidx);
@@ -662,6 +669,8 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::addModel(VerilatedModel* modelp)
     m_offload = configp->m_useOffloading;
     // If at least one model requests parallel tracing, then use it
     m_parallel |= configp->m_useParallel;
+    // Use as man splits as requried be the largest model
+    m_nSplits = configp->m_nSplits > m_nSplits ? configp->m_nSplits : m_nSplits;
 
     if (VL_UNCOVERABLE(m_parallel && m_offload)) {  // LCOV_EXCL_START
         VL_FATAL_MT(__FILE__, __LINE__, "", "Cannot use parallel tracing with offloading");
@@ -812,8 +821,8 @@ static inline void cvtQDataToStr(char* dstp, QData value) {
 // VerilatedTraceBuffer
 
 template <>
-VerilatedTraceBuffer<VL_BUF_T>::VerilatedTraceBuffer(Trace& owner)
-    : VL_BUF_T{owner}
+VerilatedTraceBuffer<VL_BUF_T>::VerilatedTraceBuffer(Trace& owner, uint32_t fidx)
+    : VL_BUF_T{owner, fidx}
     , m_sigs_oldvalp{owner.m_sigs_oldvalp}
     , m_sigs_enabledp{owner.m_sigs_enabledp} {}
 
@@ -898,7 +907,7 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullDouble(uint32_t* oldp, double newval) {
 
 template <>
 VerilatedTraceOffloadBuffer<VL_BUF_T>::VerilatedTraceOffloadBuffer(VL_SUB_T& owner)
-    : VerilatedTraceBuffer<VL_BUF_T>{owner}
+    : VerilatedTraceBuffer<VL_BUF_T>{owner, 0}
     , m_offloadBufferWritep{owner.m_offloadBufferWritep}
     , m_offloadBufferEndp{owner.m_offloadBufferEndp} {
     if (m_offloadBufferWritep) {

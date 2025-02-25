@@ -6,6 +6,7 @@ import argparse
 import collections
 import glob
 import hashlib
+import itertools
 import json
 import logging
 import multiprocessing
@@ -22,6 +23,7 @@ import time
 
 from functools import lru_cache  # Eventually use python 3.9's cache
 from pprint import pformat, pprint
+from typing import List, Tuple
 
 import distro
 
@@ -2327,6 +2329,12 @@ class VlTest:
 
     def vcd_identical(self, fn1: str, fn2: str) -> None:
         """Test if two VCD files have logically-identical contents"""
+
+        if os.path.isdir(fn1):
+            tmp = fn1 + ".merged.vcd"
+            self.vcdmerge(fn1, tmp)
+            fn1 = tmp
+
         # vcddiff to check transitions, if installed
         cmd = "vcddiff --help"
         out = test.run_capture(cmd, check=True)
@@ -2351,6 +2359,99 @@ class VlTest:
             self.error("VCD hier miscompares " + fn1 + " " + fn2 + "\nGOT=" + a + "\nEXP=" + b +
                        "\n")
 
+    def vcdmerge(self, src: str, dst: str) -> None:
+        headers = []
+        bodies = []
+        for fn in sorted(os.listdir(src)):
+            header, body = self._vcd_parse(os.path.join(src, fn))
+            headers.append(header)
+            bodies.append(body)
+
+        # Chop up header into pairs of (list of non-scope/non-upscope commands, scope/upscope/None)
+        def chop(header):
+            chunks = []
+            leading = []
+            for item in header:
+                if item[0] in ("scope", "upscope"):
+                    chunks.append((leading, item))
+                    leading = []
+                else:
+                    leading.append(item)
+            chunks.append((leading, None))
+            return chunks
+
+        headers = [chop(_) for _ in headers]
+
+        # They should all be the same size at this point
+        if len(set(len(_) for _ in headers)) != 1:
+            self.error("VCD headers are not compatible for merging")
+
+        # Merge headers, one chunk from each at a time. Remap signal codes
+        codeMaps = [{} for _ in headers]
+        newCodes = map(lambda _: f"@{_}", itertools.count())
+        mergedHeader = []
+        tscale = None
+        for chunks in zip(*headers):
+            # Check scope directives are the same:
+            scopes = [scope for _, scope in chunks]
+            if len(set(scopes)) != 1:
+                self.error("VCD scopes differ:\n" + "\n".join(str(_) for _ in scopes))
+            # Merge each chunk into the merged header
+            for i, (items, _) in enumerate(chunks):
+                for item in items:
+                    directive, body = item
+                    if directive in ("comment", "version"):
+                        pass  # Ignore
+                    elif directive == "date":
+                        if i == 0:  # Pick the date from the first file
+                            mergedHeader.append(item)
+                    elif directive == "timescale":
+                        if i == 0:
+                            tscale = body
+                            mergedHeader.append(item)
+                        elif tscale != body:
+                            self.error(f"VCD tiemscale mismatch: 0: '{tscale}' vs {i}: '{body}'")
+                    elif directive == "attrbegin":
+                        # Just copy through, for declaratinos its a bit redundant, but fine for us
+                        mergedHeader.append(item)
+                    elif directive == "var":
+                        prefix, code, suffix = re.match(r'^(\S+\s+\S+\s+)(\S+)(.*)$',
+                                                        body).groups()
+                        newCode = codeMaps[i].get(code)
+                        if newCode is None:
+                            newCode = next(newCodes)
+                            codeMaps[i][code] = newCode
+                        mergedHeader.append((directive, f"{prefix}{newCode}{suffix}"))
+                    else:
+                        self.error(f"Unexpected VCD directive {item}")
+            if scope := scopes[0]:
+                mergedHeader.append(scope)
+
+        # Now merge the bodies
+        mergedBody = []
+        for i, body in enumerate(bodies):
+            for timePoint, valueChanges in body:
+                mergedBody.append((timePoint, i, valueChanges))
+        # Sort by tiempoint 'sort' is stable
+        mergedBody = sorted(mergedBody, key=lambda _: _[0])
+
+        # Finally, we can render the merged file..
+        with open(dst, 'w', encoding="latin-1") as fh:
+            for a, b in mergedHeader:
+                fh.write(f"${a} {b} $end\n")
+            fh.write("$enddefinitions $end\n")
+            prevTimePoint = None
+            for timePoint, fileIndex, valueChanges in mergedBody:
+                if timePoint != prevTimePoint:
+                    fh.write(f"#{timePoint}\n")
+                prevTimePoint = timePoint
+                for oldCode, value in valueChanges:
+                    fh.write(value)
+                    if value[0] in "rRbB":
+                        fh.write(" ")
+                    fh.write(codeMaps[fileIndex][oldCode])
+                    fh.write("\n")
+
     def fst2vcd(self, fn1: str, fn2: str) -> None:
         cmd = "fst2vcd -h"
         out = VtOs.run_capture(cmd, check=False)
@@ -2358,10 +2459,16 @@ class VlTest:
             self.skip("No fst2vcd installed")
             return
 
-        cmd = 'fst2vcd -e -f "' + fn1 + '" -o "' + fn2 + '"'
-        print("\t " + cmd + "\n")  # Always print to help debug race cases
-        out = VtOs.run_capture(cmd, check=False)
-        print(out)
+        fns = [(fn1, fn2)]
+        if os.path.isdir(fn1):
+            os.makedirs(fn2, exist_ok=True)
+            fns = [(os.path.join(fn1, _), os.path.join(fn2, _)) for _ in sorted(os.listdir(fn1))]
+        for src, dst in fns:
+            cmd = f'fst2vcd -e -f "{src}" -o "{dst}"'
+            print("\t " + cmd)  # Always print to help debug race cases
+            out = VtOs.run_capture(cmd, check=False)
+            if out:
+                print(out)
 
     def fst_identical(self, fn1: str, fn2: str) -> None:
         """Test if two FST files have logically-identical contents"""
@@ -2379,14 +2486,99 @@ class VlTest:
             print(out)
             self.error("SAIF files don't match!")
 
+    # Returns 2 things:
+    # - 1: The header entries, which are a list of (directives, body-of-directive) pairs
+    # - 2: The body entries, which is a list of (time point, list of value chagnes) pairs
+    # Value chagnes themselves are a pair of (code, value) strings
+    def _vcd_parse(self, filename: str) -> \
+        Tuple[List[Tuple[str, str]], List[Tuple[int, List[Tuple[str, str]]]]]:
+        with open(filename, 'r', encoding='latin-1') as fh:
+            content = fh.read()
+        header, body = re.split(r'\$enddefinitions\s+\$end', content, maxsplit=1)
+
+        # Parsing the header is easy
+        headerEntries = []
+        for entry in header.split('$end'):
+            entry = entry.strip()
+            if not entry:
+                continue
+            directiveKeyword, *directiveBody = entry.split(maxsplit=1)
+            headerEntries.append((directiveKeyword[1:], next(iter(directiveBody), "").strip()))
+
+        bodyEntries = []
+        # Noddy parser for body
+        idx = 0
+        end = len(body)
+
+        # Consume any of the given strings, returns matching string if any, or None
+        def match(*alternatives: str) -> str | None:
+            nonlocal idx
+            for text in alternatives:
+                assert text, "match alternative should not be empty"
+                if body.startswith(text, idx):
+                    idx += len(text)
+                    return text
+            return None
+
+        # Consume any whitespace
+        def skipSpace() -> None:
+            nonlocal idx
+            while idx < end and body[idx].isspace():
+                idx += 1
+
+        # Consume any non-whitespace
+        def nextWord() -> str:
+            nonlocal idx
+            s = idx
+            while idx < end and not body[idx].isspace():
+                idx += 1
+            if s == idx:
+                self.error("{filename}: A word is expected, but whitespace found")
+            return body[s:idx]
+
+        # Parse body
+        while True:
+            skipSpace()
+            if idx == end:
+                break
+            if match("$comment"):
+                # Ignore comments
+                idx = body.find("$end", idx)
+                match("$end")
+            elif match("$dumpall", "$dumpon", "$dumpoff", "$dumpvars", "$end"):
+                # Ignore $dump*/$end (but not their body!). Value changes are
+                # listed inside the body which will be picked up as if listed
+                # outdide the $dump*/$end command, which is ok for our purposes
+                pass
+            elif match("#"):
+                timePoint = int(nextWord())
+                # Add time point
+                bodyEntries.append((timePoint, []))
+            elif prefix := match("b", "B", "r", "R"):
+                value = prefix + nextWord()
+                skipSpace()
+                code = nextWord()
+                # Add value change
+                bodyEntries[-1][1].append((code, value))
+            elif value := match("0", "1", "x", "X", "z", "Z"):
+                code = nextWord()
+                # Add value change
+                bodyEntries[-1][1].append((code, value))
+            else:
+                self.error(f"{filename}: Unexpected VCD body entry with prefix '{body[idx]}'")
+
+        # Done
+        return headerEntries, bodyEntries
+
     def _vcd_read(self, filename: str) -> str:
         data = {}
         with open(filename, 'r', encoding='latin-1') as fh:
             hier_stack = ["TOP"]
-            var = []
+            var = None
+            attribute = None
             for line in fh:
                 match1 = re.search(r'\$scope (module|struct|interface)\s+(\S+)', line)
-                match2 = re.search(r'(\$var (\S+)\s+\d+\s+)\S+\s+(\S+)', line)
+                match2 = re.search(r'(\$var \S+\s+\d+)\s+\S+\s+(\S+)', line)
                 match3 = re.search(r'(\$attrbegin .* \$end)', line)
                 line = line.rstrip()
                 # print("VR"+ ' '*len(hier_stack) +" L " + line)
@@ -2396,16 +2588,18 @@ class VlTest:
                     hier_stack += [name]
                     scope = '.'.join(hier_stack)
                     data[scope] = match1.group(1) + " " + name
+                    attribute = None
                 elif match2:  # $var
                     # print("VR"+ ' '*len(hier_stack) +" var " + line)
                     scope = '.'.join(hier_stack)
                     var = match2.group(2)
-                    data[scope + "." + var] = match2.group(1) + match2.group(3)
-                elif match3:  # $attrbegin
+                    data[scope + "." + var] = match2.group(1)
+                    if attribute:
+                        data[scope + "." + var + "#"] = attribute
+                    attribute = None
+                elif match3:  # $attrbegin - Applies to the next $var
                     # print("VR"+ ' '*len(hier_stack) +" attr " + line)
-                    if var:
-                        scope = '.'.join(hier_stack)
-                        data[scope + "." + var + "#"] = match3.group(1)
+                    attribute = match3.group(1)
                 elif re.search(r'\$enddefinitions', line):
                     break
                 n = len(re.findall(r'\$upscope', line))

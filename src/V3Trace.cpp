@@ -185,8 +185,7 @@ class TraceVisitor final : public VNVisitor {
     bool m_finding = false;  // Pass one of algorithm?
 
     // Trace parallelism. Only VCD tracing can be parallelized at this time.
-    const uint32_t m_parallelism
-        = v3Global.opt.useTraceParallel() ? static_cast<uint32_t>(v3Global.opt.threads()) : 1;
+    const uint32_t m_parallelism = v3Global.opt.threads();
 
     VDouble0 m_statSetters;  // Statistic tracking
     VDouble0 m_statSettersSlow;  // Statistic tracking
