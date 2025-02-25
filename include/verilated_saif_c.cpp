@@ -411,7 +411,7 @@ void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType
         int32_t newScopeIndex = m_scopes.size();
         m_scopes.emplace_back();
         SaifScope& newScope = m_scopes.back();
-        newScope.scopeName = name;
+        newScope.scopeName = lastWord(m_prefixStack.back().first + pname);
 
         if (m_currentScope >= 0) {
             m_scopes.at(m_currentScope).childScopesIndices.emplace_back(newScopeIndex);
