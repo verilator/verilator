@@ -96,7 +96,7 @@ private:
 
     int32_t m_currentScope{-1};
     std::vector<SaifScope> m_scopes{};
-    std::vector<uint32_t> m_topScopes{};
+    std::vector<int32_t> m_topScopes{};
 
     std::unordered_map<uint32_t, ActivityVar> m_activity;
     std::vector<std::vector<ActivityBit>> m_activityArena;

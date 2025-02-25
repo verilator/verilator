@@ -229,7 +229,7 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     printStr(")\n");
 
     incrementIndent();
-    for (uint32_t topScopeIndex : m_topScopes) {
+    for (int32_t topScopeIndex : m_topScopes) {
         recursivelyPrintScopes(topScopeIndex);
     }
     decrementIndent();
@@ -405,6 +405,9 @@ void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType
     assert(!m_prefixStack.empty());
 
     std::string pname = name;
+    if (name.empty()) {
+        pname = "$rootio";
+    }
 
     if (type != VerilatedTracePrefixType::ARRAY_UNPACKED && type != VerilatedTracePrefixType::ARRAY_PACKED)
     {
@@ -420,18 +423,6 @@ void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType
             m_topScopes.emplace_back(newScopeIndex);
         }
         m_currentScope = newScopeIndex;
-    }
-
-    // An empty name means this is the root of a model created with name()=="".  The
-    // tools get upset if we try to pass this as empty, so we put the signals under a
-    // new scope, but the signals further down will be peers, not children (as usual
-    // for name()!="")
-    // Terminate earlier $root?
-    if (m_prefixStack.back().second == VerilatedTracePrefixType::ROOTIO_MODULE) popPrefix();
-    if (pname.empty()) {  // Start new temporary root
-        pname = "$rootio";  // SAIF names are not backslash escaped
-        m_prefixStack.emplace_back("", VerilatedTracePrefixType::ROOTIO_WRAPPER);
-        type = VerilatedTracePrefixType::ROOTIO_MODULE;
     }
 
     std::string newPrefix = m_prefixStack.back().first + pname;
