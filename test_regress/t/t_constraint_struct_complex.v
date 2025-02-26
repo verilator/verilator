@@ -112,15 +112,67 @@ class ArrayStruct;
     /* verilator lint_off SIDEEFFECT */
 endclass
 
+class StructArray;
+    /* verilator lint_off SIDEEFFECT */
+    typedef struct {
+        rand int arr[3];
+        rand int a;
+        rand bit [3:0] b;
+        bit c;
+    } struct_t;
+    rand struct_t s_arr[2];
+
+    constraint c_structArray {
+        foreach (s_arr[i]) begin
+            foreach (s_arr[i].arr[j]) s_arr[i].arr[j] inside {[0:9]};
+            s_arr[i].a inside {[10:20]};
+        end
+    }
+
+    function new();
+        foreach (s_arr[i]) begin
+            foreach (s_arr[i].arr[j]) s_arr[i].arr[j] = 'h0 + j;
+            s_arr[i].a = 'h10 + i;
+            s_arr[i].b = 'h0 + i;
+            s_arr[i].c = i;
+        end
+    endfunction
+
+    function void print();
+        foreach (s_arr[i]) begin
+            foreach (s_arr[i].arr[j]) $display("s_arr[%0d].arr[%0d] = %0d", i, j, s_arr[i].arr[j]);
+            $display("s_arr[%0d].a = %0d", i, s_arr[i].a);
+            $display("s_arr[%0d].b = %0h", i, s_arr[i].b);
+            $display("s_arr[%0d].c = %0d", i, s_arr[i].c);
+        end
+    endfunction
+
+    function void self_test();
+        foreach (s_arr[i]) begin
+            foreach (s_arr[i].arr[j]) if (!(s_arr[i].arr[j] inside {[0:9]})) $stop;
+            if (!(s_arr[i].a inside {[10:20]})) $stop;
+            if (!(s_arr[0].c == 0)) $stop;
+            if (!(s_arr[1].c == 1)) $stop;
+        end
+    endfunction
+    /* verilator lint_off SIDEEFFECT */
+endclass
+
 module t_constraint_struct_complex;
     int success;
-    ArrayStruct asc;
+    ArrayStruct as_c;
+    StructArray sa_c;
     initial begin
-        asc = new();
-        success = asc.randomize();
+        as_c = new();
+        sa_c = new();
+        success = as_c.randomize();
         if (success != 1) $stop;
-        asc.self_test();
-        // asc.print();
+        as_c.self_test();
+        // as_c.print();
+        success = sa_c.randomize();
+        if (success != 1) $stop;
+        sa_c.self_test();
+        // sa_c.print();
         $write("*-* All Finished *-*\n");
         $finish;
     end

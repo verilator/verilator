@@ -725,11 +725,23 @@ class ConstraintExprVisitor final : public VNVisitor {
                     memberp = VN_CAST(memberp->nextp(), MemberDType);
             }
         }
+        // Mark Random for structArray
+        if(VN_IS(nodep->fromp(), ArraySel)){
+            AstNodeExpr* const fromp = VN_AS(nodep->fromp(), ArraySel)->fromp();
+            VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType)->markConstrainedRand(true);
+            AstMemberDType* memberp = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType)->membersp();
+            while (memberp) {
+                if (memberp->name() == nodep->name()) {
+                    memberp->markConstrainedRand(true);
+                    break;
+                } else
+                    memberp = VN_CAST(memberp->nextp(), MemberDType);
+            }
+        }
         iterateChildren(nodep);
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
-        AstSFormatF* const newp
-            = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false, nullptr};
+        AstSFormatF* newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false, nullptr};
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }

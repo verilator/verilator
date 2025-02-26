@@ -216,6 +216,7 @@ public:
     // Finds the next solution satisfying the constraints
     bool next(VlRNG& rngr);
 
+    // Process the key for associative array
     template <typename T_Key>
     typename std::enable_if<std::is_integral<T_Key>::value && (sizeof(T_Key) <= 4)>::type
     process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
@@ -300,6 +301,13 @@ public:
                     "supported currently.");
     }
 
+    // Write Variable
+    template <typename T>
+    typename std::enable_if<VlIsCustomStruct<T>::value, void>::type
+    write_var(T& var, int width, const char* name, int dimension,
+              std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+        modifyMembers(var, var.memberIndices(), name);
+    }
     template <typename T>
     typename std::enable_if<!VlIsCustomStruct<T>::value, void>::type
     write_var(T& var, int width, const char* name, int dimension,
@@ -343,6 +351,7 @@ public:
             record_arr_table(var, name, dimension, {}, {});
         }
     }
+    // Helper functions to write variable
     template <typename T, std::size_t... I>
     void modifyMembers(T& obj, std::index_sequence<I...>, std::string baseName) {
         // Use the indices to access each member via std::get
@@ -352,25 +361,7 @@ public:
              0)...};
     }
 
-    template <typename T>
-    typename std::enable_if<VlIsCustomStruct<T>::value, void>::type
-    write_var(T& var, int width, const char* name, int dimension,
-              std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        modifyMembers(var, var.memberIndices(), name);
-    }
-
-    int idx;
-    std::string generateKey(const std::string& name, int idx) {
-        if (!name.empty() && name[0] == '\\') {
-            const size_t space_pos = name.find(' ');
-            return (space_pos != std::string::npos ? name.substr(0, space_pos) : name)
-                   + std::to_string(idx);
-        }
-        const size_t bracket_pos = name.find('[');
-        return (bracket_pos != std::string::npos ? name.substr(0, bracket_pos) : name)
-               + std::to_string(idx);
-    }
-
+    // Record Array Table
     template <typename T>
     typename std::enable_if<!std::is_class<T>::value, void>::type
     record_arr_table(T& var, const std::string name, int dimension, std::vector<IData> indices,
@@ -431,6 +422,18 @@ public:
                 indices.resize(indices.size() - integral_index.size());
             }
         }
+    }
+    // Helper functions to record array table
+    int idx;
+    std::string generateKey(const std::string& name, int idx) {
+        if (!name.empty() && name[0] == '\\') {
+            const size_t space_pos = name.find(' ');
+            return (space_pos != std::string::npos ? name.substr(0, space_pos) : name)
+                   + std::to_string(idx);
+        }
+        const size_t bracket_pos = name.find('[');
+        return (bracket_pos != std::string::npos ? name.substr(0, bracket_pos) : name)
+               + std::to_string(idx);
     }
 
     void hard(std::string&& constraint);
