@@ -85,13 +85,6 @@ private:
 
     int m_indent = 0;  // Indentation depth
 
-    char* m_wrBufp;  // Output buffer
-    char* m_wrFlushp;  // Output buffer flush trigger location
-    char* m_writep;  // Write pointer into output buffer
-    size_t m_wrChunkSize;  // Output buffer size
-    size_t m_maxSignalBytes = 0;  // Upper bound on number of bytes a single signal can generate
-    uint64_t m_wroteBytes = 0;  // Number of bytes written to this file
-
     void clearCurrentlyCollectedData();
 
     int32_t m_currentScope{-1};
@@ -106,17 +99,6 @@ private:
     std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
         {"", VerilatedTracePrefixType::SCOPE_MODULE}};
 
-    // Vector of free trace buffers as (pointer, size) pairs.
-    std::vector<std::pair<char*, size_t>> m_freeBuffers;
-    size_t m_numBuffers = 0;  // Number of trace buffers allocated
-
-    void bufferResize(size_t minsize);
-    void bufferFlush() VL_MT_UNSAFE_ONE;
-    void bufferCheck() {
-        // Flush the write buffer if there's not enough space left for new information
-        // We only call this once per vector, so we need enough slop for a very wide "b###" line
-        if (VL_UNLIKELY(m_writep > m_wrFlushp)) bufferFlush();
-    }
     void openNextImp(bool incFilename);
     void closePrev();
     void closeErr();
@@ -230,16 +212,6 @@ class VerilatedSaifBuffer VL_NOT_FINAL {
     friend VerilatedSaif::OffloadBuffer;
 
     VerilatedSaif& m_owner;  // Trace file owning this buffer. Required by subclasses.
-
-    // Write pointer into output buffer (in parallel mode, this is set up in 'getTraceBuffer')
-    char* m_writep = m_owner.parallel() ? nullptr : m_owner.m_writep;
-    // Output buffer flush trigger location (only used when not parallel)
-    char* const m_wrFlushp = m_owner.parallel() ? nullptr : m_owner.m_wrFlushp;
-
-    // Additional data for parallel tracing only
-    char* m_bufp = nullptr;  // The beginning of the trace buffer
-    size_t m_size = 0;  // The size of the buffer at m_bufp
-    char* m_growp = nullptr;  // Resize limit pointer
 
     // CONSTRUCTOR
     explicit VerilatedSaifBuffer(VerilatedSaif& owner)

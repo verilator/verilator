@@ -97,10 +97,6 @@ VerilatedSaif::VerilatedSaif(VerilatedSaifFile* filep) {
     // Not in header to avoid link issue if header is included without this .cpp file
     m_fileNewed = (filep == nullptr);
     m_filep = m_fileNewed ? new VerilatedSaifFile : filep;
-    m_wrChunkSize = 8 * 1024;
-    m_wrBufp = new char[m_wrChunkSize * 8];
-    m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
-    m_writep = m_wrBufp;
 }
 
 void VerilatedSaif::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
@@ -182,11 +178,10 @@ void VerilatedSaif::openNextImp(bool incFilename) {
     m_isOpen = true;
     constDump(true);  // First dump must containt the const signals
     fullDump(true);  // First dump must be full
-    m_wroteBytes = 0;
 }
 
 bool VerilatedSaif::preChangeDump() {
-    if (VL_UNLIKELY(m_rolloverSize && m_wroteBytes > m_rolloverSize)) openNextImp(true);
+    if (VL_UNLIKELY(m_rolloverSize)) openNextImp(true);
     return isOpen();
 }
 
@@ -194,12 +189,7 @@ void VerilatedSaif::emitTimeChange(uint64_t timeui) { m_time = timeui; }
 
 VerilatedSaif::~VerilatedSaif() {
     close();
-    if (m_wrBufp) VL_DO_CLEAR(delete[] m_wrBufp, m_wrBufp = nullptr);
     if (m_filep && m_fileNewed) VL_DO_CLEAR(delete m_filep, m_filep = nullptr);
-    if (parallel()) {
-        assert(m_numBuffers == m_freeBuffers.size());
-        for (auto& pair : m_freeBuffers) VL_DO_CLEAR(delete[] pair.first, pair.first = nullptr);
-    }
 }
 
 void VerilatedSaif::closePrev() {
@@ -207,7 +197,6 @@ void VerilatedSaif::closePrev() {
     if (!isOpen()) return;
 
     Super::flushBase();
-    bufferFlush();
     m_isOpen = false;
     m_filep->close();
 }
@@ -330,63 +319,15 @@ void VerilatedSaif::clearCurrentlyCollectedData()
     m_time = 0;
 }
 
-void VerilatedSaif::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
-    const VerilatedLockGuard lock{m_mutex};
-    Super::flushBase();
-    bufferFlush();
-}
-
 void VerilatedSaif::printStr(const char* str) { m_filep->write(str, strlen(str)); }
-
-void VerilatedSaif::bufferResize(size_t minsize) {
-    // minsize is size of largest write.  We buffer at least 8 times as much data,
-    // writing when we are 3/4 full (with thus 2*minsize remaining free)
-    if (VL_UNLIKELY(minsize > m_wrChunkSize)) {
-        const char* oldbufp = m_wrBufp;
-        m_wrChunkSize = roundUpToMultipleOf<1024>(minsize * 2);
-        m_wrBufp = new char[m_wrChunkSize * 8];
-        std::memcpy(m_wrBufp, oldbufp, m_writep - oldbufp);
-        m_writep = m_wrBufp + (m_writep - oldbufp);
-        m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
-        VL_DO_CLEAR(delete[] oldbufp, oldbufp = nullptr);
-    }
-}
-
-void VerilatedSaif::bufferFlush() VL_MT_UNSAFE_ONE {
-    // This function can be called from the trace offload thread
-    // This function is on the flush() call path
-    // We add output data to m_writep.
-    // When it gets nearly full we dump it using this routine which calls write()
-    // This is much faster than using buffered I/O
-    if (VL_UNLIKELY(!m_isOpen)) return;
-    const char* wp = m_wrBufp;
-    while (true) {
-        const ssize_t remaining = (m_writep - wp);
-        if (remaining == 0) break;
-        errno = 0;
-        const ssize_t got = m_filep->write(wp, remaining);
-        if (got > 0) {
-            wp += got;
-            m_wroteBytes += got;
-        } else if (VL_UNCOVERABLE(got < 0)) {
-            if (VL_UNCOVERABLE(errno != EAGAIN && errno != EINTR)) {
-                // LCOV_EXCL_START
-                // write failed, presume error (perhaps out of disk space)
-                const std::string msg = "VerilatedSaif::bufferFlush: "s + std::strerror(errno);
-                VL_FATAL_MT("", 0, "", msg.c_str());
-                closeErr();
-                break;
-                // LCOV_EXCL_STOP
-            }
-        }
-    }
-
-    // Reset buffer
-    m_writep = m_wrBufp;
-}
 
 //=============================================================================
 // Definitions
+
+void VerilatedSaif::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
+    const VerilatedLockGuard lock{m_mutex};
+    Super::flushBase();
+}
 
 void VerilatedSaif::incrementIndent()
 {
