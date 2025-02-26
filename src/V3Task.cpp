@@ -604,11 +604,19 @@ class TaskVisitor final : public VNVisitor {
                     // Any I/O variables that fell out of above loop were already linked
                     if (!portp->user2p()) {
                         // Move it to a new localized variable
-                        portp->unlinkFrBack();
-                        pushDeletep(portp);  // Remove it from the clone (not original)
                         AstVarScope* const localVscp
                             = createVarScope(portp, namePrefix + "__" + portp->shortName());
                         portp->user2p(localVscp);
+                        if (portp->needsCReset() && portp->lifetime().isAutomatic()
+                            && !portp->valuep()) {
+                            // Reset automatic var to its default, on each invocation of function
+                            AstVarRef* const vrefp
+                                = new AstVarRef{portp->fileline(), portp, VAccess::WRITE};
+                            portp->replaceWith(new AstCReset{portp->fileline(), vrefp, false});
+                        } else {
+                            portp->unlinkFrBack();
+                        }
+                        pushDeletep(portp);  // Remove it from the clone (not original)
                     }
                 }
             }

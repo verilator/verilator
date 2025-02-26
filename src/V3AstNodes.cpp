@@ -327,6 +327,15 @@ AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* l
     return new AstLogAnd{fileline(), ap, bp};
 }
 
+void AstCReset::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (constructing()) str << " [CONS]";
+}
+void AstCReset::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, constructing);
+    dumpJsonGen(str);
+}
+
 AstVar* AstClocking::ensureEventp(bool childDType) {
     if (!eventp()) {
         AstVar* const evp

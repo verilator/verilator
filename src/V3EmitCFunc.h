@@ -210,9 +210,10 @@ public:
     void emitConstant(AstConst* nodep, AstVarRef* assigntop, const string& assignString);
     void emitConstantString(const AstConst* nodep);
     void emitSetVarConstant(const string& assignString, AstConst* constp);
-    void emitVarReset(AstVar* varp);
-    string emitVarResetRecurse(const AstVar* varp, const string& varNameProtected,
-                               AstNodeDType* dtypep, int depth, const string& suffix);
+    void emitVarReset(AstVar* varp, bool constructing);
+    string emitVarResetRecurse(const AstVar* varp, bool constructing,
+                               const string& varNameProtected, AstNodeDType* dtypep, int depth,
+                               const string& suffix);
     void emitChangeDet();
     void emitConstInit(AstNode* initp) {
         // We should refactor emit to produce output into a provided buffer, not go through members
@@ -1436,7 +1437,7 @@ public:
     }
     void visit(AstCReset* nodep) override {
         AstVar* const varp = nodep->varrefp()->varp();
-        emitVarReset(varp);
+        emitVarReset(varp, nodep->constructing());
     }
     void visit(AstExecGraph* nodep) override {
         // The location of the AstExecGraph within the containing AstCFunc is where we want to

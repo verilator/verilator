@@ -179,16 +179,13 @@ class CCtorsVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstVar* nodep) override {
-        if (!nodep->isIfaceParent() && !nodep->isIfaceRef() && !nodep->noReset()
-            && !nodep->isParam() && !nodep->isStatementTemp()
-            && !(nodep->basicp()
-                 && (nodep->basicp()->isEvent() || nodep->basicp()->isTriggerVec()))) {
+        if (nodep->needsCReset()) {
             if (m_varResetp) {
-                const auto vrefp = new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE};
-                m_varResetp->add(new AstCReset{nodep->fileline(), vrefp});
+                AstVarRef* const vrefp = new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE};
+                m_varResetp->add(new AstCReset{nodep->fileline(), vrefp, true});
             } else if (m_cfuncp) {
-                const auto vrefp = new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE};
-                nodep->addNextHere(new AstCReset{nodep->fileline(), vrefp});
+                AstVarRef* const vrefp = new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE};
+                nodep->addNextHere(new AstCReset{nodep->fileline(), vrefp, true});
             }
         }
     }

@@ -2165,6 +2165,8 @@ public:
     string verilogKwd() const override;
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
+    void pinNum(int id) { m_pinNum = id; }
+    int pinNum() const { return m_pinNum; }
     void propagateAttrFrom(const AstVar* fromp) {
         // This is getting connected to fromp; keep attributes
         // Note the method below too
@@ -2197,9 +2199,11 @@ public:
         m_direction = VDirection::NONE;
         m_name = name;
     }
+    bool needsCReset() const {
+        return !isIfaceParent() && !isIfaceRef() && !noReset() && !isParam() && !isStatementTemp()
+               && !(basicp() && (basicp()->isEvent() || basicp()->isTriggerVec()));
+    }
     static AstVar* scVarRecurse(AstNode* nodep);
-    void pinNum(int id) { m_pinNum = id; }
-    int pinNum() const { return m_pinNum; }
 };
 class AstVarScope final : public AstNode {
     // A particular scoped usage of a variable
@@ -2740,15 +2744,22 @@ public:
 class AstCReset final : public AstNodeStmt {
     // Reset variable at startup
     // @astgen op1 := varrefp : AstVarRef
+    const bool m_constructing;  // Previously cleared by constructor
 public:
-    AstCReset(FileLine* fl, AstVarRef* varrefp)
-        : ASTGEN_SUPER_CReset(fl) {
+    AstCReset(FileLine* fl, AstVarRef* varrefp, bool constructing)
+        : ASTGEN_SUPER_CReset(fl)
+        , m_constructing(constructing) {
         this->varrefp(varrefp);
     }
     ASTGEN_MEMBERS_AstCReset;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return constructing() == VN_DBG_AS(samep, CReset)->constructing();
+    }
+    bool constructing() const { return m_constructing; }
 };
 class AstCReturn final : public AstNodeStmt {
     // C++ return from a function

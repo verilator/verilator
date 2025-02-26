@@ -46,11 +46,13 @@ class LifeState final {
 public:
     VDouble0 m_statAssnDel;  // Statistic tracking
     VDouble0 m_statAssnCon;  // Statistic tracking
+    VDouble0 m_statCResetDel;  // Statistic tracking
 
     // CONSTRUCTORS
     LifeState() = default;
     ~LifeState() {
         V3Stats::addStatSum("Optimizations, Lifetime assign deletions", m_statAssnDel);
+        V3Stats::addStatSum("Optimizations, Lifetime creset deletions", m_statCResetDel);
         V3Stats::addStatSum("Optimizations, Lifetime constant prop", m_statAssnCon);
     }
 };
@@ -60,7 +62,7 @@ public:
 
 class LifeVarEntry final {
     // Last assignment to this varscope, nullptr if no longer relevant
-    AstNodeAssign* m_assignp = nullptr;
+    AstNodeStmt* m_assignp = nullptr;
     AstConst* m_constp = nullptr;  // Known constant value
     // First access was a set (and thus block above may have a set that can be deleted
     bool m_setBeforeUse;
@@ -68,13 +70,18 @@ class LifeVarEntry final {
     bool m_everSet = false;
 
 public:
+    class CRESET {};
     class SIMPLEASSIGN {};
     class COMPLEXASSIGN {};
     class CONSUMED {};
 
-    LifeVarEntry(SIMPLEASSIGN, AstNodeAssign* assp)
+    LifeVarEntry(CRESET, AstCReset* nodep)
         : m_setBeforeUse{true} {
-        simpleAssign(assp);
+        resetStatement(nodep);
+    }
+    LifeVarEntry(SIMPLEASSIGN, AstNodeAssign* nodep)
+        : m_setBeforeUse{true} {
+        simpleAssign(nodep);
     }
     explicit LifeVarEntry(COMPLEXASSIGN)
         : m_setBeforeUse{false} {
@@ -85,11 +92,16 @@ public:
         consumed();
     }
     ~LifeVarEntry() = default;
-    void simpleAssign(AstNodeAssign* assp) {  // New simple A=.... assignment
-        m_assignp = assp;
+    void simpleAssign(AstNodeAssign* nodep) {  // New simple A=.... assignment
+        m_assignp = nodep;
         m_constp = nullptr;
         m_everSet = true;
-        if (VN_IS(assp->rhsp(), Const)) m_constp = VN_AS(assp->rhsp(), Const);
+        if (VN_IS(nodep->rhsp(), Const)) m_constp = VN_AS(nodep->rhsp(), Const);
+    }
+    void resetStatement(AstCReset* nodep) {  // New CReset(A) assignment
+        m_assignp = nodep;
+        m_constp = nullptr;
+        m_everSet = true;
     }
     void complexAssign() {  // A[x]=... or some complicated assignment
         m_assignp = nullptr;
@@ -99,7 +111,7 @@ public:
     void consumed() {  // Rvalue read of A
         m_assignp = nullptr;
     }
-    AstNodeAssign* assignp() const { return m_assignp; }
+    AstNodeStmt* assignp() const { return m_assignp; }
     AstConst* constNodep() const { return m_constp; }
     bool setBeforeUse() const { return m_setBeforeUse; }
     bool everSet() const { return m_everSet; }
@@ -135,7 +147,7 @@ public:
             // Rather than track what sigs AstUCFunc/AstUCStmt may change,
             // we just don't optimize any public sigs
             // Check the var entry, and remove if appropriate
-            if (AstNode* const oldassp = entp->assignp()) {
+            if (AstNodeStmt* const oldassp = entp->assignp()) {
                 UINFO(7, "       PREV: " << oldassp << endl);
                 // Redundant assignment, in same level block
                 // Don't delete it now as it will confuse iteration since it maybe WAY
@@ -143,10 +155,27 @@ public:
                 if (debug() > 4) oldassp->dumpTree("-      REMOVE/SAMEBLK: ");
                 entp->complexAssign();
                 oldassp->unlinkFrBack();
+                if (VN_IS(oldassp, CReset)) {
+                    ++m_statep->m_statCResetDel;
+                } else {
+                    ++m_statep->m_statAssnDel;
+                }
                 VL_DO_DANGLING(m_deleter.pushDeletep(oldassp), oldassp);
-                ++m_statep->m_statAssnDel;
             }
         }
+    }
+    void resetStatement(AstVarScope* nodep, AstCReset* rstp) {
+        // Do we have a old assignment we can nuke?
+        UINFO(4, "     CRESETof: " << nodep << endl);
+        UINFO(7, "       new: " << rstp << endl);
+        const auto pair = m_map.emplace(std::piecewise_construct,  //
+                                        std::forward_as_tuple(nodep),
+                                        std::forward_as_tuple(LifeVarEntry::CRESET{}, rstp));
+        if (!pair.second) {
+            checkRemoveAssign(pair.first);
+            pair.first->second.resetStatement(rstp);
+        }
+        // lifeDump();
     }
     void simpleAssign(AstVarScope* nodep, AstNodeAssign* assp) {
         // Do we have a old assignment we can nuke?
@@ -311,6 +340,15 @@ class LifeVisitor final : public VNVisitor {
             m_lifep->simpleAssign(vscp, nodep);
         } else {
             iterateAndNextNull(nodep->lhsp());
+        }
+    }
+    void visit(AstCReset* nodep) override {
+        if (!m_noopt) {
+            AstVarScope* const vscp = nodep->varrefp()->varScopep();
+            UASSERT_OBJ(vscp, nodep, "Scope lost on variable");
+            m_lifep->resetStatement(vscp, nodep);
+        } else {
+            iterateAndNextNull(nodep->varrefp());
         }
     }
     void visit(AstAssignDly* nodep) override {
