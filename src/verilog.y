@@ -545,7 +545,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 // for example yP_ for punctuation based operators.
 // Double underscores "yX__Y" means token X followed by Y,
 // and "yX__ETC" means X folled by everything but Y(s).
-%token<fl>              ya1STEP         "1step"
+%token<fl>              y1STEP          "1step"
 %token<fl>              yACCEPT_ON      "accept_on"
 %token<fl>              yALIAS          "alias"
 %token<fl>              yALWAYS         "always"
@@ -6077,7 +6077,7 @@ clocking_skewE<nodeExprp>:          // IEEE: [clocking_skew]
 
 clocking_skew<nodeExprp>:           // IEEE: clocking_skew
                 delay_control                           { $$ = $1->lhsp()->unlinkFrBack(); $1->deleteTree(); }
-        |      '#' ya1STEP                              { $$ = new AstConst{$<fl>1, AstConst::OneStep{}}; }
+        |      '#' y1STEP                               { $$ = new AstConst{$<fl>1, AstConst::OneStep{}}; }
         |      yPOSEDGE delay_controlE                  { $$ = nullptr;
                                                           BBUNSUP($1, "Unsupported: clocking event edge override"); }
         |      yNEGEDGE delay_controlE                  { $$ = nullptr;
