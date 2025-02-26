@@ -254,7 +254,7 @@ void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
 
         ActivityVar& activity = m_activity.at(code);
         for (size_t i = 0; i < activity.width; i++) {
-            auto& bit = activity.bits[i];
+            ActivityBit& bit = activity.bits[i];
             if (bit.lastVal && activity.lastTime < m_time) {
                 bit.highTime += m_time - activity.lastTime;
             }
@@ -483,9 +483,9 @@ void VerilatedSaifBuffer::emitEvent(uint32_t code) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
-    auto& activity = m_owner.m_activity.at(code);
+    ActivityVar& activity = m_owner.m_activity.at(code);
 
-    auto& bit = activity.bits[0];
+    ActivityBit& bit = activity.bits[0];
     bit.aggregateVal(m_owner.m_time - activity.lastTime, newval);
     activity.lastTime = m_owner.m_time;
 }
@@ -493,9 +493,9 @@ void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitCData(uint32_t code, CData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
-    auto& activity = m_owner.m_activity.at(code);
+    ActivityVar& activity = m_owner.m_activity.at(code);
 
-    auto dt = m_owner.m_time - activity.lastTime;
+    uint64_t dt = m_owner.m_time - activity.lastTime;
     for (size_t i = 0; i < activity.width; i++) {
         activity.bits[i].aggregateVal(dt, (newval >> i) & 1);
     }
@@ -505,9 +505,9 @@ void VerilatedSaifBuffer::emitCData(uint32_t code, CData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitSData(uint32_t code, SData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
-    auto& activity = m_owner.m_activity.at(code);
+    ActivityVar& activity = m_owner.m_activity.at(code);
 
-    auto dt = m_owner.m_time - activity.lastTime;
+    uint64_t dt = m_owner.m_time - activity.lastTime;
     for (size_t i = 0; i < activity.width; i++) {
         activity.bits[i].aggregateVal(dt, (newval >> i) & 1);
     }
@@ -517,9 +517,9 @@ void VerilatedSaifBuffer::emitSData(uint32_t code, SData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitIData(uint32_t code, IData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
-    auto& activity = m_owner.m_activity.at(code);
+    ActivityVar& activity = m_owner.m_activity.at(code);
 
-    auto dt = m_owner.m_time - activity.lastTime;
+    uint64_t dt = m_owner.m_time - activity.lastTime;
     for (size_t i = 0; i < activity.width; i++) {
         activity.bits[i].aggregateVal(dt, (newval >> i) & 1);
     }
@@ -529,9 +529,9 @@ void VerilatedSaifBuffer::emitIData(uint32_t code, IData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitQData(uint32_t code, QData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
-    auto& activity = m_owner.m_activity.at(code);
+    ActivityVar& activity = m_owner.m_activity.at(code);
 
-    auto dt = m_owner.m_time - activity.lastTime;
+    uint64_t dt = m_owner.m_time - activity.lastTime;
     for (size_t i = 0; i < activity.width; i++) {
         activity.bits[i].aggregateVal(dt, (newval >> i) & 1);
     }
@@ -541,10 +541,9 @@ void VerilatedSaifBuffer::emitQData(uint32_t code, QData newval, int bits) {
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
-    auto& activity = m_owner.m_activity.at(code);
+    ActivityVar& activity = m_owner.m_activity.at(code);
 
-    auto dt = m_owner.m_time - activity.lastTime;
-
+    uint64_t dt = m_owner.m_time - activity.lastTime;
     for (std::size_t i = 0; i < activity.width; ++i) {
         size_t wordIndex = i / VL_EDATASIZE;
         activity.bits[i].aggregateVal(dt, (newvalp[wordIndex] >> VL_BITBIT_E(i)) & 1);
