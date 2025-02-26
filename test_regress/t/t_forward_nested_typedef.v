@@ -5,10 +5,12 @@
 // SPDX-License-Identifier: CC0-1.0
 
 typedef class Bar;
+typedef Bar Baz;
 
 module t;
     initial begin
-        Bar::Qux::boo();
+        Bar::Qux::boo(1);
+        Baz::Qux::boo(1);
         if (!Bar::Qux::finish) $stop;
         $write("*-* All Finished *-*\n");
         $finish;
@@ -17,7 +19,8 @@ endmodule
 
 class Foo #(type T);
     static logic finish = 0;
-    static function void boo();
+    static function void boo(input logic rec);
+        if (rec) Bar::Qux::boo(0);
         finish = 1;
     endfunction
 endclass
