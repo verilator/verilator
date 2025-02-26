@@ -2306,7 +2306,7 @@ public:
 class AstLet final : public AstNodeFTask {
     // Verilog "let" statement
     // Parents: MODULE
-    // stmtp is always a StmtExpr as Let always returns AstNodeExpr
+    // stmtp list first item is returned StmtExpr, as Let always returns AstNodeExpr
 public:
     AstLet(FileLine* fl, const string& name)
         : ASTGEN_SUPER_Let(fl, name, nullptr) {}

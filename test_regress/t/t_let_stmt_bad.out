@@ -1,0 +1,4 @@
+%Error: t/t_let_stmt_bad.v:15:14: Expected statement, not let substitution 'letf'
+   15 |           0: letf(0);  
+      |              ^~~~
+%Error: Exiting due to

@@ -189,6 +189,9 @@ class LinkResolveVisitor final : public VNVisitor {
                 return;
             }
             letp->user2(true);
+            if (VN_IS(nodep->backp(), StmtExpr)) {
+                nodep->v3error("Expected statement, not let substitution " << letp->prettyNameQ());
+            }
             // letp->dumpTree("-let-let ");
             // nodep->dumpTree("-let-ref ");
             AstStmtExpr* const letStmtp = VN_AS(letp->stmtsp(), StmtExpr);
