@@ -477,7 +477,7 @@ detailed descriptions of these arguments.
     --trace-coverage            Enable tracing of coverage
     --trace-depth <levels>      Depth of tracing
     --trace-fst                 Enable FST waveform creation
-    --trace-saif                Enable SAIF trace file creation
+    --trace-saif                Enable SAIF file creation
     --trace-max-array <depth>   Maximum array depth for tracing
     --trace-max-width <width>   Maximum bit width for tracing
     --trace-params              Enable tracing of parameters
