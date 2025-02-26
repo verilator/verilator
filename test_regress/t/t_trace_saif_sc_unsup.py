@@ -9,15 +9,13 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt_all')
+test.scenarios('linter')
 
 test.top_filename = "t/t_trace_fst_sc.v"
 
 if not test.have_sc:
     test.skip("No SystemC installed")
 
-test.compile(verilator_flags2=["--trace-saif --sc"])
-
-test.execute()
+test.lint(fails=test.vlt_all, verilator_flags2=["--sc --trace-saif --lint-only"], expect_filename=test.golden_filename)
 
 test.passes()

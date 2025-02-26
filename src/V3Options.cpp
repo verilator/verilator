@@ -1640,7 +1640,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-top", Set, &m_topModule);
     DECL_OPTION("-top-module", Set, &m_topModule);
     DECL_OPTION("-trace", OnOff, &m_trace);
-    DECL_OPTION("-trace-saif", CbCall, [this]() {
+    DECL_OPTION("-trace-saif", CbCall, [this, fl]() {
         m_trace = true;
         m_traceFormat = TraceFormat::SAIF;
     });
@@ -1823,6 +1823,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-y", CbVal, [this, &optdir](const char* valp) {
         addIncDirUser(parseFileArg(optdir, string{valp}));
     });
+
+    if (m_systemC && m_traceFormat == TraceFormat::SAIF) {
+        fl->v3warn(E_UNSUPPORTED, "Unsupported: SAIF trace with SystemC.");
+    }
 
     parser.finalize();
 
