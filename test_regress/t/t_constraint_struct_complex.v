@@ -122,11 +122,13 @@ class StructArray;
     } struct_t;
     rand struct_t s_arr[2];
 
-    constraint c_structArray {
-        foreach (s_arr[i]) begin
-            foreach (s_arr[i].arr[j]) s_arr[i].arr[j] inside {[0:9]};
-            s_arr[i].a inside {[10:20]};
-        end
+    constraint c_structArray_0 {
+        foreach (s_arr[i])
+            foreach (s_arr[i].arr[j])
+                s_arr[i].arr[j] inside {[0:9]};
+    }
+    constraint c_structArray_1 {
+        foreach (s_arr[i]) s_arr[i].a inside {[10:20]};
     }
 
     function new();
@@ -142,7 +144,7 @@ class StructArray;
         foreach (s_arr[i]) begin
             foreach (s_arr[i].arr[j]) $display("s_arr[%0d].arr[%0d] = %0d", i, j, s_arr[i].arr[j]);
             $display("s_arr[%0d].a = %0d", i, s_arr[i].a);
-            $display("s_arr[%0d].b = %0h", i, s_arr[i].b);
+            $display("s_arr[%0d].b = %0d", i, s_arr[i].b);
             $display("s_arr[%0d].c = %0d", i, s_arr[i].c);
         end
     endfunction
