@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
+test.top_filename = "t/t_trace_fst_sc.v"
+
 if not test.have_sc:
     test.skip("No SystemC installed")
 
