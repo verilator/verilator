@@ -479,192 +479,40 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
 }
 
 void VerilatedSaif::declEvent(
-        uint32_t code, uint32_t fidx, const char* name, int dtypenum, VerilatedTraceSigDirection signalDirection,
-        VerilatedTraceSigKind signalKind, VerilatedTraceSigType signalType, bool array, int arraynum) {
-    fprintf(stdout, "Declaring event - code: %d, fidx: %d, name: %s, \n", code, fidx, name, dtypenum, array, arraynum);
-    printSignalDirection(signalDirection);
-    printSignalKind(signalKind);
-    printSignalType(signalType);
+        uint32_t code, uint32_t fidx, const char* name, int dtypenum, 
+        VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+        bool array, int arraynum) {
     declare(code, name, "event", array, arraynum, false, 0, 0);
 }
 
-void VerilatedSaif::printSignalDirection(VerilatedTraceSigDirection signalDirection)
-{
-    return;
-    switch (signalDirection) {
-        case VerilatedTraceSigDirection::INPUT:
-        {
-            fprintf(stdout, "Signal direction INPUT\n");
-            break;
-        }
-        case VerilatedTraceSigDirection::OUTPUT:
-        {
-            fprintf(stdout, "Signal direction OUTPUT\n");
-            break;
-        }
-        case VerilatedTraceSigDirection::INOUT:
-        {
-            fprintf(stdout, "Signal direction INOUT\n");
-            break;
-        }
-        default:
-        {
-            fprintf(stdout, "Signal direction NONE\n");
-            break;
-        }
-    }
-}
-
-void VerilatedSaif::printSignalKind(VerilatedTraceSigKind signalKind)
-{
-    return;
-    switch (signalKind) {
-        case VerilatedTraceSigKind::PARAMETER:
-        {
-            fprintf(stdout, "Signal kind PARAMETER\n");
-            break;
-        }
-        case VerilatedTraceSigKind::SUPPLY0:
-        {
-            fprintf(stdout, "Signal kind SUPPLY0\n");
-            break;
-        }
-        case VerilatedTraceSigKind::SUPPLY1:
-        {
-            fprintf(stdout, "Signal kind SUPPLY1\n");
-            break;
-        }
-        case VerilatedTraceSigKind::TRI:
-        {
-            fprintf(stdout, "Signal kind TRI\n");
-            break;
-        }
-        case VerilatedTraceSigKind::TRI0:
-        {
-            fprintf(stdout, "Signal kind TRI0\n");
-            break;
-        }
-        case VerilatedTraceSigKind::WIRE:
-        {
-            fprintf(stdout, "Signal kind WIRE\n");
-            break;
-        }
-        case VerilatedTraceSigKind::VAR:
-        {
-            fprintf(stdout, "Signal kind VAR\n");
-            break;
-        }
-        default:
-        {
-            break;
-        }
-    }
-}
-
-void VerilatedSaif::printSignalType(VerilatedTraceSigType signalType)
-{
-    return;
-    switch (signalType) {
-        case VerilatedTraceSigType::DOUBLE:
-        {
-            fprintf(stdout, "Signal type DOUBLE\n");
-            break;
-        }
-        case VerilatedTraceSigType::INTEGER:
-        {
-            fprintf(stdout, "Signal type INTEGER\n");
-            break;
-        }
-        case VerilatedTraceSigType::BIT:
-        {
-            fprintf(stdout, "Signal type BIT\n");
-            break;
-        }
-        case VerilatedTraceSigType::LOGIC:
-        {
-            fprintf(stdout, "Signal type LOGIC\n");
-            break;
-        }
-        case VerilatedTraceSigType::INT:
-        {
-            fprintf(stdout, "Signal type INT\n");
-            break;
-        }
-        case VerilatedTraceSigType::SHORTINT:
-        {
-            fprintf(stdout, "Signal type SHORTINT\n");
-            break;
-        }
-        case VerilatedTraceSigType::LONGINT:
-        {
-            fprintf(stdout, "Signal type LONGINT\n");
-            break;
-        }
-        case VerilatedTraceSigType::BYTE:
-        {
-            fprintf(stdout, "Signal type BYTE\n");
-            break;
-        }
-        case VerilatedTraceSigType::EVENT:
-        {
-            fprintf(stdout, "Signal type EVENT\n");
-            break;
-        }
-        case VerilatedTraceSigType::TIME:
-        {
-            fprintf(stdout, "Signal type TIME\n");
-            break;
-        }
-        default:
-        {
-            break;
-        }
-    }
-}
-
 void VerilatedSaif::declBit(
-        uint32_t code, uint32_t fidx, const char* name, int dtypenum, VerilatedTraceSigDirection signalDirection,
-        VerilatedTraceSigKind signalKind, VerilatedTraceSigType signalType, bool array, int arraynum) {
-    fprintf(stdout, "Declaring bit - code: %d, fidx: %d, name: %s, dtypenum: %d, array: %d, arraynum: %d\n", code, fidx, name, dtypenum, array, arraynum);
-    printSignalDirection(signalDirection);
-    printSignalKind(signalKind);
-    printSignalType(signalType);
+        uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+        VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+        bool array, int arraynum) {
     declare(code, name, "wire", array, arraynum, false, 0, 0);
 }
 void VerilatedSaif::declBus(
-        uint32_t code, uint32_t fidx, const char* name, int dtypenum, VerilatedTraceSigDirection signalDirection,
-        VerilatedTraceSigKind signalKind, VerilatedTraceSigType signalType, bool array, int arraynum, int msb, int lsb) {
-    fprintf(stdout, "Declaring bus - code: %d, fidx: %d, name: %s, dtypenum: %d, array: %d, arraynum: %d\n", code, fidx, name, dtypenum, array, arraynum);
-    printSignalDirection(signalDirection);
-    printSignalKind(signalKind);
-    printSignalType(signalType);
+        uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+        VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+        bool array, int arraynum, int msb, int lsb) {
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
 void VerilatedSaif::declQuad(
-        uint32_t code, uint32_t fidx, const char* name, int dtypenum, VerilatedTraceSigDirection signalDirection,
-        VerilatedTraceSigKind signalKind, VerilatedTraceSigType signalType, bool array, int arraynum, int msb, int lsb) {
-    fprintf(stdout, "Declaring quad - code: %d, fidx: %d, name: %s, dtypenum: %d, array: %d, arraynum: %d\n", code, fidx, name, dtypenum, array, arraynum);
-    printSignalDirection(signalDirection);
-    printSignalKind(signalKind);
-    printSignalType(signalType);
+        uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+        VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+        bool array, int arraynum, int msb, int lsb) {
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
 void VerilatedSaif::declArray(
-        uint32_t code, uint32_t fidx, const char* name, int dtypenum, VerilatedTraceSigDirection signalDirection,
-        VerilatedTraceSigKind signalKind, VerilatedTraceSigType signalType, bool array, int arraynum, int msb, int lsb) {
-    fprintf(stdout, "Declaring array - code: %d, fidx: %d, name: %s, dtypenum: %d, array: %d, arraynum: %d\n", code, fidx, name, dtypenum, array, arraynum);
-    printSignalDirection(signalDirection);
-    printSignalKind(signalKind);
-    printSignalType(signalType);
+        uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+        VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+        bool array, int arraynum, int msb, int lsb) {
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
 void VerilatedSaif::declDouble(
-        uint32_t code, uint32_t fidx, const char* name, int dtypenum, VerilatedTraceSigDirection signalDirection,
-        VerilatedTraceSigKind signalKind, VerilatedTraceSigType signalType, bool array, int arraynum) {
-    fprintf(stdout, "Declaring double - code: %d, fidx: %d, name: %s, dtypenum: %d, array: %d, arraynum: %d\n", code, fidx, name, dtypenum, array, arraynum);
-    printSignalDirection(signalDirection);
-    printSignalKind(signalKind);
-    printSignalType(signalType);
+        uint32_t code, uint32_t fidx, const char* name, int dtypenum,
+        VerilatedTraceSigDirection, VerilatedTraceSigKind, VerilatedTraceSigType,
+        bool array, int arraynum) {
     declare(code, name, "real", array, arraynum, false, 63, 0);
 }
 
@@ -695,8 +543,6 @@ void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     auto& activity = m_owner.m_activity.at(code);
 
-    fprintf(stdout, "Emitting bit - code: %d, newval: %d, activity.width: %d\n", code, newval, activity.width);
-
     auto& bit = activity.bits[0];
     bit.aggregateVal(m_owner.m_time - activity.lastTime, newval);
     activity.lastTime = m_owner.m_time;
@@ -706,12 +552,6 @@ VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitCData(uint32_t code, CData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     auto& activity = m_owner.m_activity.at(code);
-
-    fprintf(stdout, "Emitting char - code: %d, newval: %d, bits: %d, activity.width: %d\n", code, newval, bits, activity.width);
-    
-    if (bits > activity.width) {
-        fprintf(stdout, "Trying to emit more bits than activity width\n");
-    }
 
     auto dt = m_owner.m_time - activity.lastTime;
     for (size_t i = 0; i < activity.width; i++) {
@@ -725,12 +565,6 @@ void VerilatedSaifBuffer::emitSData(uint32_t code, SData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     auto& activity = m_owner.m_activity.at(code);
 
-    fprintf(stdout, "Emitting short - code: %d, newval: %d, bits: %d, activity.width: %d\n", code, newval, bits, activity.width);
-    
-    if (bits > activity.width) {
-        fprintf(stdout, "Trying to emit more bits than activity width\n");
-    }
-
     auto dt = m_owner.m_time - activity.lastTime;
     for (size_t i = 0; i < activity.width; i++) {
         activity.bits[i].aggregateVal(dt, (newval >> i) & 1);
@@ -743,12 +577,6 @@ void VerilatedSaifBuffer::emitIData(uint32_t code, IData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     auto& activity = m_owner.m_activity.at(code);
 
-    fprintf(stdout, "Emitting integer - code: %d, newval: %d, bits: %d, activity.width: %d\n", code, newval, bits, activity.width);
-    
-    if (bits > activity.width) {
-        fprintf(stdout, "Trying to emit more bits than activity width\n");
-    }
-    
     auto dt = m_owner.m_time - activity.lastTime;
     for (size_t i = 0; i < activity.width; i++) {
         activity.bits[i].aggregateVal(dt, (newval >> i) & 1);
@@ -761,12 +589,6 @@ void VerilatedSaifBuffer::emitQData(uint32_t code, QData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     auto& activity = m_owner.m_activity.at(code);
 
-    fprintf(stdout, "Emitting quad - code: %d, newval: %d, bits: %d, activity.width: %d\n", code, newval, bits, activity.width);
-    
-    if (bits > activity.width) {
-        fprintf(stdout, "Trying to emit more bits than activity width\n");
-    }
-
     auto dt = m_owner.m_time - activity.lastTime;
     for (size_t i = 0; i < activity.width; i++) {
         activity.bits[i].aggregateVal(dt, (newval >> i) & 1);
@@ -778,12 +600,6 @@ VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     auto& activity = m_owner.m_activity.at(code);
-
-    fprintf(stdout, "Emitting words - code: %d, bits: %d, activity.width: %d\n", code, bits, activity.width);
-    
-    if (bits > activity.width) {
-        fprintf(stdout, "Trying to emit more bits than activity width\n");
-    }
 
     auto dt = m_owner.m_time - activity.lastTime;
 
