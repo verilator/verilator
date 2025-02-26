@@ -260,7 +260,10 @@ void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
     bool anyNetValid{false};
 
     //NOTE: for now only care about NET, also PORT will be added
-    for (auto& [code, signalName] : saifScope.childSignals) {
+    for (auto& childSignal : saifScope.childSignals) {
+        uint32_t code = childSignal.first;
+        const char* name = childSignal.second.c_str();
+
         ActivityVar& activity = m_activity.at(code);
         for (size_t i = 0; i < activity.width; i++) {
             auto& bit = activity.bits[i];
@@ -283,7 +286,7 @@ void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
 
             printIndent();
             printStr("(");
-            printStr(signalName.c_str());
+            printStr(name);
             if (activity.width > 1) {
                 printStr("\\[");
                 printStr(std::to_string(i).c_str());
