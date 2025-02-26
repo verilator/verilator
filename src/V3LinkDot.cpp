@@ -2759,6 +2759,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // m_ds.m_dotText communicates the cell prefix between stages
                 UINFO(8, indent() << "iter.lhs   " << m_ds.ascii() << " " << nodep << endl);
                 iterateAndNextNull(lhsp);
+                if (!lhsp->classOrPackageSkipp() && lhsp->name() != "local::") {
+                    revisitLater(nodep);
+                    m_ds = lastStates;
+                    return;
+                }
                 m_ds.m_dotPos = DP_PACKAGE;
                 // nodep->lhsp() may be a new node
                 if (AstClassOrPackageRef* const classOrPackageRefp

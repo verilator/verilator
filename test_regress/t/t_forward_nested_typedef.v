@@ -25,6 +25,12 @@ class Foo #(type T);
     endfunction
 endclass
 
+class Goo #(type T);
+    function void goo();
+        T::Qux::boo(1);
+    endfunction
+endclass
+
 class Bar;
     typedef Foo#(Bar) Qux;
 endclass
