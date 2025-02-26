@@ -86,7 +86,7 @@ class SAIFSignalBit:
     def aggregate(self, dt: int, new_val: int):
         if new_val != self.last_val:
             self.transitions += 1
-        
+
         if self.last_val == 1:
             self.high_time += dt
 
@@ -119,7 +119,7 @@ class SAIFParser:
         self.timescale = ''
 
     def parse(self, saif_filename):
-        with open(saif_filename, 'r') as saif_file:
+        with open(saif_filename, 'r', encoding="utf8") as saif_file:
             for line in saif_file:
                 line = line.strip()
                 if not line:
@@ -140,10 +140,10 @@ class SAIFParser:
                 match = re.search(r'INSTANCE\s+([\w\.\$]+)', line)
                 if match:
                     instance_name = match.groups()[0]
-                    
+
                     instance = SAIFInstance(instance_name)
 
-                    if self.current_instance == None:
+                    if self.current_instance is None:
                         self.top_instances[instance_name] = instance
                     else:
                         self.current_instance.child_instances[instance_name] = instance
@@ -159,18 +159,18 @@ class SAIFParser:
                 if match:
                     signal_name, bit_index, bit_values = match.groups()
 
-                    if bit_index == None:
+                    if bit_index is None:
                         bit_index = 0
 
                     if signal_name not in self.current_instance.nets:
-                        signal = SAIFSignal(signal_name)
-                        self.current_instance.nets[signal_name] = signal
+                        saif_signal = SAIFSignal(signal_name)
+                        self.current_instance.nets[signal_name] = saif_signal
 
                     current_signal = self.current_instance.nets[signal_name]
 
                     for _ in range(0, int(bit_index) - current_signal.width + 1):
                         current_signal.bits.append(SAIFSignalBit())
-                        
+
                     current_signal.width = int(bit_index) + 1
 
                     match = re.search(r'T0 (\d+)', bit_values)
@@ -182,7 +182,7 @@ class SAIFParser:
                     match = re.search(r'T1 (\d+)', bit_values)
                     if match:
                         high_time = match.groups()[0]
-                        
+
                         current_signal.bits[int(bit_index)].high_time = int(high_time)
 
                     match = re.search(r'TC (\d+)', bit_values)
@@ -2502,20 +2502,24 @@ class VlTest:
 
     def compare_saif_instances(self, first: SAIFInstance, second: SAIFInstance):
         print(f"Entering {first.scope_name}")
-        for signal_name, signal in first.nets.items():
+        for signal_name, saif_signal in first.nets.items():
             if signal_name not in second.nets:
                 self.error(f"Signal {signal_name} doesn't exist in the second object\n")
 
             other_signal = second.nets[signal_name]
-            if other_signal.width != signal.width:
-                self.error(f"Incompatible signal width in {signal_name} {signal.width} != {other_signal.width}\n")
+            if other_signal.width != saif_signal.width:
+                self.error("Incompatible signal width in "
+                           f"{signal_name} {saif_signal.width} != {other_signal.width}\n")
 
-            for bit_index in range(signal.width):
-                signal_bit = signal.bits[bit_index]
+            for bit_index in range(saif_signal.width):
+                signal_bit = saif_signal.bits[bit_index]
                 other_signal_bit = other_signal.bits[bit_index]
 
-                if signal_bit.high_time != other_signal_bit.high_time or signal_bit.low_time != other_signal_bit.low_time or signal_bit.transitions != other_signal_bit.transitions:
-                    self.error(f"Incompatible signal bit parameters in {signal_name}[{bit_index}]\n")
+                if (signal_bit.high_time != other_signal_bit.high_time or
+                    signal_bit.low_time != other_signal_bit.low_time or
+                    signal_bit.transitions != other_signal_bit.transitions):
+                    self.error("Incompatible signal bit parameters in "
+                               f"{signal_name}[{bit_index}]\n")
 
         for instance_name, instance in first.child_instances.items():
             if instance_name not in second.child_instances:
@@ -2540,17 +2544,6 @@ class VlTest:
                 self.error(f"Top instance {top_instance_name} missing in other SAIF")
 
             self.compare_saif_instances(top_instance, second.top_instances[top_instance_name])
-        
-    def print_saif_instance_tree(self, saif_instance: SAIFInstance):
-        print(f"INSTANCE: {saif_instance.scope_name}")
-
-        print("NET:")
-        for signal_name, signal in saif_instance.nets.items():
-            for bit in range(signal.width):
-                print(f"{signal.name}[{bit}] (T0 {signal.bits[bit].low_time}) (T1 {signal.bits[bit].high_time}) (TC {signal.bits[bit].transitions})")
-
-        for instance_name, instance in saif_instance.child_instances.items():
-            self.print_saif_instance_tree(instance)
 
     def saif_identical(self, fn1: str, fn2: str) -> None:
         """Test if two SAIF files have logically-identical contents"""
