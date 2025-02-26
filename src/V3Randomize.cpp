@@ -726,10 +726,13 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
         }
         // Mark Random for structArray
-        if(VN_IS(nodep->fromp(), ArraySel)){
+        if (VN_IS(nodep->fromp(), ArraySel)) {
             AstNodeExpr* const fromp = VN_AS(nodep->fromp(), ArraySel)->fromp();
-            VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType)->markConstrainedRand(true);
-            AstMemberDType* memberp = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType)->membersp();
+            VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType)
+                ->markConstrainedRand(true);
+            AstMemberDType* memberp
+                = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType)
+                      ->membersp();
             while (memberp) {
                 if (memberp->name() == nodep->name()) {
                     memberp->markConstrainedRand(true);
@@ -741,7 +744,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
-        AstSFormatF* newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false, nullptr};
+        AstSFormatF* newp
+            = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false, nullptr};
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
