@@ -608,7 +608,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         }
         AstVar* const varp = newVar(fl, VVarType::VAR, name, dtypep);
         // Variable will be registered in the caller side.
-        UINFO(3, varp->prettyNameQ()
+        UINFO(4, varp->prettyNameQ()
                      << " is created lsb:" << dtypep->lo() << " msb:" << dtypep->hi() << "\n");
         // Use AstAssign if true, otherwise AstAssignW
         const bool use_simple_assign
@@ -673,7 +673,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     size_t collapse(UnpackRefMap& refs) {
         size_t numSplit = 0;
         for (const auto& pair : refs) {
-            UINFO(3, "In module " << m_modp->name() << " var " << pair.first->prettyNameQ()
+            UINFO(4, "In module " << m_modp->name() << " var " << pair.first->prettyNameQ()
                                   << " which has " << pair.second.size()
                                   << " refs will be split.\n");
             AstVar* const varp = pair.first;
@@ -721,7 +721,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                                         refp->access(), ref.ftask());
                     newp = newrefp;
                     refp->varp()->addNextHere(newrefp->varp());
-                    UINFO(3,
+                    UINFO(4,
                           "Create " << newrefp->varp()->prettyNameQ() << " for " << refp << "\n");
                 }
                 ref.nodep()->replaceWith(newp);
@@ -750,7 +750,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             UnpackRefMap next;
             m_refs.swap(next);
             const size_t n = collapse(next);
-            UINFO(2, n << " Variables are split " << trial << " th trial in "
+            UINFO(4, n << " Variables are split " << trial << " th trial in "
                        << m_modp->prettyNameQ() << '\n');
             if (trial == 0) m_numSplit += n;
         }
@@ -969,7 +969,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             nodep->attrSplitVar(false);
         } else {  // Finally find a good candidate
             const bool inserted = m_refs.emplace(nodep, PackedVarRef{nodep}).second;
-            if (inserted) UINFO(3, nodep->prettyNameQ() << " is added to candidate list.\n");
+            if (inserted) UINFO(4, nodep->prettyNameQ() << " is added to candidate list.\n");
         }
     }
     void visit(AstVarRef* nodep) override {
@@ -1159,7 +1159,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             AstVar* const varp = pair.first;
             PackedVarRef& ref = pair.second;
             ref.dedup();
-            UINFO(3, "In module " << m_modp->name() << " var " << varp->prettyNameQ()
+            UINFO(4, "In module " << m_modp->name() << " var " << varp->prettyNameQ()
                                   << " which has " << ref.lhs().size() << " lhs refs and "
                                   << ref.rhs().size() << " rhs refs will be split.\n");
             std::vector<SplitNewVar> vars
