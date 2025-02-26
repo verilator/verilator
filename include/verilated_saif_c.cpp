@@ -259,7 +259,6 @@ void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
 
     bool anyNetValid{false};
 
-    //NOTE: for now only care about NET, also PORT will be added
     for (auto& childSignal : saifScope.childSignals) {
         uint32_t code = childSignal.first;
         const char* name = childSignal.second.c_str();
@@ -292,6 +291,8 @@ void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
                 printStr(std::to_string(i).c_str());
                 printStr("\\]");
             }
+
+            // We only have two-value logic so TZ, TX and TB will always be 0
             printStr(" (T0 ");
             printStr(std::to_string(m_time - bit.highTime).c_str());
             printStr(") (T1 ");
@@ -299,9 +300,6 @@ void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
             printStr(") (TZ 0) (TX 0) (TB 0) (TC ");
             printStr(std::to_string(bit.transitions).c_str());
             printStr("))\n");
-
-            // NOTE: TZ, TX and TB will be allways 0
-            // NOTE: I.3.4 and I.3.5 mentions also about TG, IG and IK
         }
         activity.lastTime = m_time;
     }
