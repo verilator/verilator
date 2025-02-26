@@ -1,0 +1,3 @@
+%Error-UNSUPPORTED: Unsupported: SAIF trace with SystemC.
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
