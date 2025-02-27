@@ -16,4 +16,6 @@ test.compile(v_flags2=["--trace-saif"])
 
 test.execute()
 
+test.saif_identical(test.trace_filename, test.golden_filename)
+
 test.passes()
