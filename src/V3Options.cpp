@@ -1640,7 +1640,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-top", Set, &m_topModule);
     DECL_OPTION("-top-module", Set, &m_topModule);
     DECL_OPTION("-trace", OnOff, &m_trace);
-    DECL_OPTION("-trace-saif", CbCall, [this, fl]() {
+    DECL_OPTION("-trace-saif", CbCall, [this]() {
         m_trace = true;
         m_traceFormat = TraceFormat::SAIF;
     });
