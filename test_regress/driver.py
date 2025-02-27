@@ -2501,7 +2501,9 @@ class VlTest:
         self.vcd_identical(tmp, fn2)
 
     def compare_saif_instances(self, first: SAIFInstance, second: SAIFInstance):
-        print(f"Entering {first.scope_name}")
+        if len(first.nets) != len(second.nets):
+            self.error(f"Number of nets doesn't match in {first.scope_name}: {len(first.nets)} != {len(second.nets)}")
+
         for signal_name, saif_signal in first.nets.items():
             if signal_name not in second.nets:
                 self.error(f"Signal {signal_name} doesn't exist in the second object\n")
@@ -2520,6 +2522,9 @@ class VlTest:
                     signal_bit.transitions != other_signal_bit.transitions):
                     self.error("Incompatible signal bit parameters in "
                                f"{signal_name}[{bit_index}]\n")
+                    
+        if len(first.child_instances) != len(second.child_instances):
+            self.error(f"Number of child instances doesn't match in {first.scope_name}: {len(first.child_instances)} != {len(second.child_instances)}")
 
         for instance_name, instance in first.child_instances.items():
             if instance_name not in second.child_instances:
@@ -2539,6 +2544,9 @@ class VlTest:
         if first.timescale != second.timescale:
             self.error(f"Timescale doesn't match: {first.timescale} != {second.timescale}")
 
+        if len(first.top_instances) != len(second.top_instances):
+            self.error(f"Number of top instances doesn't match: {len(first.top_instances)} != {len(second.top_instances)}")
+
         for top_instance_name, top_instance in first.top_instances.items():
             if top_instance_name not in second.top_instances:
                 self.error(f"Top instance {top_instance_name} missing in other SAIF")
@@ -2553,7 +2561,6 @@ class VlTest:
         golden_saif = SAIFParser()
         golden_saif.parse(fn2)
 
-        self.compare_saif_contents(test_result_saif, golden_saif)
         self.compare_saif_contents(golden_saif, test_result_saif)
 
     def _vcd_read(self, filename: str) -> str:
