@@ -25,8 +25,8 @@
 #include "verilated_trace.h"
 
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 class VerilatedSaifBuffer;
 class VerilatedSaifFile;
@@ -64,7 +64,9 @@ class ActivityVar {
 public:
     // CONSTRUCTORS
     ActivityVar(uint32_t lsb, uint32_t width, ActivityBit* bits)
-        : m_lsb{lsb}, m_width{width}, m_bits{bits} {}
+        : m_lsb{lsb}
+        , m_width{width}
+        , m_bits{bits} {}
 
     ActivityVar(ActivityVar&&) = default;
     ActivityVar& operator=(ActivityVar&&) = default;
@@ -73,8 +75,7 @@ public:
     VL_ATTR_ALWINLINE void emitBit(uint64_t time, CData newval);
 
     template <typename DataType>
-    VL_ATTR_ALWINLINE
-    void emitData(uint64_t time, DataType newval, uint32_t bits) {
+    VL_ATTR_ALWINLINE void emitData(uint64_t time, DataType newval, uint32_t bits) {
         static_assert(std::is_integral<DataType>::value);
 
         uint64_t dt = time - m_lastTime;
@@ -110,20 +111,30 @@ class ActivityScope {
 public:
     // CONSTRUCTORS
     ActivityScope(std::string name, int32_t parentScopeIndex = -1)
-        : m_scopeName{std::move(name)}, m_parentScopeIndex{parentScopeIndex} {}
+        : m_scopeName{std::move(name)}
+        , m_parentScopeIndex{parentScopeIndex} {}
 
     ActivityScope(ActivityScope&&) = default;
     ActivityScope& operator=(ActivityScope&&) = default;
 
     // METHODS
-    VL_ATTR_ALWINLINE void addChildScopeIndex(int32_t index) { m_childScopesIndices.emplace_back(index); }
-    VL_ATTR_ALWINLINE void addActivityVar(uint32_t code, std::string name) { m_childActivities.emplace_back(code, std::move(name)); }
+    VL_ATTR_ALWINLINE void addChildScopeIndex(int32_t index) {
+        m_childScopesIndices.emplace_back(index);
+    }
+    VL_ATTR_ALWINLINE void addActivityVar(uint32_t code, std::string name) {
+        m_childActivities.emplace_back(code, std::move(name));
+    }
     VL_ATTR_ALWINLINE bool hasParent() const { return m_parentScopeIndex >= 0; }
 
     // ACCESSORS
     VL_ATTR_ALWINLINE const std::string& getName() const { return m_scopeName; }
-    VL_ATTR_ALWINLINE const std::vector<int32_t>& getChildScopesIndices() const { return m_childScopesIndices; }
-    VL_ATTR_ALWINLINE const std::vector<std::pair<uint32_t, std::string>>& getChildActivities() const { return m_childActivities; }
+    VL_ATTR_ALWINLINE const std::vector<int32_t>& getChildScopesIndices() const {
+        return m_childScopesIndices;
+    }
+    VL_ATTR_ALWINLINE const std::vector<std::pair<uint32_t, std::string>>&
+    getChildActivities() const {
+        return m_childActivities;
+    }
     VL_ATTR_ALWINLINE int32_t getParentScopeIndex() const { return m_parentScopeIndex; }
 
 private:

@@ -66,6 +66,7 @@ class staticproperty(property):
     def __get__(self, owner_self, owner_cls):
         return self.fget()
 
+
 #######################################################################
 #######################################################################
 # SAIF parser utilities
@@ -92,8 +93,10 @@ class SAIFSignalBit:
 
         self.last_val = new_val
 
+
 class SAIFSignal:
-    def __init__(self, signal_name, signal_width = 0):
+
+    def __init__(self, signal_name, signal_width=0):
         self.name = signal_name
         self.width = signal_width
         self.last_time = 0
@@ -102,14 +105,18 @@ class SAIFSignal:
         for _ in range(self.width):
             self.bits.append(SAIFSignalBit())
 
+
 class SAIFInstance:
+
     def __init__(self, scope_name):
         self.scope_name = scope_name
         self.parent_instance = None
         self.nets = {}
         self.child_instances = {}
 
+
 class SAIFParser:
+
     def __init__(self):
         self.top_instances = {}
         self.current_instance = None
@@ -2502,7 +2509,9 @@ class VlTest:
 
     def compare_saif_instances(self, first: SAIFInstance, second: SAIFInstance):
         if len(first.nets) != len(second.nets):
-            self.error(f"Number of nets doesn't match in {first.scope_name}: {len(first.nets)} != {len(second.nets)}")
+            self.error(
+                f"Number of nets doesn't match in {first.scope_name}: {len(first.nets)} != {len(second.nets)}"
+            )
 
         for signal_name, saif_signal in first.nets.items():
             if signal_name not in second.nets:
@@ -2517,14 +2526,16 @@ class VlTest:
                 signal_bit = saif_signal.bits[bit_index]
                 other_signal_bit = other_signal.bits[bit_index]
 
-                if (signal_bit.high_time != other_signal_bit.high_time or
-                    signal_bit.low_time != other_signal_bit.low_time or
-                    signal_bit.transitions != other_signal_bit.transitions):
+                if (signal_bit.high_time != other_signal_bit.high_time
+                        or signal_bit.low_time != other_signal_bit.low_time
+                        or signal_bit.transitions != other_signal_bit.transitions):
                     self.error("Incompatible signal bit parameters in "
                                f"{signal_name}[{bit_index}]\n")
-                    
+
         if len(first.child_instances) != len(second.child_instances):
-            self.error(f"Number of child instances doesn't match in {first.scope_name}: {len(first.child_instances)} != {len(second.child_instances)}")
+            self.error(
+                f"Number of child instances doesn't match in {first.scope_name}: {len(first.child_instances)} != {len(second.child_instances)}"
+            )
 
         for instance_name, instance in first.child_instances.items():
             if instance_name not in second.child_instances:
@@ -2545,7 +2556,9 @@ class VlTest:
             self.error(f"Timescale doesn't match: {first.timescale} != {second.timescale}")
 
         if len(first.top_instances) != len(second.top_instances):
-            self.error(f"Number of top instances doesn't match: {len(first.top_instances)} != {len(second.top_instances)}")
+            self.error(
+                f"Number of top instances doesn't match: {len(first.top_instances)} != {len(second.top_instances)}"
+            )
 
         for top_instance_name, top_instance in first.top_instances.items():
             if top_instance_name not in second.top_instances:

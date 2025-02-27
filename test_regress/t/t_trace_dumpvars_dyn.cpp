@@ -39,9 +39,11 @@ int main(int argc, char** argv) {
 
     std::unique_ptr<TRACE_CLASS> tfp{new TRACE_CLASS};
 
-#if defined(T_TRACE_DUMPVARS_DYN_VCD_0) || defined(T_TRACE_DUMPVARS_DYN_FST_0) || defined(T_TRACE_DUMPVARS_DYN_SAIF_0)
+#if defined(T_TRACE_DUMPVARS_DYN_VCD_0) || defined(T_TRACE_DUMPVARS_DYN_FST_0) \
+    || defined(T_TRACE_DUMPVARS_DYN_SAIF_0)
     tfp->dumpvars(0, "");
-#elif defined(T_TRACE_DUMPVARS_DYN_VCD_1) || defined(T_TRACE_DUMPVARS_DYN_FST_1) || defined(T_TRACE_DUMPVARS_DYN_SAIF_1)
+#elif defined(T_TRACE_DUMPVARS_DYN_VCD_1) || defined(T_TRACE_DUMPVARS_DYN_FST_1) \
+    || defined(T_TRACE_DUMPVARS_DYN_SAIF_1)
     tfp->dumpvars(99, "t");  // This should not match "top."
     tfp->dumpvars(1, "top.t.cyc");  // A signal
     tfp->dumpvars(1, "top.t.sub1a");  // Scope
