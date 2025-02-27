@@ -64,6 +64,25 @@
 //=============================================================================
 // ActivityVar
 
+VL_ATTR_ALWINLINE
+void ActivityVar::emitBit(uint64_t time, CData newval) {
+    assert(m_lastTime <= time);
+    m_bits[0].aggregateVal(time - m_lastTime, newval);
+    updateLastTime(time);
+}
+
+VL_ATTR_ALWINLINE
+void ActivityVar::emitWData(uint64_t time, const WData* newvalp, uint32_t bits) {
+    assert(m_lastTime <= time);
+    uint64_t dt = time - m_lastTime;
+    for (std::size_t i = 0; i < std::min(m_width, bits); ++i) {
+        size_t wordIndex = i / VL_EDATASIZE;
+        m_bits[i].aggregateVal(dt, (newvalp[wordIndex] >> VL_BITBIT_E(i)) & 1);
+    }
+
+    updateLastTime(time);
+}
+
 ActivityBit& ActivityVar::getBit(std::size_t index)
 {
     assert(index < m_width);
@@ -327,6 +346,8 @@ bool VerilatedSaif::printActivityStats(uint32_t activityCode, const char* activi
         printStr("))\n");
     }
 
+    activity.updateLastTime(m_time);
+
     return anyNetValid;
 }
 
@@ -501,72 +522,42 @@ VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     ActivityVar& activity = m_owner.m_activity.at(code);
-
-    ActivityBit& bit = activity.getBit(0);
-    bit.aggregateVal(m_owner.m_time - activity.getLastUpdateTime(), newval);
-    activity.updateLastTime(m_owner.m_time);
+    activity.emitBit(m_owner.m_time, newval);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitCData(uint32_t code, CData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     ActivityVar& activity = m_owner.m_activity.at(code);
-
-    uint64_t dt = m_owner.m_time - activity.getLastUpdateTime();
-    for (size_t i = 0; i < activity.getWidth(); i++) {
-        activity.getBit(i).aggregateVal(dt, (newval >> i) & 1);
-    }
-    activity.updateLastTime(m_owner.m_time);
+    activity.emitData<CData>(m_owner.m_time, newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitSData(uint32_t code, SData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     ActivityVar& activity = m_owner.m_activity.at(code);
-
-    uint64_t dt = m_owner.m_time - activity.getLastUpdateTime();
-    for (size_t i = 0; i < activity.getWidth(); i++) {
-        activity.getBit(i).aggregateVal(dt, (newval >> i) & 1);
-    }
-    activity.updateLastTime(m_owner.m_time);
+    activity.emitData<SData>(m_owner.m_time, newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitIData(uint32_t code, IData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     ActivityVar& activity = m_owner.m_activity.at(code);
-
-    uint64_t dt = m_owner.m_time - activity.getLastUpdateTime();
-    for (size_t i = 0; i < activity.getWidth(); i++) {
-        activity.getBit(i).aggregateVal(dt, (newval >> i) & 1);
-    }
-    activity.updateLastTime(m_owner.m_time);
+    activity.emitData<IData>(m_owner.m_time, newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitQData(uint32_t code, QData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     ActivityVar& activity = m_owner.m_activity.at(code);
-
-    uint64_t dt = m_owner.m_time - activity.getLastUpdateTime();
-    for (size_t i = 0; i < activity.getWidth(); i++) {
-        activity.getBit(i).aggregateVal(dt, (newval >> i) & 1);
-    }
-    activity.updateLastTime(m_owner.m_time);
+    activity.emitData<QData>(m_owner.m_time, newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     ActivityVar& activity = m_owner.m_activity.at(code);
-
-    uint64_t dt = m_owner.m_time - activity.getLastUpdateTime();
-    for (std::size_t i = 0; i < activity.getWidth(); ++i) {
-        size_t wordIndex = i / VL_EDATASIZE;
-        activity.getBit(i).aggregateVal(dt, (newvalp[wordIndex] >> VL_BITBIT_E(i)) & 1);
-    }
-
-    activity.updateLastTime(m_owner.m_time);
+    activity.emitWData(m_owner.m_time, newvalp, bits);
 }
 
 VL_ATTR_ALWINLINE
