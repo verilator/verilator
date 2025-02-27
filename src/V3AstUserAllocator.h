@@ -99,7 +99,7 @@ public:
     }
 
     // Get a pointer to the user data if exists, otherwise nullptr
-    T_Data* tryGet(const T_Node* nodep) { return getUserp(nodep); }
+    T_Data* tryGet(const T_Node* nodep) const { return getUserp(nodep); }
 
     void clear() { m_allocated.clear(); }
 };
