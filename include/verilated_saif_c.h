@@ -40,7 +40,6 @@ public:
     VL_ATTR_ALWINLINE
     void aggregateVal(uint64_t dt, bool newVal) {
         m_transitions += newVal != m_lastVal ? 1 : 0;
-        assert(dt < 10000);
         m_highTime += m_lastVal ? dt : 0;
         m_lastVal = newVal;
     }
