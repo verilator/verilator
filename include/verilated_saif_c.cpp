@@ -66,7 +66,7 @@
 
 ActivityBit& ActivityVar::getBit(std::size_t index)
 {
-    assert(index >= 0 && index < m_width);
+    assert(index < m_width);
     return m_bits[index];
 }
 
@@ -107,20 +107,7 @@ void VerilatedSaif::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     openNextImp(m_rolloverSize != 0);
     if (!isOpen()) return;
 
-    // NOTE: maybe extract those keywords to some variables to keep them in one place
-    printStr("(SAIFILE\n");
-    printStr("(SAIFVERSION \"2.0\")\n");
-    printStr("(DIRECTION \"backward\")\n");
-    printStr("(DESIGN \"foo\")\n");
-    //printStr("(DATE \"foo\")\n");
-    //printStr("(VENDOR \"foo\")\n");
-    printStr("(PROGRAM_NAME \"Verilator\")\n");
-    //printStr("(PROGRAM_VERSION \"foo\")\n");
-    printStr("(VERSION \"5.032\")\n");
-    printStr("(DIVIDER / )\n");
-    printStr("(TIMESCALE ");
-    printStr(timeResStr().c_str());
-    printStr(")\n");
+    initializeSaifFileContents();
 
     Super::traceInit();
 
@@ -178,6 +165,19 @@ void VerilatedSaif::openNextImp(bool incFilename) {
     fullDump(true);  // First dump must be full
 }
 
+void VerilatedSaif::initializeSaifFileContents() {
+    printStr("(SAIFILE\n");
+    printStr("(SAIFVERSION \"2.0\")\n");
+    printStr("(DIRECTION \"backward\")\n");
+    printStr("(DESIGN \"foo\")\n");
+    printStr("(PROGRAM_NAME \"Verilator\")\n");
+    printStr("(VERSION \"5.032\")\n");
+    printStr("(DIVIDER / )\n");
+    printStr("(TIMESCALE ");
+    printStr(timeResStr().c_str());
+    printStr(")\n");
+}
+
 bool VerilatedSaif::preChangeDump() {
     if (VL_UNLIKELY(m_rolloverSize)) openNextImp(true);
     return isOpen();
@@ -211,6 +211,20 @@ void VerilatedSaif::closeErr() {
 }
 
 void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
+    // This function is on the flush() call path
+    const VerilatedLockGuard lock{m_mutex};
+    if (!isOpen()) return;
+
+    finalizeSaifFileContents();
+    clearCurrentlyCollectedData();
+
+    closePrev();
+    // closePrev() called Super::flush(), so we just
+    // need to shut down the tracing thread here.
+    Super::closeBase();
+}
+
+void VerilatedSaif::finalizeSaifFileContents() {
     printStr("(DURATION ");
     printStr(std::to_string(m_time).c_str());
     printStr(")\n");
@@ -222,90 +236,98 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     decrementIndent();
     
     printStr(")\n"); // SAIFILE
-
-    clearCurrentlyCollectedData();
-
-    // This function is on the flush() call path
-    const VerilatedLockGuard lock{m_mutex};
-    if (!isOpen()) return;
-    closePrev();
-    // closePrev() called Super::flush(), so we just
-    // need to shut down the tracing thread here.
-    Super::closeBase();
 }
 
 void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
-    const ActivityScope& saifScope = m_scopes.at(scopeIndex);
+    const ActivityScope& scope = m_scopes.at(scopeIndex);
 
-    printIndent();
-    printStr("(INSTANCE ");
-    printStr(saifScope.getName().c_str());
-    printStr("\n");
+    openInstanceScope(scope.getName().c_str());
 
-    incrementIndent();
+    printScopeActivities(scope);
 
-    bool anyNetValid{false};
-
-    for (auto& childSignal : saifScope.getChildActivities()) {
-        uint32_t code = childSignal.first;
-        const char* name = childSignal.second.c_str();
-
-        ActivityVar& activity = m_activity.at(code);
-        for (size_t i = 0; i < activity.getWidth(); i++) {
-            ActivityBit& bit = activity.getBit(i);
-
-            if (bit.getToggleCount() <= 0) {
-                // Skip bits with no transitions
-                continue;
-            }
-
-            bit.aggregateVal(m_time - activity.getLastUpdateTime(), bit.getBitValue());
-
-            assert(m_time >= bit.getHighTime());
-
-            if (!anyNetValid) {
-                printIndent();
-                printStr("(NET\n");
-                anyNetValid = true;
-                
-                incrementIndent();
-            }
-
-            printIndent();
-            printStr("(");
-            printStr(name);
-            if (activity.getWidth() > 1) {
-                printStr("\\[");
-                printStr(std::to_string(i).c_str());
-                printStr("\\]");
-            }
-
-            // We only have two-value logic so TZ, TX and TB will always be 0
-            printStr(" (T0 ");
-            printStr(std::to_string(m_time - bit.getHighTime()).c_str());
-            printStr(") (T1 ");
-            printStr(std::to_string(bit.getHighTime()).c_str());
-            printStr(") (TZ 0) (TX 0) (TB 0) (TC ");
-            printStr(std::to_string(bit.getToggleCount()).c_str());
-            printStr("))\n");
-        }
-        activity.updateLastTime(m_time);
-    }
-    
-    if (anyNetValid) {
-        decrementIndent();
-    
-        printIndent();
-        printStr(")\n"); // NET
-    }
-
-    for (uint32_t childScopeIndex : saifScope.getChildScopesIndices()) {
+    for (uint32_t childScopeIndex : scope.getChildScopesIndices()) {
         recursivelyPrintScopes(childScopeIndex);
     }
 
+    closeInstanceScope();
+}
+
+void VerilatedSaif::openInstanceScope(const char* instanceName) {
+    printIndent();
+    printStr("(INSTANCE ");
+    printStr(instanceName);
+    printStr("\n");
+    incrementIndent();
+}
+
+void VerilatedSaif::closeInstanceScope() {
     decrementIndent();
     printIndent();
-    printStr(")\n"); // INSTANCE
+    printStr(")\n");
+}
+
+void VerilatedSaif::printScopeActivities(const ActivityScope& scope) {
+    bool anyNetValid{false};
+    for (auto& childSignal : scope.getChildActivities()) {
+        uint32_t code = childSignal.first;
+        const char* name = childSignal.second.c_str();
+        anyNetValid = printActivityStats(code, name, anyNetValid);
+    }
+
+    if (anyNetValid) {
+        closeNetScope();
+    }
+}
+
+void VerilatedSaif::openNetScope() {
+    printIndent();
+    printStr("(NET\n");
+    incrementIndent();
+}
+
+void VerilatedSaif::closeNetScope() {
+    decrementIndent();
+    printIndent();
+    printStr(")\n");
+}
+
+bool VerilatedSaif::printActivityStats(uint32_t activityCode, const char* activityName, bool anyNetValid){
+    ActivityVar& activity = m_activity.at(activityCode);
+    for (size_t i = 0; i < activity.getWidth(); i++) {
+        ActivityBit& bit = activity.getBit(i);
+
+        if (bit.getToggleCount() <= 0) {
+            // Skip bits with no toggles
+            continue;
+        }
+
+        bit.aggregateVal(m_time - activity.getLastUpdateTime(), bit.getBitValue());
+
+        if (!anyNetValid) {
+            openNetScope();
+            anyNetValid = true;
+        }
+
+        printIndent();
+        printStr("(");
+        printStr(activityName);
+        if (activity.getWidth() > 1) {
+            printStr("\\[");
+            printStr(std::to_string(i).c_str());
+            printStr("\\]");
+        }
+
+        // We only have two-value logic so TZ, TX and TB will always be 0
+        printStr(" (T0 ");
+        printStr(std::to_string(m_time - bit.getHighTime()).c_str());
+        printStr(") (T1 ");
+        printStr(std::to_string(bit.getHighTime()).c_str());
+        printStr(") (TZ 0) (TX 0) (TB 0) (TC ");
+        printStr(std::to_string(bit.getToggleCount()).c_str());
+        printStr("))\n");
+    }
+
+    return anyNetValid;
 }
 
 void VerilatedSaif::clearCurrentlyCollectedData()
