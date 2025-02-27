@@ -40,6 +40,7 @@ public:
     VL_ATTR_ALWINLINE
     void aggregateVal(uint64_t dt, bool newVal) {
         m_transitions += newVal != m_lastVal ? 1 : 0;
+        assert(dt < 10000);
         m_highTime += m_lastVal ? dt : 0;
         m_lastVal = newVal;
     }
@@ -69,6 +70,21 @@ public:
     ActivityVar& operator=(ActivityVar&&) = default;
 
     // METHODS
+    VL_ATTR_ALWINLINE void emitBit(uint64_t time, CData newval);
+
+    template <typename DataType>
+    VL_ATTR_ALWINLINE
+    void emitData(uint64_t time, DataType newval, uint32_t bits) {
+        static_assert(std::is_integral<DataType>::value);
+
+        uint64_t dt = time - m_lastTime;
+        for (size_t i = 0; i < std::min(m_width, bits); i++) {
+            m_bits[i].aggregateVal(dt, (newval >> i) & 1);
+        }
+        updateLastTime(time);
+    }
+
+    VL_ATTR_ALWINLINE void emitWData(uint64_t time, const WData* newvalp, uint32_t bits);
     VL_ATTR_ALWINLINE void updateLastTime(uint64_t val) { m_lastTime = val; }
 
     // ACCESSORS
@@ -156,7 +172,7 @@ private:
     void decrementIndent();
     void printIndent();
 
-    int m_indent = 0;  // Indentation depth
+    int m_indent = 0;
 
     void printStr(const char* str);
 
