@@ -50,18 +50,6 @@
 
 // clang-format on
 
-// This size comes form SAIF allowing use of printable ASCII characters between
-// '!' and '~' inclusive, which are a total of 94 different values. Encoding a
-// 32 bit code hence needs a maximum of std::ceil(log94(2**32-1)) == 5 bytes.
-constexpr unsigned VL_TRACE_MAX_SAIF_CODE_SIZE = 5;  // Maximum length of a SAIF string code
-
-// We use 8 bytes per code in a suffix buffer array.
-// 1 byte optional separator + VL_TRACE_MAX_SAIF_CODE_SIZE bytes for code
-// + 1 byte '\n' + 1 byte suffix size. This luckily comes out to a power of 2,
-// meaning the array can be aligned such that entries never straddle multiple
-// cache-lines.
-constexpr unsigned VL_TRACE_SUFFIX_ENTRY_SIZE = 8;  // Size of a suffix entry
-
 //=============================================================================
 // Specialization of the generics for this trace format
 
@@ -77,8 +65,7 @@ constexpr unsigned VL_TRACE_SUFFIX_ENTRY_SIZE = 8;  // Size of a suffix entry
 // VerilatedSaifFile
 
 bool VerilatedSaifFile::open(const std::string& name) VL_MT_UNSAFE {
-    m_fd = ::open(name.c_str(),
-                  O_CREAT | O_WRONLY | O_TRUNC | O_LARGEFILE | O_NONBLOCK | O_CLOEXEC, 0666);
+    m_fd = ::open(name.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_LARGEFILE | O_NONBLOCK | O_CLOEXEC, 0666);
     return m_fd >= 0;
 }
 
@@ -347,12 +334,11 @@ void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType
     assert(!m_prefixStack.empty());
 
     std::string pname = name;
-    if (name.empty()) {
+    if (pname.empty()) {
         pname = "$rootio";
     }
 
-    if (type != VerilatedTracePrefixType::ARRAY_UNPACKED && type != VerilatedTracePrefixType::ARRAY_PACKED)
-    {
+    if (type != VerilatedTracePrefixType::ARRAY_UNPACKED && type != VerilatedTracePrefixType::ARRAY_PACKED) {
         int32_t newScopeIndex = m_scopes.size();
         m_scopes.emplace_back();
         SaifScope& newScope = m_scopes.back();
@@ -392,8 +378,9 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
 
     std::string hierarchicalName = m_prefixStack.back().first + name;
 
-    const bool enabled = Super::declCode(code, hierarchicalName, bits);
-    if (!enabled) return;
+    if (!Super::declCode(code, hierarchicalName, bits)) {
+        return;
+    }
 
     const size_t block_size = 1024;
     if (m_activityArena.empty() || m_activityArena.back().size() + bits > m_activityArena.back().capacity()) {
