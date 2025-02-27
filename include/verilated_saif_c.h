@@ -142,11 +142,23 @@ private:
     std::string m_filename;  // Filename we're writing to (if open)
     uint64_t m_rolloverSize = 0;  // File size to rollover at
 
+    void initializeSaifFileContents();
+    void finalizeSaifFileContents();
+    void recursivelyPrintScopes(uint32_t scopeIndex);
+    void openInstanceScope(const char* instanceName);
+    void closeInstanceScope();
+    void printScopeActivities(const ActivityScope& scope);
+    void openNetScope();
+    void closeNetScope();
+    bool printActivityStats(uint32_t activityCode, const char* activityName, bool anyNetValid);
+
     void incrementIndent();
     void decrementIndent();
     void printIndent();
 
     int m_indent = 0;  // Indentation depth
+
+    void printStr(const char* str);
 
     void clearCurrentlyCollectedData();
 
@@ -158,18 +170,14 @@ private:
     std::vector<std::vector<ActivityBit>> m_activityArena;
     uint64_t m_time;
 
-    // Prefixes to add to signal names/scope types
     std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
         {"", VerilatedTracePrefixType::SCOPE_MODULE}};
 
     void openNextImp(bool incFilename);
     void closePrev();
     void closeErr();
-    void printStr(const char* str);
     void declare(uint32_t code, const char* name, const char* wirep, bool array, int arraynum,
                  bool bussed, int msb, int lsb);
-
-    void recursivelyPrintScopes(uint32_t scopeIndex);
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedSaif);
