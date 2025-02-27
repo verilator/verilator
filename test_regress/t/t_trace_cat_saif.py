@@ -19,7 +19,7 @@ test.compile(make_top_shell=False,
 
 test.execute()
 
-test.saif_identical(test.obj_dir + "/simpart_0000.saif", "t/" + test.name + "_0000.saif")
-test.saif_identical(test.obj_dir + "/simpart_0100.saif", "t/" + test.name + "_0100.saif")
+test.saif_identical(test.obj_dir + "/simpart_0000.saif", "t/" + test.name + "_0000.out")
+test.saif_identical(test.obj_dir + "/simpart_0100.saif", "t/" + test.name + "_0100.out")
 
 test.passes()
