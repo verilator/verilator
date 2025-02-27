@@ -31,31 +31,94 @@
 class VerilatedSaifBuffer;
 class VerilatedSaifFile;
 
-struct ActivityBit {
-    bool lastVal = false;
-    uint64_t highTime = 0;
-    size_t transitions = 0;
+//=============================================================================
+// ActivityBit
 
+class ActivityBit {
+public:
+    // METHODS
     VL_ATTR_ALWINLINE
     void aggregateVal(uint64_t dt, bool newVal) {
-        transitions += newVal != lastVal ? 1 : 0;
-        highTime += lastVal ? dt : 0;
-        lastVal = newVal;
+        m_transitions += newVal != m_lastVal ? 1 : 0;
+        m_highTime += m_lastVal ? dt : 0;
+        m_lastVal = newVal;
     }
+
+    // ACCESSORS
+    VL_ATTR_ALWINLINE bool getBitValue() const { return m_lastVal; }
+    VL_ATTR_ALWINLINE uint64_t getHighTime() const { return m_highTime; }
+    VL_ATTR_ALWINLINE uint64_t getToggleCount() const { return m_transitions; }
+
+private:
+    // MEMBERS
+    bool m_lastVal = false;
+    uint64_t m_highTime = 0;
+    size_t m_transitions = 0;
 };
 
-struct ActivityVar {
-    uint32_t lsb;
-    uint32_t width;
-    ActivityBit* bits;
-    uint64_t lastTime = 0;
+//=============================================================================
+// ActivityVar
+
+class ActivityVar {
+public:
+    // CONSTRUCTORS
+    ActivityVar(uint32_t lsb, uint32_t width, ActivityBit* bits)
+        : m_lsb{lsb}, m_width{width}, m_bits{bits} {}
+
+    ActivityVar(ActivityVar&&) = default;
+    ActivityVar& operator=(ActivityVar&&) = default;
+
+    // METHODS
+    VL_ATTR_ALWINLINE void updateLastTime(uint64_t val) { m_lastTime = val; }
+
+    // ACCESSORS
+    VL_ATTR_ALWINLINE uint32_t getWidth() const { return m_width; }
+    VL_ATTR_ALWINLINE ActivityBit& getBit(std::size_t index);
+    VL_ATTR_ALWINLINE uint64_t getLastUpdateTime() const { return m_lastTime; }
+
+private:
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(ActivityVar);
+
+    // MEMBERS
+    uint32_t m_lsb;
+    uint32_t m_width;
+    ActivityBit* m_bits;
+    uint64_t m_lastTime{0};
 };
 
-struct SaifScope {
-    std::string scopeName{};
-    std::vector<int32_t> childScopesIndices{};
-    std::vector<std::pair<uint32_t, std::string>> childSignals{};
-    int32_t parentScopeIndex{-1};
+//=============================================================================
+// ActivityScope
+
+class ActivityScope {
+public:
+    // CONSTRUCTORS
+    ActivityScope(std::string name, int32_t parentScopeIndex = -1)
+        : m_scopeName{std::move(name)}, m_parentScopeIndex{parentScopeIndex} {}
+
+    ActivityScope(ActivityScope&&) = default;
+    ActivityScope& operator=(ActivityScope&&) = default;
+
+    // METHODS
+    VL_ATTR_ALWINLINE void addChildScopeIndex(int32_t index) { m_childScopesIndices.emplace_back(index); }
+    VL_ATTR_ALWINLINE void addActivityVar(uint32_t code, std::string name) { m_childActivities.emplace_back(code, std::move(name)); }
+    VL_ATTR_ALWINLINE bool hasParent() const { return m_parentScopeIndex >= 0; }
+
+    // ACCESSORS
+    VL_ATTR_ALWINLINE const std::string& getName() const { return m_scopeName; }
+    VL_ATTR_ALWINLINE const std::vector<int32_t>& getChildScopesIndices() const { return m_childScopesIndices; }
+    VL_ATTR_ALWINLINE const std::vector<std::pair<uint32_t, std::string>>& getChildActivities() const { return m_childActivities; }
+    VL_ATTR_ALWINLINE int32_t getParentScopeIndex() const { return m_parentScopeIndex; }
+
+private:
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(ActivityScope);
+
+    // MEMBERS
+    std::string m_scopeName{};
+    std::vector<int32_t> m_childScopesIndices{};
+    std::vector<std::pair<uint32_t, std::string>> m_childActivities{};
+    int32_t m_parentScopeIndex{-1};
 };
 
 //=============================================================================
@@ -88,7 +151,7 @@ private:
     void clearCurrentlyCollectedData();
 
     int32_t m_currentScope{-1};
-    std::vector<SaifScope> m_scopes{};
+    std::vector<ActivityScope> m_scopes{};
     std::vector<int32_t> m_topScopes{};
 
     std::unordered_map<uint32_t, ActivityVar> m_activity;
