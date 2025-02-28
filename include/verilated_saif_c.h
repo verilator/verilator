@@ -34,7 +34,7 @@ class VerilatedSaifFile;
 //=============================================================================
 // ActivityBit
 
-class ActivityBit {
+class ActivityBit final {
 public:
     // METHODS
     VL_ATTR_ALWINLINE
@@ -59,7 +59,7 @@ private:
 //=============================================================================
 // ActivityVar
 
-class ActivityVar {
+class ActivityVar final {
 public:
     // CONSTRUCTORS
     ActivityVar(uint32_t width, ActivityBit* bits)
@@ -105,7 +105,7 @@ private:
 //=============================================================================
 // ActivityScope
 
-class ActivityScope {
+class ActivityScope final {
 public:
     // CONSTRUCTORS
     ActivityScope(std::string name, int32_t parentScopeIndex = -1)
