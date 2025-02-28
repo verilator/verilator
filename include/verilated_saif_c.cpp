@@ -189,9 +189,7 @@ void VerilatedSaif::initializeSaifFileContents() {
     printStr("(SAIFILE\n");
     printStr("(SAIFVERSION \"2.0\")\n");
     printStr("(DIRECTION \"backward\")\n");
-    printStr("(DESIGN \"foo\")\n");
     printStr("(PROGRAM_NAME \"Verilator\")\n");
-    printStr("(VERSION \"5.032\")\n");
     printStr("(DIVIDER / )\n");
     printStr("(TIMESCALE ");
     printStr(timeResStr());
