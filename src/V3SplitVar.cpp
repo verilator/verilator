@@ -401,7 +401,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     AstNodeModule* m_modp = nullptr;
     // AstNodeStmt, AstCell, or AstAlways(Public) for sensitivity
     AstNode* m_contextp = nullptr;
-    const AstNodeFTask* m_inFTask = nullptr;
+    const AstNodeFTask* m_inFTaskp = nullptr;
     size_t m_numSplit = 0;
     // List for SplitPackedVarVisitor
     SplitVarRefsMap m_refsForPackedSplit;
@@ -461,11 +461,11 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         }
         UASSERT_OBJ(!m_modp, m_modp, "Nested module declaration");
         UASSERT_OBJ(m_refs.empty(), nodep, "The last module didn't finish split()");
+        VL_RESTORER(m_modp);
         m_modp = nodep;
         m_tempNames.reset();
         iterateChildren(nodep);
         split();
-        m_modp = nullptr;
     }
     void visit(AstNodeStmt* nodep) override { setContextAndIterateChildren(nodep); }
     void visit(AstCell* nodep) override { setContextAndIterateChildren(nodep); }
@@ -531,11 +531,11 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         }
     }
     void visit(AstNodeFTask* nodep) override {
-        UASSERT_OBJ(!m_inFTask, nodep, "Nested func/task");
+        UASSERT_OBJ(!m_inFTaskp, nodep, "Nested func/task");
         if (!cannotSplitTaskReason(nodep)) {
-            m_inFTask = nodep;
+            VL_RESTORER(m_inFTaskp);
+            m_inFTaskp = nodep;
             iterateChildren(nodep);
-            m_inFTask = nullptr;
         }
     }
     void visit(AstVar* nodep) override {
@@ -548,7 +548,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     }
     void visit(AstVarRef* nodep) override {
         if (!nodep->varp()->attrSplitVar()) return;  // Nothing to do
-        if (m_refs.tryAdd(m_contextp, nodep, m_inFTask)) {
+        if (m_refs.tryAdd(m_contextp, nodep, m_inFTaskp)) {
             m_foundTargetVar.insert(nodep->varp());
         }
         m_refsForPackedSplit[m_modp].add(nodep);
@@ -563,7 +563,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             if (indexp) {  // OK
                 UINFO(4, "add " << nodep << " for " << refp->varp()->prettyName() << "\n");
                 if (indexp->toSInt() < outerMostSizeOfUnpackedArray(refp->varp())) {
-                    m_refs.tryAdd(m_contextp, refp, nodep, indexp->toSInt(), m_inFTask);
+                    m_refs.tryAdd(m_contextp, refp, nodep, indexp->toSInt(), m_inFTaskp);
                 } else {
                     warnNoSplit(refp->varp(), nodep->bitp(), "index is out of range");
                     m_refs.remove(refp->varp());
@@ -590,7 +590,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                         "Range check for AstSliceSel must have been finished in V3Width.cpp");
             UINFO(4, "add " << nodep << " for " << refp->varp()->prettyName() << "\n");
             m_refs.tryAdd(m_contextp, refp, nodep, nodep->declRange().hi(),
-                          nodep->declRange().lo(), m_inFTask);
+                          nodep->declRange().lo(), m_inFTaskp);
         } else {
             iterateChildren(nodep);
         }

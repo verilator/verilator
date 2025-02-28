@@ -132,6 +132,10 @@ class OrderGraphBuilder final : public VNVisitor {
         UASSERT_OBJ(!m_logicVxp, nodep, "AstActive under logic");
         UASSERT_OBJ(!m_inClocked && !m_domainp && !m_hybridp, nodep, "Should not nest");
 
+        VL_RESTORER(m_domainp);
+        VL_RESTORER(m_hybridp);
+        VL_RESTORER(m_inClocked);
+
         // This is the original sensitivity of the block (i.e.: not the ref into the TRIGGERVEC)
 
         const AstSenTree* const senTreep
@@ -163,11 +167,6 @@ class OrderGraphBuilder final : public VNVisitor {
 
         // Analyze logic underneath
         iterateChildren(nodep);
-
-        //
-        m_inClocked = false;
-        m_domainp = nullptr;
-        m_hybridp = nullptr;
     }
     void visit(AstNodeVarRef* nodep) override {
         // As we explicitly not visit (see ignored nodes below) any subtree that is not relevant
@@ -299,9 +298,9 @@ class OrderGraphBuilder final : public VNVisitor {
     }
     void visit(AstAlwaysPost* nodep) override {
         UASSERT_OBJ(!m_inPost, nodep, "Should not nest");
+        VL_RESTORER(m_inPost);
         m_inPost = true;
         iterateLogic(nodep);
-        m_inPost = false;
     }
     void visit(AstAlwaysObserved* nodep) override {  //
         iterateLogic(nodep);

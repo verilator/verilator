@@ -5795,6 +5795,7 @@ class WidthVisitor final : public VNVisitor {
             return;
         }
         nodep->doingWidth(true);
+        VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;
         // Property call will be replaced by property body in V3AssertPre. Property body has bit
         // dtype, so set it here too
@@ -5810,7 +5811,6 @@ class WidthVisitor final : public VNVisitor {
         }
         nodep->didWidth(true);
         nodep->doingWidth(false);
-        m_ftaskp = nullptr;
     }
     void visit(AstReturn* nodep) override {
         // IEEE: Assignment-like context

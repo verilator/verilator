@@ -893,9 +893,9 @@ class TraceVisitor final : public VNVisitor {
             nodep->user1p(vertexp);
 
             UASSERT_OBJ(m_cfuncp, nodep, "Trace not under func");
+            VL_RESTORER(m_tracep);
             m_tracep = nodep;
             iterateChildren(nodep);
-            m_tracep = nullptr;
         }
     }
     void visit(AstVarRef* nodep) override {

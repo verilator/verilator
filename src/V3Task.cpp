@@ -255,6 +255,9 @@ private:
     }
     void visit(AstClass* nodep) override {
         // Move initial statements into the constructor
+        VL_RESTORER(m_initialps);
+        VL_RESTORER(m_ctorp);
+        VL_RESTORER(m_classp);
         m_initialps.clear();
         m_ctorp = nullptr;
         m_classp = nodep;
@@ -274,8 +277,6 @@ private:
             VL_DO_DANGLING(pushDeletep(initialp->unlinkFrBack()), initialp);
         }
         m_initialps.clear();
-        m_ctorp = nullptr;
-        m_classp = nullptr;
     }
     void visit(AstInitialAutomatic* nodep) override {
         m_initialps.push_back(nodep);
@@ -1443,10 +1444,10 @@ class TaskVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstScope* nodep) override {
+        VL_RESTORER(m_scopep);
         m_scopep = nodep;
         m_insStmtp = nullptr;
         iterateChildren(nodep);
-        m_scopep = nullptr;
     }
     void visit(AstNodeFTaskRef* nodep) override {
         if (m_inSensesp) {

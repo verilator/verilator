@@ -772,9 +772,9 @@ class TimingControlVisitor final : public VNVisitor {
         }
     }
     void visit(AstActive* nodep) override {
+        VL_RESTORER(m_activep);
         m_activep = nodep;
         iterateChildren(nodep);
-        m_activep = nullptr;
     }
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procp);

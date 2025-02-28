@@ -109,6 +109,7 @@ class InlineMarkVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         UASSERT_OBJ(!m_modp, nodep, "Unsupported: Nested modules");
+        VL_RESTORER(m_modp);
         m_modp = nodep;
         m_allMods.push_back(nodep);
         m_modp->user2(CIL_MAYBE);
@@ -123,7 +124,6 @@ class InlineMarkVisitor final : public VNVisitor {
         }
 
         iterateChildren(nodep);
-        m_modp = nullptr;
     }
     void visit(AstClass* nodep) override {
         // TODO allow inlining of modules that have classes
@@ -584,13 +584,13 @@ class InlineVisitor final : public VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         UASSERT_OBJ(!m_modp, nodep, "Unsupported: Nested modules");
+        VL_RESTORER(m_modp);
         m_modp = nodep;
         // Iterate the stored cells directly to reduce traversal
         for (AstCell* const cellp : m_moduleState(nodep).m_childCells) {
             if (m_moduleState(cellp->modp()).m_inlined) inlineCell(cellp);
         }
         m_moduleState(nodep).m_childCells.clear();
-        m_modp = nullptr;
     }
     void visit(AstIfaceRefDType* nodep) override {
         if (nodep->user1()) {

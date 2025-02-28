@@ -168,9 +168,9 @@ class LinkJumpVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;
         iterateChildren(nodep);
-        m_ftaskp = nullptr;
     }
     void visit(AstNodeBlock* nodep) override {
         UINFO(8, "  " << nodep << endl);

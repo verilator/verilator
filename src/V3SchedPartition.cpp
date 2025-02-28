@@ -228,9 +228,9 @@ class SchedGraphBuilder final : public VNVisitor {
             });
         }
 
+        VL_RESTORER(m_senTreep);
         m_senTreep = senTreep;
         iterateChildrenConst(nodep);
-        m_senTreep = nullptr;
     }
 
     void visit(AstNodeProcedure* nodep) override { visitLogic(nodep); }

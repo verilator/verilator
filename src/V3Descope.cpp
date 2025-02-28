@@ -215,9 +215,9 @@ class DescopeVisitor final : public VNVisitor {
         makePublicFuncWrappers();
     }
     void visit(AstScope* nodep) override {
+        VL_RESTORER(m_scopep);
         m_scopep = nodep;
         iterateChildren(nodep);
-        m_scopep = nullptr;
     }
     void visit(AstVarScope* nodep) override {
         // Delete the varscope when we're finished

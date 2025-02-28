@@ -389,9 +389,9 @@ private:
     }
     void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep << endl);
+        VL_RESTORER(m_scopep);
         m_scopep = nodep;
         iterateChildren(nodep);
-        m_scopep = nullptr;
     }
     void visit(AstAlways* nodep) override {
         UINFO(4, "  ALWAYS  " << nodep << endl);

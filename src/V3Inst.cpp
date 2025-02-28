@@ -44,11 +44,11 @@ class InstVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstCell* nodep) override {
         UINFO(4, "  CELL   " << nodep << endl);
+        VL_RESTORER(m_cellp);
         m_cellp = nodep;
         // VV*****  We reset user1p() on each cell!!!
         AstNode::user1ClearTree();
         iterateChildren(nodep);
-        m_cellp = nullptr;
     }
     void visit(AstPin* nodep) override {
         // PIN(p,expr) -> ASSIGNW(VARXREF(p),expr)    (if sub's input)

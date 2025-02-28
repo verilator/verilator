@@ -321,6 +321,7 @@ class LifePostDlyVisitor final : public VNVisitor {
     }
     void visit(AstExecGraph* nodep) override {
         // Treat the ExecGraph like a call to each mtask body
+        VL_RESTORER(m_execMTaskp);
         if (m_inEvalNba) {
             UASSERT_OBJ(!m_mtasksGraphp, nodep, "Cannot handle more than one AstExecGraph");
             m_mtasksGraphp = nodep->depGraphp();
@@ -331,7 +332,6 @@ class LifePostDlyVisitor final : public VNVisitor {
             m_sequence = 0;
             iterate(mtaskp->bodyp());
         }
-        m_execMTaskp = nullptr;
     }
     void visit(AstCFunc* nodep) override {
         if (!m_tracingCall && !nodep->entryPoint()) return;

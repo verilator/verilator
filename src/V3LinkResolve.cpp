@@ -121,9 +121,9 @@ class LinkResolveVisitor final : public VNVisitor {
         if (m_assertp) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assert not allowed under another assert");
         }
+        VL_RESTORER(m_assertp);
         m_assertp = nodep;
         iterateChildren(nodep);
-        m_assertp = nullptr;
     }
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);
@@ -171,11 +171,9 @@ class LinkResolveVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        {
-            m_ftaskp = nodep;
-            iterateChildren(nodep);
-        }
-        m_ftaskp = nullptr;
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
+        iterateChildren(nodep);
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
     void visit(AstNodeFTaskRef* nodep) override {
