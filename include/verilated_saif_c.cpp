@@ -193,7 +193,7 @@ void VerilatedSaif::initializeSaifFileContents() {
     printStr("(VERSION \"5.032\")\n");
     printStr("(DIVIDER / )\n");
     printStr("(TIMESCALE ");
-    printStr(timeResStr().c_str());
+    printStr(timeResStr());
     printStr(")\n");
 }
 
@@ -245,7 +245,7 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
 
 void VerilatedSaif::finalizeSaifFileContents() {
     printStr("(DURATION ");
-    printStr(std::to_string(m_time).c_str());
+    printStr(std::to_string(m_time));
     printStr(")\n");
 
     incrementIndent();
@@ -258,7 +258,7 @@ void VerilatedSaif::finalizeSaifFileContents() {
 void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
     const ActivityScope& scope = m_scopes.at(scopeIndex);
 
-    openInstanceScope(scope.getName().c_str());
+    openInstanceScope(scope.getName());
 
     printScopeActivities(scope);
 
@@ -269,7 +269,7 @@ void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
     closeInstanceScope();
 }
 
-void VerilatedSaif::openInstanceScope(const char* instanceName) {
+void VerilatedSaif::openInstanceScope(const std::string& instanceName) {
     printIndent();
     printStr("(INSTANCE ");
     printStr(instanceName);
@@ -329,17 +329,17 @@ bool VerilatedSaif::printActivityStats(uint32_t activityCode, const char* activi
         printStr(activityName);
         if (activity.getWidth() > 1) {
             printStr("\\[");
-            printStr(std::to_string(i).c_str());
+            printStr(std::to_string(i));
             printStr("\\]");
         }
 
         // We only have two-value logic so TZ, TX and TB will always be 0
         printStr(" (T0 ");
-        printStr(std::to_string(m_time - bit.getHighTime()).c_str());
+        printStr(std::to_string(m_time - bit.getHighTime()));
         printStr(") (T1 ");
-        printStr(std::to_string(bit.getHighTime()).c_str());
+        printStr(std::to_string(bit.getHighTime()));
         printStr(") (TZ 0) (TX 0) (TB 0) (TC ");
-        printStr(std::to_string(bit.getToggleCount()).c_str());
+        printStr(std::to_string(bit.getToggleCount()));
         printStr("))\n");
     }
 
@@ -358,6 +358,8 @@ void VerilatedSaif::clearCurrentlyCollectedData() {
 }
 
 void VerilatedSaif::printStr(const char* str) { m_filep->write(str, strlen(str)); }
+
+void VerilatedSaif::printStr(const std::string& str) { m_filep->write(str.c_str(), str.size()); }
 
 //=============================================================================
 // Definitions
