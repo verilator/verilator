@@ -462,6 +462,11 @@ SystemC include directories and link to the SystemC libraries.
    Optional. Enables FST tracing if present, equivalent to "VERILATOR_ARGS
    --trace-fst".
 
+.. describe:: TRACE_SAIF
+
+   Optional. Enables SAIF tracing if present, equivalent to "VERILATOR_ARGS
+   --trace-saif".
+
 .. describe:: VERILATOR_ARGS
 
    Optional. Extra arguments to Verilator. Do not specify :vlopt:`--Mdir`
