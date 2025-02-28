@@ -2762,6 +2762,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (!lhsp->classOrPackageSkipp() && lhsp->name() != "local::") {
                     revisitLater(nodep);
                     m_ds = lastStates;
+                    if (auto* ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
+                        iterateAndNextNull(ftaskrefp->pinsp());
+                    }
                     return;
                 }
                 m_ds.m_dotPos = DP_PACKAGE;
@@ -2784,11 +2787,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (!crefp->classOrPackageSkipp()) {
                         revisitLater(nodep);
                         m_ds = lastStates;
+                        if (auto* ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
+                            iterateAndNextNull(ftaskrefp->pinsp());
+                        }
                         return;
                     }
                 }
                 if (m_lastDeferredp == nodep->lhsp()) {
                     m_ds = lastStates;
+                    if (auto* ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
+                        iterateAndNextNull(ftaskrefp->pinsp());
+                    }
                     return;
                 }
                 UINFO(8, indent() << "iter.ldone " << m_ds.ascii() << " " << nodep << endl);
