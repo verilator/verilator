@@ -52,6 +52,7 @@ Quitting = False
 Vltmt_Threads = 3
 forker = None
 Start = None
+nodist_directory = "../nodist"
 
 # So an 'import vltest_bootstrap' inside test files will do nothing
 sys.modules['vltest_bootstrap'] = {}
@@ -65,145 +66,6 @@ class staticproperty(property):
 
     def __get__(self, owner_self, owner_cls):
         return self.fget()
-
-
-#######################################################################
-#######################################################################
-# SAIF parser utilities
-
-
-class SAIFSignalBit:
-    last_val: int
-    high_time: int
-    low_time: int
-    transitions: int
-
-    def __init__(self):
-        self.last_val = 0
-        self.high_time = 0
-        self.low_time = 0
-        self.transitions = 0
-
-    def aggregate(self, dt: int, new_val: int):
-        if new_val != self.last_val:
-            self.transitions += 1
-
-        if self.last_val == 1:
-            self.high_time += dt
-
-        self.last_val = new_val
-
-
-class SAIFSignal:
-
-    def __init__(self, signal_name, signal_width=0):
-        self.name = signal_name
-        self.width = signal_width
-        self.last_time = 0
-
-        self.bits = []
-        for _ in range(self.width):
-            self.bits.append(SAIFSignalBit())
-
-
-class SAIFInstance:
-
-    def __init__(self, scope_name):
-        self.scope_name = scope_name
-        self.parent_instance = None
-        self.nets = {}
-        self.child_instances = {}
-
-
-class SAIFParser:
-
-    def __init__(self):
-        self.top_instances = {}
-        self.current_instance = None
-        self.traversing_nets = False
-        self.duration = 0
-        self.divider = ''
-        self.timescale = ''
-
-    def parse(self, saif_filename):
-        with open(saif_filename, 'r', encoding="utf8") as saif_file:
-            for line in saif_file:
-                line = line.strip()
-                if not line:
-                    continue
-
-                match = re.search(r'\(DIVIDER\s+(.)', line)
-                if match:
-                    self.divider = match.groups()[0]
-
-                match = re.search(r'\(TIMESCALE\s+(\d+\s*\w+)', line)
-                if match:
-                    self.timescale = match.groups()[0]
-
-                match = re.search(r'\s*\(DURATION\s+(\d+)', line)
-                if match:
-                    self.duration = int(match.groups()[0])
-
-                match = re.search(r'INSTANCE\s+([\w\.\$]+)', line)
-                if match:
-                    instance_name = match.groups()[0]
-
-                    instance = SAIFInstance(instance_name)
-
-                    if self.current_instance is None:
-                        self.top_instances[instance_name] = instance
-                    else:
-                        self.current_instance.child_instances[instance_name] = instance
-
-                    instance.parent_instance = self.current_instance
-                    self.current_instance = instance
-
-                match = re.search(r'NET', line)
-                if match:
-                    self.traversing_nets = True
-
-                match = re.search(r'((?:[\w\[\]])+)(?:\\\[(\d+)\\\])*\s+(\(T.+\))+', line)
-                if match:
-                    signal_name, bit_index, bit_values = match.groups()
-
-                    if bit_index is None:
-                        bit_index = 0
-
-                    if signal_name not in self.current_instance.nets:
-                        saif_signal = SAIFSignal(signal_name)
-                        self.current_instance.nets[signal_name] = saif_signal
-
-                    current_signal = self.current_instance.nets[signal_name]
-
-                    for _ in range(0, int(bit_index) - current_signal.width + 1):
-                        current_signal.bits.append(SAIFSignalBit())
-
-                    current_signal.width = int(bit_index) + 1
-
-                    match = re.search(r'T0 (\d+)', bit_values)
-                    if match:
-                        low_time = match.groups()[0]
-
-                        current_signal.bits[int(bit_index)].low_time = int(low_time)
-
-                    match = re.search(r'T1 (\d+)', bit_values)
-                    if match:
-                        high_time = match.groups()[0]
-
-                        current_signal.bits[int(bit_index)].high_time = int(high_time)
-
-                    match = re.search(r'TC (\d+)', bit_values)
-                    if match:
-                        toggle_count = match.groups()[0]
-
-                        current_signal.bits[int(bit_index)].transitions = int(toggle_count)
-
-                match = re.match(r'\s+\)\s+', line)
-                if match:
-                    if self.traversing_nets:
-                        self.traversing_nets = False
-                    else:
-                        self.current_instance = self.current_instance.parent_instance
 
 
 #######################################################################
@@ -2507,71 +2369,15 @@ class VlTest:
         self.fst2vcd(fn1, tmp)
         self.vcd_identical(tmp, fn2)
 
-    def compare_saif_instances(self, first: SAIFInstance, second: SAIFInstance):
-        if len(first.nets) != len(second.nets):
-            self.error(f"Number of nets doesn't match in {first.scope_name}: "
-                       f"{len(first.nets)} != {len(second.nets)}")
-
-        for signal_name, saif_signal in first.nets.items():
-            if signal_name not in second.nets:
-                self.error(f"Signal {signal_name} doesn't exist in the second object\n")
-
-            other_signal = second.nets[signal_name]
-            if other_signal.width != saif_signal.width:
-                self.error("Incompatible signal width in "
-                           f"{signal_name} {saif_signal.width} != {other_signal.width}\n")
-
-            for bit_index in range(saif_signal.width):
-                signal_bit = saif_signal.bits[bit_index]
-                other_signal_bit = other_signal.bits[bit_index]
-
-                if (signal_bit.high_time != other_signal_bit.high_time
-                        or signal_bit.low_time != other_signal_bit.low_time
-                        or signal_bit.transitions != other_signal_bit.transitions):
-                    self.error("Incompatible signal bit parameters in "
-                               f"{signal_name}[{bit_index}]\n")
-
-        if len(first.child_instances) != len(second.child_instances):
-            self.error(f"Number of child instances doesn't match in {first.scope_name}: "
-                       f"{len(first.child_instances)} != {len(second.child_instances)}")
-
-        for instance_name, instance in first.child_instances.items():
-            if instance_name not in second.child_instances:
-                self.error(f"Instance {instance_name} doesn't exist in the second object\n")
-
-            self.compare_saif_instances(instance, second.child_instances[instance_name])
-
-    def compare_saif_contents(self, first: SAIFParser, second: SAIFParser):
-        """Test if second SAIF file has the same values as the first"""
-
-        if first.duration != second.duration:
-            self.error(f"Duration of trace doesn't match: {first.duration} != {second.duration}")
-
-        if first.divider != second.divider:
-            self.error(f"Dividers don't match: {first.divider} != {second.divider}")
-
-        if first.timescale != second.timescale:
-            self.error(f"Timescale doesn't match: {first.timescale} != {second.timescale}")
-
-        if len(first.top_instances) != len(second.top_instances):
-            self.error("Number of top instances doesn't match: "
-                       f"{len(first.top_instances)} != {len(second.top_instances)}")
-
-        for top_instance_name, top_instance in first.top_instances.items():
-            if top_instance_name not in second.top_instances:
-                self.error(f"Top instance {top_instance_name} missing in other SAIF")
-
-            self.compare_saif_instances(top_instance, second.top_instances[top_instance_name])
-
     def saif_identical(self, fn1: str, fn2: str) -> None:
         """Test if two SAIF files have logically-identical contents"""
-        test_result_saif = SAIFParser()
-        test_result_saif.parse(fn1)
 
-        golden_saif = SAIFParser()
-        golden_saif.parse(fn2)
-
-        self.compare_saif_contents(golden_saif, test_result_saif)
+        cmd = nodist_directory + '/verilator_saif_diff --first "' + fn1 + '" --second "' + fn2 + '"'
+        print("\t " + cmd + "\n")
+        out = test.run_capture(cmd, check=True)
+        if out != '':
+            print(out)
+            self.error("SAIF files don't match!")
 
     def _vcd_read(self, filename: str) -> str:
         data = {}
