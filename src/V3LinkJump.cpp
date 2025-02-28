@@ -46,8 +46,10 @@ class LinkJumpVisitor final : public VNVisitor {
     // NODE STATE
     //  AstNode::user1()    -> AstJumpLabel*, for this block if endOfIter
     //  AstNode::user2()    -> AstJumpLabel*, for this block if !endOfIter
+    //  AstNodeBlock::user3()  -> bool, true if contains a fork
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
+    const VNUser3InUse m_user3InUse;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -178,7 +180,16 @@ class LinkJumpVisitor final : public VNVisitor {
         VL_RESTORER(m_unrollFull);
         m_blockStack.push_back(nodep);
         {
-            m_inFork = m_inFork || VN_IS(nodep, Fork);
+            if (VN_IS(nodep, Fork)) {
+                m_inFork = true;  // And remains set for children
+                // Mark all upper blocks also, can stop once see
+                // one set to avoid O(n^2)
+                for (auto itr : vlstd::reverse_view(m_blockStack)) {
+                    if (itr->user3()) break;
+                    itr->user3(true);
+                }
+            }
+            nodep->user3(m_inFork);
             iterateChildren(nodep);
         }
         m_blockStack.pop_back();
@@ -340,9 +351,13 @@ class LinkJumpVisitor final : public VNVisitor {
             nodep->v3warn(E_UNSUPPORTED,
                           "disable isn't underneath a begin with name: " << nodep->prettyNameQ());
         } else if (AstBegin* const beginp = VN_CAST(blockp, Begin)) {
-            // Jump to the end of the named block
-            AstJumpLabel* const labelp = findAddLabel(beginp, false);
-            nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
+            if (beginp->user3()) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling block that contains a fork");
+            } else {
+                // Jump to the end of the named block
+                AstJumpLabel* const labelp = findAddLabel(beginp, false);
+                nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
+            }
         } else {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork by name");
         }
