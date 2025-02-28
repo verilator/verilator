@@ -63,8 +63,8 @@ class ActivityVar {
 public:
     // CONSTRUCTORS
     ActivityVar(uint32_t width, ActivityBit* bits)
-        : m_width{width}
-        , m_bits{bits} {}
+        : m_bits{bits}
+        , m_width{width} {}
 
     ActivityVar(ActivityVar&&) = default;
     ActivityVar& operator=(ActivityVar&&) = default;
@@ -97,8 +97,8 @@ private:
     VL_UNCOPYABLE(ActivityVar);
 
     // MEMBERS
-    ActivityBit* m_bits;
     uint64_t m_lastTime{0};
+    ActivityBit* m_bits;
     uint32_t m_width;
 };
 
