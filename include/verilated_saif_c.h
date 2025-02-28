@@ -170,7 +170,7 @@ private:
     void initializeSaifFileContents();
     void finalizeSaifFileContents();
     void recursivelyPrintScopes(uint32_t scopeIndex);
-    void openInstanceScope(const char* instanceName);
+    void openInstanceScope(const std::string& instanceName);
     void closeInstanceScope();
     void printScopeActivities(const ActivityScope& scope);
     void openNetScope();
@@ -184,6 +184,7 @@ private:
     int m_indent = 0;
 
     void printStr(const char* str);
+    void printStr(const std::string& str);
 
     void clearCurrentlyCollectedData();
 
