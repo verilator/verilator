@@ -5764,14 +5764,37 @@ tableEntry<udpTableLinep>:      // IEEE: combinational_entry + sequential_entry
 //************************************************
 // Specify
 
-specify_block<nodep>:           // ==IEEE: specify_block
-                ySPECIFY yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ')' ';' yENDSPECIFY  { $$ = nullptr; }
-        |       ySPECIFY yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ')' ';' yENDSPECIFY  { $$ = nullptr; }
-        |       ySPECIFY yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ',' minTypMaxE ')' ';' yENDSPECIFY  { $$ = nullptr; }
-        |       ySPECIFY yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ')' ';' yENDSPECIFY  { $$ = nullptr; }
-        |       ySPECIFY yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' senitemE ')' ';' yENDSPECIFY  { $$ = new AstSetuphold{$2, $4, $6, $18}; }
-        |       ySPECIFY yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' senitemE ',' senitemE ')' ';' yENDSPECIFY  { $$ = new AstSetuphold{$2, $4, $6, $18, $20}; }
+specify_block<nodep>:               // ==IEEE: specify_block
+                ySPECIFY specify_itemList yENDSPECIFY   { $$ = $2; }
         |       ySPECIFY yENDSPECIFY                    { $$ = nullptr; }
+        ;
+
+specify_itemList<nodep>:            // IEEE: { specify_item }
+                specify_item                            { $$ = $1; }
+        |       specify_itemList specify_item           { $$ = addNextNull($1, $2); }
+        ;
+
+specify_item<nodep>:                // ==IEEE: specify_item
+                specparam_declaration                   { $$ = $1; }
+        |       system_timing_check                     { $$ = $1; }
+        |       yaTIMINGSPEC junkToSemiList ';'         { $$ = nullptr; }
+        ;
+
+specparam_declaration<nodep>:       // ==IEEE: specparam_declaration
+                ySPECPARAM junkToSemiList ';'           { $$ = nullptr; }
+        ;
+
+system_timing_check<nodep>:         // ==IEEE: system_timing_check
+                setuphold_timing_check                      { $$ = $1; }
+        ;
+
+setuphold_timing_check<nodep>:      // ==IEEE: $setuphold_timing_check
+                yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ')' ';' { $$ = nullptr; }
+        |       yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ')' ';' { $$ = nullptr; }
+        |       yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ',' minTypMaxE ')' ';' { $$ = nullptr; }
+        |       yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ')' ';' { $$ = nullptr; }
+        |       yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' senitemE ')' ';' { $$ = new AstSetuphold{$1, $3, $5, $17}; }
+        |       yD_SETUPHOLD '(' senitem ',' senitem ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' senitemE ',' senitemE ')' ';' { $$ = new AstSetuphold{$1, $3, $5, $17, $19}; }
         ;
 
 idAnyE<strp>:
@@ -5784,21 +5807,6 @@ senitemE<senItemp>:
         |       senitem                                   { $$ = $1; }
         ;
 
-
-specifyJunkList:
-                specifyJunk                             { } /* ignored */
-        |       specifyJunkList specifyJunk             { } /* ignored */
-        ;
-
-specifyJunk:
-                BISONPRE_NOT(ySPECIFY,yENDSPECIFY)      { }
-        |       ySPECIFY specifyJunk yENDSPECIFY        { }
-        |       error {}
-        ;
-
-specparam_declaration<nodep>:           // ==IEEE: specparam_declaration
-                ySPECPARAM junkToSemiList ';'           { $$ = nullptr; }
-        ;
 
 junkToSemiList:
                 junkToSemi                              { } /* ignored */
