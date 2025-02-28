@@ -194,7 +194,11 @@ private:
 
     std::unordered_map<uint32_t, ActivityVar> m_activity;
     std::vector<std::vector<ActivityBit>> m_activityArena;
-    uint64_t m_time;
+
+    VL_ATTR_ALWINLINE uint64_t getCurrentTime() const { return m_totalTime - m_currentTimeOrigin; }
+
+    uint64_t m_totalTime{0};
+    uint64_t m_currentTimeOrigin{0};
 
     std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
         {"", VerilatedTracePrefixType::SCOPE_MODULE}};
