@@ -440,7 +440,8 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
     assert(m_currentScope >= 0);
     m_scopes.at(m_currentScope).addActivityVar(code, std::move(finalName));
 
-    m_activity.emplace(code, ActivityVar{static_cast<uint32_t>(bits), m_activityArena.back().data() + bitsIdx});
+    m_activity.emplace(
+        code, ActivityVar{static_cast<uint32_t>(bits), m_activityArena.back().data() + bitsIdx});
 }
 
 void VerilatedSaif::declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,

@@ -74,7 +74,8 @@ public:
 
     template <typename DataType>
     VL_ATTR_ALWINLINE void emitData(uint64_t time, DataType newval, uint32_t bits) {
-        static_assert(std::is_integral<DataType>::value, "The emitted value must be of integral type");
+        static_assert(std::is_integral<DataType>::value,
+                      "The emitted value must be of integral type");
 
         uint64_t dt = time - m_lastTime;
         for (size_t i = 0; i < std::min(m_width, bits); i++) {
