@@ -126,6 +126,7 @@ void VerilatedSaif::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     openNextImp(m_rolloverSize != 0);
     if (!isOpen()) return;
 
+    m_currentTimeOrigin = m_totalTime;
     initializeSaifFileContents();
 
     Super::traceInit();
@@ -202,7 +203,7 @@ bool VerilatedSaif::preChangeDump() {
     return isOpen();
 }
 
-void VerilatedSaif::emitTimeChange(uint64_t timeui) { m_time = timeui; }
+void VerilatedSaif::emitTimeChange(uint64_t timeui) { m_totalTime = timeui; }
 
 VerilatedSaif::~VerilatedSaif() {
     close();
@@ -245,7 +246,7 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
 
 void VerilatedSaif::finalizeSaifFileContents() {
     printStr("(DURATION ");
-    printStr(std::to_string(m_time));
+    printStr(std::to_string(getCurrentTime()));
     printStr(")\n");
 
     incrementIndent();
@@ -317,7 +318,7 @@ bool VerilatedSaif::printActivityStats(uint32_t activityCode, const char* activi
             continue;
         }
 
-        bit.aggregateVal(m_time - activity.getLastUpdateTime(), bit.getBitValue());
+        bit.aggregateVal(getCurrentTime() - activity.getLastUpdateTime(), bit.getBitValue());
 
         if (!anyNetValid) {
             openNetScope();
@@ -335,7 +336,7 @@ bool VerilatedSaif::printActivityStats(uint32_t activityCode, const char* activi
 
         // We only have two-value logic so TZ, TX and TB will always be 0
         printStr(" (T0 ");
-        printStr(std::to_string(m_time - bit.getHighTime()));
+        printStr(std::to_string(getCurrentTime() - bit.getHighTime()));
         printStr(") (T1 ");
         printStr(std::to_string(bit.getHighTime()));
         printStr(") (TZ 0) (TX 0) (TB 0) (TC ");
@@ -343,7 +344,7 @@ bool VerilatedSaif::printActivityStats(uint32_t activityCode, const char* activi
         printStr("))\n");
     }
 
-    activity.updateLastTime(m_time);
+    activity.updateLastTime(getCurrentTime());
 
     return anyNetValid;
 }
@@ -354,7 +355,6 @@ void VerilatedSaif::clearCurrentlyCollectedData() {
     m_topScopes.clear();
     m_activity.clear();
     m_activityArena.clear();
-    m_time = 0;
 }
 
 void VerilatedSaif::printStr(const char* str) { m_filep->write(str, strlen(str)); }
@@ -504,42 +504,42 @@ VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     ActivityVar& activity = m_owner.m_activity.at(code);
-    activity.emitBit(m_owner.m_time, newval);
+    activity.emitBit(m_owner.getCurrentTime(), newval);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitCData(uint32_t code, CData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     ActivityVar& activity = m_owner.m_activity.at(code);
-    activity.emitData<CData>(m_owner.m_time, newval, bits);
+    activity.emitData<CData>(m_owner.getCurrentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitSData(uint32_t code, SData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     ActivityVar& activity = m_owner.m_activity.at(code);
-    activity.emitData<SData>(m_owner.m_time, newval, bits);
+    activity.emitData<SData>(m_owner.getCurrentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitIData(uint32_t code, IData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     ActivityVar& activity = m_owner.m_activity.at(code);
-    activity.emitData<IData>(m_owner.m_time, newval, bits);
+    activity.emitData<IData>(m_owner.getCurrentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitQData(uint32_t code, QData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     ActivityVar& activity = m_owner.m_activity.at(code);
-    activity.emitData<QData>(m_owner.m_time, newval, bits);
+    activity.emitData<QData>(m_owner.getCurrentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     ActivityVar& activity = m_owner.m_activity.at(code);
-    activity.emitWData(m_owner.m_time, newvalp, bits);
+    activity.emitWData(m_owner.getCurrentTime(), newvalp, bits);
 }
 
 VL_ATTR_ALWINLINE
