@@ -2896,8 +2896,8 @@ class ConstVisitor final : public VNVisitor {
 
             if (const AstConst* const aConstp = VN_CAST(ap, Const)) {
                 const AstConst* const bConstp = VN_AS(bp, Const);
-                if (aConstp->toUQuad() < bConstp->toUQuad()) return -1;
-                if (aConstp->toUQuad() > bConstp->toUQuad()) return 1;
+                if (aConstp->num().isLtXZ(bConstp->num())) return -1;
+                if (bConstp->num().isLtXZ(aConstp->num())) return 1;
                 return 0;
             }
 
