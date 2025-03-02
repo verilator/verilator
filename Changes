@@ -18,6 +18,10 @@ Verilator 5.035 devel
 * Add check for `let` misused in statement context (#5733).
 * Add used language to `--preproc-resolve` output (#5795). [Kamil Rakoczy, Antmicro Ltd.]
 * Fix reset of automatic function variables (#5747). [Augustin Fabre]
+* Fix invalid code motion over branches (#5811) (#5814). [Geza Lore]
+* Fix sorting of wide SenItems (#5816). [Geza Lore]
+* Fix tcmalloc static link and non-22.04 builds (#5817) (#5818). [Geza Lore]
+* Fix function locals in SenExprBuilder (#5822). [Geza Lore]
 
 
 Verilator 5.034 2025-02-24

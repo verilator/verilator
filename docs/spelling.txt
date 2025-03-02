@@ -19,6 +19,7 @@ Asciidoc
 Ashutosh
 Ast
 Atmel
+Augustin
 Aurelien
 Badáň
 Bagri
@@ -109,6 +110,7 @@ Embecosm
 Engstrom
 Enzo
 Eugen
+Fabre
 Fabrizio
 Faucher
 Faure
@@ -1018,6 +1020,7 @@ swrite
 synthesizeable
 sys
 systemc
+tcmalloc
 tenghtt
 testbench
 threadsafe
