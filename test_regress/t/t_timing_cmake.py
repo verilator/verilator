@@ -17,6 +17,9 @@ if not test.have_coroutines:
 if not test.have_cmake:
     test.skip("cmake is not installed")
 
+if re.search(r'clang', test.cxx_version):
+    test.skip("Known clang bug on ubuntu-24.04")
+
 test.compile(verilator_flags2=["--timescale 10ns/1ns --main --timing"],
              verilator_make_gmake=False,
              verilator_make_cmake=True)
