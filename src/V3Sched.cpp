@@ -752,14 +752,6 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
             funcp->stmtsp()->addHereThisAsNext(nodep);
         }
     }
-    const auto& locals = senExprBuilder.getAndClearLocals();
-    if (!locals.empty()) {
-        UASSERT_OBJ(funcp->stmtsp(), funcp,
-                    "No statements in trigger eval function, but there are locals");
-        for (AstVar* const nodep : vlstd::reverse_view(locals)) {
-            funcp->stmtsp()->addHereThisAsNext(nodep);
-        }
-    }
 
     // Add the initialization statements
     if (initialTrigsp) {
