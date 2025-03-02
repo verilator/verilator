@@ -96,7 +96,13 @@ jobs:
           - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-3}
           - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-0}
           - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-1}
-          # Ubuntu 24.04 Clang - has problems
+          # Ubuntu 24.04 Clang
+          - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: dist-vlt-0}
+          - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: dist-vlt-1}
+          - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: dist-vlt-2}
+          - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: dist-vlt-3}
+          - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: vltmt-0}
+          - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: vltmt-1}
           # Ubuntu 22.04 GCC
           - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-0}
           - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-1}
