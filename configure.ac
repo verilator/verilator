@@ -515,7 +515,7 @@ if test "$CFG_ENABLE_PARTIAL_STATIC" = "yes"; then
   _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -static-libgcc)
   _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -static-libstdc++)
   _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -Xlinker -gc-sections)
-  LTCMALLOC=-l:libtcmalloc_minimal.a
+  LTCMALLOC="-Wl,--whole-archive -l:libtcmalloc_minimal.a -Wl,--no-whole-archive"
 else
   LTCMALLOC=-ltcmalloc_minimal
 fi
