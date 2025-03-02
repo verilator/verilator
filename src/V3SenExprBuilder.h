@@ -63,7 +63,7 @@ class SenExprBuilder final {
     }
 
     // METHODS
-    AstVarScope* crateTemp(AstNodeExpr* exprp){
+    AstVarScope* crateTemp(AstNodeExpr* exprp) {
         // For readability, use the scoped signal name if the trigger is a simple AstVarRef
         string name;
         if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
