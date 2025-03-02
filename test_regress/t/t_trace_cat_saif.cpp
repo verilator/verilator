@@ -3,23 +3,11 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2022 by Wilson Snyder.
+// any use, without warranty, 2008 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
 #include <verilated.h>
-#if VM_TRACE_FST
-#include <verilated_fst_c.h>
-#define TRACE_FILE_NAME "simx.fst"
-#define TRACE_CLASS VerilatedFstC
-#elif VM_TRACE_VCD
-#include <verilated_vcd_c.h>
-#define TRACE_FILE_NAME "simx.vcd"
-#define TRACE_CLASS VerilatedVcdC
-#elif VM_TRACE_SAIF
 #include <verilated_saif_c.h>
-#define TRACE_FILE_NAME "simx.saif"
-#define TRACE_CLASS VerilatedSaifC
-#endif
 
 #include <memory>
 
@@ -28,25 +16,36 @@
 unsigned long long main_time = 0;
 double sc_time_stamp() { return (double)main_time; }
 
+const char* trace_name() {
+    static char name[1000];
+    VL_SNPRINTF(name, 1000, VL_STRINGIFY(TEST_OBJ_DIR) "/simpart_%04d.saif", (int)main_time);
+    return name;
+}
+
 int main(int argc, char** argv) {
     Verilated::debug(0);
     Verilated::traceEverOn(true);
     Verilated::commandArgs(argc, argv);
 
-    // This test is to specifically check "" as the below upper model name
-    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{""}};
+    std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{"top"}};
 
-    std::unique_ptr<TRACE_CLASS> tfp{new TRACE_CLASS};
-
+    std::unique_ptr<VerilatedSaifC> tfp{new VerilatedSaifC};
     top->trace(tfp.get(), 99);
-    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/" TRACE_FILE_NAME);
+
+    tfp->open(trace_name());
+
     top->clk = 0;
 
-    while (main_time <= 20) {
+    while (main_time < 190) {  // Creates 2 files
+        top->clk = !top->clk;
         top->eval();
+
+        if ((main_time % 100) == 0) {
+            tfp->close();
+            tfp->open(trace_name());
+        }
         tfp->dump((unsigned int)(main_time));
         ++main_time;
-        top->clk = !top->clk;
     }
     tfp->close();
     top->final();

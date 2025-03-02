@@ -1,0 +1,148 @@
+(SAIFILE
+(SAIFVERSION "2.0")
+(DIRECTION "backward")
+(DESIGN "t")
+(DIVIDER / )
+(TIMESCALE 1ps)
+(DURATION 60)
+(INSTANCE top
+  (NET
+    (clk (T0 35) (T1 25) (TX 0) (TC 11))
+  )
+  (INSTANCE $unit
+    (NET
+      (global_bit (T0 0) (T1 60) (TX 0) (TC 1))
+    )
+  )
+  (INSTANCE t
+    (NET
+      (clk (T0 35) (T1 25) (TX 0) (TC 11))
+      (cyc\[0\] (T0 30) (T1 30) (TX 0) (TC 6))
+      (cyc\[1\] (T0 40) (T1 20) (TX 0) (TC 3))
+      (cyc\[2\] (T0 40) (T1 20) (TX 0) (TC 1))
+      (v_arrp\[0\] (T0 30) (T1 30) (TX 0) (TC 6))
+      (v_arrp\[1\] (T0 30) (T1 30) (TX 0) (TC 6))
+      (v_arrp_arrp[3]\[0\] (T0 30) (T1 30) (TX 0) (TC 6))
+      (v_arrp_arrp[3]\[1\] (T0 30) (T1 30) (TX 0) (TC 6))
+      (v_arrp_arrp[4]\[0\] (T0 30) (T1 30) (TX 0) (TC 6))
+      (v_arrp_arrp[4]\[1\] (T0 30) (T1 30) (TX 0) (TC 6))
+      (v_arru_arrp[3]\[0\] (T0 30) (T1 30) (TX 0) (TC 6))
+      (v_arru_arrp[3]\[1\] (T0 30) (T1 30) (TX 0) (TC 6))
+      (v_arru_arrp[4]\[0\] (T0 30) (T1 30) (TX 0) (TC 6))
+      (v_arru_arrp[4]\[1\] (T0 30) (T1 30) (TX 0) (TC 6))
+      (v_enumed\[0\] (T0 30) (T1 30) (TX 0) (TC 6))
+      (v_enumed\[1\] (T0 40) (T1 20) (TX 0) (TC 3))
+      (v_enumed\[2\] (T0 40) (T1 20) (TX 0) (TC 1))
+      (v_enumed2\[1\] (T0 30) (T1 30) (TX 0) (TC 6))
+      (v_enumed2\[2\] (T0 40) (T1 20) (TX 0) (TC 3))
+      (v_enumed2\[3\] (T0 40) (T1 20) (TX 0) (TC 1))
+      (v_enumb\[0\] (T0 30) (T1 30) (TX 0) (TC 6))
+      (v_enumb\[1\] (T0 30) (T1 30) (TX 0) (TC 3))
+      (v_enumb\[2\] (T0 20) (T1 40) (TX 0) (TC 2))
+    )
+    (INSTANCE v_strp
+      (NET
+        (b1 (T0 30) (T1 30) (TX 0) (TC 6))
+        (b0 (T0 30) (T1 30) (TX 0) (TC 6))
+      )
+    )
+    (INSTANCE v_strp_strp
+      (NET
+      )
+      (INSTANCE x1
+        (NET
+          (b1 (T0 30) (T1 30) (TX 0) (TC 6))
+          (b0 (T0 30) (T1 30) (TX 0) (TC 6))
+        )
+      )
+      (INSTANCE x0
+        (NET
+          (b1 (T0 30) (T1 30) (TX 0) (TC 6))
+          (b0 (T0 30) (T1 30) (TX 0) (TC 6))
+        )
+      )
+    )
+    (INSTANCE v_unip_strp
+      (NET
+      )
+      (INSTANCE x1
+        (NET
+          (b1 (T0 30) (T1 30) (TX 0) (TC 6))
+          (b0 (T0 30) (T1 30) (TX 0) (TC 6))
+        )
+      )
+      (INSTANCE x0
+        (NET
+          (b1 (T0 30) (T1 30) (TX 0) (TC 6))
+          (b0 (T0 30) (T1 30) (TX 0) (TC 6))
+        )
+      )
+    )
+    (INSTANCE v_arrp_strp[3]
+      (NET
+        (b1 (T0 30) (T1 30) (TX 0) (TC 6))
+        (b0 (T0 30) (T1 30) (TX 0) (TC 6))
+      )
+    )
+    (INSTANCE v_arrp_strp[4]
+      (NET
+        (b1 (T0 30) (T1 30) (TX 0) (TC 6))
+        (b0 (T0 30) (T1 30) (TX 0) (TC 6))
+      )
+    )
+    (INSTANCE v_arru_strp[3]
+      (NET
+        (b1 (T0 30) (T1 30) (TX 0) (TC 6))
+        (b0 (T0 30) (T1 30) (TX 0) (TC 6))
+      )
+    )
+    (INSTANCE v_arru_strp[4]
+      (NET
+        (b1 (T0 30) (T1 30) (TX 0) (TC 6))
+        (b0 (T0 30) (T1 30) (TX 0) (TC 6))
+      )
+    )
+    (INSTANCE v_str32x2[0]
+      (NET
+        (data\[0\] (T0 30) (T1 30) (TX 0) (TC 7))
+        (data\[1\] (T0 20) (T1 40) (TX 0) (TC 4))
+        (data\[2\] (T0 20) (T1 40) (TX 0) (TC 2))
+        (data\[3\] (T0 0) (T1 60) (TX 0) (TC 1))
+        (data\[4\] (T0 0) (T1 60) (TX 0) (TC 1))
+        (data\[5\] (T0 0) (T1 60) (TX 0) (TC 1))
+        (data\[6\] (T0 0) (T1 60) (TX 0) (TC 1))
+        (data\[7\] (T0 0) (T1 60) (TX 0) (TC 1))
+      )
+    )
+    (INSTANCE v_str32x2[1]
+      (NET
+        (data\[0\] (T0 30) (T1 30) (TX 0) (TC 6))
+        (data\[1\] (T0 40) (T1 20) (TX 0) (TC 3))
+        (data\[2\] (T0 40) (T1 20) (TX 0) (TC 1))
+      )
+    )
+    (INSTANCE v_enumb2_str
+      (NET
+        (a\[0\] (T0 40) (T1 20) (TX 0) (TC 5))
+        (a\[1\] (T0 40) (T1 20) (TX 0) (TC 3))
+        (a\[2\] (T0 20) (T1 40) (TX 0) (TC 2))
+        (b\[0\] (T0 40) (T1 20) (TX 0) (TC 5))
+        (b\[1\] (T0 40) (T1 20) (TX 0) (TC 3))
+        (b\[2\] (T0 20) (T1 40) (TX 0) (TC 2))
+      )
+    )
+    (INSTANCE unnamedblk1
+      (NET
+        (b\[0\] (T0 10) (T1 50) (TX 0) (TC 1))
+        (b\[2\] (T0 10) (T1 50) (TX 0) (TC 1))
+      )
+      (INSTANCE unnamedblk2
+        (NET
+          (a\[0\] (T0 10) (T1 50) (TX 0) (TC 1))
+          (a\[2\] (T0 10) (T1 50) (TX 0) (TC 1))
+        )
+      )
+    )
+  )
+)
+)

@@ -133,7 +133,7 @@ inline std::ostream& operator<<(std::ostream& os, const VTimescale& rhs) {
 
 class TraceFormat final {
 public:
-    enum en : uint8_t { VCD = 0, FST } m_e;
+    enum en : uint8_t { VCD = 0, FST, SAIF } m_e;
     // cppcheck-suppress noExplicitConstructor
     constexpr TraceFormat(en _e = VCD)
         : m_e{_e} {}
@@ -141,13 +141,14 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     bool fst() const { return m_e == FST; }
+    bool saif() const { return m_e == SAIF; }
     bool vcd() const { return m_e == VCD; }
     string classBase() const VL_MT_SAFE {
-        static const char* const names[] = {"VerilatedVcd", "VerilatedFst"};
+        static const char* const names[] = {"VerilatedVcd", "VerilatedFst", "VerilatedSaif"};
         return names[m_e];
     }
     string sourceName() const VL_MT_SAFE {
-        static const char* const names[] = {"verilated_vcd", "verilated_fst"};
+        static const char* const names[] = {"verilated_vcd", "verilated_fst", "verilated_saif"};
         return names[m_e];
     }
 };
