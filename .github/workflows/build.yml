@@ -36,14 +36,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, ubuntu-22.04, ubuntu-20.04]
+        os: [ubuntu-24.04, ubuntu-22.04]
         compiler:
           - {cc: clang, cxx: clang++}
           - {cc: gcc, cxx: g++}
-        include:
-          # Build GCC 10 on ubuntu-20.04
-          - os: ubuntu-20.04
-            compiler: {cc: gcc-10, cxx: g++-10}
     runs-on: ${{ matrix.os }}
     name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
     env:
@@ -92,27 +88,29 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, ubuntu-20.04]
-        compiler:
-          - {cc: clang, cxx: clang++}
-          - {cc: gcc, cxx: g++}
-        reloc: [0]
-        suite: [dist-vlt-0, dist-vlt-1, dist-vlt-2, dist-vlt-3, vltmt-0, vltmt-1]
         include:
-          # Test with GCC 10 on ubuntu-20.04, also test relocation
-          - {os: ubuntu-20.04, compiler: {cc: gcc-10, cxx: g++-10}, reloc: 1, suite: dist-vlt-0}
-          - {os: ubuntu-20.04, compiler: {cc: gcc-10, cxx: g++-10}, reloc: 1, suite: dist-vlt-1}
-          - {os: ubuntu-20.04, compiler: {cc: gcc-10, cxx: g++-10}, reloc: 1, suite: dist-vlt-2}
-          - {os: ubuntu-20.04, compiler: {cc: gcc-10, cxx: g++-10}, reloc: 1, suite: dist-vlt-3}
-          - {os: ubuntu-20.04, compiler: {cc: gcc-10, cxx: g++-10}, reloc: 1, suite: vltmt-0}
-          - {os: ubuntu-20.04, compiler: {cc: gcc-10, cxx: g++-10}, reloc: 1, suite: vltmt-1}
-          # Ubuntu 24.04 only on GCC; not passing on clang yet
-          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, suite: dist-vlt-0}
-          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, suite: dist-vlt-1}
-          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, suite: dist-vlt-2}
-          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, suite: dist-vlt-3}
-          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, suite: vltmt-0}
-          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, suite: vltmt-1}
+          # Ubuntu 24.04 GCC
+          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-0}
+          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-1}
+          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-2}
+          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-3}
+          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-0}
+          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-1}
+          # Ubuntu 24.04 Clang - has problems
+          # Ubuntu 22.04 GCC
+          - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-0}
+          - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-1}
+          - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-2}
+          - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-3}
+          - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-0}
+          - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-1}
+          # Ubuntu 22.04 Clang, also test relocation
+          - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: dist-vlt-0}
+          - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: dist-vlt-1}
+          - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: dist-vlt-2}
+          - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: dist-vlt-3}
+          - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: vltmt-0}
+          - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: vltmt-1}
     runs-on: ${{ matrix.os }}
     name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.reloc && 'reloc | ' || '' }} ${{ matrix.suite }}
     env:
