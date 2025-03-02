@@ -23,6 +23,8 @@ import time
 from functools import lru_cache  # Eventually use python 3.9's cache
 from pprint import pformat, pprint
 
+import distro
+
 if False:  # pylint: disable=using-constant-test
     pprint(pformat("Ignored"))  # Prevent unused warning
 
@@ -140,10 +142,10 @@ class Capabilities:
     @staticproperty
     def cxx_version() -> str:  # pylint: disable=no-method-argument
         if Capabilities._cached_cxx_version is None:
-            Capabilities._cached_cxx_version = VtOs.run_capture(os.environ['MAKE'] + " -C " +
-                                                                os.environ['TEST_REGRESS'] +
-                                                                " -f Makefile print-cxx-version",
-                                                                check=False)
+            Capabilities._cached_cxx_version = VtOs.run_capture(
+                os.environ['MAKE'] + " --silent -C " + os.environ['TEST_REGRESS'] +
+                " -f Makefile print-cxx-version",
+                check=False)
 
         return Capabilities._cached_cxx_version
 
@@ -449,7 +451,7 @@ class Runner:
         else:
             error_msg = test.errors if test.errors else test.errors_keep_going
             test.oprint("FAILED: " + error_msg)
-            makecmd = VtOs.getenv_def('VERILATOR_MAKE', os.environ['MAKE'] + "&&")
+            makecmd = VtOs.getenv_def('VERILATOR_MAKE', os.environ['MAKE'] + " &&")
             upperdir = 'test_regress/' if re.search(r'test_regress', os.getcwd()) else ''
             self.fail_msgs.append("\t#" + test.soprint("%Error: " + error_msg) + "\t\t" + makecmd +
                                   " " + upperdir + test.py_filename + ' ' +
@@ -1236,6 +1238,13 @@ class VlTest:
 
             if self.timing and not self.have_coroutines:
                 self.skip("Test requires Coroutines; ignore error since not available\n")
+                return
+
+            if self.timing and self.sc and re.search(r'Ubuntu 24.04', distro.name(
+                    pretty=True)) and re.search(r'clang', self.cxx_version):
+                self.skip(
+                    "Test requires SystemC and Coroutines; broken on Ubuntu 24.04 w/clang\n" +
+                    " OS=" + distro.name(pretty=True) + " CXX=" + self.cxx_version)
                 return
 
             if param['verilator_make_cmake'] and not self.have_cmake:
