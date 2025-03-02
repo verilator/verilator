@@ -387,7 +387,7 @@ class LinkParseVisitor final : public VNVisitor {
                 newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
                 // Create a ParseRef to the wire. We cannot use the var as it may be deleted if
                 // it's a port (see t_var_set_link.v)
-                auto* const assp = new AstAssign{
+                AstAssign* const assp = new AstAssign{
                     newfl, new AstParseRef{newfl, VParseRefExp::PX_TEXT, nodep->name()},
                     VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)};
                 if (nodep->lifetime().isAutomatic()) {

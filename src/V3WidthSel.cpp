@@ -382,8 +382,8 @@ class WidthSelVisitor final : public VNVisitor {
             std::string name = (qleftBacknessp    ? "sliceBackBack"
                                 : qrightBacknessp ? "sliceFrontBack"
                                                   : "slice");
-            auto* const newp = new AstCMethodHard{nodep->fileline(), fromp, name,
-                                                  qleftBacknessp ? qleftBacknessp : qleftp};
+            AstCMethodHard* const newp = new AstCMethodHard{
+                nodep->fileline(), fromp, name, qleftBacknessp ? qleftBacknessp : qleftp};
             newp->addPinsp(qrightBacknessp ? qrightBacknessp : qrightp);
             newp->dtypep(ddtypep);
             newp->didWidth(true);

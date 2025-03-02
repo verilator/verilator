@@ -239,7 +239,7 @@ public:
 
     // Make a new AstActive sensitive to the given sentree and return it
     AstActive* makeActive(FileLine* const fl, AstSenTree* const senTreep) {
-        auto* const activep = new AstActive{fl, "", senTreep};
+        AstActive* const activep = new AstActive{fl, "", senTreep};
         activep->sensesStorep(activep->sensesp());
         addActive(activep);
         return activep;
@@ -572,8 +572,8 @@ class ActiveVisitor final : public VNVisitor {
         m_clockedProcess = true;
         if (nodep->edgeType() != VEdgeType::ET_CHANGED) m_allChanged = false;
 
-        if (const auto* const dtypep = nodep->sensp()->dtypep()) {
-            if (const auto* const basicp = dtypep->basicp()) {
+        if (const AstNodeDType* const dtypep = nodep->sensp()->dtypep()) {
+            if (const AstBasicDType* const basicp = dtypep->basicp()) {
                 if (basicp->isEvent()) nodep->edgeType(VEdgeType::ET_EVENT);
             }
         }

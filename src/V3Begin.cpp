@@ -506,8 +506,9 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 AstNode* const first_clearp
                     = new AstAssign{fl, new AstVarRef{fl, first_varp, VAccess::WRITE},
                                     new AstConst{fl, AstConst::BitFalse{}}};
-                auto* const orp = new AstLogOr{fl, new AstVarRef{fl, first_varp, VAccess::READ},
-                                               new AstNeq{fl, new AstConst{fl, 0}, nextp}};
+                AstLogOr* const orp
+                    = new AstLogOr{fl, new AstVarRef{fl, first_varp, VAccess::READ},
+                                   new AstNeq{fl, new AstConst{fl, 0}, nextp}};
                 AstNode* const whilep = new AstWhile{fl, orp, first_clearp};
                 first_clearp->addNext(bodyPointp);
                 AstNode* const ifbodyp

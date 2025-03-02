@@ -3064,7 +3064,7 @@ AstAlways* AstAssignW::convertToAlways() {
     if (hasTimingControl) {
         // If there's a timing control, put the assignment in a fork..join_none. This process won't
         // get marked as suspendable and thus will be scheduled normally
-        auto* forkp = new AstFork{flp, "", bodysp};
+        AstFork* forkp = new AstFork{flp, "", bodysp};
         forkp->joinType(VJoinType::JOIN_NONE);
         bodysp = forkp;
     }

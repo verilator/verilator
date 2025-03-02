@@ -588,7 +588,7 @@ class WidthVisitor final : public VNVisitor {
             return;
         }
         if (VN_IS(vdtypep, UnpackArrayDType)) {
-            auto* const newp = new AstPattern{nodep->fileline(), nullptr};
+            AstPattern* const newp = new AstPattern{nodep->fileline(), nullptr};
             patConcatConvertRecurse(newp, nodep);
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -796,7 +796,7 @@ class WidthVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
                 } else {  // int a[] = {lhs} -> same as '{lhs}
-                    auto* const newp = new AstPattern{
+                    AstPattern* const newp = new AstPattern{
                         nodep->fileline(),
                         new AstPatMember{nodep->srcp()->fileline(), nodep->srcp()->unlinkFrBack(),
                                          nullptr, nullptr}};
@@ -4192,7 +4192,8 @@ class WidthVisitor final : public VNVisitor {
         if (AstQueueDType* const queuep = m_queueDTypeIndexed[indexDTypep]) {
             return queuep;
         } else {
-            auto* const newp = new AstQueueDType{indexDTypep->fileline(), indexDTypep, nullptr};
+            AstQueueDType* const newp
+                = new AstQueueDType{indexDTypep->fileline(), indexDTypep, nullptr};
             v3Global.rootp()->typeTablep()->addTypesp(newp);
             m_queueDTypeIndexed[indexDTypep] = newp;
             return newp;
@@ -5068,7 +5069,7 @@ class WidthVisitor final : public VNVisitor {
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
             // if (debug()) nodep->dumpTree("-  AssignOut: ");
         }
-        if (auto* const controlp = nodep->timingControlp()) {
+        if (AstNode* const controlp = nodep->timingControlp()) {
             if (VN_IS(m_ftaskp, Func)) {
                 controlp->v3error("Timing controls are not legal in functions. Suggest use a task "
                                   "(IEEE 1800-2023 13.4.4)");

@@ -1714,10 +1714,11 @@ class LinkDotFindVisitor final : public VNVisitor {
         }
         // Type depends on the method used, let V3Width figure it out later
         if (nodep->exprsp()) {  // Else empty expression and pretend no "with"
-            const auto indexArgRefp = new AstLambdaArgRef{argFl, name + "__DOT__index", true};
-            const auto valueArgRefp = new AstLambdaArgRef{argFl, name, false};
-            const auto newp = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp,
-                                          nodep->exprsp()->unlinkFrBackWithNext()};
+            AstLambdaArgRef* const indexArgRefp
+                = new AstLambdaArgRef{argFl, name + "__DOT__index", true};
+            AstLambdaArgRef* const valueArgRefp = new AstLambdaArgRef{argFl, name, false};
+            AstWith* const newp = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp,
+                                              nodep->exprsp()->unlinkFrBackWithNext()};
             funcrefp->addPinsp(newp);
         }
         funcrefp->addPinsp(argp);

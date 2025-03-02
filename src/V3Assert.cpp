@@ -143,7 +143,7 @@ class AssertVisitor final : public VNVisitor {
         }
     }
     AstSampled* newSampledExpr(AstNodeExpr* nodep) {
-        const auto sampledp = new AstSampled{nodep->fileline(), nodep};
+        AstSampled* const sampledp = new AstSampled{nodep->fileline(), nodep};
         sampledp->dtypeFrom(nodep);
         return sampledp;
     }
@@ -153,7 +153,7 @@ class AssertVisitor final : public VNVisitor {
                                           nodep->findUInt64DType()};
             v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(m_monitorNumVarp);
         }
-        const auto varrefp = new AstVarRef{nodep->fileline(), m_monitorNumVarp, access};
+        AstVarRef* const varrefp = new AstVarRef{nodep->fileline(), m_monitorNumVarp, access};
         varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
         return varrefp;
     }
@@ -163,7 +163,7 @@ class AssertVisitor final : public VNVisitor {
                                           nodep->findBitDType()};
             v3Global.rootp()->dollarUnitPkgAddp()->addStmtsp(m_monitorOffVarp);
         }
-        const auto varrefp = new AstVarRef{nodep->fileline(), m_monitorOffVarp, access};
+        AstVarRef* const varrefp = new AstVarRef{nodep->fileline(), m_monitorOffVarp, access};
         varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
         return varrefp;
     }
@@ -528,7 +528,7 @@ class AssertVisitor final : public VNVisitor {
             replaceDisplay(nodep, "%%Fatal");
         } else if (nodep->displayType() == VDisplayType::DT_MONITOR) {
             nodep->displayType(VDisplayType::DT_DISPLAY);
-            const auto fl = nodep->fileline();
+            FileLine* const fl = nodep->fileline();
             AstNode* monExprsp = nodep->fmtp()->exprsp();
             AstSenItem* monSenItemsp = nullptr;
             while (monExprsp) {
@@ -548,8 +548,8 @@ class AssertVisitor final : public VNVisitor {
             AstSenTree* const monSenTree = new AstSenTree{fl, monSenItemsp};
             const auto monNum = ++m_monitorNum;
             // Where $monitor was we do "__VmonitorNum = N;"
-            const auto newsetp = new AstAssign{fl, newMonitorNumVarRefp(nodep, VAccess::WRITE),
-                                               new AstConst{fl, monNum}};
+            AstAssign* const newsetp = new AstAssign{
+                fl, newMonitorNumVarRefp(nodep, VAccess::WRITE), new AstConst{fl, monNum}};
             nodep->replaceWith(newsetp);
             // Add "always_comb if (__VmonitorOn && __VmonitorNum==N) $display(...);"
             AstNode* const stmtsp = nodep;
@@ -566,14 +566,14 @@ class AssertVisitor final : public VNVisitor {
         } else if (nodep->displayType() == VDisplayType::DT_STROBE) {
             nodep->displayType(VDisplayType::DT_DISPLAY);
             // Need one-shot
-            const auto fl = nodep->fileline();
-            const auto varp
+            FileLine* const fl = nodep->fileline();
+            AstVar* const varp
                 = new AstVar{fl, VVarType::MODULETEMP, "__Vstrobe" + cvtToStr(m_modStrobeNum++),
                              nodep->findBitDType()};
             m_modp->addStmtsp(varp);
             // Where $strobe was we do "__Vstrobe = '1;"
-            const auto newsetp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
-                                               new AstConst{fl, AstConst::BitTrue{}}};
+            AstAssign* const newsetp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                                     new AstConst{fl, AstConst::BitTrue{}}};
             nodep->replaceWith(newsetp);
             // Add "always_comb if (__Vstrobe) begin $display(...); __Vstrobe = '0; end"
             AstNode* const stmtsp = nodep;
@@ -587,7 +587,7 @@ class AssertVisitor final : public VNVisitor {
         }
     }
     void visit(AstMonitorOff* nodep) override {
-        const auto newp
+        AstAssign* const newp
             = new AstAssign{nodep->fileline(), newMonitorOffVarRefp(nodep, VAccess::WRITE),
                             new AstConst{nodep->fileline(), AstConst::BitTrue{}, nodep->off()}};
         nodep->replaceWith(newp);
