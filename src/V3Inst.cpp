@@ -109,14 +109,6 @@ class InstVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
-    void visit(AstUdpTable* nodep) override {
-        if (!v3Global.opt.bboxUnsup()) {
-            // If we support primitives, update V3Undriven to remove special case
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Verilog 1995 UDP Tables. "
-                                         "Use --bbox-unsup to ignore tables.");
-        }
-    }
-
     // Save some time
     void visit(AstNodeExpr*) override {}
     void visit(AstNodeAssign*) override {}
