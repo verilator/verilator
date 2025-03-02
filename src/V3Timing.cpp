@@ -933,10 +933,7 @@ class TimingControlVisitor final : public VNVisitor {
             UASSERT_OBJ(m_senExprBuilderp, nodep, "No SenExprBuilder for this scope");
             auto* const assignp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
                                                 m_senExprBuilderp->build(sensesp).first};
-            // Put all the locals and inits before the trigger eval loop
-            for (AstVar* const varp : m_senExprBuilderp->getAndClearLocals()) {
-                nodep->addHereThisAsNext(varp);
-            }
+            // Put all and inits before the trigger eval loop
             for (AstNodeStmt* const stmtp : m_senExprBuilderp->getAndClearInits()) {
                 nodep->addHereThisAsNext(stmtp);
             }
