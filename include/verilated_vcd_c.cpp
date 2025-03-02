@@ -465,7 +465,7 @@ void VerilatedVcd::declDouble(uint32_t code, uint32_t fidx, const char* name, in
 // Get/commit trace buffer
 
 VerilatedVcd::Buffer* VerilatedVcd::getTraceBuffer(uint32_t fidx) {
-    VerilatedVcd::Buffer* const bufp = new Buffer{*this};
+    VerilatedVcd::Buffer* const bufp = new Buffer{*this, fidx};
     if (parallel()) {
         // Note: This is called from VerilatedVcd::dump, which already holds the lock
         // If no buffer available, allocate a new one

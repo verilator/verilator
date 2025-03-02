@@ -175,11 +175,14 @@ public:
     const bool m_useParallel;  // Use parallel tracing
     const bool m_useOffloading;  // Offloading trace rendering
     const bool m_useFstWriterThread;  // Use the separate FST writer thread
+    const uint32_t m_nSplits;  // Number of split trace files to use
 
-    VerilatedTraceConfig(bool useParallel, bool useOffloading, bool useFstWriterThread)
+    VerilatedTraceConfig(bool useParallel, bool useOffloading, bool useFstWriterThread,
+                         uint32_t nSplits)
         : m_useParallel{useParallel}
         , m_useOffloading{useOffloading}
-        , m_useFstWriterThread{useFstWriterThread} {}
+        , m_useFstWriterThread{useFstWriterThread}
+        , m_nSplits{nSplits} {}
 };
 
 //=============================================================================
@@ -251,10 +254,11 @@ private:
 
     bool m_offload = false;  // Use the offload thread
     bool m_parallel = false;  // Use parallel tracing
+    uint32_t m_nSplits = 1;  // Number of split tracefiles to use
 
     struct ParallelWorkerData final {
         const dumpCb_t m_cb;  // The callback
-        void* const m_userp;  // The use pointer to pass to the callback
+        void* const m_userp;  // The user pointer to pass to the callback
         Buffer* const m_bufp;  // The buffer pointer to pass to the callback
         std::atomic<bool> m_ready{false};  // The ready flag
         mutable VerilatedMutex m_mutex;  // Mutex for suspension until ready
@@ -374,6 +378,10 @@ protected:
 
     bool offload() const { return m_offload; }
     bool parallel() const { return m_parallel; }
+    bool split() const { return m_nSplits > 1; }
+    uint32_t nSplits() const { return m_nSplits; }
+
+    VerilatedContext* contextp() const { return m_contextp; }
 
     // Return last ' ' separated word. Assumes string does not end in ' '.
     static std::string lastWord(const std::string& str) {
@@ -458,7 +466,7 @@ protected:
     uint32_t* const m_sigs_oldvalp;  // Previous value store
     EData* const m_sigs_enabledp;  // Bit vector of enabled codes (nullptr = all on)
 
-    explicit VerilatedTraceBuffer(Trace& owner);
+    explicit VerilatedTraceBuffer(Trace& owner, uint32_t fidx);
     ~VerilatedTraceBuffer() override = default;
 
 public:
