@@ -1,5 +1,6 @@
 (SAIFILE
 (DIRECTION "backward")
+(SAIFVERSION "2.0")
 (DESIGN "t")
 (DIVIDER / )
 (TIMESCALE 1ps)
