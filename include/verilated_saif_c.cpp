@@ -376,10 +376,14 @@ void VerilatedSaif::printIndent() {
 }
 
 void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType type) {
-    assert(!m_prefixStack.empty());
-
     std::string pname = name;
-    if (pname.empty()) { pname = "$rootio"; }
+
+    if (m_prefixStack.back().second == VerilatedTracePrefixType::ROOTIO_MODULE) popPrefix();
+    if (pname.empty())
+    {
+        pname = "$rootio";
+        type = VerilatedTracePrefixType::ROOTIO_MODULE;
+    }
 
     if (type != VerilatedTracePrefixType::ARRAY_UNPACKED
         && type != VerilatedTracePrefixType::ARRAY_PACKED) {
@@ -403,10 +407,9 @@ void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType
 }
 
 void VerilatedSaif::popPrefix() {
-    assert(m_prefixStack.size() > 1);
-
     if (m_prefixStack.back().second != VerilatedTracePrefixType::ARRAY_UNPACKED
-        && m_prefixStack.back().second != VerilatedTracePrefixType::ARRAY_PACKED) {
+        && m_prefixStack.back().second != VerilatedTracePrefixType::ARRAY_PACKED
+        && m_currentScope >= 0) {
         m_currentScope = m_scopes.at(m_currentScope).getParentScopeIndex();
     }
 
