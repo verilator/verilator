@@ -19,24 +19,27 @@ module t;
     `checkh(b, 0);
     `checkh(c, 0);
 
-    #1 a = 1;
+    a = 1;
+    #1;
     `checkh(a, 1);
-    `checkh(b, 0);
-    `checkh(c, 0);
-
-    #1 a = 2;
-    `checkh(a, 2);
     `checkh(b, 1);
+    // TODO implement inter-dependency resolution between force statements
     `checkh(c, 1);
 
-    #1 a = 3;
-    c = 3;
-    `checkh(a, 3);
+    a = 2;
+    #1;
+    `checkh(a, 2);
     `checkh(b, 2);
-    // TODO implement inter-dependency resolution between force statements
     `checkh(c, 2);
 
-    #1 release b;
+    a = 3;
+    c = 3;
+    #1;
+    `checkh(a, 3);
+    `checkh(b, 3);
+    `checkh(c, 3);
+
+    release b;
     release c;
     `checkh(a, 3);
     `checkh(b, 1);

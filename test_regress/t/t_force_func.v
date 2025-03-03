@@ -20,26 +20,26 @@ module t;
     `checkh(a, 0);
     `checkh(b, 0);
 
-    #1 a = 1;
+    a = 1;
+    #1;
     `checkh(a, 1);
-    `checkh(b, 0);
+    `checkh(b, 1);
 
-    #1 a = 2;
+    a = 2;
+    #1;
     `checkh(a, 2);
     // TODO
     // IEEE 1800-2023 10.6
     // Assignment shall be reevaluated while the assign or force is in effect.
-    `checkh(b, 1);
-
-    #1 a = 3;
-    `checkh(a, 3);
     `checkh(b, 2);
 
-    #1 release b;
+    a = 3;
+    #1;
     `checkh(a, 3);
-    // IEEE 1800-2023 10.6.2
-    // Not driven variable maintains its value after release.
-    // Value is maintained until a next assignment.
+    `checkh(b, 3);
+
+    release b;
+    `checkh(a, 3);
     `checkh(b, 3);
 
     b = 2;

@@ -17,19 +17,22 @@ module t;
     `checkh(a, 0);
     `checkh(b, 0);
 
-    #1 a = 1;
+    a = 1;
+    #1;
     `checkh(a, 1);
-    `checkh(b, 0);
-
-    #1 a = 2;
-    `checkh(a, 2);
     `checkh(b, 1);
 
-    #1 a = 3;
-    `checkh(a, 3);
+    a = 2;
+    #1;
+    `checkh(a, 2);
     `checkh(b, 2);
 
-    #1 release b;
+    a = 3;
+    #1;
+    `checkh(a, 3);
+    `checkh(b, 3);
+
+    release b;
     `checkh(a, 3);
     `checkh(b, 1);
 

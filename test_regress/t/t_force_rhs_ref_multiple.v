@@ -18,23 +18,19 @@ module t;
     `checkh(e, 10);
     #1;
     a = 0;
-    `checkh(e, 10);
     #1;
     // TODO support multiple VarRefs on RHS
     `checkh(e, 9);
 
     b = 0;
-    `checkh(e, 9);
     #1;
     `checkh(e, 7);
 
     c = 0;
-    `checkh(e, 7);
     #1;
     `checkh(e, 4);
 
     d = 0;
-    `checkh(e, 4);
     #1;
     `checkh(e, 0);
 
