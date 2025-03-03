@@ -829,7 +829,8 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
     return nullptr;
 }
 
-const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum) const VL_MT_STABLE {
+const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
+                                               bool assert) const VL_MT_STABLE {
     const AstNodeDType* nodep = this;
     while (true) {
         if (VL_UNLIKELY(VN_IS(nodep, MemberDType) || VN_IS(nodep, ParamTypeDType)
@@ -840,7 +841,7 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum) co
                 nodep = subp;
                 continue;
             } else {
-                nodep->v3fatalSrc(nodep->prettyTypeName() << " not linked to type");
+                if (assert) nodep->v3fatalSrc(nodep->prettyTypeName() << " not linked to type");
                 return nullptr;
             }
         }
@@ -2669,7 +2670,9 @@ AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp() const {
     AstNode* lastp = nullptr;
     while (foundp != lastp) {
         lastp = foundp;
-        if (AstNodeDType* const anodep = VN_CAST(foundp, NodeDType)) foundp = anodep->skipRefp();
+        if (AstNodeDType* const anodep = VN_CAST(foundp, NodeDType)) {
+            foundp = anodep->skipRefOrNullp();
+        }
         if (AstTypedef* const anodep = VN_CAST(foundp, Typedef)) foundp = anodep->subDTypep();
         if (AstClassRefDType* const anodep = VN_CAST(foundp, ClassRefDType))
             foundp = anodep->classp();
