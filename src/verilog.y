@@ -5775,9 +5775,8 @@ specify_itemList<nodep>:            // IEEE: { specify_item }
         ;
 
 specify_item<nodep>:                // ==IEEE: specify_item
-                specparam_declaration                   { $$ = $1; }
-        |       system_timing_check                     { $$ = $1; }
-        |       yaTIMINGSPEC junkToSemiList ';'         { $$ = nullptr; }
+                system_timing_check                     { $$ = $1; }
+        |       junkToSemiList ';'                      { $$ = nullptr; }
         ;
 
 specparam_declaration<nodep>:       // ==IEEE: specparam_declaration
@@ -5828,7 +5827,7 @@ junkToSemiList:
         ;
 
 junkToSemi:
-                BISONPRE_NOT(';',yENDSPECIFY,yENDMODULE)        { }
+                BISONPRE_NOT(';',yENDSPECIFY,yENDMODULE,yD_SETUPHOLD)        { }
         |       error {}
         ;
 
