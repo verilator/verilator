@@ -2540,11 +2540,6 @@ class uvm_pool #(type KEY=int, T=uvm_void) extends uvm_object;
   static protected this_type m_global_pool;
   protected T pool[KEY];
    typedef uvm_object_registry #(uvm_pool #(KEY,T)) type_id;
-   static function uvm_pool #(KEY,T) type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -2641,11 +2636,6 @@ class uvm_object_string_pool #(type T=uvm_object) extends uvm_pool #(string,T);
   typedef uvm_object_string_pool #(T) this_type;
   static protected this_type m_global_pool;
    typedef uvm_object_registry #(uvm_object_string_pool#(T)) type_id;
-   static function uvm_object_string_pool#(T) type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -2707,11 +2697,6 @@ typedef uvm_object_string_pool #(uvm_event#(uvm_object)) uvm_event_pool     ;
 class uvm_queue #(type T=int) extends uvm_object;
   typedef uvm_queue #(T) this_type;
    typedef uvm_object_registry #(uvm_queue#(T)) type_id;
-   static function uvm_queue#(T) type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -4089,11 +4074,6 @@ endfunction
 endclass
 class uvm_field_op extends uvm_object;
    typedef uvm_object_registry#(uvm_field_op,"uvm_field_op") type_id;
-   static function uvm_field_op type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -4229,17 +4209,12 @@ class uvm_field_op extends uvm_object;
    static function uvm_field_op m_get_available_op() ;
       uvm_field_op field_op ;
       if (m_recycled_op.size() > 0) field_op = m_recycled_op.pop_back() ;
-      else field_op = uvm_field_op::type_id_create("field_op");
+      else field_op = uvm_field_op::type_id::create("field_op");
       return field_op ;
    endfunction
 endclass
 class uvm_copier extends uvm_policy;
    typedef uvm_object_registry#(uvm_copier,"uvm_copier") type_id;
-   static function uvm_copier type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -4494,11 +4469,6 @@ class uvm_printer_element_proxy extends uvm_structure_proxy#(uvm_printer_element
 endclass : uvm_printer_element_proxy
 class uvm_table_printer extends uvm_printer;
    typedef uvm_object_registry#(uvm_table_printer,"uvm_table_printer") type_id;
-   static function uvm_table_printer type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -4537,11 +4507,6 @@ class uvm_tree_printer extends uvm_printer;
   protected string m_newline = "\n";
   protected string m_linefeed ;
    typedef uvm_object_registry#(uvm_tree_printer,"uvm_tree_printer") type_id;
-   static function uvm_tree_printer type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -4574,11 +4539,6 @@ class uvm_tree_printer extends uvm_printer;
 endclass
 class uvm_line_printer extends uvm_tree_printer;
    typedef uvm_object_registry#(uvm_line_printer,"uvm_line_printer") type_id;
-   static function uvm_line_printer type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -5281,11 +5241,6 @@ function void uvm_line_printer::flush() ;
 endfunction
 class uvm_comparer extends uvm_policy;
    typedef uvm_object_registry#(uvm_comparer,"uvm_comparer") type_id;
-   static function uvm_comparer type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -5653,11 +5608,6 @@ endfunction
 typedef bit signed [(4096*8)-1:0] uvm_pack_bitstream_t;
 class uvm_packer extends uvm_policy;
    typedef uvm_object_registry#(uvm_packer,"uvm_packer") type_id;
-   static function uvm_packer type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -6166,11 +6116,6 @@ class uvm_parent_child_link extends uvm_link_base;
    local uvm_object m_lhs;
    local uvm_object m_rhs;
    typedef uvm_object_registry#(uvm_parent_child_link,"uvm_parent_child_link") type_id;
-   static function uvm_parent_child_link type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -6222,11 +6167,6 @@ class uvm_cause_effect_link extends uvm_link_base;
    local uvm_object m_lhs;
    local uvm_object m_rhs;
    typedef uvm_object_registry#(uvm_cause_effect_link,"uvm_cause_effect_link") type_id;
-   static function uvm_cause_effect_link type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -6278,11 +6218,6 @@ class uvm_related_link extends uvm_link_base;
    local uvm_object m_lhs;
    local uvm_object m_rhs;
    typedef uvm_object_registry#(uvm_related_link,"uvm_related_link") type_id;
-   static function uvm_related_link type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -6460,11 +6395,6 @@ class uvm_text_tr_database extends uvm_tr_database;
    local uvm_simple_lock_dap#(string) m_filename_dap;
    UVM_FILE m_file;
    typedef uvm_object_registry#(uvm_text_tr_database,"uvm_text_tr_database") type_id;
-   static function uvm_text_tr_database type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -6508,7 +6438,7 @@ class uvm_text_tr_database extends uvm_tr_database;
    protected virtual function uvm_tr_stream do_open_stream(string name,
                                                            string scope,
                                                            string type_name);
-      uvm_text_tr_stream m_stream = uvm_text_tr_stream::type_id_create(name);
+      uvm_text_tr_stream m_stream = uvm_text_tr_stream::type_id::create(name);
       return m_stream;
    endfunction : do_open_stream
    protected virtual function void do_establish_link(uvm_link_base link);
@@ -6543,14 +6473,14 @@ class uvm_text_tr_database extends uvm_tr_database;
       if (filename == "") begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"UVM/TXT_DB/EMPTY_NAME"))
-       uvm_report_warning ("UVM/TXT_DB/EMPTY_NAME", "Ignoring attempt to set file name to ''!", UVM_NONE, "t/uvm/src/base/uvm_text_tr_database.svh", 195, "", 1);
+       uvm_report_warning ("UVM/TXT_DB/EMPTY_NAME", "Ignoring attempt to set file name to ''!", UVM_NONE, "t/uvm/src/base/uvm_text_tr_database.svh", 191, "", 1);
    end
          return;
       end
       if (!m_filename_dap.try_set(filename)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"UVM/TXT_DB/SET_AFTER_OPEN"))
-       uvm_report_warning ("UVM/TXT_DB/SET_AFTER_OPEN", "Ignoring attempt to change file name after opening the db!", UVM_NONE, "t/uvm/src/base/uvm_text_tr_database.svh", 201, "", 1);
+       uvm_report_warning ("UVM/TXT_DB/SET_AFTER_OPEN", "Ignoring attempt to change file name after opening the db!", UVM_NONE, "t/uvm/src/base/uvm_text_tr_database.svh", 197, "", 1);
    end
          return;
       end
@@ -6761,11 +6691,6 @@ endclass : uvm_tr_stream
 class uvm_text_tr_stream extends uvm_tr_stream;
    local uvm_text_tr_database m_text_db;
    typedef uvm_object_registry#(uvm_text_tr_stream,"uvm_text_tr_stream") type_id;
-   static function uvm_text_tr_stream type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -6874,7 +6799,7 @@ endfunction : __m_uvm_execute_field_op
                                                            time   open_time,
                                                            string type_name);
       if (m_text_db.open_db()) begin
-         return uvm_text_recorder::type_id_create(name);
+         return uvm_text_recorder::type_id::create(name);
       end
       return null;
    endfunction : do_open_recorder
@@ -7172,11 +7097,6 @@ virtual class uvm_recorder extends uvm_policy;
 endclass
 class uvm_text_recorder extends uvm_recorder;
    typedef uvm_object_registry#(uvm_text_recorder,"uvm_text_recorder") type_id;
-   static function uvm_text_recorder type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -7563,11 +7483,6 @@ class uvm_event#(type T=uvm_object) extends uvm_event_base;
         endfunction : m_register_cb
         static local bit m_cb_registered = m_register_cb();
    typedef uvm_object_registry #(this_type) type_id;
-   static function this_type type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -7664,11 +7579,6 @@ class uvm_barrier extends uvm_object;
   local  bit       auto_reset;
   local  uvm_event#(uvm_object) m_event;
    typedef uvm_object_registry#(uvm_barrier,"uvm_barrier") type_id;
-   static function uvm_barrier type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -8404,11 +8314,6 @@ endclass
 class uvm_callback extends uvm_object;
   protected bit m_enabled = 1;
    typedef uvm_object_registry#(uvm_callback,"uvm_callback") type_id;
-   static function uvm_callback type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -8578,11 +8483,6 @@ endclass : uvm_report_message_object_element
 class uvm_report_message_element_container extends uvm_object;
   protected uvm_report_message_element_base elements[$];
    typedef uvm_object_registry#(uvm_report_message_element_container,"uvm_report_message_element_container") type_id;
-   static function uvm_report_message_element_container type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -8739,11 +8639,6 @@ class uvm_report_message extends uvm_object;
     end
   endfunction
    typedef uvm_object_registry#(uvm_report_message,"uvm_report_message") type_id;
-   static function uvm_report_message type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -9598,11 +9493,6 @@ class uvm_report_handler extends uvm_object;
   UVM_FILE severity_file_handles[uvm_severity];
   uvm_id_file_array severity_id_file_handles[uvm_severity];
    typedef uvm_object_registry#(uvm_report_handler,"uvm_report_handler") type_id;
-   static function uvm_report_handler type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -9979,7 +9869,7 @@ class uvm_report_object extends uvm_object;
   local bit m_rh_set;
   local function void m_rh_init();
     if (!m_rh_set)
-      set_report_handler(uvm_report_handler::type_id_create(get_name()));
+      set_report_handler(uvm_report_handler::type_id::create(get_name()));
   endfunction : m_rh_init
   function new(string name = "");
     super.new(name);
@@ -10511,18 +10401,13 @@ class uvm_phase extends uvm_object;
         return null;
      end
      if (phase_done == null) begin
-        phase_done = uvm_objection::type_id_create({get_name(), "_objection"});
+        phase_done = uvm_objection::type_id::create({get_name(), "_objection"});
      end
      return phase_done;
   endfunction
 endclass
 class uvm_phase_state_change extends uvm_object;
    typedef uvm_object_registry#(uvm_phase_state_change,"uvm_phase_state_change") type_id;
-   static function uvm_phase_state_change type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -10608,7 +10493,7 @@ function void uvm_phase::add(uvm_phase phase,
   if (phase == null)
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH/NULL"))
-       uvm_report_fatal ("PH/NULL", "add: phase argument is null", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 762, "", 1);
+       uvm_report_fatal ("PH/NULL", "add: phase argument is null", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 754, "", 1);
    end
   if (with_phase != null && with_phase.get_phase_type() == UVM_PHASE_IMP) begin
     string nm = with_phase.get_name();
@@ -10616,7 +10501,7 @@ function void uvm_phase::add(uvm_phase phase,
     if (with_phase == null)
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BAD_ADD"))
-       uvm_report_fatal ("PH_BAD_ADD", {"cannot find with_phase '",nm,"' within node '",get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 769, "", 1);
+       uvm_report_fatal ("PH_BAD_ADD", {"cannot find with_phase '",nm,"' within node '",get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 761, "", 1);
    end
   end
   if (before_phase != null && before_phase.get_phase_type() == UVM_PHASE_IMP) begin
@@ -10625,7 +10510,7 @@ function void uvm_phase::add(uvm_phase phase,
     if (before_phase == null)
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BAD_ADD"))
-       uvm_report_fatal ("PH_BAD_ADD", {"cannot find before_phase '",nm,"' within node '",get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 777, "", 1);
+       uvm_report_fatal ("PH_BAD_ADD", {"cannot find before_phase '",nm,"' within node '",get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 769, "", 1);
    end
   end
   if (after_phase != null && after_phase.get_phase_type() == UVM_PHASE_IMP) begin
@@ -10634,7 +10519,7 @@ function void uvm_phase::add(uvm_phase phase,
     if (after_phase == null)
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BAD_ADD"))
-       uvm_report_fatal ("PH_BAD_ADD", {"cannot find after_phase '",nm,"' within node '",get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 785, "", 1);
+       uvm_report_fatal ("PH_BAD_ADD", {"cannot find after_phase '",nm,"' within node '",get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 777, "", 1);
    end
   end
   if (start_with_phase != null && start_with_phase.get_phase_type() == UVM_PHASE_IMP) begin
@@ -10643,7 +10528,7 @@ function void uvm_phase::add(uvm_phase phase,
     if (start_with_phase == null)
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BAD_ADD"))
-       uvm_report_fatal ("PH_BAD_ADD", {"cannot find start_with_phase '",nm,"' within node '",get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 793, "", 1);
+       uvm_report_fatal ("PH_BAD_ADD", {"cannot find start_with_phase '",nm,"' within node '",get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 785, "", 1);
    end
   end
   if (end_with_phase != null && end_with_phase.get_phase_type() == UVM_PHASE_IMP) begin
@@ -10652,18 +10537,18 @@ function void uvm_phase::add(uvm_phase phase,
      if (end_with_phase == null)
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BAD_ADD"))
-       uvm_report_fatal ("PH_BAD_ADD", {"cannot find end_with_phase '",nm,"' within node '",get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 801, "", 1);
+       uvm_report_fatal ("PH_BAD_ADD", {"cannot find end_with_phase '",nm,"' within node '",get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 793, "", 1);
    end
   end
   if (((with_phase != null) + (after_phase != null) + (start_with_phase != null)) > 1)
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BAD_ADD"))
-       uvm_report_fatal ("PH_BAD_ADD", "only one of with_phase/after_phase/start_with_phase may be specified as they all specify predecessor", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 806, "", 1);
+       uvm_report_fatal ("PH_BAD_ADD", "only one of with_phase/after_phase/start_with_phase may be specified as they all specify predecessor", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 798, "", 1);
    end
   if (((with_phase != null) + (before_phase != null) + (end_with_phase != null)) > 1)
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BAD_ADD"))
-       uvm_report_fatal ("PH_BAD_ADD", "only one of with_phase/before_phase/end_with_phase may be specified as they all specify successor", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 810, "", 1);
+       uvm_report_fatal ("PH_BAD_ADD", "only one of with_phase/before_phase/end_with_phase may be specified as they all specify successor", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 802, "", 1);
    end
   if (before_phase == this ||
      after_phase == m_end_node ||
@@ -10672,13 +10557,13 @@ function void uvm_phase::add(uvm_phase phase,
      end_with_phase == m_end_node)
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BAD_ADD"))
-       uvm_report_fatal ("PH_BAD_ADD", "cannot add before begin node, after end node, or with end nodes", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 818, "", 1);
+       uvm_report_fatal ("PH_BAD_ADD", "cannot add before begin node, after end node, or with end nodes", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 810, "", 1);
    end
   if (before_phase != null && after_phase != null) begin
     if (!after_phase.is_before(before_phase)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BAD_ADD"))
-       uvm_report_fatal ("PH_BAD_ADD", {"Phase '",before_phase.get_name(), "' is not before phase '",after_phase.get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 823, "", 1);
+       uvm_report_fatal ("PH_BAD_ADD", {"Phase '",before_phase.get_name(), "' is not before phase '",after_phase.get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 815, "", 1);
    end
     end
   end
@@ -10686,7 +10571,7 @@ function void uvm_phase::add(uvm_phase phase,
     if (!start_with_phase.is_before(before_phase)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BAD_ADD"))
-       uvm_report_fatal ("PH_BAD_ADD", {"Phase '",before_phase.get_name(), "' is not before phase '",start_with_phase.get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 830, "", 1);
+       uvm_report_fatal ("PH_BAD_ADD", {"Phase '",before_phase.get_name(), "' is not before phase '",start_with_phase.get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 822, "", 1);
    end
     end
   end
@@ -10694,7 +10579,7 @@ function void uvm_phase::add(uvm_phase phase,
     if (!after_phase.is_before(end_with_phase)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BAD_ADD"))
-       uvm_report_fatal ("PH_BAD_ADD", {"Phase '",end_with_phase.get_name(), "' is not before phase '",after_phase.get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 837, "", 1);
+       uvm_report_fatal ("PH_BAD_ADD", {"Phase '",end_with_phase.get_name(), "' is not before phase '",after_phase.get_name(),"'"}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 829, "", 1);
    end
     end
   end
@@ -10718,7 +10603,7 @@ function void uvm_phase::add(uvm_phase phase,
     uvm_phase_type typ = phase.get_phase_type();
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"PH/TRC/ADD_PH"))
-       uvm_report_info ("PH/TRC/ADD_PH", {get_name()," (",m_phase_type.name(),") ADD_PHASE: phase=",phase.get_full_name()," (", typ.name(),", inst_id=",$sformatf("%0d",phase.get_inst_id()),")", " with_phase=", (with_phase == null)   ? "null" : with_phase.get_name(), " start_with_phase=", (start_with_phase == null)   ? "null" : start_with_phase.get_name(), " end_with_phase=", (end_with_phase == null)   ? "null" : end_with_phase.get_name(), " after_phase=", (after_phase == null)  ? "null" : after_phase.get_name(), " before_phase=", (before_phase == null) ? "null" : before_phase.get_name(), " new_node=", (new_node == null)     ? "null" : {new_node.get_name(), " inst_id=", $sformatf("%0d",new_node.get_inst_id())}, " begin_node=", (begin_node == null)   ? "null" : begin_node.get_name(), " end_node=", (end_node == null)     ? "null" : end_node.get_name()}, UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 886, "", 1);
+       uvm_report_info ("PH/TRC/ADD_PH", {get_name()," (",m_phase_type.name(),") ADD_PHASE: phase=",phase.get_full_name()," (", typ.name(),", inst_id=",$sformatf("%0d",phase.get_inst_id()),")", " with_phase=", (with_phase == null)   ? "null" : with_phase.get_name(), " start_with_phase=", (start_with_phase == null)   ? "null" : start_with_phase.get_name(), " end_with_phase=", (end_with_phase == null)   ? "null" : end_with_phase.get_name(), " after_phase=", (after_phase == null)  ? "null" : after_phase.get_name(), " before_phase=", (before_phase == null) ? "null" : before_phase.get_name(), " new_node=", (new_node == null)     ? "null" : {new_node.get_name(), " inst_id=", $sformatf("%0d",new_node.get_inst_id())}, " begin_node=", (begin_node == null)   ? "null" : begin_node.get_name(), " end_node=", (end_node == null)     ? "null" : end_node.get_name()}, UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 878, "", 1);
    end
   end
   if (with_phase != null) begin
@@ -10787,7 +10672,7 @@ function void uvm_phase::add(uvm_phase phase,
     tmp_node = phase;
   else
     tmp_node = new_node;
-   state_chg = uvm_phase_state_change::type_id_create(tmp_node.get_name());
+  state_chg = uvm_phase_state_change::type_id::create(tmp_node.get_name());
   state_chg.m_phase = tmp_node;
   state_chg.m_jump_to = null;
   state_chg.m_prev_state = tmp_node.m_state;
@@ -10830,7 +10715,7 @@ function uvm_domain uvm_phase::get_domain();
   if(!$cast(get_domain,phase))
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH/INTERNAL"))
-       uvm_report_fatal ("PH/INTERNAL", "get_domain: m_phase_type is DOMAIN but $cast to uvm_domain fails", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1047, "", 1);
+       uvm_report_fatal ("PH/INTERNAL", "get_domain: m_phase_type is DOMAIN but $cast to uvm_domain fails", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1035, "", 1);
    end
 endfunction
 function string uvm_phase::get_domain_name();
@@ -10894,7 +10779,7 @@ function void uvm_phase::m_print_successors();
     level = 0;
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_INFO,"UVM/PHASE/SUCC"))
-       uvm_report_info ("UVM/PHASE/SUCC", $sformatf("%s%s (%s) id=%0d",spaces.substr(0,level*2),get_name(), m_phase_type.name(),get_inst_id()), UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1162, "", 1);
+       uvm_report_info ("UVM/PHASE/SUCC", $sformatf("%s%s (%s) id=%0d",spaces.substr(0,level*2),get_name(), m_phase_type.name(),get_inst_id()), UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1150, "", 1);
    end
   level++;
   foreach (m_successors[succ]) begin
@@ -11012,7 +10897,7 @@ task uvm_phase::execute_phase();
     wait (pred.m_state == UVM_PHASE_DONE);
   if (m_state == UVM_PHASE_DONE)
     return;
-   state_chg = uvm_phase_state_change::type_id_create(get_name());
+  state_chg = uvm_phase_state_change::type_id::create(get_name());
   state_chg.m_phase      = this;
   state_chg.m_jump_to    = null;
   state_chg.m_prev_state = m_state;
@@ -11035,7 +10920,7 @@ task uvm_phase::execute_phase();
   if (m_phase_trace) begin
    begin
      if (uvm_report_enabled(UVM_LOW,UVM_INFO,"PH/TRC/STRT"))
-       uvm_report_info ("PH/TRC/STRT", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"Starting phase"}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1382, "", 1);
+       uvm_report_info ("PH/TRC/STRT", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"Starting phase"}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1366, "", 1);
    end
   end
   if (m_phase_type != UVM_PHASE_NODE) begin
@@ -11117,7 +11002,7 @@ task uvm_phase::execute_phase();
                 wait (m_premature_end);
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"PH/TRC/EXE/JUMP"))
-       uvm_report_info ("PH/TRC/EXE/JUMP", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"PHASE EXIT ON JUMP REQUEST"}, UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 1462, "", 1);
+       uvm_report_info ("PH/TRC/EXE/JUMP", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"PHASE EXIT ON JUMP REQUEST"}, UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 1446, "", 1);
    end
              end
              begin
@@ -11130,14 +11015,14 @@ task uvm_phase::execute_phase();
                    phase_done.wait_for(UVM_ALL_DROPPED, top);
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"PH/TRC/EXE/ALLDROP"))
-       uvm_report_info ("PH/TRC/EXE/ALLDROP", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"PHASE EXIT ALL_DROPPED"}, UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 1475, "", 1);
+       uvm_report_info ("PH/TRC/EXE/ALLDROP", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"PHASE EXIT ALL_DROPPED"}, UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 1459, "", 1);
    end
                end
                else begin
                   if (m_phase_trace)
    begin
      if (uvm_report_enabled(UVM_LOW,UVM_INFO,"PH/TRC/SKIP"))
-       uvm_report_info ("PH/TRC/SKIP", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"No objections raised, skipping phase"}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1478, "", 1);
+       uvm_report_info ("PH/TRC/SKIP", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"No objections raised, skipping phase"}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1462, "", 1);
    end
                end
                wait_for_self_and_siblings_to_drop() ;
@@ -11146,13 +11031,13 @@ task uvm_phase::execute_phase();
                  uvm_wait_for_nba_region();
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"PH_READY_TO_END"))
-       uvm_report_info ("PH_READY_TO_END", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"PHASE READY TO END"}, UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 1490, "", 1);
+       uvm_report_info ("PH_READY_TO_END", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"PHASE READY TO END"}, UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 1474, "", 1);
    end
                  m_ready_to_end_count++;
                  if (m_phase_trace)
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"PH_READY_TO_END_CB"))
-       uvm_report_info ("PH_READY_TO_END_CB", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"CALLING READY_TO_END CB"}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1493, "", 1);
+       uvm_report_info ("PH_READY_TO_END_CB", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"CALLING READY_TO_END CB"}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1477, "", 1);
    end
                  state_chg.m_prev_state = m_state;
                  m_state = UVM_PHASE_READY_TO_END;
@@ -11178,14 +11063,14 @@ task uvm_phase::execute_phase();
                   if (m_phase_trace)
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"PH/TRC/TO_WAIT"))
-       uvm_report_info ("PH/TRC/TO_WAIT", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),$sformatf("STARTING PHASE TIMEOUT WATCHDOG (timeout == %t)", top.phase_timeout)}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1513, "", 1);
+       uvm_report_info ("PH/TRC/TO_WAIT", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),$sformatf("STARTING PHASE TIMEOUT WATCHDOG (timeout == %t)", top.phase_timeout)}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1497, "", 1);
    end
                   #(top.phase_timeout);
                   if ($time == 9200s) begin
                      if (m_phase_trace)
    begin
      if (uvm_report_enabled(UVM_LOW,UVM_INFO,"PH/TRC/TIMEOUT"))
-       uvm_report_info ("PH/TRC/TIMEOUT", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"PHASE TIMEOUT WATCHDOG EXPIRED"}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1517, "", 1);
+       uvm_report_info ("PH/TRC/TIMEOUT", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"PHASE TIMEOUT WATCHDOG EXPIRED"}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1501, "", 1);
    end
                      foreach (m_executing_phases[p]) begin
                         uvm_objection p_phase_done;
@@ -11194,20 +11079,20 @@ task uvm_phase::execute_phase();
                            if (m_phase_trace)
    begin
      if (uvm_report_enabled(UVM_LOW,UVM_INFO,"PH/TRC/TIMEOUT/OBJCTN"))
-       uvm_report_info ("PH/TRC/TIMEOUT/OBJCTN", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),$sformatf("Phase '%s' has outstanding objections:\n%s", p.get_full_name(), p_phase_done.convert2string())}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1526, "", 1);
+       uvm_report_info ("PH/TRC/TIMEOUT/OBJCTN", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),$sformatf("Phase '%s' has outstanding objections:\n%s", p.get_full_name(), p_phase_done.convert2string())}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1510, "", 1);
    end
                         end
                      end
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_TIMEOUT"))
-       uvm_report_fatal ("PH_TIMEOUT", $sformatf("Default timeout of %0t hit, indicating a probable testbench issue", 9200s), UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1532, "", 1);
+       uvm_report_fatal ("PH_TIMEOUT", $sformatf("Default timeout of %0t hit, indicating a probable testbench issue", 9200s), UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1516, "", 1);
    end
                   end
                   else begin
                      if (m_phase_trace)
    begin
      if (uvm_report_enabled(UVM_LOW,UVM_INFO,"PH/TRC/TIMEOUT"))
-       uvm_report_info ("PH/TRC/TIMEOUT", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"PHASE TIMEOUT WATCHDOG EXPIRED"}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1536, "", 1);
+       uvm_report_info ("PH/TRC/TIMEOUT", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"PHASE TIMEOUT WATCHDOG EXPIRED"}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1520, "", 1);
    end
                      foreach (m_executing_phases[p]) begin
                         uvm_objection p_phase_done;
@@ -11216,19 +11101,19 @@ task uvm_phase::execute_phase();
                            if (m_phase_trace)
    begin
      if (uvm_report_enabled(UVM_LOW,UVM_INFO,"PH/TRC/TIMEOUT/OBJCTN"))
-       uvm_report_info ("PH/TRC/TIMEOUT/OBJCTN", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),$sformatf("Phase '%s' has outstanding objections:\n%s", p.get_full_name(), p_phase_done.convert2string())}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1545, "", 1);
+       uvm_report_info ("PH/TRC/TIMEOUT/OBJCTN", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),$sformatf("Phase '%s' has outstanding objections:\n%s", p.get_full_name(), p_phase_done.convert2string())}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1529, "", 1);
    end
                         end
                      end
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_TIMEOUT"))
-       uvm_report_fatal ("PH_TIMEOUT", $sformatf("Explicit timeout of %0t hit, indicating a probable testbench issue", top.phase_timeout), UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1551, "", 1);
+       uvm_report_fatal ("PH_TIMEOUT", $sformatf("Explicit timeout of %0t hit, indicating a probable testbench issue", top.phase_timeout), UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1535, "", 1);
    end
                   end
                   if (m_phase_trace)
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"PH/TRC/EXE/3"))
-       uvm_report_info ("PH/TRC/EXE/3", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"PHASE EXIT TIMEOUT"}, UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 1554, "", 1);
+       uvm_report_info ("PH/TRC/EXE/3", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"PHASE EXIT TIMEOUT"}, UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 1538, "", 1);
    end
                end
                else begin
@@ -11248,20 +11133,20 @@ task uvm_phase::execute_phase();
         state_chg.m_jump_to = m_jump_phase;
    begin
      if (uvm_report_enabled(UVM_MEDIUM,UVM_INFO,"PH_JUMP"))
-       uvm_report_info ("PH_JUMP", $sformatf("phase %s (schedule %s, domain %s) is jumping to phase %s", get_name(), get_schedule_name(), get_domain_name(), m_jump_phase.get_name()), UVM_MEDIUM, "t/uvm/src/base/uvm_phase.svh", 1598, "", 1);
+       uvm_report_info ("PH_JUMP", $sformatf("phase %s (schedule %s, domain %s) is jumping to phase %s", get_name(), get_schedule_name(), get_domain_name(), m_jump_phase.get_name()), UVM_MEDIUM, "t/uvm/src/base/uvm_phase.svh", 1582, "", 1);
    end
       end
       else begin
    begin
      if (uvm_report_enabled(UVM_MEDIUM,UVM_INFO,"PH_JUMP"))
-       uvm_report_info ("PH_JUMP", $sformatf("phase %s (schedule %s, domain %s) is ending prematurely", get_name(), get_schedule_name(), get_domain_name()), UVM_MEDIUM, "t/uvm/src/base/uvm_phase.svh", 1604, "", 1);
+       uvm_report_info ("PH_JUMP", $sformatf("phase %s (schedule %s, domain %s) is ending prematurely", get_name(), get_schedule_name(), get_domain_name()), UVM_MEDIUM, "t/uvm/src/base/uvm_phase.svh", 1588, "", 1);
    end
       end
       #0;
       if (m_phase_trace)
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"PH_END"))
-       uvm_report_info ("PH_END", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"ENDING PHASE PREMATURELY"}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1610, "", 1);
+       uvm_report_info ("PH_END", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"ENDING PHASE PREMATURELY"}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1594, "", 1);
    end
     end
     else begin
@@ -11271,7 +11156,7 @@ task uvm_phase::execute_phase();
     if (m_phase_trace)
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"PH_END"))
-       uvm_report_info ("PH_END", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"ENDING PHASE"}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1624, "", 1);
+       uvm_report_info ("PH_END", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"ENDING PHASE"}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1608, "", 1);
    end
     state_chg.m_prev_state = m_state;
     m_state = UVM_PHASE_ENDED;
@@ -11319,7 +11204,7 @@ task uvm_phase::execute_phase();
     if (m_phase_trace)
    begin
      if (uvm_report_enabled(UVM_LOW,UVM_INFO,"PH/TRC/DONE"))
-       uvm_report_info ("PH/TRC/DONE", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"Completed phase"}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1666, "", 1);
+       uvm_report_info ("PH/TRC/DONE", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"Completed phase"}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1650, "", 1);
    end
     state_chg.m_prev_state = m_state;
     m_state = UVM_PHASE_DONE;
@@ -11369,7 +11254,7 @@ task uvm_phase::execute_phase();
         if (m_phase_trace)
    begin
      if (uvm_report_enabled(UVM_LOW,UVM_INFO,"PH/TRC/SCHEDULED"))
-       uvm_report_info ("PH/TRC/SCHEDULED", {$sformatf("Phase '%0s' (id=%0d) ", succ.get_full_name(), succ.get_inst_id()),{"Scheduled from phase ",get_full_name()}}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1705, "", 1);
+       uvm_report_info ("PH/TRC/SCHEDULED", {$sformatf("Phase '%0s' (id=%0d) ", succ.get_full_name(), succ.get_inst_id()),{"Scheduled from phase ",get_full_name()}}, UVM_LOW, "t/uvm/src/base/uvm_phase.svh", 1689, "", 1);
    end
       end
     end
@@ -11449,7 +11334,7 @@ task uvm_phase::m_wait_for_pred();
             sibling.get_name(),sibling.get_inst_id(),sibling.m_state.name());
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"PH/TRC/WAIT_PRED_OF_SUCC"))
-       uvm_report_info ("PH/TRC/WAIT_PRED_OF_SUCC", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),s}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1819, "", 1);
+       uvm_report_info ("PH/TRC/WAIT_PRED_OF_SUCC", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),s}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1803, "", 1);
    end
       end
       sibling.wait_for_state(UVM_PHASE_READY_TO_END, UVM_GTE);
@@ -11459,7 +11344,7 @@ task uvm_phase::m_wait_for_pred();
             sibling.get_name(),sibling.get_inst_id());
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"PH/TRC/WAIT_PRED_OF_SUCC"))
-       uvm_report_info ("PH/TRC/WAIT_PRED_OF_SUCC", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),s}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1828, "", 1);
+       uvm_report_info ("PH/TRC/WAIT_PRED_OF_SUCC", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),s}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1812, "", 1);
    end
       end
     end
@@ -11471,13 +11356,13 @@ task uvm_phase::m_wait_for_pred();
         s = {s, ")"};
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"PH/TRC/WAIT_PRED_OF_SUCC"))
-       uvm_report_info ("PH/TRC/WAIT_PRED_OF_SUCC", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),{"*** All pred to succ ",s," in READY_TO_END state, so ending phase ***"}}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1840, "", 1);
+       uvm_report_info ("PH/TRC/WAIT_PRED_OF_SUCC", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),{"*** All pred to succ ",s," in READY_TO_END state, so ending phase ***"}}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1824, "", 1);
    end
       end
       else begin
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"PH/TRC/WAIT_PRED_OF_SUCC"))
-       uvm_report_info ("PH/TRC/WAIT_PRED_OF_SUCC", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"*** No pred to succ other than myself, so ending phase ***"}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1844, "", 1);
+       uvm_report_info ("PH/TRC/WAIT_PRED_OF_SUCC", {$sformatf("Phase '%0s' (id=%0d) ", this.get_full_name(), this.get_inst_id()),"*** No pred to succ other than myself, so ending phase ***"}, UVM_HIGH, "t/uvm/src/base/uvm_phase.svh", 1828, "", 1);
    end
       end
     end
@@ -11504,7 +11389,7 @@ function void uvm_phase::m_report_null_objection(uvm_object obj,
    end
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"UVM/PH/NULL_OBJECTION"))
-       uvm_report_error ("UVM/PH/NULL_OBJECTION", $sformatf("'%s' attempted to %s on '%s', however '%s' is not a task-based phase node! %s", m_obj_name, m_action, get_name(), get_name(), m_addon), UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1885, "", 1);
+       uvm_report_error ("UVM/PH/NULL_OBJECTION", $sformatf("'%s' attempted to %s on '%s', however '%s' is not a task-based phase node! %s", m_obj_name, m_action, get_name(), get_name(), m_addon), UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1869, "", 1);
    end
 endfunction : m_report_null_objection
 function void uvm_phase::raise_objection (uvm_object obj,
@@ -11543,25 +11428,25 @@ function void uvm_phase::sync(uvm_domain target,
   if (!this.is_domain()) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BADSYNC"))
-       uvm_report_fatal ("PH_BADSYNC", "sync() called from a non-domain phase schedule node", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1939, "", 1);
+       uvm_report_fatal ("PH_BADSYNC", "sync() called from a non-domain phase schedule node", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1923, "", 1);
    end
   end
   else if (target == null) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BADSYNC"))
-       uvm_report_fatal ("PH_BADSYNC", "sync() called with a null target domain", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1942, "", 1);
+       uvm_report_fatal ("PH_BADSYNC", "sync() called with a null target domain", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1926, "", 1);
    end
   end
   else if (!target.is_domain()) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BADSYNC"))
-       uvm_report_fatal ("PH_BADSYNC", "sync() called with a non-domain phase schedule node as target", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1945, "", 1);
+       uvm_report_fatal ("PH_BADSYNC", "sync() called with a non-domain phase schedule node as target", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1929, "", 1);
    end
   end
   else if (phase == null && with_phase != null) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BADSYNC"))
-       uvm_report_fatal ("PH_BADSYNC", "sync() called with null phase and non-null with phase", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1948, "", 1);
+       uvm_report_fatal ("PH_BADSYNC", "sync() called with null phase and non-null with phase", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1932, "", 1);
    end
   end
   else if (phase == null) begin
@@ -11601,22 +11486,22 @@ function void uvm_phase::unsync(uvm_domain target,
   if (!this.is_domain()) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BADSYNC"))
-       uvm_report_fatal ("PH_BADSYNC", "unsync() called from a non-domain phase schedule node", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1993, "", 1);
+       uvm_report_fatal ("PH_BADSYNC", "unsync() called from a non-domain phase schedule node", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1977, "", 1);
    end
   end else if (target == null) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BADSYNC"))
-       uvm_report_fatal ("PH_BADSYNC", "unsync() called with a null target domain", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1995, "", 1);
+       uvm_report_fatal ("PH_BADSYNC", "unsync() called with a null target domain", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1979, "", 1);
    end
   end else if (!target.is_domain()) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BADSYNC"))
-       uvm_report_fatal ("PH_BADSYNC", "unsync() called with a non-domain phase schedule node as target", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1997, "", 1);
+       uvm_report_fatal ("PH_BADSYNC", "unsync() called with a non-domain phase schedule node as target", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1981, "", 1);
    end
   end else if (phase == null && with_phase != null) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BADSYNC"))
-       uvm_report_fatal ("PH_BADSYNC", "unsync() called with null phase and non-null with phase", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1999, "", 1);
+       uvm_report_fatal ("PH_BADSYNC", "unsync() called with null phase and non-null with phase", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 1983, "", 1);
    end
   end else if (phase == null) begin
     int visited[uvm_phase];
@@ -11664,7 +11549,7 @@ function void uvm_phase::set_jump_phase(uvm_phase phase) ;
   begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"JMPPHIDL"))
-       uvm_report_error ("JMPPHIDL", { "Attempting to jump from phase \"", get_name(), "\" which is not currently active (current state is ", m_state.name(), "). The jump will not happen until the phase becomes ", "active."}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 2067, "", 1);
+       uvm_report_error ("JMPPHIDL", { "Attempting to jump from phase \"", get_name(), "\" which is not currently active (current state is ", m_state.name(), "). The jump will not happen until the phase becomes ", "active."}, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 2051, "", 1);
    end
   end
   d = m_find_predecessor(phase,0);
@@ -11678,14 +11563,14 @@ function void uvm_phase::set_jump_phase(uvm_phase phase) ;
                     "must terminate"}, phase.get_name(), get_name());
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"PH_BADJUMP"))
-       uvm_report_fatal ("PH_BADJUMP", msg, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 2093, "", 1);
+       uvm_report_fatal ("PH_BADJUMP", msg, UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 2077, "", 1);
    end
     end
     else begin
       m_jump_fwd = 1;
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"PH_JUMPF"))
-       uvm_report_info ("PH_JUMPF", $sformatf("jumping forward to phase %s", phase.get_name()), UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 2098, "", 1);
+       uvm_report_info ("PH_JUMPF", $sformatf("jumping forward to phase %s", phase.get_name()), UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 2082, "", 1);
    end
     end
   end
@@ -11693,7 +11578,7 @@ function void uvm_phase::set_jump_phase(uvm_phase phase) ;
     m_jump_bkwd = 1;
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"PH_JUMPB"))
-       uvm_report_info ("PH_JUMPB", $sformatf("jumping backward to phase %s", phase.get_name()), UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 2104, "", 1);
+       uvm_report_info ("PH_JUMPB", $sformatf("jumping backward to phase %s", phase.get_name()), UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 2088, "", 1);
    end
   end
   m_jump_phase = d;
@@ -11708,7 +11593,7 @@ endfunction
 function void uvm_phase::jump_all(uvm_phase phase);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"NOTIMPL"))
-       uvm_report_warning ("NOTIMPL", "uvm_phase::jump_all is not implemented and has been replaced by uvm_domain::jump_all", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 2136, "", 1);
+       uvm_report_warning ("NOTIMPL", "uvm_phase::jump_all is not implemented and has been replaced by uvm_domain::jump_all", UVM_NONE, "t/uvm/src/base/uvm_phase.svh", 2120, "", 1);
    end
 endfunction
 function uvm_phase uvm_phase::get_jump_target();
@@ -11766,7 +11651,7 @@ endtask
 function void uvm_phase::kill();
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"PH_KILL"))
-       uvm_report_info ("PH_KILL", {"killing phase '", get_name(),"'"}, UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 2230, "", 1);
+       uvm_report_info ("PH_KILL", {"killing phase '", get_name(),"'"}, UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 2214, "", 1);
    end
   if (m_phase_proc != null) begin
     m_phase_proc.kill();
@@ -11815,13 +11700,13 @@ function void uvm_phase::m_print_termination_state();
   if (phase_done != null) begin
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"PH_TERMSTATE"))
-       uvm_report_info ("PH_TERMSTATE", $sformatf("phase %s outstanding objections = %0d", get_name(), phase_done.get_objection_total(top)), UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 2309, "", 1);
+       uvm_report_info ("PH_TERMSTATE", $sformatf("phase %s outstanding objections = %0d", get_name(), phase_done.get_objection_total(top)), UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 2293, "", 1);
    end
   end
   else begin
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"PH_TERMSTATE"))
-       uvm_report_info ("PH_TERMSTATE", $sformatf("phase %s has no outstanding objections", get_name()), UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 2315, "", 1);
+       uvm_report_info ("PH_TERMSTATE", $sformatf("phase %s has no outstanding objections", get_name()), UVM_DEBUG, "t/uvm/src/base/uvm_phase.svh", 2299, "", 1);
    end
   end
 endfunction
@@ -14994,11 +14879,6 @@ class uvm_objection extends uvm_report_object;
    end
   endfunction
   typedef uvm_object_registry#(uvm_objection,"uvm_objection") type_id;
-  static function uvm_objection type_id_create (string name="",
-                                                uvm_component parent=null,
-                                                string contxt="");
-    return type_id::create(name, parent, contxt);
-  endfunction
   static function type_id get_type();
     return type_id::get();
   endfunction
@@ -15489,11 +15369,6 @@ endclass : uvm_set_get_dap_base
 class uvm_simple_lock_dap#(type T=int) extends uvm_set_get_dap_base#(T);
    typedef uvm_simple_lock_dap#(T) this_type;
    typedef uvm_object_registry #(uvm_simple_lock_dap#(T)) type_id;
-   static function uvm_simple_lock_dap#(T) type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -15582,11 +15457,6 @@ endclass
 class uvm_get_to_lock_dap#(type T=int) extends uvm_set_get_dap_base#(T);
    typedef uvm_get_to_lock_dap#(T) this_type;
    typedef uvm_object_registry #(uvm_get_to_lock_dap#(T)) type_id;
-   static function uvm_get_to_lock_dap#(T) type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -15667,11 +15537,6 @@ endclass
 class uvm_set_before_get_dap#(type T=int) extends uvm_set_get_dap_base#(T);
    typedef uvm_set_before_get_dap#(T) this_type;
    typedef uvm_object_registry #(uvm_set_before_get_dap#(T)) type_id;
-   static function uvm_set_before_get_dap#(T) type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -18097,11 +17962,6 @@ endclass
 class uvm_class_pair #(type T1=int, T2=T1) extends uvm_object;
   typedef uvm_class_pair #(T1, T2 ) this_type;
    typedef uvm_object_registry #(this_type) type_id;
-   static function this_type type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -18164,11 +18024,6 @@ endclass
 class uvm_built_in_pair #(type T1=int, T2=T1) extends uvm_object;
   typedef uvm_built_in_pair #(T1,T2) this_type;
    typedef uvm_object_registry #(this_type) type_id;
-   static function this_type type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -18683,11 +18538,6 @@ class uvm_sequence_item extends uvm_transaction;
     return "uvm_sequence_item";
   endfunction
    typedef uvm_object_registry#(uvm_sequence_item,"uvm_sequence_item") type_id;
-   static function uvm_sequence_item type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -20206,8 +20056,8 @@ virtual class uvm_sequence_base extends uvm_sequence_item;
      string apo_name = $sformatf("%s.automatic_phase_objection", get_full_name());
      string sp_name = $sformatf("%s.starting_phase", get_full_name());
      if (create) begin
-        m_automatic_phase_objection_dap = uvm_get_to_lock_dap#(bit)::type_id_create(apo_name, get_sequencer());
-        m_starting_phase_dap = uvm_get_to_lock_dap#(uvm_phase)::type_id_create(sp_name, get_sequencer());
+        m_automatic_phase_objection_dap = uvm_get_to_lock_dap#(bit)::type_id::create(apo_name, get_sequencer());
+        m_starting_phase_dap = uvm_get_to_lock_dap#(uvm_phase)::type_id::create(sp_name, get_sequencer());
      end
      else begin
         m_automatic_phase_objection_dap.set_name(apo_name);
@@ -20518,11 +20368,6 @@ endclass
 typedef class uvm_sequence_library_cfg;
 class uvm_sequence_library #(type REQ=uvm_sequence_item,RSP=REQ) extends uvm_sequence #(REQ,RSP);
    typedef uvm_object_registry #(uvm_sequence_library#(REQ,RSP)) type_id;
-   static function uvm_sequence_library#(REQ,RSP) type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -20584,11 +20429,6 @@ class uvm_sequence_library #(type REQ=uvm_sequence_item,RSP=REQ) extends uvm_seq
 endclass
 class uvm_sequence_library_cfg extends uvm_object;
    typedef uvm_object_registry#(uvm_sequence_library_cfg,"uvm_sequence_library_cfg") type_id;
-   static function uvm_sequence_library_cfg type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -21080,11 +20920,6 @@ class uvm_tlm_generic_payload extends uvm_sequence_item;
    protected uvm_tlm_extension_base m_extensions [uvm_tlm_extension_base];
    local rand uvm_tlm_extension_base m_rand_exts[];
    typedef uvm_object_registry#(uvm_tlm_generic_payload,"uvm_tlm_generic_payload") type_id;
-   static function uvm_tlm_generic_payload type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -22416,11 +22251,6 @@ typedef struct packed {
   } uvm_reg_map_addr_range;
 class uvm_reg_item extends uvm_sequence_item;
    typedef uvm_object_registry#(uvm_reg_item,"uvm_reg_item") type_id;
-   static function uvm_reg_item type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -22552,11 +22382,6 @@ virtual class uvm_reg_adapter extends uvm_object;
 endclass
 class uvm_reg_tlm_adapter extends uvm_reg_adapter;
    typedef uvm_object_registry#(uvm_reg_tlm_adapter,"uvm_reg_tlm_adapter") type_id;
-   static function uvm_reg_tlm_adapter type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -22579,7 +22404,7 @@ class uvm_reg_tlm_adapter extends uvm_reg_adapter;
     super.new(name);
   endfunction
   virtual function uvm_sequence_item reg2bus(const ref uvm_reg_bus_op rw);
-     uvm_tlm_gp gp = uvm_tlm_gp::type_id_create("tlm_gp",, this.get_full_name());
+     uvm_tlm_gp gp = uvm_tlm_gp::type_id::create("tlm_gp",, this.get_full_name());
      int nbytes = (rw.n_bits-1)/8+1;
      uvm_reg_addr_t addr=rw.addr;
      if (rw.kind == UVM_WRITE)
@@ -22605,12 +22430,12 @@ class uvm_reg_tlm_adapter extends uvm_reg_adapter;
     if (bus_item == null)
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"REG/NULL_ITEM"))
-       uvm_report_fatal ("REG/NULL_ITEM", "bus2reg: bus_item argument is null", UVM_NONE, "t/uvm/src/reg/uvm_reg_adapter.svh", 232, "", 1);
+       uvm_report_fatal ("REG/NULL_ITEM", "bus2reg: bus_item argument is null", UVM_NONE, "t/uvm/src/reg/uvm_reg_adapter.svh", 228, "", 1);
    end
     if (!$cast(gp,bus_item)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"WRONG_TYPE"))
-       uvm_report_error ("WRONG_TYPE", "Provided bus_item is not of type uvm_tlm_gp", UVM_NONE, "t/uvm/src/reg/uvm_reg_adapter.svh", 235, "", 1);
+       uvm_report_error ("WRONG_TYPE", "Provided bus_item is not of type uvm_tlm_gp", UVM_NONE, "t/uvm/src/reg/uvm_reg_adapter.svh", 231, "", 1);
    end
       return;
     end
@@ -22653,7 +22478,7 @@ class uvm_reg_predictor #(type BUSTYPE=int) extends uvm_component;
     static string m_type_name;
     if (m_type_name == "") begin
       BUSTYPE t;
-       t = BUSTYPE::type_id_create("t");
+      t = BUSTYPE::type_id::create("t");
       m_type_name = {"uvm_reg_predictor #(", t.get_type_name(), ")"};
     end
     return m_type_name;
@@ -22670,7 +22495,7 @@ class uvm_reg_predictor #(type BUSTYPE=int) extends uvm_component;
     if (adapter == null)
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"REG/WRITE/NULL"))
-       uvm_report_fatal ("REG/WRITE/NULL", "write: adapter handle is null", UVM_NONE, "t/uvm/src/reg/uvm_reg_predictor.svh", 168, "", 1);
+       uvm_report_fatal ("REG/WRITE/NULL", "write: adapter handle is null", UVM_NONE, "t/uvm/src/reg/uvm_reg_predictor.svh", 160, "", 1);
    end
      rw.byte_en = -1;
      adapter.bus2reg(tr,rw);
@@ -22699,7 +22524,7 @@ class uvm_reg_predictor #(type BUSTYPE=int) extends uvm_component;
        if (predict_info.addr.exists(rw.addr)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"REG_PREDICT_COLLISION"))
-       uvm_report_error ("REG_PREDICT_COLLISION", {"Collision detected for register '", rg.get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_predictor.svh", 202, "", 1);
+       uvm_report_error ("REG_PREDICT_COLLISION", {"Collision detected for register '", rg.get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_predictor.svh", 194, "", 1);
    end
           m_pending.delete(rg);
        end
@@ -22732,12 +22557,12 @@ class uvm_reg_predictor #(type BUSTYPE=int) extends uvm_component;
               if(reg_item.kind == UVM_WRITE)
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"REG_PREDICT"))
-       uvm_report_info ("REG_PREDICT", {"Observed WRITE transaction to register ", ir.get_full_name(), ": value='h", $sformatf("%0h",reg_item.value[0]), " : updated value = 'h", $sformatf("%0h",ir.get())}, UVM_HIGH, "t/uvm/src/reg/uvm_reg_predictor.svh", 243, "", 1);
+       uvm_report_info ("REG_PREDICT", {"Observed WRITE transaction to register ", ir.get_full_name(), ": value='h", $sformatf("%0h",reg_item.value[0]), " : updated value = 'h", $sformatf("%0h",ir.get())}, UVM_HIGH, "t/uvm/src/reg/uvm_reg_predictor.svh", 235, "", 1);
    end
               else
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"REG_PREDICT"))
-       uvm_report_info ("REG_PREDICT", {"Observed READ transaction to register ", ir.get_full_name(), ": value='h", $sformatf("%0h",reg_item.value[0])}, UVM_HIGH, "t/uvm/src/reg/uvm_reg_predictor.svh", 247, "", 1);
+       uvm_report_info ("REG_PREDICT", {"Observed READ transaction to register ", ir.get_full_name(), ": value='h", $sformatf("%0h",reg_item.value[0])}, UVM_HIGH, "t/uvm/src/reg/uvm_reg_predictor.svh", 239, "", 1);
    end
               reg_ap.write(reg_item);
               m_pending.delete(rg);
@@ -22748,13 +22573,13 @@ class uvm_reg_predictor #(type BUSTYPE=int) extends uvm_component;
        if (!found)
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"REG_PREDICT_INTERNAL"))
-       uvm_report_error ("REG_PREDICT_INTERNAL", {"Unexpected failed address lookup for register '", rg.get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_predictor.svh", 256, "", 1);
+       uvm_report_error ("REG_PREDICT_INTERNAL", {"Unexpected failed address lookup for register '", rg.get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_predictor.svh", 248, "", 1);
    end
      end
      else begin
    begin
      if (uvm_report_enabled(UVM_FULL,UVM_INFO,"REG_PREDICT_NOT_FOR_ME"))
-       uvm_report_info ("REG_PREDICT_NOT_FOR_ME", {"Observed transaction does not target a register: ", $sformatf("%p",tr)}, UVM_FULL, "t/uvm/src/reg/uvm_reg_predictor.svh", 261, "", 1);
+       uvm_report_info ("REG_PREDICT_NOT_FOR_ME", {"Observed transaction does not target a register: ", $sformatf("%p",tr)}, UVM_FULL, "t/uvm/src/reg/uvm_reg_predictor.svh", 253, "", 1);
    end
      end
   endfunction
@@ -22768,18 +22593,13 @@ class uvm_reg_predictor #(type BUSTYPE=int) extends uvm_component;
     if (m_pending.num() > 0) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"PENDING REG ITEMS"))
-       uvm_report_error ("PENDING REG ITEMS", $sformatf("There are %0d incomplete register transactions still pending completion:%s",m_pending.num(),uvm_pkg::m_uvm_string_queue_join(q)), UVM_NONE, "t/uvm/src/reg/uvm_reg_predictor.svh", 282, "", 1);
+       uvm_report_error ("PENDING REG ITEMS", $sformatf("There are %0d incomplete register transactions still pending completion:%s",m_pending.num(),uvm_pkg::m_uvm_string_queue_join(q)), UVM_NONE, "t/uvm/src/reg/uvm_reg_predictor.svh", 274, "", 1);
    end
     end
   endfunction
 endclass
 class uvm_reg_sequence #(type BASE=uvm_sequence #(uvm_reg_item)) extends BASE;
    typedef uvm_object_registry #(uvm_reg_sequence #(BASE)) type_id;
-   static function uvm_reg_sequence #(BASE) type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -23050,11 +22870,6 @@ typedef class uvm_mem;
 typedef class uvm_reg_backdoor;
 class uvm_reg_cbs extends uvm_callback;
    typedef uvm_object_registry#(uvm_reg_cbs,"uvm_reg_cbs") type_id;
-   static function uvm_reg_cbs type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -23105,11 +22920,6 @@ class uvm_reg_read_only_cbs extends uvm_reg_cbs;
       super.new(name);
    endfunction
    typedef uvm_object_registry#(uvm_reg_read_only_cbs,"uvm_reg_read_only_cbs") type_id;
-   static function uvm_reg_read_only_cbs type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -23179,11 +22989,6 @@ class uvm_reg_write_only_cbs extends uvm_reg_cbs;
       super.new(name);
    endfunction
    typedef uvm_object_registry#(uvm_reg_write_only_cbs,"uvm_reg_write_only_cbs") type_id;
-   static function uvm_reg_write_only_cbs type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -23434,11 +23239,6 @@ class uvm_reg_field extends uvm_object;
       }
    }
    typedef uvm_object_registry#(uvm_reg_field,"uvm_reg_field") type_id;
-   static function uvm_reg_field type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -24045,7 +23845,7 @@ task uvm_reg_field::write(output uvm_status_e       status,
                           input  string             fname = "",
                           input  int                lineno = 0);
    uvm_reg_item rw;
-   rw = uvm_reg_item::type_id_create("field_write_item",,get_full_name());
+   rw = uvm_reg_item::type_id::create("field_write_item",,get_full_name());
    rw.element      = this;
    rw.element_kind = UVM_FIELD;
    rw.kind         = UVM_WRITE;
@@ -24074,7 +23874,7 @@ task uvm_reg_field::do_write(uvm_reg_item rw);
    if (rw.value[0] >> m_size) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", {"uvm_reg_field::write(): Value greater than field '", get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1096, "", 1);
+       uvm_report_warning ("RegModel", {"uvm_reg_field::write(): Value greater than field '", get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1092, "", 1);
    end
       rw.value[0] &= ((1<<m_size)-1);
    end
@@ -24103,7 +23903,7 @@ task uvm_reg_field::do_write(uvm_reg_item rw);
       if (bad_side_effect) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", $sformatf("Writing field \"%s\" will cause unintended side effects in adjoining Write-to-Clear or Write-to-Set fields in the same register", this.get_full_name()), UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1145, "", 1);
+       uvm_report_warning ("RegModel", $sformatf("Writing field \"%s\" will cause unintended side effects in adjoining Write-to-Clear or Write-to-Set fields in the same register", this.get_full_name()), UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1141, "", 1);
    end
       end
    end
@@ -24142,7 +23942,7 @@ task uvm_reg_field::read(output uvm_status_e       status,
                          input  string             fname = "",
                          input  int                lineno = 0);
    uvm_reg_item rw;
-   rw = uvm_reg_item::type_id_create("field_read_item",,get_full_name());
+   rw = uvm_reg_item::type_id::create("field_read_item",,get_full_name());
    rw.element      = this;
    rw.element_kind = UVM_FIELD;
    rw.kind         = UVM_READ;
@@ -24218,7 +24018,7 @@ task uvm_reg_field::do_read(uvm_reg_item rw);
              mode == "W0CRS") begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", {"Reading field '",get_full_name(), "' will cause unintended side effects in adjoining ", "Read-to-Clear or Read-to-Set fields in the same register"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1320, "", 1);
+       uvm_report_warning ("RegModel", {"Reading field '",get_full_name(), "' will cause unintended side effects in adjoining ", "Read-to-Clear or Read-to-Set fields in the same register"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1312, "", 1);
    end
          end
       end
@@ -24229,21 +24029,21 @@ function bit uvm_reg_field::is_indv_accessible(uvm_door_e  path,
    if (path == UVM_BACKDOOR) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", {"Individual BACKDOOR field access not available for field '", get_full_name(), "'. Accessing complete register instead."}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1335, "", 1);
+       uvm_report_warning ("RegModel", {"Individual BACKDOOR field access not available for field '", get_full_name(), "'. Accessing complete register instead."}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1327, "", 1);
    end
       return 0;
    end
    if (!m_individually_accessible) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", {"Individual field access not available for field '", get_full_name(), "'. Accessing complete register instead."}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1342, "", 1);
+       uvm_report_warning ("RegModel", {"Individual field access not available for field '", get_full_name(), "'. Accessing complete register instead."}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1334, "", 1);
    end
       return 0;
    end
    if (m_parent.get_frontdoor(local_map) != null) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", {"Individual field access not available for field '", get_name(), "' because register '", m_parent.get_full_name(), "' has a user-defined front-door. Accessing complete register instead."}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1351, "", 1);
+       uvm_report_warning ("RegModel", {"Individual field access not available for field '", get_name(), "' because register '", m_parent.get_full_name(), "' has a user-defined front-door. Accessing complete register instead."}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1343, "", 1);
    end
       return 0;
    end
@@ -24306,7 +24106,7 @@ function bit uvm_reg_field::is_indv_accessible(uvm_door_e  path,
    end
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", {"Target bus does not support byte enabling, and the field '", get_full_name(),"' is not the only field within the entire bus width. ", "Individual field access will not be available. ", "Accessing complete register instead."}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1430, "", 1);
+       uvm_report_warning ("RegModel", {"Target bus does not support byte enabling, and the field '", get_full_name(),"' is not the only field within the entire bus width. ", "Individual field access will not be available. ", "Accessing complete register instead."}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1422, "", 1);
    end
    return 0;
 endfunction
@@ -24323,7 +24123,7 @@ task uvm_reg_field::poke(output uvm_status_e      status,
    if (value >> m_size) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", {"uvm_reg_field::poke(): Value exceeds size of field '", get_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1454, "", 1);
+       uvm_report_warning ("RegModel", {"uvm_reg_field::poke(): Value exceeds size of field '", get_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1446, "", 1);
    end
       value &= value & ((1<<m_size)-1);
    end
@@ -24334,7 +24134,7 @@ task uvm_reg_field::poke(output uvm_status_e      status,
    if (status == UVM_NOT_OK) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", {"uvm_reg_field::poke(): Peek of register '", m_parent.get_full_name(),"' returned status ",status.name()}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1469, "", 1);
+       uvm_report_error ("RegModel", {"uvm_reg_field::poke(): Peek of register '", m_parent.get_full_name(),"' returned status ",status.name()}, UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1461, "", 1);
    end
       m_parent.XatomicX(0);
       m_parent.m_is_locked_by_field = 1'b0;
@@ -24418,44 +24218,39 @@ endfunction: convert2string
 function uvm_object uvm_reg_field::clone();
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"RegModel"))
-       uvm_report_fatal ("RegModel", "RegModel field cannot be cloned", UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1596, "", 1);
+       uvm_report_fatal ("RegModel", "RegModel field cannot be cloned", UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1588, "", 1);
    end
   return null;
 endfunction
 function void uvm_reg_field::do_copy(uvm_object rhs);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", "RegModel field copy not yet implemented", UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1603, "", 1);
+       uvm_report_warning ("RegModel", "RegModel field copy not yet implemented", UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1595, "", 1);
    end
 endfunction
 function bit uvm_reg_field::do_compare (uvm_object  rhs,
                                         uvm_comparer comparer);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", "RegModel field compare not yet implemented", UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1612, "", 1);
+       uvm_report_warning ("RegModel", "RegModel field compare not yet implemented", UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1604, "", 1);
    end
   return 0;
 endfunction
 function void uvm_reg_field::do_pack (uvm_packer packer);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", "RegModel field cannot be packed", UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1621, "", 1);
+       uvm_report_warning ("RegModel", "RegModel field cannot be packed", UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1613, "", 1);
    end
 endfunction
 function void uvm_reg_field::do_unpack (uvm_packer packer);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", "RegModel field cannot be unpacked", UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1628, "", 1);
+       uvm_report_warning ("RegModel", "RegModel field cannot be unpacked", UVM_NONE, "t/uvm/src/reg/uvm_reg_field.svh", 1620, "", 1);
    end
 endfunction
 typedef class uvm_vreg_field_cbs;
 class uvm_vreg_field extends uvm_object;
    typedef uvm_object_registry#(uvm_vreg_field,"uvm_vreg_field") type_id;
-   static function uvm_vreg_field type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -25871,7 +25666,7 @@ task uvm_reg::write(output uvm_status_e      status,
    uvm_reg_item rw;
    XatomicX(1);
    set(value);
-   rw = uvm_reg_item::type_id_create("write_item",,get_full_name());
+   rw = uvm_reg_item::type_id::create("write_item",,get_full_name());
    rw.element      = this;
    rw.element_kind = UVM_REG;
    rw.kind         = UVM_WRITE;
@@ -26051,7 +25846,7 @@ task uvm_reg::XreadX(output uvm_status_e      status,
                      input  string            fname = "",
                      input  int               lineno = 0);
    uvm_reg_item rw;
-   rw = uvm_reg_item::type_id_create("read_item",,get_full_name());
+   rw = uvm_reg_item::type_id::create("read_item",,get_full_name());
    rw.element      = this;
    rw.element_kind = UVM_REG;
    rw.kind         = UVM_READ;
@@ -26236,7 +26031,7 @@ function bit uvm_reg::Xcheck_accessX (input uvm_reg_item rw,
       if (get_backdoor() == null && !has_hdl_path()) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", {"No backdoor access available for register '",get_full_name(), "' . Using frontdoor instead."}, UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2077, "", 1);
+       uvm_report_warning ("RegModel", {"No backdoor access available for register '",get_full_name(), "' . Using frontdoor instead."}, UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2069, "", 1);
    end
          rw.path = UVM_FRONTDOOR;
       end
@@ -26254,12 +26049,12 @@ function bit uvm_reg::Xcheck_accessX (input uvm_reg_item rw,
        if (rw.map == null)
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,get_type_name()))
-       uvm_report_error (get_type_name(), "Unable to physically access register with null map", UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2097, "", 1);
+       uvm_report_error (get_type_name(), "Unable to physically access register with null map", UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2089, "", 1);
    end
        else
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,get_type_name()))
-       uvm_report_error (get_type_name(), {"No transactor available to physically access register on map '", rw.map.get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2101, "", 1);
+       uvm_report_error (get_type_name(), {"No transactor available to physically access register on map '", rw.map.get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2093, "", 1);
    end
        rw.status = UVM_NOT_OK;
        return 0;
@@ -26268,7 +26063,7 @@ function bit uvm_reg::Xcheck_accessX (input uvm_reg_item rw,
      if (map_info.frontdoor == null && map_info.unmapped) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", {"Register '",get_full_name(), "' unmapped in map '", (rw.map==null)? rw.local_map.get_full_name():rw.map.get_full_name(), "' and does not have a user-defined frontdoor"}, UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2112, "", 1);
+       uvm_report_error ("RegModel", {"Register '",get_full_name(), "' unmapped in map '", (rw.map==null)? rw.local_map.get_full_name():rw.map.get_full_name(), "' and does not have a user-defined frontdoor"}, UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2104, "", 1);
    end
           rw.status = UVM_NOT_OK;
           return 0;
@@ -26296,7 +26091,7 @@ task  uvm_reg::backdoor_write(uvm_reg_item rw);
      foreach (hdl_concat.slices[j]) begin
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"RegMem"))
-       uvm_report_info ("RegMem", $sformatf("backdoor_write to %s", hdl_concat.slices[j].path), UVM_DEBUG, "t/uvm/src/reg/uvm_reg.svh", 2155, "", 1);
+       uvm_report_info ("RegMem", $sformatf("backdoor_write to %s", hdl_concat.slices[j].path), UVM_DEBUG, "t/uvm/src/reg/uvm_reg.svh", 2147, "", 1);
    end
         if (hdl_concat.slices[j].offset < 0) begin
            ok &= uvm_hdl_deposit(hdl_concat.slices[j].path,rw.value[0]);
@@ -26326,7 +26121,7 @@ function uvm_status_e uvm_reg::backdoor_read_func(uvm_reg_item rw);
      foreach (hdl_concat.slices[j]) begin
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"RegMem"))
-       uvm_report_info ("RegMem", $sformatf("backdoor_read from %s ", hdl_concat.slices[j].path), UVM_DEBUG, "t/uvm/src/reg/uvm_reg.svh", 2192, "", 1);
+       uvm_report_info ("RegMem", $sformatf("backdoor_read from %s ", hdl_concat.slices[j].path), UVM_DEBUG, "t/uvm/src/reg/uvm_reg.svh", 2184, "", 1);
    end
         if (hdl_concat.slices[j].offset < 0) begin
            ok &= uvm_hdl_read(hdl_concat.slices[j].path,val);
@@ -26348,13 +26143,13 @@ function uvm_status_e uvm_reg::backdoor_read_func(uvm_reg_item rw);
      if (val != rw.value[0]) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", $sformatf("Backdoor read of register %s with multiple HDL copies: values are not the same: %0h at path '%s', and %0h at path '%s'. Returning first value.", get_full_name(), rw.value[0], uvm_hdl_concat2string(paths[0]), val, uvm_hdl_concat2string(paths[i])), UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2220, "", 1);
+       uvm_report_error ("RegModel", $sformatf("Backdoor read of register %s with multiple HDL copies: values are not the same: %0h at path '%s', and %0h at path '%s'. Returning first value.", get_full_name(), rw.value[0], uvm_hdl_concat2string(paths[0]), val, uvm_hdl_concat2string(paths[i])), UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2212, "", 1);
    end
         return UVM_NOT_OK;
       end
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"RegMem"))
-       uvm_report_info ("RegMem", $sformatf("returned backdoor value 0x%0x",rw.value[0]), UVM_DEBUG, "t/uvm/src/reg/uvm_reg.svh", 2224, "", 1);
+       uvm_report_info ("RegMem", $sformatf("returned backdoor value 0x%0x",rw.value[0]), UVM_DEBUG, "t/uvm/src/reg/uvm_reg.svh", 2216, "", 1);
    end
   end
   rw.status = (ok) ? UVM_IS_OK : UVM_NOT_OK;
@@ -26374,14 +26169,14 @@ task uvm_reg::poke(output uvm_status_e      status,
    if (bkdr == null && !has_hdl_path(kind)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", {"No backdoor access available to poke register '",get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2252, "", 1);
+       uvm_report_error ("RegModel", {"No backdoor access available to poke register '",get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2244, "", 1);
    end
       status = UVM_NOT_OK;
       return;
    end
    if (!m_is_locked_by_field)
      XatomicX(1);
-   rw = uvm_reg_item::type_id_create("reg_poke_item",,get_full_name());
+   rw = uvm_reg_item::type_id::create("reg_poke_item",,get_full_name());
    rw.element      = this;
    rw.path         = UVM_BACKDOOR;
    rw.element_kind = UVM_REG;
@@ -26399,7 +26194,7 @@ task uvm_reg::poke(output uvm_status_e      status,
    status = rw.status;
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"RegModel"))
-       uvm_report_info ("RegModel", $sformatf("Poked register \"%s\": 'h%h", get_full_name(), value), UVM_HIGH, "t/uvm/src/reg/uvm_reg.svh", 2285, "", 1);
+       uvm_report_info ("RegModel", $sformatf("Poked register \"%s\": 'h%h", get_full_name(), value), UVM_HIGH, "t/uvm/src/reg/uvm_reg.svh", 2273, "", 1);
    end
    do_predict(rw, UVM_PREDICT_WRITE);
    if (!m_is_locked_by_field)
@@ -26419,14 +26214,14 @@ task uvm_reg::peek(output uvm_status_e      status,
    if (bkdr == null && !has_hdl_path(kind)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", $sformatf("No backdoor access available to peek register \"%s\"", get_full_name()), UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2313, "", 1);
+       uvm_report_error ("RegModel", $sformatf("No backdoor access available to peek register \"%s\"", get_full_name()), UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2301, "", 1);
    end
       status = UVM_NOT_OK;
       return;
    end
    if(!m_is_locked_by_field)
       XatomicX(1);
-   rw = uvm_reg_item::type_id_create("mem_peek_item",,get_full_name());
+   rw = uvm_reg_item::type_id::create("mem_peek_item",,get_full_name());
    rw.element      = this;
    rw.path         = UVM_BACKDOOR;
    rw.element_kind = UVM_REG;
@@ -26444,7 +26239,7 @@ task uvm_reg::peek(output uvm_status_e      status,
    value = rw.value[0];
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"RegModel"))
-       uvm_report_info ("RegModel", $sformatf("Peeked register \"%s\": 'h%h", get_full_name(), value), UVM_HIGH, "t/uvm/src/reg/uvm_reg.svh", 2346, "", 1);
+       uvm_report_info ("RegModel", $sformatf("Peeked register \"%s\": 'h%h", get_full_name(), value), UVM_HIGH, "t/uvm/src/reg/uvm_reg.svh", 2330, "", 1);
    end
    do_predict(rw, UVM_PREDICT_READ);
    if (!m_is_locked_by_field)
@@ -26464,7 +26259,7 @@ function bit uvm_reg::do_check(input uvm_reg_data_t expected,
    if ((actual&valid_bits_mask) === (expected&valid_bits_mask)) return 1;
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", $sformatf("Register \"%s\" value read from DUT (0x%h) does not match mirrored value (0x%h) (valid bit mask = 0x%h)", get_full_name(), actual, expected,valid_bits_mask), UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2373, "", 1);
+       uvm_report_error ("RegModel", $sformatf("Register \"%s\" value read from DUT (0x%h) does not match mirrored value (0x%h) (valid bit mask = 0x%h)", get_full_name(), actual, expected,valid_bits_mask), UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2357, "", 1);
    end
    foreach(m_fields[i]) begin
       string acc = m_fields[i].get_access(map);
@@ -26477,7 +26272,7 @@ function bit uvm_reg::do_check(input uvm_reg_data_t expected,
          if (val !== exp) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_INFO,"RegModel"))
-       uvm_report_info ("RegModel", $sformatf("Field %s (%s[%0d:%0d]) mismatch read=%0d'h%0h mirrored=%0d'h%0h ", m_fields[i].get_name(), get_full_name(), m_fields[i].get_lsb_pos() + m_fields[i].get_n_bits() - 1, m_fields[i].get_lsb_pos(), m_fields[i].get_n_bits(), val, m_fields[i].get_n_bits(), exp), UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2392, "", 1);
+       uvm_report_info ("RegModel", $sformatf("Field %s (%s[%0d:%0d]) mismatch read=%0d'h%0h mirrored=%0d'h%0h ", m_fields[i].get_name(), get_full_name(), m_fields[i].get_lsb_pos() + m_fields[i].get_n_bits() - 1, m_fields[i].get_lsb_pos(), m_fields[i].get_n_bits(), val, m_fields[i].get_n_bits(), exp), UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2376, "", 1);
    end
          end
       end
@@ -26588,34 +26383,34 @@ endfunction
 function uvm_object uvm_reg::clone();
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"RegModel"))
-       uvm_report_fatal ("RegModel", "RegModel registers cannot be cloned", UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2544, "", 1);
+       uvm_report_fatal ("RegModel", "RegModel registers cannot be cloned", UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2528, "", 1);
    end
   return null;
 endfunction
 function void uvm_reg::do_copy(uvm_object rhs);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"RegModel"))
-       uvm_report_fatal ("RegModel", "RegModel registers cannot be copied", UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2551, "", 1);
+       uvm_report_fatal ("RegModel", "RegModel registers cannot be copied", UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2535, "", 1);
    end
 endfunction
 function bit uvm_reg::do_compare (uvm_object  rhs,
                                         uvm_comparer comparer);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", "RegModel registers cannot be compared", UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2559, "", 1);
+       uvm_report_warning ("RegModel", "RegModel registers cannot be compared", UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2543, "", 1);
    end
   return 0;
 endfunction
 function void uvm_reg::do_pack (uvm_packer packer);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", "RegModel registers cannot be packed", UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2567, "", 1);
+       uvm_report_warning ("RegModel", "RegModel registers cannot be packed", UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2551, "", 1);
    end
 endfunction
 function void uvm_reg::do_unpack (uvm_packer packer);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", "RegModel registers cannot be unpacked", UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2574, "", 1);
+       uvm_report_warning ("RegModel", "RegModel registers cannot be unpacked", UVM_NONE, "t/uvm/src/reg/uvm_reg.svh", 2558, "", 1);
    end
 endfunction
 typedef class uvm_reg_indirect_ftdr_seq;
@@ -26735,7 +26530,7 @@ class uvm_reg_indirect_data extends uvm_reg;
       begin
          uvm_reg_item rw;
          XatomicX(1);
-         rw = uvm_reg_item::type_id_create("write_item",,get_full_name());
+         rw = uvm_reg_item::type_id::create("write_item",,get_full_name());
          rw.element      = this;
          rw.element_kind = UVM_REG;
          rw.kind         = UVM_WRITE;
@@ -26768,7 +26563,7 @@ class uvm_reg_indirect_data extends uvm_reg;
       if (path == UVM_BACKDOOR) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,get_full_name()))
-       uvm_report_warning (get_full_name(), "Cannot backdoor-read an indirect data access register. Switching to frontdoor.", UVM_NONE, "t/uvm/src/reg/uvm_reg_indirect.svh", 218, "", 1);
+       uvm_report_warning (get_full_name(), "Cannot backdoor-read an indirect data access register. Switching to frontdoor.", UVM_NONE, "t/uvm/src/reg/uvm_reg_indirect.svh", 214, "", 1);
    end
          path = UVM_FRONTDOOR;
       end
@@ -26783,7 +26578,7 @@ class uvm_reg_indirect_data extends uvm_reg;
                      input  int               lineno = 0);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,get_full_name()))
-       uvm_report_error (get_full_name(), "Cannot poke() an indirect data access register", UVM_NONE, "t/uvm/src/reg/uvm_reg_indirect.svh", 232, "", 1);
+       uvm_report_error (get_full_name(), "Cannot poke() an indirect data access register", UVM_NONE, "t/uvm/src/reg/uvm_reg_indirect.svh", 228, "", 1);
    end
       status = UVM_NOT_OK;
    endtask
@@ -26796,7 +26591,7 @@ class uvm_reg_indirect_data extends uvm_reg;
                      input  int               lineno = 0);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,get_full_name()))
-       uvm_report_error (get_full_name(), "Cannot peek() an indirect data access register", UVM_NONE, "t/uvm/src/reg/uvm_reg_indirect.svh", 243, "", 1);
+       uvm_report_error (get_full_name(), "Cannot peek() an indirect data access register", UVM_NONE, "t/uvm/src/reg/uvm_reg_indirect.svh", 239, "", 1);
    end
       status = UVM_NOT_OK;
    endtask
@@ -26874,7 +26669,7 @@ class uvm_reg_fifo extends uvm_reg;
        m_size = size;
     endfunction
     virtual function void build();
-       value = uvm_reg_field::type_id_create("value");
+        value = uvm_reg_field::type_id::create("value");
         value.configure(this, get_n_bits(), 0, "RW", 0, 32'h0, 1, 0, 1);
     endfunction
     function void set_compare(uvm_check_e check=UVM_CHECK);
@@ -26943,7 +26738,7 @@ class uvm_reg_fifo extends uvm_reg;
            if (this.value.get_compare() == UVM_CHECK && mirror_val != value) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"MIRROR_MISMATCH"))
-       uvm_report_warning ("MIRROR_MISMATCH", $sformatf("Observed DUT read value 'h%0h != mirror value 'h%0h",value,mirror_val), UVM_NONE, "t/uvm/src/reg/uvm_reg_fifo.svh", 241, "", 1);
+       uvm_report_warning ("MIRROR_MISMATCH", $sformatf("Observed DUT read value 'h%0h != mirror value 'h%0h",value,mirror_val), UVM_NONE, "t/uvm/src/reg/uvm_reg_fifo.svh", 237, "", 1);
    end
            end
         end
@@ -26953,7 +26748,7 @@ class uvm_reg_fifo extends uvm_reg;
       if (m_set_cnt && !m_update_in_progress) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"Needs Update"))
-       uvm_report_error ("Needs Update", "Must call update() after set() and before write()", UVM_NONE, "t/uvm/src/reg/uvm_reg_fifo.svh", 263, "", 1);
+       uvm_report_error ("Needs Update", "Must call update() after set() and before write()", UVM_NONE, "t/uvm/src/reg/uvm_reg_fifo.svh", 259, "", 1);
    end
         rw.status = UVM_NOT_OK;
         return;
@@ -26961,7 +26756,7 @@ class uvm_reg_fifo extends uvm_reg;
       if (fifo.size() >= m_size && !m_update_in_progress) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"FIFO Full"))
-       uvm_report_error ("FIFO Full", "Write to full FIFO ignored", UVM_NONE, "t/uvm/src/reg/uvm_reg_fifo.svh", 268, "", 1);
+       uvm_report_error ("FIFO Full", "Write to full FIFO ignored", UVM_NONE, "t/uvm/src/reg/uvm_reg_fifo.svh", 264, "", 1);
    end
         rw.status = UVM_NOT_OK;
         return;
@@ -26983,11 +26778,6 @@ class uvm_reg_file extends uvm_object;
    local string            default_hdl_path = "RTL";
    local uvm_object_string_pool #(uvm_queue #(string)) hdl_paths_pool;
    typedef uvm_object_registry#(uvm_reg_file,"uvm_reg_file") type_id;
-   static function uvm_reg_file type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -29111,7 +28901,7 @@ task uvm_mem::write(output uvm_status_e      status,
                     input  uvm_object        extension = null,
                     input  string            fname = "",
                     input  int               lineno = 0);
-   uvm_reg_item rw = uvm_reg_item::type_id_create("mem_write",,get_full_name());
+   uvm_reg_item rw = uvm_reg_item::type_id::create("mem_write",,get_full_name());
    rw.element      = this;
    rw.element_kind = UVM_MEM;
    rw.kind         = UVM_WRITE;
@@ -29138,7 +28928,7 @@ task uvm_mem::read(output uvm_status_e       status,
                    input  string             fname = "",
                    input  int                lineno = 0);
    uvm_reg_item rw;
-   rw = uvm_reg_item::type_id_create("mem_read",,get_full_name());
+   rw = uvm_reg_item::type_id::create("mem_read",,get_full_name());
    rw.element      = this;
    rw.element_kind = UVM_MEM;
    rw.kind         = UVM_READ;
@@ -29166,7 +28956,7 @@ task uvm_mem::burst_write(output uvm_status_e       status,
                           input  string             fname = "",
                           input  int                lineno = 0);
    uvm_reg_item rw;
-   rw = uvm_reg_item::type_id_create("mem_burst_write",,get_full_name());
+   rw = uvm_reg_item::type_id::create("mem_burst_write",,get_full_name());
    rw.element      = this;
    rw.element_kind = UVM_MEM;
    rw.kind         = UVM_BURST_WRITE;
@@ -29193,7 +28983,7 @@ task uvm_mem::burst_read(output uvm_status_e       status,
                          input  string             fname = "",
                          input  int                lineno = 0);
    uvm_reg_item rw;
-   rw = uvm_reg_item::type_id_create("mem_burst_read",,get_full_name());
+   rw = uvm_reg_item::type_id::create("mem_burst_read",,get_full_name());
    rw.element      = this;
    rw.element_kind = UVM_MEM;
    rw.kind         = UVM_BURST_READ;
@@ -29284,7 +29074,7 @@ task uvm_mem::do_write(uvm_reg_item rw);
      end
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"RegModel"))
-       uvm_report_info ("RegModel", {pre_s,"Wrote memory via ",path_s,": ", get_full_name(),range_s,value_s}, UVM_HIGH, "t/uvm/src/reg/uvm_mem.svh", 1281, "", 1);
+       uvm_report_info ("RegModel", {pre_s,"Wrote memory via ",path_s,": ", get_full_name(),range_s,value_s}, UVM_HIGH, "t/uvm/src/reg/uvm_mem.svh", 1265, "", 1);
    end
    end
    m_write_in_progress = 1'b0;
@@ -29363,7 +29153,7 @@ task uvm_mem::do_read(uvm_reg_item rw);
      end
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"RegModel"))
-       uvm_report_info ("RegModel", {pre_s,"Read memory via ",path_s,": ", get_full_name(),range_s,value_s}, UVM_HIGH, "t/uvm/src/reg/uvm_mem.svh", 1389, "", 1);
+       uvm_report_info ("RegModel", {pre_s,"Read memory via ",path_s,": ", get_full_name(),range_s,value_s}, UVM_HIGH, "t/uvm/src/reg/uvm_mem.svh", 1373, "", 1);
    end
    end
    m_read_in_progress = 1'b0;
@@ -29373,7 +29163,7 @@ function bit uvm_mem::Xcheck_accessX(input uvm_reg_item rw,
    if (rw.offset >= m_size) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,get_type_name()))
-       uvm_report_error (get_type_name(), $sformatf("Offset 'h%0h exceeds size of memory, 'h%0h", rw.offset, m_size), UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1405, "", 1);
+       uvm_report_error (get_type_name(), $sformatf("Offset 'h%0h exceeds size of memory, 'h%0h", rw.offset, m_size), UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1389, "", 1);
    end
       rw.status = UVM_NOT_OK;
       return 0;
@@ -29384,7 +29174,7 @@ function bit uvm_mem::Xcheck_accessX(input uvm_reg_item rw,
       if (get_backdoor() == null && !has_hdl_path()) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", {"No backdoor access available for memory '",get_full_name(), "' . Using frontdoor instead."}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1417, "", 1);
+       uvm_report_warning ("RegModel", {"No backdoor access available for memory '",get_full_name(), "' . Using frontdoor instead."}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1401, "", 1);
    end
          rw.path = UVM_FRONTDOOR;
       end
@@ -29400,7 +29190,7 @@ function bit uvm_mem::Xcheck_accessX(input uvm_reg_item rw,
      if (rw.local_map == null) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,get_type_name()))
-       uvm_report_error (get_type_name(), {"No transactor available to physically access memory from map '", rw.map.get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1436, "", 1);
+       uvm_report_error (get_type_name(), {"No transactor available to physically access memory from map '", rw.map.get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1420, "", 1);
    end
         rw.status = UVM_NOT_OK;
         return 0;
@@ -29410,7 +29200,7 @@ function bit uvm_mem::Xcheck_accessX(input uvm_reg_item rw,
         if (map_info.unmapped) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", {"Memory '",get_full_name(), "' unmapped in map '", rw.map.get_full_name(), "' and does not have a user-defined frontdoor"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1448, "", 1);
+       uvm_report_error ("RegModel", {"Memory '",get_full_name(), "' unmapped in map '", rw.map.get_full_name(), "' and does not have a user-defined frontdoor"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1432, "", 1);
    end
            rw.status = UVM_NOT_OK;
            return 0;
@@ -29419,7 +29209,7 @@ function bit uvm_mem::Xcheck_accessX(input uvm_reg_item rw,
            if (get_n_bits() > rw.local_map.get_n_bytes()*8) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", $sformatf("Cannot burst a %0d-bit memory through a narrower data path (%0d bytes)", get_n_bits(), rw.local_map.get_n_bytes()*8), UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1457, "", 1);
+       uvm_report_error ("RegModel", $sformatf("Cannot burst a %0d-bit memory through a narrower data path (%0d bytes)", get_n_bits(), rw.local_map.get_n_bytes()*8), UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1441, "", 1);
    end
               rw.status = UVM_NOT_OK;
               return 0;
@@ -29427,7 +29217,7 @@ function bit uvm_mem::Xcheck_accessX(input uvm_reg_item rw,
            if (rw.offset + rw.value.size() > m_size) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", $sformatf("Burst of size 'd%0d starting at offset 'd%0d exceeds size of memory, 'd%0d", rw.value.size(), rw.offset, m_size), UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1464, "", 1);
+       uvm_report_error ("RegModel", $sformatf("Burst of size 'd%0d starting at offset 'd%0d exceeds size of memory, 'd%0d", rw.value.size(), rw.offset, m_size), UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1448, "", 1);
    end
               return 0;
            end
@@ -29453,12 +29243,12 @@ task uvm_mem::poke(output uvm_status_e      status,
    if (bkdr == null && !has_hdl_path(kind)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", {"No backdoor access available in memory '", get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1500, "", 1);
+       uvm_report_error ("RegModel", {"No backdoor access available in memory '", get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1484, "", 1);
    end
       status = UVM_NOT_OK;
       return;
    end
-   rw = uvm_reg_item::type_id_create("mem_poke_item",,get_full_name());
+   rw = uvm_reg_item::type_id::create("mem_poke_item",,get_full_name());
    rw.element      = this;
    rw.path         = UVM_BACKDOOR;
    rw.element_kind = UVM_MEM;
@@ -29477,7 +29267,7 @@ task uvm_mem::poke(output uvm_status_e      status,
    status = rw.status;
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"RegModel"))
-       uvm_report_info ("RegModel", $sformatf("Poked memory '%s[%0d]' with value 'h%h", get_full_name(), offset, value), UVM_HIGH, "t/uvm/src/reg/uvm_mem.svh", 1531, "", 1);
+       uvm_report_info ("RegModel", $sformatf("Poked memory '%s[%0d]' with value 'h%h", get_full_name(), offset, value), UVM_HIGH, "t/uvm/src/reg/uvm_mem.svh", 1511, "", 1);
    end
 endtask: poke
 task uvm_mem::peek(output uvm_status_e      status,
@@ -29495,12 +29285,12 @@ task uvm_mem::peek(output uvm_status_e      status,
    if (bkdr == null && !has_hdl_path(kind)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", {"No backdoor access available in memory '", get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1554, "", 1);
+       uvm_report_error ("RegModel", {"No backdoor access available in memory '", get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1534, "", 1);
    end
       status = UVM_NOT_OK;
       return;
    end
-   rw = uvm_reg_item::type_id_create("mem_peek_item",,get_full_name());
+   rw = uvm_reg_item::type_id::create("mem_peek_item",,get_full_name());
    rw.element      = this;
    rw.path         = UVM_BACKDOOR;
    rw.element_kind = UVM_MEM;
@@ -29519,7 +29309,7 @@ task uvm_mem::peek(output uvm_status_e      status,
    value  = rw.value[0];
    begin
      if (uvm_report_enabled(UVM_HIGH,UVM_INFO,"RegModel"))
-       uvm_report_info ("RegModel", $sformatf("Peeked memory '%s[%0d]' has value 'h%h", get_full_name(), offset, value), UVM_HIGH, "t/uvm/src/reg/uvm_mem.svh", 1585, "", 1);
+       uvm_report_info ("RegModel", $sformatf("Peeked memory '%s[%0d]' has value 'h%h", get_full_name(), offset, value), UVM_HIGH, "t/uvm/src/reg/uvm_mem.svh", 1561, "", 1);
    end
 endtask: peek
 function void uvm_mem::set_frontdoor(uvm_reg_frontdoor ftdr,
@@ -29533,7 +29323,7 @@ function void uvm_mem::set_frontdoor(uvm_reg_frontdoor ftdr,
    if (map == null) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", {"Memory '",get_full_name(), "' not found in map '", map.get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1607, "", 1);
+       uvm_report_error ("RegModel", {"Memory '",get_full_name(), "' not found in map '", map.get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1583, "", 1);
    end
       return;
    end
@@ -29546,7 +29336,7 @@ function uvm_reg_frontdoor uvm_mem::get_frontdoor(uvm_reg_map map = null);
    if (map == null) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", {"Memory '",get_full_name(), "' not found in map '", map.get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1626, "", 1);
+       uvm_report_error ("RegModel", {"Memory '",get_full_name(), "' not found in map '", map.get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1602, "", 1);
    end
       return null;
    end
@@ -29590,7 +29380,7 @@ function uvm_status_e uvm_mem::backdoor_read_func(uvm_reg_item rw);
            string hdl_path = {hdl_concat.slices[j].path, "[", idx, "]"};
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"RegModel"))
-       uvm_report_info ("RegModel", {"backdoor_read from ",hdl_path}, UVM_DEBUG, "t/uvm/src/reg/uvm_mem.svh", 1691, "", 1);
+       uvm_report_info ("RegModel", {"backdoor_read from ",hdl_path}, UVM_DEBUG, "t/uvm/src/reg/uvm_mem.svh", 1667, "", 1);
    end
            if (hdl_concat.slices[j].offset < 0) begin
               ok &= uvm_hdl_read(hdl_path, val);
@@ -29612,7 +29402,7 @@ function uvm_status_e uvm_mem::backdoor_read_func(uvm_reg_item rw);
         if (val != rw.value[mem_idx]) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", $sformatf("Backdoor read of register %s with multiple HDL copies: values are not the same: %0h at path '%s', and %0h at path '%s'. Returning first value.", get_full_name(), rw.value[mem_idx], uvm_hdl_concat2string(paths[0]), val, uvm_hdl_concat2string(paths[i])), UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1716, "", 1);
+       uvm_report_error ("RegModel", $sformatf("Backdoor read of register %s with multiple HDL copies: values are not the same: %0h at path '%s', and %0h at path '%s'. Returning first value.", get_full_name(), rw.value[mem_idx], uvm_hdl_concat2string(paths[0]), val, uvm_hdl_concat2string(paths[i])), UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1692, "", 1);
    end
            return UVM_NOT_OK;
          end
@@ -29636,7 +29426,7 @@ task uvm_mem::backdoor_write(uvm_reg_item rw);
        foreach (hdl_concat.slices[j]) begin
    begin
      if (uvm_report_enabled(UVM_DEBUG,UVM_INFO,"RegModel"))
-       uvm_report_info ("RegModel", $sformatf("backdoor_write to %s ",hdl_concat.slices[j].path), UVM_DEBUG, "t/uvm/src/reg/uvm_mem.svh", 1751, "", 1);
+       uvm_report_info ("RegModel", $sformatf("backdoor_write to %s ",hdl_concat.slices[j].path), UVM_DEBUG, "t/uvm/src/reg/uvm_mem.svh", 1727, "", 1);
    end
           if (hdl_concat.slices[j].offset < 0) begin
              ok &= uvm_hdl_deposit({hdl_concat.slices[j].path,"[", idx, "]"},rw.value[mem_idx]);
@@ -29663,7 +29453,7 @@ function void uvm_mem::clear_hdl_path(string kind = "RTL");
   if (!m_hdl_paths_pool.exists(kind)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", {"Unknown HDL Abstraction '",kind,"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1784, "", 1);
+       uvm_report_warning ("RegModel", {"Unknown HDL Abstraction '",kind,"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1760, "", 1);
    end
     return;
   end
@@ -29703,7 +29493,7 @@ function void uvm_mem::get_hdl_path(ref uvm_hdl_path_concat paths[$],
   if (!has_hdl_path(kind)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", {"Memory does not have hdl path defined for abstraction '",kind,"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1846, "", 1);
+       uvm_report_error ("RegModel", {"Memory does not have hdl path defined for abstraction '",kind,"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1822, "", 1);
    end
     return;
   end
@@ -29730,7 +29520,7 @@ function void uvm_mem::get_full_hdl_path(ref uvm_hdl_path_concat paths[$],
    if (!has_hdl_path(kind)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", {"Memory does not have hdl path defined for abstraction '",kind,"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1883, "", 1);
+       uvm_report_error ("RegModel", {"Memory does not have hdl path defined for abstraction '",kind,"'"}, UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1859, "", 1);
    end
       return;
    end
@@ -29807,34 +29597,34 @@ endfunction
 function uvm_object uvm_mem::clone();
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"RegModel"))
-       uvm_report_fatal ("RegModel", "RegModel memories cannot be cloned", UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1987, "", 1);
+       uvm_report_fatal ("RegModel", "RegModel memories cannot be cloned", UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1963, "", 1);
    end
   return null;
 endfunction
 function void uvm_mem::do_copy(uvm_object rhs);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"RegModel"))
-       uvm_report_fatal ("RegModel", "RegModel memories cannot be copied", UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1994, "", 1);
+       uvm_report_fatal ("RegModel", "RegModel memories cannot be copied", UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1970, "", 1);
    end
 endfunction
 function bit uvm_mem::do_compare (uvm_object  rhs,
                                         uvm_comparer comparer);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", "RegModel memories cannot be compared", UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 2002, "", 1);
+       uvm_report_warning ("RegModel", "RegModel memories cannot be compared", UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1978, "", 1);
    end
   return 0;
 endfunction
 function void uvm_mem::do_pack (uvm_packer packer);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", "RegModel memories cannot be packed", UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 2010, "", 1);
+       uvm_report_warning ("RegModel", "RegModel memories cannot be packed", UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1986, "", 1);
    end
 endfunction
 function void uvm_mem::do_unpack (uvm_packer packer);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", "RegModel memories cannot be unpacked", UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 2017, "", 1);
+       uvm_report_warning ("RegModel", "RegModel memories cannot be unpacked", UVM_NONE, "t/uvm/src/reg/uvm_mem.svh", 1993, "", 1);
    end
 endfunction
 function void uvm_mem::Xadd_vregX(uvm_vreg vreg);
@@ -29861,11 +29651,6 @@ virtual class uvm_reg_transaction_order_policy extends uvm_object;
 endclass
 class uvm_reg_seq_base extends uvm_sequence_base;
    typedef uvm_object_registry#(uvm_reg_seq_base,"uvm_reg_seq_base") type_id;
-   static function uvm_reg_seq_base type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -29890,11 +29675,6 @@ endfunction
 endclass
 class uvm_reg_map extends uvm_object;
    typedef uvm_object_registry#(uvm_reg_map,"uvm_reg_map") type_id;
-   static function uvm_reg_map type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -31288,11 +31068,6 @@ function void uvm_reg_map::do_copy (uvm_object rhs);
 endfunction
 class uvm_reg_block extends uvm_object;
    typedef uvm_object_registry#(uvm_reg_block,"uvm_reg_block") type_id;
-   static function uvm_reg_block type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -32135,7 +31910,7 @@ function uvm_reg_map uvm_reg_block::create_map(string name,
                                                uvm_endianness_e endian,
                                                bit byte_addressing=1);
    uvm_reg_map  map;
-   map = uvm_reg_map::type_id_create(name,,this.get_full_name());
+   map = uvm_reg_map::type_id::create(name,,this.get_full_name());
    map.configure(this,base_addr,n_bytes,endian,byte_addressing);
    add_map(map);
    return map;
@@ -32144,14 +31919,14 @@ function void uvm_reg_block::add_map(uvm_reg_map map);
    if (this.locked) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", "Cannot add map to locked model", UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 1894, "", 1);
+       uvm_report_error ("RegModel", "Cannot add map to locked model", UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 1890, "", 1);
    end
       return;
    end
    if (this.maps.exists(map)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", {"Map '",map.get_name(), "' already exists in '",get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 1900, "", 1);
+       uvm_report_error ("RegModel", {"Map '",map.get_name(), "' already exists in '",get_full_name(),"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 1896, "", 1);
    end
       return;
    end
@@ -32174,7 +31949,7 @@ function uvm_reg_map uvm_reg_block::get_map_by_name(string name);
    end
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", {"Map with name '",name,"' does not exist in block"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 1932, "", 1);
+       uvm_report_warning ("RegModel", {"Map with name '",name,"' does not exist in block"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 1928, "", 1);
    end
    return null;
 endfunction
@@ -32182,7 +31957,7 @@ function void uvm_reg_block::set_default_map(uvm_reg_map map);
   if (!maps.exists(map))
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", {"Map '",map.get_full_name(),"' does not exist in block"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 1941, "", 1);
+       uvm_report_warning ("RegModel", {"Map '",map.get_full_name(),"' does not exist in block"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 1937, "", 1);
    end
   default_map = map;
 endfunction
@@ -32214,7 +31989,7 @@ function void uvm_reg_block::set_backdoor(uvm_reg_backdoor bkdr,
        this.backdoor.has_update_threads()) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", "Previous register backdoor still has update threads running. Backdoors with active mirroring should only be set before simulation starts.", UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2004, "", 1);
+       uvm_report_warning ("RegModel", "Previous register backdoor still has update threads running. Backdoors with active mirroring should only be set before simulation starts.", UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2000, "", 1);
    end
    end
    this.backdoor = bkdr;
@@ -32241,7 +32016,7 @@ function void uvm_reg_block::clear_hdl_path(string kind = "RTL");
   if (!hdl_paths_pool.exists(kind)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", {"Unknown HDL Abstraction '",kind,"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2040, "", 1);
+       uvm_report_warning ("RegModel", {"Unknown HDL Abstraction '",kind,"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2036, "", 1);
    end
     return;
   end
@@ -32265,7 +32040,7 @@ function void uvm_reg_block::get_hdl_path(ref string paths[$], input string kind
   if (!has_hdl_path(kind)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", {"Block does not have hdl path defined for abstraction '",kind,"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2081, "", 1);
+       uvm_report_error ("RegModel", {"Block does not have hdl path defined for abstraction '",kind,"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2077, "", 1);
    end
     return;
   end
@@ -32287,7 +32062,7 @@ function void uvm_reg_block::get_full_hdl_path(ref string paths[$],
    if (!has_hdl_path(kind)) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", {"Block does not have hdl path defined for abstraction '",kind,"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2110, "", 1);
+       uvm_report_error ("RegModel", {"Block does not have hdl path defined for abstraction '",kind,"'"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2106, "", 1);
    end
       return;
    end
@@ -32322,7 +32097,7 @@ function void uvm_reg_block::set_default_hdl_path(string kind);
     if (parent == null) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"RegModel"))
-       uvm_report_error ("RegModel", {"Block has no parent. ", "Must specify a valid HDL abstraction (kind)"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2159, "", 1);
+       uvm_report_error ("RegModel", {"Block has no parent. ", "Must specify a valid HDL abstraction (kind)"}, UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2155, "", 1);
    end
     end
     kind = parent.get_default_hdl_path();
@@ -32370,34 +32145,34 @@ endfunction
 function uvm_object uvm_reg_block::clone();
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"RegModel"))
-       uvm_report_fatal ("RegModel", "RegModel blocks cannot be cloned", UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2233, "", 1);
+       uvm_report_fatal ("RegModel", "RegModel blocks cannot be cloned", UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2229, "", 1);
    end
   return null;
 endfunction
 function void uvm_reg_block::do_copy(uvm_object rhs);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_FATAL,"RegModel"))
-       uvm_report_fatal ("RegModel", "RegModel blocks cannot be copied", UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2240, "", 1);
+       uvm_report_fatal ("RegModel", "RegModel blocks cannot be copied", UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2236, "", 1);
    end
 endfunction
 function bit uvm_reg_block::do_compare (uvm_object  rhs,
                                         uvm_comparer comparer);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", "RegModel blocks cannot be compared", UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2248, "", 1);
+       uvm_report_warning ("RegModel", "RegModel blocks cannot be compared", UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2244, "", 1);
    end
   return 0;
 endfunction
 function void uvm_reg_block::do_pack (uvm_packer packer);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", "RegModel blocks cannot be packed", UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2256, "", 1);
+       uvm_report_warning ("RegModel", "RegModel blocks cannot be packed", UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2252, "", 1);
    end
 endfunction
 function void uvm_reg_block::do_unpack (uvm_packer packer);
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"RegModel"))
-       uvm_report_warning ("RegModel", "RegModel blocks cannot be unpacked", UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2263, "", 1);
+       uvm_report_warning ("RegModel", "RegModel blocks cannot be unpacked", UVM_NONE, "t/uvm/src/reg/uvm_reg_block.svh", 2259, "", 1);
    end
 endfunction
 function string uvm_reg_block::convert2string();
@@ -32411,11 +32186,6 @@ function string uvm_reg_block::convert2string();
 endfunction: convert2string
 class uvm_reg_hw_reset_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
    typedef uvm_object_registry#(uvm_reg_hw_reset_seq,"uvm_reg_hw_reset_seq") type_id;
-   static function uvm_reg_hw_reset_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -32521,11 +32291,6 @@ endclass: uvm_reg_hw_reset_seq
 class uvm_reg_single_bit_bash_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
    uvm_reg rg;
    typedef uvm_object_registry#(uvm_reg_single_bit_bash_seq,"uvm_reg_single_bit_bash_seq") type_id;
-   static function uvm_reg_single_bit_bash_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -32650,11 +32415,6 @@ endclass: uvm_reg_single_bit_bash_seq
 class uvm_reg_bit_bash_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
    protected uvm_reg_single_bit_bash_seq reg_seq;
    typedef uvm_object_registry#(uvm_reg_bit_bash_seq,"uvm_reg_bit_bash_seq") type_id;
-   static function uvm_reg_bit_bash_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -32685,7 +32445,7 @@ class uvm_reg_bit_bash_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_ite
          return;
       end
       uvm_report_info("STARTING_SEQ",{"\n\nStarting ",get_name()," sequence...\n"},UVM_LOW);
-      reg_seq = uvm_reg_single_bit_bash_seq::type_id_create("reg_single_bit_bash_seq");
+      reg_seq = uvm_reg_single_bit_bash_seq::type_id::create("reg_single_bit_bash_seq");
       this.reset_blk(model);
       model.reset();
       do_block(model);
@@ -32720,11 +32480,6 @@ class uvm_reg_bit_bash_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_ite
 endclass: uvm_reg_bit_bash_seq
 class uvm_mem_single_walk_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
    typedef uvm_object_registry#(uvm_mem_single_walk_seq,"uvm_mem_single_walk_seq") type_id;
-   static function uvm_mem_single_walk_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -32832,11 +32587,6 @@ endclass: uvm_mem_single_walk_seq
 class uvm_mem_walk_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
    protected uvm_mem_single_walk_seq mem_seq;
    typedef uvm_object_registry#(uvm_mem_walk_seq,"uvm_mem_walk_seq") type_id;
-   static function uvm_mem_walk_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -32867,7 +32617,7 @@ class uvm_mem_walk_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
          return;
       end
       uvm_report_info("STARTING_SEQ",{"\n\nStarting ",get_name()," sequence...\n"},UVM_LOW);
-      mem_seq = uvm_mem_single_walk_seq::type_id_create("single_mem_walk_seq");
+      mem_seq = uvm_mem_single_walk_seq::type_id::create("single_mem_walk_seq");
       this.reset_blk(model);
       model.reset();
       do_block(model);
@@ -32907,11 +32657,6 @@ endclass: uvm_mem_walk_seq
 class uvm_mem_single_access_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
    uvm_mem mem;
    typedef uvm_object_registry#(uvm_mem_single_access_seq,"uvm_mem_single_access_seq") type_id;
-   static function uvm_mem_single_access_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -33046,11 +32791,6 @@ endclass: uvm_mem_single_access_seq
 class uvm_mem_access_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
    protected uvm_mem_single_access_seq mem_seq;
    typedef uvm_object_registry#(uvm_mem_access_seq,"uvm_mem_access_seq") type_id;
-   static function uvm_mem_access_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -33081,7 +32821,7 @@ class uvm_mem_access_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item)
          return;
       end
       uvm_report_info("STARTING_SEQ",{"\n\nStarting ",get_name()," sequence...\n"},UVM_LOW);
-      mem_seq = uvm_mem_single_access_seq::type_id_create("single_mem_access_seq");
+      mem_seq = uvm_mem_single_access_seq::type_id::create("single_mem_access_seq");
       this.reset_blk(model);
       model.reset();
       do_block(model);
@@ -33108,7 +32848,7 @@ class uvm_mem_access_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item)
              !mems[i].has_hdl_path()) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"uvm_mem_access_seq"))
-       uvm_report_warning ("uvm_mem_access_seq", $sformatf("Memory \"%s\" does not have a backdoor mechanism available", mems[i].get_full_name()), UVM_NONE, "t/uvm/src/reg/sequences/uvm_mem_access_seq.svh", 278, "", 1);
+       uvm_report_warning ("uvm_mem_access_seq", $sformatf("Memory \"%s\" does not have a backdoor mechanism available", mems[i].get_full_name()), UVM_NONE, "t/uvm/src/reg/sequences/uvm_mem_access_seq.svh", 274, "", 1);
    end
             continue;
          end
@@ -33130,11 +32870,6 @@ typedef class uvm_mem_access_seq;
 class uvm_reg_single_access_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
    uvm_reg rg;
    typedef uvm_object_registry#(uvm_reg_single_access_seq,"uvm_reg_single_access_seq") type_id;
-   static function uvm_reg_single_access_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -33248,11 +32983,6 @@ endclass: uvm_reg_single_access_seq
 class uvm_reg_access_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
    protected uvm_reg_single_access_seq reg_seq;
    typedef uvm_object_registry#(uvm_reg_access_seq,"uvm_reg_access_seq") type_id;
-   static function uvm_reg_access_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -33283,7 +33013,7 @@ class uvm_reg_access_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item)
          return;
       end
       uvm_report_info("STARTING_SEQ",{"\n\nStarting ",get_name()," sequence...\n"},UVM_LOW);
-      reg_seq = uvm_reg_single_access_seq::type_id_create("single_reg_access_seq");
+      reg_seq = uvm_reg_single_access_seq::type_id::create("single_reg_access_seq");
       this.reset_blk(model);
       model.reset();
       do_block(model);
@@ -33305,7 +33035,7 @@ class uvm_reg_access_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item)
          if (regs[i].get_backdoor() == null && !regs[i].has_hdl_path()) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_WARNING,"uvm_reg_access_seq"))
-       uvm_report_warning ("uvm_reg_access_seq", {"Register '",regs[i].get_full_name(), "' does not have a backdoor mechanism available"}, UVM_NONE, "t/uvm/src/reg/sequences/uvm_reg_access_seq.svh", 273, "", 1);
+       uvm_report_warning ("uvm_reg_access_seq", {"Register '",regs[i].get_full_name(), "' does not have a backdoor mechanism available"}, UVM_NONE, "t/uvm/src/reg/sequences/uvm_reg_access_seq.svh", 269, "", 1);
    end
             continue;
          end
@@ -33325,11 +33055,6 @@ class uvm_reg_access_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item)
 endclass: uvm_reg_access_seq
 class uvm_reg_mem_access_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
    typedef uvm_object_registry#(uvm_reg_mem_access_seq,"uvm_reg_mem_access_seq") type_id;
-   static function uvm_reg_mem_access_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -33355,7 +33080,7 @@ class uvm_reg_mem_access_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_i
       if (model == null) begin
    begin
      if (uvm_report_enabled(UVM_NONE,UVM_ERROR,"uvm_reg_mem_access_seq"))
-       uvm_report_error ("uvm_reg_mem_access_seq", "Register model handle is null", UVM_NONE, "t/uvm/src/reg/sequences/uvm_reg_access_seq.svh", 338, "", 1);
+       uvm_report_error ("uvm_reg_mem_access_seq", "Register model handle is null", UVM_NONE, "t/uvm/src/reg/sequences/uvm_reg_access_seq.svh", 334, "", 1);
    end
          return;
       end
@@ -33387,11 +33112,6 @@ endclass: uvm_reg_mem_access_seq
 class uvm_reg_shared_access_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
    uvm_reg rg;
    typedef uvm_object_registry#(uvm_reg_shared_access_seq,"uvm_reg_shared_access_seq") type_id;
-   static function uvm_reg_shared_access_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -33510,11 +33230,6 @@ endclass: uvm_reg_shared_access_seq
 class uvm_mem_shared_access_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
    uvm_mem mem;
    typedef uvm_object_registry#(uvm_mem_shared_access_seq,"uvm_mem_shared_access_seq") type_id;
-   static function uvm_mem_shared_access_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -33642,11 +33357,6 @@ class uvm_reg_mem_shared_access_seq extends uvm_reg_sequence #(uvm_sequence #(uv
    protected uvm_reg_shared_access_seq reg_seq;
    protected uvm_mem_shared_access_seq mem_seq;
    typedef uvm_object_registry#(uvm_reg_mem_shared_access_seq,"uvm_reg_mem_shared_access_seq") type_id;
-   static function uvm_reg_mem_shared_access_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -33677,8 +33387,8 @@ class uvm_reg_mem_shared_access_seq extends uvm_reg_sequence #(uvm_sequence #(uv
          return;
       end
       uvm_report_info("STARTING_SEQ",{"\n\nStarting ",get_name()," sequence...\n"},UVM_LOW);
-      reg_seq = uvm_reg_shared_access_seq::type_id_create("reg_shared_access_seq");
-      mem_seq = uvm_mem_shared_access_seq::type_id_create("reg_shared_access_seq");
+      reg_seq = uvm_reg_shared_access_seq::type_id::create("reg_shared_access_seq");
+      mem_seq = uvm_mem_shared_access_seq::type_id::create("reg_shared_access_seq");
       this.reset_blk(model);
       model.reset();
       do_block(model);
@@ -33734,11 +33444,6 @@ class uvm_reg_mem_shared_access_seq extends uvm_reg_sequence #(uvm_sequence #(uv
 endclass: uvm_reg_mem_shared_access_seq
 class uvm_reg_mem_built_in_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
    typedef uvm_object_registry#(uvm_reg_mem_built_in_seq,"uvm_reg_mem_built_in_seq") type_id;
-   static function uvm_reg_mem_built_in_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
@@ -33775,12 +33480,12 @@ class uvm_reg_mem_built_in_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg
                                              "NO_REG_TESTS", 0) == null &&
           uvm_resource_db#(bit)::get_by_name({"REG::",model.get_full_name()},
                                              "NO_REG_HW_RESET_TEST", 0) == null ) begin
-         uvm_reg_hw_reset_seq seq = uvm_reg_hw_reset_seq::type_id_create("reg_hw_reset_seq");
+        uvm_reg_hw_reset_seq seq = uvm_reg_hw_reset_seq::type_id::create("reg_hw_reset_seq");
         seq.model = model;
         seq.start(null,this);
    begin
      if (uvm_report_enabled(UVM_LOW,UVM_INFO,"FINISH_SEQ"))
-       uvm_report_info ("FINISH_SEQ", {"Finished ",seq.get_name()," sequence."}, UVM_LOW, "t/uvm/src/reg/sequences/uvm_reg_mem_built_in_seq.svh", 85, "", 1);
+       uvm_report_info ("FINISH_SEQ", {"Finished ",seq.get_name()," sequence."}, UVM_LOW, "t/uvm/src/reg/sequences/uvm_reg_mem_built_in_seq.svh", 81, "", 1);
    end
       end
       if (tests & UVM_DO_REG_BIT_BASH &&
@@ -33788,12 +33493,12 @@ class uvm_reg_mem_built_in_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg
                                              "NO_REG_TESTS", 0) == null &&
           uvm_resource_db#(bit)::get_by_name({"REG::",model.get_full_name()},
                                              "NO_REG_BIT_BASH_TEST", 0) == null ) begin
-         uvm_reg_bit_bash_seq seq = uvm_reg_bit_bash_seq::type_id_create("reg_bit_bash_seq");
+        uvm_reg_bit_bash_seq seq = uvm_reg_bit_bash_seq::type_id::create("reg_bit_bash_seq");
         seq.model = model;
         seq.start(null,this);
    begin
      if (uvm_report_enabled(UVM_LOW,UVM_INFO,"FINISH_SEQ"))
-       uvm_report_info ("FINISH_SEQ", {"Finished ",seq.get_name()," sequence."}, UVM_LOW, "t/uvm/src/reg/sequences/uvm_reg_mem_built_in_seq.svh", 100, "", 1);
+       uvm_report_info ("FINISH_SEQ", {"Finished ",seq.get_name()," sequence."}, UVM_LOW, "t/uvm/src/reg/sequences/uvm_reg_mem_built_in_seq.svh", 92, "", 1);
    end
       end
       if (tests & UVM_DO_REG_ACCESS &&
@@ -33801,12 +33506,12 @@ class uvm_reg_mem_built_in_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg
                                              "NO_REG_TESTS", 0) == null &&
           uvm_resource_db#(bit)::get_by_name({"REG::",model.get_full_name()},
                                              "NO_REG_ACCESS_TEST", 0) == null ) begin
-         uvm_reg_access_seq seq = uvm_reg_access_seq::type_id_create("reg_access_seq");
+        uvm_reg_access_seq seq = uvm_reg_access_seq::type_id::create("reg_access_seq");
         seq.model = model;
         seq.start(null,this);
    begin
      if (uvm_report_enabled(UVM_LOW,UVM_INFO,"FINISH_SEQ"))
-       uvm_report_info ("FINISH_SEQ", {"Finished ",seq.get_name()," sequence."}, UVM_LOW, "t/uvm/src/reg/sequences/uvm_reg_mem_built_in_seq.svh", 115, "", 1);
+       uvm_report_info ("FINISH_SEQ", {"Finished ",seq.get_name()," sequence."}, UVM_LOW, "t/uvm/src/reg/sequences/uvm_reg_mem_built_in_seq.svh", 103, "", 1);
    end
       end
       if (tests & UVM_DO_MEM_ACCESS &&
@@ -33816,12 +33521,12 @@ class uvm_reg_mem_built_in_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg
                                              "NO_MEM_TESTS", 0) == null &&
           uvm_resource_db#(bit)::get_by_name({"REG::",model.get_full_name()},
                                              "NO_MEM_ACCESS_TEST", 0) == null ) begin
-         uvm_mem_access_seq seq = uvm_mem_access_seq::type_id_create("mem_access_seq");
+        uvm_mem_access_seq seq = uvm_mem_access_seq::type_id::create("mem_access_seq");
         seq.model = model;
         seq.start(null,this);
    begin
      if (uvm_report_enabled(UVM_LOW,UVM_INFO,"FINISH_SEQ"))
-       uvm_report_info ("FINISH_SEQ", {"Finished ",seq.get_name()," sequence."}, UVM_LOW, "t/uvm/src/reg/sequences/uvm_reg_mem_built_in_seq.svh", 132, "", 1);
+       uvm_report_info ("FINISH_SEQ", {"Finished ",seq.get_name()," sequence."}, UVM_LOW, "t/uvm/src/reg/sequences/uvm_reg_mem_built_in_seq.svh", 116, "", 1);
    end
       end
       if (tests & UVM_DO_SHARED_ACCESS &&
@@ -33829,12 +33534,12 @@ class uvm_reg_mem_built_in_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg
                                              "NO_REG_TESTS", 0) == null &&
           uvm_resource_db#(bit)::get_by_name({"REG::",model.get_full_name()},
                                              "NO_REG_SHARED_ACCESS_TEST", 0) == null ) begin
-         uvm_reg_mem_shared_access_seq seq = uvm_reg_mem_shared_access_seq::type_id_create("shared_access_seq");
+        uvm_reg_mem_shared_access_seq seq = uvm_reg_mem_shared_access_seq::type_id::create("shared_access_seq");
         seq.model = model;
         seq.start(null,this);
    begin
      if (uvm_report_enabled(UVM_LOW,UVM_INFO,"FINISH_SEQ"))
-       uvm_report_info ("FINISH_SEQ", {"Finished ",seq.get_name()," sequence."}, UVM_LOW, "t/uvm/src/reg/sequences/uvm_reg_mem_built_in_seq.svh", 147, "", 1);
+       uvm_report_info ("FINISH_SEQ", {"Finished ",seq.get_name()," sequence."}, UVM_LOW, "t/uvm/src/reg/sequences/uvm_reg_mem_built_in_seq.svh", 127, "", 1);
    end
       end
       if (tests & UVM_DO_MEM_WALK &&
@@ -33842,12 +33547,12 @@ class uvm_reg_mem_built_in_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg
                                              "NO_REG_TESTS", 0) == null &&
           uvm_resource_db#(bit)::get_by_name({"REG::",model.get_full_name()},
                                              "NO_MEM_WALK_TEST", 0) == null ) begin
-         uvm_mem_walk_seq seq = uvm_mem_walk_seq::type_id_create("mem_walk_seq");
+        uvm_mem_walk_seq seq = uvm_mem_walk_seq::type_id::create("mem_walk_seq");
         seq.model = model;
         seq.start(null,this);
    begin
      if (uvm_report_enabled(UVM_LOW,UVM_INFO,"FINISH_SEQ"))
-       uvm_report_info ("FINISH_SEQ", {"Finished ",seq.get_name()," sequence."}, UVM_LOW, "t/uvm/src/reg/sequences/uvm_reg_mem_built_in_seq.svh", 162, "", 1);
+       uvm_report_info ("FINISH_SEQ", {"Finished ",seq.get_name()," sequence."}, UVM_LOW, "t/uvm/src/reg/sequences/uvm_reg_mem_built_in_seq.svh", 138, "", 1);
    end
       end
    endtask: body
@@ -33855,11 +33560,6 @@ endclass: uvm_reg_mem_built_in_seq
 class uvm_reg_mem_hdl_paths_seq extends uvm_reg_sequence #(uvm_sequence #(uvm_reg_item));
     string abstractions[$];
    typedef uvm_object_registry#(uvm_reg_mem_hdl_paths_seq,"uvm_reg_mem_hdl_paths_seq") type_id;
-   static function uvm_reg_mem_hdl_paths_seq type_id_create (string name="",
-                                     uvm_component parent=null,
-                                     string contxt="");
-     return type_id::create(name, parent, contxt);
-   endfunction
    static function type_id get_type();
      return type_id::get();
    endfunction
