@@ -1878,6 +1878,7 @@ class AstVar final : public AstNode {
     bool m_isWrittenByDpi : 1;  // This variable can be written by a DPI Export
     bool m_isWrittenBySuspendable : 1;  // This variable can be written by a suspendable process
     bool m_ignorePostWrite : 1;  // Ignore writes in 'Post' blocks during ordering
+    bool m_ignoreSchedWrite : 1;  // Ignore writes in scheduling (for coverage increments)
 
     void init() {
         m_ansi = false;
@@ -1923,6 +1924,7 @@ class AstVar final : public AstNode {
         m_isWrittenByDpi = false;
         m_isWrittenBySuspendable = false;
         m_ignorePostWrite = false;
+        m_ignoreSchedWrite = false;
         m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
     }
 
@@ -2080,6 +2082,8 @@ public:
     void setWrittenBySuspendable() { m_isWrittenBySuspendable = true; }
     bool ignorePostWrite() const { return m_ignorePostWrite; }
     void setIgnorePostWrite() { m_ignorePostWrite = true; }
+    bool ignoreSchedWrite() const { return m_ignoreSchedWrite; }
+    void setIgnoreSchedWrite() { m_ignoreSchedWrite = true; }
 
     // METHODS
     void name(const string& name) override { m_name = name; }

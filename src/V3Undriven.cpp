@@ -308,6 +308,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     void warnAlwCombOrder(AstNodeVarRef* nodep) {
         AstVar* const varp = nodep->varp();
         if (!varp->isParam() && !varp->isGenVar() && !varp->isUsedLoopIdx()
+            && !varp->ignoreSchedWrite()
             && !m_inBBox  // We may have falsely considered a SysIgnore as a driver
             && !VN_IS(nodep, VarXRef)  // Xrefs might point at two different instances
             && !varp->fileline()->warnIsOff(

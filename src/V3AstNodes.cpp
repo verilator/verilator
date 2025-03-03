@@ -2547,6 +2547,8 @@ void AstVar::dump(std::ostream& str) const {
         str << " [FUNC]";
     }
     if (isDpiOpenArray()) str << " [DPIOPENA]";
+    if (ignorePostWrite()) str << " [IGNPWR]";
+    if (ignoreSchedWrite()) str << " [IGNWR]";
     if (!attrClocker().unknown()) str << " [" << attrClocker().ascii() << "] ";
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
@@ -2579,6 +2581,8 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isParam);
     dumpJsonBoolFunc(str, attrScBv);
     dumpJsonBoolFunc(str, attrSFormat);
+    dumpJsonBoolFunc(str, ignorePostWrite);
+    dumpJsonBoolFunc(str, ignoreSchedWrite);
     dumpJsonGen(str);
 }
 bool AstVar::sameNode(const AstNode* samep) const {

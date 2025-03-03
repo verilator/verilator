@@ -159,6 +159,7 @@ class CoverageVisitor final : public VNVisitor {
             fl_nowarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
             AstVar* const varp = new AstVar{fl_nowarn, VVarType::MODULETEMP, trace_var_name,
                                             incp->findUInt32DType()};
+            varp->setIgnoreSchedWrite();  // Ignore the increment output, so no UNOPTFLAT
             varp->trace(true);
             m_modp->addStmtsp(varp);
             UINFO(5, "New coverage trace: " << varp << endl);

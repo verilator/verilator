@@ -151,7 +151,8 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
                 // We want to cut the narrowest signals
                 const int weight = vscp->width() / 8 + 1;
                 // If written, add logic -> var edge
-                if (refp->access().isWriteOrRW() && !vscp->user2SetOnce())
+                if (refp->access().isWriteOrRW() && !refp->varp()->ignoreSchedWrite()
+                    && !vscp->user2SetOnce())
                     addEdge(lvtxp, vvtxp, weight, true);
                 // If read, add var -> logic edge
                 // Note: Use same heuristic as ordering does to ignore written variables

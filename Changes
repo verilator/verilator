@@ -21,6 +21,7 @@ Verilator 5.035 devel
 * Fix invalid code motion over branches (#5811) (#5814). [Geza Lore]
 * Fix sorting of wide SenItems (#5816). [Geza Lore]
 * Fix tcmalloc static link and non-22.04 builds (#5817) (#5818). [Geza Lore]
+* Fix UNOPTFLAT warnings with `--coverage-trace` and always_comb (#5821).
 * Fix function locals in SenExprBuilder (#5822). [Geza Lore]
 
 

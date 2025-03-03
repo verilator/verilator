@@ -185,7 +185,8 @@ class OrderGraphBuilder final : public VNVisitor {
         const bool prevCon = varscp->user2() & VU_CON;
 
         // Compute whether the variable is produced (written) here
-        bool gen = !prevGen && nodep->access().isWriteOrRW();
+        const bool gen
+            = !prevGen && nodep->access().isWriteOrRW() && !varscp->varp()->ignoreSchedWrite();
 
         // Compute whether the value is consumed (read) here
         bool con = false;

@@ -231,8 +231,8 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
                 // If written, add logic -> var edge
                 // Note: See V3Order for why AlwaysPostponed is safe to be ignored. We ignore it
                 // as otherwise we would end up with a false cycle.
-                if (refp->access().isWriteOrRW() && !vscp->user2SetOnce()
-                    && !VN_IS(nodep, AlwaysPostponed)) {  //
+                if (refp->access().isWriteOrRW() && !refp->varp()->ignoreSchedWrite()
+                    && !vscp->user2SetOnce() && !VN_IS(nodep, AlwaysPostponed)) {  //
                     addEdge(lvtxp, vvtxp);
                 }
             });
