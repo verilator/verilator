@@ -1,3 +1,0 @@
-%Error: t/t_force_initial_bad.v:23:  got='h2 exp='h00000000
-%Error: t/t_force_initial_bad.v:27:  got='h2 exp='h00000001
-%Error: t/t_force_initial_bad.v:35:  got='h2 exp='h00000003

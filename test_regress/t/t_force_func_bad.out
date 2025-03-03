@@ -1,3 +1,0 @@
-%Error: t/t_force_func_bad.v:32:  got='h0 exp='h00000001
-%Error: t/t_force_func_bad.v:36:  got='h0 exp='h00000002
-%Error: t/t_force_func_bad.v:43:  got='h0 exp='h00000003
