@@ -45,9 +45,9 @@ public:
     }
 
     // ACCESSORS
-    VL_ATTR_ALWINLINE bool getBitValue() const { return m_lastVal; }
-    VL_ATTR_ALWINLINE uint64_t getHighTime() const { return m_highTime; }
-    VL_ATTR_ALWINLINE uint64_t getToggleCount() const { return m_transitions; }
+    VL_ATTR_ALWINLINE bool bitValue() const { return m_lastVal; }
+    VL_ATTR_ALWINLINE uint64_t highTime() const { return m_highTime; }
+    VL_ATTR_ALWINLINE uint64_t toggleCount() const { return m_transitions; }
 
 private:
     // MEMBERS
@@ -88,9 +88,9 @@ public:
     VL_ATTR_ALWINLINE void updateLastTime(uint64_t val) { m_lastTime = val; }
 
     // ACCESSORS
-    VL_ATTR_ALWINLINE uint32_t getWidth() const { return m_width; }
-    VL_ATTR_ALWINLINE VerilatedSaifActivityBit& getBit(std::size_t index);
-    VL_ATTR_ALWINLINE uint64_t getLastUpdateTime() const { return m_lastTime; }
+    VL_ATTR_ALWINLINE uint32_t width() const { return m_width; }
+    VL_ATTR_ALWINLINE VerilatedSaifActivityBit& bit(std::size_t index);
+    VL_ATTR_ALWINLINE uint64_t lastUpdateTime() const { return m_lastTime; }
 
 private:
     // CONSTRUCTORS
@@ -125,15 +125,16 @@ public:
     VL_ATTR_ALWINLINE bool hasParent() const { return m_parentScopeIndex >= 0; }
 
     // ACCESSORS
-    VL_ATTR_ALWINLINE const std::string& getName() const { return m_scopeName; }
-    VL_ATTR_ALWINLINE const std::vector<int32_t>& getChildScopesIndices() const {
+    VL_ATTR_ALWINLINE const std::string& name() const { return m_scopeName; }
+    VL_ATTR_ALWINLINE const std::vector<int32_t>& childScopesIndices() const {
         return m_childScopesIndices;
     }
-    VL_ATTR_ALWINLINE const std::vector<std::pair<uint32_t, std::string>>&
-    getChildActivities() const {
+    VL_ATTR_ALWINLINE
+    const std::vector<std::pair<uint32_t, std::string>>&
+    childActivities() const {
         return m_childActivities;
     }
-    VL_ATTR_ALWINLINE int32_t getParentScopeIndex() const { return m_parentScopeIndex; }
+    VL_ATTR_ALWINLINE int32_t parentScopeIndex() const { return m_parentScopeIndex; }
 
 private:
     // CONSTRUCTORS
@@ -195,7 +196,7 @@ private:
     std::unordered_map<uint32_t, VerilatedSaifActivityVar> m_activity;
     std::vector<std::vector<VerilatedSaifActivityBit>> m_activityArena;
 
-    VL_ATTR_ALWINLINE uint64_t getCurrentTime() const { return m_totalTime - m_currentTimeOrigin; }
+    VL_ATTR_ALWINLINE uint64_t currentTime() const { return m_totalTime - m_currentTimeOrigin; }
 
     uint64_t m_totalTime{0};
     uint64_t m_currentTimeOrigin{0};

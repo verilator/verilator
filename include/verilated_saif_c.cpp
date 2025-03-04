@@ -83,7 +83,7 @@ void VerilatedSaifActivityVar::emitWData(uint64_t time, const WData* newvalp, ui
     updateLastTime(time);
 }
 
-VerilatedSaifActivityBit& VerilatedSaifActivityVar::getBit(std::size_t index) {
+VerilatedSaifActivityBit& VerilatedSaifActivityVar::bit(std::size_t index) {
     assert(index < m_width);
     return m_bits[index];
 }
@@ -245,7 +245,7 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
 
 void VerilatedSaif::finalizeSaifFileContents() {
     printStr("(DURATION ");
-    printStr(std::to_string(getCurrentTime()));
+    printStr(std::to_string(currentTime()));
     printStr(")\n");
 
     incrementIndent();
@@ -258,11 +258,11 @@ void VerilatedSaif::finalizeSaifFileContents() {
 void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
     const VerilatedSaifActivityScope& scope = m_scopes.at(scopeIndex);
 
-    openInstanceScope(scope.getName());
+    openInstanceScope(scope.name());
 
     printScopeActivities(scope);
 
-    for (uint32_t childScopeIndex : scope.getChildScopesIndices()) {
+    for (uint32_t childScopeIndex : scope.childScopesIndices()) {
         recursivelyPrintScopes(childScopeIndex);
     }
 
@@ -285,7 +285,7 @@ void VerilatedSaif::closeInstanceScope() {
 
 void VerilatedSaif::printScopeActivities(const VerilatedSaifActivityScope& scope) {
     bool anyNetValid{false};
-    for (auto& childSignal : scope.getChildActivities()) {
+    for (auto& childSignal : scope.childActivities()) {
         uint32_t code = childSignal.first;
         const char* name = childSignal.second.c_str();
         anyNetValid = printActivityStats(code, name, anyNetValid);
@@ -309,15 +309,15 @@ void VerilatedSaif::closeNetScope() {
 bool VerilatedSaif::printActivityStats(uint32_t activityCode, const char* activityName,
                                        bool anyNetValid) {
     VerilatedSaifActivityVar& activity = m_activity.at(activityCode);
-    for (size_t i = 0; i < activity.getWidth(); i++) {
-        VerilatedSaifActivityBit& bit = activity.getBit(i);
+    for (size_t i = 0; i < activity.width(); i++) {
+        VerilatedSaifActivityBit& bit = activity.bit(i);
 
-        if (bit.getToggleCount() <= 0) {
+        if (bit.toggleCount() <= 0) {
             // Skip bits with no toggles
             continue;
         }
 
-        bit.aggregateVal(getCurrentTime() - activity.getLastUpdateTime(), bit.getBitValue());
+        bit.aggregateVal(currentTime() - activity.lastUpdateTime(), bit.bitValue());
 
         if (!anyNetValid) {
             openNetScope();
@@ -327,7 +327,7 @@ bool VerilatedSaif::printActivityStats(uint32_t activityCode, const char* activi
         printIndent();
         printStr("(");
         printStr(activityName);
-        if (activity.getWidth() > 1) {
+        if (activity.width() > 1) {
             printStr("\\[");
             printStr(std::to_string(i));
             printStr("\\]");
@@ -335,15 +335,15 @@ bool VerilatedSaif::printActivityStats(uint32_t activityCode, const char* activi
 
         // We only have two-value logic so TZ, TX and TB will always be 0
         printStr(" (T0 ");
-        printStr(std::to_string(getCurrentTime() - bit.getHighTime()));
+        printStr(std::to_string(currentTime() - bit.highTime()));
         printStr(") (T1 ");
-        printStr(std::to_string(bit.getHighTime()));
+        printStr(std::to_string(bit.highTime()));
         printStr(") (TZ 0) (TX 0) (TB 0) (TC ");
-        printStr(std::to_string(bit.getToggleCount()));
+        printStr(std::to_string(bit.toggleCount()));
         printStr("))\n");
     }
 
-    activity.updateLastTime(getCurrentTime());
+    activity.updateLastTime(currentTime());
 
     return anyNetValid;
 }
@@ -410,7 +410,7 @@ void VerilatedSaif::popPrefix() {
     if (m_prefixStack.back().second != VerilatedTracePrefixType::ARRAY_UNPACKED
         && m_prefixStack.back().second != VerilatedTracePrefixType::ARRAY_PACKED
         && m_currentScope >= 0) {
-        m_currentScope = m_scopes.at(m_currentScope).getParentScopeIndex();
+        m_currentScope = m_scopes.at(m_currentScope).parentScopeIndex();
     }
 
     m_prefixStack.pop_back();
@@ -505,42 +505,42 @@ VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
-    activity.emitBit(m_owner.getCurrentTime(), newval);
+    activity.emitBit(m_owner.currentTime(), newval);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitCData(uint32_t code, CData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
-    activity.emitData<CData>(m_owner.getCurrentTime(), newval, bits);
+    activity.emitData<CData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitSData(uint32_t code, SData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
-    activity.emitData<SData>(m_owner.getCurrentTime(), newval, bits);
+    activity.emitData<SData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitIData(uint32_t code, IData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
-    activity.emitData<IData>(m_owner.getCurrentTime(), newval, bits);
+    activity.emitData<IData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitQData(uint32_t code, QData newval, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
-    activity.emitData<QData>(m_owner.getCurrentTime(), newval, bits);
+    activity.emitData<QData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
-    activity.emitWData(m_owner.getCurrentTime(), newvalp, bits);
+    activity.emitWData(m_owner.currentTime(), newvalp, bits);
 }
 
 VL_ATTR_ALWINLINE
