@@ -249,7 +249,7 @@ void VerilatedSaif::finalizeSaifFileContents() {
     printStr(")\n");
 
     incrementIndent();
-    for (const int32_t topScopeIndex : m_topScopes) { recursivelyPrintScopes(topScopeIndex); }
+    for (const int32_t topScopeIndex : m_topScopes) recursivelyPrintScopes(topScopeIndex);
     decrementIndent();
 
     printStr(")\n");  // SAIFILE
@@ -259,13 +259,10 @@ void VerilatedSaif::recursivelyPrintScopes(const uint32_t scopeIndex) {
     const VerilatedSaifActivityScope& scope = m_scopes.at(scopeIndex);
 
     openInstanceScope(scope.name());
-
     printScopeActivities(scope);
-
     for (uint32_t childScopeIndex : scope.childScopesIndices()) {
         recursivelyPrintScopes(childScopeIndex);
     }
-
     closeInstanceScope();
 }
 
@@ -291,7 +288,7 @@ void VerilatedSaif::printScopeActivities(const VerilatedSaifActivityScope& scope
         anyNetValid = printActivityStats(code, name, anyNetValid);
     }
 
-    if (anyNetValid) { closeNetScope(); }
+    if (anyNetValid) closeNetScope();
 }
 
 void VerilatedSaif::openNetScope() {
@@ -422,7 +419,7 @@ void VerilatedSaif::declare(const uint32_t code, const char* name, const char* w
 
     const std::string hierarchicalName = m_prefixStack.back().first + name;
 
-    if (!Super::declCode(code, hierarchicalName, bits)) { return; }
+    if (!Super::declCode(code, hierarchicalName, bits)) return;
 
     const size_t block_size = 1024;
     if (m_activityArena.empty()
