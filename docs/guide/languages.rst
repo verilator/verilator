@@ -451,17 +451,14 @@ disable
 force, release
   Verilator supports the procedural `force` (and corresponding `release`)
   statement. However, the behavior of the `force` statement does not
-  entirely comply with IEEE 1800:
+  entirely comply with IEEE 1800-2023:
   1. Using forced variable as a value to another force statement is currently
-     not supported. Force statement that depends on the other one is ignored.
-  2. Function calls on the RHS of force statements are not reevaluated when
-     their dependencies change. Value from first call is forced.
-  3. Forcing at time 0 from different active block immediately updates
-     forced variable.
-  4. Force/release with procedural continuous assignment is not supported.
-     Assignment is treated as procedural one.
-  5. Expressions using multiple VarRefs on forced RHS are not sensitive to
-     dependency changes.
+     not supported. The dependant force statement is forced by an initial
+     constant value.
+  2. Force/release with procedural continuous assignment is not supported.
+     Assignment is treated as a procedural one.
+  3. Expressions using multiple variable references or function calls on
+     forced right-hand side are not sensitive to dependency changes.
 
 inside
   Inside expressions may not include unpacked array traversal or $ as an

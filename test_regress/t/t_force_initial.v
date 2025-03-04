@@ -23,17 +23,16 @@ module t;
     a = 1;
     #1;
     `checkh(a, 1);
-    // TODO trigger forced variable update from different initial block.
     `checkh(b, 1);
 
-    a = 2;
+    a = 3;
     #1;
-    `checkh(a, 2);
-    `checkh(b, 2);
+    `checkh(a, 3);
+    `checkh(b, 3);
 
     release b;
-    `checkh(a, 2);
-    `checkh(b, 2);
+    `checkh(a, 3);
+    `checkh(b, 3);
 
     b = 0;
     #1;

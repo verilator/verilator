@@ -96,7 +96,7 @@ public:
                 AstAssign* const assignp = new AstAssign{flp, lhsp, rhsp};
                 AstActive* const activep = new AstActive{
                     flp, "force-init",
-                    new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Initial{}}}};
+                    new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Static{}}}};
                 activep->sensesStorep(activep->sensesp());
 
                 activep->addStmtsp(new AstInitial{flp, assignp});
