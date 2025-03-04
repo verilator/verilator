@@ -73,7 +73,9 @@ class SAIFParser:
         file_contents = ''
 
         with open(saif_filename, 'r', encoding="utf8") as saif_file:
-            file_contents = saif_file.read()
+            content = saif_file.readlines()
+            filtered_lines = [line for line in content if not line.strip().startswith('//')]
+            file_contents = ''.join(filtered_lines)
 
         tokens = file_contents.replace('(', ' ( ').replace(')', ' ) ').split()
         num_of_tokens = len(tokens)
