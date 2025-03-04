@@ -32,9 +32,9 @@ class VerilatedSaifBuffer;
 class VerilatedSaifFile;
 
 //=============================================================================
-// ActivityBit
+// VerilatedSaifActivityBit
 
-class ActivityBit final {
+class VerilatedSaifActivityBit final {
 public:
     // METHODS
     VL_ATTR_ALWINLINE
@@ -57,17 +57,17 @@ private:
 };
 
 //=============================================================================
-// ActivityVar
+// VerilatedSaifActivityVar
 
-class ActivityVar final {
+class VerilatedSaifActivityVar final {
 public:
     // CONSTRUCTORS
-    ActivityVar(uint32_t width, ActivityBit* bits)
+    VerilatedSaifActivityVar(uint32_t width, VerilatedSaifActivityBit* bits)
         : m_bits{bits}
         , m_width{width} {}
 
-    ActivityVar(ActivityVar&&) = default;
-    ActivityVar& operator=(ActivityVar&&) = default;
+    VerilatedSaifActivityVar(VerilatedSaifActivityVar&&) = default;
+    VerilatedSaifActivityVar& operator=(VerilatedSaifActivityVar&&) = default;
 
     // METHODS
     VL_ATTR_ALWINLINE void emitBit(uint64_t time, CData newval);
@@ -89,31 +89,31 @@ public:
 
     // ACCESSORS
     VL_ATTR_ALWINLINE uint32_t getWidth() const { return m_width; }
-    VL_ATTR_ALWINLINE ActivityBit& getBit(std::size_t index);
+    VL_ATTR_ALWINLINE VerilatedSaifActivityBit& getBit(std::size_t index);
     VL_ATTR_ALWINLINE uint64_t getLastUpdateTime() const { return m_lastTime; }
 
 private:
     // CONSTRUCTORS
-    VL_UNCOPYABLE(ActivityVar);
+    VL_UNCOPYABLE(VerilatedSaifActivityVar);
 
     // MEMBERS
     uint64_t m_lastTime{0};
-    ActivityBit* m_bits;
+    VerilatedSaifActivityBit* m_bits;
     uint32_t m_width;
 };
 
 //=============================================================================
-// ActivityScope
+// VerilatedSaifActivityScope
 
-class ActivityScope final {
+class VerilatedSaifActivityScope final {
 public:
     // CONSTRUCTORS
-    ActivityScope(std::string name, int32_t parentScopeIndex = -1)
+    VerilatedSaifActivityScope(std::string name, int32_t parentScopeIndex = -1)
         : m_scopeName{std::move(name)}
         , m_parentScopeIndex{parentScopeIndex} {}
 
-    ActivityScope(ActivityScope&&) = default;
-    ActivityScope& operator=(ActivityScope&&) = default;
+    VerilatedSaifActivityScope(VerilatedSaifActivityScope&&) = default;
+    VerilatedSaifActivityScope& operator=(VerilatedSaifActivityScope&&) = default;
 
     // METHODS
     VL_ATTR_ALWINLINE void addChildScopeIndex(int32_t index) {
@@ -137,7 +137,7 @@ public:
 
 private:
     // CONSTRUCTORS
-    VL_UNCOPYABLE(ActivityScope);
+    VL_UNCOPYABLE(VerilatedSaifActivityScope);
 
     // MEMBERS
     std::string m_scopeName{};
@@ -172,7 +172,7 @@ private:
     void recursivelyPrintScopes(uint32_t scopeIndex);
     void openInstanceScope(const std::string& instanceName);
     void closeInstanceScope();
-    void printScopeActivities(const ActivityScope& scope);
+    void printScopeActivities(const VerilatedSaifActivityScope& scope);
     void openNetScope();
     void closeNetScope();
     bool printActivityStats(uint32_t activityCode, const char* activityName, bool anyNetValid);
@@ -189,11 +189,11 @@ private:
     void clearCurrentlyCollectedData();
 
     int32_t m_currentScope{-1};
-    std::vector<ActivityScope> m_scopes{};
+    std::vector<VerilatedSaifActivityScope> m_scopes{};
     std::vector<int32_t> m_topScopes{};
 
-    std::unordered_map<uint32_t, ActivityVar> m_activity;
-    std::vector<std::vector<ActivityBit>> m_activityArena;
+    std::unordered_map<uint32_t, VerilatedSaifActivityVar> m_activity;
+    std::vector<std::vector<VerilatedSaifActivityBit>> m_activityArena;
 
     VL_ATTR_ALWINLINE uint64_t getCurrentTime() const { return m_totalTime - m_currentTimeOrigin; }
 
