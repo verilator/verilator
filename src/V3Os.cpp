@@ -310,6 +310,16 @@ bool V3Os::filenameIsRel(const string& filename) VL_PURE {
 #endif
 }
 
+string V3Os::filenameSlashPath(const string& path) VL_PURE {
+#if defined(_WIN32) || defined(__MINGW32__)
+    string slashedPath = path;
+    std::replace(slashedPath.begin(), slashedPath.end(), '\\', '/');
+    return slashedPath;
+#else
+    return path;
+#endif
+}
+
 //######################################################################
 // File utilities
 
