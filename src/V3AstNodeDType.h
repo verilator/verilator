@@ -51,7 +51,7 @@ protected:
 private:
     // METHODS
     const AstNodeDType* skipRefIterp(bool skipConst, bool skipEnum,
-                                     bool assert = true) const VL_MT_STABLE;
+                                     bool assertOn = true) const VL_MT_STABLE;
 
 protected:
     // METHODS

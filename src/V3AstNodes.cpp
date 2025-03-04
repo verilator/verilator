@@ -830,7 +830,7 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
 }
 
 const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
-                                               bool assert) const VL_MT_STABLE {
+                                               bool assertOn) const VL_MT_STABLE {
     const AstNodeDType* nodep = this;
     while (true) {
         if (VL_UNLIKELY(VN_IS(nodep, MemberDType) || VN_IS(nodep, ParamTypeDType)
@@ -841,7 +841,7 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
                 nodep = subp;
                 continue;
             } else {
-                if (assert) nodep->v3fatalSrc(nodep->prettyTypeName() << " not linked to type");
+                if (assertOn) nodep->v3fatalSrc(nodep->prettyTypeName() << " not linked to type");
                 return nullptr;
             }
         }

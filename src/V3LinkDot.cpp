@@ -2762,7 +2762,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (!lhsp->classOrPackageSkipp() && lhsp->name() != "local::") {
                     revisitLater(nodep);
                     m_ds = lastStates;
-                    if (auto* ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
+                    if (AstNodeFTaskRef* const ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
                         iterateAndNextNull(ftaskrefp->pinsp());
                     }
                     return;
@@ -2771,7 +2771,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // nodep->lhsp() may be a new node
                 if (AstClassOrPackageRef* const classOrPackageRefp
                     = VN_CAST(nodep->lhsp(), ClassOrPackageRef)) {
-                    if (AstNode* classOrPackageNodep = classOrPackageRefp->classOrPackageSkipp()) {
+                    if (AstNode* const classOrPackageNodep
+                        = classOrPackageRefp->classOrPackageSkipp()) {
                         m_ds.m_dotSymp = m_statep->getNodeSym(classOrPackageNodep);
                     }
                 }
@@ -2787,7 +2788,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (!crefp->classOrPackageSkipp()) {
                         revisitLater(nodep);
                         m_ds = lastStates;
-                        if (auto* ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
+                        if (AstNodeFTaskRef* const ftaskrefp
+                            = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
                             iterateAndNextNull(ftaskrefp->pinsp());
                         }
                         return;
@@ -2795,7 +2797,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
                 if (m_lastDeferredp == nodep->lhsp()) {
                     m_ds = lastStates;
-                    if (auto* ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
+                    if (AstNodeFTaskRef* const ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
                         iterateAndNextNull(ftaskrefp->pinsp());
                     }
                     return;
@@ -4385,7 +4387,7 @@ public:
         : m_statep{statep} {
         UINFO(4, __FUNCTION__ << ": " << endl);
         iterate(rootp);
-        auto modulesToRevisit = std::move(m_modulesToRevisit);
+        std::map<std::string, AstNodeModule*> modulesToRevisit = std::move(m_modulesToRevisit);
         m_lastDeferredp = nullptr;
         for (auto& p : modulesToRevisit) {
             AstNodeModule* const modp = p.second;
