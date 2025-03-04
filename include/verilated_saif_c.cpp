@@ -379,8 +379,7 @@ void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType
     std::string pname = name;
 
     if (m_prefixStack.back().second == VerilatedTracePrefixType::ROOTIO_MODULE) popPrefix();
-    if (pname.empty())
-    {
+    if (pname.empty()) {
         pname = "$rootio";
         type = VerilatedTracePrefixType::ROOTIO_MODULE;
     }
