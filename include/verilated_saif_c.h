@@ -36,9 +36,9 @@ class VerilatedSaifFile;
 
 class VerilatedSaifActivityBit final {
     // MEMBERS
-    bool m_lastVal = false; // last emitted activity bit value
-    uint64_t m_highTime = 0; // total time when bit was high
-    size_t m_transitions = 0; // total number of bit transitions
+    bool m_lastVal = false;  // last emitted activity bit value
+    uint64_t m_highTime = 0;  // total time when bit was high
+    size_t m_transitions = 0;  // total number of bit transitions
 
 public:
     // METHODS
@@ -60,9 +60,9 @@ public:
 
 class VerilatedSaifActivityVar final {
     // MEMBERS
-    uint64_t m_lastTime{0}; // last time when variable value was updated
-    VerilatedSaifActivityBit* m_bits; // pointer to variable bits objects
-    uint32_t m_width; // width of variable (in bits)
+    uint64_t m_lastTime{0};  // last time when variable value was updated
+    VerilatedSaifActivityBit* m_bits;  // pointer to variable bits objects
+    uint32_t m_width;  // width of variable (in bits)
 
 public:
     // CONSTRUCTORS
@@ -106,10 +106,11 @@ private:
 
 class VerilatedSaifActivityScope final {
     // MEMBERS
-    std::string m_scopeName{}; // name of the activity scope
-    std::vector<int32_t> m_childScopesIndices{}; // array indices of child scopes
-    std::vector<std::pair<uint32_t, std::string>> m_childActivities{}; // children signals codes mapped to their names in the current scope
-    int32_t m_parentScopeIndex{-1}; // array index of parent scope
+    std::string m_scopeName{};  // name of the activity scope
+    std::vector<int32_t> m_childScopesIndices{};  // array indices of child scopes
+    std::vector<std::pair<uint32_t, std::string>>
+        m_childActivities{};  // children signals codes mapped to their names in the current scope
+    int32_t m_parentScopeIndex{-1};  // array index of parent scope
 
 public:
     // CONSTRUCTORS
@@ -165,16 +166,18 @@ private:
     bool m_isOpen = false;  // True indicates open file
     std::string m_filename;  // Filename we're writing to (if open)
 
-    int m_indent = 0; // indentation size in spaces
+    int m_indent = 0;  // indentation size in spaces
 
-    int32_t m_currentScope{-1}; // currently active scope
-    std::vector<VerilatedSaifActivityScope> m_scopes{}; // array of declared scopes
-    std::vector<int32_t> m_topScopes{}; // array of top scopes
+    int32_t m_currentScope{-1};  // currently active scope
+    std::vector<VerilatedSaifActivityScope> m_scopes{};  // array of declared scopes
+    std::vector<int32_t> m_topScopes{};  // array of top scopes
 
-    std::unordered_map<uint32_t, VerilatedSaifActivityVar> m_activity; // map of variables codes mapped to their activity objects
-    std::vector<std::vector<VerilatedSaifActivityBit>> m_activityArena; // memory pool for signals bits objects
+    std::unordered_map<uint32_t, VerilatedSaifActivityVar>
+        m_activity;  // map of variables codes mapped to their activity objects
+    std::vector<std::vector<VerilatedSaifActivityBit>>
+        m_activityArena;  // memory pool for signals bits objects
 
-    uint64_t m_time{0}; // total time of the currently traced simulation
+    uint64_t m_time{0};  // total time of the currently traced simulation
 
     // stack of declared scopes combined names
     std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
@@ -238,7 +241,8 @@ public:
 
     // ACCESSORS
     // Set size in bytes after which new file should be created.
-    void rolloverSize(uint64_t size) VL_MT_SAFE { /* noop */ }
+    void rolloverSize(uint64_t size) VL_MT_SAFE { /* noop */
+    }
 
     // METHODS - All must be thread safe
     // Open the file; call isOpen() to see if errors
@@ -378,7 +382,8 @@ public:
     /// "cat" to be used to combine the header plus any number of data files.
     void openNext(bool incFilename = true) VL_MT_SAFE { m_sptrace.openNext(incFilename); }
 
-    void rolloverSize(size_t size) VL_MT_SAFE { /* noop */ }
+    void rolloverSize(size_t size) VL_MT_SAFE { /* noop */
+    }
 
     /// Close dump
     void close() VL_MT_SAFE {

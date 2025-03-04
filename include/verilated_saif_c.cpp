@@ -72,7 +72,8 @@ void VerilatedSaifActivityVar::emitBit(const uint64_t time, const CData newval) 
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifActivityVar::emitWData(const uint64_t time, const WData* newvalp, const uint32_t bits) {
+void VerilatedSaifActivityVar::emitWData(const uint64_t time, const WData* newvalp,
+                                         const uint32_t bits) {
     assert(m_lastTime <= time);
     const uint64_t dt = time - m_lastTime;
     for (std::size_t i = 0; i < std::min(m_width, bits); ++i) {
@@ -121,7 +122,7 @@ void VerilatedSaif::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     if (isOpen()) return;
 
     // Set member variables
-    m_filename = filename; // "" is ok, as someone may overload open
+    m_filename = filename;  // "" is ok, as someone may overload open
 
     initializeSaifFileContents();
 
@@ -144,9 +145,7 @@ void VerilatedSaif::initializeSaifFileContents() {
     printStr(")\n");
 }
 
-bool VerilatedSaif::preChangeDump() {
-    return isOpen();
-}
+bool VerilatedSaif::preChangeDump() { return isOpen(); }
 
 void VerilatedSaif::emitTimeChange(uint64_t timeui) { m_time = timeui; }
 
@@ -359,8 +358,9 @@ void VerilatedSaif::popPrefix() {
     m_prefixStack.pop_back();
 }
 
-void VerilatedSaif::declare(const uint32_t code, const char* name, const char* wirep, const bool array,
-                            const int arraynum, const bool bussed, const int msb, const int lsb) {
+void VerilatedSaif::declare(const uint32_t code, const char* name, const char* wirep,
+                            const bool array, const int arraynum, const bool bussed, const int msb,
+                            const int lsb) {
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
     const std::string hierarchicalName = m_prefixStack.back().first + name;
@@ -390,35 +390,41 @@ void VerilatedSaif::declare(const uint32_t code, const char* name, const char* w
                                                       m_activityArena.back().data() + bitsIdx});
 }
 
-void VerilatedSaif::declEvent(const uint32_t code, const uint32_t fidx, const char* name, const int dtypenum,
-                              const VerilatedTraceSigDirection, const VerilatedTraceSigKind,
-                              const VerilatedTraceSigType, const bool array, const int arraynum) {
+void VerilatedSaif::declEvent(const uint32_t code, const uint32_t fidx, const char* name,
+                              const int dtypenum, const VerilatedTraceSigDirection,
+                              const VerilatedTraceSigKind, const VerilatedTraceSigType,
+                              const bool array, const int arraynum) {
     declare(code, name, "event", array, arraynum, false, 0, 0);
 }
 
-void VerilatedSaif::declBit(const uint32_t code, const uint32_t fidx, const char* name, const int dtypenum,
-                            const VerilatedTraceSigDirection, const VerilatedTraceSigKind,
-                            const VerilatedTraceSigType, const bool array, const int arraynum) {
+void VerilatedSaif::declBit(const uint32_t code, const uint32_t fidx, const char* name,
+                            const int dtypenum, const VerilatedTraceSigDirection,
+                            const VerilatedTraceSigKind, const VerilatedTraceSigType,
+                            const bool array, const int arraynum) {
     declare(code, name, "wire", array, arraynum, false, 0, 0);
 }
-void VerilatedSaif::declBus(const uint32_t code, const uint32_t fidx, const char* name, const int dtypenum,
-                            const VerilatedTraceSigDirection, const VerilatedTraceSigKind,
-                            const VerilatedTraceSigType, const bool array, const int arraynum, const int msb, const int lsb) {
+void VerilatedSaif::declBus(const uint32_t code, const uint32_t fidx, const char* name,
+                            const int dtypenum, const VerilatedTraceSigDirection,
+                            const VerilatedTraceSigKind, const VerilatedTraceSigType,
+                            const bool array, const int arraynum, const int msb, const int lsb) {
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declQuad(const uint32_t code, const uint32_t fidx, const char* name, const int dtypenum,
-                             const VerilatedTraceSigDirection, const VerilatedTraceSigKind,
-                             const VerilatedTraceSigType, const bool array, const int arraynum, const int msb, const int lsb) {
+void VerilatedSaif::declQuad(const uint32_t code, const uint32_t fidx, const char* name,
+                             const int dtypenum, const VerilatedTraceSigDirection,
+                             const VerilatedTraceSigKind, const VerilatedTraceSigType,
+                             const bool array, const int arraynum, const int msb, const int lsb) {
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declArray(const uint32_t code, const uint32_t fidx, const char* name, const int dtypenum,
-                              const VerilatedTraceSigDirection, const VerilatedTraceSigKind,
-                              const VerilatedTraceSigType, const bool array, const int arraynum, const int msb, const int lsb) {
+void VerilatedSaif::declArray(const uint32_t code, const uint32_t fidx, const char* name,
+                              const int dtypenum, const VerilatedTraceSigDirection,
+                              const VerilatedTraceSigKind, const VerilatedTraceSigType,
+                              const bool array, const int arraynum, const int msb, const int lsb) {
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declDouble(const uint32_t code, const uint32_t fidx, const char* name, const int dtypenum,
-                               const VerilatedTraceSigDirection, const VerilatedTraceSigKind,
-                               const VerilatedTraceSigType, const bool array, const int arraynum) {
+void VerilatedSaif::declDouble(const uint32_t code, const uint32_t fidx, const char* name,
+                               const int dtypenum, const VerilatedTraceSigDirection,
+                               const VerilatedTraceSigKind, const VerilatedTraceSigType,
+                               const bool array, const int arraynum) {
     declare(code, name, "real", array, arraynum, false, 63, 0);
 }
 
