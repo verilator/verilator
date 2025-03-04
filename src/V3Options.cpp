@@ -1824,10 +1824,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         addIncDirUser(parseFileArg(optdir, string{valp}));
     });
 
-    if (m_systemC && m_traceFormat == TraceFormat::SAIF) {
-        fl->v3warn(E_UNSUPPORTED, "Unsupported: SAIF trace with SystemC.");
-    }
-
     parser.finalize();
 
     for (int i = 0; i < argc;) {
