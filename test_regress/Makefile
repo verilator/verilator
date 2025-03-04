@@ -47,10 +47,13 @@ SCENARIOS ?= --vlt --vltmt --dist
 DRIVER_HASHSET ?=
 
 .PHONY: test
-test:
+test: manifest
 	$(PYTHON3) driver.py $(DRIVER_FLAGS) $(SCENARIOS) $(DRIVER_HASHSET)
 
 ######################################################################
+
+manifest:
+	$(VERILATOR_ROOT)/bin/verilator -cc --make json -j t/t_x_assign.v && cat obj_dir/Vt_x_assign.json | jq '.version' | sed -n '/^[[:digit:]]\+$$/!q1'
 
 vcs:
 	$(PYTHON3) driver.py $(DRIVER_FLAGS) --vcs --stop

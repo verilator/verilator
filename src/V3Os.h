@@ -59,6 +59,8 @@ public:
     static string filenameRelativePath(const string& filename, const string& base) VL_PURE;
     ///< @return filename is relative
     static bool filenameIsRel(const string& filename) VL_PURE;
+    ///< @return path slashed with '/'
+    static string filenameSlashPath(const string& filename) VL_PURE;
 
     // METHODS (file utilities)
     static string getline(std::istream& is, char delim = '\n');

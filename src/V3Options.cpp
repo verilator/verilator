@@ -851,7 +851,7 @@ void V3Options::notify() VL_MT_DISABLED {
                 "--xml-only, --json-only or --E option");
     }
 
-    if (m_build && (m_gmake || m_cmake)) {
+    if (m_build && (m_gmake || m_cmake || m_makeJson)) {
         cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
@@ -883,7 +883,7 @@ void V3Options::notify() VL_MT_DISABLED {
     }
 
     // Make sure at least one make system is enabled
-    if (!m_gmake && !m_cmake) m_gmake = true;
+    if (!m_gmake && !m_cmake && !m_makeJson) m_gmake = true;
 
     if (m_hierarchical && (m_hierChild || !m_hierBlocks.empty())) {
         cmdfl->v3error(
@@ -1441,6 +1441,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             m_cmake = true;
         } else if (!std::strcmp(valp, "gmake")) {
             m_gmake = true;
+        } else if (!std::strcmp(valp, "json")) {
+            m_makeJson = true;
         } else {
             fl->v3fatal("Unknown --make system specified: '" << valp << "'");
         }
