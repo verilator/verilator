@@ -121,68 +121,15 @@ void VerilatedSaif::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     if (isOpen()) return;
 
     // Set member variables
-    m_filename = filename;  // "" is ok, as someone may overload open
+    m_filename = filename; // "" is ok, as someone may overload open
 
-    openNextImp(m_rolloverSize != 0);
-    if (!isOpen()) return;
-
-    m_currentTimeOrigin = m_totalTime;
     initializeSaifFileContents();
 
     Super::traceInit();
-
-    // When using rollover, the first chunk contains the header only.
-    if (m_rolloverSize) openNextImp(true);
 }
 
 void VerilatedSaif::openNext(bool incFilename) VL_MT_SAFE_EXCLUDES(m_mutex) {
-    // Open next filename in concat sequence, mangle filename if
-    // incFilename is true.
-    const VerilatedLockGuard lock{m_mutex};
-    openNextImp(incFilename);
-}
-
-void VerilatedSaif::openNextImp(bool incFilename) {
-    closePrev();  // Close existing
-    if (incFilename) {
-        // Find _0000.{ext} in filename
-        std::string name = m_filename;
-        const size_t pos = name.rfind('.');
-        if (pos > 8 && 0 == std::strncmp("_cat", name.c_str() + pos - 8, 4)
-            && std::isdigit(name.c_str()[pos - 4]) && std::isdigit(name.c_str()[pos - 3])
-            && std::isdigit(name.c_str()[pos - 2]) && std::isdigit(name.c_str()[pos - 1])) {
-            // Increment code.
-            if ((++(name[pos - 1])) > '9') {
-                name[pos - 1] = '0';
-                if ((++(name[pos - 2])) > '9') {
-                    name[pos - 2] = '0';
-                    if ((++(name[pos - 3])) > '9') {
-                        name[pos - 3] = '0';
-                        if ((++(name[pos - 4])) > '9') {  //
-                            name[pos - 4] = '0';
-                        }
-                    }
-                }
-            }
-        } else {
-            // Append _cat0000
-            name.insert(pos, "_cat0000");
-        }
-        m_filename = name;
-    }
-    if (VL_UNCOVERABLE(m_filename[0] == '|')) {
-        assert(0);  // LCOV_EXCL_LINE // Not supported yet.
-    } else {
-        // cppcheck-suppress duplicateExpression
-        if (!m_filep->open(m_filename)) {
-            // User code can check isOpen()
-            m_isOpen = false;
-            return;
-        }
-    }
-    m_isOpen = true;
-    constDump(true);  // First dump must containt the const signals
-    fullDump(true);  // First dump must be full
+    // noop, SAIF only needs one file per trace
 }
 
 void VerilatedSaif::initializeSaifFileContents() {
@@ -198,11 +145,10 @@ void VerilatedSaif::initializeSaifFileContents() {
 }
 
 bool VerilatedSaif::preChangeDump() {
-    if (VL_UNLIKELY(m_rolloverSize)) openNextImp(true);
     return isOpen();
 }
 
-void VerilatedSaif::emitTimeChange(uint64_t timeui) { m_totalTime = timeui; }
+void VerilatedSaif::emitTimeChange(uint64_t timeui) { m_time = timeui; }
 
 VerilatedSaif::~VerilatedSaif() {
     close();

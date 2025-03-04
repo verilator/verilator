@@ -164,7 +164,6 @@ private:
     bool m_fileNewed;  // m_filep needs destruction
     bool m_isOpen = false;  // True indicates open file
     std::string m_filename;  // Filename we're writing to (if open)
-    uint64_t m_rolloverSize = 0;  // File size to rollover at
 
     int m_indent = 0; // indentation size in spaces
 
@@ -175,15 +174,14 @@ private:
     std::unordered_map<uint32_t, VerilatedSaifActivityVar> m_activity; // map of variables codes mapped to their activity objects
     std::vector<std::vector<VerilatedSaifActivityBit>> m_activityArena; // memory pool for signals bits objects
 
-    uint64_t m_totalTime{0}; // total time of the currently traced simulation
-    uint64_t m_currentTimeOrigin{0};
+    uint64_t m_time{0}; // total time of the currently traced simulation
 
     // stack of declared scopes combined names
     std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
         {"", VerilatedTracePrefixType::SCOPE_MODULE}};
 
     // METHODS
-    VL_ATTR_ALWINLINE uint64_t currentTime() const { return m_totalTime - m_currentTimeOrigin; }
+    VL_ATTR_ALWINLINE uint64_t currentTime() const { return m_time; }
 
     void initializeSaifFileContents();
     void finalizeSaifFileContents();
@@ -204,7 +202,6 @@ private:
 
     void clearCurrentlyCollectedData();
 
-    void openNextImp(bool incFilename);
     void closePrev();
     void closeErr();
     void declare(uint32_t code, const char* name, const char* wirep, bool array, int arraynum,
@@ -241,7 +238,7 @@ public:
 
     // ACCESSORS
     // Set size in bytes after which new file should be created.
-    void rolloverSize(uint64_t size) VL_MT_SAFE { m_rolloverSize = size; }
+    void rolloverSize(uint64_t size) VL_MT_SAFE { /* noop */ }
 
     // METHODS - All must be thread safe
     // Open the file; call isOpen() to see if errors
@@ -380,12 +377,9 @@ public:
     /// The header is only in the first file created, this allows
     /// "cat" to be used to combine the header plus any number of data files.
     void openNext(bool incFilename = true) VL_MT_SAFE { m_sptrace.openNext(incFilename); }
-    /// Set size in bytes after which new file should be created
-    /// This will create a header file, followed by each separate file
-    /// which might be larger than the given size (due to chunking and
-    /// alignment to a start of a given time's dump).  Any file but the
-    /// first may be removed.  Cat files together to create viewable saif.
-    void rolloverSize(size_t size) VL_MT_SAFE { m_sptrace.rolloverSize(size); }
+
+    void rolloverSize(size_t size) VL_MT_SAFE { /* noop */ }
+
     /// Close dump
     void close() VL_MT_SAFE {
         m_sptrace.close();
