@@ -17,7 +17,7 @@ EOF_ERROR = "Unexpected EOF"
 def saif_assert(expression, message):
     if not expression:
         raise Exception(message)
-    
+
 def saif_error(message):
     raise Exception(message)
 
@@ -60,7 +60,7 @@ class SAIFParser:
         self.token_stack.append(SAIFToken('saif_root'))
 
         self.current_instance = None
-        
+
         self.has_saifile_header = False
         self.direction = ''
         self.saif_version = ''
@@ -199,7 +199,7 @@ class SAIFParser:
                 # noop, only skip value
                 index += 1
                 continue
-            
+
             if self.token_stack[-2].type == NET_LIST_TYPE:
                 self.token_stack[-1].type = SIGNAL_TYPE
                 self.token_stack[-1].value = token
@@ -212,7 +212,7 @@ class SAIFParser:
         # only 'saif_root' token should be left
         saif_assert(len(self.token_stack) == 1, "Incorrect nesting of scopes")
 
-                        
+
 def compare_saif_instances(first: SAIFInstance, second: SAIFInstance):
     if len(first.nets) != len(second.nets):
         saif_error(f"Number of nets doesn't match in {first.scope_name}: "
