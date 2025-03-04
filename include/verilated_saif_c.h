@@ -130,8 +130,7 @@ public:
         return m_childScopesIndices;
     }
     VL_ATTR_ALWINLINE
-    const std::vector<std::pair<uint32_t, std::string>>&
-    childActivities() const {
+    const std::vector<std::pair<uint32_t, std::string>>& childActivities() const {
         return m_childActivities;
     }
     VL_ATTR_ALWINLINE int32_t parentScopeIndex() const { return m_parentScopeIndex; }
