@@ -116,6 +116,9 @@ class CMakeEmitter final {
         *of << "# FST Tracing output mode? 0/1 (from --trace-fst)\n";
         cmake_set_raw(*of, name + "_TRACE_FST",
                       (v3Global.opt.trace() && v3Global.opt.traceFormat().fst()) ? "1" : "0");
+        *of << "# SAIF Tracing output mode? 0/1 (from --trace-saif)\n";
+        cmake_set_raw(*of, name + "_TRACE_SAIF",
+                      (v3Global.opt.trace() && v3Global.opt.traceFormat().saif()) ? "1" : "0");
 
         *of << "\n### Sources...\n";
         std::vector<string> classes_fast;
