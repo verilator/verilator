@@ -2762,6 +2762,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (!lhsp->classOrPackageSkipp() && lhsp->name() != "local::") {
                     revisitLater(nodep);
                     m_ds = lastStates;
+                    // Resolve function args before bailing
                     if (AstNodeFTaskRef* const ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
                         iterateAndNextNull(ftaskrefp->pinsp());
                     }
@@ -2788,6 +2789,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (!crefp->classOrPackageSkipp()) {
                         revisitLater(nodep);
                         m_ds = lastStates;
+                        // Resolve function args before bailing
                         if (AstNodeFTaskRef* const ftaskrefp
                             = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
                             iterateAndNextNull(ftaskrefp->pinsp());
@@ -2796,7 +2798,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                 }
                 if (m_lastDeferredp == nodep->lhsp()) {
+                    // LHS got deferred, so this node won't be resolved. Defer it too
                     m_ds = lastStates;
+                    // Resolve function args before bailing
                     if (AstNodeFTaskRef* const ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
                         iterateAndNextNull(ftaskrefp->pinsp());
                     }
