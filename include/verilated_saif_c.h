@@ -81,7 +81,7 @@ public:
         static_assert(std::is_integral<DataType>::value,
                       "The emitted value must be of integral type");
 
-        uint64_t dt = time - m_lastTime;
+        const uint64_t dt = time - m_lastTime;
         for (size_t i = 0; i < std::min(m_width, bits); i++) {
             m_bits[i].aggregateVal(dt, (newval >> i) & 1);
         }

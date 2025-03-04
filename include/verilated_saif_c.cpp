@@ -65,25 +65,25 @@
 // VerilatedSaifActivityVar
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifActivityVar::emitBit(uint64_t time, CData newval) {
+void VerilatedSaifActivityVar::emitBit(const uint64_t time, const CData newval) {
     assert(m_lastTime <= time);
     m_bits[0].aggregateVal(time - m_lastTime, newval);
     updateLastTime(time);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifActivityVar::emitWData(uint64_t time, const WData* newvalp, uint32_t bits) {
+void VerilatedSaifActivityVar::emitWData(const uint64_t time, const WData* newvalp, const uint32_t bits) {
     assert(m_lastTime <= time);
-    uint64_t dt = time - m_lastTime;
+    const uint64_t dt = time - m_lastTime;
     for (std::size_t i = 0; i < std::min(m_width, bits); ++i) {
-        size_t wordIndex = i / VL_EDATASIZE;
+        const size_t wordIndex = i / VL_EDATASIZE;
         m_bits[i].aggregateVal(dt, (newvalp[wordIndex] >> VL_BITBIT_E(i)) & 1);
     }
 
     updateLastTime(time);
 }
 
-VerilatedSaifActivityBit& VerilatedSaifActivityVar::bit(std::size_t index) {
+VerilatedSaifActivityBit& VerilatedSaifActivityVar::bit(const std::size_t index) {
     assert(index < m_width);
     return m_bits[index];
 }
@@ -249,13 +249,13 @@ void VerilatedSaif::finalizeSaifFileContents() {
     printStr(")\n");
 
     incrementIndent();
-    for (int32_t topScopeIndex : m_topScopes) { recursivelyPrintScopes(topScopeIndex); }
+    for (const int32_t topScopeIndex : m_topScopes) { recursivelyPrintScopes(topScopeIndex); }
     decrementIndent();
 
     printStr(")\n");  // SAIFILE
 }
 
-void VerilatedSaif::recursivelyPrintScopes(uint32_t scopeIndex) {
+void VerilatedSaif::recursivelyPrintScopes(const uint32_t scopeIndex) {
     const VerilatedSaifActivityScope& scope = m_scopes.at(scopeIndex);
 
     openInstanceScope(scope.name());
@@ -285,9 +285,9 @@ void VerilatedSaif::closeInstanceScope() {
 
 void VerilatedSaif::printScopeActivities(const VerilatedSaifActivityScope& scope) {
     bool anyNetValid{false};
-    for (auto& childSignal : scope.childActivities()) {
-        uint32_t code = childSignal.first;
-        const char* name = childSignal.second.c_str();
+    for (const auto& childSignal : scope.childActivities()) {
+        const uint32_t code = childSignal.first;
+        const char* const name = childSignal.second.c_str();
         anyNetValid = printActivityStats(code, name, anyNetValid);
     }
 
@@ -306,10 +306,10 @@ void VerilatedSaif::closeNetScope() {
     printStr(")\n");
 }
 
-bool VerilatedSaif::printActivityStats(uint32_t activityCode, const char* activityName,
+bool VerilatedSaif::printActivityStats(const uint32_t activityCode, const char* activityName,
                                        bool anyNetValid) {
     VerilatedSaifActivityVar& activity = m_activity.at(activityCode);
-    for (size_t i = 0; i < activity.width(); i++) {
+    for (size_t i = 0; i < activity.width(); ++i) {
         VerilatedSaifActivityBit& bit = activity.bit(i);
 
         if (bit.toggleCount() <= 0) {
@@ -387,7 +387,7 @@ void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType
 
     if (type != VerilatedTracePrefixType::ARRAY_UNPACKED
         && type != VerilatedTracePrefixType::ARRAY_PACKED) {
-        int32_t newScopeIndex = m_scopes.size();
+        const int32_t newScopeIndex = m_scopes.size();
         if (m_currentScope >= 0) {
             m_scopes.at(m_currentScope).addChildScopeIndex(newScopeIndex);
         } else {
@@ -416,11 +416,11 @@ void VerilatedSaif::popPrefix() {
     m_prefixStack.pop_back();
 }
 
-void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, bool array,
-                            int arraynum, bool bussed, int msb, int lsb) {
+void VerilatedSaif::declare(const uint32_t code, const char* name, const char* wirep, const bool array,
+                            const int arraynum, const bool bussed, const int msb, const int lsb) {
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
-    std::string hierarchicalName = m_prefixStack.back().first + name;
+    const std::string hierarchicalName = m_prefixStack.back().first + name;
 
     if (!Super::declCode(code, hierarchicalName, bits)) { return; }
 
@@ -430,7 +430,7 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
         m_activityArena.emplace_back();
         m_activityArena.back().reserve(block_size);
     }
-    size_t bitsIdx = m_activityArena.back().size();
+    const size_t bitsIdx = m_activityArena.back().size();
     m_activityArena.back().resize(m_activityArena.back().size() + bits);
 
     std::string finalName = lastWord(hierarchicalName);
@@ -447,35 +447,35 @@ void VerilatedSaif::declare(uint32_t code, const char* name, const char* wirep, 
                                                       m_activityArena.back().data() + bitsIdx});
 }
 
-void VerilatedSaif::declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                              VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                              VerilatedTraceSigType, bool array, int arraynum) {
+void VerilatedSaif::declEvent(const uint32_t code, const uint32_t fidx, const char* name, const int dtypenum,
+                              const VerilatedTraceSigDirection, const VerilatedTraceSigKind,
+                              const VerilatedTraceSigType, const bool array, const int arraynum) {
     declare(code, name, "event", array, arraynum, false, 0, 0);
 }
 
-void VerilatedSaif::declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                            VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                            VerilatedTraceSigType, bool array, int arraynum) {
+void VerilatedSaif::declBit(const uint32_t code, const uint32_t fidx, const char* name, const int dtypenum,
+                            const VerilatedTraceSigDirection, const VerilatedTraceSigKind,
+                            const VerilatedTraceSigType, const bool array, const int arraynum) {
     declare(code, name, "wire", array, arraynum, false, 0, 0);
 }
-void VerilatedSaif::declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                            VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                            VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
+void VerilatedSaif::declBus(const uint32_t code, const uint32_t fidx, const char* name, const int dtypenum,
+                            const VerilatedTraceSigDirection, const VerilatedTraceSigKind,
+                            const VerilatedTraceSigType, const bool array, const int arraynum, const int msb, const int lsb) {
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                             VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                             VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
+void VerilatedSaif::declQuad(const uint32_t code, const uint32_t fidx, const char* name, const int dtypenum,
+                             const VerilatedTraceSigDirection, const VerilatedTraceSigKind,
+                             const VerilatedTraceSigType, const bool array, const int arraynum, const int msb, const int lsb) {
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                              VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                              VerilatedTraceSigType, bool array, int arraynum, int msb, int lsb) {
+void VerilatedSaif::declArray(const uint32_t code, const uint32_t fidx, const char* name, const int dtypenum,
+                              const VerilatedTraceSigDirection, const VerilatedTraceSigKind,
+                              const VerilatedTraceSigType, const bool array, const int arraynum, const int msb, const int lsb) {
     declare(code, name, "wire", array, arraynum, true, msb, lsb);
 }
-void VerilatedSaif::declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
-                               VerilatedTraceSigDirection, VerilatedTraceSigKind,
-                               VerilatedTraceSigType, bool array, int arraynum) {
+void VerilatedSaif::declDouble(const uint32_t code, const uint32_t fidx, const char* name, const int dtypenum,
+                               const VerilatedTraceSigDirection, const VerilatedTraceSigKind,
+                               const VerilatedTraceSigType, const bool array, const int arraynum) {
     declare(code, name, "real", array, arraynum, false, 63, 0);
 }
 
@@ -497,53 +497,53 @@ void VerilatedSaif::commitTraceBuffer(VerilatedSaif::Buffer* bufp) { delete bufp
 // so always inline them.
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifBuffer::emitEvent(uint32_t code) {
+void VerilatedSaifBuffer::emitEvent(const uint32_t code) {
     // Noop
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifBuffer::emitBit(uint32_t code, CData newval) {
+void VerilatedSaifBuffer::emitBit(const uint32_t code, const CData newval) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
     activity.emitBit(m_owner.currentTime(), newval);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifBuffer::emitCData(uint32_t code, CData newval, int bits) {
+void VerilatedSaifBuffer::emitCData(const uint32_t code, const CData newval, const int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
     activity.emitData<CData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifBuffer::emitSData(uint32_t code, SData newval, int bits) {
+void VerilatedSaifBuffer::emitSData(const uint32_t code, const SData newval, const int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
     activity.emitData<SData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifBuffer::emitIData(uint32_t code, IData newval, int bits) {
+void VerilatedSaifBuffer::emitIData(const uint32_t code, const IData newval, const int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
     activity.emitData<IData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifBuffer::emitQData(uint32_t code, QData newval, int bits) {
+void VerilatedSaifBuffer::emitQData(const uint32_t code, const QData newval, const int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
     activity.emitData<QData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifBuffer::emitWData(uint32_t code, const WData* newvalp, int bits) {
+void VerilatedSaifBuffer::emitWData(const uint32_t code, const WData* newvalp, const int bits) {
     assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
     activity.emitWData(m_owner.currentTime(), newvalp, bits);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifBuffer::emitDouble(uint32_t code, double newval) {
+void VerilatedSaifBuffer::emitDouble(const uint32_t code, const double newval) {
     // Noop
 }
