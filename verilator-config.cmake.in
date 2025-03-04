@@ -19,7 +19,7 @@
 #
 ######################################################################
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.19)
 
 # Prefer VERILATOR_ROOT from environment
 if(DEFINED ENV{VERILATOR_ROOT})
@@ -156,6 +156,81 @@ define_property(
     FULL_DOCS "Verilator trace structs enabled"
 )
 
+function(json_get_string RET JSON SECTION VARIABLE)
+    string(JSON JV ERROR_VARIABLE STATUS GET "${JSON}" ${SECTION} ${VARIABLE})
+    if (NOT ${STATUS} STREQUAL "NOTFOUND")
+        set(JV "")
+    endif()
+    set(${RET} ${JV} PARENT_SCOPE)
+endfunction()
+
+function(json_get_bool RET JSON SECTION VARIABLE)
+    string(JSON JV GET "${JSON}" ${SECTION} ${VARIABLE})
+    if(JV)
+        set(${RET} 1 PARENT_SCOPE)
+    else()
+        set(${RET} 0 PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(json_get_int RET JSON SECTION VARIABLE)
+    string(JSON JV GET "${JSON}" ${SECTION} ${VARIABLE})
+    set(${RET} ${JV} PARENT_SCOPE)
+endfunction()
+
+function(json_get_trace RET_VCD RET_FST JSON SECTION VARIABLE)
+    string(JSON JV GET "${JSON}" ${SECTION} ${VARIABLE})
+    if(JV STREQUAL "vcd")
+        set(${RET_VCD} 1 PARENT_SCOPE)
+        set(${RET_FST} 0 PARENT_SCOPE)
+    elseif(JV STREQUAL "fst")
+        set(${RET_VCD} 0 PARENT_SCOPE)
+        set(${RET_FST} 1 PARENT_SCOPE)
+    else()
+        set(${RET_VCD} 0 PARENT_SCOPE)
+        set(${RET_FST} 0 PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(json_get_submodules SUBMODULES NSUBMODULES JSON)
+    string(JSON JV ERROR_VARIABLE STATUS GET "${JSON}" submodules)
+
+    if (NOT ${STATUS} STREQUAL "NOTFOUND")
+        set(${SUBMODULES} "" PARENT_SCOPE)
+        set(${NSUBMODULES} 0 PARENT_SCOPE)
+        return()
+    endif()
+
+    string(JSON L ERROR_VARIABLE STATUS LENGTH "${JSON}" submodules)
+
+    math(EXPR L "${L}-1")
+
+    set(${SUBMODULES} ${JV} PARENT_SCOPE)
+    set(${NSUBMODULES} ${L} PARENT_SCOPE)
+endfunction()
+
+function(json_get_list RET JSON SECTION VARIABLE)
+    string(JSON L ERROR_VARIABLE STATUS LENGTH "${JSON}" ${SECTION} ${VARIABLE})
+
+    if (NOT ${STATUS} STREQUAL "NOTFOUND" OR NOT ${L})
+        set(${RET} "" PARENT_SCOPE)
+        return()
+    endif()
+
+    math(EXPR L "${L}-1")
+
+    foreach(I RANGE ${L})
+        string(JSON JV GET "${JSON}" ${SECTION} ${VARIABLE} ${I})
+        if(NOT JL)
+            string(APPEND JL "${JV}")
+        else()
+            string(APPEND JL " ${JV}")
+        endif()
+    endforeach()
+
+    set(${RET} ${JL} PARENT_SCOPE)
+endfunction()
+
 function(verilate TARGET)
     cmake_parse_arguments(
         VERILATE
@@ -283,7 +358,7 @@ function(verilate TARGET)
         --Mdir
         ${VDIR}
         --make
-        cmake
+        json
         ${VERILATOR_ARGS}
         ${VERILATE_VERILATOR_ARGS}
         ${VERILATE_SOURCES}
@@ -326,6 +401,127 @@ function(verilate TARGET)
                 "Verilator command failed (return code=${_VERILATOR_RC})"
             )
         endif()
+
+        file(READ ${VDIR}/${VERILATE_PREFIX}.json MANIFEST)
+
+        json_get_string(JSYSTEM_PERL "${MANIFEST}" system perl)
+        json_get_string(JSYSTEM_PYTHON3 "${MANIFEST}" system python3)
+        json_get_string(JSYSTEM_VERILATOR_ROOT "${MANIFEST}" system verilator_root)
+        json_get_string(JSYSTEM_VERILATOR_SOLVER "${MANIFEST}" system verilator_solver)
+
+        json_get_list(JOPTIONS_CFLAGS "${MANIFEST}" options cflags)
+        json_get_list(JOPTIONS_LDFLAGS "${MANIFEST}" options ldflags)
+        json_get_bool(JOPTIONS_SYSTEM_C "${MANIFEST}" options system_c)
+        json_get_bool(JOPTIONS_COVERAGE "${MANIFEST}" options coverage)
+        json_get_bool(JOPTIONS_USE_TIMING "${MANIFEST}" options use_timing)
+        json_get_int(JOPTIONS_THREADS "${MANIFEST}" options threads)
+        json_get_trace(JOPTIONS_TRACE_VCD JOPTIONS_TRACE_FST "${MANIFEST}" options trace)
+
+        json_get_list(JSOURCES_GLOBAL "${MANIFEST}" sources global)
+        json_get_list(JSOURCES_CLASSES_SLOW "${MANIFEST}" sources classes_slow)
+        json_get_list(JSOURCES_CLASSES_FAST "${MANIFEST}" sources classes_fast)
+        json_get_list(JSOURCES_SUPPORT_SLOW "${MANIFEST}" sources support_slow)
+        json_get_list(JSOURCES_SUPPORT_FAST "${MANIFEST}" sources support_fast)
+        json_get_list(JSOURCES_USER_CLASSES "${MANIFEST}" sources user_classes)
+
+        file(WRITE ${VDIR}/${VERILATE_PREFIX}.cmake
+            "# Verilated -*- CMake -*-\n"
+            "# DESCRIPTION: Verilator output: CMake include script with class lists\n"
+            "#\n"
+            "# This CMake script lists generated Verilated files, for including in higher level CMake scripts.\n"
+            "# This file is meant to be consumed by the verilate() function,\n"
+            "# which becomes available after executing `find_package(verilator).\n\n"
+            "### Constants...\n"
+            "set(PERL \"${JSYSTEM_PERL}\" CACHE FILEPATH \"Perl executable (from \$PERL, defaults to 'perl' if not set)\")\n"
+            "set(PYTHON3 \"${JSYSTEM_PYTHON3}\" CACHE FILEPATH \"Python3 executable (from \$PYTHON3, defaults to 'python3' if not set)\")\n"
+            "set(VERILATOR_ROOT \"${JSYSTEM_VERILATOR_ROOT}\" CACHE PATH \"Path to Verilator kit (from $VERILATOR_ROOT)\")\n"
+            "set(VERILATOR_SOLVER \"${JSYSTEM_VERILATOR_SOLVER}\" CACHE STRING \"Default SMT solver for constrained randomization (from \$VERILATOR_SOLVER)\")\n\n"
+            "### Compiler flags...\n"
+            "# User CFLAGS (from -CFLAGS on Verilator command line)\n"
+            "set(${VERILATE_PREFIX}_USER_CFLAGS ${JOPTIONS_CFLAGS})\n"
+            "# User LDLIBS (from -LDFLAGS on Verilator command line)\n"
+            "set(${VERILATE_PREFIX}_USER_LDLIBS ${JOPTIONS_LDFLAGS})\n\n"
+            "### Switches...\n"
+            "# SystemC output mode?  0/1 (from --sc)\n"
+            "set(${VERILATE_PREFIX}_SC ${JOPTIONS_SYSTEM_C})\n"
+            "# Coverage output mode?  0/1 (from --coverage)\n"
+            "set(${VERILATE_PREFIX}_COVERAGE ${JOPTIONS_COVERAGE})\n"
+            "# Timing mode?  0/1\n"
+            "set(${VERILATE_PREFIX}_TIMING ${JOPTIONS_USE_TIMING})\n"
+            "# Threaded output mode?  1/N threads (from --threads)\n"
+            "set(${VERILATE_PREFIX}_THREADS ${JOPTIONS_THREADS})\n"
+            "# VCD Tracing output mode?  0/1 (from --trace)\n"
+            "set(${VERILATE_PREFIX}_TRACE_VCD ${JOPTIONS_TRACE_VCD})\n"
+            "# FST Tracing output mode? 0/1 (from --trace-fst)\n"
+            "set(${VERILATE_PREFIX}_TRACE_FST ${JOPTIONS_TRACE_FST})\n\n"
+            "### Sources...\n"
+            "# Global classes, need linked once per executable\n"
+            "set(${VERILATE_PREFIX}_GLOBAL ${JSOURCES_GLOBAL})\n"
+            "# Generated module classes, non-fast-path, compile with low/medium optimization\n"
+            "set(${VERILATE_PREFIX}_CLASSES_SLOW ${JSOURCES_CLASSES_SLOW})\n"
+            "# Generated module classes, fast-path, compile with highest optimization\n"
+            "set(${VERILATE_PREFIX}_CLASSES_FAST ${JSOURCES_CLASSES_FAST})\n"
+            "# Generated support classes, non-fast-path, compile with low/medium optimization\n"
+            "set(${VERILATE_PREFIX}_SUPPORT_SLOW ${JSOURCES_SUPPORT_SLOW})\n"
+            "# Generated support classes, fast-path, compile with highest optimization\n"
+            "set(${VERILATE_PREFIX}_SUPPORT_FAST ${JSOURCES_SUPPORT_FAST})\n"
+            "# All dependencies\n"
+            "set(${VERILATE_PREFIX}_DEPS ${JSOURCES_DEPS})\n"
+            "# User .cpp files (from .cpp's on Verilator command line)\n"
+            "set(${VERILATE_PREFIX}_USER_CLASSES ${JSOURCES_USER_CLASSES})\n"
+        )
+
+        json_get_submodules(JSUBMODULES JNSUBMODULES "${MANIFEST}")
+
+        if (JNSUBMODULES)
+            file(APPEND ${VDIR}/${VERILATE_PREFIX}.cmake
+                "# Verilate hierarchical blocks\n"
+                "get_target_property(TOP_TARGET_NAME \"\${TARGET}\" NAME)\n"
+            )
+
+            foreach(I RANGE ${JNSUBMODULES})
+                json_get_string(JSUBMODULE_PREFIX "${JSUBMODULES}" ${I} prefix)
+                json_get_string(JSUBMODULE_TOP "${JSUBMODULES}" ${I} top)
+                json_get_list(JSUBMODULE_DEPS "${JSUBMODULES}" ${I} deps)
+                json_get_string(JSUBMODULE_DIRECTORY "${JSUBMODULES}" ${I} directory)
+                json_get_list(JSUBMODULE_SOURCES "${JSUBMODULES}" ${I} sources)
+                json_get_list(JSUBMODULE_CFLAGS "${JSUBMODULES}" ${I} cflags)
+                json_get_string(JSUBMODILE_VERILATOR_ARGS "${JSUBMODULES}" ${I} verilator_args)
+
+                set(SUBMODULE_CMAKE "")
+                set(SUBMODULE_VERILATE_ARGS "")
+
+                if (NOT ${I} STREQUAL ${JNSUBMODULES})
+                    string(APPEND SUBMODULE_CMAKE
+                        "add_library(${JSUBMODULE_PREFIX} STATIC)\n"
+                        "target_link_libraries(\${TOP_TARGET_NAME} PRIVATE ${JSUBMODULE_PREFIX})\n"
+                    )
+
+                    if (JSUBMODULE_DEPS)
+                        string(APPEND SUBMODULE_CMAKE "target_link_libraries(${JSUBMODULE_PREFIX} INTERFACE ${JSUBMODULE_DEPS})\n")
+                    endif()
+
+                    string(APPEND SUBMODULE_VERILATE_ARGS "${JSUBMODULE_PREFIX} PREFIX ${JSUBMODULE_PREFIX} TOP_MODULE ${JSUBMODULE_TOP} DIRECTORY ${JSUBMODULE_DIRECTORY} SOURCES ${JSUBMODULE_SOURCES}")
+                else()
+                    string(APPEND SUBMODULE_CMAKE "# Verilate the top module that refers to lib-create wrappers of above\n")
+                    string(APPEND SUBMODULE_VERILATE_ARGS "\${TOP_TARGET_NAME} PREFIX ${JSUBMODULE_PREFIX} TOP_MODULE ${JSUBMODULE_TOP} DIRECTORY ${JSUBMODULE_DIRECTORY} SOURCES ${JSUBMODULE_SOURCES}")
+                endif()
+
+                if (JSUBMODILE_VERILATOR_ARGS)
+                    string(APPEND SUBMODULE_VERILATE_ARGS " VERILATOR_ARGS -f ${JSUBMODILE_VERILATOR_ARGS}")
+                endif()
+
+                if (JSUBMODULE_CFLAGS)
+                    string(APPEND SUBMODULE_VERILATE_ARGS " -CFLAGS ${JSUBMODULE_CFLAGS}")
+                endif()
+
+                file(APPEND ${VDIR}/${VERILATE_PREFIX}.cmake
+                    "${SUBMODULE_CMAKE}"
+                    "verilate(${SUBMODULE_VERILATE_ARGS})\n"
+                )
+            endforeach()
+        endif()
+
         execute_process(
             COMMAND "${CMAKE_COMMAND}" -E copy "${VCMAKE}" "${VCMAKE_COPY}"
         )
