@@ -35,6 +35,11 @@ class VerilatedSaifFile;
 // VerilatedSaifActivityBit
 
 class VerilatedSaifActivityBit final {
+    // MEMBERS
+    bool m_lastVal = false; // last emitted activity bit value
+    uint64_t m_highTime = 0; // total time when bit was high
+    size_t m_transitions = 0; // total number of bit transitions
+
 public:
     // METHODS
     VL_ATTR_ALWINLINE
@@ -48,18 +53,17 @@ public:
     VL_ATTR_ALWINLINE bool bitValue() const { return m_lastVal; }
     VL_ATTR_ALWINLINE uint64_t highTime() const { return m_highTime; }
     VL_ATTR_ALWINLINE uint64_t toggleCount() const { return m_transitions; }
-
-private:
-    // MEMBERS
-    bool m_lastVal = false;
-    uint64_t m_highTime = 0;
-    size_t m_transitions = 0;
 };
 
 //=============================================================================
 // VerilatedSaifActivityVar
 
 class VerilatedSaifActivityVar final {
+    // MEMBERS
+    uint64_t m_lastTime{0}; // last time when variable value was updated
+    VerilatedSaifActivityBit* m_bits; // pointer to variable bits objects
+    uint32_t m_width; // width of variable (in bits)
+
 public:
     // CONSTRUCTORS
     VerilatedSaifActivityVar(uint32_t width, VerilatedSaifActivityBit* bits)
@@ -95,17 +99,18 @@ public:
 private:
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedSaifActivityVar);
-
-    // MEMBERS
-    uint64_t m_lastTime{0};
-    VerilatedSaifActivityBit* m_bits;
-    uint32_t m_width;
 };
 
 //=============================================================================
 // VerilatedSaifActivityScope
 
 class VerilatedSaifActivityScope final {
+    // MEMBERS
+    std::string m_scopeName{}; // name of the activity scope
+    std::vector<int32_t> m_childScopesIndices{}; // array indices of child scopes
+    std::vector<std::pair<uint32_t, std::string>> m_childActivities{}; // children signals codes mapped to their names in the current scope
+    int32_t m_parentScopeIndex{-1}; // array index of parent scope
+
 public:
     // CONSTRUCTORS
     VerilatedSaifActivityScope(std::string name, int32_t parentScopeIndex = -1)
@@ -138,12 +143,6 @@ public:
 private:
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedSaifActivityScope);
-
-    // MEMBERS
-    std::string m_scopeName{};
-    std::vector<int32_t> m_childScopesIndices{};
-    std::vector<std::pair<uint32_t, std::string>> m_childActivities{};
-    int32_t m_parentScopeIndex{-1};
 };
 
 //=============================================================================
@@ -167,6 +166,25 @@ private:
     std::string m_filename;  // Filename we're writing to (if open)
     uint64_t m_rolloverSize = 0;  // File size to rollover at
 
+    int m_indent = 0; // indentation size in spaces
+
+    int32_t m_currentScope{-1}; // currently active scope
+    std::vector<VerilatedSaifActivityScope> m_scopes{}; // array of declared scopes
+    std::vector<int32_t> m_topScopes{}; // array of top scopes
+
+    std::unordered_map<uint32_t, VerilatedSaifActivityVar> m_activity; // map of variables codes mapped to their activity objects
+    std::vector<std::vector<VerilatedSaifActivityBit>> m_activityArena; // memory pool for signals bits objects
+
+    uint64_t m_totalTime{0}; // total time of the currently traced simulation
+    uint64_t m_currentTimeOrigin{0};
+
+    // stack of declared scopes combined names
+    std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
+        {"", VerilatedTracePrefixType::SCOPE_MODULE}};
+
+    // METHODS
+    VL_ATTR_ALWINLINE uint64_t currentTime() const { return m_totalTime - m_currentTimeOrigin; }
+
     void initializeSaifFileContents();
     void finalizeSaifFileContents();
     void recursivelyPrintScopes(uint32_t scopeIndex);
@@ -181,27 +199,10 @@ private:
     void decrementIndent();
     void printIndent();
 
-    int m_indent = 0;
-
     void printStr(const char* str);
     void printStr(const std::string& str);
 
     void clearCurrentlyCollectedData();
-
-    int32_t m_currentScope{-1};
-    std::vector<VerilatedSaifActivityScope> m_scopes{};
-    std::vector<int32_t> m_topScopes{};
-
-    std::unordered_map<uint32_t, VerilatedSaifActivityVar> m_activity;
-    std::vector<std::vector<VerilatedSaifActivityBit>> m_activityArena;
-
-    VL_ATTR_ALWINLINE uint64_t currentTime() const { return m_totalTime - m_currentTimeOrigin; }
-
-    uint64_t m_totalTime{0};
-    uint64_t m_currentTimeOrigin{0};
-
-    std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
-        {"", VerilatedTracePrefixType::SCOPE_MODULE}};
 
     void openNextImp(bool incFilename);
     void closePrev();
