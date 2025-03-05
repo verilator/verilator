@@ -351,7 +351,8 @@ public:
     /// just as if this object was deleted and reconstructed.
     virtual void open(const char* filename) VL_MT_SAFE { m_sptrace.open(filename); }
 
-    void rolloverSize(size_t size) VL_MT_SAFE { /* noop */ }
+    void rolloverSize(size_t size) VL_MT_SAFE { /* noop */
+    }
 
     /// Close dump
     void close() VL_MT_SAFE {

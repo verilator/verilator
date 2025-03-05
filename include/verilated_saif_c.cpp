@@ -101,7 +101,8 @@ void VerilatedSaif::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     if (isOpen()) return;
 
     m_filename = filename;  // "" is ok, as someone may overload open
-    m_filep = ::open(m_filename.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_LARGEFILE | O_NONBLOCK | O_CLOEXEC, 0666);
+    m_filep = ::open(m_filename.c_str(),
+                     O_CREAT | O_WRONLY | O_TRUNC | O_LARGEFILE | O_NONBLOCK | O_CLOEXEC, 0666);
     m_isOpen = true;
 
     initializeSaifFileContents();
