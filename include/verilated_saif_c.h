@@ -29,159 +29,10 @@
 #include <vector>
 
 class VerilatedSaifBuffer;
-class VerilatedSaifFile;
-
-//=============================================================================
-// VerilatedSaifActivityBit
-
-class VerilatedSaifActivityBit final {
-    // MEMBERS
-    bool m_lastVal = false;  // last emitted activity bit value
-    uint64_t m_highTime = 0;  // total time when bit was high
-    size_t m_transitions = 0;  // total number of bit transitions
-
-public:
-    // METHODS
-    VL_ATTR_ALWINLINE
-    void aggregateVal(uint64_t dt, bool newVal) {
-        m_transitions += newVal != m_lastVal ? 1 : 0;
-        m_highTime += m_lastVal ? dt : 0;
-        m_lastVal = newVal;
-    }
-
-    // ACCESSORS
-    VL_ATTR_ALWINLINE bool bitValue() const { return m_lastVal; }
-    VL_ATTR_ALWINLINE uint64_t highTime() const { return m_highTime; }
-    VL_ATTR_ALWINLINE uint64_t toggleCount() const { return m_transitions; }
-};
-
-//=============================================================================
-// VerilatedSaifActivityVar
-
-class VerilatedSaifActivityVar final {
-    // MEMBERS
-    uint64_t m_lastTime{0};  // last time when variable value was updated
-    VerilatedSaifActivityBit* m_bits;  // pointer to variable bits objects
-    uint32_t m_width;  // width of variable (in bits)
-
-public:
-    // CONSTRUCTORS
-    VerilatedSaifActivityVar(uint32_t width, VerilatedSaifActivityBit* bits)
-        : m_bits{bits}
-        , m_width{width} {}
-
-    VerilatedSaifActivityVar(VerilatedSaifActivityVar&&) = default;
-    VerilatedSaifActivityVar& operator=(VerilatedSaifActivityVar&&) = default;
-
-    // METHODS
-    VL_ATTR_ALWINLINE void emitBit(uint64_t time, CData newval);
-
-    template <typename DataType>
-    VL_ATTR_ALWINLINE void emitData(uint64_t time, DataType newval, uint32_t bits) {
-        static_assert(std::is_integral<DataType>::value,
-                      "The emitted value must be of integral type");
-
-        const uint64_t dt = time - m_lastTime;
-        for (size_t i = 0; i < std::min(m_width, bits); i++) {
-            m_bits[i].aggregateVal(dt, (newval >> i) & 1);
-        }
-        updateLastTime(time);
-    }
-
-    VL_ATTR_ALWINLINE void emitWData(uint64_t time, const WData* newvalp, uint32_t bits);
-    VL_ATTR_ALWINLINE void updateLastTime(uint64_t val) { m_lastTime = val; }
-
-    // ACCESSORS
-    VL_ATTR_ALWINLINE uint32_t width() const { return m_width; }
-    VL_ATTR_ALWINLINE VerilatedSaifActivityBit& bit(std::size_t index);
-    VL_ATTR_ALWINLINE uint64_t lastUpdateTime() const { return m_lastTime; }
-
-private:
-    // CONSTRUCTORS
-    VL_UNCOPYABLE(VerilatedSaifActivityVar);
-};
-
-//=============================================================================
-// VerilatedSaifActivityScope
-
-class VerilatedSaifActivityScope final {
-    // MEMBERS
-    // absolute path to the scope
-    std::string m_scopePath{};
-    // name of the activity scope
-    std::string m_scopeName{};
-    // array indices of child scopes
-    std::vector<int32_t> m_childScopesIndices{};
-    // children signals codes mapped to their names in the current scope
-    std::vector<std::pair<uint32_t, std::string>> m_childActivities{};
-    // array index of parent scope
-    int32_t m_parentScopeIndex{-1};
-
-public:
-    // CONSTRUCTORS
-    VerilatedSaifActivityScope(std::string scopePath, std::string name,
-                               int32_t parentScopeIndex = -1)
-        : m_scopePath{std::move(scopePath)}
-        , m_scopeName{std::move(name)}
-        , m_parentScopeIndex{parentScopeIndex} {}
-
-    VerilatedSaifActivityScope(VerilatedSaifActivityScope&&) = default;
-    VerilatedSaifActivityScope& operator=(VerilatedSaifActivityScope&&) = default;
-
-    // METHODS
-    VL_ATTR_ALWINLINE void addChildScopeIndex(int32_t index) {
-        m_childScopesIndices.emplace_back(index);
-    }
-    VL_ATTR_ALWINLINE void addActivityVar(uint32_t code, std::string name) {
-        m_childActivities.emplace_back(code, std::move(name));
-    }
-    VL_ATTR_ALWINLINE bool hasParent() const { return m_parentScopeIndex >= 0; }
-
-    // ACCESSORS
-    VL_ATTR_ALWINLINE const std::string& path() const { return m_scopePath; }
-    VL_ATTR_ALWINLINE const std::string& name() const { return m_scopeName; }
-    VL_ATTR_ALWINLINE const std::vector<int32_t>& childScopesIndices() const {
-        return m_childScopesIndices;
-    }
-    VL_ATTR_ALWINLINE
-    const std::vector<std::pair<uint32_t, std::string>>& childActivities() const {
-        return m_childActivities;
-    }
-    VL_ATTR_ALWINLINE int32_t parentScopeIndex() const { return m_parentScopeIndex; }
-
-private:
-    // CONSTRUCTORS
-    VL_UNCOPYABLE(VerilatedSaifActivityScope);
-};
-
-class VerilatedSaifActivityAccumulator final {
-    // Give access to the private activities
-    friend class VerilatedSaifBuffer;
-    friend class VerilatedSaif;
-
-    // MEMBERS
-    // map of scopes paths to codes of activities inside
-    std::unordered_map<std::string, std::vector<std::pair<uint32_t, std::string>>>
-        m_scopeToActivities;
-    // map of variables codes mapped to their activity objects
-    std::unordered_map<uint32_t, VerilatedSaifActivityVar> m_activity;
-    // memory pool for signals bits objects
-    std::vector<std::vector<VerilatedSaifActivityBit>> m_activityArena;
-
-public:
-    // METHODS
-    void declare(uint32_t code, const std::string& absoluteScopePath, std::string variableName,
-                 int bits, bool array, int arraynum);
-
-    // CONSTRUCTORS
-    VerilatedSaifActivityAccumulator() = default;
-
-    VerilatedSaifActivityAccumulator(VerilatedSaifActivityAccumulator&&) = default;
-    VerilatedSaifActivityAccumulator& operator=(VerilatedSaifActivityAccumulator&&) = default;
-
-private:
-    VL_UNCOPYABLE(VerilatedSaifActivityAccumulator);
-};
+class VerilatedSaifActivityAccumulator;
+class VerilatedSaifActivityScope;
+class VerilatedSaifActivityVar;
+class VerilatedSaifActivityBit;
 
 //=============================================================================
 // VerilatedSaif
@@ -205,15 +56,13 @@ private:
     int m_indent = 0;  // indentation size in spaces
 
     // currently active scope
-    int32_t m_currentScope{-1};
+    VerilatedSaifActivityScope* m_currentScope{nullptr};
     // array of declared scopes
-    std::vector<VerilatedSaifActivityScope> m_scopes{};
-    // array of top scopes
-    std::vector<int32_t> m_topScopes{};
+    std::vector<std::unique_ptr<VerilatedSaifActivityScope>> m_scopes{};
     // activity accumulators used to store variables statistics over simulation time
-    std::vector<VerilatedSaifActivityAccumulator> m_activityAccumulators{};
-
-    uint64_t m_time{0};  // total time of the currently traced simulation
+    std::vector<std::unique_ptr<VerilatedSaifActivityAccumulator>> m_activityAccumulators{};
+    // total time of the currently traced simulation
+    uint64_t m_time{0};
 
     // stack of declared scopes combined names
     std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
@@ -224,18 +73,18 @@ private:
 
     void initializeSaifFileContents();
     void finalizeSaifFileContents();
-    void recursivelyPrintScopes(uint32_t scopeIndex);
+    void recursivelyPrintScopes(const VerilatedSaifActivityScope& scope);
     void openInstanceScope(const std::string& instanceName);
     void closeInstanceScope();
     void printScopeActivities(const VerilatedSaifActivityScope& scope);
-    bool
-    printScopeActivitiesFromAccumulatorIfPresent(const std::string& absoluteScopePath,
-                                                 VerilatedSaifActivityAccumulator& accumulator,
-                                                 bool anyNetWritten);
+    bool printScopeActivitiesFromAccumulatorIfPresent(
+        const std::string& absoluteScopePath,
+        VerilatedSaifActivityAccumulator& accumulator,
+        bool anyNetWritten);
     void openNetScope();
     void closeNetScope();
-    bool printActivityStats(VerilatedSaifActivityVar& activity, const char* activityName,
-                            bool anyNetWritten);
+    bool printActivityStats(
+        VerilatedSaifActivityVar& activity, const char* activityName, bool anyNetWritten);
 
     void incrementIndent();
     void decrementIndent();
