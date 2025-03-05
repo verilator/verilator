@@ -154,7 +154,7 @@ private:
     VL_UNCOPYABLE(VerilatedSaifActivityScope);
 };
 
-class VerilatedSaifActivityAccumulator {
+class VerilatedSaifActivityAccumulator final {
     // Give access to the private activities
     friend class VerilatedSaifBuffer;
     friend class VerilatedSaif;
