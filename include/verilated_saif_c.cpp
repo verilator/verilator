@@ -168,7 +168,8 @@ public:
     // ACCESSORS
     VL_ATTR_ALWINLINE const std::string& path() const { return m_scopePath; }
     VL_ATTR_ALWINLINE const std::string& name() const { return m_scopeName; }
-    VL_ATTR_ALWINLINE const std::vector<std::unique_ptr<VerilatedSaifActivityScope>>& childScopes() const {
+    VL_ATTR_ALWINLINE const std::vector<std::unique_ptr<VerilatedSaifActivityScope>>&
+    childScopes() const {
         return m_childScopes;
     }
     VL_ATTR_ALWINLINE
@@ -312,9 +313,7 @@ void VerilatedSaif::finalizeSaifFileContents() {
 void VerilatedSaif::recursivelyPrintScopes(const VerilatedSaifActivityScope& scope) {
     openInstanceScope(scope.name());
     printScopeActivities(scope);
-    for (const auto& childScope : scope.childScopes()) {
-        recursivelyPrintScopes(*childScope);
-    }
+    for (const auto& childScope : scope.childScopes()) { recursivelyPrintScopes(*childScope); }
     closeInstanceScope();
 }
 
@@ -336,23 +335,22 @@ void VerilatedSaif::printScopeActivities(const VerilatedSaifActivityScope& scope
     bool anyNetWritten{false};
 
     for (auto& accumulator : m_activityAccumulators) {
-        anyNetWritten |= printScopeActivitiesFromAccumulatorIfPresent(
-            scope.path(), *accumulator, anyNetWritten);
+        anyNetWritten |= printScopeActivitiesFromAccumulatorIfPresent(scope.path(), *accumulator,
+                                                                      anyNetWritten);
     }
 
     if (anyNetWritten) closeNetScope();
 }
 
 bool VerilatedSaif::printScopeActivitiesFromAccumulatorIfPresent(
-    const std::string& absoluteScopePath,
-    VerilatedSaifActivityAccumulator& accumulator,
+    const std::string& absoluteScopePath, VerilatedSaifActivityAccumulator& accumulator,
     bool anyNetWritten) {
     if (accumulator.m_scopeToActivities.count(absoluteScopePath) == 0) return false;
 
     for (const auto& childSignal : accumulator.m_scopeToActivities.at(absoluteScopePath)) {
         VerilatedSaifActivityVar& activityVariable = accumulator.m_activity.at(childSignal.first);
-        anyNetWritten = printActivityStats(
-            activityVariable, childSignal.second.c_str(), anyNetWritten);
+        anyNetWritten
+            = printActivityStats(activityVariable, childSignal.second.c_str(), anyNetWritten);
     }
 
     return anyNetWritten;
@@ -370,8 +368,8 @@ void VerilatedSaif::closeNetScope() {
     printStr(")\n");
 }
 
-bool VerilatedSaif::printActivityStats(
-    VerilatedSaifActivityVar& activity, const char* activityName, bool anyNetWritten) {
+bool VerilatedSaif::printActivityStats(VerilatedSaifActivityVar& activity,
+                                       const char* activityName, bool anyNetWritten) {
     for (size_t i = 0; i < activity.width(); ++i) {
         VerilatedSaifActivityBit& bit = activity.bit(i);
 
@@ -452,7 +450,8 @@ void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType
         std::string scopePath = m_prefixStack.back().first + pname;
         std::string scopeName = lastWord(scopePath);
 
-        auto newScope = std::make_unique<VerilatedSaifActivityScope>(std::move(scopePath), std::move(scopeName), m_currentScope);
+        auto newScope = std::make_unique<VerilatedSaifActivityScope>(
+            std::move(scopePath), std::move(scopeName), m_currentScope);
         VerilatedSaifActivityScope* newScopePtr = newScope.get();
 
         if (m_currentScope) {
@@ -460,7 +459,7 @@ void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType
         } else {
             m_scopes.emplace_back(std::move(newScope));
         }
-        
+
         m_currentScope = newScopePtr;
     }
 
@@ -520,8 +519,8 @@ void VerilatedSaif::declare(const uint32_t code, uint32_t fidx, const char* name
     std::string variableName = lastWord(hierarchicalName);
     m_currentScope->addActivityVar(code, variableName);
 
-    accumulator.declare(code, m_currentScope->path(), std::move(variableName), bits,
-                        array, arraynum);
+    accumulator.declare(code, m_currentScope->path(), std::move(variableName), bits, array,
+                        arraynum);
 }
 
 void VerilatedSaif::declEvent(const uint32_t code, const uint32_t fidx, const char* name,

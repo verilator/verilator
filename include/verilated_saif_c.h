@@ -77,14 +77,14 @@ private:
     void openInstanceScope(const std::string& instanceName);
     void closeInstanceScope();
     void printScopeActivities(const VerilatedSaifActivityScope& scope);
-    bool printScopeActivitiesFromAccumulatorIfPresent(
-        const std::string& absoluteScopePath,
-        VerilatedSaifActivityAccumulator& accumulator,
-        bool anyNetWritten);
+    bool
+    printScopeActivitiesFromAccumulatorIfPresent(const std::string& absoluteScopePath,
+                                                 VerilatedSaifActivityAccumulator& accumulator,
+                                                 bool anyNetWritten);
     void openNetScope();
     void closeNetScope();
-    bool printActivityStats(
-        VerilatedSaifActivityVar& activity, const char* activityName, bool anyNetWritten);
+    bool printActivityStats(VerilatedSaifActivityVar& activity, const char* activityName,
+                            bool anyNetWritten);
 
     void incrementIndent();
     void decrementIndent();
