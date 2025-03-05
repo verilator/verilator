@@ -119,7 +119,8 @@ class VerilatedSaifActivityScope final {
 
 public:
     // CONSTRUCTORS
-    VerilatedSaifActivityScope(std::string scopePath, std::string name, int32_t parentScopeIndex = -1)
+    VerilatedSaifActivityScope(std::string scopePath, std::string name,
+                               int32_t parentScopeIndex = -1)
         : m_scopePath{std::move(scopePath)}
         , m_scopeName{std::move(name)}
         , m_parentScopeIndex{parentScopeIndex} {}
@@ -160,7 +161,8 @@ class VerilatedSaifActivityAccumulator {
 
     // MEMBERS
     // map of scopes paths to codes of activities inside
-    std::unordered_map<std::string, std::vector<std::pair<uint32_t, std::string>>> m_scopeToActivities;
+    std::unordered_map<std::string, std::vector<std::pair<uint32_t, std::string>>>
+        m_scopeToActivities;
     // map of variables codes mapped to their activity objects
     std::unordered_map<uint32_t, VerilatedSaifActivityVar> m_activity;
     // memory pool for signals bits objects
@@ -168,7 +170,8 @@ class VerilatedSaifActivityAccumulator {
 
 public:
     // METHODS
-    void declare(uint32_t code, const std::string& absoluteScopePath, std::string variableName, int bits, bool array, int arraynum);
+    void declare(uint32_t code, const std::string& absoluteScopePath, std::string variableName,
+                 int bits, bool array, int arraynum);
 
     // CONSTRUCTORS
     VerilatedSaifActivityAccumulator() = default;
@@ -225,10 +228,14 @@ private:
     void openInstanceScope(const std::string& instanceName);
     void closeInstanceScope();
     void printScopeActivities(const VerilatedSaifActivityScope& scope);
-    bool printScopeActivitiesFromAccumulatorIfPresent(const std::string& absoluteScopePath, VerilatedSaifActivityAccumulator& accumulator, bool anyNetWritten);
+    bool
+    printScopeActivitiesFromAccumulatorIfPresent(const std::string& absoluteScopePath,
+                                                 VerilatedSaifActivityAccumulator& accumulator,
+                                                 bool anyNetWritten);
     void openNetScope();
     void closeNetScope();
-    bool printActivityStats(VerilatedSaifActivityVar& activity, const char* activityName, bool anyNetWritten);
+    bool printActivityStats(VerilatedSaifActivityVar& activity, const char* activityName,
+                            bool anyNetWritten);
 
     void incrementIndent();
     void decrementIndent();
@@ -239,8 +246,8 @@ private:
 
     void clearCurrentlyCollectedData();
 
-    void declare(uint32_t code, uint32_t fidx, const char* name, const char* wirep, bool array, int arraynum,
-                 bool bussed, int msb, int lsb);
+    void declare(uint32_t code, uint32_t fidx, const char* name, const char* wirep, bool array,
+                 int arraynum, bool bussed, int msb, int lsb);
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedSaif);
@@ -338,9 +345,11 @@ class VerilatedSaifBuffer VL_NOT_FINAL {
 
     // CONSTRUCTOR
     explicit VerilatedSaifBuffer(VerilatedSaif& owner)
-        : m_owner{owner}, m_fidx{0} {}
+        : m_owner{owner}
+        , m_fidx{0} {}
     explicit VerilatedSaifBuffer(VerilatedSaif& owner, uint32_t fidx)
-        : m_owner{owner}, m_fidx{fidx} {}
+        : m_owner{owner}
+        , m_fidx{fidx} {}
     virtual ~VerilatedSaifBuffer() = default;
 
     //=========================================================================
@@ -384,7 +393,8 @@ public:
     /// just as if this object was deleted and reconstructed.
     virtual void open(const char* filename) VL_MT_SAFE { m_sptrace.open(filename); }
 
-    void rolloverSize(size_t size) VL_MT_SAFE {/* noop */}
+    void rolloverSize(size_t size) VL_MT_SAFE { /* noop */
+    }
 
     /// Close dump
     void close() VL_MT_SAFE {

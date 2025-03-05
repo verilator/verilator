@@ -94,9 +94,7 @@ VerilatedSaifActivityBit& VerilatedSaifActivityVar::bit(const std::size_t index)
 //=============================================================================
 // Opening/Closing
 
-VerilatedSaif::VerilatedSaif(void* filep) {
-    m_activityAccumulators.emplace_back();
-}
+VerilatedSaif::VerilatedSaif(void* filep) { m_activityAccumulators.emplace_back(); }
 
 void VerilatedSaif::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
@@ -183,20 +181,22 @@ void VerilatedSaif::printScopeActivities(const VerilatedSaifActivityScope& scope
     bool anyNetWritten{false};
 
     for (auto& accumulator : m_activityAccumulators) {
-        anyNetWritten |= printScopeActivitiesFromAccumulatorIfPresent(scope.path(), accumulator, anyNetWritten);
+        anyNetWritten |= printScopeActivitiesFromAccumulatorIfPresent(scope.path(), accumulator,
+                                                                      anyNetWritten);
     }
 
     if (anyNetWritten) closeNetScope();
 }
 
-bool VerilatedSaif::printScopeActivitiesFromAccumulatorIfPresent(const std::string& absoluteScopePath, VerilatedSaifActivityAccumulator& accumulator, bool anyNetWritten) {
-    if (accumulator.m_scopeToActivities.count(absoluteScopePath) == 0) {
-        return false;
-    }
+bool VerilatedSaif::printScopeActivitiesFromAccumulatorIfPresent(
+    const std::string& absoluteScopePath, VerilatedSaifActivityAccumulator& accumulator,
+    bool anyNetWritten) {
+    if (accumulator.m_scopeToActivities.count(absoluteScopePath) == 0) { return false; }
 
     for (const auto& childSignal : accumulator.m_scopeToActivities.at(absoluteScopePath)) {
         VerilatedSaifActivityVar& activityVariable = accumulator.m_activity.at(childSignal.first);
-        anyNetWritten = printActivityStats(activityVariable, childSignal.second.c_str(), anyNetWritten);
+        anyNetWritten
+            = printActivityStats(activityVariable, childSignal.second.c_str(), anyNetWritten);
     }
 
     return anyNetWritten;
@@ -214,8 +214,8 @@ void VerilatedSaif::closeNetScope() {
     printStr(")\n");
 }
 
-bool VerilatedSaif::printActivityStats(VerilatedSaifActivityVar& activity, const char* activityName,
-                                       bool anyNetWritten) {
+bool VerilatedSaif::printActivityStats(VerilatedSaifActivityVar& activity,
+                                       const char* activityName, bool anyNetWritten) {
     for (size_t i = 0; i < activity.width(); ++i) {
         VerilatedSaifActivityBit& bit = activity.bit(i);
 
@@ -326,7 +326,9 @@ void VerilatedSaif::popPrefix() {
     m_prefixStack.pop_back();
 }
 
-void VerilatedSaifActivityAccumulator::declare(uint32_t code, const std::string& absoluteScopePath, std::string variableName, int bits, bool array, int arraynum) {
+void VerilatedSaifActivityAccumulator::declare(uint32_t code, const std::string& absoluteScopePath,
+                                               std::string variableName, int bits, bool array,
+                                               int arraynum) {
     const size_t block_size = 1024;
     if (m_activityArena.empty()
         || m_activityArena.back().size() + bits > m_activityArena.back().capacity()) {
@@ -343,13 +345,13 @@ void VerilatedSaifActivityAccumulator::declare(uint32_t code, const std::string&
     }
 
     m_scopeToActivities[absoluteScopePath].emplace_back(code, variableName);
-    m_activity.emplace(code, VerilatedSaifActivityVar{
-        static_cast<uint32_t>(bits), m_activityArena.back().data() + bitsIdx});
+    m_activity.emplace(code, VerilatedSaifActivityVar{static_cast<uint32_t>(bits),
+                                                      m_activityArena.back().data() + bitsIdx});
 }
 
-void VerilatedSaif::declare(const uint32_t code, uint32_t fidx, const char* name, const char* wirep,
-                            const bool array, const int arraynum, const bool bussed, const int msb,
-                            const int lsb) {
+void VerilatedSaif::declare(const uint32_t code, uint32_t fidx, const char* name,
+                            const char* wirep, const bool array, const int arraynum,
+                            const bool bussed, const int msb, const int lsb) {
     VerilatedSaifActivityAccumulator& accumulator = m_activityAccumulators.at(fidx);
 
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
@@ -361,7 +363,8 @@ void VerilatedSaif::declare(const uint32_t code, uint32_t fidx, const char* name
     std::string variableName = lastWord(hierarchicalName);
     m_scopes.at(m_currentScope).addActivityVar(code, variableName);
 
-    accumulator.declare(code, m_scopes.at(m_currentScope).path(), std::move(variableName), bits, array, arraynum);
+    accumulator.declare(code, m_scopes.at(m_currentScope).path(), std::move(variableName), bits,
+                        array, arraynum);
 }
 
 void VerilatedSaif::declEvent(const uint32_t code, const uint32_t fidx, const char* name,
@@ -426,43 +429,55 @@ void VerilatedSaifBuffer::emitEvent(const uint32_t code) {
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitBit(const uint32_t code, const CData newval) {
-    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code) && "Activity must be declared earlier");
-    VerilatedSaifActivityVar& activity = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
+    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code)
+           && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity
+        = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
     activity.emitBit(m_owner.currentTime(), newval);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitCData(const uint32_t code, const CData newval, const int bits) {
-    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code) && "Activity must be declared earlier");
-    VerilatedSaifActivityVar& activity = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
+    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code)
+           && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity
+        = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
     activity.emitData<CData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitSData(const uint32_t code, const SData newval, const int bits) {
-    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code) && "Activity must be declared earlier");
-    VerilatedSaifActivityVar& activity = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
+    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code)
+           && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity
+        = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
     activity.emitData<SData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitIData(const uint32_t code, const IData newval, const int bits) {
-    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code) && "Activity must be declared earlier");
-    VerilatedSaifActivityVar& activity = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
+    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code)
+           && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity
+        = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
     activity.emitData<IData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitQData(const uint32_t code, const QData newval, const int bits) {
-    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code) && "Activity must be declared earlier");
-    VerilatedSaifActivityVar& activity = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
+    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code)
+           && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity
+        = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
     activity.emitData<QData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitWData(const uint32_t code, const WData* newvalp, const int bits) {
-    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code) && "Activity must be declared earlier");
-    VerilatedSaifActivityVar& activity = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
+    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code)
+           && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity
+        = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
     activity.emitWData(m_owner.currentTime(), newvalp, bits);
 }
 
