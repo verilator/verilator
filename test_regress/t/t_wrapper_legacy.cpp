@@ -19,6 +19,9 @@
 // These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 
+// Empty legacy file (see comments inside it)
+#include "veriuser.h"
+
 int errors = 0;
 
 vluint64_t main_time = 0;

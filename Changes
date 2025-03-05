@@ -17,6 +17,7 @@ Verilator 5.035 devel
   Those using build farms may need to now use `--output-groups 0` or otherwise.
 * Add check for `let` misused in statement context (#5733).
 * Add used language to `--preproc-resolve` output (#5795). [Kamil Rakoczy, Antmicro Ltd.]
+* Add empty veriuser.h for legacy compatibility.
 * Fix reset of automatic function variables (#5747). [Augustin Fabre]
 * Fix invalid code motion over branches (#5811) (#5814). [Geza Lore]
 * Fix sorting of wide SenItems (#5816). [Geza Lore]
