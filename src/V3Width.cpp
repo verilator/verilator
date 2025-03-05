@@ -1383,16 +1383,16 @@ class WidthVisitor final : public VNVisitor {
         AstAssignW* newp = nullptr;
 
         if (nodep->delrefp() != nullptr) {
-            AstNodeVarRef* lhsp = nodep->delrefp()->varrefp()->cloneTreePure(false);
+            AstNodeVarRef* lhsp = VN_AS(nodep->delrefp()->cloneTreePure(false), VarRef);
             lhsp->access(VAccess::WRITE);
-            AstNodeVarRef* rhsp = nodep->refevp()->varrefp()->cloneTreePure(false);
+            AstNodeVarRef* rhsp = VN_AS(nodep->refevp()->cloneTreePure(false), VarRef);
             newp = new AstAssignW{flp, lhsp, rhsp};
         }
 
         if (nodep->deldatap() != nullptr) {
-            AstNodeVarRef* lhsp = nodep->deldatap()->varrefp()->cloneTreePure(false);
+            AstNodeVarRef* lhsp = VN_AS(nodep->deldatap()->cloneTreePure(false), VarRef);
             lhsp->access(VAccess::WRITE);
-            AstNodeVarRef* rhsp = nodep->dataevp()->varrefp()->cloneTreePure(false);
+            AstNodeVarRef* rhsp = VN_AS(nodep->dataevp()->cloneTreePure(false), VarRef);
 
             if (newp == nullptr) {
                 newp = new AstAssignW{flp, lhsp, rhsp};
