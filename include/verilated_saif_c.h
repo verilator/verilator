@@ -161,8 +161,7 @@ private:
     //=========================================================================
     // SAIF-specific internals
 
-    VerilatedSaifFile* m_filep;  // File we're writing to
-    bool m_fileNewed;  // m_filep needs destruction
+    int m_filep = 0;  // File we're writing to
     bool m_isOpen = false;  // True indicates open file
     std::string m_filename;  // Filename we're writing to (if open)
 
@@ -205,8 +204,6 @@ private:
 
     void clearCurrentlyCollectedData();
 
-    void closePrev();
-    void closeErr();
     void declare(uint32_t code, const char* name, const char* wirep, bool array, int arraynum,
                  bool bussed, int msb, int lsb);
 
@@ -222,7 +219,7 @@ protected:
 
     // Hooks called from VerilatedTrace
     bool preFullDump() override { return isOpen(); }
-    bool preChangeDump() override;
+    bool preChangeDump() override { return isOpen(); }
 
     // Trace buffer management
     Buffer* getTraceBuffer(uint32_t fidx) override;
@@ -236,7 +233,7 @@ public:
     // External interface to client code
 
     // CONSTRUCTOR
-    explicit VerilatedSaif(VerilatedSaifFile* filep = nullptr);
+    explicit VerilatedSaif(void* filep = nullptr);
     ~VerilatedSaif();
 
     // ACCESSORS
@@ -247,8 +244,6 @@ public:
     // METHODS - All must be thread safe
     // Open the file; call isOpen() to see if errors
     void open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex);
-    // Open next data-only file
-    void openNext(bool incFilename) VL_MT_SAFE_EXCLUDES(m_mutex);
     // Close the file
     void close() VL_MT_SAFE_EXCLUDES(m_mutex);
     // Flush any remaining data to this file
@@ -330,28 +325,6 @@ class VerilatedSaifBuffer VL_NOT_FINAL {
 };
 
 //=============================================================================
-// VerilatedFile
-/// Class representing a file to write to. These virtual methods can be
-/// overrode for e.g. socket I/O.
-
-class VerilatedSaifFile VL_NOT_FINAL {
-private:
-    int m_fd = 0;  // File descriptor we're writing to
-public:
-    // METHODS
-    /// Construct a (as yet) closed file
-    VerilatedSaifFile() = default;
-    /// Close and destruct
-    virtual ~VerilatedSaifFile() = default;
-    /// Open a file with given filename
-    virtual bool open(const std::string& name) VL_MT_UNSAFE;
-    /// Close object's file
-    virtual void close() VL_MT_UNSAFE;
-    /// Write data to file (if it is open)
-    virtual ssize_t write(const char* bufp, ssize_t len) VL_MT_UNSAFE;
-};
-
-//=============================================================================
 // VerilatedSaifC
 /// Class representing a SAIF dump file in C standalone (no SystemC)
 /// simulations.  Also derived for use in SystemC simulations.
@@ -363,8 +336,8 @@ class VerilatedSaifC VL_NOT_FINAL : public VerilatedTraceBaseC {
     VL_UNCOPYABLE(VerilatedSaifC);
 
 public:
-    /// Construct the dump. Optional argument is a preconstructed file.
-    explicit VerilatedSaifC(VerilatedSaifFile* filep = nullptr)
+    /// Construct the dump. Optional argument is ignored
+    explicit VerilatedSaifC(void* filep = nullptr)
         : m_sptrace{filep} {}
     /// Destruct, flush, and close the dump
     virtual ~VerilatedSaifC() { close(); }
@@ -377,13 +350,8 @@ public:
     /// This includes a complete header dump each time it is called,
     /// just as if this object was deleted and reconstructed.
     virtual void open(const char* filename) VL_MT_SAFE { m_sptrace.open(filename); }
-    /// Continue a SAIF dump by rotating to a new file name
-    /// The header is only in the first file created, this allows
-    /// "cat" to be used to combine the header plus any number of data files.
-    void openNext(bool incFilename = true) VL_MT_SAFE { m_sptrace.openNext(incFilename); }
 
-    void rolloverSize(size_t size) VL_MT_SAFE { /* noop */
-    }
+    void rolloverSize(size_t size) VL_MT_SAFE { /* noop */ }
 
     /// Close dump
     void close() VL_MT_SAFE {

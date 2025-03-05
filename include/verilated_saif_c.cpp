@@ -92,45 +92,21 @@ VerilatedSaifActivityBit& VerilatedSaifActivityVar::bit(const std::size_t index)
 //=============================================================================
 //=============================================================================
 //=============================================================================
-// VerilatedSaifFile
-
-bool VerilatedSaifFile::open(const std::string& name) VL_MT_UNSAFE {
-    m_fd = ::open(name.c_str(),
-                  O_CREAT | O_WRONLY | O_TRUNC | O_LARGEFILE | O_NONBLOCK | O_CLOEXEC, 0666);
-    return m_fd >= 0;
-}
-
-void VerilatedSaifFile::close() VL_MT_UNSAFE { ::close(m_fd); }
-
-ssize_t VerilatedSaifFile::write(const char* bufp, ssize_t len) VL_MT_UNSAFE {
-    return ::write(m_fd, bufp, len);
-}
-
-//=============================================================================
-//=============================================================================
-//=============================================================================
 // Opening/Closing
 
-VerilatedSaif::VerilatedSaif(VerilatedSaifFile* filep) {
-    // Not in header to avoid link issue if header is included without this .cpp file
-    m_fileNewed = (filep == nullptr);
-    m_filep = m_fileNewed ? new VerilatedSaifFile : filep;
-}
+VerilatedSaif::VerilatedSaif(void* filep) {}
 
 void VerilatedSaif::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     if (isOpen()) return;
 
-    // Set member variables
     m_filename = filename;  // "" is ok, as someone may overload open
+    m_filep = ::open(m_filename.c_str(), O_CREAT | O_WRONLY | O_TRUNC | O_LARGEFILE | O_NONBLOCK | O_CLOEXEC, 0666);
+    m_isOpen = true;
 
     initializeSaifFileContents();
 
     Super::traceInit();
-}
-
-void VerilatedSaif::openNext(bool incFilename) VL_MT_SAFE_EXCLUDES(m_mutex) {
-    // noop, SAIF only needs one file per trace
 }
 
 void VerilatedSaif::initializeSaifFileContents() {
@@ -145,34 +121,9 @@ void VerilatedSaif::initializeSaifFileContents() {
     printStr(")\n");
 }
 
-bool VerilatedSaif::preChangeDump() { return isOpen(); }
-
 void VerilatedSaif::emitTimeChange(uint64_t timeui) { m_time = timeui; }
 
-VerilatedSaif::~VerilatedSaif() {
-    close();
-    if (m_filep && m_fileNewed) VL_DO_CLEAR(delete m_filep, m_filep = nullptr);
-}
-
-void VerilatedSaif::closePrev() {
-    // This function is on the flush() call path
-    if (!isOpen()) return;
-
-    Super::flushBase();
-    m_isOpen = false;
-    m_filep->close();
-}
-
-void VerilatedSaif::closeErr() {
-    // This function is on the flush() call path
-    // Close due to an error.  We might abort before even getting here,
-    // depending on the definition of vl_fatal.
-    if (!isOpen()) return;
-
-    // No buffer flush, just fclose
-    m_isOpen = false;
-    m_filep->close();  // May get error, just ignore it
-}
+VerilatedSaif::~VerilatedSaif() { close(); }
 
 void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     // This function is on the flush() call path
@@ -182,9 +133,9 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     finalizeSaifFileContents();
     clearCurrentlyCollectedData();
 
-    closePrev();
-    // closePrev() called Super::flush(), so we just
-    // need to shut down the tracing thread here.
+    ::close(m_filep);
+    m_isOpen = false;
+
     Super::closeBase();
 }
 
@@ -298,9 +249,9 @@ void VerilatedSaif::clearCurrentlyCollectedData() {
     m_activityArena.clear();
 }
 
-void VerilatedSaif::printStr(const char* str) { m_filep->write(str, strlen(str)); }
+void VerilatedSaif::printStr(const char* str) { ::write(m_filep, str, strlen(str)); }
 
-void VerilatedSaif::printStr(const std::string& str) { m_filep->write(str.c_str(), str.size()); }
+void VerilatedSaif::printStr(const std::string& str) { ::write(m_filep, str.c_str(), str.size()); }
 
 //=============================================================================
 // Definitions
