@@ -3341,13 +3341,13 @@ public:
 };
 class AstSetuphold final : public AstNodeStmt {
     // Verilog $setuphold
-    // @astgen op1 := refevp : AstSenItem
-    // @astgen op2 := dataevp : AstSenItem
-    // @astgen op3 := delrefp : Optional[AstSenItem]
-    // @astgen op4 := deldatap : Optional[AstSenItem]
+    // @astgen op1 := refevp : AstNodeExpr
+    // @astgen op2 := dataevp : AstNodeExpr
+    // @astgen op3 := delrefp : Optional[AstNodeExpr]
+    // @astgen op4 := deldatap : Optional[AstNodeExpr]
 public:
-    AstSetuphold(FileLine* fl, AstSenItem* refevp, AstSenItem* dataevp,
-                 AstSenItem* delrefp = nullptr, AstSenItem* deldatap = nullptr)
+    AstSetuphold(FileLine* fl, AstNodeExpr* refevp, AstNodeExpr* dataevp,
+                 AstNodeExpr* delrefp = nullptr, AstNodeExpr* deldatap = nullptr)
         : ASTGEN_SUPER_Setuphold(fl) {
         this->refevp(refevp);
         this->dataevp(dataevp);
