@@ -507,7 +507,7 @@ void VerilatedSaifActivityAccumulator::declare(uint32_t code, const std::string&
 void VerilatedSaif::declare(const uint32_t code, uint32_t fidx, const char* name,
                             const char* wirep, const bool array, const int arraynum,
                             const bool bussed, const int msb, const int lsb) {
-
+    assert(m_activityAccumulators.size() > fidx);
     VerilatedSaifActivityAccumulator& accumulator = *m_activityAccumulators.at(fidx);
 
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;

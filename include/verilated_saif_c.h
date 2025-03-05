@@ -192,7 +192,7 @@ class VerilatedSaifBuffer VL_NOT_FINAL {
     VerilatedSaif& m_owner;  // Trace file owning this buffer. Required by subclasses.
     uint32_t m_fidx;  // Index of target activity accumulator
 
-    // CONSTRUCTOR
+    // CONSTRUCTORS
     explicit VerilatedSaifBuffer(VerilatedSaif& owner)
         : m_owner{owner}
         , m_fidx{0} {}
