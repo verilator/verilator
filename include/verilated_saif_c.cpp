@@ -94,7 +94,9 @@ VerilatedSaifActivityBit& VerilatedSaifActivityVar::bit(const std::size_t index)
 //=============================================================================
 // Opening/Closing
 
-VerilatedSaif::VerilatedSaif(void* filep) {}
+VerilatedSaif::VerilatedSaif(void* filep) {
+    m_activityAccumulators.emplace_back();
+}
 
 void VerilatedSaif::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
@@ -178,14 +180,26 @@ void VerilatedSaif::closeInstanceScope() {
 }
 
 void VerilatedSaif::printScopeActivities(const VerilatedSaifActivityScope& scope) {
-    bool anyNetValid{false};
-    for (const auto& childSignal : scope.childActivities()) {
-        const uint32_t code = childSignal.first;
-        const char* const name = childSignal.second.c_str();
-        anyNetValid = printActivityStats(code, name, anyNetValid);
+    bool anyNetWritten{false};
+
+    for (auto& accumulator : m_activityAccumulators) {
+        anyNetWritten |= printScopeActivitiesFromAccumulatorIfPresent(scope.path(), accumulator, anyNetWritten);
     }
 
-    if (anyNetValid) closeNetScope();
+    if (anyNetWritten) closeNetScope();
+}
+
+bool VerilatedSaif::printScopeActivitiesFromAccumulatorIfPresent(const std::string& absoluteScopePath, VerilatedSaifActivityAccumulator& accumulator, bool anyNetWritten) {
+    if (accumulator.m_scopeToActivities.count(absoluteScopePath) == 0) {
+        return false;
+    }
+
+    for (const auto& childSignal : accumulator.m_scopeToActivities.at(absoluteScopePath)) {
+        VerilatedSaifActivityVar& activityVariable = accumulator.m_activity.at(childSignal.first);
+        anyNetWritten = printActivityStats(activityVariable, childSignal.second.c_str(), anyNetWritten);
+    }
+
+    return anyNetWritten;
 }
 
 void VerilatedSaif::openNetScope() {
@@ -200,9 +214,8 @@ void VerilatedSaif::closeNetScope() {
     printStr(")\n");
 }
 
-bool VerilatedSaif::printActivityStats(const uint32_t activityCode, const char* activityName,
-                                       bool anyNetValid) {
-    VerilatedSaifActivityVar& activity = m_activity.at(activityCode);
+bool VerilatedSaif::printActivityStats(VerilatedSaifActivityVar& activity, const char* activityName,
+                                       bool anyNetWritten) {
     for (size_t i = 0; i < activity.width(); ++i) {
         VerilatedSaifActivityBit& bit = activity.bit(i);
 
@@ -213,9 +226,9 @@ bool VerilatedSaif::printActivityStats(const uint32_t activityCode, const char* 
 
         bit.aggregateVal(currentTime() - activity.lastUpdateTime(), bit.bitValue());
 
-        if (!anyNetValid) {
+        if (!anyNetWritten) {
             openNetScope();
-            anyNetValid = true;
+            anyNetWritten = true;
         }
 
         printIndent();
@@ -239,15 +252,14 @@ bool VerilatedSaif::printActivityStats(const uint32_t activityCode, const char* 
 
     activity.updateLastTime(currentTime());
 
-    return anyNetValid;
+    return anyNetWritten;
 }
 
 void VerilatedSaif::clearCurrentlyCollectedData() {
     m_currentScope = -1;
     m_scopes.clear();
     m_topScopes.clear();
-    m_activity.clear();
-    m_activityArena.clear();
+    m_activityAccumulators.clear();
 }
 
 void VerilatedSaif::printStr(const char* str) { ::write(m_filep, str, strlen(str)); }
@@ -287,7 +299,11 @@ void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType
         } else {
             m_topScopes.emplace_back(newScopeIndex);
         }
-        m_scopes.emplace_back(lastWord(m_prefixStack.back().first + pname), m_currentScope);
+
+        std::string scopePath = m_prefixStack.back().first + pname;
+        std::string scopeName = lastWord(scopePath);
+
+        m_scopes.emplace_back(std::move(scopePath), std::move(scopeName), m_currentScope);
         m_currentScope = newScopeIndex;
     }
 
@@ -310,15 +326,7 @@ void VerilatedSaif::popPrefix() {
     m_prefixStack.pop_back();
 }
 
-void VerilatedSaif::declare(const uint32_t code, const char* name, const char* wirep,
-                            const bool array, const int arraynum, const bool bussed, const int msb,
-                            const int lsb) {
-    const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
-
-    const std::string hierarchicalName = m_prefixStack.back().first + name;
-
-    if (!Super::declCode(code, hierarchicalName, bits)) return;
-
+void VerilatedSaifActivityAccumulator::declare(uint32_t code, const std::string& absoluteScopePath, std::string variableName, int bits, bool array, int arraynum) {
     const size_t block_size = 1024;
     if (m_activityArena.empty()
         || m_activityArena.back().size() + bits > m_activityArena.back().capacity()) {
@@ -328,56 +336,70 @@ void VerilatedSaif::declare(const uint32_t code, const char* name, const char* w
     const size_t bitsIdx = m_activityArena.back().size();
     m_activityArena.back().resize(m_activityArena.back().size() + bits);
 
-    std::string finalName = lastWord(hierarchicalName);
     if (array) {
-        finalName += '[';
-        finalName += std::to_string(arraynum);
-        finalName += ']';
+        variableName += '[';
+        variableName += std::to_string(arraynum);
+        variableName += ']';
     }
 
-    assert(m_currentScope >= 0);
-    m_scopes.at(m_currentScope).addActivityVar(code, std::move(finalName));
+    m_scopeToActivities[absoluteScopePath].emplace_back(code, variableName);
+    m_activity.emplace(code, VerilatedSaifActivityVar{
+        static_cast<uint32_t>(bits), m_activityArena.back().data() + bitsIdx});
+}
 
-    m_activity.emplace(code, VerilatedSaifActivityVar{static_cast<uint32_t>(bits),
-                                                      m_activityArena.back().data() + bitsIdx});
+void VerilatedSaif::declare(const uint32_t code, uint32_t fidx, const char* name, const char* wirep,
+                            const bool array, const int arraynum, const bool bussed, const int msb,
+                            const int lsb) {
+    VerilatedSaifActivityAccumulator& accumulator = m_activityAccumulators.at(fidx);
+
+    const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
+
+    const std::string hierarchicalName = m_prefixStack.back().first + name;
+
+    if (!Super::declCode(code, hierarchicalName, bits)) return;
+
+    std::string variableName = lastWord(hierarchicalName);
+    m_scopes.at(m_currentScope).addActivityVar(code, variableName);
+
+    accumulator.declare(code, m_scopes.at(m_currentScope).path(), std::move(variableName), bits, array, arraynum);
 }
 
 void VerilatedSaif::declEvent(const uint32_t code, const uint32_t fidx, const char* name,
                               const int dtypenum, const VerilatedTraceSigDirection,
                               const VerilatedTraceSigKind, const VerilatedTraceSigType,
                               const bool array, const int arraynum) {
-    declare(code, name, "event", array, arraynum, false, 0, 0);
+    declare(code, fidx, name, "event", array, arraynum, false, 0, 0);
 }
 
 void VerilatedSaif::declBit(const uint32_t code, const uint32_t fidx, const char* name,
                             const int dtypenum, const VerilatedTraceSigDirection,
                             const VerilatedTraceSigKind, const VerilatedTraceSigType,
                             const bool array, const int arraynum) {
-    declare(code, name, "wire", array, arraynum, false, 0, 0);
+    declare(code, fidx, name, "wire", array, arraynum, false, 0, 0);
 }
 void VerilatedSaif::declBus(const uint32_t code, const uint32_t fidx, const char* name,
                             const int dtypenum, const VerilatedTraceSigDirection,
                             const VerilatedTraceSigKind, const VerilatedTraceSigType,
                             const bool array, const int arraynum, const int msb, const int lsb) {
-    declare(code, name, "wire", array, arraynum, true, msb, lsb);
+    declare(code, fidx, name, "wire", array, arraynum, true, msb, lsb);
 }
 void VerilatedSaif::declQuad(const uint32_t code, const uint32_t fidx, const char* name,
                              const int dtypenum, const VerilatedTraceSigDirection,
                              const VerilatedTraceSigKind, const VerilatedTraceSigType,
                              const bool array, const int arraynum, const int msb, const int lsb) {
-    declare(code, name, "wire", array, arraynum, true, msb, lsb);
+    declare(code, fidx, name, "wire", array, arraynum, true, msb, lsb);
 }
 void VerilatedSaif::declArray(const uint32_t code, const uint32_t fidx, const char* name,
                               const int dtypenum, const VerilatedTraceSigDirection,
                               const VerilatedTraceSigKind, const VerilatedTraceSigType,
                               const bool array, const int arraynum, const int msb, const int lsb) {
-    declare(code, name, "wire", array, arraynum, true, msb, lsb);
+    declare(code, fidx, name, "wire", array, arraynum, true, msb, lsb);
 }
 void VerilatedSaif::declDouble(const uint32_t code, const uint32_t fidx, const char* name,
                                const int dtypenum, const VerilatedTraceSigDirection,
                                const VerilatedTraceSigKind, const VerilatedTraceSigType,
                                const bool array, const int arraynum) {
-    declare(code, name, "real", array, arraynum, false, 63, 0);
+    declare(code, fidx, name, "real", array, arraynum, false, 63, 0);
 }
 
 //=============================================================================
@@ -404,43 +426,43 @@ void VerilatedSaifBuffer::emitEvent(const uint32_t code) {
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitBit(const uint32_t code, const CData newval) {
-    assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
-    VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
+    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code) && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
     activity.emitBit(m_owner.currentTime(), newval);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitCData(const uint32_t code, const CData newval, const int bits) {
-    assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
-    VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
+    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code) && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
     activity.emitData<CData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitSData(const uint32_t code, const SData newval, const int bits) {
-    assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
-    VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
+    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code) && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
     activity.emitData<SData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitIData(const uint32_t code, const IData newval, const int bits) {
-    assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
-    VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
+    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code) && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
     activity.emitData<IData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitQData(const uint32_t code, const QData newval, const int bits) {
-    assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
-    VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
+    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code) && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
     activity.emitData<QData>(m_owner.currentTime(), newval, bits);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitWData(const uint32_t code, const WData* newvalp, const int bits) {
-    assert(m_owner.m_activity.count(code) && "Activity must be declared earlier");
-    VerilatedSaifActivityVar& activity = m_owner.m_activity.at(code);
+    assert(m_owner.m_activityAccumulators.at(m_fidx).m_activity.count(code) && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity = m_owner.m_activityAccumulators.at(m_fidx).m_activity.at(code);
     activity.emitWData(m_owner.currentTime(), newvalp, bits);
 }
 

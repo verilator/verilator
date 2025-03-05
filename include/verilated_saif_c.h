@@ -106,16 +106,22 @@ private:
 
 class VerilatedSaifActivityScope final {
     // MEMBERS
-    std::string m_scopeName{};  // name of the activity scope
-    std::vector<int32_t> m_childScopesIndices{};  // array indices of child scopes
-    std::vector<std::pair<uint32_t, std::string>>
-        m_childActivities{};  // children signals codes mapped to their names in the current scope
-    int32_t m_parentScopeIndex{-1};  // array index of parent scope
+    // absolute path to the scope
+    std::string m_scopePath{};
+    // name of the activity scope
+    std::string m_scopeName{};
+    // array indices of child scopes
+    std::vector<int32_t> m_childScopesIndices{};
+    // children signals codes mapped to their names in the current scope
+    std::vector<std::pair<uint32_t, std::string>> m_childActivities{};
+    // array index of parent scope
+    int32_t m_parentScopeIndex{-1};
 
 public:
     // CONSTRUCTORS
-    VerilatedSaifActivityScope(std::string name, int32_t parentScopeIndex = -1)
-        : m_scopeName{std::move(name)}
+    VerilatedSaifActivityScope(std::string scopePath, std::string name, int32_t parentScopeIndex = -1)
+        : m_scopePath{std::move(scopePath)}
+        , m_scopeName{std::move(name)}
         , m_parentScopeIndex{parentScopeIndex} {}
 
     VerilatedSaifActivityScope(VerilatedSaifActivityScope&&) = default;
@@ -131,6 +137,7 @@ public:
     VL_ATTR_ALWINLINE bool hasParent() const { return m_parentScopeIndex >= 0; }
 
     // ACCESSORS
+    VL_ATTR_ALWINLINE const std::string& path() const { return m_scopePath; }
     VL_ATTR_ALWINLINE const std::string& name() const { return m_scopeName; }
     VL_ATTR_ALWINLINE const std::vector<int32_t>& childScopesIndices() const {
         return m_childScopesIndices;
@@ -144,6 +151,33 @@ public:
 private:
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedSaifActivityScope);
+};
+
+class VerilatedSaifActivityAccumulator {
+    // Give access to the private activities
+    friend class VerilatedSaifBuffer;
+    friend class VerilatedSaif;
+
+    // MEMBERS
+    // map of scopes paths to codes of activities inside
+    std::unordered_map<std::string, std::vector<std::pair<uint32_t, std::string>>> m_scopeToActivities;
+    // map of variables codes mapped to their activity objects
+    std::unordered_map<uint32_t, VerilatedSaifActivityVar> m_activity;
+    // memory pool for signals bits objects
+    std::vector<std::vector<VerilatedSaifActivityBit>> m_activityArena;
+
+public:
+    // METHODS
+    void declare(uint32_t code, const std::string& absoluteScopePath, std::string variableName, int bits, bool array, int arraynum);
+
+    // CONSTRUCTORS
+    VerilatedSaifActivityAccumulator() = default;
+
+    VerilatedSaifActivityAccumulator(VerilatedSaifActivityAccumulator&&) = default;
+    VerilatedSaifActivityAccumulator& operator=(VerilatedSaifActivityAccumulator&&) = default;
+
+private:
+    VL_UNCOPYABLE(VerilatedSaifActivityAccumulator);
 };
 
 //=============================================================================
@@ -167,14 +201,14 @@ private:
 
     int m_indent = 0;  // indentation size in spaces
 
-    int32_t m_currentScope{-1};  // currently active scope
-    std::vector<VerilatedSaifActivityScope> m_scopes{};  // array of declared scopes
-    std::vector<int32_t> m_topScopes{};  // array of top scopes
-
-    std::unordered_map<uint32_t, VerilatedSaifActivityVar>
-        m_activity;  // map of variables codes mapped to their activity objects
-    std::vector<std::vector<VerilatedSaifActivityBit>>
-        m_activityArena;  // memory pool for signals bits objects
+    // currently active scope
+    int32_t m_currentScope{-1};
+    // array of declared scopes
+    std::vector<VerilatedSaifActivityScope> m_scopes{};
+    // array of top scopes
+    std::vector<int32_t> m_topScopes{};
+    // activity accumulators used to store variables statistics over simulation time
+    std::vector<VerilatedSaifActivityAccumulator> m_activityAccumulators{};
 
     uint64_t m_time{0};  // total time of the currently traced simulation
 
@@ -191,9 +225,10 @@ private:
     void openInstanceScope(const std::string& instanceName);
     void closeInstanceScope();
     void printScopeActivities(const VerilatedSaifActivityScope& scope);
+    bool printScopeActivitiesFromAccumulatorIfPresent(const std::string& absoluteScopePath, VerilatedSaifActivityAccumulator& accumulator, bool anyNetWritten);
     void openNetScope();
     void closeNetScope();
-    bool printActivityStats(uint32_t activityCode, const char* activityName, bool anyNetValid);
+    bool printActivityStats(VerilatedSaifActivityVar& activity, const char* activityName, bool anyNetWritten);
 
     void incrementIndent();
     void decrementIndent();
@@ -204,7 +239,7 @@ private:
 
     void clearCurrentlyCollectedData();
 
-    void declare(uint32_t code, const char* name, const char* wirep, bool array, int arraynum,
+    void declare(uint32_t code, uint32_t fidx, const char* name, const char* wirep, bool array, int arraynum,
                  bool bussed, int msb, int lsb);
 
     // CONSTRUCTORS
@@ -235,11 +270,6 @@ public:
     // CONSTRUCTOR
     explicit VerilatedSaif(void* filep = nullptr);
     ~VerilatedSaif();
-
-    // ACCESSORS
-    // Set size in bytes after which new file should be created.
-    void rolloverSize(uint64_t size) VL_MT_SAFE { /* noop */
-    }
 
     // METHODS - All must be thread safe
     // Open the file; call isOpen() to see if errors
@@ -304,10 +334,13 @@ class VerilatedSaifBuffer VL_NOT_FINAL {
     friend VerilatedSaif::OffloadBuffer;
 
     VerilatedSaif& m_owner;  // Trace file owning this buffer. Required by subclasses.
+    uint32_t m_fidx;  // Index of target activity accumulator
 
     // CONSTRUCTOR
     explicit VerilatedSaifBuffer(VerilatedSaif& owner)
-        : m_owner{owner} {}
+        : m_owner{owner}, m_fidx{0} {}
+    explicit VerilatedSaifBuffer(VerilatedSaif& owner, uint32_t fidx)
+        : m_owner{owner}, m_fidx{fidx} {}
     virtual ~VerilatedSaifBuffer() = default;
 
     //=========================================================================
@@ -351,8 +384,7 @@ public:
     /// just as if this object was deleted and reconstructed.
     virtual void open(const char* filename) VL_MT_SAFE { m_sptrace.open(filename); }
 
-    void rolloverSize(size_t size) VL_MT_SAFE { /* noop */
-    }
+    void rolloverSize(size_t size) VL_MT_SAFE {/* noop */}
 
     /// Close dump
     void close() VL_MT_SAFE {
