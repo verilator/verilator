@@ -217,8 +217,8 @@ class VerilatedSaifBuffer VL_NOT_FINAL {
 
 //=============================================================================
 // VerilatedSaifC
-/// Class representing a SAIF dump file in C standalone (no SystemC)
-/// simulations. Also derived for use in SystemC simulations.
+// Class representing a SAIF dump file in C standalone (no SystemC)
+// simulations. Also derived for use in SystemC simulations.
 
 class VerilatedSaifC VL_NOT_FINAL : public VerilatedTraceBaseC {
     VerilatedSaif m_sptrace;  // Trace file being created
@@ -227,36 +227,36 @@ class VerilatedSaifC VL_NOT_FINAL : public VerilatedTraceBaseC {
     VL_UNCOPYABLE(VerilatedSaifC);
 
 public:
-    /// Construct the dump. Optional argument is ignored
+    // Construct the dump. Optional argument is ignored
     explicit VerilatedSaifC(void* filep = nullptr)
         : m_sptrace{filep} {}
-    /// Destruct, flush, and close the dump
+    // Destruct, flush, and close the dump
     virtual ~VerilatedSaifC() { close(); }
 
     // METHODS - User called
 
-    /// Return if file is open
+    // Return if file is open
     bool isOpen() const override VL_MT_SAFE { return m_sptrace.isOpen(); }
-    /// Open a new SAIF file
-    /// This includes a complete header dump each time it is called,
-    /// just as if this object was deleted and reconstructed.
+    // Open a new SAIF file
+    // This includes a complete header dump each time it is called,
+    // just as if this object was deleted and reconstructed.
     virtual void open(const char* filename) VL_MT_SAFE { m_sptrace.open(filename); }
 
     void rolloverSize(size_t size) VL_MT_SAFE {}  // NOP
 
-    /// Close dump
+    // Close dump
     void close() VL_MT_SAFE {
         m_sptrace.close();
         modelConnected(false);
     }
-    /// Flush dump
+    // Flush dump
     void flush() VL_MT_SAFE { m_sptrace.flush(); }
-    /// Write one cycle of dump data
-    /// Call with the current context's time just after eval'ed,
-    /// e.g. ->dump(contextp->time())
+    // Write one cycle of dump data
+    // Call with the current context's time just after eval'ed,
+    // e.g. ->dump(contextp->time())
     void dump(uint64_t timeui) VL_MT_SAFE { m_sptrace.dump(timeui); }
-    /// Write one cycle of dump data - backward compatible and to reduce
-    /// conversion warnings.  It's better to use a uint64_t time instead.
+    // Write one cycle of dump data - backward compatible and to reduce
+    // conversion warnings.  It's better to use a uint64_t time instead.
     void dump(double timestamp) { dump(static_cast<uint64_t>(timestamp)); }
     void dump(uint32_t timestamp) { dump(static_cast<uint64_t>(timestamp)); }
     void dump(int timestamp) { dump(static_cast<uint64_t>(timestamp)); }
