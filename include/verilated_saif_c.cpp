@@ -218,7 +218,7 @@ private:
 //=============================================================================
 //=============================================================================
 //=============================================================================
-// VerilatedSaifActivityVar
+// VerilatedSaifActivityVar implementation
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifActivityVar::emitBit(const uint64_t time, const CData newval) {
@@ -248,7 +248,34 @@ VerilatedSaifActivityBit& VerilatedSaifActivityVar::bit(const std::size_t index)
 //=============================================================================
 //=============================================================================
 //=============================================================================
-// Opening/Closing
+// VerilatedSaifActivityAccumulator implementation
+
+void VerilatedSaifActivityAccumulator::declare(uint32_t code, const std::string& absoluteScopePath,
+                                               std::string variableName, int bits, bool array,
+                                               int arraynum) {
+    const size_t block_size = 1024;
+    if (m_activityArena.empty()
+        || m_activityArena.back().size() + bits > m_activityArena.back().capacity()) {
+        m_activityArena.emplace_back();
+        m_activityArena.back().reserve(block_size);
+    }
+    const size_t bitsIdx = m_activityArena.back().size();
+    m_activityArena.back().resize(m_activityArena.back().size() + bits);
+
+    if (array) {
+        variableName += '[';
+        variableName += std::to_string(arraynum);
+        variableName += ']';
+    }
+    m_scopeToActivities[absoluteScopePath].emplace_back(code, variableName);
+    m_activity.emplace(code, VerilatedSaifActivityVar{static_cast<uint32_t>(bits),
+                                                      m_activityArena.back().data() + bitsIdx});
+}
+
+//=============================================================================
+//=============================================================================
+//=============================================================================
+// VerilatedSaif implementation
 
 VerilatedSaif::VerilatedSaif(void* filep) {
     m_activityAccumulators.emplace_back(std::make_unique<VerilatedSaifActivityAccumulator>());
@@ -482,28 +509,6 @@ void VerilatedSaif::popPrefix() {
     m_prefixStack.pop_back();
 }
 
-void VerilatedSaifActivityAccumulator::declare(uint32_t code, const std::string& absoluteScopePath,
-                                               std::string variableName, int bits, bool array,
-                                               int arraynum) {
-    const size_t block_size = 1024;
-    if (m_activityArena.empty()
-        || m_activityArena.back().size() + bits > m_activityArena.back().capacity()) {
-        m_activityArena.emplace_back();
-        m_activityArena.back().reserve(block_size);
-    }
-    const size_t bitsIdx = m_activityArena.back().size();
-    m_activityArena.back().resize(m_activityArena.back().size() + bits);
-
-    if (array) {
-        variableName += '[';
-        variableName += std::to_string(arraynum);
-        variableName += ']';
-    }
-    m_scopeToActivities[absoluteScopePath].emplace_back(code, variableName);
-    m_activity.emplace(code, VerilatedSaifActivityVar{static_cast<uint32_t>(bits),
-                                                      m_activityArena.back().data() + bitsIdx});
-}
-
 void VerilatedSaif::declare(const uint32_t code, uint32_t fidx, const char* name,
                             const char* wirep, const bool array, const int arraynum,
                             const bool bussed, const int msb, const int lsb) {
@@ -568,6 +573,8 @@ VerilatedSaif::Buffer* VerilatedSaif::getTraceBuffer(uint32_t fidx) { return new
 
 void VerilatedSaif::commitTraceBuffer(VerilatedSaif::Buffer* bufp) { delete bufp; }
 
+//=============================================================================
+//=============================================================================
 //=============================================================================
 // VerilatedSaifBuffer implementation
 
