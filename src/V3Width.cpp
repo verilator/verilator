@@ -1996,6 +1996,7 @@ class WidthVisitor final : public VNVisitor {
             if (debug() >= 9) nodep->dumpTree("-  CastPre: ");
             // if (debug()) nodep->backp()->dumpTree("-  CastPreUpUp: ");
             userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM}.p());
+            if (debug() >= 9) nodep->dumpTree("-  CastDit: ");
             AstNodeDType* const toDtp = nodep->dtypep()->skipRefToEnump();
             AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
             const auto castable = AstNode::computeCastable(toDtp, fromDtp, nodep->fromp());
@@ -4009,9 +4010,9 @@ class WidthVisitor final : public VNVisitor {
         methodOkArguments(nodep, 0, 1);
         // IEEE 1800-2023 18.8
         if (nodep->pinsp()) {
-            nodep->dtypep(nodep->findBasicDType(VBasicDTypeKwd::INT));
-        } else {
             nodep->dtypeSetVoid();
+        } else {
+            nodep->dtypep(nodep->findBasicDType(VBasicDTypeKwd::INT));
         }
         v3Global.useRandomizeMethods(true);
     }
