@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 # pylint: disable=C0114,C0115,C0116,R0902,R0903,R0912,R0915,W0719,W0718
 ######################################################################
+#
+# Copyright 2025 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
 import argparse
 import re
 

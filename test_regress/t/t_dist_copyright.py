@@ -37,7 +37,6 @@ EXEMPT_FILES_LIST = """
     include/gtkwave
     include/vltstd
     install-sh
-    nodist/verilator_saif_diff
     src/mkinstalldirs
     test_regress/t/t_altera_lpm.v
     test_regress/t/t_flag_f__3.v
