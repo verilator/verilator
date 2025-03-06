@@ -9,8 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('linter')
+test.scenarios('simulator')
 
-test.lint(verilator_flags2=["-DTEST_DECLARE_STD"])
+test.compile()
+
+test.execute()
 
 test.passes()

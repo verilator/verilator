@@ -765,10 +765,15 @@ public:
         if (!foundp) baddot = dotname;
         return foundp;
     }
-    VSymEnt* resolveClassOrPackage(VSymEnt* lookSymp, AstClassOrPackageRef* nodep, bool classOnly,
-                                   const string& forWhat) {
+    VSymEnt* resolveClassOrPackage(VSymEnt* lookSymp, AstClassOrPackageRef* nodep, bool fallback,
+                                   bool classOnly, const string& forWhat) {
         if (nodep->classOrPackageSkipp()) return getNodeSym(nodep->classOrPackageSkipp());
-        VSymEnt* foundp = lookSymp->findIdFallback(nodep->name());
+        VSymEnt* foundp;
+        if (fallback) {
+            foundp = lookSymp->findIdFallback(nodep->name());
+        } else {
+            foundp = lookSymp->findIdFlat(nodep->name());
+        }
         if (!foundp && v3Global.rootp()->stdPackagep()) {  // Look under implied std::
             foundp = getNodeSym(v3Global.rootp()->stdPackagep())->findIdFlat(nodep->name());
         }
@@ -1038,12 +1043,8 @@ class LinkDotFindVisitor final : public VNVisitor {
         }
     }
     void visit(AstClassOrPackageRef* nodep) override {
-        if (!nodep->classOrPackageNodep()) {
-            if (nodep->name() == "$unit") {
-                nodep->classOrPackageNodep(v3Global.rootp()->dollarUnitPkgAddp());
-            } else if (nodep->name() == "std") {
-                nodep->classOrPackageNodep(v3Global.rootp()->stdPackagep());
-            }
+        if (!nodep->classOrPackageNodep() && nodep->name() == "$unit") {
+            nodep->classOrPackageNodep(v3Global.rootp()->dollarUnitPkgAddp());
         }
         iterateChildren(nodep);
     }
@@ -1183,7 +1184,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                     = VN_CAST(nodep->classOrPackagep(), ClassOrPackageRef);
                 if (dotp) {
                     AstClassOrPackageRef* const lhsp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
-                    m_statep->resolveClassOrPackage(m_curSymp, lhsp, false,
+                    m_statep->resolveClassOrPackage(m_curSymp, lhsp, true, false,
                                                     "External definition :: reference");
                     AstClass* const lhsclassp = VN_CAST(lhsp->classOrPackageSkipp(), Class);
                     if (!lhsclassp) {
@@ -1192,7 +1193,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                         m_curSymp = m_statep->getNodeSym(lhsclassp);
                         upSymp = m_curSymp;
                         AstClassOrPackageRef* const rhsp = VN_AS(dotp->rhsp(), ClassOrPackageRef);
-                        m_statep->resolveClassOrPackage(m_curSymp, rhsp, false,
+                        m_statep->resolveClassOrPackage(m_curSymp, rhsp, true, false,
                                                         "External definition :: reference");
                         AstClass* const rhsclassp = VN_CAST(rhsp->classOrPackageSkipp(), Class);
                         if (!rhsclassp) {
@@ -1211,7 +1212,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                     }
                 } else if (cpackagerefp) {
                     if (!cpackagerefp->classOrPackageSkipp()) {
-                        m_statep->resolveClassOrPackage(m_curSymp, cpackagerefp, false,
+                        m_statep->resolveClassOrPackage(m_curSymp, cpackagerefp, true, false,
                                                         "External definition :: reference");
                     }
                     AstClass* const classp = VN_CAST(cpackagerefp->classOrPackageSkipp(), Class);
@@ -1338,7 +1339,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                               "Unsupported: extern constraint definition with class-in-class");
             } else {
                 if (!cpackagerefp->classOrPackageSkipp()) {
-                    m_statep->resolveClassOrPackage(m_curSymp, cpackagerefp, false,
+                    m_statep->resolveClassOrPackage(m_curSymp, cpackagerefp, true, false,
                                                     "External definition :: reference");
                 }
                 AstClass* const classp = VN_CAST(cpackagerefp->classOrPackageSkipp(), Class);
@@ -2255,6 +2256,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
     bool m_insideClassExtParam = false;  // Inside a class from m_extendsParam
     bool m_explicitSuperNew = false;  // Hit a "super.new" call inside a "new" function
     std::map<AstNode*, AstPin*> m_usedPins;  // Pin used in this cell, map to duplicate
+    std::map<std::string, AstNodeModule*> m_modulesToRevisit;  // Modules to revisit a second time
+    AstNode* m_lastDeferredp = nullptr;  // Last node which requested a revisit of its module
 
     struct DotStates final {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -2498,6 +2501,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // e.g. parmaeterization or referring to a "class (type T) extends T"
         // Resolve it so later Class:: references into its base classes work
         symIterateNull(nodep, m_statep->getNodeSym(nodep));
+    }
+
+    // Marks the current module to be revisited after the initial AST iteration
+    void revisitLater(AstNode* deferredNodep) {
+        // Need to revisit entire module to build up all the necessary context
+        m_lastDeferredp = deferredNodep;
+        m_modulesToRevisit.insert(std::make_pair(m_modp->name(), m_modp));
     }
 
     void updateVarUse(AstVar* nodep) {
@@ -2744,12 +2754,58 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         }
                     }
                 }
-            } else if (VN_IS(nodep->lhsp(), ClassOrPackageRef)
-                       || (VN_IS(nodep->lhsp(), Dot) && VN_AS(nodep->lhsp(), Dot)->colon())) {
+            } else if (AstClassOrPackageRef* const lhsp
+                       = VN_CAST(nodep->lhsp(), ClassOrPackageRef)) {
                 // m_ds.m_dotText communicates the cell prefix between stages
-                m_ds.m_dotPos = DP_PACKAGE;
                 UINFO(8, indent() << "iter.lhs   " << m_ds.ascii() << " " << nodep << endl);
+                iterateAndNextNull(lhsp);
+                if (!lhsp->classOrPackageSkipp() && lhsp->name() != "local::") {
+                    revisitLater(nodep);
+                    m_ds = lastStates;
+                    // Resolve function args before bailing
+                    if (AstNodeFTaskRef* const ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
+                        iterateAndNextNull(ftaskrefp->pinsp());
+                    }
+                    return;
+                }
+                m_ds.m_dotPos = DP_PACKAGE;
+                // nodep->lhsp() may be a new node
+                if (AstClassOrPackageRef* const classOrPackageRefp
+                    = VN_CAST(nodep->lhsp(), ClassOrPackageRef)) {
+                    if (AstNode* const classOrPackageNodep
+                        = classOrPackageRefp->classOrPackageSkipp()) {
+                        m_ds.m_dotSymp = m_statep->getNodeSym(classOrPackageNodep);
+                    }
+                }
+                UINFO(8, indent() << "iter.ldone " << m_ds.ascii() << " " << nodep << endl);
+            } else if (VN_IS(nodep->lhsp(), Dot) && VN_AS(nodep->lhsp(), Dot)->colon()) {
+                // m_ds.m_dotText communicates the cell prefix between stages
+                UINFO(8, indent() << "iter.lhs   " << m_ds.ascii() << " " << nodep << endl);
+                m_ds.m_dotPos = DP_PACKAGE;
                 iterateAndNextNull(nodep->lhsp());
+                // nodep->lhsp() may be a new node
+                if (AstClassOrPackageRef* const crefp
+                    = VN_CAST(nodep->lhsp(), ClassOrPackageRef)) {
+                    if (!crefp->classOrPackageSkipp()) {
+                        revisitLater(nodep);
+                        m_ds = lastStates;
+                        // Resolve function args before bailing
+                        if (AstNodeFTaskRef* const ftaskrefp
+                            = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
+                            iterateAndNextNull(ftaskrefp->pinsp());
+                        }
+                        return;
+                    }
+                }
+                if (m_lastDeferredp == nodep->lhsp()) {
+                    // LHS got deferred, so this node won't be resolved. Defer it too
+                    m_ds = lastStates;
+                    // Resolve function args before bailing
+                    if (AstNodeFTaskRef* const ftaskrefp = VN_CAST(nodep->rhsp(), NodeFTaskRef)) {
+                        iterateAndNextNull(ftaskrefp->pinsp());
+                    }
+                    return;
+                }
                 UINFO(8, indent() << "iter.ldone " << m_ds.ascii() << " " << nodep << endl);
             } else {
                 m_ds.m_dotPos = DP_FIRST;
@@ -2932,10 +2988,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     first = true;
                 } else if (!cpackagerefp->classOrPackageSkipp()) {
                     VSymEnt* const foundp = m_statep->resolveClassOrPackage(
-                        m_ds.m_dotSymp, cpackagerefp, false, ":: reference");
+                        m_ds.m_dotSymp, cpackagerefp, true, false, ":: reference");
                     if (!foundp) return;
                     classOrPackagep = cpackagerefp->classOrPackageSkipp();
-                    m_ds.m_dotSymp = m_statep->getNodeSym(classOrPackagep);
+                    if (classOrPackagep) {
+                        m_ds.m_dotSymp = m_statep->getNodeSym(classOrPackagep);
+                    } else {
+                        m_ds = lastStates;
+                        return;
+                    }
                 } else {
                     classOrPackagep = cpackagerefp->classOrPackageSkipp();
                     UASSERT_OBJ(classOrPackagep, m_ds.m_dotp->lhsp(), "Bad package link");
@@ -3293,12 +3354,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VL_RESTORER(m_pinSymp);
 
             if (!nodep->classOrPackageSkipp() && nodep->name() != "local::") {
-                m_statep->resolveClassOrPackage(m_ds.m_dotSymp, nodep, false, ":: reference");
+                m_statep->resolveClassOrPackage(m_ds.m_dotSymp, nodep, m_ds.m_dotPos != DP_PACKAGE,
+                                                false, ":: reference");
             }
 
             // ClassRef's have pins, so track
             if (nodep->classOrPackageSkipp()) {
                 m_pinSymp = m_statep->getNodeSym(nodep->classOrPackageSkipp());
+            } else if (nodep->name() != "local::") {
+                return;
             }
             AstClass* const refClassp = VN_CAST(nodep->classOrPackageSkipp(), Class);
             // Make sure any extends() are properly imported within referenced class
@@ -3608,7 +3672,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 first = true;
             } else if (!cpackagerefp->classOrPackageSkipp()) {
                 VSymEnt* const foundp = m_statep->resolveClassOrPackage(
-                    m_ds.m_dotSymp, cpackagerefp, false, ":: reference");
+                    m_ds.m_dotSymp, cpackagerefp, true, false, ":: reference");
                 if (foundp) nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp());
             } else {
                 nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp());
@@ -3968,7 +4032,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     iterate(lookNodep);
                     cprp = dotp->rhsp();
                     VSymEnt* const foundp = m_statep->resolveClassOrPackage(
-                        lookSymp, lookNodep, false, nodep->verilogKwd());
+                        lookSymp, lookNodep, true, false, nodep->verilogKwd());
                     if (!foundp) return;
                     UASSERT_OBJ(lookNodep->classOrPackageSkipp(), nodep, "Bad package link");
                     lookSymp = m_statep->getNodeSym(lookNodep->classOrPackageSkipp());
@@ -3984,7 +4048,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 return;
             }
             VSymEnt* const foundp = m_statep->resolveClassOrPackage(lookSymp, cpackagerefp, true,
-                                                                    nodep->verilogKwd());
+                                                                    true, nodep->verilogKwd());
             if (foundp) {
                 if (AstClass* const classp = VN_CAST(foundp->nodep(), Class)) {
                     AstPin* paramsp = cpackagerefp->paramsp();
@@ -4151,7 +4215,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
                 if (!cpackagerefp->classOrPackageSkipp()) {
                     VSymEnt* const foundp = m_statep->resolveClassOrPackage(
-                        m_ds.m_dotSymp, cpackagerefp, false, "class/package reference");
+                        m_ds.m_dotSymp, cpackagerefp, true, false, "class/package reference");
                     if (!foundp) return;
                 }
                 nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp());
@@ -4327,6 +4391,13 @@ public:
         : m_statep{statep} {
         UINFO(4, __FUNCTION__ << ": " << endl);
         iterate(rootp);
+        std::map<std::string, AstNodeModule*> modulesToRevisit = std::move(m_modulesToRevisit);
+        m_lastDeferredp = nullptr;
+        for (auto& p : modulesToRevisit) {
+            AstNodeModule* const modp = p.second;
+            modp->foreach([](AstNode* const nodep) { nodep->user3(false); });
+            iterate(modp);
+        }
     }
     ~LinkDotResolveVisitor() override = default;
 };

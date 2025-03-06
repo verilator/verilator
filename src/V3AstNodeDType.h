@@ -50,7 +50,8 @@ protected:
 
 private:
     // METHODS
-    const AstNodeDType* skipRefIterp(bool skipConst, bool skipEnum) const VL_MT_STABLE;
+    const AstNodeDType* skipRefIterp(bool skipConst, bool skipEnum,
+                                     bool assertOn = true) const VL_MT_STABLE;
 
 protected:
     // METHODS
@@ -77,6 +78,15 @@ public:
     AstNodeDType* skipRefp() VL_MT_STABLE {
         return const_cast<AstNodeDType*>(
             static_cast<const AstNodeDType*>(this)->skipRefIterp(true, true));
+    }
+    // (Slow) Recurse over MemberDType|ParamTypeDType|RefDType|ConstDType|EnumDType to other type,
+    // Returns null if not resolved
+    const AstNodeDType* skipRefOrNullp() const VL_MT_STABLE {
+        return skipRefIterp(true, true, false);
+    }
+    AstNodeDType* skipRefOrNullp() VL_MT_STABLE {
+        return const_cast<AstNodeDType*>(
+            static_cast<const AstNodeDType*>(this)->skipRefIterp(true, true, false));
     }
     // (Slow) Recurse over MemberDType|ParamTypeDType|RefDType|EnumDType to ConstDType
     const AstNodeDType* skipRefToConstp() const { return skipRefIterp(false, true); }
