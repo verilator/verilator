@@ -56,13 +56,13 @@ private:
     int m_indent = 0;  // Indentation size in spaces
 
     // Currently active scope
-    VerilatedSaifActivityScope* m_currentScope{nullptr};
+    VerilatedSaifActivityScope* m_currentScope = nullptr;
     // Array of declared scopes
     std::vector<std::unique_ptr<VerilatedSaifActivityScope>> m_scopes{};
     // Activity accumulators used to store variables statistics over simulation time
     std::vector<std::unique_ptr<VerilatedSaifActivityAccumulator>> m_activityAccumulators{};
     // Total time of the currently traced simulation
-    uint64_t m_time{0};
+    uint64_t m_time = 0;
 
     // Stack of declared scopes combined names
     std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
@@ -83,7 +83,7 @@ private:
                                                  bool anyNetWritten);
     void openNetScope();
     void closeNetScope();
-    bool printActivityStats(VerilatedSaifActivityVar& activity, const char* activityName,
+    bool printActivityStats(VerilatedSaifActivityVar& activity, const std::string& activityName,
                             bool anyNetWritten);
 
     void incrementIndent();

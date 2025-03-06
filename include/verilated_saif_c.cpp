@@ -88,7 +88,7 @@ public:
 
 class VerilatedSaifActivityVar final {
     // MEMBERS
-    uint64_t m_lastTime{0};  // Last time when variable value was updated
+    uint64_t m_lastTime = 0;  // Last time when variable value was updated
     VerilatedSaifActivityBit* m_bits;  // Pointer to variable bits objects
     uint32_t m_width;  // Width of variable (in bits)
 
@@ -135,15 +135,15 @@ private:
 class VerilatedSaifActivityScope final {
     // MEMBERS
     // Absolute path to the scope
-    std::string m_scopePath{};
+    std::string m_scopePath;
     // Name of the activity scope
-    std::string m_scopeName{};
+    std::string m_scopeName;
     // Array indices of child scopes
     std::vector<std::unique_ptr<VerilatedSaifActivityScope>> m_childScopes{};
     // Children signals codes mapped to their names in the current scope
     std::vector<std::pair<uint32_t, std::string>> m_childActivities{};
     // Parent scope pointer
-    VerilatedSaifActivityScope* m_parentScope{nullptr};
+    VerilatedSaifActivityScope* m_parentScope = nullptr;
 
 public:
     // CONSTRUCTORS
@@ -332,7 +332,7 @@ void VerilatedSaif::closeInstanceScope() {
 }
 
 void VerilatedSaif::printScopeActivities(const VerilatedSaifActivityScope& scope) {
-    bool anyNetWritten{false};
+    bool anyNetWritten = false;
 
     for (auto& accumulator : m_activityAccumulators) {
         anyNetWritten |= printScopeActivitiesFromAccumulatorIfPresent(scope.path(), *accumulator,
@@ -369,7 +369,7 @@ void VerilatedSaif::closeNetScope() {
 }
 
 bool VerilatedSaif::printActivityStats(VerilatedSaifActivityVar& activity,
-                                       const char* activityName, bool anyNetWritten) {
+                                       const std::string& activityName, bool anyNetWritten) {
     for (size_t i = 0; i < activity.width(); ++i) {
         VerilatedSaifActivityBit& bit = activity.bit(i);
 
