@@ -64,9 +64,9 @@
 
 class VerilatedSaifActivityBit final {
     // MEMBERS
-    bool m_lastVal = false;  // last emitted activity bit value
-    uint64_t m_highTime = 0;  // total time when bit was high
-    size_t m_transitions = 0;  // total number of bit transitions
+    bool m_lastVal = false;  // Last emitted activity bit value
+    uint64_t m_highTime = 0;  // Total time when bit was high
+    size_t m_transitions = 0;  // Total number of bit transitions
 
 public:
     // METHODS
@@ -88,9 +88,9 @@ public:
 
 class VerilatedSaifActivityVar final {
     // MEMBERS
-    uint64_t m_lastTime{0};  // last time when variable value was updated
-    VerilatedSaifActivityBit* m_bits;  // pointer to variable bits objects
-    uint32_t m_width;  // width of variable (in bits)
+    uint64_t m_lastTime{0};  // Last time when variable value was updated
+    VerilatedSaifActivityBit* m_bits;  // Pointer to variable bits objects
+    uint32_t m_width;  // Width of variable (in bits)
 
 public:
     // CONSTRUCTORS
@@ -134,15 +134,15 @@ private:
 
 class VerilatedSaifActivityScope final {
     // MEMBERS
-    // absolute path to the scope
+    // Absolute path to the scope
     std::string m_scopePath{};
-    // name of the activity scope
+    // Name of the activity scope
     std::string m_scopeName{};
-    // array indices of child scopes
+    // Array indices of child scopes
     std::vector<std::unique_ptr<VerilatedSaifActivityScope>> m_childScopes{};
-    // children signals codes mapped to their names in the current scope
+    // Children signals codes mapped to their names in the current scope
     std::vector<std::pair<uint32_t, std::string>> m_childActivities{};
-    // parent scope pointer
+    // Parent scope pointer
     VerilatedSaifActivityScope* m_parentScope{nullptr};
 
 public:
@@ -192,12 +192,12 @@ class VerilatedSaifActivityAccumulator final {
     friend class VerilatedSaif;
 
     // MEMBERS
-    // map of scopes paths to codes of activities inside
+    // Map of scopes paths to codes of activities inside
     std::unordered_map<std::string, std::vector<std::pair<uint32_t, std::string>>>
         m_scopeToActivities;
-    // map of variables codes mapped to their activity objects
+    // Map of variables codes mapped to their activity objects
     std::unordered_map<uint32_t, VerilatedSaifActivityVar> m_activity;
-    // memory pool for signals bits objects
+    // Memory pool for signals bits objects
     std::vector<std::vector<VerilatedSaifActivityBit>> m_activityArena;
 
 public:
@@ -328,7 +328,7 @@ void VerilatedSaif::openInstanceScope(const std::string& instanceName) {
 void VerilatedSaif::closeInstanceScope() {
     decrementIndent();
     printIndent();
-    printStr(")\n");
+    printStr(")\n");  // INSTANCE
 }
 
 void VerilatedSaif::printScopeActivities(const VerilatedSaifActivityScope& scope) {
@@ -365,7 +365,7 @@ void VerilatedSaif::openNetScope() {
 void VerilatedSaif::closeNetScope() {
     decrementIndent();
     printIndent();
-    printStr(")\n");
+    printStr(")\n");  // NET
 }
 
 bool VerilatedSaif::printActivityStats(VerilatedSaifActivityVar& activity,
@@ -580,7 +580,7 @@ void VerilatedSaif::commitTraceBuffer(VerilatedSaif::Buffer* bufp) { delete bufp
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitEvent(const uint32_t code) {
-    // Noop
+    // NOP
 }
 
 VL_ATTR_ALWINLINE
@@ -639,5 +639,5 @@ void VerilatedSaifBuffer::emitWData(const uint32_t code, const WData* newvalp, c
 
 VL_ATTR_ALWINLINE
 void VerilatedSaifBuffer::emitDouble(const uint32_t code, const double newval) {
-    // Noop
+    // NOP
 }

@@ -55,7 +55,7 @@ class SAIFParser:
 
     def __init__(self):
         self.token_stack = []
-        # for parsing simplicity
+        # For parsing simplicity
         self.token_stack.append(SAIFToken('saif_root'))
         self.current_instance = None
         self.has_saifile_header = False
@@ -102,7 +102,7 @@ class SAIFParser:
                 index += 1
                 continue
             if re.match(r'DESIGN|DATE|VENDOR|PROGRAM_NAME|VERSION', token):
-                # noop, only skip value
+                # NOP, only skip value
                 saif_assert(index < num_of_tokens, EOF_ERROR)
                 index += 1
                 continue
@@ -157,7 +157,7 @@ class SAIFParser:
                 index += 1
                 continue
             if re.match(r'TZ|TX|TB|TG|IG|IK', token):
-                # noop, only skip value
+                # NOP, only skip value
                 index += 1
                 continue
             if self.token_stack[-2].type == NET_LIST_TYPE:
@@ -169,7 +169,7 @@ class SAIFParser:
                     f"SAIF file doesn't have a valid/compatible direction: {self.direction}")
         saif_assert(self.saif_version == "2.0",
                     f"SAIF file doesn't have a valid/compatible version: {self.saif_version}")
-        # only 'saif_root' token should be left
+        # Only 'saif_root' token should be left
         saif_assert(len(self.token_stack) == 1, "Incorrect nesting of scopes")
 
 

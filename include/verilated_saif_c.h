@@ -53,18 +53,18 @@ private:
     bool m_isOpen = false;  // True indicates open file
     std::string m_filename;  // Filename we're writing to (if open)
 
-    int m_indent = 0;  // indentation size in spaces
+    int m_indent = 0;  // Indentation size in spaces
 
-    // currently active scope
+    // Currently active scope
     VerilatedSaifActivityScope* m_currentScope{nullptr};
-    // array of declared scopes
+    // Array of declared scopes
     std::vector<std::unique_ptr<VerilatedSaifActivityScope>> m_scopes{};
-    // activity accumulators used to store variables statistics over simulation time
+    // Activity accumulators used to store variables statistics over simulation time
     std::vector<std::unique_ptr<VerilatedSaifActivityAccumulator>> m_activityAccumulators{};
-    // total time of the currently traced simulation
+    // Total time of the currently traced simulation
     uint64_t m_time{0};
 
-    // stack of declared scopes combined names
+    // Stack of declared scopes combined names
     std::vector<std::pair<std::string, VerilatedTracePrefixType>> m_prefixStack{
         {"", VerilatedTracePrefixType::SCOPE_MODULE}};
 
@@ -164,7 +164,7 @@ public:
 };
 
 #ifndef DOXYGEN
-// Declare specialization here as it's used in VerilatedFstC just below
+// Declare specialization here as it's used in VerilatedSaifC just below
 template <>
 void VerilatedSaif::Super::dump(uint64_t time);
 template <>
@@ -218,7 +218,7 @@ class VerilatedSaifBuffer VL_NOT_FINAL {
 //=============================================================================
 // VerilatedSaifC
 /// Class representing a SAIF dump file in C standalone (no SystemC)
-/// simulations.  Also derived for use in SystemC simulations.
+/// simulations. Also derived for use in SystemC simulations.
 
 class VerilatedSaifC VL_NOT_FINAL : public VerilatedTraceBaseC {
     VerilatedSaif m_sptrace;  // Trace file being created
@@ -242,8 +242,7 @@ public:
     /// just as if this object was deleted and reconstructed.
     virtual void open(const char* filename) VL_MT_SAFE { m_sptrace.open(filename); }
 
-    void rolloverSize(size_t size) VL_MT_SAFE { /* noop */
-    }
+    void rolloverSize(size_t size) VL_MT_SAFE { } // NOP
 
     /// Close dump
     void close() VL_MT_SAFE {
