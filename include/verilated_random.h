@@ -331,7 +331,7 @@ public:
     template <typename T, std::size_t N_Depth>
     typename std::enable_if<!VlIsCustomStruct<T>::value, void>::type
     write_var(VlUnpacked<T, N_Depth>& var, int width, const char* name, int dimension,
-                   std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+              std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
         m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlUnpacked<T, N_Depth>>>(
             name, width, &var, dimension, randmodeIdx);
