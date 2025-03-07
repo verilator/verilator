@@ -1311,6 +1311,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     DECL_OPTION("-facyc-simp", FOnOff, &m_fAcycSimp);
     DECL_OPTION("-fassemble", FOnOff, &m_fAssemble);
+    DECL_OPTION("-fauto-split-var", FOnOff, &m_fAutoSplitVar);
     DECL_OPTION("-fcase", FOnOff, &m_fCase);
     DECL_OPTION("-fcombine", FOnOff, &m_fCombine);
     DECL_OPTION("-fconst", FOnOff, &m_fConst);
@@ -2146,6 +2147,7 @@ void V3Options::optimize(int level) {
     const bool flag = level > 0;
     m_fAcycSimp = flag;
     m_fAssemble = flag;
+    m_fAutoSplitVar = flag;
     m_fCase = flag;
     m_fCombine = flag;
     m_fConst = flag;

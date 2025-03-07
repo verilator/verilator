@@ -563,6 +563,10 @@ Summary:
 
 .. option:: -fno-assemble
 
+.. option:: -fno-auto-var-split
+
+   Do not attempt to split variables automatically.
+
 .. option:: -fno-case
 
 .. option:: -fno-combine

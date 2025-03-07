@@ -380,6 +380,7 @@ private:
     // MEMBERS (optimizations)
     bool m_fAcycSimp;    // main switch: -fno-acyc-simp: acyclic pre-optimizations
     bool m_fAssemble;    // main switch: -fno-assemble: assign assemble
+    bool m_fAutoSplitVar;  // main switch: -fno-auto-split-var: automatic variable splitting
     bool m_fCase;        // main switch: -fno-case: case tree conversion
     bool m_fCombine;     // main switch: -fno-combine: common icode packing
     bool m_fConst;       // main switch: -fno-const: constant folding
@@ -682,6 +683,7 @@ public:
     // ACCESSORS (optimization options)
     bool fAcycSimp() const { return m_fAcycSimp; }
     bool fAssemble() const { return m_fAssemble; }
+    bool fAutoSplitVar() const { return m_fAutoSplitVar; }
     bool fCase() const { return m_fCase; }
     bool fCombine() const { return m_fCombine; }
     bool fConst() const { return m_fConst; }
