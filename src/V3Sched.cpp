@@ -737,16 +737,14 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
         map[senTreep] = trigpSenp;
     }
 
+    // Get the SenExprBuilder results
+    const SenExprBuilder::Results senResults = senExprBuilder.getAndClearResults();
+
     // Add the init and update statements
-    for (AstNodeStmt* const nodep : senExprBuilder.getAndClearInits()) {
-        initFuncp->addStmtsp(nodep);
-    }
-    for (AstNodeStmt* const nodep : senExprBuilder.getAndClearPostUpdates()) {
-        funcp->addStmtsp(nodep);
-    }
-    const auto& preUpdates = senExprBuilder.getAndClearPreUpdates();
-    if (!preUpdates.empty()) {
-        for (AstNodeStmt* const nodep : vlstd::reverse_view(preUpdates)) {
+    for (AstNodeStmt* const nodep : senResults.m_inits) initFuncp->addStmtsp(nodep);
+    for (AstNodeStmt* const nodep : senResults.m_postUpdates) funcp->addStmtsp(nodep);
+    if (!senResults.m_preUpdates.empty()) {
+        for (AstNodeStmt* const nodep : vlstd::reverse_view(senResults.m_preUpdates)) {
             UASSERT_OBJ(funcp->stmtsp(), funcp,
                         "No statements in trigger eval function, but there are pre updates");
             funcp->stmtsp()->addHereThisAsNext(nodep);
