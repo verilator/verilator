@@ -1626,6 +1626,11 @@ Summary:
 
    Disable tracing of parameters.
 
+.. option:: --trace-saif
+
+   Enable SAIF tracing in the model. This overrides :vlopt:`--trace`.
+   Specification of this format can be found in `IEEE 1801-2018<https://ieeexplore.ieee.org/document/8686430>`_ (see Annex I).
+
 .. option:: --trace-structs
 
    Enable tracing to show the name of packed structure, union, and packed

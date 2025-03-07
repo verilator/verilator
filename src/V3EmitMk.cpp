@@ -551,7 +551,7 @@ public:
         of.puts("VM_PARALLEL_BUILDS = ");
         of.puts(v3Global.useParallelBuild() ? "1" : "0");
         of.puts("\n");
-        of.puts("# Tracing output mode?  0/1 (from --trace/--trace-fst)\n");
+        of.puts("# Tracing output mode?  0/1 (from --trace/--trace-fst/--trace-saif)\n");
         of.puts("VM_TRACE = ");
         of.puts(v3Global.opt.trace() ? "1" : "0");
         of.puts("\n");
@@ -562,6 +562,10 @@ public:
         of.puts("# Tracing output mode in FST format?  0/1 (from --trace-fst)\n");
         of.puts("VM_TRACE_FST = ");
         of.puts(v3Global.opt.trace() && v3Global.opt.traceFormat().fst() ? "1" : "0");
+        of.puts("\n");
+        of.puts("# Tracing output mode in SAIF format?  0/1 (from --trace-saif)\n");
+        of.puts("VM_TRACE_SAIF = ");
+        of.puts(v3Global.opt.trace() && v3Global.opt.traceFormat().saif() ? "1" : "0");
         of.puts("\n");
 
         of.puts("\n### Object file lists...\n");

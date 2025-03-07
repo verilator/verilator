@@ -15,6 +15,10 @@
 #include <verilated_vcd_c.h>
 #define TRACE_FILE_NAME "simx.vcd"
 #define TRACE_CLASS VerilatedVcdC
+#elif VM_TRACE_SAIF
+#include <verilated_saif_c.h>
+#define TRACE_FILE_NAME "simx.saif"
+#define TRACE_CLASS VerilatedSaifC
 #endif
 
 #include <memory>
