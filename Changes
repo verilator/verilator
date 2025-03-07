@@ -11,10 +11,15 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 5.035 devel
 ==========================
 
-**Other:**
+**Major:**
 
+* Add `--trace-saif` for SAIF power traces (#5812). [Mateusz Gancarz]
 * Change `--output-groups` to default to value of `--build-jobs` (#5751).
   Those using build farms may need to now use `--output-groups 0` or otherwise.
+
+**Other:**
+
+* Support force/release with a variable reference (#5721) (#5810). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add check for `let` misused in statement context (#5733).
 * Add used language to `--preproc-resolve` output (#5795). [Kamil Rakoczy, Antmicro Ltd.]
 * Add empty veriuser.h for legacy compatibility.
@@ -24,7 +29,9 @@ Verilator 5.035 devel
 * Fix tcmalloc static link and non-22.04 builds (#5817) (#5818). [Geza Lore]
 * Fix UNOPTFLAT warnings with `--coverage-trace` and always_comb (#5821).
 * Fix function locals in SenExprBuilder (#5822). [Geza Lore]
+* Fix type_id package scope resolution (#5826). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix `rand_mode` method with cast (#5831).
+* Fix invalidating variable caches in SenExprBulider (#5834) (#5835). [Geza Lore]
 
 
 Verilator 5.034 2025-02-24
