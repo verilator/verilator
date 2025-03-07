@@ -220,7 +220,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
                 if (func != "") {
                     puts(func);
                 } else if (argp) {
-                    const bool addrof = isScan || (fmt == '@');
+                    const bool addrof = isScan || (fmt == '@') || (fmt == 'p');
                     if (addrof) puts("&(");
                     iterateConst(argp);
                     if (!addrof) emitDatap(argp);
