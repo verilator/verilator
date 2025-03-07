@@ -113,7 +113,7 @@ class ArrayStruct;
 endclass
 
 class StructArray;
-    /* verilator lint_off SIDEEFFECT */
+    /* verilator lint_off WIDTHTRUNC */
     typedef struct {
         rand int arr[3];
         rand int a;
@@ -157,7 +157,7 @@ class StructArray;
             if (!(s_arr[1].c == 1)) $stop;
         end
     endfunction
-    /* verilator lint_off SIDEEFFECT */
+    /* verilator lint_off WIDTHTRUNC */
 endclass
 
 module t_constraint_struct_complex;

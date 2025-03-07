@@ -1911,6 +1911,7 @@ public:
     }
     ASTGEN_MEMBERS_AstSFormatF;
     string name() const override VL_MT_STABLE { return m_text; }
+    void name(const string& name) override { m_text = name; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* samep) const override {
         return text() == VN_DBG_AS(samep, SFormatF)->text();

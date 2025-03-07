@@ -744,8 +744,14 @@ class ConstraintExprVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
-        AstSFormatF* newp
-            = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false, nullptr};
+        AstSFormatF* newp = nullptr;
+        if (VN_AS(nodep->fromp(), SFormatF)->name() == "(select %@ %@)") {
+            newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
+                                   VN_AS(nodep->fromp(), SFormatF)->exprsp()->cloneTreePure(true)};
+            newp->exprsp()->nextp()->name("x%8x");
+        } else
+            newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false,
+                                   nullptr};
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
