@@ -918,9 +918,9 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
             }
             case 'p': {  // 'x' but parameter is string
                 const int lbits = va_arg(ap, int);
-                const char* const cstr = va_arg(ap, const char*);
+                const std::string* const cstr = va_arg(ap, const std::string*);
                 std::ostringstream oss;
-                for (unsigned char c : std::string(cstr)) {
+                for (unsigned char c : *cstr) {
                     oss << std::hex << static_cast<int>(c);
                 }
                 std::string hex_str = oss.str();
