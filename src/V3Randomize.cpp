@@ -392,6 +392,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     exprp = nullptr;
                 }
                 if (randVarp == fromVarp) break;
+                UASSERT_OBJ(randVarp, nodep, "No rand variable found");
                 AstNode* backp = randVarp;
                 while (backp && !VN_IS(backp, Class)) backp = backp->backp();
                 RandomizeMode randMode = {};

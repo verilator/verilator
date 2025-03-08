@@ -2359,6 +2359,7 @@ public:
     AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::LOGIC); }
     AstNodeDType* findDoubleDType() const { return findBasicDType(VBasicDTypeKwd::DOUBLE); }
     AstNodeDType* findStringDType() const { return findBasicDType(VBasicDTypeKwd::STRING); }
+    AstNodeDType* findSigned8DType() const { return findBasicDType(VBasicDTypeKwd::BYTE); }
     AstNodeDType* findSigned32DType() const { return findBasicDType(VBasicDTypeKwd::INTEGER); }
     AstNodeDType* findUInt32DType() const { return findBasicDType(VBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() const { return findBasicDType(VBasicDTypeKwd::UINT64); }

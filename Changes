@@ -33,6 +33,8 @@ Verilator 5.035 devel
 * Fix type_id package scope resolution (#5826). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix `rand_mode` method with cast (#5831).
 * Fix invalidating variable caches in SenExprBulider (#5834) (#5835). [Geza Lore]
+* Fix assignment pattern as function argument (#5839)
+* Fix checking built-in method arguments (#5839)
 
 
 Verilator 5.034 2025-02-24
