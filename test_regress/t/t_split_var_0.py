@@ -19,6 +19,6 @@ test.compile(verilator_flags2=['--stats', test.t_dir + "/t_split_var_0.vlt"],
 
 test.execute()
 
-test.file_grep(test.stats, r'SplitVar,\s+Split packed variables\s+(\d+)', 13)
+test.file_grep(test.stats, r'SplitVar,\s+Split packed variables\s+(\d+)', 15)
 test.file_grep(test.stats, r'SplitVar,\s+Split unpacked arrays\s+(\d+)', 27)
 test.passes()
