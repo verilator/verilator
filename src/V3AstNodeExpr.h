@@ -243,12 +243,12 @@ protected:
     AstNodeFTaskRef(VNType t, FileLine* fl, AstNode* namep, AstNodeExpr* pinsp)
         : AstNodeExpr{t, fl} {
         this->namep(namep);
-        this->addPinsp(pinsp);
+        addPinsp(pinsp);
     }
     AstNodeFTaskRef(VNType t, FileLine* fl, const string& name, AstNodeExpr* pinsp)
         : AstNodeExpr{t, fl}
         , m_name{name} {
-        this->addPinsp(pinsp);
+        addPinsp(pinsp);
     }
 
 public:
@@ -648,7 +648,7 @@ public:
         : ASTGEN_SUPER_CMethodHard(fl)
         , m_name{name} {
         this->fromp(fromp);
-        this->addPinsp(pinsp);
+        addPinsp(pinsp);
         setPurity();
     }
     ASTGEN_MEMBERS_AstCMethodHard;
@@ -675,7 +675,7 @@ public:
     AstCast(FileLine* fl, AstNodeExpr* fromp, VFlagChildDType, AstNodeDType* dtp)
         : ASTGEN_SUPER_Cast(fl) {
         this->fromp(fromp);
-        this->childDTypep(dtp);
+        childDTypep(dtp);
         dtypeFrom(dtp);
     }
     AstCast(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
@@ -729,7 +729,7 @@ public:
     AstCellArrayRef(FileLine* fl, const string& name, AstNodeExpr* selp)
         : ASTGEN_SUPER_CellArrayRef(fl)
         , m_name{name} {
-        this->addSelp(selp);
+        addSelp(selp);
     }
     ASTGEN_MEMBERS_AstCellArrayRef;
     // ACCESSORS
@@ -770,7 +770,7 @@ public:
         : ASTGEN_SUPER_ClassOrPackageRef(fl)
         , m_name{name}
         , m_classOrPackageNodep{classOrPackageNodep} {
-        this->addParamsp(paramsp);
+        addParamsp(paramsp);
     }
     ASTGEN_MEMBERS_AstClassOrPackageRef;
     // METHODS
@@ -877,7 +877,7 @@ public:
                                   AstConsPackMember* membersp = nullptr)
         : ASTGEN_SUPER_ConsPackUOrStruct(fl) {
         this->dtypep(dtypep);
-        this->addMembersp(membersp);
+        addMembersp(membersp);
     }
     ASTGEN_MEMBERS_AstConsPackUOrStruct;
     const char* broken() const override {
@@ -1163,7 +1163,7 @@ public:
     AstDist(FileLine* fl, AstNodeExpr* exprp, AstDistItem* itemsp)
         : ASTGEN_SUPER_Inside(fl) {
         this->exprp(exprp);
-        this->addItemsp(itemsp);
+        addItemsp(itemsp);
         dtypeSetBit();
     }
     ASTGEN_MEMBERS_AstDist;
@@ -1553,7 +1553,7 @@ public:
     AstInside(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* itemsp)
         : ASTGEN_SUPER_Inside(fl) {
         this->exprp(exprp);
-        this->addItemsp(itemsp);
+        addItemsp(itemsp);
         dtypeSetBit();
     }
     ASTGEN_MEMBERS_AstInside;
@@ -1745,7 +1745,7 @@ class AstPatMember final : public AstNodeExpr {
 public:
     AstPatMember(FileLine* fl, AstNodeExpr* lhssp, AstNode* keyp, AstNodeExpr* repp)
         : ASTGEN_SUPER_PatMember(fl) {
-        this->addLhssp(lhssp);
+        addLhssp(lhssp);
         this->keyp(keyp);
         this->repp(repp);
     }
@@ -1942,7 +1942,7 @@ public:
     AstSScanF(FileLine* fl, const string& text, AstNode* fromp, AstNode* exprsp)
         : ASTGEN_SUPER_SScanF(fl)
         , m_text{text} {
-        this->addExprsp(exprsp);
+        addExprsp(exprsp);
         this->fromp(fromp);
     }
     ASTGEN_MEMBERS_AstSScanF;
@@ -2030,7 +2030,7 @@ public:
     AstSelLoopVars(FileLine* fl, AstNodeExpr* fromp, AstNode* elementsp)
         : ASTGEN_SUPER_SelLoopVars(fl) {
         this->fromp(fromp);
-        this->addElementsp(elementsp);
+        addElementsp(elementsp);
     }
     ASTGEN_MEMBERS_AstSelLoopVars;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
@@ -2151,7 +2151,7 @@ class AstSysIgnore final : public AstNodeExpr {
 public:
     AstSysIgnore(FileLine* fl, AstNode* exprsp)
         : ASTGEN_SUPER_SysIgnore(fl) {
-        this->addExprsp(exprsp);
+        addExprsp(exprsp);
     }
     ASTGEN_MEMBERS_AstSysIgnore;
     string verilogKwd() const override { return "$ignored"; }
@@ -2262,7 +2262,7 @@ class AstUCFunc final : public AstNodeExpr {
 public:
     AstUCFunc(FileLine* fl, AstNode* exprsp)
         : ASTGEN_SUPER_UCFunc(fl) {
-        this->addExprsp(exprsp);
+        addExprsp(exprsp);
     }
     ASTGEN_MEMBERS_AstUCFunc;
     bool cleanOut() const override { return false; }
@@ -2344,7 +2344,7 @@ public:
         : ASTGEN_SUPER_With(fl) {
         this->indexArgRefp(indexArgRefp);
         this->valueArgRefp(valueArgRefp);
-        this->addExprp(exprp);
+        addExprp(exprp);
     }
     ASTGEN_MEMBERS_AstWith;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
@@ -2369,7 +2369,7 @@ public:
     AstWithParse(FileLine* fl, AstNodeExpr* funcrefp, AstNode* exprsp)
         : ASTGEN_SUPER_WithParse(fl) {
         this->funcrefp(funcrefp);
-        this->addExprsp(exprsp);
+        addExprsp(exprsp);
     }
     ASTGEN_MEMBERS_AstWithParse;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }

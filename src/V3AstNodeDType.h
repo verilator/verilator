@@ -532,7 +532,7 @@ public:
     AstCDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER_CDType(fl)
         , m_name{name} {
-        this->dtypep(this);
+        dtypep(this);
     }
 
 public:
@@ -572,8 +572,8 @@ public:
     AstClassRefDType(FileLine* fl, AstClass* classp, AstPin* paramsp)
         : ASTGEN_SUPER_ClassRefDType(fl)
         , m_classp{classp} {
-        this->dtypep(this);
-        this->addParamsp(paramsp);
+        dtypep(this);
+        addParamsp(paramsp);
     }
     ASTGEN_MEMBERS_AstClassRefDType;
     // METHODS
@@ -1075,7 +1075,7 @@ class AstQueueDType final : public AstNodeDType {
 public:
     AstQueueDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstNodeExpr* boundp)
         : ASTGEN_SUPER_QueueDType(fl) {
-        this->childDTypep(dtp);
+        childDTypep(dtp);
         this->boundp(boundp);
         refDTypep(nullptr);
         dtypep(nullptr);  // V3Width will resolve
@@ -1135,7 +1135,7 @@ public:
     AstRefDType(FileLine* fl, const string& name, AstNodeExpr* classOrPackagep, AstPin* paramsp)
         : ASTGEN_SUPER_RefDType(fl)
         , m_name{name} {
-        this->classOrPackageOpp(classOrPackagep);
+        classOrPackageOpp(classOrPackagep);
         addParamsp(paramsp);
     }
     class FlagTypeOfExpr {};  // type(expr) for parser only
@@ -1352,7 +1352,7 @@ class AstUnpackArrayDType final : public AstNodeArrayDType {
 public:
     AstUnpackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep)
         : ASTGEN_SUPER_UnpackArrayDType(fl) {
-        this->childDTypep(dtp);  // Only for parser
+        childDTypep(dtp);  // Only for parser
         this->rangep(rangep);
         refDTypep(nullptr);
         dtypep(nullptr);  // V3Width will resolve
