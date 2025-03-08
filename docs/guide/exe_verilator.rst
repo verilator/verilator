@@ -644,6 +644,11 @@ Summary:
    are typically used only when recommended by a maintainer to help debug
    or work around an issue.
 
+.. option:: -fno-var-split
+
+   Do not attempt to split variables automatically. Variables explicitly
+   annotated with :option:`/*verilator&32;split_var*/` are still split.
+
 .. option:: -future0 <option>
 
    Rarely needed.  Suppress an unknown Verilator option for an option that

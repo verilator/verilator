@@ -8,10 +8,11 @@ module t (/*AUTOARG*/
    // Outputs
    o,
    // Inputs
-   clk, i
+   clk, i, idx
    );
    input clk;
    input [3:0] i;
+   input idx;
    output [3:0] o;
 
    logic [1:0][3:0] array;
@@ -21,6 +22,6 @@ module t (/*AUTOARG*/
    always @ (posedge clk)
      array[1] <= array[0];
 
-   assign o = array[1];
+   assign o = array[idx];
 
 endmodule

@@ -114,6 +114,7 @@
 
 #include "V3SplitVar.h"
 
+#include "V3AstUserAllocator.h"
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
@@ -539,19 +540,19 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         }
     }
     void visit(AstVar* nodep) override {
+        m_refsForPackedSplit[m_modp].add(nodep);
         if (!nodep->attrSplitVar()) return;  // Nothing to do
         if (!cannotSplitReason(nodep)) {
             m_refs.registerVar(nodep);
             UINFO(4, nodep->name() << " is added to candidate list.\n");
         }
-        m_refsForPackedSplit[m_modp].add(nodep);
     }
     void visit(AstVarRef* nodep) override {
+        m_refsForPackedSplit[m_modp].add(nodep);
         if (!nodep->varp()->attrSplitVar()) return;  // Nothing to do
         if (m_refs.tryAdd(m_contextp, nodep, m_inFTaskp)) {
             m_foundTargetVar.insert(nodep->varp());
         }
-        m_refsForPackedSplit[m_modp].add(nodep);
     }
     void visit(AstSel* nodep) override {
         if (VN_IS(nodep->fromp(), VarRef)) m_refsForPackedSplit[m_modp].add(nodep);
@@ -764,7 +765,7 @@ public:
     }
     ~SplitUnpackedVarVisitor() override {
         UASSERT(m_refs.empty(), "Don't forget to call split()");
-        V3Stats::addStat("SplitVar, Split unpacked arrays", m_numSplit);
+        V3Stats::addStat("SplitVar, unpacked arrays split due to attribute", m_numSplit);
     }
     const SplitVarRefsMap& getPackedVarRefs() const { return m_refsForPackedSplit; }
 
@@ -954,19 +955,27 @@ public:
 };
 
 class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
+    // NODE STATE
+    //  AstVar::user2()  -> bool. Automatically considered candidate
+    //  AstVar::user3()  -> VarInfo. Used only in findCandidates
+    const VNUser2InUse m_user2InUse;
+
     AstNetlist* const m_netp;
     const AstNodeModule* m_modp = nullptr;  // Current module (just for log)
-    int m_numSplit = 0;  // Total number of split variables
+    int m_numSplitAttr = 0;  // Number of variables split due to attribute
+    int m_numSplitAuto = 0;  // Number of variables split automatically
     // key:variable to be split. value:location where the variable is referenced.
     std::map<AstVar*, PackedVarRef, AstNodeComparator> m_refs;
     void visit(AstNodeFTask* nodep) override {
         if (!cannotSplitTaskReason(nodep)) iterateChildren(nodep);
     }
     void visit(AstVar* nodep) override {
-        if (!nodep->attrSplitVar()) return;  // Nothing to do
+        if (!nodep->attrSplitVar() && !nodep->user2()) return;  // Nothing to do
         if (const char* const reason = cannotSplitReason(nodep, true)) {
-            warnNoSplit(nodep, nodep, reason);
-            nodep->attrSplitVar(false);
+            if (nodep->attrSplitVar()) {
+                warnNoSplit(nodep, nodep, reason);
+                nodep->attrSplitVar(false);
+            }
         } else {  // Finally find a good candidate
             const bool inserted = m_refs.emplace(nodep, PackedVarRef{nodep}).second;
             if (inserted) UINFO(4, nodep->prettyNameQ() << " is added to candidate list.\n");
@@ -977,7 +986,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         visit(varp);
         const auto refit = m_refs.find(varp);
         if (refit == m_refs.end()) return;  // variable without split_var metacomment
-        UASSERT_OBJ(varp->attrSplitVar(), varp, "split_var attribute must be attached");
+        UASSERT_OBJ(varp->attrSplitVar() || varp->user2(), varp, "must be a split candidate");
         UASSERT_OBJ(!nodep->classOrPackagep(), nodep,
                     "variable in package must have been dropped beforehand.");
         const AstBasicDType* const basicp = refit->second.basicp();
@@ -999,7 +1008,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             iterateChildren(nodep);
             return;  // Variable without split_var metacomment
         }
-        UASSERT_OBJ(varp->attrSplitVar(), varp, "split_var attribute must be attached");
+        UASSERT_OBJ(varp->attrSplitVar() || varp->user2(), varp, "must be a split candidate");
 
         const std::array<AstConst*, 2> consts
             = {{VN_CAST(nodep->lsbp(), Const),
@@ -1013,7 +1022,10 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                          << " [" << consts[0]->toSInt() << ":+" << consts[1]->toSInt()
                          << "] lsb:" << refit->second.basicp()->lo() << "\n");
         } else {
-            warnNoSplit(vrefp->varp(), nodep, "its bit range cannot be determined statically");
+            if (varp->attrSplitVar()) {
+                warnNoSplit(vrefp->varp(), nodep, "its bit range cannot be determined statically");
+                varp->attrSplitVar(false);
+            }
             if (!consts[0]) {
                 UINFO(4, "LSB " << nodep->lsbp() << " is expected to be constant, but not\n");
             }
@@ -1021,7 +1033,6 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                 UINFO(4, "WIDTH " << nodep->widthp() << " is expected to be constant, but not\n");
             }
             m_refs.erase(varp);
-            varp->attrSplitVar(false);
             iterateChildren(nodep);
         }
     }
@@ -1169,6 +1180,12 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             if (vars.size() == 1 && vars.front().bitwidth() == varp->width())
                 continue;  // No split
 
+            if (varp->attrSplitVar()) {
+                ++m_numSplitAttr;
+            } else {
+                ++m_numSplitAuto;
+            }
+
             createVars(varp, ref.basicp(), vars);  // Add the split variables
 
             updateReferences(varp, ref, vars);
@@ -1191,9 +1208,91 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             } else {  // the original variable is not used anymore.
                 VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);
             }
-            ++m_numSplit;
         }
         m_refs.clear();  // Done
+    }
+
+    // Find Vars only referenced through non-overlapping constant selects,
+    // and set their user2 to mark them as split candidates
+    static void findCandidates(const RefsInModule& refSets) {
+        // Inclusive index range
+        using Range = std::pair<int32_t, int32_t>;
+
+        // Store one VarInfo per AstVar via user3
+        struct VarInfo final {
+            bool ineligible = false;  // Ineligible for automatic consideration
+            std::vector<Range> ranges;  // [lsb, msb] inclusive of Sels
+        };
+        const VNUser3InUse user3InUse;
+        AstUser3Allocator<AstVar, VarInfo> varInfos;
+
+        // Gather all Sels selecting from each variable, also mark if ineligible
+        for (const AstVarRef* const vrefp : refSets.m_refs) {
+            AstVar* const varp = vrefp->varp();
+            VarInfo& info = varInfos(varp);
+            if (info.ineligible) continue;
+            // Function return values seem not safe for splitting, even though
+            // the code above seems like it's tryinig to handle them.
+            if (varp->isFuncReturn()) {
+                info.ineligible = true;
+                continue;
+            }
+            // Don't consider ports, we don't know what is connected to them at this point
+            if (varp->isIO()) {
+                info.ineligible = true;
+                continue;
+            }
+            // Ineligible if it is not being Sel from
+            AstSel* const selp = VN_CAST(vrefp->firstAbovep(), Sel);
+            if (!selp || vrefp != selp->fromp()) {
+                info.ineligible = true;
+                continue;
+            }
+            // Ineligible if the selection range is not constant
+            AstConst* const lsbConstp = VN_CAST(selp->lsbp(), Const);
+            if (!lsbConstp) {
+                info.ineligible = true;
+                continue;
+            }
+            AstConst* const widthConstp = VN_CAST(selp->widthp(), Const);
+            if (!widthConstp) {
+                info.ineligible = true;
+                continue;
+            }
+            // All good, record the selection range
+            const int32_t lsb = lsbConstp->toSInt();
+            const int32_t msb = lsb + widthConstp->toSInt() - 1;
+            info.ranges.emplace_back(lsb, msb);
+        }
+
+        // Check the usage of each variable
+        for (AstVar* const varp : refSets.m_vars) {
+            VarInfo* const infop = varInfos.tryGet(varp);
+            if (!infop) continue;
+            // Don't consider if ineligible
+            if (infop->ineligible) continue;
+            // Sort ranges by LSB then MSB
+            std::sort(infop->ranges.begin(), infop->ranges.end(),
+                      [](const Range& a, const Range& b) {
+                          if (a.first != b.first) return a.first < b.first;
+                          return a.second < b.second;
+                      });
+            // Check for overlapping but non-identical ranges
+            bool overlap = false;
+            for (size_t i = 0; i + 1 < infop->ranges.size(); ++i) {
+                const Range& a = infop->ranges[i];
+                const Range& b = infop->ranges[i + 1];
+                // OK if the two ranges are the same
+                if (a == b) continue;
+                // OK if they don't overlap
+                if (a.second < b.first) continue;
+                // Overlap found
+                overlap = true;
+                break;
+            }
+            // If no overlapping ranges, consider it for automatic splitting
+            varp->user2(!overlap);
+        }
     }
 
 public:
@@ -1202,6 +1301,9 @@ public:
         : m_netp{nodep} {
         // If you want ignore refs and walk the tne entire AST,
         // just call iterateChildren(m_modp) and split() for each module
+        if (v3Global.opt.fVarSplit()) {
+            for (const auto& i : refs) findCandidates(i.second);
+        }
         for (auto& i : refs) {
             m_modp = i.first;
             i.second.visit(this);
@@ -1211,7 +1313,8 @@ public:
     }
     ~SplitPackedVarVisitor() override {
         UASSERT(m_refs.empty(), "Forgot to call split()");
-        V3Stats::addStat("SplitVar, Split packed variables", m_numSplit);
+        V3Stats::addStat("SplitVar, packed variables split due to attribute", m_numSplitAttr);
+        V3Stats::addStat("SplitVar, packed variables split automatically", m_numSplitAuto);
     }
 
     // Check if the passed variable can be split.
