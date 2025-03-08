@@ -962,6 +962,7 @@ class WidthVisitor final : public VNVisitor {
                 return;
             }
             UASSERT_OBJ(nodep->dtypep(), nodep, "dtype wasn't set");  // by V3WidthSel
+
             if (VN_IS(nodep->lsbp(), Const) && nodep->msbConst() < nodep->lsbConst()) {
                 // Likely impossible given above width check
                 nodep->v3warn(E_UNSUPPORTED,
@@ -1027,20 +1028,33 @@ class WidthVisitor final : public VNVisitor {
                 // evaluating type sizes for a generate block condition. We
                 // should only trigger the error if the out-of-range access is
                 // actually generated.
+                AstNodeVarRef* lrefp = AstNodeVarRef::varRefLValueRecurse(nodep);
                 if (m_doGenerate) {
-                    UINFO(5, "Selection index out of range inside generate." << endl);
+                    UINFO(5, "Selection index out of range inside generate\n");
                 } else {
                     nodep->v3warn(SELRANGE, "Selection index out of range: "
                                                 << nodep->msbConst() << ":" << nodep->lsbConst()
                                                 << " outside " << frommsb << ":" << fromlsb);
                     UINFO(1, "    Related node: " << nodep << endl);
                 }
-                // Extend it.
-                const int extendTo = nodep->msbConst() + 1;
-                AstNodeDType* const subDTypep = nodep->findLogicDType(
-                    extendTo, extendTo, nodep->fromp()->dtypep()->numeric());
-                widthCheckSized(nodep, "errorless...", nodep->fromp(), subDTypep, EXTEND_EXP,
-                                false /*noerror*/);
+                if (lrefp) UINFO(9, "    Select extend lrefp " << lrefp << endl);
+                if (lrefp && lrefp->access().isWriteOrRW()) {
+                    // lvarref[X] = ..., the expression assigned is too wide
+                    // WTF to do
+                    // Don't change the width of this lhsp, instead propagate up
+                    // to upper assign/expression the correct width
+                    AstNodeDType* const subDTypep
+                        = nodep->findLogicDType(width, width, nodep->fromp()->dtypep()->numeric());
+                    widthCheckSized(nodep, "errorless...", nodep->fromp(), subDTypep, EXTEND_EXP,
+                                    false /*noerror*/);
+                } else {
+                    // Extend it
+                    const int extendTo = nodep->msbConst() + 1;
+                    AstNodeDType* const subDTypep = nodep->findLogicDType(
+                        extendTo, extendTo, nodep->fromp()->dtypep()->numeric());
+                    widthCheckSized(nodep, "errorless...", nodep->fromp(), subDTypep, EXTEND_EXP,
+                                    false /*noerror*/);
+                }
             }
             // iterate FINAL is two blocks above
             //
@@ -1055,6 +1069,7 @@ class WidthVisitor final : public VNVisitor {
                 widthCheckSized(nodep, "Extract Range", nodep->lsbp(), selwidthDTypep, EXTEND_EXP,
                                 false /*NOWARN*/);
             }
+            // if (debug() >= 9) nodep->dumpTree("-seldone ");
         }
     }
 

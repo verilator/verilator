@@ -824,7 +824,6 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
         }
     } else if (AstArraySel* const arraySelp = VN_CAST(nodep, ArraySel)) {
         if (AstVar* const p = scVarRecurse(arraySelp->fromp())) return p;
-        if (AstVar* const p = scVarRecurse(arraySelp->bitp())) return p;
     }
     return nullptr;
 }
@@ -2484,6 +2483,22 @@ void AstNodeVarRef::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "access", access().ascii());
     dumpJsonGen(str);
 }
+AstNodeVarRef* AstNodeVarRef::varRefLValueRecurse(AstNode* nodep) {
+    // Given a (possible) lvalue expression, recurse to find the being-set NodeVarRef, else nullptr
+    if (AstNodeVarRef* const anodep = VN_CAST(nodep, NodeVarRef)) return anodep;
+    if (AstNodeSel* const anodep = VN_CAST(nodep, NodeSel))
+        return varRefLValueRecurse(anodep->fromp());
+    if (AstSel* const anodep = VN_CAST(nodep, Sel))
+        return varRefLValueRecurse(anodep->fromp());
+    if (AstArraySel* const anodep = VN_CAST(nodep, ArraySel))
+        return varRefLValueRecurse(anodep->fromp());
+    if (AstMemberSel* const anodep = VN_CAST(nodep, MemberSel))
+        return varRefLValueRecurse(anodep->fromp());
+    if (AstStructSel* const anodep = VN_CAST(nodep, StructSel))
+        return varRefLValueRecurse(anodep->fromp());
+    return nullptr;
+}
+
 void AstVarXRef::dump(std::ostream& str) const {
     this->AstNodeVarRef::dump(str);
     str << ".=" << dotted() << " ";

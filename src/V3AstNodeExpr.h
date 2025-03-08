@@ -542,6 +542,7 @@ public:
     // Know no children, and hot function, so skip iterator for speed
     // cppcheck-suppress functionConst
     void iterateChildren(VNVisitorConst& v) {}
+    static AstNodeVarRef* varRefLValueRecurse(AstNode* nodep);
 };
 
 // === Concrete node types =====================================================
