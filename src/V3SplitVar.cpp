@@ -1051,10 +1051,11 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         }
         const bool in = portp->isReadOnly();
         FileLine* const fl = portp->fileline();
+        const int portLsb = portp->basicp()->lo();
         for (const SplitNewVar& var : vars) {
             AstNodeExpr* rhsp
                 = new AstSel{fl, new AstVarRef{fl, portp, !in ? VAccess::WRITE : VAccess::READ},
-                             var.lsb(), var.bitwidth()};
+                             var.lsb() - portLsb, var.bitwidth()};
             AstNodeExpr* lhsp = new AstVarRef{fl, var.varp(), in ? VAccess::WRITE : VAccess::READ};
             if (!in) std::swap(lhsp, rhsp);
             AstNodeAssign* const assignp = newAssign(fl, lhsp, rhsp, portp);

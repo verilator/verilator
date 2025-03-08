@@ -414,6 +414,22 @@ module delay (input wire clk);
    end
 endmodule
 
+module hash_descending (
+  input logic [31:1] i /* verilator split_var */,
+  output logic [8:0] o
+);
+  assign o = i[23:15] ^ i[14:6];
+endmodule
+
+// Does the same as hash_descending but with 'i' using an ascending range
+module hash_ascending (
+  /*verilator lint_off ASCRANGE*/
+  input logic [1:31] i /* verilator split_var */,
+  /*verilator lint_on ASCRANGE*/
+  output logic [8:0] o
+);
+  assign o = i[9:17] ^ i[18:26];
+endmodule
 
 module t(/*AUTOARG*/ clk);
    input clk;
@@ -441,6 +457,19 @@ module t(/*AUTOARG*/ clk);
    var_decl_with_init i_var_decl_with_init();
    t_array_rev i_t_array_rev(clk);
 
+   logic [31:1] hash_input_d = 31'h3210abcd; // 1 based on purpose
+   /*verilator lint_off ASCRANGE*/
+   logic [1:31] hash_input_a = 31'h3210abcd; // 1 based on purpose
+   /*verilator lint_on ASCRANGE*/
+   logic [8:0] hash_output_dd;
+   logic [8:0] hash_output_da;
+   logic [8:0] hash_output_ad;
+   logic [8:0] hash_output_aa;
+   hash_descending i_hash_dd(hash_input_d, hash_output_dd);
+   hash_descending i_hash_da(hash_input_a, hash_output_da);
+   hash_ascending  i_hash_ad(hash_input_d, hash_output_ad);
+   hash_ascending  i_hash_aa(hash_input_a, hash_output_aa);
+
    assign in = 8'b10001110;
    /*verilator lint_off ASCRANGE*/
    logic [7:0] [7:0] expc
@@ -449,6 +478,7 @@ module t(/*AUTOARG*/ clk);
    /*verilator lint_on ASCRANGE*/
    always @(posedge clk) begin : always_block
       automatic bit failed = 0;
+      automatic logic [8:0] hash_expected = hash_input_d[23:15] ^ hash_input_d[14:6];
       $display("in:%b shift:%d expc:%b", in, shift, expc[7-shift]);
       for (int i = 0; i < NUMSUB; ++i) begin
          if (out[i] != expc[7-shift]) begin
@@ -460,6 +490,28 @@ module t(/*AUTOARG*/ clk);
          $display("Missmatch through_tmp:%b", through_tmp);
          failed = 1;
       end
+      if (hash_output_dd != hash_expected) begin
+        $display("Missmatch hash_output_dd: in=0x%08x out=0x%02x expected=0x%02x",
+                 hash_input_d, hash_output_dd, hash_expected);
+        failed = 1;
+      end
+      if (hash_output_da != hash_expected) begin
+        $display("Missmatch hash_output_da: in=0x%08x out=0x%02x expected=0x%02x",
+                 hash_input_a, hash_output_da, hash_expected);
+        failed = 1;
+      end
+      if (hash_output_ad != hash_expected) begin
+        $display("Missmatch hash_output_ad: in=0x%08x out=0x%02x expected=0x%02x",
+                 hash_input_d, hash_output_ad, hash_expected);
+        failed = 1;
+      end
+      if (hash_output_aa != hash_expected) begin
+        $display("Missmatch hash_output_aa: in=0x%08x out=0x%02x expected=0x%02x",
+                 hash_input_a, hash_output_aa, hash_expected);
+        failed = 1;
+      end
+      hash_input_d = {hash_input_d[ 1], hash_input_d[31:2]};
+      hash_input_a = {hash_input_a[31], hash_input_a[1:30]};
       if (failed) $stop;
       if (shift == 7) begin
          $write("*-* All Finished *-*\n");
