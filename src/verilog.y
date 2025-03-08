@@ -7160,7 +7160,6 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
                         }
         /*cont*/    class_itemListEnd endLabelE
                         { $$ = $1; $1->addMembersp($2);
-                          if ($2) $1->isParameterized(true);
                           $1->addExtendsp($3);
                           $1->addExtendsp($4);
                           $1->addMembersp($7);
