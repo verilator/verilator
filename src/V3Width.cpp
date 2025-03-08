@@ -6934,17 +6934,17 @@ class WidthVisitor final : public VNVisitor {
             = iterateCheck(nodep, "file_descriptor", underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         (void)underp;  // cppcheck
     }
+    void iterateCheckReal(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
+        // Coerce child to real if not already. Child is self-determined
+        // e.g. nodep=ADDD, underp=ADD in ADDD(ADD(a,b), real-CONST)
+        // Don't need separate PRELIM and FINAL(double) calls;
+        // as if resolves to double, the BOTH correctly resolved double,
+        // otherwise self-determined was correct
+        iterateCheckTypedSelfPrelim(nodep, side, underp, nodep->findDoubleDType(), stage);
+    }
     void iterateCheckSigned32(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to signed32 if not already. Child is self-determined
-        // underp may change as a result of replacement
-        if (stage & PRELIM) {
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, PRELIM}.p());
-        }
-        if (stage & FINAL) {
-            AstNodeDType* const expDTypep = nodep->findSigned32DType();
-            underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
-        }
-        (void)underp;  // cppcheck
+        iterateCheckTypedSelfPrelim(nodep, side, underp, nodep->findSigned32DType(), stage);
     }
     void iterateCheckDelay(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to 64-bit delay if not already. Child is self-determined
@@ -6966,36 +6966,24 @@ class WidthVisitor final : public VNVisitor {
         }
         (void)underp;  // cppcheck
     }
-    void iterateCheckReal(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
-        // Coerce child to real if not already. Child is self-determined
-        // e.g. nodep=ADDD, underp=ADD in ADDD(ADD(a,b), real-CONST)
-        // Don't need separate PRELIM and FINAL(double) calls;
-        // as if resolves to double, the BOTH correctly resolved double,
-        // otherwise self-determined was correct
-        // underp may change as a result of replacement
-        if (stage & PRELIM) {
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, PRELIM}.p());
-        }
-        if (stage & FINAL) {
-            AstNodeDType* const expDTypep = nodep->findDoubleDType();
-            underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
-        }
-        (void)underp;  // cppcheck
-    }
     void iterateCheckString(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
-        AstNodeDType* const expDTypep = nodep->findStringDType();
-        if (stage & PRELIM) {
-            underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, PRELIM}.p());
-        }
-        if (stage & FINAL) {
-            underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
-        }
-        (void)underp;  // cppcheck
+        iterateCheckTyped(nodep, side, underp, nodep->findStringDType(), stage);
     }
     void iterateCheckTyped(AstNode* nodep, const char* side, AstNode* underp,
                            AstNodeDType* expDTypep, Stage stage) {
         if (stage & PRELIM) {
             underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, PRELIM}.p());
+        }
+        if (stage & FINAL) {
+            underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
+        }
+        (void)underp;  // cppcheck
+    }
+    void iterateCheckTypedSelfPrelim(AstNode* nodep, const char* side, AstNode* underp,
+                                     AstNodeDType* expDTypep, Stage stage) {
+        // underp may change as a result of replacement
+        if (stage & PRELIM) {
+            underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, PRELIM}.p());
         }
         if (stage & FINAL) {
             underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
