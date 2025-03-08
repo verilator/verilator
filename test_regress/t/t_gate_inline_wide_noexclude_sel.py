@@ -11,9 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=['--stats', '--expand-limit 5', '-fno-auto-split-var'])
+test.lint(verilator_flags2=['--stats', '--expand-limit 5', '-fno-var-split'])
 
 test.file_grep(test.stats, r'Optimizations, Gate excluded wide expressions\s+(\d+)', 1)
 test.file_grep(test.stats, r'Optimizations, Gate sigs deleted\s+(\d+)', 9)
+test.file_grep(test.stats, r'SplitVar, packed variables split automatically\s+(\d+)', 0)
 
 test.passes()

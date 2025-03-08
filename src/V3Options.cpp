@@ -1311,7 +1311,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     DECL_OPTION("-facyc-simp", FOnOff, &m_fAcycSimp);
     DECL_OPTION("-fassemble", FOnOff, &m_fAssemble);
-    DECL_OPTION("-fauto-split-var", FOnOff, &m_fAutoSplitVar);
     DECL_OPTION("-fcase", FOnOff, &m_fCase);
     DECL_OPTION("-fcombine", FOnOff, &m_fCombine);
     DECL_OPTION("-fconst", FOnOff, &m_fConst);
@@ -1357,6 +1356,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fsubst-const", FOnOff, &m_fSubstConst);
     DECL_OPTION("-ftable", FOnOff, &m_fTable);
     DECL_OPTION("-ftaskify-all-forked", FOnOff, &m_fTaskifyAll).undocumented();  // Debug
+    DECL_OPTION("-fvar-split", FOnOff, &m_fVarSplit);
 
     DECL_OPTION("-G", CbPartialMatch, [this](const char* optp) { addParameter(optp, false); });
     DECL_OPTION("-gate-stmts", Set, &m_gateStmts);
@@ -2147,7 +2147,6 @@ void V3Options::optimize(int level) {
     const bool flag = level > 0;
     m_fAcycSimp = flag;
     m_fAssemble = flag;
-    m_fAutoSplitVar = flag;
     m_fCase = flag;
     m_fCombine = flag;
     m_fConst = flag;
@@ -2170,6 +2169,7 @@ void V3Options::optimize(int level) {
     m_fSubst = flag;
     m_fSubstConst = flag;
     m_fTable = flag;
+    m_fVarSplit = flag;
     // And set specific optimization levels
     if (level >= 3) {
         m_inlineMult = -1;  // Maximum inlining

@@ -17,5 +17,6 @@ test.execute()
 
 if test.vlt:
     test.file_grep(test.stats, r'Optimizations, Const bit op reduction\s+(\d+)', 44)
+    test.file_grep(test.stats, r'SplitVar, packed variables split automatically\s+(\d+)', 1)
 
 test.passes()

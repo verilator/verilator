@@ -765,7 +765,7 @@ public:
     }
     ~SplitUnpackedVarVisitor() override {
         UASSERT(m_refs.empty(), "Don't forget to call split()");
-        V3Stats::addStat("SplitVar, Split unpacked arrays", m_numSplit);
+        V3Stats::addStat("SplitVar, unpacked arrays split due to attribute", m_numSplit);
     }
     const SplitVarRefsMap& getPackedVarRefs() const { return m_refsForPackedSplit; }
 
@@ -956,13 +956,14 @@ public:
 
 class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     // NODE STATE
-    //  AstVar::user2()  -> Automatically considered candidate
-    //  AstVar::user3()  -> Used only in findCandidates
+    //  AstVar::user2()  -> bool. Automatically considered candidate
+    //  AstVar::user3()  -> VarInfo. Used only in findCandidates
     const VNUser2InUse m_user2InUse;
 
     AstNetlist* const m_netp;
     const AstNodeModule* m_modp = nullptr;  // Current module (just for log)
-    int m_numSplit = 0;  // Total number of split variables
+    int m_numSplitAttr = 0;  // Number of variables split due to attribute
+    int m_numSplitAuto = 0;  // Number of variables split automatically
     // key:variable to be split. value:location where the variable is referenced.
     std::map<AstVar*, PackedVarRef, AstNodeComparator> m_refs;
     void visit(AstNodeFTask* nodep) override {
@@ -1179,6 +1180,12 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             if (vars.size() == 1 && vars.front().bitwidth() == varp->width())
                 continue;  // No split
 
+            if (varp->attrSplitVar()) {
+                ++m_numSplitAttr;
+            } else {
+                ++m_numSplitAuto;
+            }
+
             createVars(varp, ref.basicp(), vars);  // Add the split variables
 
             updateReferences(varp, ref, vars);
@@ -1201,7 +1208,6 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             } else {  // the original variable is not used anymore.
                 VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);
             }
-            ++m_numSplit;
         }
         m_refs.clear();  // Done
     }
@@ -1295,7 +1301,7 @@ public:
         : m_netp{nodep} {
         // If you want ignore refs and walk the tne entire AST,
         // just call iterateChildren(m_modp) and split() for each module
-        if (v3Global.opt.fAutoSplitVar()) {
+        if (v3Global.opt.fVarSplit()) {
             for (const auto& i : refs) findCandidates(i.second);
         }
         for (auto& i : refs) {
@@ -1307,7 +1313,8 @@ public:
     }
     ~SplitPackedVarVisitor() override {
         UASSERT(m_refs.empty(), "Forgot to call split()");
-        V3Stats::addStat("SplitVar, Split packed variables", m_numSplit);
+        V3Stats::addStat("SplitVar, packed variables split due to attribute", m_numSplitAttr);
+        V3Stats::addStat("SplitVar, packed variables split automatically", m_numSplitAuto);
     }
 
     // Check if the passed variable can be split.

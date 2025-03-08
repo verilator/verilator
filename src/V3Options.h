@@ -380,7 +380,6 @@ private:
     // MEMBERS (optimizations)
     bool m_fAcycSimp;    // main switch: -fno-acyc-simp: acyclic pre-optimizations
     bool m_fAssemble;    // main switch: -fno-assemble: assign assemble
-    bool m_fAutoSplitVar;  // main switch: -fno-auto-split-var: automatic variable splitting
     bool m_fCase;        // main switch: -fno-case: case tree conversion
     bool m_fCombine;     // main switch: -fno-combine: common icode packing
     bool m_fConst;       // main switch: -fno-const: constant folding
@@ -412,6 +411,7 @@ private:
     bool m_fSubstConst;  // main switch: -fno-subst-const: final constant substitution
     bool m_fTable;       // main switch: -fno-table: lookup table creation
     bool m_fTaskifyAll = false;  // main switch: --ftaskify-all-forked
+    bool m_fVarSplit;    // main switch: -fno-var-split: automatic variable splitting
     // clang-format on
 
     bool m_available = false;  // Set to true at the end of option parsing
@@ -683,7 +683,6 @@ public:
     // ACCESSORS (optimization options)
     bool fAcycSimp() const { return m_fAcycSimp; }
     bool fAssemble() const { return m_fAssemble; }
-    bool fAutoSplitVar() const { return m_fAutoSplitVar; }
     bool fCase() const { return m_fCase; }
     bool fCombine() const { return m_fCombine; }
     bool fConst() const { return m_fConst; }
@@ -719,6 +718,7 @@ public:
     bool fSubstConst() const { return m_fSubstConst; }
     bool fTable() const { return m_fTable; }
     bool fTaskifyAll() const { return m_fTaskifyAll; }
+    bool fVarSplit() const { return m_fVarSplit; }
 
     string traceClassBase() const VL_MT_SAFE { return m_traceFormat.classBase(); }
     string traceClassLang() const { return m_traceFormat.classBase() + (systemC() ? "Sc" : "C"); }

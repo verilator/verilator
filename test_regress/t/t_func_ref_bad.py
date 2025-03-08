@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["-fno-auto-split-var"],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["-fno-var-split"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

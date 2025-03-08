@@ -563,10 +563,6 @@ Summary:
 
 .. option:: -fno-assemble
 
-.. option:: -fno-auto-var-split
-
-   Do not attempt to split variables automatically.
-
 .. option:: -fno-case
 
 .. option:: -fno-combine
@@ -647,6 +643,11 @@ Summary:
    Rarely needed. Disables one of the internal optimization steps. These
    are typically used only when recommended by a maintainer to help debug
    or work around an issue.
+
+.. option:: -fno-var-split
+
+   Do not attempt to split variables automatically. Variables explicitly
+   annotated with :option:`/*verilator&32;split_var*/` are still split.
 
 .. option:: -future0 <option>
 
