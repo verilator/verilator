@@ -2488,8 +2488,7 @@ AstNodeVarRef* AstNodeVarRef::varRefLValueRecurse(AstNode* nodep) {
     if (AstNodeVarRef* const anodep = VN_CAST(nodep, NodeVarRef)) return anodep;
     if (AstNodeSel* const anodep = VN_CAST(nodep, NodeSel))
         return varRefLValueRecurse(anodep->fromp());
-    if (AstSel* const anodep = VN_CAST(nodep, Sel))
-        return varRefLValueRecurse(anodep->fromp());
+    if (AstSel* const anodep = VN_CAST(nodep, Sel)) return varRefLValueRecurse(anodep->fromp());
     if (AstArraySel* const anodep = VN_CAST(nodep, ArraySel))
         return varRefLValueRecurse(anodep->fromp());
     if (AstMemberSel* const anodep = VN_CAST(nodep, MemberSel))
