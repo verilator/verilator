@@ -21,7 +21,7 @@ test.compile(verilator_flags2=['--cc --trace --stats +define+TEST_ATTRIBUTES'],
 test.execute()
 
 test.vcd_identical(test.trace_filename, test.golden_filename)
-test.file_grep(test.stats, r'SplitVar,\s+Split packed variables\s+(\d+)', 12)
-test.file_grep(test.stats, r'SplitVar,\s+Split unpacked arrays\s+(\d+)', 27)
+test.file_grep(test.stats, r'SplitVar,\s+packed variables split due to attribute\s+(\d+)', 12)
+test.file_grep(test.stats, r'SplitVar,\s+unpacked arrays split due to attribute\s+(\d+)', 27)
 
 test.passes()

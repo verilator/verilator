@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2024 by Wilson Snyder. This program is free software; you
+# Copyright 2025 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -10,13 +10,11 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_split_var_4.v"
 
-test.compile(verilator_flags2=['--stats'])
+test.compile(verilator_flags2=["--stats"])
 
 test.execute()
 
-test.file_grep(test.stats, r'SplitVar,\s+packed variables split due to attribute\s+(\d+)', 0)
-test.file_grep(test.stats, r'SplitVar,\s+unpacked arrays split due to attribute\s+(\d+)', 0)
+test.file_grep(test.stats, r'SplitVar, packed variables split automatically\s+(\d+)', 1)
 
 test.passes()
