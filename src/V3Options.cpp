@@ -506,7 +506,7 @@ string V3Options::fileExists(const string& filename) {
         m_impp->m_dirMap.emplace(dir, std::set<string>());
         diriter = m_impp->m_dirMap.find(dir);
 
-        std::set<string>* setp = &(diriter->second);
+        std::set<string>* const setp = &(diriter->second);
 
 #ifdef _MSC_VER
         try {
@@ -524,13 +524,11 @@ string V3Options::fileExists(const string& filename) {
 #endif
     }
     // Find it
-    const std::set<string>* filesetp = &(diriter->second);
+    const std::set<string>* const filesetp = &(diriter->second);
     const auto fileiter = filesetp->find(basename);
-    if (fileiter == filesetp->end()) {
-        return "";  // Not found
-    }
+    if (fileiter == filesetp->end()) return "";  // Not found
     // Check if it is a directory, ignore if so
-    string filenameOut = V3Os::filenameJoin(dir, basename);
+    const string filenameOut = V3Os::filenameJoin(dir, basename);
     if (!fileStatNormal(filenameOut)) return "";  // Directory
     return filenameOut;
 }
@@ -538,7 +536,7 @@ string V3Options::fileExists(const string& filename) {
 string V3Options::filePathCheckOneDir(const string& modname, const string& dirname) {
     for (const string& i : m_impp->m_libExtVs) {
         const string fn = V3Os::filenameJoin(dirname, modname + i);
-        string exists = fileExists(fn);
+        const string exists = fileExists(fn);
         if (exists != "") return exists;
     }
     return "";
@@ -578,15 +576,15 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
     const string filename = V3Os::filenameCleanup(VName::dehash(modname));
     if (!V3Os::filenameIsRel(filename)) {
         // filename is an absolute path, so can find getStdPackagePath()/getStdWaiverPath()
-        string exists = filePathCheckOneDir(filename, "");
+        const string exists = filePathCheckOneDir(filename, "");
         if (exists != "") return exists;
     }
     for (const string& dir : m_impp->m_incDirUsers) {
-        string exists = filePathCheckOneDir(filename, dir);
+        const string exists = filePathCheckOneDir(filename, dir);
         if (exists != "") return exists;
     }
     for (const string& dir : m_impp->m_incDirFallbacks) {
-        string exists = filePathCheckOneDir(filename, dir);
+        const string exists = filePathCheckOneDir(filename, dir);
         if (exists != "") return exists;
     }
 
