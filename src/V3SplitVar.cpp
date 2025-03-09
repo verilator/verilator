@@ -1223,8 +1223,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     // Find Vars only referenced through non-overlapping constant selects,
     // and set their user2 to mark them as split candidates
     static void findCandidates(const RefsInModule& refSets,
-        const std::unordered_set<AstVar*>& hasXrefs
-    ) {
+                               const std::unordered_set<AstVar*>& hasXrefs) {
         // Inclusive index range
         using Range = std::pair<int32_t, int32_t>;
 
