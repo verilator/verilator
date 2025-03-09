@@ -550,10 +550,10 @@ or "`ifdef`"'s may break other tools.
    large arrays may slow down the Verilation speed, so use this only on
    variables that require it.
 
-   Packed variables that are only referenced locally (without hiererchical
-   references) via non-overlaping, constant-indexed bit or part select
-   expressions are split automatically. This covers the somewhat comon usage
-   pattern:
+   Packed variables that are only referenced locally (without hierarchical
+   references) via non-overlapping, constant-indexed bit or part select
+   expressions are split automatically. This covers the somewhat common
+   usage pattern:
 
    .. code-block:: sv
 

@@ -23,6 +23,7 @@ Verilator 5.035 devel
 * Add check for `let` misused in statement context (#5733).
 * Add used language to `--preproc-resolve` output (#5795). [Kamil Rakoczy, Antmicro Ltd.]
 * Add empty veriuser.h for legacy compatibility.
+* Optimize automatic splitting of some packed variables (#5843). [Geza Lore]
 * Fix reset of automatic function variables (#5747). [Augustin Fabre]
 * Fix invalid code motion over branches (#5811) (#5814). [Geza Lore]
 * Fix sorting of wide SenItems (#5816). [Geza Lore]
@@ -35,6 +36,7 @@ Verilator 5.035 devel
 * Fix invalidating variable caches in SenExprBulider (#5834) (#5835). [Geza Lore]
 * Fix assignment pattern as function argument (#5839)
 * Fix checking built-in method arguments (#5839)
+* Fix splitting of packed ports with non-zero based ranges (#5842). [Geza Lore]
 
 
 Verilator 5.034 2025-02-24
