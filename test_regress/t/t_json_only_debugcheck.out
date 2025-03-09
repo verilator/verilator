@@ -993,7 +993,7 @@
      "stmtsp": [
       {"type":"STMTEXPR","name":"","addr":"(CP)","loc":"d,11:8,11:9",
        "exprp": [
-        {"type":"CMETHODHARD","name":"set","addr":"(DP)","loc":"d,11:8,11:9","dtypep":"(CB)",
+        {"type":"CMETHODHARD","name":"setBit","addr":"(DP)","loc":"d,11:8,11:9","dtypep":"(CB)",
          "fromp": [
           {"type":"VARREF","name":"__VactTriggered","addr":"(EP)","loc":"d,11:8,11:9","dtypep":"(NB)","access":"WR","varp":"(U)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
         ],

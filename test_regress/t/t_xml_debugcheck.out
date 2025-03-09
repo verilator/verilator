@@ -601,7 +601,7 @@
       <cfunc loc="a,0,0,0,0" name="_eval_settle"/>
       <cfunc loc="a,0,0,0,0" name="_eval_triggers__act">
         <stmtexpr loc="d,11,8,11,9">
-          <cmethodhard loc="d,11,8,11,9" name="set" dtype_id="7">
+          <cmethodhard loc="d,11,8,11,9" name="setBit" dtype_id="7">
             <varref loc="d,11,8,11,9" name="__VactTriggered" dtype_id="9"/>
             <const loc="d,11,8,11,9" name="32&apos;h0" dtype_id="14"/>
             <and loc="d,61,14,61,21" dtype_id="9">
