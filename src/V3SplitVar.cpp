@@ -182,6 +182,7 @@ struct SplitVarImpl VL_NOT_FINAL {
         }
         if (varp->isSigPublic()) return "it is public";
         if (varp->isUsedLoopIdx()) return "it is used as a loop variable";
+        if (varp->isForceable()) return "it is forceable";
         return nullptr;
     }
 
@@ -393,7 +394,10 @@ public:
     }
 };
 
-using SplitVarRefsMap = std::map<AstNodeModule*, RefsInModule, AstNodeComparator>;
+struct SplitVarRefs final {
+    std::map<AstNodeModule*, RefsInModule, AstNodeComparator> m_refs;
+    std::unordered_set<AstVar*> m_hasXref;
+};
 
 class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     using VarSet = std::set<AstVar*, AstNodeComparator>;
@@ -405,7 +409,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     const AstNodeFTask* m_inFTaskp = nullptr;
     size_t m_numSplit = 0;
     // List for SplitPackedVarVisitor
-    SplitVarRefsMap m_refsForPackedSplit;
+    SplitVarRefs m_forPackedSplit;
     V3UniqueNames m_tempNames;  // For generating unique temporary variable names
 
     static AstVarRef* isTargetVref(AstNode* nodep) {
@@ -437,19 +441,19 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     }
     void pushDeletep(AstNode* nodep) {  // overriding VNVisitor::pusDeletep()
         UASSERT_OBJ(m_modp, nodep, "Must not nullptr");
-        m_refsForPackedSplit[m_modp].remove(nodep);
+        m_forPackedSplit.m_refs[m_modp].remove(nodep);
         VNVisitor::pushDeletep(nodep);
     }
     AstVar* newVar(FileLine* fl, VVarType type, const std::string& name, AstNodeDType* dtp) {
         AstVar* const varp = new AstVar{fl, type, name, dtp};
         UASSERT_OBJ(m_modp, varp, "Must not nullptr");
-        m_refsForPackedSplit[m_modp].add(varp);
+        m_forPackedSplit.m_refs[m_modp].add(varp);
         return varp;
     }
     AstVarRef* newVarRef(FileLine* fl, AstVar* varp, const VAccess& access) {
         AstVarRef* const refp = new AstVarRef{fl, varp, access};
         UASSERT_OBJ(m_modp, refp, "Must not nullptr");
-        m_refsForPackedSplit[m_modp].add(refp);
+        m_forPackedSplit.m_refs[m_modp].add(refp);
         return refp;
     }
 
@@ -540,7 +544,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         }
     }
     void visit(AstVar* nodep) override {
-        m_refsForPackedSplit[m_modp].add(nodep);
+        m_forPackedSplit.m_refs[m_modp].add(nodep);
         if (!nodep->attrSplitVar()) return;  // Nothing to do
         if (!cannotSplitReason(nodep)) {
             m_refs.registerVar(nodep);
@@ -548,14 +552,18 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         }
     }
     void visit(AstVarRef* nodep) override {
-        m_refsForPackedSplit[m_modp].add(nodep);
+        m_forPackedSplit.m_refs[m_modp].add(nodep);
         if (!nodep->varp()->attrSplitVar()) return;  // Nothing to do
         if (m_refs.tryAdd(m_contextp, nodep, m_inFTaskp)) {
             m_foundTargetVar.insert(nodep->varp());
         }
     }
+    void visit(AstVarXRef* nodep) override {
+        UINFO(4, nodep->varp() << " Has hierarchical reference\n");
+        m_forPackedSplit.m_hasXref.emplace(nodep->varp());
+    }
     void visit(AstSel* nodep) override {
-        if (VN_IS(nodep->fromp(), VarRef)) m_refsForPackedSplit[m_modp].add(nodep);
+        if (VN_IS(nodep->fromp(), VarRef)) m_forPackedSplit.m_refs[m_modp].add(nodep);
         iterateChildren(nodep);
     }
     void visit(AstArraySel* nodep) override {
@@ -738,7 +746,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                     connectPort(varp, vars, nullptr);
                 }
                 varp->attrSplitVar(!cannotSplitPackedVarReason(varp));
-                m_refsForPackedSplit[m_modp].add(varp);
+                m_forPackedSplit.m_refs[m_modp].add(varp);
             } else {
                 pushDeletep(varp->unlinkFrBack());
             }
@@ -767,7 +775,7 @@ public:
         UASSERT(m_refs.empty(), "Don't forget to call split()");
         V3Stats::addStat("SplitVar, unpacked arrays split due to attribute", m_numSplit);
     }
-    const SplitVarRefsMap& getPackedVarRefs() const { return m_refsForPackedSplit; }
+    const SplitVarRefs& getPackedVarRefs() const { return std::move(m_forPackedSplit); }
 
     // Check if the passed variable can be split.
     // Even if this function returns true, the variable may not be split
@@ -1214,7 +1222,9 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
 
     // Find Vars only referenced through non-overlapping constant selects,
     // and set their user2 to mark them as split candidates
-    static void findCandidates(const RefsInModule& refSets) {
+    static void findCandidates(const RefsInModule& refSets,
+        const std::unordered_set<AstVar*>& hasXrefs
+    ) {
         // Inclusive index range
         using Range = std::pair<int32_t, int32_t>;
 
@@ -1231,6 +1241,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             AstVar* const varp = vrefp->varp();
             VarInfo& info = varInfos(varp);
             if (info.ineligible) continue;
+
             // Function return values seem not safe for splitting, even though
             // the code above seems like it's tryinig to handle them.
             if (varp->isFuncReturn()) {
@@ -1242,6 +1253,12 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                 info.ineligible = true;
                 continue;
             }
+            // Can't split variables referenced from outside the module
+            if (hasXrefs.count(varp)) {
+                info.ineligible = true;
+                continue;
+            }
+
             // Ineligible if it is not being Sel from
             AstSel* const selp = VN_CAST(vrefp->firstAbovep(), Sel);
             if (!selp || vrefp != selp->fromp()) {
@@ -1259,6 +1276,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                 info.ineligible = true;
                 continue;
             }
+
             // All good, record the selection range
             const int32_t lsb = lsbConstp->toSInt();
             const int32_t msb = lsb + widthConstp->toSInt() - 1;
@@ -1297,14 +1315,16 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
 
 public:
     // When reusing the information from SplitUnpackedVarVisitor
-    SplitPackedVarVisitor(AstNetlist* nodep, SplitVarRefsMap& refs)
+    SplitPackedVarVisitor(AstNetlist* nodep, SplitVarRefs fromUnpackedSplit)
         : m_netp{nodep} {
         // If you want ignore refs and walk the tne entire AST,
         // just call iterateChildren(m_modp) and split() for each module
         if (v3Global.opt.fVarSplit()) {
-            for (const auto& i : refs) findCandidates(i.second);
+            for (const auto& i : fromUnpackedSplit.m_refs) {
+                findCandidates(i.second, fromUnpackedSplit.m_hasXref);
+            }
         }
-        for (auto& i : refs) {
+        for (auto& i : fromUnpackedSplit.m_refs) {
             m_modp = i.first;
             i.second.visit(this);
             split();
@@ -1350,13 +1370,13 @@ const char* SplitVarImpl::cannotSplitPackedVarReason(const AstVar* varp) {
 
 void V3SplitVar::splitVariable(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    SplitVarRefsMap refs;
+    SplitVarRefs refs;
     {
         const SplitUnpackedVarVisitor visitor{nodep};
         refs = visitor.getPackedVarRefs();
     }
     V3Global::dumpCheckGlobalTree("split_var", 0, dumpTreeEitherLevel() >= 9);
-    { SplitPackedVarVisitor{nodep, refs}; }
+    { SplitPackedVarVisitor{nodep, std::move(refs)}; }
     V3Global::dumpCheckGlobalTree("split_var", 0, dumpTreeEitherLevel() >= 9);
 }
 
