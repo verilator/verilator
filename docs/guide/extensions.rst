@@ -550,6 +550,20 @@ or "`ifdef`"'s may break other tools.
    large arrays may slow down the Verilation speed, so use this only on
    variables that require it.
 
+   Packed variables that are only referenced locally (without hiererchical
+   references) via non-overlaping, constant-indexed bit or part select
+   expressions are split automatically. This covers the somewhat comon usage
+   pattern:
+
+   .. code-block:: sv
+
+         logic [1:0][31:0] tmp;
+
+         assign tmp[0] = foo    + a;
+         assign tmp[1] = tmp[1] + b;
+         assign bar    = tmp[1] + c;
+
+
    Same as :option:`split_var` configuration file option.
 
 .. option:: /*verilator&32;tag <text...>*/
