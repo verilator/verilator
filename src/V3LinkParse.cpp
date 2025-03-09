@@ -315,10 +315,7 @@ class LinkParseVisitor final : public VNVisitor {
                 nodep->varType(VVarType::LPARAM);
             }
         }
-        if (nodep->isGParam() && m_modp) {
-            m_modp->hasGParam(true);
-            if (AstClass* const classp = VN_CAST(m_modp, Class)) classp->isParameterized(true);
-        }
+        if (nodep->isGParam() && m_modp) m_modp->hasGParam(true);
 
         if (nodep->isParam() && !nodep->valuep()
             && nodep->fileline()->language() < V3LangCode::L1800_2009) {

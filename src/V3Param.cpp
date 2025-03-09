@@ -603,7 +603,7 @@ class ParamProcessor final {
         if (nodep->op4p()) replaceRefsRecurse(nodep->op4p(), oldClassp, newClassp);
         if (nodep->nextp()) replaceRefsRecurse(nodep->nextp(), oldClassp, newClassp);
     }
-    void deepCloneModule(AstNodeModule* srcModp, AstNode* cellp, AstPin* paramsp,
+    void deepCloneModule(AstNodeModule* srcModp, AstNode* ifErrorCellp, AstPin* paramsp,
                          const string& newname, const IfaceRefRefs& ifaceRefRefs) {
         // Deep clone of new module
         // Note all module internal variables will be re-linked to the new modules by clone
@@ -616,7 +616,6 @@ class ParamProcessor final {
         }
 
         if (AstClass* const newClassp = VN_CAST(newmodp, Class)) {
-            newClassp->isParameterized(false);
             replaceRefsRecurse(newmodp->stmtsp(), newClassp, VN_AS(srcModp, Class));
         }
 
@@ -624,11 +623,12 @@ class ParamProcessor final {
         newmodp->user2(false);  // We need to re-recurse this module once changed
         newmodp->recursive(false);
         newmodp->recursiveClone(false);
+        newmodp->hasGParam(false);
         // Recursion may need level cleanups
         if (newmodp->level() <= m_modp->level()) newmodp->level(m_modp->level() + 1);
         if ((newmodp->level() - srcModp->level()) >= (v3Global.opt.moduleRecursionDepth() - 2)) {
-            cellp->v3error("Exceeded maximum --module-recursion-depth of "
-                           << v3Global.opt.moduleRecursionDepth());
+            ifErrorCellp->v3error("Exceeded maximum --module-recursion-depth of "
+                                  << v3Global.opt.moduleRecursionDepth());
             return;
         }
         // Keep tree sorted by level. Note: Different parameterizations of the same recursive
@@ -642,7 +642,7 @@ class ParamProcessor final {
         }
         insertp->addNextHere(newmodp);
 
-        m_modNameMap.emplace(newmodp->name(), ModInfo(newmodp));
+        m_modNameMap.emplace(newmodp->name(), ModInfo{newmodp});
         const auto iter = m_modNameMap.find(newname);
         CloneMap* const clonemapp = &(iter->second.m_cloneMap);
         UINFO(4, "     De-parameterize to new: " << newmodp << endl);
@@ -693,14 +693,15 @@ class ParamProcessor final {
             }
         }
     }
-    const ModInfo* moduleFindOrClone(AstNodeModule* srcModp, AstNode* cellp, AstPin* paramsp,
-                                     const string& newname, const IfaceRefRefs& ifaceRefRefs) {
+    const ModInfo* moduleFindOrClone(AstNodeModule* srcModp, AstNode* ifErrorCellp,
+                                     AstPin* paramsp, const string& newname,
+                                     const IfaceRefRefs& ifaceRefRefs) {
         // Already made this flavor?
         auto it = m_modNameMap.find(newname);
         if (it != m_modNameMap.end()) {
-            UINFO(4, "     De-parameterize to old: " << it->second.m_modp << endl);
+            UINFO(4, "     De-parameterize to prev: " << it->second.m_modp << endl);
         } else {
-            deepCloneModule(srcModp, cellp, paramsp, newname, ifaceRefRefs);
+            deepCloneModule(srcModp, ifErrorCellp, paramsp, newname, ifaceRefRefs);
             it = m_modNameMap.find(newname);
             UASSERT(it != m_modNameMap.end(), "should find just-made module");
         }
@@ -1161,17 +1162,18 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->recursiveClone()) nodep->dead(true);  // Fake, made for recursive elimination
         if (nodep->dead()) return;  // Marked by LinkDot (and above)
         if (AstClass* const classp = VN_CAST(nodep, Class)) {
-            if (classp->isParameterized()) {
+            if (classp->hasGParam()) {
                 // Don't enter into a definition.
-                // If a class is used, it will be visited through a reference
+                // If a class is used, it will be visited through a reference and cloned
                 m_paramClasses.push_back(classp);
                 return;
             }
         }
 
-        if (m_iterateModule) {  // Iterating body
+        if (m_iterateModule) {  // Iterating from visitCells
             UINFO(4, " MOD-under-MOD.  " << nodep << endl);
             m_workQueue.emplace(nodep->level(), nodep);  // Delay until current module is done
+            // visitCells (which we are returning to) will process nodep from m_workQueue later
             return;
         }
 
@@ -1518,7 +1520,7 @@ public:
                 } else {
                     // Referenced. classp became a specialized class with the default
                     // values of parameters and is not a parameterized class anymore
-                    classp->isParameterized(false);
+                    classp->hasGParam(false);
                 }
             }
         }
@@ -1533,5 +1535,5 @@ public:
 void V3Param::param(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { ParamVisitor{rootp}; }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("param", 0, dumpTreeEitherLevel() >= 6);
+    V3Global::dumpCheckGlobalTree("param", 0, dumpTreeEitherLevel() >= 3);
 }
