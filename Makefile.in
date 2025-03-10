@@ -173,6 +173,7 @@ endif
 	@echo
 
 smoke-test: all_nomsg
+	make -C test_regress manifest
 	test_regress/t/t_a1_first_cc.py
 	test_regress/t/t_a2_first_sc.py
 
