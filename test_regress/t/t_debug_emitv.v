@@ -22,6 +22,7 @@ endpackage
 class Cls;
    int member = 1;
    function void method;
+      if (this != this) $stop;
    endfunction
 endclass
 

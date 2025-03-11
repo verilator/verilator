@@ -331,6 +331,9 @@ package Vt_debug_emitv___024unit;
         int signed member;
         member = 'sh1;
         task method;
+            if ((this != this)) begin
+                $stop;
+            end
         endtask
         function new;
         endfunction
