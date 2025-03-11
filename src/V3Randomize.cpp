@@ -710,9 +710,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
         if (VN_IS(nodep->bitp(), VarRef)
-            && VN_AS(nodep->bitp(), VarRef)->varp()->dtypep()->basicp()
-            && VN_AS(nodep->bitp(), VarRef)->dtypep()->basicp()->keyword()
-                   == VBasicDTypeKwd::STRING) {
+            && VN_AS(nodep->bitp(), VarRef)->isString()) {
             VNRelinker handle;
             AstNodeExpr* const idxp
                 = new AstSFormatF{fl, "#x%32p", false, nodep->bitp()->unlinkFrBack(&handle)};
