@@ -77,8 +77,12 @@ reduce a SystemVerilog design to the smallest possible reproducer.
 It can be used to automatically reduce a design with hundreds of thousands of
 lines to a minimal test case while preserving the bug-inducing behavior.
 
-Please refer to the `README
-<https://github.com/antmicro/sv-bugpoint/blob/main/README.md>`_ file for more
+With :vlopt:`--debug`, Verilator will write a *{prefix}*\ __inputs\ .vpp
+file which has all of the individual input files combined and
+pre-processed, this is often useful as the input design into `sv-bugpoint`.
+
+Please refer to `sv-bugpoint README
+<https://github.com/antmicro/sv-bugpoint/blob/main/README.md>`_ for more
 information on how to use `sv-bugpoint`.
 
 .. Contributing
