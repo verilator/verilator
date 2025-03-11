@@ -155,6 +155,7 @@ class DelayedVisitor final : public VNVisitor {
             struct {  // Stuff needed for Scheme::FlagShared
                 AstActive* activep;  // The active block for the Pre/Post logic
                 AstAlwaysPost* postp;  // The post block for commiting results
+                AstVarScope* commitFlagp;  // The commit flag variable, for reuse
                 AstIf* commitIfp;  // The previous if statement for committing, for reuse
             } m_flagSharedKit;
             struct {  // Stuff needed for Scheme::FlagUnique
@@ -421,6 +422,9 @@ class DelayedVisitor final : public VNVisitor {
         AstAlwaysPost* const postp = new AstAlwaysPost{flp};
         activep->addStmtsp(postp);
         vscpInfo.flagSharedKit().postp = postp;
+        // Initialize
+        vscpInfo.flagSharedKit().commitFlagp = nullptr;
+        vscpInfo.flagSharedKit().commitIfp = nullptr;
     }
     void convertSchemeFlagShared(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo) {
         UASSERT_OBJ(vscpInfo.m_scheme == Scheme::FlagShared, vscp, "Inconsistent NBA scheme");
@@ -443,14 +447,16 @@ class DelayedVisitor final : public VNVisitor {
         const bool consecutive = nodep == m_nextDlyp;
         m_nextDlyp = VN_CAST(nodep->nextp(), AssignDly);
 
+        VarScopeInfo* const prevVscpInfop = consecutive ? &m_vscpInfo(m_prevVscp) : nullptr;
+
         // We can reuse the flag of the previous assignment if:
         const bool reuseTheFlag =
             // Consecutive NBAs
             consecutive
             // ... that use the same scheme
-            && m_vscpInfo(m_prevVscp).m_scheme == Scheme::FlagShared
+            && prevVscpInfop->m_scheme == Scheme::FlagShared
             // ... and share the same overall update domain
-            && m_vscpInfo(m_prevVscp).senTreep()->sameTree(vscpInfo.senTreep());
+            && prevVscpInfop->senTreep()->sameTree(vscpInfo.senTreep());
 
         if (!reuseTheFlag) {
             // Create new flag
@@ -466,10 +472,25 @@ class DelayedVisitor final : public VNVisitor {
             // Add the 'Post' scheduled commit
             AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, flagVscp, VAccess::READ}};
             vscpInfo.flagSharedKit().postp->addStmtsp(ifp);
+            vscpInfo.flagSharedKit().commitFlagp = flagVscp;
             vscpInfo.flagSharedKit().commitIfp = ifp;
         } else {
-            // Reuse the commit block of the previous assignment
-            vscpInfo.flagSharedKit().commitIfp = m_vscpInfo(m_prevVscp).flagSharedKit().commitIfp;
+            if (vscp != m_prevVscp) {
+                // Different variable, ensure the commit block exists for this variable,
+                // can reuse existing one with the same flag, otherwise create a new one.
+                AstVarScope* const flagVscp = prevVscpInfop->flagSharedKit().commitFlagp;
+                UASSERT_OBJ(flagVscp, nodep, "Commit flag of previous assignment should exist");
+                if (vscpInfo.flagSharedKit().commitFlagp != flagVscp) {
+                    AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, flagVscp, VAccess::READ}};
+                    vscpInfo.flagSharedKit().postp->addStmtsp(ifp);
+                    vscpInfo.flagSharedKit().commitFlagp = flagVscp;
+                    vscpInfo.flagSharedKit().commitIfp = ifp;
+                }
+            } else {
+                // Same variable, reuse the commit block of the previous assignment
+                vscpInfo.flagSharedKit().commitFlagp = prevVscpInfop->flagSharedKit().commitFlagp;
+                vscpInfo.flagSharedKit().commitIfp = prevVscpInfop->flagSharedKit().commitIfp;
+            }
             ++m_nSharedSetFlags;
         }
         // Commit the captured value to the captured destination
