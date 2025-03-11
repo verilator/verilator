@@ -220,7 +220,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
                 if (func != "") {
                     puts(func);
                 } else if (argp) {
-                    const bool addrof = isScan || (fmt == '@');
+                    const bool addrof = isScan || (fmt == '@') || (fmt == 'p');
                     if (addrof) puts("&(");
                     iterateConst(argp);
                     if (!addrof) emitDatap(argp);
@@ -371,6 +371,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstScopeName* scopenamep, const stri
             case 'o': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'o'); break;
             case 'h':  // FALLTHRU
             case 'x': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'x'); break;
+            case 'p': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'p'); break;
             case 's': displayArg(nodep, &elistp, isScan, vfmt, ignore, 's'); break;
             case 'e': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'e'); break;
             case 'f': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'f'); break;

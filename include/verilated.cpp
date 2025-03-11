@@ -56,6 +56,7 @@
 #include <cctype>
 #include <cerrno>
 #include <cstdlib>
+#include <iostream>
 #include <limits>
 #include <list>
 #include <sstream>
@@ -913,6 +914,20 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
                     const std::string fmts{pctit, pos + 1};
                     VL_SNPRINTF(t_tmp, VL_VALUE_STRING_MAX_WIDTH, fmts.c_str(), d);
                     output += t_tmp;
+                }
+                break;
+            }
+            case 'p': {  // 'x' but parameter is string
+                const int lbits = va_arg(ap, int);
+                const std::string* const cstr = va_arg(ap, const std::string*);
+                std::ostringstream oss;
+                for (unsigned char c : *cstr) { oss << std::hex << static_cast<int>(c); }
+                std::string hex_str = oss.str();
+                if (width > 0 && widthSet) {
+                    hex_str = hex_str.size() > width
+                                  ? hex_str.substr(0, width)
+                                  : std::string(width - hex_str.size(), '0') + hex_str;
+                    output += hex_str;
                 }
                 break;
             }
