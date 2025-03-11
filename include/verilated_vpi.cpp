@@ -873,6 +873,7 @@ class VerilatedVpiImp final {
     // All only medium-speed, so use singleton function
     // Callbacks that are past or at current timestamp
     std::array<VpioCbList, CB_ENUM_MAX_VALUE> m_cbCurrentLists;
+    VpioCbList m_cbCallList;  // List of callbacks currently being called by callCbs
     VpioFutureCbs m_futureCbs;  // Time based callbacks for future timestamps
     VpioFutureCbs m_nextCbs;  // cbNextSimTime callbacks
     std::list<VerilatedVpiPutHolder> m_inertialPuts;  // Pending vpi puts due to vpiInertialDelay
@@ -925,7 +926,13 @@ public:
         for (auto& ir : s().m_cbCurrentLists[reason]) {
             if (ir.id() == id) {
                 ir.invalidate();
-                return;  // Once found, it won't also be in m_futureCbs
+                return;  // Once found, it won't also be in m_cbCallList, m_futureCbs, or m_nextCbs
+            }
+        }
+        for (auto& ir : s().m_cbCallList) {
+            if (ir.id() == id) {
+                ir.invalidate();
+                return;  // Once found, it won't also be in m_futureCbs or m_nextCbs
             }
         }
         {  // Remove from cbFuture queue
@@ -985,10 +992,9 @@ public:
         moveFutureCbs();
         if (s().m_cbCurrentLists[reason].empty()) return false;
         // Iterate on old list, making new list empty, to prevent looping over newly added elements
-        VpioCbList cbObjList;
-        std::swap(s().m_cbCurrentLists[reason], cbObjList);
+        std::swap(s().m_cbCurrentLists[reason], s().m_cbCallList);
         bool called = false;
-        for (VerilatedVpiCbHolder& ihor : cbObjList) {
+        for (VerilatedVpiCbHolder& ihor : s().m_cbCallList) {
             // cbReasonRemove sets to nullptr, so we know on removal the old end() will still exist
             if (VL_LIKELY(!ihor.invalid())) {  // Not deleted earlier
                 VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: reason_callback reason=%d id=%" PRId64 "\n",
@@ -998,6 +1004,7 @@ public:
                 called = true;
             }
         }
+        s().m_cbCallList.clear();
         return called;
     }
     static bool callValueCbs() VL_MT_UNSAFE_ONE {
