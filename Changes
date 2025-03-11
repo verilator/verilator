@@ -22,6 +22,7 @@ Verilator 5.035 devel
 * Support force/release with a variable reference (#5721) (#5810). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add check for `let` misused in statement context (#5733).
 * Add used language to `--preproc-resolve` output (#5795). [Kamil Rakoczy, Antmicro Ltd.]
+* Add `--make json` to enable integration with non-make/cmake build systems (#5799). [Andrew Voznytsa]
 * Add empty veriuser.h for legacy compatibility.
 * Optimize automatic splitting of some packed variables (#5843). [Geza Lore]
 * Fix foreach of associative array inside a constraint block (#5727) (#5841). [Yilou Wang]

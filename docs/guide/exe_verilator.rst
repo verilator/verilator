@@ -912,10 +912,12 @@ Summary:
 
    Generates a script for the specified build tool.
 
-   Supported values are ``gmake`` for GNU Make and ``cmake`` for CMake.
-   Both can be specified together.  If no build tool is specified, gmake is
-   assumed.  The executable of gmake can be configured via the environment
-   variable :option:`MAKE`.
+   Supported values are ``gmake`` for GNU Make, or ``cmake`` for CMake, or
+   ``json`` to create a JSON file to feed other build tools.
+
+   Multiple options can be specified together.  If no build tool is
+   specified, gmake is assumed.  The executable of gmake can be configured
+   via the environment variable :option:`MAKE`.
 
    When using :vlopt:`--build`, Verilator takes over the responsibility of
    building the model library/executable.  For this reason :option:`--make`
