@@ -253,6 +253,7 @@ RAW_OBJS_PCH_ASTNOMT = \
 	V3EmitCModel.o \
 	V3EmitCSyms.o \
 	V3EmitMk.o \
+	V3EmitMkJson.o \
 	V3EmitXml.o \
 	V3ExecGraph.o \
 	V3Expand.o \

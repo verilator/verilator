@@ -85,6 +85,7 @@ set(HEADERS
     V3EmitCMain.h
     V3EmitCMake.h
     V3EmitMk.h
+    V3EmitMkJson.h
     V3EmitV.h
     V3EmitXml.h
     V3Error.h
@@ -246,6 +247,7 @@ set(COMMON_SOURCES
     V3EmitCPch.cpp
     V3EmitCSyms.cpp
     V3EmitMk.cpp
+    V3EmitMkJson.cpp
     V3EmitV.cpp
     V3EmitXml.cpp
     V3Error.cpp
