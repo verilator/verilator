@@ -13,7 +13,8 @@ test.scenarios('simulator')
 test.top_filename = "t/t_flag_make_cmake.v"
 
 test.compile(verilator_flags2=['--make json'],
-             verilator_make_gmake=False, verilator_make_cmake=False)
+             verilator_make_gmake=False,
+             verilator_make_cmake=False)
 
 nout = test.run_capture("jq --version", check=False)
 version_match = re.search(r'jq-([0-9.]+)', nout, re.IGNORECASE)
