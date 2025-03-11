@@ -97,7 +97,7 @@ static int _time_cb2(p_cb_data cb_data) {
 static vpiHandle callback_handles3[2] = {NULL, NULL};
 
 static int _time_cb3(p_cb_data cb_data) {
-    size_t cb_id = (size_t) cb_data->user_data;
+    size_t cb_id = (size_t)cb_data->user_data;
     size_t cb_id_other = cb_id ? 0 : 1;
     TEST_VERBOSE_PRINTF("time_cb_3: %d\n", (int)cb_id);
     TEST_CHECK_NZ(callback_handles3[cb_id]);
@@ -139,9 +139,9 @@ extern "C" void dpii_init() {
     t3.low = 5;
     cb_data_n3.time = &t3;
     cb_data_n3.cb_rtn = _time_cb3;
-    cb_data_n3.user_data = (PLI_BYTE8*) 0;
+    cb_data_n3.user_data = (PLI_BYTE8*)0;
     callback_handles3[0] = vpi_register_cb(&cb_data_n3);
-    cb_data_n3.user_data = (PLI_BYTE8*) 1;
+    cb_data_n3.user_data = (PLI_BYTE8*)1;
     callback_handles3[1] = vpi_register_cb(&cb_data_n3);
 }
 
