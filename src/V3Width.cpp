@@ -613,13 +613,27 @@ class WidthVisitor final : public VNVisitor {
                 iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
                 iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
 
-                if (VN_IS(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
+                if (AstUnpackArrayDType* const unpackDTypep
+                    = VN_CAST(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
+                    const int unpackMinBits = unpackDTypep->arrayUnpackedElements()
+                                              * unpackDTypep->subDTypep()->widthMin();
+                    const int unpackBits = unpackDTypep->arrayUnpackedElements()
+                                           * unpackDTypep->subDTypep()->width();
                     AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
-                    nodep->lhsp(new AstCvtArrayToPacked{lhsp->fileline(), lhsp, lhsp->dtypep()});
+                    nodep->lhsp(new AstCvtArrayToPacked{lhsp->fileline(), lhsp, nullptr});
+                    nodep->lhsp()->dtypeSetLogicUnsized(unpackBits, unpackMinBits,
+                                                        VSigning::UNSIGNED);
                 }
-                if (VN_IS(nodep->rhsp()->dtypep(), UnpackArrayDType)) {
+                if (AstUnpackArrayDType* const unpackDTypep
+                    = VN_CAST(nodep->rhsp()->dtypep(), UnpackArrayDType)) {
+                    const int unpackMinBits = unpackDTypep->arrayUnpackedElements()
+                                              * unpackDTypep->subDTypep()->widthMin();
+                    const int unpackBits = unpackDTypep->arrayUnpackedElements()
+                                           * unpackDTypep->subDTypep()->width();
                     AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
-                    nodep->rhsp(new AstCvtArrayToPacked{rhsp->fileline(), rhsp, rhsp->dtypep()});
+                    nodep->rhsp(new AstCvtArrayToPacked{rhsp->fileline(), rhsp, nullptr});
+                    nodep->rhsp()->dtypeSetLogicUnsized(unpackBits, unpackMinBits,
+                                                        VSigning::UNSIGNED);
                 }
                 nodep->dtypeSetLogicUnsized(nodep->lhsp()->width() + nodep->rhsp()->width(),
                                             nodep->lhsp()->widthMin() + nodep->rhsp()->widthMin(),
