@@ -42,6 +42,7 @@ Verilator 5.035 devel
 * Fix NBA shared flag reuse (#5848). [Geza Lore]
 * Fix removal of callbacks no longer in current list (#5851) (#5852). [Gilberto Abram]
 * Fix segmentation fault on member compare (#5853).
+* Fix recursive error on virtual interfaces (#5854). [Yilou Wang]
 
 
 Verilator 5.034 2025-02-24
