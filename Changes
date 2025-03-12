@@ -41,6 +41,7 @@ Verilator 5.035 devel
 * Fix splitting of packed ports with non-zero based ranges (#5842). [Geza Lore]
 * Fix NBA shared flag reuse (#5848). [Geza Lore]
 * Fix removal of callbacks no longer in current list (#5851) (#5852). [Gilberto Abram]
+* Fix segmentation fault on member compare (#5853).
 
 
 Verilator 5.034 2025-02-24

@@ -1995,8 +1995,8 @@ AstMemberSel::AstMemberSel(FileLine* fl, AstNodeExpr* fromp, AstVar* varp)
 }
 bool AstMemberSel::sameNode(const AstNode* samep) const {
     const AstMemberSel* const sp = VN_DBG_AS(samep, MemberSel);
-    return sp != nullptr && access() == sp->access() && fromp()->isSame(sp->fromp())
-           && name() == sp->name() && varp()->sameNode(sp->varp());
+    return sp && access() == sp->access() && fromp()->isSame(sp->fromp()) && name() == sp->name()
+           && (varp() && sp->varp() && varp()->sameNode(sp->varp()));
 }
 
 void AstMemberSel::dump(std::ostream& str) const {
