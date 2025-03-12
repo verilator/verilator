@@ -432,7 +432,7 @@ class ParamProcessor final {
                 if (ptp->isGParam()) originalParamp = ptp->clonep();
             }
             if (originalIsCopy) originalParamp = m_originalParams[originalParamp];
-            clonemapp->emplace(originalParamp, stmtp);
+            if (originalParamp) clonemapp->emplace(originalParamp, stmtp);
         }
     }
     void relinkPins(const CloneMap* clonemapp, AstPin* startpinp) {
@@ -603,32 +603,32 @@ class ParamProcessor final {
         if (nodep->op4p()) replaceRefsRecurse(nodep->op4p(), oldClassp, newClassp);
         if (nodep->nextp()) replaceRefsRecurse(nodep->nextp(), oldClassp, newClassp);
     }
-    void deepCloneModule(AstNodeModule* srcModp, AstNode* ifErrorCellp, AstPin* paramsp,
+    void deepCloneModule(AstNodeModule* srcModp, AstNode* ifErrorp, AstPin* paramsp,
                          const string& newname, const IfaceRefRefs& ifaceRefRefs) {
         // Deep clone of new module
         // Note all module internal variables will be re-linked to the new modules by clone
         // However links outside the module (like on the upper cells) will not.
-        AstNodeModule* newmodp;
+        AstNodeModule* newModp;
         if (srcModp->user3p()) {
-            newmodp = VN_CAST(srcModp->user3p()->cloneTree(false), NodeModule);
+            newModp = VN_CAST(srcModp->user3p()->cloneTree(false), NodeModule);
         } else {
-            newmodp = srcModp->cloneTree(false);
+            newModp = srcModp->cloneTree(false);
         }
 
-        if (AstClass* const newClassp = VN_CAST(newmodp, Class)) {
-            replaceRefsRecurse(newmodp->stmtsp(), newClassp, VN_AS(srcModp, Class));
+        if (AstClass* const newClassp = VN_CAST(newModp, Class)) {
+            replaceRefsRecurse(newModp->stmtsp(), newClassp, VN_AS(srcModp, Class));
         }
 
-        newmodp->name(newname);
-        newmodp->user2(false);  // We need to re-recurse this module once changed
-        newmodp->recursive(false);
-        newmodp->recursiveClone(false);
-        newmodp->hasGParam(false);
+        newModp->name(newname);
+        newModp->user2(false);  // We need to re-recurse this module once changed
+        newModp->recursive(false);
+        newModp->recursiveClone(false);
+        newModp->hasGParam(false);
         // Recursion may need level cleanups
-        if (newmodp->level() <= m_modp->level()) newmodp->level(m_modp->level() + 1);
-        if ((newmodp->level() - srcModp->level()) >= (v3Global.opt.moduleRecursionDepth() - 2)) {
-            ifErrorCellp->v3error("Exceeded maximum --module-recursion-depth of "
-                                  << v3Global.opt.moduleRecursionDepth());
+        if (newModp->level() <= m_modp->level()) newModp->level(m_modp->level() + 1);
+        if ((newModp->level() - srcModp->level()) >= (v3Global.opt.moduleRecursionDepth() - 2)) {
+            ifErrorp->v3error("Exceeded maximum --module-recursion-depth of "
+                              << v3Global.opt.moduleRecursionDepth());
             return;
         }
         // Keep tree sorted by level. Note: Different parameterizations of the same recursive
@@ -637,20 +637,20 @@ class ParamProcessor final {
         // earlier expansion (see t_recursive_module_bug_2).
         AstNode* insertp = srcModp;
         while (VN_IS(insertp->nextp(), NodeModule)
-               && VN_AS(insertp->nextp(), NodeModule)->level() <= newmodp->level()) {
+               && VN_AS(insertp->nextp(), NodeModule)->level() <= newModp->level()) {
             insertp = insertp->nextp();
         }
-        insertp->addNextHere(newmodp);
+        insertp->addNextHere(newModp);
 
-        m_modNameMap.emplace(newmodp->name(), ModInfo{newmodp});
+        m_modNameMap.emplace(newModp->name(), ModInfo{newModp});
         const auto iter = m_modNameMap.find(newname);
         CloneMap* const clonemapp = &(iter->second.m_cloneMap);
-        UINFO(4, "     De-parameterize to new: " << newmodp << endl);
+        UINFO(4, "     De-parameterize to new: " << newModp << endl);
 
         // Grab all I/O so we can remap our pins later
         // Note we allow multiple users of a parameterized model,
         // thus we need to stash this info.
-        collectPins(clonemapp, newmodp, srcModp->user3p());
+        collectPins(clonemapp, newModp, srcModp->user3p());
         // Relink parameter vars to the new module
         relinkPins(clonemapp, paramsp);
         // Fix any interface references
@@ -693,15 +693,14 @@ class ParamProcessor final {
             }
         }
     }
-    const ModInfo* moduleFindOrClone(AstNodeModule* srcModp, AstNode* ifErrorCellp,
-                                     AstPin* paramsp, const string& newname,
-                                     const IfaceRefRefs& ifaceRefRefs) {
+    const ModInfo* moduleFindOrClone(AstNodeModule* srcModp, AstNode* ifErrorp, AstPin* paramsp,
+                                     const string& newname, const IfaceRefRefs& ifaceRefRefs) {
         // Already made this flavor?
         auto it = m_modNameMap.find(newname);
         if (it != m_modNameMap.end()) {
             UINFO(4, "     De-parameterize to prev: " << it->second.m_modp << endl);
         } else {
-            deepCloneModule(srcModp, ifErrorCellp, paramsp, newname, ifaceRefRefs);
+            deepCloneModule(srcModp, ifErrorp, paramsp, newname, ifaceRefRefs);
             it = m_modNameMap.find(newname);
             UASSERT(it != m_modNameMap.end(), "should find just-made module");
         }
@@ -1004,7 +1003,7 @@ public:
         // Set name for later warnings (if srcModpr changed value due to cloning)
         srcModpr->someInstanceName(instanceName);
 
-        UINFO(8, "     Done with " << nodep << endl);
+        UINFO(8, "     Done with orig " << nodep << endl);
         // if (debug() >= 10)
         // v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("param-out.tree"));
     }
@@ -1376,11 +1375,12 @@ class ParamVisitor final : public VNVisitor {
         }
     }
 
-    //! Parameter substitution for generated for loops.
-    //! @todo Unlike generated IF, we don't have to worry about short-circuiting the conditional
-    //!       expression, since this is currently restricted to simple comparisons. If we ever do
-    //!       move to more generic constant expressions, such code will be needed here.
     void visit(AstBegin* nodep) override {
+        // Parameter substitution for generated for loops.
+        // TODO Unlike generated IF, we don't have to worry about short-circuiting the
+        // conditional expression, since this is currently restricted to simple
+        // comparisons. If we ever do move to more generic constant expressions, such code
+        // will be needed here.
         if (AstGenFor* const forp = VN_AS(nodep->genforp(), GenFor)) {
             // We should have a GENFOR under here.  We will be replacing the begin,
             // so process here rather than at the generate to avoid iteration problems
@@ -1423,8 +1423,8 @@ class ParamVisitor final : public VNVisitor {
         AstNode* keepp = nullptr;
         iterateAndNextNull(nodep->exprp());
         V3Case::caseLint(nodep);
-        V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body,
-                                          // don't trigger errors yet.
+        V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the
+                                          // body, don't trigger errors yet.
         V3Const::constifyParamsEdit(nodep->exprp());  // exprp may change
         const AstConst* const exprp = VN_AS(nodep->exprp(), Const);
         // Constify

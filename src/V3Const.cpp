@@ -3871,7 +3871,7 @@ AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
     } else {
         nodep = visitor.mainAcceptEdit(nodep);
     }
-    // Because we do edits, nodep links may get trashed and core dump this.
+    // Because we do edits, nodep links may get trashed and core dump if have next line
     // if (debug() > 0) nodep->dumpTree("-  forceConDONE: ");
     return nodep;
 }
