@@ -198,6 +198,16 @@ class PremitVisitor final : public VNVisitor {
     void visit(AstNodeAssign* nodep) override {
         START_STATEMENT_OR_RETURN(nodep);
 
+        if (AstCvtArrayToPacked* packedp = VN_CAST(nodep->lhsp(), CvtArrayToPacked)) {
+            // AstCvtArrayToPacked is converted to VL_PACK, which returns rvalue,
+            // so it shouldn't be on the LHS. It is now replaced with unpacking of RHS.
+            AstNodeExpr* const exprLhsp = packedp->fromp()->unlinkFrBack();
+            packedp->replaceWith(exprLhsp);
+            VL_DO_DANGLING(pushDeletep(packedp), packedp);
+            AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+            nodep->rhsp(new AstCvtPackedToArray{rhsp->fileline(), rhsp, exprLhsp->dtypep()});
+            nodep->dtypeFrom(exprLhsp);
+        }
         // Direct assignment to a simple variable
         if (VN_IS(nodep->lhsp(), VarRef) && !AstVar::scVarRecurse(nodep->lhsp())) {
             AstNode* const rhsp = nodep->rhsp();
