@@ -223,6 +223,7 @@ class WidthVisitor final : public VNVisitor {
     const AstNodeExpr* m_randomizeFromp = nullptr;  // Current randomize method call fromp
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
+    bool m_streamConcat = false;  // True if visiting arguments of stream concatenation
     int m_dtTables = 0;  // Number of created data type tables
     TableMap m_tableMap;  // Created tables so can remove duplicates
     std::map<const AstNodeDType*, AstQueueDType*>
@@ -613,27 +614,29 @@ class WidthVisitor final : public VNVisitor {
                 iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
                 iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
 
-                if (AstUnpackArrayDType* const unpackDTypep
-                    = VN_CAST(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
-                    const int unpackMinBits = unpackDTypep->arrayUnpackedElements()
-                                              * unpackDTypep->subDTypep()->widthMin();
-                    const int unpackBits = unpackDTypep->arrayUnpackedElements()
-                                           * unpackDTypep->subDTypep()->width();
-                    AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
-                    nodep->lhsp(new AstCvtArrayToPacked{lhsp->fileline(), lhsp, nullptr});
-                    nodep->lhsp()->dtypeSetLogicUnsized(unpackBits, unpackMinBits,
-                                                        VSigning::UNSIGNED);
-                }
-                if (AstUnpackArrayDType* const unpackDTypep
-                    = VN_CAST(nodep->rhsp()->dtypep(), UnpackArrayDType)) {
-                    const int unpackMinBits = unpackDTypep->arrayUnpackedElements()
-                                              * unpackDTypep->subDTypep()->widthMin();
-                    const int unpackBits = unpackDTypep->arrayUnpackedElements()
-                                           * unpackDTypep->subDTypep()->width();
-                    AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
-                    nodep->rhsp(new AstCvtArrayToPacked{rhsp->fileline(), rhsp, nullptr});
-                    nodep->rhsp()->dtypeSetLogicUnsized(unpackBits, unpackMinBits,
-                                                        VSigning::UNSIGNED);
+                if (m_streamConcat) {
+                    if (AstUnpackArrayDType* const unpackDTypep
+                        = VN_CAST(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
+                        const int unpackMinBits = unpackDTypep->arrayUnpackedElements()
+                                                  * unpackDTypep->subDTypep()->widthMin();
+                        const int unpackBits = unpackDTypep->arrayUnpackedElements()
+                                               * unpackDTypep->subDTypep()->width();
+                        AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+                        nodep->lhsp(new AstCvtArrayToPacked{lhsp->fileline(), lhsp, nullptr});
+                        nodep->lhsp()->dtypeSetLogicUnsized(unpackBits, unpackMinBits,
+                                                            VSigning::UNSIGNED);
+                    }
+                    if (AstUnpackArrayDType* const unpackDTypep
+                        = VN_CAST(nodep->rhsp()->dtypep(), UnpackArrayDType)) {
+                        const int unpackMinBits = unpackDTypep->arrayUnpackedElements()
+                                                  * unpackDTypep->subDTypep()->widthMin();
+                        const int unpackBits = unpackDTypep->arrayUnpackedElements()
+                                               * unpackDTypep->subDTypep()->width();
+                        AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+                        nodep->rhsp(new AstCvtArrayToPacked{rhsp->fileline(), rhsp, nullptr});
+                        nodep->rhsp()->dtypeSetLogicUnsized(unpackBits, unpackMinBits,
+                                                            VSigning::UNSIGNED);
+                    }
                 }
                 nodep->dtypeSetLogicUnsized(nodep->lhsp()->width() + nodep->rhsp()->width(),
                                             nodep->lhsp()->widthMin() + nodep->rhsp()->widthMin(),
@@ -900,8 +903,11 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeStream* nodep) override {
+        VL_RESTORER(m_streamConcat);
         if (m_vup->prelim()) {
+            m_streamConcat = true;
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
+            m_streamConcat = false;
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             V3Const::constifyParamsEdit(nodep->rhsp());  // rhsp may change
             if (const AstConst* const constp = VN_CAST(nodep->rhsp(), Const)) {
