@@ -612,6 +612,15 @@ class WidthVisitor final : public VNVisitor {
             } else {
                 iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
                 iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
+
+                if (VN_IS(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
+                    AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+                    nodep->lhsp(new AstCvtArrayToPacked{lhsp->fileline(), lhsp, lhsp->dtypep()});
+                }
+                if (VN_IS(nodep->rhsp()->dtypep(), UnpackArrayDType)) {
+                    AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+                    nodep->rhsp(new AstCvtArrayToPacked{rhsp->fileline(), rhsp, rhsp->dtypep()});
+                }
                 nodep->dtypeSetLogicUnsized(nodep->lhsp()->width() + nodep->rhsp()->width(),
                                             nodep->lhsp()->widthMin() + nodep->rhsp()->widthMin(),
                                             VSigning::UNSIGNED);
