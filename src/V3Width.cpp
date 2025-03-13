@@ -239,6 +239,18 @@ class WidthVisitor final : public VNVisitor {
         EXTEND_OFF  // No extension
     };
 
+    static void packIfUnpacked(AstNodeExpr* const nodep) {
+        if (AstUnpackArrayDType* const unpackDTypep = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
+            const int elementsNum = unpackDTypep->arrayUnpackedElements();
+            const int unpackMinBits = elementsNum * unpackDTypep->subDTypep()->widthMin();
+            const int unpackBits = elementsNum * unpackDTypep->subDTypep()->width();
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
+            relinker.relink(new AstCvtArrayToPacked{
+                nodep->fileline(), nodep,
+                nodep->findLogicDType(unpackBits, unpackMinBits, VSigning::UNSIGNED)});
+        }
+    }
     // VISITORS
     //   Naming:  width_O{outputtype}_L{lhstype}_R{rhstype}_W{widthing}_S{signing}
     //          Where type:
@@ -615,28 +627,8 @@ class WidthVisitor final : public VNVisitor {
                 iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
 
                 if (m_streamConcat) {
-                    if (AstUnpackArrayDType* const unpackDTypep
-                        = VN_CAST(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
-                        const int unpackMinBits = unpackDTypep->arrayUnpackedElements()
-                                                  * unpackDTypep->subDTypep()->widthMin();
-                        const int unpackBits = unpackDTypep->arrayUnpackedElements()
-                                               * unpackDTypep->subDTypep()->width();
-                        AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
-                        nodep->lhsp(new AstCvtArrayToPacked{lhsp->fileline(), lhsp, nullptr});
-                        nodep->lhsp()->dtypeSetLogicUnsized(unpackBits, unpackMinBits,
-                                                            VSigning::UNSIGNED);
-                    }
-                    if (AstUnpackArrayDType* const unpackDTypep
-                        = VN_CAST(nodep->rhsp()->dtypep(), UnpackArrayDType)) {
-                        const int unpackMinBits = unpackDTypep->arrayUnpackedElements()
-                                                  * unpackDTypep->subDTypep()->widthMin();
-                        const int unpackBits = unpackDTypep->arrayUnpackedElements()
-                                               * unpackDTypep->subDTypep()->width();
-                        AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
-                        nodep->rhsp(new AstCvtArrayToPacked{rhsp->fileline(), rhsp, nullptr});
-                        nodep->rhsp()->dtypeSetLogicUnsized(unpackBits, unpackMinBits,
-                                                            VSigning::UNSIGNED);
-                    }
+                    packIfUnpacked(nodep->lhsp());
+                    packIfUnpacked(nodep->rhsp());
                 }
                 nodep->dtypeSetLogicUnsized(nodep->lhsp()->width() + nodep->rhsp()->width(),
                                             nodep->lhsp()->widthMin() + nodep->rhsp()->widthMin(),
