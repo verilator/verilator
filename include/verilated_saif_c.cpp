@@ -509,9 +509,9 @@ void VerilatedSaif::popPrefix() {
     m_prefixStack.pop_back();
 }
 
-void VerilatedSaif::declare(const uint32_t code, uint32_t, const char* name,
-                            const char* wirep, const bool array, const int arraynum,
-                            const bool bussed, const int msb, const int lsb) {
+void VerilatedSaif::declare(const uint32_t code, uint32_t, const char* name, const char* wirep,
+                            const bool array, const int arraynum, const bool bussed, const int msb,
+                            const int lsb) {
     VerilatedSaifActivityAccumulator& accumulator = *m_activityAccumulators.at(0);
 
     const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
@@ -568,7 +568,9 @@ void VerilatedSaif::declDouble(const uint32_t code, const uint32_t fidx, const c
 //=============================================================================
 // Get/commit trace buffer
 
-VerilatedSaif::Buffer* VerilatedSaif::getTraceBuffer(uint32_t fidx) { return new Buffer{*this, 0}; }
+VerilatedSaif::Buffer* VerilatedSaif::getTraceBuffer(uint32_t fidx) {
+    return new Buffer{*this, 0};
+}
 
 void VerilatedSaif::commitTraceBuffer(VerilatedSaif::Buffer* bufp) { delete bufp; }
 
