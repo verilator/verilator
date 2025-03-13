@@ -21,6 +21,12 @@ module t (/*AUTOARG*/);
       bit [5:0] bit6 = 6'b111000;
       bit [5:0] ans;
       enum_t ans_enum;
+      logic [1:0] a [3] = {1, 0, 3};
+      logic [1:0] b [3] = {1, 2, 0};
+      logic c [4] = {1, 1, 0, 0};
+      logic [15:0] d;
+      logic [3:0] e [2];
+      logic f [8];
 
       { >> bit {arr}} = bit6;
       `checkp(arr, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0} ");
@@ -75,6 +81,20 @@ module t (/*AUTOARG*/);
 
       ans_enum = enum_t'({ << bit[5:0] {arr6} });
       `checkh(ans_enum, bit6);
+
+      d = { >> {a, b, c}};
+      `checkh(d, 16'b0100110110001100);
+
+      { >> {e, f}} = d;
+      `checkp(e, "'{'h4, 'hd} ");
+      `checkp(f, "'{'h1, 'h0, 'h0, 'h0, 'h1, 'h1, 'h0, 'h0} ");
+
+      d = { << 4 {a, b, c}};
+      `checkh(d, 16'b1100100011010100);
+
+      { << 2 {e, f}} = d;
+      `checkp(e, "'{'h1, 'h7} ");
+      `checkp(f, "'{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h1, 'h1} ");
 
       $write("*-* All Finished *-*\n");
       $finish;

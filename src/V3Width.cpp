@@ -223,6 +223,7 @@ class WidthVisitor final : public VNVisitor {
     const AstNodeExpr* m_randomizeFromp = nullptr;  // Current randomize method call fromp
     const bool m_paramsOnly;  // Computing parameter value; limit operation
     const bool m_doGenerate;  // Do errors later inside generate statement
+    bool m_streamConcat = false;  // True if visiting arguments of stream concatenation
     int m_dtTables = 0;  // Number of created data type tables
     TableMap m_tableMap;  // Created tables so can remove duplicates
     std::map<const AstNodeDType*, AstQueueDType*>
@@ -238,6 +239,18 @@ class WidthVisitor final : public VNVisitor {
         EXTEND_OFF  // No extension
     };
 
+    static void packIfUnpacked(AstNodeExpr* const nodep) {
+        if (AstUnpackArrayDType* const unpackDTypep = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
+            const int elementsNum = unpackDTypep->arrayUnpackedElements();
+            const int unpackMinBits = elementsNum * unpackDTypep->subDTypep()->widthMin();
+            const int unpackBits = elementsNum * unpackDTypep->subDTypep()->width();
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
+            relinker.relink(new AstCvtArrayToPacked{
+                nodep->fileline(), nodep,
+                nodep->findLogicDType(unpackBits, unpackMinBits, VSigning::UNSIGNED)});
+        }
+    }
     // VISITORS
     //   Naming:  width_O{outputtype}_L{lhstype}_R{rhstype}_W{widthing}_S{signing}
     //          Where type:
@@ -612,6 +625,11 @@ class WidthVisitor final : public VNVisitor {
             } else {
                 iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
                 iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
+
+                if (m_streamConcat) {
+                    packIfUnpacked(nodep->lhsp());
+                    packIfUnpacked(nodep->rhsp());
+                }
                 nodep->dtypeSetLogicUnsized(nodep->lhsp()->width() + nodep->rhsp()->width(),
                                             nodep->lhsp()->widthMin() + nodep->rhsp()->widthMin(),
                                             VSigning::UNSIGNED);
@@ -877,8 +895,11 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeStream* nodep) override {
+        VL_RESTORER(m_streamConcat);
         if (m_vup->prelim()) {
+            m_streamConcat = true;
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
+            m_streamConcat = false;
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             V3Const::constifyParamsEdit(nodep->rhsp());  // rhsp may change
             if (const AstConst* const constp = VN_CAST(nodep->rhsp(), Const)) {
