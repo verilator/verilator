@@ -521,7 +521,9 @@ class EmitCModel final : public EmitCFunc {
             puts("return std::unique_ptr<VerilatedTraceConfig>{new VerilatedTraceConfig{");
             puts(v3Global.opt.useTraceParallel() ? "true" : "false");
             puts(v3Global.opt.useTraceOffload() ? ", true" : ", false");
-            puts(v3Global.opt.useFstWriterThread() ? ", true" : ", false");
+            puts(", false");  //v3Global.opt.useFstWriterThread() ? ", true" : ", false");
+            const uint32_t nSplits = v3Global.opt.traceFormat().vcd() ? 1 : v3Global.opt.threads();
+            puts(", " + std::to_string(nSplits));
             puts("}};\n");
             puts("};\n");
         }
