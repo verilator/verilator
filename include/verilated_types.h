@@ -184,8 +184,11 @@ public:
     // Word at given 'wordIndex'
     uint64_t word(size_t wordIndex) const { return m_flags[wordIndex]; }
 
-    // Set specified flag to given value
-    void set(size_t index, bool value) {
+    // Set specified word to given value
+    void setWord(size_t wordIndex, uint64_t value) { m_flags[wordIndex] = value; }
+
+    // Set specified bit to given value
+    void setBit(size_t index, bool value) {
         uint64_t& w = m_flags[index / 64];
         const size_t bitIndex = index % 64;
         w &= ~(1ULL << bitIndex);

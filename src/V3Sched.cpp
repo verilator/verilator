@@ -501,7 +501,7 @@ struct TriggerKit final {
     void addFirstIterationTriggerAssignment(AstVarScope* flagp, uint32_t index) const {
         FileLine* const flp = flagp->fileline();
         AstVarRef* const vrefp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
-        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "set"};
+        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "setBit"};
         callp->addPinsp(new AstConst{flp, index});
         callp->addPinsp(new AstVarRef{flp, flagp, VAccess::READ});
         callp->dtypeSetVoid();
@@ -512,7 +512,7 @@ struct TriggerKit final {
     void addExtraTriggerAssignment(AstVarScope* extraTriggerVscp, uint32_t index) const {
         FileLine* const flp = extraTriggerVscp->fileline();
         AstVarRef* const vrefp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
-        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "set"};
+        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "setBit"};
         callp->addPinsp(new AstConst{flp, index});
         callp->addPinsp(new AstVarRef{flp, extraTriggerVscp, VAccess::READ});
         callp->dtypeSetVoid();
@@ -651,9 +651,9 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
     }
 
     // Set the given trigger to the given value
-    const auto setTrig = [&](uint32_t index, AstNodeExpr* valp) {
+    const auto setTrigBit = [&](uint32_t index, AstNodeExpr* valp) {
         AstVarRef* const vrefp = new AstVarRef{flp, vscp, VAccess::WRITE};
-        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "set"};
+        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "setBit"};
         callp->addPinsp(new AstConst{flp, index});
         callp->addPinsp(valp);
         callp->dtypeSetVoid();
@@ -694,9 +694,14 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
     // Add trigger computation
     uint32_t triggerNumber = extraTriggers.size();
+    uint32_t triggerBitIdx = triggerNumber;
     AstNodeStmt* initialTrigsp = nullptr;
     std::vector<uint32_t> senItemIndex2TriggerIndex;
     senItemIndex2TriggerIndex.reserve(senItemps.size());
+    constexpr uint32_t TRIG_VEC_WORD_SIZE_LOG2 = 6;  // 64-bits
+    constexpr uint32_t TRIG_VEC_WORD_SIZE = 1 << TRIG_VEC_WORD_SIZE_LOG2;
+    std::vector<AstNodeExpr*> trigExprps;
+    trigExprps.reserve(TRIG_VEC_WORD_SIZE);
     for (const AstSenItem* const senItemp : senItemps) {
         UASSERT_OBJ(senItemp->isClocked() || senItemp->isHybrid(), senItemp,
                     "Cannot create trigger expression for non-clocked sensitivity");
@@ -706,12 +711,12 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
         // Add the trigger computation
         const auto& pair = senExprBuilder.build(senItemp);
-        funcp->addStmtsp(setTrig(triggerNumber, pair.first));
+        trigExprps.emplace_back(pair.first);
 
         // Add initialization time trigger
         if (pair.second || v3Global.opt.xInitialEdge()) {
             initialTrigsp
-                = AstNode::addNext(initialTrigsp, setTrig(triggerNumber, new AstConst{flp, 1}));
+                = AstNode::addNext(initialTrigsp, setTrigBit(triggerNumber, new AstConst{flp, 1}));
         }
 
         // Add a debug statement for this trigger
@@ -723,7 +728,47 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
         //
         ++triggerNumber;
+
+        // Add statements on every word boundary
+        if (triggerNumber % TRIG_VEC_WORD_SIZE == 0) {
+            if (triggerBitIdx % TRIG_VEC_WORD_SIZE != 0) {
+                // Set leading triggers bit-wise
+                for (AstNodeExpr* const exprp : trigExprps) {
+                    funcp->addStmtsp(setTrigBit(triggerBitIdx++, exprp));
+                }
+            } else {
+                // Set whole word as a unit
+                UASSERT_OBJ(triggerNumber == triggerBitIdx + TRIG_VEC_WORD_SIZE, senItemp,
+                            "Mismatched index");
+                UASSERT_OBJ(trigExprps.size() == TRIG_VEC_WORD_SIZE, senItemp,
+                            "There should be TRIG_VEC_WORD_SIZE expressions");
+                // Concatenate all bits in a tree
+                for (uint32_t level = 0; level < TRIG_VEC_WORD_SIZE_LOG2; ++level) {
+                    const uint32_t stride = 1 << level;
+                    for (uint32_t i = 0; i < TRIG_VEC_WORD_SIZE; i += 2 * stride) {
+                        trigExprps[i] = new AstConcat{trigExprps[i]->fileline(),
+                                                      trigExprps[i + stride], trigExprps[i]};
+                        trigExprps[i + stride] = nullptr;
+                    }
+                }
+                // Set the whole word in the trigger vector
+                AstVarRef* const vrefp = new AstVarRef{flp, vscp, VAccess::WRITE};
+                AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "setWord"};
+                callp->addPinsp(new AstConst{flp, triggerBitIdx / TRIG_VEC_WORD_SIZE});
+                callp->addPinsp(trigExprps[0]);
+                callp->dtypeSetVoid();
+                funcp->addStmtsp(callp->makeStmt());
+                triggerBitIdx += TRIG_VEC_WORD_SIZE;
+            }
+            UASSERT_OBJ(triggerNumber == triggerBitIdx, senItemp, "Mismatched index");
+            trigExprps.clear();
+        }
     }
+    // Set trailing triggers bit-wise
+    for (AstNodeExpr* const exprp : trigExprps) {
+        funcp->addStmtsp(setTrigBit(triggerBitIdx++, exprp));
+    }
+    trigExprps.clear();
 
     // Construct the map from old SenTrees to new SenTrees
     for (const AstSenTree* const senTreep : senTreeps) {
