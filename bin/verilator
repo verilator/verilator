@@ -256,7 +256,7 @@ sub sh_escape {
     # This is similar to quotemeta() but less aggressive.
     # There's no need to escape hyphens, periods, or forward slashes
     # for the shell as these have no special meaning to the shell.
-    $arg =~ s/([^0-9a-zA-Z_\-\+\=\.\/])/\\$1/g;
+    $arg =~ s/([^0-9a-zA-Z_\-\+\=\.\/:])/\\$1/g;
     return $arg;
 }
 
