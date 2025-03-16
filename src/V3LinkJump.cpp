@@ -153,11 +153,11 @@ class LinkJumpVisitor final : public VNVisitor {
             if (beginp->name() != "") beginp->name(prefix + beginp->name());
         }
 
-        if (nodep->op1p()) addPrefixToBlocksRecurse(prefix, nodep->op1p());
-        if (nodep->op2p()) addPrefixToBlocksRecurse(prefix, nodep->op2p());
-        if (nodep->op3p()) addPrefixToBlocksRecurse(prefix, nodep->op3p());
-        if (nodep->op4p()) addPrefixToBlocksRecurse(prefix, nodep->op4p());
-        if (nodep->nextp()) addPrefixToBlocksRecurse(prefix, nodep->nextp());
+        if (AstNode* const refp = nodep->op1p()) addPrefixToBlocksRecurse(prefix, refp);
+        if (AstNode* const refp = nodep->op2p()) addPrefixToBlocksRecurse(prefix, refp);
+        if (AstNode* const refp = nodep->op3p()) addPrefixToBlocksRecurse(prefix, refp);
+        if (AstNode* const refp = nodep->op4p()) addPrefixToBlocksRecurse(prefix, refp);
+        if (AstNode* const refp = nodep->nextp()) addPrefixToBlocksRecurse(prefix, refp);
     }
 
     // VISITORS

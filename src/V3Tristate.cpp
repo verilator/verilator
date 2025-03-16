@@ -302,10 +302,10 @@ public:
             TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user4p());
             if (vertexp) vertexp->unlinkDelete(&m_graph);
         }
-        deleteVerticesFromSubtreeRecurse(nodep->op1p());
-        deleteVerticesFromSubtreeRecurse(nodep->op2p());
-        deleteVerticesFromSubtreeRecurse(nodep->op3p());
-        deleteVerticesFromSubtreeRecurse(nodep->op4p());
+        if (AstNode* const refp = nodep->op1p()) deleteVerticesFromSubtreeRecurse(refp);
+        if (AstNode* const refp = nodep->op2p()) deleteVerticesFromSubtreeRecurse(refp);
+        if (AstNode* const refp = nodep->op3p()) deleteVerticesFromSubtreeRecurse(refp);
+        if (AstNode* const refp = nodep->op4p()) deleteVerticesFromSubtreeRecurse(refp);
     }
     void setTristate(AstNode* nodep) { makeVertex(nodep)->isTristate(true); }
     bool isTristate(AstNode* nodep) {

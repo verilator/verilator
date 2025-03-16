@@ -183,10 +183,10 @@ class WidthClearVisitor final {
     void clearWidthRecurse(AstNode* nodep) {
         for (; nodep; nodep = nodep->nextp()) {
             nodep->didWidth(false);
-            if (nodep->op1p()) clearWidthRecurse(nodep->op1p());
-            if (nodep->op2p()) clearWidthRecurse(nodep->op2p());
-            if (nodep->op3p()) clearWidthRecurse(nodep->op3p());
-            if (nodep->op4p()) clearWidthRecurse(nodep->op4p());
+            if (AstNode* const refp = nodep->op1p()) clearWidthRecurse(refp);
+            if (AstNode* const refp = nodep->op2p()) clearWidthRecurse(refp);
+            if (AstNode* const refp = nodep->op3p()) clearWidthRecurse(refp);
+            if (AstNode* const refp = nodep->op4p()) clearWidthRecurse(refp);
         }
     }
 

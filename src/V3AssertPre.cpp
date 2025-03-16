@@ -95,10 +95,10 @@ private:
         if (const AstVarRef* varrefp = VN_CAST(nodep, VarRef)) {
             if (varp == varrefp->varp()) nodep->replaceWith(exprp->cloneTree(false));
         }
-        replaceVarRefsWithExprRecurse(nodep->op1p(), varp, exprp);
-        replaceVarRefsWithExprRecurse(nodep->op2p(), varp, exprp);
-        replaceVarRefsWithExprRecurse(nodep->op3p(), varp, exprp);
-        replaceVarRefsWithExprRecurse(nodep->op4p(), varp, exprp);
+        if (AstNode* const refp = nodep->op1p()) replaceVarRefsWithExprRecurse(refp, varp, exprp);
+        if (AstNode* const refp = nodep->op2p()) replaceVarRefsWithExprRecurse(refp, varp, exprp);
+        if (AstNode* const refp = nodep->op3p()) replaceVarRefsWithExprRecurse(refp, varp, exprp);
+        if (AstNode* const refp = nodep->op4p()) replaceVarRefsWithExprRecurse(refp, varp, exprp);
     }
     AstPropSpec* substitutePropertyCall(AstPropSpec* nodep) {
         if (AstFuncRef* const funcrefp = VN_CAST(nodep->propp(), FuncRef)) {

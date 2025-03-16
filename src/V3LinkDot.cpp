@@ -1783,11 +1783,11 @@ class LinkDotParamVisitor final : public VNVisitor {
         // These are perhaps a little too generous, as a SELect of siga[sigb]
         // perhaps shouldn't create an implicit variable.  But, we've warned...
         else {
-            if (nodep->op1p()) pinImplicitExprRecurse(nodep->op1p());
-            if (nodep->op2p()) pinImplicitExprRecurse(nodep->op2p());
-            if (nodep->op3p()) pinImplicitExprRecurse(nodep->op3p());
-            if (nodep->op4p()) pinImplicitExprRecurse(nodep->op4p());
-            if (nodep->nextp()) pinImplicitExprRecurse(nodep->nextp());
+            if (AstNode* const refp = nodep->op1p()) pinImplicitExprRecurse(refp);
+            if (AstNode* const refp = nodep->op2p()) pinImplicitExprRecurse(refp);
+            if (AstNode* const refp = nodep->op3p()) pinImplicitExprRecurse(refp);
+            if (AstNode* const refp = nodep->op4p()) pinImplicitExprRecurse(refp);
+            if (AstNode* const refp = nodep->nextp()) pinImplicitExprRecurse(refp);
         }
     }
 
