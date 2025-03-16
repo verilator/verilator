@@ -6890,8 +6890,9 @@ class WidthVisitor final : public VNVisitor {
 
     void fixWidthReduce(AstNodeExpr* nodep) {
         // Fix the width mismatch by adding a reduction OR operator
-        // IF (A(CONSTwide)) becomes  IF (A(CONSTreduced))
-        // IF (A(somewide))  becomes  IF (A(REDOR(somewide)))
+        // IF (A(CONSTwide)) becomes IF (A(CONSTreduced))
+        // IF (A(somewide)) on pointer becomes on pointer IF (A(NEQ(somewide, Null)))
+        // IF (A(somewide)) elsewise becomes IF (A(REDOR(somewide, 0)))
         // Attempt to fix it quietly
         const int expWidth = 1;
         const int expSigned = false;
@@ -6909,7 +6910,17 @@ class WidthVisitor final : public VNVisitor {
         } else {
             VNRelinker linker;
             nodep->unlinkFrBack(&linker);
-            AstNodeExpr* const newp = new AstRedOr{nodep->fileline(), nodep};
+            AstNodeExpr* newp;
+            if (VN_IS(nodep->dtypep()->skipRefp(), ClassRefDType)) {
+                // Cannot use AstRedOr, as we may be redurcing a class handle
+                newp = new AstNeq{nodep->fileline(),
+                                  new AstConst{nodep->fileline(), AstConst::Null{}},
+
+                                  nodep};
+            } else {
+                // But, AstRedOr can be faster on wide
+                newp = new AstRedOr{nodep->fileline(), nodep};
+            }
             linker.relink(newp);
             nodep = newp;
         }
