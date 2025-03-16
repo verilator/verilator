@@ -57,6 +57,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // clang-format off
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <windows.h>   // LONG for bcrypt.h on MINGW
+# include <algorithm>  // replace
 # include <bcrypt.h>  // BCryptGenRandom
 # include <chrono>
 # include <direct.h>  // mkdir
