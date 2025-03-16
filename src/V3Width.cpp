@@ -623,8 +623,8 @@ class WidthVisitor final : public VNVisitor {
                 iterateCheckString(nodep, "RHS", nodep->rhsp(), BOTH);
                 nodep->dtypeSetString();
             } else {
-                iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
-                iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
+                iterateCheckSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
+                iterateCheckSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
 
                 if (m_streamConcat) {
                     packIfUnpacked(nodep->lhsp());
@@ -831,7 +831,7 @@ class WidthVisitor final : public VNVisitor {
             if (vdtypep && vdtypep->isString()) {
                 iterateCheckString(nodep, "LHS", nodep->srcp(), BOTH);
             } else {
-                iterateCheckSizedSelf(nodep, "LHS", nodep->srcp(), SELF, BOTH);
+                iterateCheckSelf(nodep, "LHS", nodep->srcp(), SELF, BOTH);
             }
 
             if ((vdtypep && vdtypep->isString()) || nodep->srcp()->isString()) {
@@ -898,9 +898,9 @@ class WidthVisitor final : public VNVisitor {
         VL_RESTORER(m_streamConcat);
         if (m_vup->prelim()) {
             m_streamConcat = true;
-            iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
+            iterateCheckSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
             m_streamConcat = false;
-            iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
+            iterateCheckSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             V3Const::constifyParamsEdit(nodep->rhsp());  // rhsp may change
             if (const AstConst* const constp = VN_CAST(nodep->rhsp(), Const)) {
                 if (constp->toUInt() == 0) nodep->v3error("Slice size cannot be zero.");
@@ -3390,7 +3390,7 @@ class WidthVisitor final : public VNVisitor {
         } else if (nodep->name() == "exists") {  // function int exists(input index)
             // IEEE really should have made this a "bit" return
             methodOkArguments(nodep, 1, 1);
-            iterateCheckSizedSelf(nodep, "argument", methodArg(nodep, 0), SELF, BOTH);
+            iterateCheckSelf(nodep, "argument", methodArg(nodep, 0), SELF, BOTH);
             AstNodeExpr* const index_exprp = methodCallWildcardIndexExpr(nodep, adtypep);
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(), "exists",
                                       index_exprp->unlinkFrBack()};
@@ -3403,7 +3403,7 @@ class WidthVisitor final : public VNVisitor {
                                           "clear"};
                 newp->dtypeSetVoid();
             } else {
-                iterateCheckSizedSelf(nodep, "argument", methodArg(nodep, 0), SELF, BOTH);
+                iterateCheckSelf(nodep, "argument", methodArg(nodep, 0), SELF, BOTH);
                 AstNodeExpr* const index_exprp = methodCallWildcardIndexExpr(nodep, adtypep);
                 newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           "erase", index_exprp->unlinkFrBack()};
@@ -5879,7 +5879,7 @@ class WidthVisitor final : public VNVisitor {
             if (VN_IS(propStmtp, Var)) {
                 userIterate(propStmtp, nullptr);
             } else if (VN_IS(propStmtp, PropSpec)) {
-                iterateCheckSizedSelf(nodep, "PropSpec", propStmtp, SELF, BOTH);
+                iterateCheckSelf(nodep, "PropSpec", propStmtp, SELF, BOTH);
             } else {
                 propStmtp->v3fatal("Invalid statement under AstProperty");
             }
@@ -7067,6 +7067,22 @@ class WidthVisitor final : public VNVisitor {
         }
         (void)underp;  // cppcheck
     }
+    void iterateCheckSelf(AstNode* nodep, const char* side, AstNode* underp, Determ determ,
+                          Stage stage) {
+        // Coerce child to any data type; child is self-determined
+        // i.e. isolated from expected type.
+        // e.g. nodep=CONCAT, underp=lhs in CONCAT(lhs,rhs)
+        UASSERT_OBJ(determ == SELF, nodep, "Bad call");
+        UASSERT_OBJ(stage == FINAL || stage == BOTH, nodep, "Bad call");
+        // underp may change as a result of replacement
+        if (stage & PRELIM) {
+            underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, PRELIM}.p());
+        }
+        underp = VN_IS(underp, NodeExpr) ? checkCvtUS(VN_AS(underp, NodeExpr)) : underp;
+        AstNodeDType* const expDTypep = underp->dtypep();
+        underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
+        (void)underp;  // cppcheck
+    }
     void iterateCheckSizedSelf(AstNode* nodep, const char* side, AstNode* underp, Determ determ,
                                Stage stage) {
         // Coerce child to any sized-number data type; child is self-determined
@@ -7081,6 +7097,11 @@ class WidthVisitor final : public VNVisitor {
         underp = VN_IS(underp, NodeExpr) ? checkCvtUS(VN_AS(underp, NodeExpr)) : underp;
         AstNodeDType* const expDTypep = underp->dtypep();
         underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
+        AstNodeDType* const checkDtp = expDTypep->skipRefToEnump();
+        if (!checkDtp->isIntegralOrPacked()) {
+            nodep->v3error("Expected numeric type, but got a " << checkDtp->prettyDTypeNameQ()
+                                                               << " data type");
+        }
         (void)underp;  // cppcheck
     }
     void iterateCheckAssign(AstNode* nodep, const char* side, AstNode* rhsp, Stage stage,
