@@ -25,7 +25,6 @@ Verilator 5.035 devel
 * Add `--make json` to enable integration with non-make/cmake build systems (#5799). [Andrew Voznytsa]
 * Add empty veriuser.h for legacy compatibility.
 * Optimize automatic splitting of some packed variables (#5843). [Geza Lore]
-* Fix detecting bad datatype on $countones (#5674). [Shou-Li Hsu]
 * Fix foreach of associative array inside a constraint block (#5727) (#5841). [Yilou Wang]
 * Fix reset of automatic function variables (#5747). [Augustin Fabre]
 * Fix invalid code motion over branches (#5811) (#5814). [Geza Lore]
@@ -37,8 +36,8 @@ Verilator 5.035 devel
 * Fix type_id package scope resolution (#5826). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix `rand_mode` method with cast (#5831).
 * Fix invalidating variable caches in SenExprBulider (#5834) (#5835). [Geza Lore]
-* Fix assignment pattern as function argument (#5839)
-* Fix checking built-in method arguments (#5839)
+* Fix assignment pattern as function argument (#5839).
+* Fix checking built-in method arguments (#5839).
 * Fix splitting of packed ports with non-zero based ranges (#5842). [Geza Lore]
 * Fix NBA shared flag reuse (#5848). [Geza Lore]
 * Fix removal of callbacks no longer in current list (#5851) (#5852). [Gilberto Abram]
@@ -233,7 +232,7 @@ Verilator 5.030 2024-10-27
 * Fix short-circuiting with associative array access (#5484). [Ethan Sifferman]
 * Fix short-circuiting on method calls (#5486). [Ethan Sifferman]
 * Fix exponential concatenate performance (#5488). [Arkadiusz Kozdra, Antmicro Ltd.]
-* Fix V3Table trying to generate 'x' bits in the lookup table. (#5491). [Geza Lore]
+* Fix V3Table trying to generate 'x' bits in the lookup table (#5491). [Geza Lore]
 * Fix randomize with foreach constraints (#5492). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Fix explicit CMAKE_INSTALL_PREFIX usages (#5500). [Fabian Keßler]
 * Fix configure inserting absolute paths for Python and Perl (#5504) (#5505). [Nathan Graybeal]
@@ -318,7 +317,7 @@ Verilator 5.028 2024-08-21
 * Fix static variable initializers in procedures (#5296). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix randomizing current object with `rand` class instance member (#5292). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix handling of rand fields not referenced in constraints (#5305). [Ryszard Rozak, Antmicro Ltd.]
-* Fix Python3 path discovery in make flows to avoid mixing system and user python interpreters (#5307) [Markus Krause]
+* Fix Python3 path discovery in make flows to avoid mixing system and user python interpreters (#5307). [Markus Krause]
 * Fix make flows to pass PYTHON3 (like PERL) (#5307) (#5308). [Markus Krause]
 * Fix assert on wide expression (#5319) (#5324). [Varun Koyyalagunta]
 * Fix output clock variable overwriting signal (#5320)  (#5347). [Krzysztof Bieganski, Antmicro Ltd.]
@@ -497,7 +496,7 @@ Verilator 5.022 2024-02-24
 * Fix `vpi_get()` and `vpi_get64()` to return vpiUndefined on errors (#4795). [Marlon James]
 * Fix VPI parameter iteration (#4798). [Marlon James]
 * Fix delays using wrong timeunit when modules inlined (#4806). [Paul Wright]
-* Fix warnings in verilated_sc_trace.h for Clang. (#4807) (#4827). [Anthony Donlon]
+* Fix warnings in verilated_sc_trace.h for Clang (#4807) (#4827). [Anthony Donlon]
 * Fix null pointer dereference (#4810) (#4825). [Adrian Sampson]
 * Fix compilation error on multi-inherited interface class usage (#4819).
 * Fix maybe-uninitialized compiler warning (#4820) (#4822). [Larry Doolittle]
@@ -575,7 +574,7 @@ Verilator 5.020 2024-01-01
 * Fix conflicted namespace for coroutines (#4701) (#4707). [Jinyan Xu]
 * Fix compilers seeing empty input due to file system races (#4708). [Flavien Solt]
 * Fix shift of > 32-bit number (#4719). [Flavien Solt]
-* Fix Windows include gates in filesystem Flush implementation. (#4720). [William D. Jones]
+* Fix Windows include gates in filesystem Flush implementation (#4720). [William D. Jones]
 * Fix power operator with wide numbers and constants (#4721) (#4763). [Flavien Solt]
 * Fix parameter passing to ports (#4723). [Ryszard Rozak, Antmicro Ltd.]
 * Fix block names of nested do..while loops (#4728). [Ryszard Rozak, Antmicro Ltd.]
@@ -584,7 +583,7 @@ Verilator 5.020 2024-01-01
 * Fix $finish twice to no longer exit (#4757). [Tim Hutt]
 * Fix dynamic NBA conditions (#4773). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix `V3Fork` stage to run only if `--timing` is set (#4778). [Krzysztof Bieganski, Antmicro Ltd.]
-* Fix max multiply width and add runtime assertions if too small. (#4781)
+* Fix max multiply width and add runtime assertions if too small (#4781).
 * Fix select value too wide (#5148) (#5153). [Dercury]
 
 
@@ -1249,7 +1248,7 @@ Verilator 4.218 2022-01-17
 
 * Support class static members (#2233).
 * Support force/release (#2431) (#2593). [Shunyao CAD]
-* Add 'forceable' attribute to allow forcing from C++. (#3272). [Geza Lore, Shunyao CAD]
+* Add 'forceable' attribute to allow forcing from C++ (#3272). [Geza Lore, Shunyao CAD]
 * Support lower dimension looping in foreach loops (#3172). [Ehab Ibrahim]
 * Support up to 64 bit enums for .next/.prev/.name (#3244). [Alexander Grobman]
 * Reduce .rodata footprint of trace initialization (#3250). [Geza Lore, Shunyao CAD]
@@ -1473,7 +1472,7 @@ Verilator 4.200 2021-03-12
 **Major:**
 
 * Add simulation context (VerilatedContext) to allow multiple fully independent
-  models to be in the same process. Please see the updated examples. (#2660)
+  models to be in the same process. Please see the updated examples (#2660).
 * Add context->time() and context->timeInc() API calls, to set simulation time.
   These now are recommended in place of the legacy sc_time_stamp().
 
@@ -1484,7 +1483,7 @@ Verilator 4.200 2021-03-12
 * Fix slice-assign overflow (#2803) (#2811). [David Turner]
 * Fix interface array connection ordering broken in v4.110 (#2827). [Don Owen]
 * Fix or-reduction on different scopes broken in 4.110 (#2828). [Yinan Xu]
-* Fix MSVC++ compile error. (#2831) (#2833) [Drew Taussig]
+* Fix MSVC++ compile error (#2831) (#2833). [Drew Taussig]
 
 
 Verilator 4.110 2021-02-25
@@ -1539,7 +1538,7 @@ Verilator 4.108 2021-01-10
 * Fix vpiLeftRange on little-endian memories (#2696). [Marlon James]
 * Fix VPI module tree (#2704). [Todd Strader]
 * Fix vpi_release_handle to be called implicitly per IEEE (#2706).
-* Fix to allow inheriting 'VerilatedVcdFile' class. (#2720) [HyungKi Jeong]
+* Fix to allow inheriting 'VerilatedVcdFile' class (#2720). [HyungKi Jeong]
 * Fix $urandom_range maximum value (#2723). [Nandu Raj]
 * Fix tracing empty sc module (#2729).
 * Fix generate for unrolling to be signed (#2730). [yanx21]
@@ -1645,11 +1644,11 @@ Verilator 4.040 2020-08-15
 **Minor:**
 
 * Fix arrayed interfaces, broke in 4.038 (#2468). [Josh Redford]
-* Support $stable, $rose and $fell.  (#2148) (#2501) [Peter Monsson]
+* Support $stable, $rose and $fell (#2148) (#2501). [Peter Monsson]
 * Support simple function localparams (#2461). [James Hanlon]
 * Miscellaneous parsing error changes towards UVM support.
 * Fix arrayed interfaces (#2469).  [Josh Redford]
-* Fix protect lib VCS warning. (#2479) [Julien Margetts]
+* Fix protect lib VCS warning (#2479). [Julien Margetts]
 * Fix combining different-width parameters (#2484). [abirkmanis]
 * Fix protect-lib without sequential logic (#2492). [Yutetsu TAKATSUKASA]
 * Fix V3Unknown from running with flat XML output (#2494). [James Hanlon]
@@ -1705,16 +1704,16 @@ Verilator 4.036 2020-06-06
   waivers to the warnings emitted during a Verilator run.
 * Support verilator_coverage --write-info for lcov HTML reports.
 * Line Coverage now tracks all statement lines, not just branch lines.
-* The run-time library is now compiled with -Os by default. (#2369, #2373)
+* The run-time library is now compiled with -Os by default (#2369, #2373).
 * Support multi channel descriptor I/O (#2190) [Stephen Henry]
-* Support $countbits. (#2287) [Yossi Nivin]
-* Support $isunbounded and parameter $. (#2104)
+* Support $countbits (#2287). [Yossi Nivin]
+* Support $isunbounded and parameter $ (#2104).
 * Support unpacked array .sum and .product.
-* Support prefix/postfix increment/decrement. (#2223) [Maciej Sobkowski]
+* Support prefix/postfix increment/decrement (#2223). [Maciej Sobkowski]
 * Fix FST tracing of little bit endian signals. [Geza Lore]
-* Fix +: and -: on unpacked arrays. (#2304) [engr248]
+* Fix +: and -: on unpacked arrays (#2304). [engr248]
 * Fix $isunknown with constant Z's.
-* Fix queues and dynamic array wide ops. (#2352) [Vassilis Papaefstathiou]
+* Fix queues and dynamic array wide ops (#2352). [Vassilis Papaefstathiou]
 
 
 Verilator 4.034 2020-05-03
