@@ -24,7 +24,9 @@ Verilator 5.035 devel
 * Add used language to `--preproc-resolve` output (#5795). [Kamil Rakoczy, Antmicro Ltd.]
 * Add `--make json` to enable integration with non-make/cmake build systems (#5799). [Andrew Voznytsa]
 * Add empty veriuser.h for legacy compatibility.
+* Remove unused gtkwave/wavealloca.h. [Geza Lore]
 * Optimize automatic splitting of some packed variables (#5843). [Geza Lore]
+* Optimize trigger vector in whole words (#5857). [Geza Lore]
 * Fix foreach of associative array inside a constraint block (#5727) (#5841). [Yilou Wang]
 * Fix reset of automatic function variables (#5747). [Augustin Fabre]
 * Fix invalid code motion over branches (#5811) (#5814). [Geza Lore]
@@ -43,6 +45,9 @@ Verilator 5.035 devel
 * Fix removal of callbacks no longer in current list (#5851) (#5852). [Gilberto Abram]
 * Fix segmentation fault on member compare (#5853).
 * Fix recursive error on virtual interfaces (#5854). [Yilou Wang]
+* Fix streaming of unpacked arrays concatenations (#5856). [Ryszard Rozak, Antmicro Ltd.]
+* Fix Windows paths in Perl (#5858) (#5860). [Tobias Jensen]
+* Fix algorithm header portability in V3Os.cpp (for std::replace). (#5861). [William D. Jones]
 
 
 Verilator 5.034 2025-02-24

@@ -1118,6 +1118,7 @@ vpiUndefined
 vpm
 vpp
 warmup
+wavealloca
 waveforms
 whitespace
 widthed
