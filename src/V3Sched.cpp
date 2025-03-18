@@ -456,16 +456,16 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
 //============================================================================
 // Create simply ordered functions
 
-void createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
+AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
     AstCFunc* const funcp = makeTopFunction(netlistp, "_eval_static", /* slow: */ true);
     orderSequentially(funcp, logicClasses.m_static);
-    splitCheck(funcp);
+    return funcp;  // Not splitting yet as it is not final
 }
 
-AstCFunc* createInitial(AstNetlist* netlistp, const LogicClasses& logicClasses) {
+void createInitial(AstNetlist* netlistp, const LogicClasses& logicClasses) {
     AstCFunc* const funcp = makeTopFunction(netlistp, "_eval_initial", /* slow: */ true);
     orderSequentially(funcp, logicClasses.m_initial);
-    return funcp;  // Not splitting yet as it is not final
+    splitCheck(funcp);
 }
 
 AstCFunc* createPostponed(AstNetlist* netlistp, const LogicClasses& logicClasses) {
@@ -1210,10 +1210,10 @@ void schedule(AstNetlist* netlistp) {
     }
 
     // Step 2. Schedule static, initial and final logic classes in source order
-    createStatic(netlistp, logicClasses);
+    AstCFunc* const staticp = createStatic(netlistp, logicClasses);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-static");
 
-    AstCFunc* const initp = createInitial(netlistp, logicClasses);
+    createInitial(netlistp, logicClasses);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-initial");
 
     createFinal(netlistp, logicClasses);
@@ -1236,7 +1236,7 @@ void schedule(AstNetlist* netlistp) {
     SenExprBuilder senExprBuilder{scopeTopp};
 
     // Step 4: Create 'settle' region that restores the combinational invariant
-    createSettle(netlistp, initp, senExprBuilder, logicClasses);
+    createSettle(netlistp, staticp, senExprBuilder, logicClasses);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-settle");
 
     // Step 5: Partition the clocked and combinational (including hybrid) logic into pre/act/nba.
@@ -1267,7 +1267,7 @@ void schedule(AstNetlist* netlistp) {
     }
 
     // Step 7: Create input combinational logic loop
-    AstNode* const icoLoopp = createInputCombLoop(netlistp, initp, senExprBuilder,
+    AstNode* const icoLoopp = createInputCombLoop(netlistp, staticp, senExprBuilder,
                                                   logicReplicas.m_ico, virtIfaceTriggers);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-ico");
 
@@ -1291,7 +1291,7 @@ void schedule(AstNetlist* netlistp) {
                                                &logicRegions.m_react,  //
                                                &timingKit.m_lbs});
     const TriggerKit& actTrig
-        = createTriggers(netlistp, initp, senExprBuilder, senTreeps, "act", extraTriggers);
+        = createTriggers(netlistp, staticp, senExprBuilder, senTreeps, "act", extraTriggers);
 
     // Add post updates from the timing kit
     if (timingKit.m_postUpdates) actTrig.m_funcp->addStmtsp(timingKit.m_postUpdates);
@@ -1456,7 +1456,7 @@ void schedule(AstNetlist* netlistp) {
 
     transformForks(netlistp);
 
-    splitCheck(initp);
+    splitCheck(staticp);
 
     netlistp->dpiExportTriggerp(nullptr);
 
