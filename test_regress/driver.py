@@ -1055,6 +1055,9 @@ class VlTest:
         if param['make_main'] and param['verilator_make_gmake']:
             verilator_flags += ["../" + self.main_filename]
 
+        if Args.verilator_flags:
+            verilator_flags += [Args.verilator_flags]
+
         cmdargs = [
             "--prefix",
             param['vm_prefix'],
@@ -2820,6 +2823,7 @@ if __name__ == '__main__':
     parser.add_argument('--verilated-debug',
                         action='store_true',
                         help='enable Verilated executable debug')
+    parser.add_argument('--verilator-flags', help='flags to pass to verilator')
     ## Scenarios
     for scen, v in All_Scenarios.items():
         parser.add_argument('--' + scen,
