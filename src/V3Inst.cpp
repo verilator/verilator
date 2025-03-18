@@ -467,6 +467,86 @@ private:
         }
     }
 
+    void visit(AstAssign* nodep) {
+        if (AstArraySel* const arrselp = VN_CAST(nodep->rhsp(), ArraySel)) {
+	    // handle single element selection from RHS array
+            if (const AstUnpackArrayDType* const arrp
+                = VN_CAST(arrselp->fromp()->dtypep(), UnpackArrayDType)) {
+                if (!VN_IS(arrp->subDTypep(), IfaceRefDType)) return;
+                V3Const::constifyParamsEdit(arrselp->bitp());
+                const AstConst* const constp = VN_CAST(arrselp->bitp(), Const);
+                if (!constp) {
+                    nodep->v3warn(
+                        E_UNSUPPORTED,
+                        "Non-constant index in RHS interface array selection");
+                    return;
+                }
+                const string index = AstNode::encodeNumber(constp->toSInt());
+                if (VN_IS(arrselp->fromp(), SliceSel))
+                    arrselp->fromp()->v3error("Unsupported: interface slices");
+                const AstVarRef* const varrefp = VN_CAST(arrselp->fromp(), VarRef);
+                UASSERT_OBJ(varrefp, arrselp, "No interface varref under array");
+                AstVarXRef* const newp = new AstVarXRef{
+                        nodep->fileline(), varrefp->name() + "__BRA__" + index + "__KET__", "",
+                        VAccess::READ};
+                newp->dtypep(arrp->subDTypep());
+                newp->classOrPackagep(varrefp->classOrPackagep());
+                arrselp->addNextHere(newp);
+                VL_DO_DANGLING(arrselp->unlinkFrBack()->deleteTree(), arrselp);
+            }
+        } else {
+            if (const AstUnpackArrayDType* const lhsarrp
+                = VN_CAST(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
+                if (const AstUnpackArrayDType* const rhsarrp
+                    = VN_CAST(nodep->rhsp()->dtypep(), UnpackArrayDType)) {
+		    // copy between arrays
+                    if (!VN_IS(lhsarrp->subDTypep(), IfaceRefDType)) return;
+                    if (!VN_IS(rhsarrp->subDTypep(), IfaceRefDType)) return;
+                    if (lhsarrp->elementsConst() != rhsarrp->elementsConst()) {
+                        nodep->v3warn(
+                            E_UNSUPPORTED,
+                            "Array size mismatch in interface assignment");
+                        return;
+                    }
+                    for (int i = 0; i < lhsarrp->elementsConst(); ++i) {
+                        const string index = AstNode::encodeNumber(i);
+                        AstNodeExpr* lhsp = nullptr;
+                        if (const AstVarRef* const varrefp
+                            = VN_CAST(nodep->lhsp(), VarRef)) {
+                            AstVarXRef* const newvarrefp = new AstVarXRef{
+                                nodep->fileline(), varrefp->name() + "__BRA__" + index + "__KET__", "",
+                                VAccess::WRITE};
+                            newvarrefp->dtypep(lhsarrp->subDTypep());
+                            newvarrefp->classOrPackagep(varrefp->classOrPackagep());
+                            lhsp = newvarrefp;
+                        } else if (AstMemberSel* const prevselp
+                                   = VN_CAST(nodep->lhsp(), MemberSel)) {
+                            AstMemberSel* membselp = prevselp->cloneTree(false);
+                            AstArraySel* newarrselp = new AstArraySel(
+                                nodep->fileline(), membselp,
+                                new AstConst(nodep->fileline(), V3Number(nodep->fileline(), 32, i)));
+                            lhsp = newarrselp;
+                        } else {
+                            nodep->v3warn(
+                                E_UNSUPPORTED,
+                                "Unsupported lhs node type in array assignment");
+                            return;
+                        }
+                        const AstVarRef* const rhsrefp = VN_CAST(nodep->rhsp(), VarRef);
+                        AstVarXRef* const rhsp = new AstVarXRef{
+                            nodep->fileline(), rhsrefp->name() + "__BRA__" + index + "__KET__", "",
+                            VAccess::READ};
+                        rhsp->dtypep(rhsarrp->subDTypep());
+                        rhsp->classOrPackagep(rhsrefp->classOrPackagep());
+                        AstAssign* const assignp = new AstAssign(nodep->fileline(), lhsp, rhsp);
+                        nodep->addNextHere(assignp);
+                    }
+                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                }
+            }
+        }
+    }
+
     //--------------------
     void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
