@@ -467,7 +467,7 @@ private:
         }
     }
 
-    void visit(AstAssign* nodep) {
+    void visit(AstAssign* nodep) override {
         if (AstArraySel* const arrselp = VN_CAST(nodep->rhsp(), ArraySel)) {
 	    // handle single element selection from RHS array
             if (const AstUnpackArrayDType* const arrp
