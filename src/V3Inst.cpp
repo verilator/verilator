@@ -469,16 +469,15 @@ private:
 
     void visit(AstAssign* nodep) override {
         if (AstArraySel* const arrselp = VN_CAST(nodep->rhsp(), ArraySel)) {
-	    // handle single element selection from RHS array
+            // handle single element selection from RHS array
             if (const AstUnpackArrayDType* const arrp
                 = VN_CAST(arrselp->fromp()->dtypep(), UnpackArrayDType)) {
                 if (!VN_IS(arrp->subDTypep(), IfaceRefDType)) return;
                 V3Const::constifyParamsEdit(arrselp->bitp());
                 const AstConst* const constp = VN_CAST(arrselp->bitp(), Const);
                 if (!constp) {
-                    nodep->v3warn(
-                        E_UNSUPPORTED,
-                        "Non-constant index in RHS interface array selection");
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Non-constant index in RHS interface array selection");
                     return;
                 }
                 const string index = AstNode::encodeNumber(constp->toSInt());
@@ -487,8 +486,8 @@ private:
                 const AstVarRef* const varrefp = VN_CAST(arrselp->fromp(), VarRef);
                 UASSERT_OBJ(varrefp, arrselp, "No interface varref under array");
                 AstVarXRef* const newp = new AstVarXRef{
-                        nodep->fileline(), varrefp->name() + "__BRA__" + index + "__KET__", "",
-                        VAccess::READ};
+                    nodep->fileline(), varrefp->name() + "__BRA__" + index + "__KET__", "",
+                    VAccess::READ};
                 newp->dtypep(arrp->subDTypep());
                 newp->classOrPackagep(varrefp->classOrPackagep());
                 arrselp->addNextHere(newp);
@@ -499,23 +498,21 @@ private:
                 = VN_CAST(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
                 if (const AstUnpackArrayDType* const rhsarrp
                     = VN_CAST(nodep->rhsp()->dtypep(), UnpackArrayDType)) {
-		    // copy between arrays
+                    // copy between arrays
                     if (!VN_IS(lhsarrp->subDTypep(), IfaceRefDType)) return;
                     if (!VN_IS(rhsarrp->subDTypep(), IfaceRefDType)) return;
                     if (lhsarrp->elementsConst() != rhsarrp->elementsConst()) {
-                        nodep->v3warn(
-                            E_UNSUPPORTED,
-                            "Array size mismatch in interface assignment");
+                        nodep->v3warn(E_UNSUPPORTED,
+                                      "Array size mismatch in interface assignment");
                         return;
                     }
                     for (int i = 0; i < lhsarrp->elementsConst(); ++i) {
                         const string index = AstNode::encodeNumber(i);
                         AstNodeExpr* lhsp = nullptr;
-                        if (const AstVarRef* const varrefp
-                            = VN_CAST(nodep->lhsp(), VarRef)) {
+                        if (const AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
                             AstVarXRef* const newvarrefp = new AstVarXRef{
-                                nodep->fileline(), varrefp->name() + "__BRA__" + index + "__KET__", "",
-                                VAccess::WRITE};
+                                nodep->fileline(), varrefp->name() + "__BRA__" + index + "__KET__",
+                                "", VAccess::WRITE};
                             newvarrefp->dtypep(lhsarrp->subDTypep());
                             newvarrefp->classOrPackagep(varrefp->classOrPackagep());
                             lhsp = newvarrefp;
@@ -524,12 +521,12 @@ private:
                             AstMemberSel* membselp = prevselp->cloneTree(false);
                             AstArraySel* newarrselp = new AstArraySel(
                                 nodep->fileline(), membselp,
-                                new AstConst(nodep->fileline(), V3Number(nodep->fileline(), 32, i)));
+                                new AstConst(nodep->fileline(),
+                                             V3Number(nodep->fileline(), 32, i)));
                             lhsp = newarrselp;
                         } else {
-                            nodep->v3warn(
-                                E_UNSUPPORTED,
-                                "Unsupported lhs node type in array assignment");
+                            nodep->v3warn(E_UNSUPPORTED,
+                                          "Unsupported lhs node type in array assignment");
                             return;
                         }
                         const AstVarRef* const rhsrefp = VN_CAST(nodep->rhsp(), VarRef);
