@@ -1600,6 +1600,7 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     void name(const string& name) override { m_name = name; }
     bool index() const { return m_index; }
+    bool isExprCoverageEligible() const override { return false; }
 };
 class AstMemberSel final : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr

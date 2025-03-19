@@ -4,6 +4,10 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+class cls;
+    rand int x;
+endclass
+
 module t (/*AUTOARG*/
     // Inputs
     clk
@@ -124,6 +128,7 @@ module t (/*AUTOARG*/
 
     logic ta, tb, tc;
     initial begin
+        cls obj = new;
         int q[5];
         int qv[$];
 
@@ -140,6 +145,7 @@ module t (/*AUTOARG*/
             tb = ta;
             ta = '0;
         end
+        if (!bit'(obj.randomize() with {x < 100;})) $write("");
     end
 
     sub the_sub_1 (.p(t1), .q(t2));

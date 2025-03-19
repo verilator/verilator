@@ -2486,6 +2486,8 @@ public:
     virtual bool isGateOptimizable() const { return !isTimingControl(); }
     // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstNodeIf)
     virtual bool isGateDedupable() const { return isGateOptimizable(); }
+    // Whether the node can be used in expression coverage
+    virtual bool isExprCoverageEligible() const { return isGateDedupable(); }
     // Else creates output or exits, etc, not unconsumed
     virtual bool isOutputter() { return false; }
     // Else a AstTime etc which output can't be predicted from input
