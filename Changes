@@ -42,12 +42,13 @@ Verilator 5.035 devel
 * Fix checking built-in method arguments (#5839).
 * Fix splitting of packed ports with non-zero based ranges (#5842). [Geza Lore]
 * Fix NBA shared flag reuse (#5848). [Geza Lore]
+* Fix unresolved typedefs as parameters (#5850). [Eugene Feinberg, Brian Li]
 * Fix removal of callbacks no longer in current list (#5851) (#5852). [Gilberto Abram]
 * Fix segmentation fault on member compare (#5853).
 * Fix recursive error on virtual interfaces (#5854). [Yilou Wang]
 * Fix streaming of unpacked arrays concatenations (#5856). [Ryszard Rozak, Antmicro Ltd.]
 * Fix Windows paths in Perl (#5858) (#5860). [Tobias Jensen]
-* Fix algorithm header portability in V3Os.cpp (for std::replace). (#5861). [William D. Jones]
+* Fix algorithm header portability in V3Os.cpp (for std::replace) (#5861). [William D. Jones]
 
 
 Verilator 5.034 2025-02-24

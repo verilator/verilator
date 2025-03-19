@@ -778,6 +778,10 @@ class ParamProcessor final {
                               << modvarp->prettyNameQ());
             } else {
                 UINFO(9, "Parameter type assignment expr=" << exprp << " to " << origp << endl);
+                V3Const::constifyParamsEdit(pinp->exprp());  // Reconcile typedefs
+                // Constify may have caused pinp->exprp to change
+                rawTypep = VN_AS(pinp->exprp(), NodeDType);
+                exprp = rawTypep->skipRefToNonRefp();
                 if (exprp->similarDType(origp)) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
