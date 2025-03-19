@@ -35,7 +35,7 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-class ExprCoverageEligableVisitor final : public VNVisitor {
+class ExprCoverageEligibleVisitor final : public VNVisitor {
     // STATE
     bool m_eligible = true;
 
@@ -46,8 +46,8 @@ class ExprCoverageEligableVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit ExprCoverageEligableVisitor(AstNode* nodep) { iterateChildren(nodep); }
-    ~ExprCoverageEligableVisitor() override = default;
+    explicit ExprCoverageEligibleVisitor(AstNode* nodep) { iterateChildren(nodep); }
+    ~ExprCoverageEligibleVisitor() override = default;
 
     bool eligible() { return m_eligible; }
 };
@@ -902,7 +902,7 @@ class CoverageVisitor final : public VNVisitor {
         if (m_seeking != SEEKING) {
             iterateChildren(nodep);
         } else {
-            ExprCoverageEligableVisitor elgibleVisitor(nodep);
+            ExprCoverageEligibleVisitor elgibleVisitor(nodep);
             if (elgibleVisitor.eligible()) {
                 std::stringstream emitV;
                 V3EmitV::verilogForTree(nodep, emitV);
