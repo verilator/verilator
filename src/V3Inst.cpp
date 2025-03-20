@@ -495,9 +495,7 @@ private:
             if (const AstUnpackArrayDType* const arrp
                 = VN_CAST(arrslicep->fromp()->dtypep(), UnpackArrayDType)) {
                 if (!VN_IS(arrp->subDTypep(), IfaceRefDType)) return;
-                // fatal here because mismatch between dearray and unfixed SliceSel
-                // leaves the tree in a bad state and causes an internal error
-                arrslicep->v3fatal("Unsupported: interface slices");
+                arrslicep->v3warn(E_UNSUPPORTED, "Interface slices unsupported");
                 return;
             }
         } else {
