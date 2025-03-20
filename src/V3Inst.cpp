@@ -481,9 +481,6 @@ private:
                     return;
                 }
                 const string index = AstNode::encodeNumber(constp->toSInt());
-                if (VN_IS(arrselp->fromp(), SliceSel)) {
-                    arrselp->fromp()->v3warn(E_UNSUPPORTED, "Interface slices unsupported");
-                }
                 const AstVarRef* const varrefp = VN_CAST(arrselp->fromp(), VarRef);
                 UASSERT_OBJ(varrefp, arrselp, "No interface varref under array");
                 AstVarXRef* const newp = new AstVarXRef{
@@ -493,6 +490,15 @@ private:
                 newp->classOrPackagep(varrefp->classOrPackagep());
                 arrselp->addNextHere(newp);
                 VL_DO_DANGLING(arrselp->unlinkFrBack()->deleteTree(), arrselp);
+            }
+        } else if (AstSliceSel* const arrslicep = VN_CAST(nodep->rhsp(), SliceSel)) {
+            if (const AstUnpackArrayDType* const arrp
+                = VN_CAST(arrslicep->fromp()->dtypep(), UnpackArrayDType)) {
+                if (!VN_IS(arrp->subDTypep(), IfaceRefDType)) return;
+                // fatal here because mismatch between dearray and unfixed SliceSel
+                // leaves the tree in a bad state and causes an internal error
+                arrslicep->v3fatal("Unsupported: interface slices");
+                return;
             }
         } else {
             if (const AstUnpackArrayDType* const lhsarrp

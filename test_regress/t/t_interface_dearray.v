@@ -24,7 +24,7 @@ module tb_top();
    end
 
    initial begin
-      a_t aa = a[0];
+      static a_t aa = a[0];
 
       b = a;
 
@@ -38,7 +38,7 @@ module tb_top();
       g[0] = a[0];
 
       for (int i = 0; i < 6; ++i) begin
-	 d.vif[i] = g[i];
+         d.vif[i] = g[i];
       end
 
       $write("*-* All Finished *-*\n");
