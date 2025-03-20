@@ -467,7 +467,7 @@ private:
         }
     }
 
-    void visit(AstAssign* nodep) override {
+    void visit(AstNodeAssign* nodep) override {
         if (AstArraySel* const arrselp = VN_CAST(nodep->rhsp(), ArraySel)) {
             // handle single element selection from RHS array
             if (const AstUnpackArrayDType* const arrp
@@ -481,8 +481,9 @@ private:
                     return;
                 }
                 const string index = AstNode::encodeNumber(constp->toSInt());
-                if (VN_IS(arrselp->fromp(), SliceSel))
-                    arrselp->fromp()->v3error("Unsupported: interface slices");
+                if (VN_IS(arrselp->fromp(), SliceSel)) {
+                    arrselp->fromp()->v3warn(E_UNSUPPORTED, "Interface slices unsupported");
+                }
                 const AstVarRef* const varrefp = VN_CAST(arrselp->fromp(), VarRef);
                 UASSERT_OBJ(varrefp, arrselp, "No interface varref under array");
                 AstVarXRef* const newp = new AstVarXRef{
@@ -495,12 +496,12 @@ private:
             }
         } else {
             if (const AstUnpackArrayDType* const lhsarrp
-                = VN_CAST(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
+                = VN_CAST(nodep->lhsp()->dtypep()->skipRefp(), UnpackArrayDType)) {
                 if (const AstUnpackArrayDType* const rhsarrp
-                    = VN_CAST(nodep->rhsp()->dtypep(), UnpackArrayDType)) {
+                    = VN_CAST(nodep->rhsp()->dtypep()->skipRefp(), UnpackArrayDType)) {
                     // copy between arrays
-                    if (!VN_IS(lhsarrp->subDTypep(), IfaceRefDType)) return;
-                    if (!VN_IS(rhsarrp->subDTypep(), IfaceRefDType)) return;
+                    if (!VN_IS(lhsarrp->subDTypep()->skipRefp(), IfaceRefDType)) return;
+                    if (!VN_IS(rhsarrp->subDTypep()->skipRefp(), IfaceRefDType)) return;
                     if (lhsarrp->elementsConst() != rhsarrp->elementsConst()) {
                         nodep->v3warn(E_UNSUPPORTED,
                                       "Array size mismatch in interface assignment");
@@ -513,7 +514,7 @@ private:
                             AstVarXRef* const newvarrefp = new AstVarXRef{
                                 nodep->fileline(), varrefp->name() + "__BRA__" + index + "__KET__",
                                 "", VAccess::WRITE};
-                            newvarrefp->dtypep(lhsarrp->subDTypep());
+                            newvarrefp->dtypep(lhsarrp->subDTypep()->skipRefp());
                             newvarrefp->classOrPackagep(varrefp->classOrPackagep());
                             lhsp = newvarrefp;
                         } else if (AstMemberSel* const prevselp
@@ -533,7 +534,7 @@ private:
                         AstVarXRef* const rhsp = new AstVarXRef{
                             nodep->fileline(), rhsrefp->name() + "__BRA__" + index + "__KET__", "",
                             VAccess::READ};
-                        rhsp->dtypep(rhsarrp->subDTypep());
+                        rhsp->dtypep(rhsarrp->subDTypep()->skipRefp());
                         rhsp->classOrPackagep(rhsrefp->classOrPackagep());
                         AstAssign* const assignp = new AstAssign(nodep->fileline(), lhsp, rhsp);
                         nodep->addNextHere(assignp);

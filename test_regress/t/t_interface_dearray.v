@@ -7,16 +7,26 @@
 interface A;
 endinterface
 
+typedef virtual A a_t;
+typedef a_t a_array_t[6];
+
 class C;
-   virtual A vif[6];
+   a_array_t vif;
 endclass
 
 module tb_top();
    A a[6](), b[6]();
-   C c, d;
+   C c, d, e;
+   a_array_t g;
+
+   for (genvar j = 0; j < 6; j++) begin
+      initial g[j] = a[j];
+   end
 
    initial begin
-      virtual A aa = a[0];
+      a_t aa = a[0];
+
+      b = a;
 
       c = new();
       c.vif = a;
@@ -25,9 +35,14 @@ module tb_top();
       d.vif[0] = a[0];
       d.vif[1] = a[1];
 
-      b = a;
+      g[0] = a[0];
+
+      for (int i = 0; i < 6; ++i) begin
+	 d.vif[i] = g[i];
+      end
 
       $write("*-* All Finished *-*\n");
       $finish;
    end
+
 endmodule
