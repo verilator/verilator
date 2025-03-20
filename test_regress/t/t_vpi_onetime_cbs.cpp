@@ -75,7 +75,7 @@ static const char* cb_reason_to_string(int cb_name) {
 bool cb_time_is_delay(int cb_name) {
     // For some callbacks, time is interpreted as a delay from current time
     // instead of an absolute time
-    if (cb_name == cbReadOnlySynch || cb_name == cbReadWriteSynch) { return true; }
+    if (cb_name == cbReadOnlySynch || cb_name == cbReadWriteSynch) return true;
     return false;
 }
 
@@ -137,7 +137,7 @@ static PLI_INT32 TheCallback(s_cb_data* data) {
         cb_data.cb_rtn = AtEndOfSimTimeCallback;
     } else {
         next_time = stats->exp_times[stats->count];
-        if (cb_time_is_delay(data->reason)) { next_time -= t.low; }
+        if (cb_time_is_delay(data->reason)) next_time -= t.low;
         cb_data.reason = data->reason;
         cb_data.cb_rtn = TheCallback;
     }
@@ -228,14 +228,14 @@ static int EndOfSimulationCallback(p_cb_data cb_data) {
     CHECK_RESULT(CallbackStats[cbAtEndOfSimTime].count, 8);
     CHECK_RESULT(CallbackStats[cbEndOfSimulation].count, 1);
 
-    if (!got_error) { printf("*-* All Finished *-*\n"); }
+    if (!got_error) printf("*-* All Finished *-*\n");
     return 0;
 }
 
 // cver entry
 static void VPIRegister(void) {
     // Clear stats
-    for (int cb = 1; cb <= cbAtEndOfSimTime; cb++) { CallbackStats[cb].count = 0; }
+    for (int cb = 1; cb <= cbAtEndOfSimTime; cb++) CallbackStats[cb].count = 0;
     CallbackStats[cbStartOfSimulation].exp_times = new PLI_UINT32(0);
     CallbackStats[cbEndOfSimulation].exp_times = new PLI_UINT32(22);
     s_cb_data cb_data;

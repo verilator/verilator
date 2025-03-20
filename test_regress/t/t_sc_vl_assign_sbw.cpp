@@ -30,7 +30,7 @@ int sc_main(int argc, char* argv[]) {
     tb->final();
     VL_DO_DANGLING(delete tb, tb);
 
-    if (pass) { VL_PRINTF("*-* All Finished *-*\n"); }
+    if (pass) VL_PRINTF("*-* All Finished *-*\n");
 
     return 0;
 }

@@ -40,7 +40,7 @@ class ExprCoverageEligibleVisitor final : public VNVisitor {
     bool m_eligible = true;
 
     void visit(AstNode* nodep) override {
-        if (!nodep->isExprCoverageEligible()) { m_eligible = false; }
+        if (!nodep->isExprCoverageEligible()) m_eligible = false;
         iterateChildren(nodep);
     }
 
@@ -928,11 +928,11 @@ class CoverageVisitor final : public VNVisitor {
         UINFO(9, "unsupported: " << why << " " << nodep << endl);
         bool wasSeeking = m_seeking == SEEKING;
         Objective oldSeeking = m_seeking;
-        if (wasSeeking) { abortExprCoverage(); }
+        if (wasSeeking) abortExprCoverage();
         m_seeking = ABORTED;
         iterateChildren(nodep);
         lineTrack(nodep);
-        if (!wasSeeking) { m_seeking = oldSeeking; }
+        if (!wasSeeking) m_seeking = oldSeeking;
     }
 
 public:

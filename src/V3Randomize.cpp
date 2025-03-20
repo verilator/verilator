@@ -1024,7 +1024,7 @@ class CaptureVisitor final : public VNVisitor {
 
     AstVar* getVar(AstVar* const varp) const {
         const auto it = m_varCloneMap.find(varp);
-        if (it == m_varCloneMap.end()) { return nullptr; }
+        if (it == m_varCloneMap.end()) return nullptr;
         return it->second;
     }
 

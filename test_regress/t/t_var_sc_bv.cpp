@@ -26,7 +26,7 @@ void compareWls(int obits, WDataInP const lwp, WDataInP const rwp) {
     bool same = true;
 
     for (int i = 0; (i < (words - 1)); ++i) {
-        if (lwp[i] != rwp[i]) { same = false; }
+        if (lwp[i] != rwp[i]) same = false;
     }
     if ((lwp[words - 1] & VL_MASK_E(obits)) != (rwp[words - 1] & VL_MASK_E(obits))) {
         same = false;

@@ -509,7 +509,7 @@ class ParamProcessor final {
             checkSupportedParam(modp, pinp);
             if (const AstVar* const varp = pinp->modVarp()) {
                 if (!pinp->exprp()) continue;
-                if (varp->isGParam()) { pins.emplace(varp->name(), pinp->exprp()); }
+                if (varp->isGParam()) pins.emplace(varp->name(), pinp->exprp());
             } else if (VN_IS(pinp->exprp(), BasicDType) || VN_IS(pinp->exprp(), NodeDType)) {
                 pins.emplace(pinp->name(), pinp->exprp());
             }
@@ -1255,7 +1255,7 @@ class ParamVisitor final : public VNVisitor {
                     break;
                 }
                 if (const AstVar* const varp = VN_CAST(backp, Var)) {
-                    if (!varp->isIfaceRef()) { continue; }
+                    if (!varp->isIfaceRef()) continue;
                     const AstIfaceRefDType* ifacerefp = nullptr;
                     if (const AstNodeDType* const typep = varp->childDTypep()) {
                         ifacerefp = VN_CAST(typep, IfaceRefDType);
@@ -1272,7 +1272,7 @@ class ParamVisitor final : public VNVisitor {
                             }
                         }
                     }
-                    if (!ifacerefp) { continue; }
+                    if (!ifacerefp) continue;
                     // Interfaces passed in on the port map have ifaces
                     if (const AstIface* const ifacep = ifacerefp->ifacep()) {
                         if (dotted == backp->name()) {

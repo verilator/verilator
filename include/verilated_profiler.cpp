@@ -157,7 +157,7 @@ void VlExecutionProfiler::dump(const char* filenamep, uint64_t tickEnd)
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+exec writing to '%s'\n", filenamep););
 
     FILE* const fp = std::fopen(filenamep, "w");
-    if (VL_UNLIKELY(!fp)) { VL_FATAL_MT(filenamep, 0, "", "+prof+exec+file file not writable"); }
+    if (VL_UNLIKELY(!fp)) VL_FATAL_MT(filenamep, 0, "", "+prof+exec+file file not writable");
 
     // TODO Perhaps merge with verilated_coverage output format, so can
     // have a common merging and reporting tool, etc.

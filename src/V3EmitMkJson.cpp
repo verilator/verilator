@@ -115,7 +115,7 @@ class V3EmitMkJsonEmitter final {
         Printer& putList(const std::string& name, const T& list) {
             if (list.empty()) return *this;
             begin(name, '[');
-            for (auto it = list.begin(); it != list.end(); ++it) { put(*it); }
+            for (auto it = list.begin(); it != list.end(); ++it) put(*it);
             return end();
         }
 
@@ -181,7 +181,9 @@ class V3EmitMkJsonEmitter final {
         const std::string verilatorRoot
             = V3Os::filenameSlashPath(V3Os::filenameRealPath(V3Options::getenvVERILATOR_ROOT()));
         global.emplace_back(verilatorRoot + "/include/verilated.cpp");
-        if (v3Global.dpi()) { global.emplace_back(verilatorRoot + "/include/verilated_dpi.cpp"); }
+        if (v3Global.dpi()) {  //
+            global.emplace_back(verilatorRoot + "/include/verilated_dpi.cpp");
+        }
         if (v3Global.opt.vpi()) {
             global.emplace_back(verilatorRoot + "/include/verilated_vpi.cpp");
         }
@@ -264,7 +266,7 @@ class V3EmitMkJsonEmitter final {
                 }
 
                 const string vFile = hblockp->vFileIfNecessary();
-                if (!vFile.empty()) { sources.emplace_back(vFile); }
+                if (!vFile.empty()) sources.emplace_back(vFile);
 
                 const V3StringList& vFiles = v3Global.opt.vFiles();
                 for (const string& i : vFiles)

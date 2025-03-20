@@ -131,10 +131,10 @@ void modDump(TestVpiHandle& it, int n) {
         if (type == vpiParameter || type == vpiConstType) {
             printf(" vpiConstType=%s", strFromVpiConstType(vpi_get(vpiConstType, hndl)));
         }
-        if (type == vpiModule) { printf(" vpiDefName=%s", vpi_get_str(vpiDefName, hndl)); }
+        if (type == vpiModule) printf(" vpiDefName=%s", vpi_get_str(vpiDefName, hndl));
         printf("\n");
 
-        if (iterate_over.find(type) == iterate_over.end()) { continue; }
+        if (iterate_over.find(type) == iterate_over.end()) continue;
         for (int type : iterate_over.at(type)) {
             TestVpiHandle subIt = vpi_iterate(type, hndl);
             if (subIt) {

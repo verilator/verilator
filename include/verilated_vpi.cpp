@@ -421,7 +421,7 @@ public:
     const char* fullname() const override {
         static thread_local std::string t_out;
         t_out = std::string{scopep()->name()} + "." + name();
-        for (auto idx : index()) { t_out += "[" + std::to_string(idx) + "]"; }
+        for (auto idx : index()) t_out += "[" + std::to_string(idx) + "]";
         return t_out.c_str();
     }
     void* prevDatap() const { return m_prevDatap; }

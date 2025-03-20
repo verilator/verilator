@@ -340,7 +340,7 @@ void VerilatedSaif::finalizeSaifFileContents() {
 void VerilatedSaif::recursivelyPrintScopes(const VerilatedSaifActivityScope& scope) {
     openInstanceScope(scope.name());
     printScopeActivities(scope);
-    for (const auto& childScope : scope.childScopes()) { recursivelyPrintScopes(*childScope); }
+    for (const auto& childScope : scope.childScopes()) recursivelyPrintScopes(*childScope);
     closeInstanceScope();
 }
 

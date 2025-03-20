@@ -166,7 +166,7 @@ public:
                     s << "(Array (_ BitVec " << idxWidths[i] << ") ";
                 }
                 s << "(_ BitVec " << width() << ")";
-                for (int i = 0; i < dimension(); ++i) { s << ")"; }
+                for (int i = 0; i < dimension(); ++i) s << ")";
             }
         } else {
             VL_FATAL_MT(__FILE__, __LINE__, "randomize", "indexed_name not found in m_arr_vars");

@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
         VerilatedVpi::callCbs(cbReadOnlySynch);
 
 #if VM_TRACE
-        if (traceOn) { tfp->dump(contextp->time()); }
+        if (traceOn) tfp->dump(contextp->time());
 #endif
         // cocotb controls the clock inputs using cbAfterDelay so
         // skip ahead to the next registered callback
@@ -165,7 +165,7 @@ int main(int argc, char** argv) {
     top->final();
 
 #if VM_TRACE
-    if (traceOn) { tfp->close(); }
+    if (traceOn) tfp->close();
 #endif
 
 // VM_COVERAGE is a define which is set if Verilator is

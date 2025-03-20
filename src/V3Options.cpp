@@ -1049,7 +1049,7 @@ string V3Options::argString(int argc, char** argv) {
 
 void V3Options::parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED {
     // Save command line options
-    for (int i = 0; i < argc; ++i) { addLineArg(argv[i]); }
+    for (int i = 0; i < argc; ++i) addLineArg(argv[i]);
 
     // Parse all options
     // Initial entry point from Verilator.cpp

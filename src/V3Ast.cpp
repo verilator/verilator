@@ -228,7 +228,7 @@ string AstNode::vpiName(const string& namein) {
     // we change that identifier to an escaped identifier, wrapping it with '\' and ' '
     // as specified in LRM 23.6
     string name = namein;
-    if (0 == namein.substr(0, 7).compare("__SYM__")) { name = namein.substr(7); }
+    if (0 == namein.substr(0, 7).compare("__SYM__")) name = namein.substr(7);
     string pretty;
     pretty.reserve(name.length());
     bool inEscapedIdent = false;

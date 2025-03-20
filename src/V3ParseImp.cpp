@@ -529,7 +529,7 @@ int V3ParseImp::tokenPipelineId(int token) {
     const int nexttok = nexttokp->token;
     UINFO(9, "tokenPipelineId tok=" << yylval.token << endl);
     UASSERT(yylval.token == yaID__LEX, "Start with ID");
-    if (nexttok == yP_COLONCOLON) { return yaID__CC; }
+    if (nexttok == yP_COLONCOLON) return yaID__CC;
     VL_RESTORER(yylval);  // Remember value, as about to read ahead
     if (m_tokenLastBison.token != '@' && m_tokenLastBison.token != '#'
         && m_tokenLastBison.token != '.') {

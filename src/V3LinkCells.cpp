@@ -237,7 +237,7 @@ class LinkCellsVisitor final : public VNVisitor {
         if (modp) {
             if (VN_IS(modp, Iface)) {
                 // Track module depths, so can sort list from parent down to children
-                if (!nodep->isVirtual()) { newEdge(vertex(m_modp), vertex(modp), 1, false); }
+                if (!nodep->isVirtual()) newEdge(vertex(m_modp), vertex(modp), 1, false);
                 if (!nodep->cellp()) nodep->ifacep(VN_AS(modp, Iface));
             } else if (VN_IS(modp, NotFoundModule)) {  // Will error out later
             } else {

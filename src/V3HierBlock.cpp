@@ -487,5 +487,5 @@ string V3HierBlockPlan::topCommandArgsFilename(bool forCMake) {
 }
 
 void V3HierBlockPlan::writeParametersFiles() const {
-    for (const auto& block : *this) { block.second->writeParametersFile(); }
+    for (const auto& block : *this) block.second->writeParametersFile();
 }
