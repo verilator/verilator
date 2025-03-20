@@ -21,7 +21,7 @@ module t (/*AUTOARG*/
    endgenerate
 endmodule
 
-module Core(input clk);
+module Core(input clk); /*verilator hier_block*/
       reg [63:0]   crc;
       logic [31:0] rdata;
       logic [31:0] rdata2;
@@ -49,7 +49,7 @@ module Check(
       input wire [63:0] result,
       input logic [31:0] rdata,
       input logic [31:0] rdata2
-   ); /*verilator hier_block*/
+   );
    integer      cyc = 0;
    reg [63:0]   sum;
 
