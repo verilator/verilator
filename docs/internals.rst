@@ -2077,7 +2077,7 @@ driver.py Non-Scenario Arguments
 
 --j #
   Run number of parallel tests, or 0 to determine the count based on the
-  number of cores installed.  Requires Perl's Parallel::Forker package.
+  number of cores installed.
 
 --quiet
   Suppress all output except for failures and progress messages every 15

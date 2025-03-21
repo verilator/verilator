@@ -34,7 +34,7 @@ ifneq ($(NC_ROOT),)
 #PRODUCTS += --nc
 endif
 
-# Run tests in parallel.  Requires Parallel::Forker to be installed.
+# Run tests in parallel.
 ifeq ($(CFG_WITH_LONGTESTS),yes)
  DRIVER_FLAGS ?= -j 0 --quiet --rerun
 endif
