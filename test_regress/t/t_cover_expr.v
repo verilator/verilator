@@ -129,6 +129,7 @@ module t (/*AUTOARG*/
     logic ta, tb, tc;
     initial begin
         cls obj = new;
+        cls null_obj = null;
         int q[5];
         int qv[$];
 
@@ -146,6 +147,7 @@ module t (/*AUTOARG*/
             ta = '0;
         end
         if (!bit'(obj.randomize() with {x < 100;})) $write("");
+        if (null_obj != null && null_obj.x == 5) $write("");
     end
 
     sub the_sub_1 (.p(t1), .q(t2));
