@@ -19,10 +19,6 @@ module tb_top();
    C c, d, e;
    a_array_t g;
 
-   for (genvar j = 0; j < 6; j++) begin
-      initial g[j] = a[j];
-   end
-
    initial begin
       static a_t aa = a[0];
 
@@ -36,9 +32,15 @@ module tb_top();
       d.vif[1] = a[1];
 
       g[0] = a[0];
+      g = a;
+
+      d.vif[0] = g[0];
+      d.vif = g;
+
+      e = new();
 
       for (int i = 0; i < 6; ++i) begin
-         d.vif[i] = g[i];
+         e.vif[i] = g[i];
       end
 
       $write("*-* All Finished *-*\n");

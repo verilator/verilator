@@ -7,10 +7,10 @@
                                          : ... note: In instance 'tb_top'
    30 |          d.vif[i] = a[i];
       |                       ^
-%Error-UNSUPPORTED: t/t_interface_dearray_bad.v:30:19: Non-constant index in RHS interface array selection
+%Error-UNSUPPORTED: t/t_interface_dearray_bad.v:30:23: Non-constant index in RHS interface array selection
                                                      : ... note: In instance 'tb_top'
    30 |          d.vif[i] = a[i];
-      |                   ^
+      |                       ^
 %Error-UNSUPPORTED: t/t_interface_dearray_bad.v:34:16: Interface slices unsupported
                                                      : ... note: In instance 'tb_top'
    34 |       e.vif = b[0:5];

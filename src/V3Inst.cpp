@@ -195,6 +195,9 @@ private:
     void visit(AstVar* nodep) override {
         if (VN_IS(nodep->dtypep(), UnpackArrayDType)
             && VN_IS(VN_AS(nodep->dtypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType)) {
+            if (VN_AS(VN_AS(nodep->dtypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType)
+                    ->isVirtual())
+                return;
             UINFO(8, "   dv-vec-VAR    " << nodep << endl);
             AstUnpackArrayDType* const arrdtype = VN_AS(nodep->dtypep(), UnpackArrayDType);
             AstNode* prevp = nullptr;
@@ -241,7 +244,10 @@ private:
             const bool isIface
                 = ifaceVarp && VN_IS(ifaceVarp->dtypep(), UnpackArrayDType)
                   && VN_IS(VN_AS(ifaceVarp->dtypep(), UnpackArrayDType)->subDTypep(),
-                           IfaceRefDType);
+                           IfaceRefDType)
+                  && !VN_AS(VN_AS(ifaceVarp->dtypep(), UnpackArrayDType)->subDTypep(),
+                            IfaceRefDType)
+                          ->isVirtual();
 
             // Make all of the required clones
             for (int i = 0; i < m_cellRangep->elementsConst(); i++) {
@@ -363,6 +369,7 @@ private:
             if (const AstUnpackArrayDType* const arrp
                 = VN_CAST(arrselp->fromp()->dtypep(), UnpackArrayDType)) {
                 if (!VN_IS(arrp->subDTypep(), IfaceRefDType)) return;
+                if (VN_AS(arrp->subDTypep(), IfaceRefDType)->isVirtual()) return;
                 // Interface pin attaches to one element of arrayed interface
                 V3Const::constifyParamsEdit(arrselp->bitp());
                 const AstConst* const constp = VN_CAST(arrselp->bitp(), Const);
@@ -390,6 +397,7 @@ private:
             const AstUnpackArrayDType* const pinArrp
                 = VN_CAST(pinVarp->dtypep(), UnpackArrayDType);
             if (!pinArrp || !VN_IS(pinArrp->subDTypep(), IfaceRefDType)) return;
+            if (VN_AS(pinArrp->subDTypep(), IfaceRefDType)->isVirtual()) return;
             // Arrayed pin/var attaches to arrayed submodule lower port/var, expand it
             AstNode* prevp = nullptr;
             AstNode* prevPinp = nullptr;
@@ -471,13 +479,14 @@ private:
         if (AstArraySel* const arrselp = VN_CAST(nodep->rhsp(), ArraySel)) {
             // handle single element selection from RHS array
             if (const AstUnpackArrayDType* const arrp
-                = VN_CAST(arrselp->fromp()->dtypep(), UnpackArrayDType)) {
-                if (!VN_IS(arrp->subDTypep(), IfaceRefDType)) return;
+                = VN_CAST(arrselp->fromp()->dtypep()->skipRefp(), UnpackArrayDType)) {
+                if (!VN_IS(arrp->subDTypep()->skipRefp(), IfaceRefDType)) return;
+                if (VN_AS(arrp->subDTypep()->skipRefp(), IfaceRefDType)->isVirtual()) return;
                 V3Const::constifyParamsEdit(arrselp->bitp());
                 const AstConst* const constp = VN_CAST(arrselp->bitp(), Const);
                 if (!constp) {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Non-constant index in RHS interface array selection");
+                    arrselp->bitp()->v3warn(E_UNSUPPORTED,
+                                            "Non-constant index in RHS interface array selection");
                     return;
                 }
                 const string index = AstNode::encodeNumber(constp->toSInt());
@@ -495,6 +504,7 @@ private:
             if (const AstUnpackArrayDType* const arrp
                 = VN_CAST(arrslicep->fromp()->dtypep(), UnpackArrayDType)) {
                 if (!VN_IS(arrp->subDTypep(), IfaceRefDType)) return;
+                if (VN_AS(arrp->subDTypep(), IfaceRefDType)->isVirtual()) return;
                 arrslicep->v3warn(E_UNSUPPORTED, "Interface slices unsupported");
                 return;
             }
@@ -506,6 +516,8 @@ private:
                     // copy between arrays
                     if (!VN_IS(lhsarrp->subDTypep()->skipRefp(), IfaceRefDType)) return;
                     if (!VN_IS(rhsarrp->subDTypep()->skipRefp(), IfaceRefDType)) return;
+                    if (VN_AS(rhsarrp->subDTypep()->skipRefp(), IfaceRefDType)->isVirtual())
+                        return;
                     if (lhsarrp->elementsConst() != rhsarrp->elementsConst()) {
                         nodep->v3warn(E_UNSUPPORTED,
                                       "Array size mismatch in interface assignment");
@@ -514,13 +526,24 @@ private:
                     for (int i = 0; i < lhsarrp->elementsConst(); ++i) {
                         const string index = AstNode::encodeNumber(i);
                         AstNodeExpr* lhsp = nullptr;
-                        if (const AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
-                            AstVarXRef* const newvarrefp = new AstVarXRef{
-                                nodep->fileline(), varrefp->name() + "__BRA__" + index + "__KET__",
-                                "", VAccess::WRITE};
-                            newvarrefp->dtypep(lhsarrp->subDTypep()->skipRefp());
-                            newvarrefp->classOrPackagep(varrefp->classOrPackagep());
-                            lhsp = newvarrefp;
+                        if (AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
+                            if (VN_AS(lhsarrp->subDTypep()->skipRefp(), IfaceRefDType)
+                                    ->isVirtual()) {
+                                AstVarRef* const newvarp = varrefp->cloneTree(false);
+                                AstArraySel* newarrselp = new AstArraySel(
+                                    nodep->fileline(), newvarp,
+                                    new AstConst(nodep->fileline(),
+                                                 V3Number(nodep->fileline(), 32, i)));
+                                lhsp = newarrselp;
+                            } else {
+                                AstVarXRef* const newvarrefp = new AstVarXRef{
+                                    nodep->fileline(),
+                                    varrefp->name() + "__BRA__" + index + "__KET__", "",
+                                    VAccess::WRITE};
+                                newvarrefp->dtypep(lhsarrp->subDTypep()->skipRefp());
+                                newvarrefp->classOrPackagep(varrefp->classOrPackagep());
+                                lhsp = newvarrefp;
+                            }
                         } else if (AstMemberSel* const prevselp
                                    = VN_CAST(nodep->lhsp(), MemberSel)) {
                             AstMemberSel* membselp = prevselp->cloneTree(false);
