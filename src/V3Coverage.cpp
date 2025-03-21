@@ -39,9 +39,26 @@ class ExprCoverageEligibleVisitor final : public VNVisitor {
     // STATE
     bool m_eligible = true;
 
+    void visit(AstNodeVarRef* nodep) override {
+        AstNodeDType* dtypep = nodep->varp()->dtypep();
+        // Class objecs and references not supported for expression coverage
+        // because the object may not persist until the point at which
+        // coverage data is gathered
+        // This could be resolved in the future by protecting against dereferrencing
+        // null pointers when cloning the expression for expression coverage
+        if (VN_CAST(dtypep, ClassRefDType)) {
+            m_eligible = false;
+        } else {
+            iterateChildren(nodep);
+        }
+    }
+
     void visit(AstNode* nodep) override {
-        if (!nodep->isExprCoverageEligible()) m_eligible = false;
-        iterateChildren(nodep);
+        if (!nodep->isExprCoverageEligible()) {
+            m_eligible = false;
+        } else {
+            iterateChildren(nodep);
+        }
     }
 
 public:
