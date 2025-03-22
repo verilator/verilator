@@ -10,14 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.top_filename = 't/t_EXAMPLE.v'
 
-out_filename = test.obj_dir + "/V" + test.name + ".xml"
-
-test.compile(verilator_flags2=['--no-std', '-Wno-DEPRECATED --xml-only', '--flatten'],
-             verilator_make_gmake=False,
-             make_top_shell=False,
-             make_main=False)
-
-test.files_identical(out_filename, test.golden_filename)
+test.lint(verilator_flags2=["--xml-only --xml-output /dev/null"],
+          fails=True,
+          expect_filename=test.golden_filename)
 
 test.passes()

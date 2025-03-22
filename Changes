@@ -24,6 +24,7 @@ Verilator 5.035 devel
 * Add used language to `--preproc-resolve` output (#5795). [Kamil Rakoczy, Antmicro Ltd.]
 * Add `--make json` to enable integration with non-make/cmake build systems (#5799). [Andrew Voznytsa]
 * Add empty veriuser.h for legacy compatibility.
+* Add DEPRECATED warning on `--xml-only` and `--xml-output`.
 * Remove unused gtkwave/wavealloca.h. [Geza Lore]
 * Optimize automatic splitting of some packed variables (#5843). [Geza Lore]
 * Optimize trigger vector in whole words (#5857). [Geza Lore]

@@ -1815,8 +1815,14 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
     });
     DECL_OPTION("-x-initial-edge", OnOff, &m_xInitialEdge);
-    DECL_OPTION("-xml-only", OnOff, &m_xmlOnly);
-    DECL_OPTION("-xml-output", CbVal, [this](const char* valp) {
+    DECL_OPTION("-xml-only", CbOnOff, [this, fl](bool flag) {
+        if (!m_xmlOnly && flag)
+            fl->v3warn(DEPRECATED, "Option --xml-only is deprecated, move to --json-only");
+        m_xmlOnly = flag;
+    });
+    DECL_OPTION("-xml-output", CbVal, [this, fl](const char* valp) {
+        if (!m_xmlOnly)
+            fl->v3warn(DEPRECATED, "Option --xml-only is deprecated, move to --json-only");
         m_xmlOutput = valp;
         m_xmlOnly = true;
     });

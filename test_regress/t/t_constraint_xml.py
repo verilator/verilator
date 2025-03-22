@@ -13,7 +13,7 @@ test.scenarios('vlt')
 
 out_filename = test.obj_dir + "/V" + test.name + ".xml"
 
-test.compile(verilator_flags2=['--no-std', '--xml-only', '-Wno-CONSTRAINTIGN'],
+test.compile(verilator_flags2=['--no-std', '-Wno-DEPRECATED --xml-only', '-Wno-CONSTRAINTIGN'],
              verilator_make_gmake=False,
              make_top_shell=False,
              make_main=False)

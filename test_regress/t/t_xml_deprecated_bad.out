@@ -1,0 +1,4 @@
+%Warning-DEPRECATED: Option --xml-only is deprecated, move to --json-only
+                     ... For warning description see https://verilator.org/warn/DEPRECATED?v=latest
+                     ... Use "/* verilator lint_off DEPRECATED */" and lint_on around source to disable this message.
+%Error: Exiting due to
