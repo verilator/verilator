@@ -330,7 +330,7 @@ class DynScopeVisitor final : public VNVisitor {
             membersel->varp(refp->varp());
         }
         handle.relink(membersel);
-        VL_DO_DANGLING(refp->deleteTree(), refp);
+        VL_DO_DANGLING(pushDeletep(refp), refp);
     }
 
     static bool hasAsyncFork(AstNode* nodep) {
@@ -591,7 +591,7 @@ class ForkVisitor final : public VNVisitor {
             taskp
                 = makeTask(beginp->fileline(), beginp->stmtsp()->unlinkFrBackWithNext(), taskName);
             beginp->unlinkFrBack(&handle);
-            VL_DO_DANGLING(beginp->deleteTree(), beginp);
+            VL_DO_DANGLING(pushDeletep(beginp), beginp);
         } else if (AstNodeStmt* const stmtp = VN_CAST(nodep, NodeStmt)) {
             const string taskName = generateTaskName(stmtp, "fork_stmt");
             taskp = makeTask(stmtp->fileline(), stmtp->unlinkFrBack(&handle), taskName);
