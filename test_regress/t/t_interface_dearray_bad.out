@@ -1,21 +1,25 @@
-%Error-UNSUPPORTED: t/t_interface_dearray_bad.v:25:13: Array size mismatch in interface assignment
+%Error: t/t_interface_dearray_bad.v:23:7: Illegal target of assignment
+                                        : ... note: In instance 'tb_top'
+   23 |       a = f;
+      |       ^
+%Error-UNSUPPORTED: t/t_interface_dearray_bad.v:26:13: Array size mismatch in interface assignment
                                                      : ... note: In instance 'tb_top'
-   25 |       c.vif = b;
+   26 |       c.vif = b;
       |             ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_interface_dearray_bad.v:30:23: Expecting expression to be constant, but variable isn't const: 'i'
+%Error: t/t_interface_dearray_bad.v:31:23: Expecting expression to be constant, but variable isn't const: 'i'
                                          : ... note: In instance 'tb_top'
-   30 |          d.vif[i] = a[i];
+   31 |          d.vif[i] = a[i];
       |                       ^
-%Error-UNSUPPORTED: t/t_interface_dearray_bad.v:30:23: Non-constant index in RHS interface array selection
+%Error-UNSUPPORTED: t/t_interface_dearray_bad.v:31:23: Non-constant index in RHS interface array selection
                                                      : ... note: In instance 'tb_top'
-   30 |          d.vif[i] = a[i];
+   31 |          d.vif[i] = a[i];
       |                       ^
-%Error-UNSUPPORTED: t/t_interface_dearray_bad.v:34:16: Interface slices unsupported
+%Error-UNSUPPORTED: t/t_interface_dearray_bad.v:35:16: Interface slices unsupported
                                                      : ... note: In instance 'tb_top'
-   34 |       e.vif = b[0:5];
+   35 |       e.vif = b[0:5];
       |                ^
-%Error: Internal Error: t/t_interface_dearray_bad.v:25:15: ../V3Broken.cpp:#: Broken link in node (or something without maybePointedTo): 'm_varp && !m_varp->brokeExists()' @ ./V3Ast__gen_impl.h:#
+%Error: Internal Error: t/t_interface_dearray_bad.v:23:11: ../V3Broken.cpp:#: Broken link in node (or something without maybePointedTo): 'm_varp && !m_varp->brokeExists()' @ ./V3Ast__gen_impl.h:#
                                                          : ... note: In instance 'tb_top'
-   25 |       c.vif = b;
-      |               ^
+   23 |       a = f;
+      |           ^

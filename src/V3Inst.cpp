@@ -475,6 +475,34 @@ private:
         }
     }
 
+    void visit(AstArg* nodep) override {
+        if (AstArraySel* const arrselp = VN_CAST(nodep->exprp(), ArraySel)) {
+            // handle single element selection from RHS array
+            if (const AstUnpackArrayDType* const arrp
+                = VN_CAST(arrselp->fromp()->dtypep()->skipRefp(), UnpackArrayDType)) {
+                if (!VN_IS(arrp->subDTypep()->skipRefp(), IfaceRefDType)) return;
+                if (VN_AS(arrp->subDTypep()->skipRefp(), IfaceRefDType)->isVirtual()) return;
+                V3Const::constifyParamsEdit(arrselp->bitp());
+                const AstConst* const constp = VN_CAST(arrselp->bitp(), Const);
+                if (!constp) {
+                    arrselp->bitp()->v3warn(E_UNSUPPORTED,
+                                            "Non-constant index in RHS interface array selection");
+                    return;
+                }
+                const string index = AstNode::encodeNumber(constp->toSInt());
+                const AstVarRef* const varrefp = VN_CAST(arrselp->fromp(), VarRef);
+                UASSERT_OBJ(varrefp, arrselp, "No interface varref under array");
+                AstVarXRef* const newp = new AstVarXRef{
+                    nodep->fileline(), varrefp->name() + "__BRA__" + index + "__KET__", "",
+                    VAccess::READ};
+                newp->dtypep(arrp->subDTypep());
+                newp->classOrPackagep(varrefp->classOrPackagep());
+                arrselp->addNextHere(newp);
+                VL_DO_DANGLING(arrselp->unlinkFrBack()->deleteTree(), arrselp);
+            }
+        }
+    }
+
     void visit(AstNodeAssign* nodep) override {
         if (AstArraySel* const arrselp = VN_CAST(nodep->rhsp(), ArraySel)) {
             // handle single element selection from RHS array
@@ -509,15 +537,19 @@ private:
                 return;
             }
         } else {
-            if (const AstUnpackArrayDType* const lhsarrp
-                = VN_CAST(nodep->lhsp()->dtypep()->skipRefp(), UnpackArrayDType)) {
-                if (const AstUnpackArrayDType* const rhsarrp
-                    = VN_CAST(nodep->rhsp()->dtypep()->skipRefp(), UnpackArrayDType)) {
+            if (const AstUnpackArrayDType* const rhsarrp
+                = VN_CAST(nodep->rhsp()->dtypep()->skipRefp(), UnpackArrayDType)) {
+                if (const AstUnpackArrayDType* const lhsarrp
+                    = VN_CAST(nodep->lhsp()->dtypep()->skipRefp(), UnpackArrayDType)) {
                     // copy between arrays
                     if (!VN_IS(lhsarrp->subDTypep()->skipRefp(), IfaceRefDType)) return;
                     if (!VN_IS(rhsarrp->subDTypep()->skipRefp(), IfaceRefDType)) return;
                     if (VN_AS(rhsarrp->subDTypep()->skipRefp(), IfaceRefDType)->isVirtual())
                         return;
+                    if (!VN_AS(lhsarrp->subDTypep()->skipRefp(), IfaceRefDType)->isVirtual()) {
+                        nodep->lhsp()->v3error("Illegal target of assignment");
+                        return;
+                    }
                     if (lhsarrp->elementsConst() != rhsarrp->elementsConst()) {
                         nodep->v3warn(E_UNSUPPORTED,
                                       "Array size mismatch in interface assignment");
@@ -527,23 +559,12 @@ private:
                         const string index = AstNode::encodeNumber(i);
                         AstNodeExpr* lhsp = nullptr;
                         if (AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
-                            if (VN_AS(lhsarrp->subDTypep()->skipRefp(), IfaceRefDType)
-                                    ->isVirtual()) {
-                                AstVarRef* const newvarp = varrefp->cloneTree(false);
-                                AstArraySel* newarrselp = new AstArraySel(
-                                    nodep->fileline(), newvarp,
-                                    new AstConst(nodep->fileline(),
-                                                 V3Number(nodep->fileline(), 32, i)));
-                                lhsp = newarrselp;
-                            } else {
-                                AstVarXRef* const newvarrefp = new AstVarXRef{
-                                    nodep->fileline(),
-                                    varrefp->name() + "__BRA__" + index + "__KET__", "",
-                                    VAccess::WRITE};
-                                newvarrefp->dtypep(lhsarrp->subDTypep()->skipRefp());
-                                newvarrefp->classOrPackagep(varrefp->classOrPackagep());
-                                lhsp = newvarrefp;
-                            }
+                            AstVarRef* const newvarp = varrefp->cloneTree(false);
+                            AstArraySel* newarrselp = new AstArraySel(
+                                nodep->fileline(), newvarp,
+                                new AstConst(nodep->fileline(),
+                                             V3Number(nodep->fileline(), 32, i)));
+                            lhsp = newarrselp;
                         } else if (AstMemberSel* const prevselp
                                    = VN_CAST(nodep->lhsp(), MemberSel)) {
                             AstMemberSel* membselp = prevselp->cloneTree(false);
@@ -568,6 +589,8 @@ private:
                     }
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                 }
+            } else {
+                iterateChildren(nodep);
             }
         }
     }
@@ -575,6 +598,8 @@ private:
     //--------------------
     void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNew* nodep) override { iterateChildren(nodep); }
+    void visit(AstMethodCall* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
