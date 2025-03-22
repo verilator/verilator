@@ -43,6 +43,7 @@ private:
     // Predicted runtime of this mtask, in the same abstract time units as priority().
     uint32_t m_cost = 0;
     uint64_t m_predictStart = 0;  // Predicted start time of task
+    int m_threads = 1;  // Threads used by this mtask
     VL_UNCOPYABLE(ExecMTask);
 
 public:
@@ -57,6 +58,8 @@ public:
     void predictStart(uint64_t time) { m_predictStart = time; }
     string name() const override VL_MT_STABLE { return "mt"s + std::to_string(id()); }
     string hashName() const { return m_hashName; }
+    void threads(int threads) { m_threads = threads; }
+    int threads() const { return m_threads; }
     void dump(std::ostream& str) const;
 
     static uint32_t numUsedIds() VL_MT_SAFE { return s_nextId; }

@@ -100,7 +100,10 @@ void VlWorkerThread::startWorker(VlWorkerThread* workerp, VerilatedContext* cont
 // VlThreadPool
 
 VlThreadPool::VlThreadPool(VerilatedContext* contextp, unsigned nThreads) {
-    for (unsigned i = 0; i < nThreads; ++i) m_workers.push_back(new VlWorkerThread{contextp});
+    for (unsigned i = 0; i < nThreads; ++i) {
+        m_workers.push_back(new VlWorkerThread{contextp});
+        m_unassignedWorkers.push(i);
+    }
 }
 
 VlThreadPool::~VlThreadPool() {

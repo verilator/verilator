@@ -466,6 +466,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_FULL_CASE              "full_case"
 %token<fl>              yVLT_HIER_BLOCK             "hier_block"
 %token<fl>              yVLT_HIER_PARAMS            "hier_params"
+%token<fl>              yVLT_HIER_WORKERS           "hier_workers"
 %token<fl>              yVLT_INLINE                 "inline"
 %token<fl>              yVLT_ISOLATE_ASSIGNMENTS    "isolate_assignments"
 %token<fl>              yVLT_LINT_OFF               "lint_off"
@@ -503,6 +504,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_SCOPE    "--scope"
 %token<fl>              yVLT_D_TASK     "--task"
 %token<fl>              yVLT_D_VAR      "--var"
+%token<fl>              yVLT_D_WORKERS  "--workers"
 
 %token<strp>            yaD_PLI         "${pli-system}"
 
@@ -7660,6 +7662,10 @@ vltItem:
                         { V3Config::addModulePragma(*$2, VPragmaType::HIER_BLOCK); }
         |       yVLT_HIER_PARAMS vltDModuleE
                         { V3Config::addModulePragma(*$2, VPragmaType::HIER_PARAMS); }
+        |       yVLT_HIER_WORKERS vltDModuleE vltDWorkers
+                        { V3Config::addHierWorkers($<fl>1, *$2, $3->toSInt()); }
+        |       yVLT_HIER_WORKERS vltDHierDpi vltDWorkers
+                        { V3Config::addHierWorkers($<fl>1, *$2, $3->toSInt()); }
         |       yVLT_PARALLEL_CASE vltDFile
                         { V3Config::addCaseParallel(*$2, 0); }
         |       yVLT_PARALLEL_CASE vltDFile yVLT_D_LINES yaINTNUM
@@ -7747,6 +7753,10 @@ vltDFTaskE<strp>:
                 /* empty */                             { static string empty; $$ = &empty; }
         |       yVLT_D_FUNCTION str                     { $$ = $2; }
         |       yVLT_D_TASK str                         { $$ = $2; }
+        ;
+
+vltDWorkers<nump>:  // --workers <arg>
+                yVLT_D_WORKERS yaINTNUM                  { $$ = $2; }
         ;
 
 vltInlineFront<cbool>:

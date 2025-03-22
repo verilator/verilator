@@ -33,6 +33,7 @@ public:
     static void addCaseParallel(const string& file, int lineno);
     static void addCoverageBlockOff(const string& file, int lineno);
     static void addCoverageBlockOff(const string& module, const string& blockname);
+    static void addHierWorkers(FileLine* fl, const string& model, int workers);
     static void addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max);
     static void addIgnoreMatch(V3ErrorCode code, const string& filename, const string& contents,
                                const string& match);
@@ -52,6 +53,8 @@ public:
     static void applyModule(AstNodeModule* modulep);
     static void applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp);
 
+    static int getHierWorkers(const string& model);
+    static FileLine* getHierWorkersFileLine();
     static uint64_t getProfileData(const string& hierDpi);
     static uint64_t getProfileData(const string& model, const string& key);
     static FileLine* getProfileDataFileLine();

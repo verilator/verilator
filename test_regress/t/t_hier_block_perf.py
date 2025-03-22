@@ -13,12 +13,18 @@ test.scenarios('vlt_all')
 test.init_benchmarksim()
 test.cycles = (int(test.benchmark) if test.benchmark else 1000000)
 test.sim_time = test.cycles * 10 + 1000
-THREADS = int(os.environ["SIM_THREADS"]) if "SIM_THREADS" in os.environ else 2
+
+THREADS = int(os.environ["THREADS"]) if "THREADS" in os.environ else 2
+HIER_BLOCK_THREADS = int(
+    os.environ["HIER_BLOCK_THREADS"]) if "HIER_BLOCK_THREADS" in os.environ else 2
+
+config_file = test.t_dir + "/" + test.name + ".vlt"
 
 test.compile(benchmarksim=1,
              v_flags2=[
-                 "+define+SIM_CYCLES=" + str(test.cycles), "--prof-exec", "--hierarchical",
-                 "--stats"
+                 config_file, "+define+SIM_CYCLES=" + str(test.cycles), "--prof-exec",
+                 "--hierarchical", "--stats", "-Wno-UNOPTFLAT",
+                 "-DWORKERS=" + (str(HIER_BLOCK_THREADS) if test.vltmt else "1")
              ],
              threads=(THREADS if test.vltmt else 1))
 

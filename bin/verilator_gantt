@@ -8,16 +8,17 @@ import collections
 import math
 import re
 import statistics
+from collections import OrderedDict
 # from pprint import pprint
 
-Sections = []
+Sections = OrderedDict()
 LongestVcdStrValueLength = 0
 Threads = collections.defaultdict(lambda: [])  # List of records per thread id
 Mtasks = collections.defaultdict(lambda: {'elapsed': 0, 'end': 0})
 Cpus = collections.defaultdict(lambda: {'mtask_time': 0})
 Global = {'args': {}, 'cpuinfo': collections.defaultdict(lambda: {}), 'stats': {}}
 ElapsedTime = None  # total elapsed time
-ExecGraphTime = 0  # total elapsed time excuting an exec graph
+ExecGraphTime = 0  # total elapsed time executing an exec graph
 ExecGraphIntervals = []  # list of (start, end) pairs
 
 ######################################################################
@@ -37,11 +38,11 @@ def read_data(filename):
         re_proc_dat = re.compile(r'VLPROFPROC ([a-z_ ]+)\s*:\s*(.*)$')
         cpu = None
         thread = 0
-        execGraphStart = None
 
         global LongestVcdStrValueLength
         global ExecGraphTime
 
+        ExecGraphStack = []
         SectionStack = []
         mTaskThread = {}
 
@@ -88,16 +89,17 @@ def read_data(filename):
                     Mtasks[mtask]['predict_cost'] = predict_cost
                     Mtasks[mtask]['end'] = max(Mtasks[mtask]['end'], tick)
                 elif kind == "EXEC_GRAPH_BEGIN":
-                    execGraphStart = tick
+                    ExecGraphStack.append(tick)
                 elif kind == "EXEC_GRAPH_END":
+                    assert ExecGraphStack, "EXEC_GRAPH_END without EXEC_GRAPH_BEGIN"
+                    execGraphStart = ExecGraphStack.pop()
                     ExecGraphTime += tick - execGraphStart
                     ExecGraphIntervals.append((execGraphStart, tick))
-                    execGraphStart = None
                 elif Args.debug:
                     print("-Unknown execution trace record: %s" % line)
             elif re_thread.match(line):
                 thread = int(re_thread.match(line).group(1))
-                Sections.append([])
+                Sections[thread] = []
             elif re.match(r'^VLPROF(THREAD|VERSION)', line):
                 pass
             elif re_arg1.match(line):
@@ -308,7 +310,7 @@ def report_cpus():
 
 
 def report_sections():
-    for thread, section in enumerate(Sections):
+    for thread, section in Sections.items():
         if section:
             print(f"\nSection profile for thread {thread}:")
             report_section(section)
@@ -432,7 +434,10 @@ def write_vcd(filename):
             # Find the earliest MTask start after the start point, and the
             # latest MTask end before the end point, so we can scale to the
             # same range
-            start = tStart[bisect.bisect_left(tStart, start)]
+            tStartIdx = bisect.bisect_left(tStart, start)
+            if tStartIdx >= len(tStart):
+                continue
+            start = tStart[tStartIdx]
             end = tEnd[bisect.bisect_right(tEnd, end) - 1]
             # Compute scale so predicted graph is of same width as interval
             measured_scaling = (end - start) / Global['predict_last_end']
@@ -462,7 +467,7 @@ def write_vcd(filename):
                 addValue(pcode, time, value)
 
         # Section graph
-        for thread, section in enumerate(Sections):
+        for thread, section in Sections.items():
             if section:
                 scode = getCode(LongestVcdStrValueLength * 8, "section", f"t{thread}_trace")
                 dcode = getCode(32, "section", f"t{thread}_depth")
