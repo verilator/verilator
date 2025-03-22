@@ -555,7 +555,7 @@ class Runner:
             out += "  Skipped " + str(self.skip_cnt)
         if forker.num_running():
             out += "  Running " + str(forker.num_running())
-        if self.left_cnt > 10 and eta > 10:
+        if self.left_cnt > 10 and eta > 10 and self.all_cnt != self.left_cnt:
             out += "  Eta %d:%02d" % (int(eta / 60), eta % 60)
         out += "  Time %d:%02d" % (int(delta / 60), delta % 60)
         return out
