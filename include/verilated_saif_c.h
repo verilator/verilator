@@ -193,9 +193,6 @@ class VerilatedSaifBuffer VL_NOT_FINAL {
     uint32_t m_fidx;  // Index of target activity accumulator
 
     // CONSTRUCTORS
-    explicit VerilatedSaifBuffer(VerilatedSaif& owner)
-        : m_owner{owner}
-        , m_fidx{0} {}
     explicit VerilatedSaifBuffer(VerilatedSaif& owner, uint32_t fidx)
         : m_owner{owner}
         , m_fidx{fidx} {}
