@@ -166,9 +166,11 @@ module t (/*AUTOARG*/
       `checks(s, "-inf");
       r = $sqrt(-1.0);  // NaN
       s = $sformatf("%g", r);
-      `checks(s, "-nan");
+      if (s == "-nan") s = "nan";
+      `checks(s, "nan");
       r = -$sqrt(-1.0);  // NaN
       s = $sformatf("%g", r);
+      if (s == "-nan") s = "nan";
       `checks(s, "nan");
 
       if (real'(TWENTY) != 20.0) $stop;

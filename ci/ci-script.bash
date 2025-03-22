@@ -87,7 +87,7 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   fi
 
   # Run sanitize on Ubuntu 22.04 only
-  ( [ "$CI_RUNS_ON" = 'ubuntu-22.04' ] || [ "$CI_RUNS_ON" = 'ubuntu-24.04' ] ) && sanitize='--sanitize' || sanitize=''
+  ( [[ "$CI_RUNS_ON" =~ 'ubuntu-22.04' ]] || [[ "$CI_RUNS_ON" =~ 'ubuntu-24.04' ]] ) && sanitize='--sanitize' || sanitize=''
 
   TEST_REGRESS=test_regress
   if [ "$CI_RELOC" == 1 ]; then
@@ -121,10 +121,10 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt $sanitize" DRIVER_HASHSET=--hashset=3/4
       ;;
     vltmt-0)
-      "$MAKE" -C "$TEST_REGRESS" SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=0/2
       ;;
     vltmt-1)
-      "$MAKE" -C "$TEST_REGRESS" SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=1/2
       ;;
     coverage-all)
       nodist/code_coverage --stages 1-

@@ -2788,8 +2788,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         } else if (valuep->format == vpiOctStrVal) {
             const int len = std::strlen(valuep->value.str);
             for (int i = 0; i < len; ++i) {
-                char digit = valuep->value.str[len - i - 1] - '0';
-                if (digit < 0 || digit > 7) {
+                unsigned char digit = valuep->value.str[len - i - 1] - '0';
+                if (digit > 7) {  // If str was < '0', then as unsigned, digit > 7
                     VL_VPI_WARNING_(__FILE__, __LINE__,
                                     "%s: Non octal character '%c' in '%s' as value %s for %s",
                                     __func__, digit + '0', valuep->value.str,

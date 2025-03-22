@@ -113,7 +113,7 @@ extern "C" void dpii_init() {
     t_cb_data cb_data_n1, cb_data_n2, cb_data_n3;
     bzero(&cb_data_n1, sizeof(cb_data_n1));
     bzero(&cb_data_n2, sizeof(cb_data_n2));
-    bzero(&cb_data_n2, sizeof(cb_data_n3));
+    bzero(&cb_data_n3, sizeof(cb_data_n3));
     s_vpi_time t1, t2, t3;
 
     cb_data_n1.reason = cbAfterDelay;
