@@ -346,7 +346,6 @@ public:
                                 if (i != indices.size() - 1) oss << ".";
                             }
                             auto& varr = var.find_element(indices);
-                            std::cout << std::string(name) + "." + oss.str() << std::endl;
                             write_var(varr, 1, (std::string(name) + "." + oss.str()).c_str(), 1);
                             return;
                         }
