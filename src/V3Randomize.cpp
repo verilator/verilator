@@ -538,9 +538,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         UASSERT_OBJ(!rhsp, nodep, "Missing emitSMT %r for " << rhsp);
         UASSERT_OBJ(!thsp, nodep, "Missing emitSMT %t for " << thsp);
         AstSFormatF* const newp = new AstSFormatF{nodep->fileline(), smtExpr, false, argsp};
-        if(m_structSel && newp->name() == "(select %@ %@)"){ // for struct arrays
+        if (m_structSel && newp->name() == "(select %@ %@)") {  // for struct arrays
             newp->name("%@.%@");
-            newp->exprsp()->nextp()->name("%8x");// x%8x
+            newp->exprsp()->nextp()->name("%8x");  // x%8x
         }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -755,11 +755,11 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (VN_AS(nodep->fromp(), SFormatF)->name() == "%@.%@") {
             newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
                                    VN_AS(nodep->fromp(), SFormatF)->exprsp()->cloneTreePure(true)};
-            newp->exprsp()->nextp()->name("%8x"); // x%8x
-        } else{
+            newp->exprsp()->nextp()->name("%8x");  // x%8x
+        } else {
             newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false,
                                    nullptr};
-            }
+        }
         m_structSel = false;
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);

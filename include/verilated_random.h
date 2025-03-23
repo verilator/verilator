@@ -330,42 +330,44 @@ public:
     }
     template <typename T, std::size_t N_Depth>
     void write_var(VlUnpacked<T, N_Depth>& var, int width, const char* name, int dimension,
-              std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if(is_inner_custom_struct<T>()){
+                   std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+        if (is_inner_custom_struct<T>()) {
             std::vector<size_t> dim_size;
             if ((dimension > 0) && (N_Depth != 0)) {
-                for(size_t dim =0; dim< dimension; ++dim){
+                for (size_t dim = 0; dim < dimension; ++dim) {
                     dim_size.push_back(var.find_length(dim));
                 }
-                std::function<void(std::vector<size_t>, int)> unroll_array = [&](std::vector<size_t> indices, int depth) {
-                    if (depth == dim_size.size()) { // Base case: All indices are set
-                        std::ostringstream oss;
-                        for (int i = 0 ;i <indices.size();++i) {
-                            oss << std::hex << std::setw(8) << std::setfill('0') << indices[i];
-                            if(i != indices.size()-1) oss<<".";
+                std::function<void(std::vector<size_t>, int)> unroll_array =
+                    [&](std::vector<size_t> indices, int depth) {
+                        if (depth == dim_size.size()) {  // Base case: All indices are set
+                            std::ostringstream oss;
+                            for (int i = 0; i < indices.size(); ++i) {
+                                oss << std::hex << std::setw(8) << std::setfill('0') << indices[i];
+                                if (i != indices.size() - 1) oss << ".";
+                            }
+                            auto& varr = var.find_element(indices);
+                            std::cout << std::string(name) + "." + oss.str() << std::endl;
+                            write_var(varr, 1, (std::string(name) + "." + oss.str()).c_str(), 1);
+                            return;
                         }
-                        auto & varr = var.find_element(indices);
-                        std::cout <<std::string(name)+"."+oss.str()<< std::endl;
-                        write_var(varr, 1 ,(std::string(name)+"."+oss.str()).c_str(), 1);
-                        return;
-                    }
-                    // Loop through the current dimension
-                    for (size_t i = 0; i < dim_size[depth]; ++i) {
-                        indices.push_back(i);
-                        unroll_array(indices, depth + 1);
-                        indices.pop_back(); // Backtrack
-                    }
-                };
-                unroll_array({},0);
+                        // Loop through the current dimension
+                        for (size_t i = 0; i < dim_size[depth]; ++i) {
+                            indices.push_back(i);
+                            unroll_array(indices, depth + 1);
+                            indices.pop_back();  // Backtrack
+                        }
+                    };
+                unroll_array({}, 0);
             }
-        }else{
+        } else {
             if ((dimension > 0) && (N_Depth != 0)) {
                 if (m_vars.find(name) != m_vars.end()) return;
-                    m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlUnpacked<T, N_Depth>>>(
-                    name, width, &var, dimension, randmodeIdx);
+                m_vars[name]
+                    = std::make_shared<const VlRandomArrayVarTemplate<VlUnpacked<T, N_Depth>>>(
+                        name, width, &var, dimension, randmodeIdx);
                 if (dimension > 0) {
                     idx = 0;
-                record_arr_table(var, name, dimension, {}, {});
+                    record_arr_table(var, name, dimension, {}, {});
                 }
             }
         }
@@ -404,10 +406,8 @@ public:
     template <typename T>
     typename std::enable_if<VlIsCustomStruct<T>::value, void>::type
     record_arr_table(T& var, const std::string name, int dimension, std::vector<IData> indices,
-                     std::vector<size_t> idxWidths){
-                        VL_FATAL_MT(__FILE__, __LINE__, "randomize",
-                            "Should not reach here."
-                            );
+                     std::vector<size_t> idxWidths) {
+        VL_FATAL_MT(__FILE__, __LINE__, "randomize", "Should not reach here.");
     }
     template <typename T>
     void record_arr_table(VlQueue<T>& var, const std::string name, int dimension,
