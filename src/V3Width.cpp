@@ -5881,7 +5881,7 @@ class WidthVisitor final : public VNVisitor {
             } else if (VN_IS(propStmtp, PropSpec)) {
                 iterateCheckSelf(nodep, "PropSpec", propStmtp, SELF, BOTH);
             } else {
-                propStmtp->v3fatal("Invalid statement under AstProperty");
+                propStmtp->v3fatalSrc("Invalid statement under AstProperty");
             }
         }
         nodep->didWidth(true);

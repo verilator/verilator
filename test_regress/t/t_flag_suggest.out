@@ -9,3 +9,4 @@
 %Error: Invalid option: -Won-SPLITVAR... Suggested alternative: '-Wno-SPLITVAR'
 %Error: Unknown warning specified: -Wno-SPLITVER... Suggested alternative: '-Wno-SPLITVAR'
 %Error: Unknown language specified: 1364-1997... Suggested alternative: '1364-1995'
+%Error: verilator: No Input Verilog file specified on command line, see verilator --help for more information

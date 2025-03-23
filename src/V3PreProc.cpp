@@ -242,7 +242,7 @@ private:
     void statePop() {
         m_states.pop();
         if (VL_UNCOVERABLE(m_states.empty())) {
-            error("InternalError: Pop of parser state with nothing on stack");  // LCOV_EXCL_LINE
+            fileline()->v3fatalSrc("Pop of parser state with nothing on stack");
             m_states.push(ps_TOP);  // LCOV_EXCL_LINE
         }
     }
@@ -640,8 +640,8 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
                             const string arg = trimWhitespace(refp->args()[numArgs], true);
                             if (arg != "") valueDef = arg;
                         } else if (!haveDefault) {
-                            error("Define missing argument '" + argName + "' for: " + refp->name()
-                                  + "\n");
+                            fileline()->v3error("Define missing argument '" + argName
+                                                + "' for: " + refp->name());
                             return " `" + refp->name() + " ";
                         }
                         numArgs++;
@@ -679,7 +679,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
             // `define X() is ok to call with nothing
             && !(refp->args().size() == 1 && numArgs == 0
                  && trimWhitespace(refp->args()[0], false) == "")) {
-            error("Define passed too many arguments: " + refp->name() + "\n");
+            fileline()->v3error("Define passed too many arguments: " + refp->name());
             return " `" + refp->name() + " ";
         }
     }
@@ -800,7 +800,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
     StrList wholefile;
     const bool ok = filterp->readWholefile(filename, wholefile /*ref*/);
     if (!ok) {
-        error("File not found: " + filename + "\n");
+        fileline()->v3error("File not found: " + filename);
         return;
     }
 
@@ -808,7 +808,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
         // We allow the same include file twice, because occasionally it pops
         // up, with guards preventing a real recursion.
         if (m_lexp->m_streampStack.size() > V3PreProc::INCLUDE_DEPTH_MAX) {
-            error("Recursive inclusion of file: " + filename);
+            fileline()->v3error("Recursive inclusion of file: " + filename);
             // Include might be a tree of includes that is O(n^2) or worse.
             // Once hit this error then, ignore all further includes so can unwind.
             m_incError = true;
@@ -964,8 +964,9 @@ int V3PreProcImp::getRawToken() {
             m_lastLineno = m_lexp->m_tokFilelinep->lineno();
             m_tokensOnLine = 0;
         } else if (++m_tokensOnLine > v3Global.opt.preprocTokenLimit()) {
-            error("Too many preprocessor tokens on a line (>"
-                  + cvtToStr(v3Global.opt.preprocTokenLimit()) + "); perhaps recursive `define");
+            fileline()->v3error("Too many preprocessor tokens on a line (>"
+                                + cvtToStr(v3Global.opt.preprocTokenLimit())
+                                + "); perhaps recursive `define");
             tok = VP_EOF_ERROR;
         }
 
@@ -1103,7 +1104,7 @@ int V3PreProcImp::getStateToken() {
                     goto next_tok;
                 } else if (state() == ps_DEFNAME_ELSIF) {
                     if (m_ifdefStack.empty()) {
-                        error("`elsif with no matching `if\n");
+                        fileline()->v3error("`elsif with no matching `if");
                     } else {
                         // Handle `else portion
                         const VPreIfEntry lastIf = m_ifdefStack.top();
@@ -1159,7 +1160,7 @@ int V3PreProcImp::getStateToken() {
                 // IE, `ifdef `MACRO(x): Substitute and come back here when state pops.
                 break;
             } else {
-                error("Expecting define name. Found: "s + tokenName(tok) + "\n");
+                fileline()->v3error("Expecting define name. Found: "s + tokenName(tok));
                 goto next_tok;
             }
         }
@@ -1208,7 +1209,7 @@ int V3PreProcImp::getStateToken() {
                         goto next_tok;
                     } else if (state() == ps_EXPR_ELSIF) {
                         if (m_ifdefStack.empty()) {
-                            error("`elsif with no matching `if\n");
+                            fileline()->v3error("`elsif with no matching `if");
                         } else {
                             // Handle `else portion
                             const VPreIfEntry lastIf = m_ifdefStack.top();
@@ -1243,8 +1244,8 @@ int V3PreProcImp::getStateToken() {
                 if (VString::removeWhitespace(string{yyourtext(), yyourleng()}).empty()) {
                     return tok;
                 } else {
-                    error("Syntax error in `ifdef () expression; unexpected: '"s + tokenName(tok)
-                          + "'\n");
+                    fileline()->v3error("Syntax error in `ifdef () expression; unexpected: '"s
+                                        + tokenName(tok) + "'");
                 }
                 goto next_tok;
             }
@@ -1266,7 +1267,8 @@ int V3PreProcImp::getStateToken() {
                     goto next_tok;
                 }
             } else {
-                error("Expecting define formal arguments. Found: "s + tokenName(tok) + "\n");
+                fileline()->v3error("Expecting define formal arguments. Found: "s + tokenName(tok)
+                                    + "\n");
                 goto next_tok;
             }
         }
@@ -1318,8 +1320,8 @@ int V3PreProcImp::getStateToken() {
             } else {
                 UASSERT(!m_defRefs.empty(), "Shouldn't be in DEFPAREN w/o active defref");
                 const VDefineRef* const refp = &(m_defRefs.top());
-                error("Expecting ( to begin argument list for define reference `"s + refp->name()
-                      + "\n");
+                fileline()->v3error("Expecting ( to begin argument list for define reference `"s
+                                    + refp->name());
                 statePop();
                 goto next_tok;
             }
@@ -1392,9 +1394,9 @@ int V3PreProcImp::getStateToken() {
                 statePush(ps_STRIFY);
                 goto next_tok;
             } else {
-                error(std::string{
-                          "Expecting ) or , to end argument list for define reference. Found: "}
-                      + tokenName(tok));
+                fileline()->v3error(
+                    "Expecting ) or , to end argument list for define reference. Found: "s
+                    + tokenName(tok));
                 statePop();
                 goto next_tok;
             }
@@ -1419,7 +1421,7 @@ int V3PreProcImp::getStateToken() {
                 break;
             } else {
                 statePop();
-                error("Expecting include filename. Found: "s + tokenName(tok) + "\n");
+                fileline()->v3error("Expecting include filename. Found: "s + tokenName(tok));
                 goto next_tok;
             }
         }
@@ -1427,12 +1429,12 @@ int V3PreProcImp::getStateToken() {
             if (tok == VP_STRING) {
                 if (!m_off) {
                     m_lastSym.assign(yyourtext(), yyourleng());
-                    error(m_lastSym);
+                    fileline()->v3error(m_lastSym);
                 }
                 statePop();
                 goto next_tok;
             } else {
-                error("Expecting `error string. Found: "s + tokenName(tok) + "\n");
+                fileline()->v3error("Expecting `error string. Found: "s + tokenName(tok));
                 statePop();
                 goto next_tok;
             }
@@ -1479,7 +1481,7 @@ int V3PreProcImp::getStateToken() {
                 statePop();
                 goto next_tok;
             } else if (tok == VP_EOF) {
-                error("`\" not terminated at EOF\n");
+                fileline()->v3error("`\" not terminated at EOF");
                 break;
             } else if (tok == VP_BACKQUOTE) {
                 m_strify += "\\\"";
@@ -1513,7 +1515,7 @@ int V3PreProcImp::getStateToken() {
         case VP_ELSIF: statePush(ps_DEFNAME_ELSIF); goto next_tok;
         case VP_ELSE:
             if (m_ifdefStack.empty()) {
-                error("`else with no matching `if\n");
+                fileline()->v3error("`else with no matching `if");
             } else {
                 const VPreIfEntry lastIf = m_ifdefStack.top();
                 m_ifdefStack.pop();
@@ -1527,7 +1529,7 @@ int V3PreProcImp::getStateToken() {
         case VP_ENDIF:
             UINFO(4, "Endif " << endl);
             if (m_ifdefStack.empty()) {
-                error("`endif with no matching `if\n");
+                fileline()->v3error("`endif with no matching `if");
             } else {
                 const VPreIfEntry lastIf = m_ifdefStack.top();
                 m_ifdefStack.pop();
@@ -1547,7 +1549,7 @@ int V3PreProcImp::getStateToken() {
                 unputString("``");
             }
             if (m_defDepth++ > V3PreProc::DEFINE_RECURSION_LEVEL_MAX) {
-                error("Recursive `define substitution: `" + name);
+                fileline()->v3error("Recursive `define substitution: `" + name);
                 goto next_tok;
             }
             // Substitute
@@ -1618,7 +1620,7 @@ int V3PreProcImp::getStateToken() {
             goto next_tok;
         }
         case VP_EOF:
-            if (!m_ifdefStack.empty()) error("`ifdef not terminated at EOF\n");
+            if (!m_ifdefStack.empty()) fileline()->v3error("`ifdef not terminated at EOF");
             return tok;
         case VP_UNDEFINEALL:
             if (!m_off) {

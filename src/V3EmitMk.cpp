@@ -408,7 +408,7 @@ private:
             const string filename = v3Global.debugFilename("outputgroup") + ".txt";
             UINFO(5, "Dumping " << filename << endl);
             m_logp = std::unique_ptr<std::ofstream>{V3File::new_ofstream(filename)};
-            if (m_logp->fail()) v3fatal("Can't write " << filename);
+            if (m_logp->fail()) v3fatal("Can't write file: " << filename);
         }
 
         if (m_logp) dumpLogScoreHistogram(*m_logp);

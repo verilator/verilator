@@ -235,7 +235,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                                   "Unsupported: 'rand_mode()' on dynamic array element");
                     valid = false;
                 } else {
-                    methodHardp->v3fatal("Unknown rand_mode() receiver");
+                    methodHardp->v3fatalSrc("Unknown rand_mode() receiver");
                 }
             }
             if (!nodep->pinsp() && VN_IS(nodep->backp(), StmtExpr)) {

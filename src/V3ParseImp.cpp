@@ -336,7 +336,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
             osp = ofp = V3File::new_ofstream(vppfilename);
         }
         if (osp->fail()) {
-            fileline->v3error("Cannot write preprocessor output: " + vppfilename);
+            fileline->v3error("Can't write file: " + vppfilename);
             return;
         }
         if (v3Global.opt.dumpDefines()) {
@@ -371,7 +371,7 @@ void V3ParseImp::dumpInputsFile() {
         = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix() + "__inputs.vpp";
     std::ofstream* ofp = V3File::new_ofstream(vppfilename, append);
     if (ofp->fail()) {
-        v3error("Cannot write preprocessor output: " + vppfilename);
+        v3error("Can't write file: " + vppfilename);
         return;
     }
     if (!append) {

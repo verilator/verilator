@@ -1,2 +1,3 @@
 %Error: Unknown setting for --x-assign: 'bad_one'
         ... Suggest '0', '1', 'fast', or 'unique'
+%Error: Exiting due to

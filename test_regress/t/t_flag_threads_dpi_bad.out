@@ -1,2 +1,3 @@
 %Error: Unknown setting for --threads-dpi: 'bad_one'
         ... Suggest 'all', 'none', or 'pure'
+%Error: Exiting due to

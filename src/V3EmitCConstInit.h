@@ -95,7 +95,7 @@ protected:
     }
 
     void visit(AstInitItem* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatal("Handled by AstInitArray");
+        nodep->v3fatalSrc("Handled by AstInitArray");
     }  // LCOV_EXCL_STOP
 
     void visit(AstConst* nodep) override {

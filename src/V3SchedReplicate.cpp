@@ -108,7 +108,7 @@ public:
         case REACTIVE | OBSERVED | INPUT | NBA: return "plum";
         case REACTIVE | OBSERVED | ACTIVE | NBA: return "lightSeaGreen";
         case REACTIVE | OBSERVED | INPUT | ACTIVE | NBA: return "gray50";
-        default: v3fatal("There are only 5 region bits"); return "";
+        default: v3fatalSrc("There are only 5 region bits"); return "";
         }
     }
     // LCOV_EXCL_STOP

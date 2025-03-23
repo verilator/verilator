@@ -1,0 +1,4 @@
+%Error: t/t_preproc_ifdefend_bad.v:9:1: `ifdef not terminated at EOF
+    9 | %Error-internal-contents-bad-ct2-ln9
+      | ^
+%Error: Exiting due to

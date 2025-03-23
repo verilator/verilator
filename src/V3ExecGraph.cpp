@@ -98,7 +98,7 @@ private:
     void dumpDotFile(const V3Graph& graph, const string& filename) const {
         // This generates a file used by graphviz, https://www.graphviz.org
         const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
-        if (logp->fail()) v3fatal("Can't write " << filename);
+        if (logp->fail()) v3fatal("Can't write file: " << filename);
 
         // Header
         *logp << "digraph v3graph {\n";

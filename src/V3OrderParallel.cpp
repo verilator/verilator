@@ -556,7 +556,7 @@ public:
         UINFO(1, "Writing " << filename << endl);
         const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
         std::ostream* const osp = &(*ofp);  // &* needed to deref unique_ptr
-        if (osp->fail()) v3fatalStatic("Can't write " << filename);
+        if (osp->fail()) v3fatalStatic("Can't write file: " << filename);
 
         // Find start vertex with longest CP
         const LogicMTask* startp = nullptr;

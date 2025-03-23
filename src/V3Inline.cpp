@@ -603,10 +603,10 @@ class InlineVisitor final : public VNVisitor {
 
     //--------------------
     void visit(AstCell* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatal("Traversal should have been short circuited");
+        nodep->v3fatalSrc("Traversal should have been short circuited");
     }
     void visit(AstNodeStmt* nodep) override {
-        nodep->v3fatal("Traversal should have been short circuited");
+        nodep->v3fatalSrc("Traversal should have been short circuited");
     }  // LCOV_EXCL_STOP
     void visit(AstNodeFile*) override {}  // Accelerate
     void visit(AstNodeDType*) override {}  // Accelerate
