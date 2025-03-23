@@ -1600,7 +1600,7 @@ std::string VL_TO_STRING(const VlUnpacked<T_Value, N_Depth>& obj) {
 // };
 
 template <typename T, std::size_t N>
-struct ExtractInnerType<VlUnpacked<T, N>> {
+struct ExtractInnerType<VlUnpacked<T, N>> final {
     using type = typename ExtractInnerType<T>::type;
 };
 // Function to check if the inner type is a custom struct

@@ -183,7 +183,7 @@ template <typename>
 struct VlIsQueue : public std::false_type {};
 // Recursive type extraction helper
 template <typename T>
-struct ExtractInnerType {
+struct ExtractInnerType final {
     using type = T;
 };
 
