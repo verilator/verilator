@@ -92,6 +92,7 @@ public:
     ~V3HierBlock() VL_MT_DISABLED;
 
     void addParent(V3HierBlock* parentp) { m_parents.insert(parentp); }
+    bool hasParent() const { return !m_parents.empty(); }
     void addChild(V3HierBlock* childp) { m_children.insert(childp); }
     bool hasChild() const { return !m_children.empty(); }
     const HierBlockSet& parents() const { return m_parents; }

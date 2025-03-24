@@ -30,6 +30,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <set>
+#include <stack>
 #include <thread>
 #include <vector>
 
@@ -205,6 +206,13 @@ class VlThreadPool final : public VerilatedVirtualBase {
     // MEMBERS
     std::vector<VlWorkerThread*> m_workers;  // our workers
 
+    // Guards indexes of unassigned workers
+    mutable VerilatedMutex m_mutex;
+    // Indexes of unassigned workers
+    std::stack<size_t> m_unassignedWorkers VL_GUARDED_BY(m_mutex);
+    // Used for sequentially generating task IDs to avoid shadowing
+    std::atomic<unsigned> m_assignedTasks{0};
+
 public:
     // CONSTRUCTORS
     // Construct a thread pool with 'nThreads' dedicated threads. The thread
@@ -214,6 +222,19 @@ public:
     ~VlThreadPool() override;
 
     // METHODS
+    size_t assignWorkerIndex() {
+        const VerilatedLockGuard lock{m_mutex};
+        assert(!m_unassignedWorkers.empty());
+        const size_t index = m_unassignedWorkers.top();
+        m_unassignedWorkers.pop();
+        return index;
+    }
+    void freeWorkerIndexes(std::vector<size_t>& indexes) {
+        const VerilatedLockGuard lock{m_mutex};
+        for (size_t index : indexes) m_unassignedWorkers.push(index);
+        indexes.clear();
+    }
+    unsigned assignTaskIndex() { return m_assignedTasks++; }
     int numThreads() const { return static_cast<int>(m_workers.size()); }
     VlWorkerThread* workerp(int index) {
         assert(index >= 0);

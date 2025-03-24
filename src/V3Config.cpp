@@ -540,6 +540,8 @@ class V3ConfigResolver final {
     std::unordered_map<string, std::unordered_map<string, uint64_t>>
         m_profileData;  // Access to profile_data records
     uint8_t m_mode = NONE;
+    std::unordered_map<string, int> m_hierWorkers;
+    FileLine* m_hierWorkersFileLine = nullptr;
     FileLine* m_profileFileLine = nullptr;
 
     V3ConfigResolver() = default;
@@ -570,6 +572,16 @@ public:
         // Empty key for hierarchical DPI wrapper costs.
         return getProfileData(hierDpi, "");
     }
+    void addHierWorkers(FileLine* fl, const string& model, int workers) {
+        if (!m_hierWorkersFileLine) m_hierWorkersFileLine = fl;
+        m_hierWorkers[model] = workers;
+    }
+    int getHierWorkers(const string& model) const {
+        const auto mit = m_hierWorkers.find(model);
+        // Assign a single worker if no specified.
+        return mit != m_hierWorkers.cend() ? mit->second : 0;
+    }
+    FileLine* getHierWorkersFileLine() const { return m_hierWorkersFileLine; }
     uint64_t getProfileData(const string& model, const string& key) const {
         const auto mit = m_profileData.find(model);
         if (mit == m_profileData.cend()) return 0;
@@ -600,6 +612,10 @@ void V3Config::addCoverageBlockOff(const string& filename, int lineno) {
 
 void V3Config::addCoverageBlockOff(const string& module, const string& blockname) {
     V3ConfigResolver::s().modules().at(module).addCoverageBlockOff(blockname);
+}
+
+void V3Config::addHierWorkers(FileLine* fl, const string& model, int workers) {
+    V3ConfigResolver::s().addHierWorkers(fl, model, workers);
 }
 
 void V3Config::addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max) {
@@ -741,6 +757,12 @@ void V3Config::applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar
     if (vp) vp->apply(varp);
 }
 
+int V3Config::getHierWorkers(const string& model) {
+    return V3ConfigResolver::s().getHierWorkers(model);
+}
+FileLine* V3Config::getHierWorkersFileLine() {
+    return V3ConfigResolver::s().getHierWorkersFileLine();
+}
 uint64_t V3Config::getProfileData(const string& hierDpi) {
     return V3ConfigResolver::s().getProfileData(hierDpi);
 }
