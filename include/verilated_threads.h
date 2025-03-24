@@ -205,9 +205,12 @@ public:
 class VlThreadPool final : public VerilatedVirtualBase {
     // MEMBERS
     std::vector<VlWorkerThread*> m_workers;  // our workers
-    mutable VerilatedMutex m_mutex;
-    std::stack<size_t> m_unassignedWorkers VL_GUARDED_BY(m_mutex);
 
+    // Guards indexes of unassigned workers
+    mutable VerilatedMutex m_mutex;
+    // Indexes of unassigned workers
+    std::stack<size_t> m_unassignedWorkers VL_GUARDED_BY(m_mutex);
+    // Used for sequentially generating task IDs to avoid shadowing
     std::atomic<unsigned> m_assignedTasks{0};
 
 public:
@@ -221,6 +224,7 @@ public:
     // METHODS
     size_t assignWorkerIndex() {
         const VerilatedLockGuard lock{m_mutex};
+        assert(!m_unassignedWorkers.empty());
         const size_t index = m_unassignedWorkers.top();
         m_unassignedWorkers.pop();
         return index;

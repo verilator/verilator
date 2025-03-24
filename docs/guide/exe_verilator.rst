@@ -2126,17 +2126,17 @@ The grammar of configuration commands is as follows:
 
 .. option:: hier_workers -hier-dpi "<function_name>" -workers <worker_count>
 
-   Internal annotation for specifying how much threads need to be used for scheduling
-   hierarchical DPI tasks. This data is inserted internally during :vlopt:`--hierarchical`,
-   based on value specified in :option:`hier_workers -module`. See
-   :ref:`Hierarchical Verilation`.
+   Specifies how many threads need to be used for scheduling hierarchical DPI
+   tasks. This data is inserted internally during :vlopt:`--hierarchical`,
+   based on value specified in :option:`hier_workers -module`. This option
+   should not be used directly. See :ref:`Hierarchical Verilation`.
 
 .. option:: hier_workers -module "<module_name>" -workers <worker_count>
 
-   Annotation for specifying how much threads need to be used for scheduling
-   given module with :option:`/*verilator&32;hier_block*/` metacomment. This number
-   needs to be smaller than :vlopt:`--threads` to fit in a thread schedule. See
-   :ref:`Hierarchical Verilation`.
+   Specifies how many threads need to be used for scheduling given module with
+   :option:`/*verilator&32;hier_block*/` metacomment. This number needs to be
+   smaller than :vlopt:`--threads` to fit in a thread schedule.
+   See :ref:`Hierarchical Verilation`.
 
 .. option:: inline -module "<modulename>"
 

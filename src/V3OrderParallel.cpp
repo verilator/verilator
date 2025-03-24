@@ -1758,7 +1758,7 @@ class DpiThreadsVisitor final : public VNVisitorConst {
 public:
     // CONSTRUCTORS
     explicit DpiThreadsVisitor(AstMTaskBody* nodep) { iterateConst(nodep); }
-    uint32_t threads() const { return m_threads; }
+    int threads() const { return m_threads; }
     ~DpiThreadsVisitor() override = default;
 
 private:
