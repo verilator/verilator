@@ -6,6 +6,6 @@
 
 `verilator_config
 `ifdef WORKERS
-	hier_workers -module "Test" -workers `WORKERS
-	hier_workers -module "Check" -workers `WORKERS
+hier_workers -module "Test" -workers `WORKERS
+hier_workers -module "Check" -workers `WORKERS
 `endif
