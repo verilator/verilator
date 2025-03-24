@@ -5,4 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 `verilator_config
-hier_workers -module "Core" -workers `WORKERS
+`ifdef WORKERS
+	hier_workers -module "Test" -workers `WORKERS
+	hier_workers -module "Check" -workers `WORKERS
+`endif

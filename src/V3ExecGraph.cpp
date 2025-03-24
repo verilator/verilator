@@ -876,6 +876,7 @@ void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
         }
         ++i;
     }
+    V3Stats::addStatSum("Optimizations, Thread schedule total tasks", i);
 
     addStrStmt("vlSelf->__Vm_mtaskstate_final__" + std::to_string(scheduleId) + tag
                + ".waitUntilUpstreamDone(vlSymsp->__Vm_even_cycle__" + tag + ");\n");
@@ -971,6 +972,8 @@ void implement(AstNetlist* netlistp) {
         // Schedule the mtasks: statically associate each mtask with a thread,
         // and determine the order in which each thread will run its mtasks.
         const std::vector<ThreadSchedule> packed = PackThreads::apply(*execGraphp->depGraphp());
+        V3Stats::addStatSum("Optimizations, Thread schedule count",
+                            static_cast<double>(packed.size()));
 
         // Wrap each MTask body into a CFunc for better profiling/debugging
         wrapMTaskBodies(execGraphp);

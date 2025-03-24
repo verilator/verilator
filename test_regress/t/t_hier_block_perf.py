@@ -14,22 +14,27 @@ test.init_benchmarksim()
 test.cycles = (int(test.benchmark) if test.benchmark else 1000000)
 test.sim_time = test.cycles * 10 + 1000
 
-THREADS = int(os.environ["THREADS"]) if "THREADS" in os.environ else 2
+THREADS = int(os.environ["THREADS"]) if "THREADS" in os.environ else 4
 HIER_BLOCK_THREADS = int(
     os.environ["HIER_BLOCK_THREADS"]) if "HIER_BLOCK_THREADS" in os.environ else 2
 
 config_file = test.t_dir + "/" + test.name + ".vlt"
 
-test.compile(benchmarksim=1,
-             v_flags2=[
-                 config_file, "+define+SIM_CYCLES=" + str(test.cycles), "--prof-exec",
-                 "--hierarchical", "--stats", "-Wno-UNOPTFLAT",
-                 "-DWORKERS=" + (str(HIER_BLOCK_THREADS) if test.vltmt else "1")
-             ],
-             threads=(THREADS if test.vltmt else 1))
+test.compile(
+    benchmarksim=1,
+    v_flags2=[
+        config_file, "+define+SIM_CYCLES=" + str(test.cycles), "--prof-exec", "--hierarchical",
+        "--stats", "-Wno-UNOPTFLAT",
+        (f"-DWORKERS={HIER_BLOCK_THREADS}" if test.vltmt and HIER_BLOCK_THREADS > 1 else "")
+    ],
+    threads=(THREADS if test.vltmt else 1))
 
 test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
-               r'Optimizations, Hierarchical DPI wrappers with costs\s+(\d+)', 3)
+               r'Optimizations, Hierarchical DPI wrappers with costs\s+(\d+)', 6)
+test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
+               r'Optimizations, Thread schedule count\s+(\d+)', 4)
+test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
+               r'Optimizations, Thread schedule total tasks\s+(\d+)', 10)
 
 test.execute(all_run_flags=[
     "+verilator+prof+exec+start+2",
