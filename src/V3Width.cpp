@@ -1401,6 +1401,11 @@ class WidthVisitor final : public VNVisitor {
             }
         }
 
+        if (!newp) {
+            pushDeletep(nodep->unlinkFrBack());
+            return;
+        }
+
         nodep->replaceWith(newp);
     }
 
