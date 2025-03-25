@@ -1249,9 +1249,9 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     bool inPct = false;
     bool inIgnore = false;
     std::string::const_iterator pos = format.cbegin();
-    for (; pos != format.cend() && !_vl_vsss_eof(fp, floc); ++pos) {
-        // VL_DBG_MSGF("_vlscan fmt='"<<pos[0]<<"' floc="<<floc<<" file='"<<_vl_vsss_peek(fp, floc,
-        // fromp, fstr)<<"'\n");
+    for (; pos != format.cend(); ++pos) {
+        // VL_DBG_MSGF("_vlscan fmt='%c' floc=%d file='%c'\n", pos[0], floc,
+        // _vl_vsss_peek(fp, floc, fromp, fstr));
         if (!inPct && pos[0] == '%') {
             inPct = true;
             inIgnore = false;
@@ -1435,7 +1435,12 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
             }  // switch
         }
     }
+    // Processed all arguments
+    return got;
+
 done:
+    // Scan stopped early, return parsed or EOF
+    if (_vl_vsss_eof(fp, floc)) return -1;
     return got;
 }
 

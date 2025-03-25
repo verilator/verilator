@@ -54,6 +54,7 @@ Verilator 5.035 devel
 * Fix streaming of unpacked arrays concatenations (#5856). [Ryszard Rozak, Antmicro Ltd.]
 * Fix Windows paths in Perl (#5858) (#5860). [Tobias Jensen]
 * Fix algorithm header portability in V3Os.cpp (for std::replace) (#5861). [William D. Jones]
+* Fix `$fscanf` not returning -1 on EOF (#5881).
 
 
 Verilator 5.034 2025-02-24
