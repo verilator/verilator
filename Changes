@@ -11,7 +11,7 @@ contributors that suggested a given feature are shown in []. Thanks!
 Verilator 5.035 devel
 ==========================
 
-**Major:**
+**Important:**
 
 * Add `--trace-saif` for SAIF power traces (#5812). [Mateusz Gancarz]
 * Change `--output-groups` to default to value of `--build-jobs` (#5751).
@@ -20,6 +20,7 @@ Verilator 5.035 devel
 **Other:**
 
 * Support force/release with a variable reference (#5721) (#5810). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Add multi-thread hierarchical simulation (#2583) (#5871). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add check for `let` misused in statement context (#5733).
 * Add used language to `--preproc-resolve` output (#5795). [Kamil Rakoczy, Antmicro Ltd.]
 * Add `--make json` to enable integration with non-make/cmake build systems (#5799). [Andrew Voznytsa]
@@ -28,6 +29,7 @@ Verilator 5.035 devel
 * Remove unused gtkwave/wavealloca.h. [Geza Lore]
 * Optimize automatic splitting of some packed variables (#5843). [Geza Lore]
 * Optimize trigger vector in whole words (#5857). [Geza Lore]
+* Fix interface array assignments (#5270) (#5633) (#5869). [Nick Brereton]
 * Fix change detection at time 0 (#5499) (#5864). [Geza Lore]
 * Fix foreach of associative array inside a constraint block (#5727) (#5841). [Yilou Wang]
 * Fix reset of automatic function variables (#5747). [Augustin Fabre]
@@ -44,7 +46,7 @@ Verilator 5.035 devel
 * Fix checking built-in method arguments (#5839).
 * Fix splitting of packed ports with non-zero based ranges (#5842). [Geza Lore]
 * Fix NBA shared flag reuse (#5848). [Geza Lore]
-* Fix expression coverage on additional nodes (#5849 partial) (#5867). [Todd Strader]
+* Fix multiple expression coverage issues (#5849 partial) (#5867) (#5870). [Todd Strader]
 * Fix unresolved typedefs as parameters (#5850). [Eugene Feinberg, Brian Li]
 * Fix removal of callbacks no longer in current list (#5851) (#5852). [Gilberto Abram]
 * Fix segmentation fault on member compare (#5853).

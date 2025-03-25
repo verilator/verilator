@@ -2128,7 +2128,7 @@ The grammar of configuration commands is as follows:
 
    Specifies how many threads need to be used for scheduling hierarchical DPI
    tasks. This data is inserted internally during :vlopt:`--hierarchical`,
-   based on value specified in :option:`hier_workers -module`. This option
+   based on value specified in `hier_workers -module`. This option
    should not be used directly. See :ref:`Hierarchical Verilation`.
 
 .. option:: hier_workers -module "<module_name>" -workers <worker_count>
