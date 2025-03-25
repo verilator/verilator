@@ -72,7 +72,7 @@ and the design can be easily manually reduced. In other cases, the bug is
 caused by a complex interaction of many parts of the design, and it is not
 clear which parts are necessary to reproduce the bug. In these cases, an
 Open Source tool called `sv-bugpoint
-<https://github.com/antmicro/sv-bugpoint>_` can be used to automatically
+<https://github.com/antmicro/sv-bugpoint>`_ can be used to automatically
 reduce a SystemVerilog design to the smallest possible reproducer.
 It can be used to automatically reduce a design with hundreds of thousands of
 lines to a minimal test case while preserving the bug-inducing behavior.
