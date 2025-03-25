@@ -77,7 +77,6 @@ module t (/*AUTOARG*/
     $recrem();
     $removal();
     $setup();
-    $setuphold();
     $skew();
     $timeskew();
     $width();
