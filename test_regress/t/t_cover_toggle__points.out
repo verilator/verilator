@@ -87,6 +87,16 @@
                      .clk                       (clk),
                      .toggle                    (toggle));
         
+           param#(1) p1 (/*AUTOINST*/
+                         // Inputs
+                         .clk                   (clk),
+                         .toggle                (toggle));
+        
+           param#() p2 (/*AUTOINST*/
+                        // Inputs
+                        .clk                    (clk),
+                        .toggle                 (toggle));
+        
 %000001    reg [1:0]  memory[121:110];
 -000001  point: comment=memory[110][0] hier=top.t
 -000000  point: comment=memory[110][1] hier=top.t
@@ -226,5 +236,68 @@
 -000002  point: comment=toggle hier=top.t.o1
            // CHECK_COVER(-1,"top.t.o1","toggle",2)
         
+        endmodule
+        
+        module param #(parameter P = 2) (/*AUTOARG*/
+           // Inputs
+           clk, toggle
+           );
+        
+ 000019    input clk;
++000019  point: comment=clk hier=top.t.p2
++000019  point: comment=clk hier=top.t.p1
+%000002    input toggle;
+-000002  point: comment=toggle hier=top.t.p2
+-000002  point: comment=toggle hier=top.t.p1
+        
+%000001    logic z;
+-000001  point: comment=z hier=top.t.p2
+-000000  point: comment=z hier=top.t.p1
+        
+           for (genvar i = 0; i < P; i++) begin
+%000002       logic x;
+-000002  point: comment=genblk1[0].x hier=top.t.p2
+-000002  point: comment=genblk1[1].x hier=top.t.p2
+-000002  point: comment=genblk1[0].x hier=top.t.p1
+              always @ (posedge clk) begin
+                 x <= toggle;
+              end
+              for (genvar j = 0; j < 3; j++) begin
+%000003          logic [2:0] y;
+-000001  point: comment=genblk1[0].genblk1[0].y[0] hier=top.t.p2
+-000003  point: comment=genblk1[0].genblk1[0].y[1] hier=top.t.p2
+-000002  point: comment=genblk1[0].genblk1[0].y[2] hier=top.t.p2
+-000001  point: comment=genblk1[0].genblk1[1].y[0] hier=top.t.p2
+-000003  point: comment=genblk1[0].genblk1[1].y[1] hier=top.t.p2
+-000002  point: comment=genblk1[0].genblk1[1].y[2] hier=top.t.p2
+-000001  point: comment=genblk1[0].genblk1[2].y[0] hier=top.t.p2
+-000003  point: comment=genblk1[0].genblk1[2].y[1] hier=top.t.p2
+-000002  point: comment=genblk1[0].genblk1[2].y[2] hier=top.t.p2
+-000001  point: comment=genblk1[1].genblk1[0].y[0] hier=top.t.p2
+-000003  point: comment=genblk1[1].genblk1[0].y[1] hier=top.t.p2
+-000002  point: comment=genblk1[1].genblk1[0].y[2] hier=top.t.p2
+-000001  point: comment=genblk1[1].genblk1[1].y[0] hier=top.t.p2
+-000003  point: comment=genblk1[1].genblk1[1].y[1] hier=top.t.p2
+-000002  point: comment=genblk1[1].genblk1[1].y[2] hier=top.t.p2
+-000001  point: comment=genblk1[1].genblk1[2].y[0] hier=top.t.p2
+-000003  point: comment=genblk1[1].genblk1[2].y[1] hier=top.t.p2
+-000002  point: comment=genblk1[1].genblk1[2].y[2] hier=top.t.p2
+-000001  point: comment=genblk1[0].genblk1[0].y[0] hier=top.t.p1
+-000003  point: comment=genblk1[0].genblk1[0].y[1] hier=top.t.p1
+-000002  point: comment=genblk1[0].genblk1[0].y[2] hier=top.t.p1
+-000001  point: comment=genblk1[0].genblk1[1].y[0] hier=top.t.p1
+-000003  point: comment=genblk1[0].genblk1[1].y[1] hier=top.t.p1
+-000002  point: comment=genblk1[0].genblk1[1].y[2] hier=top.t.p1
+-000001  point: comment=genblk1[0].genblk1[2].y[0] hier=top.t.p1
+-000003  point: comment=genblk1[0].genblk1[2].y[1] hier=top.t.p1
+-000002  point: comment=genblk1[0].genblk1[2].y[2] hier=top.t.p1
+                 always @ (negedge clk) begin
+                    y <= {toggle, ~toggle, 1'b1};
+                 end
+              end
+           end
+           if (P > 1) begin : gen_1
+              assign z = 1;
+           end
         endmodule
         
