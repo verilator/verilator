@@ -330,5 +330,8 @@ module cond(input logic clk, input int cyc);
       for (int i = 0; i < 7; i = (i > 4) ? i + 1 : i + 2) begin
          k = 1'(i);
       end
+
+      if (k ? 1 : 0) k = 1;
+      else k = 0;
    end
 endmodule

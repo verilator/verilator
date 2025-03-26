@@ -676,7 +676,9 @@ class CoverageVisitor final : public VNVisitor {
             m_state = lastState;
         }
         VL_RESTORER(m_ifCond);
+        VL_RESTORER(m_condBranchOff);
         m_ifCond = true;
+        m_condBranchOff = true;
         iterateAndNextNull(nodep->condp());
         UINFO(9, " done HANDLE " << m_state.m_handle << " for " << nodep << endl);
     }
