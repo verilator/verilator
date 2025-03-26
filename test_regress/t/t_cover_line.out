@@ -485,6 +485,12 @@
  000044          k = 1'(i);
 +000044  point: comment=block hier=top.t.cond1
               end
+        
+~000011       if (k ? 1 : 0) k = 1;
+-000000  point: comment=if hier=top.t.cond1
++000011  point: comment=else hier=top.t.cond1
+ 000011       else k = 0;
++000011  point: comment=else hier=top.t.cond1
            end
         endmodule
         
