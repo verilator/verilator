@@ -301,7 +301,7 @@ package my_pkg;
 endpackage
 
 module cond(input logic clk, input int cyc);
-   logic a, b, c, d, e, f, g, h;
+   logic a, b, c, d, e, f, g, h, k, l;
 
    function logic func_side_effect;
       $display("SIDE EFFECT");
@@ -324,5 +324,11 @@ module cond(input logic clk, input int cyc);
    always begin
       if (cyc == 5) h = cyc > 5 ? 1 : 0;
       else h = 1;
+      for (int i = 0; (i < 5) ? 1 : 0; i++) begin
+         k = 1'(i);
+      end
+      for (int i = 0; i < 7; i = (i > 4) ? i + 1 : i + 2) begin
+         k = 1'(i);
+      end
    end
 endmodule
