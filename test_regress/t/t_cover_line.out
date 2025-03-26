@@ -425,7 +425,7 @@
         endpackage
         
         module cond(input logic clk, input int cyc);
-           logic a, b, c, d, e, f, g, h;
+           logic a, b, c, d, e, f, g, h, k, l;
         
  000021    function logic func_side_effect;
 +000021  point: comment=block hier=top.t.cond1
@@ -473,6 +473,18 @@
 +000010  point: comment=else hier=top.t.cond1
  000010       else h = 1;
 +000010  point: comment=else hier=top.t.cond1
+ 000055       for (int i = 0; (i < 5) ? 1 : 0; i++) begin
++000011  point: comment=block hier=top.t.cond1
++000055  point: comment=block hier=top.t.cond1
+ 000055          k = 1'(i);
++000055  point: comment=block hier=top.t.cond1
+              end
+ 000044       for (int i = 0; i < 7; i = (i > 4) ? i + 1 : i + 2) begin
++000011  point: comment=block hier=top.t.cond1
++000044  point: comment=block hier=top.t.cond1
+ 000044          k = 1'(i);
++000044  point: comment=block hier=top.t.cond1
+              end
            end
         endmodule
         
