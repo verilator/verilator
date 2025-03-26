@@ -76,11 +76,11 @@ jobs:
 
       - name: Build and Push to Docker
         uses: docker/build-push-action@v4
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
         with:
           context: ${{ env.build_context }}
           build-args: SOURCE_COMMIT=${{ env.git_tag }}
           platforms: linux/arm64,linux/amd64
-          push: ${{ !env.ACT && startsWith(github.ref, 'refs/tags/v') }}
+          push: ${{ !env.ACT && (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch') }}
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
