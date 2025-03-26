@@ -572,17 +572,22 @@ class CoverageVisitor final : public VNVisitor {
             m_condCovThen = true;
             iterate(nodep->thenp());
             lineTrack(nodep);
-            m_condCovIfp->addThensp(newCoverInc(nodep->fileline(), "", "v_branch", "cond_then",
-                                                linesCov(m_state, nodep), 0,
-                                                traceNameForLine(nodep, "cond_then")));
-
+            AstNodeExpr* const thenp = nodep->thenp()->unlinkFrBack();
+            nodep->thenp(new AstExprStmt{thenp->fileline(),
+                                         newCoverInc(nodep->fileline(), "", "v_branch",
+                                                     "cond_then", linesCov(m_state, nodep), 0,
+                                                     traceNameForLine(nodep, "cond_then")),
+                                         thenp});
             m_state = lastState;
             createHandle(nodep);
             m_condCovThen = false;
             iterate(nodep->elsep());
-            m_condCovIfp->addElsesp(newCoverInc(nodep->fileline(), "", "v_branch", "cond_else",
-                                                linesCov(m_state, nodep), 1,
-                                                traceNameForLine(nodep, "cond_else")));
+            AstNodeExpr* const elsep = nodep->elsep()->unlinkFrBack();
+            nodep->elsep(new AstExprStmt{elsep->fileline(),
+                                         newCoverInc(nodep->fileline(), "", "v_branch",
+                                                     "cond_else", linesCov(m_state, nodep), 1,
+                                                     traceNameForLine(nodep, "cond_else")),
+                                         elsep});
 
             m_state = lastState;
         } else {
