@@ -297,7 +297,28 @@ class CoverageVisitor final : public VNVisitor {
     // we can cover expressions in while loops, but the counting goes outside
     // the while, see: "minimally-intelligent decision about ... clock domain"
     // in the Toggle Coverage docs
-    void visit(AstWhile* nodep) override { iterateProcedure(nodep, false); }
+    void visit(AstWhile* nodep) override {
+        VL_RESTORER(m_state);
+        VL_RESTORER(m_inToggleOff);
+        m_inToggleOff = true;
+        createHandle(nodep);
+        {
+            VL_RESTORER(m_condBranchOff);
+            m_condBranchOff = true;
+            iterateAndNextNull(nodep->precondsp());
+            iterateNull(nodep->condp());
+            iterateAndNextNull(nodep->incsp());
+        }
+        iterateAndNextNull(nodep->stmtsp());
+        if (m_state.lineCoverageOn(nodep)) {
+            lineTrack(nodep);
+            AstNode* const newp
+                = newCoverInc(nodep->fileline(), "", "v_line", "block", linesCov(m_state, nodep),
+                              0, traceNameForLine(nodep, "block"));
+            insertProcStatement(nodep, newp);
+        }
+    }
+
     void visit(AstNodeFTask* nodep) override {
         if (!nodep->dpiImport()) iterateProcedure(nodep);
     }
