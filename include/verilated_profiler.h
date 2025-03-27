@@ -214,7 +214,7 @@ public:
     // METHODS
     VlPgoProfiler() = default;
     ~VlPgoProfiler() = default;
-    void write(const char* modelp, const std::string& filename) VL_MT_SAFE;
+    void write(const char* modelp, const std::string& filename, bool firstHierCall) VL_MT_SAFE;
     void addCounter(size_t counter, const std::string& name) {
         VL_DEBUG_IF(assert(counter < N_Entries););
         m_records.emplace_back(Record{name, counter});
@@ -228,7 +228,8 @@ public:
 };
 
 template <std::size_t N_Entries>
-void VlPgoProfiler<N_Entries>::write(const char* modelp, const std::string& filename) VL_MT_SAFE {
+void VlPgoProfiler<N_Entries>::write(const char* modelp, const std::string& filename,
+                                     bool firstHierCall) VL_MT_SAFE {
     static VerilatedMutex s_mutex;
     const VerilatedLockGuard lock{s_mutex};
 
@@ -238,7 +239,7 @@ void VlPgoProfiler<N_Entries>::write(const char* modelp, const std::string& file
     // each will collect is own data correctly.  However when each is
     // destroyed we need to get all the data, not keep overwriting and only
     // get the last model's data.
-    static bool s_firstCall = true;
+    static bool s_firstCall = firstHierCall;
 
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+vlt+file writing to '%s'\n", filename.c_str()););
 
@@ -246,12 +247,14 @@ void VlPgoProfiler<N_Entries>::write(const char* modelp, const std::string& file
     if (VL_UNLIKELY(!fp)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "+prof+vlt+file file not writable");
     }
-    s_firstCall = false;
+    if (s_firstCall) {
+        // TODO Perhaps merge with verilated_coverage output format, so can
+        // have a common merging and reporting tool, etc.
+        fprintf(fp, "// Verilated model profile-guided optimization data dump file\n");
+        fprintf(fp, "`verilator_config\n");
+    }
 
-    // TODO Perhaps merge with verilated_coverage output format, so can
-    // have a common merging and reporting tool, etc.
-    fprintf(fp, "// Verilated model profile-guided optimization data dump file\n");
-    fprintf(fp, "`verilator_config\n");
+    s_firstCall = false;
 
     for (const Record& rec : m_records) {
         fprintf(fp, "profile_data -model \"%s\" -mtask \"%s\" -cost 64'd%" PRIu64 "\n", modelp,
