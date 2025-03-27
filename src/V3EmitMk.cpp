@@ -50,7 +50,7 @@ private:
         const int m_dbgId;  // Work list ID for debugging.
 
         WorkList() = delete;
-        WorkList(int id)
+        explicit WorkList(int id)
             : m_dbgId{id} {}
     };
 
@@ -463,7 +463,7 @@ private:
 public:
     static std::vector<FileOrConcatenatedFilesList>
     singleConcatenatedFilesList(std::vector<FilenameWithScore> inputFiles, uint64_t totalScore,
-                                std::string groupFilePrefix) {
+                                const std::string& groupFilePrefix) {
         EmitGroup group{std::move(inputFiles), totalScore, groupFilePrefix};
         group.process();
         return group.m_outputFiles;

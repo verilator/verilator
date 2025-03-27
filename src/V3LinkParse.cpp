@@ -681,7 +681,7 @@ class LinkParseVisitor final : public VNVisitor {
         if (nodep->genforp()) {
             ++m_genblkNum;
             if (nodep->name() == "") assignGenBlkNum = m_genblkNum;
-        } else if (nodep->generate() && nodep->name() == "" && assignGenBlkNum == -1
+        } else if (nodep->generate() && nodep->name() == ""
                    && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf)) && !nestedIf) {
             assignGenBlkNum = m_genblkAbove;
         }

@@ -2980,7 +2980,6 @@ void vl_get_value_array_vectors(unsigned index, const unsigned num, const unsign
                   "type T is not unsigned");  // ensure logical right shift
     const unsigned element_size_bytes = VL_BYTES_I(packedSize);
     const unsigned element_size_words = VL_WORDS_I(packedSize);
-    const unsigned element_size_repr = (element_size_bytes + sizeof(T) - 1) / sizeof(T);
     if (sizeof(T) == sizeof(QData)) {
         for (unsigned i = 0; i < num; i++) {
             dst[i * 2].aval = static_cast<QData>(src[index]);
@@ -3102,7 +3101,7 @@ void vl_put_value_array_rawvals(unsigned index, const unsigned num, const unsign
     }
 }
 
-void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_INT32* index_p,
+void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const PLI_INT32* index_p,
                         PLI_UINT32 num) {
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
     if (!vl_check_array_format(vop->varp(), arrayvalue_p, vop->fullname())) return;
@@ -3328,7 +3327,7 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
     vl_get_value_array(object, arrayvalue_p, index_p, num);
 }
 
-void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_INT32* index_p,
+void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const PLI_INT32* index_p,
                         PLI_UINT32 num) {
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
     if (!vl_check_array_format(vop->varp(), arrayvalue_p, vop->fullname())) return;

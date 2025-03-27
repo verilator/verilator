@@ -1952,9 +1952,8 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
         const string idx = portp->name() + "__Vidx";
         stmt = "for (size_t " + idx + " = 0; " + idx + " < " + cvtToStr(unpackSize) + "; ++" + idx
                + ") ";
-        stmt += (isBit ? "VL_SET_SVBV_" : "VL_SET_SVLV_")
-                + string{portp->dtypep()->skipRefp()->charIQWN()} + "(" + cvtToStr(portp->width())
-                + ", ";
+        stmt += (isBit ? "VL_SET_SVBV_"s : "VL_SET_SVLV_"s)
+                + portp->dtypep()->skipRefp()->charIQWN() + "(" + cvtToStr(portp->width()) + ", ";
         stmt += toName + " + " + cvtToStr(portp->dtypep()->skipRefp()->widthWords()) + " * " + idx
                 + ", ";
         if (unpackDim > 0) {  // Access multi-dimensional array as a 1D array

@@ -712,7 +712,7 @@ void V3ParseImp::tokenPipelineSym() {
         } else {  // Not found
             yylval.scp = nullptr;
             if (token == yaID__CC) {
-                if (!m_afterColonColon & !v3Global.opt.bboxUnsup()) {
+                if (!m_afterColonColon && !v3Global.opt.bboxUnsup()) {
                     // IEEE does require this, but we may relax this as UVM breaks it, so allow
                     // bbox for today
                     // We'll get a parser error eventually but might not be obvious

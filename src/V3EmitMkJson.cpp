@@ -43,7 +43,8 @@ class V3EmitMkJsonEmitter final {
 
         // METHODS
     public:
-        Printer(const std::unique_ptr<std::ofstream>& of, const std::string& indent = "    ")
+        explicit Printer(const std::unique_ptr<std::ofstream>& of,
+                         const std::string& indent = "    ")
             : m_of(of)
             , m_indent(indent) {
             begin();
@@ -144,7 +145,6 @@ class V3EmitMkJsonEmitter final {
         const std::unique_ptr<std::ofstream> of{
             V3File::new_ofstream(makeDir + "/" + v3Global.opt.prefix() + ".json")};
 
-        const string name = v3Global.opt.prefix();
         const std::string trace
             = v3Global.opt.trace() ? (v3Global.opt.traceFormat().vcd() ? "vcd" : "fst") : "off";
 
@@ -257,11 +257,11 @@ class V3EmitMkJsonEmitter final {
                 const V3HierBlock* hblockp = *it;
                 const V3HierBlock::HierBlockSet& children = hblockp->children();
 
-                std::vector<std::string> deps;
+                std::vector<std::string> childDeps;
                 std::vector<std::string> sources;
 
                 for (const auto& childr : children) {
-                    deps.emplace_back((childr)->hierPrefix());
+                    childDeps.emplace_back((childr)->hierPrefix());
                     sources.emplace_back(makeDir + "/" + childr->hierWrapperFilename(true));
                 }
 
@@ -278,7 +278,7 @@ class V3EmitMkJsonEmitter final {
                 cursor += cursor.begin()
                               .put("prefix", hblockp->hierPrefix())
                               .put("top", hblockp->modp()->name())
-                              .putList("deps", deps)
+                              .putList("deps", childDeps)
                               .put("directory", makeDir + "/" + hblockp->hierPrefix())
                               .putList("sources", sources)
                               .putList("cflags", cflags)

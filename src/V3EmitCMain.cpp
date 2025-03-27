@@ -50,7 +50,6 @@ private:
         v3Global.opt.addCFlags("-DVL_TIME_CONTEXT");  // On MSVC++ anyways
 
         // Optional main top name argument, with empty string replacement
-        string topArg;
         string topName = v3Global.opt.mainTopName();
         if (topName == "-") topName = "";
 
