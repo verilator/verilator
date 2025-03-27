@@ -5792,8 +5792,8 @@ setuphold_timing_check<nodep>:      // ==IEEE: $setuphold_timing_check
         |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ')' ';' { $$ = nullptr; }
         |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ',' minTypMaxE ')' ';' { $$ = nullptr; }
         |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ')' ';' { $$ = nullptr; }
-        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' terminal_identifierE ')' ';' { $$ = new AstSetuphold{$1, $3, $5, $17}; }
-        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' terminal_identifierE ',' terminal_identifierE ')' ';' { $$ = new AstSetuphold{$1, $3, $5, $17, $19}; }
+        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' delayed_referenceE ')' ';' { $$ = new AstSetuphold{$1, $3, $5, $17}; }
+        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' delayed_referenceE ',' delayed_referenceE ')' ';' { $$ = new AstSetuphold{$1, $3, $5, $17, $19}; }
         ;
 
 timing_check_event<nodeExprp>:      // ==IEEE: $timing_check_event
@@ -5807,13 +5807,13 @@ timing_check_event<nodeExprp>:      // ==IEEE: $timing_check_event
         |       yEDGE terminal_identifier yP_ANDANDAND expr           { $$ = $2; }
         ;
 
-terminal_identifier<nodeExprp>:
-                id                  { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1, nullptr, nullptr}; }
+delayed_referenceE<nodeExprp>:
+                /*empty*/                               { $$ = nullptr; }
+        |       terminal_identifier                     { $$ = $1; }
         ;
 
-terminal_identifierE<nodeExprp>:
-                /*empty*/               { $$ = nullptr; }
-        |       terminal_identifier     { $$ = $1; }
+terminal_identifier<nodeExprp>:
+                idArrayed     { $$ = $1; }
         ;
 
 idAnyE<strp>:

@@ -1382,17 +1382,38 @@ class WidthVisitor final : public VNVisitor {
 
         AstAssignW* newp = nullptr;
 
-        if (nodep->delrefp() != nullptr) {
-            AstNodeVarRef* lhsp = VN_AS(nodep->delrefp()->cloneTreePure(false), VarRef);
-            lhsp->access(VAccess::WRITE);
-            AstNodeVarRef* rhsp = VN_AS(nodep->refevp()->cloneTreePure(false), VarRef);
+        if (nodep->delrefp()) {
+            AstNodeExpr* const lhsp = nodep->delrefp()->cloneTreePure(false);
+            AstNodeExpr* const rhsp = nodep->refevp()->cloneTreePure(false);
+            if (AstNodeVarRef* varRefp = VN_CAST(lhsp, NodeVarRef)) {
+                varRefp->access(VAccess::WRITE);
+                varRefp->varp()->setForcedByCode();
+            }
+
+            if (AstNodePreSel* selp = VN_CAST(lhsp, NodePreSel)) {
+                if (AstNodeVarRef* varRefp = VN_CAST(selp->fromp(), NodeVarRef)) {
+                    varRefp->access(VAccess::WRITE);
+                    varRefp->varp()->setForcedByCode();
+                }
+            }
+
             newp = new AstAssignW{flp, lhsp, rhsp};
         }
 
-        if (nodep->deldatap() != nullptr) {
-            AstNodeVarRef* lhsp = VN_AS(nodep->deldatap()->cloneTreePure(false), VarRef);
-            lhsp->access(VAccess::WRITE);
-            AstNodeVarRef* rhsp = VN_AS(nodep->dataevp()->cloneTreePure(false), VarRef);
+        if (nodep->deldatap()) {
+            AstNodeExpr* const lhsp = nodep->deldatap()->cloneTreePure(false);
+            AstNodeExpr* const rhsp = nodep->dataevp()->cloneTreePure(false);
+            if (AstNodeVarRef* varRefp = VN_CAST(lhsp, NodeVarRef)) {
+                varRefp->access(VAccess::WRITE);
+                varRefp->varp()->setForcedByCode();
+            }
+
+            if (AstNodePreSel* selp = VN_CAST(lhsp, NodePreSel)) {
+                if (AstNodeVarRef* varRefp = VN_CAST(selp->fromp(), NodeVarRef)) {
+                    varRefp->access(VAccess::WRITE);
+                    varRefp->varp()->setForcedByCode();
+                }
+            }
 
             if (newp == nullptr) {
                 newp = new AstAssignW{flp, lhsp, rhsp};

@@ -15,6 +15,10 @@ module t (/*AUTOARG*/
    wire delayed_CLK;
    wire delayed_D;
    reg notifier;
+   wire [1:0] BL_X = 2'b11;
+   wire [5:0] BL_X2;
+   wire BL_0;
+   wire [3:0] BL_1 = 4'b1100;
 
    logic[3:0] sh1 = 1;
    logic[3:0] sh2 = 2;
@@ -27,11 +31,17 @@ module t (/*AUTOARG*/
       $setuphold (posedge clk, negedge d, 0, 0, notifier,,, delayed_CLK, delayed_D);
       $setuphold (posedge sh1, negedge sh3, 0, 0, notifier,,, sh2, sh4);
       $setuphold (posedge clk, negedge d, 0, 0);
+      $setuphold (posedge clk, negedge d, (0:0:0), (0:0:0));
       $setuphold (posedge clk, negedge d, 0, 0,,,,,);
+      $setuphold (posedge clk &&& sh1, BL_X[0], 0, 0, ,,,delayed_CLK, BL_0);
+      $setuphold (posedge clk &&& sh1, BL_1, 0, 0, ,,,delayed_CLK, BL_X2[4:1]);
    endspecify
 
    initial begin
       if (sh1 != sh2 || sh3 != sh4) begin
+         $stop;
+      end
+      if (BL_0 != BL_X[0] || BL_1 != BL_X2[4:1]) begin
          $stop;
       end
    end
