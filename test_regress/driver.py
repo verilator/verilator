@@ -442,6 +442,8 @@ class Runner:
         test._read_status()
         if test.ok:
             self.ok_cnt += 1
+            if Args.driver_clean:
+                test.clean()
         elif test._quit:
             pass
         elif test._scenario_off and not test.errors:
@@ -951,14 +953,17 @@ class VlTest:
     #----------------------------------------------------------------------
     # Methods invoked by tests
 
-    def clean(self) -> None:
-        """Called on a rerun to cleanup files."""
+    def clean(self, for_rerun=False) -> None:
+        """Called on a --driver-clean or rerun to cleanup files."""
         if self.clean_command:
             os.system(self.clean_command)
-        # Prevents false-failures when switching compilers
-        # Remove old results to force hard rebuild
         os.system('/bin/rm -rf ' + self.obj_dir + '__fail1')
-        os.system('/bin/mv ' + self.obj_dir + ' ' + self.obj_dir + '__fail1')
+        if for_rerun:
+            # Prevents false-failures when switching compilers
+            # Remove old results to force hard rebuild
+            os.system('/bin/mv ' + self.obj_dir + ' ' + self.obj_dir + '__fail1')
+        else:
+            os.system('/bin/rm -rf ' + self.obj_dir)
 
     def clean_objs(self) -> None:
         os.system("/bin/rm -rf " + ' '.join(glob.glob(self.obj_dir + "/*")))
@@ -2715,7 +2720,7 @@ def run_them() -> None:
         for ftest in orig_runner.fail_tests:
             # Reschedule test
             if ftest.rerunnable:
-                ftest.clean()
+                ftest.clean(for_rerun=True)
             runner.one_test(py_filename=ftest.py_filename,
                             scenario=ftest.scenario,
                             rerun_skipping=not ftest.rerunnable)
@@ -2776,6 +2781,7 @@ if __name__ == '__main__':
     parser.add_argument('--benchmark', action='store', help='enable benchmarking')
     parser.add_argument('--debug', action='store_const', const=9, help='enable debug')
     # --debugi: see _parameter()
+    parser.add_argument('--driver-clean', action='store_true', help='clean after test passes')
     parser.add_argument('--fail-max',
                         action='store',
                         default=None,
