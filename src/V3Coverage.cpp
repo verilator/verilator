@@ -502,10 +502,6 @@ class CoverageVisitor final : public VNVisitor {
                                << dtypep->prettyTypeName());
         }
     }
-    AstNodeStmt* getContainingStmt(AstNode* nodep) {
-        while (VN_IS(nodep, NodeExpr)) nodep = nodep->backp();
-        return VN_CAST(nodep, NodeStmt);
-    }
 
     // VISITORS - LINE COVERAGE
     void visit(AstCond* nodep) override {
