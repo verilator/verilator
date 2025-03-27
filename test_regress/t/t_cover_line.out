@@ -441,7 +441,9 @@
 ~000028    assign b = (cyc == 1) ? clk : 0;
 -000003  point: comment=cond_then hier=top.t.cond1
 +000028  point: comment=cond_else hier=top.t.cond1
-           assign c = func_side_effect() ? clk : 0;
+~000021    assign c = func_side_effect() ? clk : 0;
++000021  point: comment=cond_then hier=top.t.cond1
+-000000  point: comment=cond_else hier=top.t.cond1
  000010    always @(posedge clk) begin
 +000010  point: comment=block hier=top.t.cond1
 ~000010       d = (cyc % 3 == 0) ? 1 : 0;

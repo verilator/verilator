@@ -518,14 +518,7 @@ class CoverageVisitor final : public VNVisitor {
             coverExprs(nodep->condp());
         }
 
-        if (!m_state.lineCoverageOn(nodep) || !nodep->condp()->isPure()) {
-            // Current method cannot run coverage for impure statements
-            m_condBranchOff = true;
-            lineTrack(nodep);
-            return;
-        }
-
-        if (!m_condBranchOff && VN_IS(m_modp, Module)) {
+        if (!m_condBranchOff && m_state.lineCoverageOn(nodep) && VN_IS(m_modp, Module)) {
             VL_RESTORER(m_seeking);
             // Disable expression coverage in sub-expressions, since they were already visited
             m_seeking = ABORTED;
