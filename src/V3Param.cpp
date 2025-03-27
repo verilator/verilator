@@ -1260,14 +1260,12 @@ class ParamVisitor final : public VNVisitor {
                     if (const AstNodeDType* const typep = varp->childDTypep()) {
                         ifacerefp = VN_CAST(typep, IfaceRefDType);
                         if (!ifacerefp) {
-                            if (const AstUnpackArrayDType* const unpackp
-                                = VN_CAST(typep, UnpackArrayDType)) {
+                            if (VN_IS(typep, UnpackArrayDType)) {
                                 ifacerefp = VN_CAST(typep->getChildDTypep(), IfaceRefDType);
                             }
                         }
                         if (!ifacerefp) {
-                            if (const AstBracketArrayDType* const unpackp
-                                = VN_CAST(typep, BracketArrayDType)) {
+                            if (VN_IS(typep, BracketArrayDType)) {
                                 ifacerefp = VN_CAST(typep->subDTypep(), IfaceRefDType);
                             }
                         }
