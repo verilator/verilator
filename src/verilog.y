@@ -916,6 +916,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_ROSE_GCLK    "$rose_gclk"
 %token<fl>              yD_RTOI         "$rtoi"
 %token<fl>              yD_SAMPLED      "$sampled"
+%token<fl>              yD_SETUPHOLD    "$setuphold"
 %token<fl>              yD_SFORMAT      "$sformat"
 %token<fl>              yD_SFORMATF     "$sformatf"
 %token<fl>              yD_SHORTREALTOBITS "$shortrealtobits"
@@ -3108,6 +3109,11 @@ delayExpr<nodeExprp>:
 minTypMax<nodeExprp>:           // IEEE: mintypmax_expression and constant_mintypmax_expression
                 delayExpr                               { $$ = $1; }
         |       delayExpr ':' delayExpr ':' delayExpr   { $$ = $3; MINTYPMAXDLYUNSUP($3); DEL($1); DEL($5); }
+        ;
+
+minTypMaxE<nodeExprp>:
+                /*empty*/                               { $$ = nullptr; }
+        |       minTypMax                               { $$ = $1; }
         ;
 
 netSigList<varp>:               // IEEE: list_of_port_identifiers
@@ -5758,24 +5764,61 @@ tableEntry<udpTableLinep>:      // IEEE: combinational_entry + sequential_entry
 //************************************************
 // Specify
 
-specify_block<nodep>:           // ==IEEE: specify_block
-                ySPECIFY specifyJunkList yENDSPECIFY    { $$ = nullptr; }
+specify_block<nodep>:               // ==IEEE: specify_block
+                ySPECIFY specify_itemList yENDSPECIFY   { $$ = $2; }
         |       ySPECIFY yENDSPECIFY                    { $$ = nullptr; }
         ;
 
-specifyJunkList:
-                specifyJunk                             { } /* ignored */
-        |       specifyJunkList specifyJunk             { } /* ignored */
+specify_itemList<nodep>:            // IEEE: { specify_item }
+                specify_item                            { $$ = $1; }
+        |       specify_itemList specify_item           { $$ = addNextNull($1, $2); }
         ;
 
-specifyJunk:
-                BISONPRE_NOT(ySPECIFY,yENDSPECIFY)      { }
-        |       ySPECIFY specifyJunk yENDSPECIFY        { }
-        |       error {}
+specify_item<nodep>:                // ==IEEE: specify_item
+                system_timing_check                     { $$ = $1; }
+        |       junkToSemiList ';'                      { $$ = nullptr; }
         ;
 
-specparam_declaration<nodep>:           // ==IEEE: specparam_declaration
+specparam_declaration<nodep>:       // ==IEEE: specparam_declaration
                 ySPECPARAM junkToSemiList ';'           { $$ = nullptr; }
+        ;
+
+system_timing_check<nodep>:         // ==IEEE: system_timing_check
+                setuphold_timing_check                      { $$ = $1; }
+        ;
+
+setuphold_timing_check<nodep>:      // ==IEEE: $setuphold_timing_check
+                yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ')' ';' { $$ = nullptr; }
+        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ')' ';' { $$ = nullptr; }
+        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ',' minTypMaxE ')' ';' { $$ = nullptr; }
+        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ')' ';' { $$ = nullptr; }
+        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' terminal_identifierE ')' ';' { $$ = new AstSetuphold{$1, $3, $5, $17}; }
+        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' terminal_identifierE ',' terminal_identifierE ')' ';' { $$ = new AstSetuphold{$1, $3, $5, $17, $19}; }
+        ;
+
+timing_check_event<nodeExprp>:      // ==IEEE: $timing_check_event
+                terminal_identifier                                   { $$ = $1; }
+        |       yPOSEDGE terminal_identifier                          { $$ = $2; }
+        |       yNEGEDGE terminal_identifier                          { $$ = $2; }
+        |       yEDGE terminal_identifier                             { $$ = $2; }
+        |       terminal_identifier yP_ANDANDAND expr                 { $$ = $1; }
+        |       yPOSEDGE terminal_identifier yP_ANDANDAND expr        { $$ = $2; }
+        |       yNEGEDGE terminal_identifier yP_ANDANDAND expr        { $$ = $2; }
+        |       yEDGE terminal_identifier yP_ANDANDAND expr           { $$ = $2; }
+        ;
+
+terminal_identifier<nodeExprp>:
+                id                  { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1, nullptr, nullptr}; }
+        ;
+
+terminal_identifierE<nodeExprp>:
+                /*empty*/               { $$ = nullptr; }
+        |       terminal_identifier     { $$ = $1; }
+        ;
+
+idAnyE<strp>:
+                /*empty*/                               { $$ = nullptr; }
+        |       idAny                                   { $$ = $1; }
         ;
 
 junkToSemiList:
@@ -5784,7 +5827,7 @@ junkToSemiList:
         ;
 
 junkToSemi:
-                BISONPRE_NOT(';',yENDSPECIFY,yENDMODULE)        { }
+                BISONPRE_NOT(';',yENDSPECIFY,yENDMODULE,yD_SETUPHOLD)        { }
         |       error {}
         ;
 

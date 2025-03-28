@@ -1377,6 +1377,38 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstSetuphold* nodep) override {
+        FileLine* const flp = nodep->fileline();
+
+        AstAssignW* newp = nullptr;
+
+        if (nodep->delrefp() != nullptr) {
+            AstNodeVarRef* lhsp = VN_AS(nodep->delrefp()->cloneTreePure(false), VarRef);
+            lhsp->access(VAccess::WRITE);
+            AstNodeVarRef* rhsp = VN_AS(nodep->refevp()->cloneTreePure(false), VarRef);
+            newp = new AstAssignW{flp, lhsp, rhsp};
+        }
+
+        if (nodep->deldatap() != nullptr) {
+            AstNodeVarRef* lhsp = VN_AS(nodep->deldatap()->cloneTreePure(false), VarRef);
+            lhsp->access(VAccess::WRITE);
+            AstNodeVarRef* rhsp = VN_AS(nodep->dataevp()->cloneTreePure(false), VarRef);
+
+            if (newp == nullptr) {
+                newp = new AstAssignW{flp, lhsp, rhsp};
+            } else {
+                newp->addNextHere(new AstAssignW{flp, lhsp, rhsp});
+            }
+        }
+
+        if (newp == nullptr) {
+            nodep->unlinkFrBack()->deleteTree();
+            return;
+        }
+
+        nodep->replaceWith(newp);
+    }
+
     void visit(AstStable* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
