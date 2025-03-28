@@ -32,6 +32,7 @@ module t (/*AUTOARG*/
       $setuphold (posedge sh1, negedge sh3, 0, 0, notifier,,, sh2, sh4);
       $setuphold (posedge clk, negedge d, 0, 0);
       $setuphold (posedge clk, negedge d, (0:0:0), (0:0:0));
+      $setuphold (posedge clk, negedge d, 0:0:0, 0:0:0);
       $setuphold (posedge clk, negedge d, 0, 0,,,,,);
       $setuphold (posedge clk &&& sh1, BL_X[0], 0, 0, ,,,delayed_CLK, BL_0);
       $setuphold (posedge clk &&& sh1, BL_1, 0, 0, ,,,delayed_CLK, BL_X2[4:1]);

@@ -5788,12 +5788,12 @@ system_timing_check<nodep>:         // ==IEEE: system_timing_check
         ;
 
 setuphold_timing_check<nodep>:      // ==IEEE: $setuphold_timing_check
-                yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ')' ';' { $$ = nullptr; }
-        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ')' ';' { $$ = nullptr; }
-        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ',' minTypMaxE ')' ';' { $$ = nullptr; }
-        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ')' ';' { $$ = nullptr; }
-        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' delayed_referenceE ')' ';' { $$ = new AstSetuphold{$1, $3, $5, $17}; }
-        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' expr ',' expr ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' delayed_referenceE ',' delayed_referenceE ')' ';' { $$ = new AstSetuphold{$1, $3, $5, $17, $19}; }
+                yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' timing_check_limit ',' timing_check_limit ')' ';' { $$ = nullptr; }
+        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' timing_check_limit ',' timing_check_limit ',' idAnyE ')' ';' { $$ = nullptr; }
+        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' timing_check_limit ',' timing_check_limit ',' idAnyE ',' minTypMaxE ')' ';' { $$ = nullptr; }
+        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' timing_check_limit ',' timing_check_limit ',' idAnyE ',' minTypMaxE ',' minTypMaxE ')' ';' { $$ = nullptr; }
+        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' timing_check_limit ',' timing_check_limit ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' delayed_referenceE ')' ';' { $$ = new AstSetuphold{$1, $3, $5, $17}; }
+        |       yD_SETUPHOLD '(' timing_check_event ',' timing_check_event ',' timing_check_limit ',' timing_check_limit ',' idAnyE ',' minTypMaxE ',' minTypMaxE ',' delayed_referenceE ',' delayed_referenceE ')' ';' { $$ = new AstSetuphold{$1, $3, $5, $17, $19}; }
         ;
 
 timing_check_event<nodeExprp>:      // ==IEEE: $timing_check_event
@@ -5805,6 +5805,11 @@ timing_check_event<nodeExprp>:      // ==IEEE: $timing_check_event
         |       yPOSEDGE terminal_identifier yP_ANDANDAND expr        { $$ = $2; }
         |       yNEGEDGE terminal_identifier yP_ANDANDAND expr        { $$ = $2; }
         |       yEDGE terminal_identifier yP_ANDANDAND expr           { $$ = $2; }
+        ;
+
+timing_check_limit<nodeExprp>:
+                expr                      { $$ = $1; }
+        |       expr ':' expr ':' expr    { $$ = $3; }
         ;
 
 delayed_referenceE<nodeExprp>:
