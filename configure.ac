@@ -432,6 +432,7 @@ AC_SUBST(HAVE_COROUTINES)
 
 # Flags for compiling Verilator internals including parser always
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Qunused-arguments)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Xclang -fno-pch-timestamp)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-faligned-new)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-shadow)
@@ -469,6 +470,7 @@ CFG_CXX_FLAGS_CMAKE="-faligned-new"
 m4_foreach([cflag],[
         [-fbracket-depth=4096],
         [-fcf-protection=none],
+        [-Xclang -fno-pch-timestamp],
         [-mno-cet],
         [-Qunused-arguments],
         [-Wno-bool-operation],
