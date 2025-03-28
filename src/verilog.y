@@ -450,12 +450,12 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 
 %token<strp>            yaTABLELINE     "TABLE LINE"
 
-%token<strp>            yaSCHDR         "`systemc_header BLOCK"
-%token<strp>            yaSCINT         "`systemc_ctor BLOCK"
-%token<strp>            yaSCIMP         "`systemc_dtor BLOCK"
-%token<strp>            yaSCIMPH        "`systemc_interface BLOCK"
-%token<strp>            yaSCCTOR        "`systemc_implementation BLOCK"
-%token<strp>            yaSCDTOR        "`systemc_imp_header BLOCK"
+%token<strp>            yaSCCTOR        "`systemc_ctor block"
+%token<strp>            yaSCDTOR        "`systemc_dtor block"
+%token<strp>            yaSCHDR         "`systemc_header block"
+%token<strp>            yaSCIMP         "`systemc_implementation block"
+%token<strp>            yaSCIMPH        "`systemc_imp_header block"
+%token<strp>            yaSCINT         "`systemc_interface block"
 
 %token<fl>              yVLT_CLOCKER                "clocker"
 %token<fl>              yVLT_CLOCK_ENABLE           "clock_enable"
