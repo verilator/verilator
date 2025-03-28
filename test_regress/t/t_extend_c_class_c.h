@@ -6,11 +6,11 @@
 // any use, without warranty, 2006-2009 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-class t_extend_class_c {
+class t_extend_c_class_c {
 public:
     // CONSTRUCTORS
-    t_extend_class_c() = default;
-    ~t_extend_class_c() = default;
+    t_extend_c_class_c() = default;
+    ~t_extend_c_class_c() = default;
     // METHODS
     // This function will be called from an instance created in Verilog
     uint32_t my_math(uint32_t in) { return in + 1; }

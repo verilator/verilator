@@ -14,7 +14,7 @@ module t (/*AUTOARG*/
 
    reg [31:0] in;
    wire [31:0] out;
-   t_extend_class_v sub (.in(in), .out(out));
+   t_extend_c_class_v sub (.in(in), .out(out));
 
    always @ (posedge clk) begin
       cyc <= cyc + 8'd1;
@@ -31,7 +31,7 @@ module t (/*AUTOARG*/
    end
 endmodule
 
-module t_extend_class_v (/*AUTOARG*/
+module t_extend_c_class_v (/*AUTOARG*/
    // Outputs
    out,
    // Inputs
@@ -47,11 +47,11 @@ module t_extend_class_v (/*AUTOARG*/
    end
 
  `systemc_header
-#include "t_extend_class_c.h"   // Header for contained object
+#include "t_extend_c_class_c.h"   // Header for contained object
  `systemc_interface
-   t_extend_class_c* m_myobjp;  // Pointer to object we are embedding
+   t_extend_c_class_c* m_myobjp;  // Pointer to object we are embedding
  `systemc_ctor
-   m_myobjp = new t_extend_class_c();   // Construct contained object
+   m_myobjp = new t_extend_c_class_c();   // Construct contained object
  `systemc_dtor
    delete m_myobjp;     // Destruct contained object
  `verilog
