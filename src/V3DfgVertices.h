@@ -196,7 +196,8 @@ public:
     // Remove undriven sources
     void packSources() {
         // Grab and reset the driver data
-        std::vector<DriverData> driverData{std::move(m_driverData)};
+        std::vector<DriverData> driverData;
+        driverData.swap(m_driverData);
 
         // Grab and unlink the sources
         std::vector<DfgVertex*> sources{arity()};
@@ -255,7 +256,8 @@ public:
     // Remove undriven sources
     void packSources() {
         // Grab and reset the driver data
-        std::vector<DriverData> driverData{std::move(m_driverData)};
+        std::vector<DriverData> driverData;
+        driverData.swap(m_driverData);
 
         // Grab and unlink the sources
         std::vector<DfgVertex*> sources{arity()};
