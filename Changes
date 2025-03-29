@@ -56,7 +56,10 @@ Verilator 5.035 devel
 * Fix Windows paths in Perl (#5858) (#5860). [Tobias Jensen]
 * Fix algorithm header portability in V3Os.cpp (for std::replace) (#5861). [William D. Jones]
 * Fix `$fscanf` not returning -1 on EOF (#5881).
+* Fix PGO profiling for multi-threaded hierarchical scenarios (#5888). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix V3Gate assertion on eliminated circular logic (#5889) (#5898). [Geza Lore]
 * Fix process comparisons (#5896).
+* Fix ccache with clang (#5899). [Geza Lore]
 
 
 Verilator 5.034 2025-02-24
