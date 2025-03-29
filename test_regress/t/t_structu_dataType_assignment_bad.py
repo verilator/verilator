@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter')
 
 test.lint(verilator_flags2=['--structs-packed'], fails=True, expect_filename=test.golden_filename)
 
