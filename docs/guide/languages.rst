@@ -396,8 +396,8 @@ This section describes specific limitations for each language keyword.
    \`begin_keywords, \`begin_keywords, \`begin_keywords, \`begin_keywords,
    \`define, \`else, \`elsif, \`end_keywords, \`endif, \`error, \`ifdef,
    \`ifndef, \`include, \`line, \`systemc_ctor, \`systemc_dtor,
-   \`systemc_header, \`systemc_imp_header, \`systemc_implementation,
-   \`systemc_interface, \`undef, \`verilog
+   \`systemc_header, \`systemc_header_post, \`systemc_imp_header,
+   \`systemc_implementation, \`systemc_interface, \`undef, \`verilog
 
 |cmdslong1|
   Fully supported.

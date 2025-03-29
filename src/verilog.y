@@ -453,6 +453,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<strp>            yaSCCTOR        "`systemc_ctor block"
 %token<strp>            yaSCDTOR        "`systemc_dtor block"
 %token<strp>            yaSCHDR         "`systemc_header block"
+%token<strp>            yaSCHDRP        "`systemc_header_post block"
 %token<strp>            yaSCIMP         "`systemc_implementation block"
 %token<strp>            yaSCIMPH        "`systemc_imp_header block"
 %token<strp>            yaSCINT         "`systemc_interface block"
@@ -2738,6 +2739,7 @@ non_port_module_item<nodep>:    // ==IEEE: non_port_module_item
 
 vlScBlock<nodep>:  // Verilator-specific `systemc_* blocks
                 yaSCHDR                                 { $$ = new AstScHdr{$<fl>1, *$1}; v3Global.setHasSCTextSections(); }
+        |       yaSCHDRP                                { $$ = new AstScHdrPost{$<fl>1, *$1}; v3Global.setHasSCTextSections(); }
         |       yaSCINT                                 { $$ = new AstScInt{$<fl>1, *$1}; v3Global.setHasSCTextSections(); }
         |       yaSCIMP                                 { $$ = new AstScImp{$<fl>1, *$1}; v3Global.setHasSCTextSections(); }
         |       yaSCIMPH                                { $$ = new AstScImpHdr{$<fl>1, *$1}; v3Global.setHasSCTextSections(); }

@@ -12,6 +12,8 @@ class Cls;
 `ifdef verilator
  `systemc_header
 #define DID_INT_HEADER 1
+ `systemc_header_post
+inline void `systemc_class_name::my_inline_function() {}
  `systemc_interface
 #ifndef DID_INT_HEADER
 #error "`systemc_header didn't work"
@@ -22,6 +24,7 @@ class Cls;
        return 1;
    }
    static void my_imp_function();
+   static void my_inline_function();
 
  `systemc_imp_header
 #define DID_IMP_HEADER 1
@@ -49,6 +52,7 @@ module t (/*AUTOARG*/);
       c = new;
       i = $c(c, "->my_function()");
       $c(c, "->my_imp_function();");
+      $c(c, "->my_inline_function();");
       c = null;  // Causes destruction and All Finished
       $finish;
    end

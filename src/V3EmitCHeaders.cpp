@@ -595,6 +595,7 @@ class EmitCHeader final : public EmitCConstInit {
         // Emit out of class function declarations
         puts("\n");
         emitFuncDecls(modp, /* inClassBody: */ false);
+        emitTextSection(modp, VNType::atScHdrPost);
     }
 
     explicit EmitCHeader(const AstNodeModule* modp) {

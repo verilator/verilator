@@ -81,7 +81,7 @@ static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
 %s V95 V01NC V01C V05 S05 S09 S12 S17 S23
 %s ATTRMODE QQQ STRING TABLE
 %s VA5 SAX VLT
-%s SYSCHDR SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
+%s SYSCHDR SYSCHDRP SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
 
 ws      [ \t\f\r]+
 wsnr    [ \t\f]+
@@ -1028,7 +1028,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Common for all SYSC header states */
   /* OPTIMIZE: we return one per line, make it one for the entire block */
   /* If add to this list also add to V3LanguageWords.h */
-<V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,S23,SAX,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR>{
+<V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,S23,SAX,VLT,SYSCHDR,SYSCHDRP,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR>{
   "`accelerate"                         { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`autoexpand_vectornets"              { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`celldefine"                         { FL_FWD; PARSEP->lexFileline()->celldefineOn(true); FL_BRK; }
@@ -1100,6 +1100,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`systemc_ctor"                       { FL_FWD; BEGIN SYSCCTOR; FL_BRK; }
   "`systemc_dtor"                       { FL_FWD; BEGIN SYSCDTOR; FL_BRK; }
   "`systemc_header"                     { FL_FWD; BEGIN SYSCHDR; FL_BRK; }
+  "`systemc_header_post"                { FL_FWD; BEGIN SYSCHDRP; FL_BRK; }
   "`systemc_imp_header"                 { FL_FWD; BEGIN SYSCIMPH; FL_BRK; }
   "`systemc_implementation"             { FL_FWD; BEGIN SYSCIMP; FL_BRK; }
   "`systemc_interface"                  { FL_FWD; BEGIN SYSCINT; FL_BRK; }
@@ -1115,6 +1116,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
 <SYSCHDR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; yylval.strp = PARSEP->newString(yytext); return yaSCHDR; }
+<SYSCHDRP>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; yylval.strp = PARSEP->newString(yytext); return yaSCHDRP; }
 <SYSCINT>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; yylval.strp = PARSEP->newString(yytext); return yaSCINT; }
 <SYSCIMP>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; yylval.strp = PARSEP->newString(yytext); return yaSCIMP; }
 <SYSCIMPH>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; yylval.strp = PARSEP->newString(yytext); return yaSCIMPH; }
@@ -1122,7 +1124,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <SYSCDTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; yylval.strp = PARSEP->newString(yytext); return yaSCDTOR; }
 
   /* Pick up text-type data */
-<SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR>{
+<SYSCHDR,SYSCHDRP,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR>{
   {wsnr}*               { yymore(); }
   {crnl}                { yymore(); }
 }

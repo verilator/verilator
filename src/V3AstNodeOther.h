@@ -3898,6 +3898,14 @@ public:
     bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
     bool isOutputter() override { return true; }
 };
+class AstScHdrPost final : public AstNodeText {
+public:
+    AstScHdrPost(FileLine* fl, const string& textp)
+        : ASTGEN_SUPER_ScHdrPost(fl, textp) {}
+    ASTGEN_MEMBERS_AstScHdrPost;
+    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() override { return true; }
+};
 class AstScImp final : public AstNodeText {
 public:
     AstScImp(FileLine* fl, const string& textp)

@@ -111,6 +111,15 @@ or "`ifdef`"'s may break other tools.
    class/endclass pair. Despite the name of this macro, this also works in
    pure C++ code.
 
+.. option:: `systemc_header_post
+
+   Take the remaining text up to the next :option:`\`verilog` or
+   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
+   verbatim into the output .h file's header after the class definition.
+   Must be placed as a module or class item, e.g., directly inside a
+   module/endmodule or class/endclass pair. Despite the name of this macro,
+   this also works in pure C++ code.
+
 .. option:: `systemc_class_name
 
    Inside one of the :option:`\`systemc_... <\`systemc_header>` text
