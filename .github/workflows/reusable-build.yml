@@ -1,0 +1,76 @@
+---
+# DESCRIPTION: Github actions config
+# This name is key to badges in README.rst, so we use the name build
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: reusable-build
+
+on:
+  workflow_call:
+    inputs:
+      os:  # e.g. ubuntu-24.04
+        required: true
+        type: string
+      cc:  # gcc or clang
+        required: true
+        type: string
+
+env:
+  CI_OS_NAME: linux
+  CI_COMMIT: ${{ github.sha }}
+  CCACHE_COMPRESS: 1
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_LIMIT_MULTIPLE: 0.95
+  INSTALL_DIR: ${{ github.workspace }}/install
+  RELOC_DIR: ${{ github.workspace }}/relloc
+
+defaults:
+  run:
+    shell: bash
+    working-directory: repo
+
+jobs:
+
+  build:
+    runs-on: ${{ inputs.os }}
+    name: Sub-build | ${{ inputs.os }} | ${{ inputs.cc }}
+    env:
+      CI_BUILD_STAGE_NAME: build
+      CI_RUNS_ON: ${{ inputs.os }}
+      CC: ${{ inputs.cc }}
+      CXX: ${{ inputs.cc == 'clang' && 'clang++' || 'g++' }}
+      CACHE_BASE_KEY: build-${{ inputs.os }}-${{ inputs.cc }}
+      CCACHE_MAXSIZE: 1000M  # Per build matrix entry (* 5 = 5000M in total)
+      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ inputs.os }}-${{ inputs.cc }}.tar.gz
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: repo
+
+      - name: Cache $CCACHE_DIR
+        uses: actions/cache@v4
+        env:
+          CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
+          restore-keys: |
+            ${{ env.CACHE_KEY }}-
+
+      - name: Install packages for build
+        run: ./ci/ci-install.bash
+
+      - name: Build
+        run: ./ci/ci-script.bash
+
+      - name: Tar up repository
+        working-directory: ${{ github.workspace }}
+        run: tar --posix -c -z -f ${{ env.VERILATOR_ARCHIVE }} repo
+
+      - name: Upload tar archive
+        uses: actions/upload-artifact@v4
+        with:
+          path: ${{ github.workspace }}/${{ env.VERILATOR_ARCHIVE }}
+          name: ${{ env.VERILATOR_ARCHIVE }}
