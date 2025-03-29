@@ -56,6 +56,7 @@ Verilator 5.035 devel
 * Fix Windows paths in Perl (#5858) (#5860). [Tobias Jensen]
 * Fix algorithm header portability in V3Os.cpp (for std::replace) (#5861). [William D. Jones]
 * Fix `$fscanf` not returning -1 on EOF (#5881).
+* Fix process comparisons (#5896).
 
 
 Verilator 5.034 2025-02-24
