@@ -121,10 +121,13 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
       "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean $sanitize" DRIVER_HASHSET=--hashset=3/4
       ;;
     vltmt-0)
-      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --driver-clean" DRIVER_HASHSET=--hashset=0/2
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --driver-clean" DRIVER_HASHSET=--hashset=0/3
       ;;
     vltmt-1)
-      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --driver-clean" DRIVER_HASHSET=--hashset=1/2
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --driver-clean" DRIVER_HASHSET=--hashset=1/3
+      ;;
+    vltmt-2)
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --driver-clean" DRIVER_HASHSET=--hashset=2/3
       ;;
     coverage-all)
       nodist/code_coverage --stages 1-

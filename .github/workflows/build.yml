@@ -96,6 +96,7 @@ jobs:
           - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-3}
           - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-0}
           - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-1}
+          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-2}
           # Ubuntu 24.04 Clang
           - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: dist-vlt-0}
           - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: dist-vlt-1}
@@ -103,6 +104,7 @@ jobs:
           - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: dist-vlt-3}
           - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: vltmt-0}
           - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: vltmt-1}
+          - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: vltmt-2}
           # Ubuntu 22.04 GCC
           - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-0}
           - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-1}
@@ -110,6 +112,7 @@ jobs:
           - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-3}
           - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-0}
           - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-1}
+          - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-2}
           # Ubuntu 22.04 Clang, also test relocation
           - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: dist-vlt-0}
           - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: dist-vlt-1}
@@ -117,6 +120,7 @@ jobs:
           - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: dist-vlt-3}
           - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: vltmt-0}
           - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: vltmt-1}
+          - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: vltmt-2}
     runs-on: ${{ matrix.os }}
     name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.reloc && 'reloc | ' || '' }} ${{ matrix.suite }}
     env:
