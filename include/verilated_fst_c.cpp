@@ -48,6 +48,14 @@
 # include <unistd.h>
 #endif
 
+#if defined(_WIN32) || defined(__MINGW32__)
+# include <direct.h>  // _mkdir
+#else
+# include <sys/stat.h> // mkdir
+#endif
+
+#include <iostream>
+
 // clang-format on
 
 //=============================================================================
@@ -66,25 +74,92 @@ static_assert(std::is_same<vlFstEnumHandle, fstEnumHandle>::value, "vlFstHandle 
 #undef VL_BUF_T
 
 //=============================================================================
+// VerilatedFstWriter
+
+class VerilatedFstWriter final {
+    void* m_fst = nullptr;
+
+public:
+    uint64_t m_timeui = 0;
+
+    VerilatedFstWriter(const std::string& filename, const std::string& timeRes,
+                       bool useWriterThread) {
+        m_fst = fstWriterCreate(filename.c_str(), 1);
+        fstWriterSetPackType(m_fst, FST_WR_PT_LZ4);
+        fstWriterSetTimescaleFromString(m_fst, timeRes.c_str());  // lintok-begin-on-ref
+        if (useWriterThread) fstWriterSetParallelMode(m_fst, 1);
+    }
+
+    ~VerilatedFstWriter() { fstWriterClose(m_fst); }
+
+    void flush() { fstWriterFlushContext(m_fst); }
+
+    void pushScope(enum fstScopeType scopeType, const char* scopeName) {
+        fstWriterSetScope(m_fst, scopeType, scopeName, nullptr);
+    }
+
+    void popScope() { fstWriterSetUpscope(m_fst); }
+
+    fstEnumHandle createEnumTable(const char* name, uint32_t elements, unsigned int minValbits,
+                                  const char** itemNamesp, const char** itemValuesp) {
+        return fstWriterCreateEnumTable(m_fst, name, elements, minValbits, itemNamesp,
+                                        itemValuesp);
+    }
+
+    fstHandle createVar(enum fstVarType varType, enum fstVarDir varDir, uint32_t bits,
+                        const std::string& name, fstHandle aliasHandle) {
+        return fstWriterCreateVar(m_fst, varType, varDir, bits, name.c_str(), aliasHandle);
+    }
+
+    void emitEnumTableRef(fstEnumHandle enumHandle) {
+        fstWriterEmitEnumTableRef(m_fst, enumHandle);
+    }
+
+    void emitValueChange(fstHandle handle, const void* val) {
+        fstWriterEmitValueChange(m_fst, handle, val);
+    }
+
+    bool flushPending() { return fstWriterGetFlushContextPending(m_fst); }
+
+    // Static as might be called from worker thread
+    static void emitTimeChange(void* p, bool flush) {
+        VerilatedFstWriter* const selfp = static_cast<VerilatedFstWriter*>(p);
+        if (flush) selfp->flush();
+        fstWriterEmitTimeChange(selfp->m_fst, selfp->m_timeui);
+    }
+};
+
+//=============================================================================
 // VerilatedFst
 
 VerilatedFst::VerilatedFst(void* /*fst*/) {}
 
 VerilatedFst::~VerilatedFst() {
-    if (m_fst) fstWriterClose(m_fst);
+    for (VerilatedFstWriter* const writerp : m_writerps) delete writerp;
+    m_writerps.clear();
     if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = nullptr);
-    if (m_strbufp) VL_DO_CLEAR(delete[] m_strbufp, m_strbufp = nullptr);
+    m_strbufps.clear();
 }
 
 void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
-    m_fst = fstWriterCreate(filename, 1);
-    fstWriterSetPackType(m_fst, FST_WR_PT_LZ4);
-    fstWriterSetTimescaleFromString(m_fst, timeResStr().c_str());  // lintok-begin-on-ref
-    if (m_useFstWriterThread) fstWriterSetParallelMode(m_fst, 1);
+
+    const std::string timeRes = timeResStr();
+    if (split()) {
+#if defined(_WIN32) || defined(__MINGW32__)
+        _mkdir(filename);
+#else
+        mkdir(filename, 0777);
+#endif
+        for (uint32_t n = 0; n < nSplits(); ++n) {
+            const std::string splitName = std::string{filename} + "/" + std::to_string(n);
+            m_writerps.push_back(new VerilatedFstWriter{splitName, timeRes, m_useFstWriterThread});
+        }
+    } else {
+        m_writerps.push_back(new VerilatedFstWriter{filename, timeRes, m_useFstWriterThread});
+    }
     constDump(true);  // First dump must contain the const signals
     fullDump(true);  // First dump must be full for fst
-
     Super::traceInit();
 
     // convert m_code2symbol into an array for fast lookup
@@ -94,24 +169,64 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
     }
     m_code2symbol.clear();
 
-    // Allocate string buffer for arrays
-    if (!m_strbufp) m_strbufp = new char[maxBits() + 32];
+    // Allocate buffer for data
+    m_strbufps.resize(m_writerps.size());
+    for (std::unique_ptr<char[]>& uptr : m_strbufps) uptr.reset(new char[maxBits() + 32]);
 }
 
 void VerilatedFst::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     Super::closeBase();
-    fstWriterClose(m_fst);
-    m_fst = nullptr;
+    for (VerilatedFstWriter* const writerp : m_writerps) delete writerp;
+    m_writerps.clear();
 }
 
 void VerilatedFst::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     Super::flushBase();
-    fstWriterFlushContext(m_fst);
+    for (VerilatedFstWriter* const writerp : m_writerps) writerp->flush();
 }
 
-void VerilatedFst::emitTimeChange(uint64_t timeui) { fstWriterEmitTimeChange(m_fst, timeui); }
+void VerilatedFst::emitTimeChange(uint64_t timeui) {
+    // Pick up the thread pool
+    if (VlThreadPool* const threadPoolp = static_cast<VlThreadPool*>(contextp()->threadPoolp())) {
+        // Thread pool is available, use it to call VerilatedFstWriter::emitTimeChange,
+        // as it might cause a long running compression phase to apply
+
+        bool flush = false;
+        for (VerilatedFstWriter* const writerp : m_writerps) {
+            // If one has a flush pending (due to reaching buffer size limits),
+            // then flush all of them, so all flush at the same time in parallel
+            flush |= writerp->flushPending();
+            // Set the time point to emit
+            writerp->m_timeui = timeui;
+        }
+
+        // We use the whole pool + the main thread
+        const size_t nThreads = std::min<size_t>(threadPoolp->numThreads() + 1, m_writerps.size());
+
+        // Enque emitTimeChange on workers
+        for (size_t i = 0; i < m_writerps.size(); ++i) {
+            if (const size_t idx = i % nThreads) {
+                threadPoolp->workerp(idx - 1)->addTask(VerilatedFstWriter::emitTimeChange,
+                                                       m_writerps[i], flush);
+            }
+        }
+
+        // emitTimeChange on main (this) thread
+        for (size_t i = 0; i < m_writerps.size(); ++i) {
+            if (i % nThreads == 0) VerilatedFstWriter::emitTimeChange(m_writerps[i], flush);
+        }
+    } else {
+        // No thread pool, everything on main thread
+        for (VerilatedFstWriter* const writerp : m_writerps) {
+            // Set the time point to emit
+            writerp->m_timeui = timeui;
+            // Emit time change in this writer
+            VerilatedFstWriter::emitTimeChange(writerp, false);
+        }
+    }
+}
 
 //=============================================================================
 // Decl
@@ -119,9 +234,13 @@ void VerilatedFst::emitTimeChange(uint64_t timeui) { fstWriterEmitTimeChange(m_f
 void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, uint32_t elements,
                                  unsigned int minValbits, const char** itemNamesp,
                                  const char** itemValuesp) {
-    const fstEnumHandle enumNum
-        = fstWriterCreateEnumTable(m_fst, name, elements, minValbits, itemNamesp, itemValuesp);
-    m_local2fstdtype[dtypenum] = enumNum;
+    for (VerilatedFstWriter* const writerp : m_writerps) {
+        const fstEnumHandle enumHandle
+            = writerp->createEnumTable(name, elements, minValbits, itemNamesp, itemValuesp);
+        const auto pair = m_local2fstdtype.emplace(dtypenum, enumHandle);
+        // All enum handles should be the same in all files
+        assert(pair.second || pair.first->second == enumHandle);
+    }
 }
 
 // TODO: should return std::optional<fstScopeType>, but I can't have C++17
@@ -158,19 +277,23 @@ void VerilatedFst::pushPrefix(const std::string& name, VerilatedTracePrefixType 
     m_prefixStack.emplace_back(newPrefix + (properScope ? " " : ""), type);
     if (properScope) {
         const std::string scopeName = lastWord(newPrefix);
-        fstWriterSetScope(m_fst, scopeType, scopeName.c_str(), nullptr);
+        for (VerilatedFstWriter* const writerp : m_writerps) {
+            writerp->pushScope(scopeType, scopeName.c_str());
+        }
     }
 }
 
 void VerilatedFst::popPrefix() {
     assert(!m_prefixStack.empty());
     const bool properScope = toFstScopeType(m_prefixStack.back().second).first;
-    if (properScope) fstWriterSetUpscope(m_fst);
+    if (properScope) {
+        for (VerilatedFstWriter* const writerp : m_writerps) writerp->popScope();
+    }
     m_prefixStack.pop_back();
     assert(!m_prefixStack.empty());  // Always one left, the constructor's initial one
 }
 
-void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum,
+void VerilatedFst::declare(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                            VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
                            VerilatedTraceSigType type, bool array, int arraynum, bool bussed,
                            int msb, int lsb) {
@@ -188,7 +311,9 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum,
     if (bussed) name_ss << " [" << msb << ":" << lsb << "]";
     const std::string name_str = name_ss.str();
 
-    if (dtypenum > 0) fstWriterEmitEnumTableRef(m_fst, m_local2fstdtype[dtypenum]);
+    const uint32_t widx = fidx % m_writerps.size();
+
+    if (dtypenum > 0) m_writerps[widx]->emitEnumTableRef(m_local2fstdtype.at(dtypenum));
 
     fstVarDir varDir = FST_VD_IMPLICIT;
     switch (direction) {
@@ -228,47 +353,46 @@ void VerilatedFst::declare(uint32_t code, const char* name, int dtypenum,
     else { assert(0); /* Unreachable */ }
     // clang-format on
 
-    const auto it = vlstd::as_const(m_code2symbol).find(code);
-    if (it == m_code2symbol.end()) {  // New
-        m_code2symbol[code]
-            = fstWriterCreateVar(m_fst, varType, varDir, bits, name_str.c_str(), 0);
-    } else {  // Alias
-        fstWriterCreateVar(m_fst, varType, varDir, bits, name_str.c_str(), it->second);
+    const auto pair = m_code2symbol.emplace(code, 0);
+    if (pair.second) {  // New
+        pair.first->second = m_writerps[widx]->createVar(varType, varDir, bits, name_str, 0);
+    } else {  // Alias - Verilator arranged for aliases to have the same fidx, so this is safe
+        m_writerps[widx]->createVar(varType, varDir, bits, name_str, pair.first->second);
     }
 }
 
 void VerilatedFst::declEvent(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                              VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
                              VerilatedTraceSigType type, bool array, int arraynum) {
-    declare(code, name, dtypenum, direction, kind, type, array, arraynum, false, 0, 0);
+    declare(code, fidx, name, dtypenum, direction, kind, type, array, arraynum, false, 0, 0);
 }
 void VerilatedFst::declBit(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                            VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
                            VerilatedTraceSigType type, bool array, int arraynum) {
-    declare(code, name, dtypenum, direction, kind, type, array, arraynum, false, 0, 0);
+    declare(code, fidx, name, dtypenum, direction, kind, type, array, arraynum, false, 0, 0);
 }
 void VerilatedFst::declBus(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                            VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
                            VerilatedTraceSigType type, bool array, int arraynum, int msb,
                            int lsb) {
-    declare(code, name, dtypenum, direction, kind, type, array, arraynum, true, msb, lsb);
+    declare(code, fidx, name, dtypenum, direction, kind, type, array, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declQuad(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                             VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
                             VerilatedTraceSigType type, bool array, int arraynum, int msb,
                             int lsb) {
-    declare(code, name, dtypenum, direction, kind, type, array, arraynum, true, msb, lsb);
+    declare(code, fidx, name, dtypenum, direction, kind, type, array, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declArray(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                              VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
                              VerilatedTraceSigType type, bool array, int arraynum, int msb,
                              int lsb) {
-    declare(code, name, dtypenum, direction, kind, type, array, arraynum, true, msb, lsb);
+    declare(code, fidx, name, dtypenum, direction, kind, type, array, arraynum, true, msb, lsb);
 }
 void VerilatedFst::declDouble(uint32_t code, uint32_t fidx, const char* name, int dtypenum,
                               VerilatedTraceSigDirection direction, VerilatedTraceSigKind kind,
                               VerilatedTraceSigType type, bool array, int arraynum) {
-    declare(code, name, dtypenum, direction, kind, type, array, arraynum, false, 63, 0);
+    declare(code, fidx, name, dtypenum, direction, kind, type, array, arraynum, false, 63, 0);
 }
 
 //=============================================================================
@@ -276,7 +400,7 @@ void VerilatedFst::declDouble(uint32_t code, uint32_t fidx, const char* name, in
 
 VerilatedFst::Buffer* VerilatedFst::getTraceBuffer(uint32_t fidx) {
     if (offload()) return new OffloadBuffer{*this};
-    return new Buffer{*this};
+    return new Buffer{*this, fidx};
 }
 
 void VerilatedFst::commitTraceBuffer(VerilatedFst::Buffer* bufp) {
@@ -311,13 +435,13 @@ void VerilatedFst::configure(const VerilatedTraceConfig& config) {
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitEvent(uint32_t code) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
-    fstWriterEmitValueChange(m_fst, m_symbolp[code], "1");
+    m_writer.emitValueChange(m_symbolp[code], "1");
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitBit(uint32_t code, CData newval) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
-    fstWriterEmitValueChange(m_fst, m_symbolp[code], newval ? "1" : "0");
+    m_writer.emitValueChange(m_symbolp[code], newval ? "1" : "0");
 }
 
 VL_ATTR_ALWINLINE
@@ -325,7 +449,7 @@ void VerilatedFstBuffer::emitCData(uint32_t code, CData newval, int bits) {
     char buf[VL_BYTESIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtCDataToStr(buf, newval << (VL_BYTESIZE - bits));
-    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
+    m_writer.emitValueChange(m_symbolp[code], buf);
 }
 
 VL_ATTR_ALWINLINE
@@ -333,7 +457,7 @@ void VerilatedFstBuffer::emitSData(uint32_t code, SData newval, int bits) {
     char buf[VL_SHORTSIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtSDataToStr(buf, newval << (VL_SHORTSIZE - bits));
-    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
+    m_writer.emitValueChange(m_symbolp[code], buf);
 }
 
 VL_ATTR_ALWINLINE
@@ -341,7 +465,7 @@ void VerilatedFstBuffer::emitIData(uint32_t code, IData newval, int bits) {
     char buf[VL_IDATASIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtIDataToStr(buf, newval << (VL_IDATASIZE - bits));
-    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
+    m_writer.emitValueChange(m_symbolp[code], buf);
 }
 
 VL_ATTR_ALWINLINE
@@ -349,7 +473,7 @@ void VerilatedFstBuffer::emitQData(uint32_t code, QData newval, int bits) {
     char buf[VL_QUADSIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtQDataToStr(buf, newval << (VL_QUADSIZE - bits));
-    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
+    m_writer.emitValueChange(m_symbolp[code], buf);
 }
 
 VL_ATTR_ALWINLINE
@@ -365,10 +489,10 @@ void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int bits
         cvtEDataToStr(wp, newvalp[--words]);
         wp += VL_EDATASIZE;
     }
-    fstWriterEmitValueChange(m_fst, m_symbolp[code], m_strbufp);
+    m_writer.emitValueChange(m_symbolp[code], m_strbufp);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitDouble(uint32_t code, double newval) {
-    fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
+    m_writer.emitValueChange(m_symbolp[code], &newval);
 }
