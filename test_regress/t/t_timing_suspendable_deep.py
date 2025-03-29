@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=["--binary --timing"])
+test.compile(verilator_flags2=["--binary"])
 
 test.passes()

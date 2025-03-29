@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_cxx_equal_to.v"
 
-test.compile(verilator_flags2=['--binary --timing --trace'])
+test.compile(verilator_flags2=['--binary --trace'])
 
 test.execute()
 

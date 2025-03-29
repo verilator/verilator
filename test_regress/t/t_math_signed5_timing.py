@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_math_signed5.v"
 
-test.compile(verilator_flags2=['--binary --timing'], timing_loop=True)
+test.compile(verilator_flags2=['--binary'])
 
 test.execute()
 
