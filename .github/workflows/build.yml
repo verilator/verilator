@@ -12,15 +12,6 @@ on:
   schedule:
     - cron: '0 0 * * 0'  # weekly
 
-env:
-  CI_OS_NAME: linux
-  CI_COMMIT: ${{ github.sha }}
-  CCACHE_COMPRESS: 1
-  CCACHE_DIR: ${{ github.workspace }}/.ccache
-  CCACHE_LIMIT_MULTIPLE: 0.95
-  INSTALL_DIR: ${{ github.workspace }}/install
-  RELOC_DIR: ${{ github.workspace }}/relloc
-
 defaults:
   run:
     shell: bash
@@ -32,142 +23,155 @@ concurrency:
 
 jobs:
 
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04, ubuntu-22.04]
-        compiler:
-          - {cc: clang, cxx: clang++}
-          - {cc: gcc, cxx: g++}
-    runs-on: ${{ matrix.os }}
-    name: Build | ${{ matrix.os }} | ${{ matrix.compiler.cc }}
-    env:
-      CI_BUILD_STAGE_NAME: build
-      CI_RUNS_ON: ${{ matrix.os }}
-      CC: ${{ matrix.compiler.cc }}
-      CXX: ${{ matrix.compiler.cxx }}
-      CACHE_BASE_KEY: build-${{ matrix.os }}-${{ matrix.compiler.cc }}
-      CCACHE_MAXSIZE: 1000M  # Per build matrix entry (* 5 = 5000M in total)
-      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          path: repo
-
-      - name: Cache $CCACHE_DIR
-        uses: actions/cache@v4
-        env:
-          CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
-          restore-keys: |
-            ${{ env.CACHE_KEY }}-
-
-      - name: Install packages for build
-        run: ./ci/ci-install.bash
-
-      - name: Build
-        run: ./ci/ci-script.bash
-
-      - name: Tar up repository
-        working-directory: ${{ github.workspace }}
-        run: tar --posix -c -z -f ${{ env.VERILATOR_ARCHIVE }} repo
-
-      - name: Upload tar archive
-        uses: actions/upload-artifact@v4
-        with:
-          path: ${{ github.workspace }}/${{ env.VERILATOR_ARCHIVE }}
-          name: ${{ env.VERILATOR_ARCHIVE }}
-
-  test:
-    needs: build
+  build-2404-gcc:
+    name: Build
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+       os: ${{ matrix.os }}
+       cc: ${{ matrix.cc }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Ubuntu 24.04 GCC
-          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-0}
-          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-1}
-          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-2}
-          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-3}
-          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-0}
-          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-1}
-          - {os: ubuntu-24.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-2}
-          # Ubuntu 24.04 Clang
-          - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: dist-vlt-0}
-          - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: dist-vlt-1}
-          - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: dist-vlt-2}
-          - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: dist-vlt-3}
-          - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: vltmt-0}
-          - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: vltmt-1}
-          - {os: ubuntu-24.04, compiler: {cc: clang, cxx: clang++}, reloc: 0, suite: vltmt-2}
-          # Ubuntu 22.04 GCC
-          - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-0}
-          - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-1}
-          - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-2}
-          - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: dist-vlt-3}
-          - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-0}
-          - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-1}
-          - {os: ubuntu-22.04, compiler: {cc: gcc, cxx: g++}, reloc: 0, suite: vltmt-2}
-          # Ubuntu 22.04 Clang, also test relocation
-          - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: dist-vlt-0}
-          - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: dist-vlt-1}
-          - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: dist-vlt-2}
-          - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: dist-vlt-3}
-          - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: vltmt-0}
-          - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: vltmt-1}
-          - {os: ubuntu-22.04, compiler: {cc: clang, cxx: clang++}, reloc: 1, suite: vltmt-2}
-    runs-on: ${{ matrix.os }}
-    name: Test | ${{ matrix.os }} | ${{ matrix.compiler.cc }} | ${{ matrix.reloc && 'reloc | ' || '' }} ${{ matrix.suite }}
-    env:
-      CI_BUILD_STAGE_NAME: test
-      CI_RUNS_ON: ${{ matrix.os }}
-      CI_RELOC: ${{ matrix.reloc }}
-      CC: ${{ matrix.compiler.cc }}
-      CXX: ${{ matrix.compiler.cxx }}
-      CACHE_BASE_KEY: test-${{ matrix.os }}-${{ matrix.compiler.cc }}-${{ matrix.reloc }}-${{ matrix.suite }}
-      CCACHE_MAXSIZE: 100M  # Per build per suite (* 5 * 5 = 2500M in total)
-      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ matrix.os }}-${{ matrix.compiler.cc }}.tar.gz
-    steps:
+          - {os: ubuntu-24.04, cc: gcc}
 
-      - name: Download tar archive
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.VERILATOR_ARCHIVE }}
-          path: ${{ github.workspace }}
+  build-2404-clang:
+    name: Build
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+       os: ${{ matrix.os }}
+       cc: ${{ matrix.cc }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-24.04, cc: clang}
 
-      - name: Unpack tar archive
-        working-directory: ${{ github.workspace }}
-        run: tar -x -z -f ${{ env.VERILATOR_ARCHIVE }}
+  build-2204-gcc:
+    name: Build
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+       os: ${{ matrix.os }}
+       cc: ${{ matrix.cc }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-22.04, cc: gcc}
 
-      - name: Cache $CCACHE_DIR
-        uses: actions/cache@v4
-        env:
-          CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache2
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
-          restore-keys: |
-            ${{ env.CACHE_KEY }}-
+  build-2204-clang:
+    name: Build
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+       os: ${{ matrix.os }}
+       cc: ${{ matrix.cc }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-22.04, cc: clang}
 
-      - name: Install test dependencies
-        run: ./ci/ci-install.bash
+  test-2404-gcc:
+    name: Test | ${{ matrix.os }} | ${{ matrix.cc }}
+    needs: build-2404-gcc
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+       os: ${{ matrix.os }}
+       cc: ${{ matrix.cc }}
+       reloc: ${{ matrix.reloc }}
+       suite: ${{ matrix.suite }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu 24.04 gcc
+          - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: dist-vlt-0}
+          - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: dist-vlt-1}
+          - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: dist-vlt-2}
+          - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: dist-vlt-3}
+          - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: vltmt-0}
+          - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: vltmt-1}
+          - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: vltmt-2}
 
-      - name: Test
-        env:
-          TESTS: ${{ matrix.suite }}
-        run: ./ci/ci-script.bash
+  test-2404-clang:
+    name: Test | ${{ matrix.os }} | ${{ matrix.cc }}
+    needs: build-2404-clang
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+       os: ${{ matrix.os }}
+       cc: ${{ matrix.cc }}
+       reloc: ${{ matrix.reloc }}
+       suite: ${{ matrix.suite }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu 24.04 clang
+          - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: dist-vlt-0}
+          - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: dist-vlt-1}
+          - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: dist-vlt-2}
+          - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: dist-vlt-3}
+          - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: vltmt-0}
+          - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: vltmt-1}
+          - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: vltmt-2}
+
+  test-2204-gcc:
+    name: Test | ${{ matrix.os }} | ${{ matrix.cc }}
+    needs: build-2204-gcc
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+       os: ${{ matrix.os }}
+       cc: ${{ matrix.cc }}
+       reloc: ${{ matrix.reloc }}
+       suite: ${{ matrix.suite }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu 22.04 gcc
+          - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: dist-vlt-0}
+          - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: dist-vlt-1}
+          - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: dist-vlt-2}
+          - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: dist-vlt-3}
+          - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: vltmt-0}
+          - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: vltmt-1}
+          - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: vltmt-2}
+
+  test-2204-clang:
+    name: Test | ${{ matrix.os }} | ${{ matrix.cc }}
+    needs: build-2204-clang
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+       os: ${{ matrix.os }}
+       cc: ${{ matrix.cc }}
+       reloc: ${{ matrix.reloc }}
+       suite: ${{ matrix.suite }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu 22.04 clang, also test relocation
+          - {os: ubuntu-22.04, cc: clang, reloc: 1, suite: dist-vlt-0}
+          - {os: ubuntu-22.04, cc: clang, reloc: 1, suite: dist-vlt-1}
+          - {os: ubuntu-22.04, cc: clang, reloc: 1, suite: dist-vlt-2}
+          - {os: ubuntu-22.04, cc: clang, reloc: 1, suite: dist-vlt-3}
+          - {os: ubuntu-22.04, cc: clang, reloc: 1, suite: vltmt-0}
+          - {os: ubuntu-22.04, cc: clang, reloc: 1, suite: vltmt-1}
+          - {os: ubuntu-22.04, cc: clang, reloc: 1, suite: vltmt-2}
 
   lint-py:
     runs-on: ubuntu-22.04
     name: Lint Python
     env:
+      CI_OS_NAME: linux
+      CI_COMMIT: ${{ github.sha }}
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ubuntu-22.04
+      CCACHE_COMPRESS: 1
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_LIMIT_MULTIPLE: 0.95
+    strategy:
+      fail-fast: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
