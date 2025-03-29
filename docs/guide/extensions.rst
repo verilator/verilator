@@ -107,48 +107,60 @@ or "`ifdef`"'s may break other tools.
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
    verbatim into the output .h file's header.  Must be placed as a module
-   item, e.g., directly inside a module/endmodule pair. Despite the name of
-   this macro, this also works in pure C++ code.
+   or class item, e.g., directly inside a module/endmodule or
+   class/endclass pair. Despite the name of this macro, this also works in
+   pure C++ code.
+
+.. option:: `systemc_class_name
+
+   Inside one of the :option:`\`systemc_... <\`systemc_header>` text
+   blocks, replaced with the C++ class name generated for the given
+   containing SystemVerilog class or module. Currently this is replaced
+   blindly, ignoring quoting or other escapes; this behavior may change in
+   the future.  This attribute is indented only to be used internally in
+   `verilated_std.sv`.
 
 .. option:: `systemc_ctor
 
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into the C++ class constructor.  Must be placed as a module
-   item, e.g., directly inside a module/endmodule pair. Despite the name of
-   this macro, this also works in pure C++ code.
+   verbatim into the C++ class constructor.  Must be placed as a module or
+   class item, e.g., directly inside a module/endmodule or class/endclass
+   pair. Despite the name of this macro, this also works in pure C++ code.
 
 .. option:: `systemc_dtor
 
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into the C++ class destructor.  Must be placed as a module
-   item, e.g., directly inside a module/endmodule pair. Despite the name of
-   this macro, this also works in pure C++ code.
+   verbatim into the C++ class destructor.  Must be placed as a module or
+   class item, e.g., directly inside a module/endmodule or class/endclass
+   pair. Despite the name of this macro, this also works in pure C++ code.
 
 .. option:: `systemc_interface
 
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into the C++ class interface.  Must be placed as a module item,
-   e.g., directly inside a module/endmodule pair. Despite the name of this
-   macro, this also works in pure C++ code.
+   verbatim into the C++ class interface.  Must be placed as a module or
+   class item, e.g., directly inside a module/endmodule or class/endclass
+   pair. Despite the name of this macro, this also works in pure C++ code.
 
 .. option:: `systemc_imp_header
 
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
    verbatim into the header of all files for this C++ class implementation.
-   Must be placed as a module item, e.g., directly inside a module/endmodule
-   pair. Despite the name of this macro, this also works in pure C++ code.
+   Must be placed as a module or class item, e.g., directly inside a
+   module/endmodule or class/endclass pair. Despite the name of this macro,
+   this also works in pure C++ code.
 
 .. option:: `systemc_implementation
 
    Take the remaining text up to the next :option:`\`verilog` or
    :option:`\`systemc_... <\`systemc_header>` mode switch and place it
    verbatim into a single file of the C++ class implementation.  Must be
-   placed as a module item, e.g., directly inside a module/endmodule
-   pair. Despite the name of this macro, this also works in pure C++ code.
+   placed as a module or class item, e.g., directly inside a
+   module/endmodule or class/endclass pair. Despite the name of this macro,
+   this also works in pure C++ code.
 
    If you will be reading or writing any Verilog variables in the C++
    functions, the Verilog signals must be declared with a

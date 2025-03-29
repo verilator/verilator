@@ -137,7 +137,17 @@ class CCtorsVisitor final : public VNVisitor {
     AstCFunc* m_cfuncp = nullptr;  // Current function
     V3CCtorsBuilder* m_varResetp = nullptr;  // Builder of _ctor_var_reset
 
-    // VISITs
+    // METHODS
+    static void insertSc(AstCFunc* cfuncp, const AstNodeModule* modp, VNType type) {
+        auto textAndFileline = EmitCBaseVisitorConst::textSection(modp, type);
+        if (!textAndFileline.first.empty()) {
+            AstTextBlock* const newp
+                = new AstTextBlock{textAndFileline.second, textAndFileline.first, false, false};
+            cfuncp->addStmtsp(newp);
+        }
+    }
+
+    // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_varResetp);
@@ -167,6 +177,7 @@ class CCtorsVisitor final : public VNVisitor {
             // If can be referred to by base pointer, need virtual delete
             funcp->isVirtual(classp->isExtended());
             funcp->slow(false);
+            insertSc(funcp, classp, VNType::atScDtor);
             classp->addStmtsp(funcp);
         }
     }
@@ -177,6 +188,7 @@ class CCtorsVisitor final : public VNVisitor {
         m_varResetp = nullptr;
         m_cfuncp = nodep;
         iterateChildren(nodep);
+        if (nodep->name() == "new") insertSc(nodep, m_modp, VNType::atScCtor);
     }
     void visit(AstVar* nodep) override {
         if (nodep->needsCReset()) {

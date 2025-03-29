@@ -846,7 +846,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         return hierBlocks.find(name) != hierBlocks.end();
     }
 
-    // VISITs
+    // VISITORS
     void visit(AstNetlist* nodep) override {
         // Process $unit or other packages
         // Not needed - dotted references not allowed from inside packages
@@ -1791,7 +1791,7 @@ class LinkDotParamVisitor final : public VNVisitor {
         }
     }
 
-    // VISITs
+    // VISITORS
     void visit(AstTypeTable*) override {}
     void visit(AstConstPool*) override {}
     void visit(AstNodeModule* nodep) override {
@@ -1967,7 +1967,7 @@ class LinkDotScopeVisitor final : public VNVisitor {
     const AstScope* m_scopep = nullptr;  // The current scope
     VSymEnt* m_modSymp = nullptr;  // Symbol entry for current module
 
-    // VISITs
+    // VISITORS
     void visit(AstNetlist* nodep) override {
         // Recurse..., backward as must do packages before using packages
         iterateChildrenBackwardsConst(nodep);
@@ -2131,7 +2131,7 @@ class LinkDotIfaceVisitor final : public VNVisitor {
     LinkDotState* const m_statep;  // State to pass between visitors, including symbol table
     VSymEnt* m_curSymp;  // Symbol Entry for current table, where to lookup/insert
 
-    // VISITs
+    // VISITORS
     void visit(AstModport* nodep) override {
         // Modport: Remember its name for later resolution
         UINFO(5, "   fiv: " << nodep << endl);
@@ -2543,7 +2543,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         return result + " ";
     }
 
-    // VISITs
+    // VISITORS
     void visit(AstNetlist* nodep) override {
         // Recurse..., backward as must do packages before using packages
         iterateChildrenBackwardsConst(nodep);

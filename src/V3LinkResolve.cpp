@@ -55,7 +55,7 @@ class LinkResolveVisitor final : public VNVisitor {
     bool m_underGenFor = false;  // Under GenFor
     bool m_underGenerate = false;  // Under GenFor/GenIf
 
-    // VISITs
+    // VISITORS
     // TODO: Most of these visitors are here for historical reasons.
     // TODO: ExpectDescriptor can move to data type resolution, and the rest
     // TODO: could move to V3LinkParse to get them out of the way of elaboration
@@ -531,7 +531,7 @@ class LinkBotupVisitor final : public VNVisitorConst {
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
 
-    // VISITs
+    // VISITORS
     void visit(AstNetlist* nodep) override {
         // Iterate modules backwards, in bottom-up order.
         iterateChildrenBackwardsConst(nodep);

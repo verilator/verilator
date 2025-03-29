@@ -175,7 +175,7 @@ class LinkParseVisitor final : public VNVisitor {
                           << nodep->warnContextSecondary());
     }
 
-    // VISITs
+    // VISITORS
     void visit(AstNodeFTask* nodep) override {
         if (!nodep->user1SetOnce()) {  // Process only once.
             // Mark class methods

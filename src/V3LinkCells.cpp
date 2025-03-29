@@ -162,7 +162,7 @@ class LinkCellsVisitor final : public VNVisitor {
         return modp;
     }
 
-    // VISITs
+    // VISITORS
     void visit(AstNetlist* nodep) override {
         readModNames();
         iterateChildren(nodep);

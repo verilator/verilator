@@ -164,6 +164,7 @@ public:
     }
     void emitModCUse(const AstNodeModule* modp, VUseType useType);
     void emitTextSection(const AstNodeModule* modp, VNType type);
+    static std::pair<string, FileLine*> textSection(const AstNodeModule* modp, VNType type);
 
     // CONSTRUCTORS
     EmitCBaseVisitorConst() = default;
