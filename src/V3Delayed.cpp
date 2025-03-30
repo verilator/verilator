@@ -347,8 +347,8 @@ class DelayedVisitor final : public VNVisitor {
             arrSelp->bitp(captureVal(scopep, insertp, arrSelp->bitp()->unlinkFrBack(), tmpName));
             nodep = arrSelp->fromp();
         }
-        // What remains must be an AstVarRef
-        UASSERT_OBJ(VN_IS(nodep, VarRef), lhsp, "Malformed LHS in NBA");
+        // What remains must be an AstVarRef, or some sort of select, we assume can reuse it.
+        UASSERT_OBJ(nodep->isPure(), lhsp, "Malformed LHS in NBA");
         // Now have been converted to use the captured values
         return lhsp;
     }
