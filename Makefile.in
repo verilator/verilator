@@ -595,6 +595,8 @@ clean mostlyclean distclean maintainer-clean::
 	rm -f *.tex
 	rm -rf examples/*/obj_dir* examples/*/logs
 	rm -rf test_*/obj_dir
+	rm -rf src/*.tidy include/*.tidy examples/*/*.tidy
+	rm -rf .ruff_cache
 	rm -rf nodist/fuzzer/dictionary
 	rm -rf nodist/obj_dir
 	rm -rf verilator.txt
