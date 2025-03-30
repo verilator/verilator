@@ -612,7 +612,7 @@ public:
     int traceMaxArray() const { return m_traceMaxArray; }
     int traceMaxWidth() const { return m_traceMaxWidth; }
     int traceThreads() const { return m_traceThreads; }
-    bool useTraceOffload() const { return trace() && traceFormat().fst() && traceThreads() > 1; }
+    bool useTraceOffload() const { return false; }
     bool useTraceParallel() const {
         return trace() && traceFormat().vcd() && (threads() > 1 || hierChild() > 1);
     }
