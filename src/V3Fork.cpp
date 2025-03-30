@@ -24,10 +24,12 @@
 // FORKs that spawn tasks which might outlive their parents require those
 // tasks to carry their own frames and as such they require their own
 // variable scopes.
+//
 // There are two mechanisms that work together to achieve that. ForkVisitor
 // moves bodies of forked processes into new tasks, which results in them getting their
 // own scopes. The original statements get replaced with a call to the task which
 // passes the required variables by value.
+//
 // The second mechanism, DynScopeVisitor, is designed to handle variables which can't be
 // captured by value and instead require a reference. Those variables get moved into an
 // "anonymous" object, ie. a class with appropriate fields gets generated and an object

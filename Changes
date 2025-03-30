@@ -46,6 +46,7 @@ Verilator 5.035 devel
 * Fix assignment pattern as function argument (#5839).
 * Fix checking built-in method arguments (#5839).
 * Fix splitting of packed ports with non-zero based ranges (#5842). [Geza Lore]
+* Fix delays inside interface functions, and classes inside interfaces (#5846).
 * Fix NBA shared flag reuse (#5848). [Geza Lore]
 * Fix multiple expression coverage issues (#5849 partial) (#5867) (#5870). [Todd Strader]
 * Fix unresolved typedefs as parameters (#5850). [Eugene Feinberg, Brian Li]
