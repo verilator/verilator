@@ -73,8 +73,8 @@ often inlined into the root scope) will need to be updated as follows:
     :code:`$` character, i.e.: :code:`rootp` points to the Verilated
     SystemVerilog :code:`$root` scope.
 
-  * Replace :code:`modelp->internal->member->lookup` references with
-    :code:`modelp->rootp->internal->member->lookup` references, which
+  * Replace :code:`modelp->internal->member` references with
+    :code:`modelp->rootp->internal->member` references, which
     contain one additional indirection via the :code:`rootp` pointer.
 
 
