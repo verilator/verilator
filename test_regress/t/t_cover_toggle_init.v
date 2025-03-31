@@ -5,7 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t(clk);
+   // verilator coverage_off
    input clk;
+   // verilator coverage_on
 
    bit toggle;
    // CHECK_COVER(-1,"top.t","toggle",0)

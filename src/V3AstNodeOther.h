@@ -2977,12 +2977,15 @@ class AstCoverToggle final : public AstNodeStmt {
     // @astgen op1 := incp : AstCoverInc
     // @astgen op2 := origp : AstNodeExpr
     // @astgen op3 := changep : AstNodeExpr
+    // @astgen op4 := initp : AstNodeExpr
 public:
-    AstCoverToggle(FileLine* fl, AstCoverInc* incp, AstNodeExpr* origp, AstNodeExpr* changep)
+    AstCoverToggle(FileLine* fl, AstCoverInc* incp, AstNodeExpr* origp, AstNodeExpr* changep,
+                   AstNodeExpr* initp)
         : ASTGEN_SUPER_CoverToggle(fl) {
         this->incp(incp);
         this->origp(origp);
         this->changep(changep);
+        this->initp(initp);
     }
     ASTGEN_MEMBERS_AstCoverToggle;
     int instrCount() const override { return 3 + INSTR_COUNT_BRANCH + INSTR_COUNT_LD; }
