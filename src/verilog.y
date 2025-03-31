@@ -443,6 +443,8 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 // IEEE: string_literal
 %token<strp>            yaSTRING        "STRING"
 %token<strp>            yaSTRING__IGNORE "STRING-ignored"       // Used when expr:string not allowed
+// IEEE: edge_descriptor
+%token<nump>            yaEDGEDESC        "EDGE DESCRIPTOR"
 
 %token<fl>              yaTIMINGSPEC    "TIMING SPEC ELEMENT"
 
@@ -5797,14 +5799,21 @@ setuphold_timing_check<nodep>:      // ==IEEE: $setuphold_timing_check
         ;
 
 timing_check_event<nodeExprp>:      // ==IEEE: $timing_check_event
-                terminal_identifier                                   { $$ = $1; }
-        |       yPOSEDGE terminal_identifier                          { $$ = $2; }
-        |       yNEGEDGE terminal_identifier                          { $$ = $2; }
-        |       yEDGE terminal_identifier                             { $$ = $2; }
-        |       terminal_identifier yP_ANDANDAND expr                 { $$ = $1; }
-        |       yPOSEDGE terminal_identifier yP_ANDANDAND expr        { $$ = $2; }
-        |       yNEGEDGE terminal_identifier yP_ANDANDAND expr        { $$ = $2; }
-        |       yEDGE terminal_identifier yP_ANDANDAND expr           { $$ = $2; }
+                terminal_identifier                                                         { $$ = $1; }
+        |       yPOSEDGE terminal_identifier                                                { $$ = $2; }
+        |       yNEGEDGE terminal_identifier                                                { $$ = $2; }
+        |       yEDGE terminal_identifier                                                   { $$ = $2; }
+        |       yEDGE '[' edge_descriptor_list ']' terminal_identifier                      { $$ = $5; }
+        |       terminal_identifier yP_ANDANDAND expr                                       { $$ = $1; }
+        |       yPOSEDGE terminal_identifier yP_ANDANDAND expr                              { $$ = $2; }
+        |       yNEGEDGE terminal_identifier yP_ANDANDAND expr                              { $$ = $2; }
+        |       yEDGE terminal_identifier yP_ANDANDAND expr                                 { $$ = $2; }
+        |       yEDGE '[' edge_descriptor_list ']' terminal_identifier yP_ANDANDAND expr    { $$ = $5; }
+        ;
+
+edge_descriptor_list:
+                yaEDGEDESC                            {  }
+        |       edge_descriptor_list ',' yaEDGEDESC   {  }
         ;
 
 timing_check_limit<nodeExprp>:
