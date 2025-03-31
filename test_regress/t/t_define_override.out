@@ -1,0 +1,9 @@
+%Warning-REDEFMACRO: Redefining existing define: 'TEST_MACRO', with different value: '50'
+                     ... Location of previous definition, with value: '20'
+                     ... For warning description see https://verilator.org/warn/REDEFMACRO?v=latest
+                     ... Use "/* verilator lint_off REDEFMACRO */" and lint_on around source to disable this message.
+%Warning-OVERRIDEDEF: t/t_define_override.v:2:23: Overriding define: 'TEST_MACRO' with value: '10' to existing command line define value: '50'
+                      ... Location of previous definition, with value: '50'
+%Warning-OVERRIDEDEF: t/t_define_override.v:3:24: Overriding define: 'TEST_MACRO' with value: '100' to existing command line define value: '50'
+                      ... Location of previous definition, with value: '50'
+%Error: Exiting due to

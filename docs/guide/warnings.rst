@@ -1261,6 +1261,31 @@ List Of Warnings
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
 
+
+.. option:: OVERRIDEDEF
+
+   Warns that a macro definition within the code is being overridden by a command line directive:
+   
+   For example, running Verilator with :vlopt:`+define+DUP=def1` and
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 1
+
+         `define DUP def2 //<--- Warning
+
+   Results in:
+
+   .. code-block::
+         %Warning-OVERRIDEDEF: example.v1:20: Overriding define: 'DEF' with value: 'def2' to existing command line define value: 'def1'
+                      ... Location of previous definition, with value: '50'
+
+   While not explicitly stated in the IEEE 1800-2023 standard, this warning
+   tracks with the other simulators' behavior of overriding macro
+   definitions within code files with the definition passed in through
+   the command line.
+
+
 .. option:: PINCONNECTEMPTY
 
    .. TODO better example

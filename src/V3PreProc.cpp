@@ -211,6 +211,7 @@ private:
     string defineSubst(VDefineRef* refp);
 
     bool defExists(const string& name);
+    bool defCmdline(const string& name);
     string defValue(const string& name);
     string defParams(const string& name);
     FileLine* defFileline(const string& name);
@@ -316,6 +317,14 @@ bool V3PreProcImp::defExists(const string& name) {
     const auto iter = m_defines.find(name);
     return (iter != m_defines.end());
 }
+bool V3PreProcImp::defCmdline(const string& name) {
+    const auto iter = m_defines.find(name);
+    if (iter == m_defines.end()) {
+        fileline()->v3error("Define or directive not defined: `" + name);
+        return "";
+    }
+    return iter->second.cmdline();
+}
 string V3PreProcImp::defValue(const string& name) {
     const auto iter = m_defines.find(name);
     if (iter == m_defines.end()) {
@@ -345,21 +354,38 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
                                                                   << "' (IEEE 1800-2023 22.5.1)");
     } else {
         if (defExists(name)) {
-            if (!(defValue(name) == value
-                  && defParams(name) == params)) {  // Duplicate defs are OK
-                fl->v3warn(REDEFMACRO, "Redefining existing define: '"
-                                           << name << "', with different value: '" << value
-                                           << (params == "" ? "" : " ") << params << "'\n"
-                                           << fl->warnContextPrimary() << '\n'
-                                           << defFileline(name)->warnOther()
-                                           << "... Location of previous definition, with value: '"
-                                           << defValue(name)
-                                           << (defParams(name).empty() ? "" : " ")
-                                           << defParams(name) << "'\n"
-                                           << defFileline(name)->warnContextSecondary());
+            if (defCmdline(name) && !cmdline) {
+                fl->v3warn(OVERRIDEDEF, "Overriding define: '"
+                                        << name << "' with value: '" << value
+                                        << "' to existing command line define value: '"
+                                        << defValue(name)
+                                        << (params == "" ? "" : " ") << params << "'\n"
+                                        << fl->warnContextPrimary() << '\n'
+                                        << defFileline(name)->warnOther()
+                                        << "... Location of previous definition, with value: '"
+                                        << defValue(name)
+                                        << (defParams(name).empty() ? "" : " ")
+                                        << defParams(name) << "'\n"
+                                        << defFileline(name)->warnContextSecondary());
+                return;
+            } else {
+                if (!(defValue(name) == value
+                    && defParams(name) == params)) {  // Duplicate defs are OK
+                    fl->v3warn(REDEFMACRO, "Redefining existing define: '"
+                                            << name << "', with different value: '" << value
+                                            << (params == "" ? "" : " ") << params << "'\n"
+                                            << fl->warnContextPrimary() << '\n'
+                                            << defFileline(name)->warnOther()
+                                            << "... Location of previous definition, with value: '"
+                                            << defValue(name)
+                                            << (defParams(name).empty() ? "" : " ")
+                                            << defParams(name) << "'\n"
+                                            << defFileline(name)->warnContextSecondary());
+                }
+                undef(name);
             }
-            undef(name);
         }
+
         m_defines.emplace(name, VDefine{fl, value, params, cmdline});
     }
 }
