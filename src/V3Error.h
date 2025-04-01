@@ -90,6 +90,7 @@ public:
         CONTASSREG,     // Continuous assignment on reg
         COVERIGN,       // Coverage ignored
         DECLFILENAME,   // Declaration doesn't match filename
+        DEFOVERRIDE,    // Overriding existing define macro through command line
         DEFPARAM,       // Style: Defparam
         DEPRECATED,     // Feature will be deprecated
         ENCAPSULATED,   // Error: local/protected violation
@@ -196,7 +197,7 @@ public:
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG", "COVERIGN",
-            "DECLFILENAME", "DEFPARAM", "DEPRECATED",
+            "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED",
             "ENCAPSULATED", "ENDLABEL", "ENUMVALUE", "EOFNEWLINE", "GENCLK",
             "GENUNNAMED", "HIERBLOCK",
             "IFDEPTH", "IGNOREDRETURN",
