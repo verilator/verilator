@@ -7,10 +7,13 @@
 
 `define TEST_MACRO 10
 `define TEST_MACRO 100
+
+`define STRINGIFY(x) `"x`"
+
 module test (
 );
     initial begin
-        $display("TEST_MACRO %d", `TEST_MACRO);
+        $display("TEST_MACRO %s", `STRINGIFY(`TEST_MACRO));
         $finish;
     end
 
