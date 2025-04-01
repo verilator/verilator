@@ -120,15 +120,7 @@ public:
     // Iff has second dtype, set as generic node function
     virtual void virtRefDType2p(AstNodeDType* nodep) {}
     // Assignable equivalence.  Calls skipRefToNonRefp() during comparisons.
-    bool similarDType(const AstNodeDType* samep) const {
-        const AstNodeDType* nodep = this;
-        nodep = nodep->skipRefToNonRefp();
-        samep = samep->skipRefToNonRefp();
-        if (nodep == samep) return true;
-        if (nodep->type() != samep->type()) return false;
-        return nodep->similarDTypeNode(samep);
-    }
-
+    bool similarDType(const AstNodeDType* samep) const;
     // Iff has a non-null subDTypep(), as generic node function
     virtual AstNodeDType* subDTypep() const VL_MT_STABLE { return nullptr; }
     virtual bool isFourstate() const;
@@ -581,7 +573,11 @@ public:
         const AstClassRefDType* const asamep = VN_DBG_AS(samep, ClassRefDType);
         return (m_classp == asamep->m_classp && m_classOrPackagep == asamep->m_classOrPackagep);
     }
-    bool similarDTypeNode(const AstNodeDType* samep) const override { return sameNode(samep); }
+    bool similarDTypeNode(const AstNodeDType* samep) const override {
+        // Doesn't need to compare m_classOrPackagep
+        const AstClassRefDType* const asamep = VN_DBG_AS(samep, ClassRefDType);
+        return m_classp == asamep->m_classp;
+    }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;

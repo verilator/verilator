@@ -848,6 +848,15 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
     }
 }
 
+bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
+    const AstNodeDType* nodep = this;
+    nodep = nodep->skipRefToNonRefp();
+    samep = samep->skipRefToNonRefp();
+    if (nodep == samep) return true;
+    if (nodep->type() != samep->type()) return false;
+    return nodep->similarDTypeNode(samep);
+}
+
 bool AstNodeDType::isFourstate() const { return basicp() && basicp()->isFourstate(); }
 
 class AstNodeDType::CTypeRecursed final {

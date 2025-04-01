@@ -21,16 +21,26 @@ class Testcase implements ICls;
    virtual function string get();
       return "In ICls";
    endfunction
+   function Testcase clone();
+      Testcase a = new this;
+      return a;
+   endfunction
 endclass
 
 module t(/*AUTOARG*/);
 
    initial begin
       Testcase test;
+      Testcase cloned;
       test = new;
       if (test.cls.name != "test_class") $stop;
       if (test.cls.icls.get() != "In ICls") $stop;
+
+      cloned = test.clone();
+      if (cloned.cls.name != "test_class") $stop;
+
       test.cls.icls = null; // Prevent leak
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

@@ -62,6 +62,7 @@ Verilator 5.035 devel
 * Fix process comparisons (#5896).
 * Fix ccache with clang (#5899). [Geza Lore]
 * Fix delayed assignment malformed LHS assertion (#5904).
+* Fix `new this` (#5909).
 
 
 Verilator 5.034 2025-02-24
