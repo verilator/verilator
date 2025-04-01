@@ -1266,7 +1266,7 @@ List Of Warnings
 
    Warns that a macro definition within the code is being overridden by a command line directive:
    
-   For example, running Verilator with :vlopt:`+define+DUP=def1` and
+   For example, running Verilator with :code:`+define+DUP=def1` and
 
    .. code-block:: sv
       :linenos:
