@@ -320,8 +320,7 @@ bool V3PreProcImp::defExists(const string& name) {
 bool V3PreProcImp::defCmdline(const string& name) {
     const auto iter = m_defines.find(name);
     if (iter == m_defines.end()) {
-        fileline()->v3error("Define or directive not defined: `" + name);
-        return "";
+        return false;
     }
     return iter->second.cmdline();
 }
@@ -355,7 +354,7 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
     } else {
         if (defExists(name)) {
             if (defCmdline(name) && !cmdline) {
-                fl->v3warn(OVERRIDEDEF, "Overriding define: '"
+                fl->v3warn(DEFOVERRIDE, "Overriding define: '"
                                         << name << "' with value: '" << value
                                         << "' to existing command line define value: '"
                                         << defValue(name)
