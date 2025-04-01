@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=["+define+TEST_MACRO=20 +define+TEST_MACRO=50"], fails=True, expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["+define+TEST_MACRO=20 +define+TEST_MACRO=50"],
+          fails=True,
+          expect_filename=test.golden_filename)
 
 test.passes()

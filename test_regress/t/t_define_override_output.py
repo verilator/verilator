@@ -12,7 +12,9 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_define_override.v"
 
-test.compile(verilator_flags2=["-Wno-DEFOVERRIDE -Wno-REDEFMACRO +define+TEST_MACRO=20 +define+TEST_MACRO=50"])
+test.compile(verilator_flags2=[
+    "-Wno-DEFOVERRIDE -Wno-REDEFMACRO +define+TEST_MACRO=20 +define+TEST_MACRO=50"
+])
 
 test.execute(expect_filename=test.golden_filename)
 
