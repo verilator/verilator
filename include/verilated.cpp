@@ -3476,7 +3476,7 @@ void VerilatedHierarchy::remove(VerilatedScope* fromp, VerilatedScope* top) {
 void VerilatedAssertOneThread::fatal_different() VL_MT_SAFE {
     VL_FATAL_MT(__FILE__, __LINE__, "",
                 "Routine called that is single threaded, but called from"
-                " a different thread then the expected constructing thread");
+                " a different thread than the expected constructing thread");
 }
 #endif
 

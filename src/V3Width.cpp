@@ -4328,7 +4328,7 @@ class WidthVisitor final : public VNVisitor {
         userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         if (!similarDTypeRecurse(nodep->dtypep(), nodep->rhsp()->dtypep())) {
             nodep->rhsp()->v3error("New-as-copier passed different data type '"
-                                   << nodep->dtypep()->prettyTypeName() << "' then expected '"
+                                   << nodep->dtypep()->prettyTypeName() << "' than expected '"
                                    << nodep->rhsp()->dtypep()->prettyTypeName() << "'");
         }
     }
