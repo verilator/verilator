@@ -7,11 +7,13 @@
 module t (/*AUTOARG*/
    // Inputs
    clk,
-   d
+   d,
+   t_in
    );
 
    input clk;
    input d;
+   input t_in;
    wire delayed_CLK;
    wire delayed_D;
    reg notifier;
@@ -52,6 +54,8 @@ module t (/*AUTOARG*/
       $setuphold (negedge fake_CLK, negedge fake_D &&& sh1, 0, 0);
       $setuphold (edge fake_CLK, edge fake_D &&& sh1, 0, 0);
       $setuphold (edge [0Z, z1, 10] fake_CLK, edge [01, x0, 0X] fake_CLK &&& sh1, 0, 0);
+
+      $setuphold (posedge clk, negedge d, 0, 0, notifier, (0:0:0), 0, t_in);
    endspecify
 
    initial begin

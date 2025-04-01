@@ -1379,55 +1379,42 @@ class WidthVisitor final : public VNVisitor {
 
     void visit(AstSetuphold* nodep) override {
         FileLine* const flp = nodep->fileline();
-
         AstAssignW* newp = nullptr;
-
         if (nodep->delrefp()) {
-            AstNodeExpr* const lhsp = nodep->delrefp()->cloneTreePure(false);
-            AstNodeExpr* const rhsp = nodep->refevp()->cloneTreePure(false);
-            if (AstNodeVarRef* varRefp = VN_CAST(lhsp, NodeVarRef)) {
-                varRefp->access(VAccess::WRITE);
-                varRefp->varp()->setForcedByCode();
-            }
-
-            if (AstNodePreSel* selp = VN_CAST(lhsp, NodePreSel)) {
-                if (AstNodeVarRef* varRefp = VN_CAST(selp->fromp(), NodeVarRef)) {
-                    varRefp->access(VAccess::WRITE);
-                    varRefp->varp()->setForcedByCode();
-                }
-            }
-
-            newp = new AstAssignW{flp, lhsp, rhsp};
+            newp = convertSetupholdToAssign(flp, nodep->refevp(), nodep->delrefp());
         }
-
         if (nodep->deldatap()) {
-            AstNodeExpr* const lhsp = nodep->deldatap()->cloneTreePure(false);
-            AstNodeExpr* const rhsp = nodep->dataevp()->cloneTreePure(false);
-            if (AstNodeVarRef* varRefp = VN_CAST(lhsp, NodeVarRef)) {
-                varRefp->access(VAccess::WRITE);
-                varRefp->varp()->setForcedByCode();
-            }
-
-            if (AstNodePreSel* selp = VN_CAST(lhsp, NodePreSel)) {
-                if (AstNodeVarRef* varRefp = VN_CAST(selp->fromp(), NodeVarRef)) {
-                    varRefp->access(VAccess::WRITE);
-                    varRefp->varp()->setForcedByCode();
-                }
-            }
-
-            if (newp == nullptr) {
-                newp = new AstAssignW{flp, lhsp, rhsp};
+            if (!newp) {
+                newp = convertSetupholdToAssign(flp, nodep->dataevp(), nodep->deldatap());
             } else {
-                newp->addNextHere(new AstAssignW{flp, lhsp, rhsp});
+                newp->addNextHere(
+                    convertSetupholdToAssign(flp, nodep->dataevp(), nodep->deldatap()));
             }
         }
-
         if (!newp) {
             pushDeletep(nodep->unlinkFrBack());
             return;
         }
-
         nodep->replaceWith(newp);
+    }
+
+    AstAssignW* convertSetupholdToAssign(FileLine* const flp, AstNodeExpr* const evp,
+                                         AstNodeExpr* const delp) {
+        AstNodeExpr* const lhsp = delp->cloneTreePure(false);
+        AstNodeExpr* const rhsp = evp->cloneTreePure(false);
+        UASSERT_OBJ(VN_IS(lhsp, NodeVarRef) || VN_IS(lhsp, NodePreSel), lhsp,
+                    "Incorrect reference in a timing check");
+        if (AstNodeVarRef* varRefp = VN_CAST(lhsp, NodeVarRef)) {
+            if (varRefp->varp()->direction() == VDirection::INPUT) { return nullptr; }
+            varRefp->access(VAccess::WRITE);
+        }
+        if (AstNodePreSel* selp = VN_CAST(lhsp, NodePreSel)) {
+            if (AstNodeVarRef* varRefp = VN_CAST(selp->fromp(), NodeVarRef)) {
+                if (varRefp->varp()->direction() == VDirection::INPUT) { return nullptr; }
+                varRefp->access(VAccess::WRITE);
+            }
+        }
+        return new AstAssignW{flp, lhsp, rhsp};
     }
 
     void visit(AstStable* nodep) override {
