@@ -475,7 +475,7 @@ List Of Warnings
 .. option:: DEFOVERRIDE
 
    Warns that a macro definition within the code is being overridden by a command line directive:
-   
+
    For example, running Verilator with :code:`<+define+\<DUP\>=\<def2\>>` and
 
    .. code-block:: sv
