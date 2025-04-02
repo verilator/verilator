@@ -12,7 +12,7 @@
     {"type":"VAR","name":"dotted","addr":"(R)","loc":"d,33:16,33:22","dtypep":"(S)","origName":"dotted","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"VSTATIC","varType":"WIRE","dtypeName":"logic","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"ASSIGNW","name":"","addr":"(T)","loc":"d,33:23,33:24","dtypep":"(S)",
      "rhsp": [
-      {"type":"VARXREF","name":"value","addr":"(U)","loc":"d,33:30,33:35","dtypep":"(V)","dotted":"itop","inlinedDots":"","access":"RD","varp":"(W)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
+      {"type":"VARXREF","name":"value","addr":"(U)","loc":"d,33:30,33:35","dtypep":"(V)","containsGenBlock":false,"dotted":"itop","inlinedDots":"","access":"RD","varp":"(W)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
     ],
      "lhsp": [
       {"type":"VARREF","name":"dotted","addr":"(X)","loc":"d,33:16,33:22","dtypep":"(S)","access":"WR","varp":"(R)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}

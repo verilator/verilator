@@ -2509,6 +2509,7 @@ AstNodeVarRef* AstNodeVarRef::varRefLValueRecurse(AstNode* nodep) {
 
 void AstVarXRef::dump(std::ostream& str) const {
     this->AstNodeVarRef::dump(str);
+    if (containsGenBlock()) str << " [GENBLK]";
     str << ".=" << dotted() << " ";
     if (inlinedDots() != "") str << " inline.=" << inlinedDots() << " - ";
     if (varScopep()) {
@@ -2520,6 +2521,7 @@ void AstVarXRef::dump(std::ostream& str) const {
     }
 }
 void AstVarXRef::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, containsGenBlock);
     dumpJsonStrFunc(str, dotted);
     dumpJsonStrFunc(str, inlinedDots);
     dumpJsonGen(str);
