@@ -1,0 +1,9 @@
+%Error: t/t_interface_param_another_bad.v:9:36: Expecting expression to be constant, but variable isn't const: 'dummy'
+                                              : ... note: In instance 't'
+    9 |    simple_bus #(.PARAMETER(sb_intf.dummy)) simple();
+      |                                    ^~~~~
+%Error: t/t_interface_param_another_bad.v:9:18: Can't convert defparam value to constant: Param 'PARAMETER' of 'simple'
+                                              : ... note: In instance 't'
+    9 |    simple_bus #(.PARAMETER(sb_intf.dummy)) simple();
+      |                  ^~~~~~~~~
+%Error: Exiting due to
