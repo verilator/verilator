@@ -83,9 +83,10 @@ option will require a longer time to run Verilator, and
 may increase the risk of reset bugs in trade for performance; see the above
 documentation for these options.
 
-If using Verilated multithreaded, use ``numactl`` to ensure you use
-non-conflicting hardware resources. See :ref:`Multithreading`. Also,
-consider using profile-guided optimization; see :ref:`Thread PGO`.
+If using Verilated multithreaded, consider overriding Verilator's default
+thread-to-processor assignment by using ``numactl``; see
+:ref:`Multithreading`. Also, consider using profile-guided optimization;
+see :ref:`Thread PGO`.
 
 Minor Verilog code changes can also give big wins.  You should not have any
 :option:`UNOPTFLAT` warnings from Verilator.  Fixing these warnings can

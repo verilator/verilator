@@ -1,6 +1,7 @@
 VLPROFVERSION 2.0
 VLPROF arg +verilator+prof+exec+start+1
 VLPROF arg +verilator+prof+exec+window+2
+VLPROF info numa 0,2;1,3
 VLPROF stat threads 2
 VLPROF stat yields 51
 VLPROFPROC processor    : 0

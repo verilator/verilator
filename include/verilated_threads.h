@@ -34,15 +34,6 @@
 #include <thread>
 #include <vector>
 
-// clang-format off
-#if defined(__linux)
-# include <sched.h>  // For sched_getcpu()
-#endif
-#if defined(__APPLE__) && !defined(__arm64__)
-# include <cpuid.h>  // For __cpuid_count()
-#endif
-// clang-format on
-
 class VlExecutionProfiler;
 class VlThreadPool;
 
@@ -156,6 +147,10 @@ private:
 
     VL_UNCOPYABLE(VlWorkerThread);
 
+protected:
+    friend class VlThreadPool;
+    const std::thread& cthread() const { return m_cthread; }
+
 public:
     // CONSTRUCTORS
     explicit VlWorkerThread(VerilatedContext* contextp);
@@ -206,12 +201,12 @@ class VlThreadPool final : public VerilatedVirtualBase {
     // MEMBERS
     std::vector<VlWorkerThread*> m_workers;  // our workers
 
-    // Guards indexes of unassigned workers
-    mutable VerilatedMutex m_mutex;
+    mutable VerilatedMutex m_mutex;  // Guards indexes of unassigned workers
     // Indexes of unassigned workers
     std::stack<size_t> m_unassignedWorkers VL_GUARDED_BY(m_mutex);
-    // Used for sequentially generating task IDs to avoid shadowing
+    // For sequentially generating task IDs to avoid shadowing
     std::atomic<unsigned> m_assignedTasks{0};
+    std::string m_numaStatus;  // Status of NUMA assignment
 
 public:
     // CONSTRUCTORS
@@ -236,6 +231,7 @@ public:
     }
     unsigned assignTaskIndex() { return m_assignedTasks++; }
     int numThreads() const { return static_cast<int>(m_workers.size()); }
+    std::string numaStatus() const { return m_numaStatus; }
     VlWorkerThread* workerp(int index) {
         assert(index >= 0);
         assert(index < static_cast<int>(m_workers.size()));
@@ -244,6 +240,9 @@ public:
 
 private:
     VL_UNCOPYABLE(VlThreadPool);
+
+    static bool isNumactlRunning();
+    std::string numaAssign();
 };
 
 #endif

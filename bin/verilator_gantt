@@ -16,7 +16,14 @@ LongestVcdStrValueLength = 0
 Threads = collections.defaultdict(lambda: [])  # List of records per thread id
 Mtasks = collections.defaultdict(lambda: {'elapsed': 0, 'end': 0})
 Cpus = collections.defaultdict(lambda: {'mtask_time': 0})
-Global = {'args': {}, 'cpuinfo': collections.defaultdict(lambda: {}), 'stats': {}}
+Global = {
+    'args': {},
+    'cpuinfo': collections.defaultdict(lambda: {}),
+    'info': {
+        'numa': 'no data'
+    },
+    'stats': {}
+}
 ElapsedTime = None  # total elapsed time
 ExecGraphTime = 0  # total elapsed time executing an exec graph
 ExecGraphIntervals = []  # list of (start, end) pairs
@@ -33,7 +40,8 @@ def read_data(filename):
 
         re_arg1 = re.compile(r'VLPROF arg\s+(\S+)\+([0-9.]*)\s*')
         re_arg2 = re.compile(r'VLPROF arg\s+(\S+)\s+([0-9.]*)\s*$')
-        re_stat = re.compile(r'VLPROF stat\s+(\S+)\s+([0-9.]+)')
+        re_info = re.compile(r'VLPROF info\s+(\S+)\s+(.*)$')
+        re_stat = re.compile(r'VLPROF stat\s+(\S+)\s+(\S+)')
         re_proc_cpu = re.compile(r'VLPROFPROC processor\s*:\s*(\d+)\s*$')
         re_proc_dat = re.compile(r'VLPROFPROC ([a-z_ ]+)\s*:\s*(.*)$')
         cpu = None
@@ -108,6 +116,9 @@ def read_data(filename):
             elif re_arg2.match(line):
                 match = re_arg2.match(line)
                 Global['args'][match.group(1)] = match.group(2)
+            elif re_info.match(line):
+                match = re_info.match(line)
+                Global['info'][match.group(1)] = match.group(2)
             elif re_stat.match(line):
                 match = re_stat.match(line)
                 Global['stats'][match.group(1)] = match.group(2)
@@ -163,6 +174,7 @@ def report():
     print("  Total mtasks       = %d" % len(Mtasks))
     print("  Total yields       = %d" % int(Global['stats'].get('yields', 0)))
 
+    report_numa()
     report_mtasks()
     report_cpus()
     report_sections()
@@ -181,6 +193,11 @@ def report():
             print("%Warning: Threads scheduled on multiple sockets.")
             print("        : See docs on use of numactl.")
     print()
+
+
+def report_numa():
+    print("\nNUMA assignment:")
+    print("  NUMA status        = %s" % Global['info']['numa'])
 
 
 def report_mtasks():

@@ -12,6 +12,9 @@ Summary:
   Total mtasks       = 7
   Total yields       = 0
 
+NUMA assignment:
+  NUMA status        = no data
+
 Parallelized code, measured:
   Thread utilization =  14.22%
   Speedup            =  0.284x
