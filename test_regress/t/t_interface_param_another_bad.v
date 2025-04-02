@@ -6,7 +6,7 @@
 
 module t ();
    simple_bus sb_intf();
-   simple_bus #(.PARAMETER($bits(sb_intf.dummy))) simple();
+   simple_bus #(.PARAMETER(sb_intf.dummy)) simple();
    initial begin
       $write("*-* All Finished *-*\n");
       $finish;

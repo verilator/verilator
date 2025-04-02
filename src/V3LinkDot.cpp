@@ -2266,6 +2266,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         bool m_super;  // Starts with super reference
         bool m_unresolvedCell;  // Unresolved cell, needs help from V3Param
         bool m_unresolvedClass;  // Unresolved class reference, needs help from V3Param
+        bool m_genBlk;  // Contains gen block reference
         AstNode* m_unlinkedScopep;  // Unresolved scope, needs corresponding VarXRef
         bool m_dotErr;  // Error found in dotted resolution, ignore upwards
         string m_dotText;  // String of dotted names found in below parseref
@@ -2280,6 +2281,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_dotText = "";
             m_unresolvedCell = false;
             m_unresolvedClass = false;
+            m_genBlk = false;
             m_unlinkedScopep = nullptr;
         }
         string ascii() const {
@@ -2295,6 +2297,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (m_super) sstr << "  [super]";
             if (m_unresolvedCell) sstr << "  [unrCell]";
             if (m_unresolvedClass) sstr << "  [unrClass]";
+            if (m_genBlk) sstr << "  [genBlk]";
             sstr << "  txt=" << m_dotText;
             return sstr.str();
         }
@@ -3075,6 +3078,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
                     m_ds.m_dotSymp = foundp;
                     m_ds.m_dotPos = DP_SCOPE;
+                    if (const AstBegin* const beginp = VN_CAST(foundp->nodep(), Begin)) {
+                        if (beginp->generate()) m_ds.m_genBlk = true;
+                    }
                     // Upper AstDot visitor will handle it from here
                 } else if (VN_IS(foundp->nodep(), Cell) && allowVar) {
                     AstCell* const cellp = VN_AS(foundp->nodep(), Cell);
@@ -3135,6 +3141,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             = new AstVarXRef{nodep->fileline(), nodep->name(), m_ds.m_dotText,
                                              VAccess::READ};  // lvalue'ness computed later
                         refp->varp(varp);
+                        refp->containsGenBlock(m_ds.m_genBlk);
                         if (varp->attrSplitVar()) {
                             refp->v3warn(
                                 SPLITVAR,

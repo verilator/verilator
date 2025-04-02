@@ -11,8 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(
-    fails=test.vlt_all,  # Unsupported bug1523
-    expect_filename=test.golden_filename)
+test.compile()
+
+test.execute()
 
 test.passes()

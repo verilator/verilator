@@ -1292,7 +1292,10 @@ class ParamVisitor final : public VNVisitor {
                 }
             }
         }
-        nodep->varp(nullptr);  // Needs relink, as may remove pointed-to var
+        if (nodep->containsGenBlock()) {
+            // Needs relink, as may remove pointed-to var
+            nodep->varp(nullptr);
+        }
     }
 
     void visit(AstDot* nodep) override {
