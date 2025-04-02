@@ -105,8 +105,6 @@ class VlExecutionRecord final {
     static_assert(alignof(uint64_t) >= alignof(Payload), "Padding not allowed");
     static_assert(alignof(Payload) >= alignof(Type), "Padding not allowed");
 
-    static uint16_t getcpu();  // Return currently executing CPU id
-
 public:
     // CONSTRUCTOR
     VlExecutionRecord() = default;
@@ -120,7 +118,7 @@ public:
     void mtaskBegin(uint32_t id, uint32_t predictStart) {
         m_payload.mtaskBegin.m_id = id;
         m_payload.mtaskBegin.m_predictStart = predictStart;
-        m_payload.mtaskBegin.m_cpu = getcpu();
+        m_payload.mtaskBegin.m_cpu = VlOs::getcpu();
         m_type = Type::MTASK_BEGIN;
     }
     void mtaskEnd(uint32_t id, uint32_t predictCost) {

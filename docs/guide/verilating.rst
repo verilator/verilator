@@ -243,11 +243,14 @@ trace. FST tracing can utilize up to 2 offload threads, so there is no use
 of setting :vlopt:`--trace-threads` higher than 2 at the moment.
 
 When running a multithreaded model, the default Linux task scheduler often
-works against the model by assuming short-lived threads and thus
-it often schedules threads using multiple hyperthreads within the same
-physical core. For best performance, use the :command:`numactl` program to
-(when the threading count fits) select unique physical cores on the same
-socket. The same applies for :vlopt:`--trace-threads` as well.
+works against the model by assuming short-lived threads and thus it often
+schedules threads using multiple hyperthreads within the same physical
+core. If there is no affinity already set, on Linux only, Verilator
+attempts to set thread-to-processor affinity in a reasonable way.
+
+For best performance, use the :command:`numactl` program to (when the
+threading count fits) select unique physical cores on the same socket. The
+same applies for :vlopt:`--trace-threads` as well.
 
 As an example, if a model was Verilated with
 :vlopt:`--threads 4 <--threads>`, we consult:
