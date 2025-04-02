@@ -1377,6 +1377,46 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstSetuphold* nodep) override {
+        FileLine* const flp = nodep->fileline();
+        AstAssignW* newp = nullptr;
+        if (nodep->delrefp()) {
+            newp = convertSetupholdToAssign(flp, nodep->refevp(), nodep->delrefp());
+        }
+        if (nodep->deldatap()) {
+            if (!newp) {
+                newp = convertSetupholdToAssign(flp, nodep->dataevp(), nodep->deldatap());
+            } else {
+                newp->addNextHere(
+                    convertSetupholdToAssign(flp, nodep->dataevp(), nodep->deldatap()));
+            }
+        }
+        if (!newp) {
+            pushDeletep(nodep->unlinkFrBack());
+            return;
+        }
+        nodep->replaceWith(newp);
+    }
+
+    AstAssignW* convertSetupholdToAssign(FileLine* const flp, AstNodeExpr* const evp,
+                                         AstNodeExpr* const delp) {
+        AstNodeExpr* const lhsp = delp->cloneTreePure(false);
+        AstNodeExpr* const rhsp = evp->cloneTreePure(false);
+        UASSERT_OBJ(VN_IS(lhsp, NodeVarRef) || VN_IS(lhsp, NodePreSel), lhsp,
+                    "Incorrect reference in a timing check");
+        if (AstNodeVarRef* varRefp = VN_CAST(lhsp, NodeVarRef)) {
+            if (varRefp->varp()->direction() == VDirection::INPUT) { return nullptr; }
+            varRefp->access(VAccess::WRITE);
+        }
+        if (AstNodePreSel* selp = VN_CAST(lhsp, NodePreSel)) {
+            if (AstNodeVarRef* varRefp = VN_CAST(selp->fromp(), NodeVarRef)) {
+                if (varRefp->varp()->direction() == VDirection::INPUT) { return nullptr; }
+                varRefp->access(VAccess::WRITE);
+            }
+        }
+        return new AstAssignW{flp, lhsp, rhsp};
+    }
+
     void visit(AstStable* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);

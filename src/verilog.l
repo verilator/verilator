@@ -79,7 +79,7 @@ static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
 %o 25000
 
 %s V95 V01NC V01C V05 S05 S09 S12 S17 S23
-%s ATTRMODE QQQ STRING TABLE
+%s ATTRMODE QQQ STRING TABLE EDGEDESC
 %s VA5 SAX VLT
 %s SYSCHDR SYSCHDRP SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
 
@@ -271,7 +271,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$rtoi"               { FL; return yD_RTOI; }
   "$sampled"            { FL; return yD_SAMPLED; }
   "$setup"              { FL; return yaTIMINGSPEC; }
-  "$setuphold"          { FL; return yaTIMINGSPEC; }
+  "$setuphold"          { FL; return yD_SETUPHOLD; }
   "$sformat"            { FL; return yD_SFORMAT; }
   "$sformatf"           { FL; return yD_SFORMATF; }
   "$shortrealtobits"    { FL; return yD_SHORTREALTOBITS; }
@@ -328,6 +328,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "default"             { FL; return yDEFAULT; }
   "defparam"            { FL; return yDEFPARAM; }
   "disable"             { FL; return yDISABLE; }
+  "edge"/{ws}*"["       { FL; yy_push_state(EDGEDESC); return yEDGE; }
   "edge"                { FL; return yEDGE; }
   "else"                { FL; return yELSE; }
   "end"                 { FL; return yEND; }
@@ -1022,6 +1023,13 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <TABLE>.                { yymore(); }
 <TABLE><<EOF>>          { FL; yylval.fl->v3error("EOF in 'table'");
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
+
+<EDGEDESC>{
+  01|10|[01][zZxX]|[zZxX][01]  { FL; return yaEDGEDESC; }
+}
+<EDGEDESC>","|"["         { FL; return yytext[0]; }
+<EDGEDESC>{ws}            { FL_FWD; FL_BRK; }  /* otherwise ignore white-space */
+<EDGEDESC>"]"             { FL; yy_pop_state(); return yytext[0]; }
 
   /************************************************************************/
   /* Preprocessor */
