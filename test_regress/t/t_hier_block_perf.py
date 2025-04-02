@@ -44,10 +44,11 @@ test.execute(all_run_flags=[
     " +verilator+prof+exec+file+" + test.obj_dir + "/profile_exec.dat",
     " +verilator+prof+vlt+file+" + test.obj_dir + "/profile.vlt"])  # yapf:disable
 
+gantt_log = test.obj_dir + "/gantt.log"
+
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_gantt", test.obj_dir +
-    "/profile_exec.dat", "--vcd " + test.obj_dir + "/profile_exec.vcd", "| tee " + test.obj_dir +
-    "/gantt.log"
+    "/profile_exec.dat", "--vcd " + test.obj_dir + "/profile_exec.vcd", "| tee " + gantt_log
 ])
 
 test.passes()
