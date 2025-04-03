@@ -487,6 +487,7 @@ List Of Warnings
    Results in:
 
    .. code-block::
+
          %Warning-DEFOVERRIDE: example.v1:20: Overriding define: 'DEF' with value: 'def2' to existing command line define value: 'def1'
                       ... Location of previous definition, with value: '50'
 

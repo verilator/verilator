@@ -20,17 +20,20 @@ Verilator 5.035 devel
 **Other:**
 
 * Support force/release with a variable reference (#5721) (#5810). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Support command-line overriding `define (#5900) (#5908). [Brian Li]
+* Support `$setuphold` (#5884). [Krzysztof Sychla]
 * Support `systemc_interface and related inside `class`.
 * Add multi-thread hierarchical simulation (#2583) (#5871). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add check for `let` misused in statement context (#5733).
 * Add used language to `--preproc-resolve` output (#5795). [Kamil Rakoczy, Antmicro Ltd.]
 * Add `--make json` to enable integration with non-make/cmake build systems (#5799). [Andrew Voznytsa]
+* Add numactl-like automatic assignment of processor affinity (#5911).
 * Add empty veriuser.h for legacy compatibility.
 * Add DEPRECATED warning on `--xml-only` and `--xml-output`.
-* Add numactl-like automatic assignment of processor affinity.
 * Remove unused gtkwave/wavealloca.h. [Geza Lore]
 * Optimize automatic splitting of some packed variables (#5843). [Geza Lore]
 * Optimize trigger vector in whole words (#5857). [Geza Lore]
+* Fix parameters referencing interface fields (#1593) (#5910). [Ryszard Rozak, Antmicro Ltd.]
 * Fix interface array assignments (#5270) (#5633) (#5869). [Nick Brereton]
 * Fix change detection at time 0 (#5499) (#5864). [Geza Lore]
 * Fix foreach of associative array inside a constraint block (#5727) (#5841). [Yilou Wang]

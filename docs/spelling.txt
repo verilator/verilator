@@ -863,6 +863,7 @@ noprivate
 noreturn
 notif
 nullptr
+numactl
 onehot
 ooo
 oprofile
