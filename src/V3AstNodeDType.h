@@ -157,7 +157,7 @@ public:
     bool generic() const VL_MT_SAFE { return m_generic; }
     void generic(bool flag) { m_generic = flag; }
     std::pair<uint32_t, uint32_t> dimensions(bool includeBasic);
-    uint32_t arrayUnpackedElements();  // 1, or total multiplication of all dimensions
+    uint32_t arrayUnpackedElements() const;  // 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I");
