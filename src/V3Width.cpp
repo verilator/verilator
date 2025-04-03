@@ -5189,6 +5189,17 @@ class WidthVisitor final : public VNVisitor {
 
             if (VN_IS(nodep->lhsp()->dtypep(), NodeArrayDType)
                 && VN_IS(nodep->rhsp(), NodeStream)) {
+                if (const AstUnpackArrayDType* const arr
+                    = VN_CAST(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
+                    const int lwidth = arr->subDTypep()->width() * arr->arrayUnpackedElements();
+                    const int rwidth = nodep->rhsp()->width();
+                    if (lwidth < rwidth) {
+                        nodep->v3widthWarn(lwidth, rwidth,
+                                           "Target fixed size variable ("
+                                               << lwidth << " bits) is narrower than the stream ("
+                                               << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
+                    }
+                }
                 AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
                 nodep->rhsp(new AstCvtPackedToArray{rhsp->fileline(), rhsp, lhsDTypep});
             }
