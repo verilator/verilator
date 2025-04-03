@@ -1799,40 +1799,39 @@ public:
     AstUdpTable(FileLine* fl, AstUdpTableLine* linesp)
         : ASTGEN_SUPER_UdpTable(fl) {
         this->addLinesp(linesp);
-        if (!v3Global.hasTable()) { v3Global.setHasTable(); }
+        if (!v3Global.hasTable()) v3Global.setHasTable();
     }
     ASTGEN_MEMBERS_AstUdpTable;
 };
 class AstUdpTableLine final : public AstNode {
-    // @astgen op1 := iFieldp : List[AstUdpTableLineVal] // Input fields
-    // @astgen op2 := oFieldp : List[AstUdpTableLineVal] // Output fields
-public:
-    enum UdpType : uint8_t { UDP_COMB, UDP_SEQUENT };
-
+    // @astgen op1 := iFieldsp : List[AstUdpTableLineVal]  // Input fields
+    // @astgen op2 := oFieldsp : List[AstUdpTableLineVal]  // Output fields
 private:
-    const UdpType m_type;
+    const bool m_udpIsCombo;  // Combinational or sequential UDP
 
 public:
-    AstUdpTableLine(FileLine* fl, AstUdpTableLineVal* iFieldp, AstUdpTableLineVal* oFieldp,
-                    UdpType type = UDP_COMB)
+    class UdpCombo {};
+    AstUdpTableLine(UdpCombo, FileLine* fl, AstUdpTableLineVal* iFieldsp,
+                    AstUdpTableLineVal* oFieldsp)
         : ASTGEN_SUPER_UdpTableLine(fl)
-        , m_type{type} {
-        this->addIFieldp(iFieldp);
-        this->addOFieldp(oFieldp);
+        , m_udpIsCombo{true} {
+        addIFieldsp(iFieldsp);
+        addOFieldsp(oFieldsp);
     }
-    AstUdpTableLine(FileLine* fl, AstUdpTableLineVal* iFieldp, AstUdpTableLineVal* oFieldp1,
-                    AstUdpTableLineVal* oFieldp2, UdpType type = UDP_COMB)
+    class UdpSequential {};
+    AstUdpTableLine(UdpSequential, FileLine* fl, AstUdpTableLineVal* iFieldsp,
+                    AstUdpTableLineVal* oFieldsp1, AstUdpTableLineVal* oFieldsp2)
         : ASTGEN_SUPER_UdpTableLine(fl)
-        , m_type{type} {
-        this->addIFieldp(iFieldp);
-        this->addOFieldp(oFieldp1);
-        this->addOFieldp(oFieldp2);
+        , m_udpIsCombo{false} {
+        addIFieldsp(iFieldsp);
+        addOFieldsp(oFieldsp1);
+        addOFieldsp(oFieldsp2);
     }
     ASTGEN_MEMBERS_AstUdpTableLine;
-    int type() const { return m_type; }
+    int udpIsCombo() const { return m_udpIsCombo; }
 };
 class AstUdpTableLineVal final : public AstNode {
-    string m_text;
+    string m_text;  // Value character
 
 public:
     AstUdpTableLineVal(FileLine* fl, const string& text)
