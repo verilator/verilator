@@ -219,7 +219,7 @@ class GateBuildVisitor final : public VNVisitorConst {
                       const char* consumeReason = nullptr) {
         UASSERT_OBJ(m_scopep, nodep, "Logic not under Scope");
         UASSERT_OBJ(!m_logicVertexp, nodep, "Logic blocks should not nest");
-        VL_RESTORER(m_logicVertexp)
+        VL_RESTORER(m_logicVertexp);
 
         // m_activep is null under AstCFunc's, that's ok.
         m_logicVertexp = new GateLogicVertex{m_graphp, nodep, m_activep, slow};

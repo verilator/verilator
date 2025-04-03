@@ -284,7 +284,7 @@ public:
         if (nodep->emptyBody() && !nodep->isLoose()) return;
         VL_RESTORER(m_useSelfForThis);
         VL_RESTORER(m_cfuncp);
-        VL_RESTORER(m_instantiatesOwnProcess)
+        VL_RESTORER(m_instantiatesOwnProcess);
         m_cfuncp = nodep;
         m_instantiatesOwnProcess = false;
 
