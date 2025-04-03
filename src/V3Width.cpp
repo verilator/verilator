@@ -239,6 +239,13 @@ class WidthVisitor final : public VNVisitor {
         EXTEND_OFF  // No extension
     };
 
+    int widthUnpacked(const AstNodeDType* const dtypep) {
+        if (const AstUnpackArrayDType* const arrDtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+            return arrDtypep->subDTypep()->width() * arrDtypep->arrayUnpackedElements();
+        }
+        return dtypep->width();
+    }
+
     static void packIfUnpacked(AstNodeExpr* const nodep) {
         if (AstUnpackArrayDType* const unpackDTypep = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
             const int elementsNum = unpackDTypep->arrayUnpackedElements();
@@ -5187,22 +5194,33 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const lhsDTypep
                 = nodep->lhsp()->dtypep();  // Note we use rhsp for context determined
 
-            if (VN_IS(nodep->lhsp()->dtypep(), NodeArrayDType)
-                && VN_IS(nodep->rhsp(), NodeStream)) {
-                if (const AstUnpackArrayDType* const arr
-                    = VN_CAST(nodep->lhsp()->dtypep(), UnpackArrayDType)) {
-                    const int lwidth = arr->subDTypep()->width() * arr->arrayUnpackedElements();
-                    const int rwidth = nodep->rhsp()->width();
-                    if (lwidth < rwidth) {
-                        nodep->v3widthWarn(lwidth, rwidth,
-                                           "Target fixed size variable ("
-                                               << lwidth << " bits) is narrower than the stream ("
-                                               << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
-                    }
+            // Check width of stream and wrap if needed
+            if (AstNodeStream* const streamp = VN_CAST(nodep->rhsp(), NodeStream)) {
+                const int lwidth = widthUnpacked(lhsDTypep);
+                const int rwidth = widthUnpacked(streamp->lhsp()->dtypep());
+                if (lwidth != 0 && lwidth < rwidth) {
+                    nodep->v3widthWarn(lwidth, rwidth,
+                                       "Target fixed size variable ("
+                                           << lwidth << " bits) is narrower than the stream ("
+                                           << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
                 }
-                AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
-                nodep->rhsp(new AstCvtPackedToArray{rhsp->fileline(), rhsp, lhsDTypep});
+                if (VN_IS(lhsDTypep, NodeArrayDType)) {
+                    streamp->unlinkFrBack();
+                    nodep->rhsp(new AstCvtPackedToArray{streamp->fileline(), streamp, lhsDTypep});
+                }
             }
+            if (const AstNodeStream* const streamp = VN_CAST(nodep->lhsp(), NodeStream)) {
+                const int lwidth = widthUnpacked(streamp->lhsp()->dtypep());
+                const int rwidth = widthUnpacked(nodep->rhsp()->dtypep());
+                if (rwidth != 0 && rwidth < lwidth) {
+                    nodep->v3widthWarn(lwidth, rwidth,
+                                       "Stream target requires "
+                                           << lwidth
+                                           << " bits, but source expression only provides "
+                                           << rwidth << " bits (IEEE 1800-2023 11.4.14.3)");
+                }
+            }
+
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
             // if (debug()) nodep->dumpTree("-  AssignOut: ");
         }
@@ -5262,32 +5280,6 @@ class WidthVisitor final : public VNVisitor {
             nodep->replaceWith(newp->makeStmt());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
-        }
-
-        // Width check for unpacked array stream assignment
-        if (const AstNodeStream* streamp = VN_CAST(nodep->rhsp(), NodeStream)) {
-            if (AstUnpackArrayDType* arr = VN_CAST(streamp->lhsp()->dtypep(), UnpackArrayDType)) {
-                int lwidth = nodep->lhsp()->width();
-                int rwidth = arr->subDTypep()->width() * arr->arrayUnpackedElements();
-                if (lwidth != 0 && lwidth < rwidth) {
-                    nodep->v3widthWarn(lwidth, rwidth,
-                                       "Target fixed size variable ("
-                                           << lwidth << " bits) is narrower than the stream ("
-                                           << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
-                }
-            }
-        } else if (const AstNodeStream* streamp = VN_CAST(nodep->lhsp(), NodeStream)) {
-            if (AstUnpackArrayDType* arr = VN_CAST(streamp->lhsp()->dtypep(), UnpackArrayDType)) {
-                int rwidth = nodep->rhsp()->width();
-                int lwidth = arr->subDTypep()->width() * arr->arrayUnpackedElements();
-                if (rwidth != 0 && rwidth < lwidth) {
-                    nodep->v3widthWarn(lwidth, rwidth,
-                                       "Stream target requires "
-                                           << lwidth
-                                           << " bits, but source expression only provides "
-                                           << rwidth << " bits (IEEE 1800-2023 11.4.14.3)");
-                }
-            }
         }
 
         if (nodep->hasDType() && nodep->dtypep()->isEvent()) {
