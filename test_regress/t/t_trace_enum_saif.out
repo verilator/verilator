@@ -13,8 +13,16 @@
   (INSTANCE t
    (NET
     (clk (T0 10) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 1))
+    (v_enumed\[0\] (T0 10) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+    (v_enumed\[1\] (T0 10) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+    (v_other_enumed\[0\] (T0 10) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+    (v_other_enumed\[1\] (T0 10) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
    )
    (INSTANCE sink
+    (NET
+     (state\[0\] (T0 10) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+     (state\[1\] (T0 10) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+    )
    )
   )
  )

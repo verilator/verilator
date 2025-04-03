@@ -400,11 +400,6 @@ bool VerilatedSaif::printActivityStats(VerilatedSaifActivityVar& activity,
     for (size_t i = 0; i < activity.width(); ++i) {
         VerilatedSaifActivityBit& bit = activity.bit(i);
 
-        if (bit.toggleCount() <= 0) {
-            // Skip bits with no toggles
-            continue;
-        }
-
         bit.aggregateVal(currentTime() - activity.lastUpdateTime(), bit.bitValue());
 
         if (!anyNetWritten) {
