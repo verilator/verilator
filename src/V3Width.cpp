@@ -1586,6 +1586,12 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
         // Type set in constructor
     }
+    void visit(AstCvtPackedToArray* nodep) override {
+        if (nodep->didWidthAndSet()) return;
+        // Opaque returns, so arbitrary
+        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
+        // Type set in constructor
+    }
     void visit(AstTimeImport* nodep) override {
         // LHS is a real number in seconds
         // Need to round to time units and precision
@@ -5180,6 +5186,12 @@ class WidthVisitor final : public VNVisitor {
             // if (debug()) nodep->dumpTree("-    assign: ");
             AstNodeDType* const lhsDTypep
                 = nodep->lhsp()->dtypep();  // Note we use rhsp for context determined
+
+            if (VN_IS(nodep->lhsp()->dtypep(), NodeArrayDType)
+                && VN_IS(nodep->rhsp(), NodeStream)) {
+                AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+                nodep->rhsp(new AstCvtPackedToArray{rhsp->fileline(), rhsp, lhsDTypep});
+            }
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
             // if (debug()) nodep->dumpTree("-  AssignOut: ");
         }
