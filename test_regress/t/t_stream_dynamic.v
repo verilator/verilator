@@ -18,19 +18,26 @@ module t (/*AUTOARG*/);
       bit arr[];
       bit [1:0] arr2[$];
       bit [5:0] arr6[$];
-      bit [5:0] bit6 = 6'b111000;
+      bit [5:0] bit6;
       bit [5:0] ans;
-      bit [3:0] arr4[] = '{25{4'b1000}};
-      bit [7:0] arr8[] = '{8{8'b00110011}};
-      bit [63:0] arr64[] = '{5{64'h0123456789abcdef}};
-      bit [159:0] arr160[] = '{2{160'h0123456789abcdef0123456789abcdef01234567}};
+      bit [3:0] arr4[];
+      bit [7:0] arr8[];
+      bit [63:0] arr64[];
+      bit [159:0] arr160[];
       bit [63:0] bit64;
       bit [99:0] bit100;
       bit [319:0] bit320;
       enum_t ans_enum;
 
+      bit6 = 6'b111000;
+      arr4 = '{25{4'b1000}};
+      arr8 = '{8{8'b00110011}};
+      arr64 = '{5{64'h0123456789abcdef}};
+      arr160 = '{2{160'h0123456789abcdef0123456789abcdef01234567}};
+
       { >> bit {arr}} = bit6;
-      `checkp(arr, "'{'h0, 'h0, 'h0, 'h1, 'h1, 'h1} ");
+      `checkp(arr, "'{'h0, 'h0, 'h0, 'h1, 'h1, 'h1} ");  // Majority rules
+      // `checkp(arr, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0} ");  // VCS
 
       ans = { >> bit {arr} };
       `checkh(ans, bit6);
@@ -39,7 +46,8 @@ module t (/*AUTOARG*/);
       `checkh(ans_enum, bit6);
 
       { << bit {arr}} = bit6;
-      `checkp(arr, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0} ");
+      `checkp(arr, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0} ");  // Majority rules
+      // `checkp(arr, "'{'h0, 'h0, 'h0, 'h1, 'h1, 'h1} ");  // VCS
 
       ans = { << bit {arr} };
       `checkh(ans, bit6);
@@ -47,6 +55,8 @@ module t (/*AUTOARG*/);
       ans_enum = enum_t'({ << bit {arr} });
       `checkh(ans_enum, bit6);
 
+`ifdef VERILATOR
+      // This set flags errors on other simulators
       { >> bit[1:0] {arr2}} = bit6;
       `checkp(arr2, "'{'h0, 'h2, 'h3} ");
 
@@ -82,6 +92,7 @@ module t (/*AUTOARG*/);
 
       ans_enum = enum_t'({ << bit[5:0] {arr6} });
       `checkh(ans_enum, bit6);
+`endif
 
       bit64 = { >> bit {arr8} };
       `checkh(bit64[7:0], 8'b00110011);
