@@ -1599,6 +1599,12 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
         // Type set in constructor
     }
+    void visit(AstCvtArrayToPacked* nodep) override {
+        if (nodep->didWidthAndSet()) return;
+        // Opaque returns, so arbitrary
+        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
+        // Type set in constructor
+    }
     void visit(AstTimeImport* nodep) override {
         // LHS is a real number in seconds
         // Need to round to time units and precision
@@ -5218,6 +5224,11 @@ class WidthVisitor final : public VNVisitor {
                                            << lwidth
                                            << " bits, but source expression only provides "
                                            << rwidth << " bits (IEEE 1800-2023 11.4.14.3)");
+                }
+                if (VN_IS(nodep->rhsp()->dtypep(), NodeArrayDType)) {
+                    AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+                    nodep->rhsp(
+                        new AstCvtArrayToPacked{rhsp->fileline(), rhsp, streamp->dtypep()});
                 }
             }
 
