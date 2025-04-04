@@ -1016,11 +1016,11 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
     return info;
 }
 
-uint32_t AstNodeDType::arrayUnpackedElements() {
+uint32_t AstNodeDType::arrayUnpackedElements() const {
     uint32_t entries = 1;
-    for (AstNodeDType* dtypep = this; dtypep;) {
+    for (const AstNodeDType* dtypep = this; dtypep;) {
         dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-        if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             entries *= adtypep->elementsConst();
             dtypep = adtypep->subDTypep();
         } else {

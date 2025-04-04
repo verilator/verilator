@@ -31,7 +31,13 @@ module t (/*AUTOARG*/);
       { >> bit {arr}} = bit6;
       `checkp(arr, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0} ");
 
+      arr = { >> bit {bit6}};
+      `checkp(arr, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0} ");
+
       ans = { >> bit {arr} };
+      `checkh(ans, bit6);
+
+      { >> bit {ans}} = arr;
       `checkh(ans, bit6);
 
       ans_enum = enum_t'({ >> bit {arr} });
@@ -40,7 +46,13 @@ module t (/*AUTOARG*/);
       { << bit {arr}} = bit6;
       `checkp(arr, "'{'h0, 'h0, 'h0, 'h1, 'h1, 'h1} ");
 
+      arr = { << bit {bit6}};
+      `checkp(arr, "'{'h0, 'h0, 'h0, 'h1, 'h1, 'h1} ");
+
       ans = { << bit {arr} };
+      `checkh(ans, bit6);
+
+      { << bit {ans} } = arr;
       `checkh(ans, bit6);
 
       ans_enum = enum_t'({ << bit {arr} });
@@ -49,7 +61,13 @@ module t (/*AUTOARG*/);
       { >> bit[1:0] {arr2}} = bit6;
       `checkp(arr2, "'{'h3, 'h2, 'h0} ");
 
+      arr2 = { >> bit[1:0] {bit6}};
+      `checkp(arr2, "'{'h3, 'h2, 'h0} ");
+
       ans = { >> bit[1:0] {arr2} };
+      `checkh(ans, bit6);
+
+      { >> bit[1:0] {ans} } = arr2;
       `checkh(ans, bit6);
 
       ans_enum = enum_t'({ >> bit[1:0] {arr2} });
@@ -61,13 +79,22 @@ module t (/*AUTOARG*/);
       ans = { << bit[1:0] {arr2} };
       `checkh(ans, bit6);
 
+      { << bit[1:0] {ans} } = arr2;
+      `checkh(ans, bit6);
+
       ans_enum = enum_t'({ << bit[1:0] {arr2} });
       `checkh(ans_enum, bit6);
 
       { >> bit [5:0] {arr6} } = bit6;
       `checkp(arr6, "'{'h38} ");
 
+      arr6 = { >> bit [5:0] {bit6}};
+      `checkp(arr6, "'{'h38} ");
+
       ans = { >> bit[5:0] {arr6} };
+      `checkh(ans, bit6);
+
+      { >> bit[5:0] {ans} } = arr6;
       `checkh(ans, bit6);
 
       ans_enum = enum_t'({ >> bit[5:0] {arr6} });
@@ -76,7 +103,13 @@ module t (/*AUTOARG*/);
       { << bit [5:0] {arr6} } = bit6;
       `checkp(arr6, "'{'h38} ");
 
+      arr6 = { << bit [5:0] {bit6}};
+      `checkp(arr6, "'{'h38} ");
+
       ans = { << bit[5:0] {arr6} };
+      `checkh(ans, bit6);
+
+      { << bit[5:0] {ans} } = arr6;
       `checkh(ans, bit6);
 
       ans_enum = enum_t'({ << bit[5:0] {arr6} });
