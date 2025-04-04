@@ -66,6 +66,7 @@ Verilator 5.035 devel
 * Fix process comparisons (#5896).
 * Fix ccache with clang (#5899). [Geza Lore]
 * Fix delayed assignment malformed LHS assertion (#5904).
+* Fix segfault in fork synchronization (#5906). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix `new this` (#5909).
 
 

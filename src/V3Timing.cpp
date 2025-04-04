@@ -723,8 +723,8 @@ class TimingControlVisitor final : public VNVisitor {
     void makeForkJoin(AstFork* const forkp) {
         // Create a fork sync var
         FileLine* const flp = forkp->fileline();
-        // If we're in a function, insert the sync var directly before the fork
-        AstNode* const insertBeforep = m_classp ? forkp : nullptr;
+        // Insert the sync var directly before the fork
+        AstNode* const insertBeforep = forkp;
         addCLocalScope(flp, insertBeforep);
         AstVarScope* forkVscp
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
