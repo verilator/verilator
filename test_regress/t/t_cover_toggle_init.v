@@ -9,17 +9,17 @@ module t(clk);
    input clk;
    // verilator coverage_on
 
-   bit toggle;
+   logic toggle;
    // CHECK_COVER(-1,"top.t","toggle",0)
 
-   bit toggle_0 = 0;
+   logic toggle_0 = 0;
    // CHECK_COVER(-1,"top.t","toggle_0",0)
 
-   bit toggle_1 = 1;
+   logic toggle_1 = 1;
    // CHECK_COVER(-1,"top.t","toggle_1",0)
 
-   bit toggle_always_0;
-   bit toggle_always_1;
+   logic toggle_always_0;
+   logic toggle_always_1;
 
    always @(posedge clk) begin
       toggle_always_0 = 0;
