@@ -14,4 +14,8 @@
                                                        : ... note: In instance 't'
    17 |     stream = {>>{packed_data2}};
       |            ^
+%Warning-WIDTHEXPAND: t/t_stream_unpack_narrower.v:18:24: Stream target requires 61 bits, but source expression only provides 32 bits (IEEE 1800-2023 11.4.14.3)
+                                                        : ... note: In instance 't'
+   18 |     {>>{packed_data2}} = stream;
+      |                        ^
 %Error: Exiting due to
