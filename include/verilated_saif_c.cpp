@@ -319,6 +319,7 @@ void VerilatedSaif::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     finalizeSaifFileContents();
     clearCurrentlyCollectedData();
 
+    writeBuffered(true);
     ::close(m_filep);
     m_isOpen = false;
 
@@ -437,9 +438,25 @@ void VerilatedSaif::clearCurrentlyCollectedData() {
     m_activityAccumulators.clear();
 }
 
-void VerilatedSaif::printStr(const char* str) { ::write(m_filep, str, strlen(str)); }
+void VerilatedSaif::printStr(const char* str) {
+    m_buffer.append(str);
+    writeBuffered(false);
+}
 
-void VerilatedSaif::printStr(const std::string& str) { ::write(m_filep, str.c_str(), str.size()); }
+void VerilatedSaif::printStr(const std::string& str) {
+    m_buffer.append(str);
+    writeBuffered(false);
+}
+
+void VerilatedSaif::writeBuffered(bool force) {
+    if (VL_UNLIKELY(m_buffer.size() >= WRITE_BUFFER_SIZE || force)) {
+        if (VL_UNLIKELY(!m_buffer.empty())) {
+            ::write(m_filep, m_buffer.data(), m_buffer.size());
+            m_buffer = "";
+            m_buffer.reserve(WRITE_BUFFER_SIZE * 2);
+        }
+    }
+}
 
 //=============================================================================
 // Definitions
@@ -454,7 +471,7 @@ void VerilatedSaif::incrementIndent() { m_indent += 1; }
 void VerilatedSaif::decrementIndent() { m_indent -= 1; }
 
 void VerilatedSaif::printIndent() {
-    for (int i = 0; i < m_indent; ++i) printStr(" ");
+    printStr(std::string(m_indent, ' '));  // Must use () constructor
 }
 
 void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType type) {

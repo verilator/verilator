@@ -17,6 +17,7 @@ test.compile(verilator_flags2=['--cc --trace-saif --trace-structs'])
 
 test.execute()
 
-test.saif_identical(test.trace_filename, test.golden_filename)
+# saif_identical is very slow, so require exact match
+test.files_identical(test.trace_filename, test.golden_filename)
 
 test.passes()

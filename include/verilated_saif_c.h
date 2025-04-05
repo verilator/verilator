@@ -52,8 +52,10 @@ private:
     int m_filep = 0;  // File we're writing to
     bool m_isOpen = false;  // True indicates open file
     std::string m_filename;  // Filename we're writing to (if open)
+    std::string m_buffer;  // Write data buffer
 
     int m_indent = 0;  // Indentation size in spaces
+    static constexpr size_t WRITE_BUFFER_SIZE = 256 * 1024;  // Bytes between write calls
 
     // Currently active scope
     VerilatedSaifActivityScope* m_currentScope = nullptr;
@@ -92,6 +94,7 @@ private:
 
     void printStr(const char* str);
     void printStr(const std::string& str);
+    void writeBuffered(bool force);
 
     void clearCurrentlyCollectedData();
 
