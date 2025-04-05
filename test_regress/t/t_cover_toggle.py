@@ -43,6 +43,6 @@ test.run(cmd=[
          verilator_run=True)
 
 test.files_identical(test.obj_dir + "/annotated-points/" + test.name + ".v",
-                     "t/" + test.name + "_points.out")
+                     "t/" + test.name + "__points.out")
 
 test.passes()

@@ -23,6 +23,6 @@ test.compile(make_top_shell=False,
 test.execute(all_run_flags=["+verilator+error+limit+100"],
              expect_filename=test.t_dir + "/t_assert_ctl_arg.out")
 
-test.files_identical(test.coverage_filename, test.t_dir + "/t_assert_ctl_arg_coverage.out")
+test.files_identical(test.coverage_filename, test.t_dir + "/t_assert_ctl_arg.coverage.out")
 
 test.passes()

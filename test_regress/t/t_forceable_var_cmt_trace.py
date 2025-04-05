@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.pli_filename = "t/t_forceable_var.cpp"
 test.top_filename = "t/t_forceable_var.v"
-test.golden_filename = "t/t_forceable_var_trace.vcd"
+test.golden_filename = "t/t_forceable_var_trace.vcd.out"
 
 test.compile(make_top_shell=False,
              make_main=False,

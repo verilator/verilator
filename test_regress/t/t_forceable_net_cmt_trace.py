@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.pli_filename = "t/t_forceable_net.cpp"
 test.top_filename = "t/t_forceable_net.v"
-test.golden_filename = "t/t_forceable_net_trace.vcd"
+test.golden_filename = "t/t_forceable_net_trace.vcd.out"
 
 test.compile(make_top_shell=False,
              make_main=False,

@@ -19,7 +19,7 @@ test.compile(make_top_shell=False,
 
 test.execute()
 
-test.vcd_identical(test.obj_dir + "/simpart_0000.vcd", "t/" + test.name + "_0000.out")
-test.vcd_identical(test.obj_dir + "/simpart_0100.vcd", "t/" + test.name + "_0100.out")
+test.vcd_identical(test.obj_dir + "/simpart_0000.vcd", "t/" + test.name + "__0000.out")
+test.vcd_identical(test.obj_dir + "/simpart_0100.vcd", "t/" + test.name + "__0100.out")
 
 test.passes()

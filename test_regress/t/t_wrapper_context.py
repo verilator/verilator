@@ -20,10 +20,12 @@ test.compile(
     make_flags=['CPPFLAGS_ADD=-DVL_NO_LEGACY'])
 
 test.execute()
-test.files_identical_sorted(test.obj_dir + "/coverage_top0.dat", "t/t_wrapper_context_top0.out")
-test.files_identical_sorted(test.obj_dir + "/coverage_top1.dat", "t/t_wrapper_context_top1.out")
+test.files_identical_sorted(test.obj_dir + "/coverage_top0.dat",
+                            "t/t_wrapper_context__top0.dat.out")
+test.files_identical_sorted(test.obj_dir + "/coverage_top1.dat",
+                            "t/t_wrapper_context__top1.dat.out")
 
-test.vcd_identical(test.obj_dir + "/trace0.vcd", "t/t_wrapper_context_trace0.out")
-test.vcd_identical(test.obj_dir + "/trace1.vcd", "t/t_wrapper_context_trace1.out")
+test.vcd_identical(test.obj_dir + "/trace0.vcd", "t/t_wrapper_context__trace0.vcd.out")
+test.vcd_identical(test.obj_dir + "/trace1.vcd", "t/t_wrapper_context__trace1.vcd.out")
 
 test.passes()
