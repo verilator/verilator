@@ -314,7 +314,7 @@ class ActiveLatchCheckVisitor final : public VNVisitorConst {
     void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();
         if (nodep->access().isWriteOrRW() && varp->isSignal() && !varp->isUsedLoopIdx()
-            && !varp->isFuncLocalSticky()) {
+            && !varp->isFuncLocalSticky() && !varp->lifetime().isAutomatic()) {
             m_graph.addAssignment(nodep);
         }
     }
