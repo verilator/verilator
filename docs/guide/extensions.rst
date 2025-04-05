@@ -178,8 +178,9 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: `SYSTEMVERILOG
 
-   The SYSTEMVERILOG, SV_COV_START, and related standard defines are set by
-   default when :vlopt:`--language <--language>` is "1800-\*".
+   The SYSTEMVERILOG, SV_COV_START, and related standard predefined macros
+   are defined by default when :vlopt:`--language <--language>` is
+   "1800-\*".
 
 .. option:: `VERILATOR
 
@@ -187,8 +188,8 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: `verilator3
 
-   The VERILATOR, verilator and verilator3 defines are set by default so
-   you may "\`ifdef" around tool specific constructs.
+   The VERILATOR, verilator and verilator3 predefined macros are defined by
+   default so you may "\`ifdef" around tool specific constructs.
 
 .. option:: `verilator_config
 
