@@ -11,6 +11,7 @@
                                                       : ... note: In instance 't'
    32 |       mid = (temp1_d1r == 'h0);   
       |       ^~~
+                       ... For warning description see https://verilator.org/warn/ALWCOMBORDER?v=latest
                        ... Use "/* verilator lint_off ALWCOMBORDER */" and lint_on around source to disable this message.
 %Error-PROCASSWIRE: t/t_lint_always_comb_bad.v:46:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2023 6.5): 'temp1_d1r'
                                                    : ... note: In instance 't'

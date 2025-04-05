@@ -2,6 +2,7 @@
 ... Suggest use 'extends'
    10 | class ClsBad1 implements NotIcls;
       |                          ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_implements_noninterface_bad.v:16:23: Attempting to extend from interface class 'Icls'
 ... Suggest use 'implements'
    16 | class ClsBad2 extends Icls;

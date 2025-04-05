@@ -1,6 +1,7 @@
 %Error: t/t_fuzz_negwidth_bad.v:9:9: Unsupported: Width of number exceeds implementation limit: 1231232312312312'd1  (IEEE 1800-2023 6.9.1)
     9 | int c = 1231232312312312'd1;
       |         ^~~~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_fuzz_negwidth_bad.v:10:9: Syntax error: size cannot be provided with '0/'1/'x/'z: 12'1 (IEEE 1800-2023 5.7.1)
    10 | int e = 12'1;
       |         ^~~~

@@ -2,4 +2,5 @@
                                       : ... Suggest use 'CParam#()'
    32 |     CParam::type_t val_0 = 100;
       |     ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

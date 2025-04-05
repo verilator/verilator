@@ -5,4 +5,5 @@
         t/t_dpi_dup_bad.v:12:47: ... Original signature: int dpii_fa_bit (int)
    12 |    import "DPI-C" dpii_fa_bit =  function int oth_f_int1(input int i);
       |                                               ^~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

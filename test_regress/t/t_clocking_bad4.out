@@ -2,6 +2,7 @@
                                  : ... note: In instance 't'
    23 |        input #cyc in;
       |               ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_clocking_bad4.v:24:16: Skew cannot be negative
                                  : ... note: In instance 't'
    24 |        input #(-1) out;

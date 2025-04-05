@@ -7,4 +7,4 @@
                                                      : ... note: In instance 't'
    16 |       points_qv = points_q.find_first(a) with (a.x.index == 0);
       |                                                          ^~
-                        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.

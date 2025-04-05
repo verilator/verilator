@@ -2,6 +2,7 @@
                                   : ... note: In instance 't'
     8 |    if ($test$plusargs("BAD-non-constant")) begin
       |        ^~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_gen_missing_bad2.v:8:8: Generate If condition must evaluate to constant
                                   : ... note: In instance 't'
     8 |    if ($test$plusargs("BAD-non-constant")) begin

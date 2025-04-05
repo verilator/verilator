@@ -2,6 +2,7 @@
                                      : ... note: In instance 't'
    15 |       dimn[1:0] = 0;             
       |           ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Warning-SELRANGE: t/t_mem_multi_ref_bad.v:15:11: Extracting 2 bits from only 1 bit number
                                                 : ... note: In instance 't'
    15 |       dimn[1:0] = 0;             

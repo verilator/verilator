@@ -1,2 +1,3 @@
 %Error: t/t_preproc_eof2_bad.v:10:1: Unterminated ( in define formal arguments.
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

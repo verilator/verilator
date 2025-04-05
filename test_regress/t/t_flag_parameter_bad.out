@@ -1,2 +1,3 @@
 %Error: Parameters from the command line were not found in the design: PARAM_THAT_DOES_NON_EXIST
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

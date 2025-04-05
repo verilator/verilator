@@ -2,6 +2,7 @@
                                     : ... note: In instance 't'
    17 |    reg [1<<29 : 0] hugerange;
       |        ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_select_bad_range4.v:20:16: Width of :+ or :- is < 0: 32'hffffffff
                                      : ... note: In instance 't'
    20 |       sel2 = mi[44 +: -1];
@@ -24,6 +25,8 @@
                                                 : ... note: In instance 't'
    21 |       sel2 = mi[44 +: 1<<29];
       |                ^
+                   ... For warning description see https://verilator.org/warn/SELRANGE?v=latest
+                   ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
 %Warning-SELRANGE: t/t_select_bad_range4.v:21:16: Selection index out of range: 536870915:4 outside 45:40
                                                 : ... note: In instance 't'
    21 |       sel2 = mi[44 +: 1<<29];
@@ -32,6 +35,8 @@
                                                   : ... note: In instance 't'
    21 |       sel2 = mi[44 +: 1<<29];
       |            ^
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
 %Error: t/t_select_bad_range4.v:22:23: Expecting expression to be constant, but variable isn't const: 'nonconst'
                                      : ... note: In instance 't'
    22 |       sel2 = mi[44 +: nonconst];

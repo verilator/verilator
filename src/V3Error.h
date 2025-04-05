@@ -44,7 +44,7 @@ public:
         //
         EC_INFO,        // General information out
         EC_FATAL,       // Kill the program
-        EC_FATALEXIT,   // Kill the program, suppress with --quiet-exit
+        EC_FATALMANY,   // Kill the program, due to too many errors, suppress with --quiet-exit
         EC_FATALSRC,    // Kill the program, for internal source errors
         EC_ERROR,       // General error out, can't suppress
         EC_FIRST_NAMED,  // Just a code so the program knows where to start info/errors
@@ -186,7 +186,7 @@ public:
         // clang-format off
         static const char* const names[] = {
             // Leading spaces indicate it can't be disabled.
-            " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR", " FIRST_NAMED",
+            " MIN", " INFO", " FATAL", " FATALMANY", " FATALSRC", " ERROR", " FIRST_NAMED",
             // Boolean
             " I_CELLDEFINE", " I_COVERAGE",  " I_DEF_NETTYPE_WIRE", " I_LINT", " I_TIMING", " I_TRACING", " I_UNUSED",
             // Errors
@@ -313,9 +313,9 @@ public:
 private:
     static constexpr unsigned MAX_ERRORS = 50;  // Fatal after this may errors
 
-    bool m_describedWarnings VL_GUARDED_BY(m_mutex) = false;  // Told user how to disable warns
     // Tell user to see manual, 0=not yet, 1=doit, 2=disable
-    int m_tellManual VL_GUARDED_BY(m_mutex) = 0;
+    bool m_tellManual VL_GUARDED_BY(m_mutex) = false;
+    bool m_tellInternal VL_GUARDED_BY(m_mutex) = false;
     V3ErrorCode m_errorCode VL_GUARDED_BY(m_mutex)
         = V3ErrorCode::EC_FATAL;  // Error string being formed will abort
     bool m_errorSuppressed VL_GUARDED_BY(m_mutex)
@@ -328,7 +328,6 @@ private:
     int m_errCount VL_GUARDED_BY(m_mutex) = 0;  // Error count
     // Pretend this warning is an error
     std::array<bool, V3ErrorCode::_ENUM_MAX> m_pretendError VL_GUARDED_BY(m_mutex);
-    bool m_describedWeb VL_GUARDED_BY(m_mutex) = false;  // Told user to see web
     // Told user specifics about this warning
     std::array<bool, V3ErrorCode::_ENUM_MAX> m_describedEachWarn VL_GUARDED_BY(m_mutex);
     int m_debugDefault = 0;  // Option: --debugi Default debugging level
@@ -364,7 +363,7 @@ public:
         m_errCount++;
         if (errorCount() == errorLimit()) {  // Not >= as would otherwise recurse
             v3errorEnd(
-                (v3errorPrep(V3ErrorCode::EC_FATALEXIT),
+                (v3errorPrep(V3ErrorCode::EC_FATALMANY),
                  (v3errorStr() << "Exiting due to too many errors encountered; --error-limit="
                                << errorCount() << std::endl),
                  v3errorStr()));
@@ -393,18 +392,12 @@ public:
     int warnCount() VL_REQUIRES(m_mutex) { return m_warnCount; }
     bool errorSuppressed() VL_REQUIRES(m_mutex) { return m_errorSuppressed; }
     void errorSuppressed(bool flag) VL_REQUIRES(m_mutex) { m_errorSuppressed = flag; }
-    bool describedWeb() VL_REQUIRES(m_mutex) { return m_describedWeb; }
-    void describedWeb(bool flag) VL_REQUIRES(m_mutex) { m_describedWeb = flag; }
     bool describedEachWarn(V3ErrorCode code) VL_REQUIRES(m_mutex) {
         return m_describedEachWarn[code];
     }
     void describedEachWarn(V3ErrorCode code, bool flag) VL_REQUIRES(m_mutex) {
         m_describedEachWarn[code] = flag;
     }
-    bool describedWarnings() VL_REQUIRES(m_mutex) { return m_describedWarnings; }
-    void describedWarnings(bool flag) VL_REQUIRES(m_mutex) { m_describedWarnings = flag; }
-    int tellManual() VL_REQUIRES(m_mutex) { return m_tellManual; }
-    void tellManual(int level) VL_REQUIRES(m_mutex) { m_tellManual = level; }
     void suppressThisWarning() VL_REQUIRES(m_mutex);
     string warnContextNone() VL_REQUIRES(m_mutex) {
         errorContexted(true);
@@ -567,7 +560,7 @@ void v3errorEndFatal(std::ostringstream& sstr)
 #define v3error(msg) v3warnCode(V3ErrorCode::EC_ERROR, msg)
 #define v3fatal(msg) v3warnCodeFatal(V3ErrorCode::EC_FATAL, msg)
 // Fatal exit; used instead of fatal() if message gets suppressed with --quiet-exit
-#define v3fatalExit(msg) v3warnCodeFatal(V3ErrorCode::EC_FATALEXIT, msg)
+#define v3fatalMany(msg) v3warnCodeFatal(V3ErrorCode::EC_FATALMANY, msg)
 // Fatal exit; used instead of fatal() to mention the source code line
 #define v3fatalSrc(msg) \
     v3errorEndFatal(v3errorBuildMessage( \

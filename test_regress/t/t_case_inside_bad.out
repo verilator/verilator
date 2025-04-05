@@ -1,4 +1,5 @@
 %Error: t/t_case_inside_bad.v:9:20: Illegal to have inside on a casex/casez
     9 |       casex (1'bx) inside
       |                    ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

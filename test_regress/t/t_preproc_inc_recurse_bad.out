@@ -1,4 +1,5 @@
 %Error: t/t_preproc_inc_recurse_bad.v:7:10: Recursive inclusion of file: t/t_preproc_inc_recurse_bad.v
     7 | `include "t_preproc_inc_recurse_bad.v"
       |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

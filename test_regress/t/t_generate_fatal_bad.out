@@ -8,6 +8,7 @@
            bar = ?32?h0
    13 |    localparam integer BAZ = get_baz(BAR);
       |                             ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                       : ... note: In instance 't.genloop[1].foo_inst'
         t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing

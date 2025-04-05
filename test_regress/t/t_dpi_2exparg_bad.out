@@ -8,6 +8,8 @@
                                                 : ... note: In instance 't.a'
    12 |    task dpix_twice(input int i, output [2:0] o);  o = ~i; endtask
       |                                                     ^
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
 %Error: t/t_dpi_2exparg_bad.v:19:9: Duplicate declaration of DPI function with different signature: 'dpix_twice'
    19 |    task dpix_twice(input int i, output [63:0] o);  o = ~i; endtask
       |         ^~~~~~~~~~
@@ -15,4 +17,5 @@
         t/t_dpi_2exparg_bad.v:12:9: ... Original signature: void dpix_twice (int, svLogicVecVal* /* logic[2:0] */ )
    12 |    task dpix_twice(input int i, output [2:0] o);  o = ~i; endtask
       |         ^~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

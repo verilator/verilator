@@ -1,4 +1,5 @@
 %Error: t/t_fuzz_eqne_bad.v:12:23: Slice operator VARREF 't.b' on non-slicable (e.g. non-vector) right-hand-side operand
    12 |    initial c = (a != &b);
       |                       ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

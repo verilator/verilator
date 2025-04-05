@@ -7,5 +7,6 @@
                                             : ... note: In instance 't'
     9 |       if ($) $stop;
       |       ^~
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
 %Error: Exiting due to

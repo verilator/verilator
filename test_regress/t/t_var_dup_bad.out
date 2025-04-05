@@ -4,6 +4,7 @@
         t/t_var_dup_bad.v:16:11: ... Location of original declaration
    16 |    reg    a;
       |           ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_var_dup_bad.v:20:12: Duplicate declaration of signal: 'l'
    20 |    integer l;
       |            ^

@@ -4,6 +4,7 @@
         t/t_class_member_bad2.v:8:8: ... Location of original declaration
     8 |    int vardup;
       |        ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_class_member_bad2.v:12:9: Duplicate declaration of task: 'memdup'
    12 |    task memdup;
       |         ^~~~~~

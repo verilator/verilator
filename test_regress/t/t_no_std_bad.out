@@ -5,4 +5,5 @@
 %Error: t/t_no_std_bad.v:9:11: Importing from missing package 'std'
     9 |    import std::*;
       |           ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

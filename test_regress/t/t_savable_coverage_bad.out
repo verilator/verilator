@@ -1,2 +1,3 @@
 %Error: Unsupported: --coverage and --savable not supported together
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

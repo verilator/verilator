@@ -8,4 +8,5 @@
 %Error: t/t_pp_defnettype_bad.v:7:21: syntax error, unexpected IDENTIFIER
     7 | `default_nettype bad_none_such
       |                     ^~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

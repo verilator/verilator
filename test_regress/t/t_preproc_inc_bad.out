@@ -2,4 +2,5 @@
    11 | endmodule
       | ^~~~~~~~~
         t/t_preproc_inc_bad.v:10:1: ... note: In file included from 't_preproc_inc_bad.v'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

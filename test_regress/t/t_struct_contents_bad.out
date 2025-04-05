@@ -2,6 +2,7 @@
                                        : ... note: In instance 't'
    20 |       real        r;   
       |                   ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_struct_contents_bad.v:22:19: Unpacked data type 'real' in packed struct/union (IEEE 1800-2023 7.2.1)
                                        : ... note: In instance 't'
    22 |       shortreal   sr;  

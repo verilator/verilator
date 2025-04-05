@@ -4,6 +4,7 @@
         t/t_implements_collision_bad.v:12:30: ... Location of interface class's function
    12 |    pure virtual function int icfboth;
       |                              ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_implements_collision_bad.v:19:1: Class 'Cls' implements 'IclsBoth' but is missing implementation for 'icfboth' (IEEE 1800-2023 8.26)
    19 | class Cls implements IclsBoth;
       | ^~~~~

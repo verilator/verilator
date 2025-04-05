@@ -8,6 +8,8 @@
                                               : ... note: In instance 't'
    24 |             .outz_w22   (outd_w73),      
       |              ^~~~~~~~
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
 %Warning-WIDTHEXPAND: t/t_inst_overwide.v:27:14: Input port connection 'inw_w31' expects 31 bits on the pin connection, but pin connection's VARREF 'ina_w1' generates 1 bits.
                                                : ... note: In instance 't'
    27 |             .inw_w31    (ina_w1),        

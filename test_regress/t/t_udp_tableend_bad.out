@@ -1,4 +1,5 @@
 %Error: t/t_udp_tableend_bad.v:11:4: Syntax error: 'endtable' outside of 'table'
    11 |    endtable   
       |    ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

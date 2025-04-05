@@ -1,6 +1,7 @@
 %Error: t/t_preproc_ifexpr_bad.v:12:14: `elsif with no matching `if
    12 | `elsif ( ONE )  // BAD: elsif without if
       |              ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_preproc_ifexpr_bad.v:13:1: `endif with no matching `if
    13 | `endif
       | ^~~~~~

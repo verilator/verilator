@@ -1,4 +1,5 @@
 %Error: t/t_enum_recurse_bad2.v:7:14: Self-referential enumerated type definition
     7 | typedef enum foo_t { A  = 'b0, B = 'b1 } foo_t;
       |              ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

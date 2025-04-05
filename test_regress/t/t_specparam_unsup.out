@@ -1,4 +1,5 @@
 %Error: t/t_specparam_unsup.v:14:8: Can't find definition of variable: 'tdevice_PU'
    14 |       #tdevice_PU PoweredUp = 1'b1;
       |        ^~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

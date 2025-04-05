@@ -2,6 +2,7 @@
                                 : ... Suggested alternative: '`DEFINED'
    11 |    `NDEFINED
       |    ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_pp_misdef_bad.v:14:6: Define or directive not defined: '`imescale'
                                 : ... Suggested alternative: '`timescale'
    14 |      `imescale

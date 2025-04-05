@@ -1,4 +1,5 @@
 %Error: t/t_scoped_param_pattern_init_unsup.v:30:22: syntax error, unexpected ':', expecting ',' or '}'
    30 |         some_pkg::FOO: 32'h9876,
       |                      ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

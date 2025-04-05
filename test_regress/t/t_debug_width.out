@@ -1,4 +1,4 @@
 %Error: Internal Error: t/t_opt_const.v:12:8: ../V3Ast.cpp:#: widthMismatch detected 'lhsp()->widthMin() != rhsp()->widthMin()' @ ../V3AstNodes.cpp:#OUT:(G/wu32/1) LHS:(G/w32) RHS:(G/wu32/1)
    12 | module t( 
       |        ^
-                        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.
+                        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

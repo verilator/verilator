@@ -1,4 +1,5 @@
 %Error: t/t_randomize_union_bad.v:7:9: Unpacked unions shall not be declared as rand or randc. (IEEE 1800-2023 18.4)
     7 | typedef union {
       |         ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

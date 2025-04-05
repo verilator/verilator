@@ -7,6 +7,7 @@
                                          : ... note: In instance 'tb_top'
    30 |          d.vif[i] = a[i];
       |                       ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error-UNSUPPORTED: t/t_interface_dearray_bad.v:30:23: Non-constant index in RHS interface array selection
                                                      : ... note: In instance 'tb_top'
    30 |          d.vif[i] = a[i];
@@ -19,3 +20,4 @@
                                                          : ... note: In instance 'tb_top'
    25 |       c.vif = b;
       |               ^
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.

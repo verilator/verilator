@@ -2,6 +2,7 @@
                                            : ... note: In instance 't'
    11 |       function automatic bit constFunc();
       |                              ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_lint_const_func_gen_bad.v:15:26: Expecting expression to be constant, but can't determine constant for FUNCREF 'constFunc'
                                            : ... note: In instance 't'
         t/t_lint_const_func_gen_bad.v:11:30: ... Location of non-constant FUNC 'constFunc': Constant function called under generate

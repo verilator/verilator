@@ -3,4 +3,5 @@
                                    : ... Suggested alternative: 'meth2'
    18 |       c.meth3();   
       |         ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

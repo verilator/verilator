@@ -6,4 +6,5 @@
 %Error: t/t_lint_bsspace_bad.v:11:4: syntax error, unexpected IDENTIFIER
    11 |    blak
       |    ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

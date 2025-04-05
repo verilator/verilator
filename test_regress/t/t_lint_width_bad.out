@@ -8,6 +8,8 @@
                                                 : ... note: In instance 't.p4'
    47 |    wire [4:0] out = in;
       |                   ^
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Warning-WIDTHEXPAND: t/t_lint_width_bad.v:21:25: Operator SHIFTL expects 5 bits on the LHS, but LHS's CONST '1'h1' generates 1 bits.
                                                 : ... note: In instance 't'
    21 |    wire [4:0] d = (1'b1 << 2) + 5'b1;   

@@ -16,7 +16,9 @@
                                                   : ... note: In instance 't'
   113 |             if (unpacked_siz_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
       |                                      ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Internal Error: t/t_stream_unpack_lhs.v:113:35: ../V3Width.cpp:#: Node has no type
                                                       : ... note: In instance 't'
   113 |             if (unpacked_siz_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
       |                                   ^~
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.

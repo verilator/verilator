@@ -4,4 +4,5 @@
         t/t_implements_missing_bad.v:9:30: ... Location of interface class's function
     9 |    pure virtual function int icf2;
       |                              ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

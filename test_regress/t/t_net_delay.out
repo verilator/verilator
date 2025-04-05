@@ -16,6 +16,8 @@
                                          : ... note: In instance 't'
    22 |    wire[3:0] #5 val3 = cyc;
       |              ^
+                    ... For warning description see https://verilator.org/warn/ASSIGNDLY?v=latest
+                    ... Use "/* verilator lint_off ASSIGNDLY */" and lint_on around source to disable this message.
 %Warning-STMTDLY: t/t_net_delay.v:23:14: Ignoring delay on this statement due to --no-timing
                                        : ... note: In instance 't'
    23 |    wire[3:0] #5 val4;

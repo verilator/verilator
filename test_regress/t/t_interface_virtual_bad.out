@@ -2,6 +2,7 @@
                                          : ... note: In instance 't'
    31 |       v8 = q8;   
       |            ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_interface_virtual_bad.v:35:12: Operator ASSIGN expected no interface modport on Assign RHS but got 'phy' modport.
                                          : ... note: In instance 't'
    35 |       v8 = v8_phy;   

@@ -1,6 +1,7 @@
 %Error: t/t_enum_recurse_bad.v:7:9: Recursive enum value: 'u'
     7 | enum {u=u} e_t;
       |         ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_enum_recurse_bad.v:7:9: Expecting expression to be constant, but enum value isn't const: 'u'
     7 | enum {u=u} e_t;
       |         ^

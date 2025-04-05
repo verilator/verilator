@@ -1,4 +1,5 @@
 %Error: t/t_mem_slice_dtype_bad.v:23:45: ADD unexpected in assignment to unpacked array
    23 |       completed_cnt[id] <= completed_cnt_dp + 1;
       |                                             ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

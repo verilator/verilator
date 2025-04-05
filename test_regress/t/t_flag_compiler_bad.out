@@ -1,3 +1,4 @@
 %Error: Unknown setting for --compiler: 'bad_one'
         ... Suggest 'clang', 'gcc', or 'msvc'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

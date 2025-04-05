@@ -1,7 +1,9 @@
 %Error: t/t_select_bad_tri.v:11:24: Selection index is constantly unknown or tristated: 1'bx
    11 |       if (in[(   (1'h0 / 1'b0)   )+:71] != 71'h0) $stop;
       |                        ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Internal Error: t/t_select_bad_tri.v:11:24: ../V3Number.cpp:#: toUInt with 4-state 1'bx
                                                   : ... note: In instance 't'
    11 |       if (in[(   (1'h0 / 1'b0)   )+:71] != 71'h0) $stop;
       |                        ^
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.

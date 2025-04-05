@@ -1,6 +1,7 @@
 %Error: t/t_pp_line_bad.v:8:1: `line was not properly formed with '`line number "filename" level'
     8 | `line 100
       | ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_pp_line_bad.v:8:1: `line was not properly formed with '`line number "filename" level'
 %Error: t/t_pp_line_bad.v:9:1: `line was not properly formed with '`line number "filename" level'
     9 | `line 200 somefile

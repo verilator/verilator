@@ -1,3 +1,4 @@
 %Error: --hierarchical must not be set with --hierarchical-child or --hierarchical-block
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: --hierarchical-block must be set when --hierarchical-child is set
 %Error: Exiting due to

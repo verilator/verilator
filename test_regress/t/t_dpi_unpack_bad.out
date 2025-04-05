@@ -7,6 +7,7 @@
                                                : ... note: In instance 't'
    21 |       import_func0(sig0);
       |       ^~~~~~~~~~~~
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:23:20: Shape of the argument does not match the shape of the parameter ('logic[2:0]$[0:2][0:1]' v.s. 'logic[2:0]$[0:2]')
                                               : ... note: In instance 't'

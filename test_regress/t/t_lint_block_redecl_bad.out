@@ -4,4 +4,5 @@
         t/t_lint_block_redecl_bad.v:14:35: ... Location of original declaration
    14 |       for(i=0; i<10; i++ ) begin: COMB
       |                                   ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

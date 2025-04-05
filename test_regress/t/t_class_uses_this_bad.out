@@ -1,4 +1,5 @@
 %Error: t/t_class_uses_this_bad.v:11:12: 'this' used outside class (IEEE 1800-2023 8.11)
    11 |        this.addr = 2;
       |            ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

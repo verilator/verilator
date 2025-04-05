@@ -2,4 +2,5 @@
                                   : ... note: In instance 't.sub'
    11 | module sub #(parameter WIDTH=X, parameter X=WIDTH)
       |                                           ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

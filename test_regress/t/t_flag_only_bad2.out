@@ -1,2 +1,3 @@
 %Error: The following cannot be used together: --build, -E, --dpi-hdr-only, --lint-only, --xml-only, --json-only. Suggest see manual
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

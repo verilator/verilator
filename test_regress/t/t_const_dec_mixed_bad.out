@@ -1,4 +1,5 @@
 %Error: t/t_const_dec_mixed_bad.v:9:30: Mixing X/Z/? with digits not legal in decimal constant: x_1
     9 |    parameter [200:0] MIXED = 32'dx_1;
       |                              ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

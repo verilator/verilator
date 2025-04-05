@@ -1,3 +1,4 @@
 %Error: --build-jobs requires a non-negative integer, but '-1' was passed
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: The following cannot be used together: --build, --lint-only. Suggest see manual
 %Error: Exiting due to

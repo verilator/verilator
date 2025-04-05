@@ -1,4 +1,5 @@
 %Error: t/t_fork_func_bad.v:11:10: Return isn't legal under fork (IEEE 1800-2023 9.2.3)
    11 |          return 0;   
       |          ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

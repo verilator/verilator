@@ -2,6 +2,7 @@
                                    : ... Suggested alternative: 'foobar'
    13 |       if (foobat) $stop;
       |           ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_var_suggest_bad.v:14:7: Can't find definition of task/function: 'boobat'
                                   : ... Suggested alternative: 'boobar'
    14 |       boobat;

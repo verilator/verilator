@@ -6,4 +6,6 @@
 %Warning-CASEWITHX: t/t_case_x_bad.v:19:9: Use of x/? constant in case statement, (perhaps intended casex/casez)
    19 |         4'b1xxx: $stop;
       |         ^~~~~~~
+                    ... For warning description see https://verilator.org/warn/CASEWITHX?v=latest
+                    ... Use "/* verilator lint_off CASEWITHX */" and lint_on around source to disable this message.
 %Error: Exiting due to

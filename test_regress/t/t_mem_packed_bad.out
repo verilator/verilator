@@ -1,4 +1,5 @@
 %Error: t/t_mem_packed_bad.v:27:32: CONST '28'h0' unexpected in assignment to unpacked array
    27 |       ch04                  <= 56'd0;
       |                                ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

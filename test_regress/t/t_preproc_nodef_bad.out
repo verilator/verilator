@@ -1,4 +1,5 @@
 %Error: t/t_preproc_nodef_bad.v:7:1: Define or directive not defined: '`not_defined'
     7 | `not_defined
       | ^~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

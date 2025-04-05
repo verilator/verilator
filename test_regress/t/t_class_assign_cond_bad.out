@@ -2,6 +2,7 @@
                                          : ... note: In instance 't'
    22 |       c1 = (c1 != null) ? c1 : c2;
       |                         ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_class_assign_cond_bad.v:23:10: Assign RHS expects a CLASSREFDTYPE 'Cls1', got CLASSREFDTYPE 'Cls2'
                                          : ... note: In instance 't'
    23 |       c1 = (c1 != null) ? c2 : c2;

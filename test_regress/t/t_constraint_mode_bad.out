@@ -2,6 +2,7 @@
                                        : ... note: In instance 't'
    21 |       p.m_one.constraint_mode(0);
       |               ^~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_constraint_mode_bad.v:22:45: Cannot call 'constraint_mode()' as a function on a variable
                                        : ... note: In instance 't'
    22 |       $display("p.constraint_mode()=%0d", p.constraint_mode());

@@ -8,6 +8,7 @@
                                     : ... note: In instance 't'
    13 |        fork @e; @e; join;
       |        ^~~~
+                 ... For error description see https://verilator.org/warn/NOTIMING?v=latest
 %Error-NOTIMING: t/t_notiming.v:14:8: Event control statement in this location requires --timing
                                     : ... note: In instance 't'
                                     : ... With --no-timing, suggest have one event control statement per procedure, at the top of the procedure

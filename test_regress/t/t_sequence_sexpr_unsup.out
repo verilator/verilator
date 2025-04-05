@@ -233,6 +233,7 @@
 %Warning-COVERIGN: t/t_sequence_sexpr_unsup.v:129:10: Ignoring unsupported: cover sequence
   129 |    cover sequence (s_a) $display("");
       |          ^~~~~~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
 %Warning-COVERIGN: t/t_sequence_sexpr_unsup.v:130:10: Ignoring unsupported: cover sequence
   130 |    cover sequence (@(posedge a) disable iff (b) s_a) $display("");

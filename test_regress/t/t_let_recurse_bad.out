@@ -1,4 +1,5 @@
 %Error: t/t_let_recurse_bad.v:9:36: Recursive let substitution 'RECURSE'
     9 |    let RECURSE(a) = (a == 1) ? 1 : RECURSE(a - 1);   
       |                                    ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

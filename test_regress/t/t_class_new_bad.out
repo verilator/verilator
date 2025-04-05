@@ -2,6 +2,7 @@
                                  : ... note: In instance 't'
    31 |       c1 = new(3);   
       |                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_class_new_bad.v:32:16: Too many arguments in function call to FUNC 'new'
                                  : ... note: In instance 't'
    32 |       c2 = new(3);   
@@ -18,3 +19,4 @@
                                                  : ... note: In instance 't'
    34 |       c1 = new[2];
       |            ^~~
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.

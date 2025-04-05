@@ -2,6 +2,7 @@
                                       : ... note: In instance 't'
    22 |    function :extends int get_e; return 1; endfunction   
       |                          ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_class_override_bad.v:24:33: Member 'get_ef' marked ':extends' but no base class function is being extend (IEEE 1800-2023 8.20)
                                       : ... note: In instance 't'
    24 |    function :extends :final int get_ef; return 1; endfunction   

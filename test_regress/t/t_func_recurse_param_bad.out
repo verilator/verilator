@@ -3,4 +3,5 @@
         t/t_func_recurse_param_bad.v:9:27: ... Location of non-constant FUNC 'recurse_self': Unsupported: Recursive constant functions
    15 |    localparam int HUGE = recurse_self(10000);   
       |                          ^~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

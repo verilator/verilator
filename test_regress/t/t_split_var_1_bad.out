@@ -19,14 +19,19 @@
                                               : ... note: In instance 't.i_sub3'
    90 |    assign outwires[12] = inwires[13];   
       |                                 ^
+                   ... For warning description see https://verilator.org/warn/SELRANGE?v=latest
+                   ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
 %Warning-WIDTHTRUNC: t/t_split_var_1_bad.v:41:31: Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's FUNCREF 'bad_func' generates 32 bits.
                                                 : ... note: In instance 't'
    41 |       i_sub0.cannot_split1[1] = bad_func(addr, rd_data0);
       |                               ^
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
 %Error: t/t_split_var_1_bad.v:79:16: Illegal assignment of constant to unpacked array
                                    : ... note: In instance 't.i_sub2'
    79 |    assign b = a[0];   
       |                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:56:31: 'cannot_split0' has split_var metacomment but will not be split because index cannot be determined statically.
                                               : ... note: In instance 't.i_sub0'
    56 |       rd_data = cannot_split0[addr];

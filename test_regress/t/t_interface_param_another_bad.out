@@ -2,6 +2,7 @@
                                               : ... note: In instance 't'
     9 |    simple_bus #(.PARAMETER(sb_intf.dummy)) simple();
       |                                    ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_interface_param_another_bad.v:9:18: Can't convert defparam value to constant: Param 'PARAMETER' of 'simple'
                                               : ... note: In instance 't'
     9 |    simple_bus #(.PARAMETER(sb_intf.dummy)) simple();

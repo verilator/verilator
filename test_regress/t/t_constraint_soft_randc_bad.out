@@ -4,4 +4,5 @@
         t/t_constraint_soft_randc_bad.v:10:23: ... Location of restricting expression
    10 |    constraint c_bad { soft rc > 4; }   
       |                       ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

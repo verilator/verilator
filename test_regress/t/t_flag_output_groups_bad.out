@@ -1,2 +1,3 @@
 %Error: --output-groups must be >= -1: -2
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

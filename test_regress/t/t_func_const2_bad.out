@@ -13,4 +13,5 @@
            c = ?32?h9
    22 |    localparam SOMEP = f_add2(A, B, 9);
       |                       ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to
