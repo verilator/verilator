@@ -110,15 +110,15 @@ class CMakeEmitter final {
         cmake_set_raw(*of, name + "_TIMING", v3Global.usesTiming() ? "1" : "0");
         *of << "# Threaded output mode?  1/N threads (from --threads)\n";
         cmake_set_raw(*of, name + "_THREADS", cvtToStr(v3Global.opt.threads()));
-        *of << "# VCD Tracing output mode?  0/1 (from --trace)\n";
-        cmake_set_raw(*of, name + "_TRACE_VCD",
-                      (v3Global.opt.trace() && v3Global.opt.traceFormat().vcd()) ? "1" : "0");
         *of << "# FST Tracing output mode? 0/1 (from --trace-fst)\n";
         cmake_set_raw(*of, name + "_TRACE_FST",
                       (v3Global.opt.trace() && v3Global.opt.traceFormat().fst()) ? "1" : "0");
         *of << "# SAIF Tracing output mode? 0/1 (from --trace-saif)\n";
         cmake_set_raw(*of, name + "_TRACE_SAIF",
                       (v3Global.opt.trace() && v3Global.opt.traceFormat().saif()) ? "1" : "0");
+        *of << "# VCD Tracing output mode?  0/1 (from --trace-vcd)\n";
+        cmake_set_raw(*of, name + "_TRACE_VCD",
+                      (v3Global.opt.trace() && v3Global.opt.traceFormat().vcd()) ? "1" : "0");
 
         *of << "\n### Sources...\n";
         std::vector<string> classes_fast;

@@ -930,7 +930,7 @@ void V3Options::notify() VL_MT_DISABLED {
     }
 
     if (trace()) {
-        // With --trace, --trace-threads is ignored
+        // With --trace-vcd, --trace-threads is ignored
         if (traceFormat().vcd()) m_traceThreads = 1;
     }
 
@@ -1671,6 +1671,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-no-trace-top", Set, &m_noTraceTop);
     DECL_OPTION("-trace-underscore", OnOff, &m_traceUnderscore);
+    DECL_OPTION("-trace-vcd", CbCall, [this]() {
+        m_trace = true;
+        m_traceFormat = TraceFormat::VCD;
+    });
 
     DECL_OPTION("-U", CbPartialMatch, &V3PreShell::undef);
     DECL_OPTION("-underline-zero", OnOff, &m_underlineZero);  // Deprecated

@@ -20,7 +20,7 @@ module t(/*AUTOARG*/
 
 endmodule
 
-// #5782 internal error with --trace. Bit range is not properly handled.
+// #5782 internal error with --trace-vcd. Bit range is not properly handled.
 module bug5782 (
     output logic [31:0][15:0] data_out
 );

@@ -17,7 +17,7 @@ test.scenarios('simulator')
 # closely enough to pass the same test?
 # If not -- probably we should switch this to be vlt-only.
 
-test.compile(verilator_flags2=["--trace"])
+test.compile(verilator_flags2=["--trace-vcd"])
 
 test.execute()
 

@@ -281,7 +281,7 @@ function(verilate TARGET)
     endif()
 
     if(VERILATE_TRACE)
-        list(APPEND VERILATOR_ARGS --trace)
+        list(APPEND VERILATOR_ARGS --trace-vcd)
     endif()
 
     if(VERILATE_TRACE_FST)
@@ -290,6 +290,10 @@ function(verilate TARGET)
 
     if(VERILATE_TRACE_SAIF)
         list(APPEND VERILATOR_ARGS --trace-saif)
+    endif()
+
+    if(VERILATE_TRACE_VCD)
+        list(APPEND VERILATOR_ARGS --trace-vcd)
     endif()
 
     if(VERILATE_SYSTEMC)

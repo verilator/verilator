@@ -12,7 +12,8 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_cover_line.v"
 
-test.compile(verilator_flags2=['--cc --coverage-line --trace --trace-coverage +define+ATTRIBUTE'])
+test.compile(
+    verilator_flags2=['--cc --coverage-line --trace-vcd --trace-coverage +define+ATTRIBUTE'])
 
 test.execute()
 

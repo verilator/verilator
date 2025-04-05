@@ -18,7 +18,7 @@ test.top_filename = "t/t_a1_first_cc.v"
 
 DEBUG_QUIET = "--debug --debugi 0 --gdbbt --no-dump-tree"
 
-test.compile(verilator_flags2=[DEBUG_QUIET, "-sc --trace --pins-sc-uint-bool"])
+test.compile(verilator_flags2=[DEBUG_QUIET, "-sc --trace-vcd --pins-sc-uint-bool"])
 
 test.execute()
 

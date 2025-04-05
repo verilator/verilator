@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=["--cc --trace --exe", test.pli_filename],
+test.compile(verilator_flags2=["--cc --trace-vcd --exe", test.pli_filename],
              make_top_shell=False,
              make_main=False)
 

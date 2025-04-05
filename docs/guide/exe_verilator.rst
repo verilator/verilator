@@ -1493,7 +1493,7 @@ Summary:
    but may run in a multithreaded environment. With "--threads N",
    where N >= 2, the model is generated to run multithreaded on up to N
    threads. See :ref:`Multithreading`. This option also applies to
-   :vlopt:`--trace` (but not :vlopt:`--trace-fst`).
+   :vlopt:`--trace-vcd` (but not :vlopt:`--trace-fst`).
 
 .. option:: --no-threads
 
@@ -1574,26 +1574,19 @@ Summary:
 
 .. option:: --trace
 
-   Adds waveform tracing code to the model using VCD format. This overrides
-   :vlopt:`--trace-fst`.
+   Deprecated; use :vlopt:`--trace-fst`, :vlopt:`--trace-saif` or
+   :vlopt:`--trace-vcd` instead.
 
-   Verilator will generate additional :file:`<prefix>__Trace*.cpp` files
-   must be compiled.  In addition :file:`verilated_vcd_sc.cpp`
-   (for SystemC traces) or :file:`verilated_vcd_c.cpp` (for both) must be
-   compiled and linked in.  If using the Verilator-generated Makefiles,
-   these files will be added to the source file lists for you.  If you are
-   not using the Verilator Makefiles, you will need to add these to your
-   Makefile manually.
+   Using :vlopt:`--trace` without :vlopt:`--trace-fst` nor
+   :vlopt:`--trace-fst` requests VCD traces.
 
-   Having tracing compiled in may result in small performance losses,
-   even when tracing is not turned on during model execution.
+   Using :vlopt:`--trace` :vlopt:`--trace-fst` requests FST traces.
 
-   When using :vlopt:`--threads`, VCD tracing is parallelized, using the
-   same number of threads as passed to :vlopt:`--threads`.
+   Using :vlopt:`--trace` :vlopt:`--trace-saif` requests SAIF traces.
 
 .. option:: --trace-coverage
 
-   With :vlopt:`--trace` and ``--coverage-*``, enable tracing to include a
+   With `--trace-*`  and ``--coverage-*``, enable tracing to include a
    traced signal for every :vlopt:`--coverage-line` or
    :vlopt:`--coverage-user`\ -inserted coverage point, to assist in
    debugging coverage items.  Note :vlopt:`--coverage-toggle` does not get
@@ -1672,6 +1665,24 @@ Summary:
    Enable tracing of signals or modules that start with an
    underscore. Otherwise, these signals are not output during tracing.  See
    also :vlopt:`--coverage-underscore` option.
+
+.. option:: --trace-vcd
+
+   Adds waveform tracing code to the model using VCD format.
+
+   Verilator will generate additional :file:`<prefix>__Trace*.cpp` files
+   must be compiled.  In addition :file:`verilated_vcd_sc.cpp`
+   (for SystemC traces) or :file:`verilated_vcd_c.cpp` (for both) must be
+   compiled and linked in.  If using the Verilator-generated Makefiles,
+   these files will be added to the source file lists for you.  If you are
+   not using the Verilator Makefiles, you will need to add these to your
+   Makefile manually.
+
+   Having tracing compiled in may result in small performance losses,
+   even when tracing is not turned on during model execution.
+
+   When using :vlopt:`--threads`, VCD tracing is parallelized, using the
+   same number of threads as passed to :vlopt:`--threads`.
 
 .. option:: -U<var>
 

@@ -13,7 +13,7 @@ test.scenarios('simulator')
 
 test.compile(
     # Disable inlining, this test is trivial without it
-    verilator_flags2=["-fno-inline --trace"],
+    verilator_flags2=["-fno-inline --trace-vcd"],
     verilator_flags3=[])
 
 test.execute()

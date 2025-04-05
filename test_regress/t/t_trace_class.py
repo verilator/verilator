@@ -12,8 +12,8 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 test.compile(
-    # verilator_flags2 = ['--binary --trace'],
-    verilator_flags2=['--binary --trace'])
+    # verilator_flags2 = ['--binary --trace-vcd'],
+    verilator_flags2=['--binary --trace-vcd'])
 
 test.execute()
 

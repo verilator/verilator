@@ -19,7 +19,7 @@ out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
 test.compile(make_top_shell=False,
              make_main=False,
              v_flags2=[
-                 "--trace --exe", test.pli_filename,
+                 "--trace-vcd --exe", test.pli_filename,
                  test.t_dir + "/t_trace_public_sig.vlt --no-json-edit-nums"
              ])
 

@@ -15,9 +15,9 @@
 /// \brief Verilated C++ tracing in SAIF format implementation code
 ///
 /// This file must be compiled and linked against all Verilated objects
-/// that use --trace.
+/// that use --trace-saif.
 ///
-/// Use "verilator --trace" to add this to the Makefile for the linker.
+/// Use "verilator --trace-saif" to add this to the Makefile for the linker.
 ///
 //=============================================================================
 

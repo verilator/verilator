@@ -42,8 +42,8 @@ def gen(filename, n):
 gen(test.top_filename, 6000)
 
 test.compile(
-    # use --trace to generate trace files that can be parallelized
-    verilator_flags2=["--stats --trace --verilate-jobs 2"])
+    # use --trace-vcd to generate trace files that can be parallelized
+    verilator_flags2=["--stats --trace-vcd --verilate-jobs 2"])
 
 test.execute()
 

@@ -14,10 +14,11 @@ test.pli_filename = "t/t_forceable_net.cpp"
 test.top_filename = "t/t_forceable_net.v"
 test.golden_filename = "t/t_forceable_net_trace.vcd"
 
-test.compile(
-    make_top_shell=False,
-    make_main=False,
-    verilator_flags2=['--exe', '--trace', test.pli_filename, test.t_dir + "/t_forceable_net.vlt"])
+test.compile(make_top_shell=False,
+             make_main=False,
+             verilator_flags2=[
+                 '--exe', '--trace-vcd', test.pli_filename, test.t_dir + "/t_forceable_net.vlt"
+             ])
 
 test.execute()
 

@@ -15,7 +15,7 @@ test.golden_filename = "t/t_trace_public.out"
 
 test.compile(make_top_shell=False,
              make_main=False,
-             v_flags2=["-DATTRIBUTES --trace --exe", test.pli_filename])
+             v_flags2=["-DATTRIBUTES --trace-vcd --exe", test.pli_filename])
 
 test.execute()
 

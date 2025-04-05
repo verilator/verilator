@@ -619,7 +619,7 @@ or "`ifdef`"'s may break other tools.
    Attached to a DPI import to indicate that function should be called when
    initializing tracing. This attribute is indented only to be used
    internally in code that Verilator generates when :vlopt:`--lib-create`
-   or :vlopt:`--hierarchical` is used along with :vlopt:`--trace`.
+   or :vlopt:`--hierarchical` is used along with :vlopt:`--trace-vcd`.
 
 .. option:: /*verilator&32;tracing_off*/
 

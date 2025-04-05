@@ -221,7 +221,7 @@ model, it may be beneficial to performance to adjust the
 influences the partitioning of the model by adjusting the assumed execution
 time of DPI imports.
 
-When using :vlopt:`--trace` to perform VCD tracing, the VCD trace
+When using :vlopt:`--trace-vcd` to perform VCD tracing, the VCD trace
 construction is parallelized using the same number of threads as specified
 with :vlopt:`--threads`, and is executed on the same thread pool as the model.
 
@@ -293,8 +293,8 @@ and must be called only by the eval thread.
 If using :vlopt:`--sc`, the SystemC kernel is not thread-safe; therefore,
 the eval thread and main thread must be the same.
 
-If using :vlopt:`--trace`, the tracing classes must be constructed and
-called from the main thread.
+If using :vlopt:`--trace-vcd` or other trace options, the tracing classes
+must be constructed and called from the main thread.
 
 If using :vlopt:`--vpi`, since SystemVerilog VPI was not architected by
 IEEE to be multithreaded, Verilator requires all VPI calls are only made
@@ -457,8 +457,7 @@ SystemC include directories and link to the SystemC libraries.
 
 .. describe:: TRACE
 
-   Optional. Enables VCD tracing if present, equivalent to "VERILATOR_ARGS
-   --trace".
+   Deprecated. Same as TRACE_VCD, which should be used instead.
 
 .. describe:: TRACE_FST
 
@@ -469,6 +468,11 @@ SystemC include directories and link to the SystemC libraries.
 
    Optional. Enables SAIF tracing if present, equivalent to "VERILATOR_ARGS
    --trace-saif".
+
+.. describe:: TRACE_VCD
+
+   Optional. Enables VCD tracing if present, equivalent to "VERILATOR_ARGS
+   --trace-vcd".
 
 .. describe:: VERILATOR_ARGS
 

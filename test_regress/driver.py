@@ -1036,7 +1036,7 @@ class VlTest:
         if Args.rr:
             verilator_flags += ["--rr"]
         if Args.trace:
-            verilator_flags += ["--trace"]
+            verilator_flags += ["--trace-vcd"]
         if Args.gdbsim or Args.rrsim:
             verilator_flags += ["-CFLAGS -ggdb -LDFLAGS -ggdb"]
         verilator_flags += ["--x-assign unique"]  # More likely to be buggy

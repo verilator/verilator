@@ -3038,7 +3038,7 @@ void VerilatedContext::trace(VerilatedTraceBaseC* tfp, int levels, int options) 
     if (m_ns.m_traceBaseModelCbs.empty())
         VL_FATAL_MT("", 0, "",
                     "Testbench C call to 'VerilatedContext::trace()' requires model(s) Verilated"
-                    " with --trace or --trace-vcd option");
+                    " with --trace-fst or --trace-vcd option");
     for (auto& cbr : m_ns.m_traceBaseModelCbs) cbr(tfp, levels, options);
 }
 void VerilatedContext::traceBaseModelCbAdd(traceBaseModelCb_t cb) VL_MT_SAFE {

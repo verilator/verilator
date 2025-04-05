@@ -15,7 +15,7 @@ test.top_filename = "t/t_protect_ids.v"
 test.compile(verilator_flags2=[
     "--protect-ids",
     "--protect-key SECRET_KEY",
-    "--trace",
+    "--trace-vcd",
     "--debug-protect",
     "--coverage",
     "-Wno-INSECURE",

@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(v_flags2=["--trace", "--output-split-cfuncs", "1"])
+test.compile(v_flags2=["--trace-vcd", "--output-split-cfuncs", "1"])
 
 test.passes()

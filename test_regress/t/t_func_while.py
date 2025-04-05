@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--trace"])
+test.compile(verilator_flags2=["--trace-vcd"])
 
 test.passes()
