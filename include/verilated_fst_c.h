@@ -56,6 +56,7 @@ private:
     std::map<int, vlFstEnumHandle> m_local2fstdtype;
     vlFstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array
     char* m_strbufp = nullptr;  // String buffer long enough to hold maxBits() chars
+    uint64_t m_timeui = 0;  // Time to emit, 0 = not needed
 
     bool m_useFstWriterThread = false;  // Whether to use the separate FST writer thread
 
@@ -75,6 +76,7 @@ protected:
 
     // Called when the trace moves forward to a new time point
     void emitTimeChange(uint64_t timeui) override;
+    void emitTimeChangeMaybe();
 
     // Hooks called from VerilatedTrace
     bool preFullDump() override { return isOpen(); }

@@ -55,6 +55,8 @@ private:
     char* m_wrBufp;  // Output buffer
     char* m_wrFlushp;  // Output buffer flush trigger location
     char* m_writep;  // Write pointer into output buffer
+    char* m_wrTimeBeginp = nullptr;  // Write pointer for last time dump
+    char* m_wrTimeEndp = nullptr;  // Write pointer for last time dump
     size_t m_wrChunkSize;  // Output buffer size
     size_t m_maxSignalBytes = 0;  // Upper bound on number of bytes a single signal can generate
     uint64_t m_wroteBytes = 0;  // Number of bytes written to this file
