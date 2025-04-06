@@ -316,7 +316,7 @@ Verilator 5.028 2024-08-21
 * Add parsing but otherwise ignore std::randomize (#5354). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Add Verilated cc define when `--timing` used (#5383). [Kaleb Barrett]
 * Improve emitted code to use a reference for VlSelf (#5254). [Yangyu Chen]
-* Fix monitor block sensitivity items (#4400) (#5294). [Udaya Raj Subedi]
+* Fix monitor block sensitivity items (#4040) (#4400) (#5294). [Udaya Raj Subedi]
 * Fix fusing macro arguments to not ignore whitespace (#5061). [Tudor Timi]
 * Fix optimized-out sensitivity trees with `--timing` (#5080) (#5349). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix classes/modules of case-similar names (#5109). [Arkadiusz Kozdra]
