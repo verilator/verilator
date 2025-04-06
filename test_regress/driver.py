@@ -12,6 +12,7 @@ import multiprocessing
 import os
 import pickle
 import platform
+import pty
 import re
 import runpy
 import shutil
@@ -1714,18 +1715,35 @@ class VlTest:
         # Execute command redirecting output, keeping order between stderr and stdout.
         # Must do low-level IO so GCC interaction works (can't be line-based)
         status = None
-        if True:  # process_caller_block  # pylint: disable=using-constant-test
+        # process_caller_block  # pylint: disable=using-constant-test
 
-            logfh = None
-            if logfile:
-                logfh = open(logfile, 'wb')  # pylint: disable=consider-using-with
+        logfh = None
+        if logfile:
+            logfh = open(logfile, 'wb')  # pylint: disable=consider-using-with
 
+        if not Args.interactive_debugger:
+            # Become TTY controlling termal so GDB will not capture main driver.py's terminal
+            pid, fd = pty.fork()
+            if pid == 0:
+                subprocess.run(["stty", "nl"], check=True)  # No carriage returns
+                os.execlp("bash", "/bin/bash", "-c", command)
+            else:
+                # Parent process: Interact with GDB
+                while True:
+                    try:
+                        data = os.read(fd, 1)
+                        self._run_output(data, logfh, tee)
+                    except OSError:
+                        break
+
+                (pid, rc) = os.waitpid(pid, 0)
+
+        else:
             with subprocess.Popen(command,
                                   shell=True,
                                   bufsize=0,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.STDOUT) as proc:
-
                 rawbuf = bytearray(2048)
 
                 while True:
@@ -1734,32 +1752,25 @@ class VlTest:
                     got = proc.stdout.readinto(rawbuf)
                     if got:
                         data = rawbuf[0:got]
-                        if re.search(r'--debug-exit-uvm23: Exiting', str(data)):
-                            self._force_pass = True
-                            print("EXIT: " + str(data))
-                        if tee:
-                            sys.stdout.write(data.decode('latin-1'))
-                            if Args.interactive_debugger:
-                                sys.stdout.flush()
-                        if logfh:
-                            logfh.write(data)
+                        self._run_output(data, logfh, tee)
                     elif finished is not None:
                         break
 
-                if logfh:
-                    logfh.close()
-
                 rc = proc.returncode  # Negative if killed by signal
-                if (rc in (
-                        -4,  # SIGILL
-                        -8,  # SIGFPA
-                        -11)):  # SIGSEGV
-                    self.error("Exec failed with core dump")
-                    status = 10
-                elif rc:
-                    status = 10
-                else:
-                    status = 0
+
+        if logfh:
+            logfh.close()
+
+        if (rc in (
+                -4,  # SIGILL
+                -8,  # SIGFPA
+                -11)):  # SIGSEGV
+            self.error("Exec failed with core dump")
+            status = 10
+        elif rc:
+            status = 10
+        else:
+            status = 0
 
         sys.stdout.flush()
         sys.stderr.flush()
@@ -1792,6 +1803,17 @@ class VlTest:
             return False
 
         return True
+
+    def _run_output(self, data, logfh, tee):
+        if re.search(r'--debug-exit-uvm23: Exiting', str(data)):
+            self._force_pass = True
+            print("EXIT: " + str(data))
+        if tee:
+            sys.stdout.write(data.decode('latin-1'))
+            if Args.interactive_debugger:
+                sys.stdout.flush()
+        if logfh:
+            logfh.write(data)
 
     def _run_log_try(self, logfile: str, check_finished: bool, moretry: bool) -> bool:
         # If moretry, then return true to try again

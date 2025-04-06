@@ -7,18 +7,12 @@
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-# This test runs the very first time we've executed Verilator --sc
-# after building so we make sure to run with --gdbbt, so if it dumps we'll
-# get a trace.
-
 import vltest_bootstrap
 
 test.scenarios('simulator')
 test.top_filename = "t/t_a1_first_cc.v"
 
-DEBUG_QUIET = "--debug --debugi 0 --gdbbt --no-dump-tree"
-
-test.compile(verilator_flags2=[DEBUG_QUIET, "-sc --trace-vcd --pins-sc-uint-bool"])
+test.compile(verilator_flags2=["-sc --trace-vcd --pins-sc-uint-bool"])
 
 test.execute()
 
