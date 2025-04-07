@@ -13,7 +13,7 @@ Verilator 5.035 devel
 
 **Important:**
 
-* Add `--trace-saif` for SAIF power traces (#5812). [Mateusz Gancarz]
+* Add `--trace-saif` for SAIF power traces (#5812) (#5914). [Mateusz Gancarz]
 * Change `--output-groups` to default to value of `--build-jobs` (#5751).
   Those using build farms may need to now use `--output-groups 0` or otherwise.
 
@@ -70,6 +70,7 @@ Verilator 5.035 devel
 * Fix delayed assignment malformed LHS assertion (#5904).
 * Fix segfault in fork synchronization (#5906). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix `new this` (#5909).
+* Fix LATCH warning for automatic variables (#5918). [Yutetsu TAKATSUKASA]
 
 
 Verilator 5.034 2025-02-24
