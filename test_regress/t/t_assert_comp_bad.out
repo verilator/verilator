@@ -1,43 +1,47 @@
--Info: t/t_assert_comp_bad.v:10:7: Elaboration system task message (IEEE 1800-2023 20.11)
+-Info: t/t_assert_comp_bad.v:13:7: Elaboration system task message (IEEE 1800-2023 20.11)
                                  : ... note: In instance 't'
-   10 |       $info;
+   13 |       $info;
       |       ^~~~~
--Info: t/t_assert_comp_bad.v:11:7: User elaboration-time info
+-Info: t/t_assert_comp_bad.v:14:7: User elaboration-time info
                                  : ... note: In instance 't'
-   11 |       $info("User elaboration-time info");
+   14 |       $info("User elaboration-time info");
       |       ^~~~~
-%Warning-USERWARN: t/t_assert_comp_bad.v:12:7: Elaboration system task message (IEEE 1800-2023 20.11)
+-Info: t/t_assert_comp_bad.v:15:7: Percent=% PctPct=%% Ten=10
+                                 : ... note: In instance 't'
+   15 |       $info("Percent=%% PctPct=%s Ten=%0d", PCTPCT, TEN);
+      |       ^~~~~
+%Warning-USERWARN: t/t_assert_comp_bad.v:16:7: Elaboration system task message (IEEE 1800-2023 20.11)
                                              : ... note: In instance 't'
-   12 |       $warning;
+   16 |       $warning;
       |       ^~~~~~~~
                    ... For warning description see https://verilator.org/warn/USERWARN?v=latest
                    ... Use "/* verilator lint_off USERWARN */" and lint_on around source to disable this message.
-%Warning-USERWARN: t/t_assert_comp_bad.v:13:7: User elaboration-time warning
+%Warning-USERWARN: t/t_assert_comp_bad.v:17:7: User elaboration-time warning
                                              : ... note: In instance 't'
-   13 |       $warning("User elaboration-time warning");
+   17 |       $warning("User elaboration-time warning");
       |       ^~~~~~~~
-%Warning-USERWARN: t/t_assert_comp_bad.v:14:7:           1
+%Warning-USERWARN: t/t_assert_comp_bad.v:18:7:           1
                                              : ... note: In instance 't'
-   14 |       $warning(1);   
+   18 |       $warning(1);   
       |       ^~~~~~~~
-%Warning-USERERROR: t/t_assert_comp_bad.v:15:7: Elaboration system task message (IEEE 1800-2023 20.11)
+%Warning-USERERROR: t/t_assert_comp_bad.v:19:7: Elaboration system task message (IEEE 1800-2023 20.11)
                                               : ... note: In instance 't'
-   15 |       $error;
+   19 |       $error;
       |       ^~~~~~
                     ... For warning description see https://verilator.org/warn/USERERROR?v=latest
                     ... Use "/* verilator lint_off USERERROR */" and lint_on around source to disable this message.
-%Warning-USERERROR: t/t_assert_comp_bad.v:16:7: User elaboration-time error
+%Warning-USERERROR: t/t_assert_comp_bad.v:20:7: User elaboration-time error
                                               : ... note: In instance 't'
-   16 |       $error("User elaboration-time error");
+   20 |       $error("User elaboration-time error");
       |       ^~~~~~
-%Warning-USERFATAL: t/t_assert_comp_bad.v:17:7: User elaboration-time fatal
+%Warning-USERFATAL: t/t_assert_comp_bad.v:21:7: User elaboration-time fatal
                                               : ... note: In instance 't'
-   17 |       $fatal(0, "User elaboration-time fatal");
+   21 |       $fatal(0, "User elaboration-time fatal");
       |       ^~~~~~
                     ... For warning description see https://verilator.org/warn/USERFATAL?v=latest
                     ... Use "/* verilator lint_off USERFATAL */" and lint_on around source to disable this message.
-%Warning-USERFATAL: t/t_assert_comp_bad.v:18:7: Elaboration system task message (IEEE 1800-2023 20.11)
+%Warning-USERFATAL: t/t_assert_comp_bad.v:22:7: Elaboration system task message (IEEE 1800-2023 20.11)
                                               : ... note: In instance 't'
-   18 |       $fatal;
+   22 |       $fatal;
       |       ^~~~~~
 %Error: Exiting due to

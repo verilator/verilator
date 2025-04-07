@@ -3249,7 +3249,7 @@ class ConstVisitor final : public VNVisitor {
             }
         }
         if (m_doNConst && anyconst) {
-            // UINFO(9,"  Display in  "<<nodep->text()<<endl);
+            // UINFO(9, "  Display in  " << nodep->text() << endl);
             string newFormat;
             string fmt;
             bool inPct = false;
@@ -3265,9 +3265,9 @@ class ConstVisitor final : public VNVisitor {
                     inPct = false;
                     fmt += ch;
                     switch (std::tolower(ch)) {
-                    case '%': break;  // %% - just output a %
-                    case 'm': break;  // %m - auto insert "name"
-                    case 'l': break;  // %l - auto insert "library"
+                    case '%': break;  // %% - still %%
+                    case 'm': break;  // %m - still %m - auto insert "name"
+                    case 'l': break;  // %l - still %l - auto insert "library"
                     case 't':  // FALLTHRU
                     case '^':  // %t/%^ - don't know $timeformat so can't constify
                         if (argp) argp = argp->nextp();

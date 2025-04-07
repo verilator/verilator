@@ -99,6 +99,8 @@ public:
     static string quoteBackslash(const string& str) { return quoteAny(str, '\\', '\\'); }
     // Replace any %'s with %%
     static string quotePercent(const string& str) { return quoteAny(str, '%', '%'); }
+    // Replace any %%'s with %
+    static string dequotePercent(const string& str);
     // Surround a raw string by double quote and escape if necessary
     // e.g. input abc's  becomes "\"abc\'s\""
     static string escapeStringForPath(const string& str);

@@ -71,6 +71,7 @@ Verilator 5.035 devel
 * Fix segfault in fork synchronization (#5906). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix `new this` (#5909).
 * Fix LATCH warning for automatic variables (#5918). [Yutetsu TAKATSUKASA]
+* Fix %% on elaboration severity tasks (#5922). [Ethan Sifferman]
 
 
 Verilator 5.034 2025-02-24

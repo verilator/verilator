@@ -5463,7 +5463,7 @@ class WidthVisitor final : public VNVisitor {
         userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         if (!m_paramsOnly) {
             V3Const::constifyParamsEdit(nodep->fmtp());  // fmtp may change
-            string text = nodep->fmtp()->text();
+            string text = VString::dequotePercent(nodep->fmtp()->text());
             if (text.empty()) text = "Elaboration system task message (IEEE 1800-2023 20.11)";
             switch (nodep->displayType()) {
             case VDisplayType::DT_INFO: nodep->v3warn(USERINFO, text); break;
