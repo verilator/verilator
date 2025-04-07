@@ -28,7 +28,15 @@ module t(/*AUTOARG*/
 
    Chk check(clk, cyc);
 
+   checker checker_in_module;
+   endchecker
+
 endmodule
+
+package Pkg;
+   checker checker_in_pkg;
+   endchecker
+endpackage
 
 checker Chk
             // UNSUP  (input clk, int in)

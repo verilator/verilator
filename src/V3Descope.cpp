@@ -74,7 +74,7 @@ class DescopeVisitor final : public VNVisitor {
             string name = scopep->name();
             string::size_type pos;
             if ((pos = name.rfind('.')) != string::npos) name.erase(0, pos + 1);
-            ret.thisPtr = VSelfPointerText{VSelfPointerText::This(), name};
+            ret.thisPtr = VSelfPointerText{VSelfPointerText::This{}, name};
         }
         return ret.thisPtr;
     }
@@ -104,9 +104,9 @@ class DescopeVisitor final : public VNVisitor {
         if (VN_IS(scopep->modp(), Class)) {
             // Direct reference to class members are from within the class itself, references from
             // outside the class must go via AstMemberSel
-            return VSelfPointerText{VSelfPointerText::This()};
+            return VSelfPointerText{VSelfPointerText::This{}};
         } else if (relativeRefOk && scopep == m_scopep) {
-            return VSelfPointerText{VSelfPointerText::This()};
+            return VSelfPointerText{VSelfPointerText::This{}};
         } else if (relativeRefOk && !m_modSingleton && scopep->aboveScopep() == m_scopep
                    && VN_IS(scopep->modp(), Module)) {
             // Reference to scope of instance directly under this module, can just "this->cell",

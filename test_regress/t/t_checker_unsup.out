@@ -1,0 +1,44 @@
+%Error-UNSUPPORTED: t/t_checker_unsup.v:31:4: Unsupported: checker
+   31 |    checker checker_in_module;
+      |    ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_checker_unsup.v:37:4: Unsupported: checker
+   37 |    checker checker_in_pkg;
+      |    ^~~~~~~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:41:1: Unsupported: checker
+   41 | checker Chk
+      | ^~~~~~~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:44:8: Unsupported: checker data declaration
+   44 |    bit clk;
+      |        ^~~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:45:8: Unsupported: checker data declaration
+   45 |    bit in;
+      |        ^~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:46:8: Unsupported: checker data declaration
+   46 |    bit rst;
+      |        ^~~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:47:4: Unsupported: checker rand
+   47 |    rand bit randed;   
+      |    ^~~~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:49:8: Unsupported: checker data declaration
+   49 |    int counter = 0;
+      |        ^~~~~~~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:51:8: Unsupported: checker data declaration
+   51 |    int ival;
+      |        ^~~~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:61:8: Unsupported: checker data declaration
+   61 |    int ival2;
+      |        ^~~~~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:69:4: Unsupported: checker default clocking
+   69 |    default clocking clk;   
+      |    ^~~~~~~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:70:4: Unsupported: checker default disable iff
+   70 |    default disable iff rst;   
+      |    ^~~~~~~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:72:4: Unsupported: checker
+   72 |    checker ChkChk;   
+      |    ^~~~~~~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:72:12: Unsupported: recursive checker
+   72 |    checker ChkChk;   
+      |            ^~~~~~
+%Error: Exiting due to

@@ -1496,7 +1496,7 @@ list_of_ports<nodep>:           // IEEE: list_of_ports + list_of_port_declaratio
 
 portAndTagE<nodep>:
                 /* empty */
-                        { int p = PINNUMINC();
+                        { const int p = PINNUMINC();
                           const string name = "__pinNumber" + cvtToStr(p);
                           $$ = new AstPort{CRELINE(), p, name};
                           AstVar* varp = new AstVar{CRELINE(), VVarType::WIRE, name, VFlagChildDType{},
@@ -6304,22 +6304,26 @@ property_port_item<nodep>:  // IEEE: property_port_item/sequence_port_item
         //                      //           id {variable_dimension} [ '=' property_actual_arg ]
         //                      // seq IEEE: [ yLOCAL [ sequence_lvar_port_direction ] ] sequence_formal_type
         //                      //           id {variable_dimension} [ '=' sequence_actual_arg ]
-                property_port_itemFront property_port_itemAssignment { $$ = $2; }
+                property_port_itemFront property_port_itemAssignment  { $$ = $2; }
         ;
 
 property_port_itemFront:  // IEEE: part of property_port_item/sequence_port_item
-                property_port_itemDirE property_formal_typeNoDt  { VARDTYPE($2); }
+                property_port_itemDirE property_formal_typeNoDt
+                        { VARDTYPE($2); }
         //                      // data_type_or_implicit
         |       property_port_itemDirE data_type
                         { VARDTYPE($2); GRAMMARP->m_typedPropertyPort = true; }
         |       property_port_itemDirE yVAR data_type
                         { VARDTYPE($3); GRAMMARP->m_typedPropertyPort = true; }
-        |       property_port_itemDirE yVAR implicit_typeE      { VARDTYPE($3); }
-        |       property_port_itemDirE implicit_typeE           { VARDTYPE($2); }
+        |       property_port_itemDirE yVAR implicit_typeE
+                        { VARDTYPE($3); }
+        |       property_port_itemDirE implicit_typeE
+                        { VARDTYPE($2); }
         ;
 
 property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequence_port_item/checker_port_direction
-                id variable_dimensionListE         { $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
+                id variable_dimensionListE
+                        { $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
         |       id variable_dimensionListE '=' property_actual_arg
                         { $$ = VARDONEA($<fl>1, *$1, $2, $4);
                           BBUNSUP($3, "Unsupported: property variable default value"); }
@@ -7128,7 +7132,7 @@ rs_case_item<nodep>:  // ==IEEE: rs_case_item
 //**********************************************************************
 // Checker
 
-checker_declaration<nodep>:  // ==IEEE: part of checker_declaration
+checker_declaration<nodeModulep>:  // ==IEEE: part of checker_declaration
                 checkerFront checker_port_listE ';'
                         checker_or_generate_itemListE yENDCHECKER endLabelE
                         { $$ = $1;
