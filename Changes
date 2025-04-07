@@ -19,6 +19,7 @@ Verilator 5.035 devel
 
 **Other:**
 
+* Support simple `checker` blocks (#4066). [Srinivasan Venkataramanan]
 * Support force/release with a variable reference (#5721) (#5810). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Support command-line overriding `define (#5900) (#5908). [Brian Li]
 * Support `$setuphold` (#5884). [Krzysztof Sychla]

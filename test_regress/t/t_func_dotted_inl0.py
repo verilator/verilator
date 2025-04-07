@@ -19,7 +19,8 @@ test.compile(v_flags2=['--no-json-edit-nums', '+define+ATTRIBUTES', '+define+NOU
 if test.vlt_all:
     test.file_grep(
         out_filename,
-        r'{"type":"MODULE","name":"ma",.*"loc":"\w,84:[^"]*",.*"origName":"ma",.*,"modPublic":true')
+        r'{"type":"MODULE","name":"ma",.*"loc":"\w,84:[^"]*",.*"origName":"ma",.*,"modPublic":true'
+    )
     test.file_grep(
         out_filename,
         r'{"type":"MODULE","name":"mb",.*"loc":"\w,99:[^"]*",.*"origName":"mb",.*"modPublic":true')

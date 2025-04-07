@@ -1211,7 +1211,7 @@ description:                    // ==IEEE: description
         |       interface_declaration                   { }
         |       program_declaration                     { }
         |       package_declaration                     { }
-        |       package_item                            { if ($1) PARSEP->unitPackage($1->fileline())->addStmtsp($1); }
+        |       package_itemTop                         { if ($1) PARSEP->unitPackage($1->fileline())->addStmtsp($1); }
         |       bind_directive                          { if ($1) PARSEP->unitPackage($1->fileline())->addStmtsp($1); }
         //UNSUP config_declaration                      { }
         //                      // Verilator only
@@ -1282,12 +1282,33 @@ package_item<nodep>:            // ==IEEE: package_item
         |       sigAttrScope                            { $$ = nullptr; }
         ;
 
+package_itemTop<nodep>:         // ==IEEE: package_item
+
+                package_or_generate_item_declNoChecker  { $$ = $1; }
+        |       checker_declaration
+                       { PARSEP->rootp()->addModulesp($1);
+                         $$ = nullptr; }
+        |       anonymous_program                       { $$ = $1; }
+        |       package_export_declaration              { $$ = $1; }
+        |       timeunits_declaration                   { $$ = $1; }
+        |       sigAttrScope                            { $$ = nullptr; }
+        ;
+
 package_or_generate_item_declaration<nodep>:    // ==IEEE: package_or_generate_item_declaration
+                package_or_generate_item_declNoChecker  { $$ = $1; }
+        |       checker_declaration
+                        { $1->v3warn(E_UNSUPPORTED, "Unsupported: 'checker' below unit-level");
+                          PARSEP->rootp()->addModulesp($1);
+                          $$ = nullptr; }
+        ;
+
+package_or_generate_item_declNoChecker<nodep>:
                 net_declaration                         { $$ = $1; }
         |       data_declaration                        { $$ = $1; }
         |       task_declaration                        { $$ = $1; }
         |       function_declaration                    { $$ = $1; }
-        |       checker_declaration                     { $$ = $1; }
+        //                      // IEEE checker_declaration excluded, to handle Top, see other rules
+        //                      // checker_declaration
         |       dpi_import_export                       { $$ = $1; }
         |       extern_constraint_declaration           { $$ = $1; }
         |       class_declaration                       { $$ = $1; }
@@ -1759,7 +1780,7 @@ program_declaration:            // IEEE: program_declaration + program_nonansi_h
 
 pgmFront<nodeModulep>:
                 yPROGRAM lifetimeE idAny/*new_program*/
-                        { $$ = new AstModule{$<fl>3, *$3, true};
+                        { $$ = new AstModule{$<fl>3, *$3, AstModule::Program{}};
                           $$->lifetime($2);
                           $$->inLibrary(PARSEP->inLibrary() || $$->fileline()->celldefineOn());
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
@@ -2813,9 +2834,13 @@ module_or_generate_item_declaration<nodep>:     // ==IEEE: module_or_generate_it
                 package_or_generate_item_declaration    { $$ = $1; }
         |       genvar_declaration                      { $$ = $1; }
         |       clocking_declaration                    { $$ = $1; }
-        |       yDEFAULT yCLOCKING idAny/*new-clocking_identifier*/ ';'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: default clocking identifier"); }
+        |       modDefaultClocking                      { $$ = $1; }
         |       defaultDisable                          { $$ = $1; }
+        ;
+
+modDefaultClocking<nodep>:  // IEEE: part of module_or_generate_item_declaration/checker_or_...
+                yDEFAULT yCLOCKING idAny/*new-clocking_identifier*/ ';'
+                        { $$ = nullptr; BBUNSUP($1, "Unsupported: default clocking identifier"); }
         ;
 
 defaultDisable<nodep>:  // IEEE: part of module_/checker_or_generate_item_declaration
@@ -6321,7 +6346,7 @@ property_port_itemFront:  // IEEE: part of property_port_item/sequence_port_item
                         { VARDTYPE($2); }
         ;
 
-property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequence_port_item/checker_port_direction
+property_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequence_port_item
                 id variable_dimensionListE
                         { $$ = VARDONEA($<fl>1, *$1, $2, nullptr); }
         |       id variable_dimensionListE '=' property_actual_arg
@@ -7145,19 +7170,60 @@ checker_declaration<nodeModulep>:  // ==IEEE: part of checker_declaration
 
 checkerFront<nodeModulep>:  // IEEE: part of checker_declaration
                 yCHECKER idAny/*checker_identifier*/
-                        { BBUNSUP($<fl>1, "Unsupported: checker");
-                          // TODO should be AstChecker not AstModule
-                          $$ = new AstModule{$<fl>2, *$2};
+                        { $$ = new AstModule{$<fl>2, *$2, AstModule::Checker{}};
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
                           $$->unconnectedDrive(PARSEP->unconnectedDrive());
                           SYMP->pushNew($$); }
+        |       checkerFront sigAttrScope               { $$ = $1; }
         ;
 
 checker_port_listE<nodep>:  // IEEE: [ ( [ checker_port_list ] ) ]
-        //                      // checker_port_item is basically the same as property_port_item, minus yLOCAL::
-        //                      // Want to bet 1800-2012 adds local to checkers?
-                property_port_listE                     { $$ = $1; }
+                /* empty */                             { $$ = nullptr; }
+        |       '(' ')'                                 { $$ = nullptr; }
+        |       '('
+        /*mid*/         { VARRESET_LIST(PORT); GRAMMARP->m_pinAnsi = true; }
+        /*cont*/    checker_port_list ')'
+                        { $$ = $3; }
+        ;
+
+checker_port_list<nodep>:  // ==IEEE: checker_port_list
+                checker_port_item                             { $$ = $1; }
+        |       checker_port_list ',' checker_port_item       { $$ = addNextNull($1, $3); }
+        ;
+
+checker_port_item<nodep>:  // IEEE: checker_port_item
+                checker_port_itemFront checker_port_itemAssignment  { $$ = $2; }
+        ;
+
+checker_port_itemFront:  // IEEE: part of checker_port_item
+                checker_port_directionE property_formal_typeNoDt
+                        { VARDTYPE($2); }
+        //                      // data_type_or_implicit
+        |       checker_port_directionE data_type
+                        { VARDTYPE($2); GRAMMARP->m_typedPropertyPort = true; }
+        |       checker_port_directionE yVAR data_type
+                        { VARDTYPE($3); GRAMMARP->m_typedPropertyPort = true; }
+        |       checker_port_directionE yVAR implicit_typeE
+                        { VARDTYPE($3); }
+        |       checker_port_directionE implicit_typeE
+                        { VARDTYPE($2); }
+        ;
+
+checker_port_directionE:  // IEEE: [ checker_port_direction ]
+                /* empty */                             { VARIO(INPUT); }
+        |       yINPUT                                  { VARIO(INPUT); }
+        |       yOUTPUT                                 { VARIO(OUTPUT); }
+        ;
+
+checker_port_itemAssignment<nodep>:  // IEEE: part of checker_port_direction
+                id variable_dimensionListE
+                        { $$ = new AstPort{CRELINE(), PINNUMINC(), *$1};
+                          $$->addNext(VARDONEA($<fl>1, *$1, $2, nullptr)); }
+        |       id variable_dimensionListE '=' property_actual_arg
+                        { $$ = new AstPort{CRELINE(), PINNUMINC(), *$1};
+                          $$->addNext(VARDONEA($<fl>1, *$1, $2, $4));
+                          BBUNSUP($3, "Unsupported: checker port variable default value"); }
         ;
 
 checker_or_generate_itemListE<nodep>:  // IEEE: [{ checker_or_generate_itemList }]
@@ -7182,22 +7248,19 @@ checker_or_generate_item<nodep>:  // ==IEEE: checker_or_generate_item
         ;
 
 checker_or_generate_item_declaration<nodep>:  // ==IEEE: checker_or_generate_item_declaration
-                data_declaration
-                        { $$ = $1; BBUNSUP($1, "Unsupported: checker data declaration"); }
+                data_declaration                        { $$ = $1; }
         |       yRAND data_declaration
                         { $$ = $2; BBUNSUP($1, "Unsupported: checker rand"); }
         |       function_declaration                    { $$ = $1; }
         |       checker_declaration
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: recursive checker"); }
+                        { $$ = nullptr; BBUNSUP($1, "Unsupported: recursive 'checker'"); }
         |       assertion_item_declaration              { $$ = $1; }
         |       covergroup_declaration                  { $$ = $1; }
         //      // IEEE deprecated: overload_declaration
         |       genvar_declaration                      { $$ = $1; }
         |       clocking_declaration                    { $$ = $1; }
-        |       yDEFAULT yCLOCKING idAny/*clocking_identifier*/ ';'        { }
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: checker default clocking"); }
-        |       defaultDisable
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: checker default disable iff"); }
+        |       modDefaultClocking                      { $$ = $1; }
+        |       defaultDisable                          { $$ = $1; }
         |       ';'                                     { $$ = nullptr; }
         ;
 

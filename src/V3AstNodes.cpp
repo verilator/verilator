@@ -2048,6 +2048,16 @@ void AstModportVarRef::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "direction", direction().ascii());
     dumpJsonGen(str);
 }
+void AstModule::dump(std::ostream& str) const {
+    this->AstNodeModule::dump(str);
+    if (isChecker()) str << " [CHECKER]";
+    if (isProgram()) str << " [PROGRAM]";
+}
+void AstModule::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isChecker);
+    dumpJsonBoolFunc(str, isProgram);
+    dumpJsonGen(str);
+}
 void AstPin::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (modVarp()) {

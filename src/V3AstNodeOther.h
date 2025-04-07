@@ -2489,14 +2489,28 @@ public:
 };
 class AstModule final : public AstNodeModule {
     // A module declaration
-    const bool m_isProgram;  // Module represents a program
+    const bool m_isChecker = false;  // Module represents a checker
+    const bool m_isProgram = false;  // Module represents a program
 public:
-    AstModule(FileLine* fl, const string& name, bool program = false)
+    class Checker {};  // for constructor type-overload selection
+    class Program {};  // for constructor type-overload selection
+    AstModule(FileLine* fl, const string& name)
+        : ASTGEN_SUPER_Module(fl, name) {}
+    AstModule(FileLine* fl, const string& name, Checker)
         : ASTGEN_SUPER_Module(fl, name)
-        , m_isProgram{program} {}
+        , m_isChecker{true} {}
+    AstModule(FileLine* fl, const string& name, Program)
+        : ASTGEN_SUPER_Module(fl, name)
+        , m_isProgram{true} {}
     ASTGEN_MEMBERS_AstModule;
-    string verilogKwd() const override { return m_isProgram ? "program" : "module"; }
+    string verilogKwd() const override {
+        return m_isChecker ? "checker" : m_isProgram ? "program" : "module";
+    }
     bool timescaleMatters() const override { return true; }
+    bool isChecker() const { return m_isChecker; }
+    bool isProgram() const { return m_isProgram; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
 };
 class AstNotFoundModule final : public AstNodeModule {
     // A missing module declaration

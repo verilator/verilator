@@ -38,9 +38,7 @@ package Pkg;
    endchecker
 endpackage
 
-checker Chk
-            // UNSUP  (input clk, int in)
-            ;
+checker Chk(input defaulted = 1'b0);
    bit clk;
    bit in;
    bit rst;
