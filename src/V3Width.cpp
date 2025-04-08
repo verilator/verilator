@@ -5198,12 +5198,12 @@ class WidthVisitor final : public VNVisitor {
             //
             // if (debug()) nodep->dumpTree("-    assign: ");
             AstNodeDType* const lhsDTypep
-                = nodep->lhsp()->dtypep();  // Note we use rhsp for context determined
+                = nodep->lhsp()->dtypep()->skipRefp();  // Note we use rhsp for context determined
 
             // Check width of stream and wrap if needed
             if (AstNodeStream* const streamp = VN_CAST(nodep->rhsp(), NodeStream)) {
                 const int lwidth = widthUnpacked(lhsDTypep);
-                const int rwidth = widthUnpacked(streamp->lhsp()->dtypep());
+                const int rwidth = widthUnpacked(streamp->lhsp()->dtypep()->skipRefp());
                 if (lwidth != 0 && lwidth < rwidth) {
                     nodep->v3widthWarn(lwidth, rwidth,
                                        "Target fixed size variable ("
@@ -5216,8 +5216,10 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
             if (const AstNodeStream* const streamp = VN_CAST(nodep->lhsp(), NodeStream)) {
-                const int lwidth = widthUnpacked(streamp->lhsp()->dtypep());
-                const int rwidth = widthUnpacked(nodep->rhsp()->dtypep());
+                const AstNodeDType* const rhsDTypep = nodep->rhsp()->dtypep()->skipRefp();
+
+                const int lwidth = widthUnpacked(streamp->lhsp()->dtypep()->skipRefp());
+                const int rwidth = widthUnpacked(rhsDTypep);
                 if (rwidth != 0 && rwidth < lwidth) {
                     nodep->v3widthWarn(lwidth, rwidth,
                                        "Stream target requires "
@@ -5225,7 +5227,7 @@ class WidthVisitor final : public VNVisitor {
                                            << " bits, but source expression only provides "
                                            << rwidth << " bits (IEEE 1800-2023 11.4.14.3)");
                 }
-                if (VN_IS(nodep->rhsp()->dtypep(), NodeArrayDType)) {
+                if (VN_IS(rhsDTypep, NodeArrayDType)) {
                     AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
                     nodep->rhsp(
                         new AstCvtArrayToPacked{rhsp->fileline(), rhsp, streamp->dtypep()});

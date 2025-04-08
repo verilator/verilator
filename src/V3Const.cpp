@@ -2169,7 +2169,7 @@ class ConstVisitor final : public VNVisitor {
             // Add a cast if needed.
             AstStreamR* const streamp = VN_AS(nodep->rhsp(), StreamR)->unlinkFrBack();
             AstNodeExpr* srcp = streamp->lhsp()->unlinkFrBack();
-            AstNodeDType* const srcDTypep = srcp->dtypep();
+            AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
             if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
                 srcp = new AstCvtArrayToPacked{srcp->fileline(), srcp, nodep->dtypep()};
             } else if (VN_IS(srcDTypep, UnpackArrayDType)) {
@@ -2191,30 +2191,32 @@ class ConstVisitor final : public VNVisitor {
             // Push the stream operator to the rhs of the assignment statement
             AstNodeExpr* streamp = nodep->lhsp()->unlinkFrBack();
             AstNodeExpr* const dstp = VN_AS(streamp, StreamL)->lhsp()->unlinkFrBack();
+            AstNodeDType* const dstDTypep = dstp->dtypep()->skipRefp();
             AstNodeExpr* const srcp = nodep->rhsp()->unlinkFrBack();
+            AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
             // Connect the rhs to the stream operator and update its width
             VN_AS(streamp, StreamL)->lhsp(srcp);
-            if (VN_IS(srcp->dtypep(), DynArrayDType) || VN_IS(srcp->dtypep(), QueueDType)
-                || VN_IS(srcp->dtypep(), UnpackArrayDType)) {
+            if (VN_IS(srcDTypep, DynArrayDType) || VN_IS(srcDTypep, QueueDType)
+                || VN_IS(srcDTypep, UnpackArrayDType)) {
                 streamp->dtypeSetStream();
             } else {
                 streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
             }
-            if (VN_IS(dstp->dtypep(), UnpackArrayDType)) {
-                streamp = new AstCvtPackedToArray{nodep->fileline(), streamp, dstp->dtypep()};
+            if (VN_IS(dstDTypep, UnpackArrayDType)) {
+                streamp = new AstCvtPackedToArray{nodep->fileline(), streamp, dstDTypep};
             } else {
                 UASSERT(sWidth >= dWidth, "sWidth >= dWidth should have caused an error earlier");
                 if (dWidth == 0) {
-                    streamp = new AstCvtPackedToArray{nodep->fileline(), streamp, dstp->dtypep()};
+                    streamp = new AstCvtPackedToArray{nodep->fileline(), streamp, dstDTypep};
                 } else if (sWidth >= dWidth) {
                     streamp = new AstSel{streamp->fileline(), streamp, sWidth - dWidth, dWidth};
                 }
             }
             nodep->lhsp(dstp);
             nodep->rhsp(streamp);
-            nodep->dtypep(dstp->dtypep());
+            nodep->dtypep(dstDTypep);
             return true;
         } else if (m_doV && VN_IS(nodep->lhsp(), StreamR)) {
             // The right stream operator on lhs of assignment statement does
@@ -2222,12 +2224,13 @@ class ConstVisitor final : public VNVisitor {
             // then we select bits from the left-most, not the right-most.
             AstNodeExpr* const streamp = nodep->lhsp()->unlinkFrBack();
             AstNodeExpr* const dstp = VN_AS(streamp, StreamR)->lhsp()->unlinkFrBack();
+            AstNodeDType* const dstDTypep = dstp->dtypep()->skipRefp();
             AstNodeExpr* srcp = nodep->rhsp()->unlinkFrBack();
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
-            if (VN_IS(dstp->dtypep(), UnpackArrayDType)) {
+            if (VN_IS(dstDTypep, UnpackArrayDType)) {
                 const int dstBitWidth
-                    = dWidth * VN_AS(dstp->dtypep(), UnpackArrayDType)->arrayUnpackedElements();
+                    = dWidth * VN_AS(dstDTypep, UnpackArrayDType)->arrayUnpackedElements();
                 // Handling the case where rhs is wider than lhs. StreamL does not require this
                 // since the combination of the left streaming operation and the implicit
                 // truncation in VL_ASSIGN_UNPACK automatically selects the left-most bits.
@@ -2235,30 +2238,30 @@ class ConstVisitor final : public VNVisitor {
                     srcp
                         = new AstSel{streamp->fileline(), srcp, sWidth - dstBitWidth, dstBitWidth};
                 }
-                srcp = new AstCvtPackedToArray{nodep->fileline(), srcp, dstp->dtypep()};
+                srcp = new AstCvtPackedToArray{nodep->fileline(), srcp, dstDTypep};
             } else {
                 UASSERT(sWidth >= dWidth, "sWidth >= dWidth should have caused an error earlier");
                 if (dWidth == 0) {
-                    srcp = new AstCvtPackedToArray{nodep->fileline(), srcp, dstp->dtypep()};
+                    srcp = new AstCvtPackedToArray{nodep->fileline(), srcp, dstDTypep};
                 } else if (sWidth >= dWidth) {
                     srcp = new AstSel{streamp->fileline(), srcp, sWidth - dWidth, dWidth};
                 }
             }
             nodep->lhsp(dstp);
             nodep->rhsp(srcp);
-            nodep->dtypep(dstp->dtypep());
+            nodep->dtypep(dstDTypep);
             VL_DO_DANGLING(pushDeletep(streamp), streamp);
             // Further reduce, any of the nodes may have more reductions.
             return true;
         } else if (m_doV && VN_IS(nodep->rhsp(), StreamL)) {
-            AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep();
+            AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep()->skipRefp();
             AstStreamL* streamp = VN_AS(nodep->rhsp(), StreamL);
             AstNodeExpr* const srcp = streamp->lhsp();
-            const AstNodeDType* const srcDTypep = srcp->dtypep();
+            const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
             if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)
                 || VN_IS(srcDTypep, UnpackArrayDType)) {
-                streamp->lhsp(new AstCvtArrayToPacked{srcp->fileline(), srcp->unlinkFrBack(),
-                                                      nodep->dtypep()});
+                streamp->lhsp(
+                    new AstCvtArrayToPacked{srcp->fileline(), srcp->unlinkFrBack(), lhsDtypep});
                 streamp->dtypeFrom(lhsDtypep);
             }
         } else if (m_doV && replaceAssignMultiSel(nodep)) {
