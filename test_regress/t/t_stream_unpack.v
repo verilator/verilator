@@ -15,10 +15,12 @@ typedef enum bit [5:0] {
 
 module t (/*AUTOARG*/);
    initial begin
-      bit arr[6];
+      typedef bit [5:0] bit6_t;
+      typedef bit bit6_unpacked_t[6];
+      bit6_unpacked_t arr;
       bit [1:0] arr2[3];
-      bit [5:0] arr6[1];
-      bit [5:0] bit6 = 6'b111000;
+      bit6_t arr6[1];
+      bit6_t bit6 = 6'b111000;
       bit [5:0] ans;
       enum_t ans_enum;
       logic [1:0] a [3] = {1, 0, 3};
