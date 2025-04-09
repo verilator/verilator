@@ -146,36 +146,9 @@ class CMakeEmitter final {
             }
         }
 
-        global.emplace_back("${VERILATOR_ROOT}/include/verilated.cpp");
-        if (v3Global.dpi()) {  //
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_dpi.cpp");
-        }
-        if (v3Global.opt.vpi()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_vpi.cpp");
-        }
-        if (v3Global.opt.savable()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_save.cpp");
-        }
-        if (v3Global.opt.coverage()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_cov.cpp");
-        }
-        if (v3Global.opt.trace()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/" + v3Global.opt.traceSourceBase()
-                                + "_c.cpp");
-        }
-        if (v3Global.usesProbDist()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_probdist.cpp");
-        }
-        if (v3Global.usesTiming()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_timing.cpp");
-        }
-        if (v3Global.useRandomizeMethods()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_random.cpp");
-        }
-        global.emplace_back("${VERILATOR_ROOT}/include/verilated_threads.cpp");
-        if (v3Global.opt.usesProfiler()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_profiler.cpp");
-        }
+        for (const string& cpp : v3Global.verilatedCppFiles())
+            global.emplace_back("${VERILATOR_ROOT}/include/"s + cpp);
+
         if (!v3Global.opt.libCreate().empty()) {
             global.emplace_back(v3Global.opt.makeDir() + "/" + v3Global.opt.libCreate() + ".cpp");
         }

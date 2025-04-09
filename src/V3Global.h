@@ -208,6 +208,7 @@ public:
     void idPtrMapDumpJson(std::ostream& os);
     const std::string& ptrToId(const void* p);
     std::thread::id mainThreadId() const { return m_mainThreadId; }
+    static std::vector<std::string> verilatedCppFiles();
 };
 
 extern V3Global v3Global;

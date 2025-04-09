@@ -593,22 +593,8 @@ public:
                     // Do nothing because VM_GLOBAL is necessary per executable. Top module will
                     // have them.
                 } else if (support == 2 && !slow) {
-                    putMakeClassEntry(of, "verilated.cpp");
-                    if (v3Global.dpi()) putMakeClassEntry(of, "verilated_dpi.cpp");
-                    if (v3Global.opt.vpi()) putMakeClassEntry(of, "verilated_vpi.cpp");
-                    if (v3Global.opt.savable()) putMakeClassEntry(of, "verilated_save.cpp");
-                    if (v3Global.opt.coverage()) putMakeClassEntry(of, "verilated_cov.cpp");
-                    if (v3Global.opt.trace()) {
-                        putMakeClassEntry(of, v3Global.opt.traceSourceBase() + "_c.cpp");
-                    }
-                    if (v3Global.usesProbDist()) putMakeClassEntry(of, "verilated_probdist.cpp");
-                    if (v3Global.usesTiming()) putMakeClassEntry(of, "verilated_timing.cpp");
-                    if (v3Global.useRandomizeMethods())
-                        putMakeClassEntry(of, "verilated_random.cpp");
-                    putMakeClassEntry(of, "verilated_threads.cpp");
-                    if (v3Global.opt.usesProfiler()) {
-                        putMakeClassEntry(of, "verilated_profiler.cpp");
-                    }
+                    for (const string& cpp : v3Global.verilatedCppFiles())
+                        putMakeClassEntry(of, cpp);
                 } else if (support == 2 && slow) {
                 } else if (support == 0 && v3Global.opt.outputGroups() > 0) {
                     const std::vector<FileOrConcatenatedFilesList>& list

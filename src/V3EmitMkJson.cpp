@@ -180,36 +180,8 @@ class V3EmitMkJsonEmitter final {
 
         const std::string verilatorRoot
             = V3Os::filenameSlashPath(V3Os::filenameRealPath(V3Options::getenvVERILATOR_ROOT()));
-        global.emplace_back(verilatorRoot + "/include/verilated.cpp");
-        if (v3Global.dpi()) {  //
-            global.emplace_back(verilatorRoot + "/include/verilated_dpi.cpp");
-        }
-        if (v3Global.opt.vpi()) {
-            global.emplace_back(verilatorRoot + "/include/verilated_vpi.cpp");
-        }
-        if (v3Global.opt.savable()) {
-            global.emplace_back(verilatorRoot + "/include/verilated_save.cpp");
-        }
-        if (v3Global.opt.coverage()) {
-            global.emplace_back(verilatorRoot + "/include/verilated_cov.cpp");
-        }
-        if (v3Global.opt.trace()) {
-            global.emplace_back(verilatorRoot + "/include/" + v3Global.opt.traceSourceBase()
-                                + "_c.cpp");
-        }
-        if (v3Global.usesProbDist()) {
-            global.emplace_back(verilatorRoot + "/include/verilated_probdist.cpp");
-        }
-        if (v3Global.usesTiming()) {
-            global.emplace_back(verilatorRoot + "/include/verilated_timing.cpp");
-        }
-        if (v3Global.useRandomizeMethods()) {
-            global.emplace_back(verilatorRoot + "/include/verilated_random.cpp");
-        }
-        global.emplace_back(verilatorRoot + "/include/verilated_threads.cpp");
-        if (v3Global.opt.usesProfiler()) {
-            global.emplace_back(verilatorRoot + "/include/verilated_profiler.cpp");
-        }
+        for (const string& cpp : v3Global.verilatedCppFiles())
+            global.emplace_back(verilatorRoot + "/include/" + cpp);
         if (!v3Global.opt.libCreate().empty()) {
             global.emplace_back(makeDir + "/" + v3Global.opt.libCreate() + ".cpp");
         }
