@@ -5198,11 +5198,12 @@ class WidthVisitor final : public VNVisitor {
             //
             // if (debug()) nodep->dumpTree("-    assign: ");
             AstNodeDType* const lhsDTypep
-                = nodep->lhsp()->dtypep()->skipRefp();  // Note we use rhsp for context determined
+                = nodep->lhsp()->dtypep();  // Note we use rhsp for context determined
 
             // Check width of stream and wrap if needed
             if (AstNodeStream* const streamp = VN_CAST(nodep->rhsp(), NodeStream)) {
-                const int lwidth = widthUnpacked(lhsDTypep);
+                AstNodeDType* const lhsDTypeSkippedRefp = lhsDTypep->skipRefp();
+                const int lwidth = widthUnpacked(lhsDTypeSkippedRefp);
                 const int rwidth = widthUnpacked(streamp->lhsp()->dtypep()->skipRefp());
                 if (lwidth != 0 && lwidth < rwidth) {
                     nodep->v3widthWarn(lwidth, rwidth,
@@ -5210,9 +5211,10 @@ class WidthVisitor final : public VNVisitor {
                                            << lwidth << " bits) is narrower than the stream ("
                                            << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
                 }
-                if (VN_IS(lhsDTypep, NodeArrayDType)) {
+                if (VN_IS(lhsDTypeSkippedRefp, NodeArrayDType)) {
                     streamp->unlinkFrBack();
-                    nodep->rhsp(new AstCvtPackedToArray{streamp->fileline(), streamp, lhsDTypep});
+                    nodep->rhsp(new AstCvtPackedToArray{streamp->fileline(), streamp,
+                                                        lhsDTypeSkippedRefp});
                 }
             }
             if (const AstNodeStream* const streamp = VN_CAST(nodep->lhsp(), NodeStream)) {
