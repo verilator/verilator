@@ -145,6 +145,9 @@ class V3EmitMkJsonEmitter final {
         const std::unique_ptr<std::ofstream> of{
             V3File::new_ofstream(makeDir + "/" + v3Global.opt.prefix() + ".json")};
 
+        const std::string trace
+            = v3Global.opt.trace() ? (v3Global.opt.traceFormat().vcd() ? "vcd" : "fst") : "off";
+
         std::vector<string> classesFast;
         std::vector<string> classesSlow;
         std::vector<string> supportFast;
@@ -203,10 +206,7 @@ class V3EmitMkJsonEmitter final {
                               .put("coverage", v3Global.opt.coverage())
                               .put("use_timing", v3Global.usesTiming())
                               .put("threads", v3Global.opt.threads())
-                              .put("trace", v3Global.opt.trace())
-                              .put("trace_fst", v3Global.opt.traceFormat().fst())
-                              .put("trace_saif", v3Global.opt.traceFormat().saif())
-                              .put("trace_vcd", v3Global.opt.traceFormat().vcd())
+                              .put("trace", trace)
                               .end()
                               .begin("sources")
                               .putList("global", global)
