@@ -1,13 +1,21 @@
-%Warning-WIDTHEXPAND: t/t_stream_unpack_narrower.v:14:18: Stream target requires 32 bits, but source expression only provides 31 bits (IEEE 1800-2023 11.4.14.3)
+%Warning-WIDTHEXPAND: t/t_stream_unpack_narrower.v:15:18: Stream target requires 32 bits, but source expression only provides 31 bits (IEEE 1800-2023 11.4.14.3)
                                                         : ... note: In instance 't'
-   14 |     {>>{stream}} = packed_data;
+   15 |     {>>{stream}} = packed_data;
       |                  ^
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
-%Warning-WIDTHTRUNC: t/t_stream_unpack_narrower.v:15:17: Target fixed size variable (31 bits) is narrower than the stream (32 bits) (IEEE 1800-2023 11.4.14)
+%Warning-WIDTHTRUNC: t/t_stream_unpack_narrower.v:16:17: Target fixed size variable (31 bits) is narrower than the stream (32 bits) (IEEE 1800-2023 11.4.14)
                                                        : ... note: In instance 't'
-   15 |     packed_data = {>>{stream}};
+   16 |     packed_data = {>>{stream}};
       |                 ^
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+%Warning-WIDTHTRUNC: t/t_stream_unpack_narrower.v:17:12: Target fixed size variable (32 bits) is narrower than the stream (61 bits) (IEEE 1800-2023 11.4.14)
+                                                       : ... note: In instance 't'
+   17 |     stream = {>>{packed_data2}};
+      |            ^
+%Warning-WIDTHEXPAND: t/t_stream_unpack_narrower.v:18:24: Stream target requires 61 bits, but source expression only provides 32 bits (IEEE 1800-2023 11.4.14.3)
+                                                        : ... note: In instance 't'
+   18 |     {>>{packed_data2}} = stream;
+      |                        ^
 %Error: Exiting due to
