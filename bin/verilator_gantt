@@ -27,6 +27,7 @@ Global = {
 ElapsedTime = None  # total elapsed time
 ExecGraphTime = 0  # total elapsed time executing an exec graph
 ExecGraphIntervals = []  # list of (start, end) pairs
+ThreadScheduleWaitIntervals = []
 
 ######################################################################
 
@@ -37,6 +38,7 @@ def read_data(filename):
         re_record = re.compile(r'^VLPROFEXEC (\S+) (\d+)(.*)$')
         re_payload_mtaskBegin = re.compile(r'id (\d+) predictStart (\d+) cpu (\d+)')
         re_payload_mtaskEnd = re.compile(r'id (\d+) predictCost (\d+)')
+        re_payload_wait = re.compile(r'cpu (\d+)')
 
         re_arg1 = re.compile(r'VLPROF arg\s+(\S+)\+([0-9.]*)\s*')
         re_arg2 = re.compile(r'VLPROF arg\s+(\S+)\s+([0-9.]*)\s*$')
@@ -52,6 +54,7 @@ def read_data(filename):
 
         ExecGraphStack = []
         SectionStack = []
+        ThreadScheduleWait = {}
         mTaskThread = {}
 
         for line in fh:
@@ -96,6 +99,15 @@ def read_data(filename):
                     Mtasks[mtask]['elapsed'] += tick - begin
                     Mtasks[mtask]['predict_cost'] = predict_cost
                     Mtasks[mtask]['end'] = max(Mtasks[mtask]['end'], tick)
+                elif kind == "THREAD_SCHEDULE_WAIT_BEGIN":
+                    ecpu = int(re_payload_wait.match(payload).groups()[0])
+                    if ecpu not in ThreadScheduleWait.keys():
+                        ThreadScheduleWait[ecpu] = []
+                    ThreadScheduleWait[ecpu].append(tick)
+                elif kind == "THREAD_SCHEDULE_WAIT_END":
+                    ecpu = int(re_payload_wait.match(payload).groups()[0])
+                    start = ThreadScheduleWait[ecpu].pop()
+                    ThreadScheduleWaitIntervals.append((start, tick, ecpu))
                 elif kind == "EXEC_GRAPH_BEGIN":
                     ExecGraphStack.append(tick)
                 elif kind == "EXEC_GRAPH_END":
@@ -422,6 +434,9 @@ def write_vcd(filename):
                 val = buf.ljust(LongestVcdStrValueLength * 8, "0")
             values[time][code] = val
 
+        def addXValue(code, time):
+            values[time][code] = 'x'
+
         # Measured graph
         for thread in sorted(Threads):
             mcode = getCode(32, 'measured', 't%d_mtask' % thread)
@@ -445,6 +460,13 @@ def write_vcd(filename):
 
         tStart = sorted(_['start'] for records in Threads.values() for _ in records)
         tEnd = sorted(_['end'] for records in Threads.values() for _ in records)
+
+        # Measured waiting time
+        for (start, end, cpu) in ThreadScheduleWaitIntervals:
+            mcode = getCode(32, 'measured', 'cpu%d_waiting' % cpu)
+            addXValue(mcode, start)
+            addValue(mcode, end, None)
+
 
         # Predicted graph
         for start, end in ExecGraphIntervals:
@@ -532,6 +554,8 @@ def write_vcd(filename):
                 value = values[time][code]
                 if value is None:
                     fh.write("bz v%x\n" % code)
+                elif value == 'x':
+                    fh.write("bx v%x\n" % code)
                 elif isinstance(value, str):
                     fh.write("b%s v%x\n" % (value, code))
                 else:
