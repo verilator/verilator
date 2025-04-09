@@ -4407,12 +4407,15 @@ public:
 class AstNew final : public AstNodeFTaskRef {
     // New as constructor
     // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
+    bool m_isImplicit = false;  // Implicitly generated from extends args
 public:
     AstNew(FileLine* fl, AstNodeExpr* pinsp)
         : ASTGEN_SUPER_New(fl, "new", pinsp) {}
     ASTGEN_MEMBERS_AstNew;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
+    bool isImplicit() const { return m_isImplicit; }
+    void isImplicit(bool flag) { m_isImplicit = flag; }
 };
 class AstTaskRef final : public AstNodeFTaskRef {
     // A reference to a task

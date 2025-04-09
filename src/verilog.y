@@ -7340,7 +7340,7 @@ classExtendsOne<classExtendsp>:         // IEEE: part of class_declaration
                           $<scp>$ = $<scp>1; }
         |       class_typeExtImpList '(' list_of_argumentsE ')'
                         { $$ = new AstClassExtends{$1->fileline(), $1, GRAMMARP->m_inImplements};
-                          BBUNSUP($<fl>2, "Unsupported: 'extends' with class list_of_arguments");
+                          $$->addArgsp($3);
                           $<scp>$ = $<scp>1; }
         //                      // IEEE-2023: Added: yEXTENDS class_type '(' yDEFAULT ')'
         |       class_typeExtImpList '(' yDEFAULT ')'

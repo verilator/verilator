@@ -147,6 +147,12 @@ private:
             }
         }
     }
+    void visit(AstClassExtends* nodep) override {
+        if (nodep->user1SetOnce()) return;  // Process once
+        // Extend arguments were converted to super.new arguments in V3LinkDot
+        if (nodep->argsp()) pushDeletep(nodep->argsp()->unlinkFrBackWithNext());
+        iterateChildren(nodep);
+    }
     void visit(AstConst* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype");

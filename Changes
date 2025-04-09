@@ -24,6 +24,7 @@ Verilator 5.035 devel
 * Support command-line overriding `define (#5900) (#5908). [Brian Li]
 * Support `$setuphold` (#5884). [Krzysztof Sychla]
 * Support `systemc_interface and related inside `class`.
+* Support class extends with arguments.
 * Change `--trace` to `--trace-vcd`.
 * Add multi-thread hierarchical simulation (#2583) (#5871). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add check for `let` misused in statement context (#5733).
