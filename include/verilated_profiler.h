@@ -62,6 +62,8 @@ VL_ATTR_ALWINLINE QData VL_CPU_TICK() {
     _VL_FOREACH_APPLY(macro, SECTION_POP) \
     _VL_FOREACH_APPLY(macro, MTASK_BEGIN) \
     _VL_FOREACH_APPLY(macro, MTASK_END) \
+    _VL_FOREACH_APPLY(macro, THREAD_SCHEDULE_WAIT_BEGIN) \
+    _VL_FOREACH_APPLY(macro, THREAD_SCHEDULE_WAIT_END) \
     _VL_FOREACH_APPLY(macro, EXEC_GRAPH_BEGIN) \
     _VL_FOREACH_APPLY(macro, EXEC_GRAPH_END)
 // clang-format on
@@ -95,6 +97,9 @@ class VlExecutionRecord final {
             uint32_t m_id;  // MTask id
             uint32_t m_predictCost;  // How long scheduler predicted would take
         } mtaskEnd;
+        struct {
+            uint32_t m_cpu;  // Executing CPU id
+        } threadScheduleWait;
     };
 
     // STATE
@@ -125,6 +130,14 @@ public:
         m_payload.mtaskEnd.m_id = id;
         m_payload.mtaskEnd.m_predictCost = predictCost;
         m_type = Type::MTASK_END;
+    }
+    void threadScheduleWaitBegin() {
+        m_payload.threadScheduleWait.m_cpu = VlOs::getcpu();
+        m_type = Type::THREAD_SCHEDULE_WAIT_BEGIN;
+    }
+    void threadScheduleWaitEnd() {
+        m_payload.threadScheduleWait.m_cpu = VlOs::getcpu();
+        m_type = Type::THREAD_SCHEDULE_WAIT_END;
     }
     void execGraphBegin() { m_type = Type::EXEC_GRAPH_BEGIN; }
     void execGraphEnd() { m_type = Type::EXEC_GRAPH_END; }

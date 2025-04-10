@@ -199,6 +199,12 @@ void VlExecutionProfiler::dump(const char* filenamep, uint64_t tickEnd)
                 fprintf(fp, " id %u predictCost %u\n", payload.m_id, payload.m_predictCost);
                 break;
             }
+            case VlExecutionRecord::Type::THREAD_SCHEDULE_WAIT_BEGIN:
+            case VlExecutionRecord::Type::THREAD_SCHEDULE_WAIT_END: {
+                const auto& payload = er.m_payload.threadScheduleWait;
+                fprintf(fp, " cpu %u\n", payload.m_cpu);
+                break;
+            }
             case VlExecutionRecord::Type::SECTION_PUSH: {
                 const auto& payload = er.m_payload.sectionPush;
                 fprintf(fp, " %s\n", payload.m_name);

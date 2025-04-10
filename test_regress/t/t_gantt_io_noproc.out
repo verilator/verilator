@@ -7,6 +7,7 @@ Argument settings:
 Summary:
   Total elapsed time = 23415 rdtsc ticks
   Parallelized code  = 82.51% of elapsed time
+  Waiting time       = 8.54% of elapsed time
   Total threads      = 2
   Total CPUs used    = 2
   Total mtasks       = 7

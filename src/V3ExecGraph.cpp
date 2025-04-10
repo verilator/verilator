@@ -726,7 +726,13 @@ void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId,
         varp->protect(false);  // Do not protect as we still have references in AstText
         modp->addStmtsp(varp);
         // For now, reference is still via text bashing
+        if (v3Global.opt.profExec()) {
+            addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitBegin();\n");
+        }
         addStrStmt("vlSelf->" + name + +".waitUntilUpstreamDone(even_cycle);\n");
+        if (v3Global.opt.profExec()) {
+            addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitEnd();\n");
+        }
     }
 
     if (v3Global.opt.profPgo()) {
@@ -878,8 +884,14 @@ void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
     }
     V3Stats::addStatSum("Optimizations, Thread schedule total tasks", i);
 
+    if (v3Global.opt.profExec()) {
+        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitBegin();\n");
+    }
     addStrStmt("vlSelf->__Vm_mtaskstate_final__" + std::to_string(scheduleId) + tag
                + ".waitUntilUpstreamDone(vlSymsp->__Vm_even_cycle__" + tag + ");\n");
+    if (v3Global.opt.profExec()) {
+        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitEnd();\n");
+    }
     // Free all assigned worker indices in this section
     if (!v3Global.opt.hierBlocks().empty() && last > 0) {
         addStrStmt("vlSymsp->__Vm_threadPoolp->freeWorkerIndexes(indexes);\n");
