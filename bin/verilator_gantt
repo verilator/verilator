@@ -54,7 +54,7 @@ def read_data(filename):
 
         ExecGraphStack = []
         SectionStack = []
-        ThreadScheduleWait = {}
+        ThreadScheduleWait = collections.defaultdict(list)
         mTaskThread = {}
 
         for line in fh:
@@ -101,8 +101,6 @@ def read_data(filename):
                     Mtasks[mtask]['end'] = max(Mtasks[mtask]['end'], tick)
                 elif kind == "THREAD_SCHEDULE_WAIT_BEGIN":
                     ecpu = int(re_payload_wait.match(payload).groups()[0])
-                    if ecpu not in ThreadScheduleWait.keys():
-                        ThreadScheduleWait[ecpu] = []
                     ThreadScheduleWait[ecpu].append(tick)
                 elif kind == "THREAD_SCHEDULE_WAIT_END":
                     ecpu = int(re_payload_wait.match(payload).groups()[0])
@@ -466,7 +464,6 @@ def write_vcd(filename):
             mcode = getCode(32, 'measured', 'cpu%d_waiting' % cpu)
             addXValue(mcode, start)
             addValue(mcode, end, None)
-
 
         # Predicted graph
         for start, end in ExecGraphIntervals:
