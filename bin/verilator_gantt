@@ -26,6 +26,7 @@ Global = {
 }
 ElapsedTime = None  # total elapsed time
 ExecGraphTime = 0  # total elapsed time executing an exec graph
+WaitingTime = 0 # total elapsed time waiting for mtasks
 ExecGraphIntervals = []  # list of (start, end) pairs
 ThreadScheduleWaitIntervals = [] # list of (start, tick, ecpu) pairs
 
@@ -51,6 +52,7 @@ def read_data(filename):
 
         global LongestVcdStrValueLength
         global ExecGraphTime
+        global WaitingTime
 
         ExecGraphStack = []
         SectionStack = []
@@ -105,6 +107,7 @@ def read_data(filename):
                 elif kind == "THREAD_SCHEDULE_WAIT_END":
                     ecpu = int(re_payload_wait.match(payload).groups()[0])
                     start = ThreadScheduleWait[ecpu].pop()
+                    WaitingTime += tick - start
                     ThreadScheduleWaitIntervals.append((start, tick, ecpu))
                 elif kind == "EXEC_GRAPH_BEGIN":
                     ExecGraphStack.append(tick)
@@ -179,6 +182,7 @@ def report():
     print("\nSummary:")
     print("  Total elapsed time = {} rdtsc ticks".format(ElapsedTime))
     print("  Parallelized code  = {:.2%} of elapsed time".format(ExecGraphTime / ElapsedTime))
+    print("  Waiting time       = {:.2%} of elapsed time".format(WaitingTime / ElapsedTime))
     print("  Total threads      = %d" % nthreads)
     print("  Total CPUs used    = %d" % ncpus)
     print("  Total mtasks       = %d" % len(Mtasks))
