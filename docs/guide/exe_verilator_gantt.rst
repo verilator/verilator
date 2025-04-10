@@ -51,6 +51,10 @@ predicted_parallelism
 cpu#_thread
   For the given CPU number, the thread number measured to be executing.
 
+cpu#_waiting
+  For the given CPU number, aggregated waiting time for mtask dependencies.
+  Visualized as `X` values.
+
 mtask#_cpu
   For the given mtask id, the CPU it was measured to execute on.
 
