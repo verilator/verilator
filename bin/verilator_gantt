@@ -26,9 +26,9 @@ Global = {
 }
 ElapsedTime = None  # total elapsed time
 ExecGraphTime = 0  # total elapsed time executing an exec graph
-WaitingTime = 0 # total elapsed time waiting for mtasks
+WaitingTime = 0  # total elapsed time waiting for mtasks
 ExecGraphIntervals = []  # list of (start, end) pairs
-ThreadScheduleWaitIntervals = [] # list of (start, tick, ecpu) pairs
+ThreadScheduleWaitIntervals = []  # list of (start, tick, ecpu) pairs
 
 ######################################################################
 
