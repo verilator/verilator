@@ -20,9 +20,11 @@
 # binary relative to $VERILATOR_ROOT (such as when inside the git sources).
 
 ifeq ($(VERILATOR_ROOT),)
+VERILATOR = verilator
 VERILATOR_COVERAGE = verilator_coverage
 else
 export VERILATOR_ROOT
+VERILATOR = $(VERILATOR_ROOT)/bin/verilator
 VERILATOR_COVERAGE = $(VERILATOR_ROOT)/bin/verilator_coverage
 endif
 ######################################################################

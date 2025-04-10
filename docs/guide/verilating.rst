@@ -370,10 +370,11 @@ Verilate in CMake
 .. code-block:: CMake
 
      verilate(target SOURCES source ... [TOP_MODULE top] [PREFIX name]
-              [TRACE] [TRACE_FST] [SYSTEMC] [COVERAGE]
+              [COVERAGE] [SYSTEMC]
+              [TRACE_FST] [TRACE_SAIF] [TRACE_VCD] [TRACE_THREADS num]
               [INCLUDE_DIRS dir ...] [OPT_SLOW ...] [OPT_FAST ...]
               [OPT_GLOBAL ..] [DIRECTORY dir] [THREADS num]
-              [TRACE_THREADS num] [VERILATOR_ARGS ...])
+              [VERILATOR_ARGS ...])
 
 Lowercase and ... should be replaced with arguments; the uppercase parts
 delimit the arguments and can be passed in any order or left out entirely
@@ -446,10 +447,6 @@ SystemC include directories and link to the SystemC libraries.
 
    Optional. Enable a multithreaded model; see :vlopt:`--threads`.
 
-.. describe:: TRACE_THREADS
-
-   Optional. Enable multithreaded FST trace; see :vlopt:`--trace-threads`.
-
 .. describe:: TOP_MODULE
 
    Optional. Sets the name of the top module. Defaults to the name of the
@@ -468,6 +465,10 @@ SystemC include directories and link to the SystemC libraries.
 
    Optional. Enables SAIF tracing if present, equivalent to "VERILATOR_ARGS
    --trace-saif".
+
+.. describe:: TRACE_THREADS
+
+   Optional. Enable multithreaded FST trace; see :vlopt:`--trace-threads`.
 
 .. describe:: TRACE_VCD
 
