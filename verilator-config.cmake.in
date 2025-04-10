@@ -51,6 +51,12 @@ endif()
 
 set(verilator_FOUND 1)
 
+find_program(CCACHE_FOUND ccache)
+
+if(CCACHE_FOUND)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+endif()
+
 include(CheckCXXSourceCompiles)
 function(_verilator_check_cxx_libraries LIBRARIES RESVAR)
     # Check whether a particular link option creates a valid executable
