@@ -43,6 +43,8 @@ class VlcOptions final {
     bool m_unlink = false;      // main switch: --unlink
     string m_writeFile;         // main switch: --write
     string m_writeInfoFile;     // main switch: --write-info
+    bool m_toggleOnly = false;  // main switch: --m_toggle_only
+    bool m_skipToggle = false;  // main switch: --m_skip_toggle
     // clang-format on
 
 private:
@@ -69,6 +71,8 @@ public:
     bool unlink() const { return m_unlink; }
     string writeFile() const { return m_writeFile; }
     string writeInfoFile() const { return m_writeInfoFile; }
+    bool toggleOnly() const { return m_toggleOnly; }
+    bool skipToggle() const { return m_skipToggle; }
 
     // METHODS (from main)
     static string version() VL_MT_DISABLED;

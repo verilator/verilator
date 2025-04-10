@@ -73,6 +73,7 @@ public:
     int lineno() const { return std::atoi(keyExtract(VL_CIK_LINENO, m_name.c_str()).c_str()); }
     int column() const { return std::atoi(keyExtract(VL_CIK_COLUMN, m_name.c_str()).c_str()); }
     // METHODS
+    static bool isToggle(const char* name) { return keyExtract(VL_CIK_TYPE, name) == "toggle"; }
     static string keyExtract(const char* shortKey, const char* name) {
         // Hot function
         const size_t shortLen = std::strlen(shortKey);

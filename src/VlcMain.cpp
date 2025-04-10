@@ -80,6 +80,8 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     });
     DECL_OPTION("-write", Set, &m_writeFile);
     DECL_OPTION("-write-info", Set, &m_writeInfoFile);
+    DECL_OPTION("-toggle-only", OnOff, &m_toggleOnly);
+    DECL_OPTION("-skip-toggle", OnOff, &m_skipToggle);
     parser.finalize();
 
     // Parse parameters
