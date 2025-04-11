@@ -2882,10 +2882,14 @@ class WidthVisitor final : public VNVisitor {
                 pushDeletep(itemp->valuep()->unlinkFrBack());
             }
         }
+        const bool isHardPackedUnion
+            = nodep->packed() && VN_IS(nodep, UnionDType) && !VN_CAST(nodep, UnionDType)->isSoft();
+
         // Determine bit assignments and width
         if (VN_IS(nodep, UnionDType) || nodep->packed()) {
             int lsb = 0;
             int width = 0;
+            bool first = true;
             // Report errors on first member first
             AstMemberDType* itemp;
             // MSB is first, so loop backwards
@@ -2895,11 +2899,17 @@ class WidthVisitor final : public VNVisitor {
                 if (itemp->isFourstate()) nodep->isFourstate(true);
                 itemp->lsb(lsb);
                 if (VN_IS(nodep, UnionDType)) {
-                    width = std::max(width, itemp->width());
+                    const int itemWidth = itemp->width();
+                    if (!first && isHardPackedUnion && itemWidth != width) {
+                        itemp->v3error("Hard packed union members must have equal size "
+                                       "(IEEE 1800-2023 7.3.1)");
+                    }
+                    width = std::max(width, itemWidth);
                 } else {
                     lsb += itemp->width();
                     width += itemp->width();
                 }
+                first = false;
             }
             nodep->widthForce(width, width);  // Signing stays as-is, as parsed from declaration
         } else {

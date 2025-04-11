@@ -27,10 +27,10 @@ module t_dpi_result_type_bad;
    typedef struct      packed { bit [63:0] x; bit [63:0] y; } struct_2_state_128;
 
    // 2-state packed unions of width > 32
-   typedef union       packed { bit [ 32:0] x; bit y; } union_2_state_33;
-   typedef union       packed { bit [ 63:0] x; bit y; } union_2_state_64;
-   typedef union       packed { bit [ 64:0] x; bit y; } union_2_state_65;
-   typedef union       packed { bit [127:0] x; bit y; } union_2_state_128;
+   typedef union       packed { bit [ 32:0] x; bit [ 32:0] y; } union_2_state_33;
+   typedef union       packed { bit [ 63:0] x; bit [ 63:0] y; } union_2_state_64;
+   typedef union       packed { bit [ 64:0] x; bit [ 64:0] y; } union_2_state_65;
+   typedef union       packed { bit [127:0] x; bit [127:0] y; } union_2_state_128;
 
    // 4-state packed arrays of any size
    typedef logic [  0:0] array_4_state_1_t;
@@ -59,17 +59,17 @@ module t_dpi_result_type_bad;
    typedef struct        packed { logic [63:0] x; bit [63:0] y; } struct_4_state_128;
 
    // 4-state packed unions of any size
-   typedef union         packed { logic [  0:0] x; bit y; } union_4_state_1;
-   typedef union         packed { logic [  1:0] x; bit y; } union_4_state_2;
-   typedef union         packed { logic [  7:0] x; bit y; } union_4_state_8;
-   typedef union         packed { logic [  8:0] x; bit y; } union_4_state_9;
-   typedef union         packed { logic [ 15:0] x; bit y; } union_4_state_16;
-   typedef union         packed { logic [ 16:0] x; bit y; } union_4_state_17;
-   typedef union         packed { logic [ 31:0] x; bit y; } union_4_state_32;
-   typedef union         packed { logic [ 32:0] x; bit y; } union_4_state_33;
-   typedef union         packed { logic [ 63:0] x; bit y; } union_4_state_64;
-   typedef union         packed { logic [ 64:0] x; bit y; } union_4_state_65;
-   typedef union         packed { logic [127:0] x; bit y; } union_4_state_128;
+   typedef union         packed { logic [  0:0] x; bit [  0:0] y; } union_4_state_1;
+   typedef union         packed { logic [  1:0] x; bit [  1:0] y; } union_4_state_2;
+   typedef union         packed { logic [  7:0] x; bit [  7:0] y; } union_4_state_8;
+   typedef union         packed { logic [  8:0] x; bit [  8:0] y; } union_4_state_9;
+   typedef union         packed { logic [ 15:0] x; bit [ 15:0] y; } union_4_state_16;
+   typedef union         packed { logic [ 16:0] x; bit [ 16:0] y; } union_4_state_17;
+   typedef union         packed { logic [ 31:0] x; bit [ 31:0] y; } union_4_state_32;
+   typedef union         packed { logic [ 32:0] x; bit [ 32:0] y; } union_4_state_33;
+   typedef union         packed { logic [ 63:0] x; bit [ 63:0] y; } union_4_state_64;
+   typedef union         packed { logic [ 64:0] x; bit [ 64:0] y; } union_4_state_65;
+   typedef union         packed { logic [127:0] x; bit [127:0] y; } union_4_state_128;
 
    //======================================================================
    // Imports
