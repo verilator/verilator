@@ -251,6 +251,19 @@ module t (/*AUTOARG*/
       $display("%g", $acosh(r));
       $display("%g", $atanh(r));
 
+      if ($sampled(cyc[1])) $write("");
+      if ($rose(cyc)) $write("");
+      if ($fell(cyc)) $write("");
+      if ($stable(cyc)) $write("");
+      if ($changed(cyc)) $write("");
+      if ($past(cyc[1])) $write("");
+
+      if ($rose(cyc, clk)) $write("");
+      if ($fell(cyc, clk)) $write("");
+      if ($stable(cyc, clk)) $write("");
+      if ($changed(cyc, clk)) $write("");
+      if ($past(cyc[1], 5)) $write("");
+
       force sum = 10;
       repeat (2) if (sum != 10) $stop;
       release sum;
