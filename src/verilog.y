@@ -2304,7 +2304,7 @@ struct_unionDecl<nodeUOrStructDTypep>:  // IEEE: part of data_type
         /*cont*/    struct_union_memberListEnd
                         { $$ = $<nodeUOrStructDTypep>4; $$->addMembersp($5); SYMP->popScope($$); }
         |       yUNION taggedSoftE packedSigningE '{'
-        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $3}; SYMP->pushNew($<nodeUOrStructDTypep>$); }
+        /*mid*/         { $<nodeUOrStructDTypep>$ = new AstUnionDType{$1, $2, $3}; SYMP->pushNew($<nodeUOrStructDTypep>$); }
         /*cont*/    struct_union_memberListEnd
                         { $$ = $<nodeUOrStructDTypep>5; $$->addMembersp($6); SYMP->popScope($$); }
         ;
@@ -2440,9 +2440,9 @@ random_qualifier<qualifiers>:   // ==IEEE: random_qualifier
         |       yRANDC                                  { $$ = VMemberQualifiers::none(); $$.m_randc = true; }
         ;
 
-taggedSoftE:
-                /*empty*/                               { }
-        |       ySOFT                                   { BBUNSUP($<fl>1, "Unsupported: 'union soft'"); }
+taggedSoftE<cbool>:
+                /*empty*/                               { $$ = false; }
+        |       ySOFT                                   { $$ = true; }
         //UNSUP yTAGGED                                 { UNSUP }
         ;
 
