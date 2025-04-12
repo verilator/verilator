@@ -227,11 +227,19 @@ endfunction()
 function(verilate TARGET)
     cmake_parse_arguments(
         VERILATE
-        "COVERAGE;SYSTEMC;TRACE_FST;TRACE_SAIF;TRACE_VCD;TRACE_STRUCTS"
+        "COVERAGE;SYSTEMC;TRACE_FST;TRACE_SAIF;TRACE_VCD;TRACE;TRACE_STRUCTS"
         "PREFIX;TOP_MODULE;THREADS;TRACE_THREADS;DIRECTORY"
         "SOURCES;VERILATOR_ARGS;INCLUDE_DIRS;OPT_SLOW;OPT_FAST;OPT_GLOBAL"
         ${ARGN}
     )
+
+    if (VERILATE_TRACE)
+        if (NOT VERILATE_TRACE_VCD)
+            set(VERILATE_TRACE_VCD TRUE)
+        endif()
+        message(DEPRECATION "The `TRACE` argument is deprecated. Please use `TRACE_VCD` instead.")
+    endif()
+
     if(NOT VERILATE_SOURCES)
         message(FATAL_ERROR "Need at least one source")
     endif()
@@ -434,6 +442,7 @@ function(verilate TARGET)
         json_get_list(JSOURCES_SUPPORT_SLOW "${MANIFEST}" sources support_slow)
         json_get_list(JSOURCES_SUPPORT_FAST "${MANIFEST}" sources support_fast)
         json_get_list(JSOURCES_USER_CLASSES "${MANIFEST}" sources user_classes)
+        json_get_list(JSOURCES_DEPS "${MANIFEST}" sources deps)
 
         file(WRITE ${VDIR}/${VERILATE_PREFIX}.cmake
             "# Verilated -*- CMake -*-\n"
