@@ -338,7 +338,7 @@ function(verilate TARGET)
                 STATUS
                 "Found ccache: ${OBJCACHE_PATH} (\"${objcache_version}\")"
             )
-            set(CMAKE_CXX_COMPILER_LAUNCHER "${OBJCACHE_PATH}")
+            set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${OBJCACHE_PATH}")
         endif()
     endif()
 
