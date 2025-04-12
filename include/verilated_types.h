@@ -920,8 +920,7 @@ template <typename T_Value, size_t N_MaxSize>
 std::string VL_TO_STRING(const VlQueue<T_Value, N_MaxSize>& obj) {
     return obj.to_string();
 }
-template <typename T>
-struct VlIsQueue<VlQueue<T>> : public std::true_type {};
+
 //===================================================================
 // Verilog associative array container
 // There are no multithreaded locks on this; the base variable must
@@ -1340,7 +1339,6 @@ public:
     int find_length(int dimension) const {
         return find_length<N_CurrentDimension>(dimension, std::integral_constant < bool,
                                                std::is_class<T_Value>::value
-                                                   && !VlIsQueue<T_Value>::value
                                                    && !VlIsCustomStruct<T_Value>::value > {});
     }
 
@@ -1359,7 +1357,6 @@ public:
     auto& find_element(std::vector<size_t>& indices) {
         return find_element<N_CurrentDimension>(indices, std::integral_constant < bool,
                                                 std::is_class<T_Value>::value
-                                                    && !VlIsQueue<T_Value>::value
                                                     && !VlIsCustomStruct<T_Value>::value > {});
     }
 
@@ -1594,8 +1591,8 @@ std::string VL_TO_STRING(const VlUnpacked<T_Value, N_Depth>& obj) {
 }
 
 // Specialization to extract inner type recursively
-// template <typename T>
-// struct ExtractInnerType<VlQueue<T>> {
+// template <typename T, std::size_t N>
+// struct ExtractInnerType<VlQueue<T, N>> {
 //     using type = typename ExtractInnerType<T>::type;
 // };
 

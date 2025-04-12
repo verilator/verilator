@@ -179,8 +179,6 @@ using VerilatedAssertDirectiveType_t = std::underlying_type<VerilatedAssertDirec
 template <typename>
 struct VlIsCustomStruct : public std::false_type {};
 
-template <typename>
-struct VlIsQueue : public std::false_type {};
 // Recursive type extraction helper
 template <typename T>
 struct ExtractInnerType {
