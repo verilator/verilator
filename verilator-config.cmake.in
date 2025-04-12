@@ -227,11 +227,19 @@ endfunction()
 function(verilate TARGET)
     cmake_parse_arguments(
         VERILATE
-        "COVERAGE;SYSTEMC;TRACE_FST;TRACE_SAIF;TRACE_VCD;TRACE_STRUCTS"
+        "COVERAGE;SYSTEMC;TRACE_FST;TRACE_SAIF;TRACE_VCD;TRACE;TRACE_STRUCTS"
         "PREFIX;TOP_MODULE;THREADS;TRACE_THREADS;DIRECTORY"
         "SOURCES;VERILATOR_ARGS;INCLUDE_DIRS;OPT_SLOW;OPT_FAST;OPT_GLOBAL"
         ${ARGN}
     )
+
+    if (VERILATE_TRACE)
+        if (NOT VERILATE_TRACE_VCD)
+            set(VERILATE_TRACE_VCD TRUE)
+        endif()
+        message(DEPRECATION "The `TRACE` argument is deprecated. Please use `TRACE_VCD` instead.")
+    endif()
+
     if(NOT VERILATE_SOURCES)
         message(FATAL_ERROR "Need at least one source")
     endif()
