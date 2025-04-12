@@ -4756,7 +4756,7 @@ fstReaderContext *fstReaderOpen(const char *nam)
             ((xc->fh) || (xc->contains_hier_section || (xc->contains_hier_section_lz4)))) {
             /* more init */
             xc->do_rewind = 1;
-        } else {
+        } else if (!rc) {
             fstReaderClose(xc);
             xc = NULL;
         }
