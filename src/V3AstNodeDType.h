@@ -1388,13 +1388,20 @@ public:
     string verilogKwd() const override { return "struct"; }
 };
 class AstUnionDType final : public AstNodeUOrStructDType {
+    bool m_isSoft;  // Is a "union soft"
+
 public:
     // UNSUP: bool isTagged;
     // VSigning below is mispurposed to indicate if packed or not
-    AstUnionDType(FileLine* fl, VSigning numericUnpack)
-        : ASTGEN_SUPER_UnionDType(fl, numericUnpack) {}
+    // isSoft implies packed
+    AstUnionDType(FileLine* fl, bool isSoft, VSigning numericUnpack)
+        : ASTGEN_SUPER_UnionDType(fl, numericUnpack)
+        , m_isSoft(isSoft) {
+        packed(packed() | m_isSoft);
+    }
     ASTGEN_MEMBERS_AstUnionDType;
     string verilogKwd() const override { return "union"; }
+    bool isSoft() const { return m_isSoft; }
 };
 
 #endif  // Guard
