@@ -22,6 +22,7 @@ Verilator 5.035 devel
 * Support simple `checker` blocks (#4066). [Srinivasan Venkataramanan]
 * Support force/release with a variable reference (#5721) (#5810). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Support command-line overriding `define (#5900) (#5908). [Brian Li]
+* Support soft unions (#5912) (#5932). [Robin Heinemann]
 * Support `$setuphold` (#5884). [Krzysztof Sychla]
 * Support `systemc_interface and related inside `class`.
 * Support class extends with arguments.
@@ -31,6 +32,8 @@ Verilator 5.035 devel
 * Add used language to `--preproc-resolve` output (#5795). [Kamil Rakoczy, Antmicro Ltd.]
 * Add `--make json` to enable integration with non-make/cmake build systems (#5799). [Andrew Voznytsa]
 * Add numactl-like automatic assignment of processor affinity (#5911).
+* Add ccache support for generated cmake files (#5926) (#5930). [Andrew Voznytsa]
+* Add visualization of multi-threaded waiting time with verilator_gantt (#5929). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add empty veriuser.h for legacy compatibility.
 * Add DEPRECATED warning on `--xml-only` and `--xml-output`.
 * Remove unused gtkwave/wavealloca.h. [Geza Lore]
@@ -71,9 +74,11 @@ Verilator 5.035 devel
 * Fix delayed assignment malformed LHS assertion (#5904).
 * Fix segfault in fork synchronization (#5906). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix `new this` (#5909).
+* Fix assignments with stream expressions and unpacked arrays (#5915). [Ryszard Rozak, Antmicro Ltd.]
 * Fix LATCH warning for automatic variables (#5918). [Yutetsu TAKATSUKASA]
 * Fix %% on elaboration severity tasks (#5922). [Ethan Sifferman]
 * Fix port default values with `--coverage-line` creating `0=0` (#5920). [Drew Ranck]
+* Fix missing C++ regeneration when Verilog files are updated (#5934). [Zhouyi Shen]
 
 
 Verilator 5.034 2025-02-24
