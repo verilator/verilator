@@ -1337,9 +1337,8 @@ public:
 
     template <std::size_t N_CurrentDimension = 0>
     int find_length(int dimension) const {
-        return find_length<N_CurrentDimension>(dimension, std::integral_constant < bool,
-                                               std::is_class<T_Value>::value
-                                                   && !VlIsCustomStruct<T_Value>::value > {});
+        return find_length<N_CurrentDimension>(dimension, std::integral_constant<bool, std::is_class<T_Value>::value && !VlIsCustomStruct<T_Value>::value>{}
+        );
     }
 
     template <std::size_t N_CurrentDimension = 0, typename U = T_Value>
@@ -1355,9 +1354,7 @@ public:
 
     template <std::size_t N_CurrentDimension = 0>
     auto& find_element(std::vector<size_t>& indices) {
-        return find_element<N_CurrentDimension>(indices, std::integral_constant < bool,
-                                                std::is_class<T_Value>::value
-                                                    && !VlIsCustomStruct<T_Value>::value > {});
+        return find_element<N_CurrentDimension>(indices,  std::integral_constant<bool, std::is_class<T_Value>::value && !VlIsCustomStruct<T_Value>::value>{});
     }
 
     T_Value& operator[](size_t index) { return m_storage[index]; }
