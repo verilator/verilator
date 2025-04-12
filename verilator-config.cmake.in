@@ -442,6 +442,7 @@ function(verilate TARGET)
         json_get_list(JSOURCES_SUPPORT_SLOW "${MANIFEST}" sources support_slow)
         json_get_list(JSOURCES_SUPPORT_FAST "${MANIFEST}" sources support_fast)
         json_get_list(JSOURCES_USER_CLASSES "${MANIFEST}" sources user_classes)
+        json_get_list(JSOURCES_DEPS "${MANIFEST}" sources deps)
 
         file(WRITE ${VDIR}/${VERILATE_PREFIX}.cmake
             "# Verilated -*- CMake -*-\n"
