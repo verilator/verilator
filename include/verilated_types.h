@@ -1337,24 +1337,23 @@ public:
 
     template <std::size_t N_CurrentDimension = 0>
     int find_length(int dimension) const {
-        return find_length<N_CurrentDimension>(dimension, std::integral_constant<bool, std::is_class<T_Value>::value && !VlIsCustomStruct<T_Value>::value>{}
-        );
+        return find_length<N_CurrentDimension>(dimension, std::is_class<T_Value>{});
     }
 
     template <std::size_t N_CurrentDimension = 0, typename U = T_Value>
-    auto& find_element(std::vector<size_t>& indices, std::false_type) {
+    auto& find_element(const std::vector<size_t>& indices, std::false_type) {
         return m_storage[indices[N_CurrentDimension]];
     }
 
     template <std::size_t N_CurrentDimension = 0, typename U = T_Value>
-    auto& find_element(std::vector<size_t>& indices, std::true_type) {
+    auto& find_element(const std::vector<size_t>& indices, std::true_type) {
         return m_storage[indices[N_CurrentDimension]]
             .template find_element<N_CurrentDimension + 1>(indices);
     }
 
     template <std::size_t N_CurrentDimension = 0>
-    auto& find_element(std::vector<size_t>& indices) {
-        return find_element<N_CurrentDimension>(indices,  std::integral_constant<bool, std::is_class<T_Value>::value && !VlIsCustomStruct<T_Value>::value>{});
+    auto& find_element(const std::vector<size_t>& indices) {
+        return find_element<N_CurrentDimension>(indices, std::is_class<T_Value>{});
     }
 
     T_Value& operator[](size_t index) { return m_storage[index]; }
@@ -1587,21 +1586,6 @@ std::string VL_TO_STRING(const VlUnpacked<T_Value, N_Depth>& obj) {
     return obj.to_string();
 }
 
-// Specialization to extract inner type recursively
-// template <typename T, std::size_t N>
-// struct ExtractInnerType<VlQueue<T, N>> {
-//     using type = typename ExtractInnerType<T>::type;
-// };
-
-template <typename T, std::size_t N>
-struct ExtractInnerType<VlUnpacked<T, N>> {
-    using type = typename ExtractInnerType<T>::type;
-};
-// Function to check if the inner type is a custom struct
-template <typename T>
-constexpr bool is_inner_custom_struct() {
-    return VlIsCustomStruct<typename ExtractInnerType<T>::type>::value;
-}
 //===================================================================
 // Helper to apply the given indices to a target expression
 

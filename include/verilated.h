@@ -178,13 +178,6 @@ using VerilatedAssertDirectiveType_t = std::underlying_type<VerilatedAssertDirec
 // Type trait for custom struct
 template <typename>
 struct VlIsCustomStruct : public std::false_type {};
-
-// Recursive type extraction helper
-template <typename T>
-struct ExtractInnerType {
-    using type = T;
-};
-
 //=============================================================================
 // Utility functions
 

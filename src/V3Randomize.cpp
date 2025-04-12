@@ -481,8 +481,6 @@ class ConstraintExprVisitor final : public VNVisitor {
     bool m_wantSingle = false;  // Whether to merge constraint expressions with LOGAND
     VMemberMap& m_memberMap;  // Member names cached for fast lookup
 
-    bool m_structSel = false;
-
     AstSFormatF* getConstFormat(AstNodeExpr* nodep) {
         return new AstSFormatF{nodep->fileline(), (nodep->width() & 3) ? "#b%b" : "#x%x", false,
                                nodep};
@@ -538,10 +536,6 @@ class ConstraintExprVisitor final : public VNVisitor {
         UASSERT_OBJ(!rhsp, nodep, "Missing emitSMT %r for " << rhsp);
         UASSERT_OBJ(!thsp, nodep, "Missing emitSMT %t for " << thsp);
         AstSFormatF* const newp = new AstSFormatF{nodep->fileline(), smtExpr, false, argsp};
-        if(m_structSel && newp->name() == "(select %@ %@)"){ // for struct arrays
-            newp->name("%@.%@");
-            newp->exprsp()->nextp()->name("%8x");// x%8x
-        }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
@@ -717,7 +711,6 @@ class ConstraintExprVisitor final : public VNVisitor {
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
     }
     void visit(AstStructSel* nodep) override {
-        m_structSel = true;
         if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), StructDType)) {
             AstNodeExpr* const fromp = nodep->fromp();
             if (VN_IS(fromp, StructSel)) {
@@ -752,15 +745,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
         AstSFormatF* newp = nullptr;
-        if (VN_AS(nodep->fromp(), SFormatF)->name() == "%@.%@") {
+        if (VN_AS(nodep->fromp(), SFormatF)->name() == "(select %@ %@)") {
             newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
                                    VN_AS(nodep->fromp(), SFormatF)->exprsp()->cloneTreePure(true)};
-            newp->exprsp()->nextp()->name("%8x"); // x%8x
-        } else{
+            newp->exprsp()->nextp()->name("x%8x");
+        } else
             newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false,
                                    nullptr};
-            }
-        m_structSel = false;
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
