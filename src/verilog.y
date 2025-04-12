@@ -6764,9 +6764,9 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
                           GRAMMARP->endLabel($<fl>7, $1, $7); }
         ;
 
-covergroup_declarationFront<constraintp>:  // IEEE: part of covergroup_declaration
+covergroup_declarationFront<classp>:  // IEEE: part of covergroup_declaration
                 yCOVERGROUP idAny
-                        { $$ = new AstConstraint{$<fl>2, *$2, nullptr};
+                        { $$ = new AstClass{$<fl>2, *$2};
                           BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup");
                           SYMP->pushNew($<constraintp>$); }
         ;
@@ -6945,30 +6945,27 @@ cross_item<nodep>:  // ==IEEE: cross_item
 cross_body<nodep>:  // ==IEEE: cross_body
                 '{' '}'                                 { $$ = nullptr; }
         //                      // IEEE-2012: No semicolon here, mistake in spec
-        |       '{' cross_body_itemSemiList '}'         { $$ = $2; }
+        |       '{' cross_body_itemList '}'             { $$ = $2; }
         |       ';'                                     { $$ = nullptr; }
         //
-        |       '{' cross_body_itemSemiList error '}'   { $$ = $2; }
+        |       '{' cross_body_itemList error '}'       { $$ = $2; }
         |       '{' error '}'                           { $$ = nullptr; }
         ;
 
-cross_body_itemSemiList<nodep>:  // IEEE: part of cross_body
-                cross_body_item ';'                     { $$ = $1; }
-        |       cross_body_itemSemiList cross_body_item ';'  { $$ = addNextNull($1, $2); }
-        //
-        |       error ';'                               { $$ = nullptr; }
-        |       cross_body_itemSemiList error ';'       { $$ = $1; }
+cross_body_itemList<nodep>:  // IEEE: part of cross_body
+                cross_body_item                         { $$ = $1; }
+        |       cross_body_itemList cross_body_item     { $$ = addNextNull($1, $2); }
         ;
 
 cross_body_item<nodep>:  // ==IEEE: cross_body_item
-        //                      // IEEE: our semicolon is in the list
-        //                      // IEEE: bins_selection_or_option
-                coverage_option                         { $$ = $1; }
-        //                      // IEEE: bins_selection
-        |       function_declaration
+                function_declaration
                         { $$ = $1; BBCOVERIGN($1->fileline(), "Ignoring unsupported: coverage cross 'function' declaration"); }
-        |       bins_keyword idAny/*new-bin_identifier*/ '=' select_expression iffE
+        //                      // IEEE: bins_selection_or_option
+        |       coverage_option ';'                     { $$ = $1; }
+        //                      // IEEE: bins_selection
+        |       bins_keyword idAny/*new-bin_identifier*/ '=' select_expression iffE ';'
                         { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage cross bin"); }
+        |       error ';'                               { $$ = nullptr; }
         ;
 
 select_expression<nodep>:  // ==IEEE: select_expression
@@ -7000,8 +6997,14 @@ select_expression<nodep>:  // ==IEEE: select_expression
         //                      // IEEE-2012: Need clarification as to precedence
         //UNSUP  cgexpr  { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression"); }
         //
+        //                      // IEEE: cross_set_expression [ yMATCHES integer_covergroup_expression ]
+        //                      // covergroup_expression [ yMATCHES ( integer_covergroup_expression | '$' ) ]
         //                      // Need precedence fix
         //UNSUP  cgexpr yMATCHES cgexpr    {..}
+        //UNSUP                 // Below are all removed
+        |       idAny '(' list_of_argumentsE ')'
+                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage select function call"); }
+        //UNSUP                 // Above are all removed, replace with:
         ;
 
 bins_expression<nodep>:  // ==IEEE: bins_expression
