@@ -908,8 +908,6 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         if (nodep->name() == "at" && nodep->fromp()->user1()) {
             iterateChildren(nodep);
-            nodep->dumpTreeJson(cout);
-            cout << endl;
             AstNodeExpr* pinp = nodep->pinsp()->unlinkFrBack();
             if (VN_IS(pinp, SFormatF)) VN_AS(pinp, SFormatF)->name("%8x");
             AstNodeExpr* const argsp = AstNode::addNext(nodep->fromp()->unlinkFrBack(), pinp);
