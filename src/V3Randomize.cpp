@@ -909,7 +909,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (nodep->name() == "at" && nodep->fromp()->user1()) {
             iterateChildren(nodep);
             AstNodeExpr* pinp = nodep->pinsp()->unlinkFrBack();
-            if (VN_IS(pinp, SFormatF)) VN_AS(pinp, SFormatF)->name("%8x");
+            if (VN_IS(pinp, SFormatF) && m_structSel) VN_AS(pinp, SFormatF)->name("%8x");
             AstNodeExpr* const argsp = AstNode::addNext(nodep->fromp()->unlinkFrBack(), pinp);
             AstSFormatF* newp = nullptr;
             if (m_structSel) {
