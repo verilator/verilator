@@ -309,7 +309,7 @@ public:
         modifyMembers(var, var.memberIndices(), name);
     }
     template <typename T>
-    typename std::enable_if<!VlIsCustomStruct<T>::value, void>::type
+    typename std::enable_if<!ContainsCustomStruct<T>::value, void>::type
     write_var(T& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
@@ -318,7 +318,8 @@ public:
             = std::make_shared<const VlRandomVar>(name, width, &var, dimension, randmodeIdx);
     }
     template <typename T>
-    void write_var(VlQueue<T>& var, int width, const char* name, int dimension,
+    typename std::enable_if<!ContainsCustomStruct<T>::value, void>::type
+    write_var(VlQueue<T>& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
         m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlQueue<T>>>(
@@ -329,7 +330,7 @@ public:
         }
     }
     template <typename T, std::size_t N_Depth>
-    typename std::enable_if<!VlIsCustomStruct<T>::value, void>::type
+    typename std::enable_if<!ContainsCustomStruct<T>::value, void>::type
     write_var(VlUnpacked<T, N_Depth>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
@@ -340,15 +341,55 @@ public:
             record_arr_table(var, name, dimension, {}, {});
         }
     }
+    template <typename T>
+    typename std::enable_if<ContainsCustomStruct<T>::value, void>::type
+    write_var(VlQueue<T>& var, int width, const char* name, int dimension,
+        std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+            if(dimension>0){
+                record_struct_arr(var, name, dimension, {}, {});
+            }
+        }
     template <typename T, std::size_t N_Depth>
-    typename std::enable_if<VlIsCustomStruct<T>::value, void>::type
+    typename std::enable_if<ContainsCustomStruct<T>::value, void>::type
     write_var(VlUnpacked<T, N_Depth>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if ((dimension > 0) && (N_Depth != 0)) {
+        if(dimension>0){
+            record_struct_arr(var, name, dimension, {}, {});
+        }
+    }
+    template <typename T>
+    typename std::enable_if<ContainsCustomStruct<T>::value, void>::type
+    record_struct_arr(T& var, const std::string name, int dimension, std::vector<IData> indices,
+        std::vector<size_t> idxWidths) {
+            std::ostringstream oss;
+            for (size_t i = 0; i < indices.size(); ++i){
+                oss << std::hex << std::setw(8) << std::setfill('0') << static_cast<int>(indices[i]);
+                if(i<indices.size()-1) oss<<".";
+            }
+            write_var(var, 1ULL,(name+"."+oss.str()).c_str(), 1ULL );
+    }
+    template <typename T, std::size_t N_Depth>
+    void record_struct_arr(VlUnpacked<T, N_Depth>& var, const std::string name, int dimension,
+                          std::vector<IData> indices, std::vector<size_t> idxWidths) {
+        if(dimension>0 && N_Depth!=0){
+            idxWidths.push_back(32);
             for (size_t i = 0; i < N_Depth; ++i) {
-                std::ostringstream oss;
-                oss << std::setfill('0') << std::setw(8) << i;
-                write_var(var.operator[](i), 1, (std::string(name) + ".x" + oss.str()).c_str(), 1);
+                indices.push_back(i);
+                record_struct_arr(var.operator[](i), name, dimension - 1, indices,
+                                 idxWidths);
+                indices.pop_back();
+            }
+        }
+    }
+    template <typename T>
+    void record_struct_arr(VlQueue<T>& var, const std::string name, int dimension,
+                          std::vector<IData> indices, std::vector<size_t> idxWidths) {
+        if ((dimension > 0) && (var.size() != 0)) {
+            idxWidths.push_back(32);
+            for (size_t i = 0; i < var.size(); ++i) {
+                indices.push_back(i);
+                record_struct_arr(var.atWrite(i), name, dimension - 1, indices, idxWidths);
+                indices.pop_back();
             }
         }
     }

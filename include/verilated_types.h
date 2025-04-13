@@ -921,6 +921,9 @@ std::string VL_TO_STRING(const VlQueue<T_Value, N_MaxSize>& obj) {
     return obj.to_string();
 }
 
+template<typename T_Value, size_t N_MaxSize>
+struct ContainsCustomStruct<VlQueue<T_Value, N_MaxSize>> : ContainsCustomStruct<T_Value> {};
+
 //===================================================================
 // Verilog associative array container
 // There are no multithreaded locks on this; the base variable must
@@ -1256,6 +1259,9 @@ std::string VL_TO_STRING(const VlAssocArray<T_Key, T_Value>& obj) {
     return obj.to_string();
 }
 
+template<typename T_Key, typename T_Value>
+struct ContainsCustomStruct<VlAssocArray<T_Key, T_Value>> : ContainsCustomStruct<T_Key> {};
+
 template <typename T_Key, typename T_Value>
 void VL_READMEM_N(bool hex, int bits, const std::string& filename,
                   VlAssocArray<T_Key, T_Value>& obj, QData start, QData end) VL_MT_SAFE {
@@ -1586,6 +1592,8 @@ std::string VL_TO_STRING(const VlUnpacked<T_Value, N_Depth>& obj) {
     return obj.to_string();
 }
 
+template<typename T, int N>
+struct ContainsCustomStruct<VlUnpacked<T, N>> : ContainsCustomStruct<T> {};
 //===================================================================
 // Helper to apply the given indices to a target expression
 
