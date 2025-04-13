@@ -909,16 +909,15 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (nodep->name() == "at" && nodep->fromp()->user1()) {
             iterateChildren(nodep);
             nodep->dumpTreeJson(cout);
-            cout<<endl;
+            cout << endl;
             AstNodeExpr* pinp = nodep->pinsp()->unlinkFrBack();
-            if(VN_IS(pinp, SFormatF)) VN_AS(pinp, SFormatF)->name("%8x");
-            AstNodeExpr* const argsp
-                = AstNode::addNext(nodep->fromp()->unlinkFrBack(), pinp);
+            if (VN_IS(pinp, SFormatF)) VN_AS(pinp, SFormatF)->name("%8x");
+            AstNodeExpr* const argsp = AstNode::addNext(nodep->fromp()->unlinkFrBack(), pinp);
             AstSFormatF* newp = nullptr;
-            if(m_structSel){
+            if (m_structSel) {
                 newp = new AstSFormatF{fl, "%@.%@", false, argsp};
-            }
-            else newp = new AstSFormatF{fl, "(select %@ %@)", false, argsp};
+            } else
+                newp = new AstSFormatF{fl, "(select %@ %@)", false, argsp};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;

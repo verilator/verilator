@@ -179,7 +179,7 @@ using VerilatedAssertDirectiveType_t = std::underlying_type<VerilatedAssertDirec
 template <typename>
 struct VlIsCustomStruct : public std::false_type {};
 
-template<typename T>
+template <typename T>
 struct ContainsCustomStruct : VlIsCustomStruct<T> {};
 //=============================================================================
 // Utility functions

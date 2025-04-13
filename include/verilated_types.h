@@ -921,7 +921,7 @@ std::string VL_TO_STRING(const VlQueue<T_Value, N_MaxSize>& obj) {
     return obj.to_string();
 }
 
-template<typename T_Value, size_t N_MaxSize>
+template <typename T_Value, size_t N_MaxSize>
 struct ContainsCustomStruct<VlQueue<T_Value, N_MaxSize>> : ContainsCustomStruct<T_Value> {};
 
 //===================================================================
@@ -1259,7 +1259,7 @@ std::string VL_TO_STRING(const VlAssocArray<T_Key, T_Value>& obj) {
     return obj.to_string();
 }
 
-template<typename T_Key, typename T_Value>
+template <typename T_Key, typename T_Value>
 struct ContainsCustomStruct<VlAssocArray<T_Key, T_Value>> : ContainsCustomStruct<T_Key> {};
 
 template <typename T_Key, typename T_Value>
@@ -1592,7 +1592,7 @@ std::string VL_TO_STRING(const VlUnpacked<T_Value, N_Depth>& obj) {
     return obj.to_string();
 }
 
-template<typename T, int N>
+template <typename T, int N>
 struct ContainsCustomStruct<VlUnpacked<T, N>> : ContainsCustomStruct<T> {};
 //===================================================================
 // Helper to apply the given indices to a target expression
