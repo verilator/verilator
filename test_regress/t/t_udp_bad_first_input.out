@@ -1,5 +1,6 @@
-%Error: t/t_udp_bad_first_input.v:8:7: The first port must be the output port!
+%Error: t/t_udp_bad_first_input.v:8:7: First UDP port must be the output port
                                      : ... note: In instance 'top'
     8 | input a, b, c;
       |       ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

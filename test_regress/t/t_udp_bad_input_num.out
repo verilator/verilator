@@ -1,15 +1,6 @@
-%Error: t/t_udp_bad_input_num.v:14:1: 3 input var required, while there are 2 input for the table line!
+%Error: t/t_udp_bad_input_num.v:14:9: Incorrect number of input values, expected 3, got 2
                                     : ... note: In instance 'top'
    14 |         1 0  :   0;
-      | ^~~~~~~~
-%Warning-WIDTHEXPAND: t/t_udp_bad_input_num.v:14:1: Operator AND expects 3 bits on the LHS, but LHS's CONST '2'h3' generates 2 bits.
-                                                  : ... note: In instance 'top'
-   14 |         1 0  :   0;
-      | ^~~~~~~~
-                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
-                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
-%Warning-WIDTHEXPAND: t/t_udp_bad_input_num.v:14:1: Operator EQ expects 3 bits on the RHS, but RHS's CONST '2'h1' generates 2 bits.
-                                                  : ... note: In instance 'top'
-   14 |         1 0  :   0;
-      | ^~~~~~~~
+      |         ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

@@ -1,5 +1,6 @@
-%Error: t/t_udp_bad_comb_trigger.v:14:9: There should not be a edge trigger for combinational UDP table line!
-                                       : ... note: In instance 'top'
+%Error: t/t_udp_bad_comb_trigger.v:14:10: There should not be a edge trigger for combinational UDP table line
+                                        : ... note: In instance 'top'
    14 |         (01) 1 0  :   0;
-      |         ^~~~
+      |          ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

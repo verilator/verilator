@@ -1,7 +1,6 @@
-%Warning-LATCH: t/t_udp_sequential_bad.v:12:5: Latch inferred for signal 'o' (not all control paths of combinational always assign a value)
-                                             : ... Suggest use of always_latch for intentional latches
-   12 |     table
-      |     ^~~~~
-                ... For warning description see https://verilator.org/warn/LATCH?v=latest
-                ... Use "/* verilator lint_off LATCH */" and lint_on around source to disable this message.
+%Error: t/t_udp_sequential_bad.v:8:8: For combinational UDP, the output must not be a 'reg' data type
+                                    : ... note: In instance 'top'
+    8 | output dout;
+      |        ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to
