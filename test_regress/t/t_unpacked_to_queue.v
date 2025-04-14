@@ -35,19 +35,33 @@ module test();
 
     localparam NUM_ELEMS = 4;
 
-    string       array_s  [NUM_ELEMS];
+    typedef string       array_s_t  [NUM_ELEMS];
+    typedef logic [7:0]  array_8_t  [NUM_ELEMS];
+    typedef logic [15:0] array_16_t [NUM_ELEMS];
+    typedef logic [31:0] array_32_t [NUM_ELEMS];
+    typedef logic [63:0] array_64_t [NUM_ELEMS];
+    typedef logic [95:0] array_96_t [NUM_ELEMS];
 
-    logic [7:0]  array_8  [NUM_ELEMS];
-    logic [15:0] array_16 [NUM_ELEMS];
-    logic [31:0] array_32 [NUM_ELEMS];
-    logic [63:0] array_64 [NUM_ELEMS];
-    logic [95:0] array_96 [NUM_ELEMS];
+    typedef string       queue_s_t  [$];
+    typedef logic [7:0]  queue_8_t  [$];
+    typedef logic [15:0] queue_16_t [$];
+    typedef logic [31:0] queue_32_t [$];
+    typedef logic [63:0] queue_64_t [$];
+    typedef logic [95:0] queue_96_t [$];
 
-    logic [7:0]  queue_8  [$];
-    logic [15:0] queue_16 [$];
-    logic [31:0] queue_32 [$];
-    logic [63:0] queue_64 [$];
-    logic [95:0] queue_96 [$];
+    array_s_t  array_s;
+    array_8_t  array_8;
+    array_16_t array_16;
+    array_32_t array_32;
+    array_64_t array_64;
+    array_96_t array_96;
+
+    queue_s_t  queue_s;
+    queue_8_t  queue_8;
+    queue_16_t queue_16;
+    queue_32_t queue_32;
+    queue_64_t queue_64;
+    queue_96_t queue_96;
 
 
     initial begin
@@ -58,6 +72,7 @@ module test();
             array_32[i] = 32'(i);
             array_64[i] = 64'(i);
             array_96[i] = 96'(i);
+            queue_s.push_back("test");
             queue_8.push_back(8'(i));
             queue_16.push_back(16'(i));
             queue_32.push_back(32'(i));
@@ -66,13 +81,13 @@ module test();
         end
 
         check#(1)::check_string(NUM_ELEMS, array_s);
-
         check#(8)::check_array(NUM_ELEMS, array_8);
         check#(16)::check_array(NUM_ELEMS, array_16);
         check#(32)::check_array(NUM_ELEMS, array_32);
         check#(64)::check_array(NUM_ELEMS, array_64);
         check#(96)::check_array(NUM_ELEMS, array_96);
 
+        check#(1)::check_string(NUM_ELEMS, queue_s);
         check#(8)::check_array(NUM_ELEMS, queue_8);
         check#(16)::check_array(NUM_ELEMS, queue_16);
         check#(32)::check_array(NUM_ELEMS, queue_32);
