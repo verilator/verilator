@@ -236,7 +236,7 @@ static inline std::string VL_CVT_N_CSTR(const char* lhsp) VL_PURE {
 template <std::size_t N_Depth>
 static inline VlQueue<std::string> VL_CVT_UNPACK_TO_Q(const VlUnpacked<std::string, N_Depth>& q) VL_PURE {
     VlQueue<std::string> ret;
-    for (size_t i = 0; i < N_Depth; ++i) 
+    for (size_t i = 0; i < N_Depth; ++i)
         ret.push_back(q[i]);
     return ret;
 }
@@ -244,7 +244,7 @@ static inline VlQueue<std::string> VL_CVT_UNPACK_TO_Q(const VlUnpacked<std::stri
 template <std::size_t N_Depth>
 static inline VlQueue<CData> VL_CVT_UNPACK_TO_Q(const VlUnpacked<CData, N_Depth>& q) VL_PURE {
     VlQueue<CData> ret;
-    for (size_t i = 0; i < N_Depth; ++i) 
+    for (size_t i = 0; i < N_Depth; ++i)
         ret.push_back(q[i]);
     return ret;
 }
@@ -252,7 +252,7 @@ static inline VlQueue<CData> VL_CVT_UNPACK_TO_Q(const VlUnpacked<CData, N_Depth>
 template <std::size_t N_Depth>
 static inline VlQueue<SData> VL_CVT_UNPACK_TO_Q(const VlUnpacked<SData, N_Depth>& q) VL_PURE {
     VlQueue<SData> ret;
-    for (size_t i = 0; i < N_Depth; ++i) 
+    for (size_t i = 0; i < N_Depth; ++i)
         ret.push_back(q[i]);
     return ret;
 }
@@ -260,7 +260,7 @@ static inline VlQueue<SData> VL_CVT_UNPACK_TO_Q(const VlUnpacked<SData, N_Depth>
 template <std::size_t N_Depth>
 static inline VlQueue<IData> VL_CVT_UNPACK_TO_Q(const VlUnpacked<IData, N_Depth>& q) VL_PURE {
     VlQueue<IData> ret;
-    for (size_t i = 0; i < N_Depth; ++i) 
+    for (size_t i = 0; i < N_Depth; ++i)
         ret.push_back(q[i]);
     return ret;
 }
@@ -268,7 +268,7 @@ static inline VlQueue<IData> VL_CVT_UNPACK_TO_Q(const VlUnpacked<IData, N_Depth>
 template <std::size_t N_Depth>
 static inline VlQueue<QData> VL_CVT_UNPACK_TO_Q(const VlUnpacked<QData, N_Depth>& q) VL_PURE {
     VlQueue<QData> ret;
-    for (size_t i = 0; i < N_Depth; ++i) 
+    for (size_t i = 0; i < N_Depth; ++i)
         ret.push_back(q[i]);
     return ret;
 }
@@ -276,7 +276,7 @@ static inline VlQueue<QData> VL_CVT_UNPACK_TO_Q(const VlUnpacked<QData, N_Depth>
 template <std::size_t N_Depth, std::size_t N_Words>
 static inline VlQueue<VlWide<N_Words>> VL_CVT_UNPACK_TO_Q(const VlUnpacked<VlWide<N_Words>, N_Depth>& q) VL_PURE {
     VlQueue<VlWide<N_Words>> ret;
-    for (size_t i = 0; i < N_Depth; ++i) 
+    for (size_t i = 0; i < N_Depth; ++i)
         ret.push_back(q[i]);
     return ret;
 }

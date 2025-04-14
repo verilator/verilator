@@ -17,14 +17,14 @@
 
 class check #(parameter WIDTH=8);
     static function automatic void check_array (int n,
-                                    logic [WIDTH-1:0] array []);      
+                                    logic [WIDTH-1:0] array []);
         for (int r=0; r<n; r++) begin
             `checkh(array[r], WIDTH'(r))
         end
     endfunction
 
     static function automatic void check_string (int n,
-                                    string array []);      
+                                    string array []);
         for (int r=0; r<n; r++) begin
             `checks(array[r], "test")
         end
