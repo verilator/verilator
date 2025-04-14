@@ -1605,6 +1605,12 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
         // Type set in constructor
     }
+    void visit(AstCvtUnpackedToQueue* nodep) override {
+        if (nodep->didWidthAndSet()) return;
+        // Opaque returns, so arbitrary
+        userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
+        // Type set in constructor
+    }
     void visit(AstTimeImport* nodep) override {
         // LHS is a real number in seconds
         // Need to round to time units and precision
@@ -7058,6 +7064,12 @@ class WidthVisitor final : public VNVisitor {
             }
             nodep->v3error(side << " expects a " << lhsClassRefp->prettyTypeName() << ", got "
                                 << rhsDtypep->prettyTypeName());
+        }
+        if (VN_IS(lhsDTypep->skipRefp(), DynArrayDType) && VN_IS(rhsp->dtypep()->skipRefp(), UnpackArrayDType)){
+            VNRelinker relinker;
+            rhsp->unlinkFrBack(&relinker);
+            relinker.relink(new AstCvtUnpackedToQueue{
+                    rhsp->fileline(), VN_AS(rhsp, NodeExpr), lhsDTypep});
         }
     }
     static bool similarDTypeRecurse(const AstNodeDType* const node1p,
