@@ -237,8 +237,7 @@ static inline std::string VL_CVT_N_CSTR(const char* lhsp) VL_PURE {
 template <typename T, std::size_t N_Depth>
 static inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_PURE {
     VlQueue<T> ret;
-    for (size_t i = 0; i < N_Depth; ++i)
-        ret.push_back(q[i]);
+    for (size_t i = 0; i < N_Depth; ++i) ret.push_back(q[i]);
     return ret;
 }
 

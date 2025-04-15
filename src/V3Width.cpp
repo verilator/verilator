@@ -7075,11 +7075,12 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3error(side << " expects a " << lhsClassRefp->prettyTypeName() << ", got "
                                 << rhsDtypep->prettyTypeName());
         }
-        if (VN_IS(lhsDTypep->skipRefp(), DynArrayDType) && VN_IS(rhsp->dtypep()->skipRefp(), UnpackArrayDType)){
+        if (VN_IS(lhsDTypep->skipRefp(), DynArrayDType)
+            && VN_IS(rhsp->dtypep()->skipRefp(), UnpackArrayDType)) {
             VNRelinker relinker;
             rhsp->unlinkFrBack(&relinker);
-            relinker.relink(new AstCvtUnpackedToQueue{
-                    rhsp->fileline(), VN_AS(rhsp, NodeExpr), lhsDTypep});
+            relinker.relink(
+                new AstCvtUnpackedToQueue{rhsp->fileline(), VN_AS(rhsp, NodeExpr), lhsDTypep});
         }
     }
     static bool similarDTypeRecurse(const AstNodeDType* const node1p,
