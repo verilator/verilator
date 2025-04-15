@@ -201,7 +201,7 @@ class VlRandomizer final {
                                                                        // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
     const VlQueue<CData>* m_randmode;  // rand_mode state;
-    int idx = 0; // Internal counter for key generation
+    int idx = 0;  // Internal counter for key generation
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
@@ -335,7 +335,7 @@ public:
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         modifyMembers(var, var.memberIndices(), name);
     }
-    
+
     // Register queue of non-struct types
     template <typename T>
     typename std::enable_if<!ContainsCustomStruct<T>::value, void>::type
@@ -371,7 +371,7 @@ public:
             record_arr_table(var, name, dimension, {}, {});
         }
     }
-    
+
     // Register unpacked array of structs
     template <typename T, std::size_t N_Depth>
     typename std::enable_if<ContainsCustomStruct<T>::value, void>::type
@@ -395,7 +395,6 @@ public:
     }
 
     // TODO: Register associative array of structs
-
 
     // ----------------------------------------
     // ---  Record Arrays: flat and struct  ---
@@ -513,7 +512,6 @@ public:
 
     // TODO: Add support for associative arrays of structs
     // Recursively process associative arrays of structs
-
 
     // --------------------------
     // ---  Helper functions  ---

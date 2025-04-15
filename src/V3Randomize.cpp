@@ -480,7 +480,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstVar* m_randModeVarp;  // Relevant randmode state variable
     bool m_wantSingle = false;  // Whether to merge constraint expressions with LOGAND
     VMemberMap& m_memberMap;  // Member names cached for fast lookup
-    bool m_structSel = false; // Marks when inside a struct selection, used to format "%@.%@" for struct arrays
+    bool m_structSel
+        = false;  // Marks when inside a struct selection, used to format "%@.%@" for struct arrays
 
     AstSFormatF* getConstFormat(AstNodeExpr* nodep) {
         return new AstSFormatF{nodep->fileline(), (nodep->width() & 3) ? "#b%b" : "#x%x", false,
