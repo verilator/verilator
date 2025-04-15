@@ -480,8 +480,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstVar* m_randModeVarp;  // Relevant randmode state variable
     bool m_wantSingle = false;  // Whether to merge constraint expressions with LOGAND
     VMemberMap& m_memberMap;  // Member names cached for fast lookup
-    bool m_structSel
-        = false;  // Marks when inside a struct selection, used to format "%@.%@" for struct arrays
+    bool m_structSel = false;  // Marks when inside structSel
+                               // (used to format "%@.%@" for struct arrays)
 
     AstSFormatF* getConstFormat(AstNodeExpr* nodep) {
         return new AstSFormatF{nodep->fileline(), (nodep->width() & 3) ? "#b%b" : "#x%x", false,
@@ -538,9 +538,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         UASSERT_OBJ(!rhsp, nodep, "Missing emitSMT %r for " << rhsp);
         UASSERT_OBJ(!thsp, nodep, "Missing emitSMT %t for " << thsp);
         AstSFormatF* const newp = new AstSFormatF{nodep->fileline(), smtExpr, false, argsp};
-        if (m_structSel && newp->name() == "(select %@ %@)") {  // for struct arrays
+        if (m_structSel && newp->name() == "(select %@ %@)") {
             newp->name("%@.%@");
-            newp->exprsp()->nextp()->name("%8x");  // x%8x
+            newp->exprsp()->nextp()->name("%8x");
         }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -755,7 +755,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (VN_AS(nodep->fromp(), SFormatF)->name() == "%@.%@") {
             newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
                                    VN_AS(nodep->fromp(), SFormatF)->exprsp()->cloneTreePure(true)};
-            newp->exprsp()->nextp()->name("%8x");  // x%8x
+            newp->exprsp()->nextp()->name("%8x");
         } else {
             newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false,
                                    nullptr};
