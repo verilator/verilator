@@ -200,8 +200,8 @@ class VlRandomizer final {
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
                                                                        // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
-    std::map<size_t, std::string> seen_values;  // Record String Index to avoid conflicts
     const VlQueue<CData>* m_randmode;  // rand_mode state;
+    int idx = 0; // Internal counter for key generation
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
@@ -216,7 +216,11 @@ public:
     // Finds the next solution satisfying the constraints
     bool next(VlRNG& rngr);
 
-    // Process the key for associative array
+    // -----------------------------------------------
+    // ---  Process the key for associative array  ---
+    // -----------------------------------------------
+
+    // process_key: Handle integral keys (<= 32-bit)
     template <typename T_Key>
     typename std::enable_if<std::is_integral<T_Key>::value && (sizeof(T_Key) <= 4)>::type
     process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
@@ -226,6 +230,8 @@ public:
             = base_name + "[" + std::to_string(integral_index[integral_index.size() - 1]) + "]";
         idx_width = sizeof(T_Key) * 8;
     }
+
+    // process_key: Handle integral keys (> 32-bit), split into 2 x 32-bit segments
     template <typename T_Key>
     typename std::enable_if<std::is_integral<T_Key>::value && (sizeof(T_Key) > 4)>::type
     process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
@@ -245,6 +251,8 @@ public:
 
         idx_width = sizeof(T_Key) * 8;
     }
+
+    // process_key: Handle wide keys (VlWide-like), segment is 32-bit per element
     template <typename T_Key>
     typename std::enable_if<VlIsVlWide<T_Key>::value>::type
     process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
@@ -262,6 +270,8 @@ public:
         indexed_name = base_name + "[" + index_string + "]";
         idx_width = key.size() * 32;
     }
+
+    // process_key: Handle string key, encoded as 128-bit hex
     template <typename T_Key>
     typename std::enable_if<std::is_same<T_Key, std::string>::value>::type
     process_key(const T_Key& key, std::string& indexed_name, std::vector<size_t>& integral_index,
@@ -290,6 +300,8 @@ public:
 
         idx_width = 128;
     }
+
+    // process_key: Unsupported key type fallback
     template <typename T_Key>
     typename std::enable_if<!std::is_integral<T_Key>::value
                             && !std::is_same<T_Key, std::string>::value
@@ -301,13 +313,11 @@ public:
                     "supported currently.");
     }
 
-    // Write Variable
-    template <typename T>
-    typename std::enable_if<VlIsCustomStruct<T>::value, void>::type
-    write_var(T& var, int width, const char* name, int dimension,
-              std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        modifyMembers(var, var.memberIndices(), name);
-    }
+    // -----------------------------------------
+    // ---  write_var to register variables  ---
+    // -----------------------------------------
+
+    // Register scalar variable (non-struct, basic type)
     template <typename T>
     typename std::enable_if<!ContainsCustomStruct<T>::value, void>::type
     write_var(T& var, int width, const char* name, int dimension,
@@ -317,6 +327,16 @@ public:
         m_vars[name]
             = std::make_shared<const VlRandomVar>(name, width, &var, dimension, randmodeIdx);
     }
+
+    // Register user-defined struct variable by recursively writing members
+    template <typename T>
+    typename std::enable_if<VlIsCustomStruct<T>::value, void>::type
+    write_var(T& var, int width, const char* name, int dimension,
+              std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+        modifyMembers(var, var.memberIndices(), name);
+    }
+    
+    // Register queue of non-struct types
     template <typename T>
     typename std::enable_if<!ContainsCustomStruct<T>::value, void>::type
     write_var(VlQueue<T>& var, int width, const char* name, int dimension,
@@ -329,6 +349,16 @@ public:
             record_arr_table(var, name, dimension, {}, {});
         }
     }
+
+    // Register queue of structs
+    template <typename T>
+    typename std::enable_if<ContainsCustomStruct<T>::value, void>::type
+    write_var(VlQueue<T>& var, int width, const char* name, int dimension,
+              std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+        if (dimension > 0) { record_struct_arr(var, name, dimension, {}, {}); }
+    }
+
+    // Register unpacked array of non-struct types
     template <typename T, std::size_t N_Depth>
     typename std::enable_if<!ContainsCustomStruct<T>::value, void>::type
     write_var(VlUnpacked<T, N_Depth>& var, int width, const char* name, int dimension,
@@ -341,53 +371,16 @@ public:
             record_arr_table(var, name, dimension, {}, {});
         }
     }
-    template <typename T>
-    typename std::enable_if<ContainsCustomStruct<T>::value, void>::type
-    write_var(VlQueue<T>& var, int width, const char* name, int dimension,
-              std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (dimension > 0) { record_struct_arr(var, name, dimension, {}, {}); }
-    }
+    
+    // Register unpacked array of structs
     template <typename T, std::size_t N_Depth>
     typename std::enable_if<ContainsCustomStruct<T>::value, void>::type
     write_var(VlUnpacked<T, N_Depth>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (dimension > 0) { record_struct_arr(var, name, dimension, {}, {}); }
     }
-    template <typename T>
-    typename std::enable_if<ContainsCustomStruct<T>::value, void>::type
-    record_struct_arr(T& var, const std::string name, int dimension, std::vector<IData> indices,
-                      std::vector<size_t> idxWidths) {
-        std::ostringstream oss;
-        for (size_t i = 0; i < indices.size(); ++i) {
-            oss << std::hex << std::setw(8) << std::setfill('0') << static_cast<int>(indices[i]);
-            if (i < indices.size() - 1) oss << ".";
-        }
-        write_var(var, 1ULL, (name + "." + oss.str()).c_str(), 1ULL);
-    }
-    template <typename T, std::size_t N_Depth>
-    void record_struct_arr(VlUnpacked<T, N_Depth>& var, const std::string name, int dimension,
-                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
-        if (dimension > 0 && N_Depth != 0) {
-            idxWidths.push_back(32);
-            for (size_t i = 0; i < N_Depth; ++i) {
-                indices.push_back(i);
-                record_struct_arr(var.operator[](i), name, dimension - 1, indices, idxWidths);
-                indices.pop_back();
-            }
-        }
-    }
-    template <typename T>
-    void record_struct_arr(VlQueue<T>& var, const std::string name, int dimension,
-                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
-        if ((dimension > 0) && (var.size() != 0)) {
-            idxWidths.push_back(32);
-            for (size_t i = 0; i < var.size(); ++i) {
-                indices.push_back(i);
-                record_struct_arr(var.atWrite(i), name, dimension - 1, indices, idxWidths);
-                indices.pop_back();
-            }
-        }
-    }
+
+    // Register associative array of non-struct types
     template <typename T_Key, typename T_Value>
     void write_var(VlAssocArray<T_Key, T_Value>& var, int width, const char* name, int dimension,
                    std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
@@ -400,17 +393,15 @@ public:
             record_arr_table(var, name, dimension, {}, {});
         }
     }
-    // Helper functions to write variable
-    template <typename T, std::size_t... I>
-    void modifyMembers(T& obj, std::index_sequence<I...>, std::string baseName) {
-        // Use the indices to access each member via std::get
-        (void)std::initializer_list<int>{
-            (write_var(std::get<I>(obj.getMembers(obj)), obj.memberWidth()[I],
-                       (baseName + "." + obj.memberNames()[I]).c_str(), obj.memberDimension()[I]),
-             0)...};
-    }
 
-    // Record Array Table
+    // TODO: Register associative array of structs
+
+
+    // ----------------------------------------
+    // ---  Record Arrays: flat and struct  ---
+    // ----------------------------------------
+
+    // Record a flat (non-class) element into the array variable table
     template <typename T>
     typename std::enable_if<!std::is_class<T>::value, void>::type
     record_arr_table(T& var, const std::string name, int dimension, std::vector<IData> indices,
@@ -419,19 +410,8 @@ public:
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices, idxWidths);
         ++idx;
     }
-    template <typename T>
-    void record_arr_table(VlQueue<T>& var, const std::string name, int dimension,
-                          std::vector<IData> indices, std::vector<size_t> idxWidths) {
-        if ((dimension > 0) && (var.size() != 0)) {
-            idxWidths.push_back(32);
-            for (size_t i = 0; i < var.size(); ++i) {
-                const std::string indexed_name = name + "[" + std::to_string(i) + "]";
-                indices.push_back(i);
-                record_arr_table(var.atWrite(i), indexed_name, dimension - 1, indices, idxWidths);
-                indices.pop_back();
-            }
-        }
-    }
+
+    // Recursively record all elements in an unpacked array
     template <typename T, std::size_t N_Depth>
     void record_arr_table(VlUnpacked<T, N_Depth>& var, const std::string name, int dimension,
                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
@@ -446,6 +426,23 @@ public:
             }
         }
     }
+
+    // Recursively record all elements in a queue
+    template <typename T>
+    void record_arr_table(VlQueue<T>& var, const std::string name, int dimension,
+                          std::vector<IData> indices, std::vector<size_t> idxWidths) {
+        if ((dimension > 0) && (var.size() != 0)) {
+            idxWidths.push_back(32);
+            for (size_t i = 0; i < var.size(); ++i) {
+                const std::string indexed_name = name + "[" + std::to_string(i) + "]";
+                indices.push_back(i);
+                record_arr_table(var.atWrite(i), indexed_name, dimension - 1, indices, idxWidths);
+                indices.pop_back();
+            }
+        }
+    }
+
+    // Recursively record all elements in an associative array
     template <typename T_Key, typename T_Value>
     void record_arr_table(VlAssocArray<T_Key, T_Value>& var, const std::string name, int dimension,
                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
@@ -472,8 +469,67 @@ public:
             }
         }
     }
-    // Helper functions to record array table
-    int idx;
+
+    // Register a single structArray element via write_var
+    template <typename T>
+    typename std::enable_if<ContainsCustomStruct<T>::value, void>::type
+    record_struct_arr(T& var, const std::string name, int dimension, std::vector<IData> indices,
+                      std::vector<size_t> idxWidths) {
+        std::ostringstream oss;
+        for (size_t i = 0; i < indices.size(); ++i) {
+            oss << std::hex << std::setw(8) << std::setfill('0') << static_cast<int>(indices[i]);
+            if (i < indices.size() - 1) oss << ".";
+        }
+        write_var(var, 1ULL, (name + "." + oss.str()).c_str(), 1ULL);
+    }
+
+    // Recursively process VlUnpacked of structs
+    template <typename T, std::size_t N_Depth>
+    void record_struct_arr(VlUnpacked<T, N_Depth>& var, const std::string name, int dimension,
+                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
+        if (dimension > 0 && N_Depth != 0) {
+            idxWidths.push_back(32);
+            for (size_t i = 0; i < N_Depth; ++i) {
+                indices.push_back(i);
+                record_struct_arr(var.operator[](i), name, dimension - 1, indices, idxWidths);
+                indices.pop_back();
+            }
+        }
+    }
+
+    // Recursively process VlQueue of structs
+    template <typename T>
+    void record_struct_arr(VlQueue<T>& var, const std::string name, int dimension,
+                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
+        if ((dimension > 0) && (var.size() != 0)) {
+            idxWidths.push_back(32);
+            for (size_t i = 0; i < var.size(); ++i) {
+                indices.push_back(i);
+                record_struct_arr(var.atWrite(i), name, dimension - 1, indices, idxWidths);
+                indices.pop_back();
+            }
+        }
+    }
+
+    // TODO: Add support for associative arrays of structs
+    // Recursively process associative arrays of structs
+
+
+    // --------------------------
+    // ---  Helper functions  ---
+    // --------------------------
+
+    // Helper: Register all members of a user-defined struct
+    template <typename T, std::size_t... I>
+    void modifyMembers(T& obj, std::index_sequence<I...>, std::string baseName) {
+        // Use the indices to access each member via std::get
+        (void)std::initializer_list<int>{
+            (write_var(std::get<I>(obj.getMembers(obj)), obj.memberWidth()[I],
+                       (baseName + "." + obj.memberNames()[I]).c_str(), obj.memberDimension()[I]),
+             0)...};
+    }
+
+    // Helper: Generate unique variable key from name and index
     std::string generateKey(const std::string& name, int idx) {
         if (!name.empty() && name[0] == '\\') {
             const size_t space_pos = name.find(' ');

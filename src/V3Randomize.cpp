@@ -480,8 +480,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstVar* m_randModeVarp;  // Relevant randmode state variable
     bool m_wantSingle = false;  // Whether to merge constraint expressions with LOGAND
     VMemberMap& m_memberMap;  // Member names cached for fast lookup
-
-    bool m_structSel = false;
+    bool m_structSel = false; // Marks when inside a struct selection, used to format "%@.%@" for struct arrays
 
     AstSFormatF* getConstFormat(AstNodeExpr* nodep) {
         return new AstSFormatF{nodep->fileline(), (nodep->width() & 3) ? "#b%b" : "#x%x", false,
@@ -912,9 +911,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             if (VN_IS(pinp, SFormatF) && m_structSel) VN_AS(pinp, SFormatF)->name("%8x");
             AstNodeExpr* const argsp = AstNode::addNext(nodep->fromp()->unlinkFrBack(), pinp);
             AstSFormatF* newp = nullptr;
-            if (m_structSel) {
+            if (m_structSel)
                 newp = new AstSFormatF{fl, "%@.%@", false, argsp};
-            } else
+            else
                 newp = new AstSFormatF{fl, "(select %@ %@)", false, argsp};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);

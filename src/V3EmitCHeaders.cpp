@@ -287,6 +287,7 @@ class EmitCHeader final : public EmitCConstInit {
             putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false));
             puts(";\n");
         }
+
         // Three helper functions for struct constrained randomization:
         // - memberNames: Get member names
         // - getMembers: Access member references
