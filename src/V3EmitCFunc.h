@@ -392,6 +392,11 @@ public:
         emitOpName(nodep, nodep->emitC(), nodep->fromp(), elemDTypep, nullptr);
     }
 
+    void visit(AstCvtUnpackedToQueue* nodep) override {
+        AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
+        emitOpName(nodep, nodep->emitC(), nodep->fromp(), elemDTypep, nullptr);
+    }
+
     void visit(AstNodeAssign* nodep) override {
         bool paren = true;
         bool decind = false;

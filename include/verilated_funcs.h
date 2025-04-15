@@ -233,6 +233,15 @@ static inline std::string VL_CVT_N_CSTR(const char* lhsp) VL_PURE {
     return lhsp ? std::string{lhsp} : ""s;
 }
 
+// Return queue from an unpacked array
+template <typename T, std::size_t N_Depth>
+static inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_PURE {
+    VlQueue<T> ret;
+    for (size_t i = 0; i < N_Depth; ++i)
+        ret.push_back(q[i]);
+    return ret;
+}
+
 // Return double from lhs (numeric) unsigned
 double VL_ITOR_D_W(int lbits, WDataInP const lwp) VL_PURE;
 static inline double VL_ITOR_D_I(int, IData lhs) VL_PURE {
