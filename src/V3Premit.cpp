@@ -308,13 +308,11 @@ class PremitVisitor final : public VNVisitor {
         checkNode(nodep);
     }
     void visit(AstArraySel* nodep) override {
-        // Skip straight to children. Don't replace the array
-        iterateChildren(nodep->fromp());
+        iterateAndNextNull(nodep->fromp());
         {  // Only the 'from' is part of the assignment LHS
             VL_RESTORER(m_assignLhs);
             m_assignLhs = false;
-            // Index is never wide, so skip straight to children
-            iterateChildren(nodep->bitp());
+            iterateAndNextNull(nodep->bitp());
         }
         // ArraySel are just pointer arithmetic and should never be replaced
     }
