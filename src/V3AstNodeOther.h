@@ -1798,19 +1798,48 @@ class AstUdpTable final : public AstNode {
 public:
     AstUdpTable(FileLine* fl, AstUdpTableLine* linesp)
         : ASTGEN_SUPER_UdpTable(fl) {
-        addLinesp(linesp);
+        this->addLinesp(linesp);
+        if (!v3Global.hasTable()) v3Global.setHasTable();
     }
     ASTGEN_MEMBERS_AstUdpTable;
 };
 class AstUdpTableLine final : public AstNode {
-    string m_text;
+    // @astgen op1 := iFieldsp : List[AstUdpTableLineVal]  // Input fields
+    // @astgen op2 := oFieldsp : List[AstUdpTableLineVal]  // Output fields
+private:
+    const bool m_udpIsCombo;  // Combinational or sequential UDP
 
 public:
-    AstUdpTableLine(FileLine* fl, const string& text)
+    class UdpCombo {};
+    AstUdpTableLine(UdpCombo, FileLine* fl, AstUdpTableLineVal* iFieldsp,
+                    AstUdpTableLineVal* oFieldsp)
         : ASTGEN_SUPER_UdpTableLine(fl)
-        , m_text{text} {}
+        , m_udpIsCombo{true} {
+        addIFieldsp(iFieldsp);
+        addOFieldsp(oFieldsp);
+    }
+    class UdpSequential {};
+    AstUdpTableLine(UdpSequential, FileLine* fl, AstUdpTableLineVal* iFieldsp,
+                    AstUdpTableLineVal* oFieldsp1, AstUdpTableLineVal* oFieldsp2)
+        : ASTGEN_SUPER_UdpTableLine(fl)
+        , m_udpIsCombo{false} {
+        addIFieldsp(iFieldsp);
+        addOFieldsp(oFieldsp1);
+        addOFieldsp(oFieldsp2);
+    }
     ASTGEN_MEMBERS_AstUdpTableLine;
+    int udpIsCombo() const { return m_udpIsCombo; }
+};
+class AstUdpTableLineVal final : public AstNode {
+    string m_text;  // Value character
+
+public:
+    AstUdpTableLineVal(FileLine* fl, const string& text)
+        : ASTGEN_SUPER_UdpTableLineVal(fl)
+        , m_text{text} {}
+    ASTGEN_MEMBERS_AstUdpTableLineVal;
     string name() const override VL_MT_STABLE { return m_text; }
+    void name(std::string const& text) override VL_MT_STABLE { m_text = text; }
     string text() const VL_MT_SAFE { return m_text; }
 };
 class AstVar final : public AstNode {

@@ -450,7 +450,9 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 
 %token<fl>              ygenSTRENGTH    "STRENGTH keyword (strong1/etc)"
 
-%token<strp>            yaTABLELINE     "TABLE LINE"
+%token<strp>            yaTABLE_FIELD  "UDP table field"
+%token<fl>              yaTABLE_LRSEP   ":"
+%token<fl>              yaTABLE_LINEEND "UDP table line end"
 
 %token<strp>            yaSCCTOR        "`systemc_ctor block"
 %token<strp>            yaSCDTOR        "`systemc_dtor block"
@@ -5785,14 +5787,26 @@ combinational_body<nodep>:      // IEEE: combinational_body + sequential_body
                 yTABLE tableEntryList yENDTABLE         { $$ = new AstUdpTable{$1, $2}; }
         ;
 
-tableEntryList<udpTableLinep>:  // IEEE: { combinational_entry | sequential_entry }
-                tableEntry                              { $$ = $1; }
-        |       tableEntryList tableEntry               { $$ = addNextNull($1, $2); }
+tableEntryList<udpTableLinep>:  // IEEE: { combinational_entry + sequential_entry }
+                tableLine                              { $$ = $1; }
+        |       tableEntryList tableLine               { $$ = addNextNull($1, $2); }
         ;
 
-tableEntry<udpTableLinep>:      // IEEE: combinational_entry + sequential_entry
-                yaTABLELINE                             { $$ = new AstUdpTableLine{$<fl>1, *$1}; }
-        |       error                                   { $$ = nullptr; }
+tableLine<udpTableLinep>:
+                tableInputList yaTABLE_LRSEP tablelVal yaTABLE_LINEEND
+                        { $$ = new AstUdpTableLine{AstUdpTableLine::UdpCombo{}, $<fl>1, $1, $3}; }
+        |       tableInputList yaTABLE_LRSEP tablelVal yaTABLE_LRSEP tablelVal yaTABLE_LINEEND
+                        { $$ = new AstUdpTableLine{AstUdpTableLine::UdpSequential{}, $<fl>1, $1, $3, $5}; }
+        ;
+
+tableInputList<udpTableLineValp>:
+                tablelVal                            { $$ = $1; }
+        |       tableInputList tablelVal             { $$ = addNextNull($1, $2); }
+        ;
+
+tablelVal<udpTableLineValp>:
+                yaTABLE_FIELD                          { $$ = new AstUdpTableLineVal{$<fl>1, *$1}; }
+        |       '(' yaTABLE_FIELD yaTABLE_FIELD ')'    { $$ = new AstUdpTableLineVal{$<fl>2, *$2 + *$3}; }
         ;
 
 //************************************************
