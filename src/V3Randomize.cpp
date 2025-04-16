@@ -481,6 +481,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstVar* m_randModeVarp;  // Relevant randmode state variable
     bool m_wantSingle = false;  // Whether to merge constraint expressions with LOGAND
     VMemberMap& m_memberMap;  // Member names cached for fast lookup
+    bool m_structSel = false;  // Marks when inside structSel
+                               // (used to format "%@.%@" for struct arrays)
 
     AstSFormatF* getConstFormat(AstNodeExpr* nodep) {
         return new AstSFormatF{nodep->fileline(), (nodep->width() & 3) ? "#b%b" : "#x%x", false,
@@ -537,6 +539,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         UASSERT_OBJ(!rhsp, nodep, "Missing emitSMT %r for " << rhsp);
         UASSERT_OBJ(!thsp, nodep, "Missing emitSMT %t for " << thsp);
         AstSFormatF* const newp = new AstSFormatF{nodep->fileline(), smtExpr, false, argsp};
+        if (m_structSel && newp->name() == "(select %@ %@)") {
+            newp->name("%@.%@");
+            newp->exprsp()->nextp()->name("%x");
+        }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
@@ -712,6 +718,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
     }
     void visit(AstStructSel* nodep) override {
+        m_structSel = true;
         if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), StructDType)) {
             AstNodeExpr* const fromp = nodep->fromp();
             if (VN_IS(fromp, StructSel)) {
@@ -726,11 +733,34 @@ class ConstraintExprVisitor final : public VNVisitor {
                     memberp = VN_CAST(memberp->nextp(), MemberDType);
             }
         }
+        // Mark Random for structArray
+        if (VN_IS(nodep->fromp(), ArraySel)) {
+            AstNodeExpr* const fromp = VN_AS(nodep->fromp(), ArraySel)->fromp();
+            AstStructDType* const dtypep
+                = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType);
+            dtypep->markConstrainedRand(true);
+            AstMemberDType* memberp = dtypep->membersp();
+            while (memberp) {
+                if (memberp->name() == nodep->name()) {
+                    memberp->markConstrainedRand(true);
+                    break;
+                } else
+                    memberp = VN_CAST(memberp->nextp(), MemberDType);
+            }
+        }
         iterateChildren(nodep);
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
-        AstSFormatF* const newp
-            = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false, nullptr};
+        AstSFormatF* newp = nullptr;
+        if (VN_AS(nodep->fromp(), SFormatF)->name() == "%@.%@") {
+            newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
+                                   VN_AS(nodep->fromp(), SFormatF)->exprsp()->cloneTreePure(true)};
+            newp->exprsp()->nextp()->name("%x");
+        } else {
+            newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false,
+                                   nullptr};
+        }
+        m_structSel = false;
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
@@ -885,9 +915,14 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         if (nodep->name() == "at" && nodep->fromp()->user1()) {
             iterateChildren(nodep);
-            AstNodeExpr* const argsp
-                = AstNode::addNext(nodep->fromp()->unlinkFrBack(), nodep->pinsp()->unlinkFrBack());
-            AstSFormatF* const newp = new AstSFormatF{fl, "(select %@ %@)", false, argsp};
+            AstNodeExpr* pinp = nodep->pinsp()->unlinkFrBack();
+            if (VN_IS(pinp, SFormatF) && m_structSel) VN_AS(pinp, SFormatF)->name("%x");
+            AstNodeExpr* const argsp = AstNode::addNext(nodep->fromp()->unlinkFrBack(), pinp);
+            AstSFormatF* newp = nullptr;
+            if (m_structSel)
+                newp = new AstSFormatF{fl, "%@.%@", false, argsp};
+            else
+                newp = new AstSFormatF{fl, "(select %@ %@)", false, argsp};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;

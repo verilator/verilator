@@ -175,9 +175,14 @@ enum class VerilatedAssertDirectiveType : uint8_t {
 using VerilatedAssertType_t = std::underlying_type<VerilatedAssertType>::type;
 using VerilatedAssertDirectiveType_t = std::underlying_type<VerilatedAssertDirectiveType>::type;
 
-// Type trait for custom struct
+// Type trait: whether T is a user-defined custom struct
 template <typename>
 struct VlIsCustomStruct : public std::false_type {};
+
+// Type trait: used to detect if array element is a custom struct (e.g. for struct arrays)
+template <typename T>
+struct VlContainsCustomStruct : VlIsCustomStruct<T> {};
+
 //=============================================================================
 // Utility functions
 
