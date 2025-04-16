@@ -755,6 +755,7 @@ class TraceVisitor final : public VNVisitor {
     void createTraceFunctions() {
         // Detect and remove duplicate values
         detectDuplicates();
+        m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
 
         // Simplify & optimize the graph
         if (dumpGraphLevel() >= 6) m_graph.dumpDotFilePrefixed("trace_pre");
