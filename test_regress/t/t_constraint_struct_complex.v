@@ -115,34 +115,91 @@ endclass
 class StructArray;
     /* verilator lint_off WIDTHTRUNC */
     typedef struct {
-        rand int arr[3];
+        rand int arr[3];                    // static unpacked array
+        rand int dyn[];                    // dynamic array
+        rand int que[$];                   // queue
+        rand int assoc[string];            // associative array with string key
         rand int a;
         rand bit [3:0] b;
         bit c;
     } struct_t;
+
     rand struct_t s_arr[2];
 
-    constraint c_structArray_0 {
+    constraint c_static {
         foreach (s_arr[i])
             foreach (s_arr[i].arr[j])
                 s_arr[i].arr[j] inside {[0:9]};
     }
-    constraint c_structArray_1 {
-        foreach (s_arr[i]) s_arr[i].a inside {[10:20]};
+
+    constraint c_dyn {
+        foreach (s_arr[i])
+            s_arr[i].dyn.size() == 2;
+        foreach (s_arr[i])
+            foreach (s_arr[i].dyn[j])
+                s_arr[i].dyn[j] inside {[10:19]};
+    }
+
+    constraint c_queue {
+        foreach (s_arr[i])
+            s_arr[i].que.size() == 2;
+        foreach (s_arr[i])
+            foreach (s_arr[i].que[j])
+                s_arr[i].que[j] inside {[20:29]};
+    }
+
+    constraint c_assoc {
+        foreach (s_arr[i]) {
+            s_arr[i].assoc.exists("x");
+            s_arr[i].assoc.exists("y");
+            s_arr[i].assoc["x"] inside {[30:39]};
+            s_arr[i].assoc["y"] inside {[30:39]};
+        }
+    }
+
+    constraint c_other {
+        foreach (s_arr[i]) s_arr[i].a inside {[40:50]};
     }
 
     function new();
         foreach (s_arr[i]) begin
-            foreach (s_arr[i].arr[j]) s_arr[i].arr[j] = 'h0 + j;
-            s_arr[i].a = 'h10 + i;
-            s_arr[i].b = 'h0 + i;
+            s_arr[i].dyn = new[2];
+            s_arr[i].que = {0, 0};
+            s_arr[i].assoc = '{"x": 0, "y": 0};
+            foreach (s_arr[i])
+                foreach (s_arr[i].arr[j])
+                    s_arr[i].arr[j] = j;
+            
+            foreach (s_arr[i]) 
+                foreach (s_arr[i].dyn[j])
+                    s_arr[i].dyn[j] = 10 + j;
+
+            foreach (s_arr[i])
+                foreach (s_arr[i].que[j])
+                    s_arr[i].que[j] = 20 + j;
+
+            s_arr[i].assoc["x"] = 30;
+            s_arr[i].assoc["y"] = 31;
+            s_arr[i].a = 40 + i;
+            s_arr[i].b = i;
             s_arr[i].c = i;
         end
     endfunction
 
     function void print();
         foreach (s_arr[i]) begin
-            foreach (s_arr[i].arr[j]) $display("s_arr[%0d].arr[%0d] = %0d", i, j, s_arr[i].arr[j]);
+            foreach (s_arr[i])
+                foreach (s_arr[i].arr[j])
+                    $display("s_arr[%0d].arr[%0d] = %0d", i, j, s_arr[i].arr[j]);
+            foreach (s_arr[i]) 
+                foreach (s_arr[i].dyn[j])
+                    $display("s_arr[%0d].dyn[%0d] = %0d", i, j, s_arr[i].dyn[j]);
+            foreach (s_arr[i])
+                foreach (s_arr[i].que[j])
+                    $display("s_arr[%0d].que[%0d] = %0d", i, j, s_arr[i].que[j]);
+            
+            $display("s_arr[%0d].assoc[\"x\"] = %0d", i, s_arr[i].assoc["x"]);
+            $display("s_arr[%0d].assoc[\"y\"] = %0d", i, s_arr[i].assoc["y"]);
             $display("s_arr[%0d].a = %0d", i, s_arr[i].a);
             $display("s_arr[%0d].b = %0d", i, s_arr[i].b);
             $display("s_arr[%0d].c = %0d", i, s_arr[i].c);
@@ -151,12 +208,23 @@ class StructArray;
 
     function void self_test();
         foreach (s_arr[i]) begin
-            foreach (s_arr[i].arr[j]) if (!(s_arr[i].arr[j] inside {[0:9]})) $stop;
-            if (!(s_arr[i].a inside {[10:20]})) $stop;
-            if (!(s_arr[0].c == 0)) $stop;
-            if (!(s_arr[1].c == 1)) $stop;
+            foreach (s_arr[i])
+                foreach (s_arr[i].arr[j])
+                    if (!(s_arr[i].arr[j] inside {[0:9]})) $stop;
+            foreach (s_arr[i]) 
+                foreach (s_arr[i].dyn[j])
+                    if (!(s_arr[i].dyn[j] inside {[10:19]})) $stop;
+            foreach (s_arr[i])
+                foreach (s_arr[i].que[j])
+                    if (!(s_arr[i].que[j] inside {[20:29]})) $stop;
+            if (!(s_arr[i].assoc.exists("x") && s_arr[i].assoc["x"] inside {[30:39]})) $stop;
+            if (!(s_arr[i].assoc.exists("y") && s_arr[i].assoc["y"] inside {[30:39]})) $stop;
+            if (!(s_arr[i].a inside {[40:50]})) $stop;
+            if (i == 0 && s_arr[i].c != 0) $stop;
+            if (i == 1 && s_arr[i].c != 1) $stop;
         end
     endfunction
+
     /* verilator lint_off WIDTHTRUNC */
 endclass
 
