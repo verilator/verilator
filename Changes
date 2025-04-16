@@ -13,20 +13,23 @@ Verilator 5.035 devel
 
 **Important:**
 
-* Add `--trace-saif` for SAIF power traces (#5812) (#5914). [Mateusz Gancarz]
 * Change `--output-groups` to default to value of `--build-jobs` (#5751).
   Those using build farms may need to now use `--output-groups 0` or otherwise.
+* Support user-defined primitives (UDPs) (#468) (#5807) (#5936). [Zhou Shen, Krzysztof Sychla, et al]
+* Add `--trace-saif` for SAIF power traces (#5812) (#5914). [Mateusz Gancarz]
 
 **Other:**
 
+* Change `--trace` to `--trace-vcd`.
 * Support simple `checker` blocks (#4066). [Srinivasan Venkataramanan]
 * Support force/release with a variable reference (#5721) (#5810). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Support constraint random for StructArray (#5805) (#5937). [Yilou Wang]
 * Support command-line overriding `define (#5900) (#5908). [Brian Li]
 * Support soft unions (#5912) (#5932). [Robin Heinemann]
 * Support `$setuphold` (#5884). [Krzysztof Sychla]
+* Support assigning unpacked arrays to queues (#5924) (#5928). [Brian Li]
 * Support `systemc_interface and related inside `class`.
 * Support class extends with arguments.
-* Change `--trace` to `--trace-vcd`.
 * Add multi-thread hierarchical simulation (#2583) (#5871). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add check for `let` misused in statement context (#5733).
 * Add used language to `--preproc-resolve` output (#5795). [Kamil Rakoczy, Antmicro Ltd.]
@@ -79,6 +82,7 @@ Verilator 5.035 devel
 * Fix %% on elaboration severity tasks (#5922). [Ethan Sifferman]
 * Fix port default values with `--coverage-line` creating `0=0` (#5920). [Drew Ranck]
 * Fix missing C++ regeneration when Verilog files are updated (#5934). [Zhouyi Shen]
+* Fix stream expressions (#5938). [Ryszard Rozak, Antmicro Ltd.]
 
 
 Verilator 5.034 2025-02-24
