@@ -21,7 +21,6 @@ on:
         required: true
         type: string
 
-
 env:
   CI_OS_NAME: linux
   CI_COMMIT: ${{ github.sha }}

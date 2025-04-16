@@ -27,8 +27,8 @@ jobs:
     name: Build
     uses: ./.github/workflows/reusable-build.yml
     with:
-       os: ${{ matrix.os }}
-       cc: ${{ matrix.cc }}
+      os: ${{ matrix.os }}
+      cc: ${{ matrix.cc }}
     strategy:
       fail-fast: false
       matrix:
@@ -39,8 +39,8 @@ jobs:
     name: Build
     uses: ./.github/workflows/reusable-build.yml
     with:
-       os: ${{ matrix.os }}
-       cc: ${{ matrix.cc }}
+      os: ${{ matrix.os }}
+      cc: ${{ matrix.cc }}
     strategy:
       fail-fast: false
       matrix:
@@ -51,8 +51,8 @@ jobs:
     name: Build
     uses: ./.github/workflows/reusable-build.yml
     with:
-       os: ${{ matrix.os }}
-       cc: ${{ matrix.cc }}
+      os: ${{ matrix.os }}
+      cc: ${{ matrix.cc }}
     strategy:
       fail-fast: false
       matrix:
@@ -63,8 +63,8 @@ jobs:
     name: Build
     uses: ./.github/workflows/reusable-build.yml
     with:
-       os: ${{ matrix.os }}
-       cc: ${{ matrix.cc }}
+      os: ${{ matrix.os }}
+      cc: ${{ matrix.cc }}
     strategy:
       fail-fast: false
       matrix:
@@ -76,10 +76,10 @@ jobs:
     needs: build-2404-gcc
     uses: ./.github/workflows/reusable-test.yml
     with:
-       os: ${{ matrix.os }}
-       cc: ${{ matrix.cc }}
-       reloc: ${{ matrix.reloc }}
-       suite: ${{ matrix.suite }}
+      os: ${{ matrix.os }}
+      cc: ${{ matrix.cc }}
+      reloc: ${{ matrix.reloc }}
+      suite: ${{ matrix.suite }}
     strategy:
       fail-fast: false
       matrix:
@@ -98,10 +98,10 @@ jobs:
     needs: build-2404-clang
     uses: ./.github/workflows/reusable-test.yml
     with:
-       os: ${{ matrix.os }}
-       cc: ${{ matrix.cc }}
-       reloc: ${{ matrix.reloc }}
-       suite: ${{ matrix.suite }}
+      os: ${{ matrix.os }}
+      cc: ${{ matrix.cc }}
+      reloc: ${{ matrix.reloc }}
+      suite: ${{ matrix.suite }}
     strategy:
       fail-fast: false
       matrix:
@@ -120,10 +120,10 @@ jobs:
     needs: build-2204-gcc
     uses: ./.github/workflows/reusable-test.yml
     with:
-       os: ${{ matrix.os }}
-       cc: ${{ matrix.cc }}
-       reloc: ${{ matrix.reloc }}
-       suite: ${{ matrix.suite }}
+      os: ${{ matrix.os }}
+      cc: ${{ matrix.cc }}
+      reloc: ${{ matrix.reloc }}
+      suite: ${{ matrix.suite }}
     strategy:
       fail-fast: false
       matrix:
@@ -142,10 +142,10 @@ jobs:
     needs: build-2204-clang
     uses: ./.github/workflows/reusable-test.yml
     with:
-       os: ${{ matrix.os }}
-       cc: ${{ matrix.cc }}
-       reloc: ${{ matrix.reloc }}
-       suite: ${{ matrix.suite }}
+      os: ${{ matrix.os }}
+      cc: ${{ matrix.cc }}
+      reloc: ${{ matrix.reloc }}
+      suite: ${{ matrix.suite }}
     strategy:
       fail-fast: false
       matrix:

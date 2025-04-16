@@ -134,10 +134,7 @@ configure_package_config_file(
     INSTALL_DESTINATION .
 )
 
-install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/verilator-config.cmake
-    DESTINATION .
-)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/verilator-config.cmake DESTINATION .)
 
 configure_package_config_file(
     verilator-config-version.cmake.in

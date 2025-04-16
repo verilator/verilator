@@ -165,7 +165,7 @@ define_property(
 
 function(json_get_string RET JSON SECTION VARIABLE)
     string(JSON JV ERROR_VARIABLE STATUS GET "${JSON}" ${SECTION} ${VARIABLE})
-    if (NOT ${STATUS} STREQUAL "NOTFOUND")
+    if(NOT ${STATUS} STREQUAL "NOTFOUND")
         set(JV "")
     endif()
     set(${RET} ${JV} PARENT_SCOPE)
@@ -188,7 +188,7 @@ endfunction()
 function(json_get_submodules SUBMODULES NSUBMODULES JSON)
     string(JSON JV ERROR_VARIABLE STATUS GET "${JSON}" submodules)
 
-    if (NOT ${STATUS} STREQUAL "NOTFOUND")
+    if(NOT ${STATUS} STREQUAL "NOTFOUND")
         set(${SUBMODULES} "" PARENT_SCOPE)
         set(${NSUBMODULES} 0 PARENT_SCOPE)
         return()
@@ -205,7 +205,7 @@ endfunction()
 function(json_get_list RET JSON SECTION VARIABLE)
     string(JSON L ERROR_VARIABLE STATUS LENGTH "${JSON}" ${SECTION} ${VARIABLE})
 
-    if (NOT ${STATUS} STREQUAL "NOTFOUND" OR NOT ${L})
+    if(NOT ${STATUS} STREQUAL "NOTFOUND" OR NOT ${L})
         set(${RET} "" PARENT_SCOPE)
         return()
     endif()
@@ -233,8 +233,8 @@ function(verilate TARGET)
         ${ARGN}
     )
 
-    if (VERILATE_TRACE)
-        if (NOT VERILATE_TRACE_VCD)
+    if(VERILATE_TRACE)
+        if(NOT VERILATE_TRACE_VCD)
             set(VERILATE_TRACE_VCD TRUE)
         endif()
         message(DEPRECATION "The `TRACE` argument is deprecated. Please use `TRACE_VCD` instead.")
@@ -495,7 +495,7 @@ function(verilate TARGET)
 
         json_get_submodules(JSUBMODULES JNSUBMODULES "${MANIFEST}")
 
-        if (JNSUBMODULES)
+        if(JNSUBMODULES)
             file(APPEND ${VDIR}/${VERILATE_PREFIX}.cmake
                 "# Verilate hierarchical blocks\n"
                 "get_target_property(TOP_TARGET_NAME \"\${TARGET}\" NAME)\n"
@@ -513,13 +513,13 @@ function(verilate TARGET)
                 set(SUBMODULE_CMAKE "")
                 set(SUBMODULE_VERILATE_ARGS "")
 
-                if (NOT ${I} STREQUAL ${JNSUBMODULES})
+                if(NOT ${I} STREQUAL ${JNSUBMODULES})
                     string(APPEND SUBMODULE_CMAKE
                         "add_library(${JSUBMODULE_PREFIX} STATIC)\n"
                         "target_link_libraries(\${TOP_TARGET_NAME} PRIVATE ${JSUBMODULE_PREFIX})\n"
                     )
 
-                    if (JSUBMODULE_DEPS)
+                    if(JSUBMODULE_DEPS)
                         string(APPEND SUBMODULE_CMAKE "target_link_libraries(${JSUBMODULE_PREFIX} INTERFACE ${JSUBMODULE_DEPS})\n")
                     endif()
 
@@ -529,11 +529,11 @@ function(verilate TARGET)
                     string(APPEND SUBMODULE_VERILATE_ARGS "\${TOP_TARGET_NAME} PREFIX ${JSUBMODULE_PREFIX} TOP_MODULE ${JSUBMODULE_TOP} DIRECTORY ${JSUBMODULE_DIRECTORY} SOURCES ${JSUBMODULE_SOURCES}")
                 endif()
 
-                if (JSUBMODILE_VERILATOR_ARGS)
+                if(JSUBMODILE_VERILATOR_ARGS)
                     string(APPEND SUBMODULE_VERILATE_ARGS " VERILATOR_ARGS -f ${JSUBMODILE_VERILATOR_ARGS}")
                 endif()
 
-                if (JSUBMODULE_CFLAGS)
+                if(JSUBMODULE_CFLAGS)
                     string(APPEND SUBMODULE_VERILATE_ARGS " -CFLAGS ${JSUBMODULE_CFLAGS}")
                 endif()
 
