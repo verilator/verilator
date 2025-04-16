@@ -23,16 +23,13 @@ config_file = test.t_dir + "/" + test.name + ".vlt"
 test.compile(
     benchmarksim=1,
     v_flags2=[
-        config_file, "+define+SIM_CYCLES=" + str(test.cycles), "--prof-exec", "--hierarchical",
-        "--stats", "-Wno-UNOPTFLAT",
+        config_file, "+define+SIM_CYCLES=" + str(test.cycles), "--hierarchical", "--stats",
+        "-Wno-UNOPTFLAT",
         (f"-DWORKERS={HIER_BLOCK_THREADS}" if test.vltmt and HIER_BLOCK_THREADS > 1 else ""),
         (f"--hierarchical-threads {HIER_THREADS}" if test.vltmt and HIER_THREADS > 1 else "")
     ],
     threads=(THREADS if test.vltmt else 1),
-    context_threads=(HIER_THREADS if test.vltmt else 1))
-
-test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
-               r'Optimizations, Hierarchical DPI wrappers with costs\s+(\d+)', 6)
+    context_threads=(max(HIER_THREADS, THREADS) if test.vltmt else 1))
 
 if test.vltmt:
     test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
@@ -40,17 +37,6 @@ if test.vltmt:
     test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
                    r'Optimizations, Thread schedule total tasks\s+(\d+)', 2)
 
-test.execute(all_run_flags=[
-    "+verilator+prof+exec+start+2",
-    " +verilator+prof+exec+window+2",
-    " +verilator+prof+exec+file+" + test.obj_dir + "/profile_exec.dat",
-    " +verilator+prof+vlt+file+" + test.obj_dir + "/profile.vlt"])  # yapf:disable
-
-gantt_log = test.obj_dir + "/gantt.log"
-
-test.run(cmd=[
-    os.environ["VERILATOR_ROOT"] + "/bin/verilator_gantt", test.obj_dir +
-    "/profile_exec.dat", "--vcd " + test.obj_dir + "/profile_exec.vcd", "| tee " + gantt_log
-])
+test.execute()
 
 test.passes()

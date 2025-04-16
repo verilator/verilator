@@ -777,6 +777,16 @@ Summary:
    for deparametrized modules with :option:`/*verilator&32;hier_block*/`
    metacomment. See :ref:`Hierarchical Verilation`.
 
+.. option:: --hierarchical-threads <threads>
+
+   Specifies the number of threads used for scheduling hierarchical blocks.
+   The main use-case of this option is to provide possiblity for scheduling
+   multi-thread hierarchical blocks on multiple threads without increasing
+   parallelism of the whole design.
+
+   Set to `--threads` by default, for optimal performance should not exceed
+   CPU core count.
+
 .. option:: -I<dir>
 
    See :vlopt:`-y`.

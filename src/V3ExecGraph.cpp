@@ -341,13 +341,16 @@ class PackThreads final {
 
     // MEMBERS
     const uint32_t m_nThreads;  // Number of threads
+    const uint32_t m_nHierThreads;  // Number of threads used for hierarchical tasks
     const uint32_t m_sandbagNumerator;  // Numerator padding for est runtime
     const uint32_t m_sandbagDenom;  // Denominator padding for est runtime
 
     // CONSTRUCTORS
     explicit PackThreads(uint32_t nThreads = v3Global.opt.threads(),
+                         uint32_t nHierThreads = v3Global.opt.hierThreads(),
                          unsigned sandbagNumerator = 30, unsigned sandbagDenom = 100)
         : m_nThreads{nThreads}
+        , m_nHierThreads{nHierThreads}
         , m_sandbagNumerator{sandbagNumerator}
         , m_sandbagDenom{sandbagDenom} {}
     ~PackThreads() = default;
@@ -419,7 +422,7 @@ class PackThreads final {
         SchedulingMode mode = SchedulingMode::SCHEDULING;
 
         // Time each thread is occupied until
-        std::vector<uint32_t> busyUntil(m_nThreads, 0);
+        std::vector<uint32_t> busyUntil(std::max(m_nThreads, m_nHierThreads), 0);
 
         // MTasks ready to be assigned next. All their dependencies are already assigned.
         std::set<ExecMTask*, MTaskCmp> readyMTasks;
@@ -479,7 +482,7 @@ class PackThreads final {
 
             if (!bestMtaskp && mode == SchedulingMode::WIDE_TASK_DISCOVERED) {
                 mode = SchedulingMode::WIDE_TASK_SCHEDULING;
-                const uint32_t size = m_nThreads / maxThreadWorkers;
+                const uint32_t size = m_nHierThreads / maxThreadWorkers;
                 UASSERT(size, "Thread pool size should be bigger than 0");
                 // If no tasks were added to the normal thread schedule, clear it.
                 if (schedule.mtaskState.empty()) result.clear();
@@ -584,8 +587,9 @@ public:
         new V3GraphEdge{&graph, t3, t5, 1};
         new V3GraphEdge{&graph, t4, t6, 1};
 
-        constexpr uint32_t threads = 6;
-        PackThreads packer{threads,
+        constexpr uint32_t threads = 2;
+        constexpr uint32_t hierThreads = 6;
+        PackThreads packer{threads, hierThreads,
                            3,  // Sandbag numerator
                            10};  // Sandbag denom
 
@@ -599,7 +603,7 @@ public:
         UASSERT_SELFTEST(const ExecMTask*, scheduled[0].threads[0][0], t0);
         UASSERT_SELFTEST(const ExecMTask*, scheduled[0].threads[0][1], t1);
 
-        UASSERT_SELFTEST(size_t, scheduled[1].threads.size(), threads / 3);
+        UASSERT_SELFTEST(size_t, scheduled[1].threads.size(), hierThreads / 3);
         UASSERT_SELFTEST(const ExecMTask*, scheduled[1].threads[0][0], t2);
         UASSERT_SELFTEST(const ExecMTask*, scheduled[1].threads[0][1], t3);
         UASSERT_SELFTEST(const ExecMTask*, scheduled[1].threads[1][0], t4);
@@ -689,14 +693,15 @@ public:
         */
         new V3GraphEdge{&graph, t0, t1, 1};
 
-        constexpr uint32_t threads = 2;
-        PackThreads packer{threads,
+        constexpr uint32_t threads = 1;
+        constexpr uint32_t hierThreads = 2;
+        PackThreads packer{threads, hierThreads,
                            3,  // Sandbag numerator
                            10};  // Sandbag denom
 
         const std::vector<ThreadSchedule> scheduled = packer.pack(graph);
         UASSERT_SELFTEST(size_t, scheduled.size(), 2);
-        UASSERT_SELFTEST(size_t, scheduled[0].threads.size(), threads / 2);
+        UASSERT_SELFTEST(size_t, scheduled[0].threads.size(), hierThreads / 2);
         UASSERT_SELFTEST(size_t, scheduled[0].threads[0].size(), 1);
         for (size_t i = 1; i < scheduled[0].threads.size(); ++i)
             UASSERT_SELFTEST(size_t, scheduled[0].threads[i].size(), 0);
