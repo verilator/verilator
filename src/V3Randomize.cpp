@@ -735,7 +735,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Mark Random for structArray
         if (VN_IS(nodep->fromp(), ArraySel)) {
             AstNodeExpr* const fromp = VN_AS(nodep->fromp(), ArraySel)->fromp();
-            AstStructDType* const dtypep = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType);
+            AstStructDType* const dtypep
+                = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType);
             dtypep->markConstrainedRand(true);
             AstMemberDType* memberp = dtypep->membersp();
             while (memberp) {
