@@ -201,7 +201,7 @@ class VlRandomizer final {
                                                                        // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
     const VlQueue<CData>* m_randmode;  // rand_mode state;
-    int idx = 0;  // Internal counter for key generation
+    int m_index = 0;  // Internal counter for key generation
 
     // PRIVATE METHODS
     void randomConstraint(std::ostream& os, VlRNG& rngr, int bits);
@@ -319,7 +319,7 @@ public:
 
     // Register scalar variable (non-struct, basic type)
     template <typename T>
-    typename std::enable_if<!ContainsCustomStruct<T>::value, void>::type
+    typename std::enable_if<!VlContainsCustomStruct<T>::value, void>::type
     write_var(T& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
@@ -338,46 +338,46 @@ public:
 
     // Register queue of non-struct types
     template <typename T>
-    typename std::enable_if<!ContainsCustomStruct<T>::value, void>::type
+    typename std::enable_if<!VlContainsCustomStruct<T>::value, void>::type
     write_var(VlQueue<T>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
         m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlQueue<T>>>(
             name, width, &var, dimension, randmodeIdx);
         if (dimension > 0) {
-            idx = 0;
+            m_index = 0;
             record_arr_table(var, name, dimension, {}, {});
         }
     }
 
     // Register queue of structs
     template <typename T>
-    typename std::enable_if<ContainsCustomStruct<T>::value, void>::type
+    typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
     write_var(VlQueue<T>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (dimension > 0) { record_struct_arr(var, name, dimension, {}, {}); }
+        if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
     }
 
     // Register unpacked array of non-struct types
     template <typename T, std::size_t N_Depth>
-    typename std::enable_if<!ContainsCustomStruct<T>::value, void>::type
+    typename std::enable_if<!VlContainsCustomStruct<T>::value, void>::type
     write_var(VlUnpacked<T, N_Depth>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
         m_vars[name] = std::make_shared<const VlRandomArrayVarTemplate<VlUnpacked<T, N_Depth>>>(
             name, width, &var, dimension, randmodeIdx);
         if (dimension > 0) {
-            idx = 0;
+            m_index = 0;
             record_arr_table(var, name, dimension, {}, {});
         }
     }
 
     // Register unpacked array of structs
     template <typename T, std::size_t N_Depth>
-    typename std::enable_if<ContainsCustomStruct<T>::value, void>::type
+    typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
     write_var(VlUnpacked<T, N_Depth>& var, int width, const char* name, int dimension,
               std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
-        if (dimension > 0) { record_struct_arr(var, name, dimension, {}, {}); }
+        if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
     }
 
     // Register associative array of non-struct types
@@ -389,7 +389,7 @@ public:
             = std::make_shared<const VlRandomArrayVarTemplate<VlAssocArray<T_Key, T_Value>>>(
                 name, width, &var, dimension, randmodeIdx);
         if (dimension > 0) {
-            idx = 0;
+            m_index = 0;
             record_arr_table(var, name, dimension, {}, {});
         }
     }
@@ -405,9 +405,9 @@ public:
     typename std::enable_if<!std::is_class<T>::value, void>::type
     record_arr_table(T& var, const std::string name, int dimension, std::vector<IData> indices,
                      std::vector<size_t> idxWidths) {
-        const std::string key = generateKey(name, idx);
-        m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, idx, indices, idxWidths);
-        ++idx;
+        const std::string key = generateKey(name, m_index);
+        m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, m_index, indices, idxWidths);
+        ++m_index;
     }
 
     // Recursively record all elements in an unpacked array
@@ -471,12 +471,12 @@ public:
 
     // Register a single structArray element via write_var
     template <typename T>
-    typename std::enable_if<ContainsCustomStruct<T>::value, void>::type
+    typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
     record_struct_arr(T& var, const std::string name, int dimension, std::vector<IData> indices,
                       std::vector<size_t> idxWidths) {
         std::ostringstream oss;
         for (size_t i = 0; i < indices.size(); ++i) {
-            oss << std::hex << std::setw(8) << std::setfill('0') << static_cast<int>(indices[i]);
+            oss << std::hex << static_cast<int>(indices[i]);
             if (i < indices.size() - 1) oss << ".";
         }
         write_var(var, 1ULL, (name + "." + oss.str()).c_str(), 1ULL);

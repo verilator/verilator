@@ -540,7 +540,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstSFormatF* const newp = new AstSFormatF{nodep->fileline(), smtExpr, false, argsp};
         if (m_structSel && newp->name() == "(select %@ %@)") {
             newp->name("%@.%@");
-            newp->exprsp()->nextp()->name("%8x");
+            newp->exprsp()->nextp()->name("%x");
         }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -735,11 +735,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Mark Random for structArray
         if (VN_IS(nodep->fromp(), ArraySel)) {
             AstNodeExpr* const fromp = VN_AS(nodep->fromp(), ArraySel)->fromp();
-            VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType)
-                ->markConstrainedRand(true);
-            AstMemberDType* memberp
-                = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType)
-                      ->membersp();
+            AstStructDType* const dtypep = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType);
+            dtypep->markConstrainedRand(true);
+            AstMemberDType* memberp = dtypep->membersp();
             while (memberp) {
                 if (memberp->name() == nodep->name()) {
                     memberp->markConstrainedRand(true);
@@ -755,7 +753,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (VN_AS(nodep->fromp(), SFormatF)->name() == "%@.%@") {
             newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
                                    VN_AS(nodep->fromp(), SFormatF)->exprsp()->cloneTreePure(true)};
-            newp->exprsp()->nextp()->name("%8x");
+            newp->exprsp()->nextp()->name("%x");
         } else {
             newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false,
                                    nullptr};
@@ -909,7 +907,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (nodep->name() == "at" && nodep->fromp()->user1()) {
             iterateChildren(nodep);
             AstNodeExpr* pinp = nodep->pinsp()->unlinkFrBack();
-            if (VN_IS(pinp, SFormatF) && m_structSel) VN_AS(pinp, SFormatF)->name("%8x");
+            if (VN_IS(pinp, SFormatF) && m_structSel) VN_AS(pinp, SFormatF)->name("%x");
             AstNodeExpr* const argsp = AstNode::addNext(nodep->fromp()->unlinkFrBack(), pinp);
             AstSFormatF* newp = nullptr;
             if (m_structSel)

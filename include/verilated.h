@@ -181,7 +181,7 @@ struct VlIsCustomStruct : public std::false_type {};
 
 // Type trait: used to detect if array element is a custom struct (e.g. for struct arrays)
 template <typename T>
-struct ContainsCustomStruct : VlIsCustomStruct<T> {};
+struct VlContainsCustomStruct : VlIsCustomStruct<T> {};
 
 //=============================================================================
 // Utility functions
