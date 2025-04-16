@@ -11,9 +11,9 @@ primitive d_edge_ff (q, clock, data);
  table
      // clock data q q+
       // obtain output on rising edge of clock
-     (10) 0 : ? : 0 ;
+     F    0 : ? : 0 ;
      (10) 1 : ? : 1 ;
-     (0?) 0 : ? : 1 ;
+     R    0 : ? : 1 ;
      (0?) 1 : ? : 0 ;
  endtable
 endprimitive

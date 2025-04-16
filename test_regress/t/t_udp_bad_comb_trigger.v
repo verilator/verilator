@@ -18,6 +18,7 @@ input a, b, c;
 
     endtable
 endprimitive
+
 module top (o, a, b, c);
     output o;
     input a, b, c;

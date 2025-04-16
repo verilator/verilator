@@ -19,6 +19,7 @@ reg dout;
 
     endtable
 endprimitive
+
 module top (a, b, c, o);
     input a, b, c;
     output o;

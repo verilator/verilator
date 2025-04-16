@@ -19,6 +19,7 @@ output dout;
 
     endtable
 endprimitive
+
 primitive t_gate_seq(dout, a, b, c);
 input a, b, c;
 output dout;
@@ -33,6 +34,7 @@ output dout;
 
     endtable
 endprimitive
+
 module top (a, b, c, o1, o2);
     input a, b, c;
     output o1, o2;
