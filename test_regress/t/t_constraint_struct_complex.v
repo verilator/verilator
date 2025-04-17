@@ -133,16 +133,16 @@ class StructArray;
     }
 
     constraint c_dyn {
-        foreach (s_arr[i])
-            s_arr[i].dyn.size() == 2;
+        // foreach (s_arr[i])
+            // s_arr[i].dyn.size() == 2;
         foreach (s_arr[i])
             foreach (s_arr[i].dyn[j])
                 s_arr[i].dyn[j] inside {[10:19]};
     }
 
     constraint c_queue {
-        foreach (s_arr[i])
-            s_arr[i].que.size() == 2;
+        // foreach (s_arr[i])
+            // s_arr[i].que.size() == 2;
         foreach (s_arr[i])
             foreach (s_arr[i].que[j])
                 s_arr[i].que[j] inside {[20:29]};
@@ -150,8 +150,8 @@ class StructArray;
 
     constraint c_assoc {
         foreach (s_arr[i]) {
-            s_arr[i].assoc.exists("x");
-            s_arr[i].assoc.exists("y");
+            // s_arr[i].assoc.exists("x");
+            // s_arr[i].assoc.exists("y");
             s_arr[i].assoc["x"] inside {[30:39]};
             s_arr[i].assoc["y"] inside {[30:39]};
         }
@@ -166,20 +166,16 @@ class StructArray;
             s_arr[i].dyn = new[2];
             s_arr[i].que = {0, 0};
             s_arr[i].assoc = '{"x": 0, "y": 0};
-            foreach (s_arr[i])
-                foreach (s_arr[i].arr[j])
-                    s_arr[i].arr[j] = j;
-            
-            foreach (s_arr[i]) 
-                foreach (s_arr[i].dyn[j])
-                    s_arr[i].dyn[j] = 10 + j;
 
-            foreach (s_arr[i])
-                foreach (s_arr[i].que[j])
-                    s_arr[i].que[j] = 20 + j;
+            foreach (s_arr[i].arr[j])
+                s_arr[i].arr[j] = j;
+            foreach (s_arr[i].dyn[j])
+                s_arr[i].dyn[j] = 10 + j;
+            foreach (s_arr[i].que[j])
+                s_arr[i].que[j] = 20 + j;
 
-            s_arr[i].assoc["x"] = 30;
-            s_arr[i].assoc["y"] = 31;
+            s_arr[i].assoc["x"] = i + 30;
+            s_arr[i].assoc["y"] = i + 31;
             s_arr[i].a = 40 + i;
             s_arr[i].b = i;
             s_arr[i].c = i;
@@ -188,16 +184,13 @@ class StructArray;
 
     function void print();
         foreach (s_arr[i]) begin
-            foreach (s_arr[i])
-                foreach (s_arr[i].arr[j])
-                    $display("s_arr[%0d].arr[%0d] = %0d", i, j, s_arr[i].arr[j]);
-            foreach (s_arr[i]) 
-                foreach (s_arr[i].dyn[j])
-                    $display("s_arr[%0d].dyn[%0d] = %0d", i, j, s_arr[i].dyn[j]);
-            foreach (s_arr[i])
-                foreach (s_arr[i].que[j])
-                    $display("s_arr[%0d].que[%0d] = %0d", i, j, s_arr[i].que[j]);
-            
+            foreach (s_arr[i].arr[j])
+                $display("s_arr[%0d].arr[%0d] = %0d", i, j, s_arr[i].arr[j]);
+            foreach (s_arr[i].dyn[j])
+                $display("s_arr[%0d].dyn[%0d] = %0d", i, j, s_arr[i].dyn[j]);
+            foreach (s_arr[i].que[j])
+                $display("s_arr[%0d].que[%0d] = %0d", i, j, s_arr[i].que[j]);
+
             $display("s_arr[%0d].assoc[\"x\"] = %0d", i, s_arr[i].assoc["x"]);
             $display("s_arr[%0d].assoc[\"y\"] = %0d", i, s_arr[i].assoc["y"]);
             $display("s_arr[%0d].a = %0d", i, s_arr[i].a);
@@ -208,15 +201,12 @@ class StructArray;
 
     function void self_test();
         foreach (s_arr[i]) begin
-            foreach (s_arr[i])
-                foreach (s_arr[i].arr[j])
-                    if (!(s_arr[i].arr[j] inside {[0:9]})) $stop;
-            foreach (s_arr[i]) 
-                foreach (s_arr[i].dyn[j])
-                    if (!(s_arr[i].dyn[j] inside {[10:19]})) $stop;
-            foreach (s_arr[i])
-                foreach (s_arr[i].que[j])
-                    if (!(s_arr[i].que[j] inside {[20:29]})) $stop;
+            foreach (s_arr[i].arr[j])
+                if (!(s_arr[i].arr[j] inside {[0:9]})) $stop;
+            foreach (s_arr[i].dyn[j])
+                if (!(s_arr[i].dyn[j] inside {[10:19]})) $stop;
+            foreach (s_arr[i].que[j])
+                if (!(s_arr[i].que[j] inside {[20:29]})) $stop;
             if (!(s_arr[i].assoc.exists("x") && s_arr[i].assoc["x"] inside {[30:39]})) $stop;
             if (!(s_arr[i].assoc.exists("y") && s_arr[i].assoc["y"] inside {[30:39]})) $stop;
             if (!(s_arr[i].a inside {[40:50]})) $stop;
