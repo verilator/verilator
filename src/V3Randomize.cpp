@@ -790,8 +790,13 @@ class ConstraintExprVisitor final : public VNVisitor {
                         << stringSize << "bits, limit is 128 bits");
             }
             VNRelinker handle;
-            AstNodeExpr* const idxp
-                = new AstSFormatF{fl, "#x%32x", false, stringp->lhsp()->unlinkFrBack(&handle)};
+            AstNodeExpr* idxp = nullptr;
+            if(!m_structSel)
+                idxp
+                    = new AstSFormatF{fl, "#x%32x", false, stringp->lhsp()->unlinkFrBack(&handle)};
+            else
+                idxp
+                = new AstSFormatF{fl, "%32x", false, stringp->lhsp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
         } else {
@@ -805,11 +810,11 @@ class ConstraintExprVisitor final : public VNVisitor {
                 std::string fmt;
                 // Normalize to standard bit width
                 if (actual_width <= 8) {
-                    fmt = "#x%2x";
+                    m_structSel? fmt = "%2x" :fmt = "#x%2x" ;
                 } else if (actual_width <= 16) {
-                    fmt = "#x%4x";
+                    m_structSel? fmt = "%4x" :fmt = "#x%4x";
                 } else {
-                    fmt = "#x%" + std::to_string(VL_WORDS_I(actual_width) * 8) + "x";
+                    fmt = (m_structSel? "%":"#x%") + std::to_string(VL_WORDS_I(actual_width) * 8) + "x";
                 }
 
                 AstNodeExpr* const idxp
