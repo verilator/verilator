@@ -317,7 +317,8 @@ void reportLoopVars(Graph* graphp, SchedAcyclicVarVertex* vvtxp) {
 
     if (splittable) {
         std::cerr << V3Error::warnMoreStandalone()
-                  << "... Suggest add /*verilator split_var*/ or /*verilator isolate_assignments*/ to appropriate variables above."
+                  << "... Suggest add /*verilator split_var*/ or /*verilator "
+                     "isolate_assignments*/ to appropriate variables above."
                   << std::endl;
     }
     V3Stats::addStat("Scheduling, split_var, candidates", splittable);
