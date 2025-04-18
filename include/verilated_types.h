@@ -1265,7 +1265,7 @@ std::string VL_TO_STRING(const VlAssocArray<T_Key, T_Value>& obj) {
 }
 
 template <typename T_Key, typename T_Value>
-struct VlContainsCustomStruct<VlAssocArray<T_Key, T_Value>> : VlContainsCustomStruct<T_Key> {};
+struct VlContainsCustomStruct<VlAssocArray<T_Key, T_Value>> : VlContainsCustomStruct<T_Value> {};
 
 template <typename T_Key, typename T_Value>
 void VL_READMEM_N(bool hex, int bits, const std::string& filename,
