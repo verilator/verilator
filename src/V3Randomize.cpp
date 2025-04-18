@@ -539,7 +539,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         UASSERT_OBJ(!rhsp, nodep, "Missing emitSMT %r for " << rhsp);
         UASSERT_OBJ(!thsp, nodep, "Missing emitSMT %t for " << thsp);
         AstSFormatF* const newp = new AstSFormatF{nodep->fileline(), smtExpr, false, argsp};
-        if (m_structSel && newp->name() == "(select %@ %@)") { newp->name("%@.%@"); }
+        if (m_structSel && newp->name() == "(select %@ %@)") {
+            newp->name("%@.%@");
+            if(!VN_IS(nodep, AssocSel)) newp->exprsp()->nextp()->name("%x"); }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }

@@ -1597,8 +1597,8 @@ std::string VL_TO_STRING(const VlUnpacked<T_Value, N_Depth>& obj) {
     return obj.to_string();
 }
 
-template <typename T, int N>
-struct VlContainsCustomStruct<VlUnpacked<T, N>> : VlContainsCustomStruct<T> {};
+template <typename T_Value, std::size_t N_Depth>
+struct VlContainsCustomStruct<VlUnpacked<T_Value, N_Depth>> : VlContainsCustomStruct<T_Value> {};
 
 //===================================================================
 // Helper to apply the given indices to a target expression
