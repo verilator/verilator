@@ -541,7 +541,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstSFormatF* const newp = new AstSFormatF{nodep->fileline(), smtExpr, false, argsp};
         if (m_structSel && newp->name() == "(select %@ %@)") {
             newp->name("%@.%@");
-            if(!VN_IS(nodep, AssocSel)) newp->exprsp()->nextp()->name("%x"); }
+            if (!VN_IS(nodep, AssocSel)) newp->exprsp()->nextp()->name("%x");
+        }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
