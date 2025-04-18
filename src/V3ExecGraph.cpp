@@ -396,7 +396,7 @@ class PackThreads final {
 
             // Populate busyUntil timestamps. For multi-worker tasks, set timestamps for
             // offsetted threads.
-            if (mode != SchedulingMode::WIDE_TASK_SCHEDULING) {
+            if (bestMtaskp->threads() <= 1) {
                 busyUntil[bestThreadId] = bestEndTime;
             } else {
                 for (int i = 0; i < maxThreadWorkers; ++i) {
