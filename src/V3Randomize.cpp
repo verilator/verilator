@@ -539,9 +539,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         UASSERT_OBJ(!rhsp, nodep, "Missing emitSMT %r for " << rhsp);
         UASSERT_OBJ(!thsp, nodep, "Missing emitSMT %t for " << thsp);
         AstSFormatF* const newp = new AstSFormatF{nodep->fileline(), smtExpr, false, argsp};
-        if (m_structSel && newp->name() == "(select %@ %@)") {
-            newp->name("%@.%@");
-        }
+        if (m_structSel && newp->name() == "(select %@ %@)") { newp->name("%@.%@"); }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
@@ -733,8 +731,10 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
         }
         // Mark Random for structArray
-        if (VN_IS(nodep->fromp(), ArraySel) || VN_IS(nodep->fromp(), CMethodHard)  ) {
-            AstNodeExpr* const fromp = VN_IS(nodep->fromp(), ArraySel) ? VN_AS(nodep->fromp(), ArraySel)->fromp() : VN_AS(nodep->fromp(), CMethodHard)->fromp();
+        if (VN_IS(nodep->fromp(), ArraySel) || VN_IS(nodep->fromp(), CMethodHard)) {
+            AstNodeExpr* const fromp = VN_IS(nodep->fromp(), ArraySel)
+                                           ? VN_AS(nodep->fromp(), ArraySel)->fromp()
+                                           : VN_AS(nodep->fromp(), CMethodHard)->fromp();
             AstStructDType* const dtypep
                 = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType);
             dtypep->markConstrainedRand(true);
@@ -754,7 +754,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (VN_AS(nodep->fromp(), SFormatF)->name() == "%@.%@") {
             newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
                                    VN_AS(nodep->fromp(), SFormatF)->exprsp()->cloneTreePure(true)};
-            if(newp->exprsp()->nextp()->name()!="%32p")newp->exprsp()->nextp()->name("%x") ;// Did this for #x%x to %x
+            if (newp->exprsp()->nextp()->name() != "%32p")
+                newp->exprsp()->nextp()->name("%x");  // Did this for #x%x to %x
         } else {
             newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false,
                                    nullptr};
@@ -769,12 +770,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (VN_IS(nodep->bitp(), VarRef) && VN_AS(nodep->bitp(), VarRef)->isString()) {
             VNRelinker handle;
             AstNodeExpr* idxp = nullptr;
-            if(m_structSel)
-                idxp
-                    = new AstSFormatF{fl, "%32p", false, nodep->bitp()->unlinkFrBack(&handle)};
+            if (m_structSel)
+                idxp = new AstSFormatF{fl, "%32p", false, nodep->bitp()->unlinkFrBack(&handle)};
             else
-                idxp
-                    = new AstSFormatF{fl, "#x%32p", false, nodep->bitp()->unlinkFrBack(&handle)};
+                idxp = new AstSFormatF{fl, "#x%32p", false, nodep->bitp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
         } else if (VN_IS(nodep->bitp(), CvtPackString)

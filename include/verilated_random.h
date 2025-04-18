@@ -384,7 +384,7 @@ public:
     template <typename T_Key, typename T_Value>
     typename std::enable_if<!VlContainsCustomStruct<T_Value>::value, void>::type
     write_var(VlAssocArray<T_Key, T_Value>& var, int width, const char* name, int dimension,
-                   std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+              std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (m_vars.find(name) != m_vars.end()) return;
         m_vars[name]
             = std::make_shared<const VlRandomArrayVarTemplate<VlAssocArray<T_Key, T_Value>>>(
@@ -399,7 +399,7 @@ public:
     template <typename T_Key, typename T_Value>
     typename std::enable_if<VlContainsCustomStruct<T_Value>::value, void>::type
     write_var(VlAssocArray<T_Key, T_Value>& var, int width, const char* name, int dimension,
-                   std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
+              std::uint32_t randmodeIdx = std::numeric_limits<std::uint32_t>::max()) {
         if (dimension > 0) record_struct_arr(var, name, dimension, {}, {});
     }
     // ----------------------------------------
@@ -482,10 +482,12 @@ public:
                       std::vector<size_t> idxWidths) {
         std::ostringstream oss;
         for (size_t i = 0; i < indices.size(); ++i) {
-            oss << std::hex << std::setw(int(idxWidths[i]/4)) << std::setfill('0') << static_cast<int>(indices[i]);
+            oss << std::hex << std::setw(int(idxWidths[i] / 4)) << std::setfill('0')
+                << static_cast<int>(indices[i]);
             if (i < indices.size() - 1) oss << ".";
         }
-        write_var(var, 1ULL, oss.str().length() > 0?(name + "." + oss.str()).c_str():name.c_str(), 1ULL);
+        write_var(var, 1ULL,
+                  oss.str().length() > 0 ? (name + "." + oss.str()).c_str() : name.c_str(), 1ULL);
     }
 
     // Recursively process VlUnpacked of structs
@@ -518,8 +520,9 @@ public:
 
     // Recursively process associative arrays of structs
     template <typename T_Key, typename T_Value>
-    void record_struct_arr(VlAssocArray<T_Key, T_Value>& var, const std::string name, int dimension,
-                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
+    void record_struct_arr(VlAssocArray<T_Key, T_Value>& var, const std::string name,
+                           int dimension, std::vector<IData> indices,
+                           std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (var.size() != 0)) {
             for (auto it = var.begin(); it != var.end(); ++it) {
                 const T_Key& key = it->first;
@@ -531,13 +534,13 @@ public:
 
                 process_key(key, indexed_name, integral_index, name, idx_width);
                 std::ostringstream oss;
-                for(int i = 0; i<integral_index.size(); ++i)
+                for (int i = 0; i < integral_index.size(); ++i)
                     oss << std::hex << static_cast<int>(integral_index[i]);
 
                 std::string result = oss.str();
-                result.insert(result.begin(), int(idx_width/4) - result.size(), '0');
-                record_struct_arr(var.at(key), name+"."+result, dimension - 1, indices, idxWidths);
-
+                result.insert(result.begin(), int(idx_width / 4) - result.size(), '0');
+                record_struct_arr(var.at(key), name + "." + result, dimension - 1, indices,
+                                  idxWidths);
             }
         }
     }
