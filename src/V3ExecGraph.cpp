@@ -66,6 +66,7 @@ class ThreadSchedule final {
     uint32_t m_id;  // Unique ID of a schedule
     static uint32_t s_nextId;  // Next ID number to use
     std::unordered_set<const ExecMTask*> mtasks;  // Mtasks in this schedule
+    uint32_t m_endTime = 0;  // Latest task end time in this schedule
 
 public:
     // CONSTANTS
@@ -196,6 +197,7 @@ public:
     uint32_t scheduleOn(const ExecMTask* mtaskp, uint32_t bestThreadId) {
         mtasks.emplace(mtaskp);
         const uint32_t bestEndTime = mtaskp->predictStart() + mtaskp->cost();
+        m_endTime = std::max(m_endTime, bestEndTime);
         mtaskState[mtaskp].completionTime = bestEndTime;
         mtaskState[mtaskp].threadId = bestThreadId;
 
@@ -208,6 +210,7 @@ public:
         return bestEndTime;
     }
     bool contains(const ExecMTask* mtaskp) const { return mtasks.count(mtaskp); }
+    uint32_t endTime() const { return m_endTime; }
 };
 
 uint32_t ThreadSchedule::s_nextId = 0;
@@ -256,6 +259,8 @@ class PackThreads final {
     // METHODS
     uint32_t completionTime(const ThreadSchedule& schedule, const ExecMTask* mtaskp,
                             uint32_t threadId) {
+        // Ignore tasks that were scheduled on a different schedule
+        if (!schedule.contains(mtaskp)) return 0;
         const ThreadSchedule::MTaskState& state = schedule.mtaskState.at(mtaskp);
         UASSERT(state.threadId != ThreadSchedule::UNASSIGNED, "Mtask should have assigned thread");
         if (threadId == state.threadId) {
@@ -380,12 +385,14 @@ class PackThreads final {
                 // If no tasks were added to the normal thread schedule, remove it.
                 if (schedule.mtaskState.empty()) result.erase(result.begin());
                 result.emplace_back(ThreadSchedule{size});
+                std::fill(busyUntil.begin(), busyUntil.end(), schedule.endTime());
                 continue;
             }
 
             if (!bestMtaskp && mode == SchedulingMode::WIDE_TASK_SCHEDULING) {
                 mode = SchedulingMode::SCHEDULING;
                 if (!schedule.mtaskState.empty()) result.emplace_back(ThreadSchedule{m_nThreads});
+                std::fill(busyUntil.begin(), busyUntil.end(), schedule.endTime());
                 continue;
             }
 
@@ -466,18 +473,28 @@ public:
         t4->cost(100);
         t4->priority(100);
         t4->threads(3);
+        ExecMTask* const t5 = new ExecMTask{&graph, makeBody()};
+        t5->cost(100);
+        t5->priority(100);
+        ExecMTask* const t6 = new ExecMTask{&graph, makeBody()};
+        t6->cost(100);
+        t6->priority(100);
 
         /*
                           0
                          / \
                         1   2
                            / \
-                          3  4
+                          3   4
+                         /    \
+                        5      6
         */
         new V3GraphEdge{&graph, t0, t1, 1};
         new V3GraphEdge{&graph, t0, t2, 1};
         new V3GraphEdge{&graph, t2, t3, 1};
         new V3GraphEdge{&graph, t2, t4, 1};
+        new V3GraphEdge{&graph, t3, t5, 1};
+        new V3GraphEdge{&graph, t4, t6, 1};
 
         constexpr uint32_t threads = 6;
         PackThreads packer{threads,
@@ -485,6 +502,7 @@ public:
                            10};  // Sandbag denom
 
         const std::vector<ThreadSchedule> scheduled = packer.pack(graph);
+        UASSERT_SELFTEST(size_t, scheduled.size(), 3);
         UASSERT_SELFTEST(size_t, scheduled[0].threads.size(), threads);
         UASSERT_SELFTEST(size_t, scheduled[0].threads[0].size(), 2);
         for (size_t i = 1; i < scheduled[0].threads.size(); ++i)
@@ -494,17 +512,23 @@ public:
         UASSERT_SELFTEST(const ExecMTask*, scheduled[0].threads[0][1], t1);
 
         UASSERT_SELFTEST(size_t, scheduled[1].threads.size(), threads / 3);
-        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].threads[1][0], t2);
-        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].threads[1][1], t3);
-        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].threads[0][0], t4);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].threads[0][0], t2);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].threads[0][1], t3);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].threads[1][0], t4);
 
-        UASSERT_SELFTEST(size_t, ThreadSchedule::mtaskState.size(), 5);
+        UASSERT_SELFTEST(size_t, scheduled[2].threads.size(), threads);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[2].threads[0][0], t5);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[2].threads[1][0], t6);
+
+        UASSERT_SELFTEST(size_t, ThreadSchedule::mtaskState.size(), 7);
 
         UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t0), 0);
         UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t1), 0);
-        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t2), 1);
-        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t3), 1);
-        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t4), 0);
+        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t2), 0);
+        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t3), 0);
+        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t4), 1);
+        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t5), 0);
+        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t6), 1);
 
         // On its native thread, we see the actual end time for t0:
         UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[0], t0, 0), 1000);
@@ -518,12 +542,36 @@ public:
         // with t0's sandbagged time; compounding caused trouble in
         // practice.
         UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[0], t1, 1), 1130);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t2, 0), 1229);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t2, 1), 1199);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t3, 0), 1329);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t3, 1), 1299);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 0), 1329);
-        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 1), 1359);
+
+        // Wide task scheduling
+
+        // Task does not depend on previous or future schedules
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[0], t2, 0), 0);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[2], t2, 0), 0);
+
+        // We allow sandbagging for hierarchical children tasks, this does not affect
+        // wide task scheduling. When the next schedule is created it doesn't matter
+        // anyway.
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t2, 0), 1200);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t2, 1), 1230);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t2, 2), 1230);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t2, 3), 1230);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t2, 4), 1230);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t2, 5), 1230);
+
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t3, 0), 1300);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t3, 1), 1330);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t3, 2), 1330);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t3, 3), 1330);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t3, 4), 1330);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t3, 5), 1330);
+
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 0), 1360);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 1), 1330);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 2), 1360);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 3), 1360);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 4), 1360);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 5), 1360);
 
         for (AstNode* const nodep : mTaskBodyps) nodep->deleteTree();
     }
