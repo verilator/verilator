@@ -6563,6 +6563,13 @@ class WidthVisitor final : public VNVisitor {
             return true;
         }
 
+        // Reject mixed scalar vs aggregate
+        if (VN_IS(lhs, QueueDType) || VN_IS(lhs, DynArrayDType) || VN_IS(lhs, UnpackArrayDType)
+            || VN_IS(lhs, AssocArrayDType) || VN_IS(rhs, QueueDType) || VN_IS(rhs, DynArrayDType)
+            || VN_IS(rhs, UnpackArrayDType) || VN_IS(rhs, AssocArrayDType)) {
+            return false;
+        }
+
         return true;
     }
 
@@ -6584,7 +6591,9 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
 
             const auto isAggregateType = [](const AstNode* nodep) {
-                const AstNodeDType* dtypep = nodep->dtypep()->skipRefp();
+                const AstNodeDType* dtypep = nodep->dtypep();
+                if (!dtypep) return false;
+                dtypep = dtypep->skipRefp();
                 return VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)
                        || VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, AssocArrayDType);
             };
