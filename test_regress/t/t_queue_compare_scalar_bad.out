@@ -1,0 +1,7 @@
+%Error: t/t_queue_compare_scalar_bad.v:13:19: Comparison requires matching data types
+                                            : ... note: In instance 't'
+                                            : ... LHS: 'int$[$]', RHS: 'logic[31:0]'
+   13 |     if (queue_var == 1) begin
+      |                   ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

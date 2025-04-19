@@ -6536,6 +6536,31 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+
+            const auto isStrictCompareable = [](const AstNode* nodep) {
+                const AstNodeDType* dtypep = nodep->dtypep()->skipRefp();
+                return VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)
+                       || VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, AssocArrayDType)
+                       || dtypep->isString();
+            };
+
+            const bool lhsStrictCompareable = isStrictCompareable(nodep->lhsp());
+            const bool rhsStrictCompareable = isStrictCompareable(nodep->rhsp());
+
+            if (lhsStrictCompareable || rhsStrictCompareable) {
+                if (!nodep->lhsp()->dtypep()->skipRefp()->sameTree(
+                        nodep->rhsp()->dtypep()->skipRefp())) {
+                    nodep->v3error("Comparison requires matching data types\n"
+                                   << nodep->warnMore()
+                                   << "... LHS: " << nodep->lhsp()->dtypep()->prettyDTypeNameQ()
+                                   << ", RHS: " << nodep->rhsp()->dtypep()->prettyDTypeNameQ());
+                    AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+            }
+
             if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
                 if (!realok) {
                     nodep->v3error("Real is illegal operand to ?== operator");
