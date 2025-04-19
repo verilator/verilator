@@ -6521,6 +6521,8 @@ class WidthVisitor final : public VNVisitor {
     }
 
     bool areAggregatesComparable(AstNodeDType* lhs, AstNodeDType* rhs) {
+        if (!lhs || !rhs) return false;
+
         lhs = lhs->skipRefp();
         rhs = rhs->skipRefp();
 
@@ -6598,12 +6600,12 @@ class WidthVisitor final : public VNVisitor {
                        || VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, AssocArrayDType);
             };
 
-            const bool lhsAggregateType = isAggregateType(nodep->lhsp());
-            const bool rhsAggregateType = isAggregateType(nodep->rhsp());
+            AstNodeDType* lhsDType = nodep->lhsp()->dtypep();
+            AstNodeDType* rhsDType = nodep->rhsp()->dtypep();
 
-            if (lhsAggregateType || rhsAggregateType) {
-                AstNodeDType* lhsDType = nodep->lhsp()->dtypep();
-                AstNodeDType* rhsDType = nodep->rhsp()->dtypep();
+            // Only do the aggregate validation if both types are known
+            if (lhsDType && rhsDType
+                && (isAggregateType(nodep->lhsp()) || isAggregateType(nodep->rhsp()))) {
                 if (!areAggregatesComparable(lhsDType, rhsDType)) {
                     nodep->v3error("Comparison requires matching data types\n"
                                    << nodep->warnMore()
