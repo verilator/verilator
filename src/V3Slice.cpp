@@ -299,55 +299,44 @@ class SliceVisitor final : public VNVisitor {
 
     void expandBiOp(AstNodeBiop* nodep) {
         if (nodep->user1SetOnce()) return;  // Process once
-        // If it's an unpacked array, blow it up into comparing each element
-        AstNodeDType* const fromDtp = nodep->lhsp()->dtypep()->skipRefp();
         UINFO(9, "  Bi-Eq/Neq expansion " << nodep << endl);
+
+        // Only expand if lhs is an unpacked array (we assume type checks already passed)
+        const AstNodeDType* const fromDtp = nodep->lhsp()->dtypep()->skipRefp();
         if (const AstUnpackArrayDType* const adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
             AstNodeBiop* logp = nullptr;
-            if (!VN_IS(nodep->lhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
-                nodep->lhsp()->v3error(
-                    "Slice operator "
-                    << nodep->lhsp()->prettyTypeName()
-                    << " on non-slicable (e.g. non-vector) left-hand-side operand");
-            } else if (!VN_IS(nodep->rhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
-                nodep->rhsp()->v3error(
-                    "Slice operator "
-                    << nodep->rhsp()->prettyTypeName()
-                    << " on non-slicable (e.g. non-vector) right-hand-side operand");
-            } else {
-                const int elements = adtypep->rangep()->elementsConst();
-                for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
-                    // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
-                    AstNodeBiop* const clonep
-                        = VN_AS(nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx),
-                                                 cloneAndSel(nodep->rhsp(), elements, elemIdx)),
-                                NodeBiop);
-                    if (!logp) {
-                        logp = clonep;
-                    } else {
-                        switch (nodep->type()) {
-                        case VNType::atEq:  // FALLTHRU
-                        case VNType::atEqCase:
-                            logp = new AstLogAnd{nodep->fileline(), logp, clonep};
-                            break;
-                        case VNType::atNeq:  // FALLTHRU
-                        case VNType::atNeqCase:
-                            logp = new AstLogOr{nodep->fileline(), logp, clonep};
-                            break;
-                        default:
-                            nodep->v3fatalSrc("Unknown node type processing array slice");
-                            break;
-                        }
+            const int elements = adtypep->rangep()->elementsConst();
+            for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
+                // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
+                AstNodeBiop* const clonep
+                    = VN_AS(nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx),
+                                             cloneAndSel(nodep->rhsp(), elements, elemIdx)),
+                            NodeBiop);
+                if (!logp) {
+                    logp = clonep;
+                } else {
+                    switch (nodep->type()) {
+                    case VNType::atEq:  // FALLTHRU
+                    case VNType::atEqCase:
+                        logp = new AstLogAnd{nodep->fileline(), logp, clonep};
+                        break;
+                    case VNType::atNeq:  // FALLTHRU
+                    case VNType::atNeqCase:
+                        logp = new AstLogOr{nodep->fileline(), logp, clonep};
+                        break;
+                    default: nodep->v3fatalSrc("Unknown node type processing array slice"); break;
                     }
                 }
-                UASSERT_OBJ(logp, nodep, "Unpacked array with empty indices range");
-                nodep->replaceWith(logp);
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                nodep = logp;
             }
+            UASSERT_OBJ(logp, nodep, "Unpacked array with empty indices range");
+            nodep->replaceWith(logp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            nodep = logp;
         }
+
         iterateChildren(nodep);
     }
+
     void visit(AstEq* nodep) override { expandBiOp(nodep); }
     void visit(AstNeq* nodep) override { expandBiOp(nodep); }
     void visit(AstEqCase* nodep) override { expandBiOp(nodep); }
