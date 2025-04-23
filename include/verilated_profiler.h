@@ -92,9 +92,9 @@ class VlExecutionRecord final {
             uint32_t m_id;  // MTask id
             uint32_t m_predictStart;  // Time scheduler predicted would start
             uint32_t m_cpu;  // Executing CPU id
+            const char* m_module;  // Name of module with this mtask
         } mtaskBegin;
         struct {
-            uint32_t m_id;  // MTask id
             uint32_t m_predictCost;  // How long scheduler predicted would take
         } mtaskEnd;
         struct {
@@ -120,14 +120,14 @@ public:
         m_type = Type::SECTION_PUSH;
     }
     void sectionPop() { m_type = Type::SECTION_POP; }
-    void mtaskBegin(uint32_t id, uint32_t predictStart) {
+    void mtaskBegin(uint32_t id, uint32_t predictStart, const char* moduleName) {
         m_payload.mtaskBegin.m_id = id;
         m_payload.mtaskBegin.m_predictStart = predictStart;
         m_payload.mtaskBegin.m_cpu = VlOs::getcpu();
+        m_payload.mtaskBegin.m_module = moduleName;
         m_type = Type::MTASK_BEGIN;
     }
-    void mtaskEnd(uint32_t id, uint32_t predictCost) {
-        m_payload.mtaskEnd.m_id = id;
+    void mtaskEnd(uint32_t predictCost) {
         m_payload.mtaskEnd.m_predictCost = predictCost;
         m_type = Type::MTASK_END;
     }
