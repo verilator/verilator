@@ -920,11 +920,13 @@ void wrapMTaskBodies(AstExecGraph* const execGraphp) {
 
         if (v3Global.opt.profExec()) {
             const string& predictStart = std::to_string(mtaskp->predictStart());
-            // We use top module flag as it is always set for all hierarchical phases, when it is
-            // not set we assume that it is a non-hierarchical run and we don't need module name
-            // anyway.
-            addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskBegin(taskId, " + predictStart
-                       + ", \"" + v3Global.opt.topModule() + "\");\n");
+            if (v3Global.opt.hierChild()) {
+                addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskBegin(taskId, " + predictStart
+                           + ", \"" + v3Global.opt.topModule() + "\");\n");
+            } else {
+                addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskBegin(taskId, " + predictStart
+                           + ");\n");
+            }
         }
 
         // Set mtask ID in the run-time system

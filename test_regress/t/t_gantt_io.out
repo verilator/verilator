@@ -33,10 +33,10 @@ All code, measured, scaled by predicted speedup:
   Speedup            =   1.25x
 
 MTask statistics:
-  Longest mtask id = 6 from module 'top'
+  Longest mtask id = 6
   Longest mtask time = 17.70% of time elapsed in parallelized code
-  min log(p2e) = -4.736  from module 'top' mtask 6 (predict 30, elapsed 3420)
-  max log(p2e) = -2.409  from module 'top' mtask 8 (predict 107, elapsed 1190)
+  min log(p2e) = -4.736  from mtask 6 (predict 30, elapsed 3420)
+  max log(p2e) = -2.409  from mtask 8 (predict 107, elapsed 1190)
   mean = -3.325
   stddev = 0.692
   e ^ stddev = 1.998

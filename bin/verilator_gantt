@@ -37,8 +37,9 @@ def read_data(filename):
     with open(filename, "r", encoding="utf8") as fh:
         re_thread = re.compile(r'^VLPROFTHREAD (\d+)$')
         re_record = re.compile(r'^VLPROFEXEC (\S+) (\d+)(.*)$')
+        # The hierBlock argument is optional
         re_payload_mtaskBegin = re.compile(
-            r'id (\d+) predictStart (\d+) cpu (\d+) module\s*(\w+)?')
+            r'id (\d+) predictStart (\d+) cpu (\d+)(?: hierBlock)?\s*(\w+)?')
         re_payload_mtaskEnd = re.compile(r'predictCost (\d+)')
         re_payload_wait = re.compile(r'cpu (\d+)')
 
@@ -75,8 +76,9 @@ def read_data(filename):
                     SectionStack.pop()
                     Sections[thread].append((tick, tuple(SectionStack)))
                 elif kind == "MTASK_BEGIN":
-                    mtask, predict_start, ecpu, module = re_payload_mtaskBegin.match(
+                    mtask, predict_start, ecpu, hier_block = re_payload_mtaskBegin.match(
                         payload).groups()
+                    hier_block = "" if hier_block is None else hier_block
                     mtask = int(mtask)
                     predict_start = int(predict_start)
                     ecpu = int(ecpu)
@@ -85,25 +87,26 @@ def read_data(filename):
                         'start': tick,
                         'mtask': mtask,
                         'predict_start': predict_start,
-                        'module': module,
+                        'hier_block': hier_block,
                         'cpu': ecpu
                     })
-                    Mtasks[(module, mtask)]['begin'] = tick
-                    Mtasks[(module, mtask)]['predict_start'] = predict_start
-                    Mtasks[(module, mtask)]['thread'] = thread
-                    MtasksStack.append((module, mtask, records[-1]))
+                    Mtasks[(hier_block, mtask)]['begin'] = tick
+                    Mtasks[(hier_block, mtask)]['predict_start'] = predict_start
+                    Mtasks[(hier_block, mtask)]['thread'] = thread
+                    MtasksStack.append((hier_block, mtask, records[-1]))
                 elif kind == "MTASK_END":
                     predict_cost, = re_payload_mtaskEnd.match(payload).groups()
                     mtask = int(mtask)
-                    module, mtask, record = MtasksStack.pop()
+                    hier_block, mtask, record = MtasksStack.pop()
                     predict_cost = int(predict_cost)
-                    begin = Mtasks[(module, mtask)]['begin']
+                    begin = Mtasks[(hier_block, mtask)]['begin']
                     record['end'] = tick
                     assert record and records[-1]['start'] <= records[-1]['end'] <= tick
                     record['predict_cost'] = predict_cost
-                    Mtasks[(module, mtask)]['elapsed'] += tick - begin
-                    Mtasks[(module, mtask)]['predict_cost'] = predict_cost
-                    Mtasks[(module, mtask)]['end'] = max(Mtasks[(module, mtask)]['end'], tick)
+                    Mtasks[(hier_block, mtask)]['elapsed'] += tick - begin
+                    Mtasks[(hier_block, mtask)]['predict_cost'] = predict_cost
+                    Mtasks[(hier_block, mtask)]['end'] = max(Mtasks[(hier_block, mtask)]['end'],
+                                                             tick)
                 elif kind == "THREAD_SCHEDULE_WAIT_BEGIN":
                     ecpu = int(re_payload_wait.match(payload).groups()[0])
                     ThreadScheduleWait[ecpu].append(tick)
@@ -237,8 +240,8 @@ def report_mtasks():
     long_mtask = None
     predict_mtask_time = 0
     predict_elapsed = 0
-    for (module, mtaskId) in Mtasks:
-        record = Mtasks[(module, mtaskId)]
+    for (hier_block, mtask_id) in Mtasks:
+        record = Mtasks[(hier_block, mtask_id)]
         predict_mtask_time += record['predict_cost']
         total_mtask_time += record['elapsed']
         thread_mtask_time[record['thread']] += record['elapsed']
@@ -246,8 +249,8 @@ def report_mtasks():
         predict_elapsed = max(predict_elapsed, predict_end)
         if record['elapsed'] > long_mtask_time:
             long_mtask_time = record['elapsed']
-            long_mtask = mtaskId
-            long_mtask_module = module
+            long_mtask = mtask_id
+            long_mtask_hier_block = hier_block
     Global['predict_last_end'] = predict_elapsed
 
     serialTime = ElapsedTime - ExecGraphTime
@@ -276,8 +279,8 @@ def report_mtasks():
     max_p2e = -1000000
     max_mtask = None
 
-    for (module, mtaskId) in sorted(Mtasks.keys()):
-        mtask = Mtasks[(module, mtaskId)]
+    for (hier_block, mtask_id) in sorted(Mtasks.keys()):
+        mtask = Mtasks[(hier_block, mtask_id)]
         if mtask['elapsed'] > 0:
             if mtask['predict_cost'] == 0:
                 mtask['predict_cost'] = 1  # don't log(0) below
@@ -286,41 +289,42 @@ def report_mtasks():
 
             if p2e_ratio > max_p2e:
                 max_p2e = p2e_ratio
-                max_mtask = mtaskId
-                max_module = module
+                max_mtask = mtask_id
+                max_hier_block = hier_block
             if p2e_ratio < min_p2e:
                 min_p2e = p2e_ratio
-                min_mtask = mtaskId
-                min_module = module
+                min_mtask = mtask_id
+                min_hier_block = hier_block
 
     print("\nMTask statistics:")
-    if long_mtask_module:
-        print("  Longest mtask id = {} from module '{}'".format(long_mtask, long_mtask_module))
+    if long_mtask_hier_block:
+        print("  Longest mtask id = {} from hier_block '{}'".format(long_mtask,
+                                                                    long_mtask_hier_block))
     else:
         print("  Longest mtask id = {}".format(long_mtask))
     print("  Longest mtask time = {:.2%} of time elapsed in parallelized code".format(
         long_mtask_time / ExecGraphTime))
     print("  min log(p2e) = %0.3f" % min_p2e, end="")
 
-    if min_module:
-        print("  from module '%s' mtask %d (predict %d," %
-              (min_module, min_mtask, Mtasks[(min_module, min_mtask)]['predict_cost']),
+    if min_hier_block:
+        print("  from hier_block '%s' mtask %d (predict %d," %
+              (min_hier_block, min_mtask, Mtasks[(min_hier_block, min_mtask)]['predict_cost']),
               end="")
     else:
         print("  from mtask %d (predict %d," %
-              (min_mtask, Mtasks[(min_module, min_mtask)]['predict_cost']),
+              (min_mtask, Mtasks[(min_hier_block, min_mtask)]['predict_cost']),
               end="")
-    print(" elapsed %d)" % Mtasks[(min_module, min_mtask)]['elapsed'])
+    print(" elapsed %d)" % Mtasks[(min_hier_block, min_mtask)]['elapsed'])
     print("  max log(p2e) = %0.3f" % max_p2e, end="")
-    if max_module:
-        print("  from module '%s' mtask %d (predict %d," %
-              (max_module, max_mtask, Mtasks[(max_module, max_mtask)]['predict_cost']),
+    if max_hier_block:
+        print("  from hier_block '%s' mtask %d (predict %d," %
+              (max_hier_block, max_mtask, Mtasks[(max_hier_block, max_mtask)]['predict_cost']),
               end="")
     else:
         print("  from mtask %d (predict %d," %
-              (max_mtask, Mtasks[(max_module, max_mtask)]['predict_cost']),
+              (max_mtask, Mtasks[(max_hier_block, max_mtask)]['predict_cost']),
               end="")
-    print(" elapsed %d)" % Mtasks[(max_module, max_mtask)]['elapsed'])
+    print(" elapsed %d)" % Mtasks[(max_hier_block, max_mtask)]['elapsed'])
 
     stddev = statistics.pstdev(p2e_ratios)
     mean = statistics.mean(p2e_ratios)
@@ -506,8 +510,8 @@ def write_vcd(filename):
             # Compute scale so predicted graph is of same width as interval
             measured_scaling = (end - start) / Global['predict_last_end']
             # Predict mtasks that fill the time the execution occupied
-            for (module, mtaskId) in Mtasks:
-                mtask = Mtasks[(module, mtaskId)]
+            for (hier_block, mtask_id) in Mtasks:
+                mtask = Mtasks[(hier_block, mtask_id)]
                 thread = mtask['thread']
                 pred_scaled_start = start + int(mtask['predict_start'] * measured_scaling)
                 pred_scaled_end = start + int(
@@ -516,7 +520,7 @@ def write_vcd(filename):
                     continue
 
                 mcode = getCode(32, 'predicted', 't%d_mtask' % thread)
-                addValue(mcode, pred_scaled_start, mtaskId)
+                addValue(mcode, pred_scaled_start, mtask_id)
                 addValue(mcode, pred_scaled_end, None)
 
                 parallelism['predicted'][pred_scaled_start] += 1
