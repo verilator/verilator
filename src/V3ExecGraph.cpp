@@ -771,8 +771,8 @@ const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& schedul
     for (const std::vector<const ExecMTask*>& thread : schedule.threads) {
         if (thread.empty()) continue;
         const uint32_t threadId = schedule.threadId(thread.front());
-        const string name{"__Vthread__" + tag + "__t" + cvtToStr(threadId) + "__s"
-                          + cvtToStr(schedule.id())};
+        const string name{"__Vthread__" + tag + "__s" + cvtToStr(schedule.id()) + "__t"
+                          + cvtToStr(threadId)};
         AstCFunc* const funcp = new AstCFunc{fl, name, nullptr, "void"};
         modp->addStmtsp(funcp);
         funcps.push_back(funcp);
