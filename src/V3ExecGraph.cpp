@@ -916,18 +916,17 @@ void wrapMTaskBodies(AstExecGraph* const execGraphp) {
             funcp->addStmtsp(new AstCStmt{flp, stmt});
         };
 
-        if (v3Global.opt.hierChild() || !v3Global.opt.hierBlocks().empty()) {
-            addStrStmt(
-                "static const unsigned taskId = vlSymsp->__Vm_threadPoolp->assignTaskIndex();\n");
-        } else {
-            const string& id = std::to_string(mtaskp->id());
-            addStrStmt("static constexpr unsigned taskId = " + id + ";\n");
-        }
+        addStrStmt("static constexpr unsigned taskId = " + cvtToStr(mtaskp->id()) + ";\n");
 
-        if (v3Global.opt.profExec() && mtaskp->threads() <= 1) {
+        if (v3Global.opt.profExec()) {
             const string& predictStart = std::to_string(mtaskp->predictStart());
-            addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskBegin(taskId, " + predictStart
-                       + ");\n");
+            if (v3Global.opt.hierChild()) {
+                addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskBegin(taskId, " + predictStart
+                           + ", \"" + v3Global.opt.topModule() + "\");\n");
+            } else {
+                addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskBegin(taskId, " + predictStart
+                           + ");\n");
+            }
         }
 
         // Set mtask ID in the run-time system
@@ -939,10 +938,9 @@ void wrapMTaskBodies(AstExecGraph* const execGraphp) {
         // Flush message queue
         addStrStmt("Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);\n");
 
-        if (v3Global.opt.profExec() && mtaskp->threads() <= 1) {
-            const string& predictConst = std::to_string(mtaskp->cost());
-            addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskEnd(taskId, " + predictConst
-                       + ");\n");
+        if (v3Global.opt.profExec()) {
+            const string& predictCost = std::to_string(mtaskp->cost());
+            addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskEnd(" + predictCost + ");\n");
         }
 
         // AstMTask will simply contain a call
