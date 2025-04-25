@@ -1822,11 +1822,13 @@ public:
     }
     string emitC() override {
         if (m_reset) {
+            // NOCOMMIT
+            string salt = std::to_string(0x0123456789abcdefull);
             if (v3Global.opt.xAssign() == "unique") {
-                return "VL_RAND_RESET_ASSIGN_%nq(%nw, %P)";
+                return "VL_RAND_RESET_ASSIGN_%nq(%nw, %P, " + salt + ")";
             } else {
                 // This follows xInitial randomization
-                return "VL_RAND_RESET_%nq(%nw, %P)";
+                return "VL_RAND_RESET_%nq(%nw, %P, " + salt + ")";
             }
         }
         if (seedp()) {

@@ -23,6 +23,9 @@
 #include <map>
 #include <vector>
 
+// NOCOMMIT
+VL_DEFINE_DEBUG_FUNCTIONS;
+
 // We use a static char array in VL_VALUE_STRING
 constexpr int VL_VALUE_STRING_MAX_WIDTH = 8192;
 
@@ -670,6 +673,8 @@ void EmitCFunc::emitVarReset(AstVar* varp, bool constructing) {
 string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                                       const string& varNameProtected, AstNodeDType* dtypep,
                                       int depth, const string& suffix) {
+    UINFO(1, "Var Reset -- " << varp->prettyName() << " -- " << varp->origName() << " -- " << varp
+                             << endl);
     dtypep = dtypep->skipRefp();
     AstBasicDType* const basicp = dtypep->basicp();
     // Returns string to do resetting, empty to do nothing (which caller should handle)
@@ -767,7 +772,16 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
             } else {
                 out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(") : "VL_RAND_RESET_W(";
                 out += cvtToStr(dtypep->widthMin());
-                out += ", " + varNameProtected + suffix + ");\n";
+                out += ", " + varNameProtected + suffix;
+                if (!zeroit) {
+                    V3Hash hash(varp->prettyName());
+                    UINFO(1,
+                          "Var Hash -- " << varp->prettyName() << " -- " << hash.value() << endl);
+                    out += ", ";
+                    // NOCOMMIT -- 64b
+                    out += std::to_string(hash.value());
+                }
+                out += ");\n";
             }
             return out;
         } else {
@@ -780,9 +794,13 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
             if (zeroit || (v3Global.opt.xInitialEdge() && varp->isUsedClock())) {
                 out += " = 0;\n";
             } else {
+                V3Hash hash(varp->prettyName());
+                UINFO(1, "Var Hash -- " << varp->prettyName() << " -- " << hash.value() << endl);
                 out += " = VL_RAND_RESET_";
                 out += dtypep->charIQWN();
-                out += "(" + cvtToStr(dtypep->widthMin()) + ");\n";
+                // NOCOMMIT -- 64b
+                out += "(" + cvtToStr(dtypep->widthMin()) + ", " + std::to_string(hash.value())
+                       + ");\n";
             }
             return out;
         }
