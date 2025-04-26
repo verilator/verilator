@@ -11,8 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 test.top_filename = "t/t_opt_const.v"
+test.pli_filename = "t/t_opt_const.cpp"
 
-test.compile(verilator_flags2=["-Wno-UNOPTTHREADS", "--stats", test.t_dir + "/t_opt_const.cpp"])
+test.compile(verilator_flags2=["-Wno-UNOPTTHREADS", "--stats", test.pli_filename])
 
 test.execute()
 
