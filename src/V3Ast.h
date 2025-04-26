@@ -1686,6 +1686,7 @@ public:
     bool isVlSym() const { return m_strp->find("vlSymsp") != string::npos; }
     bool hasThis() const { return m_strp == s_thisp || VString::startsWith(*m_strp, "this"); }
     string protect(bool useSelfForThis, bool protect) const;
+    static string replaceThis(bool useSelfForThis, const string& text);
     const std::string& asString() const { return *m_strp; }
     bool operator==(const VSelfPointerText& other) const { return *m_strp == *other.m_strp; }
 };
