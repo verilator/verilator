@@ -37,6 +37,8 @@ Verilator 5.035 devel
 * Add numactl-like automatic assignment of processor affinity (#5911).
 * Add ccache support for generated cmake files (#5926) (#5930). [Andrew Voznytsa]
 * Add visualization of multi-threaded waiting time with verilator_gantt (#5929). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Add suggesting isolate_assignments to UNOPTFLAT (#5942). [John Khoo]
+* Add profiling of hierarchical mtasks with verilator_gantt (#5956). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add empty veriuser.h for legacy compatibility.
 * Add DEPRECATED warning on `--xml-only` and `--xml-output`.
 * Remove unused gtkwave/wavealloca.h. [Geza Lore]
