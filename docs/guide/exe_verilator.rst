@@ -1,8 +1,9 @@
 .. Copyright 2003-2025 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-verilator Arguments
-===================
+=====================
+ verilator Arguments
+=====================
 
 The following arguments may be passed to the "verilator" executable.
 
@@ -10,20 +11,6 @@ Summary:
 
    .. include:: ../_build/gen/args_verilator.rst
 
-
-.. option:: <file.v>
-
-   Specifies the Verilog file containing the top module to be Verilated.
-
-.. option:: <file.c/.cc/.cpp/.cxx>
-
-   Used with :vlopt:`--exe` to specify optional C++ files to be linked in
-   with the Verilog code.  The file path should either be absolute, or
-   relative to where the make will be executed from, or add to your
-   makefile's VPATH the appropriate directory to find the file.
-
-   See also :vlopt:`-CFLAGS` and :vlopt:`-LDFLAGS` options, which are
-   useful when the C++ files need special compiler flags.
 
 .. option:: <file.a/.o/.so>
 
@@ -36,6 +23,20 @@ Summary:
    If any files are specified in this way, Verilator will include a make
    rule that uses these files when linking the module's executable.  This
    generally is only useful when used with the :vlopt:`--exe` option.
+
+.. option:: <file.c/.cc/.cpp/.cxx>
+
+   Used with :vlopt:`--exe` to specify optional C++ files to be linked in
+   with the Verilog code.  The file path should either be absolute, or
+   relative to where the make will be executed from, or add to your
+   makefile's VPATH the appropriate directory to find the file.
+
+   See also :vlopt:`-CFLAGS` and :vlopt:`-LDFLAGS` options, which are
+   useful when the C++ files need special compiler flags.
+
+.. option:: <file.v>
+
+   Specifies the Verilog file containing the top module to be Verilated.
 
 .. option:: +1364-1995ext+<ext>
 
@@ -331,11 +332,11 @@ Summary:
    detailed messages.  See :vlopt:`--debug` for other implications of
    enabling debug.
 
-.. option:: --decorations none
+.. option:: --no-decoration
 
-.. option:: --decorations medium
+   Alias for ``--decorations none``.
 
-.. option:: --decorations node
+.. option:: --decorations <level>
 
    When creating output Verilated code, set level of comment and whitespace
    decoration.
@@ -361,10 +362,6 @@ Summary:
      Verilog source may be related.  As node pointers are not stable
      between different Verilator runs, this may harm compile caching and
      should only be used for debug.
-
-.. option:: --no-decoration
-
-   Alias for ``--decorations none``.
 
 .. option:: --default-language <value>
 
@@ -402,6 +399,11 @@ Summary:
    name or location of the emitted DPI header file, it is output in
    :vlopt:`--Mdir` as it would be without this option.
 
+.. option:: --dump-<srcfile>
+
+   Rarely needed - for developer use. Enable all dumping in the given
+   source file at level 3.
+
 .. option:: --dump-defines
 
    With :vlopt:`-E`, suppress normal output, and instead print a list of
@@ -433,18 +435,6 @@ Summary:
    :vlopt:`--debug --no-dump-tree <--dump-tree>` may be useful if the dump
    files are large and not desired.
 
-.. option:: --dump-tree-json
-
-   Rarely needed.  Enable dumping Ast .json.tree debug files with dumping level 3,
-   which dumps the standard critical stages.  For details on the format, see
-   the Verilator Internals manual.
-
-.. option:: --dump-tree-dot
-
-   Rarely needed.  Enable dumping Ast .tree.dot debug files in Graphviz
-   Dot format. This option implies :vlopt:`--dump-tree`, unless
-   :vlopt:`--dumpi-tree` was passed explicitly.
-
 .. option:: --dump-tree-addrids
 
    Rarely needed - for developer use.  Replace AST node addresses with
@@ -454,10 +444,24 @@ Summary:
    by a newly allocated node after a node with the same address has been
    dumped and then freed.
 
-.. option:: --dump-<srcfile>
+.. option:: --dump-tree-dot
 
-   Rarely needed - for developer use. Enable all dumping in the given
-   source file at level 3.
+   Rarely needed.  Enable dumping Ast .tree.dot debug files in Graphviz
+   Dot format. This option implies :vlopt:`--dump-tree`, unless
+   :vlopt:`--dumpi-tree` was passed explicitly.
+
+.. option:: --dump-tree-json
+
+   Rarely needed.  Enable dumping Ast .json.tree debug files with dumping level 3,
+   which dumps the standard critical stages.  For details on the format, see
+   the Verilator Internals manual.
+
+.. option:: --dumpi-<srcfile> <level>
+
+   Rarely needed - for developer use. Set the dumping level in the
+   specified Verilator source file to the specified value (e.g.,
+   `--dumpi-V3Order 9`).  Level 0 disables dumps and is equivalent to
+   `--no-dump-<srcfile>`.  Level 9 enables the dumping of everything.
 
 .. option:: --dumpi-dfg <level>
 
@@ -478,13 +482,6 @@ Summary:
 
    Rarely needed - for developer use.  Set internal Ast JSON dumping level
    globally to the specified value.
-
-.. option:: --dumpi-<srcfile> <level>
-
-   Rarely needed - for developer use. Set the dumping level in the
-   specified Verilator source file to the specified value (e.g.,
-   `--dumpi-V3Order 9`).  Level 0 disables dumps and is equivalent to
-   `--no-dump-<srcfile>`.  Level 9 enables the dumping of everything.
 
 .. option:: -E
 
@@ -569,7 +566,7 @@ Summary:
 
 .. option:: -fno-const
 
-.. options: -fno-const-before-dfg
+.. option:: -fno-const-before-dfg
 
    Do not apply any global expression folding prior to the DFG pass. This
    option is solely for the purpose of DFG testing and should not be used
@@ -592,13 +589,13 @@ Summary:
 
    Disable individual DFG peephole optimizer pattern.
 
-.. option:: -fno-dfg-pre-inline
-
-   Do not apply the DFG optimizer before inlining.
-
 .. option:: -fno-dfg-post-inline
 
    Do not apply the DFG optimizer after inlining.
+
+.. option:: -fno-dfg-pre-inline
+
+   Do not apply the DFG optimizer before inlining.
 
 .. option:: -fno-expand
 
@@ -724,14 +721,6 @@ Summary:
    Generate a true-random key suitable for use with :vlopt:`--protect-key`,
    print it, and exit immediately.
 
-.. option:: --getenv <variable>
-
-   If the variable is declared in the environment, print it and exit
-   immediately. Otherwise, if it's built into Verilator
-   (e.g., VERILATOR_ROOT), print that and exit immediately. Otherwise, print
-   a newline and exit immediately. This can be useful in makefiles. See
-   also :vlopt:`-V`, and the various :file:`*.mk` files.
-
 .. option:: --get-supported <feature>
 
    If the given feature is supported, print "1" and exit
@@ -740,6 +729,14 @@ Summary:
    :file:`*.mk` files.
 
    Feature may be one of the following: COROUTINES, SYSTEMC.
+
+.. option:: --getenv <variable>
+
+   If the variable is declared in the environment, print it and exit
+   immediately. Otherwise, if it's built into Verilator
+   (e.g., VERILATOR_ROOT), print that and exit immediately. Otherwise, print
+   a newline and exit immediately. This can be useful in makefiles. See
+   also :vlopt:`-V`, and the various :file:`*.mk` files.
 
 .. option:: --help
 
@@ -803,6 +800,15 @@ Summary:
    must be a positive integer specifying the maximum number of parallel
    build jobs.
 
+.. option:: --no-json-edit-nums
+
+   Don't dump edit number in .tree.json files.  This may make the file more
+   run-to-run stable for easier comparison.
+
+.. option:: --no-json-ids
+
+   Don't use short identifiers instead of addresses/paths in .tree.json.
+
 .. option:: --json-only
 
    Create JSON output only, do not create any other output.
@@ -825,15 +831,6 @@ Summary:
 
    Specifies the filename for the main output file (`.tree.json`) of --json-only.
    Using this option automatically sets :vlopt:`--json-only`.
-
-.. option:: --no-json-edit-nums
-
-   Don't dump edit number in .tree.json files.  This may make the file more
-   run-to-run stable for easier comparison.
-
-.. option:: --no-json-ids
-
-   Don't use short identifiers instead of addresses/paths in .tree.json.
 
 .. option:: --l2-name <value>
 
@@ -908,30 +905,6 @@ Summary:
    Rarely needed.  Set the maximum variable size in bytes for it to be
    subject to localizing-to-stack optimization.  Defaults to 1024.
 
-.. option:: --make <build-tool>
-
-   Generates a script for the specified build tool.
-
-   Supported values are ``gmake`` for GNU Make, or ``cmake`` for CMake, or
-   ``json`` to create a JSON file to feed other build tools.
-
-   Multiple options can be specified together.  If no build tool is
-   specified, gmake is assumed.  The executable of gmake can be configured
-   via the environment variable :option:`MAKE`.
-
-   When using :vlopt:`--build`, Verilator takes over the responsibility of
-   building the model library/executable.  For this reason :option:`--make`
-   cannot be specified when using :vlopt:`--build`.
-
-.. option:: -MAKEFLAGS <string>
-
-   When using :vlopt:`--build`, add the specified argument to the invoked
-   make command line.  For multiple flags, either pass them as a single
-   argument with space separators quoted in the shell (e.g.  ``-MAKEFLAGS
-   "-a -b"``), or use multiple -MAKEFLAGS arguments
-   (e.g. ``-MAKEFLAGS -l -MAKEFLAGS -k``). Use of this option should not be
-   required for simple builds using the host toolchain.
-
 .. option:: --main
 
    Generates a top-level C++ main() file that supports parsing arguments,
@@ -956,6 +929,30 @@ Summary:
    generated C++ main() function.
 
    If the string ``"-"`` is used, no top level scope is added.
+
+.. option:: --make <build-tool>
+
+   Generates a script for the specified build tool.
+
+   Supported values are ``gmake`` for GNU Make, or ``cmake`` for CMake, or
+   ``json`` to create a JSON file to feed other build tools.
+
+   Multiple options can be specified together.  If no build tool is
+   specified, gmake is assumed.  The executable of gmake can be configured
+   via the environment variable :option:`MAKE`.
+
+   When using :vlopt:`--build`, Verilator takes over the responsibility of
+   building the model library/executable.  For this reason :option:`--make`
+   cannot be specified when using :vlopt:`--build`.
+
+.. option:: -MAKEFLAGS <string>
+
+   When using :vlopt:`--build`, add the specified argument to the invoked
+   make command line.  For multiple flags, either pass them as a single
+   argument with space separators quoted in the shell (e.g.  ``-MAKEFLAGS
+   "-a -b"``), or use multiple -MAKEFLAGS arguments
+   (e.g. ``-MAKEFLAGS -l -MAKEFLAGS -k``). Use of this option should not be
+   required for simple builds using the host toolchain.
 
 .. option:: --max-num-width <value>
 
@@ -991,6 +988,11 @@ Summary:
 
    Ignored for compatibility with other simulators.
 
+.. option:: -o <executable>
+
+   Specify the name for the final executable built if using :vlopt:`--exe`.
+   Defaults to the :vlopt:`--prefix` if not specified.
+
 .. option:: -O0
 
    Disables optimization of the model.
@@ -1010,11 +1012,6 @@ Summary:
    disables an optimization, an uppercase letter enables it.  This option
    is deprecated and the various `-f<optimization>` arguments should be
    used instead.
-
-.. option:: -o <executable>
-
-   Specify the name for the final executable built if using :vlopt:`--exe`.
-   Defaults to the :vlopt:`--prefix` if not specified.
 
 .. option:: --no-order-clock-delay
 
@@ -1107,6 +1104,14 @@ Summary:
    position to indicate the corresponding bit of the __out variable has
    a value being driven from within the Verilated model.
 
+.. option:: --pins-sc-biguint
+
+   Specifies SystemC inputs/outputs greater than 65 bits wide should use
+   sc_biguint between 65 and 512, and sc_bv from 513 upwards.  When
+   combined with the :vlopt:`--pins-sc-uint` combination, it results in
+   sc_uint being used between 2 and 64 and sc_biguint being used between 65
+   and 512.
+
 .. option:: --pins-sc-uint
 
    Specifies SystemC inputs/outputs greater than 2 bits wide should use
@@ -1117,14 +1122,6 @@ Summary:
 .. option:: --pins-sc-uint-bool
 
    Specifies SystemC inputs/outputs one bit wide should use sc_uint<1>.
-
-.. option:: --pins-sc-biguint
-
-   Specifies SystemC inputs/outputs greater than 65 bits wide should use
-   sc_biguint between 65 and 512, and sc_bv from 513 upwards.  When
-   combined with the :vlopt:`--pins-sc-uint` combination, it results in
-   sc_uint being used between 2 and 64 and sc_biguint being used between 65
-   and 512.
 
 .. option:: --pins-uint8
 
@@ -1487,6 +1484,12 @@ Summary:
 
    A synonym for :vlopt:`+1800-2023ext+\<ext\>`.
 
+.. option:: --no-threads
+
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.004, created a model which was not thread-safe.
+
 .. option:: --threads <threads>
 
    With "--threads 1", the default, the generated model is single-threaded
@@ -1495,17 +1498,7 @@ Summary:
    threads. See :ref:`Multithreading`. This option also applies to
    :vlopt:`--trace-vcd` (but not :vlopt:`--trace-fst`).
 
-.. option:: --no-threads
-
-   Deprecated and has no effect (ignored).
-
-   In versions before 5.004, created a model which was not thread-safe.
-
-.. option:: --threads-dpi all
-
-.. option:: --threads-dpi none
-
-.. option:: --threads-dpi pure
+.. option:: --threads-dpi <mode>
 
    When using :vlopt:`--threads`, controls which DPI imported tasks and
    functions are considered thread-safe.
@@ -1539,9 +1532,9 @@ Summary:
    does not occur before a given module.  Default is "1ps/1ps" (to match
    SystemC).  This is overridden by :vlopt:`--timescale-override`.
 
-.. option:: --timescale-override <timeunit>/<timeprecision>
-
 .. option:: --timescale-override /<timeprecision>
+
+.. option:: --timescale-override <timeunit>/<timeprecision>
 
    Overrides all "\`timescale"s in sources. The timeunit may be left empty
    to specify only to override the timeprecision, e.g. "/1fs".
@@ -1891,33 +1884,36 @@ Summary:
    ``-Wwarn-UNUSEDGENVAR`` ``-Wwarn-UNUSEDLOOP`` ``-Wwarn-UNUSEDPARAM``
    ``-Wwarn-UNUSEDSIGNAL`` ``-Wwarn-VARHIDDEN``.
 
-.. option:: --x-assign 0
-
-.. option:: --x-assign 1
-
-.. option:: --x-assign fast (default)
-
-.. option:: --x-assign unique
+.. option:: --x-assign <mode>
 
    Controls the two-state value that is substituted when an explicit X
-   value is encountered in the source.  "--x-assign fast", the default,
-   converts all Xs to whatever is best for performance.  "--x-assign 0"
-   converts all Xs to 0s, and is also fast.  "--x-assign 1" converts all Xs
-   to 1s, this is nearly as fast as 0, but more likely to find reset bugs
-   as active high logic will fire. Using "--x-assign unique" will result in
-   all explicit Xs being replaced by a constant value determined at
-   runtime. The value is determined by calling a function at initialization
-   time. This enables the randomization of Xs with different seeds on different
-   executions. This method is the slowest, but safest for finding reset
-   bugs.
+   value is encountered in the source.
 
-   If using "--x-assign unique", you may want to seed your random number
-   generator such that each regression run gets a different randomization
-   sequence. The simplest is to use the :vlopt:`+verilator+seed+\<value\>`
-   runtime option.  Alternatively, use the system's :code:`srand48()` or for
-   Windows :code:`srand()` function to do this.  You'll probably also want
-   to print any seeds selected, and code to enable rerunning with that same
-   seed so you can reproduce bugs.
+   With "--x-assign 0",
+     converts all Xs to 0s, and is also fast.
+
+   With "--x-assign 1",
+     converts all Xs to 1s, this is nearly as fast as 0, but more likely to
+     find reset bugs as active high logic will fire.
+
+   With "--x-assign fast", the default,
+     converts all Xs to whatever is best for performance.
+
+   With "--x-assign unique",
+     all explicit Xs being replaced by a constant value determined at
+     runtime. The value is determined by calling a function at
+     initialization time. This enables the randomization of Xs with
+     different seeds on different executions. This method is the slowest,
+     but safest for finding reset bugs.
+
+     If using `--x-assign unique`, you may want to seed your random number
+     generator such that each regression run gets a different randomization
+     sequence. The simplest is to use the
+     :vlopt:`+verilator+seed+\<value\>` runtime option.  Alternatively, use
+     the system's :code:`srand48()` or for Windows :code:`srand()` function
+     to do this.  You'll probably also want to print any seeds selected,
+     and code to enable rerunning with that same seed so you can reproduce
+     bugs.
 
    .. note::
 
@@ -1927,24 +1923,20 @@ Summary:
       specified. Initial values of all other state holding variables are
       controlled with `--x-initial`.
 
-.. option:: --x-initial 0
-
-.. option:: --x-initial fast
-
-.. option:: --x-initial unique (default)
+.. option:: --x-initial <mode>
 
    Controls the two-state value used to initialize variables that
    are not otherwise initialized.
 
-   "--x-initial 0",
+   With "--x-initial 0",
      initializes all otherwise uninitialized variables to zero.
 
-   "--x-initial unique", the default,
+   With "--x-initial unique", the default,
      initializes variables using a function, which determines the value to
      use for each initialization. This gives the greatest flexibility and
      allows for finding reset bugs.  See :ref:`Unknown states`.
 
-   "--x-initial fast",
+   With "--x-initial fast",
      is best for performance, and initializes all variables to a state
      Verilator determines is optimal.  This may allow further code
      optimizations, but will likely hide any code bugs relating to missing
@@ -2025,8 +2017,9 @@ Summary:
 
 .. _Configuration Files:
 
-Configuration Files
-===================
+=====================
+ Configuration Files
+=====================
 
 In addition to the command line, warnings and other features for the
 :command:`verilator` command may be controlled with configuration files,
@@ -2059,15 +2052,6 @@ The grammar of configuration commands is as follows:
 
    Take the remaining text and treat it as Verilator configuration commands.
 
-.. option:: coverage_on  [-file "<filename>" [-lines <line> [ - <line> ]]]
-
-.. option:: coverage_off [-file "<filename>" [-lines <line> [ - <line> ]]]
-
-   Enable/disable coverage for the specified filename (or wildcard with
-   '\*' or '?', or all files if omitted) and range of line numbers (or all
-   lines if omitted).  Often used to ignore an entire module for coverage
-   analysis purposes.
-
 .. option:: clock_enable -module "<modulename>" -var "<signame>"
 
    Deprecated and has no effect (ignored).
@@ -2079,13 +2063,16 @@ The grammar of configuration commands is as follows:
 
    Same as :option:`/*verilator&32;clock_enable*/` metacomment.
 
-.. option:: clocker -module "<modulename>" [-task "<taskname>"] -var "<signame>"
+
+   .. t_dist_docs_style ignore no_clocker
 
 .. option:: clocker -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
-.. option:: no_clocker -module "<modulename>" [-task "<taskname>"] -var "<signame>"
+.. option:: clocker -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 
 .. option:: no_clocker -module "<modulename>" [-function "<funcname>"] -var "<signame>"
+
+.. option:: no_clocker -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 
    Indicates whether the signal is used as clock or not. Verilator uses
    this information to mark the signal and any derived signals as clocker.
@@ -2093,15 +2080,24 @@ The grammar of configuration commands is as follows:
 
    Same as :option:`/*verilator&32;clocker*/` metacomment.
 
-.. option:: coverage_block_off -module "<modulename>" -block "<blockname>"
-
 .. option:: coverage_block_off -file "<filename>" -line <lineno>
+
+.. option:: coverage_block_off -module "<modulename>" -block "<blockname>"
 
    Specifies the entire begin/end block should be ignored for coverage
    analysis purposes.  It can either be specified as a named block or as a
    filename and line number.
 
    Same as :option:`/*verilator&32;coverage_block_off*/` metacomment.
+
+.. option:: coverage_off [-file "<filename>" [-lines <line> [ - <line> ]]]
+
+.. option:: coverage_on  [-file "<filename>" [-lines <line> [ - <line> ]]]
+
+   Enable/disable coverage for the specified filename (or wildcard with
+   '\*' or '?', or all files if omitted) and range of line numbers (or all
+   lines if omitted).  Often used to ignore an entire module for coverage
+   analysis purposes.
 
 .. option:: forceable -module "<modulename>" -var "<signame>"
 
@@ -2113,11 +2109,8 @@ The grammar of configuration commands is as follows:
 
 .. option:: full_case -file "<filename>" -lines <lineno>
 
-.. option:: parallel_case -file "<filename>" -lines <lineno>
-
-   Same as :code:`//synopsys full_case` and
-   :code:`//synopsys parallel_case`. When these synthesis directives are
-   discovered, Verilator will either formally prove the directive to be
+   Same as :code:`//synthesis full_case`. When these synthesis directives
+   are discovered, Verilator will either formally prove the directive to be
    true, or, failing that, will insert the appropriate code to detect
    failing cases at simulation runtime and print an "Assertion failed"
    error message.
@@ -2154,15 +2147,8 @@ The grammar of configuration commands is as follows:
    Specifies the module may be inlined into any modules that use this
    module.  Same as :option:`/*verilator&32;inline_module*/` metacomment.
 
-.. option:: isolate_assignments -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 
-.. option:: isolate_assignments -module "<modulename>" [-function "<funcname>"] -var "<signame>"
-
-.. option:: isolate_assignments -module "<modulename>" -function "<fname>"
-
-   Used to indicate that the assignments to this signal in any blocks
-   should be isolated into new blocks.  Same as
-   :option:`/*verilator&32;isolate_assignments*/` metacomment.
+   .. t_dist_docs_style ignore no_inline
 
 .. option:: no_inline -module "<modulename>"
 
@@ -2170,9 +2156,9 @@ The grammar of configuration commands is as follows:
    this module.  Same as :option:`/*verilator&32;no_inline_module*/`
    metacomment.
 
-.. option:: no_inline [-module "<modulename>"] -task "<taskname>"
-
 .. option:: no_inline [-module "<modulename>"] -function "<funcname>"
+
+.. option:: no_inline [-module "<modulename>"] -task "<taskname>"
 
    Specify the function or task should not be inlined into where it is
    used.  This may reduce the size of the final executable when a task is
@@ -2182,11 +2168,21 @@ The grammar of configuration commands is as follows:
 
    Same as :option:`/*verilator&32;no_inline_task*/` metacomment.
 
-.. option:: lint_on  [-rule <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
+.. option:: isolate_assignments -module "<modulename>" -function "<fname>"
+
+.. option:: isolate_assignments -module "<modulename>" [-function "<funcname>"] -var "<signame>"
+
+.. option:: isolate_assignments -module "<modulename>" [-task "<taskname>"] -var "<signame>"
+
+   Used to indicate that the assignments to this signal in any blocks
+   should be isolated into new blocks.  Same as
+   :option:`/*verilator&32;isolate_assignments*/` metacomment.
 
 .. option:: lint_off [-rule <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
 
 .. option:: lint_off [-rule <message>] [-file "<filename>"] [-contents "<wildcard>"] [-match "<wildcard>"]
+
+.. option:: lint_on  [-rule <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
 
    Enable/disables the specified lint warning, in the specified filename
    (or wildcard with '\*' or '?', or all files if omitted) and range of
@@ -2218,18 +2214,13 @@ The grammar of configuration commands is as follows:
    Before version 4.026, :code:`-rule` was named :code:`-msg`, and
    :code:`-msg` remained a deprecated alias until Version 5.000.
 
-.. option:: public [-module "<modulename>"] [-task/-function "<taskname>"]  -var "<signame>"
+.. option:: parallel_case -file "<filename>" -lines <lineno>
 
-.. option:: public_flat [-module "<modulename>"] [-task/-function "<taskname>"]  -var "<signame>"
-
-.. option:: public_flat_rd [-module "<modulename>"] [-task/-function "<taskname>"]  -var "<signame>"
-
-.. option:: public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"]  -var "<signame>" "@(edge)"
-
-   Sets the variable to be public.  Same as
-   :option:`/*verilator&32;public*/` or
-   :option:`/*verilator&32;public_flat*/`, etc., metacomments. See
-   also :ref:`VPI Example`.
+   Same as :code:`//synthesis parallel_case`. When these synthesis
+   directives are discovered, Verilator will either formally prove the
+   directive to be true, or, failing that, will insert the appropriate code
+   to detect failing cases at simulation runtime and print an "Assertion
+   failed" error message.
 
 .. option:: profile_data -hier-dpi "<function_name>" -cost <cost_value>
 
@@ -2244,17 +2235,30 @@ The grammar of configuration commands is as follows:
    order to improve model runtime performance.  This option is not expected
    to be used by users directly.  See :ref:`Thread PGO`.
 
-.. option:: sc_bv -module "<modulename>" [-task "<taskname>"] -var "<signame>"
+.. option:: public [-module "<modulename>"] [-task/-function "<taskname>"]  -var "<signame>"
+
+.. option:: public_flat [-module "<modulename>"] [-task/-function "<taskname>"]  -var "<signame>"
+
+.. option:: public_flat_rd [-module "<modulename>"] [-task/-function "<taskname>"]  -var "<signame>"
+
+.. option:: public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"]  -var "<signame>" "@(edge)"
+
+   Sets the variable to be public.  Same as
+   :option:`/*verilator&32;public*/` or
+   :option:`/*verilator&32;public_flat*/`, etc., metacomments. See
+   also :ref:`VPI Example`.
 
 .. option:: sc_bv -module "<modulename>" [-function "<funcname>"] -var "<signame>"
+
+.. option:: sc_bv -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 
    Sets the port to be of :code:`sc_bv<{width}>` type, instead of bool,
    uint32_t, or uint64_t.  Same as :option:`/*verilator&32;sc_bv*/`
    metacomment.
 
-.. option:: sformat [-module "<modulename>"] [-task "<taskname>"] -var "<signame>"
-
 .. option:: sformat [-module "<modulename>"] [-function "<funcname>"] -var "<signame>"
+
+.. option:: sformat [-module "<modulename>"] [-task "<taskname>"] -var "<signame>"
 
    Must be applied to the final argument of type :code:`input string` of a
    function or task to indicate that the function or task should pass all
@@ -2264,9 +2268,9 @@ The grammar of configuration commands is as follows:
 
    Same as :option:`/*verilator&32;sformat*/` metacomment.
 
-.. option:: split_var [-module "<modulename>"] [-task "<taskname>"] -var "<varname>"
-
 .. option:: split_var [-module "<modulename>"] [-function "<funcname>"] -var "<varname>"
+
+.. option:: split_var [-module "<modulename>"] [-task "<taskname>"] -var "<varname>"
 
    Break the variable into multiple pieces typically to resolve UNOPTFLAT
    performance issues. Typically the variables to attach this to are
@@ -2274,9 +2278,9 @@ The grammar of configuration commands is as follows:
 
    Same as :option:`/*verilator&32;split_var*/` metacomment.
 
-.. option:: timing_on  [-file "<filename>" [-lines <line> [ - <line>]]]
-
 .. option:: timing_off [-file "<filename>" [-lines <line> [ - <line>]]]
+
+.. option:: timing_on  [-file "<filename>" [-lines <line> [ - <line>]]]
 
    Enables/disables timing constructs for the specified file and lines.
    When disabled, all timing control constructs in the specified source
@@ -2287,13 +2291,16 @@ The grammar of configuration commands is as follows:
    Same as :option:`/*verilator&32;timing_on*/`,
    :option:`/*verilator&32;timing_off*/` metacomments.
 
-.. option:: tracing_on  [-file "<filename>" [-lines <line> [ - <line> ]]]
+
+   .. t_dist_docs_style ignore tracing_on
 
 .. option:: tracing_off [-file "<filename>" [-lines <line> [ - <line> ]]]
 
-.. option:: tracing_on  [-scope "<scopename>" [-levels <levels> ]]
+.. option:: tracing_on  [-file "<filename>" [-lines <line> [ - <line> ]]]
 
 .. option:: tracing_off [-scope "<scopename>" [-levels <levels> ]]
+
+.. option:: tracing_on  [-scope "<scopename>" [-levels <levels> ]]
 
    Enable/disable waveform tracing for all future signals declared in
    all files.

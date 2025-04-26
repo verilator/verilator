@@ -1101,6 +1101,7 @@ verilogmod
 verimake
 veriuser
 vl
+vlSelf
 vlopt
 vlt
 vltstd

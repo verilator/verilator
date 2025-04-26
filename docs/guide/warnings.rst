@@ -1,9 +1,9 @@
 .. Copyright 2003-2025 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-*******************
-Errors and Warnings
-*******************
+=====================
+ Errors and Warnings
+=====================
 
 .. _Disabling Warnings:
 
@@ -85,6 +85,8 @@ List Of Warnings
    that is not yet supported in Verilator.  See also :ref:`Language
    Limitations`.
 
+
+   .. t_dist_docs_style restart_sort
 
 .. option:: ALWCOMBORDER
 
@@ -1247,19 +1249,19 @@ List Of Warnings
    simulate correctly.
 
 
-.. option:: NOTIMING
-
-   Error when a timing-related construct that requires :vlopt:`--timing` has
-   been encountered. Issued only if Verilator is run with the
-   :vlopt:`--no-timing` option.
-
-
 .. option:: NONSTD
 
    Warns when a non-standard language feature is used that has a standard
    equivalent, which might behave differently in corner cases. For example
    :code:`$psprintf` system function is replaced by its standard equivalent
    :code:`$sformatf`.
+
+
+.. option:: NOTIMING
+
+   Error when a timing-related construct that requires :vlopt:`--timing` has
+   been encountered. Issued only if Verilator is run with the
+   :vlopt:`--no-timing` option.
 
 
 .. option:: NULLPORT
@@ -1375,6 +1377,26 @@ List Of Warnings
    This error may be disabled with a lint_off PINNOTFOUND metacomment.
 
 
+.. option:: PKGNODECL
+
+   An error that a package/class appears to have been referenced that has
+   not yet been declared.  According to IEEE 1800-2023 26.3, all packages
+   must be declared before being used.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_PKGNODECL_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_PKGNODECL_msg.rst
+
+   Often the package is declared in its own header file.  In this case add
+   an include of that package header file to the referencing file.  (And
+   make sure you have header guards in the package's header file to prevent
+   multiple declarations of the package.)
+
+
 .. option:: PORTSHORT
 
    Warns that an output port is connected to a constant.
@@ -1396,26 +1418,6 @@ List Of Warnings
    implying it is an input.
 
    This error may be disabled with a lint_off PORTSHORT metacomment.
-
-
-.. option:: PKGNODECL
-
-   An error that a package/class appears to have been referenced that has
-   not yet been declared.  According to IEEE 1800-2023 26.3, all packages
-   must be declared before being used.
-
-   Faulty example:
-
-   .. include:: ../../docs/gen/ex_PKGNODECL_faulty.rst
-
-   Results in:
-
-   .. include:: ../../docs/gen/ex_PKGNODECL_msg.rst
-
-   Often the package is declared in its own header file.  In this case add
-   an include of that package header file to the referencing file.  (And
-   make sure you have header guards in the package's header file to prevent
-   multiple declarations of the package.)
 
 
 .. option:: PREPROCZERO
@@ -2207,21 +2209,6 @@ List Of Warnings
    .. include:: ../../docs/gen/ex_WIDTHEXPAND_1_fixed.rst
 
 
-.. option:: WIDTHTRUNC
-
-   A more granular :option:`WIDTH` warning, for when a value is
-   truncated. See :option:`WIDTH`.
-
-.. option:: WIDTHEXPAND
-
-   A more granular :option:`WIDTH` warning, for when a value is zero
-   expanded. See :option:`WIDTH`.
-
-.. option:: WIDTHXZEXPAND
-
-   A more granular :option:`WIDTH` warning, for when a value is X/Z
-   expanded. See :option:`WIDTH`.
-
 .. option:: WIDTHCONCAT
 
    Warns that based on the width rules of Verilog, a concatenate, or
@@ -2246,6 +2233,21 @@ List Of Warnings
    width to the parameter definition (:code:`parameter [31:0]`), or add the
    width to the parameter usage (:code:`{PAR[31:0], PAR[31:0]}`).
 
+
+.. option:: WIDTHEXPAND
+
+   A more granular :option:`WIDTH` warning, for when a value is zero
+   expanded. See :option:`WIDTH`.
+
+.. option:: WIDTHTRUNC
+
+   A more granular :option:`WIDTH` warning, for when a value is
+   truncated. See :option:`WIDTH`.
+
+.. option:: WIDTHXZEXPAND
+
+   A more granular :option:`WIDTH` warning, for when a value is X/Z
+   expanded. See :option:`WIDTH`.
 
 .. option:: ZERODLY
 
