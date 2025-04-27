@@ -35,7 +35,8 @@ class SampledVisitor final : public VNVisitor {
     //  AstVarScope::user1()  -> AstVarScope*. The VarScope that stores sampled value
     //  AstVarRef::user1()    -> bool. Whether already converted
     const VNUser1InUse m_user1InUse;
-    // STATE
+
+    // STATE - for current visit position (use VL_RESTORER)
     AstScope* m_scopep = nullptr;  // Current scope
     bool m_inSampled = false;  // True inside a sampled expression
 

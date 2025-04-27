@@ -68,8 +68,9 @@ public:
 
 class ClockVisitor final : public VNVisitor {
     // NODE STATE
+
     // STATE
-    AstCFunc* m_evalp = nullptr;  // The '_eval' function
+    AstCFunc* const m_evalp = nullptr;  // The '_eval' function
     AstSenTree* m_lastSenp = nullptr;  // Last sensitivity match, so we can detect duplicates.
     AstIf* m_lastIfp = nullptr;  // Last sensitivity if active to add more under
 
@@ -174,8 +175,8 @@ class ClockVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit ClockVisitor(AstNetlist* netlistp) {
-        m_evalp = netlistp->evalp();
+    explicit ClockVisitor(AstNetlist* netlistp)
+        : m_evalp{netlistp->evalp()} {
         // Simplify all SenTrees
         for (AstSenTree* senTreep = netlistp->topScopep()->senTreesp(); senTreep;
              senTreep = VN_AS(senTreep->nextp(), SenTree)) {

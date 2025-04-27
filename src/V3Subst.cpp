@@ -170,8 +170,8 @@ public:
 class SubstUseVisitor final : public VNVisitorConst {
     // NODE STATE
     // See SubstVisitor
-    //
-    // STATE
+
+    // STATE - across all visitors
     const int m_origStep;  // Step number where subst was recorded
     bool m_ok = true;  // No misassignments found
 

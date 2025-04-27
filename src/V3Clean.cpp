@@ -45,7 +45,7 @@ class CleanVisitor final : public VNVisitor {
     // TYPES
     enum CleanState : uint8_t { CS_UNKNOWN, CS_CLEAN, CS_DIRTY };
 
-    // STATE
+    // STATE - for current visit position (use VL_RESTORER)
     const AstNodeModule* m_modp = nullptr;
 
     // METHODS

@@ -125,7 +125,7 @@ class LinkCellsVisitor final : public VNVisitor {
         return nodep->user1u().toGraphVertex();
     }
     void newEdge(V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cuttable) {
-        V3GraphEdge* const edgep = new V3GraphEdge{&m_graph, fromp, top, weight, cuttable};
+        const V3GraphEdge* const edgep = new V3GraphEdge{&m_graph, fromp, top, weight, cuttable};
         UINFO(9, "    newEdge " << edgep << " " << fromp->name() << " -> " << top->name() << endl);
     }
 

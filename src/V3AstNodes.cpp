@@ -1861,10 +1861,10 @@ void AstIfaceRefDType::dump(std::ostream& str) const {
     if (ifaceName() != "") str << " if=" << ifaceName();
     if (modportName() != "") str << " mp=" << modportName();
     if (cellp()) {
-        str << " -> ";
+        str << " c-> ";
         cellp()->dump(str);
     } else if (ifacep()) {
-        str << " -> ";
+        str << " i-> ";
         ifacep()->dump(str);
     } else {
         str << " -> UNLINKED";
