@@ -168,7 +168,12 @@ class WidthSelVisitor final : public VNVisitor {
         }
     }
     AstNodeExpr* newMulConst(FileLine* fl, uint32_t elwidth, AstNodeExpr* indexp) {
-        AstNodeExpr* const extendp = new AstExtend{fl, indexp};
+        AstNodeExpr* extendp;
+        if (indexp->width() > 32) {
+            extendp = new AstSel{fl, indexp, 0, 32};
+        } else {
+            extendp = new AstExtend{fl, indexp};
+        }
         extendp->dtypeSetLogicUnsized(
             32, std::max(V3Number::log2b(elwidth) + 1, indexp->widthMin()), VSigning::UNSIGNED);
         AstNodeExpr* const mulp
@@ -382,8 +387,8 @@ class WidthSelVisitor final : public VNVisitor {
             std::string name = (qleftBacknessp    ? "sliceBackBack"
                                 : qrightBacknessp ? "sliceFrontBack"
                                                   : "slice");
-            auto* const newp = new AstCMethodHard{nodep->fileline(), fromp, name,
-                                                  qleftBacknessp ? qleftBacknessp : qleftp};
+            AstCMethodHard* const newp = new AstCMethodHard{
+                nodep->fileline(), fromp, name, qleftBacknessp ? qleftBacknessp : qleftp};
             newp->addPinsp(qrightBacknessp ? qrightBacknessp : qrightp);
             newp->dtypep(ddtypep);
             newp->didWidth(true);

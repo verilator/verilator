@@ -1,0 +1,7 @@
+[0] -Info: t_assert_comp.v:23: top.t
+[0] -Info: t_assert_comp.v:24: top.t: User run-time info
+[0] -Info: t_assert_comp.v:25: top.t: Percent=% PctPct=%% Ten=10
+[0] %Warning: t_assert_comp.v:26: top.t
+[0] %Warning: t_assert_comp.v:27: top.t: User run-time warning
+[0] %Warning: t_assert_comp.v:28: top.t:           1
+*-* All Finished *-*

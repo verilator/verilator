@@ -1,6 +1,7 @@
 %Error: t/t_flag_future.v:8:7: Unknown verilator lint message code: 'FUTURE1', in '/*verilator lint_off FUTURE1*/'
     8 |       /*verilator lint_off FUTURE1*/ 
       |       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_flag_future.v:11:7: Unknown verilator comment: '/*verilator FUTURE2*/'
    11 |       /*verilator FUTURE2*/ 
       |       ^~~~~~~~~~~~~~~~~~~~~

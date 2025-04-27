@@ -4,4 +4,5 @@
         t/t_assert_dup_bad.v:15:4: ... Location of original declaration
    15 |    covlabel:
       |    ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

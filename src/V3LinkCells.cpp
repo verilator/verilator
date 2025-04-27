@@ -125,8 +125,8 @@ class LinkCellsVisitor final : public VNVisitor {
         return nodep->user1u().toGraphVertex();
     }
     void newEdge(V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cuttable) {
-        UINFO(9, "newEdge " << fromp->name() << " -> " << top->name() << endl);
-        new V3GraphEdge{&m_graph, fromp, top, weight, cuttable};
+        V3GraphEdge* const edgep = new V3GraphEdge{&m_graph, fromp, top, weight, cuttable};
+        UINFO(9, "    newEdge " << edgep << " " << fromp->name() << " -> " << top->name() << endl);
     }
 
     AstNodeModule* findModuleSym(const string& modName) {
@@ -162,7 +162,7 @@ class LinkCellsVisitor final : public VNVisitor {
         return modp;
     }
 
-    // VISITs
+    // VISITORS
     void visit(AstNetlist* nodep) override {
         readModNames();
         iterateChildren(nodep);
@@ -237,7 +237,7 @@ class LinkCellsVisitor final : public VNVisitor {
         if (modp) {
             if (VN_IS(modp, Iface)) {
                 // Track module depths, so can sort list from parent down to children
-                newEdge(vertex(m_modp), vertex(modp), 1, false);
+                if (!nodep->isVirtual()) newEdge(vertex(m_modp), vertex(modp), 1, false);
                 if (!nodep->cellp()) nodep->ifacep(VN_AS(modp, Iface));
             } else if (VN_IS(modp, NotFoundModule)) {  // Will error out later
             } else {

@@ -189,8 +189,8 @@ bool AstVarRef::sameNode(const AstVarRef* samep) const {
         return (varScopep() == samep->varScopep() && access() == samep->access());
     } else {
         return (selfPointer() == samep->selfPointer()
-                && classOrPackagep() == samep->classOrPackagep()
-                && varp()->name() == samep->varp()->name() && access() == samep->access());
+                && classOrPackagep() == samep->classOrPackagep() && access() == samep->access()
+                && (varp() && samep->varp() && varp()->name() == samep->varp()->name()));
     }
 }
 bool AstVarRef::sameNoLvalue(AstVarRef* samep) const {

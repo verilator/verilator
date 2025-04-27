@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--exe --main --timing --trace -Wno-MINTYPMAXDLY"])
+test.compile(verilator_flags2=["--exe --main --timing --trace-vcd -Wno-MINTYPMAXDLY"])
 
 test.execute()
 

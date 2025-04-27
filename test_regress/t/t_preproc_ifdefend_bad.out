@@ -1,0 +1,5 @@
+%Error: t/t_preproc_ifdefend_bad.v:9:1: `ifdef not terminated at EOF
+    9 | %Error-internal-contents-bad-ct2-ln9
+      | ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

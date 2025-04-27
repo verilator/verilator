@@ -13,6 +13,6 @@ test.scenarios('vlt')
 
 test.compile(
     # Check we can call dump() on graph, and other things
-    v_flags=["--trace --debug --debugi 0 --debugi-V3Trace 9"])
+    v_flags=["--trace-vcd --debug --debugi 0 --debugi-V3Trace 9"])
 
 test.passes()

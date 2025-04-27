@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
 
     topp->reset = 1;
     topp->is_parent = 0;
-    for (int i = 0; i < 5; i++) { single_cycle(topp); }
+    for (int i = 0; i < 5; i++) single_cycle(topp);
 
     topp->reset = 0;
     while (!contextp->gotFinish()) {

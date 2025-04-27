@@ -118,6 +118,7 @@ class V3Global final {
     bool m_hasEvents = false;  // Design uses SystemVerilog named events
     bool m_hasClasses = false;  // Design uses SystemVerilog classes
     bool m_hasSampled = false;  // Design uses SAMPLED expresions
+    bool m_hasTable = false;  // Desgin has the UDP Table.
     bool m_hasVirtIfaces = false;  // Design uses virtual interfaces
     bool m_usesProbDist = false;  // Uses $dist_*
     bool m_usesStdPackage = false;  // Design uses the std package
@@ -182,6 +183,8 @@ public:
     void setHasClasses() { m_hasClasses = true; }
     bool hasSampled() const { return m_hasSampled; }
     void setHasSampled() { m_hasSampled = true; }
+    bool hasTable() const { return m_hasTable; }
+    void setHasTable() { m_hasTable = true; }
     bool hasVirtIfaces() const { return m_hasVirtIfaces; }
     void setHasVirtIfaces() { m_hasVirtIfaces = true; }
     bool usesProbDist() const { return m_usesProbDist; }
@@ -208,6 +211,7 @@ public:
     void idPtrMapDumpJson(std::ostream& os);
     const std::string& ptrToId(const void* p);
     std::thread::id mainThreadId() const { return m_mainThreadId; }
+    static std::vector<std::string> verilatedCppFiles();
 };
 
 extern V3Global v3Global;

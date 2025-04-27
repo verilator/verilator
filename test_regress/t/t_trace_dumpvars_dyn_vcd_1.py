@@ -14,7 +14,7 @@ test.pli_filename = "t/t_trace_dumpvars_dyn.cpp"
 test.top_filename = "t/t_trace_dumpvars_dyn.v"
 
 test.compile(make_main=False,
-             verilator_flags2=["--trace --exe", test.pli_filename, "-CFLAGS -DVL_DEBUG"])
+             verilator_flags2=["--trace-vcd --exe", test.pli_filename, "-CFLAGS -DVL_DEBUG"])
 
 test.execute()
 

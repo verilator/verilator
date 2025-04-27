@@ -120,6 +120,8 @@ public:
         if (!m_varp->isWide() && !m_whole.m_complex && m_whole.m_assignp && !m_wordAssign) {
             const AstNodeAssign* const assp = m_whole.m_assignp;
             UASSERT_OBJ(assp, errp, "Reading whole that was never assigned");
+            // AstCvtPackedToArray can't be anywhere else than on the RHS of assignment
+            if (VN_IS(assp->rhsp(), CvtPackedToArray)) return nullptr;
             return assp->rhsp();
         } else {
             return nullptr;

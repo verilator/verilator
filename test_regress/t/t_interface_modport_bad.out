@@ -2,4 +2,5 @@
                                         : ... Suggested alternative: 'out_modport'
    23 |    ifc.oop_modport isub,   
       |        ^~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

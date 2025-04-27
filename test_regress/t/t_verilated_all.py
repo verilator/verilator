@@ -20,7 +20,7 @@ test.compile(
     # Can't use --coverage and --savable together, so cheat and compile inline
     verilator_flags2=[
         "--cc", "--coverage-toggle --coverage-line --coverage-user",
-        "--trace --vpi ", "--trace-threads 1",
+        "--trace-vcd --vpi ", "--trace-threads 1",
         ("--timing" if test.have_coroutines else "--no-timing -Wno-STMTDLY"), "--prof-exec",
         "--prof-pgo", root + "/include/verilated_save.cpp"
     ],
@@ -46,7 +46,7 @@ for dfile in test.glob_some(test.obj_dir + "/*.d"):
 
 for filename in sorted(hit.keys()):
     if (not hit[filename] and not re.search(r'_sc', filename) and not re.search(r'_fst', filename)
-            and not re.search(r'_thread', filename)
+            and not re.search(r'_saif', filename) and not re.search(r'_thread', filename)
             and (not re.search(r'_timing', filename) or test.have_coroutines)):
         test.error("Include file not covered by t_verilated_all test: ", filename)
 

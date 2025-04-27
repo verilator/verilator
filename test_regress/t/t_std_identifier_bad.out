@@ -1,5 +1,8 @@
-%Error-PKGNODECL: t/t_std_identifier.v:16:20: Package/class 'std' not found, and needs to be predeclared (IEEE 1800-2023 26.3)
+%Error: t/t_std_identifier.v:16:20: Package/class for ':: reference' not found: 'std'
    16 |     int baz = foo::std::bar;
       |                    ^~~
-                  ... For error description see https://verilator.org/warn/PKGNODECL?v=latest
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_std_identifier.v:16:25: Can't find definition of scope/variable/func: 'bar'
+   16 |     int baz = foo::std::bar;
+      |                         ^~~
 %Error: Exiting due to

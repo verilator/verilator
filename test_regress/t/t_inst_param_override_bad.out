@@ -1,6 +1,7 @@
 %Error: t/t_inst_param_override_bad.v:33:23: Instance attempts to override 'PACKED_DATA_WIDTH' as a parameter, but it is a local parameter
    33 |     axi_stream_if # (.PACKED_DATA_WIDTH(10)) axis1(clk);
       |                       ^~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_inst_param_override_bad.v:35:23: Instance attempts to override 'mytask' as a parameter, but it is a task
    35 |     axi_stream_if # (.mytask(10)) axis2(clk);
       |                       ^~~~~~

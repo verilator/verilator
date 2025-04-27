@@ -108,7 +108,7 @@ public:
         case REACTIVE | OBSERVED | INPUT | NBA: return "plum";
         case REACTIVE | OBSERVED | ACTIVE | NBA: return "lightSeaGreen";
         case REACTIVE | OBSERVED | INPUT | ACTIVE | NBA: return "gray50";
-        default: v3fatal("There are only 5 region bits"); return "";
+        default: v3fatalSrc("There are only 5 region bits"); return "";
         }
     }
     // LCOV_EXCL_STOP
@@ -231,8 +231,8 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
                 // If written, add logic -> var edge
                 // Note: See V3Order for why AlwaysPostponed is safe to be ignored. We ignore it
                 // as otherwise we would end up with a false cycle.
-                if (refp->access().isWriteOrRW() && !vscp->user2SetOnce()
-                    && !VN_IS(nodep, AlwaysPostponed)) {  //
+                if (refp->access().isWriteOrRW() && !refp->varp()->ignoreSchedWrite()
+                    && !vscp->user2SetOnce() && !VN_IS(nodep, AlwaysPostponed)) {  //
                     addEdge(lvtxp, vvtxp);
                 }
             });

@@ -79,9 +79,9 @@ static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
 %o 25000
 
 %s V95 V01NC V01C V05 S05 S09 S12 S17 S23
-%s ATTRMODE QQQ STRING TABLE
+%s ATTRMODE QQQ STRING TABLE EDGEDESC
 %s VA5 SAX VLT
-%s SYSCHDR SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
+%s SYSCHDR SYSCHDRP SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
 
 ws      [ \t\f\r]+
 wsnr    [ \t\f]+
@@ -115,6 +115,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "full_case"           { FL; return yVLT_FULL_CASE; }
   "hier_block"          { FL; return yVLT_HIER_BLOCK; }
   "hier_params"         { FL; return yVLT_HIER_PARAMS; }
+  "hier_workers"        { FL; return yVLT_HIER_WORKERS; }
   "inline"              { FL; return yVLT_INLINE; }
   "isolate_assignments" { FL; return yVLT_ISOLATE_ASSIGNMENTS; }
   "lint_off"            { FL; return yVLT_LINT_OFF; }
@@ -152,6 +153,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   -?"-scope"            { FL; return yVLT_D_SCOPE; }
   -?"-task"             { FL; return yVLT_D_TASK; }
   -?"-var"              { FL; return yVLT_D_VAR; }
+  -?"-workers"          { FL; return yVLT_D_WORKERS; }
 
   /* Reachable by attr_event_control */
   "edge"                { FL; return yEDGE; }
@@ -269,7 +271,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$rtoi"               { FL; return yD_RTOI; }
   "$sampled"            { FL; return yD_SAMPLED; }
   "$setup"              { FL; return yaTIMINGSPEC; }
-  "$setuphold"          { FL; return yaTIMINGSPEC; }
+  "$setuphold"          { FL; return yD_SETUPHOLD; }
   "$sformat"            { FL; return yD_SFORMAT; }
   "$sformatf"           { FL; return yD_SFORMATF; }
   "$shortrealtobits"    { FL; return yD_SHORTREALTOBITS; }
@@ -326,6 +328,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "default"             { FL; return yDEFAULT; }
   "defparam"            { FL; return yDEFPARAM; }
   "disable"             { FL; return yDISABLE; }
+  "edge"/{ws}*"["       { FL; yy_push_state(EDGEDESC); return yEDGE; }
   "edge"                { FL; return yEDGE; }
   "else"                { FL; return yELSE; }
   "end"                 { FL; return yEND; }
@@ -653,7 +656,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
 <VA5,SAX>{
   /*     Generic unsupported warnings */
-   "1step"              { FL; return ya1STEP; }
+   "1step"              { FL; return y1STEP; }
    "above"              { ERROR_RSVD_WORD("AMS"); }
    "abs"                { ERROR_RSVD_WORD("AMS"); }
    "absdelay"           { ERROR_RSVD_WORD("AMS"); }
@@ -964,9 +967,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           FL; yylval.cdouble = V3ParseImp::lexParseTimenum(yytext);
                           return yaTIMENUM;
                         }
-  1step                 {
-                          return ya1STEP;
-                        }
+  1step                 { FL; return y1STEP; }
 }
 
   /************************************************************************/
@@ -1008,27 +1009,37 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /************************************************************************/
   /* Attributes */
   /* Note simulators vary in support for "(* /_*something*_/ foo*)" where _ doesn't exist */
-<V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,S23,SAX>{
+<V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,S23,SAX,TABLE>{
     "(*"({ws}|{crnl})*({id}|{escid})    { yymore(); yy_push_state(ATTRMODE); }  /* Doesn't match (*), but (* attr_spec */
 }
 
   /************************************************************************/
   /* Tables */
-<TABLE>\\{crnl}         { yymore(); }
-<TABLE>{crnl}           { yymore(); }
-<TABLE>";"              { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLELINE; }
-<TABLE>"endtable"       { yy_pop_state(); FL; return yENDTABLE; }
-<TABLE>"`line"{ws}+[^\n\r]*{crnl}       { FL_FWD; PARSEP->lexPpline(yytext); FL_BRK; }
-<TABLE>.                { yymore(); }
-<TABLE><<EOF>>          { FL; yylval.fl->v3error("EOF in 'table'");
-                          yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
+<TABLE>[rRfFpPnN\*]                                             { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLE_FIELD; } /* edge_symbol */
+<TABLE>[01xX\?bB\-]                                             { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLE_FIELD; } /* level_symbol, next_state */
+<TABLE>":"                                                      { FL; return yaTABLE_LRSEP; } /* LHS and RHS separator for table line. */
+<TABLE>";"                                                      { FL; return yaTABLE_LINEEND; }
+<TABLE>[\(\)]                                                   { FL; return yytext[0]; }
+<TABLE>{ws}|(\\){0,1}{crnl}                                     { FL_FWD; FL_BRK; }
+<TABLE>"`line"{ws}+[^\n\r]*{crnl}                               { FL_FWD; PARSEP->lexPpline(yytext); FL_BRK; }
+<TABLE>"//"[^\n]*                                               { FL_FWD; FL_BRK; }  /* throw away single line comments */
+<TABLE>"endtable"                                               { FL; yy_pop_state(); return yENDTABLE; }
+<TABLE><<EOF>>                                                  { FL; yylval.fl->v3error("EOF in 'table'");
+                                                                      yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
+
+<EDGEDESC>{
+  01|10|[01][zZxX]|[zZxX][01]  { FL; return yaEDGEDESC; }
+}
+<EDGEDESC>","|"["         { FL; return yytext[0]; }
+<EDGEDESC>{ws}            { FL_FWD; FL_BRK; }  /* otherwise ignore white-space */
+<EDGEDESC>"]"             { FL; yy_pop_state(); return yytext[0]; }
 
   /************************************************************************/
   /* Preprocessor */
   /* Common for all SYSC header states */
   /* OPTIMIZE: we return one per line, make it one for the entire block */
   /* If add to this list also add to V3LanguageWords.h */
-<V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,S23,SAX,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR>{
+<V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,S23,SAX,VLT,SYSCHDR,SYSCHDRP,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR>{
   "`accelerate"                         { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`autoexpand_vectornets"              { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`celldefine"                         { FL_FWD; PARSEP->lexFileline()->celldefineOn(true); FL_BRK; }
@@ -1100,6 +1111,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`systemc_ctor"                       { FL_FWD; BEGIN SYSCCTOR; FL_BRK; }
   "`systemc_dtor"                       { FL_FWD; BEGIN SYSCDTOR; FL_BRK; }
   "`systemc_header"                     { FL_FWD; BEGIN SYSCHDR; FL_BRK; }
+  "`systemc_header_post"                { FL_FWD; BEGIN SYSCHDRP; FL_BRK; }
   "`systemc_imp_header"                 { FL_FWD; BEGIN SYSCIMPH; FL_BRK; }
   "`systemc_implementation"             { FL_FWD; BEGIN SYSCIMP; FL_BRK; }
   "`systemc_interface"                  { FL_FWD; BEGIN SYSCINT; FL_BRK; }
@@ -1115,6 +1127,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 }
 
 <SYSCHDR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; yylval.strp = PARSEP->newString(yytext); return yaSCHDR; }
+<SYSCHDRP>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; yylval.strp = PARSEP->newString(yytext); return yaSCHDRP; }
 <SYSCINT>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; yylval.strp = PARSEP->newString(yytext); return yaSCINT; }
 <SYSCIMP>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; yylval.strp = PARSEP->newString(yytext); return yaSCIMP; }
 <SYSCIMPH>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; yylval.strp = PARSEP->newString(yytext); return yaSCIMPH; }
@@ -1122,7 +1135,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <SYSCDTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; yylval.strp = PARSEP->newString(yytext); return yaSCDTOR; }
 
   /* Pick up text-type data */
-<SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR>{
+<SYSCHDR,SYSCHDRP,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR>{
   {wsnr}*               { yymore(); }
   {crnl}                { yymore(); }
 }

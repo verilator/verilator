@@ -8,6 +8,7 @@ class constrained_associative_array_basic;
 
     rand int int_index_arr [int];
     rand int string_index_arr [string];
+    rand int string_index_arr_2 [string];
     /* verilator lint_off SIDEEFFECT */
     // Constraints for both arrays
     constraint int_index_constraints {
@@ -18,11 +19,15 @@ class constrained_associative_array_basic;
         string_index_arr["Bob"] inside {50, 60};
         string_index_arr["Charlie"] > 25;
     }
+    constraint string_index_2_constraints {
+        foreach (string_index_arr_2[i]) string_index_arr_2[i] > 10; // nodep->bitp() would be VARREF, instead of CVTPACKSTRING
+    }
 
     // Constructor to initialize arrays
     function new();
         int_index_arr = '{1: 0, 8: 0, 7: 0};
         string_index_arr = '{"Alice": 25, "Bob": 50, "Charlie": 45};
+        string_index_arr_2 = '{"key1": 15, "key2": 20, "key3": 30};
     endfunction
 
     // Function to check and display the arrays
@@ -34,6 +39,9 @@ class constrained_associative_array_basic;
             if ((name == "Alice" && string_index_arr[name] != 35) ||
                 (name == "Bob" && !(string_index_arr[name] inside {50, 60})) ||
                 (name == "Charlie" && string_index_arr[name] <= 25)) $stop;
+        end
+        foreach (string_index_arr_2[i]) begin
+            if (string_index_arr_2[i] <= 10) $stop;
         end
     endfunction
 

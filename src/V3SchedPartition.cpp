@@ -198,7 +198,7 @@ class SchedGraphBuilder final : public VNVisitor {
             if (vrefp->access().isReadOrRW() && m_readTriggersThisLogic(vscp)) {
                 new V3GraphEdge{m_graphp, getVarVertex(vscp), logicVtxp, 10};
             }
-            if (vrefp->access().isWriteOrRW()) {
+            if (vrefp->access().isWriteOrRW() && !vrefp->varp()->ignoreSchedWrite()) {
                 new V3GraphEdge{m_graphp, logicVtxp, getVarVertex(vscp), 10};
             }
         });
@@ -228,9 +228,9 @@ class SchedGraphBuilder final : public VNVisitor {
             });
         }
 
+        VL_RESTORER(m_senTreep);
         m_senTreep = senTreep;
         iterateChildrenConst(nodep);
-        m_senTreep = nullptr;
     }
 
     void visit(AstNodeProcedure* nodep) override { visitLogic(nodep); }
@@ -362,7 +362,8 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
             nodep->foreach([](const AstNodeVarRef* vrefp) {
                 AstVarScope* const vscp = vrefp->varScopep();
                 if (vrefp->access().isReadOrRW()) vscp->user1(true);
-                if (vrefp->access().isWriteOrRW()) vscp->user2(true);
+                if (vrefp->access().isWriteOrRW() && !vrefp->varp()->ignoreSchedWrite())
+                    vscp->user2(true);
             });
         };
 

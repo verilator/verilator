@@ -2,4 +2,5 @@
                                               : ... Perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
    13 |    intf intf_i;
       |         ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

@@ -7,4 +7,4 @@
                                                   : ... note: In instance 't'
     8 |    tri g=g.and.g;
       |            ^~~
-                        ... See the manual at https://verilator.org/verilator_doc.html for more assistance.
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.

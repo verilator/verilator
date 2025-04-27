@@ -5,6 +5,7 @@
 %Error: t/t_randomize_method_complex_bad.v:16:30: Can't find definition of variable: 'r'
    16 |       x.f.randomize() with { r < 5; },
       |                              ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_randomize_method_complex_bad.v:17:9: 'randomize() with' on a non-class-instance 'int'
    17 |       i.randomize() with { v < 5; });
       |         ^~~~~~~~~

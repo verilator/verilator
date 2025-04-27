@@ -1,4 +1,5 @@
 %Error: t/t_typedef_no_bad.v:10:4: Can't find typedef/interface: 'sometype'
    10 |    sometype p;
       |    ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

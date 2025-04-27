@@ -73,7 +73,7 @@ public:
 
 private:
     // MEMBERS
-    string m_name;  //< Name of the source file
+    const string m_name;  //< Name of the source file
     LinenoMap m_lines;  //< Map of each annotated line
     bool m_needed = false;  //< Need to annotate; has low coverage
 

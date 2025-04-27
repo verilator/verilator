@@ -6,9 +6,9 @@
 
 typedef logic [5:0] udata6_t;
 
-typedef union packed {
-  udata6_t    a;
-  logic [2:0] b;
+typedef union soft packed {
+    udata6_t      a;
+    logic [2 : 0] b;
 } sub_t;
 
 typedef struct packed {

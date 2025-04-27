@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(verilator_flags2=["-DTEST_DECLARE_STD"], fails=test.vlt_all)  # Issue #4705 due to ::
+test.lint(verilator_flags2=["-DTEST_DECLARE_STD"])
 
 test.passes()

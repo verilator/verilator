@@ -2,6 +2,7 @@
                                    : ... note: In instance 't'
    12 |    Cls c;   
       |    ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_class_param_bad2.v:7:18: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'PARAMB'
                                    : ... note: In instance 't'
     7 | class Cls #(type PARAMB);

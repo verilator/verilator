@@ -188,9 +188,9 @@ class CombineVisitor final : VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         UASSERT_OBJ(!m_modp, nodep, "Should not nest");
+        VL_RESTORER(m_modp);
         m_modp = nodep;
         iterateChildrenConst(nodep);
-        m_modp = nullptr;
     }
     void visit(AstCFunc* nodep) override {
         iterateChildrenConst(nodep);

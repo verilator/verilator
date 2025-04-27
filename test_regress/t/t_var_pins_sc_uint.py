@@ -13,7 +13,7 @@ test.scenarios('vlt')
 test.pli_filename = "t/t_var_pinsizes.cpp"
 test.top_filename = "t/t_var_pinsizes.v"
 
-test.compile(verilator_flags2=["-sc --pins-sc-uint --trace --exe", test.pli_filename],
+test.compile(verilator_flags2=["-sc --pins-sc-uint --trace-vcd --exe", test.pli_filename],
              make_main=False)
 
 

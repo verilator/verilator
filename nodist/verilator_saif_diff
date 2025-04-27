@@ -1,0 +1,241 @@
+#!/usr/bin/env python3
+# pylint: disable=C0114,C0115,C0116,R0902,R0903,R0912,R0915,W0719,W0718
+######################################################################
+#
+# Copyright 2025 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+import argparse
+import re
+
+SUCCESS_CODE = 0
+FAILURE_CODE = 1
+INSTANCE_TYPE = "INSTANCE"
+NET_LIST_TYPE = "NET"
+SIGNAL_TYPE = "SIGNAL"
+EOF_ERROR = "Unexpected EOF"
+
+
+def saif_assert(expression, message):
+    if not expression:
+        raise Exception(message)
+
+
+def saif_error(message):
+    raise Exception(message)
+
+
+class SAIFSignalBit:
+    name: str
+    high_time: int
+    low_time: int
+    transitions: int
+
+    def __init__(self, name):
+        self.name = name
+        self.high_time = 0
+        self.low_time = 0
+        self.transitions = 0
+
+
+class SAIFInstance:
+
+    def __init__(self, scope_name):
+        self.scope_name = scope_name
+        self.parent_instance = None
+        self.nets = {}
+        self.child_instances = {}
+
+
+class SAIFToken:
+
+    def __init__(self, token):
+        self.token = token
+        self.type = ''
+        self.value = ''
+
+
+class SAIFParser:
+
+    def __init__(self):
+        self.token_stack = []
+        # For parsing simplicity
+        self.token_stack.append(SAIFToken('saif_root'))
+        self.current_instance = None
+        self.has_saifile_header = False
+        self.direction = ''
+        self.saif_version = ''
+        self.top_instances = {}
+        self.duration = 0
+        self.divider = ''
+        self.timescale = ''
+
+    def parse(self, saif_filename):
+        file_contents = ''
+        with open(saif_filename, 'r', encoding="utf8") as saif_file:
+            content = saif_file.readlines()
+            filtered_lines = [line for line in content if not line.strip().startswith('//')]
+            file_contents = ''.join(filtered_lines)
+        tokens = file_contents.replace('(', ' ( ').replace(')', ' ) ').split()
+        num_of_tokens = len(tokens)
+        index = 0
+        while index < num_of_tokens:
+            token = tokens[index]
+            index += 1
+            if token == '(':
+                self.token_stack.append(SAIFToken(token))
+                self.token_stack[-1].type = self.token_stack[-2].type
+                self.token_stack[-1].value = self.token_stack[-2].value
+                continue
+            if token == ')':
+                if self.token_stack[-1].type == INSTANCE_TYPE:
+                    self.current_instance = self.current_instance.parent_instance
+                self.token_stack.pop()
+                continue
+            if re.match(r'SAIFILE', token):
+                self.has_saifile_header = True
+                continue
+            if re.match(r'DIRECTION', token):
+                saif_assert(index < num_of_tokens, EOF_ERROR)
+                self.direction = tokens[index].replace('\"', '')
+                index += 1
+                continue
+            if re.match(r'SAIFVERSION', token):
+                saif_assert(index < num_of_tokens, EOF_ERROR)
+                self.saif_version = tokens[index].replace('\"', '')
+                index += 1
+                continue
+            if re.match(r'DESIGN|DATE|VENDOR|PROGRAM_NAME|VERSION', token):
+                # NOP, only skip value
+                saif_assert(index < num_of_tokens, EOF_ERROR)
+                index += 1
+                continue
+            if re.match(r'DIVIDER', token):
+                saif_assert(index < num_of_tokens, EOF_ERROR)
+                self.divider = tokens[index]
+                index += 1
+                continue
+            if re.match(r'TIMESCALE', token):
+                saif_assert(index < num_of_tokens, EOF_ERROR)
+                self.timescale = tokens[index]
+                index += 1
+                continue
+            if re.match(r'DURATION', token):
+                saif_assert(index < num_of_tokens, EOF_ERROR)
+                self.duration = tokens[index]
+                index += 1
+                continue
+            if re.match(r'INSTANCE', token):
+                saif_assert(index < num_of_tokens, EOF_ERROR)
+                instance_name = tokens[index]
+                index += 1
+                self.token_stack[-1].type = INSTANCE_TYPE
+                self.token_stack[-1].value = instance_name
+                instance = SAIFInstance(instance_name)
+                if self.current_instance is None:
+                    self.top_instances[instance_name] = instance
+                else:
+                    self.current_instance.child_instances[instance_name] = instance
+                instance.parent_instance = self.current_instance
+                self.current_instance = instance
+                continue
+            if re.match(r'NET', token):
+                self.token_stack[-1].type = NET_LIST_TYPE
+                continue
+            if re.match(r'T1', token):
+                net_name = self.token_stack[-1].value
+                saif_assert(index < num_of_tokens, EOF_ERROR)
+                self.current_instance.nets[net_name].high_time = tokens[index]
+                index += 1
+                continue
+            if re.match(r'T0', token):
+                net_name = self.token_stack[-1].value
+                saif_assert(index < num_of_tokens, EOF_ERROR)
+                self.current_instance.nets[net_name].low_time = tokens[index]
+                index += 1
+                continue
+            if re.match(r'TC', token):
+                net_name = self.token_stack[-1].value
+                saif_assert(index < num_of_tokens, EOF_ERROR)
+                self.current_instance.nets[net_name].transitions = tokens[index]
+                index += 1
+                continue
+            if re.match(r'TZ|TX|TB|TG|IG|IK', token):
+                # NOP, only skip value
+                index += 1
+                continue
+            if self.token_stack[-2].type == NET_LIST_TYPE:
+                self.token_stack[-1].type = SIGNAL_TYPE
+                self.token_stack[-1].value = token
+                self.current_instance.nets[token] = SAIFSignalBit(token)
+        saif_assert(self.has_saifile_header, "SAIF file doesn't contain a SAIFILE keyword")
+        saif_assert(self.direction == "backward",
+                    f"SAIF file doesn't have a valid/compatible direction: {self.direction}")
+        saif_assert(self.saif_version == "2.0",
+                    f"SAIF file doesn't have a valid/compatible version: {self.saif_version}")
+        # Only 'saif_root' token should be left
+        saif_assert(len(self.token_stack) == 1, "Incorrect nesting of scopes")
+
+
+def compare_saif_instances(first: SAIFInstance, second: SAIFInstance):
+    if len(first.nets) != len(second.nets):
+        saif_error(f"Number of nets doesn't match in {first.scope_name}: "
+                   f"{len(first.nets)} != {len(second.nets)}")
+    for signal_name, saif_signal in first.nets.items():
+        if signal_name not in second.nets:
+            saif_error(f"Signal {signal_name} doesn't exist in the second object\n")
+        other_signal = second.nets[signal_name]
+        if (saif_signal.high_time != other_signal.high_time
+                or saif_signal.low_time != other_signal.low_time
+                or saif_signal.transitions != other_signal.transitions):
+            saif_error("Incompatible signal bit parameters in "
+                       f"{signal_name}\n")
+    if len(first.child_instances) != len(second.child_instances):
+        saif_error(f"Number of child instances doesn't match in {first.scope_name}: "
+                   f"{len(first.child_instances)} != {len(second.child_instances)}")
+    for instance_name, instance in first.child_instances.items():
+        if instance_name not in second.child_instances:
+            saif_error(f"Instance {instance_name} doesn't exist in the second object\n")
+        compare_saif_instances(instance, second.child_instances[instance_name])
+
+
+def compare_saif_contents(first_file: str, second_file: str):
+    """Test if second SAIF file has the same values as the first"""
+    first_saif = SAIFParser()
+    first_saif.parse(first_file)
+    second_saif = SAIFParser()
+    second_saif.parse(second_file)
+    if first_saif.duration != second_saif.duration:
+        saif_error("Duration of trace doesn't match: "
+                   f"{first_saif.duration} != {second_saif.duration}")
+    if first_saif.divider != second_saif.divider:
+        saif_error(f"Dividers don't match: {first_saif.divider} != {second_saif.divider}")
+    if first_saif.timescale != second_saif.timescale:
+        saif_error(f"Timescale doesn't match: {first_saif.timescale} != {second_saif.timescale}")
+    if len(first_saif.top_instances) != len(second_saif.top_instances):
+        saif_error("Number of top instances doesn't match: "
+                   f"{len(first_saif.top_instances)} != {len(second_saif.top_instances)}")
+    for top_instance_name, top_instance in first_saif.top_instances.items():
+        if top_instance_name not in second_saif.top_instances:
+            saif_error(f"Top instance {top_instance_name} missing in other SAIF")
+        compare_saif_instances(top_instance, second_saif.top_instances[top_instance_name])
+    return SUCCESS_CODE
+
+
+parser = argparse.ArgumentParser(allow_abbrev=False,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter,
+                                 description="""verilator_saif_diff checks if two SAIF files are logically-identical. It returns first encountered difference as output.
+Run as:
+  cd $VERILATOR_ROOT
+  nodist/code_coverage --first example.saif --second other.saif""")
+parser.add_argument('--first', action='store', help='First SAIF file')
+parser.add_argument('--second', action='store', help='Second SAIF file')
+parser.set_defaults(stop=True)
+args = parser.parse_args()
+try:
+    compare_saif_contents(args.first, args.second)
+except Exception as error:
+    print(error)

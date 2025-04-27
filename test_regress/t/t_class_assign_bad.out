@@ -2,6 +2,7 @@
                                    : ... note: In instance 't'
    28 |       c = 0;
       |         ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_class_assign_bad.v:29:9: Assign RHS expects a CLASSREFDTYPE 'Cls', got BASICDTYPE 'logic'
                                    : ... note: In instance 't'
    29 |       c = 1;

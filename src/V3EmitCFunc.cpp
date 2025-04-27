@@ -220,7 +220,7 @@ void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
                 if (func != "") {
                     puts(func);
                 } else if (argp) {
-                    const bool addrof = isScan || (fmt == '@');
+                    const bool addrof = isScan || (fmt == '@') || (fmt == 'p');
                     if (addrof) puts("&(");
                     iterateConst(argp);
                     if (!addrof) emitDatap(argp);
@@ -371,6 +371,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstScopeName* scopenamep, const stri
             case 'o': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'o'); break;
             case 'h':  // FALLTHRU
             case 'x': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'x'); break;
+            case 'p': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'p'); break;
             case 's': displayArg(nodep, &elistp, isScan, vfmt, ignore, 's'); break;
             case 'e': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'e'); break;
             case 'f': displayArg(nodep, &elistp, isScan, vfmt, ignore, 'f'); break;
@@ -606,11 +607,13 @@ void EmitCFunc::emitSetVarConstant(const string& assignString, AstConst* constp)
     puts(";\n");
 }
 
-void EmitCFunc::emitVarReset(AstVar* varp) {
+void EmitCFunc::emitVarReset(AstVar* varp, bool constructing) {
+    // 'constructing' indicates that the object was just constructed, so no need to clear it also
     AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
+    const string vlSelf = VSelfPointerText::replaceThis(m_useSelfForThis, "this->");
     const string varNameProtected = (VN_IS(m_modp, Class) || varp->isFuncLocal())
                                         ? varp->nameProtect()
-                                        : "vlSelf->" + varp->nameProtect();
+                                        : vlSelf + varp->nameProtect();
     if (varp->isIO() && m_modp->isTop() && optSystemC()) {
         // System C top I/O doesn't need loading, as the lower level subinst code does it.}
     } else if (varp->isParam()) {
@@ -624,6 +627,7 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
                 emitSetVarConstant(varNameProtected + ".atDefault()",
                                    VN_AS(initarp->defaultp(), Const));
             }
+            if (!constructing) puts(varNameProtected + ".clear();");
             const auto& mapr = initarp->map();
             for (const auto& itr : mapr) {
                 AstNode* const valuep = itr.second->valuep();
@@ -635,6 +639,7 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
                 emitSetVarConstant(varNameProtected + ".atDefault()",
                                    VN_AS(initarp->defaultp(), Const));
             }
+            if (!constructing) puts(varNameProtected + ".clear();");
             const auto& mapr = initarp->map();
             for (const auto& itr : mapr) {
                 AstNode* const valuep = itr.second->valuep();
@@ -658,25 +663,30 @@ void EmitCFunc::emitVarReset(AstVar* varp) {
             varp->v3fatalSrc("InitArray under non-arrayed var");
         }
     } else {
-        putns(varp, emitVarResetRecurse(varp, varNameProtected, dtypep, 0, ""));
+        putns(varp, emitVarResetRecurse(varp, constructing, varNameProtected, dtypep, 0, ""));
     }
 }
 
-string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameProtected,
-                                      AstNodeDType* dtypep, int depth, const string& suffix) {
+string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
+                                      const string& varNameProtected, AstNodeDType* dtypep,
+                                      int depth, const string& suffix) {
     dtypep = dtypep->skipRefp();
     AstBasicDType* const basicp = dtypep->basicp();
     // Returns string to do resetting, empty to do nothing (which caller should handle)
     if (AstAssocArrayDType* const adtypep = VN_CAST(dtypep, AssocArrayDType)) {
         // Access std::array as C array
         const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
-        return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
-                                   suffix + ".atDefault()" + cvtarray);
+        const string pre = constructing ? "" : varNameProtected + suffix + ".clear();\n";
+        return pre
+               + emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
+                                     depth + 1, suffix + ".atDefault()" + cvtarray);
     } else if (AstWildcardArrayDType* const adtypep = VN_CAST(dtypep, WildcardArrayDType)) {
         // Access std::array as C array
         const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
-        return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
-                                   suffix + ".atDefault()" + cvtarray);
+        const string pre = constructing ? "" : varNameProtected + suffix + ".clear();\n";
+        return pre
+               + emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
+                                     depth + 1, suffix + ".atDefault()" + cvtarray);
     } else if (VN_IS(dtypep, CDType)) {
         return "";  // Constructor does it
     } else if (VN_IS(dtypep, ClassRefDType)) {
@@ -686,13 +696,17 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
     } else if (const AstDynArrayDType* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
         // Access std::array as C array
         const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
-        return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
-                                   suffix + ".atDefault()" + cvtarray);
+        const string pre = constructing ? "" : varNameProtected + suffix + ".clear();\n";
+        return pre
+               + emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
+                                     depth + 1, suffix + ".atDefault()" + cvtarray);
     } else if (const AstQueueDType* const adtypep = VN_CAST(dtypep, QueueDType)) {
         // Access std::array as C array
         const string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");
-        return emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(), depth + 1,
-                                   suffix + ".atDefault()" + cvtarray);
+        const string pre = constructing ? "" : varNameProtected + suffix + ".clear();\n";
+        return pre
+               + emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
+                                     depth + 1, suffix + ".atDefault()" + cvtarray);
     } else if (VN_IS(dtypep, SampleQueueDType)) {
         return "";
     } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
@@ -701,8 +715,9 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         const string ivar = "__Vi"s + cvtToStr(depth);
         const string pre = ("for (int " + ivar + " = " + cvtToStr(0) + "; " + ivar + " < "
                             + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");
-        const string below = emitVarResetRecurse(varp, varNameProtected, adtypep->subDTypep(),
-                                                 depth + 1, suffix + "[" + ivar + "]");
+        const string below
+            = emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
+                                  depth + 1, suffix + "[" + ivar + "]");
         const string post = "}\n";
         return below.empty() ? "" : pre + below + post;
     } else if (VN_IS(dtypep, NodeUOrStructDType) && !VN_AS(dtypep, NodeUOrStructDType)->packed()) {
@@ -710,15 +725,15 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, const string& varNameP
         string literal;
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
-            const std::string line
-                = emitVarResetRecurse(varp, varNameProtected + suffix + "." + itemp->nameProtect(),
-                                      itemp->dtypep(), depth + 1, "");
+            const std::string line = emitVarResetRecurse(
+                varp, constructing, varNameProtected + suffix + "." + itemp->nameProtect(),
+                itemp->dtypep(), depth + 1, "");
             if (!line.empty()) literal += line;
         }
         return literal;
     } else if (basicp && basicp->keyword() == VBasicDTypeKwd::STRING) {
-        // String's constructor deals with it
-        return "";
+        if (constructing) return "";  // String's constructor deals with it
+        return varNameProtected + suffix + ".clear();\n";
     } else if (basicp && basicp->isForkSync()) {
         return "";
     } else if (basicp && basicp->isProcessRef()) {

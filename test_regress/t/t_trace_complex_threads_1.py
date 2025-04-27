@@ -13,7 +13,7 @@ test.scenarios('simulator')
 test.top_filename = "t/t_trace_complex.v"
 test.golden_filename = "t/t_trace_complex.out"
 
-test.compile(verilator_flags2=['--cc --trace --trace-threads 1'])
+test.compile(verilator_flags2=['--cc --trace-vcd --trace-threads 1'])
 
 test.execute()
 

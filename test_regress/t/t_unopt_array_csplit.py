@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.top_filename = "t/t_unopt_array.v"
 
-test.compile(v_flags2=["--trace --output-split 1 --output-split-cfuncs 1 -Wno-UNOPTFLAT"])
+test.compile(v_flags2=["--trace-vcd --output-split 1 --output-split-cfuncs 1 -Wno-UNOPTFLAT"])
 
 test.execute()
 

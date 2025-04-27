@@ -5,4 +5,5 @@
 %Error: t/t_lint_pkg_colon_bad.v:7:25: syntax error, unexpected IDENTIFIER, expecting IDENTIFIER-for-type
     7 | module t (input mispkg::foo_t a);
       |                         ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

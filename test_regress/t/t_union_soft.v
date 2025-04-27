@@ -11,13 +11,24 @@ module t(/*AUTOARG*/);
       bit [3:0] val2;
    } u;
 
+   union soft packed {
+       bit [7 : 0] val1;
+       bit [3 : 0] val2;
+   } u2;
+
    initial begin
       u.val1 = 8'h7c;
       if (u.val1 != 8'h7c) $stop;
       u.val2 = 4'h6;
       if (u.val2 != 4'h6) $stop;
       $display("%p", u);
-      if (u.ual1 != 8'h76) $stop;
+      if(u.val1 != 8'h76) $stop;
+      u2.val1 = 8'h7c;
+      if(u2.val1 != 8'h7c) $stop;
+      u2.val2 = 4'h6;
+      if(u2.val2 != 4'h6) $stop;
+      $display("%p", u2);
+      if(u2.val1 != 8'h76) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end

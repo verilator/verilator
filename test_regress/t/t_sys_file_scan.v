@@ -11,7 +11,7 @@ module t;
    integer count, a;
 
    initial begin
-      infile = $fopen("t/t_sys_file_scan_input.dat", "r");
+      infile = $fopen("t/t_sys_file_scan.dat", "r");
       outfile = $fopen({`STRINGIFY(`TEST_OBJ_DIR),"/t_sys_file_scan_test.log"}, "w");
 
       count = 1234;

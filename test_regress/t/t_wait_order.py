@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 
 test.compile(expect_filename=test.golden_filename,
-             verilator_flags2=['--binary --timing'],
+             verilator_flags2=['--binary'],
              fails=test.vlt_all)
 
 test.passes()

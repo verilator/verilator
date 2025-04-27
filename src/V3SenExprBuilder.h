@@ -28,13 +28,19 @@
 // AstSenTree have triggered
 
 class SenExprBuilder final {
+public:
+    // TYPES
+    struct Results final {
+        std::vector<AstNodeStmt*> m_inits;  // Initialization statements for previous values
+        std::vector<AstNodeStmt*> m_preUpdates;  // Pre update assignments
+        std::vector<AstNodeStmt*> m_postUpdates;  // Post update assignments
+    };
+
+private:
     // STATE
     AstScope* const m_scopep;  // The scope
 
-    std::vector<AstVar*> m_locals;  // Trigger eval local variables
-    std::vector<AstNodeStmt*> m_inits;  // Initialization statements for previous values
-    std::vector<AstNodeStmt*> m_preUpdates;  // Pre update assignments
-    std::vector<AstNodeStmt*> m_postUpdates;  // Post update assignments
+    Results m_results;  // The builder result
 
     std::unordered_map<VNRef<AstNode>, AstVarScope*> m_prev;  // The 'previous value' signals
     std::unordered_map<VNRef<AstNode>, AstVarScope*> m_curr;  // The 'current value' signals
@@ -64,6 +70,21 @@ class SenExprBuilder final {
     }
 
     // METHODS
+    AstVarScope* crateTemp(AstNodeExpr* exprp) {
+        // For readability, use the scoped signal name if the trigger is a simple AstVarRef
+        string name;
+        if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
+            AstVarScope* const vscp = refp->varScopep();
+            name = "__" + vscp->scopep()->nameDotless() + "__" + vscp->varp()->name();
+            name = m_prevNames.get(name);
+        } else {
+            name = m_prevNames.get(exprp);
+        }
+        AstVarScope* const vscp = m_scopep->createTemp(name, exprp->dtypep());
+        vscp->varp()->isInternal(true);
+        return vscp;
+    }
+
     AstNodeExpr* getCurr(AstNodeExpr* exprp) {
         // For simple expressions like varrefs or selects, just use them directly
         if (isSimpleExpr(exprp)) return exprp->cloneTree(false);
@@ -71,21 +92,13 @@ class SenExprBuilder final {
         // Create the 'current value' variable
         FileLine* const flp = exprp->fileline();
         auto result = m_curr.emplace(*exprp, nullptr);
-        if (result.second) {
-            AstVar* const varp
-                = new AstVar{flp, VVarType::BLOCKTEMP, m_currNames.get(exprp), exprp->dtypep()};
-            varp->funcLocal(true);
-            m_locals.push_back(varp);
-            AstVarScope* vscp = new AstVarScope{flp, m_scopep, varp};
-            m_scopep->addVarsp(vscp);
-            result.first->second = vscp;
-        }
+        if (result.second) result.first->second = crateTemp(exprp);
         AstVarScope* const currp = result.first->second;
 
         // Add pre update if it does not exist yet in this round
         if (m_hasPreUpdate.emplace(*currp).second) {
-            m_preUpdates.push_back(new AstAssign{flp, new AstVarRef{flp, currp, VAccess::WRITE},
-                                                 exprp->cloneTree(false)});
+            m_results.m_preUpdates.push_back(new AstAssign{
+                flp, new AstVarRef{flp, currp, VAccess::WRITE}, exprp->cloneTree(false)});
         }
         return new AstVarRef{flp, currp, VAccess::READ};
     }
@@ -98,32 +111,12 @@ class SenExprBuilder final {
         // Create the 'previous value' variable
         const auto pair = m_prev.emplace(*scopeExprp, nullptr);
         if (pair.second) {
-            AstVarScope* prevp;
-            if (m_scopep->isTop()) {
-                // For readability, use the scoped signal name if the trigger is a simple AstVarRef
-                string name;
-                if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
-                    AstVarScope* const vscp = refp->varScopep();
-                    name = "__" + vscp->scopep()->nameDotless() + "__" + vscp->varp()->name();
-                    name = m_prevNames.get(name);
-                } else {
-                    name = m_prevNames.get(exprp);
-                }
-                prevp = m_scopep->createTemp(name, exprp->dtypep());
-            } else {
-                AstVar* const varp = new AstVar{flp, VVarType::BLOCKTEMP, m_prevNames.get(exprp),
-                                                exprp->dtypep()};
-                varp->funcLocal(true);
-                m_locals.push_back(varp);
-                prevp = new AstVarScope{flp, m_scopep, varp};
-                m_scopep->addVarsp(prevp);
-            }
+            AstVarScope* const prevp = crateTemp(exprp);
             pair.first->second = prevp;
-
             // Add the initializer init
             AstAssign* const initp = new AstAssign{flp, new AstVarRef{flp, prevp, VAccess::WRITE},
                                                    exprp->cloneTree(false)};
-            m_inits.push_back(initp);
+            m_results.m_inits.push_back(initp);
         }
 
         AstVarScope* const prevp = pair.first->second;
@@ -142,9 +135,9 @@ class SenExprBuilder final {
             if (VN_IS(exprp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 AstCMethodHard* const cmhp = new AstCMethodHard{flp, wrPrev(), "assign", rdCurr()};
                 cmhp->dtypeSetVoid();
-                m_postUpdates.push_back(cmhp->makeStmt());
+                m_results.m_postUpdates.push_back(cmhp->makeStmt());
             } else {
-                m_postUpdates.push_back(new AstAssign{flp, wrPrev(), rdCurr()});
+                m_results.m_postUpdates.push_back(new AstAssign{flp, wrPrev(), rdCurr()});
             }
         }
 
@@ -186,7 +179,7 @@ class SenExprBuilder final {
                 // No need to check if the event was fired, we need the flag clear regardless
                 AstCMethodHard* const clearp = new AstCMethodHard{flp, currp(), "clearFired"};
                 clearp->dtypeSetVoid();
-                m_postUpdates.push_back(clearp->makeStmt());
+                m_results.m_postUpdates.push_back(clearp->makeStmt());
             }
 
             // Get 'fired' state
@@ -229,23 +222,12 @@ public:
         return {resultp, firedAtInitialization};
     }
 
-    std::vector<AstNodeStmt*> getAndClearInits() { return std::move(m_inits); }
-
-    std::vector<AstVar*> getAndClearLocals() {
-        // With m_locals empty, m_prev and m_curr are no longer valid
-        m_prev.clear();
+    Results getAndClearResults() {
         m_curr.clear();
-        return std::move(m_locals);
-    }
-
-    std::vector<AstNodeStmt*> getAndClearPreUpdates() {
+        m_prev.clear();
         m_hasPreUpdate.clear();
-        return std::move(m_preUpdates);
-    }
-
-    std::vector<AstNodeStmt*> getAndClearPostUpdates() {
         m_hasPostUpdate.clear();
-        return std::move(m_postUpdates);
+        return std::move(m_results);
     }
 
     // CONSTRUCTOR

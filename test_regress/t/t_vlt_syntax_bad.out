@@ -1,6 +1,7 @@
 %Error: t/t_vlt_syntax_bad.vlt:9:20: sensitivity not expected for attribute
     9 | public -module "t" @(posedge clk)
       |                    ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_vlt_syntax_bad.vlt:11:1: isolate_assignments only applies to signals or functions/tasks
    11 | isolate_assignments -module "t"
       | ^~~~~~~~~~~~~~~~~~~

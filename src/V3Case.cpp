@@ -72,13 +72,13 @@ class CaseLintVisitor final : public VNVisitorConst {
 
         // Check for X/Z in non-casex statements
         {
+            VL_RESTORER(m_caseExprp);
             m_caseExprp = nodep;
             iterateConst(nodep->exprp());
             for (AstCaseItem* itemp = nodep->itemsp(); itemp;
                  itemp = VN_AS(itemp->nextp(), CaseItem)) {
                 iterateAndNextConstNull(itemp->condsp());
             }
-            m_caseExprp = nullptr;
         }
     }
     void visit(AstConst* nodep) override {
@@ -578,7 +578,7 @@ class CaseVisitor final : public VNVisitor {
     }
     //--------------------
     void visit(AstAlways* nodep) override {
-        VL_RESTORER(m_alwaysp)
+        VL_RESTORER(m_alwaysp);
         m_alwaysp = nodep;
         iterateChildren(nodep);
     }

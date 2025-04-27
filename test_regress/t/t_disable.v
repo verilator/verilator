@@ -12,6 +12,13 @@ module t(/*AUTOARG*/);
          #1 $stop;
       join_none
       #2;
+      begin : forked
+         fork
+            disable forked;
+            #1 $stop;
+         join_none
+      end
+      #2;
       $write("*-* All Finished *-*\n");
       $finish;
    end

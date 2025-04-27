@@ -7,4 +7,5 @@
                                        : ... note: In instance 't'
    12 |    localparam bit_int_t count_bits [1:0] = {2{$bits(count_t)}};
       |                                              ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

@@ -21,7 +21,7 @@ test.compile(
     verilator_flags2=[
         '--hierarchical',
         '--Wno-TIMESCALEMOD',
-        '--trace',
+        '--trace-vcd',
         '--no-trace-underscore',  # To avoid handle mismatches
     ],
     threads=(6 if test.vltmt else 1))

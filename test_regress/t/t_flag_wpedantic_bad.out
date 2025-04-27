@@ -1,4 +1,5 @@
 %Error: t/t_flag_wpedantic_bad.v:8:8: syntax error, unexpected global, expecting IDENTIFIER or do or final or randomize
     8 |    reg global;
       |        ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

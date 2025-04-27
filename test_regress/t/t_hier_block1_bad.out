@@ -9,6 +9,7 @@
                                    : ... note: In instance 't.i_sub1'
    45 | module sub1 (byte_ifs.receiver in, byte_ifs.sender out); /*verilator hier_block*/ 
       |                                ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_hier_block1_bad.v:45:52: Modport cannot be used at the hierarchical block boundary
                                    : ... note: In instance 't.i_sub1'
    45 | module sub1 (byte_ifs.receiver in, byte_ifs.sender out); /*verilator hier_block*/ 

@@ -1,6 +1,7 @@
 %Error: t/t_package_export.v:45:17: Export object not found: 'pkg1::BAD_DOES_NOT_EXIST'
    45 |    export pkg1::BAD_DOES_NOT_EXIST;
       |                 ^~~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_package_export.v:56:16: Can't find definition of scope/variable/func: 'PARAM2'
                                   : ... Suggested alternative: 'PARAM1'
    56 |    reg [pkg11::PARAM2 : 0] bus12;

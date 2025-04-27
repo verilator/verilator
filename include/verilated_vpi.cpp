@@ -85,7 +85,7 @@ public:
         // To simplify our free list, we use a size large enough for all derived types
         // We reserve word zero for the next pointer, as that's safer in case a
         // dangling reference to the original remains around.
-        static constexpr size_t CHUNK_SIZE = 128;
+        static constexpr size_t CHUNK_SIZE = 256;
         if (VL_UNCOVERABLE(size > CHUNK_SIZE))
             VL_FATAL_MT(__FILE__, __LINE__, "", "increase CHUNK_SIZE");
         if (VL_LIKELY(t_freeHeadp)) {
@@ -421,7 +421,7 @@ public:
     const char* fullname() const override {
         static thread_local std::string t_out;
         t_out = std::string{scopep()->name()} + "." + name();
-        for (auto idx : index()) { t_out += "[" + std::to_string(idx) + "]"; }
+        for (auto idx : index()) t_out += "[" + std::to_string(idx) + "]";
         return t_out.c_str();
     }
     void* prevDatap() const { return m_prevDatap; }
@@ -873,6 +873,7 @@ class VerilatedVpiImp final {
     // All only medium-speed, so use singleton function
     // Callbacks that are past or at current timestamp
     std::array<VpioCbList, CB_ENUM_MAX_VALUE> m_cbCurrentLists;
+    VpioCbList m_cbCallList;  // List of callbacks currently being called by callCbs
     VpioFutureCbs m_futureCbs;  // Time based callbacks for future timestamps
     VpioFutureCbs m_nextCbs;  // cbNextSimTime callbacks
     std::list<VerilatedVpiPutHolder> m_inertialPuts;  // Pending vpi puts due to vpiInertialDelay
@@ -925,7 +926,13 @@ public:
         for (auto& ir : s().m_cbCurrentLists[reason]) {
             if (ir.id() == id) {
                 ir.invalidate();
-                return;  // Once found, it won't also be in m_futureCbs
+                return;  // Once found, it won't also be in m_cbCallList, m_futureCbs, or m_nextCbs
+            }
+        }
+        for (auto& ir : s().m_cbCallList) {
+            if (ir.id() == id) {
+                ir.invalidate();
+                return;  // Once found, it won't also be in m_futureCbs or m_nextCbs
             }
         }
         {  // Remove from cbFuture queue
@@ -985,10 +992,9 @@ public:
         moveFutureCbs();
         if (s().m_cbCurrentLists[reason].empty()) return false;
         // Iterate on old list, making new list empty, to prevent looping over newly added elements
-        VpioCbList cbObjList;
-        std::swap(s().m_cbCurrentLists[reason], cbObjList);
+        std::swap(s().m_cbCurrentLists[reason], s().m_cbCallList);
         bool called = false;
-        for (VerilatedVpiCbHolder& ihor : cbObjList) {
+        for (VerilatedVpiCbHolder& ihor : s().m_cbCallList) {
             // cbReasonRemove sets to nullptr, so we know on removal the old end() will still exist
             if (VL_LIKELY(!ihor.invalid())) {  // Not deleted earlier
                 VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: reason_callback reason=%d id=%" PRId64 "\n",
@@ -998,6 +1004,7 @@ public:
                 called = true;
             }
         }
+        s().m_cbCallList.clear();
         return called;
     }
     static bool callValueCbs() VL_MT_UNSAFE_ONE {
@@ -2567,8 +2574,8 @@ void vl_vpi_put_word(const VerilatedVpioVar* vop, QData word, size_t bitCount, s
 }
 
 void vl_vpi_get_value(const VerilatedVpioVarBase* vop, p_vpi_value valuep) {
-    const VerilatedVar* varp = vop->varp();
-    void* varDatap = vop->varDatap();
+    const VerilatedVar* const varp = vop->varp();
+    void* const varDatap = vop->varDatap();
     const char* fullname = vop->fullname();
 
     if (!vl_check_format(varp, valuep, fullname, true)) return;
@@ -2781,8 +2788,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         } else if (valuep->format == vpiOctStrVal) {
             const int len = std::strlen(valuep->value.str);
             for (int i = 0; i < len; ++i) {
-                char digit = valuep->value.str[len - i - 1] - '0';
-                if (digit < 0 || digit > 7) {
+                unsigned char digit = valuep->value.str[len - i - 1] - '0';
+                if (digit > 7) {  // If str was < '0', then as unsigned, digit > 7
                     VL_VPI_WARNING_(__FILE__, __LINE__,
                                     "%s: Non octal character '%c' in '%s' as value %s for %s",
                                     __func__, digit + '0', valuep->value.str,
@@ -2973,7 +2980,6 @@ void vl_get_value_array_vectors(unsigned index, const unsigned num, const unsign
                   "type T is not unsigned");  // ensure logical right shift
     const unsigned element_size_bytes = VL_BYTES_I(packedSize);
     const unsigned element_size_words = VL_WORDS_I(packedSize);
-    const unsigned element_size_repr = (element_size_bytes + sizeof(T) - 1) / sizeof(T);
     if (sizeof(T) == sizeof(QData)) {
         for (unsigned i = 0; i < num; i++) {
             dst[i * 2].aval = static_cast<QData>(src[index]);
@@ -3095,7 +3101,7 @@ void vl_put_value_array_rawvals(unsigned index, const unsigned num, const unsign
     }
 }
 
-void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_INT32* index_p,
+void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const PLI_INT32* index_p,
                         PLI_UINT32 num) {
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
     if (!vl_check_array_format(vop->varp(), arrayvalue_p, vop->fullname())) return;
@@ -3112,7 +3118,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_INT
     }
 
     const bool leftIsLow = vop->rangep()->left() == vop->rangep()->low();
-    int index
+    const int index
         = leftIsLow ? index_p[0] - vop->rangep()->left() : vop->rangep()->left() - index_p[0];
 
     if (arrayvalue_p->format == vpiShortIntVal) {
@@ -3303,9 +3309,8 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
         return;
     }
 
-    int lowRange = vop->rangep()->low();
-    int highRange = vop->rangep()->high();
-
+    const int lowRange = vop->rangep()->low();
+    const int highRange = vop->rangep()->high();
     if ((index_p[0] > highRange) || (index_p[0] < lowRange)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: index %u for object %s is out of bounds [%u,%u]",
                       __func__, index_p[0], vop->fullname(), lowRange, highRange);
@@ -3321,14 +3326,14 @@ void vpi_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
     vl_get_value_array(object, arrayvalue_p, index_p, num);
 }
 
-void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_INT32* index_p,
+void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const PLI_INT32* index_p,
                         PLI_UINT32 num) {
     const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
     if (!vl_check_array_format(vop->varp(), arrayvalue_p, vop->fullname())) return;
 
     const VerilatedVar* const varp = vop->varp();
 
-    int size = vop->size();
+    const int size = vop->size();
     if (VL_UNCOVERABLE(num > size)) {
         VL_VPI_ERROR_(__FILE__, __LINE__,
                       "%s: requested elements to set (%u) exceed array size (%u)", __func__, num,
@@ -3337,7 +3342,7 @@ void vl_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_INT
     }
 
     const bool leftIsLow = vop->rangep()->left() == vop->rangep()->low();
-    int index
+    const int index
         = leftIsLow ? index_p[0] - vop->rangep()->left() : vop->rangep()->left() - index_p[0];
 
     if (arrayvalue_p->format == vpiShortIntVal) {
@@ -3485,11 +3490,8 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
         return;
     }
 
-    const VerilatedVar* const varp = vop->varp();
-
-    int lowRange = vop->rangep()->low();
-    int highRange = vop->rangep()->high();
-
+    const int lowRange = vop->rangep()->low();
+    const int highRange = vop->rangep()->high();
     if ((index_p[0] > highRange) || (index_p[0] < lowRange)) {
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: index %u for object %s is out of bounds [%u,%u]",
                       __func__, index_p[0], vop->fullname(), lowRange, highRange);

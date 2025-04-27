@@ -147,10 +147,10 @@ class ExpandVisitor final : public VNVisitor {
         // but are now being used on the RHS of the assignment
         if (VN_IS(nodep, VarRef)) VN_AS(nodep, VarRef)->access(VAccess::READ);
         // Iterate
-        if (nodep->op1p()) fixCloneLvalue(nodep->op1p());
-        if (nodep->op2p()) fixCloneLvalue(nodep->op2p());
-        if (nodep->op3p()) fixCloneLvalue(nodep->op3p());
-        if (nodep->op4p()) fixCloneLvalue(nodep->op4p());
+        if (AstNode* const refp = nodep->op1p()) fixCloneLvalue(refp);
+        if (AstNode* const refp = nodep->op2p()) fixCloneLvalue(refp);
+        if (AstNode* const refp = nodep->op3p()) fixCloneLvalue(refp);
+        if (AstNode* const refp = nodep->op4p()) fixCloneLvalue(refp);
     }
 
     static AstNodeExpr* newAstWordSelClone(AstNodeExpr* nodep, int word) {

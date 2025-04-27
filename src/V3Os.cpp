@@ -57,6 +57,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // clang-format off
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <windows.h>   // LONG for bcrypt.h on MINGW
+# include <algorithm>  // replace
 # include <bcrypt.h>  // BCryptGenRandom
 # include <chrono>
 # include <direct.h>  // mkdir
@@ -307,6 +308,16 @@ bool V3Os::filenameIsRel(const string& filename) VL_PURE {
     return std::filesystem::path(filename).is_relative();
 #else
     return (filename.length() > 0 && filename[0] != '/');
+#endif
+}
+
+string V3Os::filenameSlashPath(const string& path) VL_PURE {
+#if defined(_WIN32) || defined(__MINGW32__)
+    string slashedPath = path;
+    std::replace(slashedPath.begin(), slashedPath.end(), '\\', '/');
+    return slashedPath;
+#else
+    return path;
 #endif
 }
 

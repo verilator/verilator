@@ -1,6 +1,7 @@
 %Error: t/t_inst_param_comma_bad.v:35:15: syntax error, unexpected ')', expecting IDENTIFIER-for-type
    35 |    M #(.P(13),) m1(
       |               ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_inst_param_comma_bad.v:40:11: syntax error, unexpected ')', expecting IDENTIFIER-for-type
    40 |    M #(14,) m2 (
       |           ^

@@ -2,6 +2,7 @@
                                        : ... Suggest make it an output argument instead?
    79 |    import "DPI-C" function bit [ 32:0] i_array_2_state_33();
       |                                        ^~~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_dpi_result_type_bad.v:80:40: DPI function may not return a > 32 bits wide type other than basic types.
                                        : ... Suggest make it an output argument instead?
    80 |    import "DPI-C" function bit [ 63:0] i_array_2_state_64();

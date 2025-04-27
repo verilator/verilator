@@ -50,7 +50,8 @@ protected:
 
 private:
     // METHODS
-    const AstNodeDType* skipRefIterp(bool skipConst, bool skipEnum) const VL_MT_STABLE;
+    const AstNodeDType* skipRefIterp(bool skipConst, bool skipEnum,
+                                     bool assertOn = true) const VL_MT_STABLE;
 
 protected:
     // METHODS
@@ -77,6 +78,15 @@ public:
     AstNodeDType* skipRefp() VL_MT_STABLE {
         return const_cast<AstNodeDType*>(
             static_cast<const AstNodeDType*>(this)->skipRefIterp(true, true));
+    }
+    // (Slow) Recurse over MemberDType|ParamTypeDType|RefDType|ConstDType|EnumDType to other type,
+    // Returns null if not resolved
+    const AstNodeDType* skipRefOrNullp() const VL_MT_STABLE {
+        return skipRefIterp(true, true, false);
+    }
+    AstNodeDType* skipRefOrNullp() VL_MT_STABLE {
+        return const_cast<AstNodeDType*>(
+            static_cast<const AstNodeDType*>(this)->skipRefIterp(true, true, false));
     }
     // (Slow) Recurse over MemberDType|ParamTypeDType|RefDType|EnumDType to ConstDType
     const AstNodeDType* skipRefToConstp() const { return skipRefIterp(false, true); }
@@ -110,15 +120,7 @@ public:
     // Iff has second dtype, set as generic node function
     virtual void virtRefDType2p(AstNodeDType* nodep) {}
     // Assignable equivalence.  Calls skipRefToNonRefp() during comparisons.
-    bool similarDType(const AstNodeDType* samep) const {
-        const AstNodeDType* nodep = this;
-        nodep = nodep->skipRefToNonRefp();
-        samep = samep->skipRefToNonRefp();
-        if (nodep == samep) return true;
-        if (nodep->type() != samep->type()) return false;
-        return nodep->similarDTypeNode(samep);
-    }
-
+    bool similarDType(const AstNodeDType* samep) const;
     // Iff has a non-null subDTypep(), as generic node function
     virtual AstNodeDType* subDTypep() const VL_MT_STABLE { return nullptr; }
     virtual bool isFourstate() const;
@@ -155,7 +157,7 @@ public:
     bool generic() const VL_MT_SAFE { return m_generic; }
     void generic(bool flag) { m_generic = flag; }
     std::pair<uint32_t, uint32_t> dimensions(bool includeBasic);
-    uint32_t arrayUnpackedElements();  // 1, or total multiplication of all dimensions
+    uint32_t arrayUnpackedElements() const;  // 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I");
@@ -522,7 +524,7 @@ public:
     AstCDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER_CDType(fl)
         , m_name{name} {
-        this->dtypep(this);
+        dtypep(this);
     }
 
 public:
@@ -562,8 +564,8 @@ public:
     AstClassRefDType(FileLine* fl, AstClass* classp, AstPin* paramsp)
         : ASTGEN_SUPER_ClassRefDType(fl)
         , m_classp{classp} {
-        this->dtypep(this);
-        this->addParamsp(paramsp);
+        dtypep(this);
+        addParamsp(paramsp);
     }
     ASTGEN_MEMBERS_AstClassRefDType;
     // METHODS
@@ -571,7 +573,11 @@ public:
         const AstClassRefDType* const asamep = VN_DBG_AS(samep, ClassRefDType);
         return (m_classp == asamep->m_classp && m_classOrPackagep == asamep->m_classOrPackagep);
     }
-    bool similarDTypeNode(const AstNodeDType* samep) const override { return sameNode(samep); }
+    bool similarDTypeNode(const AstNodeDType* samep) const override {
+        // Doesn't need to compare m_classOrPackagep
+        const AstClassRefDType* const asamep = VN_DBG_AS(samep, ClassRefDType);
+        return m_classp == asamep->m_classp;
+    }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
@@ -1065,7 +1071,7 @@ class AstQueueDType final : public AstNodeDType {
 public:
     AstQueueDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstNodeExpr* boundp)
         : ASTGEN_SUPER_QueueDType(fl) {
-        this->childDTypep(dtp);
+        childDTypep(dtp);
         this->boundp(boundp);
         refDTypep(nullptr);
         dtypep(nullptr);  // V3Width will resolve
@@ -1125,7 +1131,7 @@ public:
     AstRefDType(FileLine* fl, const string& name, AstNodeExpr* classOrPackagep, AstPin* paramsp)
         : ASTGEN_SUPER_RefDType(fl)
         , m_name{name} {
-        this->classOrPackageOpp(classOrPackagep);
+        classOrPackageOpp(classOrPackagep);
         addParamsp(paramsp);
     }
     class FlagTypeOfExpr {};  // type(expr) for parser only
@@ -1342,7 +1348,7 @@ class AstUnpackArrayDType final : public AstNodeArrayDType {
 public:
     AstUnpackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstRange* rangep)
         : ASTGEN_SUPER_UnpackArrayDType(fl) {
-        this->childDTypep(dtp);  // Only for parser
+        childDTypep(dtp);  // Only for parser
         this->rangep(rangep);
         refDTypep(nullptr);
         dtypep(nullptr);  // V3Width will resolve
@@ -1382,13 +1388,20 @@ public:
     string verilogKwd() const override { return "struct"; }
 };
 class AstUnionDType final : public AstNodeUOrStructDType {
+    bool m_isSoft;  // Is a "union soft"
+
 public:
     // UNSUP: bool isTagged;
     // VSigning below is mispurposed to indicate if packed or not
-    AstUnionDType(FileLine* fl, VSigning numericUnpack)
-        : ASTGEN_SUPER_UnionDType(fl, numericUnpack) {}
+    // isSoft implies packed
+    AstUnionDType(FileLine* fl, bool isSoft, VSigning numericUnpack)
+        : ASTGEN_SUPER_UnionDType(fl, numericUnpack)
+        , m_isSoft(isSoft) {
+        packed(packed() | m_isSoft);
+    }
     ASTGEN_MEMBERS_AstUnionDType;
     string verilogKwd() const override { return "union"; }
+    bool isSoft() const { return m_isSoft; }
 };
 
 #endif  // Guard

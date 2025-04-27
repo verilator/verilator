@@ -2,4 +2,5 @@
                                  : ... note: In instance 't'
    13 |    typedef enum s_t {
       |            ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

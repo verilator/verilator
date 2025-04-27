@@ -434,10 +434,14 @@ class TraceDeclVisitor final : public VNVisitor {
 
         // Save the hierarchical names of interface references that reference this scope
         const AstCell* const cellp = nodep->aboveCellp();
-        if (cellp && VN_IS(cellp->modp(), Iface)) {
+        if (cellp
+            && VN_IS(cellp->modp(), Iface)
+            // Exclude classes that were inside interfaces, the cell's modp is an interface,
+            // but the nodep->module is the Class
+            && VN_IS(nodep->modp(), Iface)) {
             const size_t lastDot = path.find_last_of('.');
             UASSERT_OBJ(lastDot != string::npos, nodep,
-                        "Expected an interface scope name to have at least one dot");
+                        "Expected an interface scope name to have at least one dot: " << path);
             const std::string parentPath = path.substr(0, lastDot + 1);
 
             for (AstIntfRef *intfRefp = cellp->intfRefsp(), *nextp; intfRefp; intfRefp = nextp) {

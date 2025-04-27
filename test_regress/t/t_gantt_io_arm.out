@@ -7,10 +7,14 @@ Argument settings:
 Summary:
   Total elapsed time = 300000 rdtsc ticks
   Parallelized code  = 80.49% of elapsed time
+  Waiting time       = 0.67% of elapsed time
   Total threads      = 2
   Total CPUs used    = 2
   Total mtasks       = 5
   Total yields       = 51
+
+NUMA assignment:
+  NUMA status        = 0,2;1,3
 
 Parallelized code, measured:
   Thread utilization =  42.50%

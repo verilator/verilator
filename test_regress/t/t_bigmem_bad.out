@@ -2,6 +2,7 @@
                               : ... note: In instance 't_bigmem'
    14 |       if (wen) mem[addr] <= data;
       |                   ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Warning-WIDTHTRUNC: t/t_bigmem_bad.v:14:26: Operator ASSIGNDLY expects 1 bits on the Assign RHS, but Assign RHS's VARREF 'data' generates 256 bits.
                                            : ... note: In instance 't_bigmem'
    14 |       if (wen) mem[addr] <= data;

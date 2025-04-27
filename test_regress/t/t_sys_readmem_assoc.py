@@ -15,7 +15,9 @@ test.compile()
 
 test.execute()
 
-test.files_identical(test.obj_dir + "/t_sys_writemem_c_b.mem", "t/t_sys_readmem_assoc_c_b.out")
-test.files_identical(test.obj_dir + "/t_sys_writemem_w_h.mem", "t/t_sys_readmem_assoc_w_h.out")
+test.files_identical(test.obj_dir + "/t_sys_writemem_c_b.mem",
+                     "t/t_sys_readmem_assoc__c_b.mem.out")
+test.files_identical(test.obj_dir + "/t_sys_writemem_w_h.mem",
+                     "t/t_sys_readmem_assoc__w_h.mem.out")
 
 test.passes()

@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2023 by Wilson Snyder.
+// any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
 module t(/*AUTOARG*/
@@ -12,13 +12,23 @@ module t(/*AUTOARG*/
 
    integer cyc = 0;
 
+   bit failure;
+   mutex check_bus(cyc, clk, failure);
+
+   integer cyc_d1;
+   always @ (posedge clk) cyc_d1 <= cyc;
+
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d\n", $time, cyc);
+      $write("[%0t] cyc==%0d cyc_d1=0x%0x  exp=%x failure=%x\n",
+             $time, cyc, cyc_d1, $onehot0(cyc), failure);
 `endif
       cyc <= cyc + 1;
-      if (cyc == 0) begin
+      if (cyc < 3) begin
+      end
+      else if (cyc < 90) begin
+         if (failure !== !$onehot0(cyc)) $stop;
       end
       else if (cyc == 99) begin
          $write("*-* All Finished *-*\n");
@@ -26,55 +36,12 @@ module t(/*AUTOARG*/
       end
    end
 
-   Chk check(clk, cyc);
-
 endmodule
 
-checker Chk
-            // UNSUP  (input clk, int in)
-            ;
-   bit clk;
-   bit in;
-   bit rst;
-   rand bit randed;  // TODO test this
-
-   int counter = 0;
-
-   int ival;
-   final if (ival != 1234) $stop;
-   genvar g;
-   if (0) begin
-      initial ival = 1;
-   end
-   else begin
-      initial ival = 1234;
-   end
-
-   int ival2;
-   case (1)
-     0: initial ival2 = 0;
-     default: initial ival2 = 12345;
-   endcase
-   final if (ival2 != 12345) $stop;
-
-
-   default clocking clk;  // TODO test this
-   default disable iff rst;  // TODO test this
-
-   checker ChkChk;  // TODO flag unsupported
-   endchecker
-
-   function automatic int f;  // TODO test this
-   endfunction
-
-
-   clocking cb1 @(posedge clk);  // TODO test this
-       input in;
-       output out;
-   endclocking
-
-   always_ff @(posedge clk)
-      counter <= counter + 1'b1;
-
-   a1: assert property (@(posedge clk) counter == in);
+checker mutex (input logic [31:0] sig, input bit clk, output bit failure);
+   logic [31:0] last_sig;
+   assert property (@(negedge clk) $onehot0(sig))
+     failure = 1'b0; else failure = 1'b1;
+   assert property (@(negedge clk) sig == last_sig + 1);
+   always_ff @(posedge clk) last_sig <= sig;
 endchecker

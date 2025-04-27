@@ -158,7 +158,7 @@ static void partCheckCachedScoreVsActual(uint32_t cached, uint32_t actual) {
 // We keep MTaskEdge graph edges in a PairingHeap, sorted by score and id
 
 struct EdgeKey final {
-    // Node: Structure layout chosen to minimize padding in PairingHeao<*>::Node
+    // Node: Structure layout chosen to minimize padding in PairingHeap<*>::Node
     uint64_t m_id;  // Unique ID part of edge score
     uint32_t m_score;  // Score part of ID
     void increase(uint32_t score) {
@@ -177,7 +177,7 @@ using EdgeHeap = PairingHeap<EdgeKey>;
 // MTask utility classes
 
 struct MergeCandidateKey final {
-    // Note: Structure layout chosen to minimize padding in PairingHeao<*>::Node
+    // Note: Structure layout chosen to minimize padding in PairingHeap<*>::Node
     uint64_t m_id;  // Unique ID part of edge score
     uint32_t m_score;  // Score part of ID
     bool operator<(const MergeCandidateKey& other) const {
@@ -556,7 +556,7 @@ public:
         UINFO(1, "Writing " << filename << endl);
         const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
         std::ostream* const osp = &(*ofp);  // &* needed to deref unique_ptr
-        if (osp->fail()) v3fatalStatic("Can't write " << filename);
+        if (osp->fail()) v3fatalStatic("Can't write file: " << filename);
 
         // Find start vertex with longest CP
         const LogicMTask* startp = nullptr;
@@ -1738,6 +1738,34 @@ private:
 };
 
 //######################################################################
+// DpiThreadsVisitor
+
+// Get number of threads occupied by this mtask
+class DpiThreadsVisitor final : public VNVisitorConst {
+    int m_threads = 1;  // Max number of threads used by this mtask
+
+    // METHODS
+    void visit(AstCFunc* nodep) override {
+        m_threads = std::max(m_threads, V3Config::getHierWorkers(nodep->cname()));
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstNodeCCall* nodep) override {
+        iterateChildrenConst(nodep);
+        iterateConst(nodep->funcp());
+    }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit DpiThreadsVisitor(AstMTaskBody* nodep) { iterateConst(nodep); }
+    int threads() const { return m_threads; }
+    ~DpiThreadsVisitor() override = default;
+
+private:
+    VL_UNCOPYABLE(DpiThreadsVisitor);
+};
+
+//######################################################################
 // FixDataHazards
 
 class FixDataHazards final {
@@ -1940,7 +1968,7 @@ class FixDataHazards final {
         }
 
         // Handle nodes containing DPI calls, we want to serialize those
-        // by default unless user gave --threads-dpi-concurrent.
+        // by default unless user gave '--threads-dpi none'.
         // Same basic strategy as above to serialize access to SC vars.
         if (!v3Global.opt.threadsDpiPure() || !v3Global.opt.threadsDpiUnpure()) {
             TasksByRank tasksByRank;
@@ -1961,7 +1989,7 @@ class FixDataHazards final {
                 tasksByRank[writerMtaskp->rank()].insert(writerMtaskp);
             }
         }
-        // Not: Find all reader tasks for this variable, group by rank.
+        // Note: Find all reader tasks for this variable, group by rank.
         // There was "broken" code here to find readers, but fixing it to
         // work properly harmed performance on some tests, see issue #3360.
     }
@@ -2451,6 +2479,8 @@ AstExecGraph* V3Order::createParallel(OrderGraph& orderGraph, const std::string&
 
         // Create the ExecMTask
         ExecMTask* const execMTaskp = new ExecMTask{depGraphp, bodyp};
+        if (!v3Global.opt.hierBlocks().empty())
+            execMTaskp->threads(DpiThreadsVisitor{bodyp}.threads());
         const bool newEntry = logicMTaskToExecMTask.emplace(mTaskp, execMTaskp).second;
         UASSERT_OBJ(newEntry, mTaskp, "LogicMTasks should be processed in dependencyorder");
         UINFO(3, "Final '" << tag << "' LogicMTask " << mTaskp->id() << " maps to ExecMTask"

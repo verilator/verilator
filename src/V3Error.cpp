@@ -72,7 +72,7 @@ string V3ErrorGuarded::msgPrefix() VL_REQUIRES(m_mutex) {
         return "-Info: ";
     } else if (code == V3ErrorCode::EC_FATAL) {
         return "%Error: ";
-    } else if (code == V3ErrorCode::EC_FATALEXIT) {
+    } else if (code == V3ErrorCode::EC_FATALMANY) {
         return "%Error: ";
     } else if (code == V3ErrorCode::EC_FATALSRC) {
         return "%Error: Internal Error: ";
@@ -162,7 +162,7 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
     // Output
     if (
 #ifndef V3ERROR_NO_GLOBAL_
-        !(v3Global.opt.quietExit() && m_errorCode == V3ErrorCode::EC_FATALEXIT)
+        !(v3Global.opt.quietExit() && m_errorCode == V3ErrorCode::EC_FATALMANY)
 #else
         true
 #endif
@@ -172,54 +172,54 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
     if (!m_errorSuppressed
         && !(m_errorCode == V3ErrorCode::EC_INFO || m_errorCode == V3ErrorCode::USERINFO)) {
         const bool anError = isError(m_errorCode, m_errorSuppressed);
-        if (m_errorCode >= V3ErrorCode::EC_FIRST_NAMED && !m_describedWeb) {
-            m_describedWeb = true;
-            std::cerr << warnMore() << "... For " << (anError ? "error" : "warning")
-                      << " description see https://verilator.org/warn/" << m_errorCode.ascii()
-                      << "?v=" << PACKAGE_VERSION_NUMBER_STRING << endl;
-        }
-        if (!m_describedEachWarn[m_errorCode] && !m_pretendError[m_errorCode]) {
+        if (m_errorCode != V3ErrorCode::EC_FATALMANY  // Not verbose on final too-many-errors error
+            && !m_describedEachWarn[m_errorCode]) {
             m_describedEachWarn[m_errorCode] = true;
-            if (!m_errorCode.hardError() && !m_describedWarnings) {
-                m_describedWarnings = true;
+            const string docUrl = "https://verilator.org/verilator_doc.html"s
+                                  + "?v=" + PACKAGE_VERSION_NUMBER_STRING;
+            const string warnUrl = "https://verilator.org/warn/"s + m_errorCode.ascii()
+                                   + "?v=" + PACKAGE_VERSION_NUMBER_STRING;
+            if (m_errorCode >= V3ErrorCode::EC_FIRST_NAMED) {
+                std::cerr << warnMore() << "... For " << (anError ? "error" : "warning")
+                          << " description see " << warnUrl << endl;
+            } else if (m_errCount >= 1
+                       && (m_errorCode == V3ErrorCode::EC_FATAL
+                           || m_errorCode == V3ErrorCode::EC_FATALMANY
+                           || m_errorCode == V3ErrorCode::EC_FATALSRC)
+                       && !m_tellInternal) {
+                m_tellInternal = true;
+                std::cerr << warnMore()
+                          << "... This fatal error may be caused by the earlier error(s);"
+                             " resolve those first."
+                          << endl;
+            } else if (!m_tellManual) {
+                m_tellManual = true;
+                std::cerr << warnMore() << "... See the manual at " << docUrl
+                          << " for more assistance." << endl;
+            }
+            if (!m_pretendError[m_errorCode] && !m_errorCode.hardError()) {
                 std::cerr << warnMore() << "... Use \"/* verilator lint_off "
                           << m_errorCode.ascii()
                           << " */\" and lint_on around source to disable this message." << endl;
-            }
-            if (m_errorCode.dangerous()) {
-                std::cerr << warnMore() << "*** See https://verilator.org/warn/"
-                          << m_errorCode.ascii() << " before disabling this,\n";
-                std::cerr << warnMore() << "else you may end up with different sim results."
-                          << endl;
+                if (m_errorCode.dangerous()) {
+                    std::cerr << warnMore() << "*** See " << warnUrl
+                              << " before disabling this,\n";
+                    std::cerr << warnMore() << "else you may end up with different sim results."
+                              << endl;
+                }
             }
         }
         if (!msg_additional.empty()) std::cerr << msg_additional;
-        // If first warning is not the user's fault (internal/unsupported) then give the website
-        // Not later warnings, as a internal may be caused by an earlier problem
-        if (tellManual() == 0) {
-            if (m_errorCode.mentionManual() || sstr.str().find("Unsupported") != string::npos) {
-                tellManual(1);
-            } else {
-                tellManual(2);
-            }
-        }
         if (anError) {
             incErrors();
         } else {
             incWarnings();
         }
-        if (m_errorCode == V3ErrorCode::EC_FATAL || m_errorCode == V3ErrorCode::EC_FATALEXIT
+        if (m_errorCode == V3ErrorCode::EC_FATAL || m_errorCode == V3ErrorCode::EC_FATALMANY
             || m_errorCode == V3ErrorCode::EC_FATALSRC) {
             static bool inFatal = false;
             if (!inFatal) {
                 inFatal = true;
-                if (tellManual() == 1) {
-                    std::cerr << warnMore()
-                              << "... See the manual at https://verilator.org/verilator_doc.html "
-                                 "for more assistance."
-                              << endl;
-                    tellManual(2);
-                }
 #ifndef V3ERROR_NO_GLOBAL_
                 if (dumpTreeLevel() || dumpTreeJsonLevel() || debug()) {
                     V3Broken::allowMidvisitorCheck(true);
@@ -271,12 +271,12 @@ string V3Error::lineStr(const char* filename, int lineno) VL_PURE {
 void V3Error::abortIfWarnings() {
     const bool exwarn = warnFatal() && warnCount();
     if (errorCount() && exwarn) {
-        v3fatalExit("Exiting due to " << std::dec << V3Error::s().errorCount() << " error(s), "  //
+        v3fatalMany("Exiting due to " << std::dec << V3Error::s().errorCount() << " error(s), "  //
                                       << V3Error::s().warnCount() << " warning(s)\n");
     } else if (errorCount()) {
-        v3fatalExit("Exiting due to " << std::dec << V3Error::s().errorCount() << " error(s)\n");
+        v3fatalMany("Exiting due to " << std::dec << V3Error::s().errorCount() << " error(s)\n");
     } else if (exwarn) {
-        v3fatalExit("Exiting due to " << std::dec << V3Error::s().warnCount() << " warning(s)\n");
+        v3fatalMany("Exiting due to " << std::dec << V3Error::s().warnCount() << " warning(s)\n");
     }
 }
 

@@ -1,0 +1,20 @@
+%Error-UNSUPPORTED: t/t_checker_unsup.v:31:12: Unsupported: 'checker' below unit-level
+   31 |    checker checker_in_module;
+      |            ^~~~~~~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_checker_unsup.v:37:12: Unsupported: 'checker' below unit-level
+   37 |    checker checker_in_pkg;
+      |            ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:41:29: Unsupported: checker port variable default value
+   41 | checker Chk(input defaulted = 1'b0);
+      |                             ^
+%Error-UNSUPPORTED: t/t_checker_unsup.v:45:4: Unsupported: checker rand
+   45 |    rand bit randed;   
+      |    ^~~~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:67:4: Unsupported: default clocking identifier
+   67 |    default clocking clk;   
+      |    ^~~~~~~
+%Error-UNSUPPORTED: t/t_checker_unsup.v:70:12: Unsupported: recursive 'checker'
+   70 |    checker ChkChk;   
+      |            ^~~~~~
+%Error: Exiting due to

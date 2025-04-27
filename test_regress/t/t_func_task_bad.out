@@ -2,6 +2,7 @@
                                  : ... note: In instance 't'
    10 |       if (task_as_func(1'b0)) $stop;
       |           ^~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_func_task_bad.v:10:7: Logical operator IF expects a non-complex data type on the If.
                                 : ... note: In instance 't'
    10 |       if (task_as_func(1'b0)) $stop;

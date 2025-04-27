@@ -42,7 +42,7 @@ def check_gcc_flags(filename):
 if not test.make_version or float(test.make_version) < 4.1:
     test.skip("Test requires GNU Make version >= 4.1")
 
-test.compile(v_flags2=["--trace --output-split 0 --exe ../" + test.main_filename],
+test.compile(v_flags2=["--trace-vcd --output-split 0 --exe ../" + test.main_filename],
              verilator_make_gmake=False)
 
 # We don't use the standard test_regress rules, as want to test the rules

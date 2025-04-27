@@ -1,3 +1,7 @@
+`begin_keywords "1800-2023"
+`verilator_config
+lint_off -rule NONSTD
+`begin_keywords "1800-2023"
 `timescale 1ns/1ps
 module top( 
    input logic clk,
@@ -10,6 +14,7 @@ module top(
       .out_signal(top_out)
    );
 endmodule
+`begin_keywords "1800-2023"
 `timescale 1ns/1ps
 module submod( 
    input logic clk,

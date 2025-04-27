@@ -2,4 +2,5 @@
                                           : ... note: In instance 't'
    12 |    assign imp_func_conflict = 1'b1;
       |           ^~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

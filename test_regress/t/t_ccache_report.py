@@ -19,7 +19,7 @@ if not test.cfg_with_ccache:
 for filename in glob.glob(test.obj_dir + "/*.o"):
     test.unlink_ok(filename)
 
-test.compile(verilator_flags2=['--trace'], make_flags=["ccache-report"])
+test.compile(verilator_flags2=['--trace-vcd'], make_flags=["ccache-report"])
 
 report = test.obj_dir + "/" + test.vm_prefix + "__ccache_report.txt"
 

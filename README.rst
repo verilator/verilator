@@ -1,7 +1,7 @@
 .. Github doesn't render images unless absolute URL
 .. Do not know of a conditional tag, "only: github" nor "github display" works
 
-|badge1| |badge2| |badge3| |badge4| |badge5| |badge6| |badge7|
+|badge1| |badge2| |badge3| |badge4| |badge5| |badge7|
 
 .. |badge1| image:: https://img.shields.io/badge/Website-Verilator.org-181717.svg
     :target: https://verilator.org
@@ -13,8 +13,6 @@
     :target: https://repology.org/project/verilator/versions
 .. |badge5| image:: https://img.shields.io/docker/pulls/verilator/verilator
     :target: https://hub.docker.com/r/verilator/verilator
-.. |badge6| image:: https://api.codacy.com/project/badge/Grade/fa78caa433c84a4ab9049c43e9debc6f
-    :target: https://www.codacy.com/gh/verilator/verilator
 .. |badge7| image:: https://github.com/verilator/verilator/workflows/build/badge.svg
     :target: https://github.com/verilator/verilator/actions?query=workflow%3Abuild
 
@@ -134,7 +132,7 @@ Related Projects
 - `GTKwave <http://gtkwave.sourceforge.net/>`_ - Waveform viewer for
   Verilator traces.
 
-- `Icarus Verilog`_ - Icarus is a full-featured interpreted Verilog
+- `Icarus Verilog`_ - Icarus is a highly-featured interpreted Verilog
   simulator. If Verilator does not support your needs, perhaps Icarus may.
 
 

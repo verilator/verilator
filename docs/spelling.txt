@@ -19,6 +19,7 @@ Asciidoc
 Ashutosh
 Ast
 Atmel
+Augustin
 Aurelien
 Badáň
 Bagri
@@ -109,6 +110,7 @@ Embecosm
 Engstrom
 Enzo
 Eugen
+Fabre
 Fabrizio
 Faucher
 Faure
@@ -650,6 +652,7 @@ elike
 elsif
 endcase
 endcelldefine
+endclass
 endfunction
 endgenerate
 endian
@@ -860,6 +863,7 @@ noprivate
 noreturn
 notif
 nullptr
+numactl
 onehot
 ooo
 oprofile
@@ -960,6 +964,7 @@ runtime
 runtimes
 rw
 sVerilator
+saif
 sawatzke
 sc
 scalared
@@ -1018,6 +1023,7 @@ swrite
 synthesizeable
 sys
 systemc
+tcmalloc
 tenghtt
 testbench
 threadsafe
@@ -1093,7 +1099,9 @@ verilator
 verilog
 verilogmod
 verimake
+veriuser
 vl
+vlSelf
 vlopt
 vlt
 vltstd
@@ -1113,6 +1121,7 @@ vpiUndefined
 vpm
 vpp
 warmup
+wavealloca
 waveforms
 whitespace
 widthed

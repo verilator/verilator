@@ -1,4 +1,5 @@
 %Error: t/t_assert_imm_nz_bad.v:13:26: Deferred assertions must use '#0' (IEEE 1800-2023 16.4)
    13 |    labeled_imas: assert #1 (clk);   
       |                          ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

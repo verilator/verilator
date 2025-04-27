@@ -35,28 +35,6 @@ thread_local VlExecutionProfiler::ExecutionTrace VlExecutionProfiler::t_trace;
 constexpr const char* const VlExecutionRecord::s_ascii[];
 
 //=============================================================================
-// VlPgoProfiler implementation
-
-uint16_t VlExecutionRecord::getcpu() {
-#if defined(__linux)
-    return sched_getcpu();  // TODO: this is a system call. Not exactly cheap.
-#elif defined(__APPLE__) && !defined(__arm64__)
-    uint32_t info[4];
-    __cpuid_count(1, 0, info[0], info[1], info[2], info[3]);
-    // info[1] is EBX, bits 24-31 are APIC ID
-    if ((info[3] & (1 << 9)) == 0) {
-        return -1;  // no APIC on chip
-    } else {
-        return (unsigned)info[1] >> 24;
-    }
-#elif defined(_WIN32)
-    return GetCurrentProcessorNumber();
-#else
-    return 0;
-#endif
-}
-
-//=============================================================================
 // VlExecutionProfiler implementation
 
 template <size_t N>
@@ -157,15 +135,21 @@ void VlExecutionProfiler::dump(const char* filenamep, uint64_t tickEnd)
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+exec writing to '%s'\n", filenamep););
 
     FILE* const fp = std::fopen(filenamep, "w");
-    if (VL_UNLIKELY(!fp)) { VL_FATAL_MT(filenamep, 0, "", "+prof+exec+file file not writable"); }
+    if (VL_UNLIKELY(!fp)) VL_FATAL_MT(filenamep, 0, "", "+prof+exec+file file not writable");
 
     // TODO Perhaps merge with verilated_coverage output format, so can
     // have a common merging and reporting tool, etc.
-    fprintf(fp, "VLPROFVERSION 2.1 # Verilator execution profile version 2.1\n");
+    fprintf(fp, "VLPROFVERSION 2.2 # Verilator execution profile version 2.2\n");
     fprintf(fp, "VLPROF arg +verilator+prof+exec+start+%" PRIu64 "\n",
             Verilated::threadContextp()->profExecStart());
     fprintf(fp, "VLPROF arg +verilator+prof+exec+window+%u\n",
             Verilated::threadContextp()->profExecWindow());
+    std::string numa = "no threads";
+    if (VlThreadPool* const threadPoolp
+        = static_cast<VlThreadPool*>(Verilated::threadContextp()->threadPoolp())) {
+        numa = threadPoolp->numaStatus();
+    }
+    fprintf(fp, "VLPROF info numa %s\n", numa.c_str());
     // Note that VerilatedContext will by default create as many threads as there are hardware
     // processors, but not all of them might be utilized. Report the actual number that has trace
     // entries to avoid over-counting.
@@ -206,13 +190,24 @@ void VlExecutionProfiler::dump(const char* filenamep, uint64_t tickEnd)
                 break;
             case VlExecutionRecord::Type::MTASK_BEGIN: {
                 const auto& payload = er.m_payload.mtaskBegin;
-                fprintf(fp, " id %u predictStart %u cpu %u\n", payload.m_id,
-                        payload.m_predictStart, payload.m_cpu);
+                if (payload.m_hierBlock[0] != '\0') {
+                    fprintf(fp, " id %u predictStart %u cpu %u hierBlock %s\n", payload.m_id,
+                            payload.m_predictStart, payload.m_cpu, payload.m_hierBlock);
+                } else {
+                    fprintf(fp, " id %u predictStart %u cpu %u\n", payload.m_id,
+                            payload.m_predictStart, payload.m_cpu);
+                }
                 break;
             }
             case VlExecutionRecord::Type::MTASK_END: {
                 const auto& payload = er.m_payload.mtaskEnd;
-                fprintf(fp, " id %u predictCost %u\n", payload.m_id, payload.m_predictCost);
+                fprintf(fp, " predictCost %u\n", payload.m_predictCost);
+                break;
+            }
+            case VlExecutionRecord::Type::THREAD_SCHEDULE_WAIT_BEGIN:
+            case VlExecutionRecord::Type::THREAD_SCHEDULE_WAIT_END: {
+                const auto& payload = er.m_payload.threadScheduleWait;
+                fprintf(fp, " cpu %u\n", payload.m_cpu);
                 break;
             }
             case VlExecutionRecord::Type::SECTION_PUSH: {

@@ -1,6 +1,7 @@
 %Error: t/t_preproc_elsif_bad.v:9:8: `elsif with no matching `if
     9 | `elsif A
       |        ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_preproc_elsif_bad.v:10:1: `endif with no matching `if
    10 | `endif
       | ^~~~~~

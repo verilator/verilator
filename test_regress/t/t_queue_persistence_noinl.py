@@ -15,8 +15,7 @@ test.top_filename = "t/t_queue_persistence.v"
 if not test.have_coroutines:
     test.skip("No coroutine support")
 
-test.compile(timing_loop=True,
-             verilator_flags2=["--binary --timing --fno-inline +define+TEST_NOINLINE"])
+test.compile(verilator_flags2=["--binary --fno-inline +define+TEST_NOINLINE"])
 
 test.execute()
 

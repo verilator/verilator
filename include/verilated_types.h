@@ -184,8 +184,11 @@ public:
     // Word at given 'wordIndex'
     uint64_t word(size_t wordIndex) const { return m_flags[wordIndex]; }
 
-    // Set specified flag to given value
-    void set(size_t index, bool value) {
+    // Set specified word to given value
+    void setWord(size_t wordIndex, uint64_t value) { m_flags[wordIndex] = value; }
+
+    // Set specified bit to given value
+    void setBit(size_t index, bool value) {
         uint64_t& w = m_flags[index / 64];
         const size_t bitIndex = index % 64;
         w &= ~(1ULL << bitIndex);
@@ -618,11 +621,13 @@ public:
     T_Value& atWriteAppend(int32_t index) {
         // cppcheck-suppress variableScope
         static thread_local T_Value t_throwAway;
-        if (VL_UNLIKELY(index < 0 || index > m_deque.size())) {
+        if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
+            if (index == m_deque.size()) {
+                push_back(atDefault());
+                return m_deque[index];
+            }
             t_throwAway = atDefault();
             return t_throwAway;
-        } else if (VL_UNLIKELY(index == m_deque.size())) {
-            push_back(atDefault());
         }
         return m_deque[index];
     }
@@ -920,6 +925,9 @@ template <typename T_Value, size_t N_MaxSize>
 std::string VL_TO_STRING(const VlQueue<T_Value, N_MaxSize>& obj) {
     return obj.to_string();
 }
+
+template <typename T_Value, size_t N_MaxSize>
+struct VlContainsCustomStruct<VlQueue<T_Value, N_MaxSize>> : VlContainsCustomStruct<T_Value> {};
 
 //===================================================================
 // Verilog associative array container
@@ -1257,6 +1265,9 @@ std::string VL_TO_STRING(const VlAssocArray<T_Key, T_Value>& obj) {
 }
 
 template <typename T_Key, typename T_Value>
+struct VlContainsCustomStruct<VlAssocArray<T_Key, T_Value>> : VlContainsCustomStruct<T_Key> {};
+
+template <typename T_Key, typename T_Value>
 void VL_READMEM_N(bool hex, int bits, const std::string& filename,
                   VlAssocArray<T_Key, T_Value>& obj, QData start, QData end) VL_MT_SAFE {
     VlReadMem rmem{hex, bits, filename, start, end};
@@ -1585,6 +1596,9 @@ template <typename T_Value, std::size_t N_Depth>
 std::string VL_TO_STRING(const VlUnpacked<T_Value, N_Depth>& obj) {
     return obj.to_string();
 }
+
+template <typename T, int N>
+struct VlContainsCustomStruct<VlUnpacked<T, N>> : VlContainsCustomStruct<T> {};
 
 //===================================================================
 // Helper to apply the given indices to a target expression

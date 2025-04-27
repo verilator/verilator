@@ -15,13 +15,13 @@ test.top_filename = "t/t_split_var_0.v"
 # CI environment offers 2 VCPUs, 2 thread setting causes the following warning.
 # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
 # So use 6 threads here though it's not optimal in performance, but ok.
-test.compile(verilator_flags2=['--cc --trace --stats +define+TEST_ATTRIBUTES'],
+test.compile(verilator_flags2=['--cc --trace-vcd --stats +define+TEST_ATTRIBUTES'],
              threads=(6 if test.vltmt else 1))
 
 test.execute()
 
 test.vcd_identical(test.trace_filename, test.golden_filename)
-test.file_grep(test.stats, r'SplitVar,\s+Split packed variables\s+(\d+)', 12)
-test.file_grep(test.stats, r'SplitVar,\s+Split unpacked arrays\s+(\d+)', 27)
+test.file_grep(test.stats, r'SplitVar,\s+packed variables split due to attribute\s+(\d+)', 12)
+test.file_grep(test.stats, r'SplitVar,\s+unpacked arrays split due to attribute\s+(\d+)', 27)
 
 test.passes()

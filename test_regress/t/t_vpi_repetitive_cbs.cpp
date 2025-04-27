@@ -153,7 +153,7 @@ static int register_cb(const int next_state) {
 }
 
 void reset_expected() {
-    for (int idx = 0; idx < CB_COUNT; idx++) { callbacks_expected_called[idx] = false; }
+    for (int idx = 0; idx < CB_COUNT; idx++) callbacks_expected_called[idx] = false;
 }
 
 void cb_will_be_called(const int cb) {
@@ -291,7 +291,7 @@ static int register_test_callback(p_cb_data data) {
 #ifdef IS_VPI
 
 static int end_of_sim_cb(p_cb_data cb_data) {
-    if (!got_error) { fprintf(stdout, "*-* All Finished *-*\n"); }
+    if (!got_error) fprintf(stdout, "*-* All Finished *-*\n");
     return 0;
 }
 

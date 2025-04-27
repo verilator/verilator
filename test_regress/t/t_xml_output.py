@@ -13,10 +13,11 @@ test.scenarios('vlt')
 
 out_filename = test.obj_dir + "/renamed-" + test.name + ".xml"
 
-test.compile(verilator_flags2=["--no-std", "--xml-only --xml-output", out_filename],
-             verilator_make_gmake=False,
-             make_top_shell=False,
-             make_main=False)
+test.compile(
+    verilator_flags2=["--no-std", "-Wno-DEPRECATED --xml-only --xml-output", out_filename],
+    verilator_make_gmake=False,
+    make_top_shell=False,
+    make_main=False)
 
 test.files_identical(out_filename, test.golden_filename)
 

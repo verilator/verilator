@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_fork.v"
 
-test.compile(verilator_flags2=["--binary --timing"])
+test.compile(verilator_flags2=["--binary"])
 
 test.execute()
 

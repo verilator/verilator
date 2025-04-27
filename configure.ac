@@ -10,7 +10,7 @@
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[5.034 2025-02-24],
+AC_INIT([Verilator],[5.036 2025-04-27],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
@@ -432,6 +432,7 @@ AC_SUBST(HAVE_COROUTINES)
 
 # Flags for compiling Verilator internals including parser always
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Qunused-arguments)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Xclang -fno-pch-timestamp)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-faligned-new)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-shadow)
@@ -469,6 +470,7 @@ CFG_CXX_FLAGS_CMAKE="-faligned-new"
 m4_foreach([cflag],[
         [-fbracket-depth=4096],
         [-fcf-protection=none],
+        [-Xclang -fno-pch-timestamp],
         [-mno-cet],
         [-Qunused-arguments],
         [-Wno-bool-operation],
@@ -515,7 +517,7 @@ if test "$CFG_ENABLE_PARTIAL_STATIC" = "yes"; then
   _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -static-libgcc)
   _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -static-libstdc++)
   _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -Xlinker -gc-sections)
-  LTCMALLOC=-l:libtcmalloc_minimal.a
+  LTCMALLOC="-Wl,--whole-archive -l:libtcmalloc_minimal.a -Wl,--no-whole-archive"
 else
   LTCMALLOC=-ltcmalloc_minimal
 fi

@@ -456,16 +456,16 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
 //============================================================================
 // Create simply ordered functions
 
-void createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
+AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
     AstCFunc* const funcp = makeTopFunction(netlistp, "_eval_static", /* slow: */ true);
     orderSequentially(funcp, logicClasses.m_static);
-    splitCheck(funcp);
+    return funcp;  // Not splitting yet as it is not final
 }
 
-AstCFunc* createInitial(AstNetlist* netlistp, const LogicClasses& logicClasses) {
+void createInitial(AstNetlist* netlistp, const LogicClasses& logicClasses) {
     AstCFunc* const funcp = makeTopFunction(netlistp, "_eval_initial", /* slow: */ true);
     orderSequentially(funcp, logicClasses.m_initial);
-    return funcp;  // Not splitting yet as it is not final
+    splitCheck(funcp);
 }
 
 AstCFunc* createPostponed(AstNetlist* netlistp, const LogicClasses& logicClasses) {
@@ -501,7 +501,7 @@ struct TriggerKit final {
     void addFirstIterationTriggerAssignment(AstVarScope* flagp, uint32_t index) const {
         FileLine* const flp = flagp->fileline();
         AstVarRef* const vrefp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
-        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "set"};
+        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "setBit"};
         callp->addPinsp(new AstConst{flp, index});
         callp->addPinsp(new AstVarRef{flp, flagp, VAccess::READ});
         callp->dtypeSetVoid();
@@ -512,7 +512,7 @@ struct TriggerKit final {
     void addExtraTriggerAssignment(AstVarScope* extraTriggerVscp, uint32_t index) const {
         FileLine* const flp = extraTriggerVscp->fileline();
         AstVarRef* const vrefp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
-        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "set"};
+        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "setBit"};
         callp->addPinsp(new AstConst{flp, index});
         callp->addPinsp(new AstVarRef{flp, extraTriggerVscp, VAccess::READ});
         callp->dtypeSetVoid();
@@ -651,9 +651,9 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
     }
 
     // Set the given trigger to the given value
-    const auto setTrig = [&](uint32_t index, AstNodeExpr* valp) {
+    const auto setTrigBit = [&](uint32_t index, AstNodeExpr* valp) {
         AstVarRef* const vrefp = new AstVarRef{flp, vscp, VAccess::WRITE};
-        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "set"};
+        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "setBit"};
         callp->addPinsp(new AstConst{flp, index});
         callp->addPinsp(valp);
         callp->dtypeSetVoid();
@@ -694,9 +694,14 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
     // Add trigger computation
     uint32_t triggerNumber = extraTriggers.size();
+    uint32_t triggerBitIdx = triggerNumber;
     AstNodeStmt* initialTrigsp = nullptr;
     std::vector<uint32_t> senItemIndex2TriggerIndex;
     senItemIndex2TriggerIndex.reserve(senItemps.size());
+    constexpr uint32_t TRIG_VEC_WORD_SIZE_LOG2 = 6;  // 64-bits
+    constexpr uint32_t TRIG_VEC_WORD_SIZE = 1 << TRIG_VEC_WORD_SIZE_LOG2;
+    std::vector<AstNodeExpr*> trigExprps;
+    trigExprps.reserve(TRIG_VEC_WORD_SIZE);
     for (const AstSenItem* const senItemp : senItemps) {
         UASSERT_OBJ(senItemp->isClocked() || senItemp->isHybrid(), senItemp,
                     "Cannot create trigger expression for non-clocked sensitivity");
@@ -706,12 +711,12 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
         // Add the trigger computation
         const auto& pair = senExprBuilder.build(senItemp);
-        funcp->addStmtsp(setTrig(triggerNumber, pair.first));
+        trigExprps.emplace_back(pair.first);
 
         // Add initialization time trigger
         if (pair.second || v3Global.opt.xInitialEdge()) {
             initialTrigsp
-                = AstNode::addNext(initialTrigsp, setTrig(triggerNumber, new AstConst{flp, 1}));
+                = AstNode::addNext(initialTrigsp, setTrigBit(triggerNumber, new AstConst{flp, 1}));
         }
 
         // Add a debug statement for this trigger
@@ -723,7 +728,47 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
         //
         ++triggerNumber;
+
+        // Add statements on every word boundary
+        if (triggerNumber % TRIG_VEC_WORD_SIZE == 0) {
+            if (triggerBitIdx % TRIG_VEC_WORD_SIZE != 0) {
+                // Set leading triggers bit-wise
+                for (AstNodeExpr* const exprp : trigExprps) {
+                    funcp->addStmtsp(setTrigBit(triggerBitIdx++, exprp));
+                }
+            } else {
+                // Set whole word as a unit
+                UASSERT_OBJ(triggerNumber == triggerBitIdx + TRIG_VEC_WORD_SIZE, senItemp,
+                            "Mismatched index");
+                UASSERT_OBJ(trigExprps.size() == TRIG_VEC_WORD_SIZE, senItemp,
+                            "There should be TRIG_VEC_WORD_SIZE expressions");
+                // Concatenate all bits in a tree
+                for (uint32_t level = 0; level < TRIG_VEC_WORD_SIZE_LOG2; ++level) {
+                    const uint32_t stride = 1 << level;
+                    for (uint32_t i = 0; i < TRIG_VEC_WORD_SIZE; i += 2 * stride) {
+                        trigExprps[i] = new AstConcat{trigExprps[i]->fileline(),
+                                                      trigExprps[i + stride], trigExprps[i]};
+                        trigExprps[i + stride] = nullptr;
+                    }
+                }
+                // Set the whole word in the trigger vector
+                AstVarRef* const vrefp = new AstVarRef{flp, vscp, VAccess::WRITE};
+                AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "setWord"};
+                callp->addPinsp(new AstConst{flp, triggerBitIdx / TRIG_VEC_WORD_SIZE});
+                callp->addPinsp(trigExprps[0]);
+                callp->dtypeSetVoid();
+                funcp->addStmtsp(callp->makeStmt());
+                triggerBitIdx += TRIG_VEC_WORD_SIZE;
+            }
+            UASSERT_OBJ(triggerNumber == triggerBitIdx, senItemp, "Mismatched index");
+            trigExprps.clear();
+        }
     }
+    // Set trailing triggers bit-wise
+    for (AstNodeExpr* const exprp : trigExprps) {
+        funcp->addStmtsp(setTrigBit(triggerBitIdx++, exprp));
+    }
+    trigExprps.clear();
 
     // Construct the map from old SenTrees to new SenTrees
     for (const AstSenTree* const senTreep : senTreeps) {
@@ -737,26 +782,16 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
         map[senTreep] = trigpSenp;
     }
 
+    // Get the SenExprBuilder results
+    const SenExprBuilder::Results senResults = senExprBuilder.getAndClearResults();
+
     // Add the init and update statements
-    for (AstNodeStmt* const nodep : senExprBuilder.getAndClearInits()) {
-        initFuncp->addStmtsp(nodep);
-    }
-    for (AstNodeStmt* const nodep : senExprBuilder.getAndClearPostUpdates()) {
-        funcp->addStmtsp(nodep);
-    }
-    const auto& preUpdates = senExprBuilder.getAndClearPreUpdates();
-    if (!preUpdates.empty()) {
-        for (AstNodeStmt* const nodep : vlstd::reverse_view(preUpdates)) {
+    for (AstNodeStmt* const nodep : senResults.m_inits) initFuncp->addStmtsp(nodep);
+    for (AstNodeStmt* const nodep : senResults.m_postUpdates) funcp->addStmtsp(nodep);
+    if (!senResults.m_preUpdates.empty()) {
+        for (AstNodeStmt* const nodep : vlstd::reverse_view(senResults.m_preUpdates)) {
             UASSERT_OBJ(funcp->stmtsp(), funcp,
                         "No statements in trigger eval function, but there are pre updates");
-            funcp->stmtsp()->addHereThisAsNext(nodep);
-        }
-    }
-    const auto& locals = senExprBuilder.getAndClearLocals();
-    if (!locals.empty()) {
-        UASSERT_OBJ(funcp->stmtsp(), funcp,
-                    "No statements in trigger eval function, but there are locals");
-        for (AstVar* const nodep : vlstd::reverse_view(locals)) {
             funcp->stmtsp()->addHereThisAsNext(nodep);
         }
     }
@@ -1175,10 +1210,10 @@ void schedule(AstNetlist* netlistp) {
     }
 
     // Step 2. Schedule static, initial and final logic classes in source order
-    createStatic(netlistp, logicClasses);
+    AstCFunc* const staticp = createStatic(netlistp, logicClasses);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-static");
 
-    AstCFunc* const initp = createInitial(netlistp, logicClasses);
+    createInitial(netlistp, logicClasses);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-initial");
 
     createFinal(netlistp, logicClasses);
@@ -1201,7 +1236,7 @@ void schedule(AstNetlist* netlistp) {
     SenExprBuilder senExprBuilder{scopeTopp};
 
     // Step 4: Create 'settle' region that restores the combinational invariant
-    createSettle(netlistp, initp, senExprBuilder, logicClasses);
+    createSettle(netlistp, staticp, senExprBuilder, logicClasses);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-settle");
 
     // Step 5: Partition the clocked and combinational (including hybrid) logic into pre/act/nba.
@@ -1232,7 +1267,7 @@ void schedule(AstNetlist* netlistp) {
     }
 
     // Step 7: Create input combinational logic loop
-    AstNode* const icoLoopp = createInputCombLoop(netlistp, initp, senExprBuilder,
+    AstNode* const icoLoopp = createInputCombLoop(netlistp, staticp, senExprBuilder,
                                                   logicReplicas.m_ico, virtIfaceTriggers);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-ico");
 
@@ -1256,7 +1291,7 @@ void schedule(AstNetlist* netlistp) {
                                                &logicRegions.m_react,  //
                                                &timingKit.m_lbs});
     const TriggerKit& actTrig
-        = createTriggers(netlistp, initp, senExprBuilder, senTreeps, "act", extraTriggers);
+        = createTriggers(netlistp, staticp, senExprBuilder, senTreeps, "act", extraTriggers);
 
     // Add post updates from the timing kit
     if (timingKit.m_postUpdates) actTrig.m_funcp->addStmtsp(timingKit.m_postUpdates);
@@ -1421,7 +1456,7 @@ void schedule(AstNetlist* netlistp) {
 
     transformForks(netlistp);
 
-    splitCheck(initp);
+    splitCheck(staticp);
 
     netlistp->dpiExportTriggerp(nullptr);
 

@@ -310,6 +310,39 @@ module Vt_debug_emitv_t;
             $display("%g", $asinh(r));
             $display("%g", $acosh(r));
             $display("%g", $atanh(r));
+            if ($sampled(cyc[1])) begin
+                $write("");
+            end
+            if ($rose(cyc)) begin
+                $write("");
+            end
+            if ($fell(cyc)) begin
+                $write("");
+            end
+            if ($stable(cyc)) begin
+                $write("");
+            end
+            if ((! $stable(cyc))) begin
+                $write("");
+            end
+            if ($past(cyc[1])) begin
+                $write("");
+            end
+            if ($rose(cyc, @( clk))) begin
+                $write("");
+            end
+            if ($fell(cyc, @( clk))) begin
+                $write("");
+            end
+            if ($stable(cyc, @( clk))) begin
+                $write("");
+            end
+            if ((! $stable(cyc, @( clk)))) begin
+                $write("");
+            end
+            if ($past(cyc[1], 'sh5)) begin
+                $write("");
+            end
             force sum = 'sha;
             begin : unnamedblk1_1
                 integer signed __Vrepeat0;
@@ -331,6 +364,9 @@ package Vt_debug_emitv___024unit;
         int signed member;
         member = 'sh1;
         task method;
+            if ((this != this)) begin
+                $stop;
+            end
         endtask
         function new;
         endfunction

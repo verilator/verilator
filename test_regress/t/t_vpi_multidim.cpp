@@ -27,6 +27,7 @@
 
 #endif
 
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -207,7 +208,9 @@ void _arr_iter_check(const char* name, int wordSize, const int* lows) {
 
 void _arr_access_format_check(TestVpiHandle& reg_h, int wordSize, const int* lows,
                               const char* octVal_s, PLI_INT32 format) {
+    constexpr int MAX_SPANSIZE = 1024;
     const int spanSize = wordSize / 2;
+    assert(spanSize <= MAX_SPANSIZE);
     s_vpi_value value_in;
     s_vpi_value value_out;
     s_vpi_error_info e;
@@ -226,14 +229,14 @@ void _arr_access_format_check(TestVpiHandle& reg_h, int wordSize, const int* low
         TestVpiHandle subreg_h = vpi_handle_by_index(reg_h, lows[2] + i);
         TEST_CHECK_NZ(subreg_h);
 
-        char octSpan_s[spanSize / 3 + 1];
+        char octSpan_s[MAX_SPANSIZE / 3 + 1];
         strncpy(octSpan_s, &octVal_s[spanSize / 3 * (1 - i)], spanSize / 3);
         octSpan_s[spanSize / 3] = '\0';
 
         uint64_t intVal;
         t_vpi_vecval vecVal[2];
         sscanf(octSpan_s, "%" SCNo64, &intVal);
-        char strVal_s[spanSize + 1];  // max length of the string happens for binary
+        char strVal_s[MAX_SPANSIZE + 1];  // max length of the string happens for binary
 
         if (format == vpiIntVal) {
             value_in.value.integer = intVal;
@@ -257,7 +260,7 @@ void _arr_access_format_check(TestVpiHandle& reg_h, int wordSize, const int* low
             sprintf(strVal_s, "%0*" PRIx64, (spanSize + 3) / 4, intVal);
             value_in.value.str = strVal_s;
         } else if (format == vpiOctStrVal) {
-            sprintf(strVal_s, "%" PRIo64, intVal);
+            sprintf(strVal_s, "%0*" PRIo64, (spanSize + 2) / 3, intVal);
             value_in.value.str = strVal_s;
         } else if (format == vpiStringVal) {
             const int byteCount = (spanSize + 7) / 8;
@@ -305,17 +308,13 @@ void _arr_access_check(const char* name, int wordSize, const int* lows) {
     std::uniform_int_distribution<uint64_t> rand64(std::numeric_limits<uint64_t>::min(),
                                                    std::numeric_limits<uint64_t>::max());
 
-    char octVal_s[wordSize / 3 + 1];
+    constexpr int MAX_WORDSIZE = 128;
+    assert(wordSize <= MAX_WORDSIZE);
+    char octVal_s[MAX_WORDSIZE / 3 + 2];
 
-    // fill octVal_s with random octal digits
-    if (wordSize < 64) {
-        sprintf(octVal_s, "%0*" PRIo64, wordSize / 3,
-                rand64(rng) % (static_cast<uint64_t>(1) << wordSize));
-    } else {
-        sprintf(octVal_s, "%0*" PRIo64, 63 / 3, rand64(rng));
-        sprintf(octVal_s + 63 / 3, "%0*" PRIo64, (wordSize - 63) / 3,
-                rand64(rng) % (static_cast<uint64_t>(1) << (wordSize - 63)));
-    }
+    octVal_s[0] = '0' + (rand64(rng) % (1ULL << ((((wordSize - 1) % 3) + 1))));
+    for (int i = 1; i < (wordSize + 2) / 3; ++i) octVal_s[i] = '0' + (rand64(rng) % 8);
+    octVal_s[(wordSize + 2) / 3] = '\0';
 
     // Assume that reading/writing to the "flattened" packed register is already tested,
     // check only reading/writing to sub-regs and validate the flattened result.

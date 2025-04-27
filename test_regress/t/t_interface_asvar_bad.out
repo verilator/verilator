@@ -2,6 +2,7 @@
                                        : ... note: In instance 't.source'
    29 |       getter = itf;   
       |                ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_interface_asvar_bad.v:30:23: Operator ADD expected non-interface on RHS but 'itf' is an interface.
                                        : ... note: In instance 't.source'
    30 |       getter = 4'd3 + itf;   

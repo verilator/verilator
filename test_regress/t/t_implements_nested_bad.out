@@ -1,4 +1,5 @@
 %Error: t/t_implements_nested_bad.v:9:17: Interface class shall not be nested within another interface class. (IEEE 1800-2023 8.26)
     9 |       interface class bad_cannot_nest;
       |                 ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

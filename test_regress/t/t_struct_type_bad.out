@@ -1,4 +1,5 @@
 %Error: t/t_struct_type_bad.v:13:7: Expecting a data type: 'i'
    13 |       i badi;   
       |       ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

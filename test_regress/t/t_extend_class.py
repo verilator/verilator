@@ -9,9 +9,9 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt_all')
+test.scenarios('vlt')
 
-test.compile(make_flags=["CPPFLAGS_ADD=-I" + test.t_dir])
+test.compile()
 
 test.execute()
 

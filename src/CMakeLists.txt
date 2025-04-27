@@ -85,6 +85,7 @@ set(HEADERS
     V3EmitCMain.h
     V3EmitCMake.h
     V3EmitMk.h
+    V3EmitMkJson.h
     V3EmitV.h
     V3EmitXml.h
     V3Error.h
@@ -177,6 +178,7 @@ set(HEADERS
     V3Trace.h
     V3TraceDecl.h
     V3Tristate.h
+    V3Udp.h
     V3Undriven.h
     V3UniqueNames.h
     V3Unknown.h
@@ -246,6 +248,7 @@ set(COMMON_SOURCES
     V3EmitCPch.cpp
     V3EmitCSyms.cpp
     V3EmitMk.cpp
+    V3EmitMkJson.cpp
     V3EmitV.cpp
     V3EmitXml.cpp
     V3Error.cpp
@@ -324,6 +327,7 @@ set(COMMON_SOURCES
     V3TraceDecl.cpp
     V3Tristate.cpp
     V3TSP.cpp
+    V3Udp.cpp
     V3Undriven.cpp
     V3Unknown.cpp
     V3Unroll.cpp

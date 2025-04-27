@@ -2,6 +2,7 @@
                                  : ... note: In instance 't'
    39 |       d_bitz[0] = 1'b1;          
       |             ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_var_types_bad.v:40:15: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
                                  : ... note: In instance 't'
    40 |       d_logicz[0] = 1'b1;        

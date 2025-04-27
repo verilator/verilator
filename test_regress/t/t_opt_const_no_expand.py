@@ -13,7 +13,7 @@ test.scenarios('simulator')
 test.top_filename = "t/t_opt_const.v"
 
 test.compile(verilator_flags2=[
-    "-Wno-UNOPTTHREADS", "-fno-dfg", "-fno-expand", "--stats", test.t_dir + "/t_opt_const.cpp"
+    "-Wno-UNOPTTHREADS", "-fno-dfg", "-fno-expand", "--stats", "t/t_opt_const.cpp"
 ])
 
 test.execute()

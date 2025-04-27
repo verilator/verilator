@@ -2,6 +2,7 @@
                                    : ... note: In instance 't'
    21 |    sub0 #(UNPACKED) i_sub0(.clk(clk), .in(8'(count)), .out(out0));
       |           ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_hier_block0_bad.v:26:42: Cannot access inside hierarchical block
    26 |       $display("%d %d %d", count, i_sub0.ff, out1);
       |                                          ^~

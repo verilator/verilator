@@ -12,4 +12,5 @@
            c = ?32?h9
    20 |    localparam P24 = f_add2(7, 8, 9);
       |                     ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

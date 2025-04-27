@@ -40,6 +40,13 @@ module t (/*AUTOARG*/
       endcase
    end
 
+   // Remove CResets
+   function int f(int in);
+      automatic int aut;
+      aut = in;
+      return aut;
+   endfunction
+
    always @ (posedge clk) begin
       if (cyc!=0) begin
          cyc<=cyc+1;
@@ -95,6 +102,9 @@ module t (/*AUTOARG*/
          end
          if (cyc==6) begin
             if (fixin != 16'hb7b7) $stop;
+         end
+         if (cyc==8) begin
+            if (f(123) != 123) $stop;
          end
          if (cyc==9) begin
             $write("*-* All Finished *-*\n");

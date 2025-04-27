@@ -1,6 +1,7 @@
 %Error: t/t_pp_defparen_bad.v:10:2: Illegal text before '(' that starts define arguments
    10 |  ( 1,2)
       |  ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_pp_defparen_bad.v:10:1: syntax error, unexpected '('
    10 | ((val  1) + (2))
       | ^

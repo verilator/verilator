@@ -175,6 +175,32 @@ package std;
 `endif
       endtask
 
+      // Two process references are equal if the different classes' containing
+      // m_process are equal. Can't yet use <=> as the base class template
+      // comparisons doesn't define <=> as they don't yet require --timing and C++20.
+`ifdef VERILATOR_TIMING
+`systemc_header_post
+template<> template<>
+inline bool VlClassRef<`systemc_class_name>::operator==(const VlClassRef<`systemc_class_name>& rhs) const {
+    if (!m_objp && !rhs.m_objp) return true;
+    if (!m_objp || !rhs.m_objp) return false;
+    return m_objp->__PVT__m_process == rhs.m_objp->__PVT__m_process;
+};
+template<> template<>
+inline bool VlClassRef<`systemc_class_name>::operator!=(const VlClassRef<`systemc_class_name>& rhs) const {
+    if (!m_objp && !rhs.m_objp) return false;
+    if (!m_objp || !rhs.m_objp) return true;
+    return m_objp->__PVT__m_process != rhs.m_objp->__PVT__m_process;
+};
+template<> template<>
+inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc_class_name>& rhs) const {
+    if (!m_objp && !rhs.m_objp) return false;
+    if (!m_objp || !rhs.m_objp) return false;
+    return m_objp->__PVT__m_process < rhs.m_objp->__PVT__m_process;
+};
+`verilog
+`endif
+
       // When really implemented, srandom must operate on the process, but for
       // now rely on the srandom() that is automatically generated for all
       // classes.

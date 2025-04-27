@@ -1,6 +1,7 @@
 %Error: t/t_pli_bad.v:10:7: Unsupported or unknown PLI call: '$unknown_pli_task'
    10 |       $unknown_pli_task;
       |       ^~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_pli_bad.v:11:7: Unsupported or unknown PLI call: '$unknown_pli_task'
    11 |       $unknown_pli_task("arg", i);
       |       ^~~~~~~~~~~~~~~~~

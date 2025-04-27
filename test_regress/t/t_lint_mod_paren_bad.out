@@ -1,4 +1,5 @@
 %Error: t/t_lint_mod_paren_bad.v:13:6: syntax error, unexpected '(', expecting ';'
    13 |    ) (
       |      ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

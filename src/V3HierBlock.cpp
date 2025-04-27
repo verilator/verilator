@@ -88,6 +88,7 @@
 
 #include "V3HierBlock.h"
 
+#include "V3Config.h"
 #include "V3EmitV.h"
 #include "V3File.h"
 #include "V3Os.h"
@@ -187,6 +188,23 @@ V3StringList V3HierBlock::commandArgs(bool forCMake) const {
     }
     if (!params().gTypeParams().empty())
         opts.push_back(" --hierarchical-params-file " + typeParametersFilename());
+
+    const int blockThreads = V3Config::getHierWorkers(m_modp->origName());
+    if (blockThreads > 1) {
+        if (hasParent()) {
+            V3Config::getHierWorkersFileLine()->v3warn(
+                E_UNSUPPORTED, "Specifying workers for nested hierarchical blocks");
+        } else {
+            if (v3Global.opt.threads() < blockThreads) {
+                m_modp->v3error("Hierarchical blocks cannot be scheduled on more threads than in "
+                                "thread pool, threads = "
+                                << v3Global.opt.threads()
+                                << " hierarchical block threads = " << blockThreads);
+            }
+
+            opts.push_back(" --threads " + std::to_string(blockThreads));
+        }
+    }
 
     return opts;
 }
@@ -487,5 +505,5 @@ string V3HierBlockPlan::topCommandArgsFilename(bool forCMake) {
 }
 
 void V3HierBlockPlan::writeParametersFiles() const {
-    for (const auto& block : *this) { block.second->writeParametersFile(); }
+    for (const auto& block : *this) block.second->writeParametersFile();
 }

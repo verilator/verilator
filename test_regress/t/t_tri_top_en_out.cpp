@@ -66,7 +66,7 @@ int main(int argc, char** argv, char**) {
         // Loop back if verilog is driving
         // Verilator will not do this for itself
         // We must implement the top-level resolution
-        if (topp->sub_io__en) { topp->sub_io = topp->sub_io__out; }
+        if (topp->sub_io__en) topp->sub_io = topp->sub_io__out;
         if (topp->bidir_single_bit_io__en) {
             topp->bidir_single_bit_io = topp->bidir_single_bit_io__out;
         }
@@ -158,7 +158,7 @@ int main(int argc, char** argv, char**) {
             // Invert the input side
             topp->bidir_single_bit_io = (~topp->bidir_single_bit_io) & 0x1;
             topp->bidir_bus_64_io = ~topp->bidir_bus_64_io;
-            for (int i = 0; i < 4; i++) { topp->bidir_bus_128_io[i] = ~topp->bidir_bus_128_io[i]; }
+            for (int i = 0; i < 4; i++) topp->bidir_bus_128_io[i] = ~topp->bidir_bus_128_io[i];
         }  // if (loop_done)
         if (errors != 0) break;
     }

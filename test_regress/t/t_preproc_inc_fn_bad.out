@@ -1,4 +1,5 @@
 %Error: t/t_preproc_inc_fn_bad.v:7:10: Expecting include filename. Found: ELSE
     7 | `include `else
       |          ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

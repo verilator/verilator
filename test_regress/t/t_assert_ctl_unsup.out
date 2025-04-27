@@ -31,6 +31,7 @@
 %Error: t/t_assert_ctl_unsup.v:38:7: Bad assertcontrol control_type (IEEE 1800-2023 Table 20-5)
    38 |       $assertcontrol(0);
       |       ^~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_assert_ctl_unsup.v:39:7: Bad assertcontrol control_type (IEEE 1800-2023 Table 20-5)
    39 |       $assertcontrol(100);
       |       ^~~~~~~~~~~~~~

@@ -55,7 +55,7 @@ class LinkResolveVisitor final : public VNVisitor {
     bool m_underGenFor = false;  // Under GenFor
     bool m_underGenerate = false;  // Under GenFor/GenIf
 
-    // VISITs
+    // VISITORS
     // TODO: Most of these visitors are here for historical reasons.
     // TODO: ExpectDescriptor can move to data type resolution, and the rest
     // TODO: could move to V3LinkParse to get them out of the way of elaboration
@@ -121,9 +121,9 @@ class LinkResolveVisitor final : public VNVisitor {
         if (m_assertp) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Assert not allowed under another assert");
         }
+        VL_RESTORER(m_assertp);
         m_assertp = nodep;
         iterateChildren(nodep);
-        m_assertp = nullptr;
     }
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);
@@ -171,11 +171,9 @@ class LinkResolveVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        {
-            m_ftaskp = nodep;
-            iterateChildren(nodep);
-        }
-        m_ftaskp = nullptr;
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
+        iterateChildren(nodep);
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
     void visit(AstNodeFTaskRef* nodep) override {
@@ -189,6 +187,9 @@ class LinkResolveVisitor final : public VNVisitor {
                 return;
             }
             letp->user2(true);
+            if (VN_IS(nodep->backp(), StmtExpr)) {
+                nodep->v3error("Expected statement, not let substitution " << letp->prettyNameQ());
+            }
             // letp->dumpTree("-let-let ");
             // nodep->dumpTree("-let-ref ");
             AstStmtExpr* const letStmtp = VN_AS(letp->stmtsp(), StmtExpr);
@@ -530,7 +531,7 @@ class LinkBotupVisitor final : public VNVisitorConst {
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
 
-    // VISITs
+    // VISITORS
     void visit(AstNetlist* nodep) override {
         // Iterate modules backwards, in bottom-up order.
         iterateChildrenBackwardsConst(nodep);

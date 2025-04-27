@@ -175,7 +175,7 @@ class LinkParseVisitor final : public VNVisitor {
                           << nodep->warnContextSecondary());
     }
 
-    // VISITs
+    // VISITORS
     void visit(AstNodeFTask* nodep) override {
         if (!nodep->user1SetOnce()) {  // Process only once.
             // Mark class methods
@@ -387,7 +387,7 @@ class LinkParseVisitor final : public VNVisitor {
                 newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
                 // Create a ParseRef to the wire. We cannot use the var as it may be deleted if
                 // it's a port (see t_var_set_link.v)
-                auto* const assp = new AstAssign{
+                AstAssign* const assp = new AstAssign{
                     newfl, new AstParseRef{newfl, VParseRefExp::PX_TEXT, nodep->name()},
                     VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)};
                 if (nodep->lifetime().isAutomatic()) {
@@ -681,7 +681,7 @@ class LinkParseVisitor final : public VNVisitor {
         if (nodep->genforp()) {
             ++m_genblkNum;
             if (nodep->name() == "") assignGenBlkNum = m_genblkNum;
-        } else if (nodep->generate() && nodep->name() == "" && assignGenBlkNum == -1
+        } else if (nodep->generate() && nodep->name() == ""
                    && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf)) && !nestedIf) {
             assignGenBlkNum = m_genblkAbove;
         }

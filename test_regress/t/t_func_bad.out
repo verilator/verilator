@@ -2,6 +2,7 @@
                            : ... note: In instance 't'
     9 |       if (add(3'd1) != 0) $stop;   
       |           ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_func_bad.v:10:27: Too many arguments in function call to FUNC 'add'
                             : ... note: In instance 't'
    10 |       if (add(3'd1, 3'd2, 3'd3) != 0) $stop;     

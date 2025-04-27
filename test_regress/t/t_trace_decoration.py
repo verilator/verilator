@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--cc --trace --no-decoration'])
+test.compile(verilator_flags2=['--cc --trace-vcd --no-decoration'])
 
 test.execute()
 

@@ -3,4 +3,5 @@
       |       ^~
         t/t_lint_in_inc_bad_1.vh:8:1: ... note: In file included from 't_lint_in_inc_bad_1.vh'
         t/t_lint_in_inc_bad.v:8:1: ... note: In file included from 't_lint_in_inc_bad.v'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

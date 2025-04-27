@@ -255,6 +255,9 @@ private:
     }
     void visit(AstClass* nodep) override {
         // Move initial statements into the constructor
+        VL_RESTORER(m_initialps);
+        VL_RESTORER(m_ctorp);
+        VL_RESTORER(m_classp);
         m_initialps.clear();
         m_ctorp = nullptr;
         m_classp = nodep;
@@ -274,8 +277,6 @@ private:
             VL_DO_DANGLING(pushDeletep(initialp->unlinkFrBack()), initialp);
         }
         m_initialps.clear();
-        m_ctorp = nullptr;
-        m_classp = nullptr;
     }
     void visit(AstInitialAutomatic* nodep) override {
         m_initialps.push_back(nodep);
@@ -604,11 +605,19 @@ class TaskVisitor final : public VNVisitor {
                     // Any I/O variables that fell out of above loop were already linked
                     if (!portp->user2p()) {
                         // Move it to a new localized variable
-                        portp->unlinkFrBack();
-                        pushDeletep(portp);  // Remove it from the clone (not original)
                         AstVarScope* const localVscp
                             = createVarScope(portp, namePrefix + "__" + portp->shortName());
                         portp->user2p(localVscp);
+                        if (portp->needsCReset() && portp->lifetime().isAutomatic()
+                            && !portp->valuep()) {
+                            // Reset automatic var to its default, on each invocation of function
+                            AstVarRef* const vrefp
+                                = new AstVarRef{portp->fileline(), portp, VAccess::WRITE};
+                            portp->replaceWith(new AstCReset{portp->fileline(), vrefp, false});
+                        } else {
+                            portp->unlinkFrBack();
+                        }
+                        pushDeletep(portp);  // Remove it from the clone (not original)
                     }
                 }
             }
@@ -1435,10 +1444,10 @@ class TaskVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstScope* nodep) override {
+        VL_RESTORER(m_scopep);
         m_scopep = nodep;
         m_insStmtp = nullptr;
         iterateChildren(nodep);
-        m_scopep = nullptr;
     }
     void visit(AstNodeFTaskRef* nodep) override {
         if (m_inSensesp) {
@@ -1943,9 +1952,8 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
         const string idx = portp->name() + "__Vidx";
         stmt = "for (size_t " + idx + " = 0; " + idx + " < " + cvtToStr(unpackSize) + "; ++" + idx
                + ") ";
-        stmt += (isBit ? "VL_SET_SVBV_" : "VL_SET_SVLV_")
-                + string{portp->dtypep()->skipRefp()->charIQWN()} + "(" + cvtToStr(portp->width())
-                + ", ";
+        stmt += (isBit ? "VL_SET_SVBV_"s : "VL_SET_SVLV_"s)
+                + portp->dtypep()->skipRefp()->charIQWN() + "(" + cvtToStr(portp->width()) + ", ";
         stmt += toName + " + " + cvtToStr(portp->dtypep()->skipRefp()->widthWords()) + " * " + idx
                 + ", ";
         if (unpackDim > 0) {  // Access multi-dimensional array as a 1D array

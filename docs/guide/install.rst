@@ -15,9 +15,9 @@ Package Manager Quick Install
 =============================
 
 Using a distribution's package manager is the easiest way to get
-started. (Note packages are unlikely to have the most recent version, so
-:ref:`Git Install` might be a better alternative.) To install as a
-package:
+started. (Note distribution packages almost never have the most recent
+Verilator version, so we recommend following :ref:`Git Install` below,
+instead.) To install as a package:
 
 .. code-block:: shell
 
@@ -118,6 +118,25 @@ To build or run Verilator, you need these standard packages:
    sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
    sudo apt-get install zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
 
+For SystemC:
+
+.. code-block:: shell
+
+   sudo apt-get install libsystemc libsystemc-dev
+
+For constraints:
+
+.. code-block:: shell
+
+   sudo apt-get install z3  # Optional solver
+
+The following is optional but is recommended for nicely rendered command line
+help when running Verilator:
+
+.. code-block:: shell
+
+   sudo apt-get install perl-doc
+
 To build or run Verilator, the following are optional but should be installed
 for good performance:
 
@@ -126,13 +145,6 @@ for good performance:
    sudo apt-get install ccache  # If present at build, needed for run
    sudo apt-get install mold  # If present at build, needed for run
    sudo apt-get install libgoogle-perftools-dev numactl
-
-The following is optional but is recommended for nicely rendered command line
-help when running Verilator:
-
-.. code-block:: shell
-
-   sudo apt-get install perl-doc
 
 To build Verilator you will need to install these packages; these do not
 need to be present to run Verilator:
@@ -146,7 +158,7 @@ Those developing Verilator itself may also want these (see internals.rst):
 .. code-block:: shell
 
    sudo apt-get install clang clang-format-14 cmake gdb gprof graphviz lcov
-   sudo apt-get install python3-clang yapf3 bear jq
+   sudo apt-get install python3-clang python3-distro yapf3 bear jq
    sudo pip3 install sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe ruff
    sudo pip3 install git+https://github.com/antmicro/astsee.git
    cpan install Pod::Perldoc
@@ -155,7 +167,10 @@ Those developing Verilator itself may also want these (see internals.rst):
 Install SystemC
 ^^^^^^^^^^^^^^^
 
-If you will be using SystemC (vs straight C++ output), download `SystemC
+SystemC code can be generated from Verilator (with :vlopt:`--sc`) if it is
+installed as a package (see above).
+
+Alternatively, from their sources, download `SystemC
 <https://www.accellera.org/downloads/standards/systemc>`__.  Follow their
 installation instructions. You will need to set the
 :option:`SYSTEMC_INCLUDE` environment variable to point to the include
@@ -169,6 +184,10 @@ Install GTKWave
 To make use of Verilator FST tracing you will want `GTKwave
 <http://gtkwave.sourceforge.net/>`__ installed, however this is not
 required at Verilator build time.
+
+.. code-block:: shell
+
+    sudo apt-get install gtkwave  # Optional Waveform viewer
 
 
 Install Z3

@@ -1,0 +1,6 @@
+%Error: t/t_udp_sequential_bad.v:8:8: For combinational UDP, the output must not be a 'reg' data type
+                                    : ... note: In instance 'top'
+    8 | output dout;
+      |        ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

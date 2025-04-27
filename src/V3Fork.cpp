@@ -24,10 +24,12 @@
 // FORKs that spawn tasks which might outlive their parents require those
 // tasks to carry their own frames and as such they require their own
 // variable scopes.
+//
 // There are two mechanisms that work together to achieve that. ForkVisitor
 // moves bodies of forked processes into new tasks, which results in them getting their
 // own scopes. The original statements get replaced with a call to the task which
 // passes the required variables by value.
+//
 // The second mechanism, DynScopeVisitor, is designed to handle variables which can't be
 // captured by value and instead require a reference. Those variables get moved into an
 // "anonymous" object, ie. a class with appropriate fields gets generated and an object
@@ -330,7 +332,7 @@ class DynScopeVisitor final : public VNVisitor {
             membersel->varp(refp->varp());
         }
         handle.relink(membersel);
-        VL_DO_DANGLING(refp->deleteTree(), refp);
+        VL_DO_DANGLING(pushDeletep(refp), refp);
     }
 
     static bool hasAsyncFork(AstNode* nodep) {
@@ -591,7 +593,7 @@ class ForkVisitor final : public VNVisitor {
             taskp
                 = makeTask(beginp->fileline(), beginp->stmtsp()->unlinkFrBackWithNext(), taskName);
             beginp->unlinkFrBack(&handle);
-            VL_DO_DANGLING(beginp->deleteTree(), beginp);
+            VL_DO_DANGLING(pushDeletep(beginp), beginp);
         } else if (AstNodeStmt* const stmtp = VN_CAST(nodep, NodeStmt)) {
             const string taskName = generateTaskName(stmtp, "fork_stmt");
             taskp = makeTask(stmtp->fileline(), stmtp->unlinkFrBack(&handle), taskName);
@@ -617,7 +619,7 @@ class ForkVisitor final : public VNVisitor {
 
         VL_RESTORER(m_forkLocalsp);
         VL_RESTORER(m_newProcess);
-        VL_RESTORER(m_forkDepth)
+        VL_RESTORER(m_forkDepth);
         if (!nodep->joinType().join()) {
             ++m_forkDepth;
             m_newProcess = true;
@@ -679,7 +681,7 @@ class ForkVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override {
-        VL_RESTORER(m_newProcess)
+        VL_RESTORER(m_newProcess);
         VL_RESTORER(m_forkDepth);
         if (nodep->user1()) --m_forkDepth;
         m_newProcess = false;

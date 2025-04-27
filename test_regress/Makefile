@@ -34,7 +34,7 @@ ifneq ($(NC_ROOT),)
 #PRODUCTS += --nc
 endif
 
-# Run tests in parallel.  Requires Parallel::Forker to be installed.
+# Run tests in parallel.
 ifeq ($(CFG_WITH_LONGTESTS),yes)
  DRIVER_FLAGS ?= -j 0 --quiet --rerun
 endif
@@ -88,7 +88,7 @@ print-cxx-version:
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
 	-rm -rf obj_* simv* simx* csrc cov_work INCA_libs *.log *.key logs vc_hdrs.h
-	-rm -rf t/obj_*
+	-rm -rf t/obj_* t/__pycache__
 
 distclean::
 	-rm -rf snapshot

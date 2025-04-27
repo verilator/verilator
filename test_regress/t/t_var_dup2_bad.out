@@ -5,6 +5,7 @@
         t/t_var_dup2_bad.v:10:11: ... Location of original declaration
    10 |    output bad_o_w,
       |           ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_var_dup2_bad.v:14:9: Duplicate declaration of signal: 'bad_o_r'
    14 |    reg  bad_o_r;
       |         ^~~~~~~

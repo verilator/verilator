@@ -6,12 +6,8 @@
 
 // based on t_gate_ormux
 
-`ifndef HIER_CORES
-   `define HIER_CORES 3
-`endif
-
-`ifndef MAIN_CORES
-   `define MAIN_CORES 1
+`ifndef CORES
+   `define CORES 4
 `endif
 
 module t (/*AUTOARG*/
@@ -21,37 +17,11 @@ module t (/*AUTOARG*/
    input clk;
 
    generate
-      for (genvar i = 0; i < `MAIN_CORES; ++i) NonHierCore mainCore(clk);
-   endgenerate
-
-   generate
-      for (genvar i = 0; i < `HIER_CORES; ++i) Core hierCore(clk);
+      for (genvar i = 0; i < `CORES; ++i) Core core(clk);
    endgenerate
 endmodule
 
-module Core(input clk); /* verilator hier_block */
-      reg [63:0]   crc;
-      logic [31:0] rdata;
-      logic [31:0] rdata2;
-      wire [31:0]  wdata = crc[31:0];
-      wire [15:0]  sel = {11'h0, crc[36:32]};
-      wire         we = crc[48];
-
-      Test test (
-                 // Outputs
-                 .rdata                    (rdata[31:0]),
-                 .rdata2                   (rdata2[31:0]),
-                 // Inputs
-                 .clk                      (clk),
-                 .we                       (we),
-                 .sel                      (sel[15:0]),
-                 .wdata                    (wdata[31:0]));
-      wire [63:0] result = {rdata2, rdata};
-
-      Check check(.clk(clk), .crc(crc), .result(result), .rdata(rdata), .rdata2(rdata2));
-endmodule
-
-module NonHierCore(input clk);
+module Core(input clk);
       reg [63:0]   crc;
       logic [31:0] rdata;
       logic [31:0] rdata2;
@@ -79,7 +49,7 @@ module Check(
       input wire [63:0] result,
       input logic [31:0] rdata,
       input logic [31:0] rdata2
-   );
+   ); /*verilator hier_block*/
    integer      cyc = 0;
    reg [63:0]   sum;
 
@@ -118,7 +88,7 @@ module Test(/*AUTOARG*/
    rdata, rdata2,
    // Inputs
    clk, we, sel, wdata
-   );
+   ); /*verilator hier_block*/
    input clk;
    input we;
    input [15:0] sel;

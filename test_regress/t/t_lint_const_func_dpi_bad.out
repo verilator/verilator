@@ -2,6 +2,7 @@
                                           : ... note: In instance 't'
     8 |    import "DPI-C" function int dpiFunc();
       |                                ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_lint_const_func_dpi_bad.v:9:23: Expecting expression to be constant, but can't determine constant for FUNCREF 'dpiFunc'
                                           : ... note: In instance 't'
         t/t_lint_const_func_dpi_bad.v:8:32: ... Location of non-constant FUNC 'dpiFunc': DPI import functions aren't simulatable

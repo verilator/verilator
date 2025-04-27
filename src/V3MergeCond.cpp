@@ -245,8 +245,8 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
     }
 
     void analyzeNode(AstNode* nodep) {
-        // If an impure node under a statement, mark that statement as impure
-        if (m_propsp && !nodep->isPure()) m_propsp->m_isFence = true;
+        // If impure, or branch, mark statement as fence
+        if (m_propsp && (!nodep->isPure() || nodep->isBrancher())) m_propsp->m_isFence = true;
         // Analyze children
         iterateChildrenConst(nodep);
     }

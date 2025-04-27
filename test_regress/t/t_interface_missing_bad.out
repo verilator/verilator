@@ -1,6 +1,7 @@
 %Error: t/t_interface_missing_bad.v:14:4: Cannot find file containing interface: 'foo_intf'
    14 |    foo_intf foo
       |    ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_interface_missing_bad.v:20:4: Cannot find file containing interface: 'foo_intf'
    20 |    foo_intf the_foo ();
       |    ^~~~~~~~

@@ -239,7 +239,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
             }
         }
         void visit(AstNodeVarRef* nodep) override {
-            if (m_gatherVars && nodep->access().isWriteOrRW()
+            if (m_gatherVars && nodep->access().isWriteOrRW() && !nodep->varp()->ignoreSchedWrite()
                 && !nodep->varScopep()->user2SetOnce()) {
                 m_writtenBySuspendable.push_back(nodep->varScopep());
             }
@@ -338,6 +338,7 @@ void transformForks(AstNetlist* const netlistp) {
             iterateChildren(nodep);
         }
         void visit(AstCFunc* nodep) override {
+            VL_RESTORER(m_funcp);
             m_funcp = nodep;
             m_awaitMoved = false;
             iterateChildren(nodep);
@@ -346,7 +347,6 @@ void transformForks(AstNetlist* const netlistp) {
                 // co_return at the end (either that or a co_await is required in a coroutine
                 nodep->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
             }
-            m_funcp = nullptr;
         }
         void visit(AstVar* nodep) override {
             if (!m_forkp) nodep->user1(true);

@@ -2,4 +2,5 @@
                                 : ... Suggest use a normal 'always'
    14 |    always_comb @(*) begin
       |    ^~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

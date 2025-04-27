@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--binary --main-top-name '-' --trace -Wno-MULTITOP"])
+test.compile(verilator_flags2=["--binary --main-top-name '-' --trace-vcd -Wno-MULTITOP"])
 
 test.execute()
 

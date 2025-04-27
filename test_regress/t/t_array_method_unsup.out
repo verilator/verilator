@@ -2,6 +2,7 @@
                                       : ... note: In instance 't'
    23 |       i = q.sum with (item + 1); do if ((i) !== (32'h11)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_array_method_unsup.v",23, (i), (32'h11)); $stop; end while(0);;
       |                 ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_array_method_unsup.v:24:21: 'with' not legal on this method
                                       : ... note: In instance 't'
    24 |       i = q.product with (item + 1); do if ((i) !== (32'h168)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_array_method_unsup.v",24, (i), (32'h168)); $stop; end while(0);;

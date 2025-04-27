@@ -62,6 +62,8 @@ VL_ATTR_ALWINLINE QData VL_CPU_TICK() {
     _VL_FOREACH_APPLY(macro, SECTION_POP) \
     _VL_FOREACH_APPLY(macro, MTASK_BEGIN) \
     _VL_FOREACH_APPLY(macro, MTASK_END) \
+    _VL_FOREACH_APPLY(macro, THREAD_SCHEDULE_WAIT_BEGIN) \
+    _VL_FOREACH_APPLY(macro, THREAD_SCHEDULE_WAIT_END) \
     _VL_FOREACH_APPLY(macro, EXEC_GRAPH_BEGIN) \
     _VL_FOREACH_APPLY(macro, EXEC_GRAPH_END)
 // clang-format on
@@ -90,11 +92,14 @@ class VlExecutionRecord final {
             uint32_t m_id;  // MTask id
             uint32_t m_predictStart;  // Time scheduler predicted would start
             uint32_t m_cpu;  // Executing CPU id
+            const char* m_hierBlock;  // Name of a hier block with this mtask
         } mtaskBegin;
         struct {
-            uint32_t m_id;  // MTask id
             uint32_t m_predictCost;  // How long scheduler predicted would take
         } mtaskEnd;
+        struct {
+            uint32_t m_cpu;  // Executing CPU id
+        } threadScheduleWait;
     };
 
     // STATE
@@ -104,8 +109,6 @@ class VlExecutionRecord final {
     Type m_type;  // The record type
     static_assert(alignof(uint64_t) >= alignof(Payload), "Padding not allowed");
     static_assert(alignof(Payload) >= alignof(Type), "Padding not allowed");
-
-    static uint16_t getcpu();  // Return currently executing CPU id
 
 public:
     // CONSTRUCTOR
@@ -117,16 +120,24 @@ public:
         m_type = Type::SECTION_PUSH;
     }
     void sectionPop() { m_type = Type::SECTION_POP; }
-    void mtaskBegin(uint32_t id, uint32_t predictStart) {
+    void mtaskBegin(uint32_t id, uint32_t predictStart, const char* hierBlock = "") {
         m_payload.mtaskBegin.m_id = id;
         m_payload.mtaskBegin.m_predictStart = predictStart;
-        m_payload.mtaskBegin.m_cpu = getcpu();
+        m_payload.mtaskBegin.m_cpu = VlOs::getcpu();
+        m_payload.mtaskBegin.m_hierBlock = hierBlock;
         m_type = Type::MTASK_BEGIN;
     }
-    void mtaskEnd(uint32_t id, uint32_t predictCost) {
-        m_payload.mtaskEnd.m_id = id;
+    void mtaskEnd(uint32_t predictCost) {
         m_payload.mtaskEnd.m_predictCost = predictCost;
         m_type = Type::MTASK_END;
+    }
+    void threadScheduleWaitBegin() {
+        m_payload.threadScheduleWait.m_cpu = VlOs::getcpu();
+        m_type = Type::THREAD_SCHEDULE_WAIT_BEGIN;
+    }
+    void threadScheduleWaitEnd() {
+        m_payload.threadScheduleWait.m_cpu = VlOs::getcpu();
+        m_type = Type::THREAD_SCHEDULE_WAIT_END;
     }
     void execGraphBegin() { m_type = Type::EXEC_GRAPH_BEGIN; }
     void execGraphEnd() { m_type = Type::EXEC_GRAPH_END; }
@@ -214,7 +225,7 @@ public:
     // METHODS
     VlPgoProfiler() = default;
     ~VlPgoProfiler() = default;
-    void write(const char* modelp, const std::string& filename) VL_MT_SAFE;
+    void write(const char* modelp, const std::string& filename, bool firstHierCall) VL_MT_SAFE;
     void addCounter(size_t counter, const std::string& name) {
         VL_DEBUG_IF(assert(counter < N_Entries););
         m_records.emplace_back(Record{name, counter});
@@ -228,7 +239,8 @@ public:
 };
 
 template <std::size_t N_Entries>
-void VlPgoProfiler<N_Entries>::write(const char* modelp, const std::string& filename) VL_MT_SAFE {
+void VlPgoProfiler<N_Entries>::write(const char* modelp, const std::string& filename,
+                                     bool firstHierCall) VL_MT_SAFE {
     static VerilatedMutex s_mutex;
     const VerilatedLockGuard lock{s_mutex};
 
@@ -238,7 +250,7 @@ void VlPgoProfiler<N_Entries>::write(const char* modelp, const std::string& file
     // each will collect is own data correctly.  However when each is
     // destroyed we need to get all the data, not keep overwriting and only
     // get the last model's data.
-    static bool s_firstCall = true;
+    static bool s_firstCall = firstHierCall;
 
     VL_DEBUG_IF(VL_DBG_MSGF("+prof+vlt+file writing to '%s'\n", filename.c_str()););
 
@@ -246,12 +258,14 @@ void VlPgoProfiler<N_Entries>::write(const char* modelp, const std::string& file
     if (VL_UNLIKELY(!fp)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "+prof+vlt+file file not writable");
     }
-    s_firstCall = false;
+    if (s_firstCall) {
+        // TODO Perhaps merge with verilated_coverage output format, so can
+        // have a common merging and reporting tool, etc.
+        fprintf(fp, "// Verilated model profile-guided optimization data dump file\n");
+        fprintf(fp, "`verilator_config\n");
+    }
 
-    // TODO Perhaps merge with verilated_coverage output format, so can
-    // have a common merging and reporting tool, etc.
-    fprintf(fp, "// Verilated model profile-guided optimization data dump file\n");
-    fprintf(fp, "`verilator_config\n");
+    s_firstCall = false;
 
     for (const Record& rec : m_records) {
         fprintf(fp, "profile_data -model \"%s\" -mtask \"%s\" -cost 64'd%" PRIu64 "\n", modelp,

@@ -1,4 +1,5 @@
 %Error: t/t_sys_fopen_bad.v:14:34: $fopen mode should be <= 4 characters
    14 |       file = $fopen("/dev/null", "somereallywidebad");
       |                                  ^~~~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

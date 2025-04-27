@@ -1,6 +1,7 @@
 %Error: t/t_var_port2_bad.v:7:11: Input/output/inout declaration not found for port: 'portwithoin'
     7 | module t (portwithoin);
       |           ^~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_var_port2_bad.v:8:10: Input/output/inout does not appear in port list: 'portwithin'
     8 |    input portwithin;
       |          ^~~~~~~~~~

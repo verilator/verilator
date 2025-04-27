@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_process.v"
 
-test.compile(v_flags2=["--binary --timing", "+define+T_PROCESS+std::process"])
+test.compile(v_flags2=["--binary", "+define+T_PROCESS+std::process"])
 
 if not test.vlt_all:
     test.execute()

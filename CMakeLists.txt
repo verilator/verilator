@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0091 NEW) # Use MSVC_RUNTIME_LIBRARY to select the runtime
 project(
     Verilator
-    VERSION 5.034
+    VERSION 5.036
     HOMEPAGE_URL https://verilator.org
     LANGUAGES CXX
 )
@@ -134,10 +134,7 @@ configure_package_config_file(
     INSTALL_DESTINATION .
 )
 
-install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/verilator-config.cmake
-    DESTINATION .
-)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/verilator-config.cmake DESTINATION .)
 
 configure_package_config_file(
     verilator-config-version.cmake.in

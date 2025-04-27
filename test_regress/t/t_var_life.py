@@ -15,7 +15,8 @@ test.compile(verilator_flags2=["--stats"])
 
 if test.vlt_all:
     test.file_grep(test.stats, r'Optimizations, Lifetime assign deletions\s+(\d+)', 4)
-    test.file_grep(test.stats, r'Optimizations, Lifetime constant prop\s+(\d+)', 2)
+    test.file_grep(test.stats, r'Optimizations, Lifetime creset deletions\s+(\d+)', 1)
+    test.file_grep(test.stats, r'Optimizations, Lifetime constant prop\s+(\d+)', 5)
 
 test.execute()
 

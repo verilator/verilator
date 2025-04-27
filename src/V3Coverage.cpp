@@ -35,6 +35,40 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+class ExprCoverageEligibleVisitor final : public VNVisitor {
+    // STATE
+    bool m_eligible = true;
+
+    void visit(AstNodeVarRef* nodep) override {
+        AstNodeDType* dtypep = nodep->varp()->dtypep();
+        // Class objecs and references not supported for expression coverage
+        // because the object may not persist until the point at which
+        // coverage data is gathered
+        // This could be resolved in the future by protecting against dereferrencing
+        // null pointers when cloning the expression for expression coverage
+        if (VN_CAST(dtypep, ClassRefDType)) {
+            m_eligible = false;
+        } else {
+            iterateChildren(nodep);
+        }
+    }
+
+    void visit(AstNode* nodep) override {
+        if (!nodep->isExprCoverageEligible()) {
+            m_eligible = false;
+        } else {
+            iterateChildren(nodep);
+        }
+    }
+
+public:
+    // CONSTRUCTORS
+    explicit ExprCoverageEligibleVisitor(AstNode* nodep) { iterateChildren(nodep); }
+    ~ExprCoverageEligibleVisitor() override = default;
+
+    bool eligible() { return m_eligible; }
+};
+
 //######################################################################
 // Coverage state, as a visitor of each AstNode
 
@@ -159,6 +193,7 @@ class CoverageVisitor final : public VNVisitor {
             fl_nowarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
             AstVar* const varp = new AstVar{fl_nowarn, VVarType::MODULETEMP, trace_var_name,
                                             incp->findUInt32DType()};
+            varp->setIgnoreSchedWrite();  // Ignore the increment output, so no UNOPTFLAT
             varp->trace(true);
             m_modp->addStmtsp(varp);
             UINFO(5, "New coverage trace: " << varp << endl);
@@ -668,6 +703,7 @@ class CoverageVisitor final : public VNVisitor {
         m_objective = true;
         iterate(nodep);
         if (checkMaxExprs(falseExprs.size())) return;
+        if (m_seeking == ABORTED) return;
 
         addExprCoverInc(nodep);
         const int start = m_exprs.size();
@@ -871,26 +907,30 @@ class CoverageVisitor final : public VNVisitor {
         lineTrack(nodep);
     }
 
-    // Lambdas not supported for expression coverage
-    void visit(AstWith* nodep) override {
-        VL_RESTORER(m_seeking);
-        if (m_seeking == SEEKING) abortExprCoverage();
-        m_seeking = ABORTED;
-        iterateChildren(nodep);
-        lineTrack(nodep);
+    void visit(AstFuncRef* nodep) override {
+        if (nodep->taskp()->lifetime().isAutomatic()) {
+            visit(static_cast<AstNodeExpr*>(nodep));
+        } else {
+            exprUnsupported(nodep, "non-automatic function");
+        }
     }
 
     void visit(AstNodeExpr* nodep) override {
         if (m_seeking != SEEKING) {
             iterateChildren(nodep);
         } else {
-            std::stringstream emitV;
-            V3EmitV::verilogForTree(nodep, emitV);
-            // Add new expression with a single term
-            CoverExpr expr;
-            expr.emplace_back(nodep, m_objective, emitV.str());
-            m_exprs.push_back(std::move(expr));
-            checkMaxExprs();
+            ExprCoverageEligibleVisitor elgibleVisitor(nodep);
+            if (elgibleVisitor.eligible()) {
+                std::stringstream emitV;
+                V3EmitV::verilogForTree(nodep, emitV);
+                // Add new expression with a single term
+                CoverExpr expr;
+                expr.emplace_back(nodep, m_objective, emitV.str());
+                m_exprs.push_back(std::move(expr));
+                checkMaxExprs();
+            } else {
+                exprUnsupported(nodep, "not coverage eligible");
+            }
         }
         lineTrack(nodep);
     }
@@ -899,6 +939,17 @@ class CoverageVisitor final : public VNVisitor {
     void visit(AstNode* nodep) override {
         iterateChildren(nodep);
         lineTrack(nodep);
+    }
+
+    void exprUnsupported(AstNode* nodep, const string& why) {
+        UINFO(9, "unsupported: " << why << " " << nodep << endl);
+        bool wasSeeking = m_seeking == SEEKING;
+        Objective oldSeeking = m_seeking;
+        if (wasSeeking) abortExprCoverage();
+        m_seeking = ABORTED;
+        iterateChildren(nodep);
+        lineTrack(nodep);
+        if (!wasSeeking) m_seeking = oldSeeking;
     }
 
 public:

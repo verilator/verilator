@@ -30,7 +30,7 @@ if 'VERILATOR_TEST_NO_ATTRIBUTES' in os.environ:
 if not os.path.exists(root + "/src/obj_dbg/compile_commands.json"):
     test.skip("compile_commands.json not found. Please install 'bear > 3.0' and rebuild Verilator")
 if not have_clang_check():
-    test.skip("No libclang installed\n")
+    test.skip("No libclang installed")
 
 # some of the files are only used in Verilation
 # and are only in "include" folder

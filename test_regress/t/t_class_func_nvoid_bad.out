@@ -2,6 +2,7 @@
                                         : ... note: In instance 't'
    47 |       if (mod_fv() == 10) $stop;   
       |           ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_class_func_nvoid_bad.v:50:11: Cannot call a task/void-function as a function: 'mod_t'
                                         : ... note: In instance 't'
    50 |       if (mod_t() == 10) $stop;   

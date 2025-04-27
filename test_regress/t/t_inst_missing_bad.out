@@ -9,4 +9,6 @@
                      t/t_inst_missing_bad.v:16:51: ... Location of port declaration
    16 | module sub (input ok, input none, input nc, input missing);
       |                                                   ^~~~~~~
+                     ... For warning description see https://verilator.org/warn/PINMISSING?v=latest
+                     ... Use "/* verilator lint_off PINMISSING */" and lint_on around source to disable this message.
 %Error: Exiting due to

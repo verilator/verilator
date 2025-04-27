@@ -36,10 +36,14 @@
         <stmtexpr loc="d,11,8,11,9">
           <ccall loc="d,11,8,11,9" dtype_id="7" func="_eval_static__TOP"/>
         </stmtexpr>
+        <assign loc="d,61,22,61,25" dtype_id="8">
+          <varref loc="d,61,22,61,25" name="clk" dtype_id="8"/>
+          <varref loc="d,61,22,61,25" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="8"/>
+        </assign>
       </cfunc>
       <cfunc loc="d,11,8,11,9" name="_eval_static__TOP">
         <assign loc="d,23,23,23,24" dtype_id="4">
-          <const loc="d,23,23,23,24" name="32&apos;sh0" dtype_id="8"/>
+          <const loc="d,23,23,23,24" name="32&apos;sh0" dtype_id="9"/>
           <varref loc="d,23,23,23,24" name="t.cyc" dtype_id="4"/>
         </assign>
       </cfunc>
@@ -47,10 +51,6 @@
         <stmtexpr loc="d,11,8,11,9">
           <ccall loc="d,11,8,11,9" dtype_id="7" func="_eval_initial__TOP"/>
         </stmtexpr>
-        <assign loc="d,61,22,61,25" dtype_id="9">
-          <varref loc="d,61,22,61,25" name="clk" dtype_id="9"/>
-          <varref loc="d,61,22,61,25" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="9"/>
-        </assign>
       </cfunc>
       <cfunc loc="d,11,8,11,9" name="_eval_initial__TOP">
         <var loc="d,28,11,28,14" name="t.all" dtype_id="10" vartype="string" origName="t__DOT__all"/>
@@ -67,7 +67,7 @@
           <varref loc="d,32,7,32,8" name="t.e" dtype_id="11"/>
         </assign>
         <if loc="d,38,10,38,12">
-          <neq loc="d,38,26,38,29" dtype_id="9">
+          <neq loc="d,38,26,38,29" dtype_id="8">
             <const loc="d,38,31,38,34" name="4&apos;h4" dtype_id="11"/>
             <arraysel loc="d,38,15,38,16" dtype_id="11">
               <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -97,7 +97,7 @@
           </begin>
         </if>
         <if loc="d,39,10,39,12">
-          <neq loc="d,39,34,39,37" dtype_id="9">
+          <neq loc="d,39,34,39,37" dtype_id="8">
             <const loc="d,39,39,39,42" name="4&apos;h1" dtype_id="11"/>
             <arraysel loc="d,39,15,39,16" dtype_id="11">
               <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -139,7 +139,7 @@
           </begin>
         </if>
         <if loc="d,40,10,40,12">
-          <neq loc="d,40,26,40,29" dtype_id="9">
+          <neq loc="d,40,26,40,29" dtype_id="8">
             <const loc="d,40,31,40,34" name="4&apos;h1" dtype_id="11"/>
             <arraysel loc="d,40,15,40,16" dtype_id="11">
               <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -181,7 +181,7 @@
           </begin>
         </if>
         <if loc="d,41,10,41,12">
-          <neq loc="d,41,42,41,45" dtype_id="9">
+          <neq loc="d,41,42,41,45" dtype_id="8">
             <const loc="d,41,47,41,50" name="4&apos;h3" dtype_id="11"/>
             <arraysel loc="d,41,15,41,16" dtype_id="11">
               <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -235,7 +235,7 @@
           </begin>
         </if>
         <if loc="d,42,10,42,12">
-          <neq loc="d,42,34,42,37" dtype_id="9">
+          <neq loc="d,42,34,42,37" dtype_id="8">
             <const loc="d,42,39,42,42" name="4&apos;h3" dtype_id="11"/>
             <arraysel loc="d,42,15,42,16" dtype_id="11">
               <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -289,7 +289,7 @@
           </begin>
         </if>
         <if loc="d,43,10,43,12">
-          <neq loc="d,43,26,43,29" dtype_id="9">
+          <neq loc="d,43,26,43,29" dtype_id="8">
             <const loc="d,43,31,43,34" name="4&apos;h3" dtype_id="11"/>
             <arraysel loc="d,43,15,43,16" dtype_id="11">
               <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -343,7 +343,7 @@
           </begin>
         </if>
         <if loc="d,44,10,44,12">
-          <neq loc="d,44,23,44,26" dtype_id="9">
+          <neq loc="d,44,23,44,26" dtype_id="8">
             <const loc="d,44,28,44,31" name="4&apos;h1" dtype_id="11"/>
             <arraysel loc="d,44,15,44,16" dtype_id="11">
               <varref loc="d,17,12,17,16" name="__Venumtab_enum_prev1" dtype_id="15"/>
@@ -373,7 +373,7 @@
           </begin>
         </if>
         <if loc="d,45,10,45,12">
-          <neq loc="d,45,26,45,29" dtype_id="9">
+          <neq loc="d,45,26,45,29" dtype_id="8">
             <const loc="d,45,31,45,34" name="4&apos;h1" dtype_id="11"/>
             <arraysel loc="d,45,15,45,16" dtype_id="11">
               <varref loc="d,17,12,17,16" name="__Venumtab_enum_prev1" dtype_id="15"/>
@@ -403,7 +403,7 @@
           </begin>
         </if>
         <if loc="d,46,10,46,12">
-          <neq loc="d,46,34,46,37" dtype_id="9">
+          <neq loc="d,46,34,46,37" dtype_id="8">
             <const loc="d,46,39,46,42" name="4&apos;h4" dtype_id="11"/>
             <arraysel loc="d,46,15,46,16" dtype_id="11">
               <varref loc="d,17,12,17,16" name="__Venumtab_enum_prev1" dtype_id="15"/>
@@ -445,7 +445,7 @@
           </begin>
         </if>
         <if loc="d,47,10,47,12">
-          <neq loc="d,47,26,47,29" dtype_id="9">
+          <neq loc="d,47,26,47,29" dtype_id="8">
             <const loc="d,47,31,47,34" name="4&apos;h4" dtype_id="11"/>
             <arraysel loc="d,47,15,47,16" dtype_id="11">
               <varref loc="d,17,12,17,16" name="__Venumtab_enum_prev1" dtype_id="15"/>
@@ -487,7 +487,7 @@
           </begin>
         </if>
         <if loc="d,49,10,49,12">
-          <neqn loc="d,49,23,49,25" dtype_id="9">
+          <neqn loc="d,49,23,49,25" dtype_id="8">
             <const loc="d,49,27,49,32" name="&quot;E03&quot;" dtype_id="10"/>
             <arraysel loc="d,49,15,49,16" dtype_id="10">
               <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
@@ -532,7 +532,7 @@
           <begin>
           </begin>
           <begin>
-            <neq loc="d,52,32,52,34" dtype_id="9">
+            <neq loc="d,52,32,52,34" dtype_id="8">
               <const loc="d,52,37,52,41" name="4&apos;h4" dtype_id="11"/>
               <ccast loc="d,52,30,52,31" dtype_id="11">
                 <varref loc="d,52,30,52,31" name="t.unnamedblk1.e" dtype_id="11"/>
@@ -583,7 +583,7 @@
           <varref loc="d,56,7,56,10" name="t.all" dtype_id="10"/>
         </assign>
         <if loc="d,57,10,57,12">
-          <neqn loc="d,57,20,57,22" dtype_id="9">
+          <neqn loc="d,57,20,57,22" dtype_id="8">
             <const loc="d,57,24,57,35" name="&quot;E01E03E04&quot;" dtype_id="10"/>
             <varref loc="d,57,15,57,18" name="t.all" dtype_id="10"/>
           </neqn>
@@ -601,24 +601,24 @@
       <cfunc loc="a,0,0,0,0" name="_eval_settle"/>
       <cfunc loc="a,0,0,0,0" name="_eval_triggers__act">
         <stmtexpr loc="d,11,8,11,9">
-          <cmethodhard loc="d,11,8,11,9" name="set" dtype_id="7">
-            <varref loc="d,11,8,11,9" name="__VactTriggered" dtype_id="9"/>
+          <cmethodhard loc="d,11,8,11,9" name="setBit" dtype_id="7">
+            <varref loc="d,11,8,11,9" name="__VactTriggered" dtype_id="8"/>
             <const loc="d,11,8,11,9" name="32&apos;h0" dtype_id="14"/>
-            <and loc="d,61,14,61,21" dtype_id="9">
-              <ccast loc="d,61,22,61,25" dtype_id="9">
-                <varref loc="d,61,22,61,25" name="clk" dtype_id="9"/>
+            <and loc="d,61,14,61,21" dtype_id="8">
+              <ccast loc="d,61,22,61,25" dtype_id="8">
+                <varref loc="d,61,22,61,25" name="clk" dtype_id="8"/>
               </ccast>
-              <not loc="d,61,14,61,21" dtype_id="9">
-                <ccast loc="d,61,14,61,21" dtype_id="9">
-                  <varref loc="d,61,14,61,21" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="9"/>
+              <not loc="d,61,14,61,21" dtype_id="8">
+                <ccast loc="d,61,14,61,21" dtype_id="8">
+                  <varref loc="d,61,14,61,21" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="8"/>
                 </ccast>
               </not>
             </and>
           </cmethodhard>
         </stmtexpr>
-        <assign loc="d,61,22,61,25" dtype_id="9">
-          <varref loc="d,61,22,61,25" name="clk" dtype_id="9"/>
-          <varref loc="d,61,22,61,25" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="9"/>
+        <assign loc="d,61,22,61,25" dtype_id="8">
+          <varref loc="d,61,22,61,25" name="clk" dtype_id="8"/>
+          <varref loc="d,61,22,61,25" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="8"/>
         </assign>
         <textblock loc="d,11,8,11,9">
           <text loc="d,11,8,11,9"/>
@@ -632,11 +632,11 @@
       </cfunc>
       <cfunc loc="a,0,0,0,0" name="_dump_triggers__act">
         <if loc="d,11,8,11,9">
-          <and loc="d,11,8,11,9" dtype_id="9">
+          <and loc="d,11,8,11,9" dtype_id="8">
             <const loc="d,11,8,11,9" name="32&apos;h1" dtype_id="14"/>
-            <not loc="d,11,8,11,9" dtype_id="9">
-              <cmethodhard loc="d,11,8,11,9" name="any" dtype_id="9">
-                <varref loc="d,11,8,11,9" name="__VactTriggered" dtype_id="9"/>
+            <not loc="d,11,8,11,9" dtype_id="8">
+              <cmethodhard loc="d,11,8,11,9" name="any" dtype_id="8">
+                <varref loc="d,11,8,11,9" name="__VactTriggered" dtype_id="8"/>
               </cmethodhard>
             </not>
           </and>
@@ -648,7 +648,7 @@
           <and loc="d,11,8,11,9" dtype_id="17">
             <const loc="d,11,8,11,9" name="64&apos;h1" dtype_id="17"/>
             <cmethodhard loc="d,11,8,11,9" name="word" dtype_id="18">
-              <varref loc="d,11,8,11,9" name="__VactTriggered" dtype_id="9"/>
+              <varref loc="d,11,8,11,9" name="__VactTriggered" dtype_id="8"/>
               <const loc="d,11,8,11,9" name="32&apos;h0" dtype_id="14"/>
             </cmethodhard>
           </and>
@@ -659,11 +659,11 @@
       </cfunc>
       <cfunc loc="a,0,0,0,0" name="_dump_triggers__nba">
         <if loc="d,11,8,11,9">
-          <and loc="d,11,8,11,9" dtype_id="9">
+          <and loc="d,11,8,11,9" dtype_id="8">
             <const loc="d,11,8,11,9" name="32&apos;h1" dtype_id="14"/>
-            <not loc="d,11,8,11,9" dtype_id="9">
-              <cmethodhard loc="d,11,8,11,9" name="any" dtype_id="9">
-                <varref loc="d,11,8,11,9" name="__VnbaTriggered" dtype_id="9"/>
+            <not loc="d,11,8,11,9" dtype_id="8">
+              <cmethodhard loc="d,11,8,11,9" name="any" dtype_id="8">
+                <varref loc="d,11,8,11,9" name="__VnbaTriggered" dtype_id="8"/>
               </cmethodhard>
             </not>
           </and>
@@ -675,7 +675,7 @@
           <and loc="d,11,8,11,9" dtype_id="17">
             <const loc="d,11,8,11,9" name="64&apos;h1" dtype_id="17"/>
             <cmethodhard loc="d,11,8,11,9" name="word" dtype_id="18">
-              <varref loc="d,11,8,11,9" name="__VnbaTriggered" dtype_id="9"/>
+              <varref loc="d,11,8,11,9" name="__VnbaTriggered" dtype_id="8"/>
               <const loc="d,11,8,11,9" name="32&apos;h0" dtype_id="14"/>
             </cmethodhard>
           </and>
@@ -690,7 +690,7 @@
           <and loc="d,11,8,11,9" dtype_id="17">
             <const loc="d,11,8,11,9" name="64&apos;h1" dtype_id="17"/>
             <cmethodhard loc="d,11,8,11,9" name="word" dtype_id="18">
-              <varref loc="d,11,8,11,9" name="__VnbaTriggered" dtype_id="9"/>
+              <varref loc="d,11,8,11,9" name="__VnbaTriggered" dtype_id="8"/>
               <const loc="d,11,8,11,9" name="32&apos;h0" dtype_id="14"/>
             </cmethodhard>
           </and>
@@ -724,15 +724,15 @@
         <assigndly loc="d,62,11,62,13" dtype_id="4">
           <add loc="d,62,18,62,19" dtype_id="4">
             <ccast loc="d,62,20,62,21" dtype_id="14">
-              <const loc="d,62,20,62,21" name="32&apos;sh1" dtype_id="8"/>
+              <const loc="d,62,20,62,21" name="32&apos;sh1" dtype_id="9"/>
             </ccast>
             <varref loc="d,62,14,62,17" name="t.cyc" dtype_id="4"/>
           </add>
           <varref loc="d,62,7,62,10" name="__Vdly__t.cyc" dtype_id="4"/>
         </assigndly>
         <if loc="d,63,7,63,9">
-          <eq loc="d,63,14,63,16" dtype_id="9">
-            <const loc="d,63,16,63,17" name="32&apos;sh0" dtype_id="8"/>
+          <eq loc="d,63,14,63,16" dtype_id="8">
+            <const loc="d,63,16,63,17" name="32&apos;sh0" dtype_id="9"/>
             <varref loc="d,63,11,63,14" name="t.cyc" dtype_id="4"/>
           </eq>
           <begin>
@@ -743,13 +743,13 @@
           </begin>
           <begin>
             <if loc="d,67,12,67,14">
-              <eq loc="d,67,19,67,21" dtype_id="9">
-                <const loc="d,67,21,67,22" name="32&apos;sh1" dtype_id="8"/>
+              <eq loc="d,67,19,67,21" dtype_id="8">
+                <const loc="d,67,21,67,22" name="32&apos;sh1" dtype_id="9"/>
                 <varref loc="d,67,16,67,19" name="t.cyc" dtype_id="4"/>
               </eq>
               <begin>
                 <if loc="d,68,13,68,15">
-                  <neqn loc="d,68,26,68,28" dtype_id="9">
+                  <neqn loc="d,68,26,68,28" dtype_id="8">
                     <const loc="d,68,30,68,35" name="&quot;E01&quot;" dtype_id="10"/>
                     <arraysel loc="d,68,18,68,19" dtype_id="10">
                       <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
@@ -783,7 +783,7 @@
                   </begin>
                 </if>
                 <if loc="d,69,13,69,15">
-                  <neq loc="d,69,26,69,29" dtype_id="9">
+                  <neq loc="d,69,26,69,29" dtype_id="8">
                     <const loc="d,69,31,69,34" name="4&apos;h3" dtype_id="11"/>
                     <arraysel loc="d,69,18,69,19" dtype_id="11">
                       <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -813,7 +813,7 @@
                   </begin>
                 </if>
                 <if loc="d,70,13,70,15">
-                  <neq loc="d,70,29,70,32" dtype_id="9">
+                  <neq loc="d,70,29,70,32" dtype_id="8">
                     <const loc="d,70,34,70,37" name="4&apos;h3" dtype_id="11"/>
                     <arraysel loc="d,70,18,70,19" dtype_id="11">
                       <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -843,7 +843,7 @@
                   </begin>
                 </if>
                 <if loc="d,71,13,71,15">
-                  <neq loc="d,71,29,71,32" dtype_id="9">
+                  <neq loc="d,71,29,71,32" dtype_id="8">
                     <const loc="d,71,34,71,37" name="4&apos;h4" dtype_id="11"/>
                     <arraysel loc="d,71,18,71,19" dtype_id="11">
                       <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -885,7 +885,7 @@
                   </begin>
                 </if>
                 <if loc="d,72,13,72,15">
-                  <neq loc="d,72,26,72,29" dtype_id="9">
+                  <neq loc="d,72,26,72,29" dtype_id="8">
                     <const loc="d,72,31,72,34" name="4&apos;h4" dtype_id="11"/>
                     <arraysel loc="d,72,18,72,19" dtype_id="11">
                       <varref loc="d,17,12,17,16" name="__Venumtab_enum_prev1" dtype_id="15"/>
@@ -915,7 +915,7 @@
                   </begin>
                 </if>
                 <if loc="d,73,13,73,15">
-                  <neq loc="d,73,29,73,32" dtype_id="9">
+                  <neq loc="d,73,29,73,32" dtype_id="8">
                     <const loc="d,73,34,73,37" name="4&apos;h4" dtype_id="11"/>
                     <arraysel loc="d,73,18,73,19" dtype_id="11">
                       <varref loc="d,17,12,17,16" name="__Venumtab_enum_prev1" dtype_id="15"/>
@@ -945,7 +945,7 @@
                   </begin>
                 </if>
                 <if loc="d,74,13,74,15">
-                  <neq loc="d,74,29,74,32" dtype_id="9">
+                  <neq loc="d,74,29,74,32" dtype_id="8">
                     <const loc="d,74,34,74,37" name="4&apos;h3" dtype_id="11"/>
                     <arraysel loc="d,74,18,74,19" dtype_id="11">
                       <varref loc="d,17,12,17,16" name="__Venumtab_enum_prev1" dtype_id="15"/>
@@ -993,13 +993,13 @@
               </begin>
               <begin>
                 <if loc="d,77,12,77,14">
-                  <eq loc="d,77,19,77,21" dtype_id="9">
-                    <const loc="d,77,21,77,22" name="32&apos;sh2" dtype_id="8"/>
+                  <eq loc="d,77,19,77,21" dtype_id="8">
+                    <const loc="d,77,21,77,22" name="32&apos;sh2" dtype_id="9"/>
                     <varref loc="d,77,16,77,19" name="t.cyc" dtype_id="4"/>
                   </eq>
                   <begin>
                     <if loc="d,78,13,78,15">
-                      <neqn loc="d,78,26,78,28" dtype_id="9">
+                      <neqn loc="d,78,26,78,28" dtype_id="8">
                         <const loc="d,78,30,78,35" name="&quot;E03&quot;" dtype_id="10"/>
                         <arraysel loc="d,78,18,78,19" dtype_id="10">
                           <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
@@ -1033,7 +1033,7 @@
                       </begin>
                     </if>
                     <if loc="d,79,13,79,15">
-                      <neq loc="d,79,26,79,29" dtype_id="9">
+                      <neq loc="d,79,26,79,29" dtype_id="8">
                         <const loc="d,79,31,79,34" name="4&apos;h4" dtype_id="11"/>
                         <arraysel loc="d,79,18,79,19" dtype_id="11">
                           <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -1063,7 +1063,7 @@
                       </begin>
                     </if>
                     <if loc="d,80,13,80,15">
-                      <neq loc="d,80,29,80,32" dtype_id="9">
+                      <neq loc="d,80,29,80,32" dtype_id="8">
                         <const loc="d,80,34,80,37" name="4&apos;h4" dtype_id="11"/>
                         <arraysel loc="d,80,18,80,19" dtype_id="11">
                           <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -1093,7 +1093,7 @@
                       </begin>
                     </if>
                     <if loc="d,81,13,81,15">
-                      <neq loc="d,81,29,81,32" dtype_id="9">
+                      <neq loc="d,81,29,81,32" dtype_id="8">
                         <const loc="d,81,34,81,37" name="4&apos;h1" dtype_id="11"/>
                         <arraysel loc="d,81,18,81,19" dtype_id="11">
                           <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -1135,7 +1135,7 @@
                       </begin>
                     </if>
                     <if loc="d,82,13,82,15">
-                      <neq loc="d,82,26,82,29" dtype_id="9">
+                      <neq loc="d,82,26,82,29" dtype_id="8">
                         <const loc="d,82,31,82,34" name="4&apos;h1" dtype_id="11"/>
                         <arraysel loc="d,82,18,82,19" dtype_id="11">
                           <varref loc="d,17,12,17,16" name="__Venumtab_enum_prev1" dtype_id="15"/>
@@ -1165,7 +1165,7 @@
                       </begin>
                     </if>
                     <if loc="d,83,13,83,15">
-                      <neq loc="d,83,29,83,32" dtype_id="9">
+                      <neq loc="d,83,29,83,32" dtype_id="8">
                         <const loc="d,83,34,83,37" name="4&apos;h1" dtype_id="11"/>
                         <arraysel loc="d,83,18,83,19" dtype_id="11">
                           <varref loc="d,17,12,17,16" name="__Venumtab_enum_prev1" dtype_id="15"/>
@@ -1195,7 +1195,7 @@
                       </begin>
                     </if>
                     <if loc="d,84,13,84,15">
-                      <neq loc="d,84,29,84,32" dtype_id="9">
+                      <neq loc="d,84,29,84,32" dtype_id="8">
                         <const loc="d,84,34,84,37" name="4&apos;h4" dtype_id="11"/>
                         <arraysel loc="d,84,18,84,19" dtype_id="11">
                           <varref loc="d,17,12,17,16" name="__Venumtab_enum_prev1" dtype_id="15"/>
@@ -1243,13 +1243,13 @@
                   </begin>
                   <begin>
                     <if loc="d,87,12,87,14">
-                      <eq loc="d,87,19,87,21" dtype_id="9">
-                        <const loc="d,87,21,87,22" name="32&apos;sh3" dtype_id="8"/>
+                      <eq loc="d,87,19,87,21" dtype_id="8">
+                        <const loc="d,87,21,87,22" name="32&apos;sh3" dtype_id="9"/>
                         <varref loc="d,87,16,87,19" name="t.cyc" dtype_id="4"/>
                       </eq>
                       <begin>
                         <if loc="d,88,13,88,15">
-                          <neqn loc="d,88,26,88,28" dtype_id="9">
+                          <neqn loc="d,88,26,88,28" dtype_id="8">
                             <const loc="d,88,30,88,35" name="&quot;E04&quot;" dtype_id="10"/>
                             <arraysel loc="d,88,18,88,19" dtype_id="10">
                               <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
@@ -1283,7 +1283,7 @@
                           </begin>
                         </if>
                         <if loc="d,89,13,89,15">
-                          <neq loc="d,89,26,89,29" dtype_id="9">
+                          <neq loc="d,89,26,89,29" dtype_id="8">
                             <const loc="d,89,31,89,34" name="4&apos;h1" dtype_id="11"/>
                             <arraysel loc="d,89,18,89,19" dtype_id="11">
                               <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -1313,7 +1313,7 @@
                           </begin>
                         </if>
                         <if loc="d,90,13,90,15">
-                          <neq loc="d,90,29,90,32" dtype_id="9">
+                          <neq loc="d,90,29,90,32" dtype_id="8">
                             <const loc="d,90,34,90,37" name="4&apos;h1" dtype_id="11"/>
                             <arraysel loc="d,90,18,90,19" dtype_id="11">
                               <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -1343,7 +1343,7 @@
                           </begin>
                         </if>
                         <if loc="d,91,13,91,15">
-                          <neq loc="d,91,29,91,32" dtype_id="9">
+                          <neq loc="d,91,29,91,32" dtype_id="8">
                             <const loc="d,91,34,91,37" name="4&apos;h3" dtype_id="11"/>
                             <arraysel loc="d,91,18,91,19" dtype_id="11">
                               <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
@@ -1385,7 +1385,7 @@
                           </begin>
                         </if>
                         <if loc="d,92,13,92,15">
-                          <neq loc="d,92,26,92,29" dtype_id="9">
+                          <neq loc="d,92,26,92,29" dtype_id="8">
                             <const loc="d,92,31,92,34" name="4&apos;h3" dtype_id="11"/>
                             <arraysel loc="d,92,18,92,19" dtype_id="11">
                               <varref loc="d,17,12,17,16" name="__Venumtab_enum_prev1" dtype_id="15"/>
@@ -1415,7 +1415,7 @@
                           </begin>
                         </if>
                         <if loc="d,93,13,93,15">
-                          <neq loc="d,93,29,93,32" dtype_id="9">
+                          <neq loc="d,93,29,93,32" dtype_id="8">
                             <const loc="d,93,34,93,37" name="4&apos;h3" dtype_id="11"/>
                             <arraysel loc="d,93,18,93,19" dtype_id="11">
                               <varref loc="d,17,12,17,16" name="__Venumtab_enum_prev1" dtype_id="15"/>
@@ -1445,7 +1445,7 @@
                           </begin>
                         </if>
                         <if loc="d,94,13,94,15">
-                          <neq loc="d,94,29,94,32" dtype_id="9">
+                          <neq loc="d,94,29,94,32" dtype_id="8">
                             <const loc="d,94,34,94,37" name="4&apos;h1" dtype_id="11"/>
                             <arraysel loc="d,94,18,94,19" dtype_id="11">
                               <varref loc="d,17,12,17,16" name="__Venumtab_enum_prev1" dtype_id="15"/>
@@ -1493,8 +1493,8 @@
                       </begin>
                       <begin>
                         <if loc="d,97,12,97,14">
-                          <eq loc="d,97,19,97,21" dtype_id="9">
-                            <const loc="d,97,21,97,23" name="32&apos;sh63" dtype_id="8"/>
+                          <eq loc="d,97,19,97,21" dtype_id="8">
+                            <const loc="d,97,21,97,23" name="32&apos;sh63" dtype_id="9"/>
                             <varref loc="d,97,16,97,19" name="t.cyc" dtype_id="4"/>
                           </eq>
                           <begin>
@@ -1527,26 +1527,26 @@
         <stmtexpr loc="a,0,0,0,0">
           <ccall loc="a,0,0,0,0" dtype_id="7" func="_eval_triggers__act"/>
         </stmtexpr>
-        <assign loc="a,0,0,0,0" dtype_id="9">
-          <cmethodhard loc="a,0,0,0,0" name="any" dtype_id="9">
-            <varref loc="a,0,0,0,0" name="__VactTriggered" dtype_id="9"/>
+        <assign loc="a,0,0,0,0" dtype_id="8">
+          <cmethodhard loc="a,0,0,0,0" name="any" dtype_id="8">
+            <varref loc="a,0,0,0,0" name="__VactTriggered" dtype_id="8"/>
           </cmethodhard>
-          <varref loc="a,0,0,0,0" name="__VactExecute" dtype_id="9"/>
+          <varref loc="a,0,0,0,0" name="__VactExecute" dtype_id="8"/>
         </assign>
         <if loc="a,0,0,0,0">
-          <varref loc="a,0,0,0,0" name="__VactExecute" dtype_id="9"/>
+          <varref loc="a,0,0,0,0" name="__VactExecute" dtype_id="8"/>
           <begin>
             <stmtexpr loc="a,0,0,0,0">
               <cmethodhard loc="a,0,0,0,0" name="andNot" dtype_id="7">
-                <varref loc="a,0,0,0,0" name="__VpreTriggered" dtype_id="9"/>
-                <varref loc="a,0,0,0,0" name="__VactTriggered" dtype_id="9"/>
-                <varref loc="a,0,0,0,0" name="__VnbaTriggered" dtype_id="9"/>
+                <varref loc="a,0,0,0,0" name="__VpreTriggered" dtype_id="8"/>
+                <varref loc="a,0,0,0,0" name="__VactTriggered" dtype_id="8"/>
+                <varref loc="a,0,0,0,0" name="__VnbaTriggered" dtype_id="8"/>
               </cmethodhard>
             </stmtexpr>
             <stmtexpr loc="a,0,0,0,0">
               <cmethodhard loc="a,0,0,0,0" name="thisOr" dtype_id="7">
-                <varref loc="a,0,0,0,0" name="__VnbaTriggered" dtype_id="9"/>
-                <varref loc="a,0,0,0,0" name="__VactTriggered" dtype_id="9"/>
+                <varref loc="a,0,0,0,0" name="__VnbaTriggered" dtype_id="8"/>
+                <varref loc="a,0,0,0,0" name="__VactTriggered" dtype_id="8"/>
               </cmethodhard>
             </stmtexpr>
             <stmtexpr loc="a,0,0,0,0">
@@ -1555,32 +1555,32 @@
           </begin>
         </if>
         <creturn loc="a,0,0,0,0">
-          <varref loc="a,0,0,0,0" name="__VactExecute" dtype_id="9"/>
+          <varref loc="a,0,0,0,0" name="__VactExecute" dtype_id="8"/>
         </creturn>
       </cfunc>
       <cfunc loc="a,0,0,0,0" name="_eval_phase__nba">
         <var loc="d,11,8,11,9" name="__VnbaExecute" dtype_id="3" vartype="bit" origName="__VnbaExecute"/>
-        <assign loc="a,0,0,0,0" dtype_id="9">
-          <cmethodhard loc="a,0,0,0,0" name="any" dtype_id="9">
-            <varref loc="a,0,0,0,0" name="__VnbaTriggered" dtype_id="9"/>
+        <assign loc="a,0,0,0,0" dtype_id="8">
+          <cmethodhard loc="a,0,0,0,0" name="any" dtype_id="8">
+            <varref loc="a,0,0,0,0" name="__VnbaTriggered" dtype_id="8"/>
           </cmethodhard>
-          <varref loc="a,0,0,0,0" name="__VnbaExecute" dtype_id="9"/>
+          <varref loc="a,0,0,0,0" name="__VnbaExecute" dtype_id="8"/>
         </assign>
         <if loc="a,0,0,0,0">
-          <varref loc="a,0,0,0,0" name="__VnbaExecute" dtype_id="9"/>
+          <varref loc="a,0,0,0,0" name="__VnbaExecute" dtype_id="8"/>
           <begin>
             <stmtexpr loc="a,0,0,0,0">
               <ccall loc="a,0,0,0,0" dtype_id="7" func="_eval_nba"/>
             </stmtexpr>
             <stmtexpr loc="a,0,0,0,0">
               <cmethodhard loc="a,0,0,0,0" name="clear" dtype_id="7">
-                <varref loc="a,0,0,0,0" name="__VnbaTriggered" dtype_id="9"/>
+                <varref loc="a,0,0,0,0" name="__VnbaTriggered" dtype_id="8"/>
               </cmethodhard>
             </stmtexpr>
           </begin>
         </if>
         <creturn loc="a,0,0,0,0">
-          <varref loc="a,0,0,0,0" name="__VnbaExecute" dtype_id="9"/>
+          <varref loc="a,0,0,0,0" name="__VnbaExecute" dtype_id="8"/>
         </creturn>
       </cfunc>
       <cfunc loc="a,0,0,0,0" name="_eval">
@@ -1590,19 +1590,19 @@
           <const loc="d,11,8,11,9" name="32&apos;h0" dtype_id="14"/>
           <varref loc="d,11,8,11,9" name="__VnbaIterCount" dtype_id="5"/>
         </assign>
-        <assign loc="d,11,8,11,9" dtype_id="9">
-          <const loc="d,11,8,11,9" name="1&apos;h1" dtype_id="9"/>
-          <varref loc="d,11,8,11,9" name="__VnbaContinue" dtype_id="9"/>
+        <assign loc="d,11,8,11,9" dtype_id="8">
+          <const loc="d,11,8,11,9" name="1&apos;h1" dtype_id="8"/>
+          <varref loc="d,11,8,11,9" name="__VnbaContinue" dtype_id="8"/>
         </assign>
         <while loc="a,0,0,0,0">
           <begin>
           </begin>
           <begin>
-            <varref loc="a,0,0,0,0" name="__VnbaContinue" dtype_id="9"/>
+            <varref loc="a,0,0,0,0" name="__VnbaContinue" dtype_id="8"/>
           </begin>
           <begin>
             <if loc="a,0,0,0,0">
-              <lt loc="a,0,0,0,0" dtype_id="9">
+              <lt loc="a,0,0,0,0" dtype_id="8">
                 <const loc="a,0,0,0,0" name="32&apos;h64" dtype_id="14"/>
                 <varref loc="a,0,0,0,0" name="__VnbaIterCount" dtype_id="5"/>
               </lt>
@@ -1627,27 +1627,27 @@
               </add>
               <varref loc="d,11,8,11,9" name="__VnbaIterCount" dtype_id="5"/>
             </assign>
-            <assign loc="d,11,8,11,9" dtype_id="9">
-              <const loc="d,11,8,11,9" name="1&apos;h0" dtype_id="9"/>
-              <varref loc="d,11,8,11,9" name="__VnbaContinue" dtype_id="9"/>
+            <assign loc="d,11,8,11,9" dtype_id="8">
+              <const loc="d,11,8,11,9" name="1&apos;h0" dtype_id="8"/>
+              <varref loc="d,11,8,11,9" name="__VnbaContinue" dtype_id="8"/>
             </assign>
             <assign loc="d,11,8,11,9" dtype_id="5">
               <const loc="d,11,8,11,9" name="32&apos;h0" dtype_id="14"/>
               <varref loc="d,11,8,11,9" name="__VactIterCount" dtype_id="5"/>
             </assign>
-            <assign loc="d,11,8,11,9" dtype_id="9">
-              <const loc="d,11,8,11,9" name="1&apos;h1" dtype_id="9"/>
-              <varref loc="d,11,8,11,9" name="__VactContinue" dtype_id="9"/>
+            <assign loc="d,11,8,11,9" dtype_id="8">
+              <const loc="d,11,8,11,9" name="1&apos;h1" dtype_id="8"/>
+              <varref loc="d,11,8,11,9" name="__VactContinue" dtype_id="8"/>
             </assign>
             <while loc="a,0,0,0,0">
               <begin>
               </begin>
               <begin>
-                <varref loc="a,0,0,0,0" name="__VactContinue" dtype_id="9"/>
+                <varref loc="a,0,0,0,0" name="__VactContinue" dtype_id="8"/>
               </begin>
               <begin>
                 <if loc="a,0,0,0,0">
-                  <lt loc="a,0,0,0,0" dtype_id="9">
+                  <lt loc="a,0,0,0,0" dtype_id="8">
                     <const loc="a,0,0,0,0" name="32&apos;h64" dtype_id="14"/>
                     <varref loc="a,0,0,0,0" name="__VactIterCount" dtype_id="5"/>
                   </lt>
@@ -1672,27 +1672,27 @@
                   </add>
                   <varref loc="d,11,8,11,9" name="__VactIterCount" dtype_id="5"/>
                 </assign>
-                <assign loc="d,11,8,11,9" dtype_id="9">
-                  <const loc="d,11,8,11,9" name="1&apos;h0" dtype_id="9"/>
-                  <varref loc="d,11,8,11,9" name="__VactContinue" dtype_id="9"/>
+                <assign loc="d,11,8,11,9" dtype_id="8">
+                  <const loc="d,11,8,11,9" name="1&apos;h0" dtype_id="8"/>
+                  <varref loc="d,11,8,11,9" name="__VactContinue" dtype_id="8"/>
                 </assign>
                 <if loc="a,0,0,0,0">
-                  <ccall loc="a,0,0,0,0" dtype_id="9" func="_eval_phase__act"/>
+                  <ccall loc="a,0,0,0,0" dtype_id="8" func="_eval_phase__act"/>
                   <begin>
-                    <assign loc="d,11,8,11,9" dtype_id="9">
-                      <const loc="d,11,8,11,9" name="1&apos;h1" dtype_id="9"/>
-                      <varref loc="d,11,8,11,9" name="__VactContinue" dtype_id="9"/>
+                    <assign loc="d,11,8,11,9" dtype_id="8">
+                      <const loc="d,11,8,11,9" name="1&apos;h1" dtype_id="8"/>
+                      <varref loc="d,11,8,11,9" name="__VactContinue" dtype_id="8"/>
                     </assign>
                   </begin>
                 </if>
               </begin>
             </while>
             <if loc="a,0,0,0,0">
-              <ccall loc="a,0,0,0,0" dtype_id="9" func="_eval_phase__nba"/>
+              <ccall loc="a,0,0,0,0" dtype_id="8" func="_eval_phase__nba"/>
               <begin>
-                <assign loc="d,11,8,11,9" dtype_id="9">
-                  <const loc="d,11,8,11,9" name="1&apos;h1" dtype_id="9"/>
-                  <varref loc="d,11,8,11,9" name="__VnbaContinue" dtype_id="9"/>
+                <assign loc="d,11,8,11,9" dtype_id="8">
+                  <const loc="d,11,8,11,9" name="1&apos;h1" dtype_id="8"/>
+                  <varref loc="d,11,8,11,9" name="__VnbaContinue" dtype_id="8"/>
                 </assign>
               </begin>
             </if>
@@ -1831,14 +1831,14 @@
         </range>
       </unpackarraydtype>
       <refdtype loc="d,52,12,52,16" id="22" name="my_t" sub_dtype_id="2"/>
-      <basicdtype loc="d,23,23,23,24" id="8" name="logic" left="31" right="0" signed="true"/>
+      <basicdtype loc="d,23,23,23,24" id="9" name="logic" left="31" right="0" signed="true"/>
       <voiddtype loc="d,11,8,11,9" id="7"/>
       <basicdtype loc="d,11,8,11,9" id="6" name="VlTriggerVec"/>
       <basicdtype loc="d,11,8,11,9" id="18" name="QData" left="63" right="0"/>
       <basicdtype loc="d,11,8,11,9" id="17" name="logic" left="63" right="0"/>
       <basicdtype loc="d,11,8,11,9" id="3" name="bit"/>
       <basicdtype loc="d,11,8,11,9" id="5" name="bit" left="31" right="0"/>
-      <basicdtype loc="d,61,22,61,25" id="9" name="logic" left="31" right="0"/>
+      <basicdtype loc="d,61,22,61,25" id="8" name="logic" left="31" right="0"/>
       <basicdtype loc="d,32,11,32,14" id="11" name="logic" left="31" right="0"/>
       <basicdtype loc="d,38,15,38,16" id="13" name="logic" left="31" right="0"/>
       <basicdtype loc="d,15,10,15,13" id="19" name="logic" left="7" right="0"/>

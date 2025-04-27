@@ -101,6 +101,7 @@ void VerilatedFst::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
 void VerilatedFst::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     Super::closeBase();
+    emitTimeChangeMaybe();
     fstWriterClose(m_fst);
     m_fst = nullptr;
 }
@@ -108,10 +109,22 @@ void VerilatedFst::close() VL_MT_SAFE_EXCLUDES(m_mutex) {
 void VerilatedFst::flush() VL_MT_SAFE_EXCLUDES(m_mutex) {
     const VerilatedLockGuard lock{m_mutex};
     Super::flushBase();
+    emitTimeChangeMaybe();
     fstWriterFlushContext(m_fst);
 }
 
-void VerilatedFst::emitTimeChange(uint64_t timeui) { fstWriterEmitTimeChange(m_fst, timeui); }
+void VerilatedFst::emitTimeChange(uint64_t timeui) {
+    if (!timeui) fstWriterEmitTimeChange(m_fst, timeui);
+    m_timeui = timeui;
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedFst::emitTimeChangeMaybe() {
+    if (VL_UNLIKELY(m_timeui)) {
+        fstWriterEmitTimeChange(m_fst, m_timeui);
+        m_timeui = 0;
+    }
+}
 
 //=============================================================================
 // Decl
@@ -311,12 +324,14 @@ void VerilatedFst::configure(const VerilatedTraceConfig& config) {
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitEvent(uint32_t code) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
+    m_owner.emitTimeChangeMaybe();
     fstWriterEmitValueChange(m_fst, m_symbolp[code], "1");
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitBit(uint32_t code, CData newval) {
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
+    m_owner.emitTimeChangeMaybe();
     fstWriterEmitValueChange(m_fst, m_symbolp[code], newval ? "1" : "0");
 }
 
@@ -325,6 +340,7 @@ void VerilatedFstBuffer::emitCData(uint32_t code, CData newval, int bits) {
     char buf[VL_BYTESIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtCDataToStr(buf, newval << (VL_BYTESIZE - bits));
+    m_owner.emitTimeChangeMaybe();
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
 
@@ -333,6 +349,7 @@ void VerilatedFstBuffer::emitSData(uint32_t code, SData newval, int bits) {
     char buf[VL_SHORTSIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtSDataToStr(buf, newval << (VL_SHORTSIZE - bits));
+    m_owner.emitTimeChangeMaybe();
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
 
@@ -341,6 +358,7 @@ void VerilatedFstBuffer::emitIData(uint32_t code, IData newval, int bits) {
     char buf[VL_IDATASIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtIDataToStr(buf, newval << (VL_IDATASIZE - bits));
+    m_owner.emitTimeChangeMaybe();
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
 
@@ -349,6 +367,7 @@ void VerilatedFstBuffer::emitQData(uint32_t code, QData newval, int bits) {
     char buf[VL_QUADSIZE];
     VL_DEBUG_IFDEF(assert(m_symbolp[code]););
     cvtQDataToStr(buf, newval << (VL_QUADSIZE - bits));
+    m_owner.emitTimeChangeMaybe();
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
 
@@ -365,10 +384,12 @@ void VerilatedFstBuffer::emitWData(uint32_t code, const WData* newvalp, int bits
         cvtEDataToStr(wp, newvalp[--words]);
         wp += VL_EDATASIZE;
     }
+    m_owner.emitTimeChangeMaybe();
     fstWriterEmitValueChange(m_fst, m_symbolp[code], m_strbufp);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedFstBuffer::emitDouble(uint32_t code, double newval) {
+    m_owner.emitTimeChangeMaybe();
     fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
 }

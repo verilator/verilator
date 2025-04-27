@@ -1,0 +1,9 @@
+%Error: t/t_class_extends_arg_super_bad.v:17:13: Explicit super.new not allowed with class extends arguments (IEEE 1800-2023 8.17)
+                                               : ... Suggest remove super.new
+   17 |       super.new(33);   
+      |             ^~~
+        t/t_class_extends_arg_super_bad.v:14:25: ... Location of extends argument(s)
+   14 | class Cls5 extends Base(5);
+      |                         ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

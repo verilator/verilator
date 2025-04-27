@@ -17,8 +17,8 @@ root = ".."
 test.compile(
     # Can't use --coverage and --savable together, so cheat and compile inline
     verilator_flags2=[
-        "--cc --coverage-toggle --coverage-line --coverage-user --trace --vpi " + root +
-        "/include/verilated_save.cpp",
+        "--cc --coverage-toggle --coverage-line --coverage-user --trace-vcd --vpi",
+        root + "/include/verilated_save.cpp",
         ("--timing" if test.have_coroutines else "--no-timing -Wno-STMTDLY")
     ],
     threads=1)

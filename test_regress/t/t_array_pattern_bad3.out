@@ -2,6 +2,7 @@
                                       : ... note: In instance 't'
    20 |               1: '1};   
       |               ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_array_pattern_bad3.v:21:13: Assignment pattern with too many elements
                                       : ... note: In instance 't'
    21 |       arr = '{'0, '1, '0, '1};   

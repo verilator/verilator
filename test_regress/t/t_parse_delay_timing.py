@@ -12,6 +12,6 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_parse_delay.v"
 
-test.compile(verilator_flags2=['--binary --timing'])
+test.compile(verilator_flags2=['--binary'])
 
 test.passes()

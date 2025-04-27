@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_force_release_var.v"
 
-test.compile(verilator_flags2=['--trace'])
+test.compile(verilator_flags2=['--trace-vcd'])
 
 test.execute()
 

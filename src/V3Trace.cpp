@@ -755,6 +755,7 @@ class TraceVisitor final : public VNVisitor {
     void createTraceFunctions() {
         // Detect and remove duplicate values
         detectDuplicates();
+        m_graph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
 
         // Simplify & optimize the graph
         if (dumpGraphLevel() >= 6) m_graph.dumpDotFilePrefixed("trace_pre");
@@ -893,9 +894,9 @@ class TraceVisitor final : public VNVisitor {
             nodep->user1p(vertexp);
 
             UASSERT_OBJ(m_cfuncp, nodep, "Trace not under func");
+            VL_RESTORER(m_tracep);
             m_tracep = nodep;
             iterateChildren(nodep);
-            m_tracep = nullptr;
         }
     }
     void visit(AstVarRef* nodep) override {

@@ -8,3 +8,4 @@
                                                           : ... note: In instance 't'
    51 |    Wrap2 #(Wrap#(19)::PBASE * 2) w38;
       |                             ^
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.

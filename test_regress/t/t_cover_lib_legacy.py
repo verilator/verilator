@@ -19,9 +19,9 @@ test.compile(v_flags2=["--coverage t/t_cover_lib_c.cpp"],
              make_main=False)
 
 test.execute()
-test.files_identical_sorted(test.obj_dir + "/coverage1.dat", "t/t_cover_lib_1.out")
-test.files_identical_sorted(test.obj_dir + "/coverage2.dat", "t/t_cover_lib_2.out")
-test.files_identical_sorted(test.obj_dir + "/coverage3.dat", "t/t_cover_lib_3.out")
-test.files_identical_sorted(test.obj_dir + "/coverage4.dat", "t/t_cover_lib_4.out")
+test.files_identical_sorted(test.obj_dir + "/coverage1.dat", "t/t_cover_lib__1.out")
+test.files_identical_sorted(test.obj_dir + "/coverage2.dat", "t/t_cover_lib__2.out")
+test.files_identical_sorted(test.obj_dir + "/coverage3.dat", "t/t_cover_lib__3.out")
+test.files_identical_sorted(test.obj_dir + "/coverage4.dat", "t/t_cover_lib__4.out")
 
 test.passes()

@@ -15,7 +15,7 @@ test.scenarios('vlt')
 test.top_filename = "t/t_trace_complex.v"
 test.golden_filename = "t/t_trace_complex.out"
 
-test.compile(verilator_flags2=['--cc --trace -CFLAGS -DVL_PORTABLE_ONLY'])
+test.compile(verilator_flags2=['--cc --trace-vcd -CFLAGS -DVL_PORTABLE_ONLY'])
 
 test.execute()
 

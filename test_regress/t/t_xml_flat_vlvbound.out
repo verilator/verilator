@@ -63,6 +63,12 @@
               <varref loc="d,24,20,24,23" name="i_a" dtype_id="1"/>
               <varref loc="d,15,57,15,60" name="__Vfunc_vlvbound_test.foo__0__val" dtype_id="1"/>
             </assign>
+            <creset loc="d,16,17,16,20">
+              <varref loc="d,16,17,16,20" name="__Vfunc_vlvbound_test.foo__0__ret" dtype_id="2"/>
+            </creset>
+            <creset loc="d,17,13,17,14">
+              <varref loc="d,17,13,17,14" name="__Vfunc_vlvbound_test.foo__0__i" dtype_id="3"/>
+            </creset>
             <assign loc="d,18,11,18,12" dtype_id="3">
               <const loc="d,18,12,18,13" name="32&apos;sh0" dtype_id="4"/>
               <varref loc="d,18,10,18,11" name="__Vfunc_vlvbound_test.foo__0__i" dtype_id="3"/>
@@ -129,6 +135,12 @@
               <varref loc="d,25,20,25,23" name="i_b" dtype_id="1"/>
               <varref loc="d,15,57,15,60" name="__Vfunc_vlvbound_test.foo__1__val" dtype_id="1"/>
             </assign>
+            <creset loc="d,16,17,16,20">
+              <varref loc="d,16,17,16,20" name="__Vfunc_vlvbound_test.foo__1__ret" dtype_id="2"/>
+            </creset>
+            <creset loc="d,17,13,17,14">
+              <varref loc="d,17,13,17,14" name="__Vfunc_vlvbound_test.foo__1__i" dtype_id="3"/>
+            </creset>
             <assign loc="d,18,11,18,12" dtype_id="3">
               <const loc="d,18,12,18,13" name="32&apos;sh0" dtype_id="4"/>
               <varref loc="d,18,10,18,11" name="__Vfunc_vlvbound_test.foo__1__i" dtype_id="3"/>

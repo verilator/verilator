@@ -46,8 +46,10 @@ class LinkJumpVisitor final : public VNVisitor {
     // NODE STATE
     //  AstNode::user1()    -> AstJumpLabel*, for this block if endOfIter
     //  AstNode::user2()    -> AstJumpLabel*, for this block if !endOfIter
+    //  AstNodeBlock::user3()  -> bool, true if contains a fork
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
+    const VNUser3InUse m_user3InUse;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -151,11 +153,11 @@ class LinkJumpVisitor final : public VNVisitor {
             if (beginp->name() != "") beginp->name(prefix + beginp->name());
         }
 
-        if (nodep->op1p()) addPrefixToBlocksRecurse(prefix, nodep->op1p());
-        if (nodep->op2p()) addPrefixToBlocksRecurse(prefix, nodep->op2p());
-        if (nodep->op3p()) addPrefixToBlocksRecurse(prefix, nodep->op3p());
-        if (nodep->op4p()) addPrefixToBlocksRecurse(prefix, nodep->op4p());
-        if (nodep->nextp()) addPrefixToBlocksRecurse(prefix, nodep->nextp());
+        if (AstNode* const refp = nodep->op1p()) addPrefixToBlocksRecurse(prefix, refp);
+        if (AstNode* const refp = nodep->op2p()) addPrefixToBlocksRecurse(prefix, refp);
+        if (AstNode* const refp = nodep->op3p()) addPrefixToBlocksRecurse(prefix, refp);
+        if (AstNode* const refp = nodep->op4p()) addPrefixToBlocksRecurse(prefix, refp);
+        if (AstNode* const refp = nodep->nextp()) addPrefixToBlocksRecurse(prefix, refp);
     }
 
     // VISITORS
@@ -168,9 +170,9 @@ class LinkJumpVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;
         iterateChildren(nodep);
-        m_ftaskp = nullptr;
     }
     void visit(AstNodeBlock* nodep) override {
         UINFO(8, "  " << nodep << endl);
@@ -178,7 +180,16 @@ class LinkJumpVisitor final : public VNVisitor {
         VL_RESTORER(m_unrollFull);
         m_blockStack.push_back(nodep);
         {
-            m_inFork = m_inFork || VN_IS(nodep, Fork);
+            if (VN_IS(nodep, Fork)) {
+                m_inFork = true;  // And remains set for children
+                // Mark all upper blocks also, can stop once see
+                // one set to avoid O(n^2)
+                for (auto itr : vlstd::reverse_view(m_blockStack)) {
+                    if (itr->user3()) break;
+                    itr->user3(true);
+                }
+            }
+            nodep->user3(m_inFork);
             iterateChildren(nodep);
         }
         m_blockStack.pop_back();
@@ -340,9 +351,13 @@ class LinkJumpVisitor final : public VNVisitor {
             nodep->v3warn(E_UNSUPPORTED,
                           "disable isn't underneath a begin with name: " << nodep->prettyNameQ());
         } else if (AstBegin* const beginp = VN_CAST(blockp, Begin)) {
-            // Jump to the end of the named block
-            AstJumpLabel* const labelp = findAddLabel(beginp, false);
-            nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
+            if (beginp->user3()) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling block that contains a fork");
+            } else {
+                // Jump to the end of the named block
+                AstJumpLabel* const labelp = findAddLabel(beginp, false);
+                nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
+            }
         } else {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork by name");
         }

@@ -15,7 +15,9 @@ test.compile(verilator_flags2=["--x-initial unique"])
 
 test.execute(all_run_flags=["+verilator+rand+reset+1"])
 
-test.files_identical(test.obj_dir + "/t_sys_readmem_4state_b.mem", "t/t_sys_readmem_4state_b.out")
-test.files_identical(test.obj_dir + "/t_sys_readmem_4state_h.mem", "t/t_sys_readmem_4state_h.out")
+test.files_identical(test.obj_dir + "/t_sys_readmem_4state_b.mem",
+                     "t/t_sys_readmem_4state__b.mem.out")
+test.files_identical(test.obj_dir + "/t_sys_readmem_4state_h.mem",
+                     "t/t_sys_readmem_4state__h.mem.out")
 
 test.passes()

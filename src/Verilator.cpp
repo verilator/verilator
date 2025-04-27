@@ -46,6 +46,7 @@
 #include "V3EmitCMain.h"
 #include "V3EmitCMake.h"
 #include "V3EmitMk.h"
+#include "V3EmitMkJson.h"
 #include "V3EmitV.h"
 #include "V3EmitXml.h"
 #include "V3ExecGraph.h"
@@ -101,6 +102,7 @@
 #include "V3Trace.h"
 #include "V3TraceDecl.h"
 #include "V3Tristate.h"
+#include "V3Udp.h"
 #include "V3Undriven.h"
 #include "V3Unknown.h"
 #include "V3Unroll.h"
@@ -182,7 +184,9 @@ static void process() {
 
         // Remove any modules that were parameterized and are no longer referenced.
         V3Dead::deadifyModules(v3Global.rootp());
+
         v3Global.checkTree();
+        if (v3Global.hasTable()) V3Udp::udpResolve(v3Global.rootp());
 
         // Create a hierarchical Verilation plan
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
@@ -625,7 +629,7 @@ static void process() {
     if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly() && !v3Global.opt.dpiHdrOnly()) {
         if (v3Global.opt.main()) V3EmitCMain::emit();
 
-        // V3EmitMk/V3EmitCMake must be after all other emitters,
+        // V3EmitMk/V3EmitCMake/V3EmitMkJson must be after all other emitters,
         // as they and below code visits AstCFiles added earlier
         size_t src_f_cnt = 0;
         for (AstNode* nodep = v3Global.rootp()->filesp(); nodep; nodep = nodep->nextp()) {
@@ -634,6 +638,7 @@ static void process() {
         }
         if (src_f_cnt >= V3EmitMk::PARALLEL_FILE_CNT_THRESHOLD) v3Global.useParallelBuild(true);
         if (v3Global.opt.cmake()) V3EmitCMake::emit();
+        if (v3Global.opt.makeJson()) V3EmitMkJson::emit();
         if (v3Global.opt.gmake()) V3EmitMk::emitmk();
     }
 
@@ -733,6 +738,10 @@ static void verilate(const string& argString) {
         if (v3Global.opt.cmake()) {
             v3Global.hierPlanp()->writeCommandArgsFiles(true);
             V3EmitCMake::emit();
+        }
+        if (v3Global.opt.makeJson()) {
+            v3Global.hierPlanp()->writeCommandArgsFiles(true);
+            V3EmitMkJson::emit();
         }
         v3Global.hierPlanp()->writeParametersFiles();
     }

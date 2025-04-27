@@ -219,7 +219,7 @@ class GateBuildVisitor final : public VNVisitorConst {
                       const char* consumeReason = nullptr) {
         UASSERT_OBJ(m_scopep, nodep, "Logic not under Scope");
         UASSERT_OBJ(!m_logicVertexp, nodep, "Logic blocks should not nest");
-        VL_RESTORER(m_logicVertexp)
+        VL_RESTORER(m_logicVertexp);
 
         // m_activep is null under AstCFunc's, that's ok.
         m_logicVertexp = new GateLogicVertex{m_graphp, nodep, m_activep, slow};
@@ -869,8 +869,20 @@ class GateInline final {
 
                 if (debug() >= 9) dstVtxp->nodep()->dumpTree("      inside: ");
 
-                UASSERT_OBJ(logicp != dstVtxp->nodep(), logicp,
-                            "Circular logic should have been rejected by okVisitor");
+                if (logicp == dstVtxp->nodep()) {
+                    // This is a bit involved. The graph tells us that the logic is circular
+                    // (driver is same as sink), however, okVisitor rejects a circular driver
+                    // and we would not reach here if the driver logic was actually circular.
+                    // The reason we end up here is because during graph building, the driver
+                    // was ciruclar, however, after committing some substituions to it, it
+                    // has become non-circualr due to V3Const being applied inside
+                    // 'commitSubstitutions'. We will trust GateOkVisitor telling the truth
+                    // that the logic is not actually circular, meaning this edge is not
+                    // actually needed, can just delete it and move on.
+                    VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
+                    continue;
+                }
+
                 recordSubstitution(vscp, substp, dstVtxp->nodep());
 
                 // If the new replacement referred to a signal,

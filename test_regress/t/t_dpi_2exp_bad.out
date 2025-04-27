@@ -1,4 +1,5 @@
 %Error: t/t_dpi_2exp_bad.v:12:45: Function was already DPI Exported, duplicate not allowed: 'dpix_twice'
    12 |    export "DPI-C" dpix_t_int_renamed = task dpix_twice;
       |                                             ^~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

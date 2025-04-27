@@ -82,7 +82,7 @@ def check_gcc_flags(filename):
 if not test.make_version or float(test.make_version) < 4.1:
     test.skip("Test requires GNU Make version >= 4.1")
 
-test.compile(v_flags2=["--trace",
+test.compile(v_flags2=["--trace-vcd",
                        "--output-split 1",
                        "--output-groups 2",
                        "--output-split-cfuncs 1",
@@ -124,7 +124,7 @@ test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_clas
 test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", "vm_classes_2")
 
 # Check combine count
-test.file_grep(test.stats, r'Node count, CFILE + (\d+)', (191 if test.vltmt else 173))
+test.file_grep(test.stats, r'Node count, CFILE + (\d+)', (231 if test.vltmt else 211))
 test.file_grep(test.stats, r'Makefile targets, VM_CLASSES_FAST + (\d+)', 2)
 test.file_grep(test.stats, r'Makefile targets, VM_CLASSES_SLOW + (\d+)', 2)
 

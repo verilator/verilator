@@ -43,12 +43,12 @@
                                    : ... note: In instance 't'
    38 |       p.srandom(0);
       |         ^~~~~~~
-%Error-NOTIMING: t/t_process.v:39:25: process::get_randstate() requires --timing
-                                    : ... note: In instance 't'
-   39 |       p.set_randstate(p.get_randstate());
-      |                         ^~~~~~~~~~~~~
 %Error-NOTIMING: t/t_process.v:39:9: process::set_randstate() requires --timing
                                    : ... note: In instance 't'
    39 |       p.set_randstate(p.get_randstate());
       |         ^~~~~~~~~~~~~
+%Error-NOTIMING: t/t_process.v:39:25: process::get_randstate() requires --timing
+                                    : ... note: In instance 't'
+   39 |       p.set_randstate(p.get_randstate());
+      |                         ^~~~~~~~~~~~~
 %Error: Exiting due to

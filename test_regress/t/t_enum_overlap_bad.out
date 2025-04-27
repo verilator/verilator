@@ -5,4 +5,5 @@
         t/t_enum_overlap_bad.v:10:11: ... Location of original declaration
    10 |           e1,
       |           ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

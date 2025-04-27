@@ -1,4 +1,5 @@
 %Error: t/t_class_extends_rec_bad.v:7:31: Attempting to extend class 'RecursiveExtCls' from itself
     7 | class RecursiveExtCls extends RecursiveExtCls;
       |                               ^~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

@@ -7,12 +7,15 @@
 module t;
 
   logic [30:0] packed_data;
+  logic [60:0] packed_data2;
   logic [7:0] stream[4];
 
   initial begin
     packed_data = 31'h12345678;
     {>>{stream}} = packed_data;
     packed_data = {>>{stream}};
+    stream = {>>{packed_data2}};
+    {>>{packed_data2}} = stream;
   end
 
 endmodule

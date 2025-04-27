@@ -11,18 +11,19 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 test.top_filename = "t_assert_ctl_arg.v"
+test.pli_filename = "t/t_assert_ctl_arg.cpp"
 
 test.compile(make_top_shell=False,
              make_main=False,
              verilator_flags2=[
-                 "--assert", "--timing", "--coverage-user", "--exe",
-                 test.t_dir + "/t_assert_ctl_arg.cpp", "-fno-inline"
+                 "--assert", "--timing", "--coverage-user", "--exe", test.pli_filename,
+                 "-fno-inline"
              ],
              nc_flags2=["+nccovoverwrite", "+nccoverage+all", "+nccovtest+" + test.name])
 
 test.execute(all_run_flags=["+verilator+error+limit+100"],
              expect_filename=test.t_dir + "/t_assert_ctl_arg.out")
 
-test.files_identical(test.coverage_filename, test.t_dir + "/t_assert_ctl_arg_coverage.out")
+test.files_identical(test.coverage_filename, test.t_dir + "/t_assert_ctl_arg.dat.out")
 
 test.passes()

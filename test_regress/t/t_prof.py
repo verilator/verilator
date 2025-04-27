@@ -8,8 +8,12 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import platform
 
 test.scenarios('vlt_all')
+
+if re.search(r'clang', test.cxx_version) and 'aarch64' in platform.processor():
+    test.skip("Known compiler profile issues on clang aarch64")
 
 test.compile(verilator_flags2=["--stats --prof-cfuncs +define+T_PROF"])
 

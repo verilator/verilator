@@ -8,6 +8,8 @@
                                               : ... note: In instance 't.sub'
    21 |    wire [15:10] udrb2;   
       |                 ^~~~~
+                   ... For warning description see https://verilator.org/warn/UNDRIVEN?v=latest
+                   ... Use "/* verilator lint_off UNDRIVEN */" and lint_on around source to disable this message.
 %Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:26:15: Signal is not driven, nor used: 'unu3'
                                                   : ... note: In instance 't.sub'
    26 |    wire       unu3;   
@@ -28,6 +30,8 @@
                                                  : ... note: In instance 't.sub'
    37 |    parameter UNUSED_P = 1;
       |              ^~~~~~~~
+                      ... For warning description see https://verilator.org/warn/UNUSEDPARAM?v=latest
+                      ... Use "/* verilator lint_off UNUSEDPARAM */" and lint_on around source to disable this message.
 %Warning-UNUSEDPARAM: t/t_lint_unused_bad.v:38:15: Parameter is not used: 'UNUSED_LP'
                                                  : ... note: In instance 't.sub'
    38 |    localparam UNUSED_LP = 2;
@@ -36,6 +40,8 @@
                                                   : ... note: In instance 't.sub'
    40 |    genvar     unused_gv;
       |               ^~~~~~~~~
+                       ... For warning description see https://verilator.org/warn/UNUSEDGENVAR?v=latest
+                       ... Use "/* verilator lint_off UNUSEDGENVAR */" and lint_on around source to disable this message.
 %Warning-UNUSEDPARAM: t/t_lint_unused_bad.v:45:15: Parameter is not used: 'linter_param1'
                                                  : ... note: In instance 't.sub'
    45 |    localparam linter_param1 = 1;

@@ -46,7 +46,7 @@ target_compile_features(example PUBLIC cxx_std_14)
 set_property(TARGET example PROPERTY CXX_STANDARD ${SystemC_CXX_STANDARD})
 
 # Add the Verilated circuit to the target
-verilate(example SYSTEMC COVERAGE TRACE
+verilate(example COVERAGE SYSTEMC TRACE_VCD
   INCLUDE_DIRS "../make_tracing_sc"
   VERILATOR_ARGS -f ../make_tracing_sc/input.vc -x-assign fast
   SOURCES ../make_tracing_sc/top.v

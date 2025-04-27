@@ -50,7 +50,7 @@ private:
         const int m_dbgId;  // Work list ID for debugging.
 
         WorkList() = delete;
-        WorkList(int id)
+        explicit WorkList(int id)
             : m_dbgId{id} {}
     };
 
@@ -408,7 +408,7 @@ private:
             const string filename = v3Global.debugFilename("outputgroup") + ".txt";
             UINFO(5, "Dumping " << filename << endl);
             m_logp = std::unique_ptr<std::ofstream>{V3File::new_ofstream(filename)};
-            if (m_logp->fail()) v3fatal("Can't write " << filename);
+            if (m_logp->fail()) v3fatal("Can't write file: " << filename);
         }
 
         if (m_logp) dumpLogScoreHistogram(*m_logp);
@@ -463,7 +463,7 @@ private:
 public:
     static std::vector<FileOrConcatenatedFilesList>
     singleConcatenatedFilesList(std::vector<FilenameWithScore> inputFiles, uint64_t totalScore,
-                                std::string groupFilePrefix) {
+                                const std::string& groupFilePrefix) {
         EmitGroup group{std::move(inputFiles), totalScore, groupFilePrefix};
         group.process();
         return group.m_outputFiles;
@@ -551,17 +551,21 @@ public:
         of.puts("VM_PARALLEL_BUILDS = ");
         of.puts(v3Global.useParallelBuild() ? "1" : "0");
         of.puts("\n");
-        of.puts("# Tracing output mode?  0/1 (from --trace/--trace-fst)\n");
+        of.puts("# Tracing output mode?  0/1 (from --trace-fst/--trace-saif/--trace-vcd)\n");
         of.puts("VM_TRACE = ");
         of.puts(v3Global.opt.trace() ? "1" : "0");
         of.puts("\n");
-        of.puts("# Tracing output mode in VCD format?  0/1 (from --trace)\n");
-        of.puts("VM_TRACE_VCD = ");
-        of.puts(v3Global.opt.trace() && v3Global.opt.traceFormat().vcd() ? "1" : "0");
-        of.puts("\n");
         of.puts("# Tracing output mode in FST format?  0/1 (from --trace-fst)\n");
         of.puts("VM_TRACE_FST = ");
-        of.puts(v3Global.opt.trace() && v3Global.opt.traceFormat().fst() ? "1" : "0");
+        of.puts(v3Global.opt.traceEnabledFst() ? "1" : "0");
+        of.puts("\n");
+        of.puts("# Tracing output mode in SAIF format?  0/1 (from --trace-saif)\n");
+        of.puts("VM_TRACE_SAIF = ");
+        of.puts(v3Global.opt.traceEnabledSaif() ? "1" : "0");
+        of.puts("\n");
+        of.puts("# Tracing output mode in VCD format?  0/1 (from --trace-vcd)\n");
+        of.puts("VM_TRACE_VCD = ");
+        of.puts(v3Global.opt.traceEnabledVcd() ? "1" : "0");
         of.puts("\n");
 
         of.puts("\n### Object file lists...\n");
@@ -589,22 +593,8 @@ public:
                     // Do nothing because VM_GLOBAL is necessary per executable. Top module will
                     // have them.
                 } else if (support == 2 && !slow) {
-                    putMakeClassEntry(of, "verilated.cpp");
-                    if (v3Global.dpi()) putMakeClassEntry(of, "verilated_dpi.cpp");
-                    if (v3Global.opt.vpi()) putMakeClassEntry(of, "verilated_vpi.cpp");
-                    if (v3Global.opt.savable()) putMakeClassEntry(of, "verilated_save.cpp");
-                    if (v3Global.opt.coverage()) putMakeClassEntry(of, "verilated_cov.cpp");
-                    if (v3Global.opt.trace()) {
-                        putMakeClassEntry(of, v3Global.opt.traceSourceBase() + "_c.cpp");
-                    }
-                    if (v3Global.usesProbDist()) putMakeClassEntry(of, "verilated_probdist.cpp");
-                    if (v3Global.usesTiming()) putMakeClassEntry(of, "verilated_timing.cpp");
-                    if (v3Global.useRandomizeMethods())
-                        putMakeClassEntry(of, "verilated_random.cpp");
-                    putMakeClassEntry(of, "verilated_threads.cpp");
-                    if (v3Global.opt.usesProfiler()) {
-                        putMakeClassEntry(of, "verilated_profiler.cpp");
-                    }
+                    for (const string& cpp : v3Global.verilatedCppFiles())
+                        putMakeClassEntry(of, cpp);
                 } else if (support == 2 && slow) {
                 } else if (support == 0 && v3Global.opt.outputGroups() > 0) {
                     const std::vector<FileOrConcatenatedFilesList>& list

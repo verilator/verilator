@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+
 if 'VERILATOR_TEST_NO_GDB' in os.environ:
     test.skip("Skipping due to VERILATOR_TEST_NO_GDB")
 if not test.have_gdb:

@@ -17,7 +17,7 @@ test.golden_filename = "t/t_trace_public.out"
 test.compile(make_top_shell=False,
              make_main=False,
              v_flags2=[
-                 "-DPUB_FUNC --trace --exe", test.pli_filename,
+                 "-DPUB_FUNC --trace-vcd --exe", test.pli_filename,
                  test.t_dir + "/t_trace_public_func.vlt"
              ])
 

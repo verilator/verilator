@@ -64,10 +64,12 @@ std::ostream& operator<<(std::ostream& os, VNType rhs);
 const std::shared_ptr<const string> VSelfPointerText::s_emptyp = std::make_shared<string>("");
 const std::shared_ptr<const string> VSelfPointerText::s_thisp = std::make_shared<string>("this");
 
+string VSelfPointerText::replaceThis(bool useSelfForThis, const string& text) {
+    return useSelfForThis ? VString::replaceWord(text, "this", "vlSelf") : text;
+}
+
 string VSelfPointerText::protect(bool useSelfForThis, bool protect) const {
-    const string& sp
-        = useSelfForThis ? VString::replaceWord(asString(), "this", "vlSelf") : asString();
-    return VIdProtect::protectWordsIf(sp, protect);
+    return VIdProtect::protectWordsIf(replaceThis(useSelfForThis, asString()), protect);
 }
 
 //######################################################################
@@ -228,7 +230,7 @@ string AstNode::vpiName(const string& namein) {
     // we change that identifier to an escaped identifier, wrapping it with '\' and ' '
     // as specified in LRM 23.6
     string name = namein;
-    if (0 == namein.substr(0, 7).compare("__SYM__")) { name = namein.substr(7); }
+    if (0 == namein.substr(0, 7).compare("__SYM__")) name = namein.substr(7);
     string pretty;
     pretty.reserve(name.length());
     bool inEscapedIdent = false;
@@ -1340,7 +1342,7 @@ void AstNode::dumpTreeFile(const string& filename, bool doDump) {
         {  // Write log & close
             UINFO(2, "Dumping " << filename << endl);
             const std::unique_ptr<std::ofstream> logsp{V3File::new_ofstream(filename)};
-            if (logsp->fail()) v3fatal("Can't write " << filename);
+            if (logsp->fail()) v3fatal("Can't write file: " << filename);
             *logsp << "Verilator Tree Dump (format 0x3900) from <e" << std::dec << editCountLast();
             *logsp << "> to <e" << std::dec << editCountGbl() << ">\n";
             if (editCountGbl() == editCountLast() && ::dumpTreeLevel() < 9) {
@@ -1385,7 +1387,7 @@ void AstNode::dumpTreeJsonFile(const string& filename, bool doDump) {
     if (!doDump) return;
     UINFO(2, "Dumping " << filename << endl);
     const std::unique_ptr<std::ofstream> treejsonp{V3File::new_ofstream(filename)};
-    if (treejsonp->fail()) v3fatal("Can't write " << filename);
+    if (treejsonp->fail()) v3fatal("Can't write file: " << filename);
     dumpTreeJson(*treejsonp);
     *treejsonp << '\n';
 }
@@ -1394,7 +1396,7 @@ void AstNode::dumpJsonMetaFileGdb(const char* filename) { dumpJsonMetaFile(filen
 void AstNode::dumpJsonMetaFile(const string& filename) {
     UINFO(2, "Dumping " << filename << endl);
     const std::unique_ptr<std::ofstream> treejsonp{V3File::new_ofstream(filename)};
-    if (treejsonp->fail()) v3fatalStatic("Can't write " << filename);
+    if (treejsonp->fail()) v3fatalStatic("Can't write file: " << filename);
     *treejsonp << '{';
     FileLine::fileNameNumMapDumpJson(*treejsonp);
     *treejsonp << ',';
@@ -1408,7 +1410,7 @@ void AstNode::dumpTreeDotFile(const string& filename, bool doDump) {
     if (doDump) {
         UINFO(2, "Dumping " << filename << endl);
         const std::unique_ptr<std::ofstream> treedotp{V3File::new_ofstream(filename)};
-        if (treedotp->fail()) v3fatal("Can't write " << filename);
+        if (treedotp->fail()) v3fatal("Can't write file: " << filename);
         *treedotp << "digraph vTree{\n";
         *treedotp << "\tgraph\t[label=\"" << filename + ".dot"
                   << "\",\n";

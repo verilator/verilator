@@ -15,7 +15,7 @@ test.top_filename = "t/t_interface_ref_trace.v"
 # in a different order. Sadly vcddiff can't check equivalence
 # test.golden_filename = "t/t_interface_ref_trace.out"
 
-test.compile(verilator_flags2=['-fno-inline --trace-structs --trace'])
+test.compile(verilator_flags2=['-fno-inline --trace-structs --trace-vcd'])
 
 test.execute()
 

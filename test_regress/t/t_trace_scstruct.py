@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--sc --trace --trace-structs --pins-bv 2'])
+test.compile(verilator_flags2=['--sc --trace-vcd --trace-structs --pins-bv 2'])
 
 #test.execute()  # didn't bother with top shell
 

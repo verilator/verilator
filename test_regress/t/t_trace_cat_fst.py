@@ -17,7 +17,7 @@ test.compile(make_top_shell=False,
 
 test.execute()
 
-test.fst_identical(test.obj_dir + "/simpart_0000.fst", "t/" + test.name + "_0000.out")
-test.fst_identical(test.obj_dir + "/simpart_0100.fst", "t/" + test.name + "_0100.out")
+test.fst_identical(test.obj_dir + "/simpart_0000.fst", "t/" + test.name + "__0000.out")
+test.fst_identical(test.obj_dir + "/simpart_0100.fst", "t/" + test.name + "__0100.out")
 
 test.passes()

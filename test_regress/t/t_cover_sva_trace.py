@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_cover_sva_notflat.v"
 
-test.compile(verilator_flags2=['--assert --cc --coverage-user --trace --trace-coverage'])
+test.compile(verilator_flags2=['--assert --cc --coverage-user --trace-vcd --trace-coverage'])
 
 test.execute()
 

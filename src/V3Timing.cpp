@@ -723,8 +723,8 @@ class TimingControlVisitor final : public VNVisitor {
     void makeForkJoin(AstFork* const forkp) {
         // Create a fork sync var
         FileLine* const flp = forkp->fileline();
-        // If we're in a function, insert the sync var directly before the fork
-        AstNode* const insertBeforep = m_classp ? forkp : nullptr;
+        // Insert the sync var directly before the fork
+        AstNode* const insertBeforep = forkp;
         addCLocalScope(flp, insertBeforep);
         AstVarScope* forkVscp
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
@@ -772,9 +772,9 @@ class TimingControlVisitor final : public VNVisitor {
         }
     }
     void visit(AstActive* nodep) override {
+        VL_RESTORER(m_activep);
         m_activep = nodep;
         iterateChildren(nodep);
-        m_activep = nullptr;
     }
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procp);
@@ -933,11 +933,10 @@ class TimingControlVisitor final : public VNVisitor {
             UASSERT_OBJ(m_senExprBuilderp, nodep, "No SenExprBuilder for this scope");
             auto* const assignp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
                                                 m_senExprBuilderp->build(sensesp).first};
-            // Put all the locals and inits before the trigger eval loop
-            for (AstVar* const varp : m_senExprBuilderp->getAndClearLocals()) {
-                nodep->addHereThisAsNext(varp);
-            }
-            for (AstNodeStmt* const stmtp : m_senExprBuilderp->getAndClearInits()) {
+            // Get the SenExprBuilder results
+            const SenExprBuilder::Results senResults = m_senExprBuilderp->getAndClearResults();
+            // Put all and inits before the trigger eval loop
+            for (AstNodeStmt* const stmtp : senResults.m_inits) {
                 nodep->addHereThisAsNext(stmtp);
             }
             // Create the trigger eval loop, which will await the evaluation step and check the
@@ -946,9 +945,7 @@ class TimingControlVisitor final : public VNVisitor {
                 flp, new AstLogNot{flp, new AstVarRef{flp, trigvscp, VAccess::READ}},
                 awaitEvalp->makeStmt()};
             // Put pre updates before the trigger check and assignment
-            for (AstNodeStmt* const stmtp : m_senExprBuilderp->getAndClearPreUpdates()) {
-                loopp->addStmtsp(stmtp);
-            }
+            for (AstNodeStmt* const stmtp : senResults.m_preUpdates) loopp->addStmtsp(stmtp);
             // Then the trigger check and assignment
             loopp->addStmtsp(assignp);
             // Let the dynamic trigger scheduler know if this trigger was set
@@ -966,9 +963,7 @@ class TimingControlVisitor final : public VNVisitor {
                 loopp->addStmtsp(awaitPostUpdatep->makeStmt());
             }
             // Put the post updates at the end of the loop
-            for (AstNodeStmt* const stmtp : m_senExprBuilderp->getAndClearPostUpdates()) {
-                loopp->addStmtsp(stmtp);
-            }
+            for (AstNodeStmt* const stmtp : senResults.m_postUpdates) loopp->addStmtsp(stmtp);
             // Finally, await the resumption step in 'act'
             AstCAwait* const awaitResumep = awaitEvalp->cloneTree(false);
             VN_AS(awaitResumep->exprp(), CMethodHard)->name("resumption");

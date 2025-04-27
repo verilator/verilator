@@ -2,6 +2,7 @@
                                      : ... note: In instance 't'
    15 |       int part = val[left +: ZERO];
       |                     ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Warning-WIDTHEXPAND: t/t_select_bad_width0.v:15:21: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's SEL generates 1 bits.
                                                    : ... note: In instance 't'
    15 |       int part = val[left +: ZERO];

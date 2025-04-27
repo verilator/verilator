@@ -9,7 +9,7 @@ assignees: ''
 
 Thanks for taking the time to report this.
 
-Can you attach an example that shows the issue?  (Must be openly licensed, completely self-contaned so can directly run what you provide. Ideally use test_regress format, see https://veripool.org/guide/latest/contributing.html?highlight=test_regress#reporting-bugs
+Can you attach an example that shows the issue?  (Must be openly licensed, completely self-contained and self-checking so can directly run what you provide. Ideally use test_regress format, see https://veripool.org/guide/latest/contributing.html?highlight=test_regress#reporting-bugs
 
 What 'verilator' command line do we use to run your example?
 

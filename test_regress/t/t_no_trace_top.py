@@ -14,7 +14,7 @@ test.top_filename = "t_trace_cat.v"
 
 test.compile(make_top_shell=False,
              make_main=False,
-             v_flags2=["--trace --no-trace-top --exe", test.pli_filename])
+             v_flags2=["--trace-vcd --no-trace-top --exe", test.pli_filename])
 
 test.execute()
 

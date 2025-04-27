@@ -1,6 +1,7 @@
 %Error: t/t_clocking_bad3.v:14:14: Corresponding variable 'in' does not exist
    14 |        input in;
       |              ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_clocking_bad3.v:15:15: Corresponding variable 'out' does not exist
    15 |        output out;
       |               ^~~

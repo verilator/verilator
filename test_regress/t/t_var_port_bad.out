@@ -1,4 +1,5 @@
 %Error: t/t_var_port_bad.v:16:13: Input/output/inout does not appear in port list: 'b'
    16 |    input a, b;
       |             ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

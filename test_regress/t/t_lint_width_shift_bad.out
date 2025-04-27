@@ -12,6 +12,8 @@
                                                       : ... note: In instance 't'
    25 |    assign or5 = i4 >> 1;   
       |                    ^~
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Warning-WIDTHTRUNC: t/t_lint_width_shift_bad.v:27:15: Operator ASSIGNW expects 3 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 4 bits.
                                                      : ... note: In instance 't'
    27 |    assign os3 = i4 >>> 1;   

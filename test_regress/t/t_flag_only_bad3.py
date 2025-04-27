@@ -12,7 +12,9 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_flag_main.v"
 
-test.lint(verilator_flags2=["-Wall --lint-only -Wno-fatal --dpi-hdr-only --xml-only --json-only"],
+test.lint(verilator_flags2=[
+    "-Wall -Wno-DEPRECATED --lint-only -Wno-fatal --dpi-hdr-only --xml-only --json-only"
+],
           fails=True,
           expect_filename=test.golden_filename)
 

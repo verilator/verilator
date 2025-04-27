@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--cc --trace --trace-structs'])
+test.compile(verilator_flags2=['--cc --trace-vcd --trace-structs'])
 
 test.execute()
 

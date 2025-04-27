@@ -253,6 +253,7 @@ RAW_OBJS_PCH_ASTNOMT = \
 	V3EmitCModel.o \
 	V3EmitCSyms.o \
 	V3EmitMk.o \
+	V3EmitMkJson.o \
 	V3EmitXml.o \
 	V3ExecGraph.o \
 	V3Expand.o \
@@ -310,6 +311,7 @@ RAW_OBJS_PCH_ASTNOMT = \
 	V3Trace.o \
 	V3TraceDecl.o \
 	V3Tristate.o \
+	V3Udp.o \
 	V3Undriven.o \
 	V3Unknown.o \
 	V3Unroll.o \

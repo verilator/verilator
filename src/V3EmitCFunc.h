@@ -210,9 +210,10 @@ public:
     void emitConstant(AstConst* nodep, AstVarRef* assigntop, const string& assignString);
     void emitConstantString(const AstConst* nodep);
     void emitSetVarConstant(const string& assignString, AstConst* constp);
-    void emitVarReset(AstVar* varp);
-    string emitVarResetRecurse(const AstVar* varp, const string& varNameProtected,
-                               AstNodeDType* dtypep, int depth, const string& suffix);
+    void emitVarReset(AstVar* varp, bool constructing);
+    string emitVarResetRecurse(const AstVar* varp, bool constructing,
+                               const string& varNameProtected, AstNodeDType* dtypep, int depth,
+                               const string& suffix);
     void emitChangeDet();
     void emitConstInit(AstNode* initp) {
         // We should refactor emit to produce output into a provided buffer, not go through members
@@ -283,7 +284,7 @@ public:
         if (nodep->emptyBody() && !nodep->isLoose()) return;
         VL_RESTORER(m_useSelfForThis);
         VL_RESTORER(m_cfuncp);
-        VL_RESTORER(m_instantiatesOwnProcess)
+        VL_RESTORER(m_instantiatesOwnProcess);
         m_cfuncp = nodep;
         m_instantiatesOwnProcess = false;
 
@@ -355,8 +356,7 @@ public:
             // code to allow the compiler to generate load store after the
             // if condition (including short-circuit evaluation)
             // speculatively and also reduce the data cache pollution when
-            // executing in the wrong path to make verilator-generated code
-            // run faster.
+            // executing in the wrong path to make Verilated code faster.
             puts("auto& vlSelfRef = std::ref(*vlSelf).get();\n");
         }
 
@@ -387,6 +387,11 @@ public:
     }
 
     void visit(AstCvtArrayToPacked* nodep) override {
+        AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
+        emitOpName(nodep, nodep->emitC(), nodep->fromp(), elemDTypep, nullptr);
+    }
+
+    void visit(AstCvtUnpackedToQueue* nodep) override {
         AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
         emitOpName(nodep, nodep->emitC(), nodep->fromp(), elemDTypep, nullptr);
     }
@@ -1058,9 +1063,8 @@ public:
         putns(nodep, "vlSymsp->_vm_contextp__->timeprecision()");
     }
     void visit(AstNodeSimpleText* nodep) override {
-        const string text = m_inUC && m_useSelfForThis
-                                ? VString::replaceWord(nodep->text(), "this", "vlSelf")
-                                : nodep->text();
+        const string text
+            = VSelfPointerText::replaceThis(m_inUC && m_useSelfForThis, nodep->text());
         if (nodep->tracking() || m_trackText) {
             puts(text);
         } else {
@@ -1336,7 +1340,7 @@ public:
     void visit(AstThisRef* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
         puts("{");
-        puts(m_useSelfForThis ? "vlSelf" : "this");
+        puts(VSelfPointerText::replaceThis(m_useSelfForThis, "this"));
         puts("}");
     }
 
@@ -1436,7 +1440,7 @@ public:
     }
     void visit(AstCReset* nodep) override {
         AstVar* const varp = nodep->varrefp()->varp();
-        emitVarReset(varp);
+        emitVarReset(varp, nodep->constructing());
     }
     void visit(AstExecGraph* nodep) override {
         // The location of the AstExecGraph within the containing AstCFunc is where we want to
