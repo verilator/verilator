@@ -1,0 +1,10 @@
+rand = 0x5d1eb5e3
+rand = 0xd5b8d57e
+rand = 0xf0be314a
+rand = 0xba24397c
+rand = 0xd61b440b
+uninitialized = 0x0f7f28c0
+x_assigned = 0xbe450da7
+uninitialized2 = 0xa97523fb
+Last rand = 0x911c43eb
+*-* All Finished *-*
