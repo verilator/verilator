@@ -154,6 +154,7 @@ private:
 
     // MEMBERS
     VSymGraph m_syms;  // Symbol table by hierarchy
+    VSymGraph m_mods;  // Symbol table of all module names
     VSymEnt* m_dunitEntp = nullptr;  // $unit entry
     std::multimap<std::string, VSymEnt*>
         m_nameScopeSymMap;  // Map of scope referenced by non-pretty textual name
@@ -209,10 +210,12 @@ public:
     // CONSTRUCTORS
     LinkDotState(AstNetlist* rootp, VLinkDotStep step)
         : m_syms{rootp}
+        , m_mods{rootp}
         , m_step(step) {
         UINFO(4, __FUNCTION__ << ": " << endl);
         s_errorThisp = this;
         V3Error::errorExitCb(preErrorDumpHandler);  // If get error, dump self
+        readModNames();
     }
     ~LinkDotState() {
         V3Error::errorExitCb(nullptr);
@@ -259,6 +262,18 @@ public:
             return "interface";
         } else {
             return nodep->prettyTypeName();
+        }
+    }
+
+    AstNodeModule* findModuleSym(const string& modName) {
+        const VSymEnt* const foundp = m_mods.rootp()->findIdFallback(modName);
+        return foundp ? VN_AS(foundp->nodep(), NodeModule) : nullptr;
+    }
+    void readModNames() {
+        // Look at all modules, and store pointers to all module names
+        for (AstNodeModule *nextp, *nodep = v3Global.rootp()->modulesp(); nodep; nodep = nextp) {
+            nextp = VN_AS(nodep->nextp(), NodeModule);
+            m_mods.rootp()->insert(nodep->name(), new VSymEnt{&m_mods, nodep});
         }
     }
 
@@ -427,7 +442,7 @@ public:
         abovep->reinsert(name, symp);
         return symp;
     }
-    static bool existsModScope(AstNodeModule* nodep) { return nodep->user1p() != nullptr; }
+    static bool existsNodeSym(AstNode* nodep) { return nodep->user1p() != nullptr; }
     static VSymEnt* getNodeSym(AstNode* nodep) {
         // Don't use this in ResolveVisitor, as we need to pick up the proper
         // reference under each SCOPE
@@ -1114,6 +1129,10 @@ class LinkDotFindVisitor final : public VNVisitor {
         nodep->user1p(m_curSymp);
         iterateChildren(nodep);
     }
+    void visit(AstRefDType* nodep) override {  // FindVisitor::
+        nodep->user1p(m_curSymp);
+        iterateChildren(nodep);
+    }
     void visit(AstNodeBlock* nodep) override {  // FindVisitor::
         UINFO(5, "   " << nodep << endl);
         if (nodep->name() == "" && nodep->unnamed()) {
@@ -1494,21 +1513,13 @@ class LinkDotFindVisitor final : public VNVisitor {
                         }
                     }
                 }
-                VSymEnt* const insp
-                    = m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
+                m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
                 if (m_statep->forPrimary() && nodep->isGParam()) {
                     ++m_paramNum;
                     VSymEnt* const symp
                         = m_statep->insertSym(m_curSymp, "__paramNumber" + cvtToStr(m_paramNum),
                                               nodep, m_classOrPackagep);
                     symp->exported(false);
-                }
-                AstIfaceRefDType* const ifacerefp
-                    = LinkDotState::ifaceRefFromArray(nodep->subDTypep());
-                if (ifacerefp) {
-                    // Can't resolve until interfaces and modport names are
-                    // known; see notes at top
-                    m_statep->insertIfaceVarSym(insp);
                 }
             }
         }
@@ -1758,9 +1769,94 @@ public:
 
 //======================================================================
 
+class LinkDotFindIfaceVisitor final : public VNVisitor {
+    // NODE STATE
+    //  *::user1p()             -> See LinkDotState
+
+    // STATE - for current visit position (use VL_RESTORER)
+    LinkDotState* const m_statep;  // State to pass between visitors, including symbol table
+    AstNode* m_declp = nullptr;  // Current declaring object that may soon contain IfaceRefDType
+
+    // METHODS
+    const VSymEnt* findNonDeclSym(VSymEnt* symp, const string& name) {
+        // Find if there is a symbol of given name, ignoring the node that is declaring
+        // it (m_declp) itself.  Thus if searching for "ifc" (an interface):
+        //
+        // module x;  // Finishes here and finds the typedef
+        //   typedef foo ifc;
+        //   ifc ifc;   // symp starts pointing here, but matches m_declp
+        while (symp) {
+            const VSymEnt* const foundp = symp->findIdFlat(name);
+            if (foundp && foundp->nodep() != m_declp) return foundp;
+            symp = symp->fallbackp();
+        }
+        return nullptr;
+    }
+
+    // VISITORS
+    void visit(AstRefDType* nodep) override {  // FindIfaceVisitor::
+        if (m_statep->forPrimary() && !nodep->classOrPackagep()) {
+            UINFO(9, "  FindIfc: " << nodep << endl);
+            // If under a var, ignore the var itself as might be e.g. "intf intf;"
+            // Critical tests:
+            //   t_interface_param_genblk.v  // Checks this does make interface
+            //   t_interface_hidden.v  // Checks this doesn't making interface when hidden
+            if (m_statep->existsNodeSym(nodep)) {
+                VSymEnt* symp = m_statep->getNodeSym(nodep);
+                const VSymEnt* foundp = findNonDeclSym(symp, nodep->name());
+                AstNode* foundNodep = nullptr;
+                // This: v4make test_regress/t/t_interface_param_genblk.py --debug
+                // --debugi-V3LinkDot 9 Passes with this commented out:
+                if (foundp) foundNodep = foundp->nodep();
+                if (!foundNodep) foundNodep = m_statep->findModuleSym(nodep->name());
+                if (foundNodep) UINFO(9, "    Ifc foundNodep " << foundNodep << endl);
+                if (AstIface* const defp = VN_CAST(foundNodep, Iface)) {
+                    // Must be found as module name, and not hidden/ by normal symbol (foundp)
+                    AstIfaceRefDType* const newp
+                        = new AstIfaceRefDType{nodep->fileline(), "", nodep->name()};
+                    if (nodep->paramsp())
+                        newp->addParamsp(nodep->paramsp()->unlinkFrBackWithNext());
+                    newp->ifacep(defp);
+                    newp->user1u(nodep->user1u());
+                    UINFO(9, "    Resolved interface " << nodep << "  =>  " << defp << endl);
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+            }
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstVar* nodep) override {  // FindVisitor::
+        VL_RESTORER(m_declp);
+        m_declp = nodep;
+        iterateChildren(nodep);
+        AstIfaceRefDType* const ifacerefp = LinkDotState::ifaceRefFromArray(nodep->subDTypep());
+        if (ifacerefp && m_statep->existsNodeSym(nodep)) {
+            // Can't resolve until interfaces and modport names are
+            // known; see notes at top
+            UINFO(9, "  FindIfc Var IfaceRef " << ifacerefp << endl);
+            if (!ifacerefp->isVirtual()) nodep->setIfaceRef();
+            VSymEnt* const symp = m_statep->getNodeSym(nodep);
+            m_statep->insertIfaceVarSym(symp);
+        }
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }  // FindIfaceVisitor::
+
+public:
+    // CONSTRUCTORS
+    LinkDotFindIfaceVisitor(AstNetlist* rootp, LinkDotState* statep)
+        : m_statep{statep} {
+        UINFO(4, __FUNCTION__ << ": " << endl);
+        iterate(rootp);
+    }
+    ~LinkDotFindIfaceVisitor() override = default;
+};
+
+//======================================================================
+
 class LinkDotParamVisitor final : public VNVisitor {
     // NODE STATE
-    // Cleared on global
     //  *::user1p()             -> See LinkDotState
     //  *::user2p()             -> See LinkDotState
     //  *::user4()              -> See LinkDotState
@@ -4451,6 +4547,9 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
 
     { LinkDotFindVisitor{rootp, &state}; }
     dumpSubstep("prelinkdot-find");
+
+    { LinkDotFindIfaceVisitor{rootp, &state}; }
+    dumpSubstep("prelinkdot-findiface");
 
     if (step == LDS_PRIMARY || step == LDS_PARAMED) {
         // Initial link stage, resolve parameters and interfaces

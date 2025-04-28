@@ -1554,8 +1554,10 @@ port<nodep>:                    // ==IEEE: port
                 portDirNetE id/*interface*/ portSig variable_dimensionListE sigAttrListE
                         { // VAR for now, but V3LinkCells may call setIfcaeRef on it later
                           $$ = $3; VARDECL(VAR); VARIO(NONE);
-                          AstNodeDType* const dtp = new AstIfaceRefDType{$<fl>2, "", *$2};
-                          VARDTYPE(dtp); VARIOANSI();
+                          // Although know it's an interface, use AstRefDType for forward compatibility
+                          // with future parser.  V3LinkCells will convert to AstIfaceRefDType.
+                          AstNodeDType* const dtp = new AstRefDType{$<fl>2, *$2};
+                          VARDTYPE(dtp);
                           addNextNull($$, VARDONEP($$, $4, $5)); }
         |       portDirNetE id/*interface*/ '.' idAny/*modport*/ portSig variable_dimensionListE sigAttrListE
                         { // VAR for now, but V3LinkCells may call setIfcaeRef on it later

@@ -131,11 +131,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
     AstNodeModule* findModuleSym(const string& modName) {
         const VSymEnt* const foundp = m_mods.rootp()->findIdFallback(modName);
-        if (!foundp) {
-            return nullptr;
-        } else {
-            return VN_AS(foundp->nodep(), NodeModule);
-        }
+        return foundp ? VN_AS(foundp->nodep(), NodeModule) : nullptr;
     }
 
     AstNodeModule* resolveModule(AstNode* nodep, const string& modName) {
@@ -534,8 +530,14 @@ class LinkCellsVisitor final : public VNVisitor {
             if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
         }
         if (m_varp) {  // Parser didn't know what was interface, resolve now
-            const AstNodeModule* const varModp = findModuleSym(nodep->name());
-            if (VN_IS(varModp, Iface)) m_varp->setIfaceRef();
+            AstNodeModule* const varModp = findModuleSym(nodep->name());
+            if (AstIface* const ifacep = VN_CAST(varModp, Iface)) {
+                // Might be an interface, but might also not really be due to interface being
+                // hidden by another declaration.  Assume it is relevant and order as-if.
+                // This is safe because an interface cannot instantiate a module, so false
+                // module->interface edges are harmless.
+                newEdge(vertex(m_modp), vertex(ifacep), 1, false);
+            }
         }
     }
     void visit(AstClassOrPackageRef* nodep) override {
