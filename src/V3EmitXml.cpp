@@ -355,8 +355,8 @@ public:
         // Xml output
         m_os << "<module_files>\n";
         for (const FileLine* ifp : m_nodeModules) {
-            m_os << "<file id=\"" << ifp->filenameLetters() << "\" filename=\"" << ifp->filename()
-                 << "\" language=\"" << ifp->language().ascii() << "\"/>\n";
+            m_os << "<file id=\"" << ifp->filenameLetters() << "\" filename=\""
+                 << ifp->filenameEsc() << "\" language=\"" << ifp->language().ascii() << "\"/>\n";
         }
         m_os << "</module_files>\n";
     }

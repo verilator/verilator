@@ -91,7 +91,7 @@ string VString::upcase(const string& str) VL_PURE {
     return result;
 }
 
-string VString::quoteAny(const string& str, char tgt, char esc) {
+string VString::quoteAny(const string& str, char tgt, char esc) VL_PURE {
     string result;
     for (const char c : str) {
         if (c == tgt) result += esc;

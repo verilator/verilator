@@ -237,7 +237,7 @@ bom             [\357\273\277]
                           return VP_TEXT; }
 <INITIAL,STRIFY>"`__FILE__"     { FL_FWDC;
                           static string rtnfile;
-                          rtnfile = '"'; rtnfile += LEXP->curFilelinep()->filename();
+                          rtnfile = '"'; rtnfile += LEXP->curFilelinep()->filenameEsc();
                           rtnfile += '"'; yytext = (char*)rtnfile.c_str(); yyleng = rtnfile.length();
                           return VP_STRING; }
 <INITIAL,STRIFY>"`__LINE__"     { FL_FWDC;
