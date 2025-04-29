@@ -72,6 +72,7 @@ public:
         ASSIGNDLY,      // Assignment delays
         ASSIGNIN,       // Assigning to input
         BADSTDPRAGMA,   // Any error related to pragmas
+        BADVLTPRAGMA,   // Unknown Verilator pragma
         BLKANDNBLK,     // Blocked and non-blocking assignments to same variable
         BLKLOOPINIT,    // Delayed assignment to array inside for loops
         BLKSEQ,         // Blocking assignments in sequential block
@@ -193,7 +194,7 @@ public:
             "LIFETIME", "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT", "TASKNSVAR", "UNSUPPORTED",
             // Warnings
             " EC_FIRST_WARN",
-            "ALWCOMBORDER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
+            "ALWCOMBORDER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA", "BADVLTPRAGMA",
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG", "COVERIGN",
@@ -232,10 +233,10 @@ public:
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
     bool pretendError() const VL_MT_SAFE {
-        return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BLKANDNBLK || m_e == BLKLOOPINIT
-                || m_e == CONTASSREG || m_e == ENCAPSULATED || m_e == ENDLABEL || m_e == ENUMVALUE
-                || m_e == IMPURE || m_e == PINNOTFOUND || m_e == PKGNODECL || m_e == PROCASSWIRE
-                || m_e == ZEROREPL  // Says IEEE
+        return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BADVLTPRAGMA || m_e == BLKANDNBLK
+                || m_e == BLKLOOPINIT || m_e == CONTASSREG || m_e == ENCAPSULATED
+                || m_e == ENDLABEL || m_e == ENUMVALUE || m_e == IMPURE || m_e == PINNOTFOUND
+                || m_e == PKGNODECL || m_e == PROCASSWIRE || m_e == ZEROREPL  // Says IEEE
         );
     }
     // Warnings to mention manual

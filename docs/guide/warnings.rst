@@ -167,6 +167,16 @@ List Of Warnings
    'pragma protect'.  Third-party pragmas not defined by IEEE 1800-2023 are
    ignored.
 
+   This error may be disabled with a lint_off BADSTDPRAGMA metacomment.
+
+
+.. option:: BADVLTPRAGMA
+
+   An error that a `/*verilator ...*/` metacomment pragma is badly formed
+   or not understood.
+
+   This error may be disabled with a lint_off BADVLTPRAGMA metacomment.
+
 
 .. option:: BLKANDNBLK
 

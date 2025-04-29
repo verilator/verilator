@@ -13,6 +13,7 @@ Verilator 5.037 devel
 
 **Other:**
 
+* Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
 * Fix sign extension of signed compared with unsigned case items (#5968).
 
 

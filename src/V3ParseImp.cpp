@@ -196,7 +196,7 @@ void V3ParseImp::lexVerilatorCmtBad(FileLine* fl, const char* textp) {
     string cmtname;
     for (int i = 0; std::isalnum(cmtparse[i]); i++) cmtname += cmtparse[i];
     if (!v3Global.opt.isFuture(cmtname)) {
-        fl->v3error("Unknown verilator comment: '" << textp << "'");
+        fl->v3warn(BADVLTPRAGMA, "Unknown verilator comment: '" << textp << "'");
     }
 }
 
