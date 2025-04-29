@@ -495,7 +495,7 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
     } else if (nodep->num().isString()) {
         emitConstantString(nodep);
     } else if (nodep->isWide()) {
-        int upWidth = nodep->num().widthMin();
+        int upWidth = nodep->num().widthToFit();
         int chunks = 0;
         if (upWidth > EMITC_NUM_CONSTW * VL_EDATASIZE) {
             // Output e.g. 8 words in groups of e.g. 8

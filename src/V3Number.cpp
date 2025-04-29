@@ -372,7 +372,7 @@ void V3Number::create(const char* sourcep) {
 
     // If was unsized, trim width per IEEE 1800-2023 5.7.1
     if (!userSized && !m_data.m_autoExtend) {
-        width(std::max(32, base_align * ((widthMin() + base_align - 1) / base_align)), false);
+        width(std::max(32, base_align * ((widthToFit() + base_align - 1) / base_align)), false);
     }
 
     // Z or X extend specific width values.  Spec says we don't 1 extend.
@@ -1131,7 +1131,7 @@ int V3Number::countZ(int lsb, int nbits) const VL_MT_SAFE {
     return count;
 }
 
-int V3Number::widthMin() const {
+int V3Number::widthToFit() const {
     for (int bit = width() - 1; bit > 0; bit--) {
         if (!bitIs0(bit)) return bit + 1;
     }

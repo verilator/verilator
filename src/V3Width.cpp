@@ -1325,7 +1325,7 @@ class WidthVisitor final : public VNVisitor {
             } else if (nodep->num().sized()) {
                 nodep->dtypeChgWidth(nodep->num().width(), nodep->num().width());
             } else {
-                nodep->dtypeChgWidth(nodep->num().width(), nodep->num().widthMin());
+                nodep->dtypeChgWidth(nodep->num().width(), nodep->num().widthToFit());
             }
         }
         // We don't size the constant until we commit the widths, as need parameters

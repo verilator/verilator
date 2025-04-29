@@ -584,7 +584,7 @@ public:
     string displayed(AstNode* nodep, const string& vformat) const VL_MT_STABLE;
     static bool displayedFmtLegal(char format, bool isScan);  // Is this a valid format letter?
     int width() const VL_MT_SAFE { return m_data.width(); }
-    int widthMin() const;  // Minimum width that can represent this number (~== log2(num)+1)
+    int widthToFit() const;  // Minimum width that can represent this number (~== log2(num)+1)
     bool sized() const VL_MT_SAFE { return m_data.m_sized; }
     bool autoExtend() const VL_MT_SAFE { return m_data.m_autoExtend; }
     bool isFromString() const { return m_data.m_fromString; }
