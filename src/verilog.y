@@ -749,7 +749,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yS_UNTIL        "s_until"
 %token<fl>              yS_UNTIL_WITH   "s_until_with"
 %token<fl>              yTABLE          "table"
-//UNSUP %token<fl>      yTAGGED         "tagged"
+%token<fl>              yTAGGED         "tagged"
 %token<fl>              yTASK           "task"
 %token<fl>              yTHIS           "this"
 %token<fl>              yTHROUGHOUT     "throughout"
@@ -1080,7 +1080,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 // These prevent other conflicts
 %left           yP_ANDANDAND
 %left           yMATCHES
-//UNSUP %left   prTAGGED
+%left           prTAGGED
 //UNSUP %left   prSEQ_CLOCKING
 
 // PSL op precedence
@@ -2447,7 +2447,7 @@ random_qualifier<qualifiers>:   // ==IEEE: random_qualifier
 taggedSoftE<cbool>:
                 /*empty*/                               { $$ = false; }
         |       ySOFT                                   { $$ = true; }
-        //UNSUP yTAGGED                                 { UNSUP }
+        |       yTAGGED                                 { $$ = false; BBUNSUP($<fl>1, "Unsupported: tagged union"); }
         ;
 
 packedSigningE<signstate>:
@@ -4033,8 +4033,8 @@ patternNoExpr<nodep>:           // IEEE: pattern **Excluding Expr*
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
         //                      // IEEE: "expr" excluded; expand in callers
         //                      // "yTAGGED idAny [expr]" Already part of expr
-        //UNSUP yTAGGED idAny/*member_identifier*/ patternNoExpr
-        //UNSUP         { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
+        |       yTAGGED idAny/*member_identifier*/ patternNoExpr
+                        { $$ = nullptr; BBUNSUP($1, "Unsupported: '{} tagged patterns"); }
         //                      // "yP_TICKBRA patternList '}'" part of expr under assignment_pattern
         ;
 
@@ -5083,8 +5083,9 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         |       ~l~expr yINSIDE '{' range_list '}'      { $$ = new AstInside{$2, $1, $4}; }
         //
         //                      // IEEE: tagged_union_expression
-        //UNSUP yTAGGED id/*member*/ %prec prTAGGED             { UNSUP }
-        //UNSUP yTAGGED id/*member*/ %prec prTAGGED primary     { UNSUP }
+        //UNSUP yTAGGED id/*member*/ %prec prTAGGED             { $$ = $2; BBUNSUP("tagged reference"); }
+        //                      // Spec only allows primary
+        //UNSUP yTAGGED id/*member*/ %prec prTAGGED expr /*primary*/     { $$ = $2; BBUNSUP("tagged reference"); }
         //
         //======================// IEEE: primary/constant_primary
         //

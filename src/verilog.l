@@ -581,7 +581,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "string"              { FL; return ySTRING; }
   "struct"              { FL; return ySTRUCT; }
   "super"               { FL; return ySUPER; }
-  "tagged"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "tagged"              { FL; return yTAGGED; }
   "this"                { FL; return yTHIS; }
   "throughout"          { FL; return yTHROUGHOUT; }
   "timeprecision"       { FL; return yTIMEPRECISION; }
