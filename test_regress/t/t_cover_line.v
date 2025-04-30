@@ -308,7 +308,7 @@ module cond(input logic clk, input int cyc);
       return 1;
    endfunction
 
-   assign a = (cyc == 0) ? clk : 0;
+   assign a = (cyc == 0) ? clk : 1'bz;
    assign b = (cyc == 1) ? clk : 0;
    assign c = func_side_effect() ? clk : 0;
    always @(posedge clk) begin
