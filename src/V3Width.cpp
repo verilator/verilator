@@ -6764,8 +6764,7 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->rhsp()->width() > 32) {
                 if (shiftp && shiftp->num().mostSetBitP1() <= 32) {
                     // If (number)<<96'h1, then make it into (number)<<32'h1
-                    V3Number num(shiftp, 32, 0);
-                    num.opAssign(shiftp->num());
+                    V3Number num{shiftp, 32, shiftp->num()};
                     AstNode* const shiftrhsp = nodep->rhsp();
                     nodep->rhsp()->replaceWith(new AstConst{shiftrhsp->fileline(), num});
                     VL_DO_DANGLING(shiftrhsp->deleteTree(), shiftrhsp);
@@ -6935,8 +6934,7 @@ class WidthVisitor final : public VNVisitor {
         const int expWidth = expDTypep->width();
         if (constp && !constp->num().isNegative()) {
             // Save later constant propagation work, just right-size it.
-            V3Number num(nodep, expWidth);
-            num.opAssign(constp->num());
+            V3Number num{nodep, expWidth, constp->num()};
             num.isSigned(false);
             AstNodeExpr* const newp = new AstConst{nodep->fileline(), num};
             constp->replaceWith(newp);

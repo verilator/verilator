@@ -466,6 +466,11 @@ public:
     V3Number(AstNode* nodep, int width) {  // 0=unsized
         init(nodep, width, width > 0);
     }
+    // Construct with value, changing to new width
+    V3Number(AstNode* nodep, int width, const V3Number& value) {
+        init(nodep, width, width > 0);
+        opAssign(value);
+    }
     V3Number(AstNode* nodep, int width, uint32_t value, bool sized = true) {
         init(nodep, width, sized);
         m_data.num()[0].m_value = value;

@@ -1368,8 +1368,7 @@ class ConstVisitor final : public VNVisitor {
         nodep->rhsp(smallerp);
 
         constp->unlinkFrBack();
-        V3Number num{constp, subsize};
-        num.opAssign(constp->num());
+        V3Number num{constp, subsize, constp->num()};
         nodep->lhsp(new AstConst{constp->fileline(), num});
         VL_DO_DANGLING(pushDeletep(constp), constp);
         if (debug() >= 9) nodep->dumpTree("-  BI(EXTEND)-ou: ");
