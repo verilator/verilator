@@ -13,7 +13,9 @@ test.scenarios("simulator")
 
 test.compile(verilator_flags2=["--x-initial unique"])
 
-test.execute(all_run_flags=["+verilator+rand+reset+2"], expect_filename=test.golden_filename)
+test.execute(
+    all_run_flags=["+verilator+rand+reset+2"], expect_filename=test.golden_filename
+)
 
 test.passes()
 

@@ -673,7 +673,7 @@ void EmitCFunc::emitVarReset(AstVar* varp, bool constructing) {
 string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                                       const string& varNameProtected, AstNodeDType* dtypep,
                                       int depth, const string& suffix) {
-    UINFO(1, "Var Reset -- " << varp->prettyName() << " -- " << varp->origName() << " -- " << varp
+    UINFO(1, "Var Reset -- " << varp->prettyName() << " -- " << varp->name() << " - " << varp->origName() << " -- " << varp
                              << endl);
     dtypep = dtypep->skipRefp();
     AstBasicDType* const basicp = dtypep->basicp();
@@ -774,12 +774,14 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 out += cvtToStr(dtypep->widthMin());
                 out += ", " + varNameProtected + suffix;
                 if (!zeroit) {
-                    V3Hash hash(varp->prettyName());
+                    emitVarResetScopeHash();
+                    uint64_t salt = std::hash<std::string>{}(varp->prettyName());
                     UINFO(1,
-                          "Var Hash -- " << varp->prettyName() << " -- " << hash.value() << endl);
+                          "Var Hash -- " << varp->prettyName() << " -- " << salt << endl);
                     out += ", ";
-                    // NOCOMMIT -- 64b
-                    out += std::to_string(hash.value());
+                    out += "__VscopeHash, ";
+                    out += std::to_string(salt);
+                    out += "ull";
                 }
                 out += ");\n";
             }
@@ -794,13 +796,16 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
             if (zeroit || (v3Global.opt.xInitialEdge() && varp->isUsedClock())) {
                 out += " = 0;\n";
             } else {
-                V3Hash hash(varp->prettyName());
-                UINFO(1, "Var Hash -- " << varp->prettyName() << " -- " << hash.value() << endl);
+                emitVarResetScopeHash();
+                uint64_t salt = std::hash<std::string>{}(varp->prettyName());
+                UINFO(1, "Var Hash -- " << varp->prettyName() << " -- " << salt << endl);
                 out += " = VL_RAND_RESET_";
                 out += dtypep->charIQWN();
                 // NOCOMMIT -- 64b
-                out += "(" + cvtToStr(dtypep->widthMin()) + ", " + std::to_string(hash.value())
-                       + ");\n";
+                out += "(" + cvtToStr(dtypep->widthMin()) + ", "
+                       + "__VscopeHash, "
+                       + std::to_string(salt)
+                       + "ull);\n";
             }
             return out;
         }
@@ -808,4 +813,11 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
         v3fatalSrc("Unknown node type in reset generator: " << varp->prettyTypeName());
     }
     return "";
+}
+
+void EmitCFunc::emitVarResetScopeHash() {
+    if (m_createdScopeHash) { return; }
+    // NOCOMMIT -- name?
+    puts("uint64_t __VscopeHash = std::hash<std::string>{}(vlSelf->name());\n");
+    m_createdScopeHash = true;
 }

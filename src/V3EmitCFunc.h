@@ -120,6 +120,7 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     int m_labelNum = 0;  // Next label number
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCExpr
     bool m_emitConstInit = false;  // Emitting constant initializer
+    bool m_createdScopeHash = false;  // Already created a scope hash
 
     // State associated with processing $display style string formatting
     struct EmitDispState final {
@@ -214,6 +215,7 @@ public:
     string emitVarResetRecurse(const AstVar* varp, bool constructing,
                                const string& varNameProtected, AstNodeDType* dtypep, int depth,
                                const string& suffix);
+    void emitVarResetScopeHash();
     void emitChangeDet();
     void emitConstInit(AstNode* initp) {
         // We should refactor emit to produce output into a provided buffer, not go through members
