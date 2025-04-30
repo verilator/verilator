@@ -1825,10 +1825,12 @@ public:
             // NOCOMMIT
             string salt = std::to_string(0x0123456789abcdefull);
             if (v3Global.opt.xAssign() == "unique") {
-                return "VL_RAND_RESET_ASSIGN_%nq(%nw, %P, " + salt + ")";
+                // NOCOMMIT -- scope
+                return "VL_RAND_RESET_ASSIGN_%nq(%nw, %P, 0x123, " + salt + ")";
             } else {
                 // This follows xInitial randomization
-                return "VL_RAND_RESET_%nq(%nw, %P, " + salt + ")";
+                // NOCOMMIT -- scope
+                return "VL_RAND_RESET_%nq(%nw, %P, 0x123, " + salt + ")";
             }
         }
         if (seedp()) {

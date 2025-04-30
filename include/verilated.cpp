@@ -407,56 +407,58 @@ IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
     return VL_RANDOM_I();
 }
 static QData VL_RANDOM_RESET_Q_GUTS(std::array<uint64_t, 2>& state) {
+    if (Verilated::threadContextp()->randReset() == 0) return 0;
+    if (Verilated::threadContextp()->randReset() == 1) return ~0;
     state[1] ^= state[0];
     state[0] = (((state[0] << 55) | (state[0] >> 9)) ^ state[1] ^ (state[1] << 14));
     state[1] = (state[1] << 36) | (state[1] >> 28);
     return state[0] + state[1];
 }
-static QData VL_RANDOM_RESET_Q(uint64_t salt) {
+static QData VL_RANDOM_RESET_Q(uint64_t scopeHash, uint64_t salt) {
     std::array<uint64_t, 2> state;
-    state[0] = Verilated::threadContextp()->randSeed() ^ salt;
+    state[0] = Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt;
     state[1] = state[0];
     return VL_RANDOM_RESET_Q_GUTS(state);
 }
-static IData VL_RANDOM_RESET_I(uint64_t salt) { return VL_RANDOM_RESET_Q(salt); }
-IData VL_RAND_RESET_I(int obits, uint64_t salt) VL_MT_SAFE {
+static IData VL_RANDOM_RESET_I(uint64_t scopeHash, uint64_t salt) { return VL_RANDOM_RESET_Q(scopeHash, salt); }
+IData VL_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_SAFE {
     if (Verilated::threadContextp()->randReset() == 0) return 0;
     IData data = ~0;
     if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
-        data = VL_RANDOM_RESET_I(salt);
+        data = VL_RANDOM_RESET_I(scopeHash, salt);
     }
     data &= VL_MASK_I(obits);
     return data;
 }
-IData VL_RAND_RESET_ASSIGN_I(int obits, uint64_t salt) VL_MT_SAFE {
-    return VL_RANDOM_RESET_I(salt) & VL_MASK_I(obits);
+IData VL_RAND_RESET_ASSIGN_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_SAFE {
+    return VL_RANDOM_RESET_I(scopeHash, salt) & VL_MASK_I(obits);
 }
 
-QData VL_RAND_RESET_Q(int obits, uint64_t salt) VL_MT_SAFE {
+QData VL_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_SAFE {
     if (Verilated::threadContextp()->randReset() == 0) return 0;
     QData data = ~0ULL;
     if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
-        data = VL_RANDOM_RESET_Q(salt);
+        data = VL_RANDOM_RESET_Q(scopeHash, salt);
     }
     data &= VL_MASK_Q(obits);
     return data;
 }
 
-QData VL_RAND_RESET_ASSIGN_Q(int obits, uint64_t salt) VL_MT_SAFE {
-    return VL_RANDOM_RESET_Q(salt) & VL_MASK_Q(obits);
+QData VL_RAND_RESET_ASSIGN_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_SAFE {
+    return VL_RANDOM_RESET_Q(scopeHash, salt) & VL_MASK_Q(obits);
 }
 
-WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp, uint64_t salt) VL_MT_SAFE {
+WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp, uint64_t scopeHash, uint64_t salt) VL_MT_SAFE {
     std::array<uint64_t, 2> state;
-    state[0] = Verilated::threadContextp()->randSeed() ^ salt;
+    state[0] = Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt;
     state[1] = state[0];
     for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = VL_RANDOM_RESET_Q_GUTS(state);
     outwp[VL_WORDS_I(obits) - 1] = VL_RANDOM_RESET_Q_GUTS(state) & VL_MASK_E(obits);
     return outwp;
 }
-WDataOutP VL_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp, uint64_t salt) VL_MT_SAFE {
+WDataOutP VL_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp, uint64_t scopeHash, uint64_t salt) VL_MT_SAFE {
     std::array<uint64_t, 2> state;
-    state[0] = Verilated::threadContextp()->randSeed() ^ salt;
+    state[0] = Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt;
     state[1] = state[0];
     for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = VL_RANDOM_RESET_Q_GUTS(state);
     outwp[VL_WORDS_I(obits) - 1] = VL_RANDOM_RESET_Q_GUTS(state) & VL_MASK_E(obits);
@@ -2184,7 +2186,8 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
         const char c = std::tolower(i);
         const int value
             = (c == 'x' || c == 'z')
-                  ? VL_RAND_RESET_I(m_hex ? 4 : 1, 0x01234567890abcdefull)  //  NOCOMMIT
+                                        // NOCOMMIT -- scope
+                  ? VL_RAND_RESET_I(m_hex ? 4 : 1, 0x123, 0x01234567890abcdefull)  //  NOCOMMIT
               : (c >= 'a') ? (c - 'a' + 10)
                            : (c - '0');
         if (m_bits <= 8) {
