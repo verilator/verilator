@@ -516,6 +516,12 @@ V3Number& V3Number::setValue1() {
     return *this;
 }
 
+void V3Number::setBitX0(int bit) {
+    // Selection beyond bounds after V3Premit needs to have 0s
+    // in upper bits.  Contrast to setAllBitsXRemoved which honors xAssign
+    setBit(bit, v3Global.constRemoveXs() ? 0 : 'x');
+}
+
 V3Number& V3Number::setMask(int nbits, int lsb) {
     setZero();
     for (int bit = lsb; bit < lsb + nbits; bit++) setBit(bit, 1);
@@ -2324,7 +2330,7 @@ V3Number& V3Number::opSel(const V3Number& lhs, uint32_t msbval, uint32_t lsbval)
         if (ibit >= 0 && ibit < lhs.width() && ibit <= static_cast<int>(msbval)) {
             setBit(bit, lhs.bitIs(ibit));
         } else {
-            setBit(bit, 'x');
+            setBitX0(bit);
         }
         ++ibit;
     }
@@ -2345,7 +2351,7 @@ V3Number& V3Number::opSelInto(const V3Number& lhs, int lsbval, int width) {
         if (ibit >= 0 && ibit < lhs.width()) {
             setBit(bit, lhs.bitIs(ibit));
         } else {
-            setBit(bit, 'x');
+            setBitX0(bit);
         }
         ibit++;
     }

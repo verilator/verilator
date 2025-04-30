@@ -356,6 +356,7 @@ public:
     V3Number& setLong(uint32_t value);
     V3Number& setLongS(int32_t value);
     V3Number& setDouble(double value);
+    void setBitX0(int bit);
     void setBit(int bit, char value) {  // Note: must be initialized as number and pre-zeroed!
         if (bit >= m_data.width()) return;
         const uint32_t mask = (1UL << (bit & 31));
@@ -654,8 +655,7 @@ public:
     uint32_t countBits(const V3Number& ctrl) const;
     uint32_t countBits(const V3Number& ctrl1, const V3Number& ctrl2, const V3Number& ctrl3) const;
     uint32_t countOnes() const;
-    uint32_t
-    mostSetBitP1() const;  // Highest bit set plus one, IE for 16 return 5, for 0 return 0.
+    uint32_t mostSetBitP1() const;  // Highest bit set + 1, e.g. for 16 return 5, for 0 return 0
 
     // Operators
     bool operator<(const V3Number& rhs) const { return isLtXZ(rhs); }
