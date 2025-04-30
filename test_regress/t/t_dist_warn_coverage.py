@@ -110,7 +110,6 @@ for s in [
         'Unsupported: \'{} tagged patterns',
         'Unsupported: always[] (in property expression)',
         'Unsupported: assertion items in clocking blocks',
-        'Unsupported: default clocking identifier',
         'Unsupported: don\'t know how to deal with ',
         'Unsupported: eventually[] (in property expression)',
         'Unsupported: extern forkjoin',

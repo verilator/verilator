@@ -1,0 +1,9 @@
+%Error-UNSUPPORTED: t/t_config_include_bad.v:7:1: Unsupported: Verilog 2001-config reserved word not implemented; suggest you want `include instead: 'include'
+    7 | include "meant_to_tick_include.v"
+      | ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_config_include_bad.v:7:9: syntax error, unexpected STRING
+    7 | include "meant_to_tick_include.v"
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
