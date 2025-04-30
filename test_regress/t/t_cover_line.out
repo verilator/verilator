@@ -435,7 +435,7 @@
 +000021  point: comment=block hier=top.t.cond1
            endfunction
         
-~000031    assign a = (cyc == 0) ? clk : 0;
+~000031    assign a = (cyc == 0) ? clk : 1'bz;
 -000000  point: comment=cond_then hier=top.t.cond1
 +000031  point: comment=cond_else hier=top.t.cond1
 ~000028    assign b = (cyc == 1) ? clk : 0;

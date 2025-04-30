@@ -1117,6 +1117,18 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
+    void visit(AstExprStmt* nodep) override {
+        iterateChildren(nodep);
+        if (m_graphing) {
+            UASSERT_OBJ(!m_alhs, nodep, "AstExprStmt node on the LHS of assignment");
+            associateLogic(nodep->resultp(), nodep);
+        } else if (nodep->resultp()->user1p()) {
+            nodep->user1p(getEnp(nodep->resultp()));
+            nodep->resultp()->user1p(nullptr);
+            m_tgraph.didProcess(nodep);
+        }
+    }
+
     void visit(AstSel* nodep) override {
         if (m_graphing) {
             iterateChildren(nodep);
