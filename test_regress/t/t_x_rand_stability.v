@@ -30,7 +30,7 @@ module t (/*AUTOARG*/
 
     initial begin
         $display("uninitialized = 0x%x", uninitialized);
-        $display("x_assigned = 0x%x", x_assigned);
+        $display("x_assigned (initial) = 0x%x", x_assigned);
         $display("uninitialized2 = 0x%x", uninitialized2);
         $display("big = 0x%x", big);
         $display("random_init = 0x%x", random_init);
@@ -41,6 +41,7 @@ module t (/*AUTOARG*/
         cyc <= cyc + 1;
         $display("rand = 0x%x", $random());
         if (cyc == 4) begin
+            $display("x_assigned = 0x%x", x_assigned);
             if (uninitialized == uninitialized2) $stop();
             if (the_sub_yes_inline_1.no_init == the_sub_yes_inline_2.no_init) $stop();
             if (the_sub_no_inline_1.no_init == the_sub_no_inline_2.no_init) $stop();
