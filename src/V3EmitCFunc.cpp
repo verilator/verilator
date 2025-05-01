@@ -770,7 +770,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
                 }
             } else {
-                out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(") : "VL_RAND_RESET_W(";
+                out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(") : "VL_SCOPED_RAND_RESET_W(";
                 out += cvtToStr(dtypep->widthMin());
                 out += ", " + varNameProtected + suffix;
                 if (!zeroit) {
@@ -799,7 +799,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 emitVarResetScopeHash();
                 uint64_t salt = std::hash<std::string>{}(varp->prettyName());
                 UINFO(1, "Var Hash -- " << varp->prettyName() << " -- " << salt << endl);
-                out += " = VL_RAND_RESET_";
+                out += " = VL_SCOPED_RAND_RESET_";
                 out += dtypep->charIQWN();
                 // NOCOMMIT -- 64b
                 out += "(" + cvtToStr(dtypep->widthMin()) + ", "
