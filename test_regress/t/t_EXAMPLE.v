@@ -26,7 +26,7 @@ module t(/*AUTOARG*/
    );
    input clk;
 
-   integer cyc = 0;
+   int cyc;
    reg [63:0] crc;
    reg [63:0] sum;
 

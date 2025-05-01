@@ -1880,9 +1880,9 @@ Summary:
    ``-Wwarn-ASSIGNDLY`` ``-Wwarn-BLKSEQ`` ``-Wwarn-DECLFILENAME``
    ``-Wwarn-DEFPARAM`` ``-Wwarn-EOFNEWLINE`` ``-Wwarn-GENUNNAMED``
    ``-Wwarn-IMPORTSTAR`` ``-Wwarn-INCABSPATH`` ``-Wwarn-PINCONNECTEMPTY``
-   ``-Wwarn-PINNOCONNECT`` ``-Wwarn-SYNCASYNCNET`` ``-Wwarn-UNDRIVEN``
-   ``-Wwarn-UNUSEDGENVAR`` ``-Wwarn-UNUSEDLOOP`` ``-Wwarn-UNUSEDPARAM``
-   ``-Wwarn-UNUSEDSIGNAL`` ``-Wwarn-VARHIDDEN``.
+   ``-Wwarn-PINNOCONNECT`` ``-Wwarn-PROCASSINIT`` ``-Wwarn-SYNCASYNCNET``
+   ``-Wwarn-UNDRIVEN`` ``-Wwarn-UNUSEDGENVAR`` ``-Wwarn-UNUSEDLOOP``
+   ``-Wwarn-UNUSEDPARAM`` ``-Wwarn-UNUSEDSIGNAL`` ``-Wwarn-VARHIDDEN``.
 
 .. option:: --x-assign <mode>
 

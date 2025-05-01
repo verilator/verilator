@@ -129,6 +129,7 @@ public:
         PINNOTFOUND,    // instance port name not found in it's module
         PKGNODECL,      // Error: Package/class needs to be predeclared
         PREPROCZERO,    // Preprocessor expression with zero
+        PROCASSINIT,    // Procedural assignment versus initialization
         PROCASSWIRE,    // Procedural assignment on wire
         PROFOUTOFDATE,  // Profile data out of date
         PROTECTED,      // detected `pragma protected
@@ -206,7 +207,7 @@ public:
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP",
             "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOLATCH", "NONSTD", "NULLPORT", "PINCONNECTEMPTY",
-            "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSWIRE",
+            "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE",
             "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
             "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPLITVAR",
             "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
@@ -259,9 +260,10 @@ public:
         return (m_e == ASSIGNDLY  // More than style, but for backward compatibility
                 || m_e == BLKSEQ || m_e == DECLFILENAME || m_e == DEFPARAM || m_e == EOFNEWLINE
                 || m_e == GENUNNAMED || m_e == IMPORTSTAR || m_e == INCABSPATH
-                || m_e == PINCONNECTEMPTY || m_e == PINNOCONNECT || m_e == SYNCASYNCNET
-                || m_e == UNDRIVEN || m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP
-                || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL || m_e == VARHIDDEN);
+                || m_e == PINCONNECTEMPTY || m_e == PINNOCONNECT || m_e == PROCASSINIT
+                || m_e == SYNCASYNCNET || m_e == UNDRIVEN || m_e == UNUSEDGENVAR
+                || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM || m_e == UNUSEDSIGNAL
+                || m_e == VARHIDDEN);
     }
     // Warnings that are unused only
     bool unusedError() const VL_MT_SAFE {

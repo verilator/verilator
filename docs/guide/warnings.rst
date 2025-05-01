@@ -1471,6 +1471,35 @@ List Of Warnings
    a var/reg must be used as the target of procedural assignments.
 
 
+.. option:: PROCINITASSIGN
+
+   Warns that the specified signal is given an initial value where it is
+   declared, and is also driven in an always process.  Typically such
+   initial values should instead be set using a reset signal inside the
+   process, to match requirements of hardware synthesis tools.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_PROCINITASSIGN_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_PROCINITASSIGN_msg.rst
+
+   One possible fix, adding a reset to the always:
+
+   .. include:: ../../docs/gen/ex_PROCINITASSIGN_fixed.rst
+
+   Alternatively, use an initial block for the initialization:
+
+   .. code-block:: sv
+
+      initial flop_out = 1;  // <--- Fixed
+
+   Disabled by default as this is a code-style warning; it will simulate
+   correctly.
+
+
 .. option:: PROFOUTOFDATE
 
    Warns that threads were scheduled using estimated costs, even though
@@ -2164,7 +2193,7 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_VARHIDDEN_msg.rst
 
-   To resolve this, rename the variable to an unique name.
+   To resolve this, rename the inner or outer variable to an unique name.
 
 
 .. option:: WAITCONST
