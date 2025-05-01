@@ -175,6 +175,14 @@ List Of Warnings
    An error that a `/*verilator ...*/` metacomment pragma is badly formed
    or not understood.
 
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_BADVLTPRAGMA_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_BADVLTPRAGMA_msg.rst
+
    This error may be disabled with a lint_off BADVLTPRAGMA metacomment.
 
 

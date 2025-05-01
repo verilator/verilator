@@ -2633,6 +2633,7 @@ class VlTest:
                 fhw.write("   :emphasize-lines: " + emph + "\n")
             fhw.write("\n")
             for line in out:
+                line = re.sub(r' +$', '', line)
                 fhw.write(line)
 
         self.files_identical(temp_fn, out_filename)
