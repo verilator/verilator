@@ -1463,15 +1463,7 @@ List Of Warnings
    than zero, when it is to be used in a preprocessor expression.
 
 
-.. option:: PROCASSWIRE
-
-   .. TODO better example
-
-   An error that a procedural assignment is setting a wire. According to IEEE,
-   a var/reg must be used as the target of procedural assignments.
-
-
-.. option:: PROCINITASSIGN
+.. option:: PROCASSINIT
 
    Warns that the specified signal is given an initial value where it is
    declared, and is also driven in an always process.  Typically such
@@ -1480,15 +1472,15 @@ List Of Warnings
 
    Faulty example:
 
-   .. include:: ../../docs/gen/ex_PROCINITASSIGN_faulty.rst
+   .. include:: ../../docs/gen/ex_PROCASSINIT_faulty.rst
 
    Results in:
 
-   .. include:: ../../docs/gen/ex_PROCINITASSIGN_msg.rst
+   .. include:: ../../docs/gen/ex_PROCASSINIT_msg.rst
 
    One possible fix, adding a reset to the always:
 
-   .. include:: ../../docs/gen/ex_PROCINITASSIGN_fixed.rst
+   .. include:: ../../docs/gen/ex_PROCASSINIT_fixed.rst
 
    Alternatively, use an initial block for the initialization:
 
@@ -1498,6 +1490,14 @@ List Of Warnings
 
    Disabled by default as this is a code-style warning; it will simulate
    correctly.
+
+
+.. option:: PROCASSWIRE
+
+   .. TODO better example
+
+   An error that a procedural assignment is setting a wire. According to IEEE,
+   a var/reg must be used as the target of procedural assignments.
 
 
 .. option:: PROFOUTOFDATE
