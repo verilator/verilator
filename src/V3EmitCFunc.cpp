@@ -21,6 +21,7 @@
 #include "V3TSP.h"
 
 #include <map>
+#include <string>
 #include <vector>
 
 // NOCOMMIT
@@ -816,6 +817,11 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
 void EmitCFunc::emitVarResetScopeHash() {
     if (m_createdScopeHash) { return; }
     // NOCOMMIT -- name?
-    puts("uint64_t __VscopeHash = std::hash<std::string>{}(vlSelf->name());\n");
+    if (m_class) {
+        puts("uint64_t __VscopeHash = " + std::to_string(std::hash<std::string>{}(m_class->name()))
+             + "ULL;\n");
+    } else {
+        puts("uint64_t __VscopeHash = std::hash<std::string>{}(vlSelf->name());\n");
+    }
     m_createdScopeHash = true;
 }
