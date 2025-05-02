@@ -18,6 +18,7 @@ Verilator 5.037 devel
 * Fix filename backslash escapes in C code (#5947).
 * Fix sign extension of signed compared with unsigned case items (#5968).
 * Fix constant propagation making upper bits Xs (#5969).
+* Fix always processes ignoring $finish (#5971). [Hennadii Chernyshchyk]
 
 
 Verilator 5.036 2025-04-27
