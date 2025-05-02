@@ -673,8 +673,8 @@ void EmitCFunc::emitVarReset(AstVar* varp, bool constructing) {
 string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                                       const string& varNameProtected, AstNodeDType* dtypep,
                                       int depth, const string& suffix) {
-    UINFO(1, "Var Reset -- " << varp->prettyName() << " -- " << varp->name() << " - " << varp->origName() << " -- " << varp
-                             << endl);
+    UINFO(1, "Var Reset -- " << varp->prettyName() << " -- " << varp->name() << " - "
+                             << varp->origName() << " -- " << varp << endl);
     dtypep = dtypep->skipRefp();
     AstBasicDType* const basicp = dtypep->basicp();
     // Returns string to do resetting, empty to do nothing (which caller should handle)
@@ -770,14 +770,14 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
                 }
             } else {
-                out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(") : "VL_SCOPED_RAND_RESET_W(";
+                out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(")
+                              : "VL_SCOPED_RAND_RESET_W(";
                 out += cvtToStr(dtypep->widthMin());
                 out += ", " + varNameProtected + suffix;
                 if (!zeroit) {
                     emitVarResetScopeHash();
                     uint64_t salt = std::hash<std::string>{}(varp->prettyName());
-                    UINFO(1,
-                          "Var Hash -- " << varp->prettyName() << " -- " << salt << endl);
+                    UINFO(1, "Var Hash -- " << varp->prettyName() << " -- " << salt << endl);
                     out += ", ";
                     out += "__VscopeHash, ";
                     out += std::to_string(salt);
@@ -802,10 +802,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 out += " = VL_SCOPED_RAND_RESET_";
                 out += dtypep->charIQWN();
                 // NOCOMMIT -- 64b
-                out += "(" + cvtToStr(dtypep->widthMin()) + ", "
-                       + "__VscopeHash, "
-                       + std::to_string(salt)
-                       + "ull);\n";
+                out += "(" + cvtToStr(dtypep->widthMin()) + ", " + "__VscopeHash, "
+                       + std::to_string(salt) + "ull);\n";
             }
             return out;
         }
