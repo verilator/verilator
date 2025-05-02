@@ -25,6 +25,7 @@
 #define VERILATOR_VERILATED_FUNCS_H_
 
 #include "verilated.h"
+
 #include <cstdint>
 #ifndef VERILATOR_VERILATED_H_INTERNAL_
 #error "verilated_funcs.h should only be included by verilated.h"
@@ -108,7 +109,8 @@ extern IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt
 /// Random reset a signal of given width (init time only, var-specific PRNG)
 extern QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_SAFE;
 /// Random reset a signal of given width (init time only, var-specific PRNG)
-extern WDataOutP VL_SCOPED_RAND_RESET_W(int obits, WDataOutP outwp, uint64_t scopeHash, uint64_t salt) VL_MT_SAFE;
+extern WDataOutP VL_SCOPED_RAND_RESET_W(int obits, WDataOutP outwp, uint64_t scopeHash,
+                                        uint64_t salt) VL_MT_SAFE;
 
 /// Random reset a signal of given width (init time only)
 extern IData VL_RAND_RESET_I(int obits) VL_MT_SAFE;

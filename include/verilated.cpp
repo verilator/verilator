@@ -420,7 +420,9 @@ static QData VL_RANDOM_RESET_Q(uint64_t scopeHash, uint64_t salt) {
     state[1] = state[0];
     return VL_RANDOM_RESET_Q_GUTS(state);
 }
-static IData VL_RANDOM_RESET_I(uint64_t scopeHash, uint64_t salt) { return VL_RANDOM_RESET_Q(scopeHash, salt); }
+static IData VL_RANDOM_RESET_I(uint64_t scopeHash, uint64_t salt) {
+    return VL_RANDOM_RESET_Q(scopeHash, salt);
+}
 
 IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_SAFE {
     if (Verilated::threadContextp()->randReset() == 0) return 0;
@@ -442,7 +444,8 @@ QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT
     return data;
 }
 
-WDataOutP VL_SCOPED_RAND_RESET_W(int obits, WDataOutP outwp, uint64_t scopeHash, uint64_t salt) VL_MT_SAFE {
+WDataOutP VL_SCOPED_RAND_RESET_W(int obits, WDataOutP outwp, uint64_t scopeHash,
+                                 uint64_t salt) VL_MT_SAFE {
     std::array<uint64_t, 2> state;
     state[0] = Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt;
     state[1] = state[0];
