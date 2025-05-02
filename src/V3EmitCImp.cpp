@@ -18,6 +18,7 @@
 
 #include "V3EmitC.h"
 #include "V3EmitCFunc.h"
+#include "V3Global.h"
 #include "V3ThreadPool.h"
 #include "V3UniqueNames.h"
 
@@ -506,7 +507,9 @@ class EmitCImp final : EmitCFunc {
         };
 
         gather(modp);
+        VL_RESTORER(m_class);
         if (const AstClassPackage* const packagep = VN_CAST(modp, ClassPackage)) {
+            m_class = packagep;
             gather(packagep->classp());
         }
 

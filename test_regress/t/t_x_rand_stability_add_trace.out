@@ -1,10 +1,17 @@
-rand = 0x952aaa76
-rand = 0xe3e54aaa
+uninitialized = 0x500685e2
+x_assigned (initial) = 0x00000000
+uninitialized2 = 0x5416b56c
+big = 0xc4503b56329c5b62d25ee2d7f2b45b50c6d1c37791f35012b1782a67b194f8a0
+random_init = 0x952aaa76
+top.t.the_sub_yes_inline_1 no_init 0x5293d3db1468cfe4
+top.t.the_sub_yes_inline_2 no_init 0xe27ac165957ed737
+top.t.the_sub_no_inline_1 no_init 0x843435030e893ca5
+top.t.the_sub_no_inline_2 no_init 0x164cf3d70f336a36
 rand = 0xe85acf2d
 rand = 0x15e12c6a
 rand = 0x0f7f28c0
-uninitialized = 0x001f1bbe
-x_assigned = 0xb3c4d5e6
-uninitialized2 = 0x0013d7d3
-Last rand = 0xe189c52a
+rand = 0xe189c52a
+rand = 0xf0700dbf
+x_assigned = 0xe3e54aaa
+Last rand = 0x02fe107d
 *-* All Finished *-*

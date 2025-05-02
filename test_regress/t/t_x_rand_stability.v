@@ -16,7 +16,7 @@ module t (/*AUTOARG*/
     logic [31:0] uninitialized;
     logic [31:0] x_assigned = '0;
 `ifdef ADD_SIGNAL
-    logic [31:0] added /* verilator public */;
+    logic [31:0] added;
 `endif
     logic [31:0] unused;
     logic [31:0] uninitialized2;
@@ -42,9 +42,14 @@ module t (/*AUTOARG*/
         $display("rand = 0x%x", $random());
         if (cyc == 4) begin
             $display("x_assigned = 0x%x", x_assigned);
+`ifndef NOT_RAND
             if (uninitialized == uninitialized2) $stop();
             if (the_sub_yes_inline_1.no_init == the_sub_yes_inline_2.no_init) $stop();
             if (the_sub_no_inline_1.no_init == the_sub_no_inline_2.no_init) $stop();
+`endif
+`ifdef ADD_SIGNAL
+            if (added != added) $stop();
+`endif
             $display("Last rand = 0x%x", $random());
             $write("*-* All Finished *-*\n");
             $finish;
