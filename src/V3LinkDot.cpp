@@ -2696,7 +2696,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_usedPins);
         m_usedPins.clear();
         UASSERT_OBJ(nodep->modp(), nodep,
-                    "Cell has unlinked module");  // V3LinkCell should have errored out
+                    "Instance has unlinked module");  // V3LinkCell should have errored out
         VL_RESTORER(m_cellp);
         VL_RESTORER(m_pinSymp);
         {

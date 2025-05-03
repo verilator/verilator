@@ -664,8 +664,8 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
         for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
              modp = VN_AS(modp->nextp(), NodeModule)) {
             UASSERT_OBJ(!moduleState(modp).m_inlined, modp,
-                        "Inlined module should have been deleted when the last cell referencing "
-                        "it was inlined");
+                        "Inlined module should have been deleted when the last instance "
+                        "referencing it was inlined");
         }
     }
 

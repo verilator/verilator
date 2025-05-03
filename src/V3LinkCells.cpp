@@ -410,10 +410,10 @@ class LinkCellsVisitor final : public VNVisitor {
                 if (!pinp->exprp()) {
                     if (pinp->name().substr(0, 11) == "__pinNumber") {
                         pinp->v3warn(PINNOCONNECT,
-                                     "Cell pin is not connected: " << pinp->prettyNameQ());
+                                     "Instance pin is not connected: " << pinp->prettyNameQ());
                     } else {
                         pinp->v3warn(PINCONNECTEMPTY,
-                                     "Cell pin connected by name with empty reference: "
+                                     "Instance pin connected by name with empty reference: "
                                          << pinp->prettyNameQ());
                     }
                 }
@@ -471,7 +471,7 @@ class LinkCellsVisitor final : public VNVisitor {
                                 nodep->addPinsp(newp);
                             } else {
                                 nodep->v3warn(PINMISSING,
-                                              "Cell has missing pin: "
+                                              "Instance has missing pin: "
                                                   << portp->prettyNameQ() << '\n'
                                                   << nodep->warnContextPrimary() << '\n'
                                                   << portp->warnOther()
