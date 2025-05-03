@@ -37,7 +37,7 @@ Warnings may be disabled in multiple ways:
    propagate upwards to any parent file (file that included the file with
    the lint_off).
 
-#. Disable the warning using :ref:`Configuration Files` with a
+#. Disable the warning using :ref:`Verilator Configuration Files` with a
    :option:`lint_off` command.  This is useful when a script suppresses
    warnings, and the Verilog source should not be changed.  This method also
    allows matching on the warning text.

@@ -1,9 +1,9 @@
 .. Copyright 2003-2025 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-=====================
- verilator Arguments
-=====================
+===================
+verilator Arguments
+===================
 
 The following arguments may be passed to the "verilator" executable.
 
@@ -1774,7 +1774,7 @@ Summary:
    them systematically.
 
    The generated file is in the Verilator Configuration format, see
-   :ref:`Configuration Files`. The standard file extension is ".vlt".
+   :ref:`Verilator Configuration Files`. The standard file extension is ".vlt".
    These files can directly be consumed by Verilator, typically by placing
    the filename as part of the Verilator command line options. Waiver files
    need to be listed on the command line before listing the files they are
@@ -2015,18 +2015,20 @@ Summary:
    filenames.
 
 
-.. _Configuration Files:
+.. _Verilator Configuration Files:
 
-=====================
- Configuration Files
-=====================
+=============================
+Verilator Configuration Files
+=============================
 
 In addition to the command line, warnings and other features for the
-:command:`verilator` command may be controlled with configuration files,
-typically named with the `.vlt` extension (what makes it a configuration
-file is the :option:`\`verilator_config` directive).  These files, when
-named `.vlt`, are read before source code files; if this behavior is
-undesired, name the config file with a `.v` suffix.
+:command:`verilator` command may be controlled with Verilator Configuration
+Files, not to be confused with IEEE Configurations blocks
+(`config...endconfig`) inside a file.  Typically named with the `.vlt`
+extension, what makes it a Verilator Configuration File is the
+:option:`\`verilator_config` directive.  These files, when named `.vlt`,
+are read before source code files; if this behavior is undesired, name the
+config file with a `.v` suffix.
 
 An example:
 
@@ -2038,9 +2040,9 @@ An example:
 
 This disables WIDTH warnings globally, and CASEX for a specific file.
 
-Configuration files are fed through the normal Verilog preprocessor prior
-to parsing, so "\`ifdef", "\`define", and comments may be used as if the
-configuration file was standard Verilog code.
+Verilator configuration files are fed through the normal Verilog
+preprocessor prior to parsing, so "\`ifdef", "\`define", and comments may
+be used as if the configuration file was standard Verilog code.
 
 Note that file or line-specific configuration only applies to files read
 after the configuration file. It is therefore recommended to pass the

@@ -6,7 +6,7 @@ Input Languages
 ***************
 
 This section describes the languages Verilator takes as input.  See also
-:ref:`Configuration Files`.
+:ref:`Verilator Configuration Files`.
 
 
 Language Standard Support

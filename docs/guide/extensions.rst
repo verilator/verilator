@@ -30,7 +30,7 @@ or "`ifdef`"'s may break other tools.
 
    Specifies the entire begin/end block should be ignored for coverage
    analysis.  Must be inside a code block, e.g., within a begin/end pair.
-   Same as :option:`coverage_block_off` in :ref:`Configuration Files`.
+   Same as :option:`coverage_block_off` in :ref:`Verilator Configuration Files`.
 
 .. option:: `error [string]
 
@@ -135,8 +135,9 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: `verilator_config
 
-   Take the remaining text up to the next :option:`\`verilog` mode switch and
-   treat it as Verilator configuration commands.  See :ref:`Configuration Files`.
+   Take the remaining text up to the next :option:`\`verilog` mode switch
+   and treat it as Verilator configuration commands.  See :ref:`Verilator
+   Configuration Files`.
 
 .. option:: `VERILATOR_TIMING
 
