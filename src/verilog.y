@@ -7734,6 +7734,38 @@ colon<fl>:                      // Generic colon that isn't making a label (e.g.
         ;
 
 //**********************************************************************
+// Config - config...endconfig
+
+//**********************************************************************
+// Config - lib.map
+
+//UNSUP library_text:  // == IEEE: library_text (note is top-level entry point)
+//UNSUP         library_description                     { }
+//UNSUP |       library_text library_description        { }
+//UNSUP ;
+
+//UNSUP library_description:  // == IEEE: library_description
+//UNSUP //                      // IEEE: library_declaration
+//UNSUP         yLIBRARY idAny/*library_identifier*/ file_path_specList ';'
+//UNSUP                 { BBUNSUP($<fl>1, "Unsupported: config lib.map library"); }
+//UNSUP         yLIBRARY idAny/*library_identifier*/ file_path_specList '-' yINCDIR file_path_specList ';'
+//UNSUP                 { BBUNSUP($<fl>1, "Unsupported: config lib.map library"); }
+//UNSUP //                      // IEEE: include_statement
+//UNSUP |       yINCLUDE file_path_spec ';'             { BBUNSUP($<fl>1, "Unsupported: config include"); }
+//UNSUP |       config_declaration                      { }
+//UNSUP |       ';'                                     { }
+//UNSUP ;
+
+//UNSUP file_path_specList:  // IEEE: file_path_spec { ',' file_path_spec }
+//UNSUP         file_path_spec                          { }
+//UNSUP |       file_path_specList ',' file_path_spec   { }
+//UNSUP ;
+
+//UNSUP file_path_spec:  // IEEE: file_path_spec
+//UNSUP         Needs to be lexer rule, Note '/' '*' must not be a comment.
+//UNSUP ;
+
+//**********************************************************************
 // VLT Files
 
 vltItem:

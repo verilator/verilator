@@ -536,4 +536,4 @@ $test$plusargs, $value$plusargs
         {VerilatedContext*} ->commandArgs(argc, argv);
 
   to register the command line before calling $test$plusargs or
-  $value$plusargs.
+  $value$plusargs. Or use :vlopt:`--binary` or :vlopt:`--main`.

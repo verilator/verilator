@@ -1,0 +1,29 @@
+%Error-UNSUPPORTED: t/t_config_libmap.map:8:1: Unsupported: Verilog 2001-config lib.map reserved word not implemented: 'include'
+                                             : ... Suggest unless in a lib.map file, want `include instead
+    8 | include ./t_config_libmap_inc.map
+      | ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_config_libmap.map:8:9: syntax error, unexpected '.'
+    8 | include ./t_config_libmap_inc.map
+      |         ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-UNSUPPORTED: t/t_config_libmap.map:10:1: Unsupported: Verilog 2001-config lib.map reserved word not implemented: 'library'
+   10 | library rtllib *.v;
+      | ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_config_libmap.map:11:1: Unsupported: Verilog 2001-config lib.map reserved word not implemented: 'library'
+   11 | library rtllib2 *.v, *.sv;
+      | ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_config_libmap.map:12:1: Unsupported: Verilog 2001-config lib.map reserved word not implemented: 'library'
+   12 | library rtllib3 *.v -incdir *.vh;
+      | ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_config_libmap.map:12:29: Unsupported: Verilog 2001-config lib.map reserved word not implemented: 'incdir'
+%Error-UNSUPPORTED: t/t_config_libmap.map:13:1: Unsupported: Verilog 2001-config lib.map reserved word not implemented: 'library'
+   13 | library rtllib4 *.v -incdir *.vh, *.svh;
+      | ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_config_libmap.map:13:29: Unsupported: Verilog 2001-config lib.map reserved word not implemented: 'incdir'
+   13 | library rtllib4 *.v -incdir *.vh, *.svh;
+      |                             ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_config_libmap.map:15:1: Unsupported: Verilog 2001-config reserved word not implemented: 'config'
+%Error-UNSUPPORTED: t/t_config_libmap.map:16:4: Unsupported: Verilog 2001-config reserved word not implemented: 'design'
+%Error-UNSUPPORTED: t/t_config_libmap.map:17:1: Unsupported: Verilog 2001-config reserved word not implemented: 'endconfig'
+%Error: Exiting due to
