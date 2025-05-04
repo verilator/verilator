@@ -408,7 +408,7 @@ public:
         if (bit < 0) return false;
         if (bit >= m_data.width()) return !bitIsXZ(m_data.width() - 1);
         const ValueAndX v = m_data.num()[bit / 32];
-        return ((v.m_value & (1UL << (bit & 31))) == 0 && !(v.m_valueX & (1UL << (bit & 31))));
+        return ((v.m_value | v.m_valueX) & (1UL << (bit & 31))) == 0;
     }
     bool bitIs1(int bit) const VL_MT_SAFE {
         if (!isNumber()) return false;

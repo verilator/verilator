@@ -13,9 +13,7 @@
  000019    input clk;
 +000019  point: comment=clk hier=top.t
            input real check_real; // Check issue #2741
- 000021    input real check_array_real [1:0];
-+000021  point: comment=check_array_real[0] hier=top.t
-+000021  point: comment=check_array_real[1] hier=top.t
+           input real check_array_real [1:0];
            input string check_string; // Check issue #2766
         
            typedef struct packed {

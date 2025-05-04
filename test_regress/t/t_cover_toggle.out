@@ -12,7 +12,7 @@
         
  000019    input clk;
            input real check_real; // Check issue #2741
- 000021    input real check_array_real [1:0];
+           input real check_array_real [1:0];
            input string check_string; // Check issue #2766
         
            typedef struct packed {
