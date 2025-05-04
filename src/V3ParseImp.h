@@ -314,9 +314,9 @@ private:
     void tokenPipeline() VL_MT_DISABLED;  // Internal; called from tokenToBison
     int tokenPipelineId(int token) VL_MT_DISABLED;
     void tokenPipelineSym() VL_MT_DISABLED;
-    size_t tokenPipeScanIdCell(size_t depth) VL_MT_DISABLED;
+    size_t tokenPipeScanIdInst(size_t depth) VL_MT_DISABLED;
     size_t tokenPipeScanBracket(size_t depth) VL_MT_DISABLED;
-    size_t tokenPipeScanParam(size_t depth, bool forCell) VL_MT_DISABLED;
+    size_t tokenPipeScanParam(size_t depth, bool forInst) VL_MT_DISABLED;
     size_t tokenPipeScanTypeEq(size_t depth) VL_MT_DISABLED;
     const V3ParseBisonYYSType* tokenPeekp(size_t depth) VL_MT_DISABLED;
     void preprocDumps(std::ostream& os, bool forInputs) VL_MT_DISABLED;

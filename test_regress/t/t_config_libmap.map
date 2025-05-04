@@ -1,3 +1,4 @@
+// -*- Verilog -*-
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
@@ -11,6 +12,10 @@ library rtllib *.v;
 library rtllib2 *.v, *.sv;
 library rtllib3 *.v -incdir *.vh;
 library rtllib4 *.v -incdir *.vh, *.svh;
+
+// Note this does not start a comment
+library gatelib ./*.vg;
+// */
 
 config cfg;
    design t;

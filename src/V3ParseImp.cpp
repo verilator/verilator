@@ -415,7 +415,7 @@ const V3ParseBisonYYSType* V3ParseImp::tokenPeekp(size_t depth) {
     return &m_tokensAhead.at(depth);
 }
 
-size_t V3ParseImp::tokenPipeScanIdCell(size_t depthIn) {
+size_t V3ParseImp::tokenPipeScanIdInst(size_t depthIn) {
     // Search around IEEE module_instantiation/interface_instantiation/program_instantiation
     // Return location of following token, or input if not found
     // yaID/*module_identifier*/ [ '#' '('...')' ] yaID/*name_of_instance*/ [ '['...']' ] '(' ...
@@ -533,7 +533,7 @@ int V3ParseImp::tokenPipelineId(int token) {
     VL_RESTORER(yylval);  // Remember value, as about to read ahead
     if (m_tokenLastBison.token != '@' && m_tokenLastBison.token != '#'
         && m_tokenLastBison.token != '.') {
-        if (const size_t depth = tokenPipeScanIdCell(0)) return yaID__aCELL;
+        if (const size_t depth = tokenPipeScanIdInst(0)) return yaID__aINST;
     }
     if (nexttok == '#') {  // e.g. class_type parameter_value_assignment '::'
         const size_t depth = tokenPipeScanParam(0, false);
@@ -757,7 +757,7 @@ std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs) {
     if (rhs.token == yaID__ETC  //
         || rhs.token == yaID__CC  //
         || rhs.token == yaID__LEX  //
-        || rhs.token == yaID__aCELL  //
+        || rhs.token == yaID__aINST  //
         || rhs.token == yaID__aTYPE) {
         os << " strp='" << *(rhs.strp) << "'";
     }

@@ -430,7 +430,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<strp>            yaID__ETC       "IDENTIFIER"
 %token<strp>            yaID__CC        "IDENTIFIER-::"
 %token<strp>            yaID__LEX       "IDENTIFIER-in-lex"
-%token<strp>            yaID__aCELL     "IDENTIFIER-for-cell"
+%token<strp>            yaID__aINST     "IDENTIFIER-for-instance"
 %token<strp>            yaID__aTYPE     "IDENTIFIER-for-type"
 //                      Can't predecode aFUNCTION, can declare after use
 //                      Can't predecode aINTERFACE, can declare after use
@@ -1444,7 +1444,7 @@ parameter_value_assignmentClassE<pinp>:      // IEEE: [ parameter_value_assignme
         ;
 
 parameter_value_assignmentInst<pinp>:       // IEEE: parameter_value_assignment for instance
-                '#' '(' cellparamListE ')'              { $$ = $3; }
+                '#' '(' instParamListE ')'              { $$ = $3; }
         //                      // Parentheses are optional around a single parameter
         //                      // IMPORTANT: Below hardcoded in tokenPipeScanParam
         |       '#' yaINTNUM                            { $$ = new AstPin{$<fl>2, 1, "", new AstConst{$<fl>2, *$2}}; }
@@ -1459,7 +1459,7 @@ parameter_value_assignmentInst<pinp>:       // IEEE: parameter_value_assignment 
 
 parameter_value_assignmentClass<pinp>:  // IEEE: parameter_value_assignment (for classes)
         //                      // Like parameter_value_assignment, but for classes only, which always have #()
-                '#' '(' cellparamListE ')'              { $$ = $3; }
+                '#' '(' instParamListE ')'              { $$ = $3; }
         ;
 
 parameter_port_listE<nodep>:    // IEEE: parameter_port_list + empty == parameter_value_assignment
@@ -3017,7 +3017,7 @@ loop_generate_construct<nodep>: // ==IEEE: loop_generate_construct
                                 initp->unlinkFrBackWithNext();  // Detach 2nd from varp, make 1st init
                                 blkp->addStmtsp(varp);
                           }
-                          // Statements are under 'genforp' as cells under this
+                          // Statements are under 'genforp' as instances under this
                           // for loop won't get an extra layer of hierarchy tacked on
                           blkp->genforp(new AstGenFor{$1, initp, $5, $7, lowerNoBegp});
                           $$ = blkp;
@@ -3324,8 +3324,8 @@ etcInst<nodep>:                 // IEEE: module_instantiation + gate_instantiati
 
 instDecl<nodep>:
         //                      // Disambigurated from data_declaration based on
-        //                      // idCell which is found as IEEE requires a later '('
-                idCell parameter_value_assignmentInstE
+        //                      // idInst which is found as IEEE requires a later '('
+                idInst parameter_value_assignmentInstE
         /*mid*/         { INSTPREP($<fl>1, *$1, $2); }
         /*cont*/    instnameList ';'
                         { $$ = $4;
@@ -3358,12 +3358,12 @@ instnameList<nodep>:
         ;
 
 instnameParen<nodep>:
-                id instRangeListE '(' cellpinListE ')'
+                id instRangeListE '(' instPinListE ')'
                         { $$ = GRAMMARP->createCell($<fl>1, *$1, $4, $2); }
         ;
 
 instnameParenUdpn<nodep>:  // IEEE: part of udp_instance when no name_of_instance
-                '(' cellpinListE ')'  // When UDP has empty name, unpacked dimensions must not be used
+                '(' instPinListE ')'  // When UDP has empty name, unpacked dimensions must not be used
                         { $$ = GRAMMARP->createCell($<fl>1, "", $2, nullptr); }
         ;
 
@@ -3384,31 +3384,31 @@ instRange<nodeRangep>:
                         { $$ = new AstRange{$1, $2, $4}; }
         ;
 
-cellparamListE<pinp>:
-                { GRAMMARP->pinPush(); } cellparamItListE   { $$ = $2; GRAMMARP->pinPop(CRELINE()); }
+instParamListE<pinp>:
+                { GRAMMARP->pinPush(); } instParamItListE   { $$ = $2; GRAMMARP->pinPop(CRELINE()); }
         ;
 
-cellpinListE<pinp>:
-                { VARRESET_LIST(UNKNOWN); } cellpinItListE   { $$ = $2; VARRESET_NONLIST(UNKNOWN); }
+instPinListE<pinp>:
+                { VARRESET_LIST(UNKNOWN); } instPinItListE   { $$ = $2; VARRESET_NONLIST(UNKNOWN); }
         ;
 
-cellparamItListE<pinp>:         // IEEE: list_of_parameter_value_assignments/list_of_parameter_assignments
+instParamItListE<pinp>:         // IEEE: list_of_parameter_value_assignments/list_of_parameter_assignments
         //                      // Empty gets a node, to track class reference of #()
                 /*empty*/                               { $$ = new AstPin{CRELINE(), PINNUMINC(), "", nullptr}; }
-        |       cellparamItList                         { $$ = $1; }
+        |       instParamItList                         { $$ = $1; }
         ;
 
-cellparamItList<pinp>:          // IEEE: list_of_parameter_value_assignments/list_of_parameter_assignments
-                cellparamItem                           { $$ = $1; }
-        |       cellparamItList ',' cellparamItem       { $$ = addNextNull($1, $3); }
+instParamItList<pinp>:          // IEEE: list_of_parameter_value_assignments/list_of_parameter_assignments
+                instParamItem                           { $$ = $1; }
+        |       instParamItList ',' instParamItem       { $$ = addNextNull($1, $3); }
         ;
 
-cellpinItListE<pinp>:           // IEEE: list_of_port_connections
-                cellpinItemE                            { $$ = $1; }
-        |       cellpinItListE ',' cellpinItemE         { $$ = addNextNull($1, $3); }
+instPinItListE<pinp>:           // IEEE: list_of_port_connections
+                instPinItemE                            { $$ = $1; }
+        |       instPinItListE ',' instPinItemE         { $$ = addNextNull($1, $3); }
         ;
 
-cellparamItem<pinp>:            // IEEE: named_parameter_assignment + empty
+instParamItem<pinp>:            // IEEE: named_parameter_assignment + empty
         //                      // Note empty is not allowed in parameter lists
                 yP_DOTSTAR                              { $$ = new AstPin{$1, PINNUMINC(), ".*", nullptr}; }
         |       '.' idAny '(' ')'
@@ -3446,7 +3446,7 @@ cellparamItem<pinp>:            // IEEE: named_parameter_assignment + empty
         //UNSUP            $$ = new AstPin{FILELINE_OR_CRE($3), PINNUMINC(), "", $3}; }
         ;
 
-cellpinItemE<pinp>:             // IEEE: named_port_connection + empty
+instPinItemE<pinp>:             // IEEE: named_port_connection + empty
         //                      // Note empty can match either () or (,); V3LinkCells cleans up ()
                 /* empty: ',,' is legal */              { $$ = new AstPin{CRELINE(), PINNUMINC(), "", nullptr}; }
         |       yP_DOTSTAR                              { $$ = new AstPin{$1, PINNUMINC(), ".*", nullptr}; }
@@ -4719,12 +4719,12 @@ funcId<nodeFTaskp>:             // IEEE: function_data_type_or_implicit + part o
                         { $$ = $2;
                           $$->fvarp($1);
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>2); }
-        |       packageClassScopeE idCellType packed_dimensionListE fIdScoped
+        |       packageClassScopeE idInstType packed_dimensionListE fIdScoped
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
                           $$ = $4;
                           $$->fvarp(GRAMMARP->createArray(refp, $3, true));
                           SYMP->pushNewUnderNodeOrCurrent($$, $<scp>4); }
-        |       packageClassScopeE idCellType parameter_value_assignmentClass packed_dimensionListE fIdScoped
+        |       packageClassScopeE idInstType parameter_value_assignmentClass packed_dimensionListE fIdScoped
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
                           $$ = $5;
                           $$->fvarp(GRAMMARP->createArray(refp, $4, true));
@@ -5901,18 +5901,24 @@ id<strp>:
         |       idRandomize                             { $$ = $1; $<fl>$ = $<fl>1; }
         ;
 
-idAny<strp>:                    // Any kind of identifier
+idAny<strp>:  // Any kind of identifier
                 yaID__ETC                               { $$ = $1; $<fl>$ = $<fl>1; }
-        |       yaID__aCELL                             { $$ = $1; $<fl>$ = $<fl>1; }
+        |       yaID__aINST                             { $$ = $1; $<fl>$ = $<fl>1; }
         |       yaID__aTYPE                             { $$ = $1; $<fl>$ = $<fl>1; }
         |       idRandomize                             { $$ = $1; $<fl>$ = $<fl>1; }
         ;
 
-idCell<strp>:                   // IEEE: instance_identifier or similar with another id then '('
-        //                      // See V3ParseImp::tokenPipeScanIdCell
+idAnyAsParseRef<parseRefp>:  // Any kind of identifier as a ParseRef
+                idAny
+                        { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}; }
+        ;
+
+
+idInst<strp>:                   // IEEE: instance_identifier or similar with another id then '('
+        //                      // See V3ParseImp::tokenPipeScanIdInst
         //                      //   [^': '@' '.'] yaID/*module_id*/ [ '#' '('...')' ] yaID/*name_of_instance*/ [ '['...']' ] '(' ...
         //                      //   [^':' @' '.'] yaID/*module_id*/ [ '#' id|etc ] yaID/*name_of_instance*/ [ '['...']' ] '(' ...
-                yaID__aCELL                             { $$ = $1; $<fl>$ = $<fl>1; }
+                yaID__aINST                             { $$ = $1; $<fl>$ = $<fl>1; }
         ;
 
 idType<strp>:                   // IEEE: class_identifier or other type identifier
@@ -5920,8 +5926,8 @@ idType<strp>:                   // IEEE: class_identifier or other type identifi
                 yaID__aTYPE                             { $$ = $1; $<fl>$ = $<fl>1; }
         ;
 
-idCellType<strp>:               // type_identifier for functions which have a following id then '('
-                yaID__aCELL                             { $$ = $1; $<fl>$ = $<fl>1; }
+idInstType<strp>:               // type_identifier for functions which have a following id then '('
+                yaID__aINST                             { $$ = $1; $<fl>$ = $<fl>1; }
         |       yaID__aTYPE                             { $$ = $1; $<fl>$ = $<fl>1; }
         ;
 
@@ -6171,8 +6177,8 @@ list_of_clocking_decl_assign<nodep>:  // IEEE: list_of_clocking_decl_assign
         ;
 
 clocking_decl_assign<nodep>:    // IEEE: clocking_decl_assign
-                idAny/*new-signal_identifier*/ exprEqE
-                        { AstParseRef* const refp = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1, nullptr, nullptr};
+                idAnyAsParseRef/*new-signal_identifier*/ exprEqE
+                        { AstParseRef* const refp = $1;
                           $$ = refp;
                           if ($2) $$ = new AstAssign{$<fl>2, refp, $2}; }
         ;
@@ -6196,8 +6202,8 @@ clocking_skew<nodeExprp>:           // IEEE: clocking_skew
 cycle_delay<delayp>:  // IEEE: cycle_delay
                yP_POUNDPOUND yaINTNUM
                         { $$ = new AstDelay{$<fl>1, new AstConst{$<fl>2, *$2}, true}; }
-        |      yP_POUNDPOUND idAny
-                        { $$ = new AstDelay{$<fl>1, new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}, true}; }
+        |      yP_POUNDPOUND idAnyAsParseRef
+                        { $$ = new AstDelay{$<fl>1, $2, true}; }
         |      yP_POUNDPOUND '(' expr ')'
                         { $$ = new AstDelay{$<fl>1, $3, true}; }
         ;
@@ -7295,8 +7301,8 @@ checker_generate_item<nodep>:  // ==IEEE: checker_generate_item
 //UNSUPchecker_instantiation<nodep>:
 //UNSUP //                      // Only used for procedural_assertion_item's
 //UNSUP //                      // Version in concurrent_assertion_item looks like etcInst
-//UNSUP //                      // Thus instead of *_checker_port_connection we can use etcInst's cellpinListE
-//UNSUP         id/*checker_identifier*/ id '(' cellpinListE ')' ';'     { }
+//UNSUP //                      // Thus instead of *_checker_port_connection we can use etcInst's instPinListE
+//UNSUP         id/*checker_identifier*/ id '(' instPinListE ')' ';'     { }
 //UNSUP ;
 
 //**********************************************************************

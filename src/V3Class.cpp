@@ -40,7 +40,7 @@ class ClassVisitor final : public VNVisitor {
     const VNUser1InUse m_inuser1;
 
     // MEMBERS
-    string m_prefix;  // String prefix to add to name based on hier
+    string m_prefix;  // String prefix to add to class name based on hier
     V3UniqueNames m_names;  // For unique naming of structs and unions
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeModule* m_classPackagep = nullptr;  // Package moving into
