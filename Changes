@@ -16,9 +16,11 @@ Verilator 5.037 devel
 * Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
 * Add PROCINITASSIGN on initial assignments to process variables (#2481). [Niraj Menon]
 * Fix filename backslash escapes in C code (#5947).
+* Fix C++ widths in V3Expand (#5953) (#5975). [Geza Lore]
+* Fix constant propagation making upper bits Xs (#5955) (#5969).
 * Fix sign extension of signed compared with unsigned case items (#5968).
-* Fix constant propagation making upper bits Xs (#5969).
 * Fix always processes ignoring $finish (#5971). [Hennadii Chernyshchyk]
+* Fix streaming to/from packed arrays (#5976). [Geza Lore]
 
 
 Verilator 5.036 2025-04-27
