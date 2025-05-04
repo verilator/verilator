@@ -532,6 +532,7 @@ V3Number& V3Number::setMask(int nbits, int lsb) {
 // ACCESSORS - as strings
 
 string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
+    // Correct number of zero bits/width matters
     std::ostringstream out;
 
     if (is1Step()) {
@@ -643,6 +644,7 @@ string V3Number::displayed(AstNode* nodep, const string& vformat) const VL_MT_ST
 }
 
 string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STABLE {
+    // Correct number of zero bits/width matters
     auto pos = vformat.cbegin();
     UASSERT(pos != vformat.cend() && pos[0] == '%',
             "$display-like function with non format argument " << *this);
@@ -882,6 +884,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
 }
 
 string V3Number::toDecimalS() const VL_MT_STABLE {
+    // Correct number of zero bits/width matters
     if (isNegative()) {
         V3Number lhsNoSign = *this;
         lhsNoSign.opNegate(*this);
@@ -1082,6 +1085,7 @@ bool V3Number::isEqOne() const {
     return true;
 }
 bool V3Number::isEqAllOnes(int optwidth) const {
+    // Correct number of zero bits/width matters
     if (!optwidth) optwidth = width();
     for (int bit = 0; bit < optwidth; bit++) {
         if (!bitIs1(bit)) return false;
@@ -1145,6 +1149,7 @@ int V3Number::widthToFit() const {
 }
 
 uint32_t V3Number::countBits(const V3Number& ctrl) const {
+    // Correct number of zero bits/width matters
     int n = 0;
     for (int bit = 0; bit < width(); ++bit) {
         switch (ctrl.bitIs(0)) {
@@ -1167,6 +1172,7 @@ uint32_t V3Number::countBits(const V3Number& ctrl) const {
 
 uint32_t V3Number::countBits(const V3Number& ctrl1, const V3Number& ctrl2,
                              const V3Number& ctrl3) const {
+    // Correct number of zero bits/width matters
     int n = countBits(ctrl1);
     if (ctrl2.bitIs(0) != ctrl1.bitIs(0)) n += countBits(ctrl2);
     if ((ctrl3.bitIs(0) != ctrl1.bitIs(0)) && (ctrl3.bitIs(0) != ctrl2.bitIs(0))) {
@@ -1192,6 +1198,7 @@ uint32_t V3Number::mostSetBitP1() const {
 //======================================================================
 
 V3Number& V3Number::opBitsNonX(const V3Number& lhs) {  // 0/1->1, X/Z->0
+    // Correct number of zero bits/width matters
     // op i, L(lhs) bit return
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
@@ -1252,6 +1259,7 @@ V3Number& V3Number::opRedOr(const V3Number& lhs) {
 }
 
 V3Number& V3Number::opRedAnd(const V3Number& lhs) {
+    // Correct number of zero bits/width matters
     // op i, 1 bit return
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
@@ -1289,6 +1297,7 @@ V3Number& V3Number::opRedXor(const V3Number& lhs) {
 
 V3Number& V3Number::opCountBits(const V3Number& expr, const V3Number& ctrl1, const V3Number& ctrl2,
                                 const V3Number& ctrl3) {
+    // Correct number of zero bits/width matters
     NUM_ASSERT_OP_ARGS4(expr, ctrl1, ctrl2, ctrl3);
     NUM_ASSERT_LOGIC_ARGS4(expr, ctrl1, ctrl2, ctrl3);
     setZero();
@@ -1354,6 +1363,7 @@ last:
 }
 
 V3Number& V3Number::opNot(const V3Number& lhs) {
+    // Correct number of zero bits/width matters
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     // op i, L(lhs) bit return
@@ -1420,6 +1430,7 @@ V3Number& V3Number::opXor(const V3Number& lhs, const V3Number& rhs) {
 }
 
 V3Number& V3Number::opConcat(const V3Number& lhs, const V3Number& rhs) {
+    // Correct number of zero bits/width matters
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     setZero();
@@ -1834,6 +1845,7 @@ V3Number& V3Number::opShiftR(const V3Number& lhs, const V3Number& rhs) {
 }
 
 V3Number& V3Number::opShiftRS(const V3Number& lhs, const V3Number& rhs, uint32_t lbits) {
+    // Correct number of zero bits/width matters (hance lbits passed)
     // L(lhs) bit return
     // The spec says a unsigned >>> still acts as a normal >>.
     // We presume it is signed; as that's V3Width's job to convert to opShiftR
@@ -1881,6 +1893,7 @@ V3Number& V3Number::opShiftL(const V3Number& lhs, const V3Number& rhs) {
 // Ops - Arithmetic
 
 V3Number& V3Number::opNegate(const V3Number& lhs) {
+    // Correct number of zero bits/width matters
     // op i, L(lhs) bit return
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
@@ -1910,6 +1923,7 @@ V3Number& V3Number::opAdd(const V3Number& lhs, const V3Number& rhs) {
     return *this;
 }
 V3Number& V3Number::opSub(const V3Number& lhs, const V3Number& rhs) {
+    // Correct number of zero bits/width matters
     // i op j, max(L(lhs),L(rhs)) bit return, if any 4-state, 4-state return
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
@@ -1949,6 +1963,7 @@ V3Number& V3Number::opMul(const V3Number& lhs, const V3Number& rhs) {
 }
 V3Number& V3Number::opMulS(const V3Number& lhs, const V3Number& rhs) {
     // Signed multiply
+    // Correct number of zero bits/width matters
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
@@ -1981,6 +1996,7 @@ V3Number& V3Number::opDiv(const V3Number& lhs, const V3Number& rhs) {
 }
 V3Number& V3Number::opDivS(const V3Number& lhs, const V3Number& rhs) {
     // Signed divide
+    // Correct number of zero bits/width matters
     // UINFO(9, ">>divs-start "<<lhs<<" "<<rhs<<endl);
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
@@ -2016,6 +2032,7 @@ V3Number& V3Number::opModDiv(const V3Number& lhs, const V3Number& rhs) {
 }
 V3Number& V3Number::opModDivS(const V3Number& lhs, const V3Number& rhs) {
     // Signed moddiv
+    // Correct number of zero bits/width matters
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
@@ -2166,6 +2183,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
 }
 
 V3Number& V3Number::opPow(const V3Number& lhs, const V3Number& rhs, bool lsign, bool rsign) {
+    // Correct number of zero bits/width matters
     // L(i) bit return, if any 4-state, 4-state return
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
@@ -2207,12 +2225,15 @@ V3Number& V3Number::opPow(const V3Number& lhs, const V3Number& rhs, bool lsign, 
     return *this;
 }
 V3Number& V3Number::opPowSU(const V3Number& lhs, const V3Number& rhs) {
+    // Correct number of zero bits/width matters
     return opPow(lhs, rhs, true, false);
 }
 V3Number& V3Number::opPowSS(const V3Number& lhs, const V3Number& rhs) {
+    // Correct number of zero bits/width matters
     return opPow(lhs, rhs, true, true);
 }
 V3Number& V3Number::opPowUS(const V3Number& lhs, const V3Number& rhs) {
+    // Correct number of zero bits/width matters
     return opPow(lhs, rhs, false, true);
 }
 
@@ -2362,6 +2383,7 @@ V3Number& V3Number::opSelInto(const V3Number& lhs, int lsbval, int width) {
 // Ops - Floating point
 
 V3Number& V3Number::opIToRD(const V3Number& lhs, bool isSigned) {
+    // Correct number of zero bits/width matters
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
     // IEEE says we ignore x/z in real conversions

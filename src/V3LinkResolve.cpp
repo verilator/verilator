@@ -190,8 +190,8 @@ class LinkResolveVisitor final : public VNVisitor {
             if (VN_IS(nodep->backp(), StmtExpr)) {
                 nodep->v3error("Expected statement, not let substitution " << letp->prettyNameQ());
             }
-            // letp->dumpTree("-let-let ");
-            // nodep->dumpTree("-let-ref ");
+            // if (debug()) letp->dumpTree("-let-let ");
+            // if (debug()) nodep->dumpTree("-let-ref ");
             AstStmtExpr* const letStmtp = VN_AS(letp->stmtsp(), StmtExpr);
             AstNodeExpr* const newp = letStmtp->exprp()->cloneTree(false);
             const V3TaskConnects tconnects = V3Task::taskConnects(nodep, letp->stmtsp());
@@ -214,7 +214,7 @@ class LinkResolveVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(refp), refp);
                 }
             });
-            // newp->dumpTree("-let-new ");
+            // if (debug()) newp->dumpTree("-let-new ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             // Iterate to expand further now, so we can look for recursions

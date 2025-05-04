@@ -97,7 +97,7 @@ class ClockVisitor final : public VNVisitor {
     }
     // VISITORS
     void visit(AstCoverToggle* nodep) override {
-        // nodep->dumpTree("-  ct: ");
+        // if (debug()) nodep->dumpTree("-  ct: ");
         // COVERTOGGLE(INC, ORIG, CHANGE) ->
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
         AstNode* const incp = nodep->incp()->unlinkFrBack();
