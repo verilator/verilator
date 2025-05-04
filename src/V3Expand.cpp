@@ -123,6 +123,11 @@ class ExpandVisitor final : public VNVisitor {
     }
     static void replaceWithDelete(AstNode* nodep, AstNode* newp) {
         newp->user1(1);  // Already processed, don't need to re-iterate
+        if (newp->width() != nodep->width()) {
+            UASSERT_OBJ(newp->widthMin() == nodep->widthMin(), nodep,
+                        "Replacement width mismatch");
+            newp->dtypeChgWidth(nodep->width(), nodep->widthMin());
+        }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
