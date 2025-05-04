@@ -5233,7 +5233,7 @@ class WidthVisitor final : public VNVisitor {
                                            << lwidth << " bits) is narrower than the stream ("
                                            << rwidth << " bits) (IEEE 1800-2023 11.4.14)");
                 }
-                if (VN_IS(lhsDTypeSkippedRefp, NodeArrayDType)) {
+                if (VN_IS(lhsDTypeSkippedRefp, UnpackArrayDType)) {
                     streamp->unlinkFrBack();
                     nodep->rhsp(new AstCvtPackedToArray{streamp->fileline(), streamp,
                                                         lhsDTypeSkippedRefp});
@@ -5241,7 +5241,6 @@ class WidthVisitor final : public VNVisitor {
             }
             if (const AstNodeStream* const streamp = VN_CAST(nodep->lhsp(), NodeStream)) {
                 const AstNodeDType* const rhsDTypep = nodep->rhsp()->dtypep()->skipRefp();
-
                 const int lwidth = widthUnpacked(streamp->lhsp()->dtypep()->skipRefp());
                 const int rwidth = widthUnpacked(rhsDTypep);
                 if (rwidth != 0 && rwidth < lwidth) {
@@ -5251,7 +5250,7 @@ class WidthVisitor final : public VNVisitor {
                                            << " bits, but source expression only provides "
                                            << rwidth << " bits (IEEE 1800-2023 11.4.14.3)");
                 }
-                if (VN_IS(rhsDTypep, NodeArrayDType)) {
+                if (VN_IS(rhsDTypep, UnpackArrayDType)) {
                     AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
                     nodep->rhsp(
                         new AstCvtArrayToPacked{rhsp->fileline(), rhsp, streamp->dtypep()});
