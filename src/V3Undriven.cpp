@@ -469,8 +469,6 @@ class UndrivenVisitor final : public VNVisitorConst {
                     entryp->drivenAlwaysCombWhole(m_alwaysCombp, m_alwaysCombp->fileline());
             }
             if (nodep->access().isWriteOrRW()) {
-                UINFO(1, "ww is=" << m_inInitialStatic << " ipa=" << m_inProcAssign << " " << nodep
-                                  << endl);
                 if (m_inInitialStatic && !entryp->initStaticp()) entryp->initStaticp(nodep);
                 if (m_alwaysp && m_inProcAssign && !entryp->procWritep())
                     entryp->procWritep(nodep);
