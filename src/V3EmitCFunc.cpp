@@ -24,9 +24,6 @@
 #include <string>
 #include <vector>
 
-// NOCOMMIT
-VL_DEFINE_DEBUG_FUNCTIONS;
-
 // We use a static char array in VL_VALUE_STRING
 constexpr int VL_VALUE_STRING_MAX_WIDTH = 8192;
 
@@ -674,8 +671,6 @@ void EmitCFunc::emitVarReset(AstVar* varp, bool constructing) {
 string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                                       const string& varNameProtected, AstNodeDType* dtypep,
                                       int depth, const string& suffix) {
-    UINFO(1, "Var Reset -- " << varp->prettyName() << " -- " << varp->name() << " - "
-                             << varp->origName() << " -- " << varp << endl);
     dtypep = dtypep->skipRefp();
     AstBasicDType* const basicp = dtypep->basicp();
     // Returns string to do resetting, empty to do nothing (which caller should handle)
@@ -778,7 +773,6 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 if (!zeroit) {
                     emitVarResetScopeHash();
                     uint64_t salt = std::hash<std::string>{}(varp->prettyName());
-                    UINFO(1, "Var Hash -- " << varp->prettyName() << " -- " << salt << endl);
                     out += ", ";
                     out += "__VscopeHash, ";
                     out += std::to_string(salt);
@@ -799,10 +793,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
             } else {
                 emitVarResetScopeHash();
                 uint64_t salt = std::hash<std::string>{}(varp->prettyName());
-                UINFO(1, "Var Hash -- " << varp->prettyName() << " -- " << salt << endl);
                 out += " = VL_SCOPED_RAND_RESET_";
                 out += dtypep->charIQWN();
-                // NOCOMMIT -- 64b
                 out += "(" + cvtToStr(dtypep->widthMin()) + ", " + "__VscopeHash, "
                        + std::to_string(salt) + "ull);\n";
             }
@@ -816,7 +808,6 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
 
 void EmitCFunc::emitVarResetScopeHash() {
     if (m_createdScopeHash) { return; }
-    // NOCOMMIT -- name?
     if (m_class) {
         puts("uint64_t __VscopeHash = " + std::to_string(std::hash<std::string>{}(m_class->name()))
              + "ULL;\n");
