@@ -2097,6 +2097,7 @@ V3Options::V3Options() {
     m_makeDir = "obj_dir";
     m_unusedRegexp = "*unused*";
     m_xAssign = "fast";
+    m_xInitial = "unique";
 
     m_defaultLanguage = V3LangCode::mostRecent();
 

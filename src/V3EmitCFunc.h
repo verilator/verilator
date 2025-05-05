@@ -152,6 +152,7 @@ protected:
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
     bool m_instantiatesOwnProcess = false;
     const AstClassPackage* m_class = nullptr;  // Pointer to current class
+    string m_classHash;  // Hash of class name
 
     bool constructorNeedsProcess(const AstClass* const classp) {
         const AstNode* const newp = m_memberMap.findMember(classp, "new");

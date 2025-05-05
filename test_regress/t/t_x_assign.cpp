@@ -21,12 +21,6 @@ double sc_time_stamp() { return 0; }
 # define EXPECTED 0
 #elif defined(T_X_ASSIGN_1)
 # define EXPECTED 1
-#elif defined(T_X_ASSIGN_UNIQUE_0)
-# define EXPECTED 0
-#elif defined(T_X_ASSIGN_UNIQUE_1)
-# define EXPECTED 1
-#else
-# error "Don't know expectd output for test" #TEST
 #endif
 // clang-format on
 
@@ -35,6 +29,8 @@ int main(int argc, const char** argv) {
     Verilated::randReset(0);
 #elif defined(T_X_ASSIGN_UNIQUE_1)
     Verilated::randReset(1);
+#elif defined(T_X_ASSIGN_UNIQUE_2)
+    Verilated::randReset(2);
 #endif
 
     VM_PREFIX* top = new VM_PREFIX{};
@@ -53,6 +49,11 @@ int main(int argc, const char** argv) {
 #elif defined(T_X_ASSIGN_UNIQUE_1)
     if (top->o_int != -1) {
         vl_fatal(__FILE__, __LINE__, "TOP.t", "x assign was not correct");
+        exit(1);
+    }
+#elif defined(T_X_ASSIGN_UNIQUE_2)
+    if (top->o_int == 0 || top->o_int == -1) {
+        vl_fatal(__FILE__, __LINE__, "TOP.t", "x assign was not unique");
         exit(1);
     }
 #else
