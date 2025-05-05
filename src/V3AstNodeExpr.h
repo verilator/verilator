@@ -1835,8 +1835,7 @@ public:
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool combinable(const AstRand* samep) const {
-        return !seedp() && !samep->seedp()
-               && urandom() == samep->urandom();
+        return !seedp() && !samep->seedp() && urandom() == samep->urandom();
     }
     bool urandom() const { return m_urandom; }
 };
