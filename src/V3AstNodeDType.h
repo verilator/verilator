@@ -427,6 +427,8 @@ public:
     string prettyDTypeName(bool full) const override;
     const char* broken() const override {
         BROKEN_RTN(dtypep() != this);
+        BROKEN_RTN(v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH
+                   && widthMin() > width());
         return nullptr;
     }
     void setSignedState(const VSigning& signst) {

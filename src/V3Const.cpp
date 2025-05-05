@@ -927,6 +927,18 @@ class ConstVisitor final : public VNVisitor {
 
     // METHODS
 
+    V3Number constNumV(AstNode* nodep) {
+        // Contract C width to V width (if needed, else just direct copy)
+        // The upper zeros in the C representation can otherwise cause
+        // wrong results in some operations, e.g. MulS
+        const V3Number& numc = VN_AS(nodep, Const)->num();
+        return !numc.isNumber() ? numc : V3Number{nodep, nodep->widthMinV(), numc};
+    }
+    V3Number toNumC(AstNode* nodep, V3Number& numv) {
+        // Extend V width back to C width for given node
+        return !numv.isNumber() ? numv : V3Number{nodep, nodep->width(), numv};
+    }
+
     bool operandConst(AstNode* nodep) { return VN_IS(nodep, Const); }
     bool operandAsvConst(const AstNode* nodep) {
         // BIASV(CONST, BIASV(CONST,...)) -> BIASV( BIASV_CONSTED(a,b), ...)
@@ -1614,31 +1626,32 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(replaceNum(nodep, ones), nodep);
     }
     void replaceConst(AstNodeUniop* nodep) {
-        V3Number num{nodep, nodep->width()};
-        nodep->numberOperate(num, VN_AS(nodep->lhsp(), Const)->num());
+        V3Number numv{nodep, nodep->widthMinV()};
+        nodep->numberOperate(numv, constNumV(nodep->lhsp()));
+        const V3Number& num = toNumC(nodep, numv);
         UINFO(4, "UNICONST -> " << num << endl);
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
     void replaceConst(AstNodeBiop* nodep) {
-        V3Number num{nodep, nodep->width()};
-        nodep->numberOperate(num, VN_AS(nodep->lhsp(), Const)->num(),
-                             VN_AS(nodep->rhsp(), Const)->num());
+        V3Number numv{nodep, nodep->widthMinV()};
+        nodep->numberOperate(numv, constNumV(nodep->lhsp()), constNumV(nodep->rhsp()));
+        const V3Number& num = toNumC(nodep, numv);
         UINFO(4, "BICONST -> " << num << endl);
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
     void replaceConst(AstNodeTriop* nodep) {
-        V3Number num{nodep, nodep->width()};
-        nodep->numberOperate(num, VN_AS(nodep->lhsp(), Const)->num(),
-                             VN_AS(nodep->rhsp(), Const)->num(),
-                             VN_AS(nodep->thsp(), Const)->num());
+        V3Number numv{nodep, nodep->widthMinV()};
+        nodep->numberOperate(numv, constNumV(nodep->lhsp()), constNumV(nodep->rhsp()),
+                             constNumV(nodep->thsp()));
+        const V3Number& num = toNumC(nodep, numv);
         UINFO(4, "TRICONST -> " << num << endl);
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
     void replaceConst(AstNodeQuadop* nodep) {
-        V3Number num{nodep, nodep->width()};
-        nodep->numberOperate(
-            num, VN_AS(nodep->lhsp(), Const)->num(), VN_AS(nodep->rhsp(), Const)->num(),
-            VN_AS(nodep->thsp(), Const)->num(), VN_AS(nodep->fhsp(), Const)->num());
+        V3Number numv{nodep, nodep->widthMinV()};
+        nodep->numberOperate(numv, constNumV(nodep->lhsp()), constNumV(nodep->rhsp()),
+                             constNumV(nodep->thsp()), constNumV(nodep->fhsp()));
+        const V3Number& num = toNumC(nodep, numv);
         UINFO(4, "QUADCONST -> " << num << endl);
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
@@ -1719,6 +1732,7 @@ class ConstVisitor final : public VNVisitor {
         nodep->rhsp(cp);
         rp->lhsp(ap);
         rp->rhsp(bp);
+        rp->dtypeFrom(nodep);  // Upper widthMin more likely correct
         if (VN_IS(rp->lhsp(), Const) && VN_IS(rp->rhsp(), Const)) replaceConst(rp);
         // if (debug()) nodep->dumpTree("-  repAsvConst_new: ");
     }
@@ -1732,6 +1746,7 @@ class ConstVisitor final : public VNVisitor {
         nodep->rhsp(lp);
         lp->lhsp(lrp);
         lp->rhsp(rp);
+        lp->dtypeFrom(nodep);  // Upper widthMin more likely correct
         // if (debug()) nodep->dumpTree("-  repAsvLUp_new: ");
     }
     void replaceAsvRUp(AstNodeBiop* nodep) {
@@ -1744,6 +1759,7 @@ class ConstVisitor final : public VNVisitor {
         nodep->rhsp(rp);
         rp->lhsp(lp);
         rp->rhsp(rrp);
+        rp->dtypeFrom(nodep);  // Upper widthMin more likely correct
         // if (debug()) nodep->dumpTree("-  repAsvRUp_new: ");
     }
     void replaceAndOr(AstNodeBiop* nodep) {
@@ -3278,7 +3294,7 @@ class ConstVisitor final : public VNVisitor {
                         if (argp) {
                             AstNode* const nextp = argp->nextp();
                             if (VN_IS(argp, Const)) {  // Convert it
-                                const string out = VN_AS(argp, Const)->num().displayed(nodep, fmt);
+                                const string out = constNumV(argp).displayed(nodep, fmt);
                                 UINFO(9, "     DispConst: " << fmt << " -> " << out << "  for "
                                                             << argp << endl);
                                 // fmt = out w/ replace % with %% as it must be literal.
