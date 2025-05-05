@@ -7,11 +7,11 @@ top.t.the_sub_yes_inline_1 no_init 0x5293d3db1468cfe4
 top.t.the_sub_yes_inline_2 no_init 0xe27ac165957ed737
 top.t.the_sub_no_inline_1 no_init 0x843435030e893ca5
 top.t.the_sub_no_inline_2 no_init 0x164cf3d70f336a36
+rand = 0xe3e54aaa
 rand = 0xe85acf2d
 rand = 0x15e12c6a
 rand = 0x0f7f28c0
 rand = 0xe189c52a
-rand = 0xf0700dbf
-x_assigned = 0xe3e54aaa
-Last rand = 0x02fe107d
+x_assigned = 0xbc969e82
+Last rand = 0xf0700dbf
 *-* All Finished *-*

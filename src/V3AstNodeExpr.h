@@ -1805,6 +1805,7 @@ class AstRand final : public AstNodeExpr {
     const bool m_reset = false;  // Random reset, versus always random
 public:
     class Reset {};
+    // NOCOMMIT -- needed or reset always false?
     AstRand(FileLine* fl, Reset, AstNodeDType* dtp, bool reset)
         : ASTGEN_SUPER_Rand(fl)
         , m_reset{reset} {

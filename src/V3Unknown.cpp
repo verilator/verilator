@@ -353,25 +353,13 @@ class UnknownVisitor final : public VNVisitor {
                 AstNodeVarRef* const newref1p
                     = new AstVarRef{nodep->fileline(), newvarp, VAccess::READ};
                 replaceHandle.relink(newref1p);  // Replace const with varref
-                AstInitial* const newinitp = new AstInitial{
-                    nodep->fileline(),
-                    new AstAssign{
-                        nodep->fileline(),
-                        new AstVarRef{nodep->fileline(), newvarp, VAccess::WRITE},
-                        new AstOr{nodep->fileline(), new AstConst{nodep->fileline(), numb1},
-                                  new AstAnd{nodep->fileline(),
-                                             new AstConst{nodep->fileline(), numbx},
-                                             new AstRand{nodep->fileline(), AstRand::Reset{},
-                                                         nodep->dtypep(), true}}}}};
                 // Add inits in front of other statement.
                 // In the future, we should stuff the initp into the module's constructor.
                 AstNode* const afterp = m_modp->stmtsp()->unlinkFrBackWithNext();
                 m_modp->addStmtsp(newvarp);
-                m_modp->addStmtsp(newinitp);
                 m_modp->addStmtsp(afterp);
                 if (debug() >= 9) newref1p->dumpTree("-     _new: ");
                 if (debug() >= 9) newvarp->dumpTree("-     _new: ");
-                if (debug() >= 9) newinitp->dumpTree("-     _new: ");
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             }
         }
