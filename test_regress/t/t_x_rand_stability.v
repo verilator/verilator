@@ -17,6 +17,7 @@ module t (/*AUTOARG*/
     logic [31:0] x_assigned = '0;
 `ifdef ADD_SIGNAL
     logic [31:0] added;
+    logic [31:0] x_assigned_added = '0;
 `endif
     logic [31:0] unused;
     logic [31:0] uninitialized2;
@@ -38,6 +39,9 @@ module t (/*AUTOARG*/
 
     always @(posedge clk) begin
         x_assigned <= 'x;
+`ifdef ADD_SIGNAL
+        x_assigned_added <= 'x;
+`endif
         cyc <= cyc + 1;
         $display("rand = 0x%x", $random());
         if (cyc == 4) begin
@@ -48,7 +52,8 @@ module t (/*AUTOARG*/
             if (the_sub_no_inline_1.no_init == the_sub_no_inline_2.no_init) $stop();
 `endif
 `ifdef ADD_SIGNAL
-            if (added != added) $stop();
+            if (added == 0) $stop();
+            if (x_assigned_added == 0) $stop();
 `endif
             $display("Last rand = 0x%x", $random());
             $write("*-* All Finished *-*\n");
