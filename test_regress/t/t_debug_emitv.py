@@ -25,7 +25,11 @@ if test.verbose:
     # Print if that the output Verilog is clean
     # TODO not yet round-trip clean
     test.run(
-        cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator", "--lint-only", output_v],
+        cmd=[
+            os.environ["VERILATOR_ROOT"] + "/bin/verilator",
+            "--lint-only",
+            output_vs[0],
+        ],
         logfile=test.obj_dir + "/sim_roundtrip.log",
         fails=True,
         verilator_run=True,
