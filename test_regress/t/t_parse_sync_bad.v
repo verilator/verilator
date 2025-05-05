@@ -14,11 +14,6 @@ endpackage
 module t;
    task tsk;
       begin
-      Invalid1 invalid1;  // invalid declaration
-      pkg::cls::defi valid1;  // valid declaration
-      pkg::cls::defu valid2;  // valid declaration
-      Invalid2 invalid2;  // invalid declaration
-
       valid1 = 5;  // valid statement
 
       pkg::cls::defi invalid;  // invalid statement
