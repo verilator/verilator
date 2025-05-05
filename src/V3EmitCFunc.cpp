@@ -815,7 +815,8 @@ void EmitCFunc::emitVarResetScopeHash() {
     if (m_class) {
         m_classHash = std::to_string(std::hash<std::string>{}(m_class->name())) + "ULL";
     } else {
-        puts("uint64_t __VscopeHash = std::hash<std::string>{}(vlSelf->name());\n");
+        puts(string("uint64_t __VscopeHash = std::hash<std::string>{}(")
+             + (m_useSelfForThis ? "vlSelf" : "this") + "->name());\n");
     }
     m_createdScopeHash = true;
 }
