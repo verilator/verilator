@@ -1903,7 +1903,7 @@ find what made a <e#*#*> line in the tree dumps):
 
 ::
 
-   watch AstNode::s_editCntGbl==####
+   watch AstNode::s_editCntGbl=####
 
 Then, when the watch fires, to break at every following change to that
 node:

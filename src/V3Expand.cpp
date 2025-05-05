@@ -445,7 +445,6 @@ class ExpandVisitor final : public VNVisitor {
                 midp = new AstCond{
                     nfl,
                     // lsb % VL_EDATASIZE == 0 ?
-
                     new AstEq{nfl, new AstConst{nfl, 0}, newSelBitBit(nodep->lsbp())},
                     // 0 :
                     new AstConst{nfl, zero},
