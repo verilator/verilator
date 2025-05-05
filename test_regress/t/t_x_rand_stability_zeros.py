@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios("simulator")
+test.scenarios("vlt")
 test.top_filename = "t/t_x_rand_stability.v"
 
 test.compile(verilator_flags2=["--x-initial unique", "-DNOT_RAND"])

@@ -10,7 +10,7 @@
 import vltest_bootstrap
 import glob
 
-test.scenarios("simulator")
+test.scenarios("vlt")
 
 test.compile(verilator_flags2=["--x-initial unique"])
 

@@ -9,11 +9,11 @@
 
 import vltest_bootstrap
 
-test.scenarios("vlt")
+test.scenarios("vltmt")
 test.top_filename = "t/t_x_rand_stability.v"
 
-test.compile(verilator_flags2=["--x-initial unique", "--trace"])
+test.compile(verilator_flags2=["--x-initial unique", "-DNOT_RAND"])
 
-test.execute(all_run_flags=["+verilator+rand+reset+2"], expect_filename=test.golden_filename)
+test.execute(all_run_flags=["+verilator+rand+reset+0"], expect_filename=test.golden_filename)
 
 test.passes()
