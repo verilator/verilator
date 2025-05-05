@@ -424,8 +424,20 @@
 -000001  point: comment=block hier=top.my_pkg
         endpackage
         
+%000001 class Getter1;
+-000001  point: comment=block hier=top.$unit::Getter1__Vclpkg
+ 000020    function int get_1;
++000020  point: comment=block hier=top.$unit::Getter1__Vclpkg
+ 000020       return 1;
++000020  point: comment=block hier=top.$unit::Getter1__Vclpkg
+           endfunction
+        endclass
+        
         module cond(input logic clk, input int cyc);
            logic a, b, c, d, e, f, g, h, k, l;
+%000001    Getter1 getter1 = new;
+-000001  point: comment=block hier=top.t.cond1
+           string s;
         
  000021    function logic func_side_effect;
 +000021  point: comment=block hier=top.t.cond1
@@ -450,6 +462,10 @@
 +000010  point: comment=block hier=top.t.cond1
 -000003  point: comment=cond_then hier=top.t.cond1
 -000007  point: comment=cond_else hier=top.t.cond1
+~000010       s = (getter1.get_1() == 0) ? "abcd" : $sformatf("%d", getter1.get_1()[4:0]);
++000010  point: comment=block hier=top.t.cond1
+-000000  point: comment=cond_then hier=top.t.cond1
++000010  point: comment=cond_else hier=top.t.cond1
            end
 ~000019    assign e = (cyc % 3 == 1) ? (clk ? 1 : 0) : 1;
 +000012  point: comment=cond_then hier=top.t.cond1

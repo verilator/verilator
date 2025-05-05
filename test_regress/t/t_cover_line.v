@@ -300,8 +300,16 @@ package my_pkg;
    int x = 1 ? 1 : 0;
 endpackage
 
+class Getter1;
+   function int get_1;
+      return 1;
+   endfunction
+endclass
+
 module cond(input logic clk, input int cyc);
    logic a, b, c, d, e, f, g, h, k, l;
+   Getter1 getter1 = new;
+   string s;
 
    function logic func_side_effect;
       $display("SIDE EFFECT");
@@ -313,6 +321,7 @@ module cond(input logic clk, input int cyc);
    assign c = func_side_effect() ? clk : 0;
    always @(posedge clk) begin
       d = (cyc % 3 == 0) ? 1 : 0;
+      s = (getter1.get_1() == 0) ? "abcd" : $sformatf("%d", getter1.get_1()[4:0]);
    end
    assign e = (cyc % 3 == 1) ? (clk ? 1 : 0) : 1;
    assign f = (cyc != 0 ? 1 : 0) ? 1 : 0;
