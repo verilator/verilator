@@ -6,6 +6,7 @@
 
 
 class ArrayStruct;
+    /* verilator lint_off SIDEEFFECT */
     // Struct with an unpacked array
     typedef int arr_3_t[3];
     typedef int arr_4_t[4];
@@ -109,7 +110,7 @@ class ArrayStruct;
         foreach (s6.mix_arr[i]) if (s6.mix_arr[i].size() == 0) $stop;
         foreach (s6.mix_arr[i, j]) if (!(s6.mix_arr[i][j] inside {[50:100]})) $stop;
     endfunction
-
+    /* verilator lint_off SIDEEFFECT */
 endclass
 
 class StructArray;
@@ -152,7 +153,7 @@ class StructArray;
         foreach (s_2d_arr[i, j]) s_2d_arr[i][j].a inside {[50:60]};
 
         foreach (s_dyn_arr[i]) s_dyn_arr[i].a inside {[60:70]};
-        
+
         foreach (s_que_arr[i]) s_que_arr[i].a inside {[70:80]};
 
         foreach (s_assoc_arr[i]) s_assoc_arr[i].a inside {[80:90]};
@@ -253,19 +254,19 @@ class StructArray;
             foreach (s_arr[i].arr[j])
                 if (!(s_arr[i].arr[j] inside {[0:9]})) $stop;
             if (!(s_arr[i].a inside {[40:50]})) $stop;
-            
+
         end
         foreach (s_2d_arr[i, j]) begin
             foreach (s_2d_arr[i][j].arr[k])
                 if (!(s_2d_arr[i][j].arr[k] inside {[9:19]})) $stop;
             if (!(s_2d_arr[i][j].a inside {[50:60]})) $stop;
-            
+
         end
         foreach (s_dyn_arr[i]) begin
             foreach (s_dyn_arr[i].arr[j])
                 if (!(s_dyn_arr[i].arr[j] inside {[19:29]})) $stop;
             if (!(s_dyn_arr[i].a inside {[60:70]})) $stop;
-            
+
         end
         foreach (s_que_arr[i]) begin
             foreach (s_que_arr[i].arr[j])
