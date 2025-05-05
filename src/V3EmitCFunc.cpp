@@ -753,7 +753,9 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                || varp->isFuncLocal()  // Randomization too slow
                || (basicp && basicp->isZeroInit())
                || (v3Global.opt.underlineZero() && !varp->name().empty() && varp->name()[0] == '_')
-               || (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0"));
+               || (varp->isXTemp()
+                       ? (v3Global.opt.xAssign() != "unique")
+                       : (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0")));
         const bool slow = !varp->isFuncLocal() && !varp->isClassMember();
         splitSizeInc(1);
         if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
@@ -774,7 +776,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     emitVarResetScopeHash();
                     uint64_t salt = std::hash<std::string>{}(varp->prettyName());
                     out += ", ";
-                    out += "__VscopeHash, ";
+                    out += m_class ? m_classHash : "__VscopeHash";
+                    out += ", ";
                     out += std::to_string(salt);
                     out += "ull";
                 }
@@ -795,8 +798,9 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 uint64_t salt = std::hash<std::string>{}(varp->prettyName());
                 out += " = VL_SCOPED_RAND_RESET_";
                 out += dtypep->charIQWN();
-                out += "(" + cvtToStr(dtypep->widthMin()) + ", " + "__VscopeHash, "
-                       + std::to_string(salt) + "ull);\n";
+                out += "(" + cvtToStr(dtypep->widthMin()) + ", "
+                       + (m_class ? m_classHash : "__VscopeHash") + ", " + std::to_string(salt)
+                       + "ull);\n";
             }
             return out;
         }
@@ -809,8 +813,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
 void EmitCFunc::emitVarResetScopeHash() {
     if (m_createdScopeHash) { return; }
     if (m_class) {
-        puts("uint64_t __VscopeHash = " + std::to_string(std::hash<std::string>{}(m_class->name()))
-             + "ULL;\n");
+        m_classHash = std::to_string(std::hash<std::string>{}(m_class->name())) + "ULL";
     } else {
         puts("uint64_t __VscopeHash = std::hash<std::string>{}(vlSelf->name());\n");
     }
