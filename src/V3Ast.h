@@ -2415,6 +2415,7 @@ public:
     void addNextHere(AstNode* newp);  // Insert newp at this->nextp
     void addHereThisAsNext(AstNode* newp);  // Adds at old place of this, this becomes next
     void replaceWith(AstNode* newp);  // Replace current node in tree with new node
+    void replaceWithKeepDType(AstNode* newp);  // Replace current node in tree, keep old dtype
     // Unlink this from whoever points to it.
     AstNode* unlinkFrBack(VNRelinker* linkerp = nullptr);
     // Unlink this from whoever points to it, keep entire next list with unlinked node

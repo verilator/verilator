@@ -521,6 +521,10 @@ void AstNode::replaceWith(AstNode* newp) {
     this->unlinkFrBack(&repHandle);
     repHandle.relink(newp);
 }
+void AstNode::replaceWithKeepDType(AstNode* newp) {
+    newp->dtypeFrom(this);
+    replaceWith(newp);
+}
 
 void VNRelinker::dump(std::ostream& str) const {
     str << " BK=" << reinterpret_cast<uint32_t*>(m_backp);

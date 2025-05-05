@@ -2066,8 +2066,7 @@ class WidthVisitor final : public VNVisitor {
                                              << nodep->warnMore()
                                              << "... Suggest try static cast");
         }
-        newp->dtypeFrom(nodep);
-        nodep->replaceWith(newp);
+        nodep->replaceWithKeepDType(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         userIterate(newp, m_vup);
     }
@@ -2211,8 +2210,7 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->final()) {
             // CastSize not needed once sizes determined
             AstNode* const underp = nodep->lhsp()->unlinkFrBack();
-            underp->dtypeFrom(nodep);
-            nodep->replaceWith(underp);
+            nodep->replaceWithKeepDType(underp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         // if (debug()) nodep->dumpTree("-  CastSizeOut: ");
@@ -7617,8 +7615,7 @@ class WidthVisitor final : public VNVisitor {
             break;
         }
         UINFO(6, "   ReplaceWithUOrSVersion: " << nodep << " w/ " << newp << endl);
-        nodep->replaceWith(newp);
-        newp->dtypeFrom(nodep);
+        nodep->replaceWithKeepDType(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return newp;
     }
@@ -7707,8 +7704,7 @@ class WidthVisitor final : public VNVisitor {
             break;
         }
         UINFO(6, "   ReplaceWithDVersion: " << nodep << " w/ " << newp << endl);
-        nodep->replaceWith(newp);
-        newp->dtypeFrom(nodep);
+        nodep->replaceWithKeepDType(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return newp;
     }

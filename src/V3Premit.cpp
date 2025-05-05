@@ -141,8 +141,7 @@ class PremitVisitor final : public VNVisitor {
                 newp = new AstShiftRSOvr{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
                                          nodep->rhsp()->unlinkFrBack()};
             }
-            newp->dtypeFrom(nodep);
-            nodep->replaceWith(newp);
+            nodep->replaceWithKeepDType(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
