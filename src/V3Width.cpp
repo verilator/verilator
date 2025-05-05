@@ -1672,6 +1672,20 @@ class WidthVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             break;
         }
+        case VAttrType::DIM_BITS_OR_NUMBER: {
+            // If dtype, compute DIM_BITS, else take expression as a number to use
+            if (VN_IS(nodep->fromp(), NodeExpr)) {
+                nodep->replaceWith(nodep->fromp()->unlinkFrBack());
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            } else {
+                AstNode* newp = new AstAttrOf{nodep->fileline(), VAttrType::DIM_BITS,
+                                              nodep->fromp()->unlinkFrBack()};
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                userIterateAndNext(newp, WidthVP{SELF, BOTH}.p());  // Convert AttrOf
+            }
+            return;
+        }
         case VAttrType::DIM_BITS:
         case VAttrType::DIM_HIGH:
         case VAttrType::DIM_INCREMENT:

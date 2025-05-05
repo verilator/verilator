@@ -458,6 +458,7 @@ public:
         ILLEGAL,
         //
         DIM_BITS,                       // V3Const converts to constant
+        DIM_BITS_OR_NUMBER,             // V3Const converts to constant
         DIM_DIMENSIONS,                 // V3Width converts to constant
         DIM_HIGH,                       // V3Width processes
         DIM_INCREMENT,                  // V3Width processes
@@ -500,7 +501,8 @@ public:
         // clang-format off
         static const char* const names[] = {
             "%E-AT",
-            "DIM_BITS", "DIM_DIMENSIONS", "DIM_HIGH", "DIM_INCREMENT", "DIM_LEFT",
+            "DIM_BITS", "DIM_BITS_OR_NUMBER", "DIM_DIMENSIONS",
+            "DIM_HIGH", "DIM_INCREMENT", "DIM_LEFT",
             "DIM_LOW", "DIM_RIGHT", "DIM_SIZE", "DIM_UNPK_DIMENSIONS",
             "DT_PUBLIC",
             "ENUM_FIRST", "ENUM_LAST", "ENUM_NUM",
