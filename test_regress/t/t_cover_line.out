@@ -435,6 +435,7 @@
         
         module cond(input logic clk, input int cyc);
            logic a, b, c, d, e, f, g, h, k, l;
+           logic [5:0] tab;
 %000001    Getter1 getter1 = new;
 -000001  point: comment=block hier=top.t.cond1
            string s;
@@ -472,9 +473,13 @@
 +000019  point: comment=cond_else hier=top.t.cond1
 -000007  point: comment=cond_then hier=top.t.cond1
 -000005  point: comment=cond_else hier=top.t.cond1
+        
+           // ternary operator in condition shouldn't be included to the coverae
 ~000011    assign f = (cyc != 0 ? 1 : 0) ? 1 : 0;
 +000011  point: comment=cond_then hier=top.t.cond1
 -000000  point: comment=cond_else hier=top.t.cond1
+           // the same as in index
+           assign tab[clk ? 1 : 0] = 1;
         
            for (genvar i = 0; i < 2; i++) begin
  000011       assign g = clk ? 1 : 0;
@@ -491,6 +496,8 @@
 +000010  point: comment=else hier=top.t.cond1
  000010       else h = 1;
 +000010  point: comment=else hier=top.t.cond1
+        
+              // ternary operator in conditions should be skipped
  000055       for (int i = 0; (i < 5) ? 1 : 0; i++) begin
 +000011  point: comment=block hier=top.t.cond1
 +000055  point: comment=block hier=top.t.cond1

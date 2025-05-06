@@ -308,6 +308,7 @@ endclass
 
 module cond(input logic clk, input int cyc);
    logic a, b, c, d, e, f, g, h, k, l;
+   logic [5:0] tab;
    Getter1 getter1 = new;
    string s;
 
@@ -324,7 +325,11 @@ module cond(input logic clk, input int cyc);
       s = (getter1.get_1() == 0) ? "abcd" : $sformatf("%d", getter1.get_1()[4:0]);
    end
    assign e = (cyc % 3 == 1) ? (clk ? 1 : 0) : 1;
+
+   // ternary operator in condition shouldn't be included to the coverae
    assign f = (cyc != 0 ? 1 : 0) ? 1 : 0;
+   // the same as in index
+   assign tab[clk ? 1 : 0] = 1;
 
    for (genvar i = 0; i < 2; i++) begin
       assign g = clk ? 1 : 0;
@@ -333,6 +338,8 @@ module cond(input logic clk, input int cyc);
    always begin
       if (cyc == 5) h = cyc > 5 ? 1 : 0;
       else h = 1;
+
+      // ternary operator in conditions should be skipped
       for (int i = 0; (i < 5) ? 1 : 0; i++) begin
          k = 1'(i);
       end
