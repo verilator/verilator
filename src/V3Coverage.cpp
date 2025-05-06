@@ -142,7 +142,6 @@ class CoverageVisitor final : public VNVisitor {
     bool m_objective = false;  // Expression objective
     bool m_ifCond = false;  // Visiting if condition
     bool m_inToggleOff = false;  // In function/task etc
-    bool m_condBranchOn = false;  // Include cond expr in branch coverage
     bool m_inLoopNotBody = false;  // Inside a loop, but not in its body
     string m_beginHier;  // AstBegin hier name for user coverage points
 
@@ -503,18 +502,27 @@ class CoverageVisitor final : public VNVisitor {
                                << dtypep->prettyTypeName());
         }
     }
+    bool includeCondToBranchRecursive(const AstNode* const nodep) {
+        const AstNode* const backp = nodep->backp();
+        if (VN_IS(backp, Cond) && VN_AS(backp, Cond)->condp() != nodep) {
+            return includeCondToBranchRecursive(backp);
+        } else if (VN_IS(backp, Sel) && VN_AS(backp, Sel)->fromp() == nodep) {
+            return includeCondToBranchRecursive(backp);
+        } else if (VN_IS(backp, NodeAssign) && VN_AS(backp, NodeAssign)->rhsp() == nodep
+                   && !m_inLoopNotBody) {
+            return true;
+        }
+        return false;
+    }
 
     // VISITORS - LINE COVERAGE
     void visit(AstCond* nodep) override {
         UINFO(4, " COND: " << nodep << endl);
 
-        if (m_seeking == NONE) {
-            VL_RESTORER(m_condBranchOn);
-            m_condBranchOn = false;
-            coverExprs(nodep->condp());
-        }
+        if (m_seeking == NONE) coverExprs(nodep->condp());
 
-        if (m_condBranchOn && m_state.lineCoverageOn(nodep) && VN_IS(m_modp, Module)) {
+        if (m_state.lineCoverageOn(nodep) && VN_IS(m_modp, Module)
+            && includeCondToBranchRecursive(nodep)) {
             VL_RESTORER(m_seeking);
             // Disable expression coverage in sub-expressions, since they were already visited
             m_seeking = ABORTED;
@@ -694,14 +702,6 @@ class CoverageVisitor final : public VNVisitor {
             m_beginHier = m_beginHier + (m_beginHier != "" ? "." : "") + nodep->name();
         }
         iterateChildren(nodep);
-        lineTrack(nodep);
-    }
-    void visit(AstNodeAssign* nodep) override {
-        VL_RESTORER(m_condBranchOn);
-        iterate(nodep->lhsp());
-        // Don't include cond expressions which are in incsp() of for loops, etc
-        m_condBranchOn = !m_inLoopNotBody;
-        iterate(nodep->rhsp());
         lineTrack(nodep);
     }
 
