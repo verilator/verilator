@@ -919,14 +919,8 @@ public:
             points.emplace_back(ref.lsb(), false);  // Start of a region
             points.emplace_back(ref.msb() + 1, true);  // End of a region
         }
-        int bit_hi, bit_lo;
-        if (basicp() == dtypep) {
-            bit_hi = basicp()->hi();
-            bit_lo = basicp()->lo();
-        } else {  // packed struct, packed array. lo is 0
-            bit_hi = dtypep->width() - 1;
-            bit_lo = 0;
-        }
+        const int bit_lo = basicp()->lo();
+        const int bit_hi = bit_lo + dtypep->width() - 1;
         if (skipUnused && !m_rhs.empty()) {  // Range to be read must be kept, so add points here
             int lsb = bit_hi + 1;
             int msb = bit_lo - 1;
