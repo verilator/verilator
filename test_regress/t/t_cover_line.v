@@ -307,7 +307,7 @@ class Getter1;
 endclass
 
 module cond(input logic clk, input int cyc);
-   logic a, b, c, d, e, f, g, h, k, l;
+   logic a, b, c, d, e, f, g, h, k, l, m;
    logic [5:0] tab;
    Getter1 getter1 = new;
    string s;
@@ -330,6 +330,7 @@ module cond(input logic clk, input int cyc);
    assign f = (cyc != 0 ? 1 : 0) ? 1 : 0;
    // the same as in index
    assign tab[clk ? 1 : 0] = 1;
+   assign m = tab[clk ? 3 : 4];
 
    for (genvar i = 0; i < 2; i++) begin
       assign g = clk ? 1 : 0;
