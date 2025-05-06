@@ -45,6 +45,7 @@
 //     and DPI libraries are not needed there.
 //=========================================================================
 
+#include "verilated.h"
 #define VERILATOR_VERILATED_CPP_
 
 #include "verilated_config.h"
@@ -406,29 +407,13 @@ IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
     Verilated::threadContextp()->randSeed(static_cast<int>(seed));
     return VL_RANDOM_I();
 }
-static QData VL_SCOPED_RANDOM_RESET_Q_GUTS(std::array<uint64_t, 2>& state) VL_MT_SAFE {
-    if (Verilated::threadContextp()->randReset() == 0) return 0;
-    if (Verilated::threadContextp()->randReset() == 1) return ~0;
-    state[1] ^= state[0];
-    state[0] = (((state[0] << 55) | (state[0] >> 9)) ^ state[1] ^ (state[1] << 14));
-    state[1] = (state[1] << 36) | (state[1] >> 28);
-    return state[0] + state[1];
-}
-static QData VL_SCOPED_RANDOM_RESET_Q(uint64_t scopeHash, uint64_t salt) VL_MT_SAFE {
-    std::array<uint64_t, 2> state;
-    state[0] = Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt;
-    state[1] = state[0];
-    return VL_SCOPED_RANDOM_RESET_Q_GUTS(state);
-}
-static IData VL_SCOPED_RANDOM_RESET_I(uint64_t scopeHash, uint64_t salt) VL_MT_SAFE {
-    return VL_SCOPED_RANDOM_RESET_Q(scopeHash, salt);
-}
 
 IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_SAFE {
     if (Verilated::threadContextp()->randReset() == 0) return 0;
     IData data = ~0;
     if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
-        data = VL_SCOPED_RANDOM_RESET_I(scopeHash, salt);
+        VlRNG rng(Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt);
+        data = rng.rand64();
     }
     data &= VL_MASK_I(obits);
     return data;
@@ -438,7 +423,8 @@ QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT
     if (Verilated::threadContextp()->randReset() == 0) return 0;
     QData data = ~0ULL;
     if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
-        data = VL_SCOPED_RANDOM_RESET_Q(scopeHash, salt);
+        VlRNG rng(Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt);
+        data = rng.rand64();
     }
     data &= VL_MASK_Q(obits);
     return data;
@@ -446,12 +432,10 @@ QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT
 
 WDataOutP VL_SCOPED_RAND_RESET_W(int obits, WDataOutP outwp, uint64_t scopeHash,
                                  uint64_t salt) VL_MT_SAFE {
-    std::array<uint64_t, 2> state;
-    state[0] = Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt;
-    state[1] = state[0];
-    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i)
-        outwp[i] = VL_SCOPED_RANDOM_RESET_Q_GUTS(state);
-    outwp[VL_WORDS_I(obits) - 1] = VL_SCOPED_RANDOM_RESET_Q_GUTS(state) & VL_MASK_E(obits);
+    if (Verilated::threadContextp()->randReset() != 2) { return VL_RAND_RESET_W(obits, outwp); }
+    VlRNG rng(Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt);
+    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = rng.rand64();
+    outwp[VL_WORDS_I(obits) - 1] = rng.rand64() & VL_MASK_E(obits);
     return outwp;
 }
 
@@ -1747,6 +1731,48 @@ IData VL_SSCANF_INNX(int, const std::string& ld, const std::string& format, int 
         = _vl_vsscanf(nullptr, static_cast<int>(ld.length() * 8), nullptr, ld, format, ap);
     va_end(ap);
     return got;
+}
+
+// MurmurHash64A
+uint64_t VL_HASH(const char* key) VL_PURE {
+    const size_t len = strlen(key);
+    const uint64_t seed = 0;
+    const uint64_t m = 0xc6a4a7935bd1e995ULL;
+    const int r = 47;
+
+    uint64_t h = seed ^ (len * m);
+
+    const uint64_t* data = (const uint64_t*)key;
+    const uint64_t* end = data + (len / 8);
+
+    while (data != end) {
+        uint64_t k = *data++;
+
+        k *= m;
+        k ^= k >> r;
+        k *= m;
+
+        h ^= k;
+        h *= m;
+    }
+
+    const unsigned char* data2 = (const unsigned char*)data;
+
+    switch (len & 7) {
+    case 7: h ^= uint64_t(data2[6]) << 48;
+    case 6: h ^= uint64_t(data2[5]) << 40;
+    case 5: h ^= uint64_t(data2[4]) << 32;
+    case 4: h ^= uint64_t(data2[3]) << 24;
+    case 3: h ^= uint64_t(data2[2]) << 16;
+    case 2: h ^= uint64_t(data2[1]) << 8;
+    case 1: h ^= uint64_t(data2[0]); h *= m;
+    };
+
+    h ^= h >> r;
+    h *= m;
+    h ^= h >> r;
+
+    return h;
 }
 
 IData VL_FREAD_I(int width, int array_lsb, int array_size, void* memp, IData fpi, IData start,

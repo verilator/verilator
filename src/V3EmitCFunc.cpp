@@ -774,9 +774,9 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 out += ", " + varNameProtected + suffix;
                 if (!zeroit) {
                     emitVarResetScopeHash();
-                    uint64_t salt = std::hash<std::string>{}(varp->prettyName());
+                    const uint64_t salt = VString::hash(varp->prettyName());
                     out += ", ";
-                    out += m_class ? m_classHash : "__VscopeHash";
+                    out += m_classOrPackage ? m_classOrPackageHash : "__VscopeHash";
                     out += ", ";
                     out += std::to_string(salt);
                     out += "ull";
@@ -795,12 +795,12 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 out += " = 0;\n";
             } else {
                 emitVarResetScopeHash();
-                uint64_t salt = std::hash<std::string>{}(varp->prettyName());
+                const uint64_t salt = VString::hash(varp->prettyName());
                 out += " = VL_SCOPED_RAND_RESET_";
                 out += dtypep->charIQWN();
                 out += "(" + cvtToStr(dtypep->widthMin()) + ", "
-                       + (m_class ? m_classHash : "__VscopeHash") + ", " + std::to_string(salt)
-                       + "ull);\n";
+                       + (m_classOrPackage ? m_classOrPackageHash : "__VscopeHash") + ", "
+                       + std::to_string(salt) + "ull);\n";
             }
             return out;
         }
@@ -811,11 +811,11 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
 }
 
 void EmitCFunc::emitVarResetScopeHash() {
-    if (m_createdScopeHash) { return; }
-    if (m_class) {
-        m_classHash = std::to_string(std::hash<std::string>{}(m_class->name())) + "ULL";
+    if (VL_LIKELY(m_createdScopeHash)) { return; }
+    if (m_classOrPackage) {
+        m_classOrPackageHash = std::to_string(VString::hash(m_classOrPackage->name())) + "ULL";
     } else {
-        puts(string("uint64_t __VscopeHash = std::hash<std::string>{}(")
+        puts(string("const uint64_t __VscopeHash = VL_HASH(")
              + (m_useSelfForThis ? "vlSelf" : "this") + "->name());\n");
     }
     m_createdScopeHash = true;
