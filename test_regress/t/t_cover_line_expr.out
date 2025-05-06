@@ -441,9 +441,7 @@
             sub the_sub_1 (.p(t1), .q(t2));
             sub the_sub_2 (.p(t3), .q(t4));
             // TODO -- non-process expressions
-%000005     sub the_sub_3 (.p(t1 ? t2 : t3), .q(t4));
--000005  point: comment=cond_then hier=top.t
--000005  point: comment=cond_else hier=top.t
+            sub the_sub_3 (.p(t1 ? t2 : t3), .q(t4));
         
             // TODO
             // pragma for expr coverage off / on
