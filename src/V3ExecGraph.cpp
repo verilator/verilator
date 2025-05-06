@@ -378,21 +378,24 @@ class PackThreads final {
                 }
             }
 
+            const uint32_t endTime = schedule.endTime();
+
             if (!bestMtaskp && mode == SchedulingMode::WIDE_TASK_DISCOVERED) {
                 mode = SchedulingMode::WIDE_TASK_SCHEDULING;
                 const uint32_t size = m_nThreads / maxThreadWorkers;
                 UASSERT(size, "Thread pool size should be bigger than 0");
-                // If no tasks were added to the normal thread schedule, remove it.
-                if (schedule.mtaskState.empty()) result.erase(result.begin());
+                // If no tasks were added to the normal thread schedule, clear it.
+                if (schedule.mtaskState.empty()) result.clear();
                 result.emplace_back(ThreadSchedule{size});
-                std::fill(busyUntil.begin(), busyUntil.end(), schedule.endTime());
+                std::fill(busyUntil.begin(), busyUntil.end(), endTime);
                 continue;
             }
 
             if (!bestMtaskp && mode == SchedulingMode::WIDE_TASK_SCHEDULING) {
                 mode = SchedulingMode::SCHEDULING;
-                if (!schedule.mtaskState.empty()) result.emplace_back(ThreadSchedule{m_nThreads});
-                std::fill(busyUntil.begin(), busyUntil.end(), schedule.endTime());
+                UASSERT(!schedule.mtaskState.empty(), "Mtask should be added");
+                result.emplace_back(ThreadSchedule{m_nThreads});
+                std::fill(busyUntil.begin(), busyUntil.end(), endTime);
                 continue;
             }
 
@@ -400,24 +403,7 @@ class PackThreads final {
 
             bestMtaskp->predictStart(bestTime);
             const uint32_t bestEndTime = schedule.scheduleOn(bestMtaskp, bestThreadId);
-
-            // Populate busyUntil timestamps. For multi-worker tasks, set timestamps for
-            // offsetted threads.
-            if (bestMtaskp->threads() <= 1) {
-                busyUntil[bestThreadId] = bestEndTime;
-            } else {
-                for (int i = 0; i < maxThreadWorkers; ++i) {
-                    const size_t threadId = bestThreadId + (i * schedule.threads.size());
-                    UASSERT(threadId < busyUntil.size(),
-                            "Incorrect busyUntil offset: threadId=" + cvtToStr(threadId)
-                                + " bestThreadId=" + cvtToStr(bestThreadId) + " i=" + cvtToStr(i)
-                                + " schedule-size=" + cvtToStr(schedule.threads.size())
-                                + " maxThreadWorkers=" + cvtToStr(maxThreadWorkers));
-                    busyUntil[threadId] = bestEndTime;
-                    UINFO(6, "Will schedule " << bestMtaskp->name() << " onto thread " << threadId
-                                              << endl);
-                }
-            }
+            busyUntil[bestThreadId] = bestEndTime;
 
             // Update the ready list
             const size_t erased = readyMTasks.erase(bestMtaskp);
@@ -446,6 +432,10 @@ class PackThreads final {
 public:
     // SELF TEST
     static void selfTest() {
+        selfTestHierFirst();
+        selfTestNormalFirst();
+    }
+    static void selfTestNormalFirst() {
         V3Graph graph;
         FileLine* const flp = v3Global.rootp()->fileline();
         std::vector<AstMTaskBody*> mTaskBodyps;
@@ -574,6 +564,65 @@ public:
         UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 5), 1360);
 
         for (AstNode* const nodep : mTaskBodyps) nodep->deleteTree();
+        ThreadSchedule::mtaskState.clear();
+    }
+    static void selfTestHierFirst() {
+        V3Graph graph;
+        FileLine* const flp = v3Global.rootp()->fileline();
+        std::vector<AstMTaskBody*> mTaskBodyps;
+        const auto makeBody = [&]() {
+            AstMTaskBody* const bodyp = new AstMTaskBody{flp};
+            mTaskBodyps.push_back(bodyp);
+            bodyp->addStmtsp(new AstComment{flp, ""});
+            return bodyp;
+        };
+        ExecMTask* const t0 = new ExecMTask{&graph, makeBody()};
+        t0->cost(1000);
+        t0->priority(1100);
+        t0->threads(2);
+        ExecMTask* const t1 = new ExecMTask{&graph, makeBody()};
+        t1->cost(100);
+        t1->priority(100);
+
+        /*
+                          0
+                          |
+                          1
+        */
+        new V3GraphEdge{&graph, t0, t1, 1};
+
+        constexpr uint32_t threads = 2;
+        PackThreads packer{threads,
+                           3,  // Sandbag numerator
+                           10};  // Sandbag denom
+
+        const std::vector<ThreadSchedule> scheduled = packer.pack(graph);
+        UASSERT_SELFTEST(size_t, scheduled.size(), 2);
+        UASSERT_SELFTEST(size_t, scheduled[0].threads.size(), threads / 2);
+        UASSERT_SELFTEST(size_t, scheduled[0].threads[0].size(), 1);
+        for (size_t i = 1; i < scheduled[0].threads.size(); ++i)
+            UASSERT_SELFTEST(size_t, scheduled[0].threads[i].size(), 0);
+
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[0].threads[0][0], t0);
+
+        UASSERT_SELFTEST(size_t, scheduled[1].threads.size(), threads);
+        UASSERT_SELFTEST(size_t, scheduled[1].threads[0].size(), 1);
+        for (size_t i = 1; i < scheduled[1].threads.size(); ++i)
+            UASSERT_SELFTEST(size_t, scheduled[1].threads[i].size(), 0);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].threads[0][0], t1);
+
+        UASSERT_SELFTEST(size_t, ThreadSchedule::mtaskState.size(), 2);
+
+        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t0), 0);
+        UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t1), 0);
+
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[0], t0, 0), 1000);
+
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t1, 0), 1100);
+        UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t1, 1), 1130);
+
+        for (AstNode* const nodep : mTaskBodyps) nodep->deleteTree();
+        ThreadSchedule::mtaskState.clear();
     }
 
     static std::vector<ThreadSchedule> apply(V3Graph& mtaskGraph) {
