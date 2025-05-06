@@ -1859,8 +1859,10 @@ public:
 struct VlNull final {
     operator bool() const { return false; }
     bool operator==(const void* ptr) const { return !ptr; }
+    bool operator!=(const void* ptr) const { return ptr; }
 };
 inline bool operator==(const void* ptr, VlNull) { return !ptr; }
+inline bool operator!=(const void* ptr, VlNull) { return ptr; }
 
 //===================================================================
 // Verilog class reference container
