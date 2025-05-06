@@ -24,9 +24,6 @@
 #ifndef VERILATOR_VERILATED_FUNCS_H_
 #define VERILATOR_VERILATED_FUNCS_H_
 
-#include "verilated.h"
-
-#include <cstdint>
 #ifndef VERILATOR_VERILATED_H_INTERNAL_
 #error "verilated_funcs.h should only be included by verilated.h"
 #endif
@@ -2817,6 +2814,8 @@ inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, double& rdr)
     return got;
 }
 extern IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE;
+
+uint64_t VL_HASH(const char* key) VL_PURE;
 
 //======================================================================
 
