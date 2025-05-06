@@ -336,6 +336,7 @@ public:
         NO_INLINE_TASK,
         PUBLIC_MODULE,
         PUBLIC_TASK,
+        TIMEUNIT_SET,
         UNROLL_DISABLE,
         UNROLL_FULL,
         FULL_CASE,

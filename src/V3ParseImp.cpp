@@ -126,8 +126,8 @@ void V3ParseImp::lexTimescaleParse(FileLine* fl, const char* textp) {
     m_timeLastUnit = v3Global.opt.timeComputeUnit(unit);
     v3Global.rootp()->timeprecisionMerge(fl, prec);
 }
-void V3ParseImp::timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, double unitVal,
-                              bool precSet, double precVal) {
+AstPragma* V3ParseImp::createTimescale(FileLine* fl, bool unitSet, double unitVal, bool precSet,
+                                       double precVal) {
     VTimescale unit{VTimescale::NONE};
     if (unitSet) {
         bool bad;
@@ -146,16 +146,13 @@ void V3ParseImp::timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, d
             fl->v3error("timeprecision illegal value");
         }
     }
-    if (!unit.isNone()) {
-        unit = v3Global.opt.timeComputeUnit(unit);
-        if (modp) {
-            modp->timeunit(unit);
-        } else {
-            v3Global.rootp()->timeunit(unit);
-            unitPackage(fl)->timeunit(unit);
-        }
-    }
     v3Global.rootp()->timeprecisionMerge(fl, prec);
+    if (unit.isNone()) {
+        return nullptr;
+    } else {
+        unit = v3Global.opt.timeComputeUnit(unit);
+        return new AstPragma{fl, VPragmaType::TIMEUNIT_SET, unit};
+    }
 }
 
 void V3ParseImp::lexVerilatorCmtLintSave(const FileLine* fl) { m_lexLintState.push_back(*fl); }
