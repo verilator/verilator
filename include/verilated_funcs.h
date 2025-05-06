@@ -102,12 +102,12 @@ inline IData VL_URANDOM_RANGE_I(IData hi, IData lo) {
 }
 
 /// Random reset a signal of given width (init time only, var-specific PRNG)
-extern IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_SAFE;
+extern IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE;
 /// Random reset a signal of given width (init time only, var-specific PRNG)
-extern QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_SAFE;
+extern QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE;
 /// Random reset a signal of given width (init time only, var-specific PRNG)
 extern WDataOutP VL_SCOPED_RAND_RESET_W(int obits, WDataOutP outwp, uint64_t scopeHash,
-                                        uint64_t salt) VL_MT_SAFE;
+                                        uint64_t salt) VL_MT_UNSAFE;
 
 /// Random reset a signal of given width (init time only)
 extern IData VL_RAND_RESET_I(int obits) VL_MT_SAFE;
