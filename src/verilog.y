@@ -1227,14 +1227,11 @@ description:                    // ==IEEE: description
 
 timeunits_declaration<nodep>:   // ==IEEE: timeunits_declaration
                 yTIMEUNIT yaTIMENUM ';'
-                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule($<fl>1, false), true, $2, false, 0);
-                          $$ = nullptr; }
+                        { $$ = PARSEP->createTimescale($<fl>2, true, $2, false, 0); }
         |       yTIMEUNIT yaTIMENUM '/' yaTIMENUM ';'
-                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule($<fl>1, false), true, $2, true, $4);
-                          $$ = nullptr; }
+                        { $$ = PARSEP->createTimescale($<fl>2, true, $2, true, $4); }
         |       yTIMEPRECISION yaTIMENUM ';'
-                        { PARSEP->timescaleMod($<fl>2, SYMP->findTopNodeModule($<fl>1, false), false, 0, true, $2);
-                          $$ = nullptr; }
+                        { $$ = PARSEP->createTimescale($<fl>2, false, 0, true, $2); }
         ;
 
 //**********************************************************************

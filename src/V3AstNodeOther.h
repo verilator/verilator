@@ -1494,18 +1494,24 @@ public:
 };
 class AstPragma final : public AstNode {
     const VPragmaType m_pragType;  // Type of pragma
+    const VTimescale m_timescale;  // For TIMEUNIT_SET
 public:
     // Pragmas don't result in any output code, they're just flags that affect
     // other processing in verilator.
     AstPragma(FileLine* fl, VPragmaType pragType)
         : ASTGEN_SUPER_Pragma(fl)
         , m_pragType{pragType} {}
+    AstPragma(FileLine* fl, VPragmaType pragType, const VTimescale& timescale)
+        : ASTGEN_SUPER_Pragma(fl)
+        , m_pragType{pragType}
+        , m_timescale(timescale) {}
     ASTGEN_MEMBERS_AstPragma;
     VPragmaType pragType() const { return m_pragType; }  // *=type of the pragma
     bool isPredictOptimizable() const override { return false; }
     bool sameNode(const AstNode* samep) const override {
         return pragType() == VN_DBG_AS(samep, Pragma)->pragType();
     }
+    VTimescale timescale() const { return m_timescale; }
 };
 class AstPropSpec final : public AstNode {
     // A clocked property

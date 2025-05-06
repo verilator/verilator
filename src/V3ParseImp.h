@@ -181,8 +181,8 @@ public:
     void tagNodep(AstNode* nodep) { m_tagNodep = nodep; }
     AstNode* tagNodep() const { return m_tagNodep; }
     void lexTimescaleParse(FileLine* fl, const char* textp) VL_MT_DISABLED;
-    void timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, double unitVal,
-                      bool precSet, double precVal) VL_MT_DISABLED;
+    AstPragma* createTimescale(FileLine* fl, bool unitSet, double unitVal, bool precSet,
+                               double precVal) VL_MT_DISABLED;
     VTimescale timeLastUnit() const { return m_timeLastUnit; }
 
     void lexFileline(FileLine* fl) { m_lexFileline = fl; }
