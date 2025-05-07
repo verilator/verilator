@@ -969,6 +969,7 @@ public:
 
     // Size of array. Verilog: function int size(), or int num()
     int size() const { return m_map.size(); }
+    bool empty() const { return m_map.empty(); }
     // Clear array. Verilog: function void delete([input index])
     void clear() { m_map.clear(); }
     void erase(const T_Key& index) { m_map.erase(index); }

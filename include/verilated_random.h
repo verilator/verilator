@@ -495,7 +495,8 @@ public:
     void record_struct_arr(VlUnpacked<T, N_Depth>& var, const std::string name, int dimension,
                            std::vector<IData> indices, std::vector<size_t> idxWidths) {
         if (dimension > 0 && N_Depth != 0) {
-            idxWidths.push_back((1 << (int)ceil(log2(int(log2(N_Depth)) + 1))));
+            constexpr size_t idx_width = 1 << VL_CLOG2_CE_Q(VL_CLOG2_CE_Q(N_Depth) + 1);
+            idxWidths.push_back(idx_width);
             for (size_t i = 0; i < N_Depth; ++i) {
                 indices.push_back(i);
                 record_struct_arr(var.operator[](i), name, dimension - 1, indices, idxWidths);
@@ -523,7 +524,7 @@ public:
     void record_struct_arr(VlAssocArray<T_Key, T_Value>& var, const std::string name,
                            int dimension, std::vector<IData> indices,
                            std::vector<size_t> idxWidths) {
-        if ((dimension > 0) && (var.size() != 0)) {
+        if ((dimension > 0) && (!var.empty())) {
             for (auto it = var.begin(); it != var.end(); ++it) {
                 const T_Key& key = it->first;
                 const T_Value& value = it->second;

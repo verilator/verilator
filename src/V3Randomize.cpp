@@ -770,13 +770,10 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstAssocSel* nodep) override {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
+        // Adaptive formatting and type handling for associative array keys
         if (VN_IS(nodep->bitp(), VarRef) && VN_AS(nodep->bitp(), VarRef)->isString()) {
             VNRelinker handle;
-            AstNodeExpr* idxp = nullptr;
-            if (m_structSel)
-                idxp = new AstSFormatF{fl, "%32p", false, nodep->bitp()->unlinkFrBack(&handle)};
-            else
-                idxp = new AstSFormatF{fl, "#x%32p", false, nodep->bitp()->unlinkFrBack(&handle)};
+            AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32p" : "#x%32p"), false, nodep->bitp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
         } else if (VN_IS(nodep->bitp(), CvtPackString)
@@ -790,12 +787,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                         << stringSize << "bits, limit is 128 bits");
             }
             VNRelinker handle;
-            AstNodeExpr* idxp = nullptr;
-            if (!m_structSel)
-                idxp
-                    = new AstSFormatF{fl, "#x%32x", false, stringp->lhsp()->unlinkFrBack(&handle)};
-            else
-                idxp = new AstSFormatF{fl, "%32x", false, stringp->lhsp()->unlinkFrBack(&handle)};
+            AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32x" : "#x%32x"), false, stringp->lhsp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
         } else {
@@ -809,14 +801,13 @@ class ConstraintExprVisitor final : public VNVisitor {
                 std::string fmt;
                 // Normalize to standard bit width
                 if (actual_width <= 8) {
-                    m_structSel ? fmt = "%2x" : fmt = "#x%2x";
+                    fmt = m_structSel ? "%2x" : "#x%2x";
                 } else if (actual_width <= 16) {
-                    m_structSel ? fmt = "%4x" : fmt = "#x%4x";
+                    fmt = m_structSel ? "%4x" : "#x%4x";
                 } else {
                     fmt = (m_structSel ? "%" : "#x%")
                           + std::to_string(VL_WORDS_I(actual_width) * 8) + "x";
                 }
-
                 AstNodeExpr* const idxp
                     = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
                 handle.relink(idxp);

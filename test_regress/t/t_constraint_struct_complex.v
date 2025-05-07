@@ -127,6 +127,7 @@ class StructArray;
     rand struct_t s_dyn_arr[];
     rand struct_t s_que_arr[$];
     rand struct_t s_assoc_arr[string];
+    rand struct_t s_assoc_arr_2[bit[5:0]];
 
     constraint c_arr {
         foreach (s_arr[i])
@@ -144,6 +145,9 @@ class StructArray;
         foreach (s_assoc_arr[i])
             foreach (s_assoc_arr[i].arr[j])
                 s_assoc_arr[i].arr[j] inside {[39:49]};
+        foreach (s_assoc_arr_2[i])
+            foreach (s_assoc_arr_2[i].arr[j])
+                s_assoc_arr_2[i].arr[j] inside {[49:59]};
     }
 
     constraint c_others {
@@ -157,9 +161,12 @@ class StructArray;
         foreach (s_que_arr[i]) s_que_arr[i].a inside {[70:80]};
 
         foreach (s_assoc_arr[i]) s_assoc_arr[i].a inside {[80:90]};
+
+        foreach (s_assoc_arr_2[i]) s_assoc_arr_2[i].a inside {[90:100]};
     }
 
     function new();
+
         foreach (s_arr[i]) begin
             foreach (s_arr[i].arr[j])
                 s_arr[i].arr[j] = j;
@@ -201,9 +208,21 @@ class StructArray;
         s_assoc_arr["long_string_index"].a = 100;
         s_assoc_arr["long_string_index"].b = 2;
         s_assoc_arr["long_string_index"].c = 0;
+
+        foreach (s_assoc_arr_2[6'd30].arr[j])
+            s_assoc_arr_2[6'd30].arr[j] = j + 70;
+        foreach (s_assoc_arr_2[6'd7].arr[j])
+            s_assoc_arr_2[6'd7].arr[j] = j + 80;
+        s_assoc_arr_2[6'd30].a = 90;
+        s_assoc_arr_2[6'd30].b = 0;
+        s_assoc_arr_2[6'd30].c = 0;
+        s_assoc_arr_2[6'd7].a = 100;
+        s_assoc_arr_2[6'd7].b = 1;
+        s_assoc_arr_2[6'd7].c = 0;
     endfunction
 
     function void print();
+
         foreach (s_arr[i]) begin
             foreach (s_arr[i].arr[j])
                 $display("s_arr[%0d].arr[%0d] = %0d", i, j, s_arr[i].arr[j]);
@@ -211,6 +230,7 @@ class StructArray;
             $display("s_arr[%0d].b = %0d", i, s_arr[i].b);
             $display("s_arr[%0d].c = %0d", i, s_arr[i].c);
         end
+
         foreach (s_2d_arr[i, j]) begin
             foreach (s_2d_arr[i][j].arr[k])
                 $display("s_2d_arr[%0d][%0d].arr[%0d] = %0d", i, j, k, s_2d_arr[i][j].arr[k]);
@@ -218,6 +238,7 @@ class StructArray;
             $display("s_2d_arr[%0d][%0d].b = %0d", i, j, s_2d_arr[i][j].b);
             $display("s_2d_arr[%0d][%0d].c = %0d", i, j, s_2d_arr[i][j].c);
         end
+
         foreach (s_dyn_arr[i]) begin
             foreach (s_dyn_arr[i].arr[j])
                 $display("s_dyn_arr[%0d].arr[%0d] = %0d", i, j, s_dyn_arr[i].arr[j]);
@@ -225,6 +246,7 @@ class StructArray;
             $display("s_dyn_arr[%0d].b = %0d", i, s_dyn_arr[i].b);
             $display("s_dyn_arr[%0d].c = %0d", i, s_dyn_arr[i].c);
         end
+
         foreach (s_que_arr[i]) begin
             foreach (s_que_arr[i].arr[j])
                 $display("s_que_arr[%0d].arr[%0d] = %0d", i, j, s_que_arr[i].arr[j]);
@@ -232,6 +254,7 @@ class StructArray;
             $display("s_que_arr[%0d].b = %0d", i, s_que_arr[i].b);
             $display("s_que_arr[%0d].c = %0d", i, s_que_arr[i].c);
         end
+
         foreach (s_assoc_arr["x"].arr[j])
             $display("s_assoc_arr[x].arr[%0d] = %0d", j, s_assoc_arr["x"].arr[j]);
         $display("s_assoc_arr[x].a = %0d", s_assoc_arr["x"].a);
@@ -247,32 +270,45 @@ class StructArray;
         $display("s_assoc_arr[long_string_index].a = %0d", s_assoc_arr["long_string_index"].a);
         $display("s_assoc_arr[long_string_index].b = %0d", s_assoc_arr["long_string_index"].b);
         $display("s_assoc_arr[long_string_index].c = %0d", s_assoc_arr["long_string_index"].c);
+
+        foreach (s_assoc_arr_2[6'd30].arr[j])
+            $display("s_assoc_arr_2[30].arr[%0d] = %0d", j, s_assoc_arr_2[6'd30].arr[j]);
+        $display("s_assoc_arr_2[30].a = %0d", s_assoc_arr_2[6'd30].a);
+        $display("s_assoc_arr_2[30].b = %0d", s_assoc_arr_2[6'd30].b);
+        $display("s_assoc_arr_2[30].c = %0d", s_assoc_arr_2[6'd30].c);
+        foreach (s_assoc_arr_2[6'd7].arr[j])
+            $display("s_assoc_arr_2[7].arr[%0d] = %0d", j, s_assoc_arr_2[6'd7].arr[j]);
+        $display("s_assoc_arr_2[7].a = %0d", s_assoc_arr_2[6'd7].a);
+        $display("s_assoc_arr_2[7].b = %0d", s_assoc_arr_2[6'd7].b);
+        $display("s_assoc_arr_2[7].c = %0d", s_assoc_arr_2[6'd7].c);
     endfunction
 
     function void self_test();
+
         foreach (s_arr[i]) begin
             foreach (s_arr[i].arr[j])
                 if (!(s_arr[i].arr[j] inside {[0:9]})) $stop;
             if (!(s_arr[i].a inside {[40:50]})) $stop;
-
         end
+
         foreach (s_2d_arr[i, j]) begin
             foreach (s_2d_arr[i][j].arr[k])
                 if (!(s_2d_arr[i][j].arr[k] inside {[9:19]})) $stop;
             if (!(s_2d_arr[i][j].a inside {[50:60]})) $stop;
-
         end
+
         foreach (s_dyn_arr[i]) begin
             foreach (s_dyn_arr[i].arr[j])
                 if (!(s_dyn_arr[i].arr[j] inside {[19:29]})) $stop;
             if (!(s_dyn_arr[i].a inside {[60:70]})) $stop;
-
         end
+
         foreach (s_que_arr[i]) begin
             foreach (s_que_arr[i].arr[j])
                 if (!(s_que_arr[i].arr[j] inside {[29:39]})) $stop;
             if (!(s_que_arr[i].a inside {[70:80]})) $stop;
         end
+
         foreach (s_assoc_arr["x"].arr[j])
             if (!(s_assoc_arr["x"].arr[j] inside {[39:49]})) $stop;
         if (!(s_assoc_arr["x"].a inside {[80:90]})) $stop;
@@ -282,6 +318,13 @@ class StructArray;
         foreach (s_assoc_arr["long_string_index"].arr[j])
             if (!(s_assoc_arr["long_string_index"].arr[j] inside {[39:49]})) $stop;
         if (!(s_assoc_arr["long_string_index"].a inside {[80:90]})) $stop;
+
+        foreach (s_assoc_arr_2[6'd30].arr[j])
+            if (!(s_assoc_arr_2[6'd30].arr[j] inside {[49:59]})) $stop;
+        if (!(s_assoc_arr_2[6'd30].a inside {[90:100]})) $stop;
+        foreach (s_assoc_arr_2[6'd7].arr[j])
+            if (!(s_assoc_arr_2[6'd7].arr[j] inside {[49:59]})) $stop;
+        if (!(s_assoc_arr_2[6'd7].a inside {[90:100]})) $stop;
     endfunction
 
     /* verilator lint_off WIDTHTRUNC */
