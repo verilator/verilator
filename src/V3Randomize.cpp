@@ -773,7 +773,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Adaptive formatting and type handling for associative array keys
         if (VN_IS(nodep->bitp(), VarRef) && VN_AS(nodep->bitp(), VarRef)->isString()) {
             VNRelinker handle;
-            AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32p" : "#x%32p"), false, nodep->bitp()->unlinkFrBack(&handle)};
+            AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32p" : "#x%32p"), false,
+                                                      nodep->bitp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
         } else if (VN_IS(nodep->bitp(), CvtPackString)
@@ -787,7 +788,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                         << stringSize << "bits, limit is 128 bits");
             }
             VNRelinker handle;
-            AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32x" : "#x%32x"), false, stringp->lhsp()->unlinkFrBack(&handle)};
+            AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32x" : "#x%32x"), false,
+                                                      stringp->lhsp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
         } else {
