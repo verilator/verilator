@@ -66,7 +66,7 @@ static void makeVlToString(AstClass* nodep) {
 static void makeVlToString(AstIface* nodep) {
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
-    funcp->argTypes("const " + EmitCBase::prefixNameProtect(nodep) + "* obj");
+    funcp->argTypes("const VlIfaceRef<" + EmitCBase::prefixNameProtect(nodep) + ">& obj");
     funcp->isMethod(false);
     funcp->isConst(false);
     funcp->isStatic(false);

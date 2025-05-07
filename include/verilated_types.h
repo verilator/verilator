@@ -1818,6 +1818,15 @@ public:
 };
 
 //===================================================================
+// Represents the null pointer. Used in VlClassRef and VlIfaceRef for:
+// * setting to null instead of via nullptr_t, to prevent the implicit conversion of 0 to nullptr
+// * comparing pointers to null.
+
+struct VlNull final {
+    operator bool() const { return false; }
+};
+
+//===================================================================
 // Base class for all verilated classes. Includes a reference counter, and a pointer to the deleter
 // object that should destroy it after the counter reaches 0. This allows for easy construction of
 // VlClassRefs from 'this'.
@@ -1849,20 +1858,6 @@ public:
     VlClass(const VlClass& copied) {}
     ~VlClass() override = default;
 };
-
-//===================================================================
-// Represents the null pointer. Used for:
-// * setting VlClassRef to null instead of via nullptr_t, to prevent the implicit conversion of 0
-//   to nullptr,
-// * comparing interface pointers to null.
-
-struct VlNull final {
-    operator bool() const { return false; }
-    bool operator==(const void* ptr) const { return !ptr; }
-    bool operator!=(const void* ptr) const { return ptr; }
-};
-inline bool operator==(const void* ptr, VlNull) { return !ptr; }
-inline bool operator!=(const void* ptr, VlNull) { return ptr; }
 
 //===================================================================
 // Verilog class reference container
@@ -2007,6 +2002,130 @@ static inline bool VL_CAST_DYNAMIC(VlClassRef<T_Lhs> in, VlClassRef<T_Out>& outr
 
 template <typename T_Lhs>
 static inline bool VL_CAST_DYNAMIC(VlNull in, VlClassRef<T_Lhs>& outr) {
+    outr = VlNull{};
+    return true;
+}
+
+//===================================================================
+// Verilog interface reference container
+// There are no multithreaded locks on this; the base variable must
+// be protected by other means
+
+template <typename T_Iface>
+class VlIfaceRef final {
+private:
+    // TYPES
+    template <typename T_OtherIface>
+    friend class VlIfaceRef;  // Needed for template copy/move assignments
+
+    // MEMBERS
+    T_Iface* m_objp = nullptr;  // Object pointed to
+
+public:
+    // CONSTRUCTORS
+    VlIfaceRef() = default;
+    VlIfaceRef(VlNull){};
+    explicit VlIfaceRef(T_Iface* objp)
+        : m_objp{objp} {}
+    VlIfaceRef(const VlIfaceRef& copied)
+        : m_objp{copied.m_objp} {}
+    VlIfaceRef(VlIfaceRef&& moved)
+        : m_objp{std::exchange(moved.m_objp, nullptr)} {}
+    template <typename T_OtherIface>
+    VlIfaceRef(const VlIfaceRef<T_OtherIface>& copied)
+        : m_objp{copied.m_objp} {}
+    template <typename T_OtherIface>
+    VlIfaceRef(VlIfaceRef<T_OtherIface>&& moved)
+        : m_objp{std::exchange(moved.m_objp, nullptr)} {}
+    ~VlIfaceRef() {}
+
+    // METHODS
+    VlIfaceRef& operator=(T_Iface* copied) {
+        if (m_objp == copied) return *this;
+        m_objp = copied;
+        return *this;
+    }
+    VlIfaceRef& operator=(const VlIfaceRef& copied) {
+        if (m_objp == copied.m_objp) return *this;
+        m_objp = copied.m_objp;
+        return *this;
+    }
+    VlIfaceRef& operator=(VlIfaceRef&& moved) {
+        if (m_objp == moved.m_objp) return *this;
+        m_objp = std::exchange(moved.m_objp, nullptr);
+        return *this;
+    }
+    template <typename T_OtherIface>
+    VlIfaceRef& operator=(const VlIfaceRef<T_OtherIface>& copied) {
+        if (m_objp == copied.m_objp) return *this;
+        m_objp = copied.m_objp;
+        return *this;
+    }
+    template <typename T_OtherIface>
+    VlIfaceRef& operator=(VlIfaceRef<T_OtherIface>&& moved) {
+        if (m_objp == moved.m_objp) return *this;
+        m_objp = std::exchange(moved.m_objp, nullptr);
+        return *this;
+    }
+    // Assign with nullptr
+    VlIfaceRef& operator=(VlNull) {
+        m_objp = nullptr;
+        return *this;
+    }
+    // Dynamic caster
+    template <typename T_OtherIface>
+    VlIfaceRef<T_OtherIface> dynamicCast() const {
+        return VlIfaceRef<T_OtherIface>{dynamic_cast<T_OtherIface*>(m_objp)};
+    }
+    // Dereference operators
+    T_Iface& operator*() const { return *m_objp; }
+    T_Iface* operator->() const { return m_objp; }
+    // For 'if (ptr)...'
+    operator bool() const { return m_objp; }
+    // In SV A == B iff both are handles to the same object (IEEE 1800-2023 8.4)
+    template <typename T_OtherIface>
+    bool operator==(const VlIfaceRef<T_OtherIface>& rhs) const {
+        return m_objp == rhs.m_objp;
+    };
+    template <typename T_OtherIface>
+    bool operator!=(const VlIfaceRef<T_OtherIface>& rhs) const {
+        return m_objp != rhs.m_objp;
+    };
+    template <typename T_OtherIface>
+    bool operator<(const VlIfaceRef<T_OtherIface>& rhs) const {
+        return m_objp < rhs.m_objp;
+    };
+    template <typename T_OtherIface>
+    bool operator==(const T_OtherIface & rhs) const {
+        return m_objp == rhs;
+    };
+    template <typename T_OtherIface>
+    bool operator!=(const T_OtherIface & rhs) const {
+        return m_objp != rhs;
+    };
+    template <typename T_OtherIface>
+    bool operator<(const T_OtherIface & rhs) const {
+        return m_objp < rhs;
+    };
+};
+
+template <typename T_Lhs, typename T_Out>
+static inline bool VL_CAST_DYNAMIC(VlIfaceRef<T_Lhs> in, VlIfaceRef<T_Out>& outr) {
+    if (!in) {
+        outr = VlNull{};
+        return true;
+    }
+    VlIfaceRef<T_Out> casted = in.template dynamicCast<T_Out>();
+    if (VL_LIKELY(casted)) {
+        outr = casted;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template <typename T_Lhs>
+static inline bool VL_CAST_DYNAMIC(VlNull in, VlIfaceRef<T_Lhs>& outr) {
     outr = VlNull{};
     return true;
 }
