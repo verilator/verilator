@@ -3341,8 +3341,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
-            } else if (AstConstraint* const consp = VN_CAST(foundp->nodep(), Constraint)) {
-                AstNode* const newp = new AstConstraintRef{nodep->fileline(), nullptr, consp};
+            } else if (AstConstraint* const defp = VN_CAST(foundp->nodep(), Constraint)) {
+                AstNode* const newp = new AstConstraintRef{nodep->fileline(), nullptr, defp};
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 ok = true;
