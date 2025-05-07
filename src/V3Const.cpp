@@ -3068,8 +3068,8 @@ class ConstVisitor final : public VNVisitor {
             varrefp->unlinkFrBack();
             AstInitial* const newinitp = new AstInitial{
                 nodep->fileline(), new AstAssign{nodep->fileline(), varrefp, exprp}};
-            m_modp->addStmtsp(newinitp);
-            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            nodep->replaceWith(newinitp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             // Set the initial value right in the variable so we can constant propagate
             AstNode* const initvaluep = exprp->cloneTree(false);
             varrefp->varp()->valuep(initvaluep);
