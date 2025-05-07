@@ -749,7 +749,12 @@ int V3ParseImp::tokenToBison() {
 // V3ParseBisonYYSType functions
 
 std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs) {
-    os << "TOKEN {" << rhs.fl->filenameLetters() << rhs.fl->asciiLineCol() << "}";
+    os << "TOKEN {";
+    if (VL_UNCOVERABLE(!rhs.fl))
+        os << "%E-null-fileline";
+    else
+        os << rhs.fl->filenameLetters() << rhs.fl->asciiLineCol();
+    os << "}";
     os << "=" << rhs.token << " " << V3ParseImp::tokenName(rhs.token);
     if (rhs.token == yaID__ETC  //
         || rhs.token == yaID__CC  //
