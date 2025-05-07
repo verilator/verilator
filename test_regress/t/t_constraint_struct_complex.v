@@ -7,6 +7,7 @@
 
 class ArrayStruct;
     /* verilator lint_off SIDEEFFECT */
+
     // Struct with an unpacked array
     typedef int arr_3_t[3];
     typedef int arr_4_t[4];
@@ -52,19 +53,25 @@ class ArrayStruct;
         foreach (s1.arr[i]) s1.arr[i] inside {1, 2, 3, 4};
         foreach (s1.arr_3[i]) s1.arr_3[i] inside {11, 22, 33, 44, 55};
     }
+
     constraint c_dynamic { foreach (s2.arr[i]) s2.arr[i] inside {[10:20]}; }
+
     constraint c_queue { foreach (s3.arr[i]) s3.arr[i] inside {[100:200]}; }
+
     constraint c_assoc {
         s4.arr["one"] inside {[10:50]};
         s4.arr["two"] inside {[51:100]};
         s4.arr["three"] inside {[101:150]};
     }
+
     constraint c_multi_dim { foreach (s5.arr[i, j]) s5.arr[i][j] inside {[0:9]}; }
+
     constraint c_mix {
         foreach (s6.mix_arr[i, j]) s6.mix_arr[i][j] inside {[50:100]};
     }
 
     function new();
+
         s1.arr = '{1, 2, 3};
         s1.arr_3 = '{1, 2, 3};
         s1.arr_4 = '{0, 2, 3, 4};
@@ -82,9 +89,11 @@ class ArrayStruct;
         foreach (s6.mix_arr[i]) begin
             s6.mix_arr[i] = new[i + 1];
         end
+
     endfunction
 
     function void print();
+
         foreach (s1.arr[i]) $display("s1.arr[%0d] = %0d", i, s1.arr[i]);
         foreach (s1.arr_3[i]) $display("s1.arr_3[%0d] = %0d", i, s1.arr_3[i]);
         foreach (s1.arr_4[i]) $display("s1.arr_4[%0d] = %0d", i, s1.arr_4[i]);
@@ -93,10 +102,12 @@ class ArrayStruct;
         foreach (s4.arr[i]) $display("s4.arr[\"%s\"] = %0d", i, s4.arr[i]);
         foreach (s5.arr[i, j]) $display("s5.arr[%0d][%0d] = %0d", i, j, s5.arr[i][j]);
         foreach (s6.mix_arr[i, j]) $display("s6.mix_arr[%0d][%0d] = %0d", i, j, s6.mix_arr[i][j]);
+
     endfunction
 
     // Self-test function to verify constraints
     function void self_test();
+
         foreach (s1.arr[i]) if (!(s1.arr[i] inside {1, 2, 3, 4})) $stop;
         foreach (s1.arr_3[i]) if (!(s1.arr_3[i] inside {11, 22, 33, 44, 55})) $stop;
         // Note: s1.arr_4[0] is not rand
@@ -109,6 +120,7 @@ class ArrayStruct;
         foreach (s5.arr[i, j]) if (!(s5.arr[i][j] inside {[0:9]})) $stop;
         foreach (s6.mix_arr[i]) if (s6.mix_arr[i].size() == 0) $stop;
         foreach (s6.mix_arr[i, j]) if (!(s6.mix_arr[i][j] inside {[50:100]})) $stop;
+
     endfunction
     /* verilator lint_off SIDEEFFECT */
 endclass
@@ -174,6 +186,7 @@ class StructArray;
             s_arr[i].b = i;
             s_arr[i].c = 0;
         end
+
         foreach (s_2d_arr[i, j]) begin
             foreach (s_2d_arr[i][j].arr[k])
                 s_2d_arr[i][j].arr[k] = k + 10;
@@ -181,6 +194,7 @@ class StructArray;
             s_2d_arr[i][j].b = i + j;
             s_2d_arr[i][j].c = 0;
         end
+
         foreach (s_dyn_arr[i]) begin
             s_dyn_arr = new[3];
             foreach (s_dyn_arr[i].arr[j])
@@ -189,9 +203,11 @@ class StructArray;
             s_dyn_arr[i].b = i;
             s_dyn_arr[i].c = 0;
         end
+
         for (int i = 0; i < 3; i++) begin
             s_que_arr.push_back('{arr: '{30, 31, 32}, a: 70 + i, b: i, c: 0});
         end
+
         // Associative array with string index
         foreach (s_assoc_arr["x"].arr[j])
             s_assoc_arr["x"].arr[j] = j + 40;
@@ -219,6 +235,7 @@ class StructArray;
         s_assoc_arr_2[6'd7].a = 100;
         s_assoc_arr_2[6'd7].b = 1;
         s_assoc_arr_2[6'd7].c = 0;
+
     endfunction
 
     function void print();
@@ -281,6 +298,7 @@ class StructArray;
         $display("s_assoc_arr_2[7].a = %0d", s_assoc_arr_2[6'd7].a);
         $display("s_assoc_arr_2[7].b = %0d", s_assoc_arr_2[6'd7].b);
         $display("s_assoc_arr_2[7].c = %0d", s_assoc_arr_2[6'd7].c);
+
     endfunction
 
     function void self_test();
@@ -325,6 +343,7 @@ class StructArray;
         foreach (s_assoc_arr_2[6'd7].arr[j])
             if (!(s_assoc_arr_2[6'd7].arr[j] inside {[49:59]})) $stop;
         if (!(s_assoc_arr_2[6'd7].a inside {[90:100]})) $stop;
+
     endfunction
 
     /* verilator lint_off WIDTHTRUNC */
@@ -374,6 +393,7 @@ class MixedStructure;
     }
 
     function new();
+
         foreach (s_arr[i]) begin
             s_arr[i].dyn = new[2];
             s_arr[i].que = {0, 0};
@@ -392,9 +412,11 @@ class MixedStructure;
             s_arr[i].b = i;
             s_arr[i].c = i;
         end
+
     endfunction
 
     function void print();
+
         foreach (s_arr[i]) begin
             foreach (s_arr[i].arr[j])
                 $display("s_arr[%0d].arr[%0d] = %0d", i, j, s_arr[i].arr[j]);
@@ -409,9 +431,11 @@ class MixedStructure;
             $display("s_arr[%0d].b = %0d", i, s_arr[i].b);
             $display("s_arr[%0d].c = %0d", i, s_arr[i].c);
         end
+
     endfunction
 
     function void self_test();
+
         foreach (s_arr[i]) begin
             foreach (s_arr[i].arr[j])
                 if (!(s_arr[i].arr[j] inside {[0:9]})) $stop;
@@ -425,12 +449,14 @@ class MixedStructure;
             if (i == 0 && s_arr[i].c != 0) $stop;
             if (i == 1 && s_arr[i].c != 1) $stop;
         end
+
     endfunction
 
     /* verilator lint_off WIDTHTRUNC */
 endclass
 
 module t_constraint_struct_complex;
+
     int success;
     ArrayStruct as_c;
     StructArray sa_c;
