@@ -6193,6 +6193,16 @@ class WidthVisitor final : public VNVisitor {
             }
         }
     }
+    // AstModule* getModule(AstNode* pkgItemp) {
+    //     while (pkgItemp->backp() && pkgItemp->backp()->nextp() == pkgItemp) {
+    //         if(VN_IS(pkgItemp, Module)) VN_CAST(pkgItemp, Module);
+    //         pkgItemp = pkgItemp->backp();
+    //     }
+    //     // return
+    // }
+    void handleStdRandomizeArgs(AstNodeFTaskRef* const nodep, AstClass* const classp){
+        return;
+    }
     void visit(AstNodeFTaskRef* nodep) override {
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
         // Function hasn't been widthed, so make it so.
@@ -6214,10 +6224,25 @@ class WidthVisitor final : public VNVisitor {
                                            adtypep->findBitDType(), adtypep);
                 for (const AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp())
                     userIterateAndNext(VN_AS(argp, Arg)->exprp(), WidthVP{SELF, BOTH}.p());
-                nodep->addPinsp(withp);
-                nodep->v3warn(CONSTRAINTIGN, "std::randomize ignored (unsupported)");
-                nodep->replaceWith(new AstConst{nodep->fileline(), 0});
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                // nodep->addPinsp(withp);
+                // nodep->v3warn(CONSTRAINTIGN, "std::randomize ignored (unsupported)");
+                // nodep->replaceWith(new AstConst{nodep->fileline(), 0});
+                // VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                // return;
+                v3Global.useRandomizeMethods(true);
+                //std::cout<< "the modle is "<< nodep->classOrPackagep()<< "  :"<<nodep->classOrPackagep()->name()<<endl;
+                // std::cout<<"The module is "<< getModule(nodep) <<endl;
+                // cout<<" name is "<< getModule(nodep)->name()<<endl;
+                // classp =  getModule(nodep);
+                // processFTaskRefArgs(nodep);
+                handleStdRandomizeArgs(nodep, classp); // clasp is void here need to change this.
+                if(withp){
+                    nodep->v3warn(CONSTRAINTIGN, "with ignored (unsupported)");
+                    nodep->replaceWith(new AstConst{nodep->fileline(), 0});
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+                // nodep->addPinsp(withp);
                 return;
             }
             UASSERT_OBJ(classp, nodep, "Should have failed in V3LinkDot");

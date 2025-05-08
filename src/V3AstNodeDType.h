@@ -465,6 +465,9 @@ public:
     bool isRandomGenerator() const VL_MT_SAFE {
         return keyword() == VBasicDTypeKwd::RANDOM_GENERATOR;
     }
+    bool isStdRandomGenerator() const VL_MT_SAFE {
+        return keyword() == VBasicDTypeKwd::RANDOM_STDGENERATOR;
+    }
     bool isOpaque() const VL_MT_SAFE { return keyword().isOpaque(); }
     bool isString() const VL_MT_STABLE { return keyword().isString(); }
     bool isZeroInit() const { return keyword().isZeroInit(); }

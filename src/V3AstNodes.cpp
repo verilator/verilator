@@ -987,6 +987,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "VlProcessRef";
         } else if (bdtypep->isRandomGenerator()) {
             info.m_type = "VlRandomizer";
+        } else if (bdtypep->isStdRandomGenerator()) {
+            info.m_type = "VlStdRandomizer";
         } else if (bdtypep->isEvent()) {
             info.m_type = v3Global.assignsEvents() ? "VlAssignableEvent" : "VlEvent";
         } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
@@ -3053,7 +3055,8 @@ void AstCMethodHard::setPurity() {
                                                           {"unique", true},
                                                           {"unique_index", true},
                                                           {"word", true},
-                                                          {"write_var", false}};
+                                                          {"write_var", false},
+                                                          {"basicRandomization", false}};
 
     if (name() == "atWriteAppend" || name() == "atWriteAppendBack") {
         m_pure = false;
