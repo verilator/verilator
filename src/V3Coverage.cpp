@@ -142,6 +142,7 @@ class CoverageVisitor final : public VNVisitor {
     bool m_objective = false;  // Expression objective
     bool m_ifCond = false;  // Visiting if condition
     bool m_inToggleOff = false;  // In function/task etc
+    bool m_condBranchOff = false;  // Do not include cond expr in branch coverage
     string m_beginHier;  // AstBegin hier name for user coverage points
 
     // STATE - cleared each module
@@ -290,7 +291,28 @@ class CoverageVisitor final : public VNVisitor {
     // we can cover expressions in while loops, but the counting goes outside
     // the while, see: "minimally-intelligent decision about ... clock domain"
     // in the Toggle Coverage docs
-    void visit(AstWhile* nodep) override { iterateProcedure(nodep, false); }
+    void visit(AstWhile* nodep) override {
+        VL_RESTORER(m_state);
+        VL_RESTORER(m_inToggleOff);
+        m_inToggleOff = true;
+        createHandle(nodep);
+        {
+            VL_RESTORER(m_condBranchOff);
+            m_condBranchOff = true;
+            iterateAndNextNull(nodep->precondsp());
+            iterateNull(nodep->condp());
+            iterateAndNextNull(nodep->incsp());
+        }
+        iterateAndNextNull(nodep->stmtsp());
+        if (m_state.lineCoverageOn(nodep)) {
+            lineTrack(nodep);
+            AstNode* const newp
+                = newCoverInc(nodep->fileline(), "", "v_line", "block", linesCov(m_state, nodep),
+                              0, traceNameForLine(nodep, "block"));
+            insertProcStatement(nodep, newp);
+        }
+    }
+
     void visit(AstNodeFTask* nodep) override {
         if (!nodep->dpiImport()) iterateProcedure(nodep);
     }
@@ -312,11 +334,11 @@ class CoverageVisitor final : public VNVisitor {
             nodep->v3fatalSrc("Bad node type");
         }
     }
-    void iterateProcedure(AstNode* nodep, bool exprProc = true) {
+    void iterateProcedure(AstNode* nodep) {
         VL_RESTORER(m_state);
         VL_RESTORER(m_exprStmtsp);
         VL_RESTORER(m_inToggleOff);
-        if (exprProc) m_exprStmtsp = nodep;
+        m_exprStmtsp = nodep;
         m_inToggleOff = true;
         createHandle(nodep);
         iterateChildren(nodep);
@@ -482,6 +504,46 @@ class CoverageVisitor final : public VNVisitor {
     }
 
     // VISITORS - LINE COVERAGE
+    void visit(AstCond* nodep) override {
+        VL_RESTORER(m_condBranchOff);
+        UINFO(4, " COND: " << nodep << endl);
+
+        if (m_seeking == NONE) {
+            VL_RESTORER(m_condBranchOff);
+            m_condBranchOff = true;
+            coverExprs(nodep->condp());
+        }
+
+        if (!m_condBranchOff && m_state.lineCoverageOn(nodep) && VN_IS(m_modp, Module)) {
+            VL_RESTORER(m_seeking);
+            // Disable expression coverage in sub-expressions, since they were already visited
+            m_seeking = ABORTED;
+
+            const CheckState lastState = m_state;
+            createHandle(nodep);
+            iterate(nodep->thenp());
+            lineTrack(nodep);
+            AstNodeExpr* const thenp = nodep->thenp()->unlinkFrBack();
+            nodep->thenp(new AstExprStmt{thenp->fileline(),
+                                         newCoverInc(nodep->fileline(), "", "v_branch",
+                                                     "cond_then", linesCov(m_state, nodep), 0,
+                                                     traceNameForLine(nodep, "cond_then")),
+                                         thenp});
+            m_state = lastState;
+            createHandle(nodep);
+            iterate(nodep->elsep());
+            AstNodeExpr* const elsep = nodep->elsep()->unlinkFrBack();
+            nodep->elsep(new AstExprStmt{elsep->fileline(),
+                                         newCoverInc(nodep->fileline(), "", "v_branch",
+                                                     "cond_else", linesCov(m_state, nodep), 1,
+                                                     traceNameForLine(nodep, "cond_else")),
+                                         elsep});
+
+            m_state = lastState;
+        } else {
+            lineTrack(nodep);
+        }
+    }
     // Note not AstNodeIf; other types don't get covered
     void visit(AstIf* nodep) override {
         if (nodep->user2()) return;
@@ -569,7 +631,9 @@ class CoverageVisitor final : public VNVisitor {
             m_state = lastState;
         }
         VL_RESTORER(m_ifCond);
+        VL_RESTORER(m_condBranchOff);
         m_ifCond = true;
+        m_condBranchOff = true;
         iterateAndNextNull(nodep->condp());
         UINFO(9, " done HANDLE " << m_state.m_handle << " for " << nodep << endl);
     }
@@ -900,11 +964,6 @@ class CoverageVisitor final : public VNVisitor {
             xorExpr(nodep);
             lineTrack(nodep);
         }
-    }
-
-    void visit(AstCond* nodep) override {
-        if (m_seeking == NONE) coverExprs(nodep->condp());
-        lineTrack(nodep);
     }
 
     void visit(AstFuncRef* nodep) override {
