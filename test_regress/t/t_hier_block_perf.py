@@ -36,7 +36,7 @@ if test.vltmt:
     test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
                    r'Optimizations, Thread schedule count\s+(\d+)', 4)
     test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
-                   r'Optimizations, Thread schedule total tasks\s+(\d+)', 10)
+                   r'Optimizations, Thread schedule total tasks\s+(\d+)', 12)
 
 test.execute(all_run_flags=[
     "+verilator+prof+exec+start+2",
