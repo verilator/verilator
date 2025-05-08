@@ -6200,9 +6200,7 @@ class WidthVisitor final : public VNVisitor {
     //     }
     //     // return
     // }
-    void handleStdRandomizeArgs(AstNodeFTaskRef* const nodep, AstClass* const classp){
-        return;
-    }
+    void handleStdRandomizeArgs(AstNodeFTaskRef* const nodep, AstClass* const classp) { return; }
     void visit(AstNodeFTaskRef* nodep) override {
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
         // Function hasn't been widthed, so make it so.
@@ -6230,13 +6228,14 @@ class WidthVisitor final : public VNVisitor {
                 // VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 // return;
                 v3Global.useRandomizeMethods(true);
-                //std::cout<< "the modle is "<< nodep->classOrPackagep()<< "  :"<<nodep->classOrPackagep()->name()<<endl;
+                //std::cout<< "the modle is "<< nodep->classOrPackagep()<< "
+                //:"<<nodep->classOrPackagep()->name()<<endl;
                 // std::cout<<"The module is "<< getModule(nodep) <<endl;
                 // cout<<" name is "<< getModule(nodep)->name()<<endl;
                 // classp =  getModule(nodep);
                 // processFTaskRefArgs(nodep);
-                handleStdRandomizeArgs(nodep, classp); // clasp is void here need to change this.
-                if(withp){
+                handleStdRandomizeArgs(nodep, classp);  // clasp is void here need to change this.
+                if (withp) {
                     nodep->v3warn(CONSTRAINTIGN, "with ignored (unsupported)");
                     nodep->replaceWith(new AstConst{nodep->fileline(), 0});
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
