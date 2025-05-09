@@ -577,14 +577,14 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lw
     const int owords = VL_WORDS_I(obits);
     VL_DEBUG_IFDEF(assert(owords <= VL_MULS_MAX_WORDS););
     owp[0] = 1;
-    for (int i = 1; i < VL_WORDS_I(obits); i++) owp[i] = 0;
+    for (int i = 1; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
     // cppcheck-has-bug-suppress variableScope
     VlWide<VL_MULS_MAX_WORDS> powstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     VlWide<VL_MULS_MAX_WORDS> lastpowstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     VlWide<VL_MULS_MAX_WORDS> lastoutstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     // cppcheck-has-bug-suppress variableScope
     VL_ASSIGN_W(obits, powstore, lwp);
-    for (int bit = 0; bit < rbits; bit++) {
+    for (int bit = 0; bit < rbits; ++bit) {
         if (bit > 0) {  // power = power*power
             VL_ASSIGN_W(obits, lastpowstore, powstore);
             VL_MUL_W(owords, powstore, lastpowstore, lastpowstore);
@@ -1770,7 +1770,7 @@ std::string VL_STACKTRACE_N() VL_MT_SAFE {
     if (!strings) return "Unable to backtrace\n";
 
     std::string result = "Backtrace:\n";
-    for (int j = 0; j < nptrs; j++) result += std::string{strings[j]} + "\n"s;
+    for (int j = 0; j < nptrs; ++j) result += std::string{strings[j]} + "\n"s;
     free(strings);
     return result;
 }
@@ -2042,7 +2042,7 @@ static const char* formatBinary(int nBits, uint32_t bits) {
     assert((nBits >= 1) && (nBits <= 32));
 
     static thread_local char t_buf[64];
-    for (int i = 0; i < nBits; i++) {
+    for (int i = 0; i < nBits; ++i) {
         const bool isOne = bits & (1 << (nBits - 1 - i));
         t_buf[i] = (isOne ? '1' : '0');
     }

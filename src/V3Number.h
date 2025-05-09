@@ -628,7 +628,7 @@ public:
     bool isFourState() const VL_MT_SAFE;
     bool hasZ() const {
         if (isString()) return false;
-        for (int i = 0; i < words(); i++) {
+        for (int i = 0; i < words(); ++i) {
             const ValueAndX v = m_data.num()[i];
             if ((~v.m_value) & v.m_valueX) return true;
         }

@@ -312,7 +312,7 @@ public:
         const char* fnstartp = m_insertFilenamep;
         while (const char* foundp = std::strchr(fnstartp, '/')) fnstartp = foundp + 1;
         const char* fnendp = fnstartp;
-        for (; *fnendp && *fnendp != '.'; fnendp++) {}
+        for (; *fnendp && *fnendp != '.'; ++fnendp) {}
         const size_t page_len = fnendp - fnstartp;
         const std::string page_default = "sp_user/" + std::string{fnstartp, page_len};
         ckeyps[2] = "page";

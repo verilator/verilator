@@ -143,7 +143,7 @@ public:
     }
     void emitGetValue(std::ostream& s) const override {
         const int elementCounts = countMatchingElements(*m_arrVarsRefp, name());
-        for (int i = 0; i < elementCounts; i++) {
+        for (int i = 0; i < elementCounts; ++i) {
             const std::string indexed_name = name() + std::to_string(i);
             const auto it = m_arrVarsRefp->find(indexed_name);
             if (it != m_arrVarsRefp->end()) {
