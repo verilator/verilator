@@ -2077,7 +2077,7 @@ class ConstVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return true;
             }
-        } else if (m_doV && VN_IS(nodep->lhsp(), Concat) && nodep->isPure()) {
+        } else if (m_doV && VN_IS(nodep->lhsp(), Concat)) {
             bool need_temp = false;
             if (m_warn && !VN_IS(nodep, AssignDly)) {  // Is same var on LHS and RHS?
                 // Note only do this (need user4) when m_warn, which is
