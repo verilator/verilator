@@ -2084,10 +2084,12 @@ class ConstVisitor final : public VNVisitor {
                 // done as unique visitor
                 const VNUser4InUse m_inuser4;
                 nodep->lhsp()->foreach([](const AstVarRef* nodep) {
-                    if (nodep->varp()) nodep->varp()->user4(1);
+                    UASSERT_OBJ(nodep->varp(), nodep, "Unlinked VarRef");
+                    nodep->varp()->user4(1);
                 });
                 nodep->rhsp()->foreach([&need_temp](const AstVarRef* nodep) {
-                    if (nodep->varp() && nodep->varp()->user4()) need_temp = true;
+                    UASSERT_OBJ(nodep->varp(), nodep, "Unlinked VarRef");
+                    if (nodep->varp()->user4()) need_temp = true;
                 });
             }
             if (need_temp) {
