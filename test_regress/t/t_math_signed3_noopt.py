@@ -11,7 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["-O0"])
+test.top_filename = "t/t_math_signed3.v"
+
+test.compile(make_main=False, verilator_flags2=["-O0", "--main", "--exe", "--timing"])
 
 test.execute()
 
