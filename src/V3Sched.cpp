@@ -435,8 +435,14 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                         if (VN_IS(procp, Always)) {
                             subFuncp->slow(false);
                             FileLine* const flp = procp->fileline();
-                            bodyp
-                                = new AstWhile{flp, new AstConst{flp, AstConst::BitTrue{}}, bodyp};
+                            bodyp = new AstWhile{
+                                flp,
+                                // If we change to use exceptions to handle finish/stop,
+                                // this can get removed
+                                new AstCExpr{flp,
+                                             "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1,
+                                             true},
+                                bodyp};
                         }
                     }
                     subFuncp->addStmtsp(bodyp);

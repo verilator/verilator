@@ -1,4 +1,4 @@
-%Warning-PINMISSING: t/t_inst_pin_place_bad.v:21:7: Cell has missing pin: 'pin_1'
+%Warning-PINMISSING: t/t_inst_pin_place_bad.v:21:7: Instance has missing pin: 'pin_1'
    21 |     ) i_sub (
       |       ^~~~~
                      t/t_inst_pin_place_bad.v:11:11: ... Location of port declaration
@@ -9,6 +9,7 @@
 %Error: t/t_inst_pin_place_bad.v:22:10: Instance attempts to connect to 'PARAM_A', but it is a parameter
    22 |         .PARAM_A(1)
       |          ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_inst_pin_place_bad.v:20:10: Instance attempts to override 'pin_1' as a parameter, but it is a port
    20 |         .pin_1(1)
       |          ^~~~~

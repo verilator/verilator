@@ -65,9 +65,9 @@ For --cc/--sc, it creates:
    * - *{prefix}*\ ___024root\ *{__DepSet_hash__n}*\ .cpp
      - Infrequent cold routines (hashed to reduce build times)
    * - *{prefix}*\ ___024root__Trace\ *{__n}*\ .cpp
-     - Wave file generation code (from --trace)
+     - Wave file generation code (from --trace-\*)
    * - *{prefix}*\ ___024root__Trace__Slow\ *{__n}*\ .cpp
-     - Wave file generation code (from --trace)
+     - Wave file generation code (from --trace-\*)
    * - *{prefix}*\ __Dpi.h
      - DPI import and export declarations (from --dpi)
    * - *{prefix}*\ __Dpi.cpp

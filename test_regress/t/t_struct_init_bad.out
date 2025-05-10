@@ -2,4 +2,5 @@
                                : ... note: In instance 't'
    55 |    const b4_t b4_const_c = '{b1: 1'b1, b1: 1'b0, b0:1'b0, b2: 1'b1, b3: 1'b1};
       |                                        ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

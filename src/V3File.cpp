@@ -146,7 +146,7 @@ V3FileDependImp dependImp;  // Depend implementation class
 
 void V3FileDependImp::writeDepend(const string& filename) {
     const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
-    if (ofp->fail()) v3fatal("Can't write " << filename);
+    if (ofp->fail()) v3fatal("Can't write file: " << filename);
 
     for (const DependFile& i : m_filenameList) {
         if (i.target()) *ofp << i.filename() << " ";
@@ -179,7 +179,7 @@ std::vector<string> V3FileDependImp::getAllDeps() const {
 
 void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn) {
     const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
-    if (ofp->fail()) v3fatal("Can't write " << filename);
+    if (ofp->fail()) v3fatal("Can't write file: " << filename);
 
     const string cmdline = stripQuotes(cmdlineIn);
     *ofp << "# DESCR"
@@ -936,7 +936,7 @@ V3OutFile::V3OutFile(const string& filename, V3OutFormatter::Language lang)
     : V3OutFormatter{filename, lang}
     , m_bufferp{new std::array<char, WRITE_BUFFER_SIZE_BYTES>{}} {
     if ((m_fp = V3File::new_fopen_w(filename)) == nullptr) {
-        v3fatal("Cannot write " << filename);
+        v3fatal("Can't write file: " << filename);
     }
 }
 

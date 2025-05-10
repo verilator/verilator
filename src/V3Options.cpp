@@ -474,7 +474,7 @@ void V3Options::decorations(FileLine* fl, const string& arg) {  // --decorations
         m_decoration = true;
         m_decorationNodes = false;
     } else {
-        fl->v3fatal("Unknown setting for --decorations: '"
+        fl->v3error("Unknown setting for --decorations: '"
                     << arg << "'\n"
                     << fl->warnMore() << "... Suggest 'none', 'medium', or 'node'");
     }
@@ -930,7 +930,7 @@ void V3Options::notify() VL_MT_DISABLED {
     }
 
     if (trace()) {
-        // With --trace, --trace-threads is ignored
+        // With --trace-vcd, --trace-threads is ignored
         if (traceFormat().vcd()) m_traceThreads = 1;
     }
 
@@ -1196,7 +1196,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-build-jobs", CbVal, [this, fl](const char* valp) {
         int val = std::atoi(valp);
         if (val < 0) {
-            fl->v3fatal("--build-jobs requires a non-negative integer, but '" << valp
+            fl->v3error("--build-jobs requires a non-negative integer, but '" << valp
                                                                               << "' was passed");
             val = 1;
         } else if (val == 0) {
@@ -1229,7 +1229,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             m_compLimitMembers = 0;  // probably ok, and AFAIK doesn't support anon structs
             m_compLimitParens = 80;  // 128, but allow some room
         } else {
-            fl->v3fatal("Unknown setting for --compiler: '"
+            fl->v3error("Unknown setting for --compiler: '"
                         << valp << "'\n"
                         << fl->warnMore() << "... Suggest 'clang', 'gcc', or 'msvc'");
         }
@@ -1417,7 +1417,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             for (int i = V3LangCode::L_ERROR + 1; i < V3LangCode::_ENUM_END; ++i) {
                 spell.pushCandidate(V3LangCode{i}.ascii());
             }
-            fl->v3fatal("Unknown language specified: " << valp << spell.bestCandidateMsg(valp));
+            fl->v3error("Unknown language specified: " << valp << spell.bestCandidateMsg(valp));
         }
     };
     DECL_OPTION("-default-language", CbVal, setLang);
@@ -1446,7 +1446,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         } else if (!std::strcmp(valp, "json")) {
             m_makeJson = true;
         } else {
-            fl->v3fatal("Unknown --make system specified: '" << valp << "'");
+            fl->v3error("Unknown --make system specified: '" << valp << "'");
         }
     });
     DECL_OPTION("-max-num-width", Set, &m_maxNumWidth);
@@ -1487,7 +1487,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-no-pins64", CbCall, [this]() { m_pinsBv = 33; });
     DECL_OPTION("-pins-bv", CbVal, [this, fl](const char* valp) {
         m_pinsBv = std::atoi(valp);
-        if (m_pinsBv > 65) fl->v3fatal("--pins-bv maximum is 65: " << valp);
+        if (m_pinsBv > 65) fl->v3error("--pins-bv maximum is 65: " << valp);
     });
     DECL_OPTION("-pins-inout-enables", OnOff, &m_pinsInoutEnables);
     DECL_OPTION("-pins-sc-uint", CbOnOff, [this](bool flag) {
@@ -1608,7 +1608,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             m_threadsDpiPure = true;
             m_threadsDpiUnpure = false;
         } else {
-            fl->v3fatal("Unknown setting for --threads-dpi: '"
+            fl->v3error("Unknown setting for --threads-dpi: '"
                         << valp << "'\n"
                         << fl->warnMore() << "... Suggest 'all', 'none', or 'pure'");
         }
@@ -1671,6 +1671,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-no-trace-top", Set, &m_noTraceTop);
     DECL_OPTION("-trace-underscore", OnOff, &m_traceUnderscore);
+    DECL_OPTION("-trace-vcd", CbCall, [this]() {
+        m_trace = true;
+        m_traceFormat = TraceFormat::VCD;
+    });
 
     DECL_OPTION("-U", CbPartialMatch, &V3PreShell::undef);
     DECL_OPTION("-underline-zero", OnOff, &m_underlineZero);  // Deprecated
@@ -1796,7 +1800,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         } else if (!std::strcmp(valp, "unique")) {
             m_xAssign = "unique";
         } else {
-            fl->v3fatal("Unknown setting for --x-assign: '"
+            fl->v3error("Unknown setting for --x-assign: '"
                         << valp << "'\n"
                         << fl->warnMore() << "... Suggest '0', '1', 'fast', or 'unique'");
         }
@@ -1809,7 +1813,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         } else if (!std::strcmp(valp, "unique")) {
             m_xInitial = "unique";
         } else {
-            fl->v3fatal("Unknown setting for --x-initial: '"
+            fl->v3error("Unknown setting for --x-initial: '"
                         << valp << "'\n"
                         << fl->warnMore() << "... Suggest '0', 'fast', or 'unique'");
         }

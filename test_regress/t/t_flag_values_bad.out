@@ -1,4 +1,5 @@
 %Error: --output-split-cfuncs must be >= 0: -1
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: --output-split-ctrace must be >= 0: -1
 %Error: --preproc-token-limit must be > 0: 0
 %Error: --reloop-limit must be >= 2: -1

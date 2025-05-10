@@ -1,2 +1,4 @@
 %Error: Unknown setting for --x-initial: 'bad_one'
         ... Suggest '0', 'fast', or 'unique'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--exe --main --timing --trace"], make_main=False)
+test.compile(verilator_flags2=["--exe --main --timing --trace-vcd"], make_main=False)
 
 test.execute()
 

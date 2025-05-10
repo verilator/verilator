@@ -4,4 +4,5 @@
         t/t_var_dotted_dup_bad.v:11:18: ... Location of original declaration
    11 |          eh2_ram dccm_bank (.*);
       |                  ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

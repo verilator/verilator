@@ -6,10 +6,10 @@
 
 // Packed struct in package
 package TEST_TYPES;
-  typedef union packed {
-    logic [64:0] a;
-    logic [2:0]  b;
-  } sub_t;
+    typedef union soft packed {
+        logic [64 : 0] a;
+        logic [2 : 0]  b;
+    } sub_t;
   typedef struct packed {
     struct packed {  // Anonymous packed struct
       logic a;

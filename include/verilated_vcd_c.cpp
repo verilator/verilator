@@ -15,9 +15,9 @@
 /// \brief Verilated C++ tracing in VCD format implementation code
 ///
 /// This file must be compiled and linked against all Verilated objects
-/// that use --trace.
+/// that use --trace-vcd.
 ///
-/// Use "verilator --trace" to add this to the Makefile for the linker.
+/// Use "verilator --trace-vcd" to add this to the Makefile for the linker.
 ///
 //=============================================================================
 
@@ -100,6 +100,8 @@ VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep) {
     m_wrBufp = new char[m_wrChunkSize * 8];
     m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
     m_writep = m_wrBufp;
+    m_wrTimeBeginp = nullptr;
+    m_wrTimeEndp = nullptr;
 }
 
 void VerilatedVcd::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
@@ -187,10 +189,19 @@ bool VerilatedVcd::preChangeDump() {
 }
 
 void VerilatedVcd::emitTimeChange(uint64_t timeui) {
-    printStr("#");
-    const std::string str = std::to_string(timeui);
-    printStr(str.c_str());
-    printStr("\n");
+    // Remember pointers when last emitted time stamp; if last output was
+    // timestamp backup and overwrite it.
+    // This is faster then checking on every signal change if time needs to
+    // be emitted.  Note buffer flushes may still emit a rare duplicate.
+    if (m_wrTimeEndp == m_writep) m_writep = m_wrTimeBeginp;
+    m_wrTimeBeginp = m_writep;
+    {
+        printStr("#");
+        const std::string str = std::to_string(timeui);
+        printStr(str.c_str());
+        printStr("\n");
+    }
+    m_wrTimeEndp = m_writep;
 }
 
 VerilatedVcd::~VerilatedVcd() {
@@ -257,6 +268,10 @@ void VerilatedVcd::bufferResize(size_t minsize) {
         m_wrBufp = new char[m_wrChunkSize * 8];
         std::memcpy(m_wrBufp, oldbufp, m_writep - oldbufp);
         m_writep = m_wrBufp + (m_writep - oldbufp);
+        if (m_wrTimeBeginp) {
+            m_wrTimeBeginp = m_wrBufp + (m_wrTimeBeginp - oldbufp);
+            m_wrTimeEndp = m_wrBufp + (m_wrTimeEndp - oldbufp);
+        }
         m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
         VL_DO_CLEAR(delete[] oldbufp, oldbufp = nullptr);
     }
@@ -293,6 +308,8 @@ void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
 
     // Reset buffer
     m_writep = m_wrBufp;
+    m_wrTimeBeginp = nullptr;
+    m_wrTimeEndp = nullptr;
 }
 
 //=============================================================================

@@ -1,0 +1,158 @@
+---
+# DESCRIPTION: Github actions config
+# This name is key to badges in README.rst, so we use the name build
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: RTLMeter
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'  # Daily, starting at 02:00 UTC
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: RTLMeter
+  cancel-in-progress: false
+
+jobs:
+  build-gcc:
+    name: Build GCC
+    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    with:
+      runs-on: ubuntu-24.04
+      cc: gcc
+
+  build-clang:
+    name: Build Clang
+    uses: ./.github/workflows/reusable-rtlmeter-build.yml
+    with:
+      runs-on: ubuntu-24.04
+      cc: clang
+
+  run-gcc:
+    name: Run GCC | ${{ matrix.cases }}
+    needs: build-gcc
+    uses: ./.github/workflows/reusable-rtlmeter-run.yml
+    with:
+      runs-on: ubuntu-24.04
+      cc: gcc
+      cases: ${{ matrix.cases }}
+      compileArgs: ""
+      executeArgs: ""
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        cases:
+          - "NVDLA:*"
+          - "OpenPiton:1x1:*"
+          - "OpenPiton:2x2:*"
+          - "OpenPiton:4x4:*"
+          - "OpenTitan:*"
+          - "VeeR-EH1:asic*"
+          - "VeeR-EH1:default*"
+          - "VeeR-EH1:hiperf*"
+          - "VeeR-EH2:asic*"
+          - "VeeR-EH2:default*"
+          - "VeeR-EH2:hiperf*"
+          - "VeeR-EL2:asic*"
+          - "VeeR-EL2:default*"
+          - "VeeR-EL2:hiperf*"
+          - "Vortex:mini:*"
+          - "Vortex:sane:*"
+          # - "XiangShan:default-chisel3:* !*:linux"
+          # - "XiangShan:default-chisel6:* !*:linux"
+          - "XiangShan:mini-chisel3:* !*:linux"
+          # - "XiangShan:mini-chisel6:* !*:linux"
+          - "XuanTie-E902:*"
+          - "XuanTie-E906:*"
+          - "XuanTie-C906:*"
+          - "XuanTie-C910:*"
+
+  run-clang:
+    name: Run Clang | ${{ matrix.cases }}
+    needs: build-clang
+    uses: ./.github/workflows/reusable-rtlmeter-run.yml
+    with:
+      runs-on: ubuntu-24.04
+      cc: clang
+      cases: ${{ matrix.cases }}
+      compileArgs: "--threads 4"
+      executeArgs: ""
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        cases:
+          - "NVDLA:*"
+          - "OpenPiton:1x1:*"
+          - "OpenPiton:2x2:*"
+          - "OpenPiton:4x4:*"
+          - "OpenTitan:*"
+          - "VeeR-EH1:asic*"
+          - "VeeR-EH1:default*"
+          - "VeeR-EH1:hiperf*"
+          - "VeeR-EH2:asic*"
+          - "VeeR-EH2:default*"
+          - "VeeR-EH2:hiperf*"
+          - "VeeR-EL2:asic*"
+          - "VeeR-EL2:default*"
+          - "VeeR-EL2:hiperf*"
+          - "Vortex:mini:*"
+          - "Vortex:sane:*"
+          - "XiangShan:default-chisel3:* !*:linux"
+          - "XiangShan:default-chisel6:* !*:linux"
+          - "XiangShan:mini-chisel3:* !*:linux"
+          - "XiangShan:mini-chisel6:* !*:linux"
+          - "XuanTie-E902:*"
+          - "XuanTie-E906:*"
+          - "XuanTie-C906:*"
+          - "XuanTie-C910:*"
+
+  combine-results:
+    name: Combine results
+    needs:
+      - run-gcc
+      - run-clang
+    if: ${{ always() }} # Run even if dependencies failed
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download all GCC results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: rtlmeter-results-ubuntu-24.04-gcc-*
+          path: all-results-gcc-${{ github.run_id }}
+          merge-multiple: true
+      - name: Download all Clang results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: rtlmeter-results-ubuntu-24.04-clang-*
+          path: all-results-clang-${{ github.run_id }}
+          merge-multiple: true
+      - name: Tar up results
+        run: |
+          # Ensure combined result directories exists in case of no results
+          mkdir -p all-results-gcc-${{ github.run_id }}
+          mkdir -p all-results-clang-${{ github.run_id }}
+          ls -la all-results*
+          # Tar up each directory
+          tar --posix -c -z -f all-results-gcc-${{ github.run_id }}.tar.gz all-results-gcc-${{ github.run_id }}
+          tar --posix -c -z -f all-results-clang-${{ github.run_id }}.tar.gz all-results-clang-${{ github.run_id }}
+      - name: Upload combined GCC results
+        uses: actions/upload-artifact@v4
+        with:
+          path: all-results-gcc-${{ github.run_id }}.tar.gz
+          name: "all-results-gcc"
+          overwrite: true
+          retention-days: 30
+      - name: Upload combined Clang results
+        uses: actions/upload-artifact@v4
+        with:
+          path: all-results-clang-${{ github.run_id }}.tar.gz
+          name: "all-results-clang"
+          overwrite: true
+          retention-days: 30

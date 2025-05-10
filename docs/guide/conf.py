@@ -169,15 +169,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-# latex_documents = [
-#    (
-#        master_doc,
-#        "Verilog-to-Routing.tex",
-#        "Verilog-to-Routing Documentation",
-#        "VTR Developers",
-#        "manual",
-#    ),
-# ]
+# latex_documents = [ ... ]
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.

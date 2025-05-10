@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--binary --coverage --trace-coverage --trace'])
+test.compile(verilator_flags2=['--binary --coverage --trace-coverage --trace-vcd'])
 
 test.execute(all_run_flags=["+verilator+coverage+file+" + test.obj_dir + "/coverage_renamed.dat"])
 

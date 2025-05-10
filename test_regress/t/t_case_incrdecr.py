@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--trace --fno-split -x-assign 0"])
+test.compile(verilator_flags2=["--trace-vcd --fno-split -x-assign 0"])
 
 test.execute()
 

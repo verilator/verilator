@@ -654,7 +654,7 @@ class TimingControlVisitor final : public VNVisitor {
     void addDebugInfo(AstCMethodHard* const methodp) const {
         if (v3Global.opt.protectIds()) return;
         FileLine* const flp = methodp->fileline();
-        AstCExpr* const ap = new AstCExpr{flp, '"' + flp->filename() + '"', 0};
+        AstCExpr* const ap = new AstCExpr{flp, '"' + flp->filenameEsc() + '"', 0};
         ap->dtypeSetString();
         methodp->addPinsp(ap);
         AstCExpr* const bp = new AstCExpr{flp, cvtToStr(flp->lineno()), 0};
@@ -723,8 +723,8 @@ class TimingControlVisitor final : public VNVisitor {
     void makeForkJoin(AstFork* const forkp) {
         // Create a fork sync var
         FileLine* const flp = forkp->fileline();
-        // If we're in a function, insert the sync var directly before the fork
-        AstNode* const insertBeforep = m_classp ? forkp : nullptr;
+        // Insert the sync var directly before the fork
+        AstNode* const insertBeforep = forkp;
         addCLocalScope(flp, insertBeforep);
         AstVarScope* forkVscp
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);

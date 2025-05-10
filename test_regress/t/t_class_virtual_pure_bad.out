@@ -1,4 +1,5 @@
 %Error: t/t_class_virtual_pure_bad.v:8:22: Illegal to have 'pure virtual' in non-virtual class (IEEE 1800-2023 8.21)
     8 |    pure virtual task pure_task;
       |                      ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

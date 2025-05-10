@@ -2,6 +2,7 @@
                                   : ... note: In instance 't'
     7 | module t #(parameter P, parameter type T);
       |                      ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_param_noval_bad.v:7:40: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
                                   : ... note: In instance 't'
     7 | module t #(parameter P, parameter type T);
@@ -24,6 +25,7 @@
                                               : ... note: In instance 't'
    10 |       for (j=0; P; j++)
       |       ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: t/t_param_noval_bad.v:10:7: For loop doesn't have genvar index, or is malformed
                                   : ... note: In instance 't'
    10 |       for (j=0; P; j++)
@@ -32,3 +34,4 @@
                                                   : ... note: In instance 't'
    10 |       for (j=0; P; j++)
       |       ^~~
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.

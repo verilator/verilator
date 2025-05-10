@@ -1,4 +1,5 @@
 %Error: t/t_implements_notfound_bad.v:7:23: Class for 'implements' not found: 'Inotfound'
     7 | class ClsI implements Inotfound;
       |                       ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

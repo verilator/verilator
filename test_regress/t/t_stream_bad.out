@@ -2,6 +2,7 @@
                               : ... note: In instance 't'
    12 |    initial packed_data_32 = {<<$random{byte_in}};
       |                                ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_stream_bad.v:12:30: Slice size isn't a constant or basic data type.
                               : ... note: In instance 't'
    12 |    initial packed_data_32 = {<<$random{byte_in}};

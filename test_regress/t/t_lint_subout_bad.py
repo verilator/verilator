@@ -13,7 +13,7 @@ test.scenarios('vlt')
 
 test.compile(
     # No --lint-only as got compile error
-    verilator_flags2=["--trace"],
+    verilator_flags2=["--trace-vcd"],
     fails=True,
     expect_filename=test.golden_filename)
 

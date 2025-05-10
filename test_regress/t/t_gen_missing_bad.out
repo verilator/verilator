@@ -1,6 +1,7 @@
 %Error: t/t_gen_missing.v:43:20: Cannot find file containing module: 'foo_not_needed'
    43 |                    foo_not_needed i_foo(.x(foo[j]), .y(bar[j]));
       |                    ^~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
         ... Looked in:
              t/foo_not_needed
              t/foo_not_needed.v

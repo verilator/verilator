@@ -12,6 +12,7 @@ import multiprocessing
 import os
 import pickle
 import platform
+import pty
 import re
 import runpy
 import shutil
@@ -442,6 +443,8 @@ class Runner:
         test._read_status()
         if test.ok:
             self.ok_cnt += 1
+            if Args.driver_clean:
+                test.clean()
         elif test._quit:
             pass
         elif test._scenario_off and not test.errors:
@@ -555,7 +558,7 @@ class Runner:
             out += "  Skipped " + str(self.skip_cnt)
         if forker.num_running():
             out += "  Running " + str(forker.num_running())
-        if self.left_cnt > 10 and eta > 10:
+        if self.left_cnt > 10 and eta > 10 and self.all_cnt != self.left_cnt:
             out += "  Eta %d:%02d" % (int(eta / 60), eta % 60)
         out += "  Time %d:%02d" % (int(delta / 60), delta % 60)
         return out
@@ -951,14 +954,17 @@ class VlTest:
     #----------------------------------------------------------------------
     # Methods invoked by tests
 
-    def clean(self) -> None:
-        """Called on a rerun to cleanup files."""
+    def clean(self, for_rerun=False) -> None:
+        """Called on a --driver-clean or rerun to cleanup files."""
         if self.clean_command:
             os.system(self.clean_command)
-        # Prevents false-failures when switching compilers
-        # Remove old results to force hard rebuild
         os.system('/bin/rm -rf ' + self.obj_dir + '__fail1')
-        os.system('/bin/mv ' + self.obj_dir + ' ' + self.obj_dir + '__fail1')
+        if for_rerun:
+            # Prevents false-failures when switching compilers
+            # Remove old results to force hard rebuild
+            os.system('/bin/mv ' + self.obj_dir + ' ' + self.obj_dir + '__fail1')
+        else:
+            os.system('/bin/rm -rf ' + self.obj_dir)
 
     def clean_objs(self) -> None:
         os.system("/bin/rm -rf " + ' '.join(glob.glob(self.obj_dir + "/*")))
@@ -1031,7 +1037,7 @@ class VlTest:
         if Args.rr:
             verilator_flags += ["--rr"]
         if Args.trace:
-            verilator_flags += ["--trace"]
+            verilator_flags += ["--trace-vcd"]
         if Args.gdbsim or Args.rrsim:
             verilator_flags += ["-CFLAGS -ggdb -LDFLAGS -ggdb"]
         verilator_flags += ["--x-assign unique"]  # More likely to be buggy
@@ -1709,18 +1715,35 @@ class VlTest:
         # Execute command redirecting output, keeping order between stderr and stdout.
         # Must do low-level IO so GCC interaction works (can't be line-based)
         status = None
-        if True:  # process_caller_block  # pylint: disable=using-constant-test
+        # process_caller_block  # pylint: disable=using-constant-test
 
-            logfh = None
-            if logfile:
-                logfh = open(logfile, 'wb')  # pylint: disable=consider-using-with
+        logfh = None
+        if logfile:
+            logfh = open(logfile, 'wb')  # pylint: disable=consider-using-with
 
+        if not Args.interactive_debugger:
+            # Become TTY controlling termal so GDB will not capture main driver.py's terminal
+            pid, fd = pty.fork()
+            if pid == 0:
+                subprocess.run(["stty", "nl"], check=True)  # No carriage returns
+                os.execlp("bash", "/bin/bash", "-c", command)
+            else:
+                # Parent process: Interact with GDB
+                while True:
+                    try:
+                        data = os.read(fd, 1)
+                        self._run_output(data, logfh, tee)
+                    except OSError:
+                        break
+
+                (pid, rc) = os.waitpid(pid, 0)
+
+        else:
             with subprocess.Popen(command,
                                   shell=True,
                                   bufsize=0,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.STDOUT) as proc:
-
                 rawbuf = bytearray(2048)
 
                 while True:
@@ -1729,32 +1752,25 @@ class VlTest:
                     got = proc.stdout.readinto(rawbuf)
                     if got:
                         data = rawbuf[0:got]
-                        if re.search(r'--debug-exit-uvm23: Exiting', str(data)):
-                            self._force_pass = True
-                            print("EXIT: " + str(data))
-                        if tee:
-                            sys.stdout.write(data.decode('latin-1'))
-                            if Args.interactive_debugger:
-                                sys.stdout.flush()
-                        if logfh:
-                            logfh.write(data)
+                        self._run_output(data, logfh, tee)
                     elif finished is not None:
                         break
 
-                if logfh:
-                    logfh.close()
-
                 rc = proc.returncode  # Negative if killed by signal
-                if (rc in (
-                        -4,  # SIGILL
-                        -8,  # SIGFPA
-                        -11)):  # SIGSEGV
-                    self.error("Exec failed with core dump")
-                    status = 10
-                elif rc:
-                    status = 10
-                else:
-                    status = 0
+
+        if logfh:
+            logfh.close()
+
+        if (rc in (
+                -4,  # SIGILL
+                -8,  # SIGFPA
+                -11)):  # SIGSEGV
+            self.error("Exec failed with core dump")
+            status = 10
+        elif rc:
+            status = 10
+        else:
+            status = 0
 
         sys.stdout.flush()
         sys.stderr.flush()
@@ -1787,6 +1803,17 @@ class VlTest:
             return False
 
         return True
+
+    def _run_output(self, data, logfh, tee):
+        if re.search(r'--debug-exit-uvm23: Exiting', str(data)):
+            self._force_pass = True
+            print("EXIT: " + str(data))
+        if tee:
+            sys.stdout.write(data.decode('latin-1'))
+            if Args.interactive_debugger:
+                sys.stdout.flush()
+        if logfh:
+            logfh.write(data)
 
     def _run_log_try(self, logfile: str, check_finished: bool, moretry: bool) -> bool:
         # If moretry, then return true to try again
@@ -2377,6 +2404,7 @@ class VlTest:
         out = test.run_capture(cmd, check=True)
         if out != '':
             print(out)
+            self.copy_if_golden(fn1, fn2)
             self.error("SAIF files don't match!")
 
     def _vcd_read(self, filename: str) -> str:
@@ -2605,6 +2633,7 @@ class VlTest:
                 fhw.write("   :emphasize-lines: " + emph + "\n")
             fhw.write("\n")
             for line in out:
+                line = re.sub(r' +$', '', line)
                 fhw.write(line)
 
         self.files_identical(temp_fn, out_filename)
@@ -2715,7 +2744,7 @@ def run_them() -> None:
         for ftest in orig_runner.fail_tests:
             # Reschedule test
             if ftest.rerunnable:
-                ftest.clean()
+                ftest.clean(for_rerun=True)
             runner.one_test(py_filename=ftest.py_filename,
                             scenario=ftest.scenario,
                             rerun_skipping=not ftest.rerunnable)
@@ -2776,6 +2805,7 @@ if __name__ == '__main__':
     parser.add_argument('--benchmark', action='store', help='enable benchmarking')
     parser.add_argument('--debug', action='store_const', const=9, help='enable debug')
     # --debugi: see _parameter()
+    parser.add_argument('--driver-clean', action='store_true', help='clean after test passes')
     parser.add_argument('--fail-max',
                         action='store',
                         default=None,

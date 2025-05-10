@@ -110,15 +110,12 @@ class CMakeEmitter final {
         cmake_set_raw(*of, name + "_TIMING", v3Global.usesTiming() ? "1" : "0");
         *of << "# Threaded output mode?  1/N threads (from --threads)\n";
         cmake_set_raw(*of, name + "_THREADS", cvtToStr(v3Global.opt.threads()));
-        *of << "# VCD Tracing output mode?  0/1 (from --trace)\n";
-        cmake_set_raw(*of, name + "_TRACE_VCD",
-                      (v3Global.opt.trace() && v3Global.opt.traceFormat().vcd()) ? "1" : "0");
         *of << "# FST Tracing output mode? 0/1 (from --trace-fst)\n";
-        cmake_set_raw(*of, name + "_TRACE_FST",
-                      (v3Global.opt.trace() && v3Global.opt.traceFormat().fst()) ? "1" : "0");
+        cmake_set_raw(*of, name + "_TRACE_FST", (v3Global.opt.traceEnabledFst()) ? "1" : "0");
         *of << "# SAIF Tracing output mode? 0/1 (from --trace-saif)\n";
-        cmake_set_raw(*of, name + "_TRACE_SAIF",
-                      (v3Global.opt.trace() && v3Global.opt.traceFormat().saif()) ? "1" : "0");
+        cmake_set_raw(*of, name + "_TRACE_SAIF", (v3Global.opt.traceEnabledSaif()) ? "1" : "0");
+        *of << "# VCD Tracing output mode?  0/1 (from --trace-vcd)\n";
+        cmake_set_raw(*of, name + "_TRACE_VCD", (v3Global.opt.traceEnabledVcd()) ? "1" : "0");
 
         *of << "\n### Sources...\n";
         std::vector<string> classes_fast;
@@ -146,36 +143,9 @@ class CMakeEmitter final {
             }
         }
 
-        global.emplace_back("${VERILATOR_ROOT}/include/verilated.cpp");
-        if (v3Global.dpi()) {  //
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_dpi.cpp");
-        }
-        if (v3Global.opt.vpi()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_vpi.cpp");
-        }
-        if (v3Global.opt.savable()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_save.cpp");
-        }
-        if (v3Global.opt.coverage()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_cov.cpp");
-        }
-        if (v3Global.opt.trace()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/" + v3Global.opt.traceSourceBase()
-                                + "_c.cpp");
-        }
-        if (v3Global.usesProbDist()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_probdist.cpp");
-        }
-        if (v3Global.usesTiming()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_timing.cpp");
-        }
-        if (v3Global.useRandomizeMethods()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_random.cpp");
-        }
-        global.emplace_back("${VERILATOR_ROOT}/include/verilated_threads.cpp");
-        if (v3Global.opt.usesProfiler()) {
-            global.emplace_back("${VERILATOR_ROOT}/include/verilated_profiler.cpp");
-        }
+        for (const string& cpp : v3Global.verilatedCppFiles())
+            global.emplace_back("${VERILATOR_ROOT}/include/"s + cpp);
+
         if (!v3Global.opt.libCreate().empty()) {
             global.emplace_back(v3Global.opt.makeDir() + "/" + v3Global.opt.libCreate() + ".cpp");
         }

@@ -1,6 +1,7 @@
 %Error: t/t_timescale_parse_bad.v:8:1: `timescale timeunit '1ps' must be greater than or equal to timeprecision '1ns'
     8 | `timescale 1ps/1ns
       | ^~~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_timescale_parse_bad.v:11:1: `timescale timeunit syntax error: 'frump'
    11 | `timescale frump
       | ^~~~~~~~~~~~~~~~

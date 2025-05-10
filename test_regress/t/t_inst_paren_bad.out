@@ -2,6 +2,7 @@
                                  : ... Perhaps intended an instantiation but are missing parenthesis (IEEE 1800-2023 23.3.2)?
    11 |    sub sub_inst;   
       |    ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Warning-MULTITOP: t/t_inst_paren_bad.v:10:8: Multiple top level modules
                                             : ... Suggest see manual; fix the duplicates, or use --top-module to select top.
                    ... For warning description see https://verilator.org/warn/MULTITOP?v=latest

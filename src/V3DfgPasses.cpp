@@ -85,7 +85,7 @@ V3DfgOptimizationContext::~V3DfgOptimizationContext() {
                                      + "__stats_dfg_patterns__" + ident + ".txt";
         // Open, write, close
         const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
-        if (ofp->fail()) v3fatal("Can't write " << filename);
+        if (ofp->fail()) v3fatal("Can't write file: " << filename);
         m_patternStats.dump(m_label, *ofp);
     }
 

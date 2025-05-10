@@ -284,7 +284,7 @@ public:
         if (nodep->emptyBody() && !nodep->isLoose()) return;
         VL_RESTORER(m_useSelfForThis);
         VL_RESTORER(m_cfuncp);
-        VL_RESTORER(m_instantiatesOwnProcess)
+        VL_RESTORER(m_instantiatesOwnProcess);
         m_cfuncp = nodep;
         m_instantiatesOwnProcess = false;
 
@@ -356,8 +356,7 @@ public:
             // code to allow the compiler to generate load store after the
             // if condition (including short-circuit evaluation)
             // speculatively and also reduce the data cache pollution when
-            // executing in the wrong path to make verilator-generated code
-            // run faster.
+            // executing in the wrong path to make Verilated code faster.
             puts("auto& vlSelfRef = std::ref(*vlSelf).get();\n");
         }
 
@@ -388,6 +387,11 @@ public:
     }
 
     void visit(AstCvtArrayToPacked* nodep) override {
+        AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
+        emitOpName(nodep, nodep->emitC(), nodep->fromp(), elemDTypep, nullptr);
+    }
+
+    void visit(AstCvtUnpackedToQueue* nodep) override {
         AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
         emitOpName(nodep, nodep->emitC(), nodep->fromp(), elemDTypep, nullptr);
     }
@@ -1059,9 +1063,8 @@ public:
         putns(nodep, "vlSymsp->_vm_contextp__->timeprecision()");
     }
     void visit(AstNodeSimpleText* nodep) override {
-        const string text = m_inUC && m_useSelfForThis
-                                ? VString::replaceWord(nodep->text(), "this", "vlSelf")
-                                : nodep->text();
+        const string text
+            = VSelfPointerText::replaceThis(m_inUC && m_useSelfForThis, nodep->text());
         if (nodep->tracking() || m_trackText) {
             puts(text);
         } else {
@@ -1337,7 +1340,7 @@ public:
     void visit(AstThisRef* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
         puts("{");
-        puts(m_useSelfForThis ? "vlSelf" : "this");
+        puts(VSelfPointerText::replaceThis(m_useSelfForThis, "this"));
         puts("}");
     }
 

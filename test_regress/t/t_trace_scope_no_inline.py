@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=["--cc --trace -fno-inline t/" + test.name + ".vlt"])
+test.compile(verilator_flags2=["--cc --trace-vcd -fno-inline t/" + test.name + ".vlt"])
 
 test.execute()
 

@@ -2,6 +2,7 @@
                             : ... Suggest modify the Verilog-2001 code to avoid SV keywords, or use `begin_keywords or --language.
     8 |    reg do;
       |        ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_var_bad_sv.v:9:14: Unexpected 'do': 'do' is a SystemVerilog keyword misused as an identifier.
     9 |    mod mod (.do(bar));
       |              ^~

@@ -55,16 +55,16 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
     sudo apt-get update
     sudo apt-get install ccache help2man libfl-dev ||
     sudo apt-get install ccache help2man libfl-dev
-    if [ "$CI_RUNS_ON" != "ubuntu-22.04" ]; then
+    if [[ ! "$CI_RUNS_ON" =~ "ubuntu-22.04" ]]; then
       # Some conflict of libunwind verison on 22.04, can live without it for now
       sudo apt-get install libgoogle-perftools-dev ||
       sudo apt-get install libgoogle-perftools-dev
     fi
-    if [ "$CI_RUNS_ON" = "ubuntu-20.04" ] || [ "$CI_RUNS_ON" = "ubuntu-22.04" ] || [ "$CI_RUNS_ON" = "ubuntu-24.04" ]; then
+    if [[ "$CI_RUNS_ON" =~ "ubuntu-20.04" ]] || [[ "$CI_RUNS_ON" =~ "ubuntu-22.04" ]] || [[ "$CI_RUNS_ON" =~ "ubuntu-24.04" ]]; then
       sudo apt-get install libsystemc libsystemc-dev ||
       sudo apt-get install libsystemc libsystemc-dev
     fi
-    if [ "$CI_RUNS_ON" = "ubuntu-22.04" ] || [ "$CI_RUNS_ON" = "ubuntu-24.04" ]; then
+    if [[ "$CI_RUNS_ON" =~ "ubuntu-22.04" ]] || [[ "$CI_RUNS_ON" =~ "ubuntu-24.04" ]]; then
       sudo apt-get install bear mold ||
       sudo apt-get install bear mold
     fi
@@ -92,11 +92,11 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     sudo apt-get install gdb gtkwave lcov libfl-dev ccache jq z3 ||
     sudo apt-get install gdb gtkwave lcov libfl-dev ccache jq z3
     # Required for test_regress/t/t_dist_attributes.py
-    if [ "$CI_RUNS_ON" = "ubuntu-22.04" ] || [ "$CI_RUNS_ON" = "ubuntu-24.04" ]; then
+    if [[ "$CI_RUNS_ON" =~ "ubuntu-22.04" ]] || [[ "$CI_RUNS_ON" =~ "ubuntu-24.04" ]]; then
       sudo apt-get install python3-clang mold ||
       sudo apt-get install python3-clang mold
     fi
-    if [ "$CI_RUNS_ON" = "ubuntu-20.04" ] || [ "$CI_RUNS_ON" = "ubuntu-22.04" ] || [ "$CI_RUNS_ON" = "ubuntu-24.04" ]; then
+    if [[ "$CI_RUNS_ON" =~ "ubuntu-20.04" ]] || [[ "$CI_RUNS_ON" =~ "ubuntu-22.04" ]] || [[ "$CI_RUNS_ON" =~ "ubuntu-24.04" ]]; then
       sudo apt-get install libsystemc-dev ||
       sudo apt-get install libsystemc-dev
     fi

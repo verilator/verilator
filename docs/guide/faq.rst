@@ -128,7 +128,7 @@ How do I generate waveforms (traces) in C++?
 
 See also the next question for tracing in SystemC mode.
 
-A. Pass the :vlopt:`--trace` option to Verilator.  Then you may use ``$dumpfile`` and
+A. Pass the :vlopt:`--trace-vcd` option to Verilator.  Then you may use ``$dumpfile`` and
    ``$dumpvars`` to enable traces, the same as with any Verilog simulator,
    although Verilator ignores the arguments to ``$dumpvars``. See
    ``examples/make_tracing_c`` in the distribution.
@@ -177,7 +177,7 @@ file.
 How do I generate waveforms (traces) in SystemC?
 """"""""""""""""""""""""""""""""""""""""""""""""
 
-A. Pass the :vlopt:`--trace` option to Verilator, and in your top-level
+A. Pass the :vlopt:`--trace-vcd` option to Verilator, and in your top-level
    :code:`sc_main()`, call :code:`Verilated::traceEverOn(true)`.  Then you
    may use :code:`$dumpfile` and code:`$dumpvars` to enable traces, as
    with any Verilog simulator; see the non-SystemC example in

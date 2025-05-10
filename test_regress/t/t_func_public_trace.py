@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_func_public.v"
 
-test.compile(verilator_flags2=["--trace"])
+test.compile(verilator_flags2=["--trace-vcd"])
 
 test.execute()
 

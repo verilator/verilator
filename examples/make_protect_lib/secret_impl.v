@@ -12,19 +12,26 @@ module secret_impl
    input [31:0]        a,
    input [31:0]        b,
    output logic [31:0] x,
-   input               clk);
+   input               clk,
+   input               reset_l);
 
-   logic [31:0]        accum_q = 0;
-   logic [31:0]        secret_value = 9;
+   logic [31:0] accum_q;
+   logic [31:0] secret_value;
 
    initial $display("[%0t] %m: initialized", $time);
 
    always @(posedge clk) begin
-      accum_q <= accum_q + a;
-      if (accum_q > 10)
-        x <= b;
-      else
-        x <= a + b + secret_value;
+      if (!reset_l) begin
+         accum_q <= 0;
+         secret_value <= 9;
+      end
+      else begin
+         accum_q <= accum_q + a;
+         if (accum_q > 10)
+           x <= b;
+         else
+           x <= a + b + secret_value;
+      end
    end
 
 endmodule

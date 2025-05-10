@@ -1,4 +1,5 @@
 %Error: t/t_dpi_import_mix_bad.v:11:32: Cannot mix DPI import, DPI export, class methods, and/or public on same function: 't.foo'
    11 |    import "DPI-C" function int foo (int i);
       |                                ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

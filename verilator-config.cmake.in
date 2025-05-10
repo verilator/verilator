@@ -130,13 +130,6 @@ define_property(
 
 define_property(
     TARGET
-    PROPERTY VERILATOR_TRACE_VCD
-    BRIEF_DOCS "Verilator VCD trace enabled"
-    FULL_DOCS "Verilator VCD trace enabled"
-)
-
-define_property(
-    TARGET
     PROPERTY VERILATOR_TRACE_FST
     BRIEF_DOCS "Verilator FST trace enabled"
     FULL_DOCS "Verilator FST trace enabled"
@@ -147,6 +140,13 @@ define_property(
     PROPERTY VERILATOR_TRACE_SAIF
     BRIEF_DOCS "Verilator SAIF trace enabled"
     FULL_DOCS "Verilator SAIF trace enabled"
+)
+
+define_property(
+    TARGET
+    PROPERTY VERILATOR_TRACE_VCD
+    BRIEF_DOCS "Verilator VCD trace enabled"
+    FULL_DOCS "Verilator VCD trace enabled"
 )
 
 define_property(
@@ -165,7 +165,7 @@ define_property(
 
 function(json_get_string RET JSON SECTION VARIABLE)
     string(JSON JV ERROR_VARIABLE STATUS GET "${JSON}" ${SECTION} ${VARIABLE})
-    if (NOT ${STATUS} STREQUAL "NOTFOUND")
+    if(NOT ${STATUS} STREQUAL "NOTFOUND")
         set(JV "")
     endif()
     set(${RET} ${JV} PARENT_SCOPE)
@@ -185,24 +185,10 @@ function(json_get_int RET JSON SECTION VARIABLE)
     set(${RET} ${JV} PARENT_SCOPE)
 endfunction()
 
-function(json_get_trace RET_VCD RET_FST JSON SECTION VARIABLE)
-    string(JSON JV GET "${JSON}" ${SECTION} ${VARIABLE})
-    if(JV STREQUAL "vcd")
-        set(${RET_VCD} 1 PARENT_SCOPE)
-        set(${RET_FST} 0 PARENT_SCOPE)
-    elseif(JV STREQUAL "fst")
-        set(${RET_VCD} 0 PARENT_SCOPE)
-        set(${RET_FST} 1 PARENT_SCOPE)
-    else()
-        set(${RET_VCD} 0 PARENT_SCOPE)
-        set(${RET_FST} 0 PARENT_SCOPE)
-    endif()
-endfunction()
-
 function(json_get_submodules SUBMODULES NSUBMODULES JSON)
     string(JSON JV ERROR_VARIABLE STATUS GET "${JSON}" submodules)
 
-    if (NOT ${STATUS} STREQUAL "NOTFOUND")
+    if(NOT ${STATUS} STREQUAL "NOTFOUND")
         set(${SUBMODULES} "" PARENT_SCOPE)
         set(${NSUBMODULES} 0 PARENT_SCOPE)
         return()
@@ -219,7 +205,7 @@ endfunction()
 function(json_get_list RET JSON SECTION VARIABLE)
     string(JSON L ERROR_VARIABLE STATUS LENGTH "${JSON}" ${SECTION} ${VARIABLE})
 
-    if (NOT ${STATUS} STREQUAL "NOTFOUND" OR NOT ${L})
+    if(NOT ${STATUS} STREQUAL "NOTFOUND" OR NOT ${L})
         set(${RET} "" PARENT_SCOPE)
         return()
     endif()
@@ -241,11 +227,19 @@ endfunction()
 function(verilate TARGET)
     cmake_parse_arguments(
         VERILATE
-        "COVERAGE;TRACE;TRACE_FST;SYSTEMC;TRACE_STRUCTS"
+        "COVERAGE;SYSTEMC;TRACE_FST;TRACE_SAIF;TRACE_VCD;TRACE;TRACE_STRUCTS"
         "PREFIX;TOP_MODULE;THREADS;TRACE_THREADS;DIRECTORY"
         "SOURCES;VERILATOR_ARGS;INCLUDE_DIRS;OPT_SLOW;OPT_FAST;OPT_GLOBAL"
         ${ARGN}
     )
+
+    if(VERILATE_TRACE)
+        if(NOT VERILATE_TRACE_VCD)
+            set(VERILATE_TRACE_VCD TRUE)
+        endif()
+        message(DEPRECATION "The `TRACE` argument is deprecated. Please use `TRACE_VCD` instead.")
+    endif()
+
     if(NOT VERILATE_SOURCES)
         message(FATAL_ERROR "Need at least one source")
     endif()
@@ -276,12 +270,26 @@ function(verilate TARGET)
         list(APPEND VERILATOR_ARGS --coverage)
     endif()
 
+    if(VERILATE_SYSTEMC)
+        list(APPEND VERILATOR_ARGS --sc)
+    else()
+        list(APPEND VERILATOR_ARGS --cc)
+    endif()
+
     if(VERILATE_TRACE AND VERILATE_TRACE_FST)
         message(FATAL_ERROR "Cannot have both TRACE and TRACE_FST")
     endif()
 
+    if(VERILATE_TRACE_FST AND VERILATE_TRACE_VCD)
+        message(FATAL_ERROR "Cannot have both TRACE_FST and TRACE_VCD")
+    endif()
+
+    if(VERILATE_TRACE_SAIF AND VERILATE_TRACE_VCD)
+        message(FATAL_ERROR "Cannot have both TRACE_SAIF and TRACE_VCD")
+    endif()
+
     if(VERILATE_TRACE)
-        list(APPEND VERILATOR_ARGS --trace)
+        list(APPEND VERILATOR_ARGS --trace-vcd)
     endif()
 
     if(VERILATE_TRACE_FST)
@@ -292,10 +300,8 @@ function(verilate TARGET)
         list(APPEND VERILATOR_ARGS --trace-saif)
     endif()
 
-    if(VERILATE_SYSTEMC)
-        list(APPEND VERILATOR_ARGS --sc)
-    else()
-        list(APPEND VERILATOR_ARGS --cc)
+    if(VERILATE_TRACE_VCD)
+        list(APPEND VERILATOR_ARGS --trace-vcd)
     endif()
 
     if(VERILATE_TRACE_STRUCTS)
@@ -340,7 +346,7 @@ function(verilate TARGET)
                 STATUS
                 "Found ccache: ${OBJCACHE_PATH} (\"${objcache_version}\")"
             )
-            set(CMAKE_CXX_COMPILER_LAUNCHER "${OBJCACHE_PATH}")
+            set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${OBJCACHE_PATH}")
         endif()
     endif()
 
@@ -426,7 +432,9 @@ function(verilate TARGET)
         json_get_bool(JOPTIONS_COVERAGE "${MANIFEST}" options coverage)
         json_get_bool(JOPTIONS_USE_TIMING "${MANIFEST}" options use_timing)
         json_get_int(JOPTIONS_THREADS "${MANIFEST}" options threads)
-        json_get_trace(JOPTIONS_TRACE_VCD JOPTIONS_TRACE_FST "${MANIFEST}" options trace)
+        json_get_bool(JOPTIONS_TRACE_FST "${MANIFEST}" options trace_fst)
+        json_get_bool(JOPTIONS_TRACE_SAIF "${MANIFEST}" options trace_saif)
+        json_get_bool(JOPTIONS_TRACE_VCD "${MANIFEST}" options trace_vcd)
 
         json_get_list(JSOURCES_GLOBAL "${MANIFEST}" sources global)
         json_get_list(JSOURCES_CLASSES_SLOW "${MANIFEST}" sources classes_slow)
@@ -434,6 +442,7 @@ function(verilate TARGET)
         json_get_list(JSOURCES_SUPPORT_SLOW "${MANIFEST}" sources support_slow)
         json_get_list(JSOURCES_SUPPORT_FAST "${MANIFEST}" sources support_fast)
         json_get_list(JSOURCES_USER_CLASSES "${MANIFEST}" sources user_classes)
+        json_get_list(JSOURCES_DEPS "${MANIFEST}" sources deps)
 
         file(WRITE ${VDIR}/${VERILATE_PREFIX}.cmake
             "# Verilated -*- CMake -*-\n"
@@ -461,10 +470,12 @@ function(verilate TARGET)
             "set(${VERILATE_PREFIX}_TIMING ${JOPTIONS_USE_TIMING})\n"
             "# Threaded output mode?  1/N threads (from --threads)\n"
             "set(${VERILATE_PREFIX}_THREADS ${JOPTIONS_THREADS})\n"
-            "# VCD Tracing output mode?  0/1 (from --trace)\n"
-            "set(${VERILATE_PREFIX}_TRACE_VCD ${JOPTIONS_TRACE_VCD})\n"
             "# FST Tracing output mode? 0/1 (from --trace-fst)\n"
             "set(${VERILATE_PREFIX}_TRACE_FST ${JOPTIONS_TRACE_FST})\n\n"
+            "# SAIF Tracing output mode? 0/1 (from --trace-saif)\n"
+            "set(${VERILATE_PREFIX}_TRACE_SAIF ${JOPTIONS_TRACE_SAIF})\n\n"
+            "# VCD Tracing output mode?  0/1 (from --trace-vcd)\n"
+            "set(${VERILATE_PREFIX}_TRACE_VCD ${JOPTIONS_TRACE_VCD})\n"
             "### Sources...\n"
             "# Global classes, need linked once per executable\n"
             "set(${VERILATE_PREFIX}_GLOBAL ${JSOURCES_GLOBAL})\n"
@@ -484,7 +495,7 @@ function(verilate TARGET)
 
         json_get_submodules(JSUBMODULES JNSUBMODULES "${MANIFEST}")
 
-        if (JNSUBMODULES)
+        if(JNSUBMODULES)
             file(APPEND ${VDIR}/${VERILATE_PREFIX}.cmake
                 "# Verilate hierarchical blocks\n"
                 "get_target_property(TOP_TARGET_NAME \"\${TARGET}\" NAME)\n"
@@ -502,13 +513,13 @@ function(verilate TARGET)
                 set(SUBMODULE_CMAKE "")
                 set(SUBMODULE_VERILATE_ARGS "")
 
-                if (NOT ${I} STREQUAL ${JNSUBMODULES})
+                if(NOT ${I} STREQUAL ${JNSUBMODULES})
                     string(APPEND SUBMODULE_CMAKE
                         "add_library(${JSUBMODULE_PREFIX} STATIC)\n"
                         "target_link_libraries(\${TOP_TARGET_NAME} PRIVATE ${JSUBMODULE_PREFIX})\n"
                     )
 
-                    if (JSUBMODULE_DEPS)
+                    if(JSUBMODULE_DEPS)
                         string(APPEND SUBMODULE_CMAKE "target_link_libraries(${JSUBMODULE_PREFIX} INTERFACE ${JSUBMODULE_DEPS})\n")
                     endif()
 
@@ -518,11 +529,11 @@ function(verilate TARGET)
                     string(APPEND SUBMODULE_VERILATE_ARGS "\${TOP_TARGET_NAME} PREFIX ${JSUBMODULE_PREFIX} TOP_MODULE ${JSUBMODULE_TOP} DIRECTORY ${JSUBMODULE_DIRECTORY} SOURCES ${JSUBMODULE_SOURCES}")
                 endif()
 
-                if (JSUBMODILE_VERILATOR_ARGS)
+                if(JSUBMODILE_VERILATOR_ARGS)
                     string(APPEND SUBMODULE_VERILATE_ARGS " VERILATOR_ARGS -f ${JSUBMODILE_VERILATOR_ARGS}")
                 endif()
 
-                if (JSUBMODULE_CFLAGS)
+                if(JSUBMODULE_CFLAGS)
                     string(APPEND SUBMODULE_VERILATE_ARGS " -CFLAGS ${JSUBMODULE_CFLAGS}")
                 endif()
 
@@ -572,10 +583,9 @@ function(verilate TARGET)
         set_property(TARGET ${TARGET} PROPERTY VERILATOR_COVERAGE ON)
     endif()
 
-    if(${VERILATE_PREFIX}_TRACE_VCD)
-        # If any verilate() call specifies TRACE, define VM_TRACE in the final build
-        set_property(TARGET ${TARGET} PROPERTY VERILATOR_TRACE ON)
-        set_property(TARGET ${TARGET} PROPERTY VERILATOR_TRACE_VCD ON)
+    if(${VERILATE_PREFIX}_SC)
+        # If any verilate() call specifies SYSTEMC, define VM_SC in the final build
+        set_property(TARGET ${TARGET} PROPERTY VERILATOR_SYSTEMC ON)
     endif()
 
     if(${VERILATE_PREFIX}_TRACE_FST)
@@ -590,9 +600,10 @@ function(verilate TARGET)
         set_property(TARGET ${TARGET} PROPERTY VERILATOR_TRACE_SAIF ON)
     endif()
 
-    if(${VERILATE_PREFIX}_SC)
-        # If any verilate() call specifies SYSTEMC, define VM_SC in the final build
-        set_property(TARGET ${TARGET} PROPERTY VERILATOR_SYSTEMC ON)
+    if(${VERILATE_PREFIX}_TRACE_VCD)
+        # If any verilate() call specifies TRACE, define VM_TRACE_VCD in the final build
+        set_property(TARGET ${TARGET} PROPERTY VERILATOR_TRACE ON)
+        set_property(TARGET ${TARGET} PROPERTY VERILATOR_TRACE_VCD ON)
     endif()
 
     if(${VERILATE_PREFIX}_TRACE_STRUCTS)

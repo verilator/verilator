@@ -193,7 +193,7 @@ void DfgGraph::dumpDotFile(const string& filename, const string& label) const {
     // This generates a file used by graphviz, https://www.graphviz.org
     // "hardcoded" parameters:
     const std::unique_ptr<std::ofstream> os{V3File::new_ofstream(filename)};
-    if (os->fail()) v3fatal("Cannot write to file: " << filename);
+    if (os->fail()) v3fatal("Can't write file: " << filename);
     dumpDot(*os.get(), label);
     os->close();
 }
@@ -244,7 +244,7 @@ void DfgGraph::dumpDotUpstreamCone(const string& fileName, const DfgVertex& vtx,
                                    const string& name) const {
     // Open output file
     const std::unique_ptr<std::ofstream> os{V3File::new_ofstream(fileName)};
-    if (os->fail()) v3fatal("Cannot write to file: " << fileName);
+    if (os->fail()) v3fatal("Can't write file: " << fileName);
 
     // Header
     *os << "digraph dfg {\n";
@@ -278,7 +278,7 @@ void DfgGraph::dumpDotAllVarConesPrefixed(const string& label) const {
         const string coneName{prefix + sinkp->varp()->name()};
         const string fileName{v3Global.debugFilename(coneName) + ".dot"};
         const std::unique_ptr<std::ofstream> os{V3File::new_ofstream(fileName)};
-        if (os->fail()) v3fatal("Cannot write to file: " << fileName);
+        if (os->fail()) v3fatal("Can't write file: " << fileName);
 
         // Header
         *os << "digraph dfg {\n";

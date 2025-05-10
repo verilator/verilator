@@ -1,4 +1,4 @@
-%Warning-PINMISSING: t/t_udp_bad.v:10:10: Cell has missing pin: 'c_bad'
+%Warning-PINMISSING: t/t_udp_bad.v:10:10: Instance has missing pin: 'c_bad'
    10 |    udp_x x (a, b);
       |          ^
                      t/t_udp_bad.v:14:28: ... Location of port declaration
@@ -9,9 +9,11 @@
 %Error: t/t_udp_bad.v:14:18: Pin is not an in/out/inout/interface: 'a_bad'
    14 | primitive udp_x (a_bad, b, c_bad);
       |                  ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error-PINNOTFOUND: t/t_udp_bad.v:10:13: Pin not found: '__pinNumber1'
    10 |    udp_x x (a, b);
       |             ^
+                    ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
 %Error: t/t_udp_bad.v:17:11: Multiple outputs not allowed in udp modules
    17 |    output c_bad;
       |           ^~~~~

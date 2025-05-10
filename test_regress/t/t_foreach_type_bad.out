@@ -2,6 +2,7 @@
                                     : ... note: In instance 't'
    19 |       foreach (c[i]);   
       |                  ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_foreach_type_bad.v:21:18: Illegal 'foreach' loop on BASICDTYPE 'real' data type
                                     : ... note: In instance 't'
    21 |       foreach (r[i]);   

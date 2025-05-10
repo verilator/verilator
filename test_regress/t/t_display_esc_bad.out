@@ -1,4 +1,5 @@
 %Error: t/t_display_esc_bad.v:9:16: Unknown escape sequence: \x
     9 |       $display("\x\y\z");   
       |                ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

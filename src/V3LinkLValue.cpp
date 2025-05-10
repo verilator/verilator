@@ -41,7 +41,7 @@ class LinkLValueVisitor final : public VNVisitor {
     bool m_inInitialStatic = false;  // Set if inside AstInitialStatic
     VAccess m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
 
-    // VISITs
+    // VISITORS
     // Result handing
     void visit(AstNodeVarRef* nodep) override {
         // VarRef: LValue its reference

@@ -1,0 +1,10 @@
+%Error: t/t_hier_block_threads_bad.v:23:8: Hierarchical blocks cannot be scheduled on more threads than in thread pool, threads = 4 hierarchical block threads = 8
+                                         : ... note: In instance 't.genblk1[1].hierCore'
+   23 | module Core(input clk); /*verilator hier_block*/ 
+      |        ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-UNSUPPORTED: t/t_hier_block_threads_bad.vlt:8:1: Specifying workers for nested hierarchical blocks
+    8 | hier_workers -module "Core" -workers 8
+      | ^~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

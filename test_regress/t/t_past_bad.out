@@ -2,6 +2,7 @@
                             : ... note: In instance 't'
    16 |       if ($past(d, num)) $stop;   
       |                    ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_past_bad.v:16:11: $past tick value must be constant (IEEE 1800-2023 16.9.3)
                             : ... note: In instance 't'
    16 |       if ($past(d, num)) $stop;   

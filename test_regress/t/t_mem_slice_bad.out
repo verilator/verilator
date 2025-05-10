@@ -2,6 +2,7 @@
                                  : ... note: In instance 't'
    39 |    assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
       |                               ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_mem_slice_bad.v:39:36: Slice selection index '[3:0]' outside data type's '[2:0]'
                                  : ... note: In instance 't'
    39 |    assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];

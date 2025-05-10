@@ -14,7 +14,7 @@ test.pli_filename = "t/t_var_pinsizes.cpp"
 test.top_filename = "t/t_var_pinsizes.v"
 
 test.compile(verilator_flags2=[
-    "-sc -pins64 --trace --exe", test.pli_filename, test.t_dir + "/t_var_pinsizes.vlt"
+    "-sc -pins64 --trace-vcd --exe", test.pli_filename, test.t_dir + "/t_var_pinsizes.vlt"
 ],
              make_main=False)
 

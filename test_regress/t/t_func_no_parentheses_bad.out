@@ -1,4 +1,5 @@
 %Error: t/t_func_no_parentheses_bad.v:16:11: Found definition of 'func' as a FUNC but expected a variable
    16 |       a = func;
       |           ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

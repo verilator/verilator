@@ -1,6 +1,7 @@
 %Error: t/t_class_new_scoped.v:45:21: syntax error, unexpected new, expecting IDENTIFIER-for-type
    45 |       b = ClsNoArg::new;
       |                     ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_class_new_scoped.v:50:19: syntax error, unexpected new-then-paren, expecting IDENTIFIER-for-type
    50 |       b = ClsArg::new(20, 1);
       |                   ^~~

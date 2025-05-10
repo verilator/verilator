@@ -91,7 +91,10 @@ module t (/*AUTOARG*/
       cross a, b { option.comment = "cross"; option.weight = 12; }
    endgroup
    covergroup cg_cross4;
-      cross a, b { function void crossfunc; endfunction; }
+      cross a, b {
+         function void crossfunc; endfunction
+         bins one = crossfunc();
+      }
    endgroup
    covergroup cg_cross_id;
       my_cg_id: cross a, b iff (!rst);
@@ -151,7 +154,27 @@ module t (/*AUTOARG*/
    covergroup cg_more extends cg_empty;
    endgroup
 
+   covergroup cg_args(int cg_lim);
+   endgroup
+
+   class CgCls;
+      int m_x;
+      int m_y;
+      int m_z;
+      covergroup cov1 @m_z;
+         coverpoint m_x;
+         coverpoint m_y;
+      endgroup
+`ifndef T_COVERGROUP_UNSUP_IGN
+      function new(); cov1 = new; endfunction
+`endif
+   endclass
+
    always @(posedge clk) begin
+      cg_more cov1 = new;
+`ifndef T_COVERGROUP_UNSUP_IGN
+      cg_args cov2 = new(2);
+`endif
       if (cyc == 10) begin
          $write("*-* All Finished *-*\n");
          $finish;

@@ -495,7 +495,7 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
     } else if (nodep->num().isString()) {
         emitConstantString(nodep);
     } else if (nodep->isWide()) {
-        int upWidth = nodep->num().widthMin();
+        int upWidth = nodep->num().widthToFit();
         int chunks = 0;
         if (upWidth > EMITC_NUM_CONSTW * VL_EDATASIZE) {
             // Output e.g. 8 words in groups of e.g. 8
@@ -610,9 +610,10 @@ void EmitCFunc::emitSetVarConstant(const string& assignString, AstConst* constp)
 void EmitCFunc::emitVarReset(AstVar* varp, bool constructing) {
     // 'constructing' indicates that the object was just constructed, so no need to clear it also
     AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
+    const string vlSelf = VSelfPointerText::replaceThis(m_useSelfForThis, "this->");
     const string varNameProtected = (VN_IS(m_modp, Class) || varp->isFuncLocal())
                                         ? varp->nameProtect()
-                                        : "vlSelf->" + varp->nameProtect();
+                                        : vlSelf + varp->nameProtect();
     if (varp->isIO() && m_modp->isTop() && optSystemC()) {
         // System C top I/O doesn't need loading, as the lower level subinst code does it.}
     } else if (varp->isParam()) {

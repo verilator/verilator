@@ -603,8 +603,7 @@ private:
             // but in reality it would yield '0's without V3Table, so force 'x' bits to '0',
             // to ensure the result is the same with and without V3Table.
             if (!m_params && VN_IS(nodep, Sel) && valuep->num().isAnyX()) {
-                V3Number num{valuep, valuep->width()};
-                num.opAssign(valuep->num());
+                V3Number num{valuep, valuep->width(), valuep->num()};
                 valuep->num().opBitsOne(num);
             }
         }

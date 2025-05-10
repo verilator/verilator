@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_trace_complex.v"
 
-test.compile(verilator_flags2=['--cc --trace --no-trace-structs --trace-params'])
+test.compile(verilator_flags2=['--cc --trace-vcd --no-trace-structs --trace-params'])
 
 test.execute()
 

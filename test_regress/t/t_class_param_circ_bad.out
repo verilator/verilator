@@ -2,4 +2,6 @@
                                        : ... note: In instance 't'
    14 |    ClsA #(PARAM+1) a;
       |    ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Internal Error: ../V3Param.cpp:#: should find just-made module
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.

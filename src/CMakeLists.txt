@@ -178,6 +178,7 @@ set(HEADERS
     V3Trace.h
     V3TraceDecl.h
     V3Tristate.h
+    V3Udp.h
     V3Undriven.h
     V3UniqueNames.h
     V3Unknown.h
@@ -326,6 +327,7 @@ set(COMMON_SOURCES
     V3TraceDecl.cpp
     V3Tristate.cpp
     V3TSP.cpp
+    V3Udp.cpp
     V3Undriven.cpp
     V3Unknown.cpp
     V3Unroll.cpp

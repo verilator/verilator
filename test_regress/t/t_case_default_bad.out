@@ -1,4 +1,5 @@
 %Error: t/t_case_default_bad.v:16:9: Multiple default statements in case statement.
    16 |         default: $stop;
       |         ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

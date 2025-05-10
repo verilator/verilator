@@ -1,4 +1,5 @@
 %Error: t/t_lint_implicit_type_bad.v:11:11: syntax error, unexpected IDENTIFIER-for-type
    11 |    assign imp_type_conflict = 1'b1;
       |           ^~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

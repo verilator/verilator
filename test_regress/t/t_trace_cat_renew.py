@@ -13,11 +13,13 @@ test.scenarios('vlt_all')
 test.pli_filename = "t/t_trace_cat.cpp"
 test.top_filename = "t/t_trace_cat.v"
 
-test.compile(make_top_shell=False, make_main=False, v_flags2=["--trace --exe", test.pli_filename])
+test.compile(make_top_shell=False,
+             make_main=False,
+             v_flags2=["--trace-vcd --exe", test.pli_filename])
 
 test.execute()
 
-test.vcd_identical(test.obj_dir + "/simpart_0000.vcd", "t/" + test.name + "_0000.out")
-test.vcd_identical(test.obj_dir + "/simpart_0100.vcd", "t/" + test.name + "_0100.out")
+test.vcd_identical(test.obj_dir + "/simpart_0000.vcd", "t/" + test.name + "__0000.out")
+test.vcd_identical(test.obj_dir + "/simpart_0100.vcd", "t/" + test.name + "__0100.out")
 
 test.passes()

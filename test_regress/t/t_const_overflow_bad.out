@@ -1,6 +1,7 @@
 %Error: t/t_const_overflow_bad.v:9:34: Too many digits for 94 bit number: '94'd123456789012345678901234567890'
     9 |    parameter [200:0] TOO_SMALL = 94'd123456789012345678901234567890;   
       |                                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_const_overflow_bad.v:11:31: Too many digits for 8 bit number: '8'habc'
    11 |    parameter [200:0] SMALLH = 8'habc;   
       |                               ^~~~~~

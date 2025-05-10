@@ -401,6 +401,38 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         }
         puts(")");
     }
+    void visit(AstSampled* nodep) override {
+        putfs(nodep, "$sampled(");
+        iterateAndNextConstNull(nodep->exprp());
+        puts(")");
+    }
+    void visit(AstRose* nodep) override {
+        putfs(nodep, "$rose(");
+        iterateAndNextConstNull(nodep->exprp());
+        if (nodep->sentreep()) {
+            puts(", ");
+            iterateAndNextConstNull(nodep->sentreep());
+        }
+        puts(")");
+    }
+    void visit(AstFell* nodep) override {
+        putfs(nodep, "$fell(");
+        iterateAndNextConstNull(nodep->exprp());
+        if (nodep->sentreep()) {
+            puts(", ");
+            iterateAndNextConstNull(nodep->sentreep());
+        }
+        puts(")");
+    }
+    void visit(AstStable* nodep) override {
+        putfs(nodep, "$stable(");
+        iterateAndNextConstNull(nodep->exprp());
+        if (nodep->sentreep()) {
+            puts(", ");
+            iterateAndNextConstNull(nodep->sentreep());
+        }
+        puts(")");
+    }
     void visit(AstReturn* nodep) override {
         putfs(nodep, "return ");
         iterateAndNextConstNull(nodep->lhsp());

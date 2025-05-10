@@ -1,6 +1,7 @@
 %Error: t/t_unconnected_bad.v:7:1: Bad `unconnected_drive syntax
     7 | `unconnected_drive
       | ^~~~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_unconnected_bad.v:9:1: Bad `unconnected_drive syntax
     9 | `unconnected_drive pull2
       | ^~~~~~~~~~~~~~~~~~

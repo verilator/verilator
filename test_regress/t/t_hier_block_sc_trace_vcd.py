@@ -22,7 +22,7 @@ test.clean_objs()
 test.compile(v_flags2=['t/t_hier_block.cpp'],
              verilator_flags2=[
                  '--sc', '--stats', '--hierarchical', '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus"',
-                 "--CFLAGS", '"-O0 -ggdb"', "--trace"
+                 "--CFLAGS", '"-O0 -ggdb"', "--trace-vcd"
              ],
              threads=(6 if test.vltmt else 1))
 

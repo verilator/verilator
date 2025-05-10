@@ -4,6 +4,7 @@
         t/t_flag_errorlimit_bad.v:9:8: ... Location of original declaration
     9 |    int u1;
       |        ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_flag_errorlimit_bad.v:11:8: Duplicate declaration of signal: 'u1'
    11 |    int u1;
       |        ^~

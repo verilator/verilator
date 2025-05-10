@@ -7,4 +7,5 @@
                                     : ... note: In instance 't'
    17 |       res = a.map(el) with (el == 200);
       |               ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

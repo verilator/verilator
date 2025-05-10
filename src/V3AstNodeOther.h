@@ -631,8 +631,10 @@ class AstCFunc final : public AstNode {
     bool m_isConstructor : 1;  // Is C class constructor
     bool m_isDestructor : 1;  // Is C class destructor
     bool m_isMethod : 1;  // Is inside a class definition
-    bool m_isLoose : 1;  // Semantically this is a method, but is implemented as a function
-                         // with an explicitly passed 'self' pointer as the first argument
+    bool m_isLoose : 1;  // Semantically this is a method, but is implemented as a function with
+                         // an explicitly passed 'self' pointer as the first argument.  This can
+                         // be slightly faster due to __restrict, and we do not declare in header
+                         // so adding/removing loose functions doesn't recompile everything.
     bool m_isInline : 1;  // Inline function
     bool m_isVirtual : 1;  // Virtual function
     bool m_entryPoint : 1;  // User may call into this top level function
@@ -915,6 +917,7 @@ class AstClassExtends final : public AstNode {
     // during early parse, then moves to dtype
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     // @astgen op2 := classOrPkgsp : Optional[AstNode]
+    // @astgen op3 := argsp : List[AstNodeExpr]
     const bool m_isImplements = false;  // class implements
     bool m_parameterized = false;  // has parameters in its statement
 
@@ -1491,18 +1494,24 @@ public:
 };
 class AstPragma final : public AstNode {
     const VPragmaType m_pragType;  // Type of pragma
+    const VTimescale m_timescale;  // For TIMEUNIT_SET
 public:
     // Pragmas don't result in any output code, they're just flags that affect
     // other processing in verilator.
     AstPragma(FileLine* fl, VPragmaType pragType)
         : ASTGEN_SUPER_Pragma(fl)
         , m_pragType{pragType} {}
+    AstPragma(FileLine* fl, VPragmaType pragType, const VTimescale& timescale)
+        : ASTGEN_SUPER_Pragma(fl)
+        , m_pragType{pragType}
+        , m_timescale(timescale) {}
     ASTGEN_MEMBERS_AstPragma;
     VPragmaType pragType() const { return m_pragType; }  // *=type of the pragma
     bool isPredictOptimizable() const override { return false; }
     bool sameNode(const AstNode* samep) const override {
         return pragType() == VN_DBG_AS(samep, Pragma)->pragType();
     }
+    VTimescale timescale() const { return m_timescale; }
 };
 class AstPropSpec final : public AstNode {
     // A clocked property
@@ -1797,19 +1806,48 @@ class AstUdpTable final : public AstNode {
 public:
     AstUdpTable(FileLine* fl, AstUdpTableLine* linesp)
         : ASTGEN_SUPER_UdpTable(fl) {
-        addLinesp(linesp);
+        this->addLinesp(linesp);
+        if (!v3Global.hasTable()) v3Global.setHasTable();
     }
     ASTGEN_MEMBERS_AstUdpTable;
 };
 class AstUdpTableLine final : public AstNode {
-    string m_text;
+    // @astgen op1 := iFieldsp : List[AstUdpTableLineVal]  // Input fields
+    // @astgen op2 := oFieldsp : List[AstUdpTableLineVal]  // Output fields
+private:
+    const bool m_udpIsCombo;  // Combinational or sequential UDP
 
 public:
-    AstUdpTableLine(FileLine* fl, const string& text)
+    class UdpCombo {};
+    AstUdpTableLine(UdpCombo, FileLine* fl, AstUdpTableLineVal* iFieldsp,
+                    AstUdpTableLineVal* oFieldsp)
         : ASTGEN_SUPER_UdpTableLine(fl)
-        , m_text{text} {}
+        , m_udpIsCombo{true} {
+        addIFieldsp(iFieldsp);
+        addOFieldsp(oFieldsp);
+    }
+    class UdpSequential {};
+    AstUdpTableLine(UdpSequential, FileLine* fl, AstUdpTableLineVal* iFieldsp,
+                    AstUdpTableLineVal* oFieldsp1, AstUdpTableLineVal* oFieldsp2)
+        : ASTGEN_SUPER_UdpTableLine(fl)
+        , m_udpIsCombo{false} {
+        addIFieldsp(iFieldsp);
+        addOFieldsp(oFieldsp1);
+        addOFieldsp(oFieldsp2);
+    }
     ASTGEN_MEMBERS_AstUdpTableLine;
+    int udpIsCombo() const { return m_udpIsCombo; }
+};
+class AstUdpTableLineVal final : public AstNode {
+    string m_text;  // Value character
+
+public:
+    AstUdpTableLineVal(FileLine* fl, const string& text)
+        : ASTGEN_SUPER_UdpTableLineVal(fl)
+        , m_text{text} {}
+    ASTGEN_MEMBERS_AstUdpTableLineVal;
     string name() const override VL_MT_STABLE { return m_text; }
+    void name(std::string const& text) override VL_MT_STABLE { m_text = text; }
     string text() const VL_MT_SAFE { return m_text; }
 };
 class AstVar final : public AstNode {
@@ -2489,14 +2527,28 @@ public:
 };
 class AstModule final : public AstNodeModule {
     // A module declaration
-    const bool m_isProgram;  // Module represents a program
+    const bool m_isChecker = false;  // Module represents a checker
+    const bool m_isProgram = false;  // Module represents a program
 public:
-    AstModule(FileLine* fl, const string& name, bool program = false)
+    class Checker {};  // for constructor type-overload selection
+    class Program {};  // for constructor type-overload selection
+    AstModule(FileLine* fl, const string& name)
+        : ASTGEN_SUPER_Module(fl, name) {}
+    AstModule(FileLine* fl, const string& name, Checker)
         : ASTGEN_SUPER_Module(fl, name)
-        , m_isProgram{program} {}
+        , m_isChecker{true} {}
+    AstModule(FileLine* fl, const string& name, Program)
+        : ASTGEN_SUPER_Module(fl, name)
+        , m_isProgram{true} {}
     ASTGEN_MEMBERS_AstModule;
-    string verilogKwd() const override { return m_isProgram ? "program" : "module"; }
+    string verilogKwd() const override {
+        return m_isChecker ? "checker" : m_isProgram ? "program" : "module";
+    }
     bool timescaleMatters() const override { return true; }
+    bool isChecker() const { return m_isChecker; }
+    bool isProgram() const { return m_isProgram; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
 };
 class AstNotFoundModule final : public AstNodeModule {
     // A missing module declaration
@@ -3339,6 +3391,24 @@ public:
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
+class AstSetuphold final : public AstNodeStmt {
+    // Verilog $setuphold
+    // @astgen op1 := refevp : AstNodeExpr
+    // @astgen op2 := dataevp : AstNodeExpr
+    // @astgen op3 := delrefp : Optional[AstNodeExpr]
+    // @astgen op4 := deldatap : Optional[AstNodeExpr]
+public:
+    AstSetuphold(FileLine* fl, AstNodeExpr* refevp, AstNodeExpr* dataevp,
+                 AstNodeExpr* delrefp = nullptr, AstNodeExpr* deldatap = nullptr)
+        : ASTGEN_SUPER_Setuphold(fl) {
+        this->refevp(refevp);
+        this->dataevp(dataevp);
+        this->delrefp(delrefp);
+        this->deldatap(deldatap);
+    }
+    ASTGEN_MEMBERS_AstSetuphold;
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
 class AstStackTraceT final : public AstNodeStmt {
     // $stacktrace used as task
 public:
@@ -3895,6 +3965,14 @@ public:
     AstScHdr(FileLine* fl, const string& textp)
         : ASTGEN_SUPER_ScHdr(fl, textp) {}
     ASTGEN_MEMBERS_AstScHdr;
+    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isOutputter() override { return true; }
+};
+class AstScHdrPost final : public AstNodeText {
+public:
+    AstScHdrPost(FileLine* fl, const string& textp)
+        : ASTGEN_SUPER_ScHdrPost(fl, textp) {}
+    ASTGEN_MEMBERS_AstScHdrPost;
     bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
     bool isOutputter() override { return true; }
 };

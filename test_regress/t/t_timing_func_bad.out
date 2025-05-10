@@ -2,6 +2,7 @@
                                   : ... note: In instance 't'
    10 |       #1 $stop;
       |       ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_timing_func_bad.v:15:12: Timing controls are not legal in functions. Suggest use a task (IEEE 1800-2023 13.4.4)
                                    : ... note: In instance 't'
    15 |       f2 = #5 0; $stop;

@@ -2,6 +2,7 @@
                              : ... note: In instance 't'
     9 |    enum bit [1:0] { BADX = 2'b1x } BAD1;
       |                     ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_enum_x_bad.v:12:23: Enum value that is unassigned cannot follow value with X/Zs (IEEE 1800-2023 6.19)
                               : ... note: In instance 't'
    12 |                       e1

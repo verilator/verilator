@@ -848,6 +848,15 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
     }
 }
 
+bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
+    const AstNodeDType* nodep = this;
+    nodep = nodep->skipRefToNonRefp();
+    samep = samep->skipRefToNonRefp();
+    if (nodep == samep) return true;
+    if (nodep->type() != samep->type()) return false;
+    return nodep->similarDTypeNode(samep);
+}
+
 bool AstNodeDType::isFourstate() const { return basicp() && basicp()->isFourstate(); }
 
 class AstNodeDType::CTypeRecursed final {
@@ -1007,11 +1016,11 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
     return info;
 }
 
-uint32_t AstNodeDType::arrayUnpackedElements() {
+uint32_t AstNodeDType::arrayUnpackedElements() const {
     uint32_t entries = 1;
-    for (AstNodeDType* dtypep = this; dtypep;) {
+    for (const AstNodeDType* dtypep = this; dtypep;) {
         dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-        if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             entries *= adtypep->elementsConst();
             dtypep = adtypep->subDTypep();
         } else {
@@ -1852,10 +1861,10 @@ void AstIfaceRefDType::dump(std::ostream& str) const {
     if (ifaceName() != "") str << " if=" << ifaceName();
     if (modportName() != "") str << " mp=" << modportName();
     if (cellp()) {
-        str << " -> ";
+        str << " c-> ";
         cellp()->dump(str);
     } else if (ifacep()) {
-        str << " -> ";
+        str << " i-> ";
         ifacep()->dump(str);
     } else {
         str << " -> UNLINKED";
@@ -2037,6 +2046,16 @@ void AstModportVarRef::dump(std::ostream& str) const {
 }
 void AstModportVarRef::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "direction", direction().ascii());
+    dumpJsonGen(str);
+}
+void AstModule::dump(std::ostream& str) const {
+    this->AstNodeModule::dump(str);
+    if (isChecker()) str << " [CHECKER]";
+    if (isProgram()) str << " [PROGRAM]";
+}
+void AstModule::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isChecker);
+    dumpJsonBoolFunc(str, isProgram);
     dumpJsonGen(str);
 }
 void AstPin::dump(std::ostream& str) const {
@@ -2500,6 +2519,7 @@ AstNodeVarRef* AstNodeVarRef::varRefLValueRecurse(AstNode* nodep) {
 
 void AstVarXRef::dump(std::ostream& str) const {
     this->AstNodeVarRef::dump(str);
+    if (containsGenBlock()) str << " [GENBLK]";
     str << ".=" << dotted() << " ";
     if (inlinedDots() != "") str << " inline.=" << inlinedDots() << " - ";
     if (varScopep()) {
@@ -2511,6 +2531,7 @@ void AstVarXRef::dump(std::ostream& str) const {
     }
 }
 void AstVarXRef::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, containsGenBlock);
     dumpJsonStrFunc(str, dotted);
     dumpJsonStrFunc(str, inlinedDots);
     dumpJsonGen(str);

@@ -3,6 +3,7 @@
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Warning-INSECURE: Using --protect-ids with --trace may expose private design details
                    ... Suggest remove --trace.
+                   ... For warning description see https://verilator.org/warn/INSECURE?v=latest
                    ... Use "/* verilator lint_off INSECURE */" and lint_on around source to disable this message.
 %Warning-INSECURE: Using --protect-ids with --vpi may expose private design details
                    ... Suggest remove --vpi.

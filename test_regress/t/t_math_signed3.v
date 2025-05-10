@@ -41,14 +41,28 @@ module t (/*AUTOARG*/);
 
    wire [3:0]        subout_u;
    sub sub (.a(2'sb11), .z(subout_u));
-   initial `checkh(subout_u, 4'b1111);
+   initial begin
+      #1;
+      `checkh(subout_u, 4'b1111);
+   end
 
    wire [5:0]        cond_a = 1'b1 ? 3'sb111 : 5'sb11111;
-   initial `checkh(cond_a, 6'b111111);
+   initial begin
+      #1;
+      `checkh(cond_a, 6'b111111);
+   end
+
    wire [5:0]        cond_b = 1'b0 ? 3'sb111 : 5'sb11111;
-   initial `checkh(cond_b, 6'b111111);
+   initial begin
+      #1;
+      `checkh(cond_b, 6'b111111);
+   end
+
+   bit cmp;
 
    initial begin
+      #1;
+
       // verilator lint_on WIDTH
       `checkh(bug729_yuu, 1'b0);
       `checkh(bug729_ysu, 1'b0);
@@ -81,13 +95,37 @@ module t (/*AUTOARG*/);
       bug349_s = 4'sb1111 - 5'b00001;
       `checkh(bug349_s,33'he);
 
+      cmp = 3'sb111 == 4'b111;
+      `checkh(cmp, 1);
+      cmp = 3'sb111 == 4'sb111;
+      `checkh(cmp, 0);
+      cmp = 3'sb111 != 4'b111;
+      `checkh(cmp, 0);
+      cmp = 3'sb111 != 4'sb111;
+      `checkh(cmp, 1);
+
+      cmp = 3'sb111 === 4'b111;
+      `checkh(cmp, 1);
+      cmp = 3'sb111 === 4'sb111;
+      `checkh(cmp, 0);
+
       case (2'sb11)
-        4'b1111: ;
+        4'b1111: $stop;
+        default: ;
+      endcase
+
+      case (sb11)
+        4'b1111: $stop;
+        default: ;
+      endcase
+
+      case (2'sb11)
+        4'sb1111: ;
         default: $stop;
       endcase
 
       case (sb11)
-        4'b1111: ;
+        4'sb1111: ;
         default: $stop;
       endcase
 
@@ -96,7 +134,7 @@ module t (/*AUTOARG*/);
    end
 endmodule
 
-module sub (input [3:0] a,
-            output [3:0] z);
+module sub(input [3:0] a,
+           output [3:0] z);
    assign z = a;
 endmodule

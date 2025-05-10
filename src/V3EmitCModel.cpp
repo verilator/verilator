@@ -584,7 +584,7 @@ class EmitCModel final : public EmitCFunc {
         puts(/****/ "vl_fatal(__FILE__, __LINE__, __FILE__,\"'" + topClassName()
              + "::trace()' called on non-" + v3Global.opt.traceClassBase() + "C object;\"\n"
              + "\" use --trace-fst with VerilatedFst object,"
-             + " and --trace with VerilatedVcd object\");\n");
+             + " and --trace-vcd with VerilatedVcd object\");\n");
         puts(/**/ "}\n");
         puts(/**/ "stfp->spTrace()->addModel(this);\n");
         puts(/**/ "stfp->spTrace()->addInitCb(&" + protect("trace_init")

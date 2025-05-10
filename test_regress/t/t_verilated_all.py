@@ -20,7 +20,7 @@ test.compile(
     # Can't use --coverage and --savable together, so cheat and compile inline
     verilator_flags2=[
         "--cc", "--coverage-toggle --coverage-line --coverage-user",
-        "--trace --vpi ", "--trace-threads 1",
+        "--trace-vcd --vpi ", "--trace-threads 1",
         ("--timing" if test.have_coroutines else "--no-timing -Wno-STMTDLY"), "--prof-exec",
         "--prof-pgo", root + "/include/verilated_save.cpp"
     ],

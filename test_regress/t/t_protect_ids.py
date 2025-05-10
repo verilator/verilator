@@ -19,7 +19,7 @@ for filename in (glob.glob(test.obj_dir + "/*_PS*.cpp") + glob.glob(test.obj_dir
     test.unlink_ok(filename)
 
 test.compile(verilator_flags2=[
-    "--protect-ids", "--protect-key SECRET_KEY", "--trace", "--coverage", "-Wno-INSECURE",
+    "--protect-ids", "--protect-key SECRET_KEY", "--trace-vcd", "--coverage", "-Wno-INSECURE",
     "t/t_protect_ids_c.cpp"
 ])
 

@@ -1,4 +1,5 @@
 %Error: t/t_vlt_match_error.v:19:27: Can't find definition of variable: 'EC_ERROR'
    19 |     initial $readmemh("", EC_ERROR);
       |                           ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

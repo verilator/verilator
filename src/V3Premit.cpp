@@ -141,8 +141,7 @@ class PremitVisitor final : public VNVisitor {
                 newp = new AstShiftRSOvr{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
                                          nodep->rhsp()->unlinkFrBack()};
             }
-            newp->dtypeFrom(nodep);
-            nodep->replaceWith(newp);
+            nodep->replaceWithKeepDType(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
@@ -288,6 +287,15 @@ class PremitVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkNode(nodep);
     }
+    void visit(AstCvtPackedToArray* nodep) override {
+        iterateChildren(nodep);
+        checkNode(nodep);
+        if (!VN_IS(nodep->backp(), NodeAssign)) createWideTemp(nodep);
+    }
+    void visit(AstCvtUnpackedToQueue* nodep) override {
+        iterateChildren(nodep);
+        checkNode(nodep);
+    }
     void visit(AstSel* nodep) override {
         iterateAndNextNull(nodep->fromp());
         {  // Only the 'from' is part of the assignment LHS
@@ -299,13 +307,11 @@ class PremitVisitor final : public VNVisitor {
         checkNode(nodep);
     }
     void visit(AstArraySel* nodep) override {
-        // Skip straight to children. Don't replace the array
-        iterateChildren(nodep->fromp());
+        iterateAndNextNull(nodep->fromp());
         {  // Only the 'from' is part of the assignment LHS
             VL_RESTORER(m_assignLhs);
             m_assignLhs = false;
-            // Index is never wide, so skip straight to children
-            iterateChildren(nodep->bitp());
+            iterateAndNextNull(nodep->bitp());
         }
         // ArraySel are just pointer arithmetic and should never be replaced
     }

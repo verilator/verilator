@@ -2,6 +2,7 @@
                                    : ... note: In instance 't'
    15 |       q.reverse(1);   
       |         ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_queue_method_bad.v:16:9: The 1 arguments passed to .shuffle method does not match its requiring 0 arguments
                                    : ... note: In instance 't'
    16 |       q.shuffle(1);   

@@ -2,6 +2,7 @@
                                            : ... note: In instance 't'
    22 |       p.m_val.rand_mode(0);
       |               ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_randomize_rand_mode_bad.v:23:19: Cannot call 'rand_mode()' on packed array element
                                            : ... note: In instance 't'
    23 |       p.m_pack[0].rand_mode(0);

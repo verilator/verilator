@@ -1,4 +1,5 @@
 %Error: t/t_let_stmt_bad.v:15:14: Expected statement, not let substitution 'letf'
    15 |           0: letf(0);  
       |              ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

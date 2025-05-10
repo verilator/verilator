@@ -2,4 +2,5 @@
                                   : ... Suggest move for loop upwards to generate-level scope.
    25 |             for (i=0; i<N; i=i+1) begin
       |             ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

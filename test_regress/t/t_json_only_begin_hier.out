@@ -1,6 +1,6 @@
 {"type":"NETLIST","name":"$root","addr":"(B)","loc":"a,0:0,0:0","timeunit":"1ps","timeprecision":"1ps","typeTablep":"(C)","constPoolp":"(D)","dollarUnitPkgp":"UNLINKED","stdPackagep":"UNLINKED","evalp":"UNLINKED","evalNbap":"UNLINKED","dpiExportTriggerp":"UNLINKED","delaySchedulerp":"UNLINKED","nbaEventp":"UNLINKED","nbaEventTriggerp":"UNLINKED","topScopep":"UNLINKED",
  "modulesp": [
-  {"type":"MODULE","name":"test","addr":"(E)","loc":"d,22:8,22:12","origName":"test","level":2,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
+  {"type":"MODULE","name":"test","addr":"(E)","loc":"d,22:8,22:12","isChecker":false,"isProgram":false,"origName":"test","level":2,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
     {"type":"VAR","name":"N","addr":"(F)","loc":"d,24:12,24:13","dtypep":"(G)","origName":"N","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":true,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"VSTATIC","varType":"GENVAR","dtypeName":"integer","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"BEGIN","name":"FOR_GENERATE","addr":"(H)","loc":"d,25:14,25:17","generate":true,"genfor":false,"implied":true,"needProcess":false,"unnamed":false,"genforp": [],"stmtsp": []},
@@ -23,7 +23,7 @@
       {"type":"CELL","name":"submod_3","addr":"(S)","loc":"d,31:21,31:29","origName":"submod_3","recursive":false,"modp":"(K)","pinsp": [],"paramsp": [],"rangep": [],"intfRefsp": []}
     ]}
   ],"activesp": []},
-  {"type":"MODULE","name":"submod","addr":"(K)","loc":"d,10:8,10:14","origName":"submod","level":3,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
+  {"type":"MODULE","name":"submod","addr":"(K)","loc":"d,10:8,10:14","isChecker":false,"isProgram":false,"origName":"submod","level":3,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
     {"type":"BEGIN","name":"submod_gen","addr":"(T)","loc":"d,12:19,12:29","generate":true,"genfor":false,"implied":false,"needProcess":false,"unnamed":false,"genforp": [],
      "stmtsp": [
@@ -36,7 +36,7 @@
     ]},
     {"type":"CELL","name":"submod_l0","addr":"(AB)","loc":"d,19:13,19:22","origName":"submod_l0","recursive":false,"modp":"(Y)","pinsp": [],"paramsp": [],"rangep": [],"intfRefsp": []}
   ],"activesp": []},
-  {"type":"MODULE","name":"submod2","addr":"(Y)","loc":"d,7:8,7:15","origName":"submod2","level":4,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],"stmtsp": [],"activesp": []}
+  {"type":"MODULE","name":"submod2","addr":"(Y)","loc":"d,7:8,7:15","isChecker":false,"isProgram":false,"origName":"submod2","level":4,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],"stmtsp": [],"activesp": []}
 ],"filesp": [],
  "miscsp": [
   {"type":"TYPETABLE","name":"","addr":"(C)","loc":"a,0:0,0:0","constraintRefp":"UNLINKED","emptyQueuep":"UNLINKED","queueIndexp":"UNLINKED","streamp":"UNLINKED","voidp":"UNLINKED",
@@ -46,7 +46,7 @@
   ]},
   {"type":"CONSTPOOL","name":"","addr":"(D)","loc":"a,0:0,0:0",
    "modulep": [
-    {"type":"MODULE","name":"@CONST-POOL@","addr":"(BB)","loc":"a,0:0,0:0","origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
+    {"type":"MODULE","name":"@CONST-POOL@","addr":"(BB)","loc":"a,0:0,0:0","isChecker":false,"isProgram":false,"origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
      "stmtsp": [
       {"type":"SCOPE","name":"@CONST-POOL@","addr":"(CB)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(BB)","varsp": [],"blocksp": [],"inlinesp": []}
     ],"activesp": []}

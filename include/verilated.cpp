@@ -577,14 +577,14 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lw
     const int owords = VL_WORDS_I(obits);
     VL_DEBUG_IFDEF(assert(owords <= VL_MULS_MAX_WORDS););
     owp[0] = 1;
-    for (int i = 1; i < VL_WORDS_I(obits); i++) owp[i] = 0;
+    for (int i = 1; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
     // cppcheck-has-bug-suppress variableScope
     VlWide<VL_MULS_MAX_WORDS> powstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     VlWide<VL_MULS_MAX_WORDS> lastpowstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     VlWide<VL_MULS_MAX_WORDS> lastoutstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     // cppcheck-has-bug-suppress variableScope
     VL_ASSIGN_W(obits, powstore, lwp);
-    for (int bit = 0; bit < rbits; bit++) {
+    for (int bit = 0; bit < rbits; ++bit) {
         if (bit > 0) {  // power = power*power
             VL_ASSIGN_W(obits, lastpowstore, powstore);
             VL_MUL_W(owords, powstore, lastpowstore, lastpowstore);
@@ -919,6 +919,7 @@ void _vl_vsformat(std::string& output, const std::string& format, va_list ap) VL
             }
             case 'p': {  // 'x' but parameter is string
                 const int lbits = va_arg(ap, int);
+                (void)lbits;
                 const std::string* const cstr = va_arg(ap, const std::string*);
                 std::ostringstream oss;
                 for (unsigned char c : *cstr) oss << std::hex << static_cast<int>(c);
@@ -1249,9 +1250,9 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     bool inPct = false;
     bool inIgnore = false;
     std::string::const_iterator pos = format.cbegin();
-    for (; pos != format.cend() && !_vl_vsss_eof(fp, floc); ++pos) {
-        // VL_DBG_MSGF("_vlscan fmt='"<<pos[0]<<"' floc="<<floc<<" file='"<<_vl_vsss_peek(fp, floc,
-        // fromp, fstr)<<"'\n");
+    for (; pos != format.cend(); ++pos) {
+        // VL_DBG_MSGF("_vlscan fmt='%c' floc=%d file='%c'\n", pos[0], floc,
+        // _vl_vsss_peek(fp, floc, fromp, fstr));
         if (!inPct && pos[0] == '%') {
             inPct = true;
             inIgnore = false;
@@ -1435,7 +1436,12 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
             }  // switch
         }
     }
+    // Processed all arguments
+    return got;
+
 done:
+    // Scan stopped early, return parsed or EOF
+    if (_vl_vsss_eof(fp, floc)) return -1;
     return got;
 }
 
@@ -1764,7 +1770,7 @@ std::string VL_STACKTRACE_N() VL_MT_SAFE {
     if (!strings) return "Unable to backtrace\n";
 
     std::string result = "Backtrace:\n";
-    for (int j = 0; j < nptrs; j++) result += std::string{strings[j]} + "\n"s;
+    for (int j = 0; j < nptrs; ++j) result += std::string{strings[j]} + "\n"s;
     free(strings);
     return result;
 }
@@ -2036,7 +2042,7 @@ static const char* formatBinary(int nBits, uint32_t bits) {
     assert((nBits >= 1) && (nBits <= 32));
 
     static thread_local char t_buf[64];
-    for (int i = 0; i < nBits; i++) {
+    for (int i = 0; i < nBits; ++i) {
         const bool isOne = bits & (1 << (nBits - 1 - i));
         t_buf[i] = (isOne ? '1' : '0');
     }
@@ -3032,7 +3038,7 @@ void VerilatedContext::trace(VerilatedTraceBaseC* tfp, int levels, int options) 
     if (m_ns.m_traceBaseModelCbs.empty())
         VL_FATAL_MT("", 0, "",
                     "Testbench C call to 'VerilatedContext::trace()' requires model(s) Verilated"
-                    " with --trace or --trace-vcd option");
+                    " with --trace-fst or --trace-vcd option");
     for (auto& cbr : m_ns.m_traceBaseModelCbs) cbr(tfp, levels, options);
 }
 void VerilatedContext::traceBaseModelCbAdd(traceBaseModelCb_t cb) VL_MT_SAFE {
@@ -3470,7 +3476,7 @@ void VerilatedHierarchy::remove(VerilatedScope* fromp, VerilatedScope* top) {
 void VerilatedAssertOneThread::fatal_different() VL_MT_SAFE {
     VL_FATAL_MT(__FILE__, __LINE__, "",
                 "Routine called that is single threaded, but called from"
-                " a different thread then the expected constructing thread");
+                " a different thread than the expected constructing thread");
 }
 #endif
 

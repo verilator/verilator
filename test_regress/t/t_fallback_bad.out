@@ -1,6 +1,7 @@
 %Error: t/t_fallback_bad.v:26:16: Can't find definition of task/function: 'tsk'
    26 |          super.tsk;
       |                ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_fallback_bad.v:27:15: Can't find definition of task/function: 'tsk'
    27 |          this.tsk;
       |               ^~~

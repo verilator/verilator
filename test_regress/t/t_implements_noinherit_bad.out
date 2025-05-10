@@ -1,4 +1,5 @@
 %Error: t/t_implements_noinherit_bad.v:14:16: Can't find definition of variable: 'IP'
    14 |       $display(IP);  
       |                ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

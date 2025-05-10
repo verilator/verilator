@@ -252,6 +252,7 @@ class InlineRelinkVisitor final : public VNVisitor {
     std::unordered_set<std::string> m_renamedInterfaces;  // Name of renamed interface variables
     AstNodeModule* const m_modp;  // Current module
     const AstCell* const m_cellp;  // Cell being cloned
+    bool m_initialStatic = false;  // Inside InitialStatic
 
     // VISITORS
     void visit(AstCellInline* nodep) override {
@@ -290,6 +291,7 @@ class InlineRelinkVisitor final : public VNVisitor {
             if (exprconstp) {
                 m_modp->addStmtsp(new AstAssignW{flp, new AstVarRef{flp, nodep, VAccess::WRITE},
                                                  exprconstp->cloneTree(false)});
+                nodep->user4(true);  // Making assignment to it
             } else if (nodep->user3()) {
                 // Public variable at the lower module end - we need to make sure we propagate
                 // the logic changes up and down; if we aliased, we might
@@ -305,6 +307,7 @@ class InlineRelinkVisitor final : public VNVisitor {
                 UINFO(9, "assign to public and unpacked: " << nodep << endl);
                 exprvarrefp = exprvarrefp->cloneTree(false);
                 exprvarrefp->access(VAccess::READ);
+                nodep->user4(true);  // Making assignment to it
                 m_modp->addStmtsp(
                     new AstAssignW{flp, new AstVarRef{flp, nodep, VAccess::WRITE}, exprvarrefp});
             } else if (nodep->isIfaceRef()) {
@@ -322,6 +325,7 @@ class InlineRelinkVisitor final : public VNVisitor {
                 exprvarrefp->access(VAccess::READ);
                 AstVarRef* const nodeVarRefp = new AstVarRef{flp, nodep, VAccess::WRITE};
                 if (nodep->isForced() && nodep->direction() == VDirection::INPUT) {
+                    nodep->user4(true);  // Making assignment to it
                     m_modp->addStmtsp(new AstAssignW{flp, nodeVarRefp, exprvarrefp});
                 } else if (nodep->isForced() && nodep->direction() == VDirection::OUTPUT) {
                     exprvarrefp->access(VAccess::WRITE);
@@ -372,6 +376,22 @@ class InlineRelinkVisitor final : public VNVisitor {
     void visit(AstTypedef* nodep) override {
         // Typedef under the inline cell, need to rename to avoid conflicts
         nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
+        iterateChildren(nodep);
+    }
+    void visit(AstInitialStatic* nodep) override {
+        VL_RESTORER(m_initialStatic);
+        m_initialStatic = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeAssign* nodep) override {
+        if (AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
+            if (m_initialStatic && varrefp->varp()->user2() && varrefp->varp()->user4()) {
+                // Initial assignment to i/o we are overriding, can remove
+                UINFO(9, "Remove InitialStatic " << nodep << endl);
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+        }
         iterateChildren(nodep);
     }
     void visit(AstVarRef* nodep) override {
@@ -470,6 +490,7 @@ class InlineVisitor final : public VNVisitor {
     //   AstVar::user2p()       // AstVarRef*/AstConst*  Points to signal this
     //                          // is a direct connect to
     //   AstVar::user3()        // bool    Don't alias the user2, keep it as signal
+    //   AstVar::user4()        // bool    Was input, remove InitialStatic Assign
     //   AstCell::user4         // AstCell* of the created clone
     const VNUser4InUse m_inuser4;
 
@@ -603,10 +624,10 @@ class InlineVisitor final : public VNVisitor {
 
     //--------------------
     void visit(AstCell* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatal("Traversal should have been short circuited");
+        nodep->v3fatalSrc("Traversal should have been short circuited");
     }
     void visit(AstNodeStmt* nodep) override {
-        nodep->v3fatal("Traversal should have been short circuited");
+        nodep->v3fatalSrc("Traversal should have been short circuited");
     }  // LCOV_EXCL_STOP
     void visit(AstNodeFile*) override {}  // Accelerate
     void visit(AstNodeDType*) override {}  // Accelerate
@@ -643,8 +664,8 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
         for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
              modp = VN_AS(modp->nextp(), NodeModule)) {
             UASSERT_OBJ(!moduleState(modp).m_inlined, modp,
-                        "Inlined module should have been deleted when the last cell referencing "
-                        "it was inlined");
+                        "Inlined module should have been deleted when the last instance "
+                        "referencing it was inlined");
         }
     }
 

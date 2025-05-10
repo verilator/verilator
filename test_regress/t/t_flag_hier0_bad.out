@@ -1,4 +1,5 @@
 %Error: --hierarchical-block requires the number of entries to be even
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Module name 'param0' is duplicated in --hierarchical-block
 %Error: --hierarchical-block requires at least two comma-separated values
 %Error: --hierarchical-block must not end with \

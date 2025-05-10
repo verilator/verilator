@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter')
 
 test.lint(fails=True,
           verilator_flags2=["--no-std", "--exe --main --timing -Wall"],

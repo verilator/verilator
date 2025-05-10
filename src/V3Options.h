@@ -609,6 +609,9 @@ public:
     VTimescale timeComputeUnit(const VTimescale& flag) const;
     int traceDepth() const { return m_traceDepth; }
     TraceFormat traceFormat() const { return m_traceFormat; }
+    bool traceEnabledFst() const { return trace() && traceFormat().fst(); }
+    bool traceEnabledSaif() const { return trace() && traceFormat().saif(); }
+    bool traceEnabledVcd() const { return trace() && traceFormat().vcd(); }
     int traceMaxArray() const { return m_traceMaxArray; }
     int traceMaxWidth() const { return m_traceMaxWidth; }
     int traceThreads() const { return m_traceThreads; }

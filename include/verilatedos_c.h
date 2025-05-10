@@ -31,6 +31,13 @@
 # include <processthreadsapi.h>  // GetProcessTimes
 # include <psapi.h>   // GetProcessMemoryInfo
 #endif
+
+#if defined(__linux)
+# include <sched.h>  // For sched_getcpu()
+#endif
+#if defined(__APPLE__) && !defined(__arm64__)
+# include <cpuid.h>  // For __cpuid_count()
+#endif
 // clang-format on
 
 namespace VlOs {
@@ -69,6 +76,28 @@ double DeltaWallTime::gettime() VL_MT_SAFE {
     if (0 == clock_gettime(CLOCK_MONOTONIC, &ts))  // MT-Safe  // LCOV_EXCL_BR_LINE
         return ts.tv_sec + ts.tv_nsec * 1e-9;
     return 0.0;  // LCOV_EXCL_LINE
+#endif
+}
+
+//=============================================================================
+// Vlos::getcpu implementation
+
+uint16_t getcpu() VL_MT_SAFE {
+#if defined(__linux)
+    return sched_getcpu();  // TODO: this is a system call. Not exactly cheap.
+#elif defined(__APPLE__) && !defined(__arm64__)
+    uint32_t info[4];
+    __cpuid_count(1, 0, info[0], info[1], info[2], info[3]);
+    // info[1] is EBX, bits 24-31 are APIC ID
+    if ((info[3] & (1 << 9)) == 0) {
+        return 0;  // no APIC on chip
+    } else {
+        return (unsigned)info[1] >> 24;
+    }
+#elif defined(_WIN32)
+    return GetCurrentProcessorNumber();
+#else
+    return 0;
 #endif
 }
 

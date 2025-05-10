@@ -4,6 +4,7 @@
         t/t_clocking_bad5.v:26:20: ... Location of original declaration
    26 |    global clocking ck @(posedge clk); endclocking
       |                    ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_clocking_bad5.v:32:20: Duplicate declaration of CLOCKING 'ogck': '$global_clock'
    32 |    global clocking ck @(posedge clk); endclocking
       |                    ^~

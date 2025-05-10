@@ -26,7 +26,7 @@ test.run(
     ],
     verilator_run=True)
 
-test.compile(verilator_flags2=[DEBUG_QUIET, "--trace"])
+test.compile(verilator_flags2=[DEBUG_QUIET, "--trace-vcd"])
 
 test.execute()
 

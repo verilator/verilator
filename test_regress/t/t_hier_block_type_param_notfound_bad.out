@@ -1,4 +1,5 @@
 %Error: Cannot open file containing hierarchical parameter declarations: '/does-not-exist'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
         ... Looked in:
              t//does-not-exist
              t//does-not-exist.v

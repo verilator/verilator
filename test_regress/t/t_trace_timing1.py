@@ -15,7 +15,7 @@ test.compile(
     verilator_flags=[  # Custom as don't want -cc
         "-Mdir", test.obj_dir, "--debug-check"
     ],
-    verilator_flags2=['--binary --trace'],
+    verilator_flags2=['--binary --trace-vcd'],
     make_main=False)
 
 test.execute()

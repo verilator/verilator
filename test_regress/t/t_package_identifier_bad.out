@@ -1,4 +1,5 @@
 %Error: t/t_package_identifier_bad.v:15:20: Package/class for ':: reference' not found: 'Bar'
    15 |     int baz = Foo::Bar::baz;
       |                    ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

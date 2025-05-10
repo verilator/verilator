@@ -1,4 +1,5 @@
 %Error: t/t_typedef_circ_bad.v:8:9: Typedef's type is circular: a_t
     8 | typedef a_t b_t;
       |         ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

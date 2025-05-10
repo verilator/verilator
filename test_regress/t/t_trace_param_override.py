@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--exe --main --trace -GPOVERRODE=31"])
+test.compile(verilator_flags2=["--exe --main --trace-vcd -GPOVERRODE=31"])
 
 test.execute()
 

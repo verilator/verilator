@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.top_filename = "t/t_trace_scope_vlt.v"
 
-test.compile(v_flags2=["--trace t/t_trace_scope_vlt.vlt"])
+test.compile(v_flags2=["--trace-vcd t/t_trace_scope_vlt.vlt"])
 
 test.execute()
 

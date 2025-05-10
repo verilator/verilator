@@ -731,8 +731,11 @@ void EmitCSyms::emitSymImp() {
         puts("#endif  // VM_TRACE\n");
     }
     if (v3Global.opt.profPgo()) {
+        // Do not overwrite data during the last hierarchical stage.
+        const string firstHierCall
+            = (v3Global.opt.hierBlocks().empty() || v3Global.opt.hierChild()) ? "true" : "false";
         puts("_vm_pgoProfiler.write(\"" + topClassName()
-             + "\", _vm_contextp__->profVltFilename());\n");
+             + "\", _vm_contextp__->profVltFilename(), " + firstHierCall + ");\n");
     }
     puts("}\n");
 

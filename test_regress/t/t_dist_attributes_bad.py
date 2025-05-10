@@ -30,7 +30,7 @@ if 'VERILATOR_TEST_NO_ATTRIBUTES' in os.environ:
 if not os.path.exists(root + "/.git"):
     test.skip("Not in a git repository")
 if not have_clang_check():
-    test.skip("No libclang installed\n")
+    test.skip("No libclang installed")
 
 aroot = os.path.abspath(root)
 ccjson_file = test.obj_dir + "/compile_commands.json"

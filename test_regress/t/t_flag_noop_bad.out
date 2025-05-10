@@ -1,1 +1,2 @@
 %Error: verilator: Need --binary, --cc, --sc, --dpi-hdr-only, --lint-only, --xml-only, --json-only or --E option
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

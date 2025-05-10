@@ -94,11 +94,13 @@ public:
     // Convert string to upper case (toupper)
     static string upcase(const string& str) VL_PURE;
     // Insert esc just before tgt
-    static string quoteAny(const string& str, char tgt, char esc);
+    static string quoteAny(const string& str, char tgt, char esc) VL_PURE;
     // Replace any \'s with \\  (two consecutive backslashes)
-    static string quoteBackslash(const string& str) { return quoteAny(str, '\\', '\\'); }
+    static string quoteBackslash(const string& str) VL_PURE { return quoteAny(str, '\\', '\\'); }
     // Replace any %'s with %%
-    static string quotePercent(const string& str) { return quoteAny(str, '%', '%'); }
+    static string quotePercent(const string& str) VL_PURE { return quoteAny(str, '%', '%'); }
+    // Replace any %%'s with %
+    static string dequotePercent(const string& str);
     // Surround a raw string by double quote and escape if necessary
     // e.g. input abc's  becomes "\"abc\'s\""
     static string escapeStringForPath(const string& str);

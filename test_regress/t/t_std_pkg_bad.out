@@ -1,4 +1,5 @@
 %Error: t/t_std_pkg_bad.v:7:9: Redeclaring the 'std' package is not allowed
     7 | package std;
       |         ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

@@ -1,4 +1,5 @@
 %Error: t/t_force_bad_rw.v:14:20: Unsupported: Signals used via read-write reference cannot be forced
    14 |       foreach (ass[index]) begin
       |                    ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

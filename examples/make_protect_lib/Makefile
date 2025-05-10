@@ -43,7 +43,7 @@ VERILATOR_FLAGS += -Wall
 VERILATOR_FLAGS += -CFLAGS -DVL_TIME_CONTEXT
 
 # Make waveforms
-TOP_VERILATOR_FLAGS = $(VERILATOR_FLAGS) --trace
+TOP_VERILATOR_FLAGS = $(VERILATOR_FLAGS) --trace-vcd
 
 ######################################################################
 default: run

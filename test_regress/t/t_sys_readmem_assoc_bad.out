@@ -2,6 +2,7 @@
                                          : ... note: In instance 't'
    13 |       $readmemb("not", assoc_bad_key);
       |                        ^~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error-UNSUPPORTED: t/t_sys_readmem_assoc_bad.v:14:24: Unsupported: $readmemb array values must be integral
                                                      : ... note: In instance 't'
    14 |       $readmemb("not", assoc_bad_value);

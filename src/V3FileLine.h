@@ -268,6 +268,8 @@ public:
     string asciiLineCol() const;
     int filenameno() const VL_MT_SAFE { return m_filenameno; }
     string filename() const VL_MT_SAFE { return singleton().numberToName(filenameno()); }
+    // Filename with C string escapes
+    string filenameEsc() const VL_MT_SAFE { return VString::quoteBackslash(filename()); }
     bool filenameIsGlobal() const VL_MT_SAFE {
         return (filename() == commandLineFilename() || filename() == builtInFilename());
     }

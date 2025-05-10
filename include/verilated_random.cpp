@@ -112,7 +112,7 @@ public:
         if (m_pidStatus) {
             std::stringstream msg;
             msg << "Subprocess command `" << m_cmd[0];
-            for (const char* const* arg = m_cmd + 1; *arg; arg++) msg << ' ' << *arg;
+            for (const char* const* arg = m_cmd + 1; *arg; ++arg) msg << ' ' << *arg;
             msg << "' failed: ";
             if (WIFSIGNALED(m_pidStatus))
                 msg << strsignal(WTERMSIG(m_pidStatus))
@@ -221,7 +221,7 @@ static Process& getSolver() {
     static std::vector<const char*> s_argv;
     static std::string s_program = Verilated::threadContextp()->solverProgram();
     s_argv.emplace_back(&s_program[0]);
-    for (char* arg = &s_program[0]; *arg; arg++) {
+    for (char* arg = &s_program[0]; *arg; ++arg) {
         if (*arg == ' ') {
             *arg = '\0';
             s_argv.emplace_back(arg + 1);
@@ -242,7 +242,7 @@ static Process& getSolver() {
     msg << "Unable to communicate with SAT solver, please check its installation or specify a "
            "different one in VERILATOR_SOLVER environment variable.\n";
     msg << " ... Tried: $";
-    for (const char* const* arg = cmd; *arg; arg++) msg << ' ' << *arg;
+    for (const char* const* arg = cmd; *arg; ++arg) msg << ' ' << *arg;
     msg << '\n';
     const std::string str = msg.str();
     VL_WARN_MT("", 0, "randomize", str.c_str());
@@ -294,7 +294,7 @@ void VlRandomVar::emitType(std::ostream& s) const { s << "(_ BitVec " << width()
 int VlRandomVar::totalWidth() const { return m_width; }
 static bool parseSMTNum(int obits, WDataOutP owp, const std::string& val) {
     int i;
-    for (i = 0; val[i] && val[i] != '#'; i++) {}
+    for (i = 0; val[i] && val[i] != '#'; ++i) {}
     if (val[i++] != '#') return false;
     switch (val[i++]) {
     case 'b': _vl_vsss_based(owp, obits, 1, &val[i], 0, val.size() - i); break;
@@ -345,7 +345,7 @@ void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
     os << "(= #b";
     for (int i = bits - 1; i >= 0; i--) os << (VL_BITISSET_I(hash, i) ? '1' : '0');
     if (bits > 1) os << " (concat";
-    for (int i = 0; i < bits; i++) {
+    for (int i = 0; i < bits; ++i) {
         IData varBitsLeft = varBits;
         IData varBitsWant = (varBits + 1) / 2;
         if (varBits > 2) os << " (bvxor";
@@ -393,7 +393,7 @@ bool VlRandomizer::next(VlRNG& rngr) {
         f << "(reset)\n";
         return false;
     }
-    for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; i++) {
+    for (int i = 0; i < _VL_SOLVER_HASH_LEN_TOTAL && sat; ++i) {
         f << "(assert ";
         randomConstraint(f, rngr, _VL_SOLVER_HASH_LEN);
         f << ")\n";

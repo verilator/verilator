@@ -91,11 +91,25 @@ string VString::upcase(const string& str) VL_PURE {
     return result;
 }
 
-string VString::quoteAny(const string& str, char tgt, char esc) {
+string VString::quoteAny(const string& str, char tgt, char esc) VL_PURE {
     string result;
     for (const char c : str) {
         if (c == tgt) result += esc;
         result += c;
+    }
+    return result;
+}
+
+string VString::dequotePercent(const string& str) {
+    string result;
+    char last = '\0';
+    for (const char c : str) {
+        if (last == '%' && c == '%') {
+            last = '\0';
+        } else {
+            result += c;
+            last = c;
+        }
     }
     return result;
 }

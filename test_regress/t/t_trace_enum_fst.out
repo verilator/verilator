@@ -1,5 +1,5 @@
 $date
-	Tue Dec 19 07:15:22 2023
+	Sat Apr  5 13:56:28 2025
 
 $end
 $version
@@ -25,11 +25,12 @@ $var logic 2 $ v_other_enumed [1:0] $end
 $upscope $end
 $upscope $end
 $enddefinitions $end
-$dumpvars
 #0
+$dumpvars
 b00 $
 b00 #
 b00 "
 0!
+$end
 #10
 1!

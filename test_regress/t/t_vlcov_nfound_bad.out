@@ -1,1 +1,2 @@
-%Error: Can't read t/t_NOT_FOUND
+%Error: Can't read coverage file: t/t_NOT_FOUND
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

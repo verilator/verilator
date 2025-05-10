@@ -8,4 +8,6 @@
                                                        : ... note: In instance 't.sub'
     9 |    logic sig_uusd;
       |          ^~~~~~~~
+                       ... For warning description see https://verilator.org/warn/UNUSEDSIGNAL?v=latest
+                       ... Use "/* verilator lint_off UNUSEDSIGNAL */" and lint_on around source to disable this message.
 %Error: Exiting due to

@@ -5,4 +5,5 @@
         t/t_enum_bad_circdecl.v:9:17: ... Location of reference
     9 |    typedef enum bad_redecl [2:0] {
       |                 ^~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

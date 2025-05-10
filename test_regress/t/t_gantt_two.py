@@ -30,24 +30,24 @@ test.execute(all_run_flags=[
     " +verilator+prof+exec+file+" + test.obj_dir + "/profile_exec.dat",
     " +verilator+prof+vlt+file+" + test.obj_dir + "/profile.vlt"])   # yapf:disable
 
-# For now, verilator_gantt still reads from STDIN
-#  (probably it should take a file, gantt.dat like verilator_profcfunc)
-# The profiling data still goes direct to the runtime's STDOUT
+gantt_log = test.obj_dir + "/gantt.log"
+
+# The profiling data goes direct to the runtime's STDOUT
 #  (maybe that should go to a separate file - gantt.dat?)
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_gantt",
     test.obj_dir + "/profile_exec.dat",
     "--vcd " + test.obj_dir + "/profile_exec.vcd",
-    "| tee " + test.obj_dir + "/gantt.log"])   # yapf:disable
+    "| tee " + gantt_log])   # yapf:disable
 
 if test.vltmt:
-    test.file_grep(test.obj_dir + "/gantt.log", r'Total threads += 2')
-    test.file_grep(test.obj_dir + "/gantt.log", r'Total mtasks += 7')
+    test.file_grep(gantt_log, r'Total threads += 2')
+    test.file_grep(gantt_log, r'Total mtasks += 7')
 else:
-    test.file_grep(test.obj_dir + "/gantt.log", r'Total threads += 1')
-    test.file_grep(test.obj_dir + "/gantt.log", r'Total mtasks += 0')
+    test.file_grep(gantt_log, r'Total threads += 1')
+    test.file_grep(gantt_log, r'Total mtasks += 0')
 
-test.file_grep(test.obj_dir + "/gantt.log", r'\|\s+4\s+\|\s+4\.0+\s+\|\s+eval')
+test.file_grep(gantt_log, r'\|\s+4\s+\|\s+4\.0+\s+\|\s+eval')
 
 # Diff to itself, just to check parsing
 test.vcd_identical(test.obj_dir + "/profile_exec.vcd", test.obj_dir + "/profile_exec.vcd")

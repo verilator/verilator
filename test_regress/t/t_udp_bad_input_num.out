@@ -1,0 +1,6 @@
+%Error: t/t_udp_bad_input_num.v:14:9: Incorrect number of input values, expected 3, got 2
+                                    : ... note: In instance 'top'
+   14 |         1 0  :   0;
+      |         ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

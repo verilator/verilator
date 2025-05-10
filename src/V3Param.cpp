@@ -928,7 +928,7 @@ class ParamProcessor final {
 
         for (auto* stmtp = srcModpr->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
-                if (VN_IS(dtypep->subDTypep(), VoidDType)) {
+                if (VN_IS(dtypep->skipRefp(), VoidDType)) {
                     nodep->v3error(
                         "Class parameter type without default value is never given value"
                         << " (IEEE 1800-2023 6.20.1): " << dtypep->prettyNameQ());
@@ -1217,7 +1217,7 @@ class ParamVisitor final : public VNVisitor {
     }
     void visit(AstParamTypeDType* nodep) override {
         iterateChildren(nodep);
-        if (VN_IS(nodep->subDTypep(), VoidDType)) {
+        if (VN_IS(nodep->skipRefp(), VoidDType)) {
             nodep->v3error("Parameter type without default value is never given value"
                            << " (IEEE 1800-2023 6.20.1): " << nodep->prettyNameQ());
         }
@@ -1260,14 +1260,12 @@ class ParamVisitor final : public VNVisitor {
                     if (const AstNodeDType* const typep = varp->childDTypep()) {
                         ifacerefp = VN_CAST(typep, IfaceRefDType);
                         if (!ifacerefp) {
-                            if (const AstUnpackArrayDType* const unpackp
-                                = VN_CAST(typep, UnpackArrayDType)) {
+                            if (VN_IS(typep, UnpackArrayDType)) {
                                 ifacerefp = VN_CAST(typep->getChildDTypep(), IfaceRefDType);
                             }
                         }
                         if (!ifacerefp) {
-                            if (const AstBracketArrayDType* const unpackp
-                                = VN_CAST(typep, BracketArrayDType)) {
+                            if (VN_IS(typep, BracketArrayDType)) {
                                 ifacerefp = VN_CAST(typep->subDTypep(), IfaceRefDType);
                             }
                         }
@@ -1294,7 +1292,10 @@ class ParamVisitor final : public VNVisitor {
                 }
             }
         }
-        nodep->varp(nullptr);  // Needs relink, as may remove pointed-to var
+        if (nodep->containsGenBlock()) {
+            // Needs relink, as may remove pointed-to var
+            nodep->varp(nullptr);
+        }
     }
 
     void visit(AstDot* nodep) override {

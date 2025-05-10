@@ -341,11 +341,12 @@ detailed descriptions of these arguments.
     --no-debug-leak             Disable leaking memory in --debug mode
     --debugi <level>            Enable debugging at a specified level
     --debugi-<srcfile> <level>  Enable debugging a source file at a level
-    --decorations <level>       Set output comment and spacing level
     --no-decoration             Disable comments and lower spacing level
+    --decorations <level>       Set output comment and spacing level
     --default-language <lang>   Default language to parse
      +define+<var>=<value>      Set preprocessor define
     --dpi-hdr-only              Only produce the DPI header file
+    --dump-<srcfile>            Enable dumping everything in source file
     --dump-defines              Show preprocessor defines with -E
     --dump-dfg                  Enable dumping DfgGraphs to .dot files
     --dump-graph                Enable dumping V3Graphs to .dot files
@@ -353,12 +354,11 @@ detailed descriptions of these arguments.
     --dump-tree-addrids         Use short identifiers instead of addresses
     --dump-tree-dot             Enable dumping Ast .tree.dot debug files
     --dump-tree-json            Enable dumping Ast .tree.json files and .tree.meta.json file
-    --dump-<srcfile>            Enable dumping everything in source file
+    --dumpi-<srcfile> <level>   Enable dumping everything in source file at level
     --dumpi-dfg <level>         Enable dumping DfgGraphs to .dot files at level
     --dumpi-graph <level>       Enable dumping V3Graphs to .dot files at level
     --dumpi-tree <level>        Enable dumping Ast .tree files at level
     --dumpi-tree-json <level>   Enable dumping Ast .tree.json files at level
-    --dumpi-<srcfile> <level>   Enable dumping everything in source file at level
      -E                         Preprocess, but do not compile
     --emit-accessors            Emit getter and setter methods for model top class
     --error-limit <value>       Abort after this number of errors
@@ -390,8 +390,8 @@ detailed descriptions of these arguments.
     --no-json-edit-nums         Don't dump editNum in .tree.json files
     --no-json-ids               Don't use short identifiers instead of adresses/paths in .tree.json
     --json-only                 Create JSON parser output (.tree.json and .meta.json)
-    --json-only-output          .tree.json output filename
     --json-only-meta-output     .tree.meta.json output filename
+    --json-only-output          .tree.json output filename
     --l2-name <value>           Verilog scope name of the top module
     --language <lang>           Default language standard to parse
      -LDFLAGS <flags>           Linker pre-object arguments for makefile
@@ -399,20 +399,20 @@ detailed descriptions of these arguments.
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
     --localize-max-size <value>  Tune localize optimization variable size
-    --make <build-tool>         Generate scripts for specified build tool
-     -MAKEFLAGS <flags>         Arguments to pass to make during --build
     --main                      Generate C++ main() file
     --main-top-name             Specify top name passed to Verilated model in generated C++ main
+    --make <build-tool>         Generate scripts for specified build tool
+     -MAKEFLAGS <flags>         Arguments to pass to make during --build
     --max-num-width <value>     Maximum number width (default: 64K)
     --Mdir <directory>          Name of output object directory
     --MMD                       Create .d dependency files
     --mod-prefix <topname>      Name to prepend to lower classes
     --MP                        Create phony dependency targets
      +notimingchecks            Ignored
+     -o <executable>            Name of final executable
      -O0                        Disable optimizations
      -O3                        High-performance optimizations
      -O<optimization-letter>    Selectable optimizations
-     -o <executable>            Name of final executable
     --output-groups <numfiles>  Group .cpp files into larger ones
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split model functions
@@ -467,13 +467,13 @@ detailed descriptions of these arguments.
     --threads <threads>         Enable multithreading
     --threads-dpi <mode>        Enable multithreaded DPI
     --threads-max-mtasks <mtasks>  Tune maximum mtask partitioning
-    --timing                    Enable timing support
-    --no-timing                 Disable timing support
     --timescale <timescale>     Sets default timescale
     --timescale-override <timescale>  Overrides all timescales
+    --timing                    Enable timing support
+    --no-timing                 Disable timing support
     --top <topname>             Alias of --top-module
     --top-module <topname>      Name of top-level input module
-    --trace                     Enable waveform creation
+    --trace                     Enable VCD waveform creation
     --trace-coverage            Enable tracing of coverage
     --trace-depth <levels>      Depth of tracing
     --trace-fst                 Enable FST waveform creation
@@ -485,6 +485,7 @@ detailed descriptions of these arguments.
     --trace-threads <threads>   Enable FST waveform creation on separate threads
     --no-trace-top              Do not emit traces for signals in the top module generated by verilator
     --trace-underscore          Enable tracing of _signals
+    --trace-vcd                 Enable VCD waveform creation
      -U<var>                    Undefine preprocessor define
     --no-unlimited-stack        Don't disable stack size limit
     --unroll-count <loops>      Tune maximum loop iterations
@@ -493,8 +494,8 @@ detailed descriptions of these arguments.
      -V                         Verbose version and config
      -v <filename>              Verilog library
     --valgrind                  Run Verilator under valgrind
-    --verilate-jobs             Job threads for Verilation stage
     --no-verilate               Skip Verilation and just compile previously Verilated code
+    --verilate-jobs             Job threads for Verilation stage
      +verilog1995ext+<ext>      Synonym for +1364-1995ext+<ext>
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
     --version                   Show program version and exits
@@ -527,9 +528,9 @@ description of these arguments.
 
 =for VL_SPHINX_EXTRACT "_build/gen/args_verilated.rst"
 
+     +verilator+coverage+file+<filename>   Set coverage output filename
      +verilator+debug                      Enable debugging
      +verilator+debugi+<value>             Enable debugging at a level
-     +verilator+coverage+file+<filename>   Set coverage output filename
      +verilator+error+limit+<value>        Set error limit
      +verilator+help                       Show help
      +verilator+noassert                   Disable assert checking

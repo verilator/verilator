@@ -12,8 +12,8 @@ import vltest_bootstrap
 test.scenarios('simulator')
 
 test.compile(verilator_flags2=[
-    '--trace', '-j 4', 't/t_hier_trace_sub/t_hier_trace.vlt', '--top-module t', '--hierarchical',
-    '-F t/t_hier_trace_sub/top.F'
+    '--trace-vcd', '-j 4', 't/t_hier_trace_sub/t_hier_trace.vlt', '--top-module t',
+    '--hierarchical', '-F t/t_hier_trace_sub/top.F'
 ])
 
 test.execute(all_run_flags=['-j 4'])

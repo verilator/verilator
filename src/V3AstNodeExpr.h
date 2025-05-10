@@ -953,7 +953,7 @@ class AstConst final : public AstNodeExpr {
         } else if (m_num.isString()) {
             dtypeSetString();
         } else {
-            dtypeSetLogicUnsized(m_num.width(), (m_num.sized() ? 0 : m_num.widthMin()),
+            dtypeSetLogicUnsized(m_num.width(), (m_num.sized() ? 0 : m_num.widthToFit()),
                                  VSigning::fromBool(m_num.isSigned()));
         }
         m_num.nodep(this);
@@ -987,7 +987,7 @@ public:
     class VerilogStringLiteral {};  // for creator type-overload selection
     AstConst(FileLine* fl, VerilogStringLiteral, const string& str)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(V3Number::VerilogStringLiteral{}, this, str) {
+        , m_num{V3Number::VerilogStringLiteral{}, this, str} {
         initWithNumber();
     }
     AstConst(FileLine* fl, uint32_t num)
@@ -1000,14 +1000,14 @@ public:
         : ASTGEN_SUPER_Const(fl)
         , m_num(this, 32, num) {
         m_num.width(32, false);
-        dtypeSetLogicUnsized(32, m_num.widthMin(), VSigning::UNSIGNED);
+        dtypeSetLogicUnsized(32, m_num.widthToFit(), VSigning::UNSIGNED);
     }
     class Signed32 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Signed32, int32_t num)  // Signed 32-bit integer of specified value
         : ASTGEN_SUPER_Const(fl)
         , m_num(this, 32, num) {
         m_num.width(32, true);
-        dtypeSetLogicUnsized(32, m_num.widthMin(), VSigning::SIGNED);
+        dtypeSetLogicUnsized(32, m_num.widthToFit(), VSigning::SIGNED);
     }
     class Unsized64 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Unsized64, uint64_t num)
@@ -1033,7 +1033,7 @@ public:
     class String {};  // for creator type-overload selection
     AstConst(FileLine* fl, String, const string& num)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(V3Number::String{}, this, num) {
+        , m_num{V3Number::String{}, this, num} {
         dtypeSetString();
     }
     class BitFalse {};
@@ -1066,14 +1066,14 @@ public:
     class Null {};
     AstConst(FileLine* fl, Null)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(V3Number::Null{}, this) {
+        , m_num{V3Number::Null{}, this} {
         dtypeSetBit();  // Events 1 bit, objects 64 bits, so autoExtend=1 and use bit here
         initWithNumber();
     }
     class OneStep {};
     AstConst(FileLine* fl, OneStep)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(V3Number::OneStep{}, this) {
+        , m_num{V3Number::OneStep{}, this} {
         dtypeSetLogicSized(64, VSigning::UNSIGNED);
         initWithNumber();
     }
@@ -1154,6 +1154,20 @@ public:
     ASTGEN_MEMBERS_AstCvtPackedToArray;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
+class AstCvtUnpackedToQueue final : public AstNodeExpr {
+    // Cast from unpacked array to dynamic/unpacked queue data type
+    // @astgen op1 := fromp : AstNodeExpr
+public:
+    AstCvtUnpackedToQueue(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
+        : ASTGEN_SUPER_CvtUnpackedToQueue(fl) {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCvtUnpackedToQueue;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { return "VL_CVT_UNPACK_TO_Q(%P, %li)"; }
     bool cleanOut() const override { return true; }
 };
 class AstDist final : public AstNodeExpr {
@@ -1913,6 +1927,7 @@ public:
     }
     ASTGEN_MEMBERS_AstSFormatF;
     string name() const override VL_MT_STABLE { return m_text; }
+    void name(const string& name) override { m_text = name; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* samep) const override {
         return text() == VN_DBG_AS(samep, SFormatF)->text();
@@ -4407,12 +4422,15 @@ public:
 class AstNew final : public AstNodeFTaskRef {
     // New as constructor
     // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
+    bool m_isImplicit = false;  // Implicitly generated from extends args
 public:
     AstNew(FileLine* fl, AstNodeExpr* pinsp)
         : ASTGEN_SUPER_New(fl, "new", pinsp) {}
     ASTGEN_MEMBERS_AstNew;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
+    bool isImplicit() const { return m_isImplicit; }
+    void isImplicit(bool flag) { m_isImplicit = flag; }
 };
 class AstTaskRef final : public AstNodeFTaskRef {
     // A reference to a task
@@ -5742,6 +5760,7 @@ class AstVarXRef final : public AstNodeVarRef {
     string m_name;
     string m_dotted;  // Dotted part of scope the name()'ed reference is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
+    bool m_containsGenBlock = false;  // Contains gen block reference
 public:
     AstVarXRef(FileLine* fl, const string& name, const string& dotted, const VAccess& access)
         : ASTGEN_SUPER_VarXRef(fl, nullptr, access)
@@ -5757,6 +5776,8 @@ public:
     void dotted(const string& dotted) { m_dotted = dotted; }
     string inlinedDots() const { return m_inlinedDots; }
     void inlinedDots(const string& flag) { m_inlinedDots = flag; }
+    bool containsGenBlock() const { return m_containsGenBlock; }
+    void containsGenBlock(const bool flag) { m_containsGenBlock = flag; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }

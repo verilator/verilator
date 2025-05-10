@@ -2,4 +2,5 @@
                                      : ... note: In instance 't'
     8 |    randc bit [37:0] i;
       |                     ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

@@ -1,4 +1,5 @@
 %Error: t/t_class_member_var_virt_bad.v:8:16: Syntax error: 'virtual' not allowed before var declaration
     8 |    virtual int member;
       |                ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

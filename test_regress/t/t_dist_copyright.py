@@ -12,7 +12,7 @@ import datetime
 
 test.scenarios('dist')
 
-RELEASE_OK_RE = r'(^test_regress/t/.*\.(cpp|h|mk|sv|v|vlt)|^test_regress/t_done/|^examples/)'
+RELEASE_OK_RE = r'(^test_regress/t/.*\.(cpp|h|map|mk|sv|v|vlt)|^test_regress/t_done/|^examples/)'
 
 EXEMPT_AUTHOR_RE = r'(^ci/|^nodist/fastcov.py|^nodist/fuzzer|^test_regress/t/.*\.(cpp|h|v|vlt)$)'
 

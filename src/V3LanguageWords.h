@@ -238,6 +238,7 @@ inline void V3LanguageWords::Singleton::init() {
     addKwd("`systemc_ctor",             "Verilator preprocessor directive");
     addKwd("`systemc_dtor",             "Verilator preprocessor directive");
     addKwd("`systemc_header",           "Verilator preprocessor directive");
+    addKwd("`systemc_header_post",      "Verilator preprocessor directive");
     addKwd("`systemc_imp_header",       "Verilator preprocessor directive");
     addKwd("`systemc_implementation",   "Verilator preprocessor directive");
     addKwd("`systemc_interface",        "Verilator preprocessor directive");

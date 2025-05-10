@@ -4,4 +4,5 @@
         t/t_class_super_new_bad_nfirst.v:17:16: ... Location of earlier statement
    17 |       imemberc = 10;
       |                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

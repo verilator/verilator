@@ -13,6 +13,6 @@ test.scenarios('simulator')
 
 test.compile(verilator_flags2=['--assert'], nc_flags2=['+assert'])
 
-test.execute()
+test.execute(expect_filename=test.golden_filename)
 
 test.passes()

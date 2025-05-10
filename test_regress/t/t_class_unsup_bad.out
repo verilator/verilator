@@ -1,6 +1,7 @@
 %Error: t/t_class_unsup_bad.v:24:21: Syntax error: 'static'/'virtual'/'rand'/'randc' not allowed before typedef declaration
    24 |    rand typedef int irand_t;
       |                     ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_class_unsup_bad.v:25:22: Syntax error: 'static'/'virtual'/'rand'/'randc' not allowed before typedef declaration
    25 |    randc typedef int icrand_t;
       |                      ^~~~~~~~

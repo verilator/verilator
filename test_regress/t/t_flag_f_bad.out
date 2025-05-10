@@ -1,2 +1,3 @@
 %Error: Cannot open -f command file: file_will_not_exist.vc
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

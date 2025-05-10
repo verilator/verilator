@@ -19,6 +19,6 @@ test.compile(
 
 test.execute(all_run_flags=["+verilator+error+limit+100"], expect_filename=test.golden_filename)
 
-test.files_identical(test.coverage_filename, test.t_dir + "/t_assert_ctl_arg_coverage.out")
+test.files_identical(test.coverage_filename, test.t_dir + "/t_assert_ctl_arg.dat.out")
 
 test.passes()

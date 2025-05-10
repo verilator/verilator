@@ -2,6 +2,7 @@
                                   : ... note: In instance 't'
     8 |    localparam t = logic;   
       |                   ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_param_type_bad2.v:9:20: Operator VAR 't2' expected non-datatype Initial value but 'real' is a datatype.
                                   : ... note: In instance 't'
     9 |    localparam t2 = realtime;   

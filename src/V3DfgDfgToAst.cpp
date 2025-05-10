@@ -199,7 +199,7 @@ class DfgToAstVisitor final : DfgVisitor {
 
     // VISITORS
     void visit(DfgVertex* vtxp) override {  // LCOV_EXCL_START
-        vtxp->v3fatal("Unhandled DfgVertex: " << vtxp->typeName());
+        vtxp->v3fatalSrc("Unhandled DfgVertex: " << vtxp->typeName());
     }  // LCOV_EXCL_STOP
 
     void visit(DfgVarPacked* vtxp) override {

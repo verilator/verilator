@@ -30,17 +30,9 @@
 #include <atomic>
 #include <condition_variable>
 #include <set>
+#include <stack>
 #include <thread>
 #include <vector>
-
-// clang-format off
-#if defined(__linux)
-# include <sched.h>  // For sched_getcpu()
-#endif
-#if defined(__APPLE__) && !defined(__arm64__)
-# include <cpuid.h>  // For __cpuid_count()
-#endif
-// clang-format on
 
 class VlExecutionProfiler;
 class VlThreadPool;
@@ -155,6 +147,10 @@ private:
 
     VL_UNCOPYABLE(VlWorkerThread);
 
+protected:
+    friend class VlThreadPool;
+    const std::thread& cthread() const { return m_cthread; }
+
 public:
     // CONSTRUCTORS
     explicit VlWorkerThread(VerilatedContext* contextp);
@@ -205,6 +201,13 @@ class VlThreadPool final : public VerilatedVirtualBase {
     // MEMBERS
     std::vector<VlWorkerThread*> m_workers;  // our workers
 
+    mutable VerilatedMutex m_mutex;  // Guards indexes of unassigned workers
+    // Indexes of unassigned workers
+    std::stack<size_t> m_unassignedWorkers VL_GUARDED_BY(m_mutex);
+    // For sequentially generating task IDs to avoid shadowing
+    std::atomic<unsigned> m_assignedTasks{0};
+    std::string m_numaStatus;  // Status of NUMA assignment
+
 public:
     // CONSTRUCTORS
     // Construct a thread pool with 'nThreads' dedicated threads. The thread
@@ -214,7 +217,21 @@ public:
     ~VlThreadPool() override;
 
     // METHODS
+    size_t assignWorkerIndex() {
+        const VerilatedLockGuard lock{m_mutex};
+        assert(!m_unassignedWorkers.empty());
+        const size_t index = m_unassignedWorkers.top();
+        m_unassignedWorkers.pop();
+        return index;
+    }
+    void freeWorkerIndexes(std::vector<size_t>& indexes) {
+        const VerilatedLockGuard lock{m_mutex};
+        for (size_t index : indexes) m_unassignedWorkers.push(index);
+        indexes.clear();
+    }
+    unsigned assignTaskIndex() { return m_assignedTasks++; }
     int numThreads() const { return static_cast<int>(m_workers.size()); }
+    std::string numaStatus() const { return m_numaStatus; }
     VlWorkerThread* workerp(int index) {
         assert(index >= 0);
         assert(index < static_cast<int>(m_workers.size()));
@@ -223,6 +240,9 @@ public:
 
 private:
     VL_UNCOPYABLE(VlThreadPool);
+
+    static bool isNumactlRunning();
+    std::string numaAssign();
 };
 
 #endif

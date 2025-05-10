@@ -120,15 +120,7 @@ public:
     // Iff has second dtype, set as generic node function
     virtual void virtRefDType2p(AstNodeDType* nodep) {}
     // Assignable equivalence.  Calls skipRefToNonRefp() during comparisons.
-    bool similarDType(const AstNodeDType* samep) const {
-        const AstNodeDType* nodep = this;
-        nodep = nodep->skipRefToNonRefp();
-        samep = samep->skipRefToNonRefp();
-        if (nodep == samep) return true;
-        if (nodep->type() != samep->type()) return false;
-        return nodep->similarDTypeNode(samep);
-    }
-
+    bool similarDType(const AstNodeDType* samep) const;
     // Iff has a non-null subDTypep(), as generic node function
     virtual AstNodeDType* subDTypep() const VL_MT_STABLE { return nullptr; }
     virtual bool isFourstate() const;
@@ -165,7 +157,7 @@ public:
     bool generic() const VL_MT_SAFE { return m_generic; }
     void generic(bool flag) { m_generic = flag; }
     std::pair<uint32_t, uint32_t> dimensions(bool includeBasic);
-    uint32_t arrayUnpackedElements();  // 1, or total multiplication of all dimensions
+    uint32_t arrayUnpackedElements() const;  // 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I");
@@ -435,6 +427,8 @@ public:
     string prettyDTypeName(bool full) const override;
     const char* broken() const override {
         BROKEN_RTN(dtypep() != this);
+        BROKEN_RTN(v3Global.widthMinUsage() == VWidthMinUsage::VERILOG_WIDTH
+                   && widthMin() > width());
         return nullptr;
     }
     void setSignedState(const VSigning& signst) {
@@ -581,7 +575,11 @@ public:
         const AstClassRefDType* const asamep = VN_DBG_AS(samep, ClassRefDType);
         return (m_classp == asamep->m_classp && m_classOrPackagep == asamep->m_classOrPackagep);
     }
-    bool similarDTypeNode(const AstNodeDType* samep) const override { return sameNode(samep); }
+    bool similarDTypeNode(const AstNodeDType* samep) const override {
+        // Doesn't need to compare m_classOrPackagep
+        const AstClassRefDType* const asamep = VN_DBG_AS(samep, ClassRefDType);
+        return m_classp == asamep->m_classp;
+    }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
@@ -668,16 +666,12 @@ class AstDefImplicitDType final : public AstNodeDType {
     // After link, these become typedefs
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     string m_name;
-    void* m_containerp;  // In what scope is the name unique, so we can know what are duplicate
-                         // definitions (arbitrary value)
     const int m_uniqueNum;
 
 public:
-    AstDefImplicitDType(FileLine* fl, const string& name, void* containerp, VFlagChildDType,
-                        AstNodeDType* dtp)
+    AstDefImplicitDType(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtp)
         : ASTGEN_SUPER_DefImplicitDType(fl)
         , m_name{name}
-        , m_containerp{containerp}
         , m_uniqueNum{uniqueNumInc()} {
         childDTypep(dtp);  // Only for parser
         dtypep(nullptr);  // V3Width will resolve
@@ -685,7 +679,6 @@ public:
     AstDefImplicitDType(const AstDefImplicitDType& other)
         : AstNodeDType(other)
         , m_name(other.m_name)
-        , m_containerp(other.m_containerp)
         , m_uniqueNum(uniqueNumInc()) {}
     ASTGEN_MEMBERS_AstDefImplicitDType;
     int uniqueNum() const { return m_uniqueNum; }
@@ -698,7 +691,6 @@ public:
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         return dtypep() ? dtypep() : childDTypep();
     }
-    void* containerp() const { return m_containerp; }
     // METHODS
     // op1 = Range of variable
     AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }
@@ -1392,13 +1384,20 @@ public:
     string verilogKwd() const override { return "struct"; }
 };
 class AstUnionDType final : public AstNodeUOrStructDType {
+    bool m_isSoft;  // Is a "union soft"
+
 public:
     // UNSUP: bool isTagged;
     // VSigning below is mispurposed to indicate if packed or not
-    AstUnionDType(FileLine* fl, VSigning numericUnpack)
-        : ASTGEN_SUPER_UnionDType(fl, numericUnpack) {}
+    // isSoft implies packed
+    AstUnionDType(FileLine* fl, bool isSoft, VSigning numericUnpack)
+        : ASTGEN_SUPER_UnionDType(fl, numericUnpack)
+        , m_isSoft(isSoft) {
+        packed(packed() | m_isSoft);
+    }
     ASTGEN_MEMBERS_AstUnionDType;
     string verilogKwd() const override { return "union"; }
+    bool isSoft() const { return m_isSoft; }
 };
 
 #endif  // Guard

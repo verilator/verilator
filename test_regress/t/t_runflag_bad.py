@@ -15,22 +15,22 @@ test.compile()
 
 test.execute(all_run_flags=["+verilator+bad+flag+testing"],
              fails=True,
-             expect_filename="t/" + test.name + "_a.out")
+             expect_filename="t/" + test.name + "__a.out")
 
 test.execute(all_run_flags=["+verilator+rand+reset+-1"],
              fails=True,
-             expect_filename="t/" + test.name + "_b.out")
+             expect_filename="t/" + test.name + "__b.out")
 
 test.execute(all_run_flags=["+verilator+rand+reset+3"],
              fails=True,
-             expect_filename="t/" + test.name + "_c.out")
+             expect_filename="t/" + test.name + "__c.out")
 
 test.execute(all_run_flags=["+verilator+prof+exec+window+0"],
              fails=True,
-             expect_filename="t/" + test.name + "_d.out")
+             expect_filename="t/" + test.name + "__d.out")
 
 test.execute(all_run_flags=["+verilator+prof+exec+window+1000000000000000000000000"],
              fails=True,
-             expect_filename="t/" + test.name + "_e.out")
+             expect_filename="t/" + test.name + "__e.out")
 
 test.passes()

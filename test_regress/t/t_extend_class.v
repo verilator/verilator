@@ -4,56 +4,57 @@
 // any use, without warranty, 2003-2007 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+// Although strange, Verilog defines are expanded inside the C blocks
+// (as the `systemc_* directives are opaque to the preprocessor)
+`define finished "*-* All Finished *-*\n"
 
-   input clk;
-   reg [7:0] cyc; initial cyc = 0;
-
-   reg [31:0] in;
-   wire [31:0] out;
-   t_extend_class_v sub (.in(in), .out(out));
-
-   always @ (posedge clk) begin
-      cyc <= cyc + 8'd1;
-      if (cyc == 8'd1) begin
-         in <= 32'h10;
-      end
-      if (cyc == 8'd2) begin
-         if (out != 32'h11) $stop;
-      end
-      if (cyc == 8'd9) begin
-         $write("*-* All Finished *-*\n");
-         $finish;
-      end
-   end
-endmodule
-
-module t_extend_class_v (/*AUTOARG*/
-   // Outputs
-   out,
-   // Inputs
-   in
-   );
-
-   input [31:0]  in;
-   output logic [31:0] out;
-
-   always @* begin
-      // When "in" changes, call my method
-      out = $c("this->m_myobjp->my_math(", in, ")");
-   end
-
+class Cls;
+`ifdef verilator
  `systemc_header
-#include "t_extend_class_c.h"   // Header for contained object
+#define DID_INT_HEADER 1
+ `systemc_header_post
+inline void `systemc_class_name::my_inline_function() {}
  `systemc_interface
-   t_extend_class_c* m_myobjp;  // Pointer to object we are embedding
- `systemc_ctor
-   m_myobjp = new t_extend_class_c();   // Construct contained object
+#ifndef DID_INT_HEADER
+#error "`systemc_header didn't work"
+#endif
+   bool m_did_ctor;
+   uint32_t my_function() {
+       if (!m_did_ctor) vl_fatal(__FILE__, __LINE__, __FILE__, "`systemc_ctor didn't work");
+       return 1;
+   }
+   static void my_imp_function();
+   static void my_inline_function();
+
+ `systemc_imp_header
+#define DID_IMP_HEADER 1
+ `systemc_implementation
+
+   void `systemc_class_name::my_imp_function() { }
+
+ `systemc_ctor  // Works, but using a $c inside a `function new` might be cleaner
+   m_did_ctor = 1;
  `systemc_dtor
-   delete m_myobjp;     // Destruct contained object
+   printf("In systemc_dtor\n");
+   printf(`finished);
  `verilog
+
+`endif  // verilator
+
+endclass
+
+module t (/*AUTOARG*/);
+
+   int i;
+
+   initial begin
+      Cls c;
+      c = new;
+      i = $c(c, "->my_function()");
+      $c(c, "->my_imp_function();");
+      $c(c, "->my_inline_function();");
+      c = null;  // Causes destruction and All Finished
+      $finish;
+   end
 
 endmodule

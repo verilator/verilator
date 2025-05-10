@@ -295,7 +295,7 @@ private:
                                   popp->makeStmt()});
             }
         } else {
-            nodep->v3fatal("Invalid direction");
+            nodep->v3fatalSrc("Invalid direction");
         }
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }

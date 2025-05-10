@@ -1,2 +1,3 @@
 %Error: --make cannot be used together with --build. Suggest see manual
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

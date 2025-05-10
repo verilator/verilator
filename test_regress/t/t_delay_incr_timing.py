@@ -11,9 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 test.top_filename = "t/t_delay_incr.v"
-test.main_time_multiplier = 10e-7 / 10e-9
 
-test.compile(timing_loop=True, verilator_flags2=['--binary --timing -Wno-ZERODLY'])
+test.compile(verilator_flags2=['--binary -Wno-ZERODLY'])
 
 test.execute()
 

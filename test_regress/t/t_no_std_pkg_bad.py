@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter')
 test.top_filename = "t/t_no_std_bad.v"
 test.golden_filename = "t/t_no_std_bad.out"
 

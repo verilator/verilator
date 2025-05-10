@@ -1,4 +1,5 @@
-%Error: t/t_param_type_bad.v:9:27: syntax error, unexpected INTEGER NUMBER, expecting IDENTIFIER or IDENTIFIER-for-cell or IDENTIFIER-for-type or randomize
+%Error: t/t_param_type_bad.v:9:27: syntax error, unexpected INTEGER NUMBER, expecting IDENTIFIER or IDENTIFIER-for-instance or IDENTIFIER-for-type or randomize
     9 |    localparam type bad2 = 2;   
       |                           ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

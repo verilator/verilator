@@ -25,26 +25,25 @@ test.execute(all_run_flags=[
     " +verilator+prof+exec+file+" + test.obj_dir + "/profile_exec.dat",
     " +verilator+prof+vlt+file+" + test.obj_dir + "/profile.vlt"])  # yapf:disable
 
-# For now, verilator_gantt still reads from STDIN
-#  (probably it should take a file, gantt.dat like verilator_profcfunc)
-# The profiling data still goes direct to the runtime's STDOUT
+gantt_log = test.obj_dir + "/gantt.log"
+
+# The profiling data goes direct to the runtime's STDOUT
 #  (maybe that should go to a separate file - gantt.dat?)
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_gantt", test.obj_dir +
-    "/profile_exec.dat", "--vcd " + test.obj_dir + "/profile_exec.vcd", "| tee " + test.obj_dir +
-    "/gantt.log"
+    "/profile_exec.dat", "--vcd " + test.obj_dir + "/profile_exec.vcd", "| tee " + gantt_log
 ])
 
 if test.vltmt:
-    test.file_grep(test.obj_dir + "/gantt.log", r'Total threads += 2')
-    test.file_grep(test.obj_dir + "/gantt.log", r'Total mtasks += 8')
+    test.file_grep(gantt_log, r'Total threads += 2')
+    test.file_grep(gantt_log, r'Total mtasks += 8')
     # Predicted thread utilization should be less than 100%
-    test.file_grep_not(test.obj_dir + "/gantt.log", r'Thread utilization =\s*\d\d\d+\.\d+%')
+    test.file_grep_not(gantt_log, r'Thread utilization =\s*\d\d\d+\.\d+%')
 else:
-    test.file_grep(test.obj_dir + "/gantt.log", r'Total threads += 1')
-    test.file_grep(test.obj_dir + "/gantt.log", r'Total mtasks += 0')
+    test.file_grep(gantt_log, r'Total threads += 1')
+    test.file_grep(gantt_log, r'Total mtasks += 0')
 
-test.file_grep(test.obj_dir + "/gantt.log", r'\|\s+2\s+\|\s+2\.0+\s+\|\s+eval')
+test.file_grep(gantt_log, r'\|\s+2\s+\|\s+2\.0+\s+\|\s+eval')
 
 # Diff to itself, just to check parsing
 test.vcd_identical(test.obj_dir + "/profile_exec.vcd", test.obj_dir + "/profile_exec.vcd")

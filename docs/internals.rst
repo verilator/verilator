@@ -1903,7 +1903,7 @@ find what made a <e#*#*> line in the tree dumps):
 
 ::
 
-   watch AstNode::s_editCntGbl==####
+   watch AstNode::s_editCntGbl=####
 
 Then, when the watch fires, to break at every following change to that
 node:
@@ -2046,6 +2046,11 @@ driver.py Non-Scenario Arguments
   Same as ``verilator --debugi level``: Set Verilator internal debugging
   level globally to the specified debug level (1-10).
 
+--driver-clean
+  After a test passes, remove the generated objects.  Reduces storage
+  requirements, but may result in longer runtime if the tests are run
+  again.
+
 --dump-tree
   Same as ``verilator --dump-tree``: Enable Verilator writing .tree debug
   files with dumping level 3, which dumps the standard critical stages.
@@ -2078,6 +2083,9 @@ driver.py Non-Scenario Arguments
 --j #
   Run number of parallel tests, or 0 to determine the count based on the
   number of cores installed.
+
+--obj-suffix <name>
+  Append the argument to the name of the ``test_regress/obj_`` directories.
 
 --quiet
   Suppress all output except for failures and progress messages every 15

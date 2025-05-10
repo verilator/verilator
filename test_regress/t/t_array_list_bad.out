@@ -2,6 +2,7 @@
                                   : ... note: In instance 't'
    38 |             test_out <= '{'0, '0};  
       |                         ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Warning-WIDTHEXPAND: t/t_array_list_bad.v:38:22: Operator ASSIGNDLY expects 3 bits on the Assign RHS, but Assign RHS's CONCAT generates 2 bits.
                                                 : ... note: In instance 't'
    38 |             test_out <= '{'0, '0};  

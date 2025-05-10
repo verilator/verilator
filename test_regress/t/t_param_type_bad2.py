@@ -13,7 +13,7 @@ test.scenarios('vlt')
 
 test.lint(
     # Bug1575 required trace to crash
-    verilator_flags2=["--trace --cc"],
+    verilator_flags2=["--trace-vcd --cc"],
     fails=True,
     expect_filename=test.golden_filename)
 

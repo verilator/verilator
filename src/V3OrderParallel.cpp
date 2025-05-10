@@ -556,7 +556,7 @@ public:
         UINFO(1, "Writing " << filename << endl);
         const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
         std::ostream* const osp = &(*ofp);  // &* needed to deref unique_ptr
-        if (osp->fail()) v3fatalStatic("Can't write " << filename);
+        if (osp->fail()) v3fatalStatic("Can't write file: " << filename);
 
         // Find start vertex with longest CP
         const LogicMTask* startp = nullptr;
@@ -1738,6 +1738,34 @@ private:
 };
 
 //######################################################################
+// DpiThreadsVisitor
+
+// Get number of threads occupied by this mtask
+class DpiThreadsVisitor final : public VNVisitorConst {
+    int m_threads = 1;  // Max number of threads used by this mtask
+
+    // METHODS
+    void visit(AstCFunc* nodep) override {
+        m_threads = std::max(m_threads, V3Config::getHierWorkers(nodep->cname()));
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstNodeCCall* nodep) override {
+        iterateChildrenConst(nodep);
+        iterateConst(nodep->funcp());
+    }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit DpiThreadsVisitor(AstMTaskBody* nodep) { iterateConst(nodep); }
+    int threads() const { return m_threads; }
+    ~DpiThreadsVisitor() override = default;
+
+private:
+    VL_UNCOPYABLE(DpiThreadsVisitor);
+};
+
+//######################################################################
 // FixDataHazards
 
 class FixDataHazards final {
@@ -2451,6 +2479,8 @@ AstExecGraph* V3Order::createParallel(OrderGraph& orderGraph, const std::string&
 
         // Create the ExecMTask
         ExecMTask* const execMTaskp = new ExecMTask{depGraphp, bodyp};
+        if (!v3Global.opt.hierBlocks().empty())
+            execMTaskp->threads(DpiThreadsVisitor{bodyp}.threads());
         const bool newEntry = logicMTaskToExecMTask.emplace(mTaskp, execMTaskp).second;
         UASSERT_OBJ(newEntry, mTaskp, "LogicMTasks should be processed in dependencyorder");
         UINFO(3, "Final '" << tag << "' LogicMTask " << mTaskp->id() << " maps to ExecMTask"

@@ -111,6 +111,7 @@ struct V3ParseBisonYYSType final {
     AstNode* scp;  // Symbol table scope for future lookups
     int token;  // Read token, aka tok
     VBaseOverride baseOverride;
+    bool flag = false;  // Passed up some rules
     union {
         V3Number* nump;
         string* strp;
@@ -181,8 +182,8 @@ public:
     void tagNodep(AstNode* nodep) { m_tagNodep = nodep; }
     AstNode* tagNodep() const { return m_tagNodep; }
     void lexTimescaleParse(FileLine* fl, const char* textp) VL_MT_DISABLED;
-    void timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, double unitVal,
-                      bool precSet, double precVal) VL_MT_DISABLED;
+    AstPragma* createTimescale(FileLine* fl, bool unitSet, double unitVal, bool precSet,
+                               double precVal) VL_MT_DISABLED;
     VTimescale timeLastUnit() const { return m_timeLastUnit; }
 
     void lexFileline(FileLine* fl) { m_lexFileline = fl; }
@@ -314,9 +315,9 @@ private:
     void tokenPipeline() VL_MT_DISABLED;  // Internal; called from tokenToBison
     int tokenPipelineId(int token) VL_MT_DISABLED;
     void tokenPipelineSym() VL_MT_DISABLED;
-    size_t tokenPipeScanIdCell(size_t depth) VL_MT_DISABLED;
+    size_t tokenPipeScanIdInst(size_t depth) VL_MT_DISABLED;
     size_t tokenPipeScanBracket(size_t depth) VL_MT_DISABLED;
-    size_t tokenPipeScanParam(size_t depth, bool forCell) VL_MT_DISABLED;
+    size_t tokenPipeScanParam(size_t depth, bool forInst) VL_MT_DISABLED;
     size_t tokenPipeScanTypeEq(size_t depth) VL_MT_DISABLED;
     const V3ParseBisonYYSType* tokenPeekp(size_t depth) VL_MT_DISABLED;
     void preprocDumps(std::ostream& os, bool forInputs) VL_MT_DISABLED;

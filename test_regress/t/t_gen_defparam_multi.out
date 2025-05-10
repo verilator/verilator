@@ -8,6 +8,7 @@
 %Error: t/t_gen_defparam_multi.v:39:25: syntax error, unexpected IDENTIFIER, expecting ',' or ';'
    39 |          defparam m2.m3.PAR3 = 80;
       |                         ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error-UNSUPPORTED: t/t_gen_defparam_multi.v:44:24: Unsupported: defparam with more than one dot
    44 |          defparam m2.m3.PAR3 = 40;
       |                        ^

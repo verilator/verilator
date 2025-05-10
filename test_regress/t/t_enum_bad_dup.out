@@ -4,4 +4,5 @@
         t/t_enum_bad_dup.v:9:19: ... Location of original declaration
     9 |    typedef enum { DUP_VALUE = 2,
       |                   ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

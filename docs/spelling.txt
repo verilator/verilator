@@ -273,6 +273,7 @@ Mednick
 Mei
 Melo
 Menküc
+Menon
 Michail
 Michiels
 Microsystems
@@ -303,6 +304,7 @@ Nauticus
 Newgard
 Nigam
 Nikana
+Niraj
 Niranjan
 Nitza
 Noack
@@ -652,6 +654,7 @@ elike
 elsif
 endcase
 endcelldefine
+endclass
 endfunction
 endgenerate
 endian
@@ -862,6 +865,7 @@ noprivate
 noreturn
 notif
 nullptr
+numactl
 onehot
 ooo
 oprofile
@@ -1099,6 +1103,7 @@ verilogmod
 verimake
 veriuser
 vl
+vlSelf
 vlopt
 vlt
 vltstd

@@ -8,26 +8,59 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
-Verilator 5.035 devel
+Verilator 5.037 devel
 ==========================
-
-**Major:**
-
-* Add `--trace-saif` for SAIF power traces (#5812). [Mateusz Gancarz]
-* Change `--output-groups` to default to value of `--build-jobs` (#5751).
-  Those using build farms may need to now use `--output-groups 0` or otherwise.
 
 **Other:**
 
+* Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
+* Add PROCINITASSIGN on initial assignments to process variables (#2481). [Niraj Menon]
+* Fix filename backslash escapes in C code (#5947).
+* Fix C++ widths in V3Expand (#5953) (#5975). [Geza Lore]
+* Fix constant propagation of post-expand stages (#5955) (#5963) (#5969) (#5972) (#5983).
+* Fix sign extension of signed compared with unsigned case items (#5968).
+* Fix always processes ignoring $finish (#5971). [Hennadii Chernyshchyk]
+* Fix streaming to/from packed arrays (#5976). [Geza Lore]
+
+
+Verilator 5.036 2025-04-27
+==========================
+
+**Important:**
+
+* Change `--output-groups` to default to value of `--build-jobs` (#5751).
+  Those using build farms may need to now use `--output-groups 0` or otherwise.
+* Support user-defined primitives (UDPs) (#468) (#5807) (#5936). [Zhou Shen, Krzysztof Sychla, et al]
+* Add `--trace-saif` for SAIF power traces (#5812) (#5914). [Mateusz Gancarz]
+
+**Other:**
+
+* Change `--trace` to `--trace-vcd`.
+* Support simple `checker` blocks (#4066). [Srinivasan Venkataramanan]
 * Support force/release with a variable reference (#5721) (#5810). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Support constraint random for StructArray (#5805) (#5937). [Yilou Wang]
+* Support command-line overriding `define (#5900) (#5908). [Brian Li]
+* Support soft unions (#5912) (#5932). [Robin Heinemann]
+* Support `$setuphold` (#5884). [Krzysztof Sychla]
+* Support assigning unpacked arrays to queues (#5924) (#5928). [Brian Li]
+* Support `systemc_interface and related inside `class`.
+* Support class extends with arguments.
+* Add multi-thread hierarchical simulation (#2583) (#5871). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add check for `let` misused in statement context (#5733).
 * Add used language to `--preproc-resolve` output (#5795). [Kamil Rakoczy, Antmicro Ltd.]
 * Add `--make json` to enable integration with non-make/cmake build systems (#5799). [Andrew Voznytsa]
+* Add numactl-like automatic assignment of processor affinity (#5911).
+* Add ccache support for generated cmake files (#5926) (#5930). [Andrew Voznytsa]
+* Add visualization of multi-threaded waiting time with verilator_gantt (#5929). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Add suggesting isolate_assignments to UNOPTFLAT (#5942). [John Khoo]
+* Add profiling of hierarchical mtasks with verilator_gantt (#5956). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add empty veriuser.h for legacy compatibility.
 * Add DEPRECATED warning on `--xml-only` and `--xml-output`.
 * Remove unused gtkwave/wavealloca.h. [Geza Lore]
 * Optimize automatic splitting of some packed variables (#5843). [Geza Lore]
 * Optimize trigger vector in whole words (#5857). [Geza Lore]
+* Fix parameters referencing interface fields (#1593) (#5910). [Ryszard Rozak, Antmicro Ltd.]
+* Fix interface array assignments (#5270) (#5633) (#5869). [Nick Brereton]
 * Fix change detection at time 0 (#5499) (#5864). [Geza Lore]
 * Fix foreach of associative array inside a constraint block (#5727) (#5841). [Yilou Wang]
 * Fix reset of automatic function variables (#5747). [Augustin Fabre]
@@ -43,8 +76,9 @@ Verilator 5.035 devel
 * Fix assignment pattern as function argument (#5839).
 * Fix checking built-in method arguments (#5839).
 * Fix splitting of packed ports with non-zero based ranges (#5842). [Geza Lore]
+* Fix delays inside interface functions, and classes inside interfaces (#5846).
 * Fix NBA shared flag reuse (#5848). [Geza Lore]
-* Fix expression coverage on additional nodes (#5849 partial) (#5867). [Todd Strader]
+* Fix multiple expression coverage issues (#5849 partial) (#5867) (#5870). [Todd Strader]
 * Fix unresolved typedefs as parameters (#5850). [Eugene Feinberg, Brian Li]
 * Fix removal of callbacks no longer in current list (#5851) (#5852). [Gilberto Abram]
 * Fix segmentation fault on member compare (#5853).
@@ -52,6 +86,22 @@ Verilator 5.035 devel
 * Fix streaming of unpacked arrays concatenations (#5856). [Ryszard Rozak, Antmicro Ltd.]
 * Fix Windows paths in Perl (#5858) (#5860). [Tobias Jensen]
 * Fix algorithm header portability in V3Os.cpp (for std::replace) (#5861). [William D. Jones]
+* Fix `$fscanf` not returning -1 on EOF (#5881).
+* Fix PGO profiling for multi-threaded hierarchical scenarios (#5888). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix V3Gate assertion on eliminated circular logic (#5889) (#5898). [Geza Lore]
+* Fix process comparisons (#5896).
+* Fix ccache with clang (#5899). [Geza Lore]
+* Fix delayed assignment malformed LHS assertion (#5904).
+* Fix segfault in fork synchronization (#5906). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix `new this` (#5909).
+* Fix assignments with stream expressions and unpacked arrays (#5915). [Ryszard Rozak, Antmicro Ltd.]
+* Fix LATCH warning for automatic variables (#5918). [Yutetsu TAKATSUKASA]
+* Fix %% on elaboration severity tasks (#5922). [Ethan Sifferman]
+* Fix port default values with `--coverage-line` creating `0=0` (#5920). [Drew Ranck]
+* Fix vlSelf error on fork repeats (#5927). [Drew Ranck]
+* Fix missing C++ regeneration when Verilog files are updated (#5934). [Zhouyi Shen]
+* Fix stream expressions (#5938). [Ryszard Rozak, Antmicro Ltd.]
+* Fix packed selection using over 32-bit index (#5957).
 
 
 Verilator 5.034 2025-02-24
@@ -299,7 +349,7 @@ Verilator 5.028 2024-08-21
 * Add parsing but otherwise ignore std::randomize (#5354). [Arkadiusz Kozdra, Antmicro Ltd.]
 * Add Verilated cc define when `--timing` used (#5383). [Kaleb Barrett]
 * Improve emitted code to use a reference for VlSelf (#5254). [Yangyu Chen]
-* Fix monitor block sensitivity items (#4400) (#5294). [Udaya Raj Subedi]
+* Fix monitor block sensitivity items (#4040) (#4400) (#5294). [Udaya Raj Subedi]
 * Fix fusing macro arguments to not ignore whitespace (#5061). [Tudor Timi]
 * Fix optimized-out sensitivity trees with `--timing` (#5080) (#5349). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix classes/modules of case-similar names (#5109). [Arkadiusz Kozdra]

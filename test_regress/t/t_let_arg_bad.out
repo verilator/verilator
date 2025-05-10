@@ -1,6 +1,7 @@
 %Error: t/t_let_arg_bad.v:13:18: Too many arguments in function call to LET 'NO_ARG'
    13 |       if (NO_ARG(10) != 10) $stop;   
       |                  ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_let_arg_bad.v:14:11: Missing argument on non-defaulted argument 'a' in function call to LET 'ONE_ARG'
    14 |       if (ONE_ARG != 10) $stop;   
       |           ^~~~~~~

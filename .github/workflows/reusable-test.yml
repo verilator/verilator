@@ -1,0 +1,80 @@
+---
+# DESCRIPTION: Github actions config
+# This name is key to badges in README.rst, so we use the name build
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: reusable-build
+
+on:
+  workflow_call:
+    inputs:
+      os:  # e.g. ubuntu-24.04
+        required: true
+        type: string
+      cc:  # gcc or clang
+        required: true
+        type: string
+      reloc:  # 0 or 1
+        required: true
+        type: number
+      suite:  # e.g. dist-vlt-0
+        required: true
+        type: string
+
+env:
+  CI_OS_NAME: linux
+  CI_COMMIT: ${{ github.sha }}
+  CCACHE_COMPRESS: 1
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_LIMIT_MULTIPLE: 0.95
+  INSTALL_DIR: ${{ github.workspace }}/install
+  RELOC_DIR: ${{ github.workspace }}/relloc
+
+defaults:
+  run:
+    shell: bash
+    working-directory: repo
+
+jobs:
+
+  test:
+    runs-on: ${{ inputs.os }}
+    name: Sub-test | ${{ inputs.os }} | ${{ inputs.cc }} | ${{inputs.reloc && 'reloc | ' || '' }} ${{ inputs.suite }}
+    env:
+      CI_BUILD_STAGE_NAME: test
+      CI_RUNS_ON: ${{ inputs.os }}
+      CI_RELOC: ${{inputs.reloc }}
+      CC: ${{ inputs.cc }}
+      CXX: ${{ inputs.cc == 'clang' && 'clang++' || 'g++' }}
+      CACHE_BASE_KEY: test-${{ inputs.os }}-${{ inputs.cc }}-${{inputs.reloc }}-${{ inputs.suite }}
+      CCACHE_MAXSIZE: 100M  # Per build per suite (* 5 * 5 = 2500M in total)
+      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ inputs.os }}-${{ inputs.cc }}.tar.gz
+    steps:
+
+      - name: Download tar archive
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.VERILATOR_ARCHIVE }}
+          path: ${{ github.workspace }}
+
+      - name: Unpack tar archive
+        working-directory: ${{ github.workspace }}
+        run: tar -x -z -f ${{ env.VERILATOR_ARCHIVE }}
+
+      - name: Cache $CCACHE_DIR
+        uses: actions/cache@v4
+        env:
+          CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache2
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
+          restore-keys: |
+            ${{ env.CACHE_KEY }}-
+
+      - name: Install test dependencies
+        run: ./ci/ci-install.bash
+
+      - name: Test
+        env:
+          TESTS: ${{ inputs.suite }}
+        run: ./ci/ci-script.bash

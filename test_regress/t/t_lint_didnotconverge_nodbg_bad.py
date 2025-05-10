@@ -22,7 +22,7 @@ test.compile(make_flags=['CPPFLAGS_ADD=-UVL_DEBUG'])
 test.execute(fails=True, expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.golden_filename,
-             out_filename="../docs/gen/ex_DIDNOTCONVERGE_nodbg_msg.rst",
+             out_filename=root + "/docs/gen/ex_DIDNOTCONVERGE_nodbg_msg.rst",
              lines="1")
 
 test.passes()

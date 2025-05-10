@@ -55,7 +55,7 @@ class LinkResolveVisitor final : public VNVisitor {
     bool m_underGenFor = false;  // Under GenFor
     bool m_underGenerate = false;  // Under GenFor/GenIf
 
-    // VISITs
+    // VISITORS
     // TODO: Most of these visitors are here for historical reasons.
     // TODO: ExpectDescriptor can move to data type resolution, and the rest
     // TODO: could move to V3LinkParse to get them out of the way of elaboration
@@ -190,8 +190,8 @@ class LinkResolveVisitor final : public VNVisitor {
             if (VN_IS(nodep->backp(), StmtExpr)) {
                 nodep->v3error("Expected statement, not let substitution " << letp->prettyNameQ());
             }
-            // letp->dumpTree("-let-let ");
-            // nodep->dumpTree("-let-ref ");
+            // if (debug()) letp->dumpTree("-let-let ");
+            // if (debug()) nodep->dumpTree("-let-ref ");
             AstStmtExpr* const letStmtp = VN_AS(letp->stmtsp(), StmtExpr);
             AstNodeExpr* const newp = letStmtp->exprp()->cloneTree(false);
             const V3TaskConnects tconnects = V3Task::taskConnects(nodep, letp->stmtsp());
@@ -214,7 +214,7 @@ class LinkResolveVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(refp), refp);
                 }
             });
-            // newp->dumpTree("-let-new ");
+            // if (debug()) newp->dumpTree("-let-new ");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             // Iterate to expand further now, so we can look for recursions
@@ -531,7 +531,7 @@ class LinkBotupVisitor final : public VNVisitorConst {
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
 
-    // VISITs
+    // VISITORS
     void visit(AstNetlist* nodep) override {
         // Iterate modules backwards, in bottom-up order.
         iterateChildrenBackwardsConst(nodep);

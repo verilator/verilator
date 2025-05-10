@@ -36,7 +36,7 @@ int test_vpiRawFourStateVal(char* name, PLI_BYTE8* test_data, int index, const u
     // prepare index and test data arrays
     int index_arr[1] = {index};
     std::vector<PLI_BYTE8> test_data_four_state;
-    test_data_four_state.reserve(size * elem_size * 2);
+    test_data_four_state.resize(size * elem_size * 2);
     for (unsigned i = 0; i < size; i++) {
         for (unsigned j = 0; j < elem_size; j++) {
             test_data_four_state[(i * 2 * elem_size) + j] = test_data[(i * elem_size) + j];
@@ -147,7 +147,7 @@ int test_vpiVectorVal(char* name, PLI_BYTE8* test_data, int index, const unsigne
     const unsigned elem_size_words = (elem_size + 3) / sizeof(PLI_UINT32);
     const unsigned vec_size = elem_size_words * size;
     std::vector<s_vpi_vecval> test_data_vectors;
-    test_data_vectors.reserve(vec_size);
+    test_data_vectors.resize(vec_size);
     unsigned test_data_index = 0;
     for (unsigned i = 0; i < size; i++) {
         unsigned count = 0;
@@ -214,7 +214,7 @@ int test_vpiIntVal(char* name, PLI_BYTE8* test_data, int index, const unsigned n
     // prepare index
     int index_arr[1] = {index};
     std::vector<PLI_INT32> test_data_integers;
-    test_data_integers.reserve(size);
+    test_data_integers.resize(size);
     for (unsigned i = 0; i < size; i++) {
         PLI_INT32& integer = test_data_integers[i];
         integer = 0;
@@ -268,7 +268,7 @@ int test_vpiShortIntVal(char* name, PLI_BYTE8* test_data, int index, const unsig
     // prepare index
     int index_arr[1] = {index};
     std::vector<PLI_INT16> test_data_shortints;
-    test_data_shortints.reserve(size);
+    test_data_shortints.resize(size);
     for (unsigned i = 0; i < size; i++) {
         if (elem_size == 2) {
             test_data_shortints[i] = test_data[i * 2] & 0xFF;
@@ -323,7 +323,7 @@ int test_vpiLongIntVal(char* name, PLI_BYTE8* test_data, int index, const unsign
     // prepare index
     int index_arr[1] = {index};
     std::vector<PLI_INT64> test_data_longints;
-    test_data_longints.reserve(size);
+    test_data_longints.resize(size);
     for (unsigned i = 0; i < size; i++) {
         PLI_INT64& longint = test_data_longints[i];
         longint = 0;

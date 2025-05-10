@@ -29,19 +29,30 @@ for s in [
         'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
         # Not yet analyzed
         ' loading non-variable',
+        '--pins-bv maximum is 65: ',
         '--pipe-filter protocol error, unexpected: ',
+        '--pipe-filter returned bad status',
+        '--pipe-filter: Can\'t pipe: ',
+        '--pipe-filter: fork failed: ',
+        '--threads must be >= 0: ',
+        '--threads-max-mtasks must be >= 1: ',
+        '--trace-threads must be >= 1: ',
         '/*verilator sformat*/ can only be applied to last argument of ',
         'Argument needed for string.',
         'Array initialization has too few elements, need element ',
         'Assigned pin is neither input nor output',
         'Assignment pattern with no members',
         'Can\'t find varpin scope of ',
+        'Can\'t read annotation file: ',
         'Can\'t resolve module reference: \'',
-        'Cannot write preprocessor output: ',
+        'Can\'t write file: ',
         'Circular logic when ordering code (non-cutable edge loop)',
+        'Define missing argument \'',
         'Define or directive not defined: `',
         'Exceeded limit of ',
+        'Expecting define formal arguments. Found: ',
         'Extern declaration\'s scope is not a defined class',
+        'File not found: ',
         'Format to $display-like function must have constant format string',
         'Forward typedef used as class/package does not resolve to class/package: ',
         'Illegal +: or -: select; type already selected, or bad dimension: ',
@@ -62,6 +73,7 @@ for s in [
         'String of ',
         'Symbol matching ',
         'Unexpected connection to arrayed port',
+        'Unmatched brackets in variable substitution in file: ',
         'Unsized numbers/parameters not allowed in streams.',
         'Unsupported RHS tristate construct: ',
         'Unsupported or syntax error: Unsized range in instance or other declaration',
@@ -72,9 +84,6 @@ for s in [
         'Unsupported: $bits for queue',
         'Unsupported: $c can\'t generate wider than 64 bits',
         'Unsupported: &&& expression',
-        'Unsupported: \'default :/\' constraint',
-        'Unsupported: \'{} .* patterns',
-        'Unsupported: \'{} tagged patterns',
         'Unsupported: +%- range',
         'Unsupported: +/- range',
         'Unsupported: 4-state numbers in this context',
@@ -96,28 +105,29 @@ for s in [
         'Unsupported: Verilog 1995 deassign',
         'Unsupported: Verilog 1995 gate primitive: ',
         'Unsupported: [] dimensions',
+        'Unsupported: \'default :/\' constraint',
+        'Unsupported: \'{} .* patterns',
+        'Unsupported: \'{} tagged patterns',
         'Unsupported: always[] (in property expression)',
         'Unsupported: assertion items in clocking blocks',
-        'Unsupported: covergroup within class',
-        'Unsupported: default clocking identifier',
         'Unsupported: don\'t know how to deal with ',
         'Unsupported: eventually[] (in property expression)',
         'Unsupported: extern forkjoin',
         'Unsupported: extern interface',
         'Unsupported: extern module',
         'Unsupported: extern task',
+        'Unsupported: modport export',
+        'Unsupported: no_inline for tasks',
         'Unsupported: property port \'local\'',
         'Unsupported: randsequence production list',
         'Unsupported: randsequence repeat',
         'Unsupported: repeat event control',
         'Unsupported: s_always (in property expression)',
+        'Unsupported: static cast to ',
+        'Unsupported: super',
         'Unsupported: this.super',
         'Unsupported: trireg',
         'Unsupported: with[] stream expression',
-        'Unsupported: modport export',
-        'Unsupported: no_inline for tasks',
-        'Unsupported: static cast to ',
-        'Unsupported: super',
 ]:
     Suppressed[s] = True
 
@@ -137,11 +147,11 @@ def read_messages():
                     continue
                 if re.match(r'^\s*/\*', line):
                     continue
-                if re.search(r'\b(v3error|v3warn|BBUNSUP)\b\($', line):
+                if re.search(r'\b(v3error|v3warn|v3fatal|BBUNSUP)\b\($', line):
                     if 'LCOV_EXCL_LINE' not in line:
                         read_next = True
                     continue
-                m = re.search(r'.*\b(v3error|v3warn|BBUNSUP)\b(.*)', line)
+                m = re.search(r'.*\b(v3error|v3warn|v3fatal|BBUNSUP)\b(.*)', line)
                 if m:
                     line = m.group(2)
                     if 'LCOV_EXCL_LINE' not in line:
@@ -185,13 +195,13 @@ def check():
     read_outputs()
 
     print("Number of suppressions = " + str(len(Suppressed)))
-    print("Coverage = ", str(100 - int(100 * len(Suppressed) / len(Messages))))
+    print("Coverage = %3.1f%%" % (100 - int(100 * len(Suppressed) / len(Messages))))
     print()
 
     print("Checking for v3error/v3warn messages in sources without")
     print("coverage in test_regress/t/*.out:")
-    print("(Developers: If a message is impossible to test, use UASSERT or")
-    print("v3fatalSrc instead of v3error)")
+    print("(Developers: If a message is impossible to test, consider using")
+    print("UASSERT or v3fatalSrc instead of v3error)")
     print()
 
     used_suppressed = {}

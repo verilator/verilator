@@ -1,4 +1,4 @@
-%Warning-PINMISSING: t/t_lint_pindup_bad.v:18:4: Cell has missing pin: 'exists'
+%Warning-PINMISSING: t/t_lint_pindup_bad.v:18:4: Instance has missing pin: 'exists'
    18 |    sub (.o(o),
       |    ^~~
                      t/t_lint_pindup_bad.v:32:15: ... Location of port declaration
@@ -12,10 +12,12 @@
         t/t_lint_pindup_bad.v:19:10: ... Location of original pin connection
    19 |         .i(i),
       |          ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error-PINNOTFOUND: t/t_lint_pindup_bad.v:21:10: Pin not found: 'nexist'
                                                : ... Suggested alternative: 'exists'
    21 |         .nexist(i2)   
       |          ^~~~~~
+                    ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
 %Error-PINNOTFOUND: t/t_lint_pindup_bad.v:15:9: Parameter not found: 'NEXIST'
                                               : ... Suggested alternative: 'EXIST'
    15 |      #(.NEXIST(1),   

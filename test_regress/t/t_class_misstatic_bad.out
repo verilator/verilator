@@ -2,6 +2,7 @@
                                       : ... note: In instance 't'
    31 |       nonstatic();   
       |       ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_class_misstatic_bad.v:38:12: Cannot call non-static member function 'nonstatic' without object (IEEE 1800-2023 8.10)
                                        : ... note: In instance 't'
    38 |       Cls::nonstatic();   

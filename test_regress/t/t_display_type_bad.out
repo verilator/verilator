@@ -3,6 +3,7 @@
                                     : ... Suggest use '%s'
    10 |       $display("%d %x %f %t", s, s, s, s);
       |                               ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_display_type_bad.v:10:34: $display-line format of '%x' illegal with string argument
                                     : ... note: In instance 't'
                                     : ... Suggest use '%s'

@@ -2,6 +2,7 @@
                                     : ... Suggested alternative: 'item'
    16 |       qv = q.find with (itemm == 2);
       |                         ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_with_suggest_bad.v:18:37: Can't find definition of variable: 'misspelledd'
                                     : ... Suggested alternative: 'misspelled'
    18 |       qv = q.find(misspelled) with (misspelledd == 2);

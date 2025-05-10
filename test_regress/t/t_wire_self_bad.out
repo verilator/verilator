@@ -1,4 +1,5 @@
 %Error: t/t_wire_self_bad.v:11:16: Wire inputs its own output, creating circular logic (wire x=x)
    11 |    wire myself = myself;
       |                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

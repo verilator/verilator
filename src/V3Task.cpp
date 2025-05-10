@@ -685,8 +685,8 @@ class TaskVisitor final : public VNVisitor {
             UASSERT_OBJ(snp, refp, "Missing scoping context");
             ccallp->addArgsp(snp);
             // __Vfilenamep
-            ccallp->addArgsp(new AstCExpr{refp->fileline(),
-                                          "\"" + refp->fileline()->filename() + "\"", 64, true});
+            ccallp->addArgsp(new AstCExpr{
+                refp->fileline(), "\"" + refp->fileline()->filenameEsc() + "\"", 64, true});
             // __Vlineno
             ccallp->addArgsp(new AstConst(refp->fileline(), refp->fileline()->lineno()));
         }
@@ -1952,9 +1952,8 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
         const string idx = portp->name() + "__Vidx";
         stmt = "for (size_t " + idx + " = 0; " + idx + " < " + cvtToStr(unpackSize) + "; ++" + idx
                + ") ";
-        stmt += (isBit ? "VL_SET_SVBV_" : "VL_SET_SVLV_")
-                + string{portp->dtypep()->skipRefp()->charIQWN()} + "(" + cvtToStr(portp->width())
-                + ", ";
+        stmt += (isBit ? "VL_SET_SVBV_"s : "VL_SET_SVLV_"s)
+                + portp->dtypep()->skipRefp()->charIQWN() + "(" + cvtToStr(portp->width()) + ", ";
         stmt += toName + " + " + cvtToStr(portp->dtypep()->skipRefp()->widthWords()) + " * " + idx
                 + ", ";
         if (unpackDim > 0) {  // Access multi-dimensional array as a 1D array

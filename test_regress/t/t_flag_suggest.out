@@ -1,11 +1,24 @@
 %Error: Invalid option: -ccc... Suggested alternative: '-cc'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Invalid option: --ccc... Suggested alternative: '-cc'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Invalid option: -no-asserT... Suggested alternative: '-no-assert'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Invalid option: -noasserT... Suggested alternative: '-no-assert'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Invalid option: -asserT... Suggested alternative: '-assert'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Invalid option: +definE+A=B... Suggested alternative: '+define+'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Invalid option: -CFLAGs... Suggested alternative: '-CFLAGS'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Invalid option: -debug-aborT
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Invalid option: -Won-SPLITVAR... Suggested alternative: '-Wno-SPLITVAR'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Unknown warning specified: -Wno-SPLITVER... Suggested alternative: '-Wno-SPLITVAR'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Unknown language specified: 1364-1997... Suggested alternative: '1364-1995'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: verilator: No Input Verilog file specified on command line, see verilator --help for more information
+        ... This fatal error may be caused by the earlier error(s); resolve those first.

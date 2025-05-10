@@ -4,4 +4,5 @@
         t/t_constraint_pure_missing_bad.v:8:21: ... Location of interface class's pure constraint
     8 |     pure constraint raint;
       |                     ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

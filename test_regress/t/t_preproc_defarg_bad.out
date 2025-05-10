@@ -1,4 +1,5 @@
 %Error: t/t_preproc_defarg_bad.v:13:4: Illegal text before '(' that starts define arguments
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_preproc_defarg_bad.v:13:8: Define passed too many arguments: A1
 %Error: t/t_preproc_defarg_bad.v:15:4: Illegal text before '(' that starts define arguments
 %Error: t/t_preproc_defarg_bad.v:16:10: Define passed too many arguments: A2

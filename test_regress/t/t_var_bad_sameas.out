@@ -4,6 +4,7 @@
         t/t_var_bad_sameas.v:9:12: ... Location of original declaration
     9 |    integer varfirst;
       |            ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_var_bad_sameas.v:11:9: Unsupported in C: Task has the same name as instance: 'varfirst'
    11 |    task varfirst; begin end endtask   
       |         ^~~~~~~~

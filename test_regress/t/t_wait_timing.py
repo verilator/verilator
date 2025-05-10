@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_wait.v"
 
-test.compile(timing_loop=True, verilator_flags2=["--binary --timing -Wno-WAITCONST"])
+test.compile(verilator_flags2=["--binary -Wno-WAITCONST"])
 
 test.execute()
 

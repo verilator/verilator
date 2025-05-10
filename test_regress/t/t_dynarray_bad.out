@@ -7,3 +7,4 @@
 %Error: Internal Error: t/t_dynarray_bad.v:15:16: ../V3Number.cpp:#: Number operation called with non-logic (double or string) argument: '"str""
    15 |       a = new [s];   
       |                ^
+                        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

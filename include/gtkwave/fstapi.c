@@ -37,10 +37,9 @@
  *
  */
 
-// #ifndef FST_CONFIG_INCLUDE
-// # define FST_CONFIG_INCLUDE <config.h>
-// #endif
-// #include FST_CONFIG_INCLUDE
+#ifdef FST_INCLUDE_CONFIG
+#include <config.h>
+#endif
 
 #include "fstapi.h"
 #include "fastlz.h"
@@ -58,21 +57,6 @@
 #ifdef __MINGW32__
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#endif
-
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#elif defined(__GNUC__)
-#ifndef __MINGW32__
-#ifndef alloca
-#define alloca __builtin_alloca
-#endif
-#else
-#include <malloc.h>
-#endif
-#elif defined(_MSC_VER)
-#include <malloc.h>
-#define alloca _alloca
 #endif
 
 #ifndef PATH_MAX
@@ -1113,10 +1097,9 @@ static void fstDetermineBreakSize(struct fstWriterContext *xc)
 /*
  * file creation and close
  */
-void *fstWriterCreate(const char *nam, int use_compressed_hier)
+fstWriterContext *fstWriterCreate(const char *nam, int use_compressed_hier)
 {
-    struct fstWriterContext *xc =
-        (struct fstWriterContext *)calloc(1, sizeof(struct fstWriterContext));
+    fstWriterContext *xc = (fstWriterContext *)calloc(1, sizeof(fstWriterContext));
 
     xc->compress_hier = use_compressed_hier;
     fstDetermineBreakSize(xc);
@@ -1175,10 +1158,8 @@ void *fstWriterCreate(const char *nam, int use_compressed_hier)
 /*
  * generation and writing out of value change data sections
  */
-static void fstWriterEmitSectionHeader(void *ctx)
+static void fstWriterEmitSectionHeader(fstWriterContext *xc)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
-
     if (xc) {
         unsigned long destlen;
         unsigned char *dmem;
@@ -1235,9 +1216,9 @@ static void fstWriterEmitSectionHeader(void *ctx)
  * be synced up with time changes
  */
 #ifdef FST_WRITER_PARALLEL
-static void fstWriterFlushContextPrivate2(void *ctx)
+static void fstWriterFlushContextPrivate2(fstWriterContext *xc)
 #else
-static void fstWriterFlushContextPrivate(void *ctx)
+static void fstWriterFlushContextPrivate(fstWriterContext *xc)
 #endif
 {
 #ifdef FST_DEBUG
@@ -1257,7 +1238,6 @@ static void fstWriterFlushContextPrivate(void *ctx)
     unsigned char *packmem;
     unsigned int packmemlen;
     uint32_t *vm4ip;
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
 #ifdef FST_WRITER_PARALLEL
     struct fstWriterContext *xc2 = xc->xc_parent;
 #else
@@ -1775,10 +1755,8 @@ static void *fstWriterFlushContextPrivate1(void *ctx)
     return (NULL);
 }
 
-static void fstWriterFlushContextPrivate(void *ctx)
+static void fstWriterFlushContextPrivate(fstWriterContext *xc)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
-
     if (xc->parallel_enabled) {
         struct fstWriterContext *xc2 =
             (struct fstWriterContext *)malloc(sizeof(struct fstWriterContext));
@@ -1852,9 +1830,8 @@ static void fstWriterFlushContextPrivate(void *ctx)
 /*
  * queues up a flush context operation
  */
-void fstWriterFlushContext(void *ctx)
+void fstWriterFlushContext(fstWriterContext *xc)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc) {
         if (xc->tchn_idx > 1) {
             xc->flush_context_pending = 1;
@@ -1865,10 +1842,8 @@ void fstWriterFlushContext(void *ctx)
 /*
  * close out FST file
  */
-void fstWriterClose(void *ctx)
+void fstWriterClose(fstWriterContext *xc)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
-
 #ifdef FST_WRITER_PARALLEL
     if (xc) {
         pthread_mutex_lock(&xc->mutex);
@@ -2234,9 +2209,8 @@ void fstWriterClose(void *ctx)
 /*
  * functions to set miscellaneous header/block information
  */
-void fstWriterSetDate(void *ctx, const char *dat)
+void fstWriterSetDate(fstWriterContext *xc, const char *dat)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc) {
         char s[FST_HDR_DATE_SIZE];
         fst_off_t fpos = ftello(xc->handle);
@@ -2251,9 +2225,8 @@ void fstWriterSetDate(void *ctx, const char *dat)
     }
 }
 
-void fstWriterSetVersion(void *ctx, const char *vers)
+void fstWriterSetVersion(fstWriterContext *xc, const char *vers)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc && vers) {
         char s[FST_HDR_SIM_VERSION_SIZE];
         fst_off_t fpos = ftello(xc->handle);
@@ -2268,9 +2241,8 @@ void fstWriterSetVersion(void *ctx, const char *vers)
     }
 }
 
-void fstWriterSetFileType(void *ctx, enum fstFileType filetype)
+void fstWriterSetFileType(fstWriterContext *xc, enum fstFileType filetype)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc) {
         if (/*(filetype >= FST_FT_MIN) &&*/ (filetype <= FST_FT_MAX)) {
             fst_off_t fpos = ftello(xc->handle);
@@ -2285,9 +2257,11 @@ void fstWriterSetFileType(void *ctx, enum fstFileType filetype)
     }
 }
 
-static void fstWriterSetAttrDoubleArgGeneric(void *ctx, int typ, uint64_t arg1, uint64_t arg2)
+static void fstWriterSetAttrDoubleArgGeneric(fstWriterContext *xc,
+                                             int typ,
+                                             uint64_t arg1,
+                                             uint64_t arg2)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc) {
         unsigned char buf[11]; /* ceil(64/7) = 10 + null term */
         unsigned char *pnt = fstCopyVarint64ToRight(buf, arg1);
@@ -2300,9 +2274,8 @@ static void fstWriterSetAttrDoubleArgGeneric(void *ctx, int typ, uint64_t arg1, 
     }
 }
 
-static void fstWriterSetAttrGeneric(void *ctx, const char *comm, int typ, uint64_t arg)
+static void fstWriterSetAttrGeneric(fstWriterContext *xc, const char *comm, int typ, uint64_t arg)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc && comm) {
         char *s = strdup(comm);
         char *sf = s;
@@ -2318,14 +2291,12 @@ static void fstWriterSetAttrGeneric(void *ctx, const char *comm, int typ, uint64
     }
 }
 
-static void fstWriterSetSourceStem_2(void *ctx,
+static void fstWriterSetSourceStem_2(fstWriterContext *xc,
                                      const char *path,
                                      unsigned int line,
                                      unsigned int use_realpath,
                                      int typ)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
-
     if (xc && path && path[0]) {
         uint64_t sidx = 0;
         int slen = strlen(path);
@@ -2357,7 +2328,7 @@ static void fstWriterSetSourceStem_2(void *ctx,
     }
 }
 
-void fstWriterSetSourceStem(void *ctx,
+void fstWriterSetSourceStem(fstWriterContext *ctx,
                             const char *path,
                             unsigned int line,
                             unsigned int use_realpath)
@@ -2365,7 +2336,7 @@ void fstWriterSetSourceStem(void *ctx,
     fstWriterSetSourceStem_2(ctx, path, line, use_realpath, FST_MT_SOURCESTEM);
 }
 
-void fstWriterSetSourceInstantiationStem(void *ctx,
+void fstWriterSetSourceInstantiationStem(fstWriterContext *ctx,
                                          const char *path,
                                          unsigned int line,
                                          unsigned int use_realpath)
@@ -2373,24 +2344,23 @@ void fstWriterSetSourceInstantiationStem(void *ctx,
     fstWriterSetSourceStem_2(ctx, path, line, use_realpath, FST_MT_SOURCEISTEM);
 }
 
-void fstWriterSetComment(void *ctx, const char *comm)
+void fstWriterSetComment(fstWriterContext *ctx, const char *comm)
 {
     fstWriterSetAttrGeneric(ctx, comm, FST_MT_COMMENT, 0);
 }
 
-void fstWriterSetValueList(void *ctx, const char *vl)
+void fstWriterSetValueList(fstWriterContext *ctx, const char *vl)
 {
     fstWriterSetAttrGeneric(ctx, vl, FST_MT_VALUELIST, 0);
 }
 
-void fstWriterSetEnvVar(void *ctx, const char *envvar)
+void fstWriterSetEnvVar(fstWriterContext *ctx, const char *envvar)
 {
     fstWriterSetAttrGeneric(ctx, envvar, FST_MT_ENVVAR, 0);
 }
 
-void fstWriterSetTimescale(void *ctx, int ts)
+void fstWriterSetTimescale(fstWriterContext *xc, int ts)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc) {
         fst_off_t fpos = ftello(xc->handle);
         fstWriterFseeko(xc, xc->handle, FST_HDR_OFFS_TIMESCALE, SEEK_SET);
@@ -2400,9 +2370,8 @@ void fstWriterSetTimescale(void *ctx, int ts)
     }
 }
 
-void fstWriterSetTimescaleFromString(void *ctx, const char *s)
+void fstWriterSetTimescaleFromString(fstWriterContext *xc, const char *s)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc && s) {
         int mat = 0;
         int seconds_exp = -9;
@@ -2458,13 +2427,12 @@ void fstWriterSetTimescaleFromString(void *ctx, const char *s)
             seconds_exp += 2;
         }
 
-        fstWriterSetTimescale(ctx, seconds_exp);
+        fstWriterSetTimescale(xc, seconds_exp);
     }
 }
 
-void fstWriterSetTimezero(void *ctx, int64_t tim)
+void fstWriterSetTimezero(fstWriterContext *xc, int64_t tim)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc) {
         fst_off_t fpos = ftello(xc->handle);
         fstWriterFseeko(xc, xc->handle, FST_HDR_OFFS_TIMEZERO, SEEK_SET);
@@ -2474,26 +2442,23 @@ void fstWriterSetTimezero(void *ctx, int64_t tim)
     }
 }
 
-void fstWriterSetPackType(void *ctx, enum fstWriterPackType typ)
+void fstWriterSetPackType(fstWriterContext *xc, enum fstWriterPackType typ)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc) {
         xc->fastpack = (typ != FST_WR_PT_ZLIB);
         xc->fourpack = (typ == FST_WR_PT_LZ4);
     }
 }
 
-void fstWriterSetRepackOnClose(void *ctx, int enable)
+void fstWriterSetRepackOnClose(fstWriterContext *xc, int enable)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc) {
         xc->repack_on_close = (enable != 0);
     }
 }
 
-void fstWriterSetParallelMode(void *ctx, int enable)
+void fstWriterSetParallelMode(fstWriterContext *xc, int enable)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc) {
         xc->parallel_was_enabled |= xc->parallel_enabled; /* make sticky */
         xc->parallel_enabled = (enable != 0);
@@ -2508,17 +2473,15 @@ void fstWriterSetParallelMode(void *ctx, int enable)
     }
 }
 
-void fstWriterSetDumpSizeLimit(void *ctx, uint64_t numbytes)
+void fstWriterSetDumpSizeLimit(fstWriterContext *xc, uint64_t numbytes)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc) {
         xc->dump_size_limit = numbytes;
     }
 }
 
-int fstWriterGetDumpSizeLimitReached(void *ctx)
+int fstWriterGetDumpSizeLimitReached(fstWriterContext *xc)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc) {
         return (xc->size_limit_locked != 0);
     }
@@ -2526,9 +2489,8 @@ int fstWriterGetDumpSizeLimitReached(void *ctx)
     return (0);
 }
 
-int fstWriterGetFseekFailed(void *ctx)
+int fstWriterGetFseekFailed(fstWriterContext *xc)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc) {
         return (xc->fseek_failed != 0);
     }
@@ -2536,14 +2498,13 @@ int fstWriterGetFseekFailed(void *ctx)
     return (0);
 }
 
-static int fstWriterGetFlushContextPendingInternal(struct fstWriterContext *xc)
+static int fstWriterGetFlushContextPendingInternal(fstWriterContext *xc)
 {
     return (xc->vchg_siz >= xc->fst_break_size) || (xc->flush_context_pending);
 }
 
-int fstWriterGetFlushContextPending(void *ctx)
+int fstWriterGetFlushContextPending(fstWriterContext *xc)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     return xc && !xc->is_initial_time && fstWriterGetFlushContextPendingInternal(xc);
 }
 
@@ -2552,7 +2513,7 @@ int fstWriterGetFlushContextPending(void *ctx)
  * fstWriterCreateVar2() is used to dump VHDL or other languages, but the
  * underlying variable needs to map to Verilog/SV via the proper fstVarType vt
  */
-fstHandle fstWriterCreateVar2(void *ctx,
+fstHandle fstWriterCreateVar2(fstWriterContext *ctx,
                               enum fstVarType vt,
                               enum fstVarDir vd,
                               uint32_t len,
@@ -2569,14 +2530,13 @@ fstHandle fstWriterCreateVar2(void *ctx,
     return (fstWriterCreateVar(ctx, vt, vd, len, nam, aliasHandle));
 }
 
-fstHandle fstWriterCreateVar(void *ctx,
+fstHandle fstWriterCreateVar(fstWriterContext *xc,
                              enum fstVarType vt,
                              enum fstVarDir vd,
                              uint32_t len,
                              const char *nam,
                              fstHandle aliasHandle)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     unsigned int i;
     int nlen, is_real;
 
@@ -2660,13 +2620,11 @@ fstHandle fstWriterCreateVar(void *ctx,
     return (0);
 }
 
-void fstWriterSetScope(void *ctx,
+void fstWriterSetScope(fstWriterContext *xc,
                        enum fstScopeType scopetype,
                        const char *scopename,
                        const char *scopecomp)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
-
     if (xc) {
         fputc(FST_ST_VCD_SCOPE, xc->hier_handle);
         if (/*(scopetype < FST_ST_VCD_MODULE) ||*/ (scopetype > FST_ST_MAX)) {
@@ -2692,24 +2650,20 @@ void fstWriterSetScope(void *ctx,
     }
 }
 
-void fstWriterSetUpscope(void *ctx)
+void fstWriterSetUpscope(fstWriterContext *xc)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
-
     if (xc) {
         fputc(FST_ST_VCD_UPSCOPE, xc->hier_handle);
         xc->hier_file_len++;
     }
 }
 
-void fstWriterSetAttrBegin(void *ctx,
+void fstWriterSetAttrBegin(fstWriterContext *xc,
                            enum fstAttrType attrtype,
                            int subtype,
                            const char *attrname,
                            uint64_t arg)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
-
     if (xc) {
         fputc(FST_ST_GEN_ATTRBEGIN, xc->hier_handle);
         if (/*(attrtype < FST_AT_MISC) ||*/ (attrtype > FST_AT_MAX)) {
@@ -2750,17 +2704,15 @@ void fstWriterSetAttrBegin(void *ctx,
     }
 }
 
-void fstWriterSetAttrEnd(void *ctx)
+void fstWriterSetAttrEnd(fstWriterContext *xc)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
-
     if (xc) {
         fputc(FST_ST_GEN_ATTREND, xc->hier_handle);
         xc->hier_file_len++;
     }
 }
 
-fstEnumHandle fstWriterCreateEnumTable(void *ctx,
+fstEnumHandle fstWriterCreateEnumTable(fstWriterContext *xc,
                                        const char *name,
                                        uint32_t elem_count,
                                        unsigned int min_valbits,
@@ -2779,9 +2731,7 @@ fstEnumHandle fstWriterCreateEnumTable(void *ctx,
     int pos = 0;
     char *attr_str = NULL;
 
-    if (ctx && name && literal_arr && val_arr && (elem_count != 0)) {
-        struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
-
+    if (xc && name && literal_arr && val_arr && (elem_count != 0)) {
         uint32_t i;
 
         name_len = strlen(name);
@@ -2866,9 +2816,8 @@ fstEnumHandle fstWriterCreateEnumTable(void *ctx,
     return (handle);
 }
 
-void fstWriterEmitEnumTableRef(void *ctx, fstEnumHandle handle)
+void fstWriterEmitEnumTableRef(fstWriterContext *xc, fstEnumHandle handle)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (xc && handle) {
         fstWriterSetAttrBegin(xc, FST_AT_MISC, FST_MT_ENUMTABLE, NULL, handle);
     }
@@ -2877,9 +2826,8 @@ void fstWriterEmitEnumTableRef(void *ctx, fstEnumHandle handle)
 /*
  * value and time change emission
  */
-void fstWriterEmitValueChange(void *ctx, fstHandle handle, const void *val)
+void fstWriterEmitValueChange(fstWriterContext *xc, fstHandle handle, const void *val)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     const unsigned char *buf = (const unsigned char *)val;
     uint32_t offs;
     int len;
@@ -2987,7 +2935,10 @@ void fstWriterEmitValueChange(void *ctx, fstHandle handle, const void *val)
     }
 }
 
-void fstWriterEmitValueChange32(void *ctx, fstHandle handle, uint32_t bits, uint32_t val)
+void fstWriterEmitValueChange32(fstWriterContext *ctx,
+                                fstHandle handle,
+                                uint32_t bits,
+                                uint32_t val)
 {
     char buf[32];
     char *s = buf;
@@ -2997,7 +2948,11 @@ void fstWriterEmitValueChange32(void *ctx, fstHandle handle, uint32_t bits, uint
     }
     fstWriterEmitValueChange(ctx, handle, buf);
 }
-void fstWriterEmitValueChange64(void *ctx, fstHandle handle, uint32_t bits, uint64_t val)
+
+void fstWriterEmitValueChange64(fstWriterContext *ctx,
+                                fstHandle handle,
+                                uint32_t bits,
+                                uint64_t val)
 {
     char buf[64];
     char *s = buf;
@@ -3007,11 +2962,14 @@ void fstWriterEmitValueChange64(void *ctx, fstHandle handle, uint32_t bits, uint
     }
     fstWriterEmitValueChange(ctx, handle, buf);
 }
-void fstWriterEmitValueChangeVec32(void *ctx, fstHandle handle, uint32_t bits, const uint32_t *val)
+
+void fstWriterEmitValueChangeVec32(fstWriterContext *xc,
+                                   fstHandle handle,
+                                   uint32_t bits,
+                                   const uint32_t *val)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (FST_UNLIKELY(bits <= 32)) {
-        fstWriterEmitValueChange32(ctx, handle, bits, val[0]);
+        fstWriterEmitValueChange32(xc, handle, bits, val[0]);
     } else if (FST_LIKELY(xc)) {
         int bq = bits / 32;
         int br = bits & 31;
@@ -3047,14 +3005,16 @@ void fstWriterEmitValueChangeVec32(void *ctx, fstHandle handle, uint32_t bits, c
                 s += 4;
             }
         }
-        fstWriterEmitValueChange(ctx, handle, xc->outval_mem);
+        fstWriterEmitValueChange(xc, handle, xc->outval_mem);
     }
 }
-void fstWriterEmitValueChangeVec64(void *ctx, fstHandle handle, uint32_t bits, const uint64_t *val)
+void fstWriterEmitValueChangeVec64(fstWriterContext *xc,
+                                   fstHandle handle,
+                                   uint32_t bits,
+                                   const uint64_t *val)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     if (FST_UNLIKELY(bits <= 64)) {
-        fstWriterEmitValueChange64(ctx, handle, bits, val[0]);
+        fstWriterEmitValueChange64(xc, handle, bits, val[0]);
     } else if (FST_LIKELY(xc)) {
         int bq = bits / 64;
         int br = bits & 63;
@@ -3090,16 +3050,15 @@ void fstWriterEmitValueChangeVec64(void *ctx, fstHandle handle, uint32_t bits, c
                 s += 4;
             }
         }
-        fstWriterEmitValueChange(ctx, handle, xc->outval_mem);
+        fstWriterEmitValueChange(xc, handle, xc->outval_mem);
     }
 }
 
-void fstWriterEmitVariableLengthValueChange(void *ctx,
+void fstWriterEmitVariableLengthValueChange(fstWriterContext *xc,
                                             fstHandle handle,
                                             const void *val,
                                             uint32_t len)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     const unsigned char *buf = (const unsigned char *)val;
 
     if (FST_LIKELY((xc) && (handle <= xc->maxhandle))) {
@@ -3143,9 +3102,8 @@ void fstWriterEmitVariableLengthValueChange(void *ctx,
     }
 }
 
-void fstWriterEmitTimeChange(void *ctx, uint64_t tim)
+void fstWriterEmitTimeChange(fstWriterContext *xc, uint64_t tim)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
     unsigned int i;
     int skip = 0;
     if (xc) {
@@ -3189,10 +3147,8 @@ void fstWriterEmitTimeChange(void *ctx, uint64_t tim)
     }
 }
 
-void fstWriterEmitDumpActive(void *ctx, int enable)
+void fstWriterEmitDumpActive(fstWriterContext *xc, int enable)
 {
-    struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
-
     if (xc) {
         struct fstBlackoutChain *b =
             (struct fstBlackoutChain *)calloc(1, sizeof(struct fstBlackoutChain));
@@ -3420,7 +3376,7 @@ static void fstWritex(struct fstReaderContext *xc,
 /*
  * scope -> flat name handling
  */
-static void fstReaderDeallocateScopeData(struct fstReaderContext *xc)
+static void fstReaderDeallocateScopeData(fstReaderContext *xc)
 {
     struct fstCurrHier *chp;
 
@@ -3433,9 +3389,8 @@ static void fstReaderDeallocateScopeData(struct fstReaderContext *xc)
     }
 }
 
-const char *fstReaderGetCurrentFlatScope(void *ctx)
+const char *fstReaderGetCurrentFlatScope(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     if (xc) {
         return (xc->curr_flat_hier_nam ? xc->curr_flat_hier_nam : "");
     } else {
@@ -3443,9 +3398,8 @@ const char *fstReaderGetCurrentFlatScope(void *ctx)
     }
 }
 
-void *fstReaderGetCurrentScopeUserInfo(void *ctx)
+void *fstReaderGetCurrentScopeUserInfo(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     if (xc) {
         return (xc->curr_hier ? xc->curr_hier->user_info : NULL);
     } else {
@@ -3453,9 +3407,8 @@ void *fstReaderGetCurrentScopeUserInfo(void *ctx)
     }
 }
 
-const char *fstReaderPopScope(void *ctx)
+const char *fstReaderPopScope(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     if (xc && xc->curr_hier) {
         struct fstCurrHier *ch = xc->curr_hier;
         if (xc->curr_hier->prev) {
@@ -3471,19 +3424,16 @@ const char *fstReaderPopScope(void *ctx)
     return (NULL);
 }
 
-void fstReaderResetScope(void *ctx)
+void fstReaderResetScope(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
-
     if (xc) {
         while (fstReaderPopScope(xc))
             ; /* remove any already-built scoping info */
     }
 }
 
-const char *fstReaderPushScope(void *ctx, const char *nam, void *user_info)
+const char *fstReaderPushScope(fstReaderContext *xc, const char *nam, void *user_info)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     if (xc) {
         struct fstCurrHier *ch = (struct fstCurrHier *)malloc(sizeof(struct fstCurrHier));
         int chl = xc->curr_hier ? xc->curr_hier->len : 0;
@@ -3512,10 +3462,8 @@ const char *fstReaderPushScope(void *ctx, const char *nam, void *user_info)
     return (NULL);
 }
 
-int fstReaderGetCurrentScopeLen(void *ctx)
+int fstReaderGetCurrentScopeLen(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
-
     if (xc && xc->curr_hier) {
         return (xc->curr_hier->len);
     }
@@ -3523,9 +3471,8 @@ int fstReaderGetCurrentScopeLen(void *ctx)
     return (0);
 }
 
-int fstReaderGetFseekFailed(void *ctx)
+int fstReaderGetFseekFailed(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     if (xc) {
         return (xc->fseek_failed != 0);
     }
@@ -3536,10 +3483,8 @@ int fstReaderGetFseekFailed(void *ctx)
 /*
  * iter mask manipulation util functions
  */
-int fstReaderGetFacProcessMask(void *ctx, fstHandle facidx)
+int fstReaderGetFacProcessMask(fstReaderContext *xc, fstHandle facidx)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
-
     if (xc) {
         facidx--;
         if (facidx < xc->maxhandle) {
@@ -3552,10 +3497,8 @@ int fstReaderGetFacProcessMask(void *ctx, fstHandle facidx)
     return (0);
 }
 
-void fstReaderSetFacProcessMask(void *ctx, fstHandle facidx)
+void fstReaderSetFacProcessMask(fstReaderContext *xc, fstHandle facidx)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
-
     if (xc) {
         facidx--;
         if (facidx < xc->maxhandle) {
@@ -3567,10 +3510,8 @@ void fstReaderSetFacProcessMask(void *ctx, fstHandle facidx)
     }
 }
 
-void fstReaderClrFacProcessMask(void *ctx, fstHandle facidx)
+void fstReaderClrFacProcessMask(fstReaderContext *xc, fstHandle facidx)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
-
     if (xc) {
         facidx--;
         if (facidx < xc->maxhandle) {
@@ -3582,19 +3523,15 @@ void fstReaderClrFacProcessMask(void *ctx, fstHandle facidx)
     }
 }
 
-void fstReaderSetFacProcessMaskAll(void *ctx)
+void fstReaderSetFacProcessMaskAll(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
-
     if (xc) {
         memset(xc->process_mask, 0xff, (xc->maxhandle + 7) / 8);
     }
 }
 
-void fstReaderClrFacProcessMaskAll(void *ctx)
+void fstReaderClrFacProcessMaskAll(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
-
     if (xc) {
         memset(xc->process_mask, 0x00, (xc->maxhandle + 7) / 8);
     }
@@ -3603,100 +3540,83 @@ void fstReaderClrFacProcessMaskAll(void *ctx)
 /*
  * various utility read/write functions
  */
-signed char fstReaderGetTimescale(void *ctx)
+signed char fstReaderGetTimescale(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? xc->timescale : 0);
 }
 
-uint64_t fstReaderGetStartTime(void *ctx)
+uint64_t fstReaderGetStartTime(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? xc->start_time : 0);
 }
 
-uint64_t fstReaderGetEndTime(void *ctx)
+uint64_t fstReaderGetEndTime(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? xc->end_time : 0);
 }
 
-uint64_t fstReaderGetMemoryUsedByWriter(void *ctx)
+uint64_t fstReaderGetMemoryUsedByWriter(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? xc->mem_used_by_writer : 0);
 }
 
-uint64_t fstReaderGetScopeCount(void *ctx)
+uint64_t fstReaderGetScopeCount(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? xc->scope_count : 0);
 }
 
-uint64_t fstReaderGetVarCount(void *ctx)
+uint64_t fstReaderGetVarCount(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? xc->var_count : 0);
 }
 
-fstHandle fstReaderGetMaxHandle(void *ctx)
+fstHandle fstReaderGetMaxHandle(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? xc->maxhandle : 0);
 }
 
-uint64_t fstReaderGetAliasCount(void *ctx)
+uint64_t fstReaderGetAliasCount(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? xc->num_alias : 0);
 }
 
-uint64_t fstReaderGetValueChangeSectionCount(void *ctx)
+uint64_t fstReaderGetValueChangeSectionCount(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? xc->vc_section_count : 0);
 }
 
-int fstReaderGetDoubleEndianMatchState(void *ctx)
+int fstReaderGetDoubleEndianMatchState(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? xc->double_endian_match : 0);
 }
 
-const char *fstReaderGetVersionString(void *ctx)
+const char *fstReaderGetVersionString(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? xc->version : NULL);
 }
 
-const char *fstReaderGetDateString(void *ctx)
+const char *fstReaderGetDateString(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? xc->date : NULL);
 }
 
-int fstReaderGetFileType(void *ctx)
+int fstReaderGetFileType(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? (int)xc->filetype : (int)FST_FT_VERILOG);
 }
 
-int64_t fstReaderGetTimezero(void *ctx)
+int64_t fstReaderGetTimezero(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? xc->timezero : 0);
 }
 
-uint32_t fstReaderGetNumberDumpActivityChanges(void *ctx)
+uint32_t fstReaderGetNumberDumpActivityChanges(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     return (xc ? xc->num_blackouts : 0);
 }
 
-uint64_t fstReaderGetDumpActivityChangeTime(void *ctx, uint32_t idx)
+uint64_t fstReaderGetDumpActivityChangeTime(fstReaderContext *xc, uint32_t idx)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
-
     if (xc && (idx < xc->num_blackouts) && (xc->blackout_times)) {
         return (xc->blackout_times[idx]);
     } else {
@@ -3704,10 +3624,8 @@ uint64_t fstReaderGetDumpActivityChangeTime(void *ctx, uint32_t idx)
     }
 }
 
-unsigned char fstReaderGetDumpActivityChangeValue(void *ctx, uint32_t idx)
+unsigned char fstReaderGetDumpActivityChangeValue(fstReaderContext *xc, uint32_t idx)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
-
     if (xc && (idx < xc->num_blackouts) && (xc->blackout_activity)) {
         return (xc->blackout_activity[idx]);
     } else {
@@ -3715,10 +3633,8 @@ unsigned char fstReaderGetDumpActivityChangeValue(void *ctx, uint32_t idx)
     }
 }
 
-void fstReaderSetLimitTimeRange(void *ctx, uint64_t start_time, uint64_t end_time)
+void fstReaderSetLimitTimeRange(fstReaderContext *xc, uint64_t start_time, uint64_t end_time)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
-
     if (xc) {
         xc->limit_range_valid = 1;
         xc->limit_range_start = start_time;
@@ -3726,27 +3642,22 @@ void fstReaderSetLimitTimeRange(void *ctx, uint64_t start_time, uint64_t end_tim
     }
 }
 
-void fstReaderSetUnlimitedTimeRange(void *ctx)
+void fstReaderSetUnlimitedTimeRange(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
-
     if (xc) {
         xc->limit_range_valid = 0;
     }
 }
 
-void fstReaderSetVcdExtensions(void *ctx, int enable)
+void fstReaderSetVcdExtensions(fstReaderContext *xc, int enable)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
-
     if (xc) {
         xc->use_vcd_extensions = (enable != 0);
     }
 }
 
-void fstReaderIterBlocksSetNativeDoublesOnCallback(void *ctx, int enable)
+void fstReaderIterBlocksSetNativeDoublesOnCallback(fstReaderContext *xc, int enable)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     if (xc) {
         xc->native_doubles_for_cb = (enable != 0);
     }
@@ -3942,9 +3853,8 @@ static int fstReaderRecreateHierFile(struct fstReaderContext *xc)
     return (pass_status);
 }
 
-int fstReaderIterateHierRewind(void *ctx)
+int fstReaderIterateHierRewind(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     int pass_status = 0;
 
     if (xc) {
@@ -3959,13 +3869,13 @@ int fstReaderIterateHierRewind(void *ctx)
     return (pass_status);
 }
 
-struct fstHier *fstReaderIterateHier(void *ctx)
+struct fstHier *fstReaderIterateHier(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     int isfeof;
     fstHandle alias;
     char *pnt;
     int ch;
+    int unnamed_scope_idx = 0;
 
     if (!xc)
         return (NULL);
@@ -3997,6 +3907,9 @@ struct fstHier *fstReaderIterateHier(void *ctx)
                         pnt[cl++] = ch;
                     }
                 }; /* scopename */
+                if (!cl) {
+                    cl = snprintf(pnt, FST_ID_NAM_SIZ, "$unnamed_scope_%d", unnamed_scope_idx++);
+                }
                 pnt[cl] = 0;
                 xc->hier.u.scope.name_length = cl;
 
@@ -4122,9 +4035,8 @@ struct fstHier *fstReaderIterateHier(void *ctx)
     return (!isfeof ? &xc->hier : NULL);
 }
 
-int fstReaderProcessHier(void *ctx, FILE *fv)
+int fstReaderProcessHier(fstReaderContext *xc, FILE *fv)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     char *str;
     char *pnt;
     int ch, scopetype;
@@ -4136,6 +4048,7 @@ int fstReaderProcessHier(void *ctx, FILE *fv)
     uint64_t attrarg;
     fstHandle maxhandle_scanbuild;
     int cl;
+    int unnamed_scope_idx = 0;
 
     if (!xc)
         return (0);
@@ -4271,6 +4184,9 @@ int fstReaderProcessHier(void *ctx, FILE *fv)
                         pnt[cl++] = ch;
                     }
                 }; /* scopename */
+                if (!cl) {
+                    cl = snprintf(pnt, FST_ID_NAM_SIZ, "$unnamed_scope_%d", unnamed_scope_idx++);
+                }
                 pnt[cl] = 0;
                 while (fgetc(xc->fh)) {
                 }; /* scopecomp */
@@ -4802,18 +4718,16 @@ int fstReaderInit(struct fstReaderContext *xc)
     return (hdr_seen);
 }
 
-void *fstReaderOpenForUtilitiesOnly(void)
+fstReaderContext *fstReaderOpenForUtilitiesOnly(void)
 {
-    struct fstReaderContext *xc =
-        (struct fstReaderContext *)calloc(1, sizeof(struct fstReaderContext));
+    fstReaderContext *xc = (fstReaderContext *)calloc(1, sizeof(fstReaderContext));
 
     return (xc);
 }
 
-void *fstReaderOpen(const char *nam)
+fstReaderContext *fstReaderOpen(const char *nam)
 {
-    struct fstReaderContext *xc =
-        (struct fstReaderContext *)calloc(1, sizeof(struct fstReaderContext));
+    fstReaderContext *xc = (fstReaderContext *)calloc(1, sizeof(fstReaderContext));
 
     if ((!nam) || (!(xc->f = fopen(nam, "rb")))) {
         free(xc);
@@ -4842,7 +4756,7 @@ void *fstReaderOpen(const char *nam)
             ((xc->fh) || (xc->contains_hier_section || (xc->contains_hier_section_lz4)))) {
             /* more init */
             xc->do_rewind = 1;
-        } else {
+        } else if (!rc) {
             fstReaderClose(xc);
             xc = NULL;
         }
@@ -4851,9 +4765,8 @@ void *fstReaderOpen(const char *nam)
     return (xc);
 }
 
-static void fstReaderDeallocateRvatData(void *ctx)
+static void fstReaderDeallocateRvatData(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     if (xc) {
         free(xc->rvat_chain_mem);
         xc->rvat_chain_mem = NULL;
@@ -4870,10 +4783,8 @@ static void fstReaderDeallocateRvatData(void *ctx)
     }
 }
 
-void fstReaderClose(void *ctx)
+void fstReaderClose(fstReaderContext *xc)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
-
     if (xc) {
         fstReaderDeallocateScopeData(xc);
         fstReaderDeallocateRvatData(xc);
@@ -4918,7 +4829,7 @@ void fstReaderClose(void *ctx)
  */
 
 /* normal read which re-interleaves the value change data */
-int fstReaderIterBlocks(void *ctx,
+int fstReaderIterBlocks(fstReaderContext *ctx,
                         void (*value_change_callback)(void *user_callback_data_pointer,
                                                       uint64_t time,
                                                       fstHandle facidx,
@@ -4929,7 +4840,7 @@ int fstReaderIterBlocks(void *ctx,
     return (fstReaderIterBlocks2(ctx, value_change_callback, NULL, user_callback_data_pointer, fv));
 }
 
-int fstReaderIterBlocks2(void *ctx,
+int fstReaderIterBlocks2(fstReaderContext *ctx,
                          void (*value_change_callback)(void *user_callback_data_pointer,
                                                        uint64_t time,
                                                        fstHandle facidx,
@@ -6003,7 +5914,7 @@ int fstReaderIterBlocks2(void *ctx,
 
 /* rvat functions */
 
-static char *fstExtractRvatDataFromFrame(struct fstReaderContext *xc, fstHandle facidx, char *buf)
+static char *fstExtractRvatDataFromFrame(fstReaderContext *xc, fstHandle facidx, char *buf)
 {
     if (facidx >= xc->rvat_frame_maxhandle) {
         return (NULL);
@@ -6038,9 +5949,11 @@ static char *fstExtractRvatDataFromFrame(struct fstReaderContext *xc, fstHandle 
     return (buf);
 }
 
-char *fstReaderGetValueFromHandleAtTime(void *ctx, uint64_t tim, fstHandle facidx, char *buf)
+char *fstReaderGetValueFromHandleAtTime(fstReaderContext *xc,
+                                        uint64_t tim,
+                                        fstHandle facidx,
+                                        char *buf)
 {
-    struct fstReaderContext *xc = (struct fstReaderContext *)ctx;
     fst_off_t blkpos = 0, prev_blkpos;
     uint64_t beg_tim, end_tim, beg_tim2, end_tim2;
     int sectype;

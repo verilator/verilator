@@ -1,56 +1,42 @@
-%Error-UNSUPPORTED: t/t_tagged.v:9:18: Unsupported: SystemVerilog 2005 reserved word not implemented: 'tagged'
+%Error-UNSUPPORTED: t/t_tagged.v:9:18: Unsupported: tagged union
     9 |    typedef union tagged {
       |                  ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_tagged.v:10:6: Unsupported: void (for tagged unions)
    10 |      void m_invalid;
       |      ^~~~
-%Error-UNSUPPORTED: t/t_tagged.v:18:11: Unsupported: SystemVerilog 2005 reserved word not implemented: 'tagged'
-   18 |       u = tagged m_invalid;
-      |           ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:22:9: Unsupported: SystemVerilog 2005 reserved word not implemented: 'tagged'
-   22 |         tagged m_invalid: ;
-      |         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:23:9: Unsupported: SystemVerilog 2005 reserved word not implemented: 'tagged'
-   23 |         tagged m_int: $stop;
-      |         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:21:16: Unsupported: matches (for tagged union)
-   21 |       case (u) matches
+%Error: t/t_tagged.v:19:14: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+   19 |          u = tagged m_invalid;
+      |              ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-UNSUPPORTED: t/t_tagged.v:24:16: Unsupported: matches (for tagged union)
+   24 |       case (u) matches
       |                ^~~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:26:21: Unsupported: SystemVerilog 2005 reserved word not implemented: 'tagged'
-   26 |       if (u matches tagged m_invalid) ;
+%Error: t/t_tagged.v:29:9: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+   29 |         tagged m_invalid: ;
+      |         ^~~~~~
+%Error-UNSUPPORTED: t/t_tagged.v:34:34: Unsupported: '{} tagged patterns
+   34 |       if (u matches tagged m_int .n) $stop;
+      |                                  ^
+%Error-UNSUPPORTED: t/t_tagged.v:34:21: Unsupported: '{} tagged patterns
+   34 |       if (u matches tagged m_int .n) $stop;
       |                     ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:26:13: Unsupported: matches operator
-   26 |       if (u matches tagged m_invalid) ;
+%Error-UNSUPPORTED: t/t_tagged.v:34:13: Unsupported: matches operator
+   34 |       if (u matches tagged m_int .n) $stop;
       |             ^~~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:27:21: Unsupported: SystemVerilog 2005 reserved word not implemented: 'tagged'
-   27 |       if (u matches tagged m_int .n) $stop;
-      |                     ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:27:13: Unsupported: matches operator
-   27 |       if (u matches tagged m_int .n) $stop;
-      |             ^~~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:29:11: Unsupported: SystemVerilog 2005 reserved word not implemented: 'tagged'
-   29 |       u = tagged m_int (123);
+%Error: t/t_tagged.v:36:11: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+   36 |       u = tagged m_int (123);
       |           ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:33:9: Unsupported: SystemVerilog 2005 reserved word not implemented: 'tagged'
-   33 |         tagged m_invalid: $stop;
+%Error: t/t_tagged.v:40:9: syntax error, unexpected tagged, expecting IDENTIFIER-for-type
+   40 |         tagged m_invalid: $stop;
       |         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:34:9: Unsupported: SystemVerilog 2005 reserved word not implemented: 'tagged'
-   34 |         tagged m_int .n: if (n !== 123) $stop;
-      |         ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:32:16: Unsupported: matches (for tagged union)
-   32 |       case (u) matches
-      |                ^~~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:37:21: Unsupported: SystemVerilog 2005 reserved word not implemented: 'tagged'
-   37 |       if (u matches tagged m_invalid) $stop;
+%Error-UNSUPPORTED: t/t_tagged.v:45:34: Unsupported: '{} tagged patterns
+   45 |       if (u matches tagged m_int .n) if (n != 123) $stop;
+      |                                  ^
+%Error-UNSUPPORTED: t/t_tagged.v:45:21: Unsupported: '{} tagged patterns
+   45 |       if (u matches tagged m_int .n) if (n != 123) $stop;
       |                     ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:37:13: Unsupported: matches operator
-   37 |       if (u matches tagged m_invalid) $stop;
-      |             ^~~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:38:21: Unsupported: SystemVerilog 2005 reserved word not implemented: 'tagged'
-   38 |       if (u matches tagged m_int .n) if (n != 123) $stop;
-      |                     ^~~~~~
-%Error-UNSUPPORTED: t/t_tagged.v:38:13: Unsupported: matches operator
-   38 |       if (u matches tagged m_int .n) if (n != 123) $stop;
+%Error-UNSUPPORTED: t/t_tagged.v:45:13: Unsupported: matches operator
+   45 |       if (u matches tagged m_int .n) if (n != 123) $stop;
       |             ^~~~~~~
 %Error: Exiting due to

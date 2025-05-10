@@ -70,14 +70,14 @@ void V3Waiver::addEntry(V3ErrorCode errorCode, const std::string& filename, cons
     }
 
     std::stringstream entry;
-    entry << "lint_off -rule " << errorCode.ascii() << " -file \"*" << filename << "\" -match \""
-          << trimmsg << "\"";
+    entry << "lint_off -rule " << errorCode.ascii() << " -file \"*"
+          << VString::quoteBackslash(filename) << "\" -match \"" << trimmsg << "\"";
     s_waiverList.push_back(entry.str());
 }
 
 void V3Waiver::write(const std::string& filename) VL_MT_SAFE_EXCLUDES(s_mutex) {
     const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
-    if (ofp->fail()) v3fatal("Can't write " << filename);
+    if (ofp->fail()) v3fatal("Can't write file: " << filename);
 
     *ofp << "// DESCR"
             "IPTION: Verilator output: Waivers generated with --waiver-output\n\n";

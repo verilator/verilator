@@ -1,4 +1,5 @@
 %Error: t/t_package_export_bad2.v:12:18: Export package not found: 'Pkg1b'
    12 |    export Pkg1b::*;   
       |                  ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

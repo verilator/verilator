@@ -8,6 +8,8 @@
                  ... Use "/* verilator lint_off MODDUP */" and lint_on around source to disable this message.
 %Warning-MULTITOP: t/t_mod_dup_bad.v:17:8: Multiple top level modules
                                          : ... Suggest see manual; fix the duplicates, or use --top-module to select top.
+                   ... For warning description see https://verilator.org/warn/MULTITOP?v=latest
+                   ... Use "/* verilator lint_off MULTITOP */" and lint_on around source to disable this message.
                                          : ... Top module 'test'
    10 | module test();
       |        ^~~~

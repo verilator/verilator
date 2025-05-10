@@ -1,9 +1,9 @@
 .. Copyright 2003-2025 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-*******************
-Errors and Warnings
-*******************
+=====================
+ Errors and Warnings
+=====================
 
 .. _Disabling Warnings:
 
@@ -37,7 +37,7 @@ Warnings may be disabled in multiple ways:
    propagate upwards to any parent file (file that included the file with
    the lint_off).
 
-#. Disable the warning using :ref:`Configuration Files` with a
+#. Disable the warning using :ref:`Verilator Configuration Files` with a
    :option:`lint_off` command.  This is useful when a script suppresses
    warnings, and the Verilog source should not be changed.  This method also
    allows matching on the warning text.
@@ -85,6 +85,8 @@ List Of Warnings
    that is not yet supported in Verilator.  See also :ref:`Language
    Limitations`.
 
+
+   .. t_dist_docs_style restart_sort
 
 .. option:: ALWCOMBORDER
 
@@ -164,6 +166,24 @@ List Of Warnings
    1800-2023.  For example, an empty pragma line, or an incorrectly used
    'pragma protect'.  Third-party pragmas not defined by IEEE 1800-2023 are
    ignored.
+
+   This error may be disabled with a lint_off BADSTDPRAGMA metacomment.
+
+
+.. option:: BADVLTPRAGMA
+
+   An error that a `/*verilator ...*/` metacomment pragma is badly formed
+   or not understood.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_BADVLTPRAGMA_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_BADVLTPRAGMA_msg.rst
+
+   This error may be disabled with a lint_off BADVLTPRAGMA metacomment.
 
 
 .. option:: BLKANDNBLK
@@ -470,6 +490,31 @@ List Of Warnings
 
    Disabled by default as this is a code-style warning; it will simulate
    correctly.
+
+
+.. option:: DEFOVERRIDE
+
+   Warns that a macro definition within the code is being overridden by a command line directive:
+
+   For example, running Verilator with :code:`<+define+\<DUP\>=\<def2\>>` and
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 1
+
+         `define DUP def2 //<--- Warning
+
+   Results in:
+
+   .. code-block::
+
+         %Warning-DEFOVERRIDE: example.v1:20: Overriding define: 'DEF' with value: 'def2' to existing command line define value: 'def1'
+                      ... Location of previous definition, with value: '50'
+
+   While not explicitly stated in the IEEE 1800-2023 standard, this warning
+   tracks with the other simulators' behavior of overriding macro
+   definitions within code files with the definition passed in through
+   the command line.
 
 
 .. option:: DEFPARAM
@@ -1222,19 +1267,19 @@ List Of Warnings
    simulate correctly.
 
 
-.. option:: NOTIMING
-
-   Error when a timing-related construct that requires :vlopt:`--timing` has
-   been encountered. Issued only if Verilator is run with the
-   :vlopt:`--no-timing` option.
-
-
 .. option:: NONSTD
 
    Warns when a non-standard language feature is used that has a standard
    equivalent, which might behave differently in corner cases. For example
    :code:`$psprintf` system function is replaced by its standard equivalent
    :code:`$sformatf`.
+
+
+.. option:: NOTIMING
+
+   Error when a timing-related construct that requires :vlopt:`--timing` has
+   been encountered. Issued only if Verilator is run with the
+   :vlopt:`--no-timing` option.
 
 
 .. option:: NULLPORT
@@ -1260,6 +1305,7 @@ List Of Warnings
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
+
 
 .. option:: PINCONNECTEMPTY
 
@@ -1349,6 +1395,26 @@ List Of Warnings
    This error may be disabled with a lint_off PINNOTFOUND metacomment.
 
 
+.. option:: PKGNODECL
+
+   An error that a package/class appears to have been referenced that has
+   not yet been declared.  According to IEEE 1800-2023 26.3, all packages
+   must be declared before being used.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_PKGNODECL_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_PKGNODECL_msg.rst
+
+   Often the package is declared in its own header file.  In this case add
+   an include of that package header file to the referencing file.  (And
+   make sure you have header guards in the package's header file to prevent
+   multiple declarations of the package.)
+
+
 .. option:: PORTSHORT
 
    Warns that an output port is connected to a constant.
@@ -1370,26 +1436,6 @@ List Of Warnings
    implying it is an input.
 
    This error may be disabled with a lint_off PORTSHORT metacomment.
-
-
-.. option:: PKGNODECL
-
-   An error that a package/class appears to have been referenced that has
-   not yet been declared.  According to IEEE 1800-2023 26.3, all packages
-   must be declared before being used.
-
-   Faulty example:
-
-   .. include:: ../../docs/gen/ex_PKGNODECL_faulty.rst
-
-   Results in:
-
-   .. include:: ../../docs/gen/ex_PKGNODECL_msg.rst
-
-   Often the package is declared in its own header file.  In this case add
-   an include of that package header file to the referencing file.  (And
-   make sure you have header guards in the package's header file to prevent
-   multiple declarations of the package.)
 
 
 .. option:: PREPROCZERO
@@ -1415,6 +1461,35 @@ List Of Warnings
 
    The portable way to suppress this warning is to use a define value other
    than zero, when it is to be used in a preprocessor expression.
+
+
+.. option:: PROCASSINIT
+
+   Warns that the specified signal is given an initial value where it is
+   declared, and is also driven in an always process.  Typically such
+   initial values should instead be set using a reset signal inside the
+   process, to match requirements of hardware synthesis tools.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_PROCASSINIT_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_PROCASSINIT_msg.rst
+
+   One possible fix, adding a reset to the always:
+
+   .. include:: ../../docs/gen/ex_PROCASSINIT_fixed.rst
+
+   Alternatively, use an initial block for the initialization:
+
+   .. code-block:: sv
+
+      initial flop_out = 1;  // <--- Fixed
+
+   Disabled by default as this is a code-style warning; it will simulate
+   correctly.
 
 
 .. option:: PROCASSWIRE
@@ -2118,7 +2193,7 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_VARHIDDEN_msg.rst
 
-   To resolve this, rename the variable to an unique name.
+   To resolve this, rename the inner or outer variable to an unique name.
 
 
 .. option:: WAITCONST
@@ -2181,21 +2256,6 @@ List Of Warnings
    .. include:: ../../docs/gen/ex_WIDTHEXPAND_1_fixed.rst
 
 
-.. option:: WIDTHTRUNC
-
-   A more granular :option:`WIDTH` warning, for when a value is
-   truncated. See :option:`WIDTH`.
-
-.. option:: WIDTHEXPAND
-
-   A more granular :option:`WIDTH` warning, for when a value is zero
-   expanded. See :option:`WIDTH`.
-
-.. option:: WIDTHXZEXPAND
-
-   A more granular :option:`WIDTH` warning, for when a value is X/Z
-   expanded. See :option:`WIDTH`.
-
 .. option:: WIDTHCONCAT
 
    Warns that based on the width rules of Verilog, a concatenate, or
@@ -2220,6 +2280,21 @@ List Of Warnings
    width to the parameter definition (:code:`parameter [31:0]`), or add the
    width to the parameter usage (:code:`{PAR[31:0], PAR[31:0]}`).
 
+
+.. option:: WIDTHEXPAND
+
+   A more granular :option:`WIDTH` warning, for when a value is zero
+   expanded. See :option:`WIDTH`.
+
+.. option:: WIDTHTRUNC
+
+   A more granular :option:`WIDTH` warning, for when a value is
+   truncated. See :option:`WIDTH`.
+
+.. option:: WIDTHXZEXPAND
+
+   A more granular :option:`WIDTH` warning, for when a value is X/Z
+   expanded. See :option:`WIDTH`.
 
 .. option:: ZERODLY
 

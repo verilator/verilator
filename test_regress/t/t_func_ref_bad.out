@@ -1,4 +1,5 @@
 %Error: t/t_func_ref_bad.v:19:22: Function/task ref argument is not of allowed type
    19 |       b = cls.get_x(a[1]);
       |                      ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

@@ -13,7 +13,7 @@ test.scenarios('simulator')
 test.top_filename = "t/t_interface_ref_trace.v"
 test.golden_filename = "t/t_interface_ref_trace.out"
 
-test.compile(v_flags2=['+define+NO_INLINE_B'], verilator_flags2=['--trace-structs --trace'])
+test.compile(v_flags2=['+define+NO_INLINE_B'], verilator_flags2=['--trace-structs --trace-vcd'])
 
 test.execute()
 

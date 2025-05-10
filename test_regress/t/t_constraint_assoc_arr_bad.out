@@ -6,6 +6,7 @@
 %Error: t/t_constraint_assoc_arr_bad.v:30:26: Illegal non-integral expression or subexpression in random constraint. (IEEE 1800-2023 18.3)
    30 |     constraint c1 { data[cl] > 0;}  
       |                          ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_constraint_assoc_arr_bad.v:44:44: Illegal non-integral expression or subexpression in random constraint. (IEEE 1800-2023 18.3)
    44 |     constraint c2 { foreach (data[i]) data[i] < 100; }  
       |                                            ^

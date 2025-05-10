@@ -35,7 +35,7 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
 
     std::ifstream is{filename.c_str()};
     if (!is) {
-        if (!nonfatal) v3fatal("Can't read " << filename);
+        if (!nonfatal) v3fatal("Can't read coverage file: " << filename);
         return;
     }
 
@@ -70,7 +70,7 @@ void VlcTop::writeCoverage(const string& filename) {
 
     std::ofstream os{filename.c_str()};
     if (!os) {
-        v3fatal("Can't write " << filename);
+        v3fatal("Can't write file: " << filename);
         return;
     }
 
@@ -86,7 +86,7 @@ void VlcTop::writeInfo(const string& filename) {
 
     std::ofstream os{filename.c_str()};
     if (!os) {
-        v3fatal("Can't write " << filename);
+        v3fatal("Can't write file: " << filename);
         return;
     }
 
@@ -285,13 +285,13 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
 
         std::ifstream is{filename.c_str()};
         if (!is) {
-            v3error("Can't read " << filename);
+            v3error("Can't read annotation file: " << filename);
             return;
         }
 
         std::ofstream os{outfilename.c_str()};
         if (!os) {
-            v3fatal("Can't write " << outfilename);
+            v3error("Can't write file: " << outfilename);
             return;
         }
 

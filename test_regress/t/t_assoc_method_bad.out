@@ -2,6 +2,7 @@
                                     : ... note: In instance 't'
    14 |       v = a.num("badarg");
       |             ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_assoc_method_bad.v:15:13: The 1 arguments passed to .size method does not match its requiring 0 arguments
                                     : ... note: In instance 't'
    15 |       v = a.size("badarg");
