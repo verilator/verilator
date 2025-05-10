@@ -53,11 +53,11 @@ void V3LinkLevel::modSortByLevel() {
     if (tops.size() >= 2) {
         const AstNode* const secp = tops[1];  // Complain about second one, as first often intended
         if (!secp->fileline()->warnIsOff(V3ErrorCode::MULTITOP)) {
-            auto warnTopModules = [](const std::string& warnMore, ModVec tops)
+            auto warnTopModules = [](const AstNode* const secp, ModVec tops)
                                       VL_REQUIRES(V3Error::s().m_mutex) -> std::string {
                 std::stringstream ss;
                 for (AstNode* alsop : tops) {
-                    ss << warnMore << "... Top module " << alsop->prettyNameQ() << endl
+                    ss << secp->warnMore() << "... Top module " << alsop->prettyNameQ() << endl
                        << alsop->warnContextSecondary();
                 }
                 return ss.str();
@@ -69,7 +69,7 @@ void V3LinkLevel::modSortByLevel() {
                                           "--top-module to select top."
                                        << V3Error::s().warnContextNone()
                                        << V3Error::warnAdditionalInfo()
-                                       << warnTopModules(secp->warnMore(), tops));
+                                       << warnTopModules(secp, tops));
         }
     }
 

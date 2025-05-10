@@ -34,6 +34,9 @@
 #include <set>
 #include <sstream>
 
+class V3Error;
+class FileLine;
+
 //######################################################################
 
 class V3ErrorCode final {
@@ -289,7 +292,7 @@ public:
         }
         return false;
     }
-
+    string url() const;
     static bool unusedMsg(const char* msgp) { return 0 == VL_STRCASECMP(msgp, "UNUSED"); }
 };
 constexpr bool operator==(const V3ErrorCode& lhs, const V3ErrorCode& rhs) {
@@ -302,7 +305,6 @@ inline std::ostream& operator<<(std::ostream& os, const V3ErrorCode& rhs) {
 }
 
 // ######################################################################
-class V3Error;
 
 class V3ErrorGuarded final {
     // Should only be used by V3ErrorGuarded::m_mutex is already locked
@@ -409,6 +411,7 @@ public:
 };
 
 // ######################################################################
+
 class V3Error final {
     // Base class for any object that wants debugging and error reporting
     // CONSTRUCTORS
