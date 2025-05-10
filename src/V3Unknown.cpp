@@ -50,16 +50,18 @@ class UnknownVisitor final : public VNVisitor {
     const VNUser2InUse m_inuser2;
     static const std::string m_xrandPrefix;
 
-    // STATE
+    // STATE - across all visitors
+    VDouble0 m_statUnkVars;  // Statistic tracking
+    V3UniqueNames m_lvboundNames;  // For generating unique temporary variable names
+    std::unique_ptr<V3UniqueNames> m_xrandNames;  // For generating unique temporary variable names
+
+    // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp = nullptr;  // Current module
     AstAssignW* m_assignwp = nullptr;  // Current assignment
     AstAssignDly* m_assigndlyp = nullptr;  // Current assignment
     AstNode* m_timingControlp = nullptr;  // Current assignment's intra timing control
     bool m_constXCvt = false;  // Convert X's
     bool m_allowXUnique = true;  // Allow unique assignments
-    VDouble0 m_statUnkVars;  // Statistic tracking
-    V3UniqueNames m_lvboundNames;  // For generating unique temporary variable names
-    std::unique_ptr<V3UniqueNames> m_xrandNames;  // For generating unique temporary variable names
 
     // METHODS
 
