@@ -153,6 +153,7 @@ module Test(/*AUTOARG*/
    bug4857 i_bug4857(.clk(clk), .in(d), .out(bug4857_out));
    bug4864 i_bug4864(.clk(clk), .in(d), .out(bug4864_out));
    bug5186 i_bug5186(.clk(clk), .in(d), .out(bug5186_out));
+   bug5993 i_bug5993(.clk(clk), .in(d[10]));
 
 endmodule
 
@@ -565,4 +566,31 @@ module bug5186(input wire clk, input wire [31:0] in, output out);
    always_ff @ (posedge clk)
       result <= bad;
    assign out = result;
+endmodule
+
+
+// See issue #5993
+// "in4[18]" is just one bit width, so " >> 8'd1" shifts out the bit.
+// BitOpTree ignored implicit "& 1". It caused the bug"
+module bug5993(input wire clk, input wire in);
+
+   reg in3;
+   reg [23:16] in4;
+
+   task automatic checkd(logic gotv, logic expv);
+      if ((gotv) !== (expv)) begin
+         $write("%%Error:  got=%0d exp=%0d\n", gotv, expv);
+         $stop;
+      end
+   endtask
+
+   // verilator lint_off WIDTH
+   wire wire_2 = in3 ? {4{14'b010111101}} : (in4[18] >> 8'b1);
+   // verilator lint_on WIDTH
+
+   always @(posedge clk) begin
+      in3 <= '0;
+      in4 <= in ?  8'b00111__0__10 : 8'b00111__1__10;
+      checkd(wire_2, 1'b0);
+   end
 endmodule

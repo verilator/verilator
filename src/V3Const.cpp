@@ -125,6 +125,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         void updateBitRange(const AstShiftR* shiftp) {
             m_lsb += VN_AS(shiftp->rhsp(), Const)->toUInt();
         }
+        void limitBitRangeToLsb() { m_msb = std::min(m_msb, m_lsb); }
         int wordIdx() const { return m_wordIdx; }
         void wordIdx(int i) { m_wordIdx = i; }
         bool polarity() const { return m_polarity; }
@@ -538,6 +539,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
             Restorer restorer{*this};
             incrOps(nodep, __LINE__);
             iterateConst(nodep->rhsp());
+            if (m_leafp) m_leafp->limitBitRangeToLsb();
             CONST_BITOP_RETURN_IF(m_failed, nodep->rhsp());
             restorer.disableRestore();  // Now all checks passed
         } else if (nodep->type() == m_rootp->type()) {  // And, Or, Xor
