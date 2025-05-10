@@ -7401,30 +7401,40 @@ class WidthVisitor final : public VNVisitor {
                                 << underp->prettyNameQ() << " is an interface.");
             } else if (const AstIfaceRefDType* expIfaceRefp
                        = VN_CAST(expDTypep->skipRefp(), IfaceRefDType)) {
-                const AstIfaceRefDType* underIfaceRefp
-                    = VN_CAST(underp->dtypep()->skipRefp(), IfaceRefDType);
-                if (!underIfaceRefp) {
-                    underp->v3error(ucfirst(nodep->prettyOperatorName())
-                                    << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
-                                    << " interface on " << side << " but " << underp->prettyNameQ()
-                                    << " is not an interface.");
-                } else if (expIfaceRefp->ifaceViaCellp() != underIfaceRefp->ifaceViaCellp()) {
-                    underp->v3error(ucfirst(nodep->prettyOperatorName())
-                                    << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
-                                    << " interface on " << side << " but " << underp->prettyNameQ()
-                                    << " is a different interface ("
-                                    << underIfaceRefp->ifaceViaCellp()->prettyNameQ() << ").");
-                } else if (underIfaceRefp->modportp()
-                           && expIfaceRefp->modportp() != underIfaceRefp->modportp()) {
-                    underp->v3error(ucfirst(nodep->prettyOperatorName())
-                                    << " expected "
-                                    << (expIfaceRefp->modportp()
-                                            ? expIfaceRefp->modportp()->prettyNameQ()
-                                            : "no")
-                                    << " interface modport on " << side << " but got "
-                                    << underIfaceRefp->modportp()->prettyNameQ() << " modport.");
+                if (VN_IS(underp, Const)) {
+                    if (!VN_CAST(underp, Const)->num().isNull()) {
+                        underp->v3error(ucfirst(nodep->prettyOperatorName())
+                                        << " expected 'null' keyword"
+                                        << " on " << side << " but got " << underp->prettyNameQ());
+                    } else {
+                        underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, FINAL}.p());
+                    }
                 } else {
-                    underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, FINAL}.p());
+                    const AstIfaceRefDType* underIfaceRefp
+                        = VN_CAST(underp->dtypep()->skipRefp(), IfaceRefDType);
+                    if (!underIfaceRefp) {
+                        underp->v3error(ucfirst(nodep->prettyOperatorName())
+                                        << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
+                                        << " interface on " << side << " but " << underp->prettyNameQ()
+                                        << " is not an interface.");
+                    } else if (expIfaceRefp->ifaceViaCellp() != underIfaceRefp->ifaceViaCellp()) {
+                        underp->v3error(ucfirst(nodep->prettyOperatorName())
+                                        << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
+                                        << " interface on " << side << " but " << underp->prettyNameQ()
+                                        << " is a different interface ("
+                                        << underIfaceRefp->ifaceViaCellp()->prettyNameQ() << ").");
+                    } else if (underIfaceRefp->modportp()
+                               && expIfaceRefp->modportp() != underIfaceRefp->modportp()) {
+                        underp->v3error(ucfirst(nodep->prettyOperatorName())
+                                        << " expected "
+                                        << (expIfaceRefp->modportp()
+                                                ? expIfaceRefp->modportp()->prettyNameQ()
+                                                : "no")
+                                        << " interface modport on " << side << " but got "
+                                        << underIfaceRefp->modportp()->prettyNameQ() << " modport.");
+                    } else {
+                        underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, FINAL}.p());
+                    }
                 }
             } else {
                 // Hope it just works out (perhaps a cast will deal with it)
