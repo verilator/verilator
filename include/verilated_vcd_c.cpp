@@ -193,7 +193,7 @@ void VerilatedVcd::emitTimeChange(uint64_t timeui) {
     // timestamp backup and overwrite it.
     // This is faster then checking on every signal change if time needs to
     // be emitted.  Note buffer flushes may still emit a rare duplicate.
-    if (m_wrTimeEndp == m_writep) m_writep = m_wrTimeBeginp;
+    if (m_wrTimeBeginp && m_wrTimeEndp == m_writep) m_writep = m_wrTimeBeginp;
     m_wrTimeBeginp = m_writep;
     {
         printStr("#");
