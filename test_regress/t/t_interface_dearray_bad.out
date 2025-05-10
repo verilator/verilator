@@ -2,6 +2,7 @@
                                         : ... note: In instance 'tb_top'
    23 |       a = f;
       |       ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error-UNSUPPORTED: t/t_interface_dearray_bad.v:26:13: Array size mismatch in interface assignment
                                                      : ... note: In instance 'tb_top'
    26 |       c.vif = b;
@@ -23,3 +24,4 @@
                                                          : ... note: In instance 'tb_top'
    23 |       a = f;
       |           ^
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.
