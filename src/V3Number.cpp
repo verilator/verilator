@@ -1853,23 +1853,17 @@ V3Number& V3Number::opShiftRS(const V3Number& lhs, const V3Number& rhs, uint32_t
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     if (rhs.isFourState()) return setAllBitsX();
     setZero();
-    for (int bit = 32; bit < rhs.width(); ++bit) {
-        for (int sbit = 0; sbit < width(); ++sbit) {
-            setBit(sbit, lhs.bitIs(lbits - 1));  // 0/1/X/Z
-        }
-        if (rhs.bitIs1(lbits - 1)) setAllBits1();  // -1 else 0
-        return *this;  // shift of over 2^32 must be -1/0
-    }
-    const uint32_t rhsval = rhs.toUInt();
-    if (rhsval < static_cast<uint32_t>(lhs.width())) {
-        for (int bit = 0; bit < width(); ++bit) {
-            setBit(bit, lhs.bitIsExtend(bit + rhsval, lbits));
-        }
-    } else {
-        for (int bit = 0; bit < width(); ++bit) {
-            setBit(bit, lhs.bitIs(lbits - 1));  // 0/1/X/Z
+    const bool overflow = rhs.width() > 32 && !rhs.isBitsZero(rhs.width() - 1, 32);
+    if (!overflow) {
+        const uint32_t rhsval = rhs.toUInt();
+        if (rhsval < static_cast<uint32_t>(lhs.width())) {
+            for (int bit = 0; bit < width(); ++bit) {
+                setBit(bit, lhs.bitIsExtend(bit + rhsval, lbits));
+            }
+            return *this;
         }
     }
+    for (int bit = 0; bit < width(); ++bit) setBit(bit, lhs.bitIs(lbits - 1));  // '0/'1/'x/'z
     return *this;
 }
 
