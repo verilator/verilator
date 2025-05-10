@@ -224,6 +224,11 @@ TAGS: $(TAGFILES)
 doxygen:
 	$(MAKE) -C docs doxygen
 
+.PHONY: spelling
+spelling:
+	$(MAKE) -C docs spelling
+
+
 ######################################################################
 # Install
 
