@@ -125,9 +125,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         void updateBitRange(const AstShiftR* shiftp) {
             m_lsb += VN_AS(shiftp->rhsp(), Const)->toUInt();
         }
-        void limitBitRangeToLsb() {
-            m_msb = std::min(m_msb, m_lsb);
-        }
+        void limitBitRangeToLsb() { m_msb = std::min(m_msb, m_lsb); }
         int wordIdx() const { return m_wordIdx; }
         void wordIdx(int i) { m_wordIdx = i; }
         bool polarity() const { return m_polarity; }
