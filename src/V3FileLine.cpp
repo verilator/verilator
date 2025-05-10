@@ -464,10 +464,6 @@ string FileLine::warnOther() const VL_REQUIRES(V3Error::s().m_mutex) {
         return V3Error::s().warnMore();
     }
 };
-string FileLine::warnOtherStandalone() const VL_EXCLUDES(V3Error::s().m_mutex) VL_MT_UNSAFE {
-    const V3RecursiveLockGuard guard{V3Error::s().m_mutex};
-    return warnOther();
-}
 
 string FileLine::source() const VL_MT_SAFE {
     if (VL_UNCOVERABLE(!m_contentp)) {  // LCOV_EXCL_START

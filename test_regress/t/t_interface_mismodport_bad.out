@@ -1,6 +1,6 @@
 %Error: t/t_interface_mismodport_bad.v:32:12: Can't find definition of 'bad' in dotted signal: 'isub.bad'
    32 |       isub.bad = i_value;   
       |            ^~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
         ... Known scopes under 'bad': <no instances found>
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

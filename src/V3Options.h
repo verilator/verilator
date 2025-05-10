@@ -779,7 +779,7 @@ public:
     string fileExists(const string& filename);
     string filePath(FileLine* fl, const string& modname, const string& lastpath,
                     const string& errmsg);
-    void filePathLookedMsg(FileLine* fl, const string& modname);
+    string filePathLookedMsg(FileLine* fl, const string& modname);
     V3LangCode fileLanguage(const string& filename);
     static bool fileStatNormal(const string& filename);
 

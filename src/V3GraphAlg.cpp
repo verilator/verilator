@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <list>
 #include <map>
+#include <numeric>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -281,8 +282,7 @@ class GraphAlgRank final : GraphAlg<> {
         // If larger rank is found, assign it and loop back through
         // If we hit a back node make a list of all loops
         if (vertexp->user() == 1) {
-            m_graphp->reportLoops(m_edgeFuncp, vertexp);
-            m_graphp->loopsMessageCb(vertexp);
+            m_graphp->loopsMessageCb(vertexp, m_edgeFuncp);
             return;  // LCOV_EXCL_LINE  // gcc gprof bug misses this return
         }
         if (vertexp->rank() >= currentRank) return;  // Already processed it
@@ -313,6 +313,7 @@ void V3Graph::rank(V3EdgeFuncP edgeFuncp) { GraphAlgRank{this, edgeFuncp}; }
 
 class GraphAlgRLoops final : GraphAlg<> {
     std::vector<V3GraphVertex*> m_callTrace;  // List of everything we hit processing so far
+    std::vector<string> m_msgs;  // Output messages
     bool m_done = false;  // Exit algorithm
 
     void main(V3GraphVertex* vertexp) {
@@ -333,9 +334,8 @@ class GraphAlgRLoops final : GraphAlg<> {
         m_callTrace[currentRank++] = vertexp;
 
         if (vertexp->user() == 1) {
-            for (unsigned i = 0; i < currentRank; i++) {  //
-                m_graphp->loopsVertexCb(m_callTrace[i]);
-            }
+            for (unsigned i = 0; i < currentRank; i++)
+                m_msgs.emplace_back(m_graphp->loopsVertexCb(m_callTrace[i]));
             m_done = true;
             return;
         }
@@ -353,10 +353,13 @@ public:
         main(vertexp);
     }
     ~GraphAlgRLoops() = default;
+    string message() const {
+        return std::accumulate(m_msgs.begin(), m_msgs.end(), std::string{""});
+    }
 };
 
-void V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
-    GraphAlgRLoops{this, edgeFuncp, vertexp};
+string V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
+    return GraphAlgRLoops{this, edgeFuncp, vertexp}.message();
 }
 
 //######################################################################

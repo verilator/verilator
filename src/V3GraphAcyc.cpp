@@ -343,10 +343,9 @@ void GraphAcyc::simplifyOut(GraphAcycVertex* avertexp) {
                 V3GraphVertex* inVertexp = inEdgep->fromp();
                 if (inVertexp == avertexp) {
                     if (debug()) v3error("Non-cutable vertex=" << avertexp);  // LCOV_EXCL_LINE
-                    v3error("Circular logic when ordering code (non-cutable edge loop)");
-                    m_origGraphp->reportLoops(
-                        &V3GraphEdge::followNotCutable,
-                        avertexp->origVertexp());  // calls OrderGraph::loopsVertexCb
+                    v3error("Circular logic when ordering code (non-cutable edge loop)\n"
+                            << m_origGraphp->reportLoops(  // calls OrderGraph::loopsVertexCb
+                                   &V3GraphEdge::followNotCutable, avertexp->origVertexp()));
                     // Things are unlikely to end well at this point,
                     // but we'll try something to get to further errors...
                     inEdgep->cutable(true);

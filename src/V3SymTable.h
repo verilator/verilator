@@ -256,7 +256,7 @@ public:
             }
         }
     }
-    void cellErrorScopes(AstNode* lookp, string prettyName = "") {
+    string cellErrorScopes(AstNode* lookp, string prettyName = "") {
         if (prettyName == "") prettyName = lookp->prettyName();
         string scopes;
         for (IdNameMap::iterator it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
@@ -267,9 +267,9 @@ public:
             }
         }
         if (scopes == "") scopes = "<no instances found>";
-        std::cerr << V3Error::warnMoreStandalone() << "... Known scopes under '" << prettyName
-                  << "': " << scopes << endl;
         if (debug()) dumpSelf(std::cerr, "       KnownScope: ", 1);
+        return V3Error::warnMore() + "... Known scopes under '" + prettyName + "': " + scopes
+               + '\n';
     }
 };
 

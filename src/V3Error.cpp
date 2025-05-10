@@ -122,6 +122,13 @@ void V3ErrorGuarded::suppressThisWarning() VL_REQUIRES(m_mutex) {
     errorSuppressed(true);
 }
 
+void V3ErrorGuarded::v3errorPrep(V3ErrorCode code) VL_REQUIRES(m_mutex) {
+    m_errorStr.str("");
+    m_errorCode = code;
+    m_errorContexted = false;
+    m_errorSuppressed = false;
+}
+
 // cppcheck-has-bug-suppress constParameter
 void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
     VL_REQUIRES(m_mutex) {
@@ -303,7 +310,6 @@ std::ostringstream& V3Error::v3errorPrepFileLine(V3ErrorCode code, const char* f
     v3errorPrep(code) << file << ":" << std::dec << line << ": ";
     return v3errorStr();
 }
-std::ostringstream& V3Error::v3errorStr() VL_REQUIRES(s().m_mutex) { return s().v3errorStr(); }
 void V3Error::v3errorEnd(std::ostringstream& sstr, const string& extra) VL_RELEASE(s().m_mutex) {
     s().v3errorEnd(sstr, extra);
     V3Error::s().m_mutex.unlock();

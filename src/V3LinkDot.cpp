@@ -3422,11 +3422,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                            << (!baddot.empty() ? AstNode::prettyNameQ(baddot)
                                                                : nodep->prettyNameQ())
                                            << " in dotted " << expectWhat << ": '"
-                                           << m_ds.m_dotText + "." + nodep->prettyName() << "'");
-                            if (okSymp) {
-                                okSymp->cellErrorScopes(nodep,
-                                                        AstNode::prettyName(m_ds.m_dotText));
-                            }
+                                           << m_ds.m_dotText + "." + nodep->prettyName() << "'\n"
+                                           << nodep->warnContextPrimary()
+                                           << (okSymp ? okSymp->cellErrorScopes(
+                                                   nodep, AstNode::prettyName(m_ds.m_dotText))
+                                                      : ""));
                         }
                         m_ds.m_dotErr = true;
                     }
@@ -3611,8 +3611,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (!nodep->varp()) {
                     nodep->v3error("Can't find definition of "
                                    << AstNode::prettyNameQ(baddot) << " in dotted signal: '"
-                                   << nodep->dotted() + "." + nodep->prettyName() << "'");
-                    okSymp->cellErrorScopes(nodep);
+                                   << nodep->dotted() + "." + nodep->prettyName() << "'\n"
+                                   << nodep->warnContextPrimary()
+                                   << okSymp->cellErrorScopes(nodep));
                     return;
                 }
                 // V3Inst may have expanded arrays of interfaces to
@@ -3636,8 +3637,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (!vscp) {
                     nodep->v3error("Can't find varpin scope of "
                                    << AstNode::prettyNameQ(baddot) << " in dotted signal: '"
-                                   << nodep->dotted() + "." + nodep->prettyName() << "'");
-                    okSymp->cellErrorScopes(nodep);
+                                   << nodep->dotted() + "." + nodep->prettyName() << "'\n"
+                                   << nodep->warnContextPrimary()
+                                   << okSymp->cellErrorScopes(nodep));
                 } else {
                     while (vscp->user2p()) {  // If V3Inline aliased it, pick up the new signal
                         UINFO(7, indent() << "Resolved pre-alias " << vscp
@@ -3844,10 +3846,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, inl, baddot, okSymp,
                                                    true);
                     if (!dotSymp) {
-                        okSymp->cellErrorScopes(nodep);
                         nodep->v3fatalSrc("Couldn't resolve inlined scope "
                                           << AstNode::prettyNameQ(baddot)
-                                          << " in: " << nodep->inlinedDots());
+                                          << " in: " << nodep->inlinedDots() << '\n'
+                                          << nodep->warnContextPrimary()
+                                          << okSymp->cellErrorScopes(nodep));
                     }
                 }
                 dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
@@ -3974,8 +3977,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     nodep->v3error("Can't find definition of "
                                    << AstNode::prettyNameQ(baddot) << " in dotted task/function: '"
                                    << nodep->dotted() + "." + nodep->prettyName() << "'\n"
-                                   << (suggest.empty() ? "" : nodep->warnMore() + suggest));
-                    okSymp->cellErrorScopes(nodep);
+                                   << (suggest.empty() ? "" : nodep->warnMore() + suggest) << '\n'
+                                   << nodep->warnContextPrimary()
+                                   << okSymp->cellErrorScopes(nodep));
                 }
             }
         }

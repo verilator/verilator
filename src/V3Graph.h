@@ -430,7 +430,7 @@ public:
 
     /// Call loopsVertexCb on any one loop starting where specified
     /// Side-effect: changes user()
-    void reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) VL_MT_DISABLED;
+    string reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) VL_MT_DISABLED;
 
     /// Build a subgraph of all loops starting where specified
     /// Side-effect: changes user()
@@ -484,8 +484,8 @@ public:
     parallelismReport(std::function<uint64_t(const V3GraphVertex*)> vertexCost) VL_MT_DISABLED;
 
     // CALLBACKS
-    virtual void loopsMessageCb(V3GraphVertex* vertexp) VL_MT_DISABLED;
-    virtual void loopsVertexCb(V3GraphVertex* vertexp) VL_MT_DISABLED;
+    virtual void loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
+    virtual string loopsVertexCb(V3GraphVertex* vertexp) VL_MT_DISABLED;
 };
 
 //============================================================================

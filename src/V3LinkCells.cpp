@@ -43,7 +43,7 @@ class LinkCellsGraph final : public V3Graph {
 public:
     LinkCellsGraph() = default;
     ~LinkCellsGraph() override = default;
-    void loopsMessageCb(V3GraphVertex* vertexp) override;
+    void loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFuncp) override;
 };
 
 class LinkCellsVertex final : public V3GraphVertex {
@@ -73,7 +73,7 @@ public:
     string name() const override VL_MT_STABLE { return "*LIBRARY*"; }
 };
 
-void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
+void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFuncp) {
     if (const LinkCellsVertex* const vvertexp = vertexp->cast<LinkCellsVertex>()) {
         vvertexp->modp()->v3warn(E_UNSUPPORTED,
                                  "Unsupported: Recursive multiple modules (module instantiates "

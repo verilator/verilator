@@ -233,13 +233,16 @@ void V3Graph::clearColors() {
 //======================================================================
 // Dumping
 
-void V3Graph::loopsMessageCb(V3GraphVertex* vertexp) {
-    vertexp->v3fatalSrc("Loops detected in graph: " << vertexp);
+void V3Graph::loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFuncp) {
+    vertexp->v3fatalSrc("Loops detected in graph: " << vertexp << "\n"
+                                                    << reportLoops(edgeFuncp, vertexp));
 }
-
-void V3Graph::loopsVertexCb(V3GraphVertex* vertexp) {
+string V3Graph::loopsVertexCb(V3GraphVertex* vertexp) {
     // Needed here as V3GraphVertex<< isn't defined until later in header
-    if (debug()) std::cerr << "-Info-Loop: " << cvtToHex(vertexp) << " " << vertexp << endl;
+    if (debug())
+        return "-Info-Loop: "s + cvtToHex(vertexp) + ' ' + cvtToStr(vertexp) + '\n';
+    else
+        return "";
 }
 
 void V3Graph::dump(std::ostream& os) const {

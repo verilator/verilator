@@ -325,7 +325,7 @@ private:
         = V3ErrorCode::EC_FATAL;  // Error string being formed will abort
     bool m_errorSuppressed VL_GUARDED_BY(m_mutex)
         = false;  // Error being formed should be suppressed
-    MessagesSet m_messages VL_GUARDED_BY(m_mutex);  // What errors we've outputted
+    MessagesSet m_messages VL_GUARDED_BY(m_mutex);  // Errors outputted, to remove dups
     ErrorExitCb m_errorExitCb VL_GUARDED_BY(m_mutex)
         = nullptr;  // Callback when error occurs for dumping
     bool m_errorContexted VL_GUARDED_BY(m_mutex) = false;  // Error being formed got context
@@ -341,12 +341,7 @@ private:
     bool m_warnFatal VL_GUARDED_BY(m_mutex) = true;  // Option: --warnFatal Warnings are fatal
     std::ostringstream m_errorStr VL_GUARDED_BY(m_mutex);  // Error string being formed
 
-    void v3errorPrep(V3ErrorCode code) VL_REQUIRES(m_mutex) {
-        m_errorStr.str("");
-        m_errorCode = code;
-        m_errorContexted = false;
-        m_errorSuppressed = false;
-    }
+    void v3errorPrep(V3ErrorCode code) VL_REQUIRES(m_mutex);
     std::ostringstream& v3errorStr() VL_REQUIRES(m_mutex) { return m_errorStr; }
     void v3errorEnd(std::ostringstream& sstr, const string& extra = "") VL_REQUIRES(m_mutex);
 
@@ -363,9 +358,9 @@ public:
     bool isError(V3ErrorCode code, bool supp) VL_REQUIRES(m_mutex);
     void vlAbortOrExit() VL_REQUIRES(m_mutex);
     void errorContexted(bool flag) VL_REQUIRES(m_mutex) { m_errorContexted = flag; }
-    void incWarnings() VL_REQUIRES(m_mutex) { m_warnCount++; }
+    void incWarnings() VL_REQUIRES(m_mutex) { ++m_warnCount; }
     void incErrors() VL_REQUIRES(m_mutex) {
-        m_errCount++;
+        ++m_errCount;
         if (errorCount() == errorLimit()) {  // Not >= as would otherwise recurse
             v3errorEnd(
                 (v3errorPrep(V3ErrorCode::EC_FATALMANY),
@@ -509,14 +504,6 @@ public:
 
     // When printing an error/warning, print prefix for multiline message
     static string warnMore() VL_REQUIRES(s().m_mutex) { return s().warnMore(); }
-    // This function should only be used when it is impossible to
-    // generate whole error message inside v3warn macros and it needs to be
-    // streamed directly to cerr.
-    // Use with caution as this function isn't MT_SAFE.
-    static string warnMoreStandalone() VL_EXCLUDES(s().m_mutex) VL_MT_UNSAFE {
-        const V3RecursiveLockGuard guard{s().m_mutex};
-        return s().warnMore();
-    }
     // This function marks place in error message from which point message
     // should be printed after information on the error code.
     // The post-processing is done in v3errorEnd function.
@@ -532,7 +519,7 @@ public:
     static std::ostringstream& v3errorPrep(V3ErrorCode code) VL_ACQUIRE(s().m_mutex);
     static std::ostringstream& v3errorPrepFileLine(V3ErrorCode code, const char* file, int line)
         VL_ACQUIRE(s().m_mutex);
-    static std::ostringstream& v3errorStr() VL_REQUIRES(s().m_mutex);
+    static std::ostringstream& v3errorStr() VL_REQUIRES(s().m_mutex) { return s().v3errorStr(); }
     // static, but often overridden in classes.
     static void v3errorEnd(std::ostringstream& sstr, const string& extra = "")
         VL_RELEASE(s().m_mutex);
