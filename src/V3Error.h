@@ -349,7 +349,7 @@ public:
     V3RecursiveMutex m_mutex;  // Make sure only single thread is in class
 
     string msgPrefix() VL_REQUIRES(m_mutex);  // returns %Error/%Warn
-    string warnMore() VL_REQUIRES(m_mutex);
+    string warnMoreSpaces() VL_REQUIRES(m_mutex);
     void execErrorExitCb() VL_REQUIRES(m_mutex) {
         if (m_errorExitCb) m_errorExitCb();
     }
@@ -503,7 +503,7 @@ public:
     }
 
     // When printing an error/warning, print prefix for multiline message
-    static string warnMore() VL_REQUIRES(s().m_mutex) { return s().warnMore(); }
+    static string warnMore() VL_MT_SAFE { return "__WARNMORE__"; }
     // This function marks place in error message from which point message
     // should be printed after information on the error code.
     // The post-processing is done in v3errorEnd function.

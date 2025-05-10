@@ -271,6 +271,16 @@ double VString::parseDouble(const string& str, bool* successp) {
     return d;
 }
 
+string VString::replaceSubstr(const string& str, const string& from, const string& to) {
+    string result = str;
+    const size_t len = from.size();
+    UASSERT_STATIC(len > 0, "Cannot replace empty string");
+    for (size_t pos = 0; (pos = result.find(from, pos)) != string::npos; pos += len) {
+        result.replace(pos, len, to);
+    }
+    return result;
+}
+
 string VString::replaceWord(const string& str, const string& from, const string& to) {
     string result = str;
     const size_t len = from.size();

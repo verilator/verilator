@@ -452,16 +452,16 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
 
 string FileLine::warnMore() const VL_REQUIRES(V3Error::s().m_mutex) {
     if (lastLineno()) {
-        return V3Error::s().warnMore() + string(ascii().size(), ' ') + ": ";
+        return V3Error::warnMore() + string(ascii().size(), ' ') + ": ";
     } else {
-        return V3Error::s().warnMore();
+        return V3Error::warnMore();
     }
 }
 string FileLine::warnOther() const VL_REQUIRES(V3Error::s().m_mutex) {
     if (lastLineno()) {
-        return V3Error::s().warnMore() + ascii() + ": ";
+        return V3Error::warnMore() + ascii() + ": ";
     } else {
-        return V3Error::s().warnMore();
+        return V3Error::warnMore();
     }
 };
 

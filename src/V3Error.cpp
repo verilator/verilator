@@ -113,7 +113,9 @@ void V3ErrorGuarded::vlAbortOrExit() VL_REQUIRES(m_mutex) {
     }
 }
 
-string V3ErrorGuarded::warnMore() VL_REQUIRES(m_mutex) { return string(msgPrefix().size(), ' '); }
+string V3ErrorGuarded::warnMoreSpaces() VL_REQUIRES(m_mutex) {
+    return string(msgPrefix().size(), ' ');
+}
 
 void V3ErrorGuarded::suppressThisWarning() VL_REQUIRES(m_mutex) {
 #ifndef V3ERROR_NO_GLOBAL_
@@ -155,6 +157,8 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
     // Suppress duplicate messages
     if (!m_messages.insert(firstLine).second) return;
 
+    msg = VString::replaceSubstr(msg, V3Error::warnMore(), warnMoreSpaces());
+
     string msg_additional;
     {
         string::size_type pos;
@@ -172,7 +176,8 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
             msg_additional.erase(pos + 1, 1);
     }
     if (!extra.empty() && !m_errorSuppressed) {
-        const string extraMsg = warnMore() + extra + "\n";
+        string extraMsg = VString::replaceSubstr(extra, V3Error::warnMore(), warnMoreSpaces());
+        extraMsg = warnMoreSpaces() + extraMsg + "\n";
         const size_t pos = msg.find('\n');
         msg.insert(pos + 1, extraMsg);
     }
@@ -193,7 +198,7 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
             && !m_describedEachWarn[m_errorCode]) {
             m_describedEachWarn[m_errorCode] = true;
             if (m_errorCode >= V3ErrorCode::EC_FIRST_NAMED) {
-                std::cerr << warnMore() << "... For " << (anError ? "error" : "warning")
+                std::cerr << warnMoreSpaces() << "... For " << (anError ? "error" : "warning")
                           << " description see " << m_errorCode.url() << endl;
             } else if (m_errCount >= 1
                        && (m_errorCode == V3ErrorCode::EC_FATAL
@@ -201,24 +206,24 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
                            || m_errorCode == V3ErrorCode::EC_FATALSRC)
                        && !m_tellInternal) {
                 m_tellInternal = true;
-                std::cerr << warnMore()
+                std::cerr << warnMoreSpaces()
                           << "... This fatal error may be caused by the earlier error(s);"
                              " resolve those first."
                           << endl;
             } else if (!m_tellManual) {
                 m_tellManual = true;
-                std::cerr << warnMore() << "... See the manual at " << m_errorCode.url()
+                std::cerr << warnMoreSpaces() << "... See the manual at " << m_errorCode.url()
                           << " for more assistance." << endl;
             }
             if (!m_pretendError[m_errorCode] && !m_errorCode.hardError()) {
-                std::cerr << warnMore() << "... Use \"/* verilator lint_off "
+                std::cerr << warnMoreSpaces() << "... Use \"/* verilator lint_off "
                           << m_errorCode.ascii()
                           << " */\" and lint_on around source to disable this message." << endl;
                 if (m_errorCode.dangerous()) {
-                    std::cerr << warnMore() << "*** See " << m_errorCode.url()
+                    std::cerr << warnMoreSpaces() << "*** See " << m_errorCode.url()
                               << " before disabling this,\n";
-                    std::cerr << warnMore() << "else you may end up with different sim results."
-                              << endl;
+                    std::cerr << warnMoreSpaces()
+                              << "else you may end up with different sim results." << endl;
                 }
             }
         }
