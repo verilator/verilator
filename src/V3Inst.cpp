@@ -491,9 +491,7 @@ private:
         }
     }
     void visit(AstNodeAssign* nodep) override {
-        if (AstArraySel* const arrselp = VN_CAST(nodep->rhsp(), ArraySel)) {
-            iterateChildren(nodep);
-        } else if (AstSliceSel* const arrslicep = VN_CAST(nodep->rhsp(), SliceSel)) {
+        if (AstSliceSel* const arrslicep = VN_CAST(nodep->rhsp(), SliceSel)) {
             if (const AstUnpackArrayDType* const arrp
                 = VN_CAST(arrslicep->fromp()->dtypep(), UnpackArrayDType)) {
                 if (!VN_IS(arrp->subDTypep(), IfaceRefDType)) return;
@@ -520,19 +518,19 @@ private:
                                       "Array size mismatch in interface assignment");
                         return;
                     }
-                    for (uint32_t i = 0; i < lhsarrp->elementsConst(); ++i) {
+                    for (int i = 0; i < lhsarrp->elementsConst(); ++i) {
                         const string index = AstNode::encodeNumber(i);
                         AstNodeExpr* lhsp = nullptr;
                         if (AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
                             AstVarRef* const newvarp = varrefp->cloneTree(false);
                             AstArraySel* newarrselp = new AstArraySel{
-                                nodep->fileline(), newvarp, new AstConst{nodep->fileline(), i}};
+                                nodep->fileline(), newvarp, new AstConst{nodep->fileline(), static_cast<uint32_t>(i)}};
                             lhsp = newarrselp;
                         } else if (AstMemberSel* const prevselp
                                    = VN_CAST(nodep->lhsp(), MemberSel)) {
                             AstMemberSel* membselp = prevselp->cloneTree(false);
                             AstArraySel* newarrselp = new AstArraySel{
-                                nodep->fileline(), membselp, new AstConst{nodep->fileline(), i}};
+                                nodep->fileline(), membselp, new AstConst{nodep->fileline(), static_cast<uint32_t>(i)}};
                             lhsp = newarrselp;
                         } else {
                             nodep->v3warn(E_UNSUPPORTED,
@@ -548,7 +546,6 @@ private:
                         AstAssign* const assignp = new AstAssign(nodep->fileline(), lhsp, rhsp);
                         nodep->addNextHere(assignp);
                     }
-                    // VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 }
             } else {
