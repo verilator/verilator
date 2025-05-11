@@ -10,7 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_assert_property.v"
+test.top_filename = "t/t_property.v"
 
 test.compile(v_flags2=['+define+FAIL_ASSERT_2'], verilator_flags2=['--assert --cc'])
 
