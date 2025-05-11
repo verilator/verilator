@@ -524,13 +524,15 @@ private:
                         if (AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
                             AstVarRef* const newvarp = varrefp->cloneTree(false);
                             AstArraySel* newarrselp = new AstArraySel{
-                                nodep->fileline(), newvarp, new AstConst{nodep->fileline(), static_cast<uint32_t>(i)}};
+                                nodep->fileline(), newvarp,
+                                new AstConst{nodep->fileline(), static_cast<uint32_t>(i)}};
                             lhsp = newarrselp;
                         } else if (AstMemberSel* const prevselp
                                    = VN_CAST(nodep->lhsp(), MemberSel)) {
                             AstMemberSel* membselp = prevselp->cloneTree(false);
                             AstArraySel* newarrselp = new AstArraySel{
-                                nodep->fileline(), membselp, new AstConst{nodep->fileline(), static_cast<uint32_t>(i)}};
+                                nodep->fileline(), membselp,
+                                new AstConst{nodep->fileline(), static_cast<uint32_t>(i)}};
                             lhsp = newarrselp;
                         } else {
                             nodep->v3warn(E_UNSUPPORTED,
