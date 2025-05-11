@@ -10,6 +10,9 @@ on:
   schedule:
     - cron: '0 2 * * *'  # Daily, starting at 02:00 UTC
 
+permissions:
+  contents: read
+
 defaults:
   run:
     shell: bash
@@ -115,10 +118,8 @@ jobs:
 
   combine-results:
     name: Combine results
-    needs:
-      - run-gcc
-      - run-clang
-    if: ${{ always() }} # Run even if dependencies failed
+    needs: [run-gcc, run-clang]
+    if: ${{ always() }}  # Run even if dependencies failed
     runs-on: ubuntu-24.04
     steps:
       - name: Download all GCC results

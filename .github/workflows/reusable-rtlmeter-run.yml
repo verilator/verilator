@@ -84,7 +84,7 @@ jobs:
 
       - name: Execute cases
         working-directory: rtlmeter
-        continue-on-error: true # Do not fail on error, so we can at leat save the successful results
+        continue-on-error: true  # Do not fail on error, so we can at leat save the successful results
         run: |
           ./rtlmeter run --verbose --cases='${{ inputs.cases }}' --compileArgs='${{ inputs.compileArgs }}' --executeArgs='${{ inputs.executeArgs }}'
           # My YAML highlighter sucks, so I put this comment here wiht a phony closing quote mark to make it work: '
