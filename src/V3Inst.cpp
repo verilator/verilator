@@ -475,7 +475,7 @@ private:
             const AstConst* const constp = VN_CAST(nodep->bitp(), Const);
             if (!constp) {
                 nodep->bitp()->v3warn(E_UNSUPPORTED,
-                                        "Non-constant index in RHS interface array selection");
+                                      "Non-constant index in RHS interface array selection");
                 return;
             }
             const string index = AstNode::encodeNumber(constp->toSInt());
@@ -526,15 +526,13 @@ private:
                         if (AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
                             AstVarRef* const newvarp = varrefp->cloneTree(false);
                             AstArraySel* newarrselp = new AstArraySel{
-                                nodep->fileline(), newvarp,
-                                new AstConst{nodep->fileline(), i}};
+                                nodep->fileline(), newvarp, new AstConst{nodep->fileline(), i}};
                             lhsp = newarrselp;
                         } else if (AstMemberSel* const prevselp
                                    = VN_CAST(nodep->lhsp(), MemberSel)) {
                             AstMemberSel* membselp = prevselp->cloneTree(false);
                             AstArraySel* newarrselp = new AstArraySel{
-                                nodep->fileline(), membselp,
-                                new AstConst{nodep->fileline(), i}};
+                                nodep->fileline(), membselp, new AstConst{nodep->fileline(), i}};
                             lhsp = newarrselp;
                         } else {
                             nodep->v3warn(E_UNSUPPORTED,
