@@ -131,14 +131,31 @@ void V3ErrorGuarded::v3errorPrep(V3ErrorCode code) VL_REQUIRES(m_mutex) {
     m_errorSuppressed = false;
 }
 
-// cppcheck-has-bug-suppress constParameter
 void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
+    VL_REQUIRES(m_mutex) {
+    static bool s_firedTooMany = false;
+    v3errorEndGuts(sstr, extra);
+    if (errorLimit() && errorCount() >= errorLimit() && !s_firedTooMany) {
+        s_firedTooMany = true;
+        // Recurses here
+        v3errorEnd((v3errorPrep(V3ErrorCode::EC_FATALMANY),
+                    (v3errorStr() << "Exiting due to too many errors encountered; --error-limit="
+                                  << errorCount() << std::endl),
+                    v3errorStr()));
+        assert(0);  // LCOV_EXCL_LINE
+        VL_UNREACHABLE;
+    }
+}
+
+// cppcheck-has-bug-suppress constParameter
+void V3ErrorGuarded::v3errorEndGuts(std::ostringstream& sstr, const string& extra)
     VL_REQUIRES(m_mutex) {
     // 'extra' is appended to the message, and is is excluded in check for
     // duplicate messages. Currently used for reporting instance name.
 #if defined(__COVERITY__) || defined(__cppcheck__)
     if (m_errorCode == V3ErrorCode::EC_FATAL) __coverity_panic__(x);
 #endif
+
     // Skip suppressed messages
     if (m_errorSuppressed
         // On debug, show only non default-off warning to prevent pages of warnings

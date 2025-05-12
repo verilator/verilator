@@ -344,6 +344,7 @@ private:
     void v3errorPrep(V3ErrorCode code) VL_REQUIRES(m_mutex);
     std::ostringstream& v3errorStr() VL_REQUIRES(m_mutex) { return m_errorStr; }
     void v3errorEnd(std::ostringstream& sstr, const string& extra = "") VL_REQUIRES(m_mutex);
+    void v3errorEndGuts(std::ostringstream& sstr, const string& extra) VL_REQUIRES(m_mutex);
 
 public:
     V3RecursiveMutex m_mutex;  // Make sure only single thread is in class
@@ -359,18 +360,7 @@ public:
     void vlAbortOrExit() VL_REQUIRES(m_mutex);
     void errorContexted(bool flag) VL_REQUIRES(m_mutex) { m_errorContexted = flag; }
     void incWarnings() VL_REQUIRES(m_mutex) { ++m_warnCount; }
-    void incErrors() VL_REQUIRES(m_mutex) {
-        ++m_errCount;
-        if (errorCount() == errorLimit()) {  // Not >= as would otherwise recurse
-            v3errorEnd(
-                (v3errorPrep(V3ErrorCode::EC_FATALMANY),
-                 (v3errorStr() << "Exiting due to too many errors encountered; --error-limit="
-                               << errorCount() << std::endl),
-                 v3errorStr()));
-            assert(0);  // LCOV_EXCL_LINE
-            VL_UNREACHABLE;
-        }
-    }
+    void incErrors() VL_REQUIRES(m_mutex) { ++m_errCount; }
     int errorCount() VL_REQUIRES(m_mutex) { return m_errCount; }
     bool pretendError(int errorCode) VL_REQUIRES(m_mutex) { return m_pretendError[errorCode]; }
     void pretendError(V3ErrorCode code, bool flag) VL_REQUIRES(m_mutex) {
