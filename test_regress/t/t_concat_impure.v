@@ -4,8 +4,10 @@
 // any use, without warranty, 2025 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
+int global_variable = 0;
+
 function int side_effect;
-  $display("ABCD");
+   global_variable++;
   return 1;
 endfunction
 
@@ -17,6 +19,7 @@ module t (/*AUTOARG*/);
 
       if (y != 3) $stop;
       if (x != 0) $stop;
+      if (global_variable != 1) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;
