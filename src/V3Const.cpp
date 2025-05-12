@@ -2077,20 +2077,41 @@ class ConstVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return true;
             }
-        } else if (m_doV && VN_IS(nodep->lhsp(), Concat) && nodep->isPure()) {
+        } else if (m_doV && VN_IS(nodep->lhsp(), Concat)) {
             bool need_temp = false;
-            if (m_warn && !VN_IS(nodep, AssignDly)) {  // Is same var on LHS and RHS?
+            bool need_temp_pure = !nodep->rhsp()->isPure();
+            if (m_warn && !VN_IS(nodep, AssignDly)
+                && !need_temp_pure) {  // Is same var on LHS and RHS?
                 // Note only do this (need user4) when m_warn, which is
                 // done as unique visitor
+                // If the rhs is not pure, we need a temporary variable anyway
                 const VNUser4InUse m_inuser4;
                 nodep->lhsp()->foreach([](const AstVarRef* nodep) {
-                    if (nodep->varp()) nodep->varp()->user4(1);
+                    UASSERT_OBJ(nodep->varp(), nodep, "Unlinked VarRef");
+                    nodep->varp()->user4(1);
                 });
                 nodep->rhsp()->foreach([&need_temp](const AstVarRef* nodep) {
-                    if (nodep->varp() && nodep->varp()->user4()) need_temp = true;
+                    UASSERT_OBJ(nodep->varp(), nodep, "Unlinked VarRef");
+                    if (nodep->varp()->user4()) need_temp = true;
                 });
             }
-            if (need_temp) {
+            if (need_temp_pure) {
+                // if the RHS is impure we need to create a temporary variable for it, because
+                // further handling involves copying of the RHS.
+                UINFO(4, "  ASSITEMPPURE " << nodep << endl);
+                // ASSIGN(CONCAT(lc1,lc2),rhs) -> ASSIGN(temp,rhs),
+                //                                ASSIGN(lc1,SEL(temp,{size1})),
+                //                                ASSIGN(lc2,SEL(temp,{size2}))
+
+                AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+                AstVar* const tempPurep = new AstVar{rhsp->fileline(), VVarType::BLOCKTEMP,
+                                                     m_concswapNames.get(rhsp), rhsp->dtypep()};
+                m_modp->addStmtsp(tempPurep);
+                AstNodeAssign* const asnp = nodep->cloneType(
+                    new AstVarRef{rhsp->fileline(), tempPurep, VAccess::WRITE}, rhsp);
+                nodep->addHereThisAsNext(asnp);
+                nodep->rhsp(new AstVarRef{rhsp->fileline(), tempPurep, VAccess::READ});
+            } else if (need_temp) {
                 // The first time we constify, there may be the same variable on the LHS
                 // and RHS.  In that case, we must use temporaries, or {a,b}={b,a} will break.
                 UINFO(4, "  ASSITEMP " << nodep << endl);
