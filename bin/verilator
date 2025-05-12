@@ -390,8 +390,8 @@ detailed descriptions of these arguments.
     --no-json-edit-nums         Don't dump editNum in .tree.json files
     --no-json-ids               Don't use short identifiers instead of adresses/paths in .tree.json
     --json-only                 Create JSON parser output (.tree.json and .meta.json)
-    --json-only-meta-output     .tree.meta.json output filename
-    --json-only-output          .tree.json output filename
+    --json-only-meta-output <filename>  Set .tree.meta.json output filename
+    --json-only-output <filename>       Set .tree.json output filename
     --l2-name <value>           Verilog scope name of the top module
     --language <lang>           Default language standard to parse
      -LDFLAGS <flags>           Linker pre-object arguments for makefile
@@ -448,7 +448,7 @@ detailed descriptions of these arguments.
     --quiet-exit                Don't print the command on failure
     --quiet-stats               Don't print statistics
     --relative-includes         Resolve includes relative to current file
-    --reloop-limit              Minimum iterations for forming loops
+    --reloop-limit <value>      Minimum iterations for forming loops
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
     --rr                        Run Verilator and record with rr
     --runtime-debug             Enable model runtime debugging

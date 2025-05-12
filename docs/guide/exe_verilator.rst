@@ -446,9 +446,9 @@ Summary:
 
 .. option:: --dump-tree-dot
 
-   Rarely needed.  Enable dumping Ast .tree.dot debug files in Graphviz
-   Dot format. This option implies :vlopt:`--dump-tree`, unless
-   :vlopt:`--dumpi-tree` was passed explicitly.
+   Rarely needed - for developer use.  Enable dumping Ast .tree.dot debug
+   files in Graphviz Dot format. This option implies :vlopt:`--dump-tree`,
+   unless :vlopt:`--dumpi-tree` was passed explicitly.
 
 .. option:: --dump-tree-json
 
@@ -568,9 +568,9 @@ Summary:
 
 .. option:: -fno-const-before-dfg
 
-   Do not apply any global expression folding prior to the DFG pass. This
-   option is solely for the purpose of DFG testing and should not be used
-   otherwise.
+   Rarely needed. Do not apply any global expression folding prior to the
+   DFG pass. This option is solely for the purpose of DFG testing and
+   should not be used otherwise.
 
 .. option:: -fno-const-bit-op-tree
 
@@ -578,24 +578,25 @@ Summary:
 
 .. option:: -fno-dfg
 
-   Disable all use of the DFG-based combinational logic optimizer.
-   Alias for :vlopt:`-fno-dfg-pre-inline` and :vlopt:`-fno-dfg-post-inline`.
+   Rarely needed. Disable all use of the DFG-based combinational logic
+   optimizer.  Alias for :vlopt:`-fno-dfg-pre-inline` and
+   :vlopt:`-fno-dfg-post-inline`.
 
 .. option:: -fno-dfg-peephole
 
-   Disable the DFG peephole optimizer.
+   Rarely needed. Disable the DFG peephole optimizer.
 
 .. option:: -fno-dfg-peephole-<pattern>
 
-   Disable individual DFG peephole optimizer pattern.
+   Rarely needed. Disable individual DFG peephole optimizer pattern.
 
 .. option:: -fno-dfg-post-inline
 
-   Do not apply the DFG optimizer after inlining.
+   Rarely needed. Do not apply the DFG optimizer after inlining.
 
 .. option:: -fno-dfg-pre-inline
 
-   Do not apply the DFG optimizer before inlining.
+   Rarely needed. Do not apply the DFG optimizer before inlining.
 
 .. option:: -fno-expand
 
@@ -647,8 +648,9 @@ Summary:
 
 .. option:: -fno-var-split
 
-   Do not attempt to split variables automatically. Variables explicitly
-   annotated with :option:`/*verilator&32;split_var*/` are still split.
+   Rarely needed. Do not attempt to split variables
+   automatically. Variables explicitly annotated with
+   :option:`/*verilator&32;split_var*/` are still split.
 
 .. option:: -future0 <option>
 
@@ -754,10 +756,10 @@ Summary:
 
 .. option:: --hierarchical-params-file <filename>
 
-   Internal flag inserted used during :vlopt:`--hierarchical`; specifies
-   name of hierarchical parameters file for deparametrized modules with
-   :option:`/*verilator&32;hier_block*/` metacomment. See
-   :ref:`Hierarchical Verilation`.
+   Rarely needed - internal use. Internal flag inserted used during
+   :vlopt:`--hierarchical`; specifies name of hierarchical parameters file
+   for deparametrized modules with :option:`/*verilator&32;hier_block*/`
+   metacomment. See :ref:`Hierarchical Verilation`.
 
 .. option:: -I<dir>
 
@@ -828,13 +830,15 @@ Summary:
 
 .. option:: --json-only-meta-output <filename>
 
-   Specifies the filename for the metadata output file (`.tree.meta.json`) of --json-only.
-   Using this option automatically sets :vlopt:`--json-only`.
+   Specifies the filename for the metadata output file (`.tree.meta.json`)
+   of :vlopt:`--json-only`.  Using this option automatically sets
+   :vlopt:`--json-only`.
 
 .. option:: --json-only-output <filename>
 
-   Specifies the filename for the main output file (`.tree.json`) of --json-only.
-   Using this option automatically sets :vlopt:`--json-only`.
+   Specifies the filename for the main output file (`.tree.json`) of
+   :vlopt:`--json-only`.  Using this option automatically sets
+   :vlopt:`--json-only`.
 
 .. option:: --l2-name <value>
 
@@ -960,7 +964,7 @@ Summary:
 
 .. option:: --max-num-width <value>
 
-   Set the maximum number literal width (e.g., in 1024'd22 this
+   Set the maximum number literal width (e.g., in 1024'd22 the
    1024).  Defaults to 64K.
 
 .. option:: --Mdir <directory>
@@ -1188,8 +1192,8 @@ Summary:
 
 .. option:: --private
 
-   Opposite of :vlopt:`--public`.  This is the default; this option exists for
-   backwards compatibility.
+   Rarely needed. Opposite of :vlopt:`--public`.  This is the default; this
+   option exists for backwards compatibility.
 
 .. option:: --prof-c
 
@@ -1344,7 +1348,7 @@ Summary:
    the path of the referencing file, instead of relative to the current
    directory.
 
-.. option:: --reloop-limit
+.. option:: --reloop-limit <value>
 
    Rarely needed. Verilator attempts to turn some common sequences of
    statements into loops in the output. This argument specifies the minimum
