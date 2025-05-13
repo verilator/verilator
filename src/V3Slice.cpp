@@ -65,7 +65,7 @@ class SliceVisitor final : public VNVisitor {
     bool m_okInitArray = false;  // Allow InitArray children
 
     // METHODS
-    AstNodeExpr* cloneAndSel(AstNode* nodep, int elements, int elemIdx) {
+    AstNodeExpr* cloneAndSel(AstNode* nodep, int elements, int elemIdx, bool needPure) {
         // Insert an ArraySel, except for a few special cases
         const AstUnpackArrayDType* const arrayp
             = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
@@ -191,16 +191,16 @@ class SliceVisitor final : public VNVisitor {
             if (!newp) newp = new AstConst{nodep->fileline(), 0};
         } else if (AstNodeCond* const snodep = VN_CAST(nodep, NodeCond)) {
             UINFO(9, "  cloneCond(" << elements << "," << elemIdx << ") " << nodep << endl);
-            return snodep->cloneType(snodep->condp()->cloneTreePure(false),
-                                     cloneAndSel(snodep->thenp(), elements, elemIdx),
-                                     cloneAndSel(snodep->elsep(), elements, elemIdx));
+            return snodep->cloneType(snodep->condp()->cloneTree(false, needPure),
+                                     cloneAndSel(snodep->thenp(), elements, elemIdx, needPure),
+                                     cloneAndSel(snodep->elsep(), elements, elemIdx, needPure));
         } else if (const AstSliceSel* const snodep = VN_CAST(nodep, SliceSel)) {
             UINFO(9, "  cloneSliceSel(" << elements << "," << elemIdx << ") " << nodep << endl);
             const int leOffset = (snodep->declRange().lo()
                                   + (!snodep->declRange().ascending()
                                          ? snodep->declRange().elements() - 1 - elemIdx
                                          : elemIdx));
-            newp = new AstArraySel{nodep->fileline(), snodep->fromp()->cloneTreePure(false),
+            newp = new AstArraySel{nodep->fileline(), snodep->fromp()->cloneTree(false, needPure),
                                    leOffset};
         } else if (VN_IS(nodep, ArraySel) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel)
                    || VN_IS(nodep, CMethodHard) || VN_IS(nodep, MemberSel)
@@ -209,8 +209,8 @@ class SliceVisitor final : public VNVisitor {
             const int leOffset = !arrayp->rangep()->ascending()
                                      ? arrayp->rangep()->elementsConst() - 1 - elemIdx
                                      : elemIdx;
-            newp = new AstArraySel{nodep->fileline(), VN_AS(nodep, NodeExpr)->cloneTreePure(false),
-                                   leOffset};
+            newp = new AstArraySel{nodep->fileline(),
+                                   VN_AS(nodep->cloneTree(false, needPure), NodeExpr), leOffset};
         } else {
             if (!m_assignError) {
                 nodep->v3error(nodep->prettyTypeName()
@@ -250,8 +250,15 @@ class SliceVisitor final : public VNVisitor {
         const int elements = arrayp->rangep()->elementsConst();
         for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
             AstNodeAssign* const newp
-                = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx),
-                                   cloneAndSel(nodep->rhsp(), elements, elemIdx));
+                = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx, elemIdx != 0),
+                                   cloneAndSel(nodep->rhsp(), elements, elemIdx, elemIdx != 0));
+            if (elemIdx == 0) {
+                nodep->foreach([this](AstExprStmt* const exprp) {
+                    AstNodeExpr* const resultp = exprp->resultp()->unlinkFrBack();
+                    exprp->replaceWith(resultp);
+                    VL_DO_DANGLING(pushDeletep(exprp), exprp);
+                });
+            }
             if (debug() >= 9) newp->dumpTree("-  new: ");
             newlistp = AstNode::addNext(newlistp, newp);
         }
@@ -319,9 +326,18 @@ class SliceVisitor final : public VNVisitor {
                 for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
                     // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
                     AstNodeBiop* const clonep
-                        = VN_AS(nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx),
-                                                 cloneAndSel(nodep->rhsp(), elements, elemIdx)),
+                        = VN_AS(nodep->cloneType(
+                                    cloneAndSel(nodep->lhsp(), elements, elemIdx, elemIdx != 0),
+                                    cloneAndSel(nodep->rhsp(), elements, elemIdx, elemIdx != 0)),
                                 NodeBiop);
+                    if (elemIdx == 0) {
+                        nodep->foreach([this](AstExprStmt* const exprp) {
+                            AstNodeExpr* const resultp = exprp->resultp()->unlinkFrBack();
+                            exprp->replaceWith(resultp);
+                            VL_DO_DANGLING(pushDeletep(exprp), exprp);
+                        });
+                    }
+
                     if (!logp) {
                         logp = clonep;
                     } else {
