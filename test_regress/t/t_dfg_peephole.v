@@ -66,9 +66,13 @@ module t (
    `signal(FOLD_BINARY_LogIf,     const_a[0] -> const_b[0]);
    `signal(FOLD_BINARY_LogOr,     const_a[0] || const_b[0]);
    `signal(FOLD_BINARY_Lt,        const_a < const_b);
+   `signal(FOLD_BINARY_Lt2,       const_a < const_a);
    `signal(FOLD_BINARY_LtS,       sconst_a < sconst_b);
+   `signal(FOLD_BINARY_LtS2,      sconst_a < sconst_a);
    `signal(FOLD_BINARY_Lte,       const_a <= const_b);
+   `signal(FOLD_BINARY_Lte2,      const_a <= const_a);
    `signal(FOLD_BINARY_LteS,      sconst_a <= sconst_b);
+   `signal(FOLD_BINARY_LteS2,     sconst_a <= sconst_a);
    `signal(FOLD_BINARY_ModDiv,    const_a % 64'd3);
    `signal(FOLD_BINARY_ModDivS,   sconst_a % 64'sd3);
    `signal(FOLD_BINARY_Mul,       const_a * 64'd3);
