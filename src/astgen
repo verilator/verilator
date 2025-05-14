@@ -1033,8 +1033,8 @@ def write_ast_macros(filename):
             Ast{t}* unlinkFrBackWithNext(VNRelinker* linkerp = nullptr) {{
                 return static_cast<Ast{t}*>(AstNode::unlinkFrBackWithNext(linkerp));
             }}
-            Ast{t}* cloneTree(bool cloneNext) {{
-                return static_cast<Ast{t}*>(AstNode::cloneTree(cloneNext));
+            Ast{t}* cloneTree(bool cloneNext, bool needPure = false) {{
+                return static_cast<Ast{t}*>(AstNode::cloneTree(cloneNext, needPure));
             }}
             Ast{t}* cloneTreePure(bool cloneNext) {{
                 return static_cast<Ast{t}*>(AstNode::cloneTreePure(cloneNext));
