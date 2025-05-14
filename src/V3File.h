@@ -296,7 +296,10 @@ public:
         : V3OutFile{filename, V3OutFormatter::LA_JSON} {
         begin();
     }
-    ~V3OutJsonFile() override { end(); }
+    ~V3OutJsonFile() override {
+        end();
+        puts("\n");
+    }
     virtual void putsHeader() {}
     void puts(const char* strg) { putsNoTracking(strg); }
     void puts(const string& strg) { putsNoTracking(strg); }
@@ -317,42 +320,24 @@ public:
         return *this;
     }
 
+    // Put a named value
+    V3OutJsonFile& put(const std::string& name, const char* valuep) {
+        return putNamed(name, std::string{valuep}, true);
+    }
     V3OutJsonFile& put(const std::string& name, const std::string& value) {
-        comma();
-        puts(m_prefix + "\"" + name + "\": \"" + value + "\"");
-        m_empty = false;
-        return *this;
+        return putNamed(name, value, true);
     }
     V3OutJsonFile& put(const std::string& name, bool value) {
-        comma();
-        puts(m_prefix + "\"" + name + "\": " + (value ? "true" : "false"));
-        m_empty = false;
-        return *this;
+        return putNamed(name, value ? "true" : "false", false);
     }
     V3OutJsonFile& put(const std::string& name, int value) {
-        comma();
-        puts(m_prefix + "\"" + name + "\": " + std::to_string(value));
-        m_empty = false;
-        return *this;
+        return putNamed(name, std::to_string(value), false);
     }
-    V3OutJsonFile& put(const std::string& value) {
-        comma();
-        puts(m_prefix + "\"" + value + "\"");
-        m_empty = false;
-        return *this;
-    }
-    V3OutJsonFile& put(bool value) {
-        comma();
-        puts(m_prefix + (value ? "true" : "false"));
-        m_empty = false;
-        return *this;
-    }
-    V3OutJsonFile& put(int value) {
-        comma();
-        puts(m_prefix + std::to_string(value));
-        m_empty = false;
-        return *this;
-    }
+
+    // Put unnamed value
+    V3OutJsonFile& put(const std::string& value) { return putNamed("", value, true); }
+    V3OutJsonFile& put(bool value) { return putNamed("", value ? "true" : "false", false); }
+    V3OutJsonFile& put(int value) { return putNamed("", std::to_string(value), false); }
 
     template <typename T>
     V3OutJsonFile& putList(const std::string& name, const T& list) {
@@ -363,9 +348,9 @@ public:
     }
 
     V3OutJsonFile& end() {
-        assert(m_prefix.length() >= strlen(INDENT));
+        UASSERT(m_prefix.length() >= strlen(INDENT), "prefix underflow");
         m_prefix.erase(m_prefix.end() - strlen(INDENT), m_prefix.end());
-        assert(!m_scope.empty());
+        UASSERT(!m_scope.empty(), "end() without begin()");
         puts("\n" + m_prefix + m_scope.top());
         m_scope.pop();
         return *this;
@@ -380,6 +365,18 @@ private:
     void comma() {
         if (!m_empty) puts(",\n");
         m_empty = true;
+    }
+    V3OutJsonFile& putNamed(const std::string& name, const std::string& value, bool quoted) {
+        comma();
+        const string valueQ
+            = quoted ? "\""s + V3OutFormatter::quoteNameControls(value) + "\"" : value;
+        if (name.empty()) {
+            puts(m_prefix + valueQ);
+        } else {
+            puts(m_prefix + "\"" + name + "\": " + valueQ);
+        }
+        m_empty = false;
+        return *this;
     }
 };
 

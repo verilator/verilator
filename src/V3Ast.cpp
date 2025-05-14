@@ -1461,7 +1461,7 @@ void AstNode::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().
             nsstr << '\n';
             nsstr << "-node: ";
             const_cast<AstNode*>(this)->dump(nsstr);
-            nsstr << endl;
+            nsstr << '\n';
         }
         m_fileline->v3errorEnd(nsstr, instanceStrExtra);
     }

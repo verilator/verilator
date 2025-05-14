@@ -108,10 +108,7 @@ template V3GraphEdge* V3GraphVertex::findConnectingEdgep<GraphWay::REVERSE>(V3Gr
 void V3GraphVertex::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
     std::ostringstream nsstr;
     nsstr << str.str();
-    if (debug()) {
-        nsstr << endl;
-        nsstr << "-vertex: " << this << endl;
-    }
+    if (debug()) nsstr << "\n-vertex: " << this << '\n';
     if (FileLine* const flp = fileline()) {
         flp->v3errorEnd(nsstr);
     } else {

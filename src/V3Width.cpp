@@ -108,11 +108,10 @@ std::ostream& operator<<(std::ostream& str, const Determ& rhs) {
 }
 
 #define v3widthWarn(lhs, rhs, msg) \
-    v3errorEnd( \
-        v3errorBuildMessage(V3Error::v3errorPrep((lhs) < (rhs)   ? V3ErrorCode::WIDTHTRUNC \
-                                                 : (lhs) > (rhs) ? V3ErrorCode::WIDTHEXPAND \
-                                                                 : V3ErrorCode::WIDTH), \
-                            msg))
+    v3warnCode(((lhs) < (rhs)   ? V3ErrorCode::WIDTHTRUNC \
+                : (lhs) > (rhs) ? V3ErrorCode::WIDTHEXPAND \
+                                : V3ErrorCode::WIDTH), \
+               msg)
 
 //######################################################################
 // Width state, as a visitor of each AstNode

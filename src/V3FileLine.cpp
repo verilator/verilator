@@ -524,6 +524,7 @@ string FileLine::warnContextParent() const VL_REQUIRES(V3Error::s().m_mutex) {
     }
     return result;
 }
+
 #ifdef VL_LEAK_CHECKS
 std::unordered_set<FileLine*> fileLineLeakChecks;
 

@@ -234,6 +234,15 @@ public:
     bool hardError() const VL_MT_SAFE {
         return (m_e != EC_INFO && m_e < V3ErrorCode::EC_FIRST_WARN);
     }
+    // Warning is fatal error, don't continue
+    bool severityFatal() const VL_MT_SAFE {
+        return m_e == V3ErrorCode::EC_FATAL || m_e == V3ErrorCode::EC_FATALMANY
+               || m_e == V3ErrorCode::EC_FATALSRC;
+    }
+    // Warning is -Info informational
+    bool severityInfo() const VL_MT_SAFE {
+        return m_e == V3ErrorCode::USERINFO || m_e == V3ErrorCode::EC_INFO;
+    }
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
     bool pretendError() const VL_MT_SAFE {
@@ -279,6 +288,7 @@ public:
         if (m_e == LITENDIAN) return V3ErrorCode{ASCRANGE};
         return V3ErrorCode{EC_MIN};  // Not renamed; see isRenamed()
     }
+    bool isNamed() const { return m_e >= EC_FIRST_NAMED; }
     bool isRenamed() const { return renamedTo() != V3ErrorCode{EC_MIN}; }
     bool isUnder(V3ErrorCode other) {
         // backwards compatibility inheritance-like warnings

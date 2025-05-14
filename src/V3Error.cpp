@@ -50,7 +50,7 @@ V3ErrorCode::V3ErrorCode(const char* msgp) {
 }
 
 string V3ErrorCode::url() const {
-    if (m_e < V3ErrorCode::EC_FIRST_NAMED) {
+    if (!isNamed()) {
         return "https://verilator.org/verilator_doc.html"s + "?v=" + PACKAGE_VERSION_NUMBER_STRING;
     } else {
         return "https://verilator.org/warn/"s + ascii() + "?v=" + PACKAGE_VERSION_NUMBER_STRING;
@@ -64,7 +64,7 @@ string V3ErrorCode::url() const {
 bool V3ErrorGuarded::isError(V3ErrorCode code, bool supp) VL_REQUIRES(m_mutex) {
     if (code.hardError()) return true;
     if (supp) return false;
-    if (code == V3ErrorCode::USERINFO || code == V3ErrorCode::EC_INFO) return false;
+    if (code.severityInfo()) return false;
     if (pretendError(code)) return true;
     return false;
 }
@@ -74,9 +74,7 @@ string V3ErrorGuarded::msgPrefix() VL_REQUIRES(m_mutex) {
     const bool supp = m_errorSuppressed;
     if (supp) {
         return "-arning-suppressed: ";
-    } else if (code == V3ErrorCode::USERINFO) {
-        return "-Info: ";
-    } else if (code == V3ErrorCode::EC_INFO) {
+    } else if (code.severityInfo()) {
         return "-Info: ";
     } else if (code == V3ErrorCode::EC_FATAL) {
         return "%Error: ";
@@ -208,8 +206,7 @@ void V3ErrorGuarded::v3errorEndGuts(std::ostringstream& sstr, const string& extr
     ) {
         std::cerr << msg;
     }
-    if (!m_errorSuppressed
-        && !(m_errorCode == V3ErrorCode::EC_INFO || m_errorCode == V3ErrorCode::USERINFO)) {
+    if (!m_errorSuppressed && !m_errorCode.severityInfo()) {
         const bool anError = isError(m_errorCode, m_errorSuppressed);
         if (m_errorCode != V3ErrorCode::EC_FATALMANY  // Not verbose on final too-many-errors error
             && !m_describedEachWarn[m_errorCode]) {
@@ -217,11 +214,7 @@ void V3ErrorGuarded::v3errorEndGuts(std::ostringstream& sstr, const string& extr
             if (m_errorCode >= V3ErrorCode::EC_FIRST_NAMED) {
                 std::cerr << warnMoreSpaces() << "... For " << (anError ? "error" : "warning")
                           << " description see " << m_errorCode.url() << endl;
-            } else if (m_errCount >= 1
-                       && (m_errorCode == V3ErrorCode::EC_FATAL
-                           || m_errorCode == V3ErrorCode::EC_FATALMANY
-                           || m_errorCode == V3ErrorCode::EC_FATALSRC)
-                       && !m_tellInternal) {
+            } else if (m_errCount >= 1 && m_errorCode.severityFatal() && !m_tellInternal) {
                 m_tellInternal = true;
                 std::cerr << warnMoreSpaces()
                           << "... This fatal error may be caused by the earlier error(s);"
@@ -250,8 +243,7 @@ void V3ErrorGuarded::v3errorEndGuts(std::ostringstream& sstr, const string& extr
         } else {
             incWarnings();
         }
-        if (m_errorCode == V3ErrorCode::EC_FATAL || m_errorCode == V3ErrorCode::EC_FATALMANY
-            || m_errorCode == V3ErrorCode::EC_FATALSRC) {
+        if (m_errorCode.severityFatal()) {
             static bool inFatal = false;
             if (!inFatal) {
                 inFatal = true;
