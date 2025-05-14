@@ -65,7 +65,8 @@ class SliceVisitor final : public VNVisitor {
     bool m_okInitArray = false;  // Allow InitArray children
 
     // METHODS
-    AstNodeExpr* cloneAndSel(AstNode* nodep, int elements, int elemIdx, bool needPure) {
+    AstNodeExpr* cloneAndSel(AstNodeExpr* const nodep, int elements, int elemIdx,
+                             const bool needPure) {
         // Insert an ArraySel, except for a few special cases
         const AstUnpackArrayDType* const arrayp
             = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
@@ -79,7 +80,7 @@ class SliceVisitor final : public VNVisitor {
             }
             m_assignError = true;
             // Likely will cause downstream errors
-            return VN_AS(nodep, NodeExpr)->cloneTree(false);
+            return nodep->cloneTree(false, needPure);
         }
         if (arrayp->rangep()->elementsConst() != elements) {
             if (!m_assignError) {
@@ -202,15 +203,14 @@ class SliceVisitor final : public VNVisitor {
                                          : elemIdx));
             newp = new AstArraySel{nodep->fileline(), snodep->fromp()->cloneTree(false, needPure),
                                    leOffset};
-        } else if (VN_IS(nodep, ArraySel) || VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel)
-                   || VN_IS(nodep, CMethodHard) || VN_IS(nodep, MemberSel)
-                   || VN_IS(nodep, ExprStmt) || VN_IS(nodep, StructSel)) {
+        } else if (VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel) || VN_IS(nodep, CMethodHard)
+                   || VN_IS(nodep, MemberSel) || VN_IS(nodep, ExprStmt)
+                   || VN_IS(nodep, StructSel)) {
             UINFO(9, "  cloneSel(" << elements << "," << elemIdx << ") " << nodep << endl);
             const int leOffset = !arrayp->rangep()->ascending()
                                      ? arrayp->rangep()->elementsConst() - 1 - elemIdx
                                      : elemIdx;
-            newp = new AstArraySel{nodep->fileline(),
-                                   VN_AS(nodep->cloneTree(false, needPure), NodeExpr), leOffset};
+            newp = new AstArraySel{nodep->fileline(), nodep->cloneTree(false, needPure), leOffset};
         } else {
             if (!m_assignError) {
                 nodep->v3error(nodep->prettyTypeName()
@@ -218,7 +218,7 @@ class SliceVisitor final : public VNVisitor {
             }
             m_assignError = true;
             // Likely will cause downstream errors
-            newp = VN_AS(nodep, NodeExpr)->cloneTree(false);
+            newp = nodep->cloneTree(false, needPure);
         }
         return newp;
     }
@@ -249,11 +249,15 @@ class SliceVisitor final : public VNVisitor {
         AstNodeAssign* newlistp = nullptr;
         const int elements = arrayp->rangep()->elementsConst();
         for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
+            // Original node is replaced, so it is safe to copy it one time even if it is impure.
             AstNodeAssign* const newp
                 = nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx, elemIdx != 0),
                                    cloneAndSel(nodep->rhsp(), elements, elemIdx, elemIdx != 0));
             if (elemIdx == 0) {
                 nodep->foreach([this](AstExprStmt* const exprp) {
+                    // Result expression is always evaluated to the same value, so the statements
+                    // can be removed once they were included in the expression created for the 1st
+                    // element.
                     AstNodeExpr* const resultp = exprp->resultp()->unlinkFrBack();
                     exprp->replaceWith(resultp);
                     VL_DO_DANGLING(pushDeletep(exprp), exprp);
@@ -325,6 +329,8 @@ class SliceVisitor final : public VNVisitor {
                 const int elements = adtypep->rangep()->elementsConst();
                 for (int elemIdx = 0; elemIdx < elements; ++elemIdx) {
                     // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
+                    // Original node is replaced, so it is safe to copy it one time even if it is
+                    // impure.
                     AstNodeBiop* const clonep
                         = VN_AS(nodep->cloneType(
                                     cloneAndSel(nodep->lhsp(), elements, elemIdx, elemIdx != 0),
@@ -332,6 +338,9 @@ class SliceVisitor final : public VNVisitor {
                                 NodeBiop);
                     if (elemIdx == 0) {
                         nodep->foreach([this](AstExprStmt* const exprp) {
+                            // Result expression is always evaluated to the same value, so the
+                            // statements can be removed once they were included in the expression
+                            // created for the 1st element.
                             AstNodeExpr* const resultp = exprp->resultp()->unlinkFrBack();
                             exprp->replaceWith(resultp);
                             VL_DO_DANGLING(pushDeletep(exprp), exprp);
