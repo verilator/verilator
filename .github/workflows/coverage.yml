@@ -26,10 +26,10 @@ defaults:
 jobs:
 
   Build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       CI_BUILD_STAGE_NAME: build
-      CI_RUNS_ON: ubuntu-22.04
+      CI_RUNS_ON: ubuntu-24.04
     steps:
 
       - name: Checkout
@@ -62,11 +62,11 @@ jobs:
         num: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         include:
           - {test: dist, num: ''}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     name: test-${{ matrix.test }}${{ matrix.num }}
     env:
       CI_BUILD_STAGE_NAME: test
-      CI_RUNS_ON: ubuntu-22.04
+      CI_RUNS_ON: ubuntu-24.04
     steps:
 
       - name: Download tar archive
