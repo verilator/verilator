@@ -20,4 +20,4 @@
 %Error-UNSUPPORTED: t/t_math_wide_bad.v:32:19: Unsupported: operator MODDIV operator of 5472 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
    32 |    assign z6 = ua % ub;
       |                   ^
-%Error: Exiting due to 7 error(s)
+%Error: Exiting due to
