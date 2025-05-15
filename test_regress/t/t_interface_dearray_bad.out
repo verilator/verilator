@@ -1,17 +1,17 @@
-%Error: t/t_interface_dearray_bad.v:23:7: Illegal target of assignment
-                                        : ... note: In instance 'tb_top'
+%Error-UNSUPPORTED: t/t_interface_dearray_bad.v:23:9: Unexpected target of interface assignment ['IFACEREFDTYPE$[0:5]']
+                                                    : ... note: In instance 'tb_top'
    23 |       a = f;
-      |       ^
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+      |         ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_interface_dearray_bad.v:26:13: Array size mismatch in interface assignment
                                                      : ... note: In instance 'tb_top'
    26 |       c.vif = b;
       |             ^
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: t/t_interface_dearray_bad.v:31:23: Expecting expression to be constant, but variable isn't const: 'i'
                                          : ... note: In instance 'tb_top'
    31 |          d.vif[i] = a[i];
       |                       ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error-UNSUPPORTED: t/t_interface_dearray_bad.v:31:23: Non-constant index in RHS interface array selection
                                                      : ... note: In instance 'tb_top'
    31 |          d.vif[i] = a[i];
