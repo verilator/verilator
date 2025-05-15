@@ -510,7 +510,8 @@ private:
                     if (VN_AS(rhsarrp->subDTypep()->skipRefp(), IfaceRefDType)->isVirtual())
                         return;
                     if (!VN_AS(lhsarrp->subDTypep()->skipRefp(), IfaceRefDType)->isVirtual()) {
-                        nodep->lhsp()->v3error("Illegal target of assignment");
+                        nodep->v3warn(E_UNSUPPORTED, "Unexpected target of interface assignment ["
+                                                         << rhsarrp->prettyDTypeNameQ() << "]");
                         return;
                     }
                     if (lhsarrp->elementsConst() != rhsarrp->elementsConst()) {
@@ -549,11 +550,11 @@ private:
                         nodep->addNextHere(assignp);
                     }
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                    return;
                 }
-            } else {
-                iterateChildren(nodep);
             }
         }
+        iterateChildren(nodep);
     }
 
     //--------------------
