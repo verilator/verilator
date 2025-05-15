@@ -1,11 +1,23 @@
-%Error-UNSUPPORTED: t/t_math_wide_bad.v:23:19: Unsupported: operator ISTORD operator of 64 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
-   23 |    assign r = real'(a);
+%Error-UNSUPPORTED: t/t_math_wide_bad.v:34:19: Unsupported: operator ISTORD operator of 64 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
+   34 |    assign r = real'(a);
       |                   ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_math_wide_bad.v:22:18: Unsupported: operator POWSS operator of 5472 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
-   22 |    assign z2 = a ** 3;
+%Error-UNSUPPORTED: t/t_math_wide_bad.v:28:18: Unsupported: operator POWSS operator of 5472 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
+   28 |    assign z2 = a ** 3;
       |                  ^~
-%Error-UNSUPPORTED: t/t_math_wide_bad.v:21:17: Unsupported: operator MULS operator of 5472 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
-   21 |    assign z = a * b;
+%Error-UNSUPPORTED: t/t_math_wide_bad.v:27:17: Unsupported: operator MULS operator of 5472 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
+   27 |    assign z = a * b;
       |                 ^
+%Error-UNSUPPORTED: t/t_math_wide_bad.v:29:18: Unsupported: operator DIVS operator of 5472 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
+   29 |    assign z3 = a / b;
+      |                  ^
+%Error-UNSUPPORTED: t/t_math_wide_bad.v:30:18: Unsupported: operator MODDIVS operator of 5472 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
+   30 |    assign z4 = a % b;
+      |                  ^
+%Error-UNSUPPORTED: t/t_math_wide_bad.v:31:19: Unsupported: operator DIV operator of 5472 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
+   31 |    assign z5 = ua / ub;
+      |                   ^
+%Error-UNSUPPORTED: t/t_math_wide_bad.v:32:19: Unsupported: operator MODDIV operator of 5472 bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h
+   32 |    assign z6 = ua % ub;
+      |                   ^
 %Error: Exiting due to
