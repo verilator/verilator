@@ -309,13 +309,19 @@ endclass
 module cond(input logic clk, input int cyc);
    logic a, b, c, d, e, f, g, h, k, l, m;
    logic [5:0] tab;
-   logic [7:0] data[1:0][1:0];
+   typedef logic [7:0] arr_t[1:0];
+   arr_t data[1:0];
    Getter1 getter1 = new;
    string s;
 
    function logic func_side_effect;
       $display("SIDE EFFECT");
       return 1;
+   endfunction
+
+   function arr_t get_arr;
+      arr_t arr;
+      return arr;
    endfunction
 
    assign a = (cyc == 0) ? clk : 1'bz;
@@ -341,7 +347,7 @@ module cond(input logic clk, input int cyc);
       if (cyc == 5) h = cyc > 5 ? 1 : 0;
       else h = 1;
 
-      data[0] = (cyc == 2) ? '{8'h01, 8'h02} : '{8'h03, 8'h04};
+      data[0] = (cyc == 2) ? '{8'h01, 8'h02} : get_arr();
 
       // ternary operator in conditions should be skipped
       for (int i = 0; (i < 5) ? 1 : 0; i++) begin
