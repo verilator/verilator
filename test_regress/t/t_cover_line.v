@@ -309,6 +309,7 @@ endclass
 module cond(input logic clk, input int cyc);
    logic a, b, c, d, e, f, g, h, k, l, m;
    logic [5:0] tab;
+   logic [7:0] data[1:0][1:0];
    Getter1 getter1 = new;
    string s;
 
@@ -339,6 +340,8 @@ module cond(input logic clk, input int cyc);
    always begin
       if (cyc == 5) h = cyc > 5 ? 1 : 0;
       else h = 1;
+
+      data[0] = (cyc == 2) ? '{8'h01, 8'h02} : '{8'h03, 8'h04};
 
       // ternary operator in conditions should be skipped
       for (int i = 0; (i < 5) ? 1 : 0; i++) begin
