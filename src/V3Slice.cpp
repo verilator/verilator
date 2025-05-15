@@ -205,8 +205,14 @@ class SliceVisitor final : public VNVisitor {
                                    leOffset};
         } else if (AstExprStmt* const snodep = VN_CAST(nodep, ExprStmt)) {
             UINFO(9, "  cloneExprStmt(" << elements << "," << elemIdx << ") " << nodep << endl);
-            return new AstExprStmt{nodep->fileline(), snodep->stmtsp()->unlinkFrBackWithNext(),
-                                   cloneAndSel(snodep->resultp(), elements, elemIdx, needPure)};
+            AstNodeExpr* const resultSelp
+                = cloneAndSel(snodep->resultp(), elements, elemIdx, needPure);
+            if (snodep->stmtsp()) {
+                return new AstExprStmt{nodep->fileline(), snodep->stmtsp()->unlinkFrBackWithNext(),
+                                       resultSelp};
+            } else {
+                return resultSelp;
+            }
         } else if (VN_IS(nodep, NodeVarRef) || VN_IS(nodep, NodeSel) || VN_IS(nodep, CMethodHard)
                    || VN_IS(nodep, MemberSel) || VN_IS(nodep, StructSel)) {
             UINFO(9, "  cloneSel(" << elements << "," << elemIdx << ") " << nodep << endl);
