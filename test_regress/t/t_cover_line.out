@@ -436,7 +436,8 @@
         module cond(input logic clk, input int cyc);
            logic a, b, c, d, e, f, g, h, k, l, m;
            logic [5:0] tab;
-           logic [7:0] data[1:0][1:0];
+           typedef logic [7:0] arr_t[1:0];
+           arr_t data[1:0];
 %000001    Getter1 getter1 = new;
 -000001  point: comment=block hier=top.t.cond1
            string s;
@@ -447,6 +448,13 @@
 +000021  point: comment=block hier=top.t.cond1
  000021       return 1;
 +000021  point: comment=block hier=top.t.cond1
+           endfunction
+        
+ 000010    function arr_t get_arr;
++000010  point: comment=block hier=top.t.cond1
+              arr_t arr;
+ 000010       return arr;
++000010  point: comment=block hier=top.t.cond1
            endfunction
         
 ~000031    assign a = (cyc == 0) ? clk : 1'bz;
@@ -499,7 +507,7 @@
  000010       else h = 1;
 +000010  point: comment=else hier=top.t.cond1
         
-~000011       data[0] = (cyc == 2) ? '{8'h01, 8'h02} : '{8'h03, 8'h04};
+~000011       data[0] = (cyc == 2) ? '{8'h01, 8'h02} : get_arr();
 +000011  point: comment=block hier=top.t.cond1
 -000001  point: comment=cond_then hier=top.t.cond1
 +000010  point: comment=cond_else hier=top.t.cond1
