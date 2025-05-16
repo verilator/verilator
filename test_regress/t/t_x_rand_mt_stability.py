@@ -8,14 +8,17 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import glob
 
-test.scenarios("vlt_all")
+test.scenarios("vltmt")
+test.top_filename = "t/t_x_rand_stability.v"
 
 test.compile(verilator_flags2=["--x-initial unique"])
 
-test.execute()
-
-files = glob.glob(test.obj_dir + "/" + test.vm_prefix + "___024root__DepSet_*__Slow.cpp")
-test.file_grep_any(files, r"VL_SCOPED_RAND_RESET")
+test.execute(all_run_flags=["+verilator+rand+reset+2"], expect_filename=test.golden_filename)
 
 test.passes()
+
+other_logs = [x for x in glob.glob("t/t_x_rand_mt_stability_*.out") if "_zero" not in x]
+for other_log in other_logs:
+    test.files_identical(test.golden_filename, other_log)
