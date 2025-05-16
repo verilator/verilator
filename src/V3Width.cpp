@@ -2112,6 +2112,7 @@ class WidthVisitor final : public VNVisitor {
                                               VFlagChildDType{}, refp};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            userIterate(newp, m_vup);
         } else {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Cast to " << nodep->dtp()->prettyTypeName());
@@ -2126,6 +2127,12 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             if (debug() >= 9) nodep->dumpTree("-  CastPre: ");
             // if (debug()) nodep->backp()->dumpTree("-  CastPreUpUp: ");
+            if (VN_IS(nodep->fromp(), Signed)) {
+                AstSigned* fromp = VN_AS(nodep->fromp(), Signed);
+                AstNode* lhsp = fromp->lhsp()->unlinkFrBack();
+                fromp->replaceWith(lhsp);
+                VL_DO_DANGLING(fromp->deleteTree(), fromp);
+            }
             userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM}.p());
             if (debug() >= 9) nodep->dumpTree("-  CastDit: ");
             AstNodeDType* const toDtp = nodep->dtypep()->skipRefToEnump();
@@ -7334,6 +7341,7 @@ class WidthVisitor final : public VNVisitor {
         // Returns the new underp
         // Conversion to/from doubles and integers are before iterating.
         UASSERT_OBJ(stage == FINAL, nodep, "Bad state to iterateCheck");
+        if (underp) { UINFO(1, "underp dtype = " << underp->dtypep() << endl); }
         UASSERT_OBJ(underp && underp->dtypep(), nodep,
                     "Node has no type");  // Perhaps forgot to do a prelim visit on it?
         if (VN_IS(underp, NodeDType)) {  // Note the node itself, not node's data type
