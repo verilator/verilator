@@ -50,6 +50,10 @@
                      // Inputs
                      .clk                       (clk));
            par par1 (/*AUTOINST*/);
+           cond cond1 (/*AUTOINST*/
+                       // Inputs
+                       .clk                     (clk),
+                       .cyc                     (cyc));
         
  000010    always @ (posedge clk) begin
 +000010  point: comment=block hier=top.t
@@ -413,5 +417,120 @@
 -000000  point: comment=block hier=top.t.par1
            endfunction
         
+        endmodule
+        
+        package my_pkg;
+%000001    int x = 1 ? 1 : 0;
+-000001  point: comment=block hier=top.my_pkg
+        endpackage
+        
+%000001 class Getter1;
+-000001  point: comment=block hier=top.$unit::Getter1__Vclpkg
+ 000020    function int get_1;
++000020  point: comment=block hier=top.$unit::Getter1__Vclpkg
+ 000020       return 1;
++000020  point: comment=block hier=top.$unit::Getter1__Vclpkg
+           endfunction
+        endclass
+        
+        module cond(input logic clk, input int cyc);
+           logic a, b, c, d, e, f, g, h, k, l, m;
+           logic [5:0] tab;
+           typedef logic [7:0] arr_t[1:0];
+           arr_t data[1:0];
+%000001    Getter1 getter1 = new;
+-000001  point: comment=block hier=top.t.cond1
+           string s;
+        
+ 000021    function logic func_side_effect;
++000021  point: comment=block hier=top.t.cond1
+ 000021       $display("SIDE EFFECT");
++000021  point: comment=block hier=top.t.cond1
+ 000021       return 1;
++000021  point: comment=block hier=top.t.cond1
+           endfunction
+        
+ 000010    function arr_t get_arr;
++000010  point: comment=block hier=top.t.cond1
+              arr_t arr;
+ 000010       return arr;
++000010  point: comment=block hier=top.t.cond1
+           endfunction
+        
+~000031    assign a = (cyc == 0) ? clk : 1'bz;
+-000000  point: comment=cond_then hier=top.t.cond1
++000031  point: comment=cond_else hier=top.t.cond1
+~000028    assign b = (cyc == 1) ? clk : 0;
+-000003  point: comment=cond_then hier=top.t.cond1
++000028  point: comment=cond_else hier=top.t.cond1
+~000021    assign c = func_side_effect() ? clk : 0;
++000021  point: comment=cond_then hier=top.t.cond1
+-000000  point: comment=cond_else hier=top.t.cond1
+ 000010    always @(posedge clk) begin
++000010  point: comment=block hier=top.t.cond1
+~000010       d = (cyc % 3 == 0) ? 1 : 0;
++000010  point: comment=block hier=top.t.cond1
+-000003  point: comment=cond_then hier=top.t.cond1
+-000007  point: comment=cond_else hier=top.t.cond1
+~000010       s = (getter1.get_1() == 0) ? "abcd" : $sformatf("%d", getter1.get_1()[4:0]);
++000010  point: comment=block hier=top.t.cond1
+-000000  point: comment=cond_then hier=top.t.cond1
++000010  point: comment=cond_else hier=top.t.cond1
+           end
+~000019    assign e = (cyc % 3 == 1) ? (clk ? 1 : 0) : 1;
++000012  point: comment=cond_then hier=top.t.cond1
++000019  point: comment=cond_else hier=top.t.cond1
+-000007  point: comment=cond_then hier=top.t.cond1
+-000005  point: comment=cond_else hier=top.t.cond1
+        
+           // ternary operator in condition shouldn't be included to the coverae
+~000011    assign f = (cyc != 0 ? 1 : 0) ? 1 : 0;
++000011  point: comment=cond_then hier=top.t.cond1
+-000000  point: comment=cond_else hier=top.t.cond1
+           // the same as in index
+           assign tab[clk ? 1 : 0] = 1;
+           assign m = tab[clk ? 3 : 4];
+        
+           for (genvar i = 0; i < 2; i++) begin
+ 000011       assign g = clk ? 1 : 0;
++000010  point: comment=cond_then hier=top.t.cond1
++000011  point: comment=cond_else hier=top.t.cond1
+           end
+        
+ 000011    always begin
++000011  point: comment=block hier=top.t.cond1
+~000010       if (cyc == 5) h = cyc > 5 ? 1 : 0;
+-000000  point: comment=cond_then hier=top.t.cond1
+-000001  point: comment=cond_else hier=top.t.cond1
+-000001  point: comment=if hier=top.t.cond1
++000010  point: comment=else hier=top.t.cond1
+ 000010       else h = 1;
++000010  point: comment=else hier=top.t.cond1
+        
+~000011       data[0] = (cyc == 2) ? '{8'h01, 8'h02} : get_arr();
++000011  point: comment=block hier=top.t.cond1
+-000001  point: comment=cond_then hier=top.t.cond1
++000010  point: comment=cond_else hier=top.t.cond1
+        
+              // ternary operator in conditions should be skipped
+ 000055       for (int i = 0; (i < 5) ? 1 : 0; i++) begin
++000011  point: comment=block hier=top.t.cond1
++000055  point: comment=block hier=top.t.cond1
+ 000055          k = 1'(i);
++000055  point: comment=block hier=top.t.cond1
+              end
+ 000044       for (int i = 0; i < 7; i = (i > 4) ? i + 1 : i + 2) begin
++000011  point: comment=block hier=top.t.cond1
++000044  point: comment=block hier=top.t.cond1
+ 000044          k = 1'(i);
++000044  point: comment=block hier=top.t.cond1
+              end
+        
+~000011       if (k ? 1 : 0) k = 1;
+-000000  point: comment=if hier=top.t.cond1
++000011  point: comment=else hier=top.t.cond1
+ 000011       else k = 0;
++000011  point: comment=else hier=top.t.cond1
+           end
         endmodule
         

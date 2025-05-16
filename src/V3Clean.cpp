@@ -202,6 +202,11 @@ class CleanVisitor final : public VNVisitor {
         operandQuadop(nodep);
         setClean(nodep, nodep->cleanOut());
     }
+    void visit(AstExprStmt* nodep) override {
+        iterateChildren(nodep);
+        computeCppWidth(nodep);
+        setClean(nodep, isClean(nodep->resultp()));
+    }
     void visit(AstNodeExpr* nodep) override {
         iterateChildren(nodep);
         computeCppWidth(nodep);
