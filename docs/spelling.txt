@@ -440,6 +440,7 @@ UNOPTFLAT
 Ubixum
 Ueno
 Uints
+Undefine
 Undefines
 Unsized
 Urbach
@@ -617,7 +618,9 @@ dep
 deparametrized
 der
 dereference
+dereferenced
 desassign
+deserialize
 destructor
 desynchronization
 detections
@@ -745,6 +748,8 @@ hierCMakeArgs
 hierMkArgs
 hierParameters
 hierVer
+html
+https
 hx
 hyperthreading
 hyperthreads
@@ -842,6 +847,7 @@ multithread
 multithreaded
 multithreading
 musl
+mutex
 mutexes
 mux
 muzafferkal
@@ -907,6 +913,7 @@ pre
 precisions
 precompiled
 predefines
+prefetch
 prepareClone
 prepend
 prepended
@@ -1063,6 +1070,7 @@ typename
 uint
 un
 unbased
+uncomment
 undef
 undefineall
 undriven

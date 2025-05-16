@@ -613,7 +613,7 @@ SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0""")
 
 parser.add_argument('--debug', action='store_true', help='enable debug')
 parser.add_argument('--no-vcd', help='disable creating vcd', action='store_true')
-parser.add_argument('--vcd', help='filename for vcd outpue', default='profile_exec.vcd')
+parser.add_argument('--vcd', help='filename for vcd output', default='profile_exec.vcd')
 parser.add_argument('filename',
                     help='input profile_exec.dat filename to process',
                     default='profile_exec.dat')

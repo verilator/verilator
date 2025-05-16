@@ -193,9 +193,9 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
             , m_restore{true} {}
         ~Restorer() {
             UASSERT(m_visitor.m_bitPolarities.size() >= m_polaritiesSize,
-                    "m_bitPolarities must grow monotorilaclly");
+                    "m_bitPolarities must grow monotonically");
             UASSERT(m_visitor.m_frozenNodes.size() >= m_frozenSize,
-                    "m_frozenNodes must grow monotorilaclly");
+                    "m_frozenNodes must grow monotonically");
             if (m_restore) restoreNow();
         }
         void disableRestore() { m_restore = false; }

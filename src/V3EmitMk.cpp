@@ -659,7 +659,7 @@ public:
         if (v3Global.opt.systemC() && !V3Options::systemCFound()) {
             v3fatal("Need $SYSTEMC_INCLUDE in environment or when Verilator configured,\n"
                     "and need $SYSTEMC_LIBDIR in environment or when Verilator configured\n"
-                    "Probably System-C isn't installed, see http://www.systemc.org\n");
+                    "Probably System-C isn't installed, see https://systemc.org\n");
         }
 
         of.puts("\n### Switches...\n");

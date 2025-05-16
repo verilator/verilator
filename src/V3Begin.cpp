@@ -29,6 +29,7 @@
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Begin.h"
+#include "V3String.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -69,11 +70,7 @@ class BeginVisitor final : public VNVisitor {
 
     // METHODS
 
-    string dot(const string& a, const string& b) {
-        if (a == "") return b;
-        if (b == "") return a;
-        return a + "__DOT__" + b;
-    }
+    string dot(const string& a, const string& b) { return VString::dot(a, "__DOT__", b); }
 
     void dotNames(const AstNodeBlock* const nodep, const char* const blockName) {
         UINFO(8, "nname " << m_namedScope << endl);

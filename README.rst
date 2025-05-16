@@ -129,7 +129,7 @@ organizations; please see `Verilator Commercial Support
 Related Projects
 ================
 
-- `GTKwave <http://gtkwave.sourceforge.net/>`_ - Waveform viewer for
+- `GTKwave <https://gtkwave.sourceforge.net/>`_ - Waveform viewer for
   Verilator traces.
 
 - `Icarus Verilog`_ - Icarus is a highly-featured interpreted Verilog

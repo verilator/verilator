@@ -560,7 +560,7 @@ class DelayedVisitor final : public VNVisitor {
     void prepareSchemeValueQueue(AstVarScope* vscp, VarScopeInfo& vscpInfo) {
         UASSERT_OBJ(N_Partial ? vscpInfo.m_scheme == Scheme::ValueQueuePartial
                               : vscpInfo.m_scheme == Scheme::ValueQueueWhole,
-                    vscp, "Inconsisten<t NBA s>cheme");
+                    vscp, "Inconsistent NBA scheme");
         FileLine* const flp = vscp->fileline();
         AstScope* const scopep = vscp->scopep();
 

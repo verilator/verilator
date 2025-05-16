@@ -130,7 +130,7 @@ if ($opt_gdb) {
 } elsif ($opt_valgrind) {
     # Run under valgrind
     my $valgrind_bin = ($ENV{VERILATOR_VALGRIND} || "valgrind --error-exitcode=1 --max-stackframe=2815880"
-        # Magic number sugested by valgrind, may need to be increased in future
+        # Magic number suggested by Valgrind, may need to be increased in future
         # if you get warnings. See: https://valgrind.org/docs/manual/manual-core.html#opt.max-stackframe
         );
 
@@ -388,7 +388,7 @@ detailed descriptions of these arguments.
     --instr-count-dpi <value>   Assumed dynamic instruction count of DPI imports
      -j <jobs>                  Parallelism for --build-jobs/--verilate-jobs
     --no-json-edit-nums         Don't dump editNum in .tree.json files
-    --no-json-ids               Don't use short identifiers instead of adresses/paths in .tree.json
+    --no-json-ids               Don't use short identifiers instead of addresses/paths in .tree.json
     --json-only                 Create JSON parser output (.tree.json and .meta.json)
     --json-only-meta-output <filename>  Set .tree.meta.json output filename
     --json-only-output <filename>       Set .tree.json output filename

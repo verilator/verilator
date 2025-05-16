@@ -182,7 +182,7 @@ Install GTKWave
 ^^^^^^^^^^^^^^^
 
 To make use of Verilator FST tracing you will want `GTKwave
-<http://gtkwave.sourceforge.net/>`__ installed, however this is not
+<https://gtkwave.sourceforge.net/>`__ installed, however this is not
 required at Verilator build time.
 
 .. code-block:: shell
@@ -288,7 +288,7 @@ location include the Verilator version name:
 
 Note after installing (see `Installation`_), you need to add the path to
 the ``bin`` directory to your ``PATH``. Or, if you use `modulecmd
-<http://modules.sourceforge.net/>`__, you'll want a module file like the
+<https://modules.sourceforge.net/>`__, you'll want a module file like the
 following:
 
 .. code-block:: shell

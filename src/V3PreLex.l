@@ -188,7 +188,7 @@ bom             [\357\273\277]
                           if ((yyourleng()-1) <= size_t(LEXP->m_protLength) && ((yyleng & 3) == 1)) {
                               LEXP->m_protBytes -= (yyleng-1)/4*3;
                           } else {
-                              LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "BASE64 line too long in `pragma protect key_bloock/data_block");
+                              LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "BASE64 line too long in `pragma protect key_block/data_block");
                           }
                           if (yytext[yyleng-3] == '=')
                               LEXP->m_protBytes++;
@@ -197,11 +197,11 @@ bom             [\357\273\277]
                           if (LEXP->m_protBytes == 0) {
                               BEGIN(INITIAL);
                           } else if (LEXP->m_protBytes < 0)
-                              LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "BASE64 encoding (too short) in `pragma protect key_bloock/data_block");
+                              LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "BASE64 encoding (too short) in `pragma protect key_block/data_block");
                           /*return VP_TEXT;*/ }
 <ENCBASE64>{wsn}*[\n\r] { FL_FWDC;
                           if (LEXP->m_protBytes != 0)
-                              LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "BASE64 encoding length mismatch in `pragma protect key_bloock/data_block");
+                              LEXP->curFilelinep()->v3warn(BADSTDPRAGMA, "BASE64 encoding length mismatch in `pragma protect key_block/data_block");
                           linenoInc(); BEGIN(INITIAL);
                           return VP_TEXT; }
 
