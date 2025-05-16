@@ -21,7 +21,6 @@
 #include "V3TSP.h"
 
 #include <map>
-#include <string>
 #include <vector>
 
 // We use a static char array in VL_VALUE_STRING
@@ -774,7 +773,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 out += ", " + varNameProtected + suffix;
                 if (!zeroit) {
                     emitVarResetScopeHash();
-                    const uint64_t salt = VString::hash(varp->prettyName());
+                    const uint64_t salt = VString::hashMurmur(varp->prettyName());
                     out += ", ";
                     out += m_classOrPackage ? m_classOrPackageHash : "__VscopeHash";
                     out += ", ";
@@ -795,7 +794,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 out += " = 0;\n";
             } else {
                 emitVarResetScopeHash();
-                const uint64_t salt = VString::hash(varp->prettyName());
+                const uint64_t salt = VString::hashMurmur(varp->prettyName());
                 out += " = VL_SCOPED_RAND_RESET_";
                 out += dtypep->charIQWN();
                 out += "(" + cvtToStr(dtypep->widthMin()) + ", "
@@ -813,7 +812,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
 void EmitCFunc::emitVarResetScopeHash() {
     if (VL_LIKELY(m_createdScopeHash)) { return; }
     if (m_classOrPackage) {
-        m_classOrPackageHash = std::to_string(VString::hash(m_classOrPackage->name())) + "ULL";
+        m_classOrPackageHash
+            = std::to_string(VString::hashMurmur(m_classOrPackage->name())) + "ULL";
     } else {
         puts(string("const uint64_t __VscopeHash = VL_HASH(")
              + (m_useSelfForThis ? "vlSelf" : "this") + "->name());\n");

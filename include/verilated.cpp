@@ -45,7 +45,6 @@
 //     and DPI libraries are not needed there.
 //=========================================================================
 
-#include "verilated.h"
 #define VERILATOR_VERILATED_CPP_
 
 #include "verilated_config.h"

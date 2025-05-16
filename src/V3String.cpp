@@ -22,8 +22,6 @@
 #include "V3Error.h"
 #include "V3FileLine.h"
 
-#include <cstdint>
-
 #ifndef V3ERROR_NO_GLOBAL_
 #include "V3Global.h"
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -319,7 +317,7 @@ string VString::aOrAn(const char* word) {
 }
 
 // MurmurHash64A
-uint64_t VString::hash(const string& str) VL_PURE {
+uint64_t VString::hashMurmur(const string& str) VL_PURE {
     const char* key = str.c_str();
     const size_t len = str.size();
     const uint64_t seed = 0;

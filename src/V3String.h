@@ -140,7 +140,7 @@ public:
     static string aOrAn(const char* word);
     static string aOrAn(const string& word) { return aOrAn(word.c_str()); }
     // Hash the string
-    static uint64_t hash(const string& str) VL_PURE;
+    static uint64_t hashMurmur(const string& str) VL_PURE;
 };
 
 //######################################################################
