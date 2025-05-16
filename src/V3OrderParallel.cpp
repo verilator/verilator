@@ -1749,10 +1749,7 @@ class DpiThreadsVisitor final : public VNVisitorConst {
         m_threads = std::max(m_threads, V3Config::getHierWorkers(nodep->cname()));
         iterateChildrenConst(nodep);
     }
-    void visit(AstNodeCCall* nodep) override {
-        iterateChildrenConst(nodep);
-        iterateConst(nodep->funcp());
-    }
+    void visit(AstNodeCCall* nodep) override { iterateConst(nodep->funcp()); }
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
