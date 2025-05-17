@@ -798,6 +798,7 @@ libtcmalloc
 libverilated
 linkers
 linter
+linters
 linux
 liu
 livelock
@@ -975,6 +976,7 @@ runtimes
 rw
 sVerilator
 saif
+sarif
 sawatzke
 sc
 scalared

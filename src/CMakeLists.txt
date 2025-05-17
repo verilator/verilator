@@ -77,6 +77,7 @@ set(HEADERS
     V3DfgPatternStats.h
     V3DfgPeephole.h
     V3DfgVertices.h
+    V3DiagSarif.h
     V3DupFinder.h
     V3EmitC.h
     V3EmitCBase.h
@@ -95,8 +96,8 @@ set(HEADERS
     V3FileLine.h
     V3Force.h
     V3Fork.h
-    V3FunctionTraits.h
     V3FuncOpt.h
+    V3FunctionTraits.h
     V3Gate.h
     V3Global.h
     V3Graph.h
@@ -133,8 +134,8 @@ set(HEADERS
     V3OptionParser.h
     V3Options.h
     V3Order.h
-    V3OrderInternal.h
     V3OrderGraph.h
+    V3OrderInternal.h
     V3OrderMoveGraph.h
     V3Os.h
     V3PairingHeap.h
@@ -234,8 +235,8 @@ set(COMMON_SOURCES
     V3DfgPasses.cpp
     V3DfgPeephole.cpp
     V3DfgRegularize.cpp
+    V3DiagSarif.cpp
     V3DupFinder.cpp
-    V3Timing.cpp
     V3EmitCBase.cpp
     V3EmitCConstPool.cpp
     V3EmitCFunc.cpp
@@ -297,6 +298,10 @@ set(COMMON_SOURCES
     V3OrderSerial.cpp
     V3Os.cpp
     V3Param.cpp
+    V3ParseGrammar.cpp
+    V3ParseImp.cpp
+    V3ParseLex.cpp
+    V3PreProc.cpp
     V3PreShell.cpp
     V3Premit.cpp
     V3ProtectLib.cpp
@@ -320,13 +325,14 @@ set(COMMON_SOURCES
     V3StatsReport.cpp
     V3String.cpp
     V3Subst.cpp
+    V3TSP.cpp
     V3Table.cpp
     V3Task.cpp
     V3ThreadPool.cpp
+    V3Timing.cpp
     V3Trace.cpp
     V3TraceDecl.cpp
     V3Tristate.cpp
-    V3TSP.cpp
     V3Udp.cpp
     V3Undriven.cpp
     V3Unknown.cpp
@@ -336,10 +342,6 @@ set(COMMON_SOURCES
     V3Width.cpp
     V3WidthCommit.cpp
     V3WidthSel.cpp
-    V3ParseImp.cpp
-    V3ParseGrammar.cpp
-    V3ParseLex.cpp
-    V3PreProc.cpp
 )
 
 set(COVERAGE_SOURCES VlcMain.cpp)

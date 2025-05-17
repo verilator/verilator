@@ -68,6 +68,10 @@ source code corresponding to the error, prefixed by the line number and a "
 | ".  Following this is typically an arrow and ~ pointing at the error on
 the source line directly above.
 
+Instead of parsing this text diagnostic output, tools that need to
+understand Verilator's warning output should read the SARIF JSON output
+created with :vlopt:`--diagnostics-sarif`.
+
 
 List Of Warnings
 ================

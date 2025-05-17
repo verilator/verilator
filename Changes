@@ -15,6 +15,7 @@ Verilator 5.037 devel
 
 * Support constrained random for associative arrays (#5985) (#5986). [Yilou Wang]
 * Support assignments to concatenations with impure RHS (#6002). [Ryszard Rozak, Antmicro Ltd.]
+* Support SARIF JSON diagnostic output with `--diagnostics-sarif`.
 * Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
 * Add PROCINITASSIGN on initial assignments to process variables (#2481). [Niraj Menon]
 * Fix --x-initial and --x-assign random stability (#2662) (#5958). [Todd Strader]

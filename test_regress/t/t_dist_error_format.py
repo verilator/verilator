@@ -22,6 +22,8 @@ def formats():
     warns = {}
     lnmatch = 0
     for filename in test.glob_some(files):
+        if re.search(r'\.sarif\.out', filename):
+            continue
         wholefile = test.file_contents(filename)
         filename = os.path.basename(filename)
         if re.search(r'(Exiting due to|%Error|%Warning)', wholefile):

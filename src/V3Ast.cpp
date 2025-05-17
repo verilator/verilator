@@ -1453,7 +1453,7 @@ void AstNode::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().
     const string instanceStrExtra
         = m_fileline->warnIsOff(V3Error::s().errorCode()) ? "" : instanceStr();
     if (!m_fileline) {
-        V3Error::v3errorEnd(str, instanceStrExtra);
+        V3Error::v3errorEnd(str, instanceStrExtra, nullptr);
     } else {
         std::ostringstream nsstr;
         nsstr << str.str();

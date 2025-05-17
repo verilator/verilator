@@ -1,0 +1,23 @@
+%Warning-MODDUP: t/t_sarif.v:21:8: Duplicate declaration of module: 't'
+   21 | module t;   
+      |        ^
+                 t/t_sarif.v:7:8: ... Location of original declaration
+    7 | module t(
+      |        ^
+                 ... For warning description see https://verilator.org/warn/MODDUP?v=latest
+                 ... Use "/* verilator lint_off MODDUP */" and lint_on around source to disable this message.
+%Warning-WIDTHTRUNC: t/t_sarif.v:12:23: Operator ASSIGNW expects 2 bits on the Assign RHS, but Assign RHS's CONST '5'h1f' generates 5 bits.
+                                      : ... note: In instance 't'
+   12 |    wire [1:0] trunced = 5'b11111;   
+      |                       ^
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+%Warning-MULTIDRIVEN: t/t_sarif.v:10:18: Signal has multiple driving blocks with different clocking: 'multidriven'
+                      t/t_sarif.v:15:6: ... Location of first driving block
+   15 |      multidriven <= '1;
+      |      ^~~~~~~~~~~
+                      t/t_sarif.v:17:6: ... Location of other driving block
+   17 |      multidriven <= '0;
+      |      ^~~~~~~~~~~
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.

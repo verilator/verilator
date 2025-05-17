@@ -42,6 +42,7 @@
 #include "V3DepthBlock.h"
 #include "V3Descope.h"
 #include "V3DfgOptimizer.h"
+#include "V3DiagSarif.h"
 #include "V3EmitC.h"
 #include "V3EmitCMain.h"
 #include "V3EmitCMake.h"
@@ -860,6 +861,8 @@ int main(int argc, char** argv) {
     } else if (v3Global.opt.build()) {
         execBuildJob();
     }
+
+    V3DiagSarif::output(true);
 
     // Explicitly release resources
     V3PreShell::shutdown();
