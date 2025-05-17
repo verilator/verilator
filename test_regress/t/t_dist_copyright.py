@@ -30,6 +30,7 @@ EXEMPT_FILES_LIST = """
     docs/CONTRIBUTING.rst
     docs/CONTRIBUTORS
     docs/README.rst
+    docs/security.rst
     docs/_static
     docs/gen
     docs/spelling.txt
