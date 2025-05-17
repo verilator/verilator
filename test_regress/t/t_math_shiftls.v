@@ -17,7 +17,7 @@ output wire [6:0] out33;
       #10;
       `checkd(out33, '0);
       $write("*-* All Finished *-*\n");
-      $finish; 
+      $finish;
     end
 
 endmodule
