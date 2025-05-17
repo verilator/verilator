@@ -922,7 +922,7 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         info.m_type = "VlClassRef<" + EmitCBase::prefixNameProtect(adtypep) + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, IfaceRefDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
-        info.m_type = EmitCBase::prefixNameProtect(adtypep->ifaceViaCellp()) + "*";
+        info.m_type = "VlIfaceRef<" + EmitCBase::prefixNameProtect(adtypep->ifaceViaCellp()) + ">";
     } else if (const auto* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
         if (adtypep->isCompound()) compound = true;
