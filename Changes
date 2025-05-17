@@ -15,7 +15,7 @@ Verilator 5.037 devel
 
 * Support constrained random for associative arrays (#5985) (#5986). [Yilou Wang]
 * Support assignments to concatenations with impure RHS (#6002). [Ryszard Rozak, Antmicro Ltd.]
-* Support SARIF JSON diagnostic output with `--diagnostics-sarif`.
+* Support SARIF JSON diagnostic output with `--diagnostics-sarif`. (#6017)
 * Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
 * Add PROCINITASSIGN on initial assignments to process variables (#2481). [Niraj Menon]
 * Fix --x-initial and --x-assign random stability (#2662) (#5958). [Todd Strader]
@@ -35,6 +35,7 @@ Verilator 5.037 devel
 * Fix folding of LteS in DfgPeephole (#6000) (#6004). [Geza Lore]
 * Fix slicing of AstExprStmt nodes (#6005). [Ryszard Rozak, Antmicro Ltd.]
 * Fix skipped generate blocks in toggle coverage (#6010). [Ryszard Rozak, Antmicro Ltd.]
+* Fix arithmetic left-shift by constants over 32 bits (#6007) (#6015). [Zhen Yan]
 
 
 Verilator 5.036 2025-04-27
