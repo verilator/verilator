@@ -9,13 +9,11 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
+test.top_filename = 't/t_EXAMPLE.v'
 
-test.compile(verilator_flags2=['--error-limit 999'],
-             fails=test.vlt_all,
-             expect_filename=test.golden_filename)
-
-if not test.vlt_all:
-    test.execute()
+test.lint(verilator_flags2=["--trace-threads -1"],
+          fails=True,
+          expect_filename=test.golden_filename)
 
 test.passes()

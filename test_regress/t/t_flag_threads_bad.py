@@ -9,13 +9,13 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
+test.top_filename = 't/t_EXAMPLE.v'
 
-test.compile(verilator_flags2=['--error-limit 999'],
-             fails=test.vlt_all,
-             expect_filename=test.golden_filename)
-
-if not test.vlt_all:
-    test.execute()
+test.run(cmd=["perl", os.environ["VERILATOR_ROOT"] + "/bin/verilator", "--threads -1"],
+         logfile=test.run_log_filename,
+         fails=True,
+         expect_filename=test.golden_filename,
+         verilator_run=True)
 
 test.passes()

@@ -1,0 +1,5 @@
+%Error: t/t_dpi_display_bad.v:17:69: /*verilator sformat*/ can only be applied to last argument of a function
+   17 |        (input string formatted /*verilator sformat*/ , input string other_bad );
+      |                                                                     ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

@@ -19,38 +19,32 @@ Suppressed = {}
 
 for s in [
         ' exited with ',  # Is hit; driver.py filters out
+        'Assigned pin is neither input nor output',  # Instead earlier error
+        'Define missing argument \'',  # Instead get Define passed too many arguments
+        'Define or directive not defined: `',  # Instead V3ParseImp will warn
         'EOF in unterminated string',  # Instead get normal unterminated
         'Enum ranges must be integral, per spec',  # Hard to hit
+        'Expecting define formal arguments. Found: ',  # Instead define syntax error
         'Import package not found: ',  # Errors earlier, until future parser released
         'Return with return value isn\'t underneath a function',  # Hard to hit, get other bad return messages
-        'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance ',  # Instead get syntax error
         'Syntax error parsing real: \'',  # Instead can't lex the number
+        'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance ',  # Instead get syntax error
         'Unsupported: Ranges ignored in port-lists',  # Hard to hit
         'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
         # Not yet analyzed
         ' loading non-variable',
-        '--pins-bv maximum is 65: ',
         '--pipe-filter protocol error, unexpected: ',
         '--pipe-filter returned bad status',
         '--pipe-filter: Can\'t pipe: ',
         '--pipe-filter: fork failed: ',
-        '--threads must be >= 0: ',
-        '--threads-max-mtasks must be >= 1: ',
-        '--trace-threads must be >= 1: ',
-        '/*verilator sformat*/ can only be applied to last argument of ',
         'Argument needed for string.',
         'Array initialization has too few elements, need element ',
-        'Assigned pin is neither input nor output',
         'Assignment pattern with no members',
         'Can\'t find varpin scope of ',
         'Can\'t read annotation file: ',
         'Can\'t resolve module reference: \'',
         'Can\'t write file: ',
-        'Circular logic when ordering code (non-cutable edge loop)',
-        'Define missing argument \'',
-        'Define or directive not defined: `',
         'Exceeded limit of ',
-        'Expecting define formal arguments. Found: ',
         'Extern declaration\'s scope is not a defined class',
         'File not found: ',
         'Format to $display-like function must have constant format string',
@@ -80,7 +74,6 @@ for s in [
         'Unsupported pullup/down (weak driver) construct.',
         'Unsupported tristate construct (not in propagation graph): ',
         'Unsupported tristate port expression: ',
-        'Unsupported/unknown built-in dynamic array method ',
         'Unsupported: $bits for queue',
         'Unsupported: $c can\'t generate wider than 64 bits',
         'Unsupported: &&& expression',
@@ -107,20 +100,15 @@ for s in [
         'Unsupported: [] dimensions',
         'Unsupported: \'default :/\' constraint',
         'Unsupported: \'{} .* patterns',
-        'Unsupported: \'{} tagged patterns',
         'Unsupported: always[] (in property expression)',
         'Unsupported: assertion items in clocking blocks',
         'Unsupported: don\'t know how to deal with ',
         'Unsupported: eventually[] (in property expression)',
         'Unsupported: extern forkjoin',
-        'Unsupported: extern interface',
-        'Unsupported: extern module',
         'Unsupported: extern task',
         'Unsupported: modport export',
         'Unsupported: no_inline for tasks',
         'Unsupported: property port \'local\'',
-        'Unsupported: randsequence production list',
-        'Unsupported: randsequence repeat',
         'Unsupported: repeat event control',
         'Unsupported: s_always (in property expression)',
         'Unsupported: static cast to ',

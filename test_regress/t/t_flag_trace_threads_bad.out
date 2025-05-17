@@ -1,0 +1,2 @@
+%Error: --trace-threads must be >= 1: -1
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
