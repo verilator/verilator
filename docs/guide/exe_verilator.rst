@@ -393,6 +393,22 @@ Summary:
    standard across Verilog tools while :vlopt:`-D <-D<var>>` is similar to
    :command:`gcc -D`.
 
+.. option:: --diagnostics-sarif
+
+   Enables diagnostics output into a Static Analysis Results Interchange
+   Format (SARIF) file, a standard, JSON-based format for the output of
+   static analysis tools such as linters.  See
+   [SARIF](http://sarifweb.azurewebsites.net/),
+   [sarif-tools](https://github.com/microsoft/sarif-tools), and the [SARIF
+   web-based viewer](https://microsoft.github.io/sarif-web-component/).
+
+.. option:: --diagnostics-sarif-output <filename>
+
+   Specifies the filename for the SARIF output file (`.sarif`) of
+   :vlopt:`--diagnostics-sarif`.  Using this option automatically sets
+   :vlopt:`--diagnostics-sarif`.  If not specified, output defaults to
+   :file:`<prefix>.sarif`.
+
 .. option:: --dpi-hdr-only
 
    Only generate the DPI header file.  This option does not affect on the

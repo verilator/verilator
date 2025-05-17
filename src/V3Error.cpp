@@ -19,6 +19,7 @@
 #include "V3Os.h"
 #ifndef V3ERROR_NO_GLOBAL_
 # include "V3Ast.h"
+# include "V3DiagSarif.h"
 # include "V3Global.h"
 # include "V3Stats.h"
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -70,7 +71,7 @@ bool V3ErrorGuarded::isError(V3ErrorCode code, bool supp) VL_REQUIRES(m_mutex) {
 }
 
 string V3ErrorGuarded::msgPrefix() VL_REQUIRES(m_mutex) {
-    const V3ErrorCode code = m_errorCode;
+    const V3ErrorCode code = m_message.code();
     const bool supp = m_errorSuppressed;
     if (supp) {
         return "-arning-suppressed: ";
@@ -112,6 +113,7 @@ void V3ErrorGuarded::vlAbortOrExit() VL_REQUIRES(m_mutex) {
 }
 
 string V3ErrorGuarded::warnMoreSpaces() VL_REQUIRES(m_mutex) {
+    UASSERT_STATIC(!m_message.isClear(), "warnMore() outside of v3errorPrep...v3errorEnd");
     return string(msgPrefix().size(), ' ');
 }
 
@@ -124,42 +126,49 @@ void V3ErrorGuarded::suppressThisWarning() VL_REQUIRES(m_mutex) {
 
 void V3ErrorGuarded::v3errorPrep(V3ErrorCode code) VL_REQUIRES(m_mutex) {
     m_errorStr.str("");
-    m_errorCode = code;
+    UASSERT_STATIC(m_message.isClear(), "Attempted v3errorPrep inside v3errorPrep...v3errorEnd");
+    m_message.init(code);
     m_errorContexted = false;
     m_errorSuppressed = false;
 }
 
-void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra)
+void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra, FileLine* fileline)
     VL_REQUIRES(m_mutex) {
     static bool s_firedTooMany = false;
-    v3errorEndGuts(sstr, extra);
+    v3errorEndGuts(sstr, extra, fileline);
+    m_message.clear();
     if (errorLimit() && errorCount() >= errorLimit() && !s_firedTooMany) {
         s_firedTooMany = true;
         // Recurses here
         v3errorEnd((v3errorPrep(V3ErrorCode::EC_FATALMANY),
                     (v3errorStr() << "Exiting due to too many errors encountered; --error-limit="
                                   << errorCount() << std::endl),
-                    v3errorStr()));
+                    v3errorStr()),
+                   "", nullptr);
         assert(0);  // LCOV_EXCL_LINE
         VL_UNREACHABLE;
     }
 }
 
 // cppcheck-has-bug-suppress constParameter
-void V3ErrorGuarded::v3errorEndGuts(std::ostringstream& sstr, const string& extra)
-    VL_REQUIRES(m_mutex) {
+void V3ErrorGuarded::v3errorEndGuts(std::ostringstream& sstr, const string& extra,
+                                    FileLine* fileline) VL_REQUIRES(m_mutex) {
     // 'extra' is appended to the message, and is is excluded in check for
     // duplicate messages. Currently used for reporting instance name.
 #if defined(__COVERITY__) || defined(__cppcheck__)
     if (m_errorCode == V3ErrorCode::EC_FATAL) __coverity_panic__(x);
 #endif
 
+    UASSERT_STATIC(!m_message.isClear(), "v3errorEnd() outside of v3errorPrep...v3errorEnd");
+    m_message.fileline(fileline);
+
     // Skip suppressed messages
     if (m_errorSuppressed
         // On debug, show only non default-off warning to prevent pages of warnings
-        && (!debug() || debug() < 3 || m_errorCode.defaultsOff()))
+        && (!debug() || debug() < 3 || m_message.code().defaultsOff()))
         return;
-    string msg = msgPrefix() + sstr.str();
+    string msg
+        = V3Error::warnContextBegin() + msgPrefix() + V3Error::warnContextEnd() + sstr.str();
 
     // If suppressed print only first line to reduce verbosity
     string firstLine = msg;
@@ -182,14 +191,7 @@ void V3ErrorGuarded::v3errorEndGuts(std::ostringstream& sstr, const string& extr
             msg.erase(pos);
         }
     }
-    // Trailing newline (generally not on messages) & remove dup newlines
-    {
-        msg += '\n';  // Trailing newlines generally not put on messages so add
-        string::size_type pos;
-        while ((pos = msg.find("\n\n")) != string::npos) msg.erase(pos + 1, 1);
-        while ((pos = msg_additional.find("\n\n")) != string::npos)
-            msg_additional.erase(pos + 1, 1);
-    }
+    msg += '\n';  // Trailing newlines generally not put on messages so add
     if (!extra.empty() && !m_errorSuppressed) {
         string extraMsg = VString::replaceSubstr(extra, V3Error::warnMore(), warnMoreSpaces());
         extraMsg = warnMoreSpaces() + extraMsg + "\n";
@@ -197,53 +199,64 @@ void V3ErrorGuarded::v3errorEndGuts(std::ostringstream& sstr, const string& extr
         msg.insert(pos + 1, extraMsg);
     }
     // Output
+    string text;
     if (
 #ifndef V3ERROR_NO_GLOBAL_
-        !(v3Global.opt.quietExit() && m_errorCode == V3ErrorCode::EC_FATALMANY)
+        !(v3Global.opt.quietExit() && m_message.code() == V3ErrorCode::EC_FATALMANY)
 #else
         true
 #endif
-    ) {
-        std::cerr << msg;
-    }
-    if (!m_errorSuppressed && !m_errorCode.severityInfo()) {
-        const bool anError = isError(m_errorCode, m_errorSuppressed);
-        if (m_errorCode != V3ErrorCode::EC_FATALMANY  // Not verbose on final too-many-errors error
-            && !m_describedEachWarn[m_errorCode]) {
-            m_describedEachWarn[m_errorCode] = true;
-            if (m_errorCode >= V3ErrorCode::EC_FIRST_NAMED) {
-                std::cerr << warnMoreSpaces() << "... For " << (anError ? "error" : "warning")
-                          << " description see " << m_errorCode.url() << endl;
-            } else if (m_errCount >= 1 && m_errorCode.severityFatal() && !m_tellInternal) {
+    )
+        text += msg;
+    if (m_errorSuppressed || m_message.code().severityInfo()) {
+        std::cerr << V3Error::stripMetaText(text, false);
+        m_message.text(text);
+#ifndef V3ERROR_NO_GLOBAL_
+        V3DiagSarif::pushMessage(m_message);
+#endif
+    } else {
+        const bool anError = isError(m_message.code(), m_errorSuppressed);
+        if (m_message.code()
+                != V3ErrorCode::EC_FATALMANY  // Not verbose on final too-many-errors error
+            && !m_describedEachWarn[m_message.code()]) {
+            m_describedEachWarn[m_message.code()] = true;
+            if (m_message.code() >= V3ErrorCode::EC_FIRST_NAMED) {
+                text += warnMoreSpaces() + "... For " + (anError ? "error" : "warning")
+                        + " description see " + m_message.code().url() + '\n';
+            } else if (m_errCount >= 1 && m_message.code().severityFatal() && !m_tellInternal) {
                 m_tellInternal = true;
-                std::cerr << warnMoreSpaces()
-                          << "... This fatal error may be caused by the earlier error(s);"
-                             " resolve those first."
-                          << endl;
+                text += warnMoreSpaces()
+                        + "... This fatal error may be caused by the earlier error(s);"
+                          " resolve those first.\n";
             } else if (!m_tellManual) {
                 m_tellManual = true;
-                std::cerr << warnMoreSpaces() << "... See the manual at " << m_errorCode.url()
-                          << " for more assistance." << endl;
+                text += warnMoreSpaces() + "... See the manual at " + m_message.code().url()
+                        + " for more assistance.\n";
             }
-            if (!m_pretendError[m_errorCode] && !m_errorCode.hardError()) {
-                std::cerr << warnMoreSpaces() << "... Use \"/* verilator lint_off "
-                          << m_errorCode.ascii()
-                          << " */\" and lint_on around source to disable this message." << endl;
-                if (m_errorCode.dangerous()) {
-                    std::cerr << warnMoreSpaces() << "*** See " << m_errorCode.url()
-                              << " before disabling this,\n";
-                    std::cerr << warnMoreSpaces()
-                              << "else you may end up with different sim results." << endl;
+            if (!m_pretendError[m_message.code()] && !m_message.code().hardError()) {
+                text += warnMoreSpaces() + "... Use \"/* verilator lint_off "
+                        + m_message.code().ascii()
+                        + " */\" and lint_on around source to disable this message.\n";
+                if (m_message.code().dangerous()) {
+                    text += warnMoreSpaces() + "*** See " + m_message.code().url()
+                            + " before disabling this,\n";
+                    text += warnMoreSpaces() + "else you may end up with different sim results.\n";
                 }
             }
         }
-        if (!msg_additional.empty()) std::cerr << msg_additional;
+        if (!msg_additional.empty()) text += msg_additional;
+        std::cerr << V3Error::stripMetaText(text, false);
+        m_message.text(text);
+#ifndef V3ERROR_NO_GLOBAL_
+        V3DiagSarif::pushMessage(m_message);
+#endif
+
         if (anError) {
             incErrors();
         } else {
             incWarnings();
         }
-        if (m_errorCode.severityFatal()) {
+        if (m_message.code().severityFatal()) {
             static bool inFatal = false;
             if (!inFatal) {
                 inFatal = true;
@@ -264,6 +277,7 @@ void V3ErrorGuarded::v3errorEndGuts(std::ostringstream& sstr, const string& extr
                     }
                     vlAbortOrExit();
                 }
+                V3DiagSarif::output(false);
 #endif
             }
 
@@ -295,6 +309,45 @@ string V3Error::lineStr(const char* filename, int lineno) VL_PURE {
     return out.str();
 }
 
+string V3Error::stripMetaText(const string& text, bool stripContext) VL_PURE {
+    string result;
+    result.reserve(text.size());
+    int inBegins = 0;
+    for (string::size_type pos = 0; pos < text.size();) {
+        // string::starts_with is C++20
+        if (0 == text.compare(pos, std::strlen("__WARN"), "__WARN")) {
+            if (0 == text.compare(pos, std::strlen("__WARNRELATED("), "__WARNRELATED(")) {
+                while (pos < text.size() && text[pos] != ')') ++pos;
+                if (pos < text.size() && text[pos] == ')') ++pos;
+                continue;
+            }
+            if (0
+                == text.compare(pos, std::strlen(V3Error::WARN_CONTEXT_BEGIN),
+                                V3Error::WARN_CONTEXT_BEGIN)) {
+                pos += std::strlen(V3Error::WARN_CONTEXT_BEGIN);
+                ++inBegins;
+                continue;
+            }
+            if (0
+                == text.compare(pos, std::strlen(V3Error::WARN_CONTEXT_END),
+                                V3Error::WARN_CONTEXT_END)) {
+                pos += std::strlen(V3Error::WARN_CONTEXT_END);
+                // No assert, is not VL_PURE
+                // UASSERT_STATIC(inBegins, "warnContextEnd() outside of warnContextBegin()");
+                --inBegins;
+                continue;
+            }
+        }
+        if (!stripContext || inBegins == 0) {
+            // Remove double newlines
+            if (!(text[pos] == '\n' && !result.empty() && result[result.size() - 1] == '\n'))
+                result += text[pos];
+        }
+        ++pos;
+    }
+    return result;
+}
+
 void V3Error::abortIfWarnings() {
     const bool exwarn = warnFatal() && warnCount();
     if (errorCount() && exwarn) {
@@ -324,16 +377,17 @@ std::ostringstream& V3Error::v3errorPrepFileLine(V3ErrorCode code, const char* f
     v3errorPrep(code) << file << ":" << std::dec << line << ": ";
     return v3errorStr();
 }
-void V3Error::v3errorEnd(std::ostringstream& sstr, const string& extra) VL_RELEASE(s().m_mutex) {
-    s().v3errorEnd(sstr, extra);
+void V3Error::v3errorEnd(std::ostringstream& sstr, const string& extra, FileLine* fileline)
+    VL_RELEASE(s().m_mutex) {
+    s().v3errorEnd(sstr, extra, fileline);
     V3Error::s().m_mutex.unlock();
 }
 
 void v3errorEnd(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex) {
-    V3Error::v3errorEnd(sstr);
+    V3Error::v3errorEnd(sstr, "", nullptr);
 }
 void v3errorEndFatal(std::ostringstream& sstr) VL_RELEASE(V3Error::s().m_mutex) {
-    V3Error::v3errorEnd(sstr);
+    V3Error::v3errorEnd(sstr, "", nullptr);
     assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE;
 }

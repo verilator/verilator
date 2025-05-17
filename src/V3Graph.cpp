@@ -112,7 +112,7 @@ void V3GraphVertex::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error
     if (FileLine* const flp = fileline()) {
         flp->v3errorEnd(nsstr);
     } else {
-        V3Error::v3errorEnd(nsstr);
+        V3Error::v3errorEnd(nsstr, "", nullptr);
     }
 }
 void V3GraphVertex::v3errorEndFatal(std::ostringstream& str) const

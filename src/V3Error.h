@@ -316,6 +316,42 @@ inline std::ostream& operator<<(std::ostream& os, const V3ErrorCode& rhs) {
 
 // ######################################################################
 
+class VErrorMessage final {
+    // TYPES
+    using FileLines = std::deque<const FileLine*>;
+    // MEMBERS
+    V3ErrorCode m_code;  // Which warning
+    string m_text;  // Warning message text
+    FileLine* m_fileline;  // Primary warning fileline
+    FileLines m_filelines;  // Additional referenced filelines
+public:
+    // CONSTRUCTORS
+    VErrorMessage() { clear(); }
+    ~VErrorMessage() = default;
+    void clear() { init(V3ErrorCode::EC_MIN); }
+    void init(V3ErrorCode code) {
+        m_code = code;
+        m_text = "";
+        m_fileline = nullptr;
+        m_filelines.clear();
+    }
+    // ACCESSORS
+    V3ErrorCode code() const { return m_code; }
+    bool isClear() const { return m_code == V3ErrorCode::EC_MIN; }
+    string text() const { return m_text; }
+    void text(const string& msg) { m_text = msg; }
+    FileLine* fileline() const { return m_fileline; }
+    void fileline(FileLine* fl) { m_fileline = fl; }
+    FileLines filelines() const { return m_filelines; }
+    // Returns identifier for use in warnRelated()
+    int pushFileline(const FileLine* fl) {
+        m_filelines.emplace_back(fl);
+        return m_filelines.size() - 1;
+    }
+};
+
+// ######################################################################
+
 class V3ErrorGuarded final {
     // Should only be used by V3ErrorGuarded::m_mutex is already locked
     // contains guarded members
@@ -328,11 +364,11 @@ public:
 private:
     static constexpr unsigned MAX_ERRORS = 50;  // Fatal after this may errors
 
+    // MEMBERS
     // Tell user to see manual, 0=not yet, 1=doit, 2=disable
     bool m_tellManual VL_GUARDED_BY(m_mutex) = false;
     bool m_tellInternal VL_GUARDED_BY(m_mutex) = false;
-    V3ErrorCode m_errorCode VL_GUARDED_BY(m_mutex)
-        = V3ErrorCode::EC_FATAL;  // Error string being formed will abort
+    VErrorMessage m_message VL_GUARDED_BY(m_mutex);  // Message being formed
     bool m_errorSuppressed VL_GUARDED_BY(m_mutex)
         = false;  // Error being formed should be suppressed
     MessagesSet m_messages VL_GUARDED_BY(m_mutex);  // Errors outputted, to remove dups
@@ -351,10 +387,13 @@ private:
     bool m_warnFatal VL_GUARDED_BY(m_mutex) = true;  // Option: --warnFatal Warnings are fatal
     std::ostringstream m_errorStr VL_GUARDED_BY(m_mutex);  // Error string being formed
 
+    // METHODS
     void v3errorPrep(V3ErrorCode code) VL_REQUIRES(m_mutex);
     std::ostringstream& v3errorStr() VL_REQUIRES(m_mutex) { return m_errorStr; }
-    void v3errorEnd(std::ostringstream& sstr, const string& extra = "") VL_REQUIRES(m_mutex);
-    void v3errorEndGuts(std::ostringstream& sstr, const string& extra) VL_REQUIRES(m_mutex);
+    void v3errorEnd(std::ostringstream& sstr, const string& extra, FileLine* fileline)
+        VL_REQUIRES(m_mutex);
+    void v3errorEndGuts(std::ostringstream& sstr, const string& extra, FileLine* fileline)
+        VL_REQUIRES(m_mutex);
 
 public:
     V3RecursiveMutex m_mutex;  // Make sure only single thread is in class
@@ -387,7 +426,7 @@ public:
     void errorLimit(int level) VL_REQUIRES(m_mutex) { m_errorLimit = level; }
     bool warnFatal() VL_REQUIRES(m_mutex) { return m_warnFatal; }
     void warnFatal(bool flag) VL_REQUIRES(m_mutex) { m_warnFatal = flag; }
-    V3ErrorCode errorCode() VL_REQUIRES(m_mutex) { return m_errorCode; }
+    V3ErrorCode errorCode() VL_REQUIRES(m_mutex) { return m_message.code(); }
     bool errorContexted() VL_REQUIRES(m_mutex) { return m_errorContexted; }
     int warnCount() VL_REQUIRES(m_mutex) { return m_warnCount; }
     bool errorSuppressed() VL_REQUIRES(m_mutex) { return m_errorSuppressed; }
@@ -399,6 +438,10 @@ public:
         m_describedEachWarn[code] = flag;
     }
     void suppressThisWarning() VL_REQUIRES(m_mutex);
+    string warnRelated(const FileLine* fl) VL_REQUIRES(m_mutex) {
+        const int id = m_message.pushFileline(fl);
+        return "__WARNRELATED("s + std::to_string(id) + ")";
+    }
     string warnContextNone() VL_REQUIRES(m_mutex) {
         errorContexted(true);
         return "";
@@ -479,6 +522,10 @@ public:
         s().incWarnings();
     }
     static void init();
+    static bool isError(V3ErrorCode code, bool supp) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const V3RecursiveLockGuard guard{s().m_mutex};
+        return s().isError(code, supp);
+    }
     static void abortIfErrors() {
         if (errorCount()) abortIfWarnings();
     }
@@ -493,6 +540,7 @@ public:
         s().pretendError(code, flag);
     }
     static string lineStr(const char* filename, int lineno) VL_PURE;
+    static string stripMetaText(const string& text, bool stripMeta) VL_PURE;
     static V3ErrorCode errorCode() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
         const V3RecursiveLockGuard guard{s().m_mutex};
         return s().errorCode();
@@ -503,7 +551,14 @@ public:
     }
 
     // When printing an error/warning, print prefix for multiline message
-    static string warnMore() VL_MT_SAFE { return "__WARNMORE__"; }
+    static constexpr const char* WARN_MORE = "__WARNMORE__";
+    static string warnMore() VL_MT_SAFE { return WARN_MORE; }
+    // When printing an error/warning, mark beginning of context information (can nest)
+    static constexpr const char* WARN_CONTEXT_BEGIN = "__WARNBEGIN__";
+    static string warnContextBegin() VL_MT_SAFE { return WARN_CONTEXT_BEGIN; }
+    // When printing an error/warning, mark end of context information (can nest)
+    static constexpr const char* WARN_CONTEXT_END = "__WARNEND__";
+    static string warnContextEnd() VL_MT_SAFE { return WARN_CONTEXT_END; }
     // This function marks place in error message from which point message
     // should be printed after information on the error code.
     // The post-processing is done in v3errorEnd function.
@@ -521,7 +576,7 @@ public:
         VL_ACQUIRE(s().m_mutex);
     static std::ostringstream& v3errorStr() VL_REQUIRES(s().m_mutex) { return s().v3errorStr(); }
     // static, but often overridden in classes.
-    static void v3errorEnd(std::ostringstream& sstr, const string& extra = "")
+    static void v3errorEnd(std::ostringstream& sstr, const string& extra, FileLine* fileline)
         VL_RELEASE(s().m_mutex);
     static void vlAbort();
 };

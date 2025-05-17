@@ -80,7 +80,7 @@ void V3Number::v3errorEnd(const std::ostringstream& str) const VL_RELEASE(V3Erro
     } else if (m_fileline) {
         m_fileline->v3errorEnd(nsstr);
     } else {
-        V3Error::v3errorEnd(nsstr);
+        V3Error::v3errorEnd(nsstr, "", nullptr);
     }
 }
 

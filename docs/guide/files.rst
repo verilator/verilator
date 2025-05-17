@@ -112,6 +112,8 @@ In specific debug and other modes, it also creates:
 
 .. list-table::
 
+   * - *{prefix}*\ .sarif
+     - SARIF diagnostics (from --diagnostics-sarif)
    * - *{prefix}*\ .tree.json
      - JSON tree information (from --json-only)
    * - *{prefix}*\ .tree.meta.json

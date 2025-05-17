@@ -224,7 +224,7 @@ string FileLine::xmlDetailedLocation() const {
 
 string FileLine::lineDirectiveStrg(int enterExit) const {
     return "`line "s + cvtToStr(lastLineno()) + " \""
-           + V3OutFormatter::quoteNameControls(filename()) + "\" " + cvtToStr(enterExit) + "\n";
+           + V3OutFormatter::quoteNameControls(filename()) + "\" " + cvtToStr(enterExit) + '\n';
 }
 
 void FileLine::lineDirective(const char* textp, int& enterExitRef) {
@@ -422,15 +422,15 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
     // duplicate messages. Currently used for reporting instance name.
     std::ostringstream nsstr;  // sstr with fileline prefix and context
     std::ostringstream wsstr;  // sstr for waiver (no fileline) with context
-    if (lastLineno()) nsstr << this;
+    if (lastLineno()) nsstr << V3Error::warnContextBegin() << this << V3Error::warnContextEnd();
     nsstr << sstr.str();
     wsstr << sstr.str();
-    nsstr << "\n";
-    wsstr << "\n";
+    nsstr << '\n';
+    wsstr << '\n';
     std::ostringstream extrass;  // extra spaced out for prefix
     if (!extra.empty()) {
-        extrass << std::setw(ascii().length()) << " "
-                << ": " << extra;
+        extrass << V3Error::warnContextBegin() << std::setw(ascii().length()) << " "
+                << ": " << V3Error::warnContextEnd() << extra;
     }
     if (warnIsOff(V3Error::s().errorCode())) {
         V3Error::s().suppressThisWarning();
@@ -440,26 +440,29 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
             wsstr << add;
             nsstr << add;
         }
-        m_waive = V3Config::waive(this, V3Error::s().errorCode(), wsstr.str());
+        const string waiverText = V3Error::stripMetaText(wsstr.str(), false);
+        m_waive = V3Config::waive(this, V3Error::s().errorCode(), waiverText);
         if (m_waive) {
             V3Error::s().suppressThisWarning();
         } else {
-            V3Waiver::addEntry(V3Error::s().errorCode(), filename(), wsstr.str());
+            V3Waiver::addEntry(V3Error::s().errorCode(), filename(), waiverText);
         }
     }
-    V3Error::v3errorEnd(nsstr, extrass.str());
+    V3Error::v3errorEnd(nsstr, extrass.str(), this);
 }
 
 string FileLine::warnMore() const VL_REQUIRES(V3Error::s().m_mutex) {
     if (lastLineno()) {
-        return V3Error::warnMore() + string(ascii().size(), ' ') + ": ";
+        return V3Error::warnContextBegin() + V3Error::warnMore() + string(ascii().size(), ' ')
+               + ": " + V3Error::warnContextEnd();
     } else {
         return V3Error::warnMore();
     }
 }
 string FileLine::warnOther() const VL_REQUIRES(V3Error::s().m_mutex) {
     if (lastLineno()) {
-        return V3Error::warnMore() + ascii() + ": ";
+        return V3Error::s().warnRelated(this) + V3Error::warnContextBegin() + V3Error::warnMore()
+               + ascii() + ": " + V3Error::warnContextEnd();
     } else {
         return V3Error::warnMore();
     }
@@ -501,7 +504,7 @@ string FileLine::warnContext() const {
             && sourceLine.length() >= static_cast<size_t>(lastColumn() - 1)) {
             string linestr = cvtToStr(firstLineno());
             while (linestr.size() < 5) linestr = ' ' + linestr;
-            out += linestr + " | " + sourceLine + "\n";
+            out += linestr + " | " + sourceLine + '\n';
             out += std::string(linestr.size(), ' ') + " | ";
             out += string((firstColumn() - 1), ' ') + '^';
             // Can't use UASSERT_OBJ used in warnings already inside the error end handler
@@ -509,10 +512,11 @@ string FileLine::warnContext() const {
                 // Note lastColumn() can be <= firstColumn() in some weird preproc expansions
                 out += string((lastColumn() - firstColumn() - 1), '~');
             }
-            out += "\n";
+            out += '\n';
         }
+        return V3Error::warnContextBegin() + out + V3Error::warnContextEnd();
     }
-    return out;
+    return "";
 }
 
 string FileLine::warnContextParent() const VL_REQUIRES(V3Error::s().m_mutex) {

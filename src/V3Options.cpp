@@ -1276,6 +1276,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-decoration", CbCall, [this, fl]() { decorations(fl, "medium"); });
     DECL_OPTION("-decorations", CbVal, [this, fl](const char* optp) { decorations(fl, optp); });
     DECL_OPTION("-no-decoration", CbCall, [this, fl]() { decorations(fl, "none"); });
+    DECL_OPTION("-diagnostics-sarif", OnOff, &m_diagnosticsSarif);
+    DECL_OPTION("-diagnostics-sarif-output", CbVal, [this](const char* optp) {
+        m_diagnosticsSarifOutput = optp;
+        m_diagnosticsSarif = true;
+    });
     DECL_OPTION("-dpi-hdr-only", OnOff, &m_dpiHdrOnly);
     DECL_OPTION("-dump-", CbPartialMatch, [this](const char* optp) { m_dumpLevel[optp] = 3; });
     DECL_OPTION("-no-dump-", CbPartialMatch, [this](const char* optp) { m_dumpLevel[optp] = 0; });

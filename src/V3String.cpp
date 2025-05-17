@@ -230,6 +230,32 @@ string VString::removeWhitespace(const string& str) {
     return result;
 }
 
+string VString::trimWhitespace(const string& str) {
+    string result;
+    result.reserve(str.size());
+    string add;
+    bool newline = false;
+    for (const char c : str) {
+        if (newline && std::isspace(c)) continue;
+        if (c == '\n') {
+            add = "\n";
+            newline = true;
+            continue;
+        }
+        if (std::isspace(c)) {
+            add += c;
+            continue;
+        }
+        if (!add.empty()) {
+            result += add;
+            newline = false;
+            add.clear();
+        }
+        result += c;
+    }
+    return result;
+}
+
 bool VString::isIdentifier(const string& str) {
     for (const char c : str) {
         if (!isIdentifierChar(c)) return false;

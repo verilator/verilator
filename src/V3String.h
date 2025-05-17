@@ -116,6 +116,8 @@ public:
     static string spaceUnprintable(const string& str) VL_PURE;
     // Remove any whitespace
     static string removeWhitespace(const string& str);
+    // Trim leading/trailing whitespace on each line
+    static string trimWhitespace(const string& str);
     // Return true if only identifer or ""
     static bool isIdentifier(const string& str);
     // Return true if char is valid character in C identifiers

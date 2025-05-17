@@ -345,6 +345,8 @@ detailed descriptions of these arguments.
     --decorations <level>       Set output comment and spacing level
     --default-language <lang>   Default language to parse
      +define+<var>=<value>      Set preprocessor define
+    --diagnostics-sarif         Enable SARIF diagnostics output
+    --diagnostics-sarif-output <filename>  Set SARIF diagnostics output file
     --dpi-hdr-only              Only produce the DPI header file
     --dump-<srcfile>            Enable dumping everything in source file
     --dump-defines              Show preprocessor defines with -E
