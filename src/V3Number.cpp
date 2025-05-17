@@ -1877,8 +1877,8 @@ V3Number& V3Number::opShiftL(const V3Number& lhs, const V3Number& rhs) {
         if (rhs.bitIs1(bit)) return *this;  // shift of over 2^32 must be zero
     }
     const uint32_t rhsval = rhs.toUInt();
-    for (int bit = 0; bit < width(); ++bit) {
-        if (bit >= static_cast<int>(rhsval)) setBit(bit, lhs.bitIs(bit - rhsval));
+    for (uint32_t bit = 0; bit < static_cast<uint32_t>(width()); ++bit) {
+        if (bit >= rhsval) setBit(bit, lhs.bitIs(bit - rhsval));
     }
     return *this;
 }
