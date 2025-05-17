@@ -19,6 +19,9 @@ Suppressed = {}
 
 for s in [
         ' exited with ',  # Is hit; driver.py filters out
+        ' loading non-variable',  # Instead 'storing to parameter' or syntax error
+        '--pipe-filter: Can\'t pipe: ',  # Can't test
+        '--pipe-filter: fork failed: ',  # Can't test
         'Assigned pin is neither input nor output',  # Instead earlier error
         'Define missing argument \'',  # Instead get Define passed too many arguments
         'Define or directive not defined: `',  # Instead V3ParseImp will warn
@@ -26,17 +29,15 @@ for s in [
         'Enum ranges must be integral, per spec',  # Hard to hit
         'Expecting define formal arguments. Found: ',  # Instead define syntax error
         'Import package not found: ',  # Errors earlier, until future parser released
+        'Member selection of non-struct/union object \'',  # Instead dotted expression error or V3Link other
         'Return with return value isn\'t underneath a function',  # Hard to hit, get other bad return messages
         'Syntax error parsing real: \'',  # Instead can't lex the number
         'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance ',  # Instead get syntax error
         'Unsupported: Ranges ignored in port-lists',  # Hard to hit
         'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
         # Not yet analyzed
-        ' loading non-variable',
         '--pipe-filter protocol error, unexpected: ',
         '--pipe-filter returned bad status',
-        '--pipe-filter: Can\'t pipe: ',
-        '--pipe-filter: fork failed: ',
         'Argument needed for string.',
         'Array initialization has too few elements, need element ',
         'Assignment pattern with no members',
@@ -44,7 +45,6 @@ for s in [
         'Can\'t read annotation file: ',
         'Can\'t resolve module reference: \'',
         'Can\'t write file: ',
-        'Exceeded limit of ',
         'Extern declaration\'s scope is not a defined class',
         'File not found: ',
         'Format to $display-like function must have constant format string',
@@ -52,7 +52,6 @@ for s in [
         'Illegal +: or -: select; type already selected, or bad dimension: ',
         'Illegal bit or array select; type already selected, or bad dimension: ',
         'Illegal range select; type already selected, or bad dimension: ',
-        'Member selection of non-struct/union object \'',
         'Modport item is not a function/task: ',
         'Modport item is not a variable: ',
         'Modport item not found: ',
@@ -67,7 +66,6 @@ for s in [
         'String of ',
         'Symbol matching ',
         'Unexpected connection to arrayed port',
-        'Unmatched brackets in variable substitution in file: ',
         'Unsized numbers/parameters not allowed in streams.',
         'Unsupported RHS tristate construct: ',
         'Unsupported or syntax error: Unsized range in instance or other declaration',
@@ -75,7 +73,6 @@ for s in [
         'Unsupported tristate construct (not in propagation graph): ',
         'Unsupported tristate port expression: ',
         'Unsupported: $bits for queue',
-        'Unsupported: $c can\'t generate wider than 64 bits',
         'Unsupported: &&& expression',
         'Unsupported: +%- range',
         'Unsupported: +/- range',
@@ -100,7 +97,6 @@ for s in [
         'Unsupported: [] dimensions',
         'Unsupported: \'default :/\' constraint',
         'Unsupported: \'{} .* patterns',
-        'Unsupported: always[] (in property expression)',
         'Unsupported: assertion items in clocking blocks',
         'Unsupported: don\'t know how to deal with ',
         'Unsupported: eventually[] (in property expression)',
@@ -110,11 +106,9 @@ for s in [
         'Unsupported: no_inline for tasks',
         'Unsupported: property port \'local\'',
         'Unsupported: repeat event control',
-        'Unsupported: s_always (in property expression)',
         'Unsupported: static cast to ',
         'Unsupported: super',
         'Unsupported: this.super',
-        'Unsupported: trireg',
         'Unsupported: with[] stream expression',
 ]:
     Suppressed[s] = True
@@ -183,7 +177,7 @@ def check():
     read_outputs()
 
     print("Number of suppressions = " + str(len(Suppressed)))
-    print("Coverage = %3.1f%%" % (100 - int(100 * len(Suppressed) / len(Messages))))
+    print("Coverage = %3.1f%%" % (100 - (100 * len(Suppressed) / len(Messages))))
     print()
 
     print("Checking for v3error/v3warn messages in sources without")

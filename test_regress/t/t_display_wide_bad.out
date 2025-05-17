@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_display_wide_bad.v:25:10: Unsupported: Exceeded limit of 8192 bits for any $display-like arguments
+   25 |          $write("[%0t] cyc==%0d crc=%d\n", $time, cyc, {crc, crc, crc, crc});   
+      |          ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

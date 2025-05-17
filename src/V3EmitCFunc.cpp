@@ -256,8 +256,9 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
             return;  // LCOV_EXCL_LINE
         }
         if (argp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
-            dispp->v3error("Exceeded limit of " + cvtToStr(VL_VALUE_STRING_MAX_WIDTH)
-                           + " bits for any $display-like arguments");
+            dispp->v3warn(E_UNSUPPORTED, "Unsupported: Exceeded limit of "
+                                             + cvtToStr(VL_VALUE_STRING_MAX_WIDTH)
+                                             + " bits for any $display-like arguments");
         }
         if (argp->widthMin() > 8 && fmtLetter == 'c') {
             // Technically legal, but surely not what the user intended.
