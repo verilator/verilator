@@ -20,11 +20,11 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Ast.h"
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
 #include "V3Parse.h"
-#include "V3ParseSym.h"
 
 #include <algorithm>
 #include <deque>
@@ -108,7 +108,6 @@ struct VMemberQualifiers final {
 
 struct V3ParseBisonYYSType final {
     FileLine* fl;
-    AstNode* scp;  // Symbol table scope for future lookups
     int token;  // Read token, aka tok
     VBaseOverride baseOverride;
     bool flag = false;  // Passed up some rules
@@ -142,7 +141,6 @@ class V3ParseImp final {
     // MEMBERS
     AstNetlist* const m_rootp;  // Root of the design
     VInFilter* const m_filterp;  // Reading filter
-    V3ParseSym* m_symp;  // Symbol table
 
     V3Lexer* m_lexerp = nullptr;  // Current FlexLexer
     static V3ParseImp* s_parsep;  // Current THIS, bison() isn't class based
@@ -269,27 +267,13 @@ public:
     size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf, max_size); }
 
     //==== Symbol tables
-    V3ParseSym* symp() { return m_symp; }
-    AstPackage* unitPackage(FileLine* /*fl*/) {
-        // Find one made earlier?
-        const VSymEnt* const rootSymp
-            = symp()->symRootp()->findIdFlat(AstPackage::dollarUnitName());
-        AstPackage* pkgp;
-        if (!rootSymp) {
-            pkgp = parsep()->rootp()->dollarUnitPkgAddp();
-            symp()->reinsert(pkgp, symp()->symRootp());  // Don't push/pop scope as they're global
-        } else {
-            pkgp = VN_AS(rootSymp->nodep(), Package);
-        }
-        return pkgp;
-    }
+    AstPackage* unitPackage(FileLine* /*fl*/) { return parsep()->rootp()->dollarUnitPkgAddp(); }
 
 public:
     // CONSTRUCTORS
-    V3ParseImp(AstNetlist* rootp, VInFilter* filterp, V3ParseSym* parserSymp)
+    V3ParseImp(AstNetlist* rootp, VInFilter* filterp)
         : m_rootp{rootp}
-        , m_filterp{filterp}
-        , m_symp{parserSymp} {
+        , m_filterp{filterp} {
         m_lexKwdLast = stateVerilogRecent();
         m_timeLastUnit = v3Global.opt.timeDefaultUnit();
     }

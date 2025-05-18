@@ -13,6 +13,7 @@ Verilator 5.037 devel
 
 **Other:**
 
+* Support redeclaring type as non-type; major parsing change (#2412).
 * Support constrained random for associative arrays (#5985) (#5986). [Yilou Wang]
 * Support assignments to concatenations with impure RHS (#6002). [Ryszard Rozak, Antmicro Ltd.]
 * Support SARIF JSON diagnostic output with `--diagnostics-sarif`. (#6017)

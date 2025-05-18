@@ -48,8 +48,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 V3ParseImp* V3ParseImp::s_parsep = nullptr;
 
-int V3ParseSym::s_anonNum = 0;
-
 //######################################################################
 // Parser constructor
 
@@ -60,11 +58,6 @@ V3ParseImp::~V3ParseImp() {
     m_numberps.clear();
     lexDestroy();
     parserClear();
-
-    if (debug() >= 9) {
-        UINFO(0, "~V3ParseImp\n");
-        symp()->dumpSelf(cout, "-vpi: ");
-    }
 }
 
 //######################################################################
@@ -695,43 +688,7 @@ void V3ParseImp::tokenPipelineSym() {
     int token = yylval.token;
     if (token == yaID__LEX || token == yaID__CC || token == yaID__aTYPE) {
         importIfInStd(yylval.fl, *(yylval.strp));
-    }
-    if (token == yaID__LEX || token == yaID__CC) {
-        const VSymEnt* foundp;
-        if (const VSymEnt* const look_underp = V3ParseImp::parsep()->symp()->nextId()) {
-            UINFO(7, "   tokenPipelineSym: next id lookup forced under " << look_underp << endl);
-            // if (debug() >= 7) V3ParseImp::parsep()->symp()->dumpSelf(cout, " -symtree: ");
-            foundp = look_underp->findIdFlat(*(yylval.strp));
-            // "consume" it.  Must set again if want another token under temp scope
-            V3ParseImp::parsep()->symp()->nextId(nullptr);
-        } else {
-            UINFO(7, "   tokenPipelineSym: find upward "
-                         << V3ParseImp::parsep()->symp()->symCurrentp() << " for '"
-                         << *(yylval.strp) << "'" << endl);
-            // if (debug()>=9) V3ParseImp::parsep()->symp()->symCurrentp()->dumpSelf(cout,
-            // " -findtree: ", true);
-            foundp = V3ParseImp::parsep()->symp()->symCurrentp()->findIdFallback(*(yylval.strp));
-        }
-        if (!foundp && !m_afterColonColon) {  // Check if the symbol can be found in std
-            // The following keywords from this file are hardcoded for detection in the parser:
-            // "mailbox", "process", "randomize", "semaphore", "std"
-            AstPackage* const stdpkgp = v3Global.rootp()->stdPackagep();
-            if (stdpkgp) {
-                VSymEnt* const stdsymp = stdpkgp->user4u().toSymEnt();
-                foundp = stdsymp->findIdFallback(*(yylval.strp));
-            }
-        }
-        if (foundp) {
-            AstNode* const scp = foundp->nodep();
-            yylval.scp = scp;
-            UINFO(7, "   tokenPipelineSym: Found " << scp << endl);
-            if (token == yaID__LEX) {  // i.e. not yaID__CC
-                token = yaID__ETC;
-            }
-        } else {  // Not found
-            yylval.scp = nullptr;
-            if (token == yaID__LEX) token = yaID__ETC;
-        }
+        if (token == yaID__LEX) token = yaID__ETC;
     }
     m_afterColonColon = token == yP_COLONCOLON;
     yylval.token = token;
@@ -744,7 +701,6 @@ int V3ParseImp::tokenToBison() {
     m_bisonLastFileline = yylval.fl;
     m_tokenLastBison = yylval;
 
-    // yylval.scp = nullptr;   // Symbol table not yet needed - no packages
     if (debug() >= 6 || debugFlex() >= 6
         || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
         cout << "tokenToBison  " << yylval << endl;
@@ -776,8 +732,8 @@ std::ostream& operator<<(std::ostream& os, const V3ParseBisonYYSType& rhs) {
 //======================================================================
 // V3Parse functions
 
-V3Parse::V3Parse(AstNetlist* rootp, VInFilter* filterp, V3ParseSym* symp) {
-    m_impp = new V3ParseImp{rootp, filterp, symp};
+V3Parse::V3Parse(AstNetlist* rootp, VInFilter* filterp) {
+    m_impp = new V3ParseImp{rootp, filterp};
 }
 V3Parse::~V3Parse() {  //
     VL_DO_CLEAR(delete m_impp, m_impp = nullptr);

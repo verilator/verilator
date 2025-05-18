@@ -1,8 +1,8 @@
-%Error: t/t_lint_import_name2_bad.v:7:8: Importing from missing package 'missing'
+%Error: t/t_lint_import_name2_bad.v:7:8: Import package not found: 'missing'
     7 | import missing::sigs;
       |        ^~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_lint_import_name2_bad.v:9:8: Importing from missing package 'missing'
+%Error: t/t_lint_import_name2_bad.v:9:8: Import package not found: 'missing'
     9 | import missing::*;
       |        ^~~~~~~
 %Error: Exiting due to
