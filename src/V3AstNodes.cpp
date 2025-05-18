@@ -830,12 +830,13 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
 
 const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
                                                bool assertOn) const VL_MT_STABLE {
+    static constexpr int MAX_TYPEDEF_DEPTH = 1000;
     const AstNodeDType* nodep = this;
-    while (true) {
-        if (VL_UNLIKELY(VN_IS(nodep, MemberDType) || VN_IS(nodep, ParamTypeDType)
-                        || VN_IS(nodep, RefDType)  //
-                        || (VN_IS(nodep, ConstDType) && skipConst)  //
-                        || (VN_IS(nodep, EnumDType) && skipEnum))) {
+    for (int depth = 0; depth < MAX_TYPEDEF_DEPTH; ++depth) {
+        if (VN_IS(nodep, MemberDType) || VN_IS(nodep, ParamTypeDType) || VN_IS(nodep, RefDType)  //
+            || VN_IS(nodep, RequireDType)  //
+            || (VN_IS(nodep, ConstDType) && skipConst)  //
+            || (VN_IS(nodep, EnumDType) && skipEnum)) {
             if (const AstNodeDType* subp = nodep->subDTypep()) {
                 nodep = subp;
                 continue;
@@ -846,6 +847,8 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
         }
         return nodep;
     }
+    nodep->v3error("Recursive type definition, or over " << MAX_TYPEDEF_DEPTH << " types deep");
+    return nullptr;
 }
 
 bool AstNodeDType::similarDType(const AstNodeDType* samep) const {

@@ -2026,6 +2026,18 @@ class WidthVisitor final : public VNVisitor {
         userIterateChildren(nodep, nullptr);
         nodep->widthFromSub(nodep->subDTypep());
     }
+    void visit(AstRequireDType* nodep) override {
+        userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
+        if (AstNodeDType* const dtp = VN_CAST(nodep->lhsp(), NodeDType)) {
+            nodep->replaceWith(dtp->unlinkFrBack());
+        } else {
+            if (nodep->lhsp())
+                nodep->lhsp()->v3error("Expected data type, not a "
+                                       << nodep->lhsp()->prettyTypeName());
+            nodep->replaceWith(new AstVoidDType{nodep->fileline()});
+        }
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstCastDynamic* nodep) override {
         nodep->dtypeChgWidthSigned(32, 1, VSigning::SIGNED);  // Spec says integer return
         userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());

@@ -324,14 +324,15 @@ class LinkParseVisitor final : public VNVisitor {
         }
         if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
-            AstNodeDType* dtypep = VN_CAST(nodep->valuep(), NodeDType);
+            AstNode* dtypep = nodep->valuep();
             if (dtypep) {
                 dtypep->unlinkFrBack();
             } else {
                 dtypep = new AstVoidDType{nodep->fileline()};
             }
-            AstNode* const newp = new AstParamTypeDType{nodep->fileline(), nodep->varType(),
-                                                        nodep->name(), VFlagChildDType{}, dtypep};
+            AstNode* const newp = new AstParamTypeDType{
+                nodep->fileline(), nodep->varType(), nodep->name(), VFlagChildDType{},
+                new AstRequireDType{nodep->fileline(), dtypep}};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;

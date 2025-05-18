@@ -4218,8 +4218,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // Get the value of type parameter passed to the class instance,
                     // to print the helpful error message.
                     const AstNodeDType* typep = refp->refDTypep();
-                    if (const AstParamTypeDType* const paramp = VN_CAST(typep, ParamTypeDType)) {
-                        typep = paramp->subDTypep();
+                    while (true) {
+                        if (const AstParamTypeDType* const atypep
+                            = VN_CAST(typep, ParamTypeDType)) {
+                            typep = atypep->subDTypep();
+                            continue;
+                        }
+                        if (const AstRequireDType* const atypep = VN_CAST(typep, RequireDType)) {
+                            typep = atypep->subDTypep();
+                            continue;
+                        }
+                        break;
                     }
                     typep->v3error("Attempting to extend using non-class");
                 }

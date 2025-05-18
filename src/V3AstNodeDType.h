@@ -123,6 +123,7 @@ public:
     bool similarDType(const AstNodeDType* samep) const;
     // Iff has a non-null subDTypep(), as generic node function
     virtual AstNodeDType* subDTypep() const VL_MT_STABLE { return nullptr; }
+    virtual AstNodeDType* subDType2p() const VL_MT_STABLE { return nullptr; }
     virtual bool isFourstate() const;
     // Ideally an IEEE $typename
     virtual string prettyDTypeName(bool) const { return prettyTypeName(); }
@@ -361,6 +362,9 @@ public:
     AstNodeDType* getChild2DTypep() const override { return keyChildDTypep(); }
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         return m_refDTypep ? m_refDTypep : childDTypep();
+    }
+    AstNodeDType* subDType2p() const override VL_MT_STABLE {
+        return m_keyDTypep ? m_keyDTypep : keyChildDTypep();
     }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
@@ -1173,6 +1177,33 @@ public:
         v3fatalSrc("call isCompound on subdata type, not reference");
         return false;
     }
+};
+class AstRequireDType final : public AstNodeDType {
+    // @astgen op1 := lhsp : Optional[AstNode<AstNodeExpr|AstNodeDType>]
+    //
+    // Require a generic node type (typically AstParseRef become a type.
+public:
+    AstRequireDType(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER_RequireDType(fl) {
+        this->lhsp(lhsp);
+    }
+    ASTGEN_MEMBERS_AstRequireDType;
+    // METHODS
+    bool similarDTypeNode(const AstNodeDType* samep) const override {
+        const AstRequireDType* const asamep = VN_DBG_AS(samep, RequireDType);
+        return subDTypep()->similarDType(asamep->subDTypep());
+    }
+    AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
+    AstNodeDType* subDTypep() const override VL_MT_STABLE {
+        // Used for recursive definition checking
+        if (AstNodeDType* const dtp = VN_CAST(lhsp(), NodeDType))
+            return dtp;
+        else
+            return nullptr;
+    }
+    int widthAlignBytes() const override { V3ERROR_NA_RETURN(1); }
+    int widthTotalBytes() const override { V3ERROR_NA_RETURN(1); }
+    bool isCompound() const override { V3ERROR_NA_RETURN(false); }
 };
 class AstSampleQueueDType final : public AstNodeDType {
     // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
