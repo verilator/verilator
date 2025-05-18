@@ -6523,9 +6523,9 @@ class WidthVisitor final : public VNVisitor {
     // LRM 6.22.2 Equivalent types
     bool isEquivalentDType(const AstNodeDType* lhs, const AstNodeDType* rhs) {
         // a) If two types match, they are equivalent.
-        lhs = lhs ? lhs->skipRefp() : nullptr;
-        rhs = rhs ? rhs->skipRefp() : nullptr;
         if (!lhs || !rhs) return false;
+        lhs = lhs->skipRefp();
+        rhs = rhs->skipRefp();
         if (lhs == rhs) return true;
         // If both are basic types, check if they are the same type
         if (VN_IS(lhs, BasicDType) && VN_IS(rhs, BasicDType)) {
@@ -6597,6 +6597,16 @@ class WidthVisitor final : public VNVisitor {
         return true;
     }
 
+    static bool isAggregateType(const AstNode* nodep) {
+        if (!nodep) return false;
+        const AstNodeDType* dtypep = nodep->dtypep();
+        if (!dtypep) return false;
+        dtypep = dtypep->skipRefp();
+        if (!dtypep) return false;
+        return VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)
+               || VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, AssocArrayDType);
+    }
+
     void visit_cmp_eq_gt(AstNodeBiop* nodep, bool realok) {
         // CALLER: AstEq, AstGt, ..., AstLtS
         // Real allowed if and only if real_lhs set
@@ -6614,30 +6624,24 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
 
-            const AstNodeDType* const lhsDType = nodep->lhsp()->dtypep();
-            const AstNodeDType* const rhsDType = nodep->rhsp()->dtypep();
+            const bool isAggrLhs = isAggregateType(nodep->lhsp());
+            const bool isAggrRhs = isAggregateType(nodep->rhsp());
 
-            const auto isAggregateType = [](const AstNode* nodep) {
-                if (!nodep) return false;
-                const AstNodeDType* dtypep = nodep->dtypep();
-                if (!dtypep) return false;
-                dtypep = dtypep->skipRefp();
-                if (!dtypep) return false;
-                return VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)
-                       || VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, AssocArrayDType);
-            };
+            if ((isAggrLhs || isAggrRhs) && nodep->lhsp() && nodep->rhsp()) {
+                const AstNodeDType* const lhsDType = nodep->lhsp()->dtypep();
+                const AstNodeDType* const rhsDType = nodep->rhsp()->dtypep();
 
-            if ((isAggregateType(nodep->lhsp()) || isAggregateType(nodep->rhsp()))
-                && !isEquivalentDType(lhsDType, rhsDType)) {
-                nodep->v3error("Comparison requires matching data types\n"
-                               << nodep->warnMore() << "... left-hand data type: "
-                               << lhsDType->prettyDTypeNameQ() << "\n"
-                               << nodep->warnMore()
-                               << "... right-hand data type: " << rhsDType->prettyDTypeNameQ());
-                AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
-                nodep->replaceWith(newp);
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                return;
+                if (lhsDType && rhsDType && !isEquivalentDType(lhsDType, rhsDType)) {
+                    nodep->v3error("Comparison requires matching data types\n"
+                                   << nodep->warnMore() << "... left-hand data type: "
+                                   << lhsDType->prettyDTypeNameQ() << "\n"
+                                   << nodep->warnMore() << "... right-hand data type: "
+                                   << rhsDType->prettyDTypeNameQ());
+                    AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
             } else if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
                 if (!realok) {
                     nodep->v3error("Real is illegal operand to ?== operator");
