@@ -51,6 +51,9 @@ module t;
     // queue vs scalar
     if (queue_var == 1) begin end
 
+    // scalar vs queue
+    if (1 == queue_var) begin end
+
     // queue with diff type
     if (q1 == q2) begin end
 

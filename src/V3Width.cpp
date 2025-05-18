@@ -6520,58 +6520,69 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
-    bool isComparableDType(const AstNodeDType* lhs, const AstNodeDType* rhs) {
-        if (!lhs || !rhs) return false;
-        lhs = lhs->skipRefp();
-        rhs = rhs->skipRefp();
+    // LRM 6.22.2 Equivalent types
+    bool isEquivalentDType(const AstNodeDType* lhs, const AstNodeDType* rhs) {
+        // a) If two types match, they are equivalent.
+        lhs = lhs ? lhs->skipRefp() : nullptr;
+        rhs = rhs ? rhs->skipRefp() : nullptr;
         if (!lhs || !rhs) return false;
         if (lhs == rhs) return true;
+        if (VN_IS(lhs, BasicDType) && VN_IS(rhs, BasicDType)) {
+            const auto* lb = VN_CAST(lhs, BasicDType);
+            const auto* rb = VN_CAST(rhs, BasicDType);
+            if (lb->keyword() == rb->keyword()) return true;
+        }
+        if (VN_IS(lhs, ClassRefDType) && VN_IS(rhs, ClassRefDType)) {
+            const auto* lb = VN_CAST(lhs, ClassRefDType);
+            const auto* rb = VN_CAST(rhs, ClassRefDType);
+            if (lb->classp() == rb->classp()) return true;
+        }
 
+        // d) Unpacked fixed-size array types are equivalent if they have equivalent element types
+        // and equal size; the actual range bounds may differ. Note that the element type of a
+        // multidimensional array is itself an array type.
         if (VN_IS(lhs, UnpackArrayDType) && VN_IS(rhs, UnpackArrayDType)) {
             const AstUnpackArrayDType* lhsp = VN_CAST(lhs, UnpackArrayDType);
             const AstUnpackArrayDType* rhsp = VN_CAST(rhs, UnpackArrayDType);
             const int lsz = lhsp->elementsConst();
             const int rsz = rhsp->elementsConst();
             if (lsz >= 0 && rsz >= 0 && lsz != rsz) return false;
-
-            const AstNodeDType* lsub = lhsp->subDTypep()->skipRefp();
-            const AstNodeDType* rsub = rhsp->subDTypep()->skipRefp();
-            return lsub && rsub && lsub->similarDType(rsub);
+            return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
         }
 
+        // e) Dynamic array, associative array, and queue types are equivalent if they are the same
+        // kind of array (dynamic, associative, or queue), have equivalent index types (for
+        // associative arrays), and have equivalent element types.
         if (VN_IS(lhs, DynArrayDType) && VN_IS(rhs, DynArrayDType)) {
-            const AstNodeDType* lsub = lhs->subDTypep()->skipRefp();
-            const AstNodeDType* rsub = rhs->subDTypep()->skipRefp();
-            return lsub && rsub && lsub->similarDType(rsub);
+            const AstDynArrayDType* lhsp = VN_CAST(lhs, DynArrayDType);
+            const AstDynArrayDType* rhsp = VN_CAST(rhs, DynArrayDType);
+            return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
         }
 
         if (VN_IS(lhs, QueueDType) && VN_IS(rhs, QueueDType)) {
-            const AstNodeDType* lsub = lhs->subDTypep()->skipRefp();
-            const AstNodeDType* rsub = rhs->subDTypep()->skipRefp();
-            return lsub && rsub && lsub->similarDType(rsub);
+            const AstQueueDType* lhsp = VN_CAST(lhs, QueueDType);
+            const AstQueueDType* rhsp = VN_CAST(rhs, QueueDType);
+            return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
         }
 
         if (VN_IS(lhs, AssocArrayDType) && VN_IS(rhs, AssocArrayDType)) {
             const AstAssocArrayDType* lhsp = VN_CAST(lhs, AssocArrayDType);
             const AstAssocArrayDType* rhsp = VN_CAST(rhs, AssocArrayDType);
-            const AstNodeDType* lval = lhsp->subDTypep()->skipRefp();
-            const AstNodeDType* rval = rhsp->subDTypep()->skipRefp();
-            const AstNodeDType* lkey = lhsp->keyDTypep()->skipRefp();
-            const AstNodeDType* rkey = rhsp->keyDTypep()->skipRefp();
-
-            return lval && rval && lkey && rkey && lval->similarDType(rval)
-                   && lkey->similarDType(rkey);
+            return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep())
+                   && isEquivalentDType(lhsp->keyDTypep(), rhsp->keyDTypep());
         }
 
-        // If either side is aggregate but the types didn't match above, reject
-        const bool lhsAgg = VN_IS(lhs, QueueDType) || VN_IS(lhs, DynArrayDType)
-                            || VN_IS(lhs, UnpackArrayDType) || VN_IS(lhs, AssocArrayDType);
-        const bool rhsAgg = VN_IS(rhs, QueueDType) || VN_IS(rhs, DynArrayDType)
-                            || VN_IS(rhs, UnpackArrayDType) || VN_IS(rhs, AssocArrayDType);
-        if (lhsAgg || rhsAgg) return false;
+        // c) Packed arrays, packed structures, packed unions, and built-in integral
+        // types are equivalent if they contain the same number of total bits, are either all
+        // 2-state or all 4-state, and are either all signed or all unsigned.
+        if (lhs->isIntegralOrPacked() && rhs->isIntegralOrPacked()) {
+            if (lhs->width() != rhs->width()) return false;
+            if (lhs->isFourstate() != rhs->isFourstate()) return false;
+            if (lhs->isSigned() != rhs->isSigned()) return false;
+            return true;
+        }
 
-        // Both are scalar (or non-aggregate), allow
-        return true;
+        return false;
     }
 
     void visit_cmp_eq_gt(AstNodeBiop* nodep, bool realok) {
@@ -6591,10 +6602,10 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
 
-            AstNodeDType* const lhsDType = nodep->lhsp()->dtypep();
-            AstNodeDType* const rhsDType = nodep->rhsp()->dtypep();
+            const AstNodeDType* const lhsDType = nodep->lhsp()->dtypep();
+            const AstNodeDType* const rhsDType = nodep->rhsp()->dtypep();
 
-            if (lhsDType && rhsDType && !isComparableDType(lhsDType, rhsDType)) {
+            if (!isEquivalentDType(lhsDType, rhsDType)) {
                 nodep->v3error("Comparison requires matching data types\n"
                                << nodep->warnMore() << "... left-hand data type: "
                                << lhsDType->prettyDTypeNameQ() << "\n"
