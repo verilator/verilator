@@ -6527,49 +6527,61 @@ class WidthVisitor final : public VNVisitor {
         rhs = rhs ? rhs->skipRefp() : nullptr;
         if (!lhs || !rhs) return false;
         if (lhs == rhs) return true;
+        // If both are basic types, check if they are the same type
         if (VN_IS(lhs, BasicDType) && VN_IS(rhs, BasicDType)) {
             const auto* lb = VN_CAST(lhs, BasicDType);
             const auto* rb = VN_CAST(rhs, BasicDType);
-            if (lb->keyword() == rb->keyword()) return true;
-        }
-        if (VN_IS(lhs, ClassRefDType) && VN_IS(rhs, ClassRefDType)) {
-            const auto* lb = VN_CAST(lhs, ClassRefDType);
-            const auto* rb = VN_CAST(rhs, ClassRefDType);
-            if (lb->classp() == rb->classp()) return true;
+            if (lb->isString() != rb->isString()) return false;
         }
 
         // d) Unpacked fixed-size array types are equivalent if they have equivalent element types
         // and equal size; the actual range bounds may differ. Note that the element type of a
         // multidimensional array is itself an array type.
-        if (VN_IS(lhs, UnpackArrayDType) && VN_IS(rhs, UnpackArrayDType)) {
-            const AstUnpackArrayDType* lhsp = VN_CAST(lhs, UnpackArrayDType);
-            const AstUnpackArrayDType* rhsp = VN_CAST(rhs, UnpackArrayDType);
-            const int lsz = lhsp->elementsConst();
-            const int rsz = rhsp->elementsConst();
-            if (lsz >= 0 && rsz >= 0 && lsz != rsz) return false;
-            return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
+        const bool lhsIsUnpackArray = VN_IS(lhs, UnpackArrayDType);
+        const bool rhsIsUnpackArray = VN_IS(rhs, UnpackArrayDType);
+        if (lhsIsUnpackArray || rhsIsUnpackArray) {
+            if (VN_IS(lhs, UnpackArrayDType) && VN_IS(rhs, UnpackArrayDType)) {
+                const AstUnpackArrayDType* const lhsp = VN_CAST(lhs, UnpackArrayDType);
+                const AstUnpackArrayDType* const rhsp = VN_CAST(rhs, UnpackArrayDType);
+                const int lsz = lhsp->elementsConst();
+                const int rsz = rhsp->elementsConst();
+                if (lsz >= 0 && rsz >= 0 && lsz != rsz) return false;
+                return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
+            }
+            return false;
         }
 
         // e) Dynamic array, associative array, and queue types are equivalent if they are the same
         // kind of array (dynamic, associative, or queue), have equivalent index types (for
         // associative arrays), and have equivalent element types.
-        if (VN_IS(lhs, DynArrayDType) && VN_IS(rhs, DynArrayDType)) {
-            const AstDynArrayDType* lhsp = VN_CAST(lhs, DynArrayDType);
-            const AstDynArrayDType* rhsp = VN_CAST(rhs, DynArrayDType);
-            return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
-        }
+        const bool lhsIsDynArray = VN_IS(lhs, DynArrayDType);
+        const bool rhsIsDynArray = VN_IS(rhs, DynArrayDType);
+        const bool lhsIsQueue = VN_IS(lhs, QueueDType);
+        const bool rhsIsQueue = VN_IS(rhs, QueueDType);
+        const bool lhsIsAssocArray = VN_IS(lhs, AssocArrayDType);
+        const bool rhsIsAssocArray = VN_IS(rhs, AssocArrayDType);
 
-        if (VN_IS(lhs, QueueDType) && VN_IS(rhs, QueueDType)) {
-            const AstQueueDType* lhsp = VN_CAST(lhs, QueueDType);
-            const AstQueueDType* rhsp = VN_CAST(rhs, QueueDType);
-            return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
-        }
+        if (lhsIsDynArray || rhsIsDynArray || lhsIsQueue || rhsIsQueue || lhsIsAssocArray
+            || rhsIsAssocArray) {
+            if (VN_IS(lhs, DynArrayDType) && VN_IS(rhs, DynArrayDType)) {
+                const AstDynArrayDType* const lhsp = VN_CAST(lhs, DynArrayDType);
+                const AstDynArrayDType* const rhsp = VN_CAST(rhs, DynArrayDType);
+                return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
+            }
 
-        if (VN_IS(lhs, AssocArrayDType) && VN_IS(rhs, AssocArrayDType)) {
-            const AstAssocArrayDType* lhsp = VN_CAST(lhs, AssocArrayDType);
-            const AstAssocArrayDType* rhsp = VN_CAST(rhs, AssocArrayDType);
-            return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep())
-                   && isEquivalentDType(lhsp->keyDTypep(), rhsp->keyDTypep());
+            if (VN_IS(lhs, QueueDType) && VN_IS(rhs, QueueDType)) {
+                const AstQueueDType* const lhsp = VN_CAST(lhs, QueueDType);
+                const AstQueueDType* const rhsp = VN_CAST(rhs, QueueDType);
+                return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
+            }
+
+            if (VN_IS(lhs, AssocArrayDType) && VN_IS(rhs, AssocArrayDType)) {
+                const AstAssocArrayDType* const lhsp = VN_CAST(lhs, AssocArrayDType);
+                const AstAssocArrayDType* const rhsp = VN_CAST(rhs, AssocArrayDType);
+                return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep())
+                       && isEquivalentDType(lhsp->keyDTypep(), rhsp->keyDTypep());
+            }
+            return false;
         }
 
         // c) Packed arrays, packed structures, packed unions, and built-in integral
@@ -6582,7 +6594,7 @@ class WidthVisitor final : public VNVisitor {
             return true;
         }
 
-        return false;
+        return true;
     }
 
     void visit_cmp_eq_gt(AstNodeBiop* nodep, bool realok) {
@@ -6605,7 +6617,18 @@ class WidthVisitor final : public VNVisitor {
             const AstNodeDType* const lhsDType = nodep->lhsp()->dtypep();
             const AstNodeDType* const rhsDType = nodep->rhsp()->dtypep();
 
-            if (!isEquivalentDType(lhsDType, rhsDType)) {
+            const auto isAggregateType = [](const AstNode* nodep) {
+                if (!nodep) return false;
+                const AstNodeDType* dtypep = nodep->dtypep();
+                if (!dtypep) return false;
+                dtypep = dtypep->skipRefp();
+                if (!dtypep) return false;
+                return VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)
+                       || VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, AssocArrayDType);
+            };
+
+            if ((isAggregateType(nodep->lhsp()) || isAggregateType(nodep->rhsp()))
+                && !isEquivalentDType(lhsDType, rhsDType)) {
                 nodep->v3error("Comparison requires matching data types\n"
                                << nodep->warnMore() << "... left-hand data type: "
                                << lhsDType->prettyDTypeNameQ() << "\n"
