@@ -742,10 +742,10 @@ public:
 class AstCellRef final : public AstNodeExpr {
     // As-of-yet unlinkable reference into a cell
     // @astgen op1 := cellp : AstNode
-    // @astgen op2 := exprp : AstNodeExpr
+    // @astgen op2 := exprp : AstNode<AstNodeExpr|AstNodeDType>
     string m_name;  // Cell name
 public:
-    AstCellRef(FileLine* fl, const string& name, AstNode* cellp, AstNodeExpr* exprp)
+    AstCellRef(FileLine* fl, const string& name, AstNode* cellp, AstNode* exprp)
         : ASTGEN_SUPER_CellRef(fl)
         , m_name{name} {
         this->cellp(cellp);
@@ -1206,8 +1206,8 @@ public:
 class AstDot final : public AstNodeExpr {
     // A dot separating paths in an AstVarXRef, AstFuncRef or AstTaskRef
     // These are eliminated in the link stage
-    // @astgen op1 := lhsp : AstNodeExpr
-    // @astgen op2 := rhsp : AstNodeExpr
+    // @astgen op1 := lhsp : AstNode<AstNodeExpr|AstNodeDType>
+    // @astgen op2 := rhsp : AstNode<AstNodeExpr|AstNodeDType>
     //
     // We don't have a list of elements as it's probably legal to do '(foo.bar).(baz.bap)'
     const bool m_colon;  // Is a "::" instead of a "." (lhs must be package/class)

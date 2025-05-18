@@ -529,7 +529,10 @@ public:
                                      "Unsupported: Interfaced port on top level module");
                     }
                     ifacerefp->v3error("Parent instance's interface is not found: "
-                                       << AstNode::prettyNameQ(ifacerefp->ifaceName()));
+                                       << AstNode::prettyNameQ(ifacerefp->ifaceName()) << '\n'
+                                       << ifacerefp->warnMore()
+                                       << "... Perhaps intended an interface instantiation but "
+                                          "are missing parenthesis (IEEE 1800-2023 25.3)?");
                 } else {
                     ifacerefp->v3warn(
                         E_UNSUPPORTED,
@@ -1550,11 +1553,11 @@ class LinkDotFindVisitor final : public VNVisitor {
                     if (tdefp && tdefp->name() == nodep->name() && m_statep->forPrimary()) {
                         UINFO(8, "Replacing type of" << nodep << endl
                                                      << " with " << tdefp << endl);
-                        AstNodeDType* const newType = tdefp->childDTypep();
-                        AstNodeDType* const oldType = nodep->childDTypep();
+                        AstNodeDType* const newDtp = tdefp->childDTypep();
+                        AstNodeDType* const oldDtp = nodep->childDTypep();
 
-                        oldType->replaceWith(newType->cloneTree(false));
-                        oldType->deleteTree();
+                        oldDtp->replaceWith(newDtp->cloneTree(false));
+                        oldDtp->deleteTree();
                     }
                 }
             }
@@ -2477,7 +2480,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
     void checkNoDot(AstNode* nodep) {
         if (VL_UNLIKELY(m_ds.m_dotPos != DP_NONE)) {
-            // UINFO(9, indent() << "ds=" << m_ds.ascii() << endl);
+            UINFO(9, indent() << "ds=" << m_ds.ascii() << endl);
             nodep->v3error("Syntax error: Not expecting "
                            << nodep->type() << " under a " << nodep->backp()->type()
                            << " in dotted expression\n"
@@ -2606,6 +2609,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // e.g. parmaeterization or referring to a "class (type T) extends T"
         // Resolve it so later Class:: references into its base classes work
         symIterateNull(nodep, m_statep->getNodeSym(nodep));
+    }
+
+    void replaceWithCheckBreak(AstNode* oldp, AstNodeDType* newp) {
+        // Flag now to avoid V3Broken throwing an internal error
+        if (oldp->wouldBreak(newp)) {
+            newp->v3error(
+                "Data type used where a non-data type is expected: " << newp->prettyNameQ());
+        }
+        oldp->replaceWith(newp);
     }
 
     // Marks the current module to be revisited after the initial AST iteration
@@ -2951,7 +2963,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 } else {  // Dot midpoint
-                    AstNodeExpr* newp = nodep->rhsp()->unlinkFrBack();
+                    AstNode* newp = nodep->rhsp()->unlinkFrBack();
                     if (m_ds.m_unresolvedCell) {
                         AstCellRef* const crp = new AstCellRef{
                             nodep->fileline(), nodep->name(), nodep->lhsp()->unlinkFrBack(), newp};
@@ -3059,7 +3071,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             return;
         } else if (m_ds.m_dotPos == DP_MEMBER) {
             // Found a Var, everything following is membership.  {scope}.{var}.HERE {member}
-            AstNodeExpr* const varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
+            AstNodeExpr* const varEtcp = VN_AS(m_ds.m_dotp->lhsp()->unlinkFrBack(), NodeExpr);
             AstNodeExpr* const newp
                 = new AstMemberSel{nodep->fileline(), varEtcp, VFlagChildDType{}, nodep->name()};
             if (m_ds.m_dotErr) {
@@ -3348,6 +3360,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 ok = true;
                 m_ds.m_dotPos = DP_MEMBER;
                 m_ds.m_dotText = "";
+            } else if (AstClass* const defp = VN_CAST(foundp->nodep(), Class)) {
+                if (allowVar) {
+                    AstRefDType* const newp = new AstRefDType{nodep->fileline(), nodep->name()};
+                    replaceWithCheckBreak(nodep, newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    ok = true;
+                    m_ds.m_dotText = "";
+                }
             } else if (AstEnumItem* const valuep = VN_CAST(foundp->nodep(), EnumItem)) {
                 if (allowVar) {
                     AstNode* const newp
@@ -3385,6 +3405,22 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         nodep->replaceWith(funcRefp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     }
+                }
+            } else if (AstTypedef* const defp = VN_CAST(foundp->nodep(), Typedef)) {
+                ok = m_ds.m_dotPos == DP_NONE || m_ds.m_dotPos == DP_SCOPE;
+                if (ok) {
+                    AstRefDType* const refp = new AstRefDType{nodep->fileline(), nodep->name()};
+                    refp->typedefp(defp);
+                    replaceWithCheckBreak(nodep, refp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                }
+            } else if (AstParamTypeDType* const defp = VN_CAST(foundp->nodep(), ParamTypeDType)) {
+                ok = (m_ds.m_dotPos == DP_NONE || m_ds.m_dotPos == DP_SCOPE);
+                if (ok) {
+                    AstRefDType* const refp = new AstRefDType{nodep->fileline(), nodep->name()};
+                    refp->refDTypep(defp);
+                    replaceWithCheckBreak(nodep, refp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
             }
             if (!ok) {
@@ -3795,7 +3831,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_MEMBER) {
             // Found a Var, everything following is method call.
             // {scope}.{var}.HERE {method} ( ARGS )
-            AstNodeExpr* const varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
+            AstNodeExpr* const varEtcp = VN_AS(m_ds.m_dotp->lhsp()->unlinkFrBack(), NodeExpr);
             AstNodeExpr* argsp = nullptr;
             if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
             AstNode* const newp = new AstMethodCall{nodep->fileline(), varEtcp, VFlagChildDType{},
@@ -4373,7 +4409,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             VL_DO_DANGLING(cpackagep->unlinkFrBack()->deleteTree(), cpackagep);
         }
-        if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
+        if (m_ds.m_dotp && (m_ds.m_dotPos == DP_PACKAGE || m_ds.m_dotPos == DP_SCOPE)) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
                         "Bad package link");
             auto* const cpackagerefp = VN_AS(m_ds.m_dotp->lhsp(), ClassOrPackageRef);

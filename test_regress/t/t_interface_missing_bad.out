@@ -1,17 +1,11 @@
-%Error: t/t_interface_missing_bad.v:14:13: Pin is not an in/out/inout/interface: 'foo'
-   14 |    foo_intf foo
-      |             ^~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_interface_missing_bad.v:14:4: Can't find typedef/interface: 'foo_intf'
    14 |    foo_intf foo
       |    ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_interface_missing_bad.v:20:4: Cannot find file containing interface: 'foo_intf'
    20 |    foo_intf the_foo ();
       |    ^~~~~~~~
 %Error: t/t_interface_missing_bad.v:25:15: Found definition of 'the_foo' as a CELL but expected a variable
    25 |         .foo (the_foo)
       |               ^~~~~~~
-%Error: t/t_interface_missing_bad.v:25:10: Instance attempts to connect to 'foo', but it is a variable
-   25 |         .foo (the_foo)
-      |          ^~~
 %Error: Exiting due to

@@ -1,7 +1,3 @@
-%Error-PKGNODECL: t/t_lint_import_name2_bad.v:7:8: Package/class 'missing' not found, and needs to be predeclared (IEEE 1800-2023 26.3)
-    7 | import missing::sigs;
-      |        ^~~~~~~
-                  ... For error description see https://verilator.org/warn/PKGNODECL?v=latest
 %Error: t/t_lint_import_name2_bad.v:7:8: Importing from missing package 'missing'
     7 | import missing::sigs;
       |        ^~~~~~~

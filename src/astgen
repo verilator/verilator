@@ -968,7 +968,31 @@ def write_ast_impl(filename):
                     emitBlock("));\n")
             # Node's broken rules can be specialized by declaring broken()
             emitBlock("    return Ast{t}::broken();\n", t=node.name)
-            emitBlock("}}\n", t=node.name)
+            emitBlock("}}\n")
+
+            emitBlock(
+                "bool Ast{t}::wouldBreakGen(const AstNode* const oldp, const AstNode* const newp) const {{\n",
+                t=node.name)
+            for i in range(1, 5):
+                op = node.getOp(i)
+                if op is None:
+                    continue
+                name, _, _, legals = op
+                if legals != '':
+                    # 'this' is a parent, where oldp replacing newp as op1p, must follow op1p's rules
+                    # Could also be on a list, we don't check for speed reasons and as V3Broken doesn't
+                    emitBlock("    if (oldp == op{i}p() && !(", i=i)
+                    eor = ""
+                    for legal in legals.split('|'):
+                        emitBlock("{eor}privateTypeTest<Ast{legal}>(newp)",
+                                  eor=eor,
+                                  name=name,
+                                  legal=legal)
+                        eor = " || "
+                    emitBlock(")) return true;\n")
+            # Node's broken rules can be specialized by declaring broken()
+            emitBlock("    return false;\n")
+            emitBlock("}}\n")
 
             emitBlock("void Ast{t}::cloneRelinkGen() {{\n", t=node.name)
             if node.superClass.name != 'Node':
@@ -1042,6 +1066,7 @@ def write_ast_macros(filename):
             Ast{t}* clonep() const {{ return static_cast<Ast{t}*>(AstNode::clonep()); }}
             Ast{t}* addNext(Ast{t}* nodep) {{ return static_cast<Ast{t}*>(AstNode::addNext(this, nodep)); }}
             const char* brokenGen() const override;
+            bool wouldBreakGen(const AstNode* const oldp, const AstNode* const newp) const override;
             void cloneRelinkGen() override;
             void dumpTreeJsonOpGen(std::ostream& str, const string& indent) const override;
             void dumpJsonGen(std::ostream& str) const;

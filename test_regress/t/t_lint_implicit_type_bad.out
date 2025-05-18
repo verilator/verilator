@@ -1,5 +1,11 @@
-%Error: t/t_lint_implicit_type_bad.v:15:11: syntax error, unexpected IDENTIFIER-for-type
+%Error: t/t_lint_implicit_type_bad.v:15:11: Data type used where a non-data type is expected: 'imp_typedef_conflict'
    15 |    assign imp_typedef_conflict = 1'b1;
       |           ^~~~~~~~~~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_lint_implicit_type_bad.v:16:11: Data type used where a non-data type is expected: 'imp_Cls_conflict'
+   16 |    assign imp_Cls_conflict = 1'b1;
+      |           ^~~~~~~~~~~~~~~~
+%Error: t/t_lint_implicit_type_bad.v:17:11: Data type used where a non-data type is expected: 'imp_PARAM_conflict'
+   17 |    assign imp_PARAM_conflict = 1'b1;
+      |           ^~~~~~~~~~~~~~~~~~
 %Error: Exiting due to

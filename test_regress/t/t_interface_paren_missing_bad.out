@@ -1,6 +1,6 @@
-%Error: t/t_interface_paren_missing_bad.v:13:9: Interface port declaration 'intf_i' doesn't have corresponding port
+%Error: t/t_interface_paren_missing_bad.v:13:4: Parent instance's interface is not found: 'intf'
                                               : ... Perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
    13 |    intf intf_i;
-      |         ^~~~~~
+      |    ^~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

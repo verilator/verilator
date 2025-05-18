@@ -316,6 +316,7 @@ private:
     int tokenPipelineId(int token) VL_MT_DISABLED;
     void tokenPipelineSym() VL_MT_DISABLED;
     size_t tokenPipeScanIdInst(size_t depth) VL_MT_DISABLED;
+    size_t tokenPipeScanIdType(size_t depth) VL_MT_DISABLED;
     size_t tokenPipeScanBracket(size_t depth) VL_MT_DISABLED;
     size_t tokenPipeScanParam(size_t depth, bool forInst) VL_MT_DISABLED;
     size_t tokenPipeScanTypeEq(size_t depth) VL_MT_DISABLED;
