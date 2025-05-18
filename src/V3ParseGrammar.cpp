@@ -262,7 +262,6 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
         // Parser needs to know what is a type
         AstNode* const newp = new AstTypedefFwd{fileline, name};
         AstNode::addNext<AstNode, AstNode>(nodep, newp);
-        SYMP->reinsert(newp);
     }
     // Don't set dtypep in the ranging;
     // We need to autosize parameters and integers separately

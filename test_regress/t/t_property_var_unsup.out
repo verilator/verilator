@@ -9,7 +9,4 @@
 %Error-UNSUPPORTED: t/t_property_var_unsup.v:24:31: Unsupported: property variable default value
    24 |    property with_def(int nine = 9);
       |                               ^
-%Error: Internal Error: t/t_property_var_unsup.v:7:8: ../V3ParseSym.h:#: Symbols suggest ending PROPERTY 'prop' but parser thinks ending MODULE 't'
-    7 | module t ( 
-      |        ^
-                        ... This fatal error may be caused by the earlier error(s); resolve those first.
+%Error: Exiting due to

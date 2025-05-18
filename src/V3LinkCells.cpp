@@ -105,7 +105,6 @@ class LinkCellsVisitor final : public VNVisitor {
 
     // STATE
     VInFilter* const m_filterp;  // Parser filter
-    V3ParseSym* m_parseSymp;  // Parser symbol table
 
     // Below state needs to be preserved between each module call.
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -141,7 +140,7 @@ class LinkCellsVisitor final : public VNVisitor {
             // If file not found, make AstNotFoundModule, rather than error out.
             // We'll throw the error when we know the module will really be needed.
             const string prettyName = AstNode::prettyName(modName);
-            V3Parse parser{v3Global.rootp(), m_filterp, m_parseSymp};
+            V3Parse parser{v3Global.rootp(), m_filterp};
             // true below -> other simulators treat modules in link-found files as library cells
             parser.parseFile(nodep->fileline(), prettyName, true, "");
             V3Error::abortIfErrors();
@@ -607,9 +606,8 @@ class LinkCellsVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    LinkCellsVisitor(AstNetlist* nodep, VInFilter* filterp, V3ParseSym* parseSymp)
+    LinkCellsVisitor(AstNetlist* nodep, VInFilter* filterp)
         : m_filterp{filterp}
-        , m_parseSymp{parseSymp}
         , m_mods{nodep} {
         if (v3Global.opt.hierChild()) {
             const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
@@ -631,7 +629,7 @@ public:
 //######################################################################
 // Link class functions
 
-void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp, V3ParseSym* parseSymp) {
+void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp) {
     UINFO(4, __FUNCTION__ << ": " << endl);
-    { LinkCellsVisitor{nodep, filterp, parseSymp}; }
+    { LinkCellsVisitor{nodep, filterp}; }
 }

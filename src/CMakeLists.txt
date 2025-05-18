@@ -142,7 +142,6 @@ set(HEADERS
     V3Param.h
     V3Parse.h
     V3ParseImp.h
-    V3ParseSym.h
     V3PchAstMT.h
     V3PchAstNoMT.h
     V3PreExpr.h

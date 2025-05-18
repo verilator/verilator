@@ -26,7 +26,6 @@
 class AstNetlist;
 class VInFilter;
 class V3ParseImp;
-class V3ParseSym;
 
 //============================================================================
 
@@ -38,7 +37,7 @@ class V3Parse final {
 
 public:
     // We must allow reading multiple files into one parser
-    V3Parse(AstNetlist* rootp, VInFilter* filterp, V3ParseSym* symp) VL_MT_DISABLED;
+    V3Parse(AstNetlist* rootp, VInFilter* filterp) VL_MT_DISABLED;
     ~V3Parse() VL_MT_DISABLED;
 
     // METHODS
