@@ -119,6 +119,8 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
             m_constp = constp;
             m_msb = constp->widthMin() - 1;
         }
+        // updateBitRange(), limitBitRangeToLsb(), and polarity() must be called during ascending
+        // back to the root.
         void updateBitRange(const AstCCast* castp) {
             m_msb = std::min(m_msb, m_lsb + castp->width() - 1);
         }
@@ -467,6 +469,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         // Don't restore m_polarity for Xor as it counts parity of the entire tree
         if (!isXorTree()) m_polarity = !m_polarity;
         if (m_leafp && castp) m_leafp->updateBitRange(castp);
+        if (m_leafp) m_leafp->polarity(!m_leafp->polarity());
     }
     void visit(AstWordSel* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
@@ -479,7 +482,6 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     void visit(AstVarRef* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
         m_leafp->setLeaf(nodep);
-        m_leafp->polarity(m_polarity);
     }
     void visit(AstConst* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
