@@ -127,7 +127,8 @@ static void makeToStringMiddle(AstClass* nodep) {
         if (const auto* const varp = VN_CAST(itemp, Var)) {
             if (!varp->isParam() && !varp->isInternal()
                 && !(varp->dtypeSkipRefp()->basicp()
-                     && varp->dtypeSkipRefp()->basicp()->isRandomGenerator())) {
+                     && (varp->dtypeSkipRefp()->basicp()->isRandomGenerator()
+                     || varp->dtypeSkipRefp()->basicp()->isStdRandomGenerator()))) {
                 string stmt = "out += \"";
                 stmt += comma;
                 comma = ", ";

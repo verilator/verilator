@@ -55,6 +55,7 @@ enum ClassRandom : uint8_t {
     NONE,  // randomize() is not called
     IS_RANDOMIZED,  // randomize() is called
     IS_RANDOMIZED_INLINE,  // randomize() with args is called
+    IS_STD_RANDOMIZED,  //std::randomize() is called
 };
 
 // ######################################################################
@@ -359,7 +360,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
         if (nodep->name() != "randomize") return;
         AstClass* classp = m_classp;
-        //cout<<" Current class is "<< classp<<endl;;
         if (const AstMethodCall* const methodCallp = VN_CAST(nodep, MethodCall)) {
             if (const AstClassRefDType* const classRefp
                 = VN_CAST(methodCallp->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
@@ -371,22 +371,10 @@ class RandomizeMarkVisitor final : public VNVisitor {
             markMembers(classp);
         }
         if (nodep->classOrPackagep()->name() == "std") {
-            //cout<<"Mark rand class or pack  " << nodep->classOrPackagep()<< endl;
-            // std randomization call
             for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 if (!argp) continue;
                 AstNodeExpr* exprp = argp->exprp();
-                // AstVar* fromVarp = nullptr;  // If nodep is a method call, this is its receiver
-                // if (AstMethodCall* methodCallp = VN_CAST(nodep, MethodCall)) {
-                //     if (AstMemberSel* const memberSelp = VN_CAST(methodCallp->fromp(),
-                //     MemberSel)) {
-                //         fromVarp = memberSelp->varp();
-                //     } else {
-                //         AstVarRef* const varrefp = VN_AS(methodCallp->fromp(), VarRef);
-                //         fromVarp = varrefp->varp();
-                //     }
-                // }
                 while (exprp) {
                     AstVar* randVarp = nullptr;
                     if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
@@ -397,17 +385,19 @@ class RandomizeMarkVisitor final : public VNVisitor {
                         randVarp = varrefp->varp();
                         exprp = nullptr;
                     }
-                    // if (randVarp == fromVarp) break;
                     UASSERT_OBJ(randVarp, nodep, "No rand variable found");
                     AstNode* backp = randVarp;
-                    //cout<< backp <<endl;
                     while (backp && (!VN_IS(backp, Class) && !VN_IS(backp, NodeModule)))
                         backp = backp->backp();
-                    RandomizeMode randMode = {};
-                    randMode.usesMode = true;
-                    randVarp->user1(randMode.asInt);
-                    VN_IS(backp, Class) ? VN_AS(backp, Class)->user1(IS_RANDOMIZED_INLINE)
-                                        : VN_AS(backp, NodeModule)->user1(IS_RANDOMIZED_INLINE);
+                    // RandomizeMode randMode = {};
+                    // randMode.usesMode = true;
+                    // randVarp->user1(randMode.asInt);
+                    VN_IS(backp, Class) ? VN_AS(backp, Class)->user1(IS_STD_RANDOMIZED)
+                                        : VN_AS(backp, NodeModule)->user1(IS_STD_RANDOMIZED);
+                    // if(VN_IS(backp, Class)) {
+                    //     randVarp->user2(true);
+                    //     randVarp->user3p(backp);
+                    // }
                 }
             }
             return;
@@ -415,7 +405,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
         for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
             AstArg* const argp = VN_CAST(pinp, Arg);
             if (!argp) continue;
-            //std::cout<<"OH the classptr "<< classp<<endl;
             classp->user1(IS_RANDOMIZED_INLINE);
             AstNodeExpr* exprp = argp->exprp();
             AstVar* fromVarp = nullptr;  // If nodep is a method call, this is its receiver
@@ -1296,9 +1285,10 @@ class RandomizeVisitor final : public VNVisitor {
     V3UniqueNames m_inlineUniqueNames;  // For generating unique function names
     V3UniqueNames m_modeUniqueNames{"__Vmode"};  // For generating unique rand/constraint
                                                  // mode state var names
+    V3UniqueNames m_inlineUniqueStdName{"__VStdrand"};
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstVar* stdgenp = nullptr;
+    std::map<AstNodeModule*, AstVar*>  m_stdgen; // create a map from the module/class to the AST Var. 
     // AstVar* const m_stdgenp;  // VlStdRandomizer variable
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeStmt* m_stmtp = nullptr;  // Current statement
@@ -1322,10 +1312,16 @@ class RandomizeVisitor final : public VNVisitor {
         classp->user3p(genp);
     }
     AstVar* createStdRandomGenerator(AstNodeModule* const modp) {
-        if (stdgenp) return stdgenp;
-        stdgenp = new AstVar{modp->fileline(), VVarType::MEMBER, "stdrand",
+        auto it = m_stdgen.find(modp);
+        if (it == m_stdgen.end()) {
+            AstVar* const stdgenp = new AstVar{modp->fileline(), VVarType::MEMBER, "stdrand",
                              modp->findBasicDType(VBasicDTypeKwd::RANDOM_STDGENERATOR)};
-        return stdgenp;
+            modp->addStmtsp(stdgenp);
+            m_stdgen.emplace(modp, stdgenp);
+            return stdgenp;
+        }
+        return it->second;
+
     }
     AstVar* getRandomGenerator(AstClass* const classp) {
         if (classp->user3p()) return VN_AS(classp->user3p(), Var);
@@ -2231,32 +2227,42 @@ class RandomizeVisitor final : public VNVisitor {
         }
 
         if (nodep->name() != "randomize") return;
+        // AstNode* classOrModule = nodep;
+        // while (classOrModule && (!VN_IS(classOrModule, Class) && !VN_IS(classOrModule, NodeModule))){
+        //     classOrModule = classOrModule->backp();
+        // }
 
         if (nodep->classOrPackagep()->name() == "std") {
-            //cout<<m_modp<<endl;
-            AstVar* dum = createStdRandomGenerator(m_modp);
-            m_modp->addStmtsp(dum);
-            // VNRelinker handle;
-            // AstNode* stmtp = m_modp->stmtsp();
-            // m_modp->stmtsp()->unlinkFrBackWithNext(&handle);
-            // dum->addNextHere(stmtp);
-            // handle.relink(dum);
-            AstCMethodHard* const methodp = new AstCMethodHard{
-                nodep->fileline(), new AstVarRef{nodep->fileline(), dum, VAccess::READWRITE},
-                "basicRandomization"};  //"write_var"
-            methodp->dtypeSetVoid();
-
+            AstVar* const stdrand = createStdRandomGenerator(m_modp);
+            AstFunc* const randomizeFuncp = V3Randomize::newRandomizeStdFunc(
+            m_memberMap, m_modp, m_inlineUniqueStdName.get(nodep));
+            randomizeFuncp->addStmtsp(new AstAssign{
+                nodep->fileline(), new AstVarRef{nodep->fileline(), VN_AS(randomizeFuncp->fvarp(), Var), VAccess::WRITE} ,
+                new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 32, 1}});
             for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 if (!argp) continue;
                 AstVar* randVarp = nullptr;
                 AstNodeExpr* exprp = argp->exprp();
-                methodp->addPinsp(exprp->unlinkFrBack());
-                methodp->addPinsp(
-                    new AstConst{nodep->fileline(), AstConst::Unsized64{}, exprp->width()});
+                AstCMethodHard* const basicMethodp = new AstCMethodHard{
+                nodep->fileline(), new AstVarRef{nodep->fileline(), stdrand, VAccess::READWRITE},
+                "basicRandomization"};
+                const size_t width = exprp->width();
+                basicMethodp->addPinsp(exprp->unlinkFrBack());
+                basicMethodp->addPinsp(
+                    new AstConst{nodep->fileline(), AstConst::Unsized64{}, width});
+                basicMethodp->dtypeSetBit();
+                randomizeFuncp->addStmtsp(new AstAssign{
+                nodep->fileline(),
+                new AstVarRef{nodep->fileline(), VN_AS(randomizeFuncp->fvarp(), Var), VAccess::WRITE},
+                new AstAnd{nodep->fileline(),   new AstVarRef{nodep->fileline(), VN_AS(randomizeFuncp->fvarp(), Var), VAccess::READ}, basicMethodp}});
             }
-            nodep->replaceWith(methodp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            // Replace the node with a call to that function
+            nodep->name(randomizeFuncp->name());
+            nodep->taskp(randomizeFuncp);
+            nodep->dtypeFrom(randomizeFuncp->dtypep());
+            nodep->classOrPackagep(m_modp);
+            pushDeletep(nodep->pinsp()->unlinkFrBackWithNext());
             return;
         }
         handleRandomizeArgs(nodep);
@@ -2476,6 +2482,24 @@ AstFunc* V3Randomize::newRandomizeFunc(VMemberMap& memberMap, AstClass* nodep,
         nodep->addMembersp(funcp);
         memberMap.insert(nodep, funcp);
     }
+    return funcp;
+}
+
+AstFunc* V3Randomize::newRandomizeStdFunc(VMemberMap& memberMap, AstNodeModule* nodep,
+                                       const std::string& name) {
+    AstFunc* funcp = nullptr;
+    v3Global.useRandomizeMethods(true);
+    AstNodeDType* const dtypep= nodep->findBitDType(32, 32, VSigning::SIGNED);  // IEEE says int return of 0/1
+    AstVar* const fvarp = new AstVar{nodep->fileline(), VVarType::MEMBER, name, dtypep};
+    fvarp->lifetime(VLifetime::AUTOMATIC);
+    fvarp->funcLocal(true);
+    fvarp->funcReturn(true);
+    fvarp->direction(VDirection::OUTPUT);
+    nodep->addStmtsp(funcp);
+    funcp = new AstFunc{nodep->fileline(), name, nullptr, fvarp};
+    funcp->dtypep(dtypep);
+    funcp->classMethod(true);
+    nodep->addStmtsp(funcp);
     return funcp;
 }
 

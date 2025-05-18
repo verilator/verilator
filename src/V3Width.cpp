@@ -6193,14 +6193,67 @@ class WidthVisitor final : public VNVisitor {
             }
         }
     }
-    // AstModule* getModule(AstNode* pkgItemp) {
-    //     while (pkgItemp->backp() && pkgItemp->backp()->nextp() == pkgItemp) {
-    //         if(VN_IS(pkgItemp, Module)) VN_CAST(pkgItemp, Module);
-    //         pkgItemp = pkgItemp->backp();
-    //     }
-    //     // return
-    // }
-    void handleStdRandomizeArgs(AstNodeFTaskRef* const nodep, AstClass* const classp) { return; }
+
+    void handleStdRandomizeArgs(AstNodeFTaskRef* const nodep) {
+        bool hasNonNullArgs = false;
+        AstConst* nullp = nullptr;
+        for (AstNode *pinp = nodep->pinsp(), *nextp = nullptr; pinp; pinp = nextp) {
+            nextp = pinp->nextp();
+            AstArg* const argp = VN_CAST(pinp, Arg);
+            if (!argp) continue;
+            AstVar* randVarp = nullptr;
+            AstNodeExpr* exprp = argp->exprp();
+            if (AstConst* const constp = VN_CAST(exprp, Const)) {
+                if (constp->num().isNull()) {
+                    nullp = constp;
+                    continue;
+                }
+            }
+            hasNonNullArgs = true;
+            AstVar* fromVarp = nullptr;  // If it's a method call, the leftmost element
+                                         // of the dot hierarchy
+            if (AstMethodCall* methodCallp = VN_CAST(nodep, MethodCall)) {
+                AstNodeExpr* fromp = methodCallp->fromp();
+                while (AstMemberSel* const memberSelp = VN_CAST(fromp, MemberSel)) {
+                    fromp = memberSelp->fromp();
+                }
+                AstVarRef* const varrefp = VN_AS(fromp, VarRef);
+                fromVarp = varrefp->varp();
+            }
+            if (!VN_IS(exprp, VarRef) && !VN_IS(exprp, MemberSel)) {
+                argp->v3error("'randomize()' argument must be a variable contained in "
+                              << (fromVarp ? fromVarp->prettyNameQ() : "curent scope"));
+                VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
+                continue;
+            }
+            while (exprp) {
+                if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
+                    randVarp = memberSelp->varp();
+                    exprp = memberSelp->fromp();
+                } else {
+                    if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
+                        randVarp = varrefp->varp();
+                    } else {
+                        argp->v3warn(
+                            E_UNSUPPORTED,
+                            "Unsupported: Non-variable expression as 'randomize()' argument");
+                        VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
+                    }
+                    exprp = nullptr;
+                }
+                // All variables in the dot hierarchy must be randomizable
+                if (randVarp && !randVarp->isRand()) randVarp->rand(VRandAttr::RAND_INLINE); //Wish to make it RAND_STD But lets see how its useful in later stage
+            }
+            if (!argp) continue;  // Errored out, bail
+        }
+        if (nullp) {
+            if (hasNonNullArgs) {
+                nullp->v3error("Cannot pass more arguments to 'randomize(null)'");
+            } else {
+                nullp->v3warn(E_UNSUPPORTED, "Unsupported: 'randomize(null)'");
+            }
+        }
+    }
     void visit(AstNodeFTaskRef* nodep) override {
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
         // Function hasn't been widthed, so make it so.
@@ -6216,32 +6269,23 @@ class WidthVisitor final : public VNVisitor {
                            || nodep->name() == "set_randstate"))) {
             // TODO perhaps this should move to V3LinkDot
             AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
-            if (!classp) {
+            if (nodep->classOrPackagep()->name() == "std") {
+                v3Global.useRandomizeMethods(true);
                 AstNodeDType* const adtypep = nodep->findBitDType();
                 withp = methodWithArgument(nodep, false, false, adtypep->findVoidDType(),
                                            adtypep->findBitDType(), adtypep);
                 for (const AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp())
                     userIterateAndNext(VN_AS(argp, Arg)->exprp(), WidthVP{SELF, BOTH}.p());
-                // nodep->addPinsp(withp);
-                // nodep->v3warn(CONSTRAINTIGN, "std::randomize ignored (unsupported)");
-                // nodep->replaceWith(new AstConst{nodep->fileline(), 0});
-                // VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                // return;
-                v3Global.useRandomizeMethods(true);
-                //std::cout<< "the modle is "<< nodep->classOrPackagep()<< "
-                //:"<<nodep->classOrPackagep()->name()<<endl;
-                // std::cout<<"The module is "<< getModule(nodep) <<endl;
-                // cout<<" name is "<< getModule(nodep)->name()<<endl;
-                // classp =  getModule(nodep);
-                // processFTaskRefArgs(nodep);
-                handleStdRandomizeArgs(nodep, classp);  // clasp is void here need to change this.
+                handleStdRandomizeArgs(nodep);  // Provided arguments should be in the current scope.
                 if (withp) {
                     nodep->v3warn(CONSTRAINTIGN, "with ignored (unsupported)");
                     nodep->replaceWith(new AstConst{nodep->fileline(), 0});
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
                 }
-                // nodep->addPinsp(withp);
+                processFTaskRefArgs(nodep);
+                nodep->addPinsp(withp);
+                nodep->didWidth(true);
                 return;
             }
             UASSERT_OBJ(classp, nodep, "Should have failed in V3LinkDot");
