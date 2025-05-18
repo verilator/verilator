@@ -6520,58 +6520,57 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
-    bool areAggregatesComparable(AstNodeDType* lhs, AstNodeDType* rhs) {
+    bool isComparableDType(const AstNodeDType* lhs, const AstNodeDType* rhs) {
         if (!lhs || !rhs) return false;
-
         lhs = lhs->skipRefp();
         rhs = rhs->skipRefp();
+        if (!lhs || !rhs) return false;
+        if (lhs == rhs) return true;
 
         if (VN_IS(lhs, UnpackArrayDType) && VN_IS(rhs, UnpackArrayDType)) {
-            auto* lhsp = VN_CAST(lhs, UnpackArrayDType);
-            auto* rhsp = VN_CAST(rhs, UnpackArrayDType);
+            const AstUnpackArrayDType* lhsp = VN_CAST(lhs, UnpackArrayDType);
+            const AstUnpackArrayDType* rhsp = VN_CAST(rhs, UnpackArrayDType);
+            const int lsz = lhsp->elementsConst();
+            const int rsz = rhsp->elementsConst();
+            if (lsz >= 0 && rsz >= 0 && lsz != rsz) return false;
 
-            // Compare element types
-            if (!areAggregatesComparable(lhsp->subDTypep(), rhsp->subDTypep())) return false;
-
-            // Compare size
-            std::vector<AstUnpackArrayDType*> lhsDims = lhsp->unpackDimensions();
-            std::vector<AstUnpackArrayDType*> rhsDims = rhsp->unpackDimensions();
-            if (lhsDims.size() != rhsDims.size()) return false;
-            for (size_t i = 0; i < lhsDims.size(); ++i) {
-                int lsz = lhsDims[i]->elementsConst();
-                int rsz = rhsDims[i]->elementsConst();
-                if (lsz >= 0 && rsz >= 0 && lsz != rsz) return false;
-            }
-
-            return true;
+            const AstNodeDType* lsub = lhsp->subDTypep()->skipRefp();
+            const AstNodeDType* rsub = rhsp->subDTypep()->skipRefp();
+            return lsub && rsub && lsub->similarDType(rsub);
         }
 
         if (VN_IS(lhs, DynArrayDType) && VN_IS(rhs, DynArrayDType)) {
-            return areAggregatesComparable(lhs->subDTypep(), rhs->subDTypep());
+            const AstNodeDType* lsub = lhs->subDTypep()->skipRefp();
+            const AstNodeDType* rsub = rhs->subDTypep()->skipRefp();
+            return lsub && rsub && lsub->similarDType(rsub);
         }
 
         if (VN_IS(lhs, QueueDType) && VN_IS(rhs, QueueDType)) {
-            return areAggregatesComparable(lhs->subDTypep(), rhs->subDTypep());
+            const AstNodeDType* lsub = lhs->subDTypep()->skipRefp();
+            const AstNodeDType* rsub = rhs->subDTypep()->skipRefp();
+            return lsub && rsub && lsub->similarDType(rsub);
         }
 
         if (VN_IS(lhs, AssocArrayDType) && VN_IS(rhs, AssocArrayDType)) {
-            const auto* lhsp = VN_CAST(lhs, AssocArrayDType);
-            const auto* rhsp = VN_CAST(rhs, AssocArrayDType);
+            const AstAssocArrayDType* lhsp = VN_CAST(lhs, AssocArrayDType);
+            const AstAssocArrayDType* rhsp = VN_CAST(rhs, AssocArrayDType);
+            const AstNodeDType* lval = lhsp->subDTypep()->skipRefp();
+            const AstNodeDType* rval = rhsp->subDTypep()->skipRefp();
+            const AstNodeDType* lkey = lhsp->keyDTypep()->skipRefp();
+            const AstNodeDType* rkey = rhsp->keyDTypep()->skipRefp();
 
-            if (!areAggregatesComparable(lhsp->subDTypep(), rhsp->subDTypep())) return false;
-
-            if (!lhsp->keyDTypep()->sameTree(rhsp->keyDTypep())) return false;
-
-            return true;
+            return lval && rval && lkey && rkey && lval->similarDType(rval)
+                   && lkey->similarDType(rkey);
         }
 
-        // Reject mixed scalar vs aggregate
-        if (VN_IS(lhs, QueueDType) || VN_IS(lhs, DynArrayDType) || VN_IS(lhs, UnpackArrayDType)
-            || VN_IS(lhs, AssocArrayDType) || VN_IS(rhs, QueueDType) || VN_IS(rhs, DynArrayDType)
-            || VN_IS(rhs, UnpackArrayDType) || VN_IS(rhs, AssocArrayDType)) {
-            return false;
-        }
+        // If either side is aggregate but the types didn't match above, reject
+        const bool lhsAgg = VN_IS(lhs, QueueDType) || VN_IS(lhs, DynArrayDType)
+                            || VN_IS(lhs, UnpackArrayDType) || VN_IS(lhs, AssocArrayDType);
+        const bool rhsAgg = VN_IS(rhs, QueueDType) || VN_IS(rhs, DynArrayDType)
+                            || VN_IS(rhs, UnpackArrayDType) || VN_IS(rhs, AssocArrayDType);
+        if (lhsAgg || rhsAgg) return false;
 
+        // Both are scalar (or non-aggregate), allow
         return true;
     }
 
@@ -6592,33 +6591,20 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
 
-            const auto isAggregateType = [](const AstNode* nodep) {
-                const AstNodeDType* dtypep = nodep->dtypep();
-                if (!dtypep) return false;
-                dtypep = dtypep->skipRefp();
-                return VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)
-                       || VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, AssocArrayDType);
-            };
+            AstNodeDType* const lhsDType = nodep->lhsp()->dtypep();
+            AstNodeDType* const rhsDType = nodep->rhsp()->dtypep();
 
-            AstNodeDType* lhsDType = nodep->lhsp()->dtypep();
-            AstNodeDType* rhsDType = nodep->rhsp()->dtypep();
-
-            // Only do the aggregate validation if both types are known
-            if (lhsDType && rhsDType
-                && (isAggregateType(nodep->lhsp()) || isAggregateType(nodep->rhsp()))) {
-                if (!areAggregatesComparable(lhsDType, rhsDType)) {
-                    nodep->v3error("Comparison requires matching data types\n"
-                                   << nodep->warnMore()
-                                   << "... LHS: " << lhsDType->prettyDTypeNameQ()
-                                   << ", RHS: " << rhsDType->prettyDTypeNameQ());
-                    AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
-                    nodep->replaceWith(newp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    return;
-                }
-            }
-
-            if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
+            if (lhsDType && rhsDType && !isComparableDType(lhsDType, rhsDType)) {
+                nodep->v3error("Comparison requires matching data types\n"
+                               << nodep->warnMore() << "... left-hand data type: "
+                               << lhsDType->prettyDTypeNameQ() << "\n"
+                               << nodep->warnMore()
+                               << "... right-hand data type: " << rhsDType->prettyDTypeNameQ());
+                AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            } else if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
                 if (!realok) {
                     nodep->v3error("Real is illegal operand to ?== operator");
                     AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};

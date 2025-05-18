@@ -1,0 +1,62 @@
+%Error: t/t_aggregate_dtype_compare_bad.v:52:19: Comparison requires matching data types
+                                               : ... note: In instance 't'
+                                               : ... left-hand data type: 'int$[$]'
+                                               : ... right-hand data type: 'logic[31:0]'
+   52 |     if (queue_var == 1) begin end
+      |                   ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_aggregate_dtype_compare_bad.v:55:12: Comparison requires matching data types
+                                               : ... note: In instance 't'
+                                               : ... left-hand data type: 'int$[$]'
+                                               : ... right-hand data type: 'bit$[$]'
+   55 |     if (q1 == q2) begin end
+      |            ^~
+%Error: t/t_aggregate_dtype_compare_bad.v:58:12: Comparison requires matching data types
+                                               : ... note: In instance 't'
+                                               : ... left-hand data type: 'int$[]'
+                                               : ... right-hand data type: 'bit$[]'
+   58 |     if (d1 == d2) begin end
+      |            ^~
+%Error: t/t_aggregate_dtype_compare_bad.v:61:12: Comparison requires matching data types
+                                               : ... note: In instance 't'
+                                               : ... left-hand data type: 'int$[0:1]'
+                                               : ... right-hand data type: 'int$[0:1][0:0]'
+   61 |     if (u1 == u2) begin end
+      |            ^~
+%Error: t/t_aggregate_dtype_compare_bad.v:64:12: Comparison requires matching data types
+                                               : ... note: In instance 't'
+                                               : ... left-hand data type: 'int$[0:1]'
+                                               : ... right-hand data type: 'int$[0:2]'
+   64 |     if (a1 == a2) begin end
+      |            ^~
+%Error: t/t_aggregate_dtype_compare_bad.v:67:13: Comparison requires matching data types
+                                               : ... note: In instance 't'
+                                               : ... left-hand data type: 'int$[string]'
+                                               : ... right-hand data type: 'int$[int]'
+   67 |     if (aa1 == aa2) begin end
+      |             ^~
+%Error: t/t_aggregate_dtype_compare_bad.v:70:13: Comparison requires matching data types
+                                               : ... note: In instance 't'
+                                               : ... left-hand data type: 'int$[string]'
+                                               : ... right-hand data type: 'logic[3:0]$[string]'
+   70 |     if (aa3 == aa4) begin end
+      |             ^~
+%Error: t/t_aggregate_dtype_compare_bad.v:73:14: Comparison requires matching data types
+                                               : ... note: In instance 't'
+                                               : ... left-hand data type: 'int$[0:1]'
+                                               : ... right-hand data type: 'bit$[0:1]'
+   73 |     if (bad1 == bad2) begin end
+      |              ^~
+%Error: t/t_aggregate_dtype_compare_bad.v:76:14: Comparison requires matching data types
+                                               : ... note: In instance 't'
+                                               : ... left-hand data type: 'int$[string]'
+                                               : ... right-hand data type: 'logic[31:0]$[string]'
+   76 |     if (val1 == val2) begin end
+      |              ^~
+%Error: t/t_aggregate_dtype_compare_bad.v:79:13: Comparison requires matching data types
+                                               : ... note: In instance 't'
+                                               : ... left-hand data type: 'int$[string]'
+                                               : ... right-hand data type: 'int$[int]'
+   79 |     if (aa5 == aa6) begin end
+      |             ^~
+%Error: Exiting due to
