@@ -325,7 +325,7 @@ int V3ParseGrammar::s_typeImpNum = 0;
 #define VARIO(type) \
     { GRAMMARP->m_varIO = VDirection::type; }
 // Set direction to default-input when detect inside an ANSI port list
-#define VARIOANSI(type) \
+#define VARIOANSI() \
     { \
         if (GRAMMARP->m_varIO == VDirection::NONE) VARIO(INPUT); \
     }
