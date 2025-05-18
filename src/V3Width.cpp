@@ -6242,7 +6242,9 @@ class WidthVisitor final : public VNVisitor {
                     exprp = nullptr;
                 }
                 // All variables in the dot hierarchy must be randomizable
-                if (randVarp && !randVarp->isRand()) randVarp->rand(VRandAttr::RAND_INLINE); //Wish to make it RAND_STD But lets see how its useful in later stage
+                if (randVarp && !randVarp->isRand())
+                    randVarp->rand(VRandAttr::RAND_INLINE);  //Wish to make it RAND_STD But lets
+                                                             //see how its useful in later stage
             }
             if (!argp) continue;  // Errored out, bail
         }
@@ -6276,7 +6278,8 @@ class WidthVisitor final : public VNVisitor {
                                            adtypep->findBitDType(), adtypep);
                 for (const AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp())
                     userIterateAndNext(VN_AS(argp, Arg)->exprp(), WidthVP{SELF, BOTH}.p());
-                handleStdRandomizeArgs(nodep);  // Provided arguments should be in the current scope.
+                handleStdRandomizeArgs(
+                    nodep);  // Provided arguments should be in the current scope.
                 if (withp) {
                     nodep->v3warn(CONSTRAINTIGN, "with ignored (unsupported)");
                     nodep->replaceWith(new AstConst{nodep->fileline(), 0});
