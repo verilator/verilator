@@ -1401,23 +1401,11 @@ List Of Warnings
 
 .. option:: PKGNODECL
 
-   An error that a package/class appears to have been referenced that has
-   not yet been declared.  According to IEEE 1800-2023 26.3, all packages
-   must be declared before being used.
-
-   Faulty example:
-
-   .. include:: ../../docs/gen/ex_PKGNODECL_faulty.rst
-
-   Results in:
-
-   .. include:: ../../docs/gen/ex_PKGNODECL_msg.rst
-
-   Often the package is declared in its own header file.  In this case add
-   an include of that package header file to the referencing file.  (And
-   make sure you have header guards in the package's header file to prevent
-   multiple declarations of the package.)
-
+   Never issued since version 5.038.  Historically an error that a
+   package/class appears to have been referenced that has not yet been
+   declared.  According to IEEE 1800-2023 26.3, all packages must be
+   declared before being used. However, several standard libraries
+   including UVM violate this, and other tools do not warn.
 
 .. option:: PORTSHORT
 

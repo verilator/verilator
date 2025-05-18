@@ -1552,15 +1552,11 @@ port<nodep>:                    // ==IEEE: port
         //                      // IEEE: interface_port_header port_identifier { unpacked_dimension }
         //                      // Expanded interface_port_header
         //                      // We use instantCb here because the non-port form looks just like a module instantiation
-                portDirNetE id/*interface*/ portSig variable_dimensionListE sigAttrListE
-                        { // VAR for now, but V3LinkCells may call setIfcaeRef on it later
-                          $$ = $3; VARDECL(VAR); VARIO(NONE);
-                          // Although know it's an interface, use AstRefDType for forward compatibility
-                          // with future parser.  V3LinkCells will convert to AstIfaceRefDType.
-                          AstNodeDType* const dtp = new AstRefDType{$<fl>2, *$2};
-                          VARDTYPE(dtp);
-                          addNextNull($$, VARDONEP($$, $4, $5)); }
-        |       portDirNetE id/*interface*/ '.' idAny/*modport*/ portSig variable_dimensionListE sigAttrListE
+        //
+        //                      // Looks identical to variable_declaration, so V3LinkDot must resolve when ID known
+        //                      // NO: portDirNetE id/*interface*/ portSig variable_dimensionListE sigAttrListE
+        //
+                portDirNetE id/*interface*/ '.' idAny/*modport*/ portSig variable_dimensionListE sigAttrListE
                         { // VAR for now, but V3LinkCells may call setIfcaeRef on it later
                           $$ = $5; VARDECL(VAR); VARIO(NONE);
                           AstNodeDType* const dtp = new AstIfaceRefDType{$<fl>2, $<fl>4, "", *$2, *$4};
@@ -1615,17 +1611,20 @@ port<nodep>:                    // ==IEEE: port
         //                      // IEEE: portDirNetE data_type '.' portSig -> handled with AstDot in expr.
         //
         |       portDirNetE data_type           portSig variable_dimensionListE sigAttrListE
-                        { $$ = $3; VARDTYPE($2); VARIOANSI(); addNextNull($$, VARDONEP($$, $4, $5)); }
+                        { $$ = $3; VARDTYPE($2); VARIOANSI();
+                          addNextNull($$, VARDONEP($$, $4, $5)); }
         |       portDirNetE data_type           portSig variable_dimensionListE sigAttrListE '=' constExpr
                         { $$ = $3; VARDTYPE($2); VARIOANSI();
                           if (AstVar* vp = VARDONEP($$, $4, $5)) { addNextNull($$, vp); vp->valuep($7); } }
         |       portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE
-                        { $$ = $4; VARDTYPE($3); VARIOANSI(); addNextNull($$, VARDONEP($$, $5, $6)); }
+                        { $$ = $4; VARDTYPE($3); VARIOANSI();
+                          addNextNull($$, VARDONEP($$, $5, $6)); }
         |       portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE '=' constExpr
                         { $$ = $4; VARDTYPE($3); VARIOANSI();
                           if (AstVar* vp = VARDONEP($$, $5, $6)) { addNextNull($$, vp); vp->valuep($8); } }
         |       portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE
-                        { $$ = $4; VARDTYPE($3); VARIOANSI(); addNextNull($$, VARDONEP($$, $5, $6)); }
+                        { $$ = $4; VARDTYPE($3); VARIOANSI();
+                          addNextNull($$, VARDONEP($$, $5, $6)); }
         |       portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE '=' constExpr
                         { $$ = $4; VARDTYPE($3); VARIOANSI();
                           if (AstVar* vp = VARDONEP($$, $5, $6)) { addNextNull($$, vp); vp->valuep($8); } }
@@ -2105,13 +2104,10 @@ port_declaration<nodep>:        // ==IEEE: port_declaration
         //
         //                      // IEEE: interface_port_declaration
         //                      // IEEE: interface_identifier list_of_interface_identifiers
-        |       id/*interface*/
-        /*mid*/         { VARRESET_NONLIST(VVarType::IFACEREF);
-                          AstIfaceRefDType* const dtp = new AstIfaceRefDType{$<fl>1, "", *$1};
-                          dtp->isPortDecl(true);
-                          VARDTYPE(dtp); }
-        /*cont*/    mpInstnameList
-                        { $$ = VARDONEP($3, nullptr, nullptr); }
+        //
+        //                      // Identical to variable_declaration, resolve in V3LinkDot when id known
+        //                      // NO:  id/*interface*/  mpInstnameList
+        //
         //                      // IEEE: interface_port_declaration
         //                      // IEEE: interface_identifier '.' modport_identifier list_of_interface_identifiers
         |       id/*interface*/ '.' idAny/*modport*/
@@ -4585,9 +4581,10 @@ exprOrDataType<nodep>:          // expr | data_type: combined to prevent conflic
         //                      // data_type includes id that overlaps expr, so special flavor
         //                      // data_type expanded:
         |       data_typeNoRef                          { $$ = $1; }
-        |       packageClassScopeE idType packed_dimensionListE
-                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
-                          $$ = GRAMMARP->createArray(refp, $3, true); }
+        //
+        //                      // Conflicts with non-type id, resolved in V3LinkDot
+        //                      // NO: packageClassScopeE idType packed_dimensionListE
+        //
         |       packageClassScopeE idType parameter_value_assignmentClass packed_dimensionListE
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
                           $$ = GRAMMARP->createArray(refp, $4, true); }
@@ -5153,8 +5150,8 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
                         { $$ = new AstCast{$2, $4, VFlagChildDType{}, $1}; }
         //                      // expanded from simple_type ps_type_identifier (part of simple_type)
         //                      // expanded from simple_type ps_parameter_identifier (part of simple_type)
-        |       packageClassScopeE idType yP_TICK '(' expr ')'
-                        { $$ = new AstCastParse{$3, $5, new AstRefDType{$<fl>2, *$2, $1, nullptr}}; }
+        //                      // Causes conflict, so handled post-parse
+        //                      // NO: packageClassScopeE idType yP_TICK '(' expr ')'
         //
         |       yTYPE__ETC '(' exprOrDataType ')' yP_TICK '(' expr ')'
                         { $$ = new AstCast{$1, $7, VFlagChildDType{},

@@ -1,9 +1,5 @@
-%Error-PKGNODECL: t/t_lint_pkg_colon_bad.v:7:17: Package/class 'mispkg' not found, and needs to be predeclared (IEEE 1800-2023 26.3)
-    7 | module t (input mispkg::foo_t a);
-      |                 ^~~~~~
-                  ... For error description see https://verilator.org/warn/PKGNODECL?v=latest
-%Error: t/t_lint_pkg_colon_bad.v:7:25: syntax error, unexpected IDENTIFIER, expecting IDENTIFIER-for-type
-    7 | module t (input mispkg::foo_t a);
-      |                         ^~~~~
+%Error: t/t_lint_pkg_colon_bad.v:8:8: syntax error, unexpected IDENTIFIER-::, expecting IDENTIFIER or do or final or randomize
+    8 |    reg mispkgb::bar_t b;
+      |        ^~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

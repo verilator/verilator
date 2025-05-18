@@ -429,6 +429,35 @@ size_t V3ParseImp::tokenPipeScanIdInst(size_t depthIn) {
     return depth;
 }
 
+size_t V3ParseImp::tokenPipeScanIdType(size_t depthIn) {
+    // Search around IEEE data type identifier
+    // Return location of following token, or input if not found
+    // tokenPipeScanIdCell has precedence over this search
+    //   yaID/*type_identifier*/ [ '#' '('...')' ] [{ '['...']' }] yaID/*identifier*/
+    // assignment_pattern_expression:
+    //   yaID/*type_identifier*/ [ '#' '('...')' ] [{ '['...']' }] yP_TICKBRA
+    // class_type parameter_value_assignment  // often followed by ) as in e.g. ClsA#(ClsB#(...))
+    //   yaID/*type_identifier*/ '#' '('...')'  [^ '::']
+    // and caller must check does NOT match tokenPipeScanIdCell
+    size_t depth = depthIn;
+    // UINFO(9, "tokenPipeScanType START d="
+    //       << depth << " " << V3ParseImp::tokenName(tokenPeekp(depth)->token) << endl);
+    if (tokenPeekp(depth)->token == '#' && tokenPeekp(depth + 1)->token == '(') {
+        depth = tokenPipeScanParam(depth, false);
+        // Not :: as then it's a yaID__CC, we'll parse that in tokenPipeScanId
+        if (tokenPeekp(depth)->token != yP_COLONCOLON) return depth;
+    }
+
+    depth = tokenPipeScanBracket(depth);  // [ '['..']' ]*
+
+    if (tokenPeekp(depth)->token != yaID__LEX && tokenPeekp(depth)->token != yP_TICKBRA)
+        return depthIn;
+    ++depth;
+    // UINFO(9, "tokenPipeScanType MATCH\n");
+
+    return depth;
+}
+
 size_t V3ParseImp::tokenPipeScanBracket(size_t inDepth) {
     // Return location of following token, or input if not found
     // [ '['...']' ]*
@@ -531,6 +560,7 @@ int V3ParseImp::tokenPipelineId(int token) {
     if (m_tokenLastBison.token != '@' && m_tokenLastBison.token != '#'
         && m_tokenLastBison.token != '.') {
         if (const size_t depth = tokenPipeScanIdInst(0)) return yaID__aINST;
+        if (const size_t depth = tokenPipeScanIdType(0)) return yaID__aTYPE;
     }
     if (nexttok == '#') {  // e.g. class_type parameter_value_assignment '::'
         const size_t depth = tokenPipeScanParam(0, false);
@@ -683,6 +713,8 @@ void V3ParseImp::tokenPipelineSym() {
             foundp = V3ParseImp::parsep()->symp()->symCurrentp()->findIdFallback(*(yylval.strp));
         }
         if (!foundp && !m_afterColonColon) {  // Check if the symbol can be found in std
+            // The following keywords from this file are hardcoded for detection in the parser:
+            // "mailbox", "process", "randomize", "semaphore", "std"
             AstPackage* const stdpkgp = v3Global.rootp()->stdPackagep();
             if (stdpkgp) {
                 VSymEnt* const stdsymp = stdpkgp->user4u().toSymEnt();
@@ -694,36 +726,11 @@ void V3ParseImp::tokenPipelineSym() {
             yylval.scp = scp;
             UINFO(7, "   tokenPipelineSym: Found " << scp << endl);
             if (token == yaID__LEX) {  // i.e. not yaID__CC
-                if (VN_IS(scp, Typedef)) {
-                    token = yaID__aTYPE;
-                } else if (VN_IS(scp, TypedefFwd)) {
-                    token = yaID__aTYPE;
-                } else if (VN_IS(scp, Class)) {
-                    token = yaID__aTYPE;
-                } else if (VN_IS(scp, Package)) {
-                    token = yaID__ETC;
-                } else {
-                    token = yaID__ETC;
-                }
+                token = yaID__ETC;
             }
         } else {  // Not found
             yylval.scp = nullptr;
-            if (token == yaID__CC) {
-                if (!m_afterColonColon && !v3Global.opt.bboxUnsup()) {
-                    // IEEE does require this, but we may relax this as UVM breaks it, so allow
-                    // bbox for today
-                    // We'll get a parser error eventually but might not be obvious
-                    // is missing package, and this confuses people
-                    static int warned = false;
-                    if (!warned++) {
-                        yylval.fl->v3warn(PKGNODECL, "Package/class '" + *yylval.strp
-                                                         + "' not found, and needs to be "
-                                                           "predeclared (IEEE 1800-2023 26.3)");
-                    }
-                }
-            } else if (token == yaID__LEX) {
-                token = yaID__ETC;
-            }
+            if (token == yaID__LEX) token = yaID__ETC;
         }
     }
     m_afterColonColon = token == yP_COLONCOLON;
