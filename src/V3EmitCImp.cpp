@@ -506,9 +506,7 @@ class EmitCImp final : EmitCFunc {
         };
 
         gather(modp);
-        VL_RESTORER(m_classOrPackage);
         if (const AstClassPackage* const packagep = VN_CAST(modp, ClassPackage)) {
-            m_classOrPackage = packagep;
             gather(packagep->classp());
         }
 

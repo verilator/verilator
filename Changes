@@ -18,7 +18,6 @@ Verilator 5.037 devel
 * Support SARIF JSON diagnostic output with `--diagnostics-sarif`. (#6017)
 * Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
 * Add PROCINITASSIGN on initial assignments to process variables (#2481). [Niraj Menon]
-* Fix --x-initial and --x-assign random stability (#2662) (#5958). [Todd Strader]
 * Fix filename backslash escapes in C code (#5947).
 * Fix C++ widths in V3Expand (#5953) (#5975). [Geza Lore]
 * Fix dependencies from different hierarchical schedules (#5954). [Bartłomiej Chmiel, Antmicro Ltd.]

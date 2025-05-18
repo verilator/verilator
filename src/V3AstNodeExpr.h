@@ -1802,8 +1802,14 @@ class AstRand final : public AstNodeExpr {
     // Return a random number, based upon width()
     // @astgen op1 := seedp : Optional[AstNode]
     const bool m_urandom = false;  // $urandom vs $random
+    const bool m_reset = false;  // Random reset, versus always random
 public:
     class Reset {};
+    AstRand(FileLine* fl, Reset, AstNodeDType* dtp, bool reset)
+        : ASTGEN_SUPER_Rand(fl)
+        , m_reset{reset} {
+        dtypep(dtp);
+    }
     AstRand(FileLine* fl, AstNode* seedp, bool urandom)
         : ASTGEN_SUPER_Rand(fl)
         , m_urandom{urandom} {
@@ -1815,6 +1821,14 @@ public:
                        : (m_urandom ? "%f$urandom()" : "%f$random()");
     }
     string emitC() override {
+        if (m_reset) {
+            if (v3Global.opt.xAssign() == "unique") {
+                return "VL_RAND_RESET_ASSIGN_%nq(%nw, %P)";
+            } else {
+                // This follows xInitial randomization
+                return "VL_RAND_RESET_%nq(%nw, %P)";
+            }
+        }
         if (seedp()) {
             if (urandom()) {
                 return "VL_URANDOM_SEEDED_%nq%lq(%li)";
@@ -1831,12 +1845,14 @@ public:
     bool cleanOut() const override { return false; }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() override { return !seedp(); }
+    bool isPure() override { return !m_reset && !seedp(); }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool combinable(const AstRand* samep) const {
-        return !seedp() && !samep->seedp() && urandom() == samep->urandom();
+        return !seedp() && !samep->seedp() && reset() == samep->reset()
+               && urandom() == samep->urandom();
     }
+    bool reset() const { return m_reset; }
     bool urandom() const { return m_urandom; }
 };
 class AstRandRNG final : public AstNodeExpr {

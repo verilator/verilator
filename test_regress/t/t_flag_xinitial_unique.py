@@ -9,13 +9,13 @@
 
 import vltest_bootstrap
 
-test.scenarios("vlt_all")
+test.scenarios('vlt_all')
 
 test.compile(verilator_flags2=["--x-initial unique"])
 
 test.execute()
 
 files = glob.glob(test.obj_dir + "/" + test.vm_prefix + "___024root__DepSet_*__Slow.cpp")
-test.file_grep_any(files, r"VL_SCOPED_RAND_RESET")
+test.file_grep_any(files, r'VL_RAND_RESET')
 
 test.passes()
