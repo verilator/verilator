@@ -1,0 +1,118 @@
+---
+# DESCRIPTION: Github actions config
+# This name is key to badges in README.rst, so we use the name build
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: reusable-rtlmeter-run
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: "Runner to use, e.g.: ubuntu-24.04"
+        type: string
+        required: true
+      cc:
+        description: "Compiler to use: 'gcc' or 'clang'"
+        type: string
+        required: true
+      cases:
+        description: "RTLMeter cases to run"
+        type: string
+        required: true
+      compileArgs:
+        description: "Additional Verilator command line arguments"
+        type: string
+        default: ""
+      executeArgs:
+        description: "Additional simulator command line arguments"
+        type: string
+        default: ""
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CCACHE_DIR: ${{ github.workspace }}/ccache
+  CCACHE_MAXSIZE: 512M
+  CCACHE_DISABLE: 1
+
+jobs:
+  run:
+    runs-on: ${{ inputs.runs-on }}
+    name: Run
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install ccache mold libfl-dev libgoogle-perftools-dev libsystemc-dev
+
+      - name: Download Verilator installation archive
+        uses: actions/download-artifact@v4
+        with:
+          name: verilator-rtlmeter-${{ inputs.runs-on }}-${{ inputs.cc }}
+
+      - name: Unpack Verilator installation archive
+        run: |
+          tar -x -z -f verilator-rtlmeter.tar.gz
+          echo "${{ github.workspace }}/install/bin" >> $GITHUB_PATH
+
+      - name: Use saved ccache
+        if: ${{ env.CCACHE_DISABLE == 0 }}
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: rtlmeter-run-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.cases }}-${{ inputs.compileArgs }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: rtlmeter-run-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ inputs.cases }}-${{ inputs.compileArgs }}
+
+      - name: Checkout RTLMeter
+        uses: actions/checkout@v4
+        with:
+          repository: "verilator/rtlmeter"
+          path: rtlmeter
+
+      - name: Setup RTLMeter venv
+        working-directory: rtlmeter
+        run: make venv
+
+      - name: Compile cases
+        working-directory: rtlmeter
+        run: |
+          ./rtlmeter run --verbose --cases='${{ inputs.cases }}' --compileArgs='${{ inputs.compileArgs }}' --executeArgs='${{ inputs.executeArgs }}' --nExecute=0
+          # My YAML highlighter sucks, so I put this comment here wiht a phony closing quote mark to make it work: '
+
+      - name: Execute cases
+        working-directory: rtlmeter
+        continue-on-error: true  # Do not fail on error, so we can at leat save the successful results
+        run: |
+          ./rtlmeter run --verbose --cases='${{ inputs.cases }}' --compileArgs='${{ inputs.compileArgs }}' --executeArgs='${{ inputs.executeArgs }}'
+          # My YAML highlighter sucks, so I put this comment here wiht a phony closing quote mark to make it work: '
+
+      - name: Collate results
+        id: results
+        working-directory: rtlmeter
+        run: |
+          # 'inputs.cases' has special characters, use its md5sum as unique id
+          hash=$(md5sum <<< '${{ inputs.cases }}' | awk '{print $1}')
+          echo "hash=${hash}" >> $GITHUB_OUTPUT
+          ./rtlmeter collate > ../results-${hash}.json
+
+      - name: Report results
+        working-directory: rtlmeter
+        run: |
+          ./rtlmeter report --steps '*' --metrics '*' ../results-${{ steps.results.outputs.hash }}.json
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          path: results-${{ steps.results.outputs.hash }}.json
+          name: rtlmeter-results-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ steps.results.outputs.hash }}
+          overwrite: true
+          retention-days: 2
+
+      - name: Report status
+        working-directory: rtlmeter
+        run: | # This will fail the job if any of the runs failed
+          ./rtlmeter run --verbose --cases='${{ inputs.cases }}' --compileArgs='${{ inputs.compileArgs }}' --executeArgs='${{ inputs.executeArgs }}'
+          # My YAML highlighter sucks, so I put this comment here wiht a phony closing quote mark to make it work: '

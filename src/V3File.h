@@ -109,12 +109,7 @@ class V3OutFormatter VL_NOT_FINAL {
     static constexpr int MAXSPACE = 80;  // After this indent, stop indenting more
 public:
     enum AlignClass : uint8_t { AL_AUTO = 0, AL_STATIC = 1 };
-    enum Language : uint8_t {
-        LA_C = 0,
-        LA_VERILOG = 1,
-        LA_MK = 2,
-        LA_XML = 3,
-    };
+    enum Language : uint8_t { LA_C, LA_JSON, LA_MK, LA_VERILOG, LA_XML };
 
 private:
     // MEMBERS
@@ -286,6 +281,116 @@ public:
     }
 };
 
+class V3OutJsonFile final : public V3OutFile {
+    // CONSTANTS
+    static constexpr const char* INDENT = "    ";  // Single indent (4, per JSON std)
+
+    // MEMBERS
+private:
+    std::stack<char> m_scope;  // Stack of ']' and '}'  to close currently open scopes
+    std::string m_prefix;  // Prefix emitted before each line in current scope
+    bool m_empty = true;  // Current scope is empty, no comma later
+
+public:
+    explicit V3OutJsonFile(const string& filename)
+        : V3OutFile{filename, V3OutFormatter::LA_JSON} {
+        begin();
+    }
+    ~V3OutJsonFile() override {
+        end();
+        puts("\n");
+    }
+    virtual void putsHeader() {}
+    void puts(const char* strg) { putsNoTracking(strg); }
+    void puts(const string& strg) { putsNoTracking(strg); }
+
+    // METHODS
+    V3OutJsonFile& begin(const std::string& name, char type = '{') {
+        comma();
+        puts(m_prefix + "\"" + name + "\": " + type + "\n");
+        m_prefix += INDENT;
+        m_scope.push(type == '{' ? '}' : ']');
+        return *this;
+    }
+    V3OutJsonFile& begin(char type = '{') {
+        comma();
+        puts(m_prefix + type + "\n");
+        m_prefix += INDENT;
+        m_scope.push(type == '{' ? '}' : ']');
+        return *this;
+    }
+
+    // Put a named value
+    V3OutJsonFile& put(const std::string& name, const char* valuep) {
+        return putNamed(name, std::string{valuep}, true);
+    }
+    V3OutJsonFile& put(const std::string& name, const std::string& value) {
+        return putNamed(name, value, true);
+    }
+    V3OutJsonFile& put(const std::string& name, bool value) {
+        return putNamed(name, value ? "true" : "false", false);
+    }
+    V3OutJsonFile& put(const std::string& name, int value) {
+        return putNamed(name, std::to_string(value), false);
+    }
+
+    // Put unnamed value
+    V3OutJsonFile& put(const std::string& value) { return putNamed("", value, true); }
+    V3OutJsonFile& put(bool value) { return putNamed("", value ? "true" : "false", false); }
+    V3OutJsonFile& put(int value) { return putNamed("", std::to_string(value), false); }
+
+    template <typename T>
+    V3OutJsonFile& putList(const std::string& name, const T& list) {
+        if (list.empty()) return *this;
+        begin(name, '[');
+        for (auto it = list.begin(); it != list.end(); ++it) put(*it);
+        return end();
+    }
+
+    V3OutJsonFile& end() {
+        UASSERT(m_prefix.length() >= strlen(INDENT), "prefix underflow");
+        m_prefix.erase(m_prefix.end() - strlen(INDENT), m_prefix.end());
+        UASSERT(!m_scope.empty(), "end() without begin()");
+        puts("\n" + m_prefix + m_scope.top());
+        m_scope.pop();
+        return *this;
+    }
+
+    V3OutJsonFile& operator+=(V3OutJsonFile& cursor) {
+        // Meaningless syntax sugar, at least for now
+        return *this;
+    }
+
+private:
+    void comma() {
+        if (!m_empty) puts(",\n");
+        m_empty = true;
+    }
+    V3OutJsonFile& putNamed(const std::string& name, const std::string& value, bool quoted) {
+        comma();
+        const string valueQ
+            = quoted ? "\""s + V3OutFormatter::quoteNameControls(value) + "\"" : value;
+        if (name.empty()) {
+            puts(m_prefix + valueQ);
+        } else {
+            puts(m_prefix + "\"" + name + "\": " + valueQ);
+        }
+        m_empty = false;
+        return *this;
+    }
+};
+
+class V3OutMkFile final : public V3OutFile {
+public:
+    explicit V3OutMkFile(const string& filename)
+        : V3OutFile{filename, V3OutFormatter::LA_MK} {}
+    ~V3OutMkFile() override = default;
+    virtual void putsHeader() { puts("# Verilated -*- Makefile -*-\n"); }
+    // No automatic indentation yet.
+    void puts(const char* strg) { putsNoTracking(strg); }
+    void puts(const string& strg) { putsNoTracking(strg); }
+};
+
 class V3OutScFile final : public V3OutCFile {
 public:
     explicit V3OutScFile(const string& filename)
@@ -315,17 +420,6 @@ public:
     }
     ~V3OutXmlFile() override = default;
     virtual void putsHeader() { puts("<?xml version=\"1.0\" ?>\n"); }
-};
-
-class V3OutMkFile final : public V3OutFile {
-public:
-    explicit V3OutMkFile(const string& filename)
-        : V3OutFile{filename, V3OutFormatter::LA_MK} {}
-    ~V3OutMkFile() override = default;
-    virtual void putsHeader() { puts("# Verilated -*- Makefile -*-\n"); }
-    // No automatic indentation yet.
-    void puts(const char* strg) { putsNoTracking(strg); }
-    void puts(const string& strg) { putsNoTracking(strg); }
 };
 
 //============================================================================

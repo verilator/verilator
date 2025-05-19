@@ -541,7 +541,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstSFormatF* const newp = new AstSFormatF{nodep->fileline(), smtExpr, false, argsp};
         if (m_structSel && newp->name() == "(select %@ %@)") {
             newp->name("%@.%@");
-            newp->exprsp()->nextp()->name("%x");
+            if (!VN_IS(nodep, AssocSel)) newp->exprsp()->nextp()->name("%x");
         }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -734,8 +734,10 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
         }
         // Mark Random for structArray
-        if (VN_IS(nodep->fromp(), ArraySel)) {
-            AstNodeExpr* const fromp = VN_AS(nodep->fromp(), ArraySel)->fromp();
+        if (VN_IS(nodep->fromp(), ArraySel) || VN_IS(nodep->fromp(), CMethodHard)) {
+            AstNodeExpr* const fromp = VN_IS(nodep->fromp(), ArraySel)
+                                           ? VN_AS(nodep->fromp(), ArraySel)->fromp()
+                                           : VN_AS(nodep->fromp(), CMethodHard)->fromp();
             AstStructDType* const dtypep
                 = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType);
             dtypep->markConstrainedRand(true);
@@ -755,7 +757,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (VN_AS(nodep->fromp(), SFormatF)->name() == "%@.%@") {
             newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
                                    VN_AS(nodep->fromp(), SFormatF)->exprsp()->cloneTreePure(true)};
-            newp->exprsp()->nextp()->name("%x");
+            if (newp->exprsp()->nextp()->name().rfind("#x", 0) == 0)
+                newp->exprsp()->nextp()->name("%x");  //  for #x%x to %x
         } else {
             newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false,
                                    nullptr};
@@ -767,10 +770,11 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstAssocSel* nodep) override {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
+        // Adaptive formatting and type handling for associative array keys
         if (VN_IS(nodep->bitp(), VarRef) && VN_AS(nodep->bitp(), VarRef)->isString()) {
             VNRelinker handle;
-            AstNodeExpr* const idxp
-                = new AstSFormatF{fl, "#x%32p", false, nodep->bitp()->unlinkFrBack(&handle)};
+            AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32p" : "#x%32p"), false,
+                                                      nodep->bitp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
         } else if (VN_IS(nodep->bitp(), CvtPackString)
@@ -784,8 +788,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                         << stringSize << "bits, limit is 128 bits");
             }
             VNRelinker handle;
-            AstNodeExpr* const idxp
-                = new AstSFormatF{fl, "#x%32x", false, stringp->lhsp()->unlinkFrBack(&handle)};
+            AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32x" : "#x%32x"), false,
+                                                      stringp->lhsp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
         } else {
@@ -799,13 +803,13 @@ class ConstraintExprVisitor final : public VNVisitor {
                 std::string fmt;
                 // Normalize to standard bit width
                 if (actual_width <= 8) {
-                    fmt = "#x%2x";
+                    fmt = m_structSel ? "%2x" : "#x%2x";
                 } else if (actual_width <= 16) {
-                    fmt = "#x%4x";
+                    fmt = m_structSel ? "%4x" : "#x%4x";
                 } else {
-                    fmt = "#x%" + std::to_string(VL_WORDS_I(actual_width) * 8) + "x";
+                    fmt = (m_structSel ? "%" : "#x%")
+                          + std::to_string(VL_WORDS_I(actual_width) * 8) + "x";
                 }
-
                 AstNodeExpr* const idxp
                     = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
                 handle.relink(idxp);

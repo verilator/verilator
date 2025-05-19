@@ -24,4 +24,13 @@
                                                    : ... note: In instance 't'
    29 |       b = s.product with (item inside { "hello", "sad", "world" });
       |         ^
+%Error-UNSUPPORTED: t/t_dynarray_method_bad.v:32:13: Unsupported/unknown built-in dynamic array method 'unknown_bad'
+                                                   : ... note: In instance 't'
+   32 |       b = s.unknown_bad;
+      |             ^~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Warning-WIDTHTRUNC: t/t_dynarray_method_bad.v:32:9: Operator ASSIGN expects 1 bits on the Assign RHS, but Assign RHS's METHODCALL 'unknown_bad' generates 64 bits.
+                                                   : ... note: In instance 't'
+   32 |       b = s.unknown_bad;
+      |         ^
 %Error: Exiting due to

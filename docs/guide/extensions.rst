@@ -1,13 +1,18 @@
 .. Copyright 2003-2025 by Wilson Snyder.
 .. SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-*******************
-Language Extensions
-*******************
+=====================
+ Language Extensions
+=====================
 
 The following additional constructs are the extensions Verilator supports
 on top of standard Verilog code.  Using these features outside of comments
 or "`ifdef`"'s may break other tools.
+
+.. option:: """ [string] """
+
+   A triple-quoted block specifies a string that may include newlines and
+   single quotes.  This extension was standardized in IEEE 1800-2023.
 
 .. option:: `__FILE__
 
@@ -21,6 +26,12 @@ or "`ifdef`"'s may break other tools.
    C++'s __LINE__.  This Verilator feature added in 2006 was incorporated
    into IEEE 1800-2009.
 
+.. option:: `coverage_block_off
+
+   Specifies the entire begin/end block should be ignored for coverage
+   analysis.  Must be inside a code block, e.g., within a begin/end pair.
+   Same as :option:`coverage_block_off` in :ref:`Verilator Configuration Files`.
+
 .. option:: `error [string]
 
    This will report an error when the preprocessor emits it, similar to
@@ -33,10 +44,117 @@ or "`ifdef`"'s may break other tools.
    internal tests, so that debugging can leave the line numbers correctly
    referring to the test file's line numbers.
 
-.. option:: """ [string] """
+.. option:: `systemc_class_name
 
-   A triple-quoted block specifies a string that may include newlines and
-   single quotes.  This extension was standardized in IEEE 1800-2023.
+   Inside one of the :option:`\`systemc_... <\`systemc_header>` text
+   blocks, replaced with the C++ class name generated for the given
+   containing SystemVerilog class or module. Currently this is replaced
+   blindly, ignoring quoting or other escapes; this behavior may change in
+   the future.  This attribute is indented only to be used internally in
+   `verilated_std.sv`.
+
+.. option:: `systemc_ctor
+
+   Take the remaining text up to the next :option:`\`verilog` or
+   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
+   verbatim into the C++ class constructor.  Must be placed as a module or
+   class item, e.g., directly inside a module/endmodule or class/endclass
+   pair. Despite the name of this macro, this also works in pure C++ code.
+
+.. option:: `systemc_dtor
+
+   Take the remaining text up to the next :option:`\`verilog` or
+   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
+   verbatim into the C++ class destructor.  Must be placed as a module or
+   class item, e.g., directly inside a module/endmodule or class/endclass
+   pair. Despite the name of this macro, this also works in pure C++ code.
+
+.. option:: `systemc_header
+
+   Take the remaining text up to the next :option:`\`verilog` or
+   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
+   verbatim into the output .h file's header.  Must be placed as a module
+   or class item, e.g., directly inside a module/endmodule or
+   class/endclass pair. Despite the name of this macro, this also works in
+   pure C++ code.
+
+.. option:: `systemc_header_post
+
+   Take the remaining text up to the next :option:`\`verilog` or
+   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
+   verbatim into the output .h file's header after the class definition.
+   Must be placed as a module or class item, e.g., directly inside a
+   module/endmodule or class/endclass pair. Despite the name of this macro,
+   this also works in pure C++ code.
+
+.. option:: `systemc_imp_header
+
+   Take the remaining text up to the next :option:`\`verilog` or
+   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
+   verbatim into the header of all files for this C++ class implementation.
+   Must be placed as a module or class item, e.g., directly inside a
+   module/endmodule or class/endclass pair. Despite the name of this macro,
+   this also works in pure C++ code.
+
+.. option:: `systemc_implementation
+
+   Take the remaining text up to the next :option:`\`verilog` or
+   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
+   verbatim into a single file of the C++ class implementation.  Must be
+   placed as a module or class item, e.g., directly inside a
+   module/endmodule or class/endclass pair. Despite the name of this macro,
+   this also works in pure C++ code.
+
+   If you will be reading or writing any Verilog variables in the C++
+   functions, the Verilog signals must be declared with a
+   :option:`/*verilator&32;public*/` metacomment.  See also the public task
+   feature; writing an accessor may result in cleaner code.
+
+.. option:: `systemc_interface
+
+   Take the remaining text up to the next :option:`\`verilog` or
+   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
+   verbatim into the C++ class interface.  Must be placed as a module or
+   class item, e.g., directly inside a module/endmodule or class/endclass
+   pair. Despite the name of this macro, this also works in pure C++ code.
+
+.. option:: `SYSTEMVERILOG
+
+   The SYSTEMVERILOG, SV_COV_START, and related standard predefined macros
+   are defined by default when :vlopt:`--language <--language>` is
+   "1800-\*".
+
+.. option:: `VERILATOR
+
+.. option:: `verilator
+
+.. option:: `verilator3
+
+   The VERILATOR, verilator and verilator3 predefined macros are defined by
+   default so you may "\`ifdef" around tool specific constructs.
+
+.. option:: `verilator_config
+
+   Take the remaining text up to the next :option:`\`verilog` mode switch
+   and treat it as Verilator configuration commands.  See :ref:`Verilator
+   Configuration Files`.
+
+.. option:: `VERILATOR_TIMING
+
+   The VERILATOR_TIMING define is set when :vlopt:`--timing` is used to
+   allow an "\`ifdef" of code dependent on this feature.  Note that this define
+   is not affected by the :option:`timing_off` configuration file option
+   nor timing metacomments.
+
+.. option:: `verilog
+
+   Switch back to processing Verilog code after a
+   :option:`\`systemc_... <\`systemc_header>` mode switch.  The Verilog
+   code returns to the last language mode specified with
+   "\`begin_keywords", or SystemVerilog if none was specified.
+
+
+   .. t_dist_docs_style restart_sort
 
 .. option:: $c([string], ...);
 
@@ -86,6 +204,16 @@ or "`ifdef`"'s may break other tools.
    prints 5 digits per the C standard. This extension was standardized into
    1800-2009.
 
+.. option:: $stacktrace
+
+   Called as a task, print a stack trace.  Called as a function, return a
+   string with a stack trace.  This relies on the C++ system trace, which
+   may give less meaningful results if the model is not compiled with debug
+   symbols.  Also, the data represents the C++ stack; the SystemVerilog
+   functions/tasks involved may be renamed and/or inlined before becoming
+   the C++ functions that may be visible in the stack trace.  This
+   extension was standardized in IEEE 1800-2023.
+
 .. option:: $timeprecision
 
    Returns the timeprecision of the model as an integer.  This extension is
@@ -95,120 +223,6 @@ or "`ifdef`"'s may break other tools.
 
    Returns the timeunit of the current module as an integer.  This
    extension is experimental and may be removed without deprecation.
-
-.. option:: `coverage_block_off
-
-   Specifies the entire begin/end block should be ignored for coverage
-   analysis.  Must be inside a code block, e.g., within a begin/end pair.
-   Same as :option:`coverage_block_off` in :ref:`Configuration Files`.
-
-.. option:: `systemc_header
-
-   Take the remaining text up to the next :option:`\`verilog` or
-   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into the output .h file's header.  Must be placed as a module
-   or class item, e.g., directly inside a module/endmodule or
-   class/endclass pair. Despite the name of this macro, this also works in
-   pure C++ code.
-
-.. option:: `systemc_header_post
-
-   Take the remaining text up to the next :option:`\`verilog` or
-   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into the output .h file's header after the class definition.
-   Must be placed as a module or class item, e.g., directly inside a
-   module/endmodule or class/endclass pair. Despite the name of this macro,
-   this also works in pure C++ code.
-
-.. option:: `systemc_class_name
-
-   Inside one of the :option:`\`systemc_... <\`systemc_header>` text
-   blocks, replaced with the C++ class name generated for the given
-   containing SystemVerilog class or module. Currently this is replaced
-   blindly, ignoring quoting or other escapes; this behavior may change in
-   the future.  This attribute is indented only to be used internally in
-   `verilated_std.sv`.
-
-.. option:: `systemc_ctor
-
-   Take the remaining text up to the next :option:`\`verilog` or
-   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into the C++ class constructor.  Must be placed as a module or
-   class item, e.g., directly inside a module/endmodule or class/endclass
-   pair. Despite the name of this macro, this also works in pure C++ code.
-
-.. option:: `systemc_dtor
-
-   Take the remaining text up to the next :option:`\`verilog` or
-   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into the C++ class destructor.  Must be placed as a module or
-   class item, e.g., directly inside a module/endmodule or class/endclass
-   pair. Despite the name of this macro, this also works in pure C++ code.
-
-.. option:: `systemc_interface
-
-   Take the remaining text up to the next :option:`\`verilog` or
-   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into the C++ class interface.  Must be placed as a module or
-   class item, e.g., directly inside a module/endmodule or class/endclass
-   pair. Despite the name of this macro, this also works in pure C++ code.
-
-.. option:: `systemc_imp_header
-
-   Take the remaining text up to the next :option:`\`verilog` or
-   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into the header of all files for this C++ class implementation.
-   Must be placed as a module or class item, e.g., directly inside a
-   module/endmodule or class/endclass pair. Despite the name of this macro,
-   this also works in pure C++ code.
-
-.. option:: `systemc_implementation
-
-   Take the remaining text up to the next :option:`\`verilog` or
-   :option:`\`systemc_... <\`systemc_header>` mode switch and place it
-   verbatim into a single file of the C++ class implementation.  Must be
-   placed as a module or class item, e.g., directly inside a
-   module/endmodule or class/endclass pair. Despite the name of this macro,
-   this also works in pure C++ code.
-
-   If you will be reading or writing any Verilog variables in the C++
-   functions, the Verilog signals must be declared with a
-   :option:`/*verilator&32;public*/` metacomment.  See also the public task
-   feature; writing an accessor may result in cleaner code.
-
-.. option:: `SYSTEMVERILOG
-
-   The SYSTEMVERILOG, SV_COV_START, and related standard predefined macros
-   are defined by default when :vlopt:`--language <--language>` is
-   "1800-\*".
-
-.. option:: `VERILATOR
-
-.. option:: `verilator
-
-.. option:: `verilator3
-
-   The VERILATOR, verilator and verilator3 predefined macros are defined by
-   default so you may "\`ifdef" around tool specific constructs.
-
-.. option:: `verilator_config
-
-   Take the remaining text up to the next :option:`\`verilog` mode switch and
-   treat it as Verilator configuration commands.  See :ref:`Configuration Files`.
-
-.. option:: `VERILATOR_TIMING
-
-   The VERILATOR_TIMING define is set when :vlopt:`--timing` is used to
-   allow an "\`ifdef" of code dependent on this feature.  Note that this define
-   is not affected by the :option:`timing_off` configuration file option
-   nor timing metacomments.
-
-.. option:: `verilog
-
-   Switch back to processing Verilog code after a
-   :option:`\`systemc_... <\`systemc_header>` mode switch.  The Verilog
-   code returns to the last language mode specified with
-   "\`begin_keywords", or SystemVerilog if none was specified.
 
 .. option:: /*verilator&32;clock_enable*/
 
@@ -233,6 +247,9 @@ or "`ifdef`"'s may break other tools.
    and always improving performance.
 
    Same as :option:`clock_enable` configuration file option.
+
+
+   .. t_dist_docs_style ignore /*verilator&32;no_clocker*/
 
 .. option:: /*verilator&32;clocker*/
 
@@ -401,29 +418,6 @@ or "`ifdef`"'s may break other tools.
 
          parameter [2:0] PARAM /*verilator public*/ = 2'b0;
 
-.. option:: /*verilator&32;public*/ (on typedef enum)
-
-   Used after an enum typedef declaration to indicate the emitted C code
-   should have the enum values visible. Due to C++ language restrictions,
-   this may only be used on 64-bit or narrower integral enumerations.
-
-   .. code-block:: sv
-
-         typedef enum logic [2:0] { ZERO = 3'b0 } pub_t /*verilator public*/;
-
-.. option:: /*verilator&32;public*/ (on variable)
-
-   Used after an input, output, register, or wire declaration to indicate
-   the signal should be declared so that C code may read or write the value
-   of the signal.  This will also declare this module public; otherwise, use
-   :code:`/*verilator&32;public_flat*/`.
-
-   Instead of using public variables, consider making a DPI or public
-   function that accesses the variable.  This is nicer as it provides an
-   obvious entry point compatible across simulators.
-
-   Same as :option:`public` configuration file option.
-
 .. option:: /*verilator&32;public*/ (on task/function)
 
    Used inside the declaration section of a function or task declaration to
@@ -447,6 +441,52 @@ or "`ifdef`"'s may break other tools.
    simulators.
 
    Same as :option:`public` configuration file option.
+
+.. option:: /*verilator&32;public*/ (on typedef enum)
+
+   Used after an enum typedef declaration to indicate the emitted C code
+   should have the enum values visible. Due to C++ language restrictions,
+   this may only be used on 64-bit or narrower integral enumerations.
+
+   .. code-block:: sv
+
+         typedef enum logic [2:0] { ZERO = 3'b0 } pub_t /*verilator public*/;
+
+.. option:: /*verilator&32;public*/ (on variable)
+
+   Used after an input, output, register, or wire declaration to indicate
+   the signal should be declared so that C code may read or write the value
+   of the signal.  This will also declare this module public; otherwise, use
+   :code:`/*verilator&32;public_flat*/`.
+
+   Instead of using public variables, consider making a DPI or public
+   function that accesses the variable.  This is nicer as it provides an
+   obvious entry point compatible across simulators.
+
+   Same as :option:`public` configuration file option.
+
+.. option:: /*verilator&32;public_[|flat|flat_rd|flat_rw]_on [@(<edge_list>)]*/ (as scope)
+
+   Used to wrap multiple signals and parameters with the respective public attribute.
+   See attribute above for their respective behavior. Cannot be nested. e.g:
+
+      .. code-block:: sv
+
+         /*verilator public_flat_rw_on*/
+         logic clk;
+         logic rst;
+         parameter width = 8;
+         /* verilator public_off*/
+         logic data;
+
+   Is equivalent to:
+
+      .. code-block:: sv
+
+         logic clk /*verilator public_flat_rw*/;
+         logic rst /*verilator public_flat_rw*/;
+         parameter width /*verilator public_flat_rw*/ = 8;
+         logic data;
 
 .. option:: /*verilator&32;public_flat*/ (on variable)
 
@@ -475,33 +515,6 @@ or "`ifdef`"'s may break other tools.
 
    Same as :option:`public_flat_rw` configuration file option.
 
-.. option:: /*verilator&32;public_[|flat|flat_rd|flat_rw]_on [@(<edge_list>)]*/ (as scope)
-
-   Used to wrap multiple signals and parameters with the respective public attribute.
-   See attribute above for their respective behavior. Cannot be nested. e.g:
-
-      .. code-block:: sv
-
-         /*verilator public_flat_rw_on*/
-         logic clk;
-         logic rst;
-         parameter width = 8;
-         /* verilator public_off*/
-         logic data;
-
-   Is equivalent to:
-
-      .. code-block:: sv
-
-         logic clk /*verilator public_flat_rw*/;
-         logic rst /*verilator public_flat_rw*/;
-         parameter width /*verilator public_flat_rw*/ = 8;
-         logic data;
-
-.. option:: /*verilator&32;public_off*/
-
-   Terminates the previous `/*verilator public*_on*/` directive; see above.
-
 .. option:: /*verilator&32;public_module*/
 
    Used after a module statement to indicate the module should not be
@@ -512,13 +525,9 @@ or "`ifdef`"'s may break other tools.
 
    Same as :option:`public` configuration file option.
 
-.. option:: /*verilator&32;sc_clock*/
+.. option:: /*verilator&32;public_off*/
 
-   Deprecated and ignored.  Previously used after an input declaration to
-   indicate the signal should be declared in SystemC as a sc_clock instead
-   of a bool.  This was needed in SystemC 1.1 and 1.2 only; versions 2.0
-   and later do not require clock pins to be sc_clocks, and this is no
-   longer needed and is ignored.
+   Terminates the previous `/*verilator public*_on*/` directive; see above.
 
 .. option:: /*verilator&32;sc_bv*/
 
@@ -530,6 +539,14 @@ or "`ifdef`"'s may break other tools.
    the performance decreases significantly with increasing usage of sc_bv.
 
    Same as :option:`sc_bv` configuration file option.
+
+.. option:: /*verilator&32;sc_clock*/
+
+   Deprecated and ignored.  Previously used after an input declaration to
+   indicate the signal should be declared in SystemC as a sc_clock instead
+   of a bool.  This was needed in SystemC 1.1 and 1.2 only; versions 2.0
+   and later do not require clock pins to be sc_clocks, and this is no
+   longer needed and is ignored.
 
 .. option:: /*verilator&32;sformat*/
 
@@ -649,13 +666,3 @@ or "`ifdef`"'s may break other tools.
    following loop at the same statement level should always be fully
    unrolled by Verilator, ignoring :vlopt:`--unroll-count`.  This is
    similar to clang's ``#pragma clang loop unroll(full)``.
-
-.. option:: $stacktrace
-
-   Called as a task, print a stack trace.  Called as a function, return a
-   string with a stack trace.  This relies on the C++ system trace, which
-   may give less meaningful results if the model is not compiled with debug
-   symbols.  Also, the data represents the C++ stack; the SystemVerilog
-   functions/tasks involved may be renamed and/or inlined before becoming
-   the C++ functions that may be visible in the stack trace.  This
-   extension was standardized in IEEE 1800-2023.

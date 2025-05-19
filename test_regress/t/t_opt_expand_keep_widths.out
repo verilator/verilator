@@ -1,0 +1,7 @@
+[0] in5=0 clock_10=0 clock_12=0 out18=1
+[5] in5=0 clock_10=0 clock_12=1 out18=1
+[10] in5=0 clock_10=0 clock_12=0 out18=1
+[15] in5=0 clock_10=1 clock_12=0 out18=1
+[15] in5=0 clock_10=1 clock_12=0 out18=0
+[20] in5=0 clock_10=0 clock_12=0 out18=0
+*-* All Finished *-*

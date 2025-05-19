@@ -5,14 +5,22 @@ dpii_int_u3:
 %Warning: DPI svOpenArrayHandle function index 1 out of bounds; 10 outside [2:-2].
 %Warning: DPI svOpenArrayHandle function called on 3 dimensional array using 1 dimensional function.
 dpii_real_u1:
-%Warning: DPI svOpenArrayHandle function unsupported datatype (5).
-%Warning: DPI svOpenArrayHandle function unsupported datatype (5).
-%Warning: DPI svOpenArrayHandle function unsupported datatype (5).
-%Warning: DPI svOpenArrayHandle function unsupported datatype (5).
-%Warning: DPI svOpenArrayHandle function unsupported datatype (5).
-%Warning: DPI svOpenArrayHandle function unsupported datatype (5).
-%Warning: DPI svOpenArrayHandle function unsupported datatype (5).
-%Warning: DPI svOpenArrayHandle function unsupported datatype (5).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
+%Warning: DPI svOpenArrayHandle function unsupported datatype (8).
 dpii_bit_u6:
 %Warning: DPI svOpenArrayHandle function called on 6 dimensional array using -1 dimensional function.
 %Warning: DPI svOpenArrayHandle function called on 6 dimensional array using -1 dimensional function.

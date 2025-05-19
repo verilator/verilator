@@ -12,8 +12,10 @@ module t_format_wide_decimal(/*AUTOARG*/
    );
    input clk;
 
-   int   cycle = 0;
-   bit [1023:0] x = '1;
+   int cycle;
+   bit [1023:0] x;
+
+   initial x = '1;
 
    always @(posedge clk) begin
       if (cycle == 0) begin

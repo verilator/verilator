@@ -441,18 +441,19 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Verilog 2001 Config */
 <V01C,V05,VA5,S05,S09,S12,S17,S23,SAX>{
   /*     Generic unsupported keywords */
-  "cell"                { ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "config"              { ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "design"              { ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "endconfig"           { ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "incdir"              { ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "include"             { FL; yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: Verilog 2001-config reserved word not implemented;"
-                                                " suggest you want `include instead: '" << yytext << "'");
+  "cell"                { FL; ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "config"              { FL; ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "design"              { FL; ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "endconfig"           { FL; ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "incdir"              { FL; ERROR_RSVD_WORD("Verilog 2001-config lib.map"); }
+  "include"             { FL; yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: Verilog 2001-config lib.map reserved word not implemented: 'include'\n"
+                                                << yylval.fl->warnMore() << "... Suggest unless in a lib.map file,"
+                                                " want `include instead");
                           FL_BRK; }
-  "instance"            { ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "liblist"             { ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "library"             { ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "use"                 { ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "instance"            { FL; ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "liblist"             { FL; ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "library"             { FL; ERROR_RSVD_WORD("Verilog 2001-config lib.map"); }
+  "use"                 { FL; ERROR_RSVD_WORD("Verilog 2001-config"); }
 }
 
   /* Verilog 2005 */
@@ -581,7 +582,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "string"              { FL; return ySTRING; }
   "struct"              { FL; return ySTRUCT; }
   "super"               { FL; return ySUPER; }
-  "tagged"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "tagged"              { FL; return yTAGGED; }
   "this"                { FL; return yTHIS; }
   "throughout"          { FL; return yTHROUGHOUT; }
   "timeprecision"       { FL; return yTIMEPRECISION; }

@@ -33,7 +33,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class DepthBlockVisitor final : public VNVisitor {
     // NODE STATE
 
-    // STATE
+    // STATE - for current visit position (use VL_RESTORER)
     const AstNodeModule* m_modp = nullptr;  // Current module
     const AstCFunc* m_cfuncp = nullptr;  // Current function
     int m_depth = 0;  // How deep in an expression
@@ -85,7 +85,7 @@ class DepthBlockVisitor final : public VNVisitor {
     void visit(AstStmtExpr* nodep) override {}  // Stop recursion after introducing new function
     void visit(AstJumpBlock*) override {}  // Stop recursion as can't break up across a jump
     void visit(AstNodeStmt* nodep) override {
-        m_depth++;
+        ++m_depth;
         if (m_depth > v3Global.opt.compLimitBlocks()) {  // Already done
             UINFO(4, "DeepBlocks " << m_depth << " " << nodep << endl);
             const AstNode* const backp = nodep->backp();  // Only for debug
@@ -97,7 +97,7 @@ class DepthBlockVisitor final : public VNVisitor {
         } else {
             iterateChildren(nodep);
         }
-        m_depth--;
+        --m_depth;
     }
 
     void visit(AstNodeExpr*) override {}  // Accelerate

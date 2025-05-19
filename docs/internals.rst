@@ -1470,7 +1470,7 @@ Preparing to Run Tests
 
 For all tests to pass, you must install the following packages:
 
--  SystemC to compile the SystemC outputs, see http://systemc.org
+-  SystemC to compile the SystemC outputs, see https://systemc.org
 
 -  vcddiff to find differences in VCD outputs. See the readme at
    https://github.com/veripool/vcddiff
@@ -1633,7 +1633,7 @@ scaled so it can be more useful with large graphs.
 
 For interactive graph viewing consider `xdot
 <https://github.com/jrfonseca/xdot.py>`__ or `ZGRViewer
-<http://zvtm.sourceforge.net/zgrviewer.html>`__. If you know of better
+<https://zvtm.sourceforge.net/zgrviewer.html>`__. If you know of better
 viewers (especially for large graphs) please let us know.
 
 
@@ -1903,7 +1903,7 @@ find what made a <e#*#*> line in the tree dumps):
 
 ::
 
-   watch AstNode::s_editCntGbl==####
+   watch AstNode::s_editCntGbl=####
 
 Then, when the watch fires, to break at every following change to that
 node:

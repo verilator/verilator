@@ -21,16 +21,16 @@ test.lint(verilator_flags2=["--lint-only"],
           expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.top_filename,
-             out_filename="../docs/gen/ex_WIDTHEXPAND_1_faulty.rst",
+             out_filename=root + "/docs/gen/ex_WIDTHEXPAND_1_faulty.rst",
              lines="8-10")
 
 test.extract(in_filename=test.golden_filename,
-             out_filename="../docs/gen/ex_WIDTHEXPAND_1_msg.rst",
+             out_filename=root + "/docs/gen/ex_WIDTHEXPAND_1_msg.rst",
              lineno_adjust=-7,
              regexp=r'Warning-WIDTH')
 
 test.extract(in_filename=test.top_filename,
-             out_filename="../docs/gen/ex_WIDTHEXPAND_1_fixed.rst",
+             out_filename=root + "/docs/gen/ex_WIDTHEXPAND_1_fixed.rst",
              lines="18")
 
 test.passes()

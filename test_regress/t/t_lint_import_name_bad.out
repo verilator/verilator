@@ -1,5 +1,5 @@
-%Error: t/t_lint_import_name_bad.v:11:12: Import object not found: 'defs'
+%Error: t/t_lint_import_name_bad.v:11:8: Import object not found: 'defs'
    11 | import defs::sigs;
-      |            ^~
+      |        ^~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

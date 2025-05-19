@@ -196,7 +196,6 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     if (GRAMMARP->m_varIO == VDirection::NONE  // In non-ANSI port list
         && GRAMMARP->m_varDecl == VVarType::PORT) {
         // Just a port list with variable name (not v2k format); AstPort already created
-        if (dtypep) fileline->v3warn(E_UNSUPPORTED, "Unsupported: Ranges ignored in port-lists");
         if (arrayp) VL_DO_DANGLING(arrayp->deleteTree(), arrayp);
         if (attrsp) {
             // TODO: Merge attributes across list? Or warn attribute is ignored
@@ -263,7 +262,6 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
         // Parser needs to know what is a type
         AstNode* const newp = new AstTypedefFwd{fileline, name};
         AstNode::addNext<AstNode, AstNode>(nodep, newp);
-        SYMP->reinsert(newp);
     }
     // Don't set dtypep in the ranging;
     // We need to autosize parameters and integers separately

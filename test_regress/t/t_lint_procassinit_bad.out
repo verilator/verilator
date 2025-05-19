@@ -1,0 +1,21 @@
+%Warning-PROCASSINIT: t/t_lint_procassinit_bad.v:26:21: Procedural assignment to declaration with initial value: 'flop_out'
+                                                      : ... note: In instance 't'
+                                                      : ... Location of variable initialization
+   26 |    logic flop_out = 1;   
+      |                     ^
+                      t/t_lint_procassinit_bad.v:30:10: ... Location of variable process write
+                                                      : ... Perhaps should initialize instead using a reset in this process
+   30 |          flop_out <= ~in;   
+      |          ^~~~~~~~
+                      ... For warning description see https://verilator.org/warn/PROCASSINIT?v=latest
+                      ... Use "/* verilator lint_off PROCASSINIT */" and lint_on around source to disable this message.
+%Warning-PROCASSINIT: t/t_lint_procassinit_bad.v:48:21: Procedural assignment to declaration with initial value: 'bad_comb'
+                                                      : ... note: In instance 't'
+                                                      : ... Location of variable initialization
+   48 |    logic bad_comb = 1;     
+      |                     ^
+                      t/t_lint_procassinit_bad.v:51:7: ... Location of variable process write
+                                                     : ... Perhaps should initialize instead using a reset in this process
+   51 |       bad_comb = ok2;
+      |       ^~~~~~~~
+%Error: Exiting due to

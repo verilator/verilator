@@ -24,7 +24,6 @@
 #include "V3HierBlock.h"
 #include "V3LinkCells.h"
 #include "V3Parse.h"
-#include "V3ParseSym.h"
 #include "V3Stats.h"
 #include "V3ThreadPool.h"
 
@@ -54,9 +53,8 @@ void V3Global::readFiles() {
     const VNUser4InUse inuser4;
 
     VInFilter filter{v3Global.opt.pipeFilter()};
-    V3ParseSym parseSyms{v3Global.rootp()};  // Symbol table must be common across all parsing
 
-    V3Parse parser{v3Global.rootp(), &filter, &parseSyms};
+    V3Parse parser{v3Global.rootp(), &filter};
 
     // Parse the std waivers
     if (v3Global.opt.stdWaiver()) {
@@ -106,7 +104,7 @@ void V3Global::readFiles() {
 
     if (!v3Global.opt.preprocOnly() || v3Global.opt.preprocResolve()) {
         // Resolve all modules cells refer to
-        V3LinkCells::link(v3Global.rootp(), &filter, &parseSyms);
+        V3LinkCells::link(v3Global.rootp(), &filter);
     }
 
     V3Global::dumpCheckGlobalTree("cells", false, dumpTreeEitherLevel() >= 9);

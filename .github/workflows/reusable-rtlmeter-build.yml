@@ -1,0 +1,73 @@
+---
+# DESCRIPTION: Github actions config
+# This name is key to badges in README.rst, so we use the name build
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: reusable-rtlmeter-build
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: "Runner to use, e.g.: ubuntu-24.04"
+        type: string
+        required: true
+      cc:
+        description: "Compiler to use: 'gcc' or 'clang'"
+        type: string
+        required: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CCACHE_DIR: ${{ github.workspace }}/ccache
+  CCACHE_MAXSIZE: 512M
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runs-on }}
+    name: Build
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install ccache mold help2man libfl-dev libgoogle-perftools-dev libsystemc-dev
+
+      - name: Use saved ccache
+        uses: actions/cache@v4
+        with:
+          path: ccache
+          key: rtlmeter-build-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: rtlmeter-build-ccache-${{ inputs.runs-on }}-${{ inputs.cc }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: repo
+          fetch-depth: 0 # Required for 'git describe' used for 'verilator --version'
+
+      - name: Configure
+        working-directory: repo
+        run: |
+          autoconf
+          ./configure --prefix=${{ github.workspace }}/install CXX=${{ inputs.cc == 'clang' && 'clang++' || 'g++' }}
+
+      - name: Make
+        working-directory: repo
+        run: make -j $(nproc)
+
+      - name: Install
+        working-directory: repo
+        run: make install
+
+      - name: Tar up installation
+        run: tar --posix -c -z -f verilator-rtlmeter.tar.gz install
+
+      - name: Upload Verilator installation archive
+        uses: actions/upload-artifact@v4
+        with:
+          path: verilator-rtlmeter.tar.gz
+          name: verilator-rtlmeter-${{ inputs.runs-on }}-${{ inputs.cc }}
+          overwrite: true

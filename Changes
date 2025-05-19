@@ -8,7 +8,37 @@ The changes in each Verilator version are described below.  The
 contributors that suggested a given feature are shown in []. Thanks!
 
 
-Verilator 5.035 devel
+Verilator 5.037 devel
+==========================
+
+**Other:**
+
+* Support redeclaring type as non-type; major parsing change (#2412).
+* Support constrained random for associative arrays (#5985) (#5986). [Yilou Wang]
+* Support assignments to concatenations with impure RHS (#6002). [Ryszard Rozak, Antmicro Ltd.]
+* Support SARIF JSON diagnostic output with `--diagnostics-sarif`. (#6017)
+* Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
+* Add PROCINITASSIGN on initial assignments to process variables (#2481). [Niraj Menon]
+* Fix filename backslash escapes in C code (#5947).
+* Fix C++ widths in V3Expand (#5953) (#5975). [Geza Lore]
+* Fix dependencies from different hierarchical schedules (#5954). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix constant propagation of post-expand stages (#5955) (#5963) (#5969) (#5972) (#5983).
+* Fix sign extension of signed compared with unsigned case items (#5968).
+* Fix always processes ignoring $finish (#5971). [Hennadii Chernyshchyk]
+* Fix streaming to/from packed arrays (#5976). [Geza Lore]
+* Fix segfault writing timestamp to VCD after buffer flush (#5978) (#5980). [Dominick Grochowina]
+* Fix inconsistent assignment error with split-var (#5984) (#5988). [Yutetsu TAKATSUKASA]
+* Fix AstAssignW conversion (#5991) (#5992). [Ryszard Rozak, Antmicro Ltd.]
+* Fix const-bit-op-tree with single-bit masks (#5993) (#5998). [Yutetsu TAKATSUKASA]
+* Fix arithmetic right-shift by constants over 32 bits (#5994). [Zhen Yan]
+* Fix checking for too-wide divide and modulus (#6003) (#6006). [Zhen Yan]
+* Fix folding of LteS in DfgPeephole (#6000) (#6004). [Geza Lore]
+* Fix slicing of AstExprStmt nodes (#6005). [Ryszard Rozak, Antmicro Ltd.]
+* Fix skipped generate blocks in toggle coverage (#6010). [Ryszard Rozak, Antmicro Ltd.]
+* Fix arithmetic left-shift by constants over 32 bits (#6007) (#6015). [Zhen Yan]
+
+
+Verilator 5.036 2025-04-27
 ==========================
 
 **Important:**
@@ -37,6 +67,8 @@ Verilator 5.035 devel
 * Add numactl-like automatic assignment of processor affinity (#5911).
 * Add ccache support for generated cmake files (#5926) (#5930). [Andrew Voznytsa]
 * Add visualization of multi-threaded waiting time with verilator_gantt (#5929). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Add suggesting isolate_assignments to UNOPTFLAT (#5942). [John Khoo]
+* Add profiling of hierarchical mtasks with verilator_gantt (#5956). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Add empty veriuser.h for legacy compatibility.
 * Add DEPRECATED warning on `--xml-only` and `--xml-output`.
 * Remove unused gtkwave/wavealloca.h. [Geza Lore]
@@ -81,8 +113,10 @@ Verilator 5.035 devel
 * Fix LATCH warning for automatic variables (#5918). [Yutetsu TAKATSUKASA]
 * Fix %% on elaboration severity tasks (#5922). [Ethan Sifferman]
 * Fix port default values with `--coverage-line` creating `0=0` (#5920). [Drew Ranck]
+* Fix vlSelf error on fork repeats (#5927). [Drew Ranck]
 * Fix missing C++ regeneration when Verilog files are updated (#5934). [Zhouyi Shen]
 * Fix stream expressions (#5938). [Ryszard Rozak, Antmicro Ltd.]
+* Fix packed selection using over 32-bit index (#5957).
 
 
 Verilator 5.034 2025-02-24

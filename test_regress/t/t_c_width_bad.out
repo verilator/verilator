@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_c_width_bad.v:9:22: Unsupported: $c can't generate wider than 64 bits
+                                          : ... note: In instance 't'
+    9 |    bit [99:0] wide = $c100("0");
+      |                      ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

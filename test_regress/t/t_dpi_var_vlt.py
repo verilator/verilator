@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 test.top_filename = "t/t_dpi_var.v"
+test.pli_filename = "t/t_dpi_var.cpp"
 
 out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
 
@@ -18,7 +19,7 @@ test.compile(make_top_shell=False,
              make_main=False,
              verilator_flags2=[
                  "--no-json-edit-nums", "--exe --no-l2name", test.t_dir + "/t_dpi_var.vlt",
-                 test.t_dir + "/t_dpi_var.cpp"
+                 test.pli_filename
              ])
 
 if test.vlt_all:

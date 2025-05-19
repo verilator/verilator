@@ -42,7 +42,7 @@ class LinkParseVisitor final : public VNVisitor {
     const VNUser2InUse m_inuser2;
 
     // TYPES
-    using ImplTypedefMap = std::map<const std::pair<void*, std::string>, AstTypedef*>;
+    using ImplTypedefMap = std::map<std::string, AstTypedef*>;
 
     // STATE
     AstVar* m_varp = nullptr;  // Variable we're under
@@ -324,14 +324,15 @@ class LinkParseVisitor final : public VNVisitor {
         }
         if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
-            AstNodeDType* dtypep = VN_CAST(nodep->valuep(), NodeDType);
+            AstNode* dtypep = nodep->valuep();
             if (dtypep) {
                 dtypep->unlinkFrBack();
             } else {
                 dtypep = new AstVoidDType{nodep->fileline()};
             }
-            AstNode* const newp = new AstParamTypeDType{nodep->fileline(), nodep->varType(),
-                                                        nodep->name(), VFlagChildDType{}, dtypep};
+            AstNode* const newp = new AstParamTypeDType{
+                nodep->fileline(), nodep->varType(), nodep->name(), VFlagChildDType{},
+                new AstRequireDType{nodep->fileline(), dtypep}};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
@@ -498,14 +499,14 @@ class LinkParseVisitor final : public VNVisitor {
         cleanFileline(nodep);
         UINFO(8, "   DEFIMPLICIT " << nodep << endl);
         // Must remember what names we've already created, and combine duplicates
-        // so that for "var enum {...} a,b" a & b will share a common typedef
-        // Unique name space under each containerp() so that an addition of
+        // so that for "var enum {...} a,b" a & b will share a common typedef.
+        // Change to unique name space per module so that an addition of
         // a new type won't change every verilated module.
         AstTypedef* defp = nullptr;
-        const ImplTypedefMap::iterator it
-            = m_implTypedef.find(std::make_pair(nodep->containerp(), nodep->name()));
+        const ImplTypedefMap::iterator it = m_implTypedef.find(nodep->name());
         if (it != m_implTypedef.end()) {
             defp = it->second;
+            UINFO(9, "Reused impltypedef " << nodep << "  -->  " << defp << endl);
         } else {
             // Definition must be inserted right after the variable (etc) that needed it
             // AstVar, AstTypedef, AstNodeFTask are common containers
@@ -526,7 +527,11 @@ class LinkParseVisitor final : public VNVisitor {
             } else {
                 defp = new AstTypedef{nodep->fileline(), nodep->name(), nullptr, VFlagChildDType{},
                                       dtypep};
-                m_implTypedef.emplace(std::make_pair(nodep->containerp(), defp->name()), defp);
+                m_implTypedef.emplace(defp->name(), defp);
+                // Rename so that name doesn't change if a type is added/removed elsewhere
+                // But the m_implTypedef is stil by old name so we can find it for next new lookups
+                defp->name("__typeimpmod" + cvtToStr(m_implTypedef.size()));
+                UINFO(9, "New impltypedef " << defp << endl);
                 backp->addNextHere(defp);
             }
         }
@@ -618,6 +623,7 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_genblkAbove);
         VL_RESTORER(m_genblkNum);
         VL_RESTORER(m_beginDepth);
+        VL_RESTORER(m_implTypedef);
         VL_RESTORER(m_lifetime);
         VL_RESTORER(m_lifetimeAllowed);
         {
@@ -630,6 +636,7 @@ class LinkParseVisitor final : public VNVisitor {
             m_genblkAbove = 0;
             m_genblkNum = 0;
             m_beginDepth = 0;
+            m_implTypedef.clear();
             m_valueModp = nodep;
             m_lifetime = nodep->lifetime();
             m_lifetimeAllowed = VN_IS(nodep, Class);

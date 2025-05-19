@@ -351,7 +351,7 @@ class CoverageVisitor final : public VNVisitor {
                 //      We'll do this, and make the if(...) coverinc later.
 
                 // Add signal to hold the old value
-                const string newvarname = "__Vtogcov__"s + nodep->shortName();
+                const string newvarname = "__Vtogcov__"s + m_beginHier + nodep->shortName();
                 FileLine* const fl_nowarn = new FileLine{nodep->fileline()};
                 fl_nowarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
                 AstVar* const chgVarp
@@ -371,10 +371,12 @@ class CoverageVisitor final : public VNVisitor {
     }
 
     void toggleVarBottom(const ToggleEnt& above, const AstVar* varp) {
+        const std::string hierPrefix
+            = (m_beginHier != "") ? AstNode::prettyName(m_beginHier) + "." : "";
         AstCoverToggle* const newp = new AstCoverToggle{
             varp->fileline(),
-            newCoverInc(varp->fileline(), "", "v_toggle", varp->name() + above.m_comment, "", 0,
-                        ""),
+            newCoverInc(varp->fileline(), "", "v_toggle",
+                        hierPrefix + varp->name() + above.m_comment, "", 0, ""),
             above.m_varRefp->cloneTree(true), above.m_chgRefp->cloneTree(true)};
         m_modp->addStmtsp(newp);
     }
@@ -627,9 +629,9 @@ class CoverageVisitor final : public VNVisitor {
         // covers the code in that line.)
         VL_RESTORER(m_beginHier);
         VL_RESTORER(m_inToggleOff);
-        m_inToggleOff = true;
+        if (!nodep->generate()) m_inToggleOff = true;
         if (nodep->name() != "") {
-            m_beginHier = m_beginHier + (m_beginHier != "" ? "." : "") + nodep->name();
+            m_beginHier = m_beginHier + (m_beginHier != "" ? "__DOT__" : "") + nodep->name();
         }
         iterateChildren(nodep);
         lineTrack(nodep);

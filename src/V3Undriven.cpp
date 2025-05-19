@@ -46,6 +46,8 @@ class UndrivenVarEntry final {
     const FileLine* m_alwCombFileLinep = nullptr;  // File line of always_comb of var if driven
                                                    // within always_comb, else nullptr
     const AstNodeVarRef* m_nodep = nullptr;  // varref if driven, else nullptr
+    const AstNode* m_initStaticp = nullptr;  // varref if in InitialStatic driven
+    const AstNode* m_procWritep = nullptr;  // varref if written in process
     const FileLine* m_nodeFileLinep = nullptr;  // File line of varref if driven, else nullptr
     bool m_underGen = false;  // Under a generate
 
@@ -129,6 +131,11 @@ public:
         m_alwCombp = alwCombp;
         m_alwCombFileLinep = fileLinep;
     }
+
+    const AstNode* initStaticp() const { return m_initStaticp; }
+    void initStaticp(const AstNode* nodep) { m_initStaticp = nodep; }
+    const AstNode* procWritep() const { return m_procWritep; }
+    void procWritep(const AstNode* nodep) { m_procWritep = nodep; }
     void underGenerate() { m_underGen = true; }
     bool isUnderGen() const { return m_underGen; }
     bool isDrivenWhole() const { return m_wholeFlags[FLAG_DRIVEN]; }
@@ -172,6 +179,18 @@ public:
         // Combine bits into overall state
         AstVar* const nodep = m_varp;
 
+        if (initStaticp() && procWritep() && !nodep->isClassMember() && !nodep->isFuncLocal()) {
+            initStaticp()->v3warn(
+                PROCASSINIT,
+                "Procedural assignment to declaration with initial value: "
+                    << nodep->prettyNameQ() << '\n'
+                    << initStaticp()->warnMore() << "... Location of variable initialization\n"
+                    << initStaticp()->warnContextPrimary() << '\n'
+                    << procWritep()->warnOther() << "... Location of variable process write\n"
+                    << procWritep()->warnMore()
+                    << "... Perhaps should initialize instead using a reset in this process\n"
+                    << procWritep()->warnContextSecondary());
+        }
         if (nodep->isGenVar()) {  // Genvar
             if (!nodep->isIfaceRef() && !nodep->isUsedParam() && !unusedMatch(nodep)) {
                 nodep->v3warn(UNUSEDGENVAR, "Genvar is not used: " << nodep->prettyNameQ());
@@ -277,10 +296,12 @@ class UndrivenVisitor final : public VNVisitorConst {
     std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps;  // Nodes to delete when finished
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In continuous assignment
+    bool m_inInitialStatic = false;  // In InitialStatic
     bool m_inProcAssign = false;  // In procedural assignment
     bool m_inFTaskRef = false;  // In function or task call
     bool m_inInoutOrRefPin = false;  // Connected to pin that is inout
     const AstNodeFTask* m_taskp = nullptr;  // Current task
+    const AstAlways* m_alwaysp = nullptr;  // Current always of either type
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
 
     // METHODS
@@ -384,9 +405,8 @@ class UndrivenVisitor final : public VNVisitorConst {
                 nodep->v3warn(PROCASSWIRE, "Procedural assignment to wire, perhaps intended var"
                                                << " (IEEE 1800-2023 6.5): "
                                                << nodep->prettyNameQ());
-            }
-            if (m_inContAssign && !nodep->varp()->varType().isContAssignable()
-                && !nodep->fileline()->language().systemVerilog()) {
+            } else if (m_inContAssign && !nodep->varp()->varType().isContAssignable()
+                       && !nodep->fileline()->language().systemVerilog()) {
                 nodep->v3warn(CONTASSREG,
                               "Continuous assignment to reg, perhaps intended wire"
                                   << " (IEEE 1364-2005 6.1; Verilog only, legal in SV): "
@@ -448,6 +468,11 @@ class UndrivenVisitor final : public VNVisitorConst {
                 if (m_alwaysCombp)
                     entryp->drivenAlwaysCombWhole(m_alwaysCombp, m_alwaysCombp->fileline());
             }
+            if (nodep->access().isWriteOrRW()) {
+                if (m_inInitialStatic && !entryp->initStaticp()) entryp->initStaticp(nodep);
+                if (m_alwaysp && m_inProcAssign && !entryp->procWritep())
+                    entryp->procWritep(nodep);
+            }
             if (m_inBBox || nodep->access().isReadOrRW()
                 || fdrv
                 // Inouts have only isWrite set, as we don't have more
@@ -480,9 +505,16 @@ class UndrivenVisitor final : public VNVisitorConst {
         m_inContAssign = true;
         iterateChildrenConst(nodep);
     }
+    void visit(AstInitialStatic* nodep) override {
+        VL_RESTORER(m_inInitialStatic);
+        m_inInitialStatic = true;
+        iterateChildrenConst(nodep);
+    }
     void visit(AstAlways* nodep) override {
+        VL_RESTORER(m_alwaysp);
         VL_RESTORER(m_alwaysCombp);
         AstNode::user2ClearTree();
+        m_alwaysp = nodep;
         if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
             UINFO(9, "   " << nodep << endl);
             m_alwaysCombp = nodep;

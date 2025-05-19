@@ -685,8 +685,8 @@ class TaskVisitor final : public VNVisitor {
             UASSERT_OBJ(snp, refp, "Missing scoping context");
             ccallp->addArgsp(snp);
             // __Vfilenamep
-            ccallp->addArgsp(new AstCExpr{refp->fileline(),
-                                          "\"" + refp->fileline()->filename() + "\"", 64, true});
+            ccallp->addArgsp(new AstCExpr{
+                refp->fileline(), "\"" + refp->fileline()->filenameEsc() + "\"", 64, true});
             // __Vlineno
             ccallp->addArgsp(new AstConst(refp->fileline(), refp->fileline()->lineno()));
         }

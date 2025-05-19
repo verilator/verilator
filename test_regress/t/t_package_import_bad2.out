@@ -1,4 +1,4 @@
-%Error: t/t_package_import_bad2.v:12:11: Importing from missing package 'Pkg1b'
+%Error: t/t_package_import_bad2.v:12:11: Import package not found: 'Pkg1b'
    12 |    import Pkg1b::*;   
       |           ^~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

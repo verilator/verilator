@@ -595,40 +595,41 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
 
     // Warn and return not found
     if (errmsg != "") {
-        fl->v3error(errmsg + "'"s + filename + "'"s);
-        filePathLookedMsg(fl, filename);
+        fl->v3error(errmsg << "'"s << filename << "'\n"s << fl->warnContextPrimary()
+                           << V3Error::warnAdditionalInfo() << filePathLookedMsg(fl, filename));
     }
     return "";
 }
 
-void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
+string V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
     static bool shown_notfound_msg = false;
+    std::ostringstream ss;
     if (modname.find("__Vhsh") != string::npos) {
-        std::cerr << V3Error::warnMoreStandalone()
-                  << "... Note: Name is longer than 127 characters; automatic"
-                  << " file lookup may have failed due to OS filename length limits.\n";
-        std::cerr << V3Error::warnMoreStandalone()
-                  << "... Suggest putting filename with this module/package"
-                  << " onto command line instead.\n";
+        ss << V3Error::warnMore() << "... Note: Name is longer than 127 characters; automatic"
+           << " file lookup may have failed due to OS filename length limits.\n";
+        ss << V3Error::warnMore() << "... Suggest putting filename with this module/package"
+           << " onto command line instead.\n";
     } else if (!shown_notfound_msg) {
         shown_notfound_msg = true;
         if (m_impp->m_incDirUsers.empty()) {
-            fl->v3error("This may be because there's no search path specified with -I<dir>.");
+            ss << V3Error::warnMore()
+               << "... This may be because there's no search path specified with -I<dir>.\n";
         }
-        std::cerr << V3Error::warnMoreStandalone() << "... Looked in:" << endl;
+        ss << V3Error::warnMore() << "... Looked in:\n";
         for (const string& dir : m_impp->m_incDirUsers) {
             for (const string& ext : m_impp->m_libExtVs) {
                 const string fn = V3Os::filenameJoin(dir, modname + ext);
-                std::cerr << V3Error::warnMoreStandalone() << "     " << fn << endl;
+                ss << V3Error::warnMore() << "     " << fn << "\n";
             }
         }
         for (const string& dir : m_impp->m_incDirFallbacks) {
             for (const string& ext : m_impp->m_libExtVs) {
                 const string fn = V3Os::filenameJoin(dir, modname + ext);
-                std::cerr << V3Error::warnMoreStandalone() << "     " << fn << endl;
+                ss << V3Error::warnMore() << "     " << fn << "\n";
             }
         }
     }
+    return ss.str();
 }
 
 //! Determine what language is associated with a filename
@@ -1275,6 +1276,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-decoration", CbCall, [this, fl]() { decorations(fl, "medium"); });
     DECL_OPTION("-decorations", CbVal, [this, fl](const char* optp) { decorations(fl, optp); });
     DECL_OPTION("-no-decoration", CbCall, [this, fl]() { decorations(fl, "none"); });
+    DECL_OPTION("-diagnostics-sarif", OnOff, &m_diagnosticsSarif);
+    DECL_OPTION("-diagnostics-sarif-output", CbVal, [this](const char* optp) {
+        m_diagnosticsSarifOutput = optp;
+        m_diagnosticsSarif = true;
+    });
     DECL_OPTION("-dpi-hdr-only", OnOff, &m_dpiHdrOnly);
     DECL_OPTION("-dump-", CbPartialMatch, [this](const char* optp) { m_dumpLevel[optp] = 3; });
     DECL_OPTION("-no-dump-", CbPartialMatch, [this](const char* optp) { m_dumpLevel[optp] = 0; });

@@ -356,8 +356,7 @@ public:
             // code to allow the compiler to generate load store after the
             // if condition (including short-circuit evaluation)
             // speculatively and also reduce the data cache pollution when
-            // executing in the wrong path to make verilator-generated code
-            // run faster.
+            // executing in the wrong path to make Verilated code faster.
             puts("auto& vlSelfRef = std::ref(*vlSelf).get();\n");
         }
 
@@ -1064,9 +1063,8 @@ public:
         putns(nodep, "vlSymsp->_vm_contextp__->timeprecision()");
     }
     void visit(AstNodeSimpleText* nodep) override {
-        const string text = m_inUC && m_useSelfForThis
-                                ? VString::replaceWord(nodep->text(), "this", "vlSelf")
-                                : nodep->text();
+        const string text
+            = VSelfPointerText::replaceThis(m_inUC && m_useSelfForThis, nodep->text());
         if (nodep->tracking() || m_trackText) {
             puts(text);
         } else {
@@ -1342,7 +1340,7 @@ public:
     void visit(AstThisRef* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
         puts("{");
-        puts(m_useSelfForThis ? "vlSelf" : "this");
+        puts(VSelfPointerText::replaceThis(m_useSelfForThis, "this"));
         puts("}");
     }
 

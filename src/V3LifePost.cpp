@@ -47,6 +47,7 @@ class LifePostElimVisitor final : public VNVisitor {
     // INPUT:
     //  AstVarScope::user4p()   -> AstVarScope*, If set, replace this
     //                             varscope with specified new one
+
     // STATE
 
     // VISITORS

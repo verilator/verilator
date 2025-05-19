@@ -405,11 +405,8 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:164:18: Ignoring unsupported: covergroup within class
   164 |       covergroup cov1 @m_z;
       |                  ^~~~
-%Error: t/t_covergroup_unsup.v:169:28: syntax error, unexpected '=', expecting IDENTIFIER or do or final or randomize
+%Error: t/t_covergroup_unsup.v:169:23: Can't find definition of variable: 'cov1'
   169 |       function new(); cov1 = new; endfunction
-      |                            ^
+      |                       ^~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: Internal Error: t/t_covergroup_unsup.v:160:4: ../V3ParseSym.h:#: Symbols suggest ending FUNC 'new' but parser thinks ending CLASS 'CgCls'
-  160 |    class CgCls;
-      |    ^~~~~
-                        ... This fatal error may be caused by the earlier error(s); resolve those first.
+%Error: Exiting due to

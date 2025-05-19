@@ -110,7 +110,7 @@ public:
                       "The emitted value must be of integral type");
 
         const uint64_t dt = time - m_lastTime;
-        for (size_t i = 0; i < std::min(m_width, bits); i++) {
+        for (size_t i = 0; i < std::min(m_width, bits); ++i) {
             m_bits[i].aggregateVal(dt, (newval >> i) & 1);
         }
         updateLastTime(time);

@@ -631,8 +631,10 @@ class AstCFunc final : public AstNode {
     bool m_isConstructor : 1;  // Is C class constructor
     bool m_isDestructor : 1;  // Is C class destructor
     bool m_isMethod : 1;  // Is inside a class definition
-    bool m_isLoose : 1;  // Semantically this is a method, but is implemented as a function
-                         // with an explicitly passed 'self' pointer as the first argument
+    bool m_isLoose : 1;  // Semantically this is a method, but is implemented as a function with
+                         // an explicitly passed 'self' pointer as the first argument.  This can
+                         // be slightly faster due to __restrict, and we do not declare in header
+                         // so adding/removing loose functions doesn't recompile everything.
     bool m_isInline : 1;  // Inline function
     bool m_isVirtual : 1;  // Virtual function
     bool m_entryPoint : 1;  // User may call into this top level function
@@ -1492,18 +1494,24 @@ public:
 };
 class AstPragma final : public AstNode {
     const VPragmaType m_pragType;  // Type of pragma
+    const VTimescale m_timescale;  // For TIMEUNIT_SET
 public:
     // Pragmas don't result in any output code, they're just flags that affect
     // other processing in verilator.
     AstPragma(FileLine* fl, VPragmaType pragType)
         : ASTGEN_SUPER_Pragma(fl)
         , m_pragType{pragType} {}
+    AstPragma(FileLine* fl, VPragmaType pragType, const VTimescale& timescale)
+        : ASTGEN_SUPER_Pragma(fl)
+        , m_pragType{pragType}
+        , m_timescale(timescale) {}
     ASTGEN_MEMBERS_AstPragma;
     VPragmaType pragType() const { return m_pragType; }  // *=type of the pragma
     bool isPredictOptimizable() const override { return false; }
     bool sameNode(const AstNode* samep) const override {
         return pragType() == VN_DBG_AS(samep, Pragma)->pragType();
     }
+    VTimescale timescale() const { return m_timescale; }
 };
 class AstPropSpec final : public AstNode {
     // A clocked property

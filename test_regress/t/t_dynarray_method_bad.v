@@ -29,6 +29,8 @@ module t (/*AUTOARG*/);
       b = s.product with (item inside { "hello", "sad", "world" });
       `checkh(b, 1'b1);
 
+      b = s.unknown_bad;
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

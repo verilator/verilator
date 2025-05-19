@@ -2,9 +2,7 @@
     8 |    nfound nfound();
       |    ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_gen_nonconst_bad.v:8:4: This may be because there's no search path specified with -I<dir>.
-    8 |    nfound nfound();
-      |    ^~~~~~
+        ... This may be because there's no search path specified with -I<dir>.
         ... Looked in:
              nfound
              nfound.v

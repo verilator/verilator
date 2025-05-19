@@ -252,6 +252,7 @@ private:
     bool m_debugWidth = false;      // main switch: --debug-width
     bool m_decoration = true;       // main switch: --decoration
     bool m_decorationNodes = false;  // main switch: --decoration=nodes
+    bool m_diagnosticsSarif = false;  // main switch: --diagnostics-sarif
     bool m_dpiHdrOnly = false;      // main switch: --dpi-hdr-only
     bool m_emitAccessors = false;   // main switch: --emit-accessors
     bool m_exe = false;             // main switch: --exe
@@ -354,6 +355,7 @@ private:
     int         m_compLimitParens = 240;  // compiler selection; number of nested parens
 
     string      m_buildDepBin;  // main switch: --build-dep-bin {filename}
+    string      m_diagnosticsSarifOutput;  // main switch: --diagnostics-sarif-output
     string      m_exeName;      // main switch: -o {name}
     string      m_flags;        // main switch: -f {name}
     string      m_hierParamsFile; // main switch: --hierarchical-params-file
@@ -519,6 +521,7 @@ public:
     bool debugWidth() const VL_PURE { return m_debugWidth; }
     bool decoration() const VL_MT_SAFE { return m_decoration; }
     bool decorationNodes() const VL_MT_SAFE { return m_decorationNodes; }
+    bool diagnosticsSarif() const VL_MT_SAFE { return m_diagnosticsSarif; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
     bool dumpDefines() const { return m_dumpLevel.count("defines") && m_dumpLevel.at("defines"); }
     bool dumpTreeDot() const {
@@ -632,6 +635,10 @@ public:
     int compLimitMembers() const VL_MT_SAFE { return m_compLimitMembers; }
     int compLimitParens() const { return m_compLimitParens; }
 
+    string diagnosticsSarifOutput() const VL_MT_SAFE {
+        return m_diagnosticsSarifOutput.empty() ? makeDir() + "/" + prefix() + ".sarif"
+                                                : m_diagnosticsSarifOutput;
+    }
     string exeName() const { return m_exeName != "" ? m_exeName : prefix(); }
     string hierParamFile() const { return m_hierParamsFile; }
     string jsonOnlyOutput() const { return m_jsonOnlyOutput; }
@@ -779,7 +786,7 @@ public:
     string fileExists(const string& filename);
     string filePath(FileLine* fl, const string& modname, const string& lastpath,
                     const string& errmsg);
-    void filePathLookedMsg(FileLine* fl, const string& modname);
+    string filePathLookedMsg(FileLine* fl, const string& modname);
     V3LangCode fileLanguage(const string& filename);
     static bool fileStatNormal(const string& filename);
 

@@ -250,6 +250,7 @@ Liu
 Liwei
 Lockhart
 Longo
+LteS
 Luca
 Luiza
 Lussier
@@ -273,6 +274,7 @@ Mednick
 Mei
 Melo
 Menküc
+Menon
 Michail
 Michiels
 Microsystems
@@ -303,6 +305,7 @@ Nauticus
 Newgard
 Nigam
 Nikana
+Niraj
 Niranjan
 Nitza
 Noack
@@ -437,6 +440,7 @@ UNOPTFLAT
 Ubixum
 Ueno
 Uints
+Undefine
 Undefines
 Unsized
 Urbach
@@ -614,7 +618,9 @@ dep
 deparametrized
 der
 dereference
+dereferenced
 desassign
+deserialize
 destructor
 desynchronization
 detections
@@ -742,6 +748,8 @@ hierCMakeArgs
 hierMkArgs
 hierParameters
 hierVer
+html
+https
 hx
 hyperthreading
 hyperthreads
@@ -790,6 +798,7 @@ libtcmalloc
 libverilated
 linkers
 linter
+linters
 linux
 liu
 livelock
@@ -839,6 +848,7 @@ multithread
 multithreaded
 multithreading
 musl
+mutex
 mutexes
 mux
 muzafferkal
@@ -904,6 +914,7 @@ pre
 precisions
 precompiled
 predefines
+prefetch
 prepareClone
 prepend
 prepended
@@ -965,6 +976,7 @@ runtimes
 rw
 sVerilator
 saif
+sarif
 sawatzke
 sc
 scalared
@@ -1060,6 +1072,7 @@ typename
 uint
 un
 unbased
+uncomment
 undef
 undefineall
 undriven
@@ -1101,6 +1114,7 @@ verilogmod
 verimake
 veriuser
 vl
+vlSelf
 vlopt
 vlt
 vltstd

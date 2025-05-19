@@ -995,7 +995,7 @@ public:
         if (it != m_nameMap.end()) {
             // No way to go back and correct the older crypt name
             UASSERT(old == it->second,
-                    "Passthru request for '" + old + "' after already --protect-ids of it.");
+                    "Pass-thru request for '" + old + "' after already --protect-ids of it.");
         } else {
             m_nameMap.emplace(old, old);
             m_newIdSet.insert(old);

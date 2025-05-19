@@ -39,8 +39,8 @@
 #endif
 
 // clang-format off
-#include "verilatedos.h"
 #include "verilated_config.h"
+#include "verilatedos.h"
 #if VM_SC
 # include "verilated_sc.h"  // Get SYSTEMC_VERSION and time declarations
 #endif

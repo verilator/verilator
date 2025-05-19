@@ -654,7 +654,7 @@ class TimingControlVisitor final : public VNVisitor {
     void addDebugInfo(AstCMethodHard* const methodp) const {
         if (v3Global.opt.protectIds()) return;
         FileLine* const flp = methodp->fileline();
-        AstCExpr* const ap = new AstCExpr{flp, '"' + flp->filename() + '"', 0};
+        AstCExpr* const ap = new AstCExpr{flp, '"' + flp->filenameEsc() + '"', 0};
         ap->dtypeSetString();
         methodp->addPinsp(ap);
         AstCExpr* const bp = new AstCExpr{flp, cvtToStr(flp->lineno()), 0};

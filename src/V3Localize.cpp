@@ -132,6 +132,11 @@ class LocalizeVisitor final : public VNVisitor {
         moveVarScopes();
     }
 
+    void visit(AstCAwait* nodep) override {
+        m_cfuncp->user1(true);  // Mark caller as not a leaf function
+        iterateChildrenConst(nodep);
+    }
+
     void visit(AstCFunc* nodep) override {
         UINFO(4, "  CFUNC " << nodep << endl);
         VL_RESTORER(m_cfuncp);

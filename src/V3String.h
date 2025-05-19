@@ -94,11 +94,11 @@ public:
     // Convert string to upper case (toupper)
     static string upcase(const string& str) VL_PURE;
     // Insert esc just before tgt
-    static string quoteAny(const string& str, char tgt, char esc);
+    static string quoteAny(const string& str, char tgt, char esc) VL_PURE;
     // Replace any \'s with \\  (two consecutive backslashes)
-    static string quoteBackslash(const string& str) { return quoteAny(str, '\\', '\\'); }
+    static string quoteBackslash(const string& str) VL_PURE { return quoteAny(str, '\\', '\\'); }
     // Replace any %'s with %%
-    static string quotePercent(const string& str) { return quoteAny(str, '%', '%'); }
+    static string quotePercent(const string& str) VL_PURE { return quoteAny(str, '%', '%'); }
     // Replace any %%'s with %
     static string dequotePercent(const string& str);
     // Surround a raw string by double quote and escape if necessary
@@ -116,6 +116,8 @@ public:
     static string spaceUnprintable(const string& str) VL_PURE;
     // Remove any whitespace
     static string removeWhitespace(const string& str);
+    // Trim leading/trailing whitespace on each line
+    static string trimWhitespace(const string& str);
     // Return true if only identifer or ""
     static bool isIdentifier(const string& str);
     // Return true if char is valid character in C identifiers
@@ -126,6 +128,8 @@ public:
     static string::size_type leadingWhitespaceCount(const string& str);
     // Return double by parsing string
     static double parseDouble(const string& str, bool* successp);
+    // Replace substring. Often replaceWord is more appropriate.
+    static string replaceSubstr(const string& str, const string& from, const string& to);
     // Replace all occurrences of the word 'from' in 'str' with 'to'. A word is considered
     // to be a consecutive sequence of the characters [a-zA-Z0-9_]. Sub-words are not replaced.
     // e.g.: replaceWords("one apple bad_apple", "apple", "banana") -> "one banana bad_apple"

@@ -36,7 +36,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class DepthVisitor final : public VNVisitor {
     // NODE STATE
 
-    // STATE
+    // STATE - for current visit position (use VL_RESTORER)
     AstCFunc* m_cfuncp = nullptr;  // Current block
     AstMTaskBody* m_mtaskbodyp = nullptr;  // Current mtaskbody
     AstNode* m_stmtp = nullptr;  // Current statement
@@ -71,6 +71,8 @@ class DepthVisitor final : public VNVisitor {
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_mtaskbodyp);
+        VL_RESTORER(m_depth);
+        VL_RESTORER(m_maxdepth);
         m_cfuncp = nodep;
         m_mtaskbodyp = nullptr;
         m_depth = 0;
@@ -81,6 +83,8 @@ class DepthVisitor final : public VNVisitor {
     void visit(AstMTaskBody* nodep) override {
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_mtaskbodyp);
+        VL_RESTORER(m_depth);
+        VL_RESTORER(m_maxdepth);
         m_cfuncp = nullptr;
         m_mtaskbodyp = nodep;
         m_depth = 0;
@@ -90,6 +94,8 @@ class DepthVisitor final : public VNVisitor {
     }
     void visitStmt(AstNodeStmt* nodep) {
         VL_RESTORER(m_stmtp);
+        VL_RESTORER(m_depth);
+        VL_RESTORER(m_maxdepth);
         m_stmtp = nodep;
         m_depth = 0;
         m_maxdepth = 0;

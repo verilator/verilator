@@ -6,7 +6,7 @@ Input Languages
 ***************
 
 This section describes the languages Verilator takes as input.  See also
-:ref:`Configuration Files`.
+:ref:`Verilator Configuration Files`.
 
 
 Language Standard Support
@@ -536,4 +536,4 @@ $test$plusargs, $value$plusargs
         {VerilatedContext*} ->commandArgs(argc, argv);
 
   to register the command line before calling $test$plusargs or
-  $value$plusargs.
+  $value$plusargs. Or use :vlopt:`--binary` or :vlopt:`--main`.
