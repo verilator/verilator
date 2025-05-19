@@ -26,6 +26,8 @@ defaults:
 jobs:
 
   Build:
+    # Only run scheduled jobs if explicitly enabled for that repo (e.g.: not on forks)
+    if: ${{ github.event_name != 'schedule' || vars.ENABLE_SCHEDULED_JOBS == 'true' }}
     runs-on: ubuntu-24.04
     env:
       CI_BUILD_STAGE_NAME: build
