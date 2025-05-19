@@ -7341,7 +7341,6 @@ class WidthVisitor final : public VNVisitor {
         // Returns the new underp
         // Conversion to/from doubles and integers are before iterating.
         UASSERT_OBJ(stage == FINAL, nodep, "Bad state to iterateCheck");
-        if (underp) { UINFO(1, "underp dtype = " << underp->dtypep() << endl); }
         UASSERT_OBJ(underp && underp->dtypep(), nodep,
                     "Node has no type");  // Perhaps forgot to do a prelim visit on it?
         if (VN_IS(underp, NodeDType)) {  // Note the node itself, not node's data type
