@@ -599,6 +599,7 @@ public:
             putnbs(argrefp, argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
         }
         puts(") {\n");
+        VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->exprp());
         puts("}\n");
     }
@@ -952,12 +953,14 @@ public:
     void visit(AstJumpBlock* nodep) override {
         nodep->labelNum(++m_labelNum);
         putns(nodep, "{\n");  // Make it visually obvious label jumps outside these
+        VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->stmtsp());
         iterateAndNextConstNull(nodep->endStmtsp());
         puts("}\n");
     }
     void visit(AstCLocalScope* nodep) override {
         putns(nodep, "{\n");
+        VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->stmtsp());
         puts("}\n");
     }
@@ -987,7 +990,10 @@ public:
         iterateAndNextConstNull(nodep->condp());
         if (!nodep->branchPred().unknown()) puts("))");
         puts(") {\n");
-        iterateAndNextConstNull(nodep->thensp());
+        {
+            VL_RESTORER(m_createdScopeHash);
+            iterateAndNextConstNull(nodep->thensp());
+        }
         puts("}");
         if (!nodep->elsesp()) {
             puts("\n");
@@ -996,6 +1002,7 @@ public:
                 puts(" else ");
                 iterateAndNextConstNull(nodep->elsesp());
             } else {
+                VL_RESTORER(m_createdScopeHash);
                 puts(" else {\n");
                 iterateAndNextConstNull(nodep->elsesp());
                 puts("}\n");
