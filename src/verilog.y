@@ -1916,9 +1916,11 @@ parameter_declarationFront:     // IEEE: local_ or parameter_declaration w/o ass
 
 parameter_declarationTypeFront: // IEEE: local_ or parameter_declaration w/o assignment
         //                      // Front must execute first so VARDTYPE is ready before list of vars
-                varParamReset yTYPE__ETC                { /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType{$2}); }
-        |       varParamReset yTYPE__ETC forward_type   { /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType{$2});
-                                                          BBUNSUP($<fl>1, "Unsupported: 'parameter type' forward type"); }
+                varParamReset yTYPE__ETC
+                        { /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType{$2}); }
+        |       varParamReset yTYPE__ETC forward_type
+                        { /*VARRESET-in-varParam*/
+                          AstNodeDType* const dtp = new AstParseTypeDType{$2, $3}; VARDTYPE(dtp); }
         ;
 
 parameter_port_declarationFrontE: // IEEE: local_ or parameter_port_declaration w/o assignment
@@ -1939,20 +1941,26 @@ parameter_port_declarationTypeFrontE: // IEEE: parameter_port_declaration w/o as
         //                      // IEEE: parameter_declaration (minus assignment)
         //                      // IEEE: local_parameter_declaration (minus assignment)
         //                      // Front must execute first so VARDTYPE is ready before list of vars
-                varParamReset yTYPE__ETC                { /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType{$2}); }
-        |       varParamReset yTYPE__ETC forward_type   { /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType{$2});
-                                                          BBUNSUP($<fl>1, "Unsupported: 'parameter type' forward type"); }
-        |       yTYPE__ETC                              { /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType{$1}); }
-        |       yTYPE__ETC forward_type                 { /*VARRESET-in-varParam*/ VARDTYPE(new AstParseTypeDType{$1});
-                                                          BBUNSUP($<fl>1, "Unsupported: 'parameter type' forward type"); }
+                varParamReset yTYPE__ETC
+                        { /*VARRESET-in-varParam*/
+                          AstNodeDType* const dtp = new AstParseTypeDType{$2}; VARDTYPE(dtp); }
+        |       varParamReset yTYPE__ETC forward_type
+                        { /*VARRESET-in-varParam*/
+                          AstNodeDType* const dtp = new AstParseTypeDType{$2, $3}; VARDTYPE(dtp); }
+        |       yTYPE__ETC
+                        { /*VARRESET-in-varParam*/
+                          AstNodeDType* const dtp = new AstParseTypeDType{$1}; VARDTYPE(dtp); }
+        |       yTYPE__ETC forward_type
+                        { /*VARRESET-in-varParam*/
+                          AstNodeDType* const dtp = new AstParseTypeDType{$1, $2}; VARDTYPE(dtp); }
         ;
 
-forward_type:  // ==IEEE: forward_type
-                yENUM                                   { }
-        |       ySTRUCT                                 { }
-        |       yUNION                                  { }
-        |       yCLASS                                  { }
-        |       yINTERFACE yCLASS                       { }
+forward_type<fwdtype>:  // ==IEEE: forward_type
+                yENUM                                   { $$ = VFwdType::ENUM; }
+        |       ySTRUCT                                 { $$ = VFwdType::STRUCT; }
+        |       yUNION                                  { $$ = VFwdType::UNION; }
+        |       yCLASS                                  { $$ = VFwdType::CLASS; }
+        |       yINTERFACE yCLASS                       { $$ = VFwdType::INTERFACE_CLASS; }
         ;
 
 net_declaration<nodep>:         // IEEE: net_declaration - excluding implict

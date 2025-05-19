@@ -7,15 +7,10 @@
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-import signal
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
 
-signal.alarm(15)  # 15s timeout
-
-test.compile()
-
-test.execute()
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

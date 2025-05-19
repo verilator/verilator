@@ -287,6 +287,33 @@ public:
 
 // ######################################################################
 
+class VFwdType final {
+public:
+    enum en : uint8_t { NONE, ENUM, STRUCT, UNION, CLASS, INTERFACE_CLASS };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[]
+            = {"none", "enum", "struct", "union", "class", "interface class"};
+        return names[m_e];
+    }
+    VFwdType()
+        : m_e{NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VFwdType(en _e)
+        : m_e{_e} {}
+    explicit VFwdType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+};
+constexpr bool operator==(const VFwdType& lhs, const VFwdType& rhs) { return lhs.m_e == rhs.m_e; }
+constexpr bool operator==(const VFwdType& lhs, VFwdType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VFwdType::en lhs, const VFwdType& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VFwdType& rhs) {
+    return os << rhs.ascii();
+}
+
+// ######################################################################
+
 class VSigning final {
 public:
     enum en : uint8_t {

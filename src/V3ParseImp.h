@@ -125,6 +125,7 @@ struct V3ParseBisonYYSType final {
         VAttrType::en attrtypeen;
         VAssertType::en asserttypeen;
         VAssertDirectiveType::en assertdirectivetypeen;
+        VFwdType::en fwdtype;
         VLifetime::en lifetime;
         VStrength::en strength;
 

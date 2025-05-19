@@ -322,7 +322,7 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->v3warn(NEWERSTD,
                           "Parameter requires default value, or use IEEE 1800-2009 or later.");
         }
-        if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
+        if (AstParseTypeDType* const ptypep = VN_CAST(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
             AstNode* dtypep = nodep->valuep();
             if (dtypep) {
@@ -331,8 +331,9 @@ class LinkParseVisitor final : public VNVisitor {
                 dtypep = new AstVoidDType{nodep->fileline()};
             }
             AstNode* const newp = new AstParamTypeDType{
-                nodep->fileline(), nodep->varType(), nodep->name(), VFlagChildDType{},
-                new AstRequireDType{nodep->fileline(), dtypep}};
+                nodep->fileline(), nodep->varType(),
+                ptypep->fwdType(), nodep->name(),
+                VFlagChildDType{}, new AstRequireDType{nodep->fileline(), dtypep}};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;

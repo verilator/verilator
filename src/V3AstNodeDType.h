@@ -1006,12 +1006,14 @@ class AstParamTypeDType final : public AstNodeDType {
     // A parameter type statement; much like a var or typedef
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     const VVarType m_varType;  // Type of variable (for localparam vs. param)
+    const VFwdType m_fwdType;  // Forward type for lint check
     string m_name;  // Name of variable
 public:
-    AstParamTypeDType(FileLine* fl, VVarType type, const string& name, VFlagChildDType,
-                      AstNodeDType* dtp)
+    AstParamTypeDType(FileLine* fl, VVarType type, VFwdType fwdType, const string& name,
+                      VFlagChildDType, AstNodeDType* dtp)
         : ASTGEN_SUPER_ParamTypeDType(fl)
         , m_varType{type}
+        , m_fwdType{fwdType}
         , m_name{name} {
         childDTypep(dtp);  // Only for parser
         dtypep(nullptr);  // V3Width will resolve
@@ -1036,6 +1038,7 @@ public:
     bool hasDType() const override VL_MT_SAFE { return true; }
     void name(const string& flag) override { m_name = flag; }
     VVarType varType() const { return m_varType; }  // * = Type of variable
+    VFwdType fwdType() const { return m_fwdType; }
     bool isParam() const { return true; }
     bool isGParam() const { return (varType() == VVarType::GPARAM); }
     bool isCompound() const override {
@@ -1047,9 +1050,11 @@ class AstParseTypeDType final : public AstNodeDType {
     // Parents: VAR
     // During parsing, this indicates the type of a parameter is a "parameter type"
     // e.g. the data type is a container of any data type
+    const VFwdType m_fwdType;  // Forward type for lint check
 public:
-    explicit AstParseTypeDType(FileLine* fl)
-        : ASTGEN_SUPER_ParseTypeDType(fl) {}
+    explicit AstParseTypeDType(FileLine* fl, VFwdType fwdType = VFwdType::NONE)
+        : ASTGEN_SUPER_ParseTypeDType(fl)
+        , m_fwdType{fwdType} {}
     ASTGEN_MEMBERS_AstParseTypeDType;
     AstNodeDType* dtypep() const VL_MT_STABLE { return nullptr; }
     // METHODS
@@ -1061,6 +1066,7 @@ public:
         v3fatalSrc("call isCompound on subdata type, not reference");
         return false;
     }
+    VFwdType fwdType() const { return m_fwdType; }
 };
 class AstQueueDType final : public AstNodeDType {
     // Queue array data type, ie "[ $ ]"

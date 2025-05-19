@@ -782,6 +782,24 @@ class ParamProcessor final {
                 // Constify may have caused pinp->exprp to change
                 rawTypep = VN_AS(pinp->exprp(), NodeDType);
                 exprp = rawTypep->skipRefToNonRefp();
+                bool ok = true;
+                switch (modvarp->fwdType()) {
+                case VFwdType::NONE: ok = true; break;
+                case VFwdType::ENUM: ok = VN_IS(exprp, EnumDType); break;
+                case VFwdType::STRUCT: ok = VN_IS(exprp, StructDType); break;
+                case VFwdType::UNION: ok = VN_IS(exprp, UnionDType); break;
+                case VFwdType::CLASS: ok = VN_IS(exprp, ClassRefDType); break;
+                case VFwdType::INTERFACE_CLASS:  // TODO: Over permissive for now:
+                    ok = VN_IS(exprp, ClassRefDType);
+                    break;
+                default: modvarp->v3fatalSrc("Bad case");
+                }
+                if (!ok) {
+                    pinp->v3error("Parameter type expression type "
+                                  << exprp->prettyDTypeNameQ()
+                                  << " violates parameter's forwarding type '"
+                                  << modvarp->fwdType().ascii() << "'");
+                }
                 if (exprp->similarDType(origp)) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
