@@ -2127,9 +2127,8 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             if (debug() >= 9) nodep->dumpTree("-  CastPre: ");
             // if (debug()) nodep->backp()->dumpTree("-  CastPreUpUp: ");
-            if (VN_IS(nodep->fromp(), Signed)) {
-                AstSigned* fromp = VN_AS(nodep->fromp(), Signed);
-                AstNode* lhsp = fromp->lhsp()->unlinkFrBack();
+            if (AstSigned* const fromp = VN_CAST(nodep->fromp(), Signed)) {
+                AstNode* const lhsp = fromp->lhsp()->unlinkFrBack();
                 fromp->replaceWith(lhsp);
                 VL_DO_DANGLING(fromp->deleteTree(), fromp);
             }
