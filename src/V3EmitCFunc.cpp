@@ -753,7 +753,9 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                || varp->isFuncLocal()  // Randomization too slow
                || (basicp && basicp->isZeroInit())
                || (v3Global.opt.underlineZero() && !varp->name().empty() && varp->name()[0] == '_')
-               || (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0"));
+               || (varp->isXTemp()
+                       ? (v3Global.opt.xAssign() != "unique")
+                       : (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0")));
         const bool slow = !varp->isFuncLocal() && !varp->isClassMember();
         splitSizeInc(1);
         if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
@@ -766,9 +768,20 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
                 }
             } else {
-                out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(") : "VL_RAND_RESET_W(";
+                out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(")
+                              : "VL_SCOPED_RAND_RESET_W(";
                 out += cvtToStr(dtypep->widthMin());
-                out += ", " + varNameProtected + suffix + ");\n";
+                out += ", " + varNameProtected + suffix;
+                if (!zeroit) {
+                    emitVarResetScopeHash();
+                    const uint64_t salt = VString::hashMurmur(varp->prettyName());
+                    out += ", ";
+                    out += m_classOrPackage ? m_classOrPackageHash : "__VscopeHash";
+                    out += ", ";
+                    out += std::to_string(salt);
+                    out += "ull";
+                }
+                out += ");\n";
             }
             return out;
         } else {
@@ -781,9 +794,13 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
             if (zeroit || (v3Global.opt.xInitialEdge() && varp->isUsedClock())) {
                 out += " = 0;\n";
             } else {
-                out += " = VL_RAND_RESET_";
+                emitVarResetScopeHash();
+                const uint64_t salt = VString::hashMurmur(varp->prettyName());
+                out += " = VL_SCOPED_RAND_RESET_";
                 out += dtypep->charIQWN();
-                out += "(" + cvtToStr(dtypep->widthMin()) + ");\n";
+                out += "(" + cvtToStr(dtypep->widthMin()) + ", "
+                       + (m_classOrPackage ? m_classOrPackageHash : "__VscopeHash") + ", "
+                       + std::to_string(salt) + "ull);\n";
             }
             return out;
         }
@@ -791,4 +808,16 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
         v3fatalSrc("Unknown node type in reset generator: " << varp->prettyTypeName());
     }
     return "";
+}
+
+void EmitCFunc::emitVarResetScopeHash() {
+    if (VL_LIKELY(m_createdScopeHash)) { return; }
+    if (m_classOrPackage) {
+        m_classOrPackageHash
+            = std::to_string(VString::hashMurmur(m_classOrPackage->name())) + "ULL";
+    } else {
+        puts(string("const uint64_t __VscopeHash = VL_HASH(")
+             + (m_useSelfForThis ? "vlSelf" : "this") + "->name());\n");
+    }
+    m_createdScopeHash = true;
 }
