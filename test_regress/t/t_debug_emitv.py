@@ -9,23 +9,30 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios("vlt")
 
 test.lint(
     # We also have dump-tree turned on, so hit a lot of AstNode*::dump() functions
     # Likewise XML
     v_flags=["--lint-only --dumpi-tree 9 --dumpi-V3EmitV 9 --debug-emitv"])
 
-output_v = test.glob_one(test.obj_dir + "/" + test.vm_prefix + "_*_width.tree.v")
+output_vs = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "_*_width.tree.v")
 
-test.files_identical(output_v, test.golden_filename)
+for output_v in output_vs:
+    test.files_identical(output_v, test.golden_filename)
 
 if test.verbose:
     # Print if that the output Verilog is clean
     # TODO not yet round-trip clean
-    test.run(cmd=[os.environ["VERILATOR_ROOT"] + "/bin/verilator", "--lint-only", output_v],
-             logfile=test.obj_dir + "/sim_roundtrip.log",
-             fails=True,
-             verilator_run=True)
+    test.run(
+        cmd=[
+            os.environ["VERILATOR_ROOT"] + "/bin/verilator",
+            "--lint-only",
+            output_vs[0],
+        ],
+        logfile=test.obj_dir + "/sim_roundtrip.log",
+        fails=True,
+        verilator_run=True,
+    )
 
 test.passes()
