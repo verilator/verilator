@@ -986,6 +986,7 @@ public:
         putns(nodep, "__Vlabel" + cvtToStr(nodep->blockp()->labelNum()) + ": ;\n");
     }
     void visit(AstWhile* nodep) override {
+        VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->precondsp());
         putns(nodep, "while (");
         iterateAndNextConstNull(nodep->condp());
@@ -1020,6 +1021,7 @@ public:
         }
     }
     void visit(AstExprStmt* nodep) override {
+        VL_RESTORER(m_createdScopeHash);
         // GCC allows compound statements in expressions, but this is not standard.
         // So we use an immediate-evaluation lambda and comma operator
         putnbs(nodep, "([&]() {\n");
