@@ -2827,7 +2827,7 @@ inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, double& rdr)
 }
 extern IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE;
 
-uint64_t VL_HASH(const char* key) VL_PURE;
+uint64_t VL_MURMUR64_HASH(const char* key) VL_PURE;
 
 //======================================================================
 
