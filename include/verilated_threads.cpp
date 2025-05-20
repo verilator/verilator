@@ -29,6 +29,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <pthread_np.h>
 #include <string>
 
 //=============================================================================
