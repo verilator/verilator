@@ -32,7 +32,7 @@
 #include <string>
 
 #ifdef __FreeBSD__
-    #include <pthread_np.h>
+#include <pthread_np.h>
 #endif
 
 //=============================================================================
