@@ -64,7 +64,7 @@ public:
     string filename() const { return keyExtract(VL_CIK_FILENAME, m_name.c_str()); }
     string comment() const { return keyExtract(VL_CIK_COMMENT, m_name.c_str()); }
     string hier() const { return keyExtract(VL_CIK_HIER, m_name.c_str()); }
-    string type() const { return keyExtract(VL_CIK_TYPE, m_name.c_str()); }
+    string type() const { return type(m_name.c_str()); }
     string thresh() const {
         // string as maybe ""
         return keyExtract(VL_CIK_THRESH, m_name.c_str());
@@ -73,7 +73,7 @@ public:
     int lineno() const { return std::atoi(keyExtract(VL_CIK_LINENO, m_name.c_str()).c_str()); }
     int column() const { return std::atoi(keyExtract(VL_CIK_COLUMN, m_name.c_str()).c_str()); }
     // METHODS
-    static bool isToggle(const char* name) { return keyExtract(VL_CIK_TYPE, name) == "toggle"; }
+    static string type(const char* name) { return keyExtract(VL_CIK_TYPE, name); }
     static string keyExtract(const char* shortKey, const char* name) {
         // Hot function
         const size_t shortLen = std::strlen(shortKey);
