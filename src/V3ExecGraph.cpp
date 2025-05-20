@@ -96,8 +96,18 @@ public:
 private:
     VL_UNCOPYABLE(ThreadSchedule);
 
+    static constexpr double s_threadBoxWidth = 2.5;
+    static constexpr double s_threadBoxHeight = 1.5;
+    static constexpr double s_horizontalGap = s_threadBoxWidth / 2;
+
     // Debugging
-    void dumpDotFile(const V3Graph& graph, const string& filename) const {
+    // Variant of dumpDotFilePrefixed without --dump option check
+    static void dumpDotFilePrefixedAlways(const std::vector<ThreadSchedule>& schedules,
+                                          const string& nameComment, uint32_t nThreads) {
+        dumpDotFile(schedules, v3Global.debugFilename(nameComment) + ".dot", nThreads);
+    }
+    static void dumpDotFile(const std::vector<ThreadSchedule>& schedules, const string& filename,
+                            uint32_t nThreads) {
         // This generates a file used by graphviz, https://www.graphviz.org
         const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
         if (logp->fail()) v3fatal("Can't write file: " << filename);
@@ -109,52 +119,102 @@ private:
 
         // Thread labels
         *logp << "\n  // Threads\n";
-        const int threadBoxWidth = 2;
-        for (int i = 0; i < v3Global.opt.threads(); i++) {
-            *logp << "  t" << i << " [label=\"Thread " << i << "\" width=" << threadBoxWidth
-                  << " pos=\"" << (-threadBoxWidth / 2) << "," << -i
-                  << "!\" style=\"filled\" fillcolor=\"grey\"] \n";
+
+        for (uint32_t i = 0; i < nThreads; ++i) {
+            const string name = "t" + std::to_string(i);
+            const string label = "Thread " + std::to_string(i);
+            constexpr double posX = -s_horizontalGap;
+            const double posY = -static_cast<double>(i) * s_threadBoxHeight;
+            dumpDotFileEmitBlock(logp, name, label, s_threadBoxWidth, s_threadBoxHeight, posX,
+                                 posY, "grey");
         }
 
         // MTask nodes
         *logp << "\n  // MTasks\n";
 
-        // Find minimum cost MTask for scaling MTask node widths
-        uint32_t minCost = UINT32_MAX;
-        for (const V3GraphVertex& vtx : graph.vertices()) {
-            if (const ExecMTask* const mtaskp = vtx.cast<const ExecMTask>()) {
-                minCost = minCost > mtaskp->cost() ? mtaskp->cost() : minCost;
+        uint32_t maxCost = 0;
+        for (const auto& state : ThreadSchedule::mtaskState) {
+            const ExecMTask* const mtaskp = state.first;
+            maxCost = std::max(maxCost, mtaskp->cost());
+        }
+        // To avoid segments getting too large, limit maximal mtask length.
+        // Based on the mtask cost, normalize it using segment cost
+        constexpr uint32_t segmentsPerLongestMtask = 4;
+        const uint32_t segmentCost = maxCost / segmentsPerLongestMtask;
+
+        // Create columns of tasks whose execution intervals overlaps.
+        // Keep offset for each column for correctly aligned tasks.
+        std::vector<double> offsets(nThreads, 0.0);
+        for (const ThreadSchedule& schedule : schedules) {
+            if (schedule.mtasks.empty()) continue;
+            using Column = std::vector<const ExecMTask*>;
+            std::vector<Column> columns = {{}};
+
+            // Order tasks based on their start time
+            struct Cmp final {
+                bool operator()(const ExecMTask* const a, const ExecMTask* const b) const {
+                    if (startTime(a) == startTime(b)) return threadId(a) < threadId(b);
+                    return startTime(a) < startTime(b);
+                }
+            };
+            const std::multiset<const ExecMTask*, Cmp> tasks(schedule.mtasks.begin(),
+                                                             schedule.mtasks.end());
+
+            for (const ExecMTask* const mtaskp : tasks) {
+                Column& column = columns.back();
+                UASSERT(column.size() <= nThreads, "Invalid partitioning");
+
+                bool intersects = true;
+                for (const ExecMTask* const earlierMtask : column) {
+                    if (endTime(mtaskp) <= startTime(earlierMtask)
+                        || startTime(mtaskp) >= endTime(earlierMtask)) {
+                        intersects = false;
+                        break;
+                    }
+                }
+                if (intersects) {
+                    column.emplace_back(mtaskp);
+                } else {
+                    columns.emplace_back(Column{mtaskp});
+                }
             }
-        }
-        const double minWidth = 2.0;
-        const auto mtaskXPos = [&](const ExecMTask* mtaskp, const double nodeWidth) {
-            const double startPosX = (minWidth * startTime(mtaskp)) / minCost;
-            return nodeWidth / minWidth + startPosX;
-        };
 
-        const auto emitMTask = [&](const ExecMTask* mtaskp) {
-            const int thread = threadId(mtaskp);
-            const double nodeWidth = minWidth * (static_cast<double>(mtaskp->cost()) / minCost);
-            const double x = mtaskXPos(mtaskp, nodeWidth);
-            const int y = -thread;
-            const string label = "label=\"" + mtaskp->name() + " (" + cvtToStr(startTime(mtaskp))
-                                 + ":" + std::to_string(endTime(mtaskp)) + ")" + "\"";
-            *logp << "  " << mtaskp->name() << " [" << label << " width=" << nodeWidth << " pos=\""
-                  << x << "," << y << "!\"]\n";
-        };
+            UASSERT(!columns.front().empty(), "Should be populated by mtasks");
 
-        // Emit MTasks
-        for (const V3GraphVertex& vtx : graph.vertices()) {
-            if (const ExecMTask* const mtaskp = vtx.cast<const ExecMTask>()) emitMTask(mtaskp);
-        }
+            for (const Column& column : columns) {
+                double lastColumnOffset = 0;
+                for (const ExecMTask* const mtaskp : column) {
+                    dumpDotFileEmitMTask(logp, mtaskp, schedule, segmentCost, offsets);
+                    lastColumnOffset = std::max(lastColumnOffset, offsets[threadId(mtaskp)]);
+                }
+                // Even out column offset
+                std::fill(offsets.begin(), offsets.end(), lastColumnOffset);
+            }
 
-        // Emit MTask dependency edges
-        *logp << "\n  // MTask dependencies\n";
-        for (const V3GraphVertex& vtx : graph.vertices()) {
-            if (const ExecMTask* const mtaskp = vtx.cast<const ExecMTask>()) {
-                for (const V3GraphEdge& edge : mtaskp->outEdges()) {
-                    const V3GraphVertex* const top = edge.top();
-                    *logp << "  " << vtx.name() << " -> " << top->name() << "\n";
+            dumpDotFileEmitFork(logp, offsets.front(), nThreads);
+
+            // Emit MTask dependency edges
+            *logp << "\n  // MTask dependencies\n";
+
+            for (const std::vector<const ExecMTask*>& thread : schedule.threads) {
+                if (thread.empty()) break;  // No more threads
+
+                // Show that schedule ends when all tasks are finished
+                *logp << "  " << thread.back()->name() << " -> fork_"
+                      << static_cast<int>(offsets.front()) << "\n";
+
+                // Show that tasks from the same thread are executed in a sequence
+                for (size_t i = 1; i < thread.size(); ++i)
+                    *logp << "  " << thread[i - 1]->name() << " -> " << thread[i]->name() << "\n";
+
+                // Emit cross-task dependencies
+                for (const ExecMTask* const mtaskp : thread) {
+                    for (const V3GraphEdge& edge : mtaskp->outEdges()) {
+                        const ExecMTask* const topMTaskp = edge.top()->cast<const ExecMTask>();
+                        if (topMTaskp && schedule.contains(topMTaskp)
+                            && threadId(topMTaskp) != threadId(mtaskp))
+                            *logp << "  " << mtaskp->name() << " -> " << topMTaskp->name() << "\n";
+                    }
                 }
             }
         }
@@ -163,10 +223,47 @@ private:
         *logp << "}\n";
         logp->close();
     }
+    static void dumpDotFileEmitBlock(const std::unique_ptr<std::ofstream>& logp,
+                                     const string& name, const string& label, double width,
+                                     double height, double xPos, double yPos,
+                                     const string& fillColor) {
+        *logp << "  " << name << " [label=\"" << label << "\" width=" << width
+              << " height=" << height << " pos=\"" << xPos << "," << yPos
+              << "!\" style=\"filled\" fillcolor=\"" << fillColor << "\"]\n";
+    }
+    static void dumpDotFileEmitMTask(const std::unique_ptr<std::ofstream>& logp,
+                                     const ExecMTask* const mtaskp, const ThreadSchedule& schedule,
+                                     uint32_t segmentCost, std::vector<double>& offsets) {
+        for (int i = 0; i < mtaskp->threads(); ++i) {
+            // Keep original name for the original thread of hierarchical task to keep
+            // dependency tracking, add '_' for the rest to differentiate them.
+            const string name = i == 0 ? mtaskp->name() : mtaskp->name() + '_' + std::to_string(i);
+            const string label = mtaskp->name() + " (" + std::to_string(startTime(mtaskp)) + ':'
+                                 + std::to_string(endTime(mtaskp)) + ')'
+                                 + "\\ncost=" + std::to_string(mtaskp->cost())
+                                 + "\\npriority=" + std::to_string(mtaskp->priority());
+            const double width
+                = std::max(s_threadBoxWidth,
+                           s_threadBoxWidth * static_cast<double>(mtaskp->cost()) / segmentCost);
+            const uint32_t mtaskThreadId = threadId(mtaskp) + i * schedule.threads.size();
+            const double xPos = width / 2 + offsets[mtaskThreadId];
+            offsets[mtaskThreadId] += width + s_horizontalGap;
+            const double yPos = -s_threadBoxHeight * static_cast<double>(mtaskThreadId);
+            const string fillColor = i == 0 ? "white" : "lightgreen";
+            dumpDotFileEmitBlock(logp, name, label, width, s_threadBoxHeight, xPos, yPos,
+                                 fillColor);
+        }
+    }
 
-    // Variant of dumpDotFilePrefixed without --dump option check
-    void dumpDotFilePrefixedAlways(const V3Graph& graph, const string& nameComment) const {
-        dumpDotFile(graph, v3Global.debugFilename(nameComment) + ".dot");
+    static void dumpDotFileEmitFork(const std::unique_ptr<std::ofstream>& logp, double offset,
+                                    uint32_t nThreads) {
+        const string& name = "fork_" + std::to_string(static_cast<int>(offset));
+        constexpr double width = s_threadBoxWidth / 8;
+        const double height = s_threadBoxHeight * nThreads;
+        const double xPos = offset - s_horizontalGap / 2;
+        const double yPos
+            = -static_cast<double>(nThreads) / 2 * s_threadBoxHeight + s_threadBoxHeight / 2;
+        dumpDotFileEmitBlock(logp, name, "", width, height, xPos, yPos, "black");
     }
 
 public:
@@ -424,7 +521,8 @@ class PackThreads final {
         }
 
         // All schedules are combined on a single graph
-        if (dumpGraphLevel() >= 4) result.back().dumpDotFilePrefixedAlways(mtaskGraph, "schedule");
+        if (dumpGraphLevel() >= 4)
+            ThreadSchedule::dumpDotFilePrefixedAlways(result, "schedule", m_nThreads);
 
         return result;
     }
