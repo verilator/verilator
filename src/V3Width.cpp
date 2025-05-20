@@ -6551,6 +6551,93 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    // LRM 6.22.2 Equivalent types
+    bool isEquivalentDType(const AstNodeDType* lhs, const AstNodeDType* rhs) {
+        // a) If two types match, they are equivalent.
+        if (!lhs || !rhs) return false;
+        lhs = lhs->skipRefp();
+        rhs = rhs->skipRefp();
+        if (lhs == rhs) return true;
+        // If both are basic types, check if they are the same type
+        if (VN_IS(lhs, BasicDType) && VN_IS(rhs, BasicDType)) {
+            const auto* lb = VN_CAST(lhs, BasicDType);
+            const auto* rb = VN_CAST(rhs, BasicDType);
+            if (lb->isString() != rb->isString()) return false;
+        }
+
+        // d) Unpacked fixed-size array types are equivalent if they have equivalent element types
+        // and equal size; the actual range bounds may differ. Note that the element type of a
+        // multidimensional array is itself an array type.
+        const bool lhsIsUnpackArray = VN_IS(lhs, UnpackArrayDType);
+        const bool rhsIsUnpackArray = VN_IS(rhs, UnpackArrayDType);
+        if (lhsIsUnpackArray || rhsIsUnpackArray) {
+            if (VN_IS(lhs, UnpackArrayDType) && VN_IS(rhs, UnpackArrayDType)) {
+                const AstUnpackArrayDType* const lhsp = VN_CAST(lhs, UnpackArrayDType);
+                const AstUnpackArrayDType* const rhsp = VN_CAST(rhs, UnpackArrayDType);
+                const int lsz = lhsp->elementsConst();
+                const int rsz = rhsp->elementsConst();
+                if (lsz >= 0 && rsz >= 0 && lsz != rsz) return false;
+                return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
+            }
+            return false;
+        }
+
+        // e) Dynamic array, associative array, and queue types are equivalent if they are the same
+        // kind of array (dynamic, associative, or queue), have equivalent index types (for
+        // associative arrays), and have equivalent element types.
+        const bool lhsIsDynArray = VN_IS(lhs, DynArrayDType);
+        const bool rhsIsDynArray = VN_IS(rhs, DynArrayDType);
+        const bool lhsIsQueue = VN_IS(lhs, QueueDType);
+        const bool rhsIsQueue = VN_IS(rhs, QueueDType);
+        const bool lhsIsAssocArray = VN_IS(lhs, AssocArrayDType);
+        const bool rhsIsAssocArray = VN_IS(rhs, AssocArrayDType);
+
+        if (lhsIsDynArray || rhsIsDynArray || lhsIsQueue || rhsIsQueue || lhsIsAssocArray
+            || rhsIsAssocArray) {
+            if (const AstDynArrayDType* const lhsp = VN_CAST(lhs, DynArrayDType)) {
+                if (const AstDynArrayDType* const rhsp = VN_CAST(rhs, DynArrayDType)) {
+                    return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
+                }
+            }
+
+            if (const AstQueueDType* const lhsp = VN_CAST(lhs, QueueDType)) {
+                if (const AstQueueDType* const rhsp = VN_CAST(rhs, QueueDType)) {
+                    return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
+                }
+            }
+
+            if (const AstAssocArrayDType* const lhsp = VN_CAST(lhs, AssocArrayDType)) {
+                if (const AstAssocArrayDType* const rhsp = VN_CAST(rhs, AssocArrayDType)) {
+                    return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep())
+                           && isEquivalentDType(lhsp->keyDTypep(), rhsp->keyDTypep());
+                }
+            }
+
+            return false;
+        }
+
+        // c) Packed arrays, packed structures, packed unions, and built-in integral
+        // types are equivalent if they contain the same number of total bits, are either all
+        // 2-state or all 4-state, and are either all signed or all unsigned.
+        if (lhs->isIntegralOrPacked() && rhs->isIntegralOrPacked()) {
+            if (lhs->width() != rhs->width()) return false;
+            if (lhs->isFourstate() != rhs->isFourstate()) return false;
+            if (lhs->isSigned() != rhs->isSigned()) return false;
+            return true;
+        }
+
+        return true;
+    }
+
+    static bool isAggregateType(const AstNode* nodep) {
+        if (!nodep) return false;
+        const AstNodeDType* dtypep = nodep->dtypep();
+        if (!dtypep) return false;
+        dtypep = dtypep->skipRefp();
+        if (!dtypep) return false;
+        return dtypep->isAggregateType();
+    }
+
     void visit_cmp_eq_gt(AstNodeBiop* nodep, bool realok) {
         // CALLER: AstEq, AstGt, ..., AstLtS
         // Real allowed if and only if real_lhs set
@@ -6567,7 +6654,26 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
-            if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
+
+            const bool isAggrLhs = isAggregateType(nodep->lhsp());
+            const bool isAggrRhs = isAggregateType(nodep->rhsp());
+
+            if ((isAggrLhs || isAggrRhs) && nodep->lhsp() && nodep->rhsp()) {
+                const AstNodeDType* const lhsDType = nodep->lhsp()->dtypep();
+                const AstNodeDType* const rhsDType = nodep->rhsp()->dtypep();
+
+                if (lhsDType && rhsDType && !isEquivalentDType(lhsDType, rhsDType)) {
+                    nodep->v3error("Comparison requires matching data types\n"
+                                   << nodep->warnMore() << "... Left-hand data type: "
+                                   << lhsDType->prettyDTypeNameQ() << "\n"
+                                   << nodep->warnMore() << "... Right-hand data type: "
+                                   << rhsDType->prettyDTypeNameQ());
+                    AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+            } else if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
                 if (!realok) {
                     nodep->v3error("Real is illegal operand to ?== operator");
                     AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};

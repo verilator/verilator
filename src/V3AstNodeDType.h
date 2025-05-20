@@ -124,6 +124,7 @@ public:
     // Iff has a non-null subDTypep(), as generic node function
     virtual AstNodeDType* subDTypep() const VL_MT_STABLE { return nullptr; }
     virtual AstNodeDType* subDType2p() const VL_MT_STABLE { return nullptr; }
+    virtual bool isAggregateType() const { return false; }
     virtual bool isFourstate() const;
     // Ideally an IEEE $typename
     virtual string prettyDTypeName(bool) const { return prettyTypeName(); }
@@ -366,6 +367,7 @@ public:
     AstNodeDType* subDType2p() const override VL_MT_STABLE {
         return m_keyDTypep ? m_keyDTypep : keyChildDTypep();
     }
+    bool isAggregateType() const override { return true; }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
@@ -742,6 +744,7 @@ public:
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }
+    bool isAggregateType() const override { return true; }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
@@ -1108,6 +1111,7 @@ public:
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         return m_refDTypep ? m_refDTypep : childDTypep();
     }
+    bool isAggregateType() const override { return true; }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     inline int boundConst() const VL_MT_STABLE;
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
@@ -1404,6 +1408,7 @@ public:
         const AstUnpackArrayDType* const sp = VN_DBG_AS(samep, UnpackArrayDType);
         return m_isCompound == sp->m_isCompound;
     }
+    bool isAggregateType() const override { return true; }
     // Outer dimension comes first. The first element is this node.
     std::vector<AstUnpackArrayDType*> unpackDimensions();
     void isCompound(bool flag) { m_isCompound = flag; }
