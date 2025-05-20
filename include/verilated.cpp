@@ -1733,7 +1733,7 @@ IData VL_SSCANF_INNX(int, const std::string& ld, const std::string& format, int 
 }
 
 // MurmurHash64A
-uint64_t VL_HASH(const char* key) VL_PURE {
+uint64_t VL_MURMUR64_HASH(const char* key) VL_PURE {
     const size_t len = strlen(key);
     const uint64_t seed = 0;
     const uint64_t m = 0xc6a4a7935bd1e995ULL;
