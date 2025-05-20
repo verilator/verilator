@@ -344,7 +344,7 @@ class UnknownVisitor final : public VNVisitor {
                 // We use the special XTEMP type so it doesn't break pure functions
                 UASSERT_OBJ(m_modp, nodep, "X number not under module");
                 AstVar* const newvarp
-                    = new AstVar{nodep->fileline(), VVarType::XTEMP, m_xrandNames->get(nodep),
+                    = new AstVar{nodep->fileline(), VVarType::XTEMP, m_xrandNames->get(nullptr),
                                  VFlagLogicPacked{}, nodep->width()};
                 newvarp->lifetime(VLifetime::STATIC);
                 ++m_statUnkVars;

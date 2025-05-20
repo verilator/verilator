@@ -20,6 +20,7 @@ module t (/*AUTOARG*/
     logic [31:0] x_assigned_added = '0;
 `endif
     logic [31:0] unused;
+    logic [31:0] x_assigned_unused = '0;
     logic [31:0] uninitialized2;
     logic [255:0] big;
     int random_init = $random();
@@ -38,6 +39,7 @@ module t (/*AUTOARG*/
     end
 
     always @(posedge clk) begin
+        x_assigned_unused = 'x;
         x_assigned <= 'x;
 `ifdef ADD_SIGNAL
         x_assigned_added <= 'x;
