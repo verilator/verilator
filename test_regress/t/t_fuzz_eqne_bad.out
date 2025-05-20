@@ -1,7 +1,7 @@
 %Error: t/t_fuzz_eqne_bad.v:12:19: Comparison requires matching data types
                                  : ... note: In instance 't'
-                                 : ... left-hand data type: 'logic$[0:-1]'
-                                 : ... right-hand data type: 'logic'
+                                 : ... Left-hand data type: 'logic$[0:-1]'
+                                 : ... Right-hand data type: 'logic'
    12 |    initial c = (a != &b);
       |                   ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

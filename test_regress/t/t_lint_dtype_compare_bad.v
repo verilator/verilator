@@ -11,11 +11,11 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-  typedef int    myint;
-  typedef bit    mybit;
-  typedef string mystr;
-  typedef int    myval;
-  typedef logic [31:0] mylogic;
+  typedef int    myint_t;
+  typedef bit    mybit_t;
+  typedef string mystr_t;
+  typedef int    myval_t;
+  typedef logic [31:0] mylogic_t;
 
   initial begin
     int queue_var[$] = '{1, 2, 3};
@@ -37,14 +37,14 @@ module t;
     int aa3[string];
     logic [3:0] aa4[string];
 
-    myint bad1[2] = '{1, 2};
-    mybit bad2[2] = '{1, 0};
+    myint_t bad1[2] = '{1, 2};
+    mybit_t bad2[2] = '{1, 0};
 
-    myval val1[mystr] = '{"foo": 123};
-    mylogic val2[string] = '{"foo": 32'h12345678};
+    myval_t   val1[mystr_t] = '{"foo": 123};
+    mylogic_t val2[string] = '{"foo": 32'h12345678};
 
-    myint aa5[string];
-    myint aa6[int];
+    myint_t aa5[string];
+    myint_t aa6[int];
     aa5["a"] = 1;
     aa6[1] = 1;
 

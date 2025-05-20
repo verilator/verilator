@@ -6664,9 +6664,9 @@ class WidthVisitor final : public VNVisitor {
 
                 if (lhsDType && rhsDType && !isEquivalentDType(lhsDType, rhsDType)) {
                     nodep->v3error("Comparison requires matching data types\n"
-                                   << nodep->warnMore() << "... left-hand data type: "
+                                   << nodep->warnMore() << "... Left-hand data type: "
                                    << lhsDType->prettyDTypeNameQ() << "\n"
-                                   << nodep->warnMore() << "... right-hand data type: "
+                                   << nodep->warnMore() << "... Right-hand data type: "
                                    << rhsDType->prettyDTypeNameQ());
                     AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
                     nodep->replaceWith(newp);

@@ -6,8 +6,8 @@
 
 module t;
   // Typedefs
-  typedef int myint;
-  typedef int myint2;
+  typedef int myint_t;
+  typedef int myint2_t;
   typedef int myq_t[$];
   typedef int myval_t;
   typedef string mykey_t;
@@ -36,8 +36,8 @@ module t;
     int aa2[string];
 
     // Typedef array
-    myint t1[2] = '{1, 2};
-    myint2 t2[2] = '{1, 2};
+    myint_t t1[2] = '{1, 2};
+    myint2_t t2[2] = '{1, 2};
 
     // Typedef queue
     myq_t tq1 = '{1, 2};
