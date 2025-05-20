@@ -31,6 +31,10 @@
 #include <memory>
 #include <string>
 
+#ifdef __FreeBSD__
+    #include <pthread_np.h>
+#endif
+
 //=============================================================================
 // Globals
 
