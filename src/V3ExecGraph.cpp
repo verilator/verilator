@@ -96,7 +96,7 @@ public:
 private:
     VL_UNCOPYABLE(ThreadSchedule);
 
-    static constexpr double s_threadBoxWidth = 2.0;
+    static constexpr double s_threadBoxWidth = 2.5;
     static constexpr double s_threadBoxHeight = 1.5;
     static constexpr double s_horizontalGap = s_threadBoxWidth / 2;
 
@@ -132,9 +132,21 @@ private:
         // MTask nodes
         *logp << "\n  // MTasks\n";
 
-        // Create columns of tasks whose execution intervals overlaps
-        int offset = 0;
+        uint32_t maxCost = 0;
+        for (const auto& state : ThreadSchedule::mtaskState) {
+            const ExecMTask* const mtaskp = state.first;
+            maxCost = std::max(maxCost, mtaskp->cost());
+        }
+        // To avoid segments getting too large, limit maximal mtask length.
+        // Based on the mtask cost, normalize it using segment cost
+        constexpr uint32_t segmentsPerLongestMtask = 4;
+        const uint32_t segmentCost = maxCost / segmentsPerLongestMtask;
+
+        // Create columns of tasks whose execution intervals overlaps.
+        // Keep offset for each column for correctly aligned tasks.
+        std::vector<double> offsets(nThreads, 0.0);
         for (const ThreadSchedule& schedule : schedules) {
+            if (schedule.mtasks.empty()) continue;
             using Column = std::vector<const ExecMTask*>;
             std::vector<Column> columns = {{}};
 
@@ -147,11 +159,11 @@ private:
             };
             const std::multiset<const ExecMTask*, Cmp> tasks(schedule.mtasks.begin(),
                                                              schedule.mtasks.end());
-            UASSERT(!tasks.empty(), "Thread schedule should have tasks");
 
             for (const ExecMTask* const mtaskp : tasks) {
                 Column& column = columns.back();
                 UASSERT(column.size() <= nThreads, "Invalid partitioning");
+
                 bool intersects = true;
                 for (const ExecMTask* const earlierMtask : column) {
                     if (endTime(mtaskp) <= startTime(earlierMtask)
@@ -170,12 +182,16 @@ private:
             UASSERT(!columns.front().empty(), "Should be populated by mtasks");
 
             for (const Column& column : columns) {
-                for (const ExecMTask* const mtask : column) {
-                    dumpDotFileEmitMTask(logp, mtask, offset, schedule);
+                double lastColumnOffset = 0;
+                for (const ExecMTask* const mtaskp : column) {
+                    dumpDotFileEmitMTask(logp, mtaskp, schedule, segmentCost, offsets);
+                    lastColumnOffset = std::max(lastColumnOffset, offsets[threadId(mtaskp)]);
                 }
-                ++offset;
+                // Even out column offset
+                std::fill(offsets.begin(), offsets.end(), lastColumnOffset);
             }
-            dumpDotFileEmitFork(logp, offset, nThreads);
+
+            dumpDotFileEmitFork(logp, offsets.front(), nThreads);
 
             // Emit MTask dependency edges
             *logp << "\n  // MTask dependencies\n";
@@ -184,7 +200,8 @@ private:
                 if (thread.empty()) break;  // No more threads
 
                 // Show that schedule ends when all tasks are finished
-                *logp << "  " << thread.back()->name() << " -> fork_" << offset << "\n";
+                *logp << "  " << thread.back()->name() << " -> fork_"
+                      << static_cast<int>(offsets.front()) << "\n";
 
                 // Show that tasks from the same thread are executed in a sequence
                 for (size_t i = 1; i < thread.size(); ++i)
@@ -215,8 +232,8 @@ private:
               << "!\" style=\"filled\" fillcolor=\"" << fillColor << "\"]\n";
     }
     static void dumpDotFileEmitMTask(const std::unique_ptr<std::ofstream>& logp,
-                                     const ExecMTask* const mtaskp, int index,
-                                     const ThreadSchedule& schedule) {
+                                     const ExecMTask* const mtaskp, const ThreadSchedule& schedule,
+                                     uint32_t segmentCost, std::vector<double>& offsets) {
         for (int i = 0; i < mtaskp->threads(); ++i) {
             // Keep original name for the original thread of hierarchical task to keep
             // dependency tracking, add '_' for the rest to differentiate them.
@@ -225,22 +242,25 @@ private:
                                  + std::to_string(endTime(mtaskp)) + ')'
                                  + "\\ncost=" + std::to_string(mtaskp->cost())
                                  + "\\npriority=" + std::to_string(mtaskp->priority());
-            const double xPos = (s_threadBoxWidth + s_horizontalGap) * index + s_horizontalGap;
-            const double yPos
-                = -s_threadBoxHeight
-                  * static_cast<double>(threadId(mtaskp) + i * schedule.threads.size());
+            const double width
+                = std::max(s_threadBoxWidth,
+                           s_threadBoxWidth * static_cast<double>(mtaskp->cost()) / segmentCost);
+            const uint32_t mtaskThreadId = threadId(mtaskp) + i * schedule.threads.size();
+            const double xPos = width / 2 + offsets[mtaskThreadId];
+            offsets[mtaskThreadId] += width + s_horizontalGap;
+            const double yPos = -s_threadBoxHeight * static_cast<double>(mtaskThreadId);
             const string fillColor = i == 0 ? "white" : "lightgreen";
-            dumpDotFileEmitBlock(logp, name, label, s_threadBoxWidth, s_threadBoxHeight, xPos,
-                                 yPos, fillColor);
+            dumpDotFileEmitBlock(logp, name, label, width, s_threadBoxHeight, xPos, yPos,
+                                 fillColor);
         }
     }
 
-    static void dumpDotFileEmitFork(const std::unique_ptr<std::ofstream>& logp, int index,
+    static void dumpDotFileEmitFork(const std::unique_ptr<std::ofstream>& logp, double offset,
                                     uint32_t nThreads) {
-        const string& name = "fork_" + std::to_string(index);
+        const string& name = "fork_" + std::to_string(static_cast<int>(offset));
         constexpr double width = s_threadBoxWidth / 8;
         const double height = s_threadBoxHeight * nThreads;
-        const double xPos = index * (s_threadBoxWidth + s_horizontalGap) - s_horizontalGap / 2;
+        const double xPos = offset - s_horizontalGap / 2;
         const double yPos
             = -static_cast<double>(nThreads) / 2 * s_threadBoxHeight + s_threadBoxHeight / 2;
         dumpDotFileEmitBlock(logp, name, "", width, height, xPos, yPos, "black");
