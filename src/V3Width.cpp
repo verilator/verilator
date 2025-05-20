@@ -6594,24 +6594,25 @@ class WidthVisitor final : public VNVisitor {
 
         if (lhsIsDynArray || rhsIsDynArray || lhsIsQueue || rhsIsQueue || lhsIsAssocArray
             || rhsIsAssocArray) {
-            if (VN_IS(lhs, DynArrayDType) && VN_IS(rhs, DynArrayDType)) {
-                const AstDynArrayDType* const lhsp = VN_CAST(lhs, DynArrayDType);
-                const AstDynArrayDType* const rhsp = VN_CAST(rhs, DynArrayDType);
-                return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
+            if (const AstDynArrayDType* const lhsp = VN_CAST(lhs, DynArrayDType)) {
+                if (const AstDynArrayDType* const rhsp = VN_CAST(rhs, DynArrayDType)) {
+                    return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
+                }
             }
 
-            if (VN_IS(lhs, QueueDType) && VN_IS(rhs, QueueDType)) {
-                const AstQueueDType* const lhsp = VN_CAST(lhs, QueueDType);
-                const AstQueueDType* const rhsp = VN_CAST(rhs, QueueDType);
-                return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
+            if (const AstQueueDType* const lhsp = VN_CAST(lhs, QueueDType)) {
+                if (const AstQueueDType* const rhsp = VN_CAST(rhs, QueueDType)) {
+                    return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
+                }
             }
 
-            if (VN_IS(lhs, AssocArrayDType) && VN_IS(rhs, AssocArrayDType)) {
-                const AstAssocArrayDType* const lhsp = VN_CAST(lhs, AssocArrayDType);
-                const AstAssocArrayDType* const rhsp = VN_CAST(rhs, AssocArrayDType);
-                return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep())
-                       && isEquivalentDType(lhsp->keyDTypep(), rhsp->keyDTypep());
+            if (const AstAssocArrayDType* const lhsp = VN_CAST(lhs, AssocArrayDType)) {
+                if (const AstAssocArrayDType* const rhsp = VN_CAST(rhs, AssocArrayDType)) {
+                    return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep())
+                           && isEquivalentDType(lhsp->keyDTypep(), rhsp->keyDTypep());
+                }
             }
+
             return false;
         }
 
@@ -6634,8 +6635,7 @@ class WidthVisitor final : public VNVisitor {
         if (!dtypep) return false;
         dtypep = dtypep->skipRefp();
         if (!dtypep) return false;
-        return VN_IS(dtypep, QueueDType) || VN_IS(dtypep, DynArrayDType)
-               || VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, AssocArrayDType);
+        return dtypep->isAggregateType();
     }
 
     void visit_cmp_eq_gt(AstNodeBiop* nodep, bool realok) {
