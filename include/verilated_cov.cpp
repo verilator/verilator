@@ -390,6 +390,10 @@ public:
                         hier = val;
                     } else {
                         // Print it
+                        if (key == "page") {
+                            const std::string type = val.substr(2, val.find('/') - 2);
+                            name += keyValueFormatter(VL_CIK_TYPE, type);
+                        }
                         name += keyValueFormatter(key, val);
                     }
                 }
