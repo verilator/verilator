@@ -2112,6 +2112,7 @@ class WidthVisitor final : public VNVisitor {
                                               VFlagChildDType{}, refp};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            userIterate(newp, m_vup);
         } else {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Cast to " << nodep->dtp()->prettyTypeName());
@@ -2126,6 +2127,11 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             if (debug() >= 9) nodep->dumpTree("-  CastPre: ");
             // if (debug()) nodep->backp()->dumpTree("-  CastPreUpUp: ");
+            if (AstSigned* const fromp = VN_CAST(nodep->fromp(), Signed)) {
+                AstNode* const lhsp = fromp->lhsp()->unlinkFrBack();
+                fromp->replaceWith(lhsp);
+                VL_DO_DANGLING(fromp->deleteTree(), fromp);
+            }
             userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM}.p());
             if (debug() >= 9) nodep->dumpTree("-  CastDit: ");
             AstNodeDType* const toDtp = nodep->dtypep()->skipRefToEnump();
