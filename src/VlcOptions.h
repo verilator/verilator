@@ -71,8 +71,8 @@ public:
     bool unlink() const { return m_unlink; }
     string writeFile() const { return m_writeFile; }
     string writeInfoFile() const { return m_writeInfoFile; }
-    bool isTypeOk(const char* name) const {
-        return m_filterType == "" || m_filterType == VlcPoint::type(name);
+    bool isTypeMatch(const char* name) const {
+        return m_filterType == "" || m_filterType == VlcPoint::typeExtract(name);
     }
 
     // METHODS (from main)

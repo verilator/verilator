@@ -64,7 +64,7 @@ public:
     string filename() const { return keyExtract(VL_CIK_FILENAME, m_name.c_str()); }
     string comment() const { return keyExtract(VL_CIK_COMMENT, m_name.c_str()); }
     string hier() const { return keyExtract(VL_CIK_HIER, m_name.c_str()); }
-    string type() const { return type(m_name.c_str()); }
+    string type() const { return typeExtract(m_name.c_str()); }
     string thresh() const {
         // string as maybe ""
         return keyExtract(VL_CIK_THRESH, m_name.c_str());
@@ -79,7 +79,7 @@ public:
         return std::atoi(columnStr.c_str());
     }
     // METHODS
-    static string type(const char* name) { return keyExtract(VL_CIK_TYPE, name); }
+    static string typeExtract(const char* name) { return keyExtract(VL_CIK_TYPE, name); }
     static string keyExtract(const char* shortKey, const char* name) {
         // Hot function
         const size_t shortLen = std::strlen(shortKey);
