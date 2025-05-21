@@ -92,7 +92,7 @@ class VFlagChildDType {};  // Used by parser.y to select constructor that sets c
 #endif
 
 // (V)erilator (N)ode deleted: Pointer to deleted AstNode (for assertions only)
-#define VN_DELETED(nodep) VL_UNLIKELY((uint64_t)(nodep) == 0x1)
+#define VN_DELETED(nodep) VL_UNLIKELY(reinterpret_cast<uint64_t>(nodep) == 0x1)
 
 //######################################################################
 

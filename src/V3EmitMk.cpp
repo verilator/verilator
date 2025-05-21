@@ -332,9 +332,9 @@ private:
 
                 for (; fileIt != list.m_files.end(); ++fileIt) {
                     const uint64_t diffNow
-                        = std::abs((int64_t)(listIdealBucketScore - bucketScore));
-                    const uint64_t diffIfAdded = std::abs(
-                        (int64_t)(listIdealBucketScore - bucketScore - fileIt->m_score));
+                        = std::abs(static_cast<int64_t>(listIdealBucketScore - bucketScore));
+                    const uint64_t diffIfAdded = std::abs(static_cast<int64_t>(
+                        listIdealBucketScore - bucketScore - fileIt->m_score));
                     if (bucketScore == 0 || fileIt->m_score == 0 || diffNow > diffIfAdded) {
                         // Bucket score will be better with the file in it.
                         bucketScore += fileIt->m_score;
