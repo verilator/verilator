@@ -70,8 +70,14 @@ public:
         return keyExtract(VL_CIK_THRESH, m_name.c_str());
     }
     string linescov() const { return keyExtract(VL_CIK_LINESCOV, m_name.c_str()); }
-    int lineno() const { return std::atoi(keyExtract(VL_CIK_LINENO, m_name.c_str()).c_str()); }
-    int column() const { return std::atoi(keyExtract(VL_CIK_COLUMN, m_name.c_str()).c_str()); }
+    int lineno() const {
+        const string lineStr = keyExtract(VL_CIK_LINENO, m_name.c_str());
+        return std::atoi(lineStr.c_str());
+    }
+    int column() const {
+        const string columnStr = keyExtract(VL_CIK_COLUMN, m_name.c_str());
+        return std::atoi(columnStr.c_str());
+    }
     // METHODS
     static string type(const char* name) { return keyExtract(VL_CIK_TYPE, name); }
     static string keyExtract(const char* shortKey, const char* name) {
