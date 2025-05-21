@@ -2260,13 +2260,13 @@ The grammar of configuration commands is as follows:
    order to improve model runtime performance.  This option is not expected
    to be used by users directly.  See :ref:`Thread PGO`.
 
-.. option:: public [-module "<modulename>"] [-task/-function "<taskname>"]  -var "<signame>"
+.. option:: public [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"]
 
-.. option:: public_flat [-module "<modulename>"] [-task/-function "<taskname>"]  -var "<signame>"
+.. option:: public_flat [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"]
 
-.. option:: public_flat_rd [-module "<modulename>"] [-task/-function "<taskname>"]  -var "<signame>"
+.. option:: public_flat_rd [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"]
 
-.. option:: public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"]  -var "<signame>" "@(edge)"
+.. option:: public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>" "@(edge)"]
 
    Sets the variable to be public.  Same as
    :option:`/*verilator&32;public*/` or

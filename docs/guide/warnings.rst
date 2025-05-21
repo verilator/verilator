@@ -1337,11 +1337,11 @@ List Of Warnings
 
    Faulty example:
 
-   .. include:: ../../docs/gen/ex_PKGNODECL_faulty.rst
+   .. include:: ../../docs/gen/ex_PINMISSING_faulty.rst
 
    Results in:
 
-   .. include:: ../../docs/gen/ex_PKGNODECL_msg.rst
+   .. include:: ../../docs/gen/ex_PINMISSING_msg.rst
 
    Repaired example:
 

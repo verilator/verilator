@@ -5,7 +5,7 @@ Revision History and Change Log
 ===============================
 
 The changes in each Verilator version are described below.  The
-contributors that suggested a given feature are shown in []. Thanks!
+contributors that suggested or implemented a given issue are shown in []. Thanks!
 
 
 Verilator 5.037 devel
@@ -13,13 +13,16 @@ Verilator 5.037 devel
 
 **Other:**
 
-* Support redeclaring type as non-type; major parsing change (#2412).
+* Support redeclaring type as non-type; major parsing change (#2412) (#6020).
 * Support constrained random for associative arrays (#5985) (#5986). [Yilou Wang]
 * Support assignments to concatenations with impure RHS (#6002). [Ryszard Rozak, Antmicro Ltd.]
 * Support SARIF JSON diagnostic output with `--diagnostics-sarif`. (#6017)
 * Support parameter forward types.
-* Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
 * Add PROCINITASSIGN on initial assignments to process variables (#2481). [Niraj Menon]
+* Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
+* Add ternary operator into branch coverage (#5880). [Ryszard Rozak, Antmicro Ltd.]
+* Add aggregate type error checks (#5570) (#5950). [Shou-Li Hsu]
+* Improve hierarchical scheduling visualization in V3ExecGraph (#6009). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix filename backslash escapes in C code (#5947).
 * Fix C++ widths in V3Expand (#5953) (#5975). [Geza Lore]
 * Fix dependencies from different hierarchical schedules (#5954). [Bartłomiej Chmiel, Antmicro Ltd.]
@@ -37,6 +40,8 @@ Verilator 5.037 devel
 * Fix slicing of AstExprStmt nodes (#6005). [Ryszard Rozak, Antmicro Ltd.]
 * Fix skipped generate blocks in toggle coverage (#6010). [Ryszard Rozak, Antmicro Ltd.]
 * Fix arithmetic left-shift by constants over 32 bits (#6007) (#6015). [Zhen Yan]
+* Fix wrong optimization result of shifted out variable (#6016) (#6019). [Yutetsu TAKATSUKASA]
+* Add missing FreeBSD include (#6027) (#6028). [Joel Bodenmann]
 
 
 Verilator 5.036 2025-04-27
