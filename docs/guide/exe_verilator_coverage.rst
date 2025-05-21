@@ -124,6 +124,11 @@ verilator_coverage Arguments
 
    This option should be used together with :option:`--annotate`.
 
+.. option:: --filter-type <type>
+
+   Skips records of coverage types different than <type>.
+   Possible values are `toggle`, `line`, `branch`, `expr`, `user`.
+
 .. option:: --help
 
    Displays a help summary, the program version, and exits.
