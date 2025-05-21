@@ -39,12 +39,12 @@ class VlcOptions final {
     bool m_annotateAll = false;  // main switch: --annotate-all
     int m_annotateMin = 10;     // main switch: --annotate-min I<count>
     bool m_annotatePoints = false;  // main switch: --annotate-points
+    string m_filterType;        // main switch: --filter-type
     VlStringSet m_readFiles;    // main switch: --read
     bool m_rank = false;        // main switch: --rank
     bool m_unlink = false;      // main switch: --unlink
     string m_writeFile;         // main switch: --write
     string m_writeInfoFile;     // main switch: --write-info
-    string m_filterType;        // main switch: --filter-type
     // clang-format on
 
 private:
