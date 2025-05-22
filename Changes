@@ -22,6 +22,7 @@ Verilator 5.037 devel
 * Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
 * Add ternary operator into branch coverage (#5880). [Ryszard Rozak, Antmicro Ltd.]
 * Add aggregate type error checks (#5570) (#5950). [Shou-Li Hsu]
+* Add `--filter-type` to verilator_coverage (#6030). [Ryszard Rozak, Antmicro Ltd.]
 * Improve hierarchical scheduling visualization in V3ExecGraph (#6009). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix filename backslash escapes in C code (#5947).
 * Fix C++ widths in V3Expand (#5953) (#5975). [Geza Lore]
@@ -40,8 +41,9 @@ Verilator 5.037 devel
 * Fix slicing of AstExprStmt nodes (#6005). [Ryszard Rozak, Antmicro Ltd.]
 * Fix skipped generate blocks in toggle coverage (#6010). [Ryszard Rozak, Antmicro Ltd.]
 * Fix arithmetic left-shift by constants over 32 bits (#6007) (#6015). [Zhen Yan]
+* Fix concatenation and type casting (#6012) (#6013). [Todd Strader]
 * Fix wrong optimization result of shifted out variable (#6016) (#6019). [Yutetsu TAKATSUKASA]
-* Add missing FreeBSD include (#6027) (#6028). [Joel Bodenmann]
+* Fix missing FreeBSD include (#6027) (#6028). [Joel Bodenmann]
 
 
 Verilator 5.036 2025-04-27
