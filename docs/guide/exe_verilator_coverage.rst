@@ -124,10 +124,11 @@ verilator_coverage Arguments
 
    This option should be used together with :option:`--annotate`.
 
-.. option:: --filter-type <type>
+.. option:: --filter-type <regex>
 
-   Skips records of coverage types different than <type>.
-   Possible values are `toggle`, `line`, `branch`, `expr`, `user`.
+   Skips records of coverage types that matches with <regex>
+   Possible values are `toggle`, `line`, `branch`, `expr`, `user` and
+   a wildcard with `\*` or `?`. The default value is `\*`.
 
 .. option:: --help
 

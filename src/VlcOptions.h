@@ -39,7 +39,7 @@ class VlcOptions final {
     bool m_annotateAll = false;  // main switch: --annotate-all
     int m_annotateMin = 10;     // main switch: --annotate-min I<count>
     bool m_annotatePoints = false;  // main switch: --annotate-points
-    string m_filterType;        // main switch: --filter-type
+    string m_filterType = "*";  // main switch: --filter-type
     VlStringSet m_readFiles;    // main switch: --read
     bool m_rank = false;        // main switch: --rank
     bool m_unlink = false;      // main switch: --unlink
@@ -72,7 +72,7 @@ public:
     string writeFile() const { return m_writeFile; }
     string writeInfoFile() const { return m_writeInfoFile; }
     bool isTypeMatch(const char* name) const {
-        return m_filterType == "" || m_filterType == VlcPoint::typeExtract(name);
+        return VString::wildmatch(VlcPoint::typeExtract(name), m_filterType);
     }
 
     // METHODS (from main)
