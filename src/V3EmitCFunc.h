@@ -186,8 +186,17 @@ public:
 
     bool emitSimpleOk(AstNodeExpr* nodep);
     void emitIQW(AstNode* nodep) {
-        // Other abbrevs: "C"har, "S"hort, "F"loat, "D"ouble, stri"N"g
-        puts(nodep->dtypep()->charIQWN());
+        // See "Type letters" in verilated.h
+        // Other abbrevs: "C"har, "S"hort, "F"loat, "D"ouble, stri"N"g, "R"=queue, "U"npacked
+        puts(nodep->dtypep()->skipRefp()->charIQWN());
+    }
+    void emitRU(AstNode* nodep) {
+        AstNodeDType* dtp = nodep->dtypep()->skipRefp();
+        // See "Type letters" in verilated.h
+        if (VN_IS(dtp, UnpackArrayDType))
+            puts("U");
+        else if (VN_IS(dtp, QueueDType) || VN_IS(dtp, DynArrayDType))
+            puts("R");
     }
     void emitScIQW(AstVar* nodep) {
         UASSERT_OBJ(nodep->isSc(), nodep, "emitting SystemC operator on non-SC variable");
@@ -387,8 +396,14 @@ public:
     }
 
     void visit(AstCvtArrayToPacked* nodep) override {
-        AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
-        emitOpName(nodep, nodep->emitC(), nodep->fromp(), elemDTypep, nullptr);
+        AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefp();
+        AstNodeDType* const elemDtp = fromDtp->subDTypep()->skipRefp();
+        puts("VL_PACK_");
+        emitIQW(nodep);
+        puts("_");
+        emitRU(fromDtp);
+        emitIQW(elemDtp);
+        emitOpName(nodep, "(%nw, %rw, %P, %li)", nodep->fromp(), elemDtp, nullptr);
     }
 
     void visit(AstCvtUnpackedToQueue* nodep) override {
@@ -453,7 +468,10 @@ public:
         } else if (const AstCvtPackedToArray* const castp
                    = VN_CAST(nodep->rhsp(), CvtPackedToArray)) {
             putns(castp, "VL_UNPACK_");
+            emitRU(nodep);
             emitIQW(nodep->dtypep()->subDTypep());
+            puts("_");
+            emitRU(castp->fromp());
             emitIQW(castp->fromp());
             puts("(");
             putns(castp->dtypep(), cvtToStr(castp->dtypep()->subDTypep()->widthMin()));

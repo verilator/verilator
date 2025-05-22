@@ -1139,7 +1139,7 @@ public:
     }
     ASTGEN_MEMBERS_AstCvtArrayToPacked;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { return "VL_PACK_%nq%rq(%nw, %rw, %P, %li)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
 };
 class AstCvtPackedToArray final : public AstNodeExpr {
