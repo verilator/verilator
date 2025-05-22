@@ -1321,6 +1321,7 @@ class VlTest:
                     entering=self.obj_dir,
                     cmd=[
                         os.environ['MAKE'],
+                        (("-j " + str(Args.driver_build_jobs)) if Args.driver_build_jobs else ""),
                         "-C " + self.obj_dir,
                         "-f " + os.path.abspath(os.path.dirname(__file__)) + "/Makefile_obj",
                         ("" if self.verbose else "--no-print-directory"),
@@ -2914,6 +2915,7 @@ if __name__ == '__main__':
 
     forker = Forker(Args.jobs)
 
+    Args.driver_build_jobs = None
     if len(Arg_Tests) >= 2 and Args.jobs >= 2:
         # Read supported into master process, so don't call every subprocess
         Capabilities.warmup_cache()
@@ -2922,5 +2924,8 @@ if __name__ == '__main__':
         print("== Many jobs; redirecting STDIN", file=sys.stderr)
         #
         sys.stdin = open("/dev/null", 'r', encoding="utf8")  # pylint: disable=consider-using-with
+    else:
+        # Speed up single-test makes
+        Args.driver_build_jobs = calc_jobs()
 
     run_them()
