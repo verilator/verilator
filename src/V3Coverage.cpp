@@ -403,8 +403,8 @@ class CoverageVisitor final : public VNVisitor {
         m_modp->addStmtsp(newp);
     }
 
-    void toggleVarRecurse(AstNodeDType* dtypep, int depth,  // per-iteration
-                          const ToggleEnt& above, AstVar* varp) {  // Constant
+    void toggleVarRecurse(const AstNodeDType* const dtypep, const int depth,  // per-iteration
+                          const ToggleEnt& above, const AstVar* const varp) {  // Constant
         if (const AstBasicDType* const bdtypep = VN_CAST(dtypep, BasicDType)) {
             if (bdtypep->isRanged()) {
                 for (int index_docs = bdtypep->lo(); index_docs < bdtypep->hi() + 1;
