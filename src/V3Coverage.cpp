@@ -382,18 +382,22 @@ class CoverageVisitor final : public VNVisitor {
                     = new AstVar{fl_nowarn, VVarType::MODULETEMP, newvarname, nodep};
                 m_modp->addStmtsp(chgVarp);
 
-                const string initVarName = "__Vtogcovinit__"s + m_beginHier + nodep->shortName();
-                AstVar* const initVarp
-                    = new AstVar{fl_nowarn, VVarType::MODULETEMP, initVarName, nodep};
-                m_modp->addStmtsp(initVarp);
+                AstVar* initVarp = nullptr;
+                AstVarRef* initVarRefp = nullptr;
+                if (nodep->dtypep()->isFourstate()) {
+                    const string initVarName
+                        = "__Vtogcovinit__"s + m_beginHier + nodep->shortName();
+                    initVarp = new AstVar{fl_nowarn, VVarType::MODULETEMP, initVarName, nodep};
+                    m_modp->addStmtsp(initVarp);
+                    initVarRefp = new AstVarRef{fl_nowarn, initVarp, VAccess::WRITE};
+                }
 
                 // Create bucket for each dimension * bit.
                 // This is necessarily an O(n^2) expansion, which is why
                 // we limit coverage to signals with < 256 bits.
 
                 ToggleEnt newvec{""s, new AstVarRef{fl_nowarn, nodep, VAccess::READ},
-                                 new AstVarRef{fl_nowarn, chgVarp, VAccess::WRITE},
-                                 new AstVarRef{fl_nowarn, initVarp, VAccess::WRITE}};
+                                 new AstVarRef{fl_nowarn, chgVarp, VAccess::WRITE}, initVarRefp};
                 toggleVarRecurse(nodep->dtypeSkipRefp(), 0, newvec, nodep);
                 newvec.cleanup();
             }
