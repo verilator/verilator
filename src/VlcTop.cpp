@@ -51,6 +51,8 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
                 if (line[secspace] == '\'' && line[secspace + 1] == ' ') break;
             }
             const string point = line.substr(3, secspace - 3);
+            if (!opt.isTypeMatch(point.c_str())) continue;
+
             const uint64_t hits = std::atoll(line.c_str() + secspace + 1);
             // UINFO(9,"   point '"<<point<<"'"<<" "<<hits<<endl);
 
