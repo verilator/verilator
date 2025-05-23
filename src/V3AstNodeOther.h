@@ -2977,7 +2977,7 @@ class AstCoverToggle final : public AstNodeStmt {
     // @astgen op1 := incp : AstCoverInc
     // @astgen op2 := origp : AstNodeExpr
     // @astgen op3 := changep : AstNodeExpr
-    // @astgen op4 := initp : AstNodeExpr
+    // @astgen op4 := initp : Optional[AstNodeExpr]
 public:
     AstCoverToggle(FileLine* fl, AstCoverInc* incp, AstNodeExpr* origp, AstNodeExpr* changep,
                    AstNodeExpr* initp)
