@@ -92,7 +92,7 @@ class CoverageVisitor final : public VNVisitor {
         const string m_comment;  // Comment for coverage dump
         AstNodeExpr* m_varRefp;  // How to get to this element
         AstNodeExpr* m_chgRefp;  // How to get to this element
-        AstNodeExpr* m_initRefp;
+        AstNodeExpr* m_initRefp;  // Evaluates to true if variable is initialized
         ToggleEnt(const string& comment, AstNodeExpr* vp, AstNodeExpr* cp, AstNodeExpr* initp)
             : m_comment{comment}
             , m_varRefp{vp}
@@ -102,6 +102,7 @@ class CoverageVisitor final : public VNVisitor {
         void cleanup() {
             VL_DO_CLEAR(m_varRefp->deleteTree(), m_varRefp = nullptr);
             VL_DO_CLEAR(m_chgRefp->deleteTree(), m_chgRefp = nullptr);
+            if (m_initRefp) { VL_DO_CLEAR(m_initRefp->deleteTree(), m_initRefp = nullptr); }
         }
     };
 
@@ -126,6 +127,7 @@ class CoverageVisitor final : public VNVisitor {
     // NODE STATE
     // Entire netlist:
     //  AstIf::user1()                  -> bool.  True indicates ifelse processed
+    //  AstVar::user1p()                -> AstVar*. Variable indicating if AstVar is initialized
     //  AstIf::user2()                  -> bool.  True indicates coverage-generated
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
