@@ -120,6 +120,7 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     int m_labelNum = 0;  // Next label number
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCExpr
     bool m_emitConstInit = false;  // Emitting constant initializer
+    bool m_createdScopeHash = false;  // Already created a scope hash
 
     // State associated with processing $display style string formatting
     struct EmitDispState final {
@@ -150,6 +151,8 @@ protected:
     const AstNodeModule* m_modp = nullptr;  // Current module being emitted
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
     bool m_instantiatesOwnProcess = false;
+    const AstClassPackage* m_classOrPackage = nullptr;  // Pointer to current class or package
+    string m_classOrPackageHash;  // Hash of class or package name
 
     bool constructorNeedsProcess(const AstClass* const classp) {
         const AstNode* const newp = m_memberMap.findMember(classp, "new");
@@ -223,6 +226,7 @@ public:
     string emitVarResetRecurse(const AstVar* varp, bool constructing,
                                const string& varNameProtected, AstNodeDType* dtypep, int depth,
                                const string& suffix);
+    void emitVarResetScopeHash();
     void emitChangeDet();
     void emitConstInit(AstNode* initp) {
         // We should refactor emit to produce output into a provided buffer, not go through members
@@ -294,6 +298,7 @@ public:
         VL_RESTORER(m_useSelfForThis);
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_instantiatesOwnProcess);
+        VL_RESTORER(m_createdScopeHash);
         m_cfuncp = nodep;
         m_instantiatesOwnProcess = false;
 
@@ -612,6 +617,7 @@ public:
             putnbs(argrefp, argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
         }
         puts(") {\n");
+        VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->exprp());
         puts("}\n");
     }
@@ -965,12 +971,14 @@ public:
     void visit(AstJumpBlock* nodep) override {
         nodep->labelNum(++m_labelNum);
         putns(nodep, "{\n");  // Make it visually obvious label jumps outside these
+        VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->stmtsp());
         iterateAndNextConstNull(nodep->endStmtsp());
         puts("}\n");
     }
     void visit(AstCLocalScope* nodep) override {
         putns(nodep, "{\n");
+        VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->stmtsp());
         puts("}\n");
     }
@@ -981,6 +989,7 @@ public:
         putns(nodep, "__Vlabel" + cvtToStr(nodep->blockp()->labelNum()) + ": ;\n");
     }
     void visit(AstWhile* nodep) override {
+        VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->precondsp());
         putns(nodep, "while (");
         iterateAndNextConstNull(nodep->condp());
@@ -999,7 +1008,10 @@ public:
         iterateAndNextConstNull(nodep->condp());
         if (!nodep->branchPred().unknown()) puts("))");
         puts(") {\n");
-        iterateAndNextConstNull(nodep->thensp());
+        {
+            VL_RESTORER(m_createdScopeHash);
+            iterateAndNextConstNull(nodep->thensp());
+        }
         puts("}");
         if (!nodep->elsesp()) {
             puts("\n");
@@ -1008,6 +1020,7 @@ public:
                 puts(" else ");
                 iterateAndNextConstNull(nodep->elsesp());
             } else {
+                VL_RESTORER(m_createdScopeHash);
                 puts(" else {\n");
                 iterateAndNextConstNull(nodep->elsesp());
                 puts("}\n");
@@ -1015,6 +1028,7 @@ public:
         }
     }
     void visit(AstExprStmt* nodep) override {
+        VL_RESTORER(m_createdScopeHash);
         // GCC allows compound statements in expressions, but this is not standard.
         // So we use an immediate-evaluation lambda and comma operator
         putnbs(nodep, "([&]() {\n");
