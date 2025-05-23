@@ -103,7 +103,6 @@ class ClockVisitor final : public VNVisitor {
         AstNode* const incp = nodep->incp()->unlinkFrBack();
         AstNodeExpr* const origp = nodep->origp()->unlinkFrBack();
         AstNodeExpr* const changeWrp = nodep->changep()->unlinkFrBack();
-        AstNodeExpr* const initpWrp = nodep->initp()->unlinkFrBack();
         AstNodeExpr* const changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
         AstNodeExpr* comparedp = nullptr;
         // Xor will optimize better than Eq, when CoverToggle has bit selects,
@@ -113,8 +112,10 @@ class ClockVisitor final : public VNVisitor {
             if (!bdtypep->isOpaque()) comparedp = new AstXor{nodep->fileline(), origp, changeRdp};
         }
         if (!comparedp) comparedp = AstEq::newTyped(nodep->fileline(), origp, changeRdp);
-        AstAnd* const condp = new AstAnd{nodep->fileline(), comparedp, initpWrp};
-        AstIf* const newp = new AstIf{nodep->fileline(), condp, incp};
+        if (nodep->initp()) {
+            comparedp = new AstAnd{nodep->fileline(), comparedp, nodep->initp()->unlinkFrBack()};
+        }
+        AstIf* const newp = new AstIf{nodep->fileline(), comparedp, incp};
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
