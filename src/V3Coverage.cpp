@@ -93,11 +93,11 @@ class CoverageVisitor final : public VNVisitor {
         AstNodeExpr* m_varRefp;  // How to get to this element
         AstNodeExpr* m_chgRefp;  // How to get to this element
         AstNodeExpr* m_initRefp;
-        ToggleEnt(const string& comment, AstNodeExpr* vp, AstNodeExpr* cp, AstNodeExpr* init)
+        ToggleEnt(const string& comment, AstNodeExpr* vp, AstNodeExpr* cp, AstNodeExpr* initp)
             : m_comment{comment}
             , m_varRefp{vp}
             , m_chgRefp{cp}
-            , m_initRefp{init} {}
+            , m_initRefp{initp} {}
         ~ToggleEnt() = default;
         void cleanup() {
             VL_DO_CLEAR(m_varRefp->deleteTree(), m_varRefp = nullptr);
