@@ -125,7 +125,7 @@ class LinkCellsVisitor final : public VNVisitor {
     }
     void newEdge(V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cuttable) {
         const V3GraphEdge* const edgep = new V3GraphEdge{&m_graph, fromp, top, weight, cuttable};
-        UINFO(9, "    newEdge " << edgep << " " << fromp->name() << " -> " << top->name() << endl);
+        UINFO(9, "    newEdge " << edgep << " " << fromp->name() << " -> " << top->name());
     }
 
     AstNodeModule* findModuleSym(const string& modName) {
@@ -186,7 +186,7 @@ class LinkCellsVisitor final : public VNVisitor {
             if (m_modp) newEdge(vertex(m_modp), vertex(nodep), 1, false);
             //
             m_modp = nodep;
-            UINFO(4, "Link Module: " << nodep << endl);
+            UINFO(4, "Link Module: " << nodep);
             if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
                 && !v3Global.opt.isLibraryFile(nodep->fileline()->filename())
                 && !VN_IS(nodep, NotFoundModule) && !nodep->recursiveClone()
@@ -207,7 +207,7 @@ class LinkCellsVisitor final : public VNVisitor {
             const bool topMatch = (v3Global.opt.topModule() == nodep->prettyName());
             if (topMatch) {
                 m_topVertexp = vertex(nodep);
-                UINFO(2, "Link --top-module: " << nodep << endl);
+                UINFO(2, "Link --top-module: " << nodep);
                 nodep->inLibrary(false);  // Safer to make sure it doesn't disappear
             }
             if (v3Global.opt.topModule() == "" ? nodep->inLibrary()  // Library cells are lower
@@ -225,7 +225,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
     void visit(AstIfaceRefDType* nodep) override {
         // Cell: Resolve its filename.  If necessary, parse it.
-        UINFO(4, "Link IfaceRef: " << nodep << endl);
+        UINFO(4, "Link IfaceRef: " << nodep);
         // Use findIdUpward instead of findIdFlat; it doesn't matter for now
         // but we might support modules-under-modules someday.
         AstNodeModule* const modp = resolveModule(nodep, nodep->ifaceName());
@@ -252,7 +252,7 @@ class LinkCellsVisitor final : public VNVisitor {
         // For historical reasons virtual interface reference variables remain VARs
         if (m_varp && !nodep->isVirtual()) m_varp->setIfaceRef();
         // Note cannot do modport resolution here; modports are allowed underneath generates
-        UINFO(4, "Link IfaceRef done: " << nodep << endl);
+        UINFO(4, "Link IfaceRef done: " << nodep);
     }
 
     void visit(AstPackageExport* nodep) override {
@@ -288,7 +288,7 @@ class LinkCellsVisitor final : public VNVisitor {
         // TODO this doesn't allow bind to dotted hier names, that would require
         // this move to post param, which would mean we do not auto-read modules
         // and means we cannot compute module levels until later.
-        UINFO(4, "Link Bind: " << nodep << endl);
+        UINFO(4, "Link Bind: " << nodep);
         AstNodeModule* const modp = resolveModule(nodep, nodep->name());
         if (modp) {
             AstNode* const cellsp = nodep->cellsp()->unlinkFrBackWithNext();
@@ -322,13 +322,13 @@ class LinkCellsVisitor final : public VNVisitor {
         nodep->user1p(m_modp);
         //
         if (!nodep->modp() || cloned) {
-            UINFO(4, "Link Cell: " << nodep << endl);
+            UINFO(4, "Link Cell: " << nodep);
             // Use findIdFallback instead of findIdFlat; it doesn't matter for now
             // but we might support modules-under-modules someday.
             AstNodeModule* cellmodp = resolveModule(nodep, nodep->modName());
             if (cellmodp) {
                 if (cellmodp == m_modp || cellmodp->user2p() == m_modp) {
-                    UINFO(1, "Self-recursive module " << cellmodp << endl);
+                    UINFO(1, "Self-recursive module " << cellmodp);
                     cellmodp->recursive(true);
                     nodep->recursive(true);
                     if (!cellmodp->recursiveClone()) {
@@ -427,7 +427,7 @@ class LinkCellsVisitor final : public VNVisitor {
                     if (ports.find(portp->name()) == ports.end()
                         && ports.find("__pinNumber" + cvtToStr(portp->pinNum())) == ports.end()) {
                         if (pinStar) {
-                            UINFO(9, "    need .* PORT  " << portp << endl);
+                            UINFO(9, "    need .* PORT  " << portp);
                             // Create any not already connected
                             AstPin* const newp = new AstPin{
                                 nodep->fileline(), 0, portp->name(),
@@ -519,7 +519,7 @@ class LinkCellsVisitor final : public VNVisitor {
         if (nodep->modp()) {  //
             iterateChildren(nodep);
         }
-        UINFO(4, " Link Cell done: " << nodep << endl);
+        UINFO(4, " Link Cell done: " << nodep);
     }
 
     void visit(AstRefDType* nodep) override {
@@ -630,6 +630,6 @@ public:
 // Link class functions
 
 void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp) {
-    UINFO(4, __FUNCTION__ << ": " << endl);
+    UINFO(4, __FUNCTION__ << ": ");
     { LinkCellsVisitor{nodep, filterp}; }
 }

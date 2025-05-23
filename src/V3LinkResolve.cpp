@@ -61,7 +61,7 @@ class LinkResolveVisitor final : public VNVisitor {
     // TODO: could move to V3LinkParse to get them out of the way of elaboration
     void visit(AstNodeModule* nodep) override {
         // Module: Create sim table for entire module and iterate
-        UINFO(8, "MODULE " << nodep << endl);
+        UINFO(8, "MODULE " << nodep);
         if (nodep->dead()) return;
         VL_RESTORER(m_modp);
         VL_RESTORER(m_senitemCvtNum);
@@ -179,7 +179,7 @@ class LinkResolveVisitor final : public VNVisitor {
     void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
         if (AstLet* letp = VN_CAST(nodep->taskp(), Let)) {
-            UINFO(7, "letSubstitute() " << nodep << " <- " << letp << endl);
+            UINFO(7, "letSubstitute() " << nodep << " <- " << letp);
             if (letp->user2()) {
                 nodep->v3error("Recursive let substitution " << letp->prettyNameQ());
                 nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
@@ -208,7 +208,7 @@ class LinkResolveVisitor final : public VNVisitor {
                 const auto it = portToExprs.find(refp->varp());
                 if (it != portToExprs.end()) {
                     AstNodeExpr* const pinp = it->second;
-                    UINFO(9, "let pin subst " << refp << " <- " << pinp << endl);
+                    UINFO(9, "let pin subst " << refp << " <- " << pinp);
                     // Side effects are copied into pins, to match other simulators
                     refp->replaceWith(pinp->cloneTree(false));
                     VL_DO_DANGLING(pushDeletep(refp), refp);
@@ -445,7 +445,7 @@ class LinkResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstUdpTable* nodep) override {
-        UINFO(5, "UDPTABLE  " << nodep << endl);
+        UINFO(5, "UDPTABLE  " << nodep);
         if (!v3Global.opt.bboxUnsup()) {
             // We don't warn until V3Inst, so that UDPs that are in libraries and
             // never used won't result in any warnings.
@@ -559,7 +559,7 @@ public:
 // Link class functions
 
 void V3LinkResolve::linkResolve(AstNetlist* rootp) {
-    UINFO(4, __FUNCTION__ << ": " << endl);
+    UINFO(4, __FUNCTION__ << ": ");
     {
         const LinkResolveVisitor visitor{rootp};
         LinkBotupVisitor{rootp};

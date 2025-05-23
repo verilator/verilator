@@ -185,13 +185,13 @@ private:
         if (inputFilesCount < MIN_FILES_COUNT
             && inputFilesCount <= static_cast<size_t>(totalBucketsNum)) {
             UINFO(4, "File concatenation skipped: Too few files (" << m_inputFiles.size() << " < "
-                                                                   << MIN_FILES_COUNT << ")\n");
+                                                                   << MIN_FILES_COUNT << ")");
             groupingRedundant = true;
         }
         if (inputFilesCount < (MIN_FILES_PER_BUCKET * totalBucketsNum)) {
             UINFO(4, "File concatenation skipped: Too few files per bucket ("
                          << m_inputFiles.size() << " < " << MIN_FILES_PER_BUCKET << " - "
-                         << totalBucketsNum << ")\n");
+                         << totalBucketsNum << ")");
             groupingRedundant = true;
         }
         if (!groupingRedundant) return false;
@@ -394,19 +394,19 @@ private:
     }
 
     void process() {
-        UINFO(4, __FUNCTION__ << " group file prefix: " << m_groupFilePrefix << '\n');
-        UINFO(5, "Number of input files: " << m_inputFiles.size() << '\n');
-        UINFO(5, "Total score: " << m_totalScore << '\n');
+        UINFO(4, __FUNCTION__ << " group file prefix: " << m_groupFilePrefix);
+        UINFO(5, "Number of input files: " << m_inputFiles.size());
+        UINFO(5, "Total score: " << m_totalScore);
 
         const int totalBucketsNum = v3Global.opt.outputGroups();
-        UINFO(5, "Number of buckets: " << totalBucketsNum << '\n');
+        UINFO(5, "Number of buckets: " << totalBucketsNum);
         UASSERT(totalBucketsNum > 0, "More than 0 buckets required");
 
         if (fallbackNoGrouping(m_inputFiles.size())) return;
 
         if (debug() >= 6 || dumpLevel() >= 6) {
             const string filename = v3Global.debugFilename("outputgroup") + ".txt";
-            UINFO(5, "Dumping " << filename << endl);
+            UINFO(5, "Dumping " << filename);
             m_logp = std::unique_ptr<std::ofstream>{V3File::new_ofstream(filename)};
             if (m_logp->fail()) v3fatal("Can't write file: " << filename);
         }
@@ -427,7 +427,7 @@ private:
                 list.m_isConcatenable = false;
                 UINFO(5, "Excluding from concatenation: Work List contains only one file: "
                          "Work List #"
-                             << list.m_dbgId << endl);
+                             << list.m_dbgId);
                 continue;
             }
 
@@ -926,11 +926,11 @@ public:
 // Gate class functions
 
 void V3EmitMk::emitmk() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     const EmitMk emitter;
 }
 
 void V3EmitMk::emitHierVerilation(const V3HierBlockPlan* planp) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     EmitMkHierVerilation{planp};
 }

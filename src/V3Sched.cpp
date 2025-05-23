@@ -1379,7 +1379,7 @@ void schedule(AstNetlist* netlistp) {
     // Orders a region's logic and creates the region eval function
     const auto order = [&](const std::string& name,
                            const std::vector<V3Sched::LogicByScope*>& logic) -> EvalKit {
-        UINFO(2, "Scheduling " << name << " #logic = " << logic.size() << endl);
+        UINFO(2, "Scheduling " << name << " #logic = " << logic.size());
         AstVarScope* const trigVscp
             = scopeTopp->createTempLike("__V" + name + "Triggered", actTrigVscp);
         const auto trigMap = cloneMapWithNewTriggerReferences(actTrigMap, trigVscp);

@@ -57,7 +57,7 @@ public:
     // CONSTRUCTORS
     explicit UndrivenVarEntry(AstVar* varp)
         : m_varp(varp) {  // Construction for when a var is used
-        UINFO(9, "create " << varp << endl);
+        UINFO(9, "create " << varp);
         m_wholeFlags.resize(FLAGS_PER_BIT);
         for (int i = 0; i < FLAGS_PER_BIT; i++) m_wholeFlags[i] = false;
         m_bitFlags.resize(varp->width() * FLAGS_PER_BIT);
@@ -114,11 +114,11 @@ private:
 
 public:
     void usedWhole() {
-        UINFO(9, "set u[*] " << m_varp->name() << endl);
+        UINFO(9, "set u[*] " << m_varp->name());
         m_wholeFlags[FLAG_USED] = true;
     }
     void drivenWhole() {
-        UINFO(9, "set d[*] " << m_varp->name() << endl);
+        UINFO(9, "set d[*] " << m_varp->name());
         m_wholeFlags[FLAG_DRIVEN] = true;
     }
     void drivenWhole(const AstNodeVarRef* nodep, const FileLine* fileLinep) {
@@ -145,13 +145,13 @@ public:
     const AstAlways* getAlwCombp() const { return m_alwCombp; }
     const FileLine* getAlwCombFileLinep() const { return m_alwCombFileLinep; }
     void usedBit(int bit, int width) {
-        UINFO(9, "set u[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name() << endl);
+        UINFO(9, "set u[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name());
         for (int i = 0; i < width; i++) {
             if (bitNumOk(bit + i)) m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_USED] = true;
         }
     }
     void drivenBit(int bit, int width) {
-        UINFO(9, "set d[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name() << endl);
+        UINFO(9, "set d[" << (bit + width - 1) << ":" << bit << "] " << m_varp->name());
         for (int i = 0; i < width; i++) {
             if (bitNumOk(bit + i)) m_bitFlags[(bit + i) * FLAGS_PER_BIT + FLAG_DRIVEN] = true;
         }
@@ -382,7 +382,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                     // Don't warn if already driven earlier as "a=0; if(a) a=1;" is fine.
                     if (usr == 2 && m_alwaysCombp
                         && entryp->isUsedNotDrivenBit(lsb, nodep->width())) {
-                        UINFO(9, " Select.  Entryp=" << cvtToHex(entryp) << endl);
+                        UINFO(9, " Select.  Entryp=" << cvtToHex(entryp));
                         warnAlwCombOrder(varrefp);
                     }
                     entryp->drivenBit(lsb, nodep->width());
@@ -426,7 +426,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                               && nodep->varp()->attrFileDescr();  // FD's are also being read from
             if (m_inBBox || nodep->access().isWriteOrRW()) {
                 if (usr == 2 && m_alwaysCombp && entryp->isUsedNotDrivenAny()) {
-                    UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp) << endl);
+                    UINFO(9, " Full bus.  Entryp=" << cvtToHex(entryp));
                     warnAlwCombOrder(nodep);
                 }
                 if (entryp->isDrivenWhole() && !m_inBBox && !VN_IS(nodep, VarXRef)
@@ -516,13 +516,13 @@ class UndrivenVisitor final : public VNVisitorConst {
         AstNode::user2ClearTree();
         m_alwaysp = nodep;
         if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) {
-            UINFO(9, "   " << nodep << endl);
+            UINFO(9, "   " << nodep);
             m_alwaysCombp = nodep;
         } else {
             m_alwaysCombp = nullptr;
         }
         iterateChildrenConst(nodep);
-        if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep << endl);
+        if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9, "   Done " << nodep);
     }
     void visit(AstNodeFTaskRef* nodep) override {
         VL_RESTORER(m_inFTaskRef);
@@ -570,7 +570,7 @@ public:
 // Undriven class functions
 
 void V3Undriven::undrivenAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { UndrivenVisitor{nodep}; }
     if (v3Global.opt.stats()) V3Stats::statsStage("undriven");
 }

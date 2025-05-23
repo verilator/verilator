@@ -331,7 +331,7 @@ void colorActiveRegion(V3Graph& graph) {
 
 LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLogic,
                        LogicByScope& hybridLogic) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
 
     // Build the graph
     const std::unique_ptr<V3Graph> graphp

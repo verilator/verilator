@@ -436,7 +436,7 @@ public:
 // EmitXml class functions
 
 void V3EmitXml::emitxml() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     // All-in-one file
     const string filename = (v3Global.opt.xmlOutput().empty()
                                  ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".xml"

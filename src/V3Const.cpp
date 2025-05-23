@@ -394,7 +394,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     bool setFailed(bool fail, const char* reason, AstNode* nodep, int line) {
         if (fail && !m_failed) {
             UINFO(9, "cannot optimize " << m_rootp << " reason:" << reason << " called from line:"
-                                        << line << " when checking:" << nodep << std::endl);
+                                        << line << " when checking:" << nodep);
             // if (debug() >= 9) m_rootp->dumpTree("-  root: ");
             m_failed = true;
         }
@@ -402,7 +402,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     }
     void incrOps(const AstNode* nodep, int line) {
         ++m_ops;
-        UINFO(9, "Increment to " << m_ops << " " << nodep << " called from line " << line << "\n");
+        UINFO(9, "Increment to " << m_ops << " " << nodep << " called from line " << line);
     }
     VarInfo& getVarInfo(const LeafInfo& ref) {
         UASSERT_OBJ(ref.refp(), m_rootp, "null varref in And/Or/Xor optimization");
@@ -729,11 +729,11 @@ public:
                 if (v->getConstResult()) {
                     UASSERT_OBJ(visitor.isOrTree(), nodep,
                                 "Only OR tree can yield known 1 result");
-                    UINFO(9, "OR tree with const 1 term: " << v->refp() << endl);
+                    UINFO(9, "OR tree with const 1 term: " << v->refp());
                     // Known 1 bit in OR tree, whole result is 1
                     resultp = new AstConst{fl, AstConst::BitTrue{}};
                 } else if (visitor.isAndTree()) {
-                    UINFO(9, "AND tree with const 0 term: " << v->refp() << endl);
+                    UINFO(9, "AND tree with const 0 term: " << v->refp());
                     // Known 0 bit in AND tree, whole result is 0
                     resultp = new AstConst{fl, AstConst::BitFalse{}};
                 } else {
@@ -750,10 +750,10 @@ public:
             resultOps += std::get<1>(result);
             if (std::get<2>(result)) {
                 hasCleanTerm = true;
-                UINFO(9, "Clean term: " << termps.back() << endl);
+                UINFO(9, "Clean term: " << termps.back());
             } else {
                 hasDirtyTerm = true;
-                UINFO(9, "Dirty term: " << termps.back() << endl);
+                UINFO(9, "Dirty term: " << termps.back());
             }
         }
 
@@ -770,7 +770,7 @@ public:
             } else {
                 // Otherwise, conservatively assume the frozen term is dirty
                 hasDirtyTerm = true;
-                UINFO(9, "Dirty frozen term: " << termp << endl);
+                UINFO(9, "Dirty frozen term: " << termp);
             }
             frozenNodes[frozenInfo.second].push_back(termp);
         }
@@ -1103,8 +1103,7 @@ class ConstVisitor final : public VNVisitor {
         if (!VN_IS(condp->thenp(), Const) && !VN_IS(condp->elsep(), Const)) return false;
         AstConst* const maskp = VN_CAST(nodep->lhsp(), Const);
         if (!maskp) return false;
-        UINFO(4, "AND(CONSTm, CONDcond(c, i, e))->CONDcond(c, AND(m,i), AND(m, e)) " << nodep
-                                                                                     << endl);
+        UINFO(4, "AND(CONSTm, CONDcond(c, i, e))->CONDcond(c, AND(m,i), AND(m, e)) " << nodep);
         AstNodeCond* const newp = static_cast<AstNodeCond*>(condp->cloneType(
             condp->condp()->unlinkFrBack(),
             new AstAnd{nodep->fileline(), maskp->cloneTree(false), condp->thenp()->unlinkFrBack()},
@@ -1219,7 +1218,7 @@ class ConstVisitor final : public VNVisitor {
 
         if (newp) {
             nodep->replaceWithKeepDType(newp);
-            UINFO(4, "Transformed leaf of bit tree to " << newp << std::endl);
+            UINFO(4, "Transformed leaf of bit tree to " << newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
 
@@ -1362,7 +1361,7 @@ class ConstVisitor final : public VNVisitor {
         const int newLsb = lp->toSInt() + bp->toSInt();
         if (newLsb + nodep->widthConst() > ap->width()) return false;
         //
-        UINFO(9, "SEL(SHIFTR(a,b),l,w) -> SEL(a,l+b,w)\n");
+        UINFO(9, "SEL(SHIFTR(a,b),l,w) -> SEL(a,l+b,w)");
         if (debug() >= 9) nodep->dumpTree("-  SEL(SH)-in: ");
         AstSel* const newp
             = new AstSel{nodep->fileline(), ap->unlinkFrBack(), newLsb, nodep->widthConst()};
@@ -1454,7 +1453,7 @@ class ConstVisitor final : public VNVisitor {
                                           : (" (adjusted +" + cvtToStr(-nodep->declRange().lo())
                                              + " to account for negative lsb)")));
                 UINFO(1, "    Related Raw index is " << nodep->msbConst() << ":"
-                                                     << nodep->lsbConst() << endl);
+                                                     << nodep->lsbConst());
                 // Don't replace with zero, we'll do it later
             }
         }
@@ -1638,14 +1637,14 @@ class ConstVisitor final : public VNVisitor {
         V3Number numv{nodep, nodep->widthMinV()};
         nodep->numberOperate(numv, constNumV(nodep->lhsp()));
         const V3Number& num = toNumC(nodep, numv);
-        UINFO(4, "UNICONST -> " << num << endl);
+        UINFO(4, "UNICONST -> " << num);
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
     void replaceConst(AstNodeBiop* nodep) {
         V3Number numv{nodep, nodep->widthMinV()};
         nodep->numberOperate(numv, constNumV(nodep->lhsp()), constNumV(nodep->rhsp()));
         const V3Number& num = toNumC(nodep, numv);
-        UINFO(4, "BICONST -> " << num << endl);
+        UINFO(4, "BICONST -> " << num);
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
     void replaceConst(AstNodeTriop* nodep) {
@@ -1653,7 +1652,7 @@ class ConstVisitor final : public VNVisitor {
         nodep->numberOperate(numv, constNumV(nodep->lhsp()), constNumV(nodep->rhsp()),
                              constNumV(nodep->thsp()));
         const V3Number& num = toNumC(nodep, numv);
-        UINFO(4, "TRICONST -> " << num << endl);
+        UINFO(4, "TRICONST -> " << num);
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
     void replaceConst(AstNodeQuadop* nodep) {
@@ -1661,7 +1660,7 @@ class ConstVisitor final : public VNVisitor {
         nodep->numberOperate(numv, constNumV(nodep->lhsp()), constNumV(nodep->rhsp()),
                              constNumV(nodep->thsp()), constNumV(nodep->fhsp()));
         const V3Number& num = toNumC(nodep, numv);
-        UINFO(4, "QUADCONST -> " << num << endl);
+        UINFO(4, "QUADCONST -> " << num);
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
 
@@ -1835,8 +1834,7 @@ class ConstVisitor final : public VNVisitor {
                     "tried to merge two selects which are not adjacent");
         AstSel* const newselp = new AstSel{
             lselp->fromp()->fileline(), rselp->fromp()->unlinkFrBack(), rstart, lwidth + rwidth};
-        UINFO(5, "merged two adjacent sel " << lselp << " and " << rselp << " to one " << newselp
-                                            << endl);
+        UINFO(5, "merged two adjacent sel " << lselp << " and " << rselp << " to one " << newselp);
 
         nodep->replaceWithKeepDType(newselp);
         VL_DO_DANGLING(pushDeletep(lselp), lselp);
@@ -1862,7 +1860,7 @@ class ConstVisitor final : public VNVisitor {
             lrp->replaceWith(newrp);
             VL_DO_DANGLING(pushDeletep(lrp), lrp);
             lp->dtypeChgWidthSigned(newlp->width(), newlp->width(), VSigning::UNSIGNED);
-            UINFO(5, "merged " << nodep << endl);
+            UINFO(5, "merged " << nodep);
             VL_DO_DANGLING(pushDeletep(rp->unlinkFrBack()), rp);
             nodep->replaceWithKeepDType(lp->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -1884,7 +1882,7 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replacePowShift(AstNodeBiop* nodep) {  // Pow or PowS
-        UINFO(5, "POW(2,b)->SHIFTL(1,b) " << nodep << endl);
+        UINFO(5, "POW(2,b)->SHIFTL(1,b) " << nodep);
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstShiftL* const newp
             = new AstShiftL{nodep->fileline(), new AstConst{nodep->fileline(), 1}, rhsp};
@@ -1893,7 +1891,7 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replaceMulShift(AstMul* nodep) {  // Mul, but not MulS as not simple shift
-        UINFO(5, "MUL(2^n,b)->SHIFTL(b,n) " << nodep << endl);
+        UINFO(5, "MUL(2^n,b)->SHIFTL(b,n) " << nodep);
         const int amount = VN_AS(nodep->lhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
         AstNodeExpr* const opp = nodep->rhsp()->unlinkFrBack();
         AstShiftL* const newp
@@ -1902,7 +1900,7 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replaceDivShift(AstDiv* nodep) {  // Mul, but not MulS as not simple shift
-        UINFO(5, "DIV(b,2^n)->SHIFTR(b,n) " << nodep << endl);
+        UINFO(5, "DIV(b,2^n)->SHIFTR(b,n) " << nodep);
         const int amount = VN_AS(nodep->rhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
         AstNodeExpr* const opp = nodep->lhsp()->unlinkFrBack();
         AstShiftR* const newp
@@ -1911,7 +1909,7 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replaceModAnd(AstModDiv* nodep) {  // Mod, but not ModS as not simple shift
-        UINFO(5, "MOD(b,2^n)->AND(b,2^n-1) " << nodep << endl);
+        UINFO(5, "MOD(b,2^n)->AND(b,2^n-1) " << nodep);
         const int amount = VN_AS(nodep->rhsp(), Const)->num().mostSetBitP1() - 1;  // 2^n->n+1
         V3Number mask{nodep, nodep->width()};
         mask.setMask(amount);
@@ -1922,7 +1920,7 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replaceShiftOp(AstNodeBiop* nodep) {
-        UINFO(5, "SHIFT(AND(a,b),CONST)->AND(SHIFT(a,CONST),SHIFT(b,CONST)) " << nodep << endl);
+        UINFO(5, "SHIFT(AND(a,b),CONST)->AND(SHIFT(a,CONST),SHIFT(b,CONST)) " << nodep);
         const int width = nodep->width();
         const int widthMin = nodep->widthMin();
         VNRelinker handle;
@@ -1946,7 +1944,7 @@ class ConstVisitor final : public VNVisitor {
         iterate(newp);  // Further reduce, either node may have more reductions.
     }
     void replaceShiftShift(AstNodeBiop* nodep) {
-        UINFO(4, "SHIFT(SHIFT(a,s1),s2)->SHIFT(a,ADD(s1,s2)) " << nodep << endl);
+        UINFO(4, "SHIFT(SHIFT(a,s1),s2)->SHIFT(a,ADD(s1,s2)) " << nodep);
         if (debug() >= 9) nodep->dumpTree("-  repShiftShift_old: ");
         AstNodeBiop* const lhsp = VN_AS(nodep->lhsp(), NodeBiop);
         lhsp->unlinkFrBack();
@@ -2040,8 +2038,8 @@ class ConstVisitor final : public VNVisitor {
             return false;
         }
         const bool lsbFirstAssign = (con1p->toUInt() < con2p->toUInt());
-        UINFO(4, "replaceAssignMultiSel " << nodep << endl);
-        UINFO(4, "                   && " << nextp << endl);
+        UINFO(4, "replaceAssignMultiSel " << nodep);
+        UINFO(4, "                   && " << nextp);
         // if (debug()) nodep->dumpTree("-  comb1: ");
         // if (debug()) nextp->dumpTree("-  comb2: ");
         AstNodeExpr* const rhs1p = nodep->rhsp()->unlinkFrBack();
@@ -2110,7 +2108,7 @@ class ConstVisitor final : public VNVisitor {
             if (need_temp_pure) {
                 // if the RHS is impure we need to create a temporary variable for it, because
                 // further handling involves copying of the RHS.
-                UINFO(4, "  ASSITEMPPURE " << nodep << endl);
+                UINFO(4, "  ASSITEMPPURE " << nodep);
                 // ASSIGN(CONCAT(lc1,lc2),rhs) -> ASSIGN(temp,rhs),
                 //                                ASSIGN(lc1,SEL(temp,{size1})),
                 //                                ASSIGN(lc2,SEL(temp,{size2}))
@@ -2126,13 +2124,13 @@ class ConstVisitor final : public VNVisitor {
             } else if (need_temp) {
                 // The first time we constify, there may be the same variable on the LHS
                 // and RHS.  In that case, we must use temporaries, or {a,b}={b,a} will break.
-                UINFO(4, "  ASSITEMP " << nodep << endl);
+                UINFO(4, "  ASSITEMP " << nodep);
                 // ASSIGN(CONCAT(lc1,lc2),rhs) -> ASSIGN(temp1,SEL(rhs,{size})),
                 //                                ASSIGN(temp2,SEL(newrhs,{size}))
                 //                                ASSIGN(lc1,temp1),
                 //                                ASSIGN(lc2,temp2)
             } else {
-                UINFO(4, "  ASSI " << nodep << endl);
+                UINFO(4, "  ASSI " << nodep);
                 // ASSIGN(CONCAT(lc1,lc2),rhs) -> ASSIGN(lc1,SEL(rhs,{size})),
                 //                                ASSIGN(lc2,SEL(newrhs,{size}))
             }
@@ -2316,7 +2314,7 @@ class ConstVisitor final : public VNVisitor {
         if (!aboveBlockp) return false;
         if (aboveBlockp != nodep->labelp()->blockp()) return false;
         if (aboveBlockp->endStmtsp() != nodep->labelp()) return false;
-        UINFO(4, "JUMPGO => last remove " << nodep << endl);
+        UINFO(4, "JUMPGO => last remove " << nodep);
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         return true;
     }
@@ -2372,7 +2370,7 @@ class ConstVisitor final : public VNVisitor {
             AstNode* const newp = valuep->cloneTree(false);
             newp->fileline(nodep->fileline());
             nodep->replaceWithKeepDType(newp);
-            UINFO(4, "Simulate->" << newp << endl);
+            UINFO(4, "Simulate->" << newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
@@ -2469,7 +2467,7 @@ class ConstVisitor final : public VNVisitor {
         AstRand* const bRandp = VN_CAST(nodep->rhsp(), Rand);
         if (!aRandp || !bRandp) return false;
         if (!aRandp->combinable(bRandp)) return false;
-        UINFO(4, "Concat(Rand,Rand) => Rand: " << nodep << endl);
+        UINFO(4, "Concat(Rand,Rand) => Rand: " << nodep);
         nodep->replaceWithKeepDType(aRandp->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return true;
@@ -2479,7 +2477,7 @@ class ConstVisitor final : public VNVisitor {
         AstRand* const aRandp = VN_CAST(nodep->fromp(), Rand);
         if (!aRandp) return false;
         if (aRandp->seedp()) return false;
-        UINFO(4, "Sel(Rand) => Rand: " << nodep << endl);
+        UINFO(4, "Sel(Rand) => Rand: " << nodep);
         nodep->replaceWithKeepDType(aRandp->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return true;
@@ -2508,7 +2506,7 @@ class ConstVisitor final : public VNVisitor {
         // putting additional CONCATs on the RHS leads to fewer assembler operations.
         // However, we'll end up with lots of wide moves if we make huge trees
         // like that, so on 32 bit boundaries, we'll do the opposite form.
-        UINFO(4, "Move concat: " << nodep << endl);
+        UINFO(4, "Move concat: " << nodep);
         if (operandConcatMove(nodep) > 1) {
             AstNodeExpr* const ap = nodep->lhsp()->unlinkFrBack();
             AstConcat* const bcConcp = VN_AS(nodep->rhsp(), Concat);
@@ -2572,7 +2570,7 @@ class ConstVisitor final : public VNVisitor {
         AstNodeExpr* const lsb1p = nodep->lsbp()->unlinkFrBack();
         AstNodeExpr* const lsb2p = belowp->lsbp()->unlinkFrBack();
         // Eliminate lower range
-        UINFO(4, "Elim Lower range: " << nodep << endl);
+        UINFO(4, "Elim Lower range: " << nodep);
         AstNodeExpr* newlsbp;
         if (VN_IS(lsb1p, Const) && VN_IS(lsb2p, Const)) {
             newlsbp = new AstConst{lsb1p->fileline(),
@@ -2787,7 +2785,7 @@ class ConstVisitor final : public VNVisitor {
                     || nodep->varp()->isParam())) {
                 if (operandConst(valuep)) {
                     const V3Number& num = VN_AS(valuep, Const)->num();
-                    // UINFO(2,"constVisit "<<cvtToHex(valuep)<<" "<<num<<endl);
+                    // UINFO(2, "constVisit " << cvtToHex(valuep) << " " << num);
                     VL_DO_DANGLING(replaceNum(nodep, num), nodep);
                     did = true;
                 } else if (m_selp && VN_IS(valuep, InitArray)) {
@@ -2796,7 +2794,7 @@ class ConstVisitor final : public VNVisitor {
                     AstNode* const itemp = initarp->getIndexDefaultedValuep(bit);
                     if (VN_IS(itemp, Const)) {
                         const V3Number& num = VN_AS(itemp, Const)->num();
-                        // UINFO(2,"constVisit "<<cvtToHex(valuep)<<" "<<num<<endl);
+                        // UINFO(2, "constVisit " << cvtToHex(valuep) << " " << num);
                         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
                         did = true;
                     }
@@ -2825,7 +2823,7 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstExprStmt* nodep) override {
         iterateChildren(nodep);
         if (!AstNode::afterCommentp(nodep->stmtsp())) {
-            UINFO(8, "ExprStmt(...) " << nodep << " " << nodep->resultp() << endl);
+            UINFO(8, "ExprStmt(...) " << nodep << " " << nodep->resultp());
             nodep->replaceWith(nodep->resultp()->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             // Removing the ExprStmt might have made something impure above now pure
@@ -2899,7 +2897,7 @@ class ConstVisitor final : public VNVisitor {
                 lastSensp = VN_AS(lastSensp, Not)->lhsp();
                 invert = !invert;
             }
-            UINFO(8, "senItem(NOT...) " << nodep << " " << invert << endl);
+            UINFO(8, "senItem(NOT...) " << nodep << " " << invert);
             if (invert) nodep->edgeType(nodep->edgeType().invert());
             sensp->replaceWith(lastSensp->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(sensp), sensp);
@@ -3097,7 +3095,7 @@ class ConstVisitor final : public VNVisitor {
             && !varrefp->varp()->isForced()  // Not forced (not really a constant)
         ) {
             // ASSIGNW (VARREF, const) -> INITIAL ( ASSIGN (VARREF, const) )
-            UINFO(4, "constAssignW " << nodep << endl);
+            UINFO(4, "constAssignW " << nodep);
             // Make a initial assignment
             AstNodeExpr* const exprp = nodep->rhsp()->unlinkFrBack();
             varrefp->unlinkFrBack();
@@ -3129,13 +3127,13 @@ class ConstVisitor final : public VNVisitor {
             if (const AstConst* const constp = VN_CAST(nodep->condp(), Const)) {
                 AstNode* keepp = nullptr;
                 if (constp->isZero()) {
-                    UINFO(4, "IF(0,{any},{x}) => {x}: " << nodep << endl);
+                    UINFO(4, "IF(0,{any},{x}) => {x}: " << nodep);
                     keepp = nodep->elsesp();
                 } else if (!m_doV || constp->isNeqZero()) {  // Might be X in Verilog
-                    UINFO(4, "IF(!0,{x},{any}) => {x}: " << nodep << endl);
+                    UINFO(4, "IF(!0,{x},{any}) => {x}: " << nodep);
                     keepp = nodep->thensp();
                 } else {
-                    UINFO(4, "IF condition is X, retaining: " << nodep << endl);
+                    UINFO(4, "IF condition is X, retaining: " << nodep);
                     return;
                 }
                 if (keepp) {
@@ -3155,7 +3153,7 @@ class ConstVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 }
             } else if (!AstNode::afterCommentp(nodep->thensp())) {
-                UINFO(4, "IF({x}) nullptr {...} => IF(NOT{x}}: " << nodep << endl);
+                UINFO(4, "IF({x}) nullptr {...} => IF(NOT{x}}: " << nodep);
                 AstNodeExpr* const condp = nodep->condp();
                 AstNode* const elsesp = nodep->elsesp();
                 condp->unlinkFrBackWithNext();
@@ -3169,7 +3167,7 @@ class ConstVisitor final : public VNVisitor {
             } else if (((VN_IS(nodep->condp(), Not) && nodep->condp()->width() == 1)
                         || VN_IS(nodep->condp(), LogNot))
                        && nodep->thensp() && nodep->elsesp()) {
-                UINFO(4, "IF(NOT {x})  => IF(x) swapped if/else" << nodep << endl);
+                UINFO(4, "IF(NOT {x})  => IF(x) swapped if/else" << nodep);
                 AstNodeExpr* const condp
                     = VN_AS(nodep->condp(), NodeUniop)->lhsp()->unlinkFrBackWithNext();
                 AstNode* const thensp = nodep->thensp()->unlinkFrBackWithNext();
@@ -3180,9 +3178,8 @@ class ConstVisitor final : public VNVisitor {
                 nodep->replaceWith(ifp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (ifSameAssign(nodep)) {
-                UINFO(
-                    4,
-                    "IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})\n");
+                UINFO(4,
+                      "IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})");
                 AstNodeAssign* const thensp = VN_AS(nodep->thensp(), NodeAssign);
                 AstNodeAssign* const elsesp = VN_AS(nodep->elsesp(), NodeAssign);
                 thensp->unlinkFrBack();
@@ -3195,7 +3192,7 @@ class ConstVisitor final : public VNVisitor {
             } else if (false  // Disabled, as vpm assertions are faster
                               // without due to short-circuiting
                        && operandIfIf(nodep)) {
-                UINFO(9, "IF({a}) IF({b}) => IF({a} && {b})" << endl);
+                UINFO(9, "IF({a}) IF({b}) => IF({a} && {b})");
                 AstNodeIf* const lowerIfp = VN_AS(nodep->thensp(), NodeIf);
                 AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
                 AstNode* const lowerThensp = lowerIfp->thensp()->unlinkFrBackWithNext();
@@ -3249,7 +3246,7 @@ class ConstVisitor final : public VNVisitor {
         if (pformatp->text().length() + nformatp->text().length() > DISPLAY_MAX_MERGE_LENGTH)
             return false;
         //
-        UINFO(9, "DISPLAY(SF({a})) DISPLAY(SF({b})) -> DISPLAY(SF({a}+{b}))" << endl);
+        UINFO(9, "DISPLAY(SF({a})) DISPLAY(SF({b})) -> DISPLAY(SF({a}+{b}))");
         // Convert DT_DISPLAY to DT_WRITE as may allow later optimizations
         if (prevp->displayType() == VDisplayType::DT_DISPLAY) {
             prevp->displayType(VDisplayType::DT_WRITE);
@@ -3281,7 +3278,7 @@ class ConstVisitor final : public VNVisitor {
             }
         }
         if (m_doNConst && anyconst) {
-            // UINFO(9, "  Display in  " << nodep->text() << endl);
+            // UINFO(9, "  Display in  " << nodep->text());
             string newFormat;
             string fmt;
             bool inPct = false;
@@ -3310,7 +3307,7 @@ class ConstVisitor final : public VNVisitor {
                             if (VN_IS(argp, Const)) {  // Convert it
                                 const string out = constNumV(argp).displayed(nodep, fmt);
                                 UINFO(9, "     DispConst: " << fmt << " -> " << out << "  for "
-                                                            << argp << endl);
+                                                            << argp);
                                 // fmt = out w/ replace % with %% as it must be literal.
                                 fmt = VString::quotePercent(out);
                                 VL_DO_DANGLING(pushDeletep(argp->unlinkFrBack()), argp);
@@ -3326,7 +3323,7 @@ class ConstVisitor final : public VNVisitor {
             }
             if (newFormat != nodep->text()) {
                 nodep->text(newFormat);
-                UINFO(9, "  Display out " << nodep << endl);
+                UINFO(9, "  Display out " << nodep);
             }
         }
         if (!nodep->exprsp() && nodep->name().find('%') == string::npos && !nodep->hidden()) {
@@ -3367,7 +3364,7 @@ class ConstVisitor final : public VNVisitor {
         m_hasJumpDelay = thisWhileHasJumpDelay || oldHasJumpDelay;
         if (m_doNConst) {
             if (nodep->condp()->isZero()) {
-                UINFO(4, "WHILE(0) => nop " << nodep << endl);
+                UINFO(4, "WHILE(0) => nop " << nodep);
                 if (nodep->precondsp()) {
                     nodep->replaceWith(nodep->precondsp());
                 } else {
@@ -3459,7 +3456,7 @@ class ConstVisitor final : public VNVisitor {
         iterateChildren(nodep);
         // AstJumpGo's below here that point to this node will set user4
         if (m_doExpensive && !nodep->user4()) {
-            UINFO(4, "JUMPLABEL => unused " << nodep << endl);
+            UINFO(4, "JUMPLABEL => unused " << nodep);
             AstNode* underp = nullptr;
             if (nodep->stmtsp()) underp = nodep->stmtsp()->unlinkFrBackWithNext();
             if (underp) {
@@ -3963,7 +3960,7 @@ AstNode* V3Const::constifyGenerateParamsEdit(AstNode* nodep) {
 
 void V3Const::constifyAllLint(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     {
         ConstVisitor visitor{ConstVisitor::PROC_V_WARN, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
@@ -3972,7 +3969,7 @@ void V3Const::constifyAllLint(AstNetlist* nodep) {
 }
 
 void V3Const::constifyCpp(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     {
         ConstVisitor visitor{ConstVisitor::PROC_CPP, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
@@ -3996,7 +3993,7 @@ void V3Const::constifyAllLive(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     // This only pushes constants up, doesn't make any other edits
     // IE doesn't prune dead statements, as we need to do some usability checks after this
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     {
         ConstVisitor visitor{ConstVisitor::PROC_LIVE, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
@@ -4006,7 +4003,7 @@ void V3Const::constifyAllLive(AstNetlist* nodep) {
 
 void V3Const::constifyAll(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     {
         ConstVisitor visitor{ConstVisitor::PROC_V_EXPENSIVE, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);

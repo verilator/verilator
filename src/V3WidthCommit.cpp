@@ -65,7 +65,7 @@ private:
         if (AstBasicDType* const bdtypep = VN_CAST(nodep, BasicDType)) {
             AstBasicDType* const newp = nodep->findInsertSameDType(bdtypep);
             if (newp != bdtypep && debug() >= 9) {
-                UINFO(9, "dtype replacement ");
+                UINFO_PREFIX("dtype replacement ");
                 nodep->dumpSmall(std::cout);
                 std::cout << "  ---->  ";
                 newp->dumpSmall(std::cout);
@@ -112,8 +112,8 @@ private:
                 how = "'protected'";
             }
             if (how) {
-                UINFO(9, "refclass " << refClassp << endl);
-                UINFO(9, "defclass " << defClassp << endl);
+                UINFO(9, "refclass " << refClassp);
+                UINFO(9, "defclass " << defClassp);
                 nodep->v3warn(ENCAPSULATED, nodep->prettyNameQ()
                                                 << " is hidden as " << how
                                                 << " within this context (IEEE 1800-2023 8.18)\n"
@@ -170,7 +170,7 @@ private:
     void visit(AstCastWrap* nodep) override {
         iterateChildren(nodep);
         editDType(nodep);
-        UINFO(6, " Replace " << nodep << " w/ " << nodep->lhsp() << endl);
+        UINFO(6, " Replace " << nodep << " w/ " << nodep->lhsp());
         nodep->replaceWith(nodep->lhsp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
@@ -326,7 +326,7 @@ public:
 // V3WidthCommit class functions
 
 void V3WidthCommit::widthCommit(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { WidthCommitVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("widthcommit", 0, dumpTreeEitherLevel() >= 6);
 }

@@ -266,7 +266,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
         getNeedsProcDepVtx(nodep);
         addFlags(nodep, T_ALLOCS_PROC);
         if (VN_IS(nodep, Always)) {
-            UINFO(1, "Always does " << (nodep->needProcess() ? "" : "NOT ") << "need process\n");
+            UINFO(1, "Always does " << (nodep->needProcess() ? "" : "NOT ") << "need process");
         }
         iterateChildren(nodep);
     }
@@ -1256,7 +1256,7 @@ public:
 // Timing class functions
 
 void V3Timing::timingAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     TimingSuspendableVisitor susVisitor{nodep};
     if (v3Global.usesTiming()) TimingControlVisitor{nodep};
     V3Global::dumpCheckGlobalTree("timing", 0, dumpTreeEitherLevel() >= 3);

@@ -1977,7 +1977,7 @@ V3Number& V3Number::opDiv(const V3Number& lhs, const V3Number& rhs) {
     // i op j, max(L(lhs),L(rhs)) bit return, if any 4-state, 4-state return
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
-    // UINFO(9, "opdiv "<<lhs<<" "<<rhs<<endl);
+    // UINFO(9, "opdiv " << lhs << " " << rhs);
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
     if (rhs.isEqZero()) return setAllBitsXRemoved();
     if (lhs.width() <= 64) {
@@ -1991,7 +1991,7 @@ V3Number& V3Number::opDiv(const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opDivS(const V3Number& lhs, const V3Number& rhs) {
     // Signed divide
     // Correct number of zero bits/width matters
-    // UINFO(9, ">>divs-start "<<lhs<<" "<<rhs<<endl);
+    // UINFO(9, ">>divs-start " << lhs << " " << rhs);
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     if (lhs.isFourState() || rhs.isFourState()) return setAllBitsX();
@@ -2001,13 +2001,13 @@ V3Number& V3Number::opDivS(const V3Number& lhs, const V3Number& rhs) {
     V3Number rhsNoSign = rhs;
     if (rhs.isNegative()) rhsNoSign.opNegate(rhs);
     const V3Number qNoSign = opDiv(lhsNoSign, rhsNoSign);
-    // UINFO(9, " >divs-mid "<<lhs<<" "<<rhs<<" "<<qNoSign<<endl);
+    // UINFO(9, " >divs-mid " << lhs << " " << rhs << " " << qNoSign);
     if ((lhs.isNegative() && !rhs.isNegative()) || (!lhs.isNegative() && rhs.isNegative())) {
         opNegate(qNoSign);
     } else {
         opAssign(qNoSign);
     }
-    UINFO(9, " <divs-out " << lhs << " " << rhs << " =" << *this << endl);
+    UINFO(9, " <divs-out " << lhs << " " << rhs << " =" << *this);
     return *this;
 }
 V3Number& V3Number::opModDiv(const V3Number& lhs, const V3Number& rhs) {
@@ -2055,7 +2055,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     const int vmsbp1 = rhs.mostSetBitP1();  // divisor
     if (VL_UNLIKELY(vmsbp1 == 0)  // rwp==0 so division by zero.  Return 0.
         || VL_UNLIKELY(umsbp1 == 0)) {  // 0/x so short circuit and return 0
-        UINFO(9, "  opmoddiv-zero " << lhs << " " << rhs << " now=" << *this << endl);
+        UINFO(9, "  opmoddiv-zero " << lhs << " " << rhs << " now=" << *this);
         return *this;
     }
 
@@ -2073,7 +2073,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
                    * static_cast<uint64_t>(rhs.m_data.num()[0].m_value));
         }
         UINFO(9, "  opmoddiv-1w  " << lhs << " " << rhs << " q=" << *this << " rem=0x" << std::hex
-                                   << k << std::dec << endl);
+                                   << k << std::dec);
         if (is_modulus) {
             setZero();
             m_data.num()[0].m_value = k;
@@ -2167,11 +2167,11 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
         }
         for (int i = vw; i < words; ++i) m_data.num()[i].m_value = 0;
         opCleanThis();
-        UINFO(9, "  opmoddiv-mod " << lhs << " " << rhs << " now=" << *this << endl);
+        UINFO(9, "  opmoddiv-mod " << lhs << " " << rhs << " now=" << *this);
         return *this;
     } else {  // division
         opCleanThis();
-        UINFO(9, "  opmoddiv-div " << lhs << " " << rhs << " now=" << *this << endl);
+        UINFO(9, "  opmoddiv-div " << lhs << " " << rhs << " now=" << *this);
         return *this;
     }
 }
@@ -2213,7 +2213,7 @@ V3Number& V3Number::opPow(const V3Number& lhs, const V3Number& rhs, bool lsign, 
             V3Number lastOut(&lhs, width());
             lastOut.opAssign(*this);
             opMul(lastOut, power);
-            // UINFO(0, "pow "<<lhs<<" "<<rhs<<" b"<<bit<<" pow="<<power<<" now="<<*this<<endl);
+            // UINFO(0, "pow "<<lhs<<" "<<rhs<<" b"<<bit<<" pow="<<power<<" now="<<*this);
         }
     }
     return *this;
@@ -2349,7 +2349,7 @@ V3Number& V3Number::opSel(const V3Number& lhs, uint32_t msbval, uint32_t lsbval)
         }
         ++ibit;
     }
-    // UINFO(0,"RANGE "<<lhs<<" "<<msb<<" "<<lsb<<" = "<<*this<<endl);
+    // UINFO(0, "RANGE " << lhs << " " << msb << " " << lsb << " = " << *this);
     return *this;
 }
 
@@ -2588,7 +2588,7 @@ V3Number& V3Number::opLteN(const V3Number& lhs, const V3Number& rhs) {
 //======================================================================
 
 void V3Number::selfTest() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     FileLine* const fl = new FileLine{FileLine::builtInFilename()};
     V3Number num{fl, 32, 0};
     num.selfTestThis();

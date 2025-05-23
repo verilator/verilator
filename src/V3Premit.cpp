@@ -67,7 +67,7 @@ class PremitVisitor final : public VNVisitor {
 
     AstVar* createWideTemp(AstNodeExpr* nodep) {
         UASSERT_OBJ(m_stmtp, nodep, "Attempting to create temporary with no insertion point");
-        UINFO(4, "createWideTemp: " << nodep << endl);
+        UINFO(4, "createWideTemp: " << nodep);
 
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
@@ -118,7 +118,7 @@ class PremitVisitor final : public VNVisitor {
 
     void visitShift(AstNodeBiop* nodep) {
         // Shifts of > 32/64 bits in C++ will wrap-around and generate non-0s
-        UINFO(4, "  ShiftFix  " << nodep << endl);
+        UINFO(4, "  ShiftFix  " << nodep);
         const AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const);
         if (shiftp && shiftp->num().mostSetBitP1() > 32) {
             shiftp->v3error(
@@ -181,7 +181,7 @@ class PremitVisitor final : public VNVisitor {
     m_inWhileCondp = nullptr
 
     void visit(AstWhile* nodep) override {
-        UINFO(4, "  WHILE  " << nodep << endl);
+        UINFO(4, "  WHILE  " << nodep);
         // cppcheck-suppress shadowVariable  // Also restored below
         START_STATEMENT_OR_RETURN(nodep);
         iterateAndNextNull(nodep->precondsp());
@@ -241,7 +241,7 @@ class PremitVisitor final : public VNVisitor {
                 && nodep->filep()->sameGateTree(VN_AS(searchp, Display)->filep())) {
                 // There's another display next; we can just wait to flush
             } else {
-                UINFO(4, "Autoflush " << nodep << endl);
+                UINFO(4, "Autoflush " << nodep);
                 nodep->addNextHere(
                     new AstFFlush{nodep->fileline(),
                                   nodep->filep() ? nodep->filep()->cloneTreePure(true) : nullptr});
@@ -367,7 +367,7 @@ public:
 // Premit class functions
 
 void V3Premit::premitAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { PremitVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("premit", 0, dumpTreeEitherLevel() >= 3);
 }

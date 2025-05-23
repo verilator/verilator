@@ -222,7 +222,7 @@ public:
 }  //namespace
 
 VirtIfaceTriggers makeVirtIfaceTriggers(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     if (v3Global.hasVirtIfaces()) {
         VirtIfaceVisitor visitor{nodep};
         V3Global::dumpCheckGlobalTree("sched_vif", 0, dumpTreeEitherLevel() >= 6);

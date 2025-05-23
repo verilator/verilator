@@ -697,6 +697,6 @@ public:
 // EmitC class functions
 
 void V3EmitC::emitcModel() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { EmitCModel{v3Global.rootp()}; }
 }

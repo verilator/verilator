@@ -334,7 +334,7 @@ public:
         // Go on a random tour. Fun!
         std::vector<Vertex*> tour;
         do {
-            UINFO(6, "Adding " << cur_vertexp->key() << " to tour.\n");
+            UINFO(6, "Adding " << cur_vertexp->key() << " to tour.");
             tour.push_back(cur_vertexp);
 
             // Look for an arbitrary edge we've not yet marked
@@ -345,7 +345,7 @@ public:
                     markedEdgesp->insert(edgeId);
                     Vertex* const neighborp = castVertexp(edge.top());
                     UINFO(6, "following edge " << edgeId << " from " << cur_vertexp->key()
-                                               << " to " << neighborp->key() << endl);
+                                               << " to " << neighborp->key());
                     cur_vertexp = neighborp;
                     goto found;
                 }
@@ -353,7 +353,7 @@ public:
             v3fatalSrc("No unmarked edges found in tour");
         found:;
         } while (cur_vertexp != startp);
-        UINFO(6, "stopped, got back to start of tour @ " << cur_vertexp->key() << endl);
+        UINFO(6, "stopped, got back to start of tour @ " << cur_vertexp->key());
 
         // Look for nodes on the tour that still have
         // un-marked edges. If we find one, recurse.
@@ -365,7 +365,7 @@ public:
                 for (V3GraphEdge& edge : vxp->outEdges()) {
                     const uint32_t edgeId = getEdgeId(&edge);
                     if (markedEdgesp->end() == markedEdgesp->find(edgeId)) {
-                        UINFO(6, "Recursing.\n");
+                        UINFO(6, "Recursing.");
                         findEulerTourRecurse(markedEdgesp, vxp, sortedOutp);
                         recursed = true;
                         goto recursed;
@@ -376,9 +376,11 @@ public:
             sortedOutp->push_back(vxp->key());
         }
 
-        UINFO(6, "Tour was: ");
-        for (const Vertex* vxp : tour) UINFONL(6, "- " << vxp->key());
-        UINFONL(6, "-\n");
+        if (debug() >= 6) {
+            UINFO(0, "Tour was:");
+            for (const Vertex* vxp : tour) std::cout << "- " << vxp->key() << '\n';
+            std::cout << "-\n";
+        }
     }
 
     void dumpGraph(std::ostream& os, const string& nameComment) const {

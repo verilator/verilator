@@ -191,8 +191,8 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
 AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
                                        AstNodeRange* arrayp, AstNode* attrsp) {
     AstNodeDType* dtypep = GRAMMARP->m_varDTypep;
-    UINFO(5, "  creVar " << name << "  decl=" << GRAMMARP->m_varDecl << "  io="
-                         << GRAMMARP->m_varIO << "  dt=" << (dtypep ? "set" : "") << endl);
+    UINFO(5, "  creVar " << name << "  decl=" << GRAMMARP->m_varDecl
+                         << "  io=" << GRAMMARP->m_varIO << "  dt=" << (dtypep ? "set" : ""));
     if (GRAMMARP->m_varIO == VDirection::NONE  // In non-ANSI port list
         && GRAMMARP->m_varDecl == VVarType::PORT) {
         // Just a port list with variable name (not v2k format); AstPort already created

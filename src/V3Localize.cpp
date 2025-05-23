@@ -93,7 +93,7 @@ class LocalizeVisitor final : public VNVisitor {
             // cannot cope with. This should be rare (introduced by V3Depth).
             if (funcps.size() > 1 && existsNonLeaf(funcps)) continue;
 
-            UINFO(4, "Localizing " << nodep << endl);
+            UINFO(4, "Localizing " << nodep);
             ++m_statLocVars;
 
             // Yank the VarScope from it's parent and schedule them for deletion. Leave the Var
@@ -138,7 +138,7 @@ class LocalizeVisitor final : public VNVisitor {
     }
 
     void visit(AstCFunc* nodep) override {
-        UINFO(4, "  CFUNC " << nodep << endl);
+        UINFO(4, "  CFUNC " << nodep);
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_nodeDepth);
         m_cfuncp = nodep;
@@ -179,7 +179,7 @@ class LocalizeVisitor final : public VNVisitor {
             && !nodep->varp()->sensIfacep()  // Not sensitive to an interface
             && !nodep->varp()->valuep()  // Does not have an initializer
         ) {
-            UINFO(4, "Consider for localization: " << nodep << endl);
+            UINFO(4, "Consider for localization: " << nodep);
             m_varScopeps.push_back(nodep);
         }
         // No iterate; Don't want varrefs under it (e.g.: in child dtype?)
@@ -202,7 +202,7 @@ class LocalizeVisitor final : public VNVisitor {
             if (nodep->access().isReadOrRW() && !varScopep->user2()) {
                 // Variable is read, but is not known to have been assigned in this function. Mark
                 // as not optimizable.
-                UINFO(4, "Not optimizable (not written): " << nodep << endl);
+                UINFO(4, "Not optimizable (not written): " << nodep);
                 varScopep->user1(1);
             }
         }
@@ -227,7 +227,7 @@ public:
 // Localize class functions
 
 void V3Localize::localizeAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { LocalizeVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("localize", 0, dumpTreeEitherLevel() >= 6);
 }

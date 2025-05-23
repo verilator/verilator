@@ -63,7 +63,7 @@ class LinkLValueVisitor final : public VNVisitor {
             }
             if (const AstClockingItem* const itemp
                 = VN_CAST(nodep->varp()->backp(), ClockingItem)) {
-                UINFO(5, "ClkOut " << nodep << endl);
+                UINFO(5, "ClkOut " << nodep);
                 if (itemp->outputp()) nodep->varp(itemp->outputp()->varp());
             }
             if (m_setForcedByCode) {
@@ -300,7 +300,7 @@ class LinkLValueVisitor final : public VNVisitor {
             if (nodep->varp() && nodep->access().isWriteOrRW()) {
                 if (const AstClockingItem* const itemp
                     = VN_CAST(nodep->varp()->backp(), ClockingItem)) {
-                    UINFO(5, "ClkOut " << nodep << endl);
+                    UINFO(5, "ClkOut " << nodep);
                     if (itemp->outputp()) nodep->varp(itemp->outputp()->varp());
                 }
             }
@@ -358,13 +358,13 @@ public:
 // Link class functions
 
 void V3LinkLValue::linkLValue(AstNetlist* nodep) {
-    UINFO(4, __FUNCTION__ << ": " << endl);
+    UINFO(4, __FUNCTION__ << ": ");
     { LinkLValueVisitor{nodep, VAccess::NOCHANGE}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linklvalue", 0, dumpTreeEitherLevel() >= 6);
 }
 void V3LinkLValue::linkLValueSet(AstNode* nodep) {
     // Called by later link functions when it is known a node needs
     // to be converted to a lvalue.
-    UINFO(9, __FUNCTION__ << ": " << endl);
+    UINFO(9, __FUNCTION__ << ": ");
     { LinkLValueVisitor{nodep, VAccess::WRITE}; }
 }

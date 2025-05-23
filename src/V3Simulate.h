@@ -211,7 +211,7 @@ public:
         if (!m_whyNotNodep) {
             m_whyNotNodep = nodep;
             if (debug() >= 5) {  // LCOV_EXCL_START
-                UINFO(0, "Clear optimizable: " << why);
+                UINFO_PREFIX("Clear optimizable: " << why);
                 if (nodep) std::cout << ": " << nodep;
                 std::cout << std::endl;
             }  // LCOV_EXCL_STOP
@@ -257,7 +257,7 @@ public:
     void newValue(AstNode* nodep, const AstNodeExpr* valuep) {
         if (const AstConst* const constp = VN_CAST(valuep, Const)) {
             newConst(nodep)->num().opAssign(constp->num());
-            UINFO(9, "     new val " << valuep->name() << " on " << nodep << endl);
+            UINFO(9, "     new val " << valuep->name() << " on " << nodep);
         } else if (fetchValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
             setValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep)));
@@ -266,7 +266,7 @@ public:
     void newOutValue(AstNode* nodep, const AstNodeExpr* valuep) {
         if (const AstConst* const constp = VN_CAST(valuep, Const)) {
             newOutConst(nodep)->num().opAssign(constp->num());
-            UINFO(9, "     new oval " << valuep->name() << " on " << nodep << endl);
+            UINFO(9, "     new oval " << valuep->name() << " on " << nodep);
         } else if (fetchOutValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
             setOutValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep)));
@@ -312,13 +312,13 @@ private:
     AstNodeExpr* fetchValue(AstNode* nodep) {
         AstNodeExpr* const valuep = fetchValueNull(nodep);
         UASSERT_OBJ(valuep, nodep, "No value found for node.");
-        // UINFO(9, "     fetch val " << *valuep << " on " << nodep << endl);
+        // UINFO(9, "     fetch val " << *valuep << " on " << nodep);
         return valuep;
     }
     AstConst* fetchConst(AstNode* nodep) {
         AstConst* const constp = fetchConstNull(nodep);
         UASSERT_OBJ(constp, nodep, "No value found for node.");
-        // UINFO(9, "     fetch num " << *constp << " on " << nodep << endl);
+        // UINFO(9, "     fetch num " << *constp << " on " << nodep);
         return constp;
     }
     AstConst* fetchOutConst(AstNode* nodep) {
@@ -342,12 +342,12 @@ public:
 private:
     void setValue(AstNode* nodep, AstNodeExpr* valuep) {
         UASSERT_OBJ(valuep, nodep, "Simulate setting null value");
-        UINFO(9, "     set val " << valuep->name() << " on " << nodep << endl);
+        UINFO(9, "     set val " << valuep->name() << " on " << nodep);
         m_varAux(nodep).valuep = valuep;
     }
     void setOutValue(AstNode* nodep, AstNodeExpr* valuep) {
         UASSERT_OBJ(valuep, nodep, "Simulate setting null value");
-        UINFO(9, "     set oval " << valuep->name() << " on " << nodep << endl);
+        UINFO(9, "     set oval " << valuep->name() << " on " << nodep);
         m_varAux(nodep).outValuep = valuep;
     }
 
@@ -357,7 +357,7 @@ private:
             m_dataCount += nodep->width();
         }
         if (!ignorePredict && !nodep->isPredictOptimizable()) {
-            // UINFO(9, "     !predictopt " << nodep << endl);
+            // UINFO(9, "     !predictopt " << nodep);
             clearOptimizable(nodep, "Isn't predictable");
         }
         if (!nodep->isPure()) m_isImpure = true;
@@ -382,8 +382,7 @@ private:
             static std::set<VNType> s_typePrinted;
             const auto pair = s_typePrinted.emplace(nodep->type());
             if (pair.second)
-                UINFO(0,
-                      "Unknown node type in SimulateVisitor: " << nodep->prettyTypeName() << endl);
+                UINFO(0, "Unknown node type in SimulateVisitor: " << nodep->prettyTypeName());
 #endif
         }
     }
@@ -531,7 +530,7 @@ private:
     }
     void visit(AstNodeIf* nodep) override {
         if (jumpingOver(nodep)) return;
-        UINFO(5, "   IF " << nodep << endl);
+        UINFO(5, "   IF " << nodep);
         checkNodeInfo(nodep);
         if (m_checkOnly) {
             iterateChildrenConst(nodep);
@@ -738,7 +737,7 @@ private:
             }
             const uint32_t index = fetchConst(selp->bitp())->toUInt();
             AstNodeExpr* const valuep = newTrackedClone(fetchValue(nodep->rhsp()));
-            UINFO(9, "     set val[" << index << "] = " << valuep << endl);
+            UINFO(9, "     set val[" << index << "] = " << valuep);
             // Values are in the "real" tree under the InitArray so can eventually extract it,
             // Not in the usual setValue (via m_varAux)
             initp->addIndexValuep(index, valuep);
@@ -861,7 +860,7 @@ private:
     }
     void visit(AstNodeCase* nodep) override {
         if (jumpingOver(nodep)) return;
-        UINFO(5, "   CASE " << nodep << endl);
+        UINFO(5, "   CASE " << nodep);
         checkNodeInfo(nodep);
         if (m_checkOnly) {
             iterateChildrenConst(nodep);
@@ -929,7 +928,7 @@ private:
         if (jumpingOver(nodep)) return;
         checkNodeInfo(nodep);
         if (!m_checkOnly) {
-            UINFO(5, "   JUMP GO " << nodep << endl);
+            UINFO(5, "   JUMP GO " << nodep);
             m_jumpp = nodep;
         }
     }
@@ -940,7 +939,7 @@ private:
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
         if (m_jumpp && m_jumpp->labelp() == nodep) {
-            UINFO(5, "   JUMP DONE " << nodep << endl);
+            UINFO(5, "   JUMP DONE " << nodep);
             m_jumpp = nullptr;
         }
     }
@@ -957,7 +956,7 @@ private:
 
     void visit(AstNodeFor* nodep) override {
         // Doing lots of Whiles is slow, so only for parameters
-        UINFO(5, "   FOR " << nodep << endl);
+        UINFO(5, "   FOR " << nodep);
         if (!m_params) {
             badNodeType(nodep);
             return;
@@ -969,7 +968,7 @@ private:
             int loops = 0;
             iterateAndNextConstNull(nodep->initsp());
             while (true) {
-                UINFO(5, "    FOR-ITER " << nodep << endl);
+                UINFO(5, "    FOR-ITER " << nodep);
                 iterateAndNextConstNull(nodep->condp());
                 if (!optimizable()) break;
                 if (!fetchConst(nodep->condp())->num().isNeqZero()) {  //
@@ -991,7 +990,7 @@ private:
     void visit(AstWhile* nodep) override {
         // Doing lots of Whiles is slow, so only for parameters
         if (jumpingOver(nodep)) return;
-        UINFO(5, "   WHILE " << nodep << endl);
+        UINFO(5, "   WHILE " << nodep);
         if (!m_params) {
             badNodeType(nodep);
             return;
@@ -1002,7 +1001,7 @@ private:
         } else if (optimizable()) {
             int loops = 0;
             while (true) {
-                UINFO(5, "    WHILE-ITER " << nodep << endl);
+                UINFO(5, "    WHILE-ITER " << nodep);
                 iterateAndNextConstNull(nodep->precondsp());
                 if (jumpingOver(nodep)) break;
                 iterateAndNextConstNull(nodep->condp());
@@ -1032,7 +1031,7 @@ private:
     void visit(AstFuncRef* nodep) override {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
-        UINFO(5, "   FUNCREF " << nodep << endl);
+        UINFO(5, "   FUNCREF " << nodep);
         checkNodeInfo(nodep);
         if (!m_params) {
             badNodeType(nodep);

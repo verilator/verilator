@@ -119,7 +119,7 @@ class CleanVisitor final : public VNVisitor {
 
     // Operate on nodes
     void insertClean(AstNodeExpr* nodep) {  // We'll insert ABOVE passed node
-        UINFO(4, "  NeedClean " << nodep << endl);
+        UINFO(4, "  NeedClean " << nodep);
         VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         //
@@ -326,7 +326,7 @@ public:
 // Clean class functions
 
 void V3Clean::cleanAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { CleanVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("clean", 0, dumpTreeEitherLevel() >= 3);
 }

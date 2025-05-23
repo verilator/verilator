@@ -87,7 +87,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     // Note argc and argv DO NOT INCLUDE the filename in [0]!!!
     // May be called recursively when there are -f files.
     for (int i = 0; i < argc;) {
-        UINFO(9, " Option: " << argv[i] << endl);
+        UINFO(9, " Option: " << argv[i]);
         if (argv[i][0] == '-') {
             if (const int consumed = parser.parse(i, argc, argv)) {
                 i += consumed;
@@ -161,7 +161,7 @@ int main(int argc, char** argv) {
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();
 
-    UINFO(1, "Done, Exiting...\n");
+    UINFO(1, "Done, Exiting...");
 }
 
 // Local Variables:

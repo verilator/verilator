@@ -159,7 +159,7 @@ class GraphAcyc final {
     }
     void cutOrigEdge(V3GraphEdge* breakEdgep, const char* why) {
         // From the break edge, cut edges in original graph it represents
-        UINFO(8, why << " CUT " << breakEdgep->fromp() << endl);
+        UINFO(8, why << " CUT " << breakEdgep->fromp());
         breakEdgep->cut();
         const OrigEdgeList* const oEListp = static_cast<OrigEdgeList*>(breakEdgep->userp());
         if (!oEListp) {
@@ -168,8 +168,7 @@ class GraphAcyc final {
         // The breakGraph edge may represent multiple real edges; cut them all
         for (const auto& origEdgep : *oEListp) {
             origEdgep->cut();
-            UINFO(8,
-                  "  " << why << "   " << origEdgep->fromp() << " ->" << origEdgep->top() << endl);
+            UINFO(8, "  " << why << "   " << origEdgep->fromp() << " ->" << origEdgep->top());
         }
     }
     // Work Queue
@@ -280,7 +279,7 @@ void GraphAcyc::simplifyNone(GraphAcycVertex* avertexp) {
     // Likewise, vertices with no outputs
     if (avertexp->isDelete()) return;
     if (avertexp->inEmpty() || avertexp->outEmpty()) {
-        UINFO(9, "  SimplifyNoneRemove " << avertexp << endl);
+        UINFO(9, "  SimplifyNoneRemove " << avertexp);
         avertexp->setDelete();  // Mark so we won't delete it twice
         // Remove edges
         while (V3GraphEdge* const edgep = avertexp->outEdges().frontp()) {
@@ -305,7 +304,7 @@ void GraphAcyc::simplifyOne(GraphAcycVertex* avertexp) {
         // The in and out may be the same node; we'll make a loop
         // The in OR out may be THIS node; we can't delete it then.
         if (inVertexp != avertexp && outVertexp != avertexp) {
-            UINFO(9, "  SimplifyOneRemove " << avertexp << endl);
+            UINFO(9, "  SimplifyOneRemove " << avertexp);
             avertexp->setDelete();  // Mark so we won't delete it twice
             // Make a new edge connecting the two vertices directly
             // If both are breakable, we pick the one with less weight, else it's arbitrary
@@ -337,7 +336,7 @@ void GraphAcyc::simplifyOut(GraphAcycVertex* avertexp) {
         V3GraphEdge* const outEdgep = avertexp->outEdges().frontp();
         if (!outEdgep->cutable()) {
             V3GraphVertex* outVertexp = outEdgep->top();
-            UINFO(9, "  SimplifyOutRemove " << avertexp << endl);
+            UINFO(9, "  SimplifyOutRemove " << avertexp);
             avertexp->setDelete();  // Mark so we won't delete it twice
             for (V3GraphEdge* const inEdgep : avertexp->inEdges().unlinkable()) {
                 V3GraphVertex* inVertexp = inEdgep->fromp();
@@ -377,16 +376,16 @@ void GraphAcyc::simplifyDup(GraphAcycVertex* avertexp) {
             if (!prevEdgep->cutable()) {
                 // !cutable duplicates prev !cutable: we can ignore it, redundant
                 //  cutable duplicates prev !cutable: know it's not a relevant loop, ignore it
-                UINFO(8, "    DelDupEdge " << avertexp << " -> " << edgep->top() << endl);
+                UINFO(8, "    DelDupEdge " << avertexp << " -> " << edgep->top());
                 VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
             } else if (!edgep->cutable()) {
                 // !cutable duplicates prev  cutable: delete the earlier cutable
-                UINFO(8, "    DelDupPrev " << avertexp << " -> " << prevEdgep->top() << endl);
+                UINFO(8, "    DelDupPrev " << avertexp << " -> " << prevEdgep->top());
                 VL_DO_DANGLING(prevEdgep->unlinkDelete(), prevEdgep);
                 outVertexp->userp(edgep);
             } else {
                 //  cutable duplicates prev  cutable: combine weights
-                UINFO(8, "    DelDupComb " << avertexp << " -> " << edgep->top() << endl);
+                UINFO(8, "    DelDupComb " << avertexp << " -> " << edgep->top());
                 prevEdgep->weight(prevEdgep->weight() + edgep->weight());
                 addOrigEdgep(prevEdgep, edgep);
                 VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
@@ -440,7 +439,7 @@ void GraphAcyc::place() {
             if (edge.weight() && edge.cutable()) ++numEdges;
         }
     }
-    UINFO(4, "    Cutable edges = " << numEdges << endl);
+    UINFO(4, "    Cutable edges = " << numEdges);
 
     std::vector<V3GraphEdge*> edges;  // List of all edges to be processed
     // Make the vector properly sized right off the bat -- faster than reallocating
@@ -463,8 +462,7 @@ void GraphAcyc::place() {
 void GraphAcyc::placeTryEdge(V3GraphEdge* edgep) {
     // Try to make this edge uncutable
     m_placeStep++;
-    UINFO(8, "    PlaceEdge s" << m_placeStep << " w" << edgep->weight() << " " << edgep->fromp()
-                               << endl);
+    UINFO(8, "    PlaceEdge s" << m_placeStep << " w" << edgep->weight() << " " << edgep->fromp());
     // Make the edge uncutable so we detect it in placement
     edgep->cutable(false);
     // Vertex::m_user begin: number indicates this edge was completed
@@ -537,27 +535,27 @@ void GraphAcyc::main() {
     simplify(false);
     if (dumpGraphLevel() >= 5) m_breakGraph.dumpDotFilePrefixed("acyc_simp");
 
-    UINFO(4, " Cutting trivial loops\n");
+    UINFO(4, " Cutting trivial loops");
     simplify(true);
     if (dumpGraphLevel() >= 6) m_breakGraph.dumpDotFilePrefixed("acyc_mid");
 
-    UINFO(4, " Ranking\n");
+    UINFO(4, " Ranking");
     m_breakGraph.rank(&V3GraphEdge::followNotCutable);
     if (dumpGraphLevel() >= 6) m_breakGraph.dumpDotFilePrefixed("acyc_rank");
 
-    UINFO(4, " Placement\n");
+    UINFO(4, " Placement");
     place();
     if (dumpGraphLevel() >= 6) m_breakGraph.dumpDotFilePrefixed("acyc_place");
 
-    UINFO(4, " Final Ranking\n");
+    UINFO(4, " Final Ranking");
     // Only needed to assert there are no loops in completed graph
     m_breakGraph.rank(&V3GraphEdge::followAlwaysTrue);
     if (dumpGraphLevel() >= 6) m_breakGraph.dumpDotFilePrefixed("acyc_done");
 }
 
 void V3Graph::acyclic(V3EdgeFuncP edgeFuncp) {
-    UINFO(4, "Acyclic\n");
+    UINFO(4, "Acyclic");
     GraphAcyc acyc{this, edgeFuncp};
     acyc.main();
-    UINFO(4, "Acyclic done\n");
+    UINFO(4, "Acyclic done");
 }

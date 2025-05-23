@@ -102,7 +102,7 @@ public:
     StatsVisitor(AstNetlist* nodep, const std::string& stage, bool fastOnly)
         : m_fastOnly{fastOnly}
         , m_accump{fastOnly ? &m_dumpster : &m_counters} {
-        UINFO(9, "Starting stats, fastOnly=" << fastOnly << endl);
+        UINFO(9, "Starting stats, fastOnly=" << fastOnly);
         memset(&m_counters, 0, sizeof(m_counters));
         memset(&m_dumpster, 0, sizeof(m_dumpster));
 

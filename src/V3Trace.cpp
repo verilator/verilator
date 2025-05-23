@@ -201,7 +201,7 @@ class TraceVisitor final : public VNVisitor {
     // METHODS
 
     void detectDuplicates() {
-        UINFO(9, "Finding duplicates\n");
+        UINFO(9, "Finding duplicates");
         // Note uses user4
         V3DupFinder dupFinder;  // Duplicate code detection
         // Hash all of the traced values and find if there are any duplicates
@@ -217,8 +217,8 @@ class TraceVisitor final : public VNVisitor {
                     UASSERT_OBJ(dupDeclp, nodep, "Trace duplicate of wrong type");
                     TraceTraceVertex* const dupvertexp
                         = dupDeclp->user1u().toGraphVertex()->cast<TraceTraceVertex>();
-                    UINFO(8, "  Orig " << nodep << endl);
-                    UINFO(8, "   dup " << dupDeclp << endl);
+                    UINFO(8, "  Orig " << nodep);
+                    UINFO(8, "   dup " << dupDeclp);
                     // Mark the hashed node as the original and our
                     // iterating node as duplicated
                     vvertexp->duplicatep(dupvertexp);
@@ -308,14 +308,14 @@ class TraceVisitor final : public VNVisitor {
         for (V3GraphVertex& vtx : m_graph.vertices()) {
             if (TraceTraceVertex* const vtxp = vtx.cast<TraceTraceVertex>()) {
                 ActCodeSet actSet;
-                UINFO(9, "  Add to sort: " << vtxp << endl);
+                UINFO(9, "  Add to sort: " << vtxp);
                 if (debug() >= 9) vtxp->nodep()->dumpTree("-   trnode: ");
                 for (const V3GraphEdge& edge : vtxp->inEdges()) {
                     const TraceActivityVertex* const cfvertexp
                         = edge.fromp()->cast<const TraceActivityVertex>();
                     UASSERT_OBJ(cfvertexp, vtxp->nodep(),
                                 "Should have been function pointing to this trace");
-                    UINFO(9, "   Activity: " << cfvertexp << endl);
+                    UINFO(9, "   Activity: " << cfvertexp);
                     if (cfvertexp->activityAlways()) {
                         // If code 0, we always trace; ignore other codes
                         actSet.insert(TraceActivityVertex::ACTIVITY_ALWAYS);
@@ -568,7 +568,7 @@ class TraceVisitor final : public VNVisitor {
             topFuncp->addStmtsp(callp->makeStmt());
         }
         // Done
-        UINFO(5, "  newCFunc " << funcp << endl);
+        UINFO(5, "  newCFunc " << funcp);
         return funcp;
     }
 
@@ -850,7 +850,7 @@ class TraceVisitor final : public VNVisitor {
     void visit(AstStmtExpr* nodep) override {
         if (!m_finding && !nodep->user2()) {
             if (AstCCall* const callp = VN_CAST(nodep->exprp(), CCall)) {
-                UINFO(8, "   CCALL " << callp << endl);
+                UINFO(8, "   CCALL " << callp);
                 // See if there are other calls in same statement list;
                 // If so, all funcs might share the same activity code
                 TraceActivityVertex* const activityVtxp
@@ -859,7 +859,7 @@ class TraceVisitor final : public VNVisitor {
                     if (AstStmtExpr* const stmtp = VN_CAST(nextp, StmtExpr)) {
                         if (AstCCall* const ccallp = VN_CAST(stmtp->exprp(), CCall)) {
                             stmtp->user2(true);  // Processed
-                            UINFO(8, "     SubCCALL " << ccallp << endl);
+                            UINFO(8, "     SubCCALL " << ccallp);
                             V3GraphVertex* const ccallFuncVtxp = getCFuncVertexp(ccallp->funcp());
                             activityVtxp->slow(ccallp->funcp()->slow());
                             new V3GraphEdge{&m_graph, activityVtxp, ccallFuncVtxp, 1};
@@ -871,7 +871,7 @@ class TraceVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstCFunc* nodep) override {
-        UINFO(8, "   CFUNC " << nodep << endl);
+        UINFO(8, "   CFUNC " << nodep);
         V3GraphVertex* const funcVtxp = getCFuncVertexp(nodep);
         if (!m_finding) {  // If public, we need a unique activity code to allow for sets
                            // directly in this func
@@ -888,7 +888,7 @@ class TraceVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstTraceDecl* nodep) override {
-        UINFO(8, "   TRACE " << nodep << endl);
+        UINFO(8, "   TRACE " << nodep);
         if (!m_finding) {
             V3GraphVertex* const vertexp = new TraceTraceVertex{&m_graph, nodep};
             nodep->user1p(vertexp);
@@ -944,7 +944,7 @@ public:
 // Trace class functions
 
 void V3Trace::traceAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { TraceVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("trace", 0, dumpTreeEitherLevel() >= 3);
 }

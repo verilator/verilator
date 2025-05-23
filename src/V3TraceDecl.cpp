@@ -290,7 +290,7 @@ class TraceDeclVisitor final : public VNVisitor {
 
     void fixupPlaceholders() {
         // Fix up cell initialization placehodlers
-        UINFO(9, "fixupPlaceholders()\n");
+        UINFO(9, "fixupPlaceholders()");
         for (const auto& item : m_cellInitPlaceholders) {
             const AstScope* const parentp = std::get<0>(item);
             const AstCell* const cellp = std::get<1>(item);
@@ -331,7 +331,7 @@ class TraceDeclVisitor final : public VNVisitor {
         if (!v3Global.opt.debugCheck()) return;
         checkCallsRecurse(funcp);
         if (!m_declUncalledps.empty()) {
-            for (auto tracep : m_declUncalledps) UINFO(0, "-nodep " << tracep << "\n");
+            for (auto tracep : m_declUncalledps) UINFO(0, "-nodep " << tracep);
             (*(m_declUncalledps.begin()))->v3fatalSrc("Created TraceDecl which is never called");
         }
     }
@@ -347,7 +347,7 @@ class TraceDeclVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstScope* nodep) override {
-        UINFO(9, "visit " << nodep << "\n");
+        UINFO(9, "visit " << nodep);
         UASSERT_OBJ(!m_currScopep, nodep, "Should not nest");
         UASSERT_OBJ(m_subFuncps.empty(), nodep, "Should not nest");
         UASSERT_OBJ(m_entries.empty(), nodep, "Should not nest");
@@ -716,7 +716,7 @@ public:
 // Trace class functions
 
 void V3TraceDecl::traceDeclAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { TraceDeclVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("tracedecl", 0, dumpTreeEitherLevel() >= 3);
 }

@@ -152,7 +152,7 @@ class V3DfgPeephole final : public DfgVisitor {
     // METHODS
     bool checkApplying(VDfgPeepholePattern id) {
         if (!m_ctx.m_enabled[id]) return false;
-        UINFO(9, "Applying DFG pattern " << id.ascii() << endl);
+        UINFO(9, "Applying DFG pattern " << id.ascii());
         ++m_ctx.m_count[id];
         return true;
     }

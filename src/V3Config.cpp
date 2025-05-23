@@ -404,17 +404,17 @@ public:
     void applyIgnores(FileLine* filelinep) {
         // HOT routine, called each parsed token line of this filename
         if (m_lastIgnore.lineno != filelinep->lineno()) {
-            // UINFO(9, "   ApplyIgnores for " << filelinep->ascii() << endl);
+            // UINFO(9, "   ApplyIgnores for " << filelinep->ascii());
             // Process all on/offs for lines up to and including the current line
             const int curlineno = filelinep->lastLineno();
             for (; m_lastIgnore.it != m_ignLines.end(); ++m_lastIgnore.it) {
                 if (m_lastIgnore.it->m_lineno > curlineno) break;
-                // UINFO(9, "     Hit " << *m_lastIgnore.it << endl);
+                // UINFO(9, "     Hit " << *m_lastIgnore.it);
                 filelinep->warnOn(m_lastIgnore.it->m_code, m_lastIgnore.it->m_on);
             }
             if (false && debug() >= 9) {
                 for (IgnLines::const_iterator it = m_lastIgnore.it; it != m_ignLines.end(); ++it) {
-                    UINFO(9, "     NXT " << *it << endl);
+                    UINFO(9, "     NXT " << *it);
                 }
             }
             m_lastIgnore.lineno = filelinep->lastLineno();
@@ -480,7 +480,7 @@ class V3ConfigScopeTraceResolver final {
 public:
     void addScopeTraceOn(bool on, const string& scope, int levels) {
         UINFO(9, "addScopeTraceOn " << on << " '" << scope << "' "
-                                    << " levels=" << levels << endl);
+                                    << " levels=" << levels);
         m_entries.emplace_back(V3ConfigScopeTraceEntry{scope, on, levels});
         m_matchCache.clear();
     }
@@ -499,7 +499,7 @@ public:
         for (const auto& ch : scope) {
             if (ch == '.') ++maxLevel;
         }
-        UINFO(9, "getScopeTraceOn " << scope << " maxLevel=" << maxLevel << endl);
+        UINFO(9, "getScopeTraceOn " << scope << " maxLevel=" << maxLevel);
 
         bool enabled = true;
         for (const auto& ent : m_entries) {
@@ -518,7 +518,7 @@ public:
                     UINFO(9, "getScopeTraceOn-part " << scope << " enabled=" << enabled
                                                      << " @ lev=" << partLevel
                                                      << (levelMatch ? "[match]" : "[miss]")
-                                                     << " from scopepart=" << scopepart << endl);
+                                                     << " from scopepart=" << scopepart);
                     break;
                 }
                 if (partEnd == scope.length()) break;

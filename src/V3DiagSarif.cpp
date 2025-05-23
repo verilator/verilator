@@ -85,7 +85,7 @@ class V3DiagSarifImp final {
                                                               : "warning");
 
         string text = msg.text();
-        // UINFO(9, "Result raw text " << text << endl << endl);
+        // UINFO(9, "Result raw text " << text);
 
         // We put the entire message including relatedLocations text
         // into the primary message text, because viewers such as
@@ -190,6 +190,6 @@ void V3DiagSarif::pushMessage(const VErrorMessage& msg) VL_MT_DISABLED {
 
 void V3DiagSarif::output(bool success) {
     if (!v3Global.opt.diagnosticsSarif()) return;
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     V3DiagSarifImp::s().output(success);
 }

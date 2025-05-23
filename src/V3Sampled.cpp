@@ -57,7 +57,7 @@ class SampledVisitor final : public VNVisitor {
         m_scopep->addVarsp(newvscp);
         // At the top of _eval, assign them (use valuep here as temporary storage during V3Sched)
         newvarp->valuep(new AstVarRef{flp, vscp, VAccess::READ});
-        UINFO(4, "New Sampled: " << newvscp << endl);
+        UINFO(4, "New Sampled: " << newvscp);
         return newvscp;
     }
 
@@ -100,7 +100,7 @@ public:
 // Sampled class functions
 
 void V3Sampled::sampledAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { SampledVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("sampled", 0, dumpTreeEitherLevel() >= 3);
 }

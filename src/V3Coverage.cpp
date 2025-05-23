@@ -183,7 +183,7 @@ class CoverageVisitor final : public VNVisitor {
         AstCoverDecl* const declp = new AstCoverDecl{fl, page, comment, linescov, offset};
         declp->hier(hier);
         m_modp->addStmtsp(declp);
-        UINFO(9, "new " << declp << endl);
+        UINFO(9, "new " << declp);
 
         AstCoverInc* const incp = new AstCoverInc{fl, declp};
         if (!trace_var_name.empty()
@@ -197,7 +197,7 @@ class CoverageVisitor final : public VNVisitor {
             varp->setIgnoreSchedWrite();  // Ignore the increment output, so no UNOPTFLAT
             varp->trace(true);
             m_modp->addStmtsp(varp);
-            UINFO(5, "New coverage trace: " << varp << endl);
+            UINFO(5, "New coverage trace: " << varp);
             AstAssign* const assp = new AstAssign{
                 incp->fileline(), new AstVarRef{incp->fileline(), varp, VAccess::WRITE},
                 new AstAdd{incp->fileline(), new AstVarRef{incp->fileline(), varp, VAccess::READ},
@@ -223,7 +223,7 @@ class CoverageVisitor final : public VNVisitor {
         // Ensure line numbers we track are in the same file as this block
         // so track via nodep
         m_state.m_nodep = nodep;
-        UINFO(9, "line create h" << m_state.m_handle << " " << nodep << endl);
+        UINFO(9, "line create h" << m_state.m_handle << " " << nodep);
     }
     void lineTrack(const AstNode* nodep) {
         if (m_state.lineCoverageOn(nodep) && !m_ifCond
@@ -231,7 +231,7 @@ class CoverageVisitor final : public VNVisitor {
             for (int lineno = nodep->fileline()->firstLineno();
                  lineno <= nodep->fileline()->lastLineno(); ++lineno) {
                 UINFO(9, "line track " << lineno << " for h" << m_state.m_handle << " "
-                                       << m_state.m_nodep << endl);
+                                       << m_state.m_nodep);
                 m_handleLines[m_state.m_handle].insert(lineno);
             }
         }
@@ -266,7 +266,7 @@ class CoverageVisitor final : public VNVisitor {
             if (!out.empty()) out += ",";
             out += linesFirstLast(first, last);
         }
-        UINFO(9, "lines out " << out << " for h" << state.m_handle << " " << nodep << endl);
+        UINFO(9, "lines out " << out << " for h" << state.m_handle << " " << nodep);
         return out;
     }
 
@@ -358,9 +358,9 @@ class CoverageVisitor final : public VNVisitor {
             && v3Global.opt.coverageToggle()) {
             const char* const disablep = varIgnoreToggle(nodep);
             if (disablep) {
-                UINFO(4, "    Disable Toggle: " << disablep << " " << nodep << endl);
+                UINFO(4, "    Disable Toggle: " << disablep << " " << nodep);
             } else {
-                UINFO(4, "    Toggle: " << nodep << endl);
+                UINFO(4, "    Toggle: " << nodep);
                 // There's several overall ways to approach this
                 //    Treat like tracing, where a end-of-timestamp action sees all changes
                 //      Works ok, but would be quite slow as need to reform
@@ -519,7 +519,7 @@ class CoverageVisitor final : public VNVisitor {
 
     // VISITORS - LINE COVERAGE
     void visit(AstCond* nodep) override {
-        UINFO(4, " COND: " << nodep << endl);
+        UINFO(4, " COND: " << nodep);
 
         if (m_seeking == NONE) coverExprs(nodep->condp());
 
@@ -558,7 +558,7 @@ class CoverageVisitor final : public VNVisitor {
     void visit(AstIf* nodep) override {
         if (nodep->user2()) return;
 
-        UINFO(4, " IF: " << nodep << endl);
+        UINFO(4, " IF: " << nodep);
         if (m_state.m_on) {
             // An else-if.  When we iterate the if, use "elsif" marking
             const bool elsif
@@ -603,7 +603,7 @@ class CoverageVisitor final : public VNVisitor {
                 && elseState.lineCoverageOn(nodep)) {
                 // Normal if. Linecov shows what's inside the if (not condition that is
                 // always executed)
-                UINFO(4, "   COVER-branch: " << nodep << endl);
+                UINFO(4, "   COVER-branch: " << nodep);
                 nodep->addThensp(newCoverInc(nodep->fileline(), "", "v_branch", "if",
                                              linesCov(ifState, nodep), 0,
                                              traceNameForLine(nodep, "if")));
@@ -616,7 +616,7 @@ class CoverageVisitor final : public VNVisitor {
             }
             // If/else attributes to each block as non-branch coverage
             else if (first_elsif || cont_elsif) {
-                UINFO(4, "   COVER-elsif: " << nodep << endl);
+                UINFO(4, "   COVER-elsif: " << nodep);
                 if (ifState.lineCoverageOn(nodep)) {
                     nodep->addThensp(newCoverInc(nodep->fileline(), "", "v_line", "elsif",
                                                  linesCov(ifState, nodep), 0,
@@ -626,13 +626,13 @@ class CoverageVisitor final : public VNVisitor {
             } else {
                 // Cover as separate blocks (not a branch as is not two-legged)
                 if (ifState.lineCoverageOn(nodep)) {
-                    UINFO(4, "   COVER-half-if: " << nodep << endl);
+                    UINFO(4, "   COVER-half-if: " << nodep);
                     nodep->addThensp(newCoverInc(nodep->fileline(), "", "v_line", "if",
                                                  linesCov(ifState, nodep), 0,
                                                  traceNameForLine(nodep, "if")));
                 }
                 if (elseState.lineCoverageOn(nodep)) {
-                    UINFO(4, "   COVER-half-el: " << nodep << endl);
+                    UINFO(4, "   COVER-half-el: " << nodep);
                     nodep->addElsesp(newCoverInc(nodep->fileline(), "", "v_line", "else",
                                                  linesCov(elseState, nodep), 1,
                                                  traceNameForLine(nodep, "else")));
@@ -643,19 +643,19 @@ class CoverageVisitor final : public VNVisitor {
         VL_RESTORER(m_ifCond);
         m_ifCond = true;
         iterateAndNextNull(nodep->condp());
-        UINFO(9, " done HANDLE " << m_state.m_handle << " for " << nodep << endl);
+        UINFO(9, " done HANDLE " << m_state.m_handle << " for " << nodep);
     }
     void visit(AstCaseItem* nodep) override {
         // We don't add an explicit "default" coverage if not provided,
         // as we already have a warning when there is no default.
-        UINFO(4, " CASEI: " << nodep << endl);
+        UINFO(4, " CASEI: " << nodep);
         if (m_state.lineCoverageOn(nodep)) {
             VL_RESTORER(m_state);
             createHandle(nodep);
             iterateAndNextNull(nodep->stmtsp());
             if (m_state.lineCoverageOn(nodep)) {  // if the case body didn't disable it
                 lineTrack(nodep);
-                UINFO(4, "   COVER: " << nodep << endl);
+                UINFO(4, "   COVER: " << nodep);
                 nodep->addStmtsp(newCoverInc(nodep->fileline(), "", "v_line", "case",
                                              linesCov(m_state, nodep), 0,
                                              traceNameForLine(nodep, "case")));
@@ -663,7 +663,7 @@ class CoverageVisitor final : public VNVisitor {
         }
     }
     void visit(AstCover* nodep) override {
-        UINFO(4, " COVER: " << nodep << endl);
+        UINFO(4, " COVER: " << nodep);
         VL_RESTORER(m_state);
         m_state.m_on = true;  // Always do cover blocks, even if there's a $stop
         createHandle(nodep);
@@ -677,13 +677,13 @@ class CoverageVisitor final : public VNVisitor {
         }
     }
     void visit(AstStop* nodep) override {
-        UINFO(4, "  STOP: " << nodep << endl);
+        UINFO(4, "  STOP: " << nodep);
         m_state.m_on = false;
     }
     void visit(AstPragma* nodep) override {
         if (nodep->pragType() == VPragmaType::COVERAGE_BLOCK_OFF) {
             // Skip all NEXT nodes under this block, and skip this if/case branch
-            UINFO(4, "  OFF: h" << m_state.m_handle << " " << nodep << endl);
+            UINFO(4, "  OFF: h" << m_state.m_handle << " " << nodep);
             m_state.m_on = false;
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else {
@@ -1009,7 +1009,7 @@ class CoverageVisitor final : public VNVisitor {
     }
 
     void exprUnsupported(AstNode* nodep, const string& why) {
-        UINFO(9, "unsupported: " << why << " " << nodep << endl);
+        UINFO(9, "unsupported: " << why << " " << nodep);
         bool wasSeeking = m_seeking == SEEKING;
         Objective oldSeeking = m_seeking;
         if (wasSeeking) abortExprCoverage();
@@ -1029,7 +1029,7 @@ public:
 // Coverage class functions
 
 void V3Coverage::coverage(AstNetlist* rootp) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { CoverageVisitor{rootp}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("coverage", 0, dumpTreeEitherLevel() >= 3);
 }

@@ -75,7 +75,7 @@ void V3ParseImp::importIfInStd(FileLine* fileline, const string& id) {
     if (fileline->filename() == V3Options::getStdPackagePath()) return;
     if (AstPackage* const stdpkgp
         = v3Global.rootp()->stdPackagep()) {  // else e.g. --no-std-package
-        UINFO(9, "import and keep std:: for " << fileline << "\n");
+        UINFO(9, "import and keep std:: for " << fileline);
         AstPackageImport* const impp = new AstPackageImport{stdpkgp->fileline(), stdpkgp, "*"};
         unitPackage(stdpkgp->fileline())->addStmtsp(impp);
         v3Global.setUsesStdPackage();
@@ -126,7 +126,7 @@ AstPragma* V3ParseImp::createTimescale(FileLine* fl, bool unitSet, double unitVa
         bool bad;
         unit = VTimescale{unitVal, bad /*ref*/};
         if (bad) {
-            UINFO(1, "Value = " << unitVal << endl);
+            UINFO(1, "Value = " << unitVal);
             fl->v3error("timeunit illegal value");
         }
     }
@@ -135,7 +135,7 @@ AstPragma* V3ParseImp::createTimescale(FileLine* fl, bool unitSet, double unitVa
         bool bad;
         prec = VTimescale{precVal, bad /*ref*/};
         if (bad) {
-            UINFO(1, "Value = " << precVal << endl);
+            UINFO(1, "Value = " << precVal);
             fl->v3error("timeprecision illegal value");
         }
     }
@@ -298,7 +298,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     const string nondirname = V3Os::filenameNonDir(modfilename);
     const string modname = V3Os::filenameNonDirExt(modfilename);
 
-    UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : "") << endl);
+    UINFO(2, __FUNCTION__ << ": " << modname << (inLibrary ? " [LIB]" : ""));
     m_lexFileline = new FileLine{fileline};
     m_lexFileline->newContent();
     m_bisonLastFileline = m_lexFileline;
@@ -366,7 +366,7 @@ void V3ParseImp::dumpInputsFile() {
     }
     if (!append) {
         append = true;
-        UINFO(1, "Writing all preprocessed output to " << vppfilename << endl);
+        UINFO(1, "Writing all preprocessed output to " << vppfilename);
         *ofp << "// Dump of all post-preprocessor input\n";
         *ofp << "// Blank lines and `line directives have been removed\n";
         *ofp << "//\n";
@@ -380,7 +380,7 @@ void V3ParseImp::dumpInputsFile() {
 
 void V3ParseImp::lexFile(const string& modname) {
     // Prepare for lexing
-    UINFO(3, "Lexing " << modname << endl);
+    UINFO(3, "Lexing " << modname);
     s_parsep = this;
     lexFileline()->warnResetDefault();  // Reenable warnings on each file
     lexDestroy();  // Restart from clean slate.
@@ -434,7 +434,7 @@ size_t V3ParseImp::tokenPipeScanIdType(size_t depthIn) {
     // and caller must check does NOT match tokenPipeScanIdCell
     size_t depth = depthIn;
     // UINFO(9, "tokenPipeScanType START d="
-    //       << depth << " " << V3ParseImp::tokenName(tokenPeekp(depth)->token) << endl);
+    //       << depth << " " << V3ParseImp::tokenName(tokenPeekp(depth)->token));
     if (tokenPeekp(depth)->token == '#' && tokenPeekp(depth + 1)->token == '(') {
         depth = tokenPipeScanParam(depth, false);
         // Not :: as then it's a yaID__CC, we'll parse that in tokenPipeScanId
@@ -446,7 +446,7 @@ size_t V3ParseImp::tokenPipeScanIdType(size_t depthIn) {
     if (tokenPeekp(depth)->token != yaID__LEX && tokenPeekp(depth)->token != yP_TICKBRA)
         return depthIn;
     ++depth;
-    // UINFO(9, "tokenPipeScanType MATCH\n");
+    // UINFO(9, "tokenPipeScanType MATCH");
 
     return depth;
 }
@@ -546,7 +546,7 @@ size_t V3ParseImp::tokenPipeScanTypeEq(size_t depth) {
 int V3ParseImp::tokenPipelineId(int token) {
     const V3ParseBisonYYSType* nexttokp = tokenPeekp(0);  // First char after yaID
     const int nexttok = nexttokp->token;
-    UINFO(9, "tokenPipelineId tok=" << yylval.token << endl);
+    UINFO(9, "tokenPipelineId tok=" << yylval.token);
     UASSERT(yylval.token == yaID__LEX, "Start with ID");
     if (nexttok == yP_COLONCOLON) return yaID__CC;
     VL_RESTORER(yylval);  // Remember value, as about to read ahead

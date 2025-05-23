@@ -647,7 +647,7 @@ public:
 // Active class functions
 
 void V3Active::activeAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { ActiveVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("active", 0, dumpTreeEitherLevel() >= 3);
 }

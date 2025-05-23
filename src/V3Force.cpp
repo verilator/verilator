@@ -408,7 +408,7 @@ public:
 //
 
 void V3Force::forceAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     if (!v3Global.hasForceableSignals()) return;
     {
         ForceState state;

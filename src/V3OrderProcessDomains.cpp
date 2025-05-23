@@ -85,13 +85,13 @@ class V3OrderProcessDomains final {
     //     else, if all inputs are from flops, it's end-of-sequential code
     //     else, it's full combo code
     void processDomains() {
-        UINFO(2, "  Domains...\n");
+        UINFO(2, "  Domains...");
         // Buffer to hold external sensitivities
         std::vector<AstSenTree*> externalDomainps;
         // For each vertex
         for (V3GraphVertex& it : m_graph.vertices()) {
             OrderEitherVertex* const vtxp = it.as<OrderEitherVertex>();
-            UINFO(5, "    pdi: " << vtxp << endl);
+            UINFO(5, "    pdi: " << vtxp);
             // Sequential logic already has its domain set
             if (vtxp->domainp()) continue;
 
@@ -99,7 +99,7 @@ class V3OrderProcessDomains final {
             // For logic, start with the explicit hybrid sensitivities
             OrderLogicVertex* const lvtxp = vtxp->cast<OrderLogicVertex>();
             if (lvtxp) domainp = lvtxp->hybridp();
-            if (domainp) UINFO(6, "      hybr d=" << debugDomain(domainp) << " " << vtxp << endl);
+            if (domainp) UINFO(6, "      hybr d=" << debugDomain(domainp) << " " << vtxp);
 
             // For each incoming edge, examine the source vertex
             for (V3GraphEdge& edge : vtxp->inEdges()) {
@@ -111,7 +111,7 @@ class V3OrderProcessDomains final {
 
                 AstSenTree* fromDomainp = fromVtxp->domainp();
 
-                UINFO(6, "      from d=" << debugDomain(fromDomainp) << " " << fromVtxp << endl);
+                UINFO(6, "      from d=" << debugDomain(fromDomainp) << " " << fromVtxp);
                 UASSERT(fromDomainp == m_deleteDomainp || !fromDomainp->hasCombo(),
                         "There should be no need for combinational domains");
 
@@ -122,7 +122,7 @@ class V3OrderProcessDomains final {
                     m_externalDomains(vscp, externalDomainps);
                     for (AstSenTree* const externalDomainp : externalDomainps) {
                         UINFO(6, "      xtrn d=" << debugDomain(externalDomainp) << " " << fromVtxp
-                                                 << " because of " << vscp << endl);
+                                                 << " because of " << vscp);
                         UASSERT_OBJ(!externalDomainp->hasCombo(), vscp,
                                     "There should be no need for combinational domains");
                         fromDomainp = combineDomains(fromDomainp, externalDomainp);
@@ -150,7 +150,7 @@ class V3OrderProcessDomains final {
             // Set the domain of the vertex
             vtxp->domainp(domainp);
 
-            UINFO(5, "      done d=" << debugDomain(domainp) << " " << vtxp << endl);
+            UINFO(5, "      done d=" << debugDomain(domainp) << " " << vtxp);
         }
     }
 

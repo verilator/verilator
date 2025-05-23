@@ -134,9 +134,9 @@ class LinkParseVisitor final : public VNVisitor {
         FileLine* const nodeFlp = nodep->fileline();
         FileLine* const childFlp = childp->fileline();
         FileLine* const nextFlp = nextp->fileline();
-        // UINFO(0, "checkInd " << nodeFlp->firstColumn() << " " << nodep << endl);
-        // UINFO(0, "  child  " << childFlp->firstColumn() << " " << childp << endl);
-        // UINFO(0, " next    " << nextFlp->firstColumn() << " " << nextp << endl);
+        // UINFO(0, "checkInd " << nodeFlp->firstColumn() << " " << nodep);
+        // UINFO(0, "  child  " << childFlp->firstColumn() << " " << childp);
+        // UINFO(0, " next    " << nextFlp->firstColumn() << " " << nextp);
         // Same filename, later line numbers (no macro magic going on)
         if (nodeFlp->filenameno() != childFlp->filenameno()) return;
         if (nodeFlp->filenameno() != nextFlp->filenameno()) return;
@@ -231,7 +231,7 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstNodeFTaskRef* nodep) override {
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
-            UINFO(5, "   " << nodep << endl);
+            UINFO(5, "   " << nodep);
             VL_RESTORER(m_valueModp);
             m_valueModp = nullptr;
             iterateChildren(nodep);
@@ -498,7 +498,7 @@ class LinkParseVisitor final : public VNVisitor {
 
     void visit(AstDefImplicitDType* nodep) override {
         cleanFileline(nodep);
-        UINFO(8, "   DEFIMPLICIT " << nodep << endl);
+        UINFO(8, "   DEFIMPLICIT " << nodep);
         // Must remember what names we've already created, and combine duplicates
         // so that for "var enum {...} a,b" a & b will share a common typedef.
         // Change to unique name space per module so that an addition of
@@ -507,7 +507,7 @@ class LinkParseVisitor final : public VNVisitor {
         const ImplTypedefMap::iterator it = m_implTypedef.find(nodep->name());
         if (it != m_implTypedef.end()) {
             defp = it->second;
-            UINFO(9, "Reused impltypedef " << nodep << "  -->  " << defp << endl);
+            UINFO(9, "Reused impltypedef " << nodep << "  -->  " << defp);
         } else {
             // Definition must be inserted right after the variable (etc) that needed it
             // AstVar, AstTypedef, AstNodeFTask are common containers
@@ -532,7 +532,7 @@ class LinkParseVisitor final : public VNVisitor {
                 // Rename so that name doesn't change if a type is added/removed elsewhere
                 // But the m_implTypedef is stil by old name so we can find it for next new lookups
                 defp->name("__typeimpmod" + cvtToStr(m_implTypedef.size()));
-                UINFO(9, "New impltypedef " << defp << endl);
+                UINFO(9, "New impltypedef " << defp);
                 backp->addNextHere(defp);
             }
         }
@@ -549,7 +549,7 @@ class LinkParseVisitor final : public VNVisitor {
 
     void visit(AstNodeForeach* nodep) override {
         // FOREACH(array, loopvars, body)
-        UINFO(9, "FOREACH " << nodep << endl);
+        UINFO(9, "FOREACH " << nodep);
         cleanFileline(nodep);
         // Separate iteration vars from base from variable
         // Input:
@@ -928,7 +928,7 @@ public:
 // Link class functions
 
 void V3LinkParse::linkParse(AstNetlist* rootp) {
-    UINFO(4, __FUNCTION__ << ": " << endl);
+    UINFO(4, __FUNCTION__ << ": ");
     { LinkParseVisitor{rootp}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linkparse", 0, dumpTreeEitherLevel() >= 6);
 }

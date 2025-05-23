@@ -336,7 +336,7 @@ void V3Options::addParameter(const string& paramline, bool allowPlus) {
             value = param.substr(pos + 1);
             param.erase(pos);
         }
-        UINFO(4, "Add parameter" << param << "=" << value << endl);
+        UINFO(4, "Add parameter" << param << "=" << value);
         (void)m_parameters.erase(param);
         m_parameters[param] = value;
     }
@@ -1844,7 +1844,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     parser.finalize();
 
     for (int i = 0; i < argc;) {
-        UINFO(9, " Option: " << argv[i] << endl);
+        UINFO(9, " Option: " << argv[i]);
         if (!std::strcmp(argv[i], "-j")
             || !std::strcmp(argv[i], "--j")) {  // Allow gnu -- switches
             ++i;
@@ -1896,7 +1896,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
 void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) VL_MT_DISABLED {
     // Read the specified -f filename and process as arguments
-    UINFO(1, "Reading Options File " << filename << endl);
+    UINFO(1, "Reading Options File " << filename);
 
     const std::unique_ptr<std::ifstream> ifp{V3File::new_ifstream(filename)};
     if (ifp->fail()) {

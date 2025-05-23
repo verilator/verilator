@@ -671,7 +671,7 @@ AstNode* AstNode::unlinkFrBack(VNRelinker* linkerp) {
 
 void AstNode::relink(VNRelinker* linkerp) {
     if (debug() > 8) {
-        UINFO(0, " EDIT:      relink: ");
+        UINFO_PREFIX(" EDIT:      relink: ");
         dumpPtrs();
     }
     AstNode* const newp = this;
@@ -1344,7 +1344,7 @@ void AstNode::dumpTreeFile(const string& filename, bool doDump) {
     // Not const function as calls checkTree
     if (doDump) {
         {  // Write log & close
-            UINFO(2, "Dumping " << filename << endl);
+            UINFO(2, "Dumping " << filename);
             const std::unique_ptr<std::ofstream> logsp{V3File::new_ofstream(filename)};
             if (logsp->fail()) v3fatal("Can't write file: " << filename);
             *logsp << "Verilator Tree Dump (format 0x3900) from <e" << std::dec << editCountLast();
@@ -1389,7 +1389,7 @@ void AstNode::dumpTreeDot(std::ostream& os) const {
 
 void AstNode::dumpTreeJsonFile(const string& filename, bool doDump) {
     if (!doDump) return;
-    UINFO(2, "Dumping " << filename << endl);
+    UINFO(2, "Dumping " << filename);
     const std::unique_ptr<std::ofstream> treejsonp{V3File::new_ofstream(filename)};
     if (treejsonp->fail()) v3fatal("Can't write file: " << filename);
     dumpTreeJson(*treejsonp);
@@ -1398,7 +1398,7 @@ void AstNode::dumpTreeJsonFile(const string& filename, bool doDump) {
 
 void AstNode::dumpJsonMetaFileGdb(const char* filename) { dumpJsonMetaFile(filename); }
 void AstNode::dumpJsonMetaFile(const string& filename) {
-    UINFO(2, "Dumping " << filename << endl);
+    UINFO(2, "Dumping " << filename);
     const std::unique_ptr<std::ofstream> treejsonp{V3File::new_ofstream(filename)};
     if (treejsonp->fail()) v3fatalStatic("Can't write file: " << filename);
     *treejsonp << '{';
@@ -1412,7 +1412,7 @@ void AstNode::dumpJsonMetaFile(const string& filename) {
 
 void AstNode::dumpTreeDotFile(const string& filename, bool doDump) {
     if (doDump) {
-        UINFO(2, "Dumping " << filename << endl);
+        UINFO(2, "Dumping " << filename);
         const std::unique_ptr<std::ofstream> treedotp{V3File::new_ofstream(filename)};
         if (treedotp->fail()) v3fatal("Can't write file: " << filename);
         *treedotp << "digraph vTree{\n";
@@ -1608,9 +1608,9 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
 VCastable AstNode::computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
                                    const AstNode* fromConstp) {
     const auto castable = computeCastableImp(toDtp, fromDtp, fromConstp);
-    UINFO(9, "  castable=" << castable << "  for " << toDtp << endl);
-    UINFO(9, "     =?= " << fromDtp << endl);
-    if (fromConstp) UINFO(9, "     const= " << fromConstp << endl);
+    UINFO(9, "  castable=" << castable << "  for " << toDtp);
+    UINFO(9, "     =?= " << fromDtp);
+    if (fromConstp) UINFO(9, "     const= " << fromConstp);
     return castable;
 }
 

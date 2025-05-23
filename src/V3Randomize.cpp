@@ -189,7 +189,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     }
     void setPackageRefs() {
         for (AstNodeVarRef* staticRefp : m_staticRefs) {
-            UINFO(9, "Updated classOrPackage ref for " << staticRefp->name() << endl);
+            UINFO(9, "Updated classOrPackage ref for " << staticRefp->name());
             staticRefp->classOrPackagep(VN_AS(staticRefp->varp()->user2p(), NodeModule));
         }
     }
@@ -1457,7 +1457,7 @@ class RandomizeVisitor final : public VNVisitor {
     }
     AstVar* enumValueTabp(AstEnumDType* const nodep) {
         if (nodep->user2p()) return VN_AS(nodep->user2p(), Var);
-        UINFO(9, "Construct Venumvaltab " << nodep << endl);
+        UINFO(9, "Construct Venumvaltab " << nodep);
         AstNodeArrayDType* const vardtypep = new AstUnpackArrayDType{
             nodep->fileline(), nodep->dtypep(),
             new AstRange{nodep->fileline(), static_cast<int>(nodep->itemCount()), 0}};
@@ -1521,7 +1521,7 @@ class RandomizeVisitor final : public VNVisitor {
             = new AstVar{varp->fileline(), VVarType::MEMBER, varp->name() + "__Vrandc", newdtp};
         newp->isInternal(true);
         varp->addNextHere(newp);
-        UINFO(9, "created " << varp << endl);
+        UINFO(9, "created " << varp);
         return newp;
     }
     AstNodeStmt* createArrayForeachLoop(FileLine* const fl, AstNodeDType* const dtypep,
@@ -1997,7 +1997,7 @@ class RandomizeVisitor final : public VNVisitor {
 
         iterateChildren(nodep);
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
-        UINFO(9, "Define randomize() for " << nodep << endl);
+        UINFO(9, "Define randomize() for " << nodep);
         nodep->baseMostClassp()->needRNG(true);
         AstFunc* const randomizep = V3Randomize::newRandomizeFunc(m_memberMap, nodep);
         AstVar* const fvarp = VN_AS(randomizep->fvarp(), Var);
@@ -2367,7 +2367,7 @@ public:
 // Randomize method class functions
 
 void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     {
         const RandomizeMarkVisitor markVisitor{nodep};
         RandomizeVisitor randomizeVisitor{nodep};

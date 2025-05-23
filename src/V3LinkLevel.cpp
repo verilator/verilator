@@ -39,7 +39,7 @@ struct CmpLevel final {
 void V3LinkLevel::modSortByLevel() {
     // Sort modules by levels, root down to lowest children
     // Calculate levels again in case we added modules
-    UINFO(2, "modSortByLevel()\n");
+    UINFO(2, "modSortByLevel()");
 
     // level() was computed for us in V3LinkCells
 
@@ -77,11 +77,11 @@ void V3LinkLevel::modSortByLevel() {
 
     // Reorder the netlist's modules to have modules in level sorted order
     stable_sort(mods.begin(), mods.end(), CmpLevel());  // Sort the vector
-    UINFO(9, "modSortByLevel() sorted\n");  // Comment required for gcc4.6.3 / bug666
+    UINFO(9, "modSortByLevel() sorted");  // Comment required for gcc4.6.3 / bug666
     for (AstNodeModule* nodep : mods) nodep->unlinkFrBack();
     UASSERT_OBJ(!v3Global.rootp()->modulesp(), v3Global.rootp(), "Unlink didn't work");
     for (AstNodeModule* nodep : mods) v3Global.rootp()->addModulesp(nodep);
-    UINFO(9, "modSortByLevel() done\n");  // Comment required for gcc4.6.3 / bug666
+    UINFO(9, "modSortByLevel() done");  // Comment required for gcc4.6.3 / bug666
     V3Global::dumpCheckGlobalTree("cellsort", false, dumpTreeEitherLevel() >= 3);
 }
 
@@ -156,11 +156,11 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
 // Wrapping
 
 void V3LinkLevel::wrapTop(AstNetlist* rootp) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     // We do ONLY the top module
     AstNodeModule* const oldmodp = rootp->modulesp();
     if (!oldmodp) {  // Later V3LinkDot will warn
-        UINFO(1, "No module found to wrap\n");
+        UINFO(1, "No module found to wrap");
         return;
     }
 
@@ -211,7 +211,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
             if (AstVar* const oldvarp = VN_CAST(subnodep, Var)) {
                 if (oldvarp->isIO()) {
                     if (!ioNames.insert(oldvarp->name()).second) {
-                        // UINFO(8, "Multitop dup I/O found: " << oldvarp << endl);
+                        // UINFO(8, "Multitop dup I/O found: " << oldvarp);
                         dupNames.insert(oldvarp->name());
                     }
                 } else if (v3Global.opt.topIfacesSupported() && oldvarp->isIfaceRef()) {
@@ -220,7 +220,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                         const AstIfaceRefDType* const ifacerefp = VN_AS(subtypep, IfaceRefDType);
                         if (!ifacerefp->cellp()) {
                             if (!ioNames.insert(oldvarp->name()).second) {
-                                // UINFO(8, "Multitop dup interface found: " << oldvarp << endl);
+                                // UINFO(8, "Multitop dup interface found: " << oldvarp);
                                 dupNames.insert(oldvarp->name());
                             }
                         }
@@ -233,8 +233,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                                 = VN_AS(arrsubtypep, IfaceRefDType);
                             if (!ifacerefp->cellp()) {
                                 if (!ioNames.insert(oldvarp->name()).second) {
-                                    // UINFO(8, "Multitop dup interface array found: " << oldvarp
-                                    // << endl);
+                                    // UINFO(8, "Multitop dup interface array found: " << oldvarp);
                                     dupNames.insert(oldvarp->name());
                                 }
                             }
@@ -250,7 +249,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
          oldmodp && oldmodp->level() <= 2; oldmodp = VN_AS(oldmodp->nextp(), NodeModule)) {
         if (VN_IS(oldmodp, Package)) continue;
         // Add instance
-        UINFO(5, "LOOP " << oldmodp << endl);
+        UINFO(5, "LOOP " << oldmodp);
         AstCell* const cellp = new AstCell{
             newmodp->fileline(),
             newmodp->fileline(),
@@ -265,7 +264,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
         // Add pins
         for (AstNode* subnodep = oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
             if (AstVar* const oldvarp = VN_CAST(subnodep, Var)) {
-                UINFO(8, "VARWRAP " << oldvarp << endl);
+                UINFO(8, "VARWRAP " << oldvarp);
                 if (oldvarp->isIO()) {
                     string name = oldvarp->name();
                     if (dupNames.find(name) != dupNames.end()) {

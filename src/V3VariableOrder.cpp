@@ -254,7 +254,7 @@ public:
 // V3VariableOrder static functions
 
 void V3VariableOrder::orderAll(AstNetlist* netlistp) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
 
     MTaskAffinityMap mTaskAffinity;
 

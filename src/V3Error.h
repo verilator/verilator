@@ -624,13 +624,17 @@ void v3errorEndFatal(std::ostringstream& sstr)
 #define UINFO(level, stmsg) \
     do { \
         if (VL_UNCOVERABLE(debug() >= (level))) { \
-            std::cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; \
+            std::ostringstream ss; \
+            ss << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; \
+            if (ss.str()[ss.str().size() - 1] != '\n') ss << '\n'; \
+            std::cout << ss.str(); \
         } \
     } while (false)
-#define UINFONL(level, stmsg) \
-    do { \
-        if (VL_UNCOVERABLE(debug() >= (level))) { std::cout << stmsg; } \
-    } while (false)
+/// Print the prefix of UINFO, but no newline.  No level argument, as
+/// always need an if() at the caller site to determine if rest of the line
+/// gets printed or not
+#define UINFO_PREFIX(stmsg) \
+    do { std::cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; } while (false)
 
 /// Compile statements only when debug build
 #ifdef VL_DEBUG

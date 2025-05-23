@@ -47,7 +47,7 @@ class DepthVisitor final : public VNVisitor {
     // METHODS
 
     void createDeepTemp(AstNodeExpr* nodep) {
-        UINFO(6, "  Deep  " << nodep << endl);
+        UINFO(6, "  Deep  " << nodep);
         // if (debug() >= 9) nodep->dumpTree("-  deep: ");
         AstVar* const varp = new AstVar{nodep->fileline(), VVarType::STMTTEMP,
                                         m_tempNames.get(nodep), nodep->dtypep()};
@@ -127,7 +127,7 @@ class DepthVisitor final : public VNVisitor {
     void needNonStaticFunc(AstNode* nodep) {
         UASSERT_OBJ(m_cfuncp, nodep, "Non-static accessor not under a function");
         if (m_cfuncp->isStatic()) {
-            UINFO(5, "Mark non-public due to " << nodep << endl);
+            UINFO(5, "Mark non-public due to " << nodep);
             m_cfuncp->isStatic(false);
         }
     }
@@ -158,7 +158,7 @@ public:
 // Depth class functions
 
 void V3Depth::depthAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { DepthVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("depth", 0, dumpTreeEitherLevel() >= 6);
 }

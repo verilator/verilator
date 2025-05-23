@@ -553,7 +553,7 @@ public:
 
     static void dumpCpFilePrefixed(const V3Graph& graph, const string& nameComment) {
         const string filename = v3Global.debugFilename(nameComment) + ".txt";
-        UINFO(1, "Writing " << filename << endl);
+        UINFO(1, "Writing " << filename);
         const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
         std::ostream* const osp = &(*ofp);  // &* needed to deref unique_ptr
         if (osp->fail()) v3fatalStatic("Can't write file: " << filename);
@@ -1231,8 +1231,8 @@ public:
                         v3Global.rootp()->fileline()->v3warn(
                             UNOPTTHREADS, "Thread scheduler is unable to provide requested "
                                           "parallelism; suggest asking for fewer threads.");
-                        UINFO(1, "Critical path limit was=" << oldLimit << " now=" << m_scoreLimit
-                                                            << endl);
+                        UINFO(1,
+                              "Critical path limit was=" << oldLimit << " now=" << m_scoreLimit);
                         continue;
                     }
                     // Really stop
@@ -1297,7 +1297,7 @@ public:
                 // increases from low numbers up toward cpLimit. It may be
                 // helpful to see progress during slow partitions. Maybe
                 // display something by default even?
-                UINFO(6, "New scoreLimitBeforeRescore: " << m_scoreLimitBeforeRescore << endl);
+                UINFO(6, "New scoreLimitBeforeRescore: " << m_scoreLimitBeforeRescore);
             }
 
             // Finally merge this candidate.
@@ -1440,7 +1440,7 @@ private:
                                 << recipientNewCpFwd.propagateCp << "\n"
                                 << "donorNewCpFwd = " << donorNewCpFwd.cp
                                 << (donorNewCpFwd.propagate ? " true " : " false ")
-                                << donorNewCpFwd.propagateCp << endl);
+                                << donorNewCpFwd.propagateCp);
 
         recipientp->setCritPathCost(GraphWay::FORWARD, recipientNewCpFwd.cp);
         if (recipientNewCpFwd.propagate) {
@@ -1503,7 +1503,7 @@ private:
         // behave identically without the caching (just slower)
 
         m_sb.rescore();
-        UINFO(6, "Did rescore. Merges since previous = " << m_mergesSinceRescore << endl);
+        UINFO(6, "Did rescore. Merges since previous = " << m_mergesSinceRescore);
 
         m_mergesSinceRescore = 0;
         m_scoreLimitBeforeRescore = 0xffffffff;
@@ -1714,7 +1714,7 @@ class DpiImportCallVisitor final : public VNVisitor {
                 // we have a normal DPI which induces DPI hazard by default.
                 m_hasDpiHazard = V3Config::getProfileData(nodep->cname()) == 0;
                 UINFO(9, "DPI wrapper '" << nodep->cname()
-                                         << "' has dpi hazard = " << m_hasDpiHazard << endl);
+                                         << "' has dpi hazard = " << m_hasDpiHazard);
             }
         }
         iterateChildren(nodep);
@@ -2055,7 +2055,7 @@ static void debugMTaskGraphStats(V3Graph& graph, const string& stage) {
     if (!debug() && !dumpLevel() && !dumpGraphLevel()) return;
 
     UINFO(4, "\n");
-    UINFO(4, " Stats for " << stage << endl);
+    UINFO(4, " Stats for " << stage);
     uint32_t mtaskCount = 0;
     uint32_t totalCost = 0;
     std::array<uint32_t, 32> mtaskCostHist;
@@ -2070,14 +2070,14 @@ static void debugMTaskGraphStats(V3Graph& graph, const string& stage) {
         UASSERT(log2Cost < 32, "log2Cost overflow in debugMTaskGraphStats");
         ++mtaskCostHist[log2Cost];
     }
-    UINFO(4, "  Total mtask cost = " << totalCost << "\n");
-    UINFO(4, "  Mtask count = " << mtaskCount << "\n");
-    UINFO(4, "  Avg cost / mtask = "
-                 << ((mtaskCount > 0) ? cvtToStr(totalCost / mtaskCount) : "INF!") << "\n");
-    UINFO(4, "  Histogram of mtask costs:\n");
+    UINFO(4, "  Total mtask cost = " << totalCost);
+    UINFO(4, "  Mtask count = " << mtaskCount);
+    UINFO(4, "  Avg cost / mtask = " << ((mtaskCount > 0) ? cvtToStr(totalCost / mtaskCount)
+                                                          : "INF!"));
+    UINFO(4, "  Histogram of mtask costs:");
     for (unsigned i = 0; i < 32; ++i) {
         if (mtaskCostHist[i]) {
-            UINFO(4, "    2^" << i << ": " << mtaskCostHist[i] << endl);
+            UINFO(4, "    2^" << i << ": " << mtaskCostHist[i]);
             V3Stats::addStat("MTask graph, " + stage + ", mtask cost 2^" + (i < 10 ? " " : "")
                                  + cvtToStr(i),
                              mtaskCostHist[i]);
@@ -2102,12 +2102,12 @@ static void debugMTaskGraphStats(V3Graph& graph, const string& stage) {
     V3Stats::addStat("MTask graph, " + stage + ", parallelism factor", report.parallelismFactor());
     if (debug() >= 4) {
         UINFO(0, "\n");
-        UINFO(0, "    MTask Parallelism estimate based costs at stage" << stage << ":\n");
-        UINFO(0, "    Critical path cost = " << report.criticalPathCost() << "\n");
-        UINFO(0, "    Total graph cost = " << report.totalGraphCost() << "\n");
-        UINFO(0, "    MTask vertex count = " << report.vertexCount() << "\n");
-        UINFO(0, "    Edge count = " << report.edgeCount() << "\n");
-        UINFO(0, "    Parallelism factor = " << report.parallelismFactor() << "\n");
+        UINFO(0, "    MTask Parallelism estimate based costs at stage" << stage << ":");
+        UINFO(0, "    Critical path cost = " << report.criticalPathCost());
+        UINFO(0, "    Total graph cost = " << report.totalGraphCost());
+        UINFO(0, "    MTask vertex count = " << report.vertexCount());
+        UINFO(0, "    Edge count = " << report.edgeCount());
+        UINFO(0, "    Parallelism factor = " << report.parallelismFactor());
     }
 }
 
@@ -2127,7 +2127,7 @@ static void hashGraphDebug(const V3Graph& graph, const char* debugName) {
             hash = vx2Id[edge.top()] + 31U * hash;  // The K&R hash function
         }
     }
-    UINFO(0, "Hash of shape (not contents) of " << debugName << " = " << cvtToStr(hash) << endl);
+    UINFO(0, "Hash of shape (not contents) of " << debugName << " = " << cvtToStr(hash));
 }
 
 //*************************************************************************
@@ -2330,7 +2330,7 @@ class Partitioner final {
             const unsigned fudgeDenominator = 5;
             const uint32_t cpLimit
                 = ((totalGraphCost * fudgeNumerator) / (targetParFactor * fudgeDenominator));
-            UINFO(4, "Partitioner set cpLimit = " << cpLimit << endl);
+            UINFO(4, "Partitioner set cpLimit = " << cpLimit);
 
             Contraction::apply(*m_mTaskGraphp, cpLimit, m_entryMTaskp, m_exitMTaskp,
                                // --debugPartition is used by tests
@@ -2481,7 +2481,7 @@ AstExecGraph* V3Order::createParallel(OrderGraph& orderGraph, const std::string&
         const bool newEntry = logicMTaskToExecMTask.emplace(mTaskp, execMTaskp).second;
         UASSERT_OBJ(newEntry, mTaskp, "LogicMTasks should be processed in dependencyorder");
         UINFO(3, "Final '" << tag << "' LogicMTask " << mTaskp->id() << " maps to ExecMTask"
-                           << execMTaskp->id() << std::endl);
+                           << execMTaskp->id());
 
         // Add the dependency edges between ExecMTasks
         for (const V3GraphEdge& edge : mTaskp->inEdges()) {
@@ -2505,7 +2505,7 @@ AstExecGraph* V3Order::createParallel(OrderGraph& orderGraph, const std::string&
 }
 
 void V3Order::selfTestParallel() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     PropagateCp<GraphWay::FORWARD>::selfTest();
     PropagateCp<GraphWay::REVERSE>::selfTest();
     Contraction::selfTest();

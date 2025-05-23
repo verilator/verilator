@@ -635,7 +635,7 @@ class AssertVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         switch (nodep->ctlType()) {
         case VAssertCtlType::ON:
-            UINFO(9, "Generating assertctl for a module: " << m_modp << endl);
+            UINFO(9, "Generating assertctl for a module: " << m_modp);
             nodep->replaceWith(new AstCExpr{
                 fl,
                 "vlSymsp->_vm_contextp__->assertOnSet("s + std::to_string(nodep->ctlAssertTypes())
@@ -644,7 +644,7 @@ class AssertVisitor final : public VNVisitor {
             break;
         case VAssertCtlType::OFF:
         case VAssertCtlType::KILL: {
-            UINFO(9, "Generating assertctl for a module: " << m_modp << endl);
+            UINFO(9, "Generating assertctl for a module: " << m_modp);
             nodep->replaceWith(new AstCExpr{fl,
                                             "vlSymsp->_vm_contextp__->assertOnClear("s
                                                 + std::to_string(nodep->ctlAssertTypes()) + " ,"s
@@ -725,7 +725,7 @@ public:
 // Top Assert class
 
 void V3Assert::assertAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { AssertVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("assert", 0, dumpTreeEitherLevel() >= 3);
 }

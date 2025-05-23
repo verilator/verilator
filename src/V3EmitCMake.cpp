@@ -221,6 +221,6 @@ public:
 };
 
 void V3EmitCMake::emit() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     const CMakeEmitter emitter;
 }

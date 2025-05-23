@@ -84,7 +84,7 @@ class UnknownVisitor final : public VNVisitor {
         if (m_assignwp) {
             // Wire assigns must become always statements to deal with insertion
             // of multiple statements.  Perhaps someday make all wassigns into always's?
-            UINFO(5, "     IM_WireRep  " << m_assignwp << endl);
+            UINFO(5, "     IM_WireRep  " << m_assignwp);
             m_assignwp->convertToAlways();
             VL_DO_CLEAR(pushDeletep(m_assignwp), m_assignwp = nullptr);
         }
@@ -115,7 +115,7 @@ class UnknownVisitor final : public VNVisitor {
             VNRelinker replaceHandle;
             AstNodeExpr* const earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);
             AstNodeExpr* const newp = new AstLogAnd{condp->fileline(), condp, earliercondp};
-            UINFO(4, "Edit BOUNDLVALUE " << newp << endl);
+            UINFO(4, "Edit BOUNDLVALUE " << newp);
             replaceHandle.relink(newp);
         } else {
             AstVar* const varp
@@ -142,7 +142,7 @@ class UnknownVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
-        UINFO(4, " MOD   " << nodep << endl);
+        UINFO(4, " MOD   " << nodep);
         VL_RESTORER(m_modp);
         VL_RESTORER(m_constXCvt);
         VL_RESTORER(m_allowXUnique);
@@ -195,7 +195,7 @@ class UnknownVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visitEqNeqCase(AstNodeBiop* nodep) {
-        UINFO(4, " N/EQCASE->EQ " << nodep << endl);
+        UINFO(4, " N/EQCASE->EQ " << nodep);
         V3Const::constifyEdit(nodep->lhsp());  // lhsp may change
         V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
         if (VN_IS(nodep->lhsp(), Const) && VN_IS(nodep->rhsp(), Const)) {
@@ -227,7 +227,7 @@ class UnknownVisitor final : public VNVisitor {
         }
     }
     void visitEqNeqWild(AstNodeBiop* nodep) {
-        UINFO(4, " N/EQWILD->EQ " << nodep << endl);
+        UINFO(4, " N/EQWILD->EQ " << nodep);
         V3Const::constifyEdit(nodep->lhsp());  // lhsp may change
         V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
         if (VN_IS(nodep->lhsp(), Const) && VN_IS(nodep->rhsp(), Const)) {
@@ -275,7 +275,7 @@ class UnknownVisitor final : public VNVisitor {
     void visit(AstIsUnknown* nodep) override {
         iterateChildren(nodep);
         // Ahh, we're two state, so this is easy
-        UINFO(4, " ISUNKNOWN->0 " << nodep << endl);
+        UINFO(4, " ISUNKNOWN->0 " << nodep);
         AstConst* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -286,7 +286,7 @@ class UnknownVisitor final : public VNVisitor {
         dropop[0] = VN_IS(nodep->rhsp(), Const) && VN_AS(nodep->rhsp(), Const)->num().isAnyX();
         dropop[1] = VN_IS(nodep->thsp(), Const) && VN_AS(nodep->thsp(), Const)->num().isAnyX();
         dropop[2] = VN_IS(nodep->fhsp(), Const) && VN_AS(nodep->fhsp(), Const)->num().isAnyX();
-        UINFO(4, " COUNTBITS(" << dropop[0] << dropop[1] << dropop[2] << " " << nodep << endl);
+        UINFO(4, " COUNTBITS(" << dropop[0] << dropop[1] << dropop[2] << " " << nodep);
 
         AstNodeExpr* nonXp = nullptr;
         if (!dropop[0]) {
@@ -296,7 +296,7 @@ class UnknownVisitor final : public VNVisitor {
         } else if (!dropop[2]) {
             nonXp = nodep->fhsp();
         } else {  // Was all X-s
-            UINFO(4, " COUNTBITS('x)->0 " << nodep << endl);
+            UINFO(4, " COUNTBITS('x)->0 " << nodep);
             AstConst* const newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -318,7 +318,7 @@ class UnknownVisitor final : public VNVisitor {
     }
     void visit(AstConst* nodep) override {
         if (m_constXCvt && nodep->num().isFourState()) {
-            UINFO(4, " CONST4 " << nodep << endl);
+            UINFO(4, " CONST4 " << nodep);
             if (debug() >= 9) nodep->dumpTree("-  Const_old: ");
             // CONST(num) -> VARREF(newvarp)
             //          -> VAR(newvarp)
@@ -338,7 +338,7 @@ class UnknownVisitor final : public VNVisitor {
                 AstConst* const newp = new AstConst{nodep->fileline(), numnew};
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
-                UINFO(4, "   -> " << newp << endl);
+                UINFO(4, "   -> " << newp);
             } else {
                 // Make a Vxrand variable
                 // We use the special XTEMP type so it doesn't break pure functions
@@ -457,7 +457,7 @@ class UnknownVisitor final : public VNVisitor {
                     if (modconstp->width() <= 32
                         && modconstp->toUInt() <= static_cast<uint32_t>(declElements)) {
                         UINFO(9, "arraysel mod const " << declElements
-                                                       << " >= " << modconstp->toUInt() << endl);
+                                                       << " >= " << modconstp->toUInt());
                         return;
                     }
                 }
@@ -530,7 +530,7 @@ const std::string UnknownVisitor::m_xrandPrefix = "__Vxrand";
 // Unknown class functions
 
 void V3Unknown::unknownAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { UnknownVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("unknown", 0, dumpTreeEitherLevel() >= 3);
 }

@@ -549,7 +549,7 @@ class EmitCImp final : EmitCFunc {
         : m_fileModp{modp}
         , m_slow{slow}
         , m_cfilesr{cfilesr} {
-        UINFO(5, "  Emitting implementation of " << prefixNameProtect(modp) << endl);
+        UINFO(5, "  Emitting implementation of " << prefixNameProtect(modp));
 
         m_modp = modp;
 
@@ -978,7 +978,7 @@ public:
 // EmitC class functions
 
 void V3EmitC::emitcImp() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     // Make parent module pointers available.
     const EmitCParentModule emitCParentModule;
     std::list<std::deque<AstCFile*>> cfiles;
@@ -1019,7 +1019,7 @@ void V3EmitC::emitcImp() {
 }
 
 void V3EmitC::emitcFiles() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     for (AstNodeFile* filep = v3Global.rootp()->filesp(); filep;
          filep = VN_AS(filep->nextp(), NodeFile)) {
         AstCFile* const cfilep = VN_CAST(filep, CFile);

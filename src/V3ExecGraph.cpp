@@ -383,7 +383,7 @@ class PackThreads final {
         }
 
         UINFO(6, "Sandbagged end time for " << mtaskp->name() << " on th " << threadId << " = "
-                                            << sandbaggedEndTime << endl);
+                                            << sandbaggedEndTime);
         return sandbaggedEndTime;
     }
 
@@ -454,7 +454,7 @@ class PackThreads final {
                     if (timeBegin > bestTime) {
                         UINFO(6, "th " << threadId << " busy until " << timeBegin
                                        << ", later than bestTime " << bestTime
-                                       << ", skipping thread.\n");
+                                       << ", skipping thread.");
                         break;
                     }
                     for (const V3GraphEdge& edge : mtaskp->inEdges()) {
@@ -463,7 +463,7 @@ class PackThreads final {
                         if (priorEndTime > timeBegin) timeBegin = priorEndTime;
                     }
                     UINFO(6, "Task " << mtaskp->name() << " start at " << timeBegin
-                                     << " on thread " << threadId << endl);
+                                     << " on thread " << threadId);
                     if ((timeBegin < bestTime)
                         || ((timeBegin == bestTime)
                             && bestMtaskp  // Redundant, but appeases static analysis tools
@@ -515,7 +515,7 @@ class PackThreads final {
                             "Tasks after one being assigned should not be ready");
                 if (isReady(schedule, nextp)) {
                     readyMTasks.insert(nextp);
-                    UINFO(6, "Inserted " << nextp->name() << " into ready\n");
+                    UINFO(6, "Inserted " << nextp->name() << " into ready");
                 }
             }
         }
@@ -754,9 +754,9 @@ void normalizeCosts(Costs& costs) {
         // profiled data.  (Improves results if only a few profiles missing.)
         const double estToProfile
             = static_cast<double>(sumCostProfiled) / static_cast<double>(sumCostEstimate);
-        UINFO(5, "Estimated data needs scaling by "
-                     << estToProfile << ", sumCostProfiled=" << sumCostProfiled
-                     << " sumCostEstimate=" << sumCostEstimate << endl);
+        UINFO(5, "Estimated data needs scaling by " << estToProfile
+                                                    << ", sumCostProfiled=" << sumCostProfiled
+                                                    << " sumCostEstimate=" << sumCostEstimate);
         for (auto& est : costs) {
             uint64_t& costEstimate = est.second.first;
             costEstimate = scaleCost(costEstimate, estToProfile);
@@ -770,14 +770,13 @@ void normalizeCosts(Costs& costs) {
         const uint64_t& costProfiled = est.second.second;
         if (maxCost < costEstimate) maxCost = costEstimate;
         if (maxCost < costProfiled) maxCost = costProfiled;
-        UINFO(9,
-              "Post uint scale: ce = " << est.second.first << " cp=" << est.second.second << endl);
+        UINFO(9, "Post uint scale: ce = " << est.second.first << " cp=" << est.second.second);
     }
     const uint64_t scaleDownTo = 10000000;  // Extra room for future algorithms to add costs
     if (maxCost > scaleDownTo) {
         const double scaleup = static_cast<double>(scaleDownTo) / static_cast<double>(maxCost);
-        UINFO(5, "Scaling data to within 32-bits by multiply by=" << scaleup << ", maxCost="
-                                                                  << maxCost << endl);
+        UINFO(5, "Scaling data to within 32-bits by multiply by=" << scaleup
+                                                                  << ", maxCost=" << maxCost);
         for (auto& est : costs) {
             est.second.first = scaleCost(est.second.first, scaleup);
             est.second.second = scaleCost(est.second.second, scaleup);
@@ -797,7 +796,7 @@ void fillinCosts(V3Graph* execMTaskGraphp) {
             = V3Config::getProfileData(v3Global.opt.prefix(), mtp->hashName());
         if (costProfiled) {
             UINFO(5, "Profile data for mtask " << mtp->id() << " " << mtp->hashName()
-                                               << " cost override " << costProfiled << endl);
+                                               << " cost override " << costProfiled);
         }
         costs[mtp->id()] = std::make_pair(costEstimate, costProfiled);
     }
@@ -810,7 +809,7 @@ void fillinCosts(V3Graph* execMTaskGraphp) {
         ExecMTask* const mtp = vtx.as<ExecMTask>();
         const uint32_t costEstimate = costs[mtp->id()].first;
         const uint64_t costProfiled = costs[mtp->id()].second;
-        UINFO(9, "ce = " << costEstimate << " cp=" << costProfiled << endl);
+        UINFO(9, "ce = " << costEstimate << " cp=" << costProfiled);
         UASSERT(costEstimate <= (1UL << 31), "cost scaling math would overflow uint32");
         UASSERT(costProfiled <= (1UL << 31), "cost scaling math would overflow uint32");
         const uint64_t costProfiled32 = static_cast<uint32_t>(costProfiled);
@@ -863,7 +862,7 @@ void finalizeCosts(V3Graph* execMTaskGraphp) {
         // the MTaskBody to see if it's empty. That's the source of truth.
         AstMTaskBody* const bodyp = mtp->bodyp();
         if (!bodyp->stmtsp()) {  // Kill this empty mtask
-            UINFO(6, "Removing zero-cost " << mtp->name() << endl);
+            UINFO(6, "Removing zero-cost " << mtp->name());
             for (V3GraphEdge& in : mtp->inEdges()) {
                 for (V3GraphEdge& out : mtp->outEdges()) {
                     new V3GraphEdge{execMTaskGraphp, in.fromp(), out.top(), 1};
@@ -891,12 +890,12 @@ void finalizeCosts(V3Graph* execMTaskGraphp) {
     V3Stats::addStat("MTask graph, final, parallelism factor", report.parallelismFactor());
     if (debug() >= 3) {
         UINFO(0, "\n");
-        UINFO(0, "    Final mtask parallelism report:\n");
-        UINFO(0, "    Critical path cost = " << report.criticalPathCost() << "\n");
-        UINFO(0, "    Total graph cost = " << report.totalGraphCost() << "\n");
-        UINFO(0, "    MTask vertex count = " << report.vertexCount() << "\n");
-        UINFO(0, "    Edge count = " << report.edgeCount() << "\n");
-        UINFO(0, "    Parallelism factor = " << report.parallelismFactor() << "\n");
+        UINFO(0, "    Final mtask parallelism report:");
+        UINFO(0, "    Critical path cost = " << report.criticalPathCost());
+        UINFO(0, "    Total graph cost = " << report.totalGraphCost());
+        UINFO(0, "    MTask vertex count = " << report.vertexCount());
+        UINFO(0, "    Edge count = " << report.edgeCount());
+        UINFO(0, "    Parallelism factor = " << report.parallelismFactor());
     }
 }
 

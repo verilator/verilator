@@ -243,7 +243,7 @@ public:
         for (auto moved : m_toScopeMoves) {
             AstNode* const nodep = moved.first;
             AstScope* const scopep = moved.second;
-            UINFO(9, "moving " << nodep << " to " << scopep << endl);
+            UINFO(9, "moving " << nodep << " to " << scopep);
             if (VN_IS(nodep, NodeFTask)) {
                 scopep->addBlocksp(nodep->unlinkFrBack());
             } else if (VN_IS(nodep, Var)) {
@@ -261,7 +261,7 @@ public:
         for (auto moved : m_toPackageMoves) {
             AstNode* const nodep = moved.first;
             AstNodeModule* const modp = moved.second;
-            UINFO(9, "moving " << nodep << " to " << modp << endl);
+            UINFO(9, "moving " << nodep << " to " << modp);
             nodep->unlinkFrBack();
             modp->addStmtsp(nodep);
         }
@@ -294,7 +294,7 @@ public:
 // Class class functions
 
 void V3Class::classAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { ClassVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("class", 0, dumpTreeEitherLevel() >= 3);
 }

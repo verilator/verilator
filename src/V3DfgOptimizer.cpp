@@ -230,14 +230,14 @@ public:
 };
 
 void V3DfgOptimizer::extract(AstNetlist* netlistp) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     // Extract more optimization candidates
     DataflowExtractVisitor::apply(netlistp);
     V3Global::dumpCheckGlobalTree("dfg-extract", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
 
     // NODE STATE
     // AstVar::user1 -> Used by V3DfgPasses::astToDfg, V3DfgPasses::eliminateVars
@@ -258,7 +258,7 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
         AstModule* const modp = VN_CAST(nodep, Module);
         if (!modp) continue;
 
-        UINFO(4, "Applying DFG optimization to module '" << modp->name() << "'" << endl);
+        UINFO(4, "Applying DFG optimization to module '" << modp->name() << "'");
         ++ctx.m_modules;
 
         // Build the DFG of this module

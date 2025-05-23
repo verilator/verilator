@@ -322,8 +322,7 @@ class HierBlockUsageCollectVisitor final : public VNVisitorConst {
         // Don't visit twice
         if (nodep->user1SetOnce()) return;
         UINFO(5, "Checking " << nodep->prettyNameQ() << " from "
-                             << (m_hierBlockp ? m_hierBlockp->prettyNameQ() : "null"s)
-                             << std::endl);
+                             << (m_hierBlockp ? m_hierBlockp->prettyNameQ() : "null"s));
         VL_RESTORER(m_modp);
         AstModule* const prevHierBlockp = m_hierBlockp;
         ModuleSet prevReferred;
@@ -382,8 +381,8 @@ void V3HierBlockPlan::add(const AstNodeModule* modp, const V3HierBlockParams& pa
     if (pair.second) {
         V3HierBlock* hblockp = new V3HierBlock{modp, params};
         UINFO(3, "Add " << modp->prettyNameQ() << " with " << params.gparams().size()
-                        << " parameters and " << params.gTypeParams().size() << " type parameters"
-                        << std::endl);
+                        << " parameters and " << params.gTypeParams().size()
+                        << " type parameters");
         pair.first->second = hblockp;
     }
 }
@@ -394,7 +393,7 @@ void V3HierBlockPlan::registerUsage(const AstNodeModule* parentp, const AstNodeM
     const iterator child = m_blocks.find(childp);
     if (child != m_blocks.end()) {
         UINFO(3, "Found usage relation " << parentp->prettyNameQ() << " uses "
-                                         << childp->prettyNameQ() << std::endl);
+                                         << childp->prettyNameQ());
         parent->second->addChild(child->second);
         child->second->addParent(parent->second);
     }

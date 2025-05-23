@@ -73,6 +73,6 @@ public:
 // EmitC static functions
 
 void V3EmitC::emitcPch() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     EmitCPch{};
 }

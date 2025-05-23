@@ -36,7 +36,7 @@ class WidthRemoveVisitor final : public VNVisitor {
     VL_DEFINE_DEBUG_FUNCTIONS;
 
     void replaceWithSignedVersion(AstNode* nodep, AstNode* newp) {
-        UINFO(6, " Replace " << nodep << " w/ " << newp << endl);
+        UINFO(6, " Replace " << nodep << " w/ " << newp);
         nodep->replaceWithKeepDType(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }

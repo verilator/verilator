@@ -62,7 +62,7 @@ class CastVisitor final : public VNVisitor {
         //
         AstCCast* const castp
             = new AstCCast{nodep->fileline(), nodep, needsize, nodep->widthMin()};
-        UINFO(4, "  MadeCast " << static_cast<void*>(castp) << " for " << nodep << endl);
+        UINFO(4, "  MadeCast " << static_cast<void*>(castp) << " for " << nodep);
         relinkHandle.relink(castp);
         // if (debug() > 8) castp->dumpTree("-  castins: ");
         //
@@ -239,7 +239,7 @@ public:
 // Cast class functions
 
 void V3Cast::castAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { CastVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("cast", 0, dumpTreeEitherLevel() >= 3);
 }

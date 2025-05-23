@@ -82,7 +82,7 @@ public:
         UASSERT_OBJ(!m_instance.initialized(), m_procp, "Dynamic scope already instantiated.");
 
         m_instance.m_classp = new AstClass{m_procp->fileline(), generateDynScopeClassName()};
-        UINFO(9, "new dynscope class " << m_instance.m_classp << endl);
+        UINFO(9, "new dynscope class " << m_instance.m_classp);
         m_instance.m_refDTypep
             = new AstClassRefDType{m_procp->fileline(), m_instance.m_classp, nullptr};
         v3Global.rootp()->typeTablep()->addTypesp(m_instance.m_refDTypep);
@@ -91,7 +91,7 @@ public:
                          generateDynScopeHandleName(m_procp), m_instance.m_refDTypep};
         m_instance.m_handlep->funcLocal(true);
         m_instance.m_handlep->lifetime(VLifetime::AUTOMATIC);
-        UINFO(9, "new dynscope var " << m_instance.m_handlep << endl);
+        UINFO(9, "new dynscope var " << m_instance.m_handlep);
 
         return m_instance;
     }
@@ -119,7 +119,7 @@ public:
             varp->varType(VVarType::MEMBER);
             varp->lifetime(VLifetime::AUTOMATIC);
             varp->usedLoopIdx(false);  // No longer unrollable
-            UINFO(9, "insert DynScope member " << varp << endl);
+            UINFO(9, "insert DynScope member " << varp);
             m_instance.m_classp->addStmtsp(varp);
         }
 
@@ -462,7 +462,7 @@ class DynScopeVisitor final : public VNVisitor {
             forkp->joinType(VJoinType::JOIN_NONE);
             nodep->replaceWith(forkp);
             forkp->addStmtsp(nodep);
-            UINFO(9, "assign new fork " << forkp << endl);
+            UINFO(9, "assign new fork " << forkp);
         } else {
             visit(static_cast<AstNodeStmt*>(nodep));
         }
@@ -481,7 +481,7 @@ public:
         // Commit changes to AST
         bool typesAdded = false;
         for (auto orderp : m_frameOrder) {
-            UINFO(9, "Frame commit " << orderp << endl);
+            UINFO(9, "Frame commit " << orderp);
             auto frameIt = m_frames.find(orderp);
             UASSERT_OBJ(frameIt != m_frames.end(), orderp, "m_frames didn't contain m_frameOrder");
             ForkDynScopeFrame* framep = frameIt->second;
@@ -537,7 +537,7 @@ class ForkVisitor final : public VNVisitor {
             varp->direction(VDirection::INPUT);
             varp->funcLocal(true);
             varp->lifetime(VLifetime::AUTOMATIC);
-            UINFO(9, "new capture var " << varp << endl);
+            UINFO(9, "new capture var " << varp);
             m_capturedVarsp = AstNode::addNext(m_capturedVarsp, varp);
             // Use the original ref as an argument for call
             m_capturedVarRefsp
@@ -603,7 +603,7 @@ class ForkVisitor final : public VNVisitor {
         }
 
         m_modp->addStmtsp(taskp);
-        UINFO(9, "new " << taskp << endl);
+        UINFO(9, "new " << taskp);
 
         AstTaskRef* const taskrefp = new AstTaskRef{nodep->fileline(), taskp, m_capturedVarRefsp};
         AstStmtExpr* const taskcallp = taskrefp->makeStmt();
@@ -698,13 +698,13 @@ public:
 // Fork class functions
 
 void V3Fork::makeDynamicScopes(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { DynScopeVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("fork_dynscope", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Fork::makeTasks(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { ForkVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("fork", 0, dumpTreeEitherLevel() >= 3);
 }

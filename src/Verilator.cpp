@@ -648,7 +648,7 @@ static void process() {
 }
 
 static void verilate(const string& argString) {
-    UINFO(1, "Option --verilate: Start Verilation\n");
+    UINFO(1, "Option --verilate: Start Verilation");
 
     // Can we skip doing everything if times are ok?
     V3File::addSrcDepend(v3Global.opt.buildDepBin());
@@ -656,7 +656,7 @@ static void verilate(const string& argString) {
         && V3File::checkTimes(v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
                                   + "__verFiles.dat",
                               argString)) {
-        UINFO(1, "--skip-identical: No change to any source files, exiting\n");
+        UINFO(1, "--skip-identical: No change to any source files, exiting");
         return;
     }
     // Undocumented debugging - cannot be a switch as then command line
@@ -696,7 +696,7 @@ static void verilate(const string& argString) {
         V3PreShell::selfTest();
         V3Broken::selfTest();
         V3ThreadPool::selfTest();
-        UINFO(2, "selfTest done\n");
+        UINFO(2, "selfTest done");
     }
 
     // Read first filename
@@ -792,7 +792,7 @@ static void execBuildJob() {
     UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
     UASSERT(!v3Global.opt.cmake(), "--build cannot use CMake.");
     VlOs::DeltaWallTime buildWallTime{true};
-    UINFO(1, "Start Build\n");
+    UINFO(1, "Start Build");
 
     const string cmdStr = buildMakeCmd(v3Global.opt.prefix() + ".mk", "");
     V3Os::filesystemFlushBuildDir(v3Global.opt.hierTopDataDir());
@@ -852,7 +852,7 @@ int main(int argc, char** argv) {
     if (v3Global.opt.verilate()) {
         verilate(argString);
     } else {
-        UINFO(1, "Option --no-verilate: Skip Verilation\n");
+        UINFO(1, "Option --no-verilate: Skip Verilation");
     }
 
     if (v3Global.hierPlanp() && v3Global.opt.gmake()) {
@@ -874,5 +874,5 @@ int main(int argc, char** argv) {
         V3Stats::summaryReport();
     }
 
-    UINFO(1, "Done, Exiting...\n");
+    UINFO(1, "Done, Exiting...");
 }

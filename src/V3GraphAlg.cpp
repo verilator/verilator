@@ -462,7 +462,7 @@ void V3Graph::sortEdges() {
 //              (Results in better dcache packing.)
 
 void V3Graph::order() {
-    UINFO(2, "Order:\n");
+    UINFO(2, "Order:");
 
     // Compute rankings again
     rank(&V3GraphEdge::followAlwaysTrue);

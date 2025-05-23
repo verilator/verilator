@@ -645,7 +645,7 @@ class MergeCondVisitor final : public VNVisitor {
         AstNodeIf* recursivep = nullptr;
         // Merge if list is longer than one node
         if (m_mgFirstp != m_mgLastp) {
-            UINFO(6, "MergeCond - First: " << m_mgFirstp << " Last: " << m_mgLastp << endl);
+            UINFO(6, "MergeCond - First: " << m_mgFirstp << " Last: " << m_mgLastp);
             ++m_statMerges;
             if (m_listLenght > m_statLongestList) m_statLongestList = m_listLenght;
 
@@ -886,7 +886,7 @@ public:
 // MergeConditionals class functions
 
 void V3MergeCond::mergeAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { MergeCondVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("merge_cond", 0, dumpTreeEitherLevel() >= 6);
 }

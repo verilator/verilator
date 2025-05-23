@@ -541,6 +541,6 @@ public:
 // ProtectLib class functions
 
 void V3ProtectLib::protect() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     ProtectVisitor{v3Global.rootp()};
 }

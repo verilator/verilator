@@ -321,7 +321,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstScopeName* scopenamep, const stri
     bool inPct = false;
     bool ignore = false;
     for (; pos != vformat.end(); ++pos) {
-        // UINFO(1, "Parse '" << *pos << "'  IP" << inPct << " List " << cvtToHex(elistp) << endl);
+        // UINFO(1, "Parse '" << *pos << "'  IP" << inPct << " List " << cvtToHex(elistp));
         if (!inPct && pos[0] == '%') {
             inPct = true;
             ignore = false;

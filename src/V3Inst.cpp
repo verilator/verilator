@@ -43,7 +43,7 @@ class InstVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstCell* nodep) override {
-        UINFO(4, "  CELL   " << nodep << endl);
+        UINFO(4, "  CELL   " << nodep);
         VL_RESTORER(m_cellp);
         m_cellp = nodep;
         // VV*****  We reset user1p() on each cell!!!
@@ -53,7 +53,7 @@ class InstVisitor final : public VNVisitor {
     void visit(AstPin* nodep) override {
         // PIN(p,expr) -> ASSIGNW(VARXREF(p),expr)    (if sub's input)
         //            or  ASSIGNW(expr,VARXREF(p))    (if sub's output)
-        UINFO(4, "   PIN  " << nodep << endl);
+        UINFO(4, "   PIN  " << nodep);
         if (!nodep->user1()) {
             // Simplify it
             V3Inst::pinReconnectSimple(nodep, m_cellp, false);
@@ -134,7 +134,7 @@ private:
     // VISITORS
     void visit(AstVar* nodep) override {
         if (VN_IS(nodep->dtypep(), IfaceRefDType)) {
-            UINFO(8, "   dm-1-VAR    " << nodep << endl);
+            UINFO(8, "   dm-1-VAR    " << nodep);
             insert(nodep);
         }
         iterateChildrenConst(nodep);
@@ -145,7 +145,7 @@ private:
 public:
     // METHODS
     void insert(AstVar* nodep) {
-        UINFO(8, "    dmINSERT    " << nodep << endl);
+        UINFO(8, "    dmINSERT    " << nodep);
         m_modVarNameMap.emplace(nodep->name(), nodep);
     }
     AstVar* find(const string& name) {
@@ -166,7 +166,7 @@ public:
     InstDeModVarVisitor() = default;
     ~InstDeModVarVisitor() override = default;
     void main(AstNodeModule* nodep) {
-        UINFO(8, "  dmMODULE    " << nodep << endl);
+        UINFO(8, "  dmMODULE    " << nodep);
         m_modVarNameMap.clear();
         iterateConst(nodep);
     }
@@ -190,12 +190,12 @@ private:
             if (VN_AS(VN_AS(nodep->dtypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType)
                     ->isVirtual())
                 return;
-            UINFO(8, "   dv-vec-VAR    " << nodep << endl);
+            UINFO(8, "   dv-vec-VAR    " << nodep);
             AstUnpackArrayDType* const arrdtype = VN_AS(nodep->dtypep(), UnpackArrayDType);
             AstNode* prevp = nullptr;
             for (int i = arrdtype->lo(); i <= arrdtype->hi(); ++i) {
                 const string varNewName = nodep->name() + "__BRA__" + cvtToStr(i) + "__KET__";
-                UINFO(8, "VAR name insert " << varNewName << "  " << nodep << endl);
+                UINFO(8, "VAR name insert " << varNewName << "  " << nodep);
                 if (!m_deModVars.find(varNewName)) {
                     AstIfaceRefDType* const ifaceRefp
                         = VN_AS(arrdtype->subDTypep(), IfaceRefDType)->cloneTree(false);
@@ -224,7 +224,7 @@ private:
     }
 
     void visit(AstCell* nodep) override {
-        UINFO(4, "  CELL   " << nodep << endl);
+        UINFO(4, "  CELL   " << nodep);
         // Find submodule vars
         UASSERT_OBJ(nodep->modp(), nodep, "Unlinked");
         m_deModVars.main(nodep->modp());
@@ -256,7 +256,7 @@ private:
                 // The spec says we add [x], but that won't work in C...
                 newp->name(newp->name() + "__BRA__" + cvtToStr(instNum) + "__KET__");
                 newp->origName(newp->origName() + "__BRA__" + cvtToStr(instNum) + "__KET__");
-                UINFO(8, "    CELL loop  " << newp << endl);
+                UINFO(8, "    CELL loop  " << newp);
 
                 // If this AstCell is actually an interface instantiation, also clone the IfaceRef
                 // within the same parent module as the cell
@@ -307,19 +307,18 @@ private:
         // Any non-direct pins need reconnection with a part-select
         if (!nodep->exprp()) return;  // No-connect
         if (m_cellRangep) {
-            UINFO(4, "   PIN  " << nodep << endl);
+            UINFO(4, "   PIN  " << nodep);
             const int modwidth = nodep->modVarp()->width();
             const int expwidth = nodep->exprp()->width();
             const std::pair<uint32_t, uint32_t> pinDim
                 = nodep->modVarp()->dtypep()->dimensions(false);
             const std::pair<uint32_t, uint32_t> expDim
                 = nodep->exprp()->dtypep()->dimensions(false);
-            UINFO(4, "   PINVAR  " << nodep->modVarp() << endl);
-            UINFO(4, "   EXP     " << nodep->exprp() << endl);
+            UINFO(4, "   PINVAR  " << nodep->modVarp());
+            UINFO(4, "   EXP     " << nodep->exprp());
             UINFO(4, "   expwidth=" << expwidth << " modwidth=" << modwidth
                                     << "  expDim(p,u)=" << expDim.first << "," << expDim.second
-                                    << "  pinDim(p,u)=" << pinDim.first << "," << pinDim.second
-                                    << endl);
+                                    << "  pinDim(p,u)=" << pinDim.first << "," << pinDim.second);
             if (expDim.second == pinDim.second + 1) {
                 // Connection to array, where array dimensions match the instant dimension
                 const AstRange* const rangep
@@ -662,7 +661,7 @@ public:
                 // See also V3Inst
                 AstNodeExpr* rhsp = new AstVarRef{pinp->fileline(), newvarp, VAccess::READ};
                 UINFO(5, "pinRecon width " << pinVarp->width() << " >? " << rhsp->width() << " >? "
-                                           << pinexprp->width() << endl);
+                                           << pinexprp->width());
                 rhsp = extendOrSel(pinp->fileline(), rhsp, pinVarp);
                 pinp->exprp(new AstVarRef{newvarp->fileline(), newvarp, VAccess::WRITE});
                 AstNodeExpr* const rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
@@ -706,13 +705,13 @@ void V3Inst::checkOutputShort(AstPin* nodep) {
 // Inst class visitor
 
 void V3Inst::instAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { InstVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("inst", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Inst::dearrayAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { InstDeVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("dearray", 0, dumpTreeEitherLevel() >= 6);
 }

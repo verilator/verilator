@@ -123,6 +123,6 @@ private:
 // EmitC class functions
 
 void V3EmitCMain::emit() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { EmitCMain visitor; }
 }

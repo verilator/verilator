@@ -60,7 +60,7 @@ class DepthBlockVisitor final : public VNVisitor {
             funcp->argTypes(EmitCBase::symClassVar());
             callp->argTypes("vlSymsp");
         }
-        UINFO(6, "      New " << callp << endl);
+        UINFO(6, "      New " << callp);
         relinkHandle.relink(callp->makeStmt());
         // Done
         return funcp;
@@ -68,7 +68,7 @@ class DepthBlockVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
-        UINFO(4, " MOD   " << nodep << endl);
+        UINFO(4, " MOD   " << nodep);
         VL_RESTORER(m_modp);
         m_modp = nodep;
         m_deepNum = 0;
@@ -87,7 +87,7 @@ class DepthBlockVisitor final : public VNVisitor {
     void visit(AstNodeStmt* nodep) override {
         ++m_depth;
         if (m_depth > v3Global.opt.compLimitBlocks()) {  // Already done
-            UINFO(4, "DeepBlocks " << m_depth << " " << nodep << endl);
+            UINFO(4, "DeepBlocks " << m_depth << " " << nodep);
             const AstNode* const backp = nodep->backp();  // Only for debug
             if (debug() >= 9) backp->dumpTree("-   pre : ");
             AstCFunc* const funcp = createDeepFunc(nodep);
@@ -115,7 +115,7 @@ public:
 // DepthBlock class functions
 
 void V3DepthBlock::depthBlockAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { DepthBlockVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deepblock", 0, dumpTreeEitherLevel() >= 3);
 }
