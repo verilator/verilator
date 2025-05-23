@@ -412,7 +412,7 @@ class CoverageVisitor final : public VNVisitor {
             newCoverInc(varp->fileline(), "", "v_toggle",
                         hierPrefix + varp->name() + above.m_comment, "", 0, ""),
             above.m_varRefp->cloneTree(false), above.m_chgRefp->cloneTree(false),
-            above.m_initRefp->cloneTree(false)};
+            above.m_initRefp ? above.m_initRefp->cloneTree(false) : nullptr};
         m_modp->addStmtsp(newp);
     }
 
@@ -428,9 +428,11 @@ class CoverageVisitor final : public VNVisitor {
                                                 above.m_varRefp->cloneTree(false), index_code, 1},
                                      new AstSel{varp->fileline(),
                                                 above.m_chgRefp->cloneTree(false), index_code, 1},
-                                     new AstSel{varp->fileline(),
-                                                above.m_initRefp->cloneTree(false), index_code,
-                                                1}};
+                                     above.m_initRefp
+                                         ? new AstSel{varp->fileline(),
+                                                      above.m_initRefp->cloneTree(false),
+                                                      index_code, 1}
+                                         : nullptr};
                     toggleVarBottom(newent, varp);
                     newent.cleanup();
                 }
@@ -445,8 +447,11 @@ class CoverageVisitor final : public VNVisitor {
                                                  above.m_varRefp->cloneTree(false), index_code},
                                  new AstArraySel{varp->fileline(),
                                                  above.m_chgRefp->cloneTree(false), index_code},
-                                 new AstArraySel{varp->fileline(),
-                                                 above.m_initRefp->cloneTree(false), index_code}};
+                                 above.m_initRefp
+                                     ? new AstArraySel{varp->fileline(),
+                                                       above.m_initRefp->cloneTree(false),
+                                                       index_code}
+                                     : nullptr};
                 toggleVarRecurse(adtypep->subDTypep()->skipRefp(), depth + 1, newent, varp);
                 newent.cleanup();
             }
@@ -454,13 +459,16 @@ class CoverageVisitor final : public VNVisitor {
             for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
                 const AstNodeDType* const subtypep = adtypep->subDTypep()->skipRefp();
                 const int index_code = index_docs - adtypep->lo();
-                ToggleEnt newent{above.m_comment + "["s + cvtToStr(index_docs) + "]",
-                                 new AstSel{varp->fileline(), above.m_varRefp->cloneTree(false),
-                                            index_code * subtypep->width(), subtypep->width()},
-                                 new AstSel{varp->fileline(), above.m_chgRefp->cloneTree(false),
-                                            index_code * subtypep->width(), subtypep->width()},
-                                 new AstSel{varp->fileline(), above.m_initRefp->cloneTree(false),
-                                            index_code * subtypep->width(), subtypep->width()}};
+                ToggleEnt newent{
+                    above.m_comment + "["s + cvtToStr(index_docs) + "]",
+                    new AstSel{varp->fileline(), above.m_varRefp->cloneTree(false),
+                               index_code * subtypep->width(), subtypep->width()},
+                    new AstSel{varp->fileline(), above.m_chgRefp->cloneTree(false),
+                               index_code * subtypep->width(), subtypep->width()},
+                    above.m_initRefp
+                        ? new AstSel{varp->fileline(), above.m_initRefp->cloneTree(false),
+                                     index_code * subtypep->width(), subtypep->width()}
+                        : nullptr};
                 toggleVarRecurse(adtypep->subDTypep()->skipRefp(), depth + 1, newent, varp);
                 newent.cleanup();
             }
@@ -476,9 +484,10 @@ class CoverageVisitor final : public VNVisitor {
                                    subtypep->width()},
                         new AstSel{varp->fileline(), above.m_chgRefp->cloneTree(false), index_code,
                                    subtypep->width()},
-                        new AstSel{varp->fileline(), above.m_initRefp->cloneTree(false),
-                                   index_code, subtypep->width()},
-                    };
+                        above.m_initRefp
+                            ? new AstSel{varp->fileline(), above.m_initRefp->cloneTree(false),
+                                         index_code, subtypep->width()}
+                            : nullptr};
                     toggleVarRecurse(subtypep, depth + 1, newent, varp);
                     newent.cleanup();
                 }
@@ -490,8 +499,11 @@ class CoverageVisitor final : public VNVisitor {
                         varp->fileline(), above.m_varRefp->cloneTree(false), itemp->name()};
                     AstNodeExpr* const chgRefp = new AstStructSel{
                         varp->fileline(), above.m_chgRefp->cloneTree(false), itemp->name()};
-                    AstNodeExpr* const initRefp = new AstStructSel{
-                        varp->fileline(), above.m_initRefp->cloneTree(false), itemp->name()};
+                    AstNodeExpr* const initRefp
+                        = above.m_initRefp
+                              ? new AstStructSel{varp->fileline(),
+                                                 above.m_initRefp->cloneTree(false), itemp->name()}
+                              : nullptr;
                     varRefp->dtypep(subtypep);
                     chgRefp->dtypep(subtypep);
                     initRefp->dtypep(subtypep);
@@ -508,7 +520,8 @@ class CoverageVisitor final : public VNVisitor {
                 if (adtypep->packed()) {
                     ToggleEnt newent{
                         above.m_comment + "."s + itemp->name(), above.m_varRefp->cloneTree(false),
-                        above.m_chgRefp->cloneTree(false), above.m_initRefp->cloneTree(false)};
+                        above.m_chgRefp->cloneTree(false),
+                        above.m_initRefp ? above.m_initRefp->cloneTree(false) : nullptr};
                     toggleVarRecurse(subtypep, depth + 1, newent, varp);
                     newent.cleanup();
                 } else {
@@ -516,8 +529,11 @@ class CoverageVisitor final : public VNVisitor {
                         varp->fileline(), above.m_varRefp->cloneTree(false), itemp->name()};
                     AstNodeExpr* const chgRefp = new AstStructSel{
                         varp->fileline(), above.m_chgRefp->cloneTree(false), itemp->name()};
-                    AstNodeExpr* const initRefp = new AstStructSel{
-                        varp->fileline(), above.m_initRefp->cloneTree(false), itemp->name()};
+                    AstNodeExpr* const initRefp
+                        = above.m_initRefp
+                              ? new AstStructSel{varp->fileline(),
+                                                 above.m_initRefp->cloneTree(false), itemp->name()}
+                              : nullptr;
                     varRefp->dtypep(subtypep);
                     chgRefp->dtypep(subtypep);
                     initRefp->dtypep(subtypep);
