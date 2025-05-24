@@ -4802,7 +4802,12 @@ class WidthVisitor final : public VNVisitor {
              patp = VN_AS(patp->nextp(), PatMember)) {
             patp->dtypep(arrayDtp->subDTypep());
             AstNodeExpr* const valuep = patternMemberValueIterate(patp);
-            AstNode* keyp = patp->keyp();
+            AstNode* keyp;
+            if (patp->varrefp()) {
+                keyp = patp->varrefp();
+            } else {
+                keyp = patp->keyp();
+            }
             if (!keyp) {
                 patp->v3error("Missing pattern key (need an expression then a ':')");
                 keyp = new AstConst{nodep->fileline(), AstConst::Signed32{}, 0};
