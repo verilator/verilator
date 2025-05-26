@@ -1734,6 +1734,9 @@ class VlTest:
                     try:
                         data = os.read(fd, 1)
                         self._run_output(data, logfh, tee)
+                        # Parent detects child termination by checking for b''
+                        if not data:
+                            break
                     except OSError:
                         break
 
