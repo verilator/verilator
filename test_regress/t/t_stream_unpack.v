@@ -31,6 +31,8 @@ module t (/*AUTOARG*/);
       logic [15:0] d;
       logic [3:0] e [2];
       logic f [8];
+      logic [1:0][7:0] g;
+      logic [1:0][1:0][3:0] h;
 
       { >> bit {arr}} = bit6;
       `checkp(arr, "'{'h1, 'h1, 'h1, 'h0, 'h0, 'h0} ");
@@ -210,6 +212,12 @@ module t (/*AUTOARG*/);
       { << 2 {e, f}} = d;
       `checkp(e, "'{'h1, 'h7} ");
       `checkp(f, "'{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h1, 'h1} ");
+
+      g = { << 8 {16'hABCD}};
+      `checkh(g, 16'hCDAB);
+
+      h = { << 8 {16'hABCD}};
+      `checkh(h, 16'hCDAB);
 
       $write("*-* All Finished *-*\n");
       $finish;
