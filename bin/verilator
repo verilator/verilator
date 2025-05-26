@@ -383,6 +383,7 @@ detailed descriptions of these arguments.
     --help                      Show this help
     --hierarchical              Enable hierarchical Verilation
     --hierarchical-params-file <name> Internal option that specifies parameters file for hier blocks
+    --hierarchical-threads <threads>  Number of threads for hierarchical scheduling
      -I<dir>                    Directory to search for includes
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes

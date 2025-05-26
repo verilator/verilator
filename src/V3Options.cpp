@@ -1602,6 +1602,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             m_threads = 1;
         }
     });
+    DECL_OPTION("-hierarchical-threads", CbVal, [this, fl](const char* valp) {
+        m_hierThreads = std::atoi(valp);
+        if (m_hierThreads < 0) fl->v3fatal("--hierarchical-threads must be >= 0: " << valp);
+    });
     DECL_OPTION("-threads-coarsen", OnOff, &m_threadsCoarsen).undocumented();  // Debug
     DECL_OPTION("-threads-dpi", CbVal, [this, fl](const char* valp) {
         if (!std::strcmp(valp, "all")) {
