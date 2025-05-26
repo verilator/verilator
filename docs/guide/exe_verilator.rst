@@ -784,7 +784,7 @@ Summary:
    multi-thread hierarchical blocks on multiple threads without increasing
    parallelism of the whole design.
 
-   Set to `--threads` by default, for optimal performance should not exceed
+   Set to :vlopt:`--threads` by default. For optimal performance should not exceed
    CPU core count.
 
 .. option:: -I<dir>
