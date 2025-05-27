@@ -71,7 +71,10 @@ public:
 
     // Return hash of node as string, prepended with the prefix if any, appended with a unique
     // suffix each time we are called with a node that hashes to the same value.
-    std::string get(const AstNode* nodep) { return get(V3Hasher::uncachedHash(nodep).toString()); }
+    std::string get(const AstNode* nodep) {
+        if (nodep == nullptr) { return get(""); }
+        return get(V3Hasher::uncachedHash(nodep).toString());
+    }
 
     // Reset to initial state (as if just constructed)
     void reset() { m_multiplicity.clear(); }
