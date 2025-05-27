@@ -312,6 +312,7 @@ public:
 
 uint32_t ThreadSchedule::s_nextId = 0;
 std::unordered_map<const ExecMTask*, ThreadSchedule::MTaskState> ThreadSchedule::mtaskState{};
+constexpr double V3ExecGraph::ThreadSchedule::s_threadBoxWidth;
 
 //######################################################################
 // PackThreads
