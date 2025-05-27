@@ -100,6 +100,7 @@ class ClockVisitor final : public VNVisitor {
         // if (debug()) nodep->dumpTree("-  ct: ");
         // COVERTOGGLE(INC, ORIG, CHANGE) ->
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
+        FileLine* fl = nodep->fileline();
         AstNode* const incp = nodep->incp()->unlinkFrBack();
         AstNodeExpr* const origp = nodep->origp()->unlinkFrBack();
         AstNodeExpr* const changeWrp = nodep->changep()->unlinkFrBack();
@@ -109,17 +110,31 @@ class ClockVisitor final : public VNVisitor {
         // but can only use Xor with non-opaque types
         if (const AstBasicDType* const bdtypep
             = VN_CAST(origp->dtypep()->skipRefp(), BasicDType)) {
-            if (!bdtypep->isOpaque()) comparedp = new AstXor{nodep->fileline(), origp, changeRdp};
+            if (!bdtypep->isOpaque()) comparedp = new AstXor{fl, origp, changeRdp};
         }
-        if (!comparedp) comparedp = AstEq::newTyped(nodep->fileline(), origp, changeRdp);
+        if (!comparedp) comparedp = AstEq::newTyped(fl, origp, changeRdp);
+        AstIf* const incIfp = new AstIf{fl, comparedp, incp};
+        AstAssign* const changeAssignp = new AstAssign{fl, changeWrp, origp->cloneTree(false)};
+        incIfp->addThensp(changeAssignp);
+        AstIf* newp;
         if (nodep->initp()) {
-            comparedp = new AstAnd{nodep->fileline(), comparedp, nodep->initp()->unlinkFrBack()};
+            if (AstVarRef* const varrefp = VN_CAST(nodep->initp(), VarRef)) {
+                AstVarRef* const writeRefp = varrefp->cloneTree(false);
+                writeRefp->access(VAccess::WRITE);
+                AstAssign* const initAssignp
+                    = new AstAssign{fl, writeRefp, new AstConst{fl, AstConst::BitTrue{}}};
+                newp = new AstIf{
+                    fl,
+                    new AstEq{fl, varrefp->unlinkFrBack(), new AstConst{fl, AstConst::BitTrue{}}},
+                    incIfp, initAssignp};
+                newp->addElsesp(changeAssignp->cloneTree(false));
+            }
+        } else {
+            newp = incIfp;
         }
-        AstIf* const newp = new AstIf{nodep->fileline(), comparedp, incp};
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
-        newp->addThensp(new AstAssign{nodep->fileline(), changeWrp, origp->cloneTree(false)});
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
