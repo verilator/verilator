@@ -107,12 +107,13 @@ class ClockVisitor final : public VNVisitor {
         AstNodeExpr* const changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
         AstNodeExpr* comparedp = nullptr;
         // Xor will optimize better than Eq, when CoverToggle has bit selects,
-        // but can only use Xor with non-opaque types
+        // but can only use Xor with non-opaque types.
+        // Opaque types aren't accepted by V3Coverage::varIgnoreToggle
         if (const AstBasicDType* const bdtypep
             = VN_CAST(origp->dtypep()->skipRefp(), BasicDType)) {
             if (!bdtypep->isOpaque()) comparedp = new AstXor{fl, origp, changeRdp};
         }
-        if (!comparedp) comparedp = AstEq::newTyped(fl, origp, changeRdp);
+        UASSERT_OBJ(comparedp, nodep, "Toggle coverage of non-opaque type variable");
         AstIf* const incIfp = new AstIf{fl, comparedp, incp};
         AstAssign* const changeAssignp = new AstAssign{fl, changeWrp, origp->cloneTree(false)};
         incIfp->addThensp(changeAssignp);
