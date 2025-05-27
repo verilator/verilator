@@ -1583,7 +1583,7 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
         return VCastable::COMPATIBLE;
     } else if (toNumericable) {
         if (fromNumericable) return VCastable::COMPATIBLE;
-    } else if (VN_IS(toDtp, EnumDType)) {
+    } else if (VN_IS(toBaseDtp, EnumDType)) {
         if (VN_IS(fromBaseDtp, EnumDType) && toDtp->sameTree(fromDtp))
             return VCastable::ENUM_IMPLICIT;
         if (fromNumericable) return VCastable::ENUM_EXPLICIT;
