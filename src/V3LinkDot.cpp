@@ -2353,6 +2353,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
     std::map<AstNode*, AstPin*> m_usedPins;  // Pin used in this cell, map to duplicate
     std::map<std::string, AstNodeModule*> m_modulesToRevisit;  // Modules to revisit a second time
     AstNode* m_lastDeferredp = nullptr;  // Last node which requested a revisit of its module
+    bool m_maybePackedArray
+        = false;  // Array select parse trees may actually be packed array datatypes
+    AstNodeDType* m_packedArrayDtp = nullptr;  // Datatype reference for packed array
 
     struct DotStates final {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -3401,8 +3404,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (ok) {
                     AstRefDType* const refp = new AstRefDType{nodep->fileline(), nodep->name()};
                     refp->typedefp(defp);
-                    replaceWithCheckBreak(nodep, refp);
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    if (m_maybePackedArray) {
+                        m_packedArrayDtp = refp;
+                    } else {
+                        replaceWithCheckBreak(nodep, refp);
+                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    }
                 }
             } else if (AstParamTypeDType* const defp = VN_CAST(foundp->nodep(), ParamTypeDType)) {
                 ok = (m_ds.m_dotPos == DP_NONE || m_ds.m_dotPos == DP_SCOPE);
@@ -4048,22 +4055,48 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.m_dotErr = true;
             return;
         }
-        iterateAndNextNull(nodep->fromp());
-        symIterateNull(nodep->rhsp(), m_curSymp);
-        symIterateNull(nodep->thsp(), m_curSymp);
+        AstNodeDType* packedArrayDtp = nullptr;  // Datatype reference for packed array
+        {
+            VL_RESTORER(m_packedArrayDtp);
+            {
+                VL_RESTORER(m_maybePackedArray);
+                m_maybePackedArray = true;
+                iterateAndNextNull(nodep->fromp());
+            }
+            symIterateNull(nodep->rhsp(), m_curSymp);
+            symIterateNull(nodep->thsp(), m_curSymp);
 
-        if (nodep->attrp()) {
-            AstNode* const attrp = nodep->attrp()->unlinkFrBack();
-            VL_DO_DANGLING(attrp->deleteTree(), attrp);
+            if (m_packedArrayDtp) {
+                AstRange* const newRangep
+                    = new AstRange(nodep->fileline(), nodep->rhsp()->unlinkFrBack(),
+                                   nodep->thsp()->unlinkFrBack());
+                AstPackArrayDType* newArrayTypep
+                    = new AstPackArrayDType(nodep->fileline(), m_packedArrayDtp, newRangep);
+                newArrayTypep->childDTypep(m_packedArrayDtp);
+                newArrayTypep->refDTypep(nullptr);
+                if (m_maybePackedArray) {
+                    packedArrayDtp = newArrayTypep;
+                } else {
+                    replaceWithCheckBreak(nodep, newArrayTypep);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                }
+            } else {
+                if (nodep->attrp()) {
+                    AstNode* const attrp = nodep->attrp()->unlinkFrBack();
+                    VL_DO_DANGLING(attrp->deleteTree(), attrp);
+                }
+                AstNode* const basefromp = AstArraySel::baseFromp(nodep, false);
+                if (VN_IS(basefromp, Replicate)) {
+                    // From {...}[...] syntax in IEEE 2017
+                    if (basefromp) UINFO(9, indent() << " Related node: " << basefromp);
+                } else {
+                    nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
+                                               basefromp->cloneTree(false)});
+                }
+            }
         }
-        AstNode* const basefromp = AstArraySel::baseFromp(nodep, false);
-        if (VN_IS(basefromp, Replicate)) {
-            // From {...}[...] syntax in IEEE 2017
-            if (basefromp) UINFO(9, indent() << " Related node: " << basefromp);
-        } else {
-            nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
-                                       basefromp->cloneTree(false)});
-        }
+
+        if (packedArrayDtp) { m_packedArrayDtp = packedArrayDtp; }
     }
     void visit(AstMemberSel* nodep) override {
         // checkNoDot not appropriate, can be under a dot
