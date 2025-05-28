@@ -1232,9 +1232,13 @@ public:
                     if (mtaskCount > maxMTasks) {
                         const score_t oldLimit = m_scoreLimit;
                         m_scoreLimit = (m_scoreLimit * 120) / 100;
-                        v3Global.rootp()->fileline()->v3warn(
-                            UNOPTTHREADS, "Thread scheduler is unable to provide requested "
-                                          "parallelism; suggest asking for fewer threads.");
+                        FileLine* const flp = v3Global.rootp()->fileline();
+                        if (!flp->warnIsOff(V3ErrorCode::UNOPTTHREADS)) {
+                            flp->v3warn(UNOPTTHREADS,
+                                        "Thread scheduler is unable to provide requested "
+                                        "parallelism; suggest asking for fewer threads.");
+                            flp->modifyWarnOff(V3ErrorCode::UNOPTTHREADS, true);
+                        }
                         UINFO(1,
                               "Critical path limit was=" << oldLimit << " now=" << m_scoreLimit);
                         continue;
