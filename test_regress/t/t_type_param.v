@@ -26,7 +26,6 @@ module foo_wrapper
 endmodule
 
 module t();
-   some_package::two_bytes_t [13:0] blargh; // NOCOMMIT
    logic [7:0] qux1;
    int bar_size1;
 
@@ -61,7 +60,7 @@ module t();
 
    int bar_size6;
 
-   foo #(.bar (some_package::two_bytes_t [3:0]))
+   foo #(.bar (some_package::two_bytes_t [4-1:0]))
    foo_inst6 (.bar_size (bar_size6));
 
    localparam bar_bits = 13;

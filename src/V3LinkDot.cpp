@@ -2354,6 +2354,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     std::map<std::string, AstNodeModule*> m_modulesToRevisit;  // Modules to revisit a second time
     AstNode* m_lastDeferredp = nullptr;  // Last node which requested a revisit of its module
     AstNodeDType* m_packedArrayDtp = nullptr;  // Datatype reference for packed array
+    bool m_inPackedArray = false;  // Currently traversing a packed array tree
 
     struct DotStates final {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -4569,14 +4570,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
     void visit(AstAttrOf* nodep) override { iterateChildren(nodep); }
 
-    // NOCOMMIT -- maybe not good?
-    void visit(AstPackArrayDType* nodep) override {
-        iterateChildren(nodep);
-    }
-
     void visit(AstNode* nodep) override {
-        LINKDOT_VISIT_START();
-        checkNoDot(nodep);
+        VL_RESTORER(m_inPackedArray);
+        if (VN_IS(nodep, PackArrayDType)) {
+            m_inPackedArray = true;
+        } else if (!m_inPackedArray) {
+            LINKDOT_VISIT_START();
+            checkNoDot(nodep);
+        }
         iterateChildren(nodep);
     }
 

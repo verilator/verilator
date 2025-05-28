@@ -20,7 +20,7 @@ module t (/*AUTOARG*/
         the_two_dee[index_t'(5)][7:0] = 8'hab;
         the_two_dee[index_t'(5)][15:8] = 8'h12;
     end
-    
+
     always @ (posedge clk) begin
         if (the_two_dee[5] != 16'h12ab) $stop();
         $write("*-* All Finished *-*\n");
