@@ -1239,7 +1239,7 @@ public:
                                         "parallelism; suggest asking for fewer threads.");
                             flp->modifyWarnOff(V3ErrorCode::UNOPTTHREADS, true);
                         }
-                        UINFO(1,
+                        UINFO(6,
                               "Critical path limit was=" << oldLimit << " now=" << m_scoreLimit);
                         continue;
                     }
