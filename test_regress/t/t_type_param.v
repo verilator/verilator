@@ -26,6 +26,7 @@ module foo_wrapper
 endmodule
 
 module t();
+   some_package::two_bytes_t [13:0] blargh; // NOCOMMIT
    logic [7:0] qux1;
    int bar_size1;
 
