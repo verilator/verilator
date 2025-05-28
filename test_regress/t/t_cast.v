@@ -28,6 +28,8 @@ module t;
       ONE = 1
    } enum_t;
 
+   typedef enum_t [3:0] enums_t;
+
    packed_t pdata;
    packed_t pdata_reg;
    packed2_t pdata2_reg;
@@ -37,6 +39,7 @@ module t;
 
    mc_t o;
    enum_t e;
+   enums_t es;
 
    intf the_intf();
 
@@ -69,6 +72,7 @@ module t;
    logic [31:0] thirty_two_bits;
    two_dee_t two_dee_sig;
 
+   int i;
    initial begin
       if (logic8bit != 8'h12) $stop;
       if (4'shf > 4'sh0) $stop;
@@ -94,6 +98,11 @@ module t;
       pdata_reg.data = 1;
       e = enum_t'(pdata_reg);
       if (e != ONE) $stop;
+
+      es = {ONE, ONE, ONE, ONE};
+      for (i = 0; i < 4; i++) if (es[i] != ONE) $stop;
+      es = enums_t'(64'h0001_0001_0001_0001);
+      for (i = 0; i < 4; i++) if (es[i] != ONE) $stop;
 
       o = tocast_t'(4'b1);
       if (o != 4'b1) $stop;
