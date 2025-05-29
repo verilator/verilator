@@ -392,6 +392,10 @@ class CoverageVisitor final : public VNVisitor {
                     initVarp = new AstVar{fl_nowarn, VVarType::MODULETEMP, initVarName, nodep};
                     m_modp->addStmtsp(initVarp);
                     initVarRefp = new AstVarRef{fl_nowarn, initVarp, VAccess::WRITE};
+                    AstAssign* const initAssignp
+                        = new AstAssign{fl_nowarn, initVarRefp->cloneTree(false),
+                                        new AstConst{fl_nowarn, AstConst::All0{}}};
+                    m_modp->addStmtsp(new AstInitialStatic{fl_nowarn, initAssignp});
                 }
 
                 // Create bucket for each dimension * bit.
