@@ -11,10 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('vltmt')
 test.clean_objs()
-test.top_filename = "t/t_instr_count_dpi_large.v"
+test.top_filename = "t/t_dpi_instr_count_large.v"
 
 test.compile(
-    v_flags2=["t/t_instr_count_dpi_large.cpp"],
+    v_flags2=["t/t_dpi_instr_count_large.cpp"],
     verilator_flags2=[
         "--hierarchical",
         "--instr-count-dpi 999999999",

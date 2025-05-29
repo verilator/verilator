@@ -13,7 +13,7 @@ test.scenarios('vltmt')
 test.clean_objs()
 
 test.compile(
-    v_flags2=["t/t_instr_count_dpi_large.cpp"],
+    v_flags2=["t/t_dpi_instr_count_large.cpp"],
     verilator_flags2=[
         "--instr-count-dpi 999999999",
         # Force UNOPTTHREADS error to cause Contraction limit increase beyond UINT32
