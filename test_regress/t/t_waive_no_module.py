@@ -12,8 +12,6 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_waive_no_module.v"
 
-test.lint(verilator_flags2=[
-    "--lint-only -Wall t/t_waive_no_module.vlt"
-])
+test.lint(verilator_flags2=["--lint-only -Wall t/t_waive_no_module.vlt"])
 
 test.passes()
