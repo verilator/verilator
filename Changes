@@ -13,7 +13,7 @@ Verilator 5.037 devel
 
 **Other:**
 
-* Support redeclaring type as non-type; major parsing change (#2412) (#6020).
+* Support redeclaring type as non-type; major parsing change (#2412) (#6020) (#6042) (#6044).
 * Support constrained random for associative arrays (#5985) (#5986). [Yilou Wang]
 * Support assignments to concatenations with impure RHS (#6002). [Ryszard Rozak, Antmicro Ltd.]
 * Support SARIF JSON diagnostic output with `--diagnostics-sarif`. (#6017)
@@ -23,8 +23,9 @@ Verilator 5.037 devel
 * Add ternary operator into branch coverage (#5880). [Ryszard Rozak, Antmicro Ltd.]
 * Add aggregate type error checks (#5570) (#5950). [Shou-Li Hsu]
 * Add `--filter-type` to verilator_coverage (#6030). [Ryszard Rozak, Antmicro Ltd.]
+* Add `--hierarchical-threads` (#6037). [Bartłomiej Chmiel]
 * Improve hierarchical scheduling visualization in V3ExecGraph (#6009). [Bartłomiej Chmiel, Antmicro Ltd.]
-* Fix --x-initial and --x-assign random stability (#2662) (#5958). [Todd Strader]
+* Fix --x-initial and --x-assign random stability (#2662) (#5958) (#6018) (#6025). [Todd Strader]
 * Fix filename backslash escapes in C code (#5947).
 * Fix C++ widths in V3Expand (#5953) (#5975). [Geza Lore]
 * Fix dependencies from different hierarchical schedules (#5954). [Bartłomiej Chmiel, Antmicro Ltd.]
@@ -45,6 +46,9 @@ Verilator 5.037 devel
 * Fix concatenation and type casting (#6012) (#6013). [Todd Strader]
 * Fix wrong optimization result of shifted out variable (#6016) (#6019). [Yutetsu TAKATSUKASA]
 * Fix missing FreeBSD include (#6027) (#6028). [Joel Bodenmann]
+* Fix associative arrays with enum keys (#6034) (#6035). [Petr Nohavica]
+* Fix GCC 10 read-only linker error (#6040). [Todd Strader]
+* Fix V3OrderParallel scoring contraction hang (#6052). [Bartłomiej Chmiel, Antmicro Ltd.]
 
 
 Verilator 5.036 2025-04-27

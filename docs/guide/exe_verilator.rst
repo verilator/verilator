@@ -780,12 +780,11 @@ Summary:
 .. option:: --hierarchical-threads <threads>
 
    Specifies the number of threads used for scheduling hierarchical blocks.
-   The main use-case of this option is to provide possiblity for scheduling
-   multi-thread hierarchical blocks on multiple threads without increasing
-   parallelism of the whole design.
+   This allows scheduling multi-thread hierarchical blocks on multiple
+   threads, without increasing the parallelism of the entire design.
 
-   Set to :vlopt:`--threads` by default. For optimal performance should not exceed
-   CPU core count.
+   Set to :vlopt:`--threads` by default. For optimal performance should not
+   exceed the CPU thread count.
 
 .. option:: -I<dir>
 
