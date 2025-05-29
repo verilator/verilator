@@ -9,8 +9,12 @@ module t(/*AUTOARG*/);
    real x;
    real y;
    var type(x+y) z;
+   localparam type x_type = type(x);
+   x_type value;
 
    initial begin
+      value = 1.234;
+      if (value != 1.234) $stop();
       x = 1.2;
       y = 2.3;
       z = x + y;
