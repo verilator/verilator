@@ -127,7 +127,7 @@ constexpr unsigned PART_SIBLING_EDGE_LIMIT = 26;
 // and we probably don't want a huge number of mTaskGraphp in practice anyway
 // (50 to 100 is typical.)
 //
-// If the user doesn't give one with '--threads-max-mTaskGraphp', we'll set the
+// If the user doesn't give one with '--threads-max-mtasks', we'll set the
 // maximum # of MTasks to
 //  (# of threads * PART_DEFAULT_MAX_MTASKS_PER_THREAD)
 constexpr unsigned PART_DEFAULT_MAX_MTASKS_PER_THREAD = 50;
