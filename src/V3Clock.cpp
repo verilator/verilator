@@ -129,6 +129,9 @@ class ClockVisitor final : public VNVisitor {
                     new AstEq{fl, varrefp->unlinkFrBack(), new AstConst{fl, AstConst::BitTrue{}}},
                     incIfp, initAssignp};
                 newp->addElsesp(changeAssignp->cloneTree(false));
+            } else {
+                nodep->initp()->v3fatalSrc("Initp is not a var ref");
+                newp = nullptr;
             }
         } else {
             newp = incIfp;
