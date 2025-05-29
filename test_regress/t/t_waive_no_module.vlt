@@ -1,0 +1,2 @@
+`verilator_config
+lint_off -file "*.v" -match "Cannot find file containing module: 'some_module_name'"
