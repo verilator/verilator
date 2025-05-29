@@ -12,13 +12,15 @@ import vltest_bootstrap
 test.scenarios('vltmt')
 test.clean_objs()
 
-test.compile(v_flags2=[test.pli_filename],
-             verilator_flags2=[
-                 "--stats", "--hierarchical", "--instr-count-dpi 999999999",
-                 # Force UNOPTTHREADS error to cause Contraction limit increase beyond UINT32
-                 "--threads-max-mtasks 1", "-Wno-UNOPTTHREADS"
-             ],
-             threads=2)
+test.compile(
+    v_flags2=["t/t_instr_count_dpi_large.cpp"],
+    verilator_flags2=[
+        "--instr-count-dpi 999999999",
+        # Force UNOPTTHREADS error to cause Contraction limit increase beyond UINT32
+        "--threads-max-mtasks 1",
+        "-Wno-UNOPTTHREADS"
+    ],
+    threads=2)
 
 test.execute()
 
