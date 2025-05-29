@@ -21,4 +21,17 @@ module t(/*AUTOARG*/);
       $finish;
    end
 
+   sub_real #(.the_type (type(x-y))) the_sub_real();
+
+endmodule
+
+module sub_real #(
+    parameter type the_type = bit
+) ();
+    the_type the_value;
+
+    initial begin
+        the_value = 4.567;
+        if (the_value != 4.567) $stop();
+    end
 endmodule
