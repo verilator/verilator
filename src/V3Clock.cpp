@@ -101,7 +101,7 @@ class ClockVisitor final : public VNVisitor {
         // COVERTOGGLE(INC, ORIG, CHANGE) ->
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
         FileLine* fl = nodep->fileline();
-        AstNode* const incp = nodep->incp()->unlinkFrBack();
+        AstNodeStmt* const incp = nodep->incp()->unlinkFrBack();
         AstNodeExpr* const origp = nodep->origp()->unlinkFrBack();
         AstNodeExpr* const changeWrp = nodep->changep()->unlinkFrBack();
         AstNodeExpr* const changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
@@ -114,30 +114,28 @@ class ClockVisitor final : public VNVisitor {
             if (!bdtypep->isOpaque()) comparedp = new AstXor{fl, origp, changeRdp};
         }
         UASSERT_OBJ(comparedp, nodep, "Toggle coverage of non-opaque type variable");
-        AstIf* const incIfp = new AstIf{fl, comparedp, incp};
-        AstAssign* const changeAssignp = new AstAssign{fl, changeWrp, origp->cloneTree(false)};
-        incIfp->addThensp(changeAssignp);
-        AstIf* newp;
+        AstNodeStmt* incBodyp;
         if (nodep->initp()) {
             if (AstVarRef* const writeRefp = VN_CAST(nodep->initp(), VarRef)) {
                 AstVarRef* const readRefp = writeRefp->cloneTree(false);
                 readRefp->access(VAccess::READ);
                 AstAssign* const initAssignp = new AstAssign{
                     fl, writeRefp->unlinkFrBack(), new AstConst{fl, AstConst::BitTrue{}}};
-                newp
+                incBodyp
                     = new AstIf{fl, new AstEq{fl, readRefp, new AstConst{fl, AstConst::BitTrue{}}},
-                                incIfp, initAssignp};
-                newp->addElsesp(changeAssignp->cloneTree(false));
+                                incp, initAssignp};
             } else {
                 nodep->initp()->v3fatalSrc("Initp is not a var ref");
-                newp = nullptr;
+                incBodyp = nullptr;
             }
         } else {
-            newp = incIfp;
+            incBodyp = incp;
         }
+        AstIf* const newp = new AstIf{fl, comparedp, incBodyp};
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
+        newp->addThensp(new AstAssign{fl, changeWrp, origp->cloneTree(false)});
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
