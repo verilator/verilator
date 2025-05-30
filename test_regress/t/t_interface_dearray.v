@@ -10,25 +10,34 @@ endinterface
 typedef virtual A a_t;
 typedef a_t a_array_t[6];
 
+class B;
+  function new(virtual A va);
+  endfunction
+endclass
+
 class C;
    a_array_t vif;
+
+   function void set(int index, a_t iface);
+      vif[index] = iface;
+   endfunction
 endclass
 
 module tb_top();
-   A a[6](), b[6]();
+   A a[6]();
    C c, d, e;
    a_array_t g;
 
    initial begin
       static a_t aa = a[0];
 
-      b = a;
+      B b = new(a[0]);
 
       c = new();
       c.vif = a;
 
       d = new();
-      d.vif[0] = a[0];
+      d.set(0, a[0]);
       d.vif[1] = a[1];
 
       g[0] = a[0];
