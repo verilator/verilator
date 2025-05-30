@@ -397,6 +397,7 @@ class CoverageVisitor final : public VNVisitor {
                                 "Width is not 1");
                     AstBasicDType* const initDtypep
                         = new AstBasicDType{fl_nowarn, VBasicDTypeKwd::INT, VSigning::NOSIGN};
+                    v3Global.rootp()->typeTablep()->addTypesp(initDtypep);
                     initVarp
                         = new AstVar{fl_nowarn, VVarType::MODULETEMP, initVarName, initDtypep};
                     m_modp->addStmtsp(initVarp);
