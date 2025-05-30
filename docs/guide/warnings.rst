@@ -1180,6 +1180,19 @@ List Of Warnings
    discarded.
 
 
+.. option:: MODMISSING
+
+   .. TODO better example
+
+   Error that a module, typically referenced by a cell, was not found.
+   This is typically fatal, but may be suppressed in some linting
+   situations with missing libraries.
+
+   Ignoring this error will cause the cell definition to be discarded.
+   Simulation results will likely be wrong, so typically used only with
+   lint-only.
+
+
 .. option:: MULTIDRIVEN
 
    Warns that the specified signal comes from multiple :code:`always`

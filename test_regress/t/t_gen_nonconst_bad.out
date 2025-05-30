@@ -1,13 +1,13 @@
-%Error: t/t_gen_nonconst_bad.v:8:4: Cannot find file containing module: 'nfound'
+%Error-MODMISSING: t/t_gen_nonconst_bad.v:8:4: Cannot find file containing module: 'nfound'
     8 |    nfound nfound();
       |    ^~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-        ... This may be because there's no search path specified with -I<dir>.
-        ... Looked in:
-             nfound
-             nfound.v
-             nfound.sv
-             obj_dir/nfound
-             obj_dir/nfound.v
-             obj_dir/nfound.sv
+                   ... For error description see https://verilator.org/warn/MODMISSING?v=latest
+                   ... This may be because there's no search path specified with -I<dir>.
+                   ... Looked in:
+                        nfound
+                        nfound.v
+                        nfound.sv
+                        obj_dir/nfound
+                        obj_dir/nfound.v
+                        obj_dir/nfound.sv
 %Error: Exiting due to

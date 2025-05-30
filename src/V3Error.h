@@ -120,6 +120,7 @@ public:
         MINTYPMAXDLY,   // Unsupported: min/typ/max delay expressions
         MISINDENT,      // Misleading indentation
         MODDUP,         // Duplicate module
+        MODMISSING,     // Error: missing module
         MULTIDRIVEN,    // Driven from multiple blocks
         MULTITOP,       // Multiple top level modules
         NEWERSTD,       // Newer language standard required
@@ -208,7 +209,7 @@ public:
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
-            "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP",
+            "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING",
             "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOLATCH", "NONSTD", "NULLPORT", "PINCONNECTEMPTY",
             "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE",
             "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
@@ -248,8 +249,9 @@ public:
     bool pretendError() const VL_MT_SAFE {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BADVLTPRAGMA || m_e == BLKANDNBLK
                 || m_e == BLKLOOPINIT || m_e == CONTASSREG || m_e == ENCAPSULATED
-                || m_e == ENDLABEL || m_e == ENUMVALUE || m_e == IMPURE || m_e == PINNOTFOUND
-                || m_e == PKGNODECL || m_e == PROCASSWIRE || m_e == ZEROREPL  // Says IEEE
+                || m_e == ENDLABEL || m_e == ENUMVALUE || m_e == IMPURE || m_e == MODMISSING
+                || m_e == PINNOTFOUND || m_e == PKGNODECL || m_e == PROCASSWIRE
+                || m_e == ZEROREPL  // Says IEEE
         );
     }
     // Warnings to mention manual
