@@ -222,6 +222,90 @@ public:
     }
 };
 
+class ParamIfaceXRefVisitor final : public VNVisitor {
+    // NOCOMMIT -- refactor with ParamVisitor
+    // NOOCMMIT -- fix names, not just for params
+    bool ifaceParamReplace(AstVarXRef* nodep, AstNode* candp) {
+        for (; candp; candp = candp->nextp()) {
+            if (nodep->name() == candp->name()) {
+                if (AstVar* const varp = VN_CAST(candp, Var)) {
+                    UINFO(9, "Found interface parameter: " << varp);
+                    nodep->varp(varp);
+                    return true;
+                } else if (const AstPin* const pinp = VN_CAST(candp, Pin)) {
+                    UINFO(9, "Found interface parameter: " << pinp);
+                    UASSERT_OBJ(pinp->exprp(), pinp, "Interface parameter pin missing expression");
+                    VL_DO_DANGLING(nodep->replaceWith(pinp->exprp()->cloneTree(false)), nodep);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    void visit(AstVarXRef* nodep) override {
+        // Check to see if the scope is just an interface because interfaces are special
+        const string dotted = nodep->dotted();
+        // NOCOMMIT -- different than ParamVisitor since it doesn't just look at params
+        if (!dotted.empty() && nodep->varp()) {
+            const AstNode* backp = nodep;
+            while ((backp = backp->backp())) {
+                if (VN_IS(backp, NodeModule)) {
+                    UINFO(9, "Hit module boundary, done looking for interface");
+                    break;
+                }
+                if (const AstVar* const varp = VN_CAST(backp, Var)) {
+                    if (!varp->isIfaceRef()) continue;
+                    const AstIfaceRefDType* ifacerefp = nullptr;
+                    if (const AstNodeDType* const typep = varp->childDTypep()) {
+                        ifacerefp = VN_CAST(typep, IfaceRefDType);
+                        if (!ifacerefp) {
+                            if (VN_IS(typep, UnpackArrayDType)) {
+                                ifacerefp = VN_CAST(typep->getChildDTypep(), IfaceRefDType);
+                            }
+                        }
+                        if (!ifacerefp) {
+                            if (VN_IS(typep, BracketArrayDType)) {
+                                ifacerefp = VN_CAST(typep->subDTypep(), IfaceRefDType);
+                            }
+                        }
+                    }
+                    if (!ifacerefp) continue;
+                    // Interfaces passed in on the port map have ifaces
+                    if (const AstIface* const ifacep = ifacerefp->ifacep()) {
+                        if (dotted == backp->name()) {
+                            UINFO(9, "Iface matching scope:  " << ifacep);
+                            if (ifaceParamReplace(nodep, ifacep->stmtsp())) {  //
+                                return;
+                            }
+                        }
+                    }
+                    // Interfaces declared in this module have cells
+                    else if (const AstCell* const cellp = ifacerefp->cellp()) {
+                        if (dotted == cellp->name()) {
+                            UINFO(9, "Iface matching scope:  " << cellp);
+                            if (ifaceParamReplace(nodep, cellp->paramsp())) {  //
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (nodep->containsGenBlock()) {
+            // Needs relink, as may remove pointed-to var
+            nodep->varp(nullptr);
+        }
+    }
+
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit ParamIfaceXRefVisitor(AstNode* nodep) { iterate(nodep); }
+    ~ParamIfaceXRefVisitor() override = default;
+    VL_UNCOPYABLE(ParamIfaceXRefVisitor);
+};
+
 //######################################################################
 // Remove parameters from cells and build new modules
 
@@ -945,6 +1029,10 @@ class ParamProcessor final {
 
         for (auto* stmtp = srcModpr->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
+                // maye have already resolved the default module
+                if (dtypep->getChildDTypep()) dtypep->dtypep(nullptr);
+                ParamIfaceXRefVisitor{dtypep};
+                V3Width::widthParamsEdit(dtypep);
                 if (VN_IS(dtypep->skipRefp(), VoidDType)) {
                     nodep->v3error(
                         "Class parameter type without default value is never given value"
