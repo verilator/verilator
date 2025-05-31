@@ -4722,6 +4722,9 @@ class WidthVisitor final : public VNVisitor {
                 newp = valuep;
             } else {
                 AstConcat* const concatp = new AstConcat{patp->fileline(), newp, valuep};
+                // Have resolved widths, no reason to warn about widths on the concat itself
+                newp->fileline()->modifyWarnOff(V3ErrorCode::WIDTHCONCAT, true);
+                valuep->fileline()->modifyWarnOff(V3ErrorCode::WIDTHCONCAT, true);
                 newp = concatp;
                 newp->dtypeSetLogicSized(concatp->lhsp()->width() + concatp->rhsp()->width(),
                                          nodep->dtypep()->numeric());

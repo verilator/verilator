@@ -49,6 +49,7 @@ Verilator 5.037 devel
 * Fix missing FreeBSD include (#6027) (#6028). [Joel Bodenmann]
 * Fix associative arrays with enum keys (#6034) (#6035). [Petr Nohavica]
 * Fix GCC 10 read-only linker error (#6040). [Todd Strader]
+* Fix WIDTHCONCAT on packed pattern assignment (#6045). [Dan Petrisko]
 * Fix V3OrderParallel scoring contraction hang (#6052). [Bartłomiej Chmiel, Antmicro Ltd.]
 
 
