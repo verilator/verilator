@@ -2353,9 +2353,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
     std::map<AstNode*, AstPin*> m_usedPins;  // Pin used in this cell, map to duplicate
     std::map<std::string, AstNodeModule*> m_modulesToRevisit;  // Modules to revisit a second time
     AstNode* m_lastDeferredp = nullptr;  // Last node which requested a revisit of its module
-    bool m_maybePackedArray
-        = false;  // Array select parse trees may actually be packed array datatypes
     AstNodeDType* m_packedArrayDtp = nullptr;  // Datatype reference for packed array
+    bool m_inPackedArray = false;  // Currently traversing a packed array tree
 
     struct DotStates final {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -2811,7 +2810,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Early return() above when deleted
     }
     void visit(AstDot* nodep) override {
-        // Legal under a DOT: AstDot, AstParseRef, AstPackageRef, AstNodeSel
+        // Legal under a DOT: AstDot, AstParseRef, AstPackageRef, AstNodeSel, AstPackArrayDType
         //    also a DOT can be part of an expression, but only above plus
         //    AstFTaskRef are legal children
         // Dot(PackageRef, ParseRef(text))
@@ -3404,7 +3403,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (ok) {
                     AstRefDType* const refp = new AstRefDType{nodep->fileline(), nodep->name()};
                     refp->typedefp(defp);
-                    if (m_maybePackedArray) {
+                    if (VN_IS(nodep->backp(), SelExtract)) {
                         m_packedArrayDtp = refp;
                     } else {
                         replaceWithCheckBreak(nodep, refp);
@@ -4058,11 +4057,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         AstNodeDType* packedArrayDtp = nullptr;  // Datatype reference for packed array
         {
             VL_RESTORER(m_packedArrayDtp);
-            {
-                VL_RESTORER(m_maybePackedArray);
-                m_maybePackedArray = true;
-                iterateAndNextNull(nodep->fromp());
-            }
+            iterateAndNextNull(nodep->fromp());
             symIterateNull(nodep->rhsp(), m_curSymp);
             symIterateNull(nodep->thsp(), m_curSymp);
 
@@ -4074,7 +4069,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     = new AstPackArrayDType(nodep->fileline(), m_packedArrayDtp, newRangep);
                 newArrayTypep->childDTypep(m_packedArrayDtp);
                 newArrayTypep->refDTypep(nullptr);
-                if (m_maybePackedArray) {
+                if (VN_IS(nodep->backp(), SelExtract)) {
                     packedArrayDtp = newArrayTypep;
                 } else {
                     replaceWithCheckBreak(nodep, newArrayTypep);
@@ -4576,8 +4571,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstAttrOf* nodep) override { iterateChildren(nodep); }
 
     void visit(AstNode* nodep) override {
-        LINKDOT_VISIT_START();
-        checkNoDot(nodep);
+        VL_RESTORER(m_inPackedArray);
+        if (VN_IS(nodep, PackArrayDType)) {
+            m_inPackedArray = true;
+        } else if (!m_inPackedArray) {
+            LINKDOT_VISIT_START();
+            checkNoDot(nodep);
+        }
         iterateChildren(nodep);
     }
 
