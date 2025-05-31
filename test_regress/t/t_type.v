@@ -9,8 +9,12 @@ module t(/*AUTOARG*/);
    real x;
    real y;
    var type(x+y) z;
+   localparam type x_type = type(x);
+   x_type value;
 
    initial begin
+      value = 1.234;
+      if (value != 1.234) $stop();
       x = 1.2;
       y = 2.3;
       z = x + y;
@@ -21,4 +25,17 @@ module t(/*AUTOARG*/);
       $finish;
    end
 
+   sub_real #(.the_type (type(x-y))) the_sub_real();
+
+endmodule
+
+module sub_real #(
+    parameter type the_type = bit
+) ();
+    the_type the_value;
+
+    initial begin
+        the_value = 4.567;
+        if (the_value != 4.567) $stop();
+    end
 endmodule
