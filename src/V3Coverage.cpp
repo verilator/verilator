@@ -386,15 +386,12 @@ class CoverageVisitor final : public VNVisitor {
 
                 AstVar* initVarp = nullptr;
                 AstVarRef* initVarRefp = nullptr;
-                const AstNodeDType* const nodeDTypep = nodep->dtypep()->skipRefp();
-                if (nodeDTypep->isFourstate()) {
+                const AstBasicDType* const basicDTypep
+                    = VN_CAST(nodep->dtypep()->skipRefp(), BasicDType);
+                if (basicDTypep && basicDTypep->isFourstate() && basicDTypep->isBitLogic()
+                    && basicDTypep->widthTotalBytes() == 1) {
                     const string initVarName
                         = "__Vtogcovinit__"s + m_beginHier + nodep->shortName();
-                    const AstBasicDType* const basicDTypep = VN_CAST(nodeDTypep, BasicDType);
-                    UASSERT_OBJ(basicDTypep, nodep, "Dtype of nodep is not basic");
-                    UASSERT_OBJ(basicDTypep->isBitLogic(), basicDTypep, "Dtypep is not logic");
-                    UASSERT_OBJ(basicDTypep->widthTotalBytes() == 1, basicDTypep,
-                                "Width is not 1");
                     AstBasicDType* const initDtypep
                         = new AstBasicDType{fl_nowarn, VBasicDTypeKwd::INT, VSigning::NOSIGN};
                     v3Global.rootp()->typeTablep()->addTypesp(initDtypep);
