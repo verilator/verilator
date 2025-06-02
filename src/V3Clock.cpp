@@ -124,7 +124,8 @@ class ClockVisitor final : public VNVisitor {
                 AstIf* const initIfp
                     = new AstIf{fl, new AstEq{fl, readRefp, new AstConst{fl, 1}}, initAssignp};
                 incBodyp
-                    = new AstIf{fl, new AstEq{fl, readRefp, new AstConst{fl, 2}}, incp, initIfp};
+                    = new AstIf{fl, new AstEq{fl, readRefp->cloneTree(false), new AstConst{fl, 2}},
+                                incp, initIfp};
             } else {
                 nodep->initp()->v3fatalSrc("Initp is not a var ref");
                 incBodyp = nullptr;
