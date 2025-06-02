@@ -7,6 +7,7 @@
 module t(clk);
    // verilator coverage_off
    input clk;
+   integer cyc;
    // verilator coverage_on
 
    logic toggle;
@@ -19,16 +20,31 @@ module t(clk);
    // CHECK_COVER(-1,"top.t","toggle_1",0)
 
    logic toggle_always_0;
+   // CHECK_COVER(-1,"top.t","toggle_always_0",0)
+
    logic toggle_always_1;
+   // CHECK_COVER(-1,"top.t","toggle_always_1",0)
+
+   logic toggle_initial_0;
+   // CHECK_COVER(-1,"top.t","toggle_initial_0",0)
+
+   logic toggle_initial_1;
+   // CHECK_COVER(-1,"top.t","toggle_initial_1",0)
+
+   initial begin
+      cyc = 1;
+      toggle_initial_0 = 0;
+      toggle_initial_1 = 1;
+   end
 
    always @(posedge clk) begin
       toggle_always_0 = 0;
-      // CHECK_COVER(-5,"top.t","toggle_always_0",0)
-
       toggle_always_1 = 1;
-      // CHECK_COVER(-7,"top.t","toggle_always_1",0)
 
-      $write("*-* All Finished *-*\n");
-      $finish;
+      if (cyc != 0) cyc <= cyc + 1;
+      if (cyc == 10) begin
+         $write("*-* All Finished *-*\n");
+         $finish;
+      end
    end
 endmodule
