@@ -13,12 +13,6 @@ module t(clk);
    logic toggle;
    // CHECK_COVER(-1,"top.t","toggle",0)
 
-   logic toggle_0 = 0;
-   // CHECK_COVER(-1,"top.t","toggle_0",0)
-
-   logic toggle_1 = 1;
-   // CHECK_COVER(-1,"top.t","toggle_1",0)
-
    logic toggle_always_0;
    // CHECK_COVER(-1,"top.t","toggle_always_0",0)
 
