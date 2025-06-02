@@ -23,10 +23,10 @@ module t(clk);
 
    always @(posedge clk) begin
       toggle_always_0 = 0;
-      // CHECK_COVER(-1,"top.t","toggle_always_0",0)
+      // CHECK_COVER(-5,"top.t","toggle_always_0",0)
 
       toggle_always_1 = 1;
-      // CHECK_COVER(-1,"top.t","toggle_always_1",0)
+      // CHECK_COVER(-7,"top.t","toggle_always_1",0)
 
       $write("*-* All Finished *-*\n");
       $finish;
