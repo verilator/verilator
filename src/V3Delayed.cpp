@@ -1046,6 +1046,9 @@ class DelayedVisitor final : public VNVisitor {
     void visit(AstAssignPost*) override {}
     void visit(AstAlwaysPost*) override {}
 
+    // Children of AstCoverToggle aren't part of assignments
+    void visit(AstCoverToggle* nodep) override {}
+
     //--------------------
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
