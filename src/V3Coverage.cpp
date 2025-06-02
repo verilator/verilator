@@ -1069,11 +1069,17 @@ class CoverageVisitor final : public VNVisitor {
     void visit(AstNodeAssign* nodep) override {
         if (AstNodeVarRef* const varRefp = VN_CAST(nodep->lhsp(), NodeVarRef)) {
             if (varRefp->varp()->user1p()) {
-                AstNodeExpr* const initLhsp = new AstVarRef{
+                AstVarRef* const initLhsp = new AstVarRef{
                     varRefp->fileline(), VN_AS(varRefp->varp()->user1p(), Var), VAccess::WRITE};
-                AstNodeAssign* initAssignp = nodep->cloneType(
+                AstNodeAssign* const initAssignp = nodep->cloneType(
                     initLhsp, new AstConst{nodep->fileline(), AstConst::All1{}});
-                nodep->addNextHere(initAssignp);
+                AstVarRef* const initRhsp = new AstVarRef{
+                    varRefp->fileline(), VN_AS(varRefp->varp()->user1p(), Var), VAccess::READ};
+                AstIf* const initIfp = new AstIf{
+                    nodep->fileline(),
+                    new AstEq{nodep->fileline(), initRhsp, new AstConst{nodep->fileline(), 0}},
+                    initAssignp};
+                nodep->addNextHere(initIfp);
             }
         }
         iterateChildren(nodep);
