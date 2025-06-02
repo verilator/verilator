@@ -389,7 +389,7 @@ class CoverageVisitor final : public VNVisitor {
                 const AstBasicDType* const basicDTypep
                     = VN_CAST(nodep->dtypep()->skipRefp(), BasicDType);
                 if (basicDTypep && basicDTypep->isFourstate() && basicDTypep->isBitLogic()
-                    && basicDTypep->widthTotalBytes() == 1) {
+                    && !basicDTypep->isRanged()) {
                     const string initVarName
                         = "__Vtogcovinit__"s + m_beginHier + nodep->shortName();
                     AstBasicDType* const initDtypep
