@@ -115,17 +115,17 @@ class ClockVisitor final : public VNVisitor {
         }
         UASSERT_OBJ(comparedp, nodep, "Toggle coverage of non-opaque type variable");
         AstNodeStmt* incBodyp;
+        AstIf* initIfp = nullptr;
         if (nodep->initp()) {
             if (AstVarRef* const writeRefp = VN_CAST(nodep->initp(), VarRef)) {
                 AstVarRef* const readRefp = writeRefp->cloneTree(false);
                 readRefp->access(VAccess::READ);
                 AstAssign* const initAssignp
                     = new AstAssign{fl, writeRefp->unlinkFrBack(), new AstConst{fl, 2}};
-                AstIf* const initIfp
-                    = new AstIf{fl, new AstEq{fl, readRefp, new AstConst{fl, 1}}, initAssignp};
+                initIfp = new AstIf{fl, new AstEq{fl, readRefp, new AstConst{fl, 1}}, initAssignp};
                 incBodyp
                     = new AstIf{fl, new AstEq{fl, readRefp->cloneTree(false), new AstConst{fl, 2}},
-                                incp, initIfp};
+                                incp, initIfp->cloneTree(false)};
             } else {
                 nodep->initp()->v3fatalSrc("Initp is not a var ref");
                 incBodyp = nullptr;
@@ -133,7 +133,7 @@ class ClockVisitor final : public VNVisitor {
         } else {
             incBodyp = incp;
         }
-        AstIf* const newp = new AstIf{fl, comparedp, incBodyp};
+        AstIf* const newp = new AstIf{fl, comparedp, incBodyp, initIfp};
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
