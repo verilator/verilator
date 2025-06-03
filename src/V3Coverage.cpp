@@ -380,6 +380,9 @@ class CoverageVisitor final : public VNVisitor {
                 const string newvarname = "__Vtogcov__"s + m_beginHier + nodep->shortName();
                 FileLine* const fl_nowarn = new FileLine{nodep->fileline()};
                 fl_nowarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
+                fl_nowarn->modifyWarnOff(V3ErrorCode::ALWCOMBORDER, true);
+                fl_nowarn->modifyWarnOff(V3ErrorCode::MULTIDRIVEN, true);
+                fl_nowarn->modifyWarnOff(V3ErrorCode::UNOPTFLAT, true);
                 AstVar* const chgVarp
                     = new AstVar{fl_nowarn, VVarType::MODULETEMP, newvarname, nodep};
                 m_modp->addStmtsp(chgVarp);
