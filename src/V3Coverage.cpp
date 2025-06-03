@@ -383,6 +383,7 @@ class CoverageVisitor final : public VNVisitor {
                 fl_nowarn->modifyWarnOff(V3ErrorCode::ALWCOMBORDER, true);
                 fl_nowarn->modifyWarnOff(V3ErrorCode::MULTIDRIVEN, true);
                 fl_nowarn->modifyWarnOff(V3ErrorCode::UNOPTFLAT, true);
+                fl_nowarn->coverageOn(false);
                 AstVar* const chgVarp
                     = new AstVar{fl_nowarn, VVarType::MODULETEMP, newvarname, nodep};
                 m_modp->addStmtsp(chgVarp);
@@ -1069,16 +1070,17 @@ class CoverageVisitor final : public VNVisitor {
     void visit(AstNodeAssign* nodep) override {
         if (AstNodeVarRef* const varRefp = VN_CAST(nodep->lhsp(), NodeVarRef)) {
             if (varRefp->varp()->user1p()) {
+                FileLine* const fl_nocov = new FileLine{nodep->fileline()};
+                fl_nocov->coverageOn(false);
                 AstVarRef* const initLhsp = new AstVarRef{
-                    varRefp->fileline(), VN_AS(varRefp->varp()->user1p(), Var), VAccess::WRITE};
-                AstNodeAssign* const initAssignp = nodep->cloneType(
-                    initLhsp, new AstConst{nodep->fileline(), AstConst::All1{}});
+                    fl_nocov, VN_AS(varRefp->varp()->user1p(), Var), VAccess::WRITE};
+                AstNodeAssign* const initAssignp
+                    = nodep->cloneType(initLhsp, new AstConst{fl_nocov, AstConst::All1{}});
                 AstVarRef* const initRhsp = new AstVarRef{
-                    varRefp->fileline(), VN_AS(varRefp->varp()->user1p(), Var), VAccess::READ};
-                AstIf* const initIfp = new AstIf{
-                    nodep->fileline(),
-                    new AstEq{nodep->fileline(), initRhsp, new AstConst{nodep->fileline(), 0}},
-                    initAssignp};
+                    fl_nocov, VN_AS(varRefp->varp()->user1p(), Var), VAccess::READ};
+                AstIf* const initIfp
+                    = new AstIf{fl_nocov, new AstEq{fl_nocov, initRhsp, new AstConst{fl_nocov, 0}},
+                                initAssignp};
                 nodep->addNextHere(initIfp);
             }
         }
