@@ -25,7 +25,10 @@ module t(/*AUTOARG*/);
       $finish;
    end
 
-   sub_real #(.the_type (type(x-y))) the_sub_real();
+   localparam type blargh = type(x-y);
+   sub_real #(.the_type (blargh)) the_sub_real();
+   // NOCOMMIT -- maybe both
+   // sub_real #(.the_type (type(x-y))) the_sub_real();
 
 endmodule
 
