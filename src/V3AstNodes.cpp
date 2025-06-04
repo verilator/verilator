@@ -828,8 +828,8 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
     return nullptr;
 }
 
-const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
-                                               bool assertOn) const VL_MT_STABLE {
+const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum, bool assertOn,
+                                               const AstNodeDType** lastp) const VL_MT_STABLE {
     static constexpr int MAX_TYPEDEF_DEPTH = 1000;
     const AstNodeDType* nodep = this;
     for (int depth = 0; depth < MAX_TYPEDEF_DEPTH; ++depth) {
@@ -842,6 +842,7 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
                 continue;
             } else {
                 if (assertOn) nodep->v3fatalSrc(nodep->prettyTypeName() << " not linked to type");
+                if (lastp) *lastp = nodep;
                 return nullptr;
             }
         }

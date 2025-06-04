@@ -50,8 +50,8 @@ protected:
 
 private:
     // METHODS
-    const AstNodeDType* skipRefIterp(bool skipConst, bool skipEnum,
-                                     bool assertOn = true) const VL_MT_STABLE;
+    const AstNodeDType* skipRefIterp(bool skipConst, bool skipEnum, bool assertOn = true,
+                                     const AstNodeDType** lastp = nullptr) const VL_MT_STABLE;
 
 protected:
     // METHODS
@@ -105,6 +105,15 @@ public:
     AstNodeDType* skipRefToNonRefp() {
         return const_cast<AstNodeDType*>(
             static_cast<const AstNodeDType*>(this)->skipRefIterp(false, false));
+    }
+    // (Slow) Recurse over MemberDType|ParamTypeDType|RefDType to other type, yield last hop upon
+    // failure
+    const AstNodeDType* skipRefOrNullToNonRefp(const AstNodeDType** lastp) const {
+        return skipRefIterp(false, false, false, lastp);
+    }
+    AstNodeDType* skipRefOrNullToNonRefp(AstNodeDType** lastp) {
+        return const_cast<AstNodeDType*>(static_cast<const AstNodeDType*>(this)->skipRefIterp(
+            false, false, false, const_cast<const AstNodeDType**>(lastp)));
     }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthAlignBytes() const = 0;
