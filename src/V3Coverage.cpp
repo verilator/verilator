@@ -127,7 +127,6 @@ class CoverageVisitor final : public VNVisitor {
     // NODE STATE
     // Entire netlist:
     //  AstIf::user1()                  -> bool.  True indicates ifelse processed
-    //  AstVar::user1p()                -> AstVar*. Variable indicating if AstVar is initialized
     //  AstIf::user2()                  -> bool.  True indicates coverage-generated
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
@@ -389,7 +388,7 @@ class CoverageVisitor final : public VNVisitor {
                 m_modp->addStmtsp(chgVarp);
 
                 AstVar* initVarp = nullptr;
-                AstVarRef* initVarRefp = nullptr;
+                AstVarRef* initWriteRefp = nullptr;
                 const AstBasicDType* const basicDTypep
                     = VN_CAST(nodep->dtypep()->skipRefp(), BasicDType);
                 if (basicDTypep && basicDTypep->isFourstate() && basicDTypep->isBitLogic()
@@ -402,10 +401,23 @@ class CoverageVisitor final : public VNVisitor {
                     initVarp
                         = new AstVar{fl_nowarn, VVarType::MODULETEMP, initVarName, initDtypep};
                     m_modp->addStmtsp(initVarp);
-                    nodep->user1p(initVarp);
-                    initVarRefp = new AstVarRef{fl_nowarn, initVarp, VAccess::WRITE};
+                    initWriteRefp = new AstVarRef{fl_nowarn, initVarp, VAccess::WRITE};
+                    AstAssign* const assignp
+                        = new AstAssign{fl_nowarn, initWriteRefp->cloneTree(false),
+                                        new AstConst{fl_nowarn, AstConst::All1{}}};
+                    AstIf* const ifp = new AstIf{
+                        fl_nowarn,
+                        new AstEq{fl_nowarn, new AstVarRef{fl_nowarn, initVarp, VAccess::READ},
+                                  new AstConst{fl_nowarn, AstConst::All0{}}},
+                        assignp};
+                    AstSenTree* const sentreep = new AstSenTree{
+                        fl_nowarn, new AstSenItem{fl_nowarn, VEdgeType::ET_CHANGED,
+                                                  new AstVarRef{fl_nowarn, nodep, VAccess::READ}}};
+                    AstAlways* const alwaysp
+                        = new AstAlways{fl_nowarn, VAlwaysKwd::ALWAYS, sentreep, ifp};
+                    m_modp->addStmtsp(alwaysp);
                     AstAssign* const initAssignp
-                        = new AstAssign{fl_nowarn, initVarRefp->cloneTree(false),
+                        = new AstAssign{fl_nowarn, initWriteRefp->cloneTree(false),
                                         new AstConst{fl_nowarn, AstConst::All0{}}};
                     m_modp->addStmtsp(new AstInitialStatic{fl_nowarn, initAssignp});
                 }
@@ -415,7 +427,7 @@ class CoverageVisitor final : public VNVisitor {
                 // we limit coverage to signals with < 256 bits.
 
                 ToggleEnt newvec{""s, new AstVarRef{fl_nowarn, nodep, VAccess::READ},
-                                 new AstVarRef{fl_nowarn, chgVarp, VAccess::WRITE}, initVarRefp};
+                                 new AstVarRef{fl_nowarn, chgVarp, VAccess::WRITE}, initWriteRefp};
                 toggleVarRecurse(nodep->dtypeSkipRefp(), 0, newvec, nodep);
                 newvec.cleanup();
             }
@@ -1067,27 +1079,6 @@ class CoverageVisitor final : public VNVisitor {
     }
 
     // VISITORS - BOTH
-    void visit(AstNodeAssign* nodep) override {
-        if (AstNodeVarRef* const varRefp = VN_CAST(nodep->lhsp(), NodeVarRef)) {
-            if (varRefp->varp()->user1p()) {
-                FileLine* const fl_nocov = new FileLine{nodep->fileline()};
-                fl_nocov->coverageOn(false);
-                AstVarRef* const initLhsp = new AstVarRef{
-                    fl_nocov, VN_AS(varRefp->varp()->user1p(), Var), VAccess::WRITE};
-                AstNodeAssign* const initAssignp
-                    = nodep->cloneType(initLhsp, new AstConst{fl_nocov, AstConst::All1{}});
-                AstVarRef* const initRhsp = new AstVarRef{
-                    fl_nocov, VN_AS(varRefp->varp()->user1p(), Var), VAccess::READ};
-                AstIf* const initIfp
-                    = new AstIf{fl_nocov, new AstEq{fl_nocov, initRhsp, new AstConst{fl_nocov, 0}},
-                                initAssignp};
-                nodep->addNextHere(initIfp);
-            }
-        }
-        iterateChildren(nodep);
-        lineTrack(nodep);
-    }
-
     void visit(AstNode* nodep) override {
         iterateChildren(nodep);
         lineTrack(nodep);
