@@ -28,6 +28,10 @@ module t(/*AUTOARG*/);
    localparam type x_minus_y_type = type(x-y);
    sub_real #(.the_type (x_minus_y_type)) the_sub_real_1();
    sub_real #(.the_type (type(x-y))) the_sub_real_2();
+   localparam type type1 = type(x*y);
+   type1 type1_var;
+   localparam type type2 = type(type1_var/y);
+   sub_real #(.the_type (type2)) the_sub_real_3();
 
 endmodule
 
