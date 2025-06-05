@@ -51,6 +51,7 @@ Verilator 5.037 devel
 * Fix GCC 10 read-only linker error (#6040). [Todd Strader]
 * Fix WIDTHCONCAT on packed pattern assignment (#6045). [Dan Petrisko]
 * Fix V3OrderParallel scoring contraction hang (#6052). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix virtual interface array typedef expressions (#6057).
 
 
 Verilator 5.036 2025-04-27
