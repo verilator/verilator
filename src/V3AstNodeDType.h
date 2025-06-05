@@ -158,7 +158,7 @@ public:
     bool widthSized() const VL_MT_SAFE { return !m_widthMin || m_widthMin == m_width; }
     bool generic() const VL_MT_SAFE { return m_generic; }
     void generic(bool flag) { m_generic = flag; }
-    std::pair<uint32_t, uint32_t> dimensions(bool includeBasic);
+    std::pair<uint32_t, uint32_t> dimensions(bool includeBasic) const;
     uint32_t arrayUnpackedElements() const;  // 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const {

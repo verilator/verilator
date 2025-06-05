@@ -1034,11 +1034,11 @@ uint32_t AstNodeDType::arrayUnpackedElements() const {
     return entries;
 }
 
-std::pair<uint32_t, uint32_t> AstNodeDType::dimensions(bool includeBasic) {
+std::pair<uint32_t, uint32_t> AstNodeDType::dimensions(bool includeBasic) const {
     // How many array dimensions (packed,unpacked) does this Var have?
     uint32_t packed = 0;
     uint32_t unpacked = 0;
-    for (AstNodeDType* dtypep = this; dtypep;) {
+    for (const AstNodeDType* dtypep = this; dtypep;) {
         dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
         if (const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType)) {
             if (VN_IS(adtypep, PackArrayDType)) {
