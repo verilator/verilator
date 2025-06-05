@@ -106,8 +106,8 @@ public:
         return const_cast<AstNodeDType*>(
             static_cast<const AstNodeDType*>(this)->skipRefIterp(false, false));
     }
-    // (Slow) Recurse over MemberDType|ParamTypeDType|RefDType to other type, yield last hop upon
-    // failure
+    // (Slow) Recurse over MemberDType|ParamTypeDType|RefDType to other type,
+    // If fails, return nullptr and, update lastp if non-nullptr with last hop's nodep
     const AstNodeDType* skipRefOrNullToNonRefp(const AstNodeDType** lastp) const {
         return skipRefIterp(false, false, false, lastp);
     }

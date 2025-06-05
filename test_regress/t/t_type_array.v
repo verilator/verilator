@@ -6,7 +6,8 @@
 
 module t(/*AUTOARG*/);
 
-   int arr [5];
+   typedef int arr_t [5];
+   arr_t arr;
    localparam type arr_type = type(arr);
    arr_type arr_prime;
 

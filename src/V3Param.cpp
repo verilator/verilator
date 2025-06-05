@@ -950,8 +950,7 @@ class ParamProcessor final {
 
         for (auto* stmtp = srcModpr->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
-                const AstNodeDType* skipRefp = dtypep->skipRefOrNullp();
-                if (skipRefp && VN_IS(skipRefp, VoidDType)) {
+                if (VN_IS(dtypep->skipRefOrNullp(), VoidDType)) {
                     nodep->v3error(
                         "Class parameter type without default value is never given value"
                         << " (IEEE 1800-2023 6.20.1): " << dtypep->prettyNameQ());
@@ -1240,8 +1239,7 @@ class ParamVisitor final : public VNVisitor {
     }
     void visit(AstParamTypeDType* nodep) override {
         iterateChildren(nodep);
-        const AstNodeDType* skipRefp = nodep->skipRefOrNullp();
-        if (skipRefp && VN_IS(skipRefp, VoidDType)) {
+        if (VN_IS(nodep->skipRefOrNullp(), VoidDType)) {
             nodep->v3error("Parameter type without default value is never given value"
                            << " (IEEE 1800-2023 6.20.1): " << nodep->prettyNameQ());
         }
