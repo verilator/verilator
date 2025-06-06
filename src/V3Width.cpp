@@ -2128,9 +2128,11 @@ class WidthVisitor final : public VNVisitor {
             if (debug() >= 9) nodep->dumpTree("-  CastPre: ");
             // if (debug()) nodep->backp()->dumpTree("-  CastPreUpUp: ");
             if (AstSigned* const fromp = VN_CAST(nodep->fromp(), Signed)) {
-                AstNode* const lhsp = fromp->lhsp()->unlinkFrBack();
-                fromp->replaceWith(lhsp);
-                VL_DO_DANGLING(fromp->deleteTree(), fromp);
+                if (VN_IS(fromp->lhsp(), NodeStream)) {
+                    AstNode* const lhsp = fromp->lhsp()->unlinkFrBack();
+                    fromp->replaceWith(lhsp);
+                    VL_DO_DANGLING(fromp->deleteTree(), fromp);
+                }
             }
             userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM}.p());
             if (debug() >= 9) nodep->dumpTree("-  CastDit: ");
