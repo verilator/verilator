@@ -413,6 +413,9 @@ public:
     void incWarnings() VL_REQUIRES(m_mutex) { ++m_warnCount; }
     void incErrors() VL_REQUIRES(m_mutex) { ++m_errCount; }
     int errorCount() VL_REQUIRES(m_mutex) { return m_errCount; }
+    bool isErrorOrWarn() VL_REQUIRES(m_mutex) {
+        return errorCount() || (warnFatal() && warnCount());
+    }
     bool pretendError(int errorCode) VL_REQUIRES(m_mutex) { return m_pretendError[errorCode]; }
     void pretendError(V3ErrorCode code, bool flag) VL_REQUIRES(m_mutex) {
         if (code == V3ErrorCode::WIDTH) {
@@ -527,6 +530,10 @@ public:
     static bool isError(V3ErrorCode code, bool supp) VL_MT_SAFE_EXCLUDES(s().m_mutex) {
         const V3RecursiveLockGuard guard{s().m_mutex};
         return s().isError(code, supp);
+    }
+    static bool isErrorOrWarn() VL_MT_SAFE_EXCLUDES(s().m_mutex) {
+        const V3RecursiveLockGuard guard{s().m_mutex};
+        return s().isErrorOrWarn();
     }
     static void abortIfErrors() {
         if (errorCount()) abortIfWarnings();

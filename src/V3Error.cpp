@@ -349,13 +349,14 @@ string V3Error::stripMetaText(const string& text, bool stripContext) VL_PURE {
 }
 
 void V3Error::abortIfWarnings() {
+    if (!isErrorOrWarn()) return;
     const bool exwarn = warnFatal() && warnCount();
     if (errorCount() && exwarn) {
         v3fatalMany("Exiting due to " << std::dec << V3Error::s().errorCount() << " error(s), "  //
                                       << V3Error::s().warnCount() << " warning(s)\n");
     } else if (errorCount()) {
         v3fatalMany("Exiting due to " << std::dec << V3Error::s().errorCount() << " error(s)\n");
-    } else if (exwarn) {
+    } else {
         v3fatalMany("Exiting due to " << std::dec << V3Error::s().warnCount() << " warning(s)\n");
     }
 }

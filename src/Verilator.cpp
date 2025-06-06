@@ -755,7 +755,8 @@ static void verilate(const string& argString) {
                                  + "__idmap.xml");
     }
 
-    if (v3Global.opt.skipIdentical().isTrue() || v3Global.opt.makeDepend().isTrue()) {
+    if ((v3Global.opt.skipIdentical().isTrue() || v3Global.opt.makeDepend().isTrue())
+        && !V3Error::isErrorOrWarn()) {
         V3File::writeTimes(v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
                                + "__verFiles.dat",
                            argString);

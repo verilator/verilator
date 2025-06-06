@@ -54,6 +54,7 @@ Verilator 5.037 devel
 * Fix type operator for interface signals (#6049) (#6050). [Todd Strader]
 * Fix V3OrderParallel scoring contraction hang (#6052). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix virtual interface array typedef expressions (#6057).
+* Fix `--skip-identical` skipping on some errors (#6066). [Todd Strader]
 
 
 Verilator 5.036 2025-04-27
