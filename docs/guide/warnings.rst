@@ -1473,7 +1473,9 @@ List Of Warnings
    Warns that the specified signal is given an initial value where it is
    declared, and is also driven in an always process.  Typically such
    initial values should instead be set using a reset signal inside the
-   process, to match requirements of hardware synthesis tools.
+   process, to match requirements of ASIC synthesis tools.  However,
+   declaration initializers are a valid FPGA design idiom and therefore,
+   FPGA users may want to disable this warning.
 
    Faulty example:
 
