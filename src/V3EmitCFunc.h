@@ -263,14 +263,28 @@ public:
     }
     void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp, bool top,
                                std::set<AstClass*>& doneClassesr) {
-        for (const AstClassExtends* extp = classp->extendsp(); extp;
-            extp = VN_AS(extp->nextp(), ClassExtends)) {
-            // Always recurse to find all virtual interfaces in ancestry
-            putConstructorSubinit(extp->classp(), cfuncp, false, doneClassesr);
-            // Diamond pattern with same base class twice?
-            if (doneClassesr.find(extp->classp()) != doneClassesr.end()) continue;
-            // Only emit: top-level direct parents OR interfaces (from recursion)
-            if (top || extp->classp()->useVirtualPublic()) {
+        if (top) {
+            // Virtual bases in depth-first left-to-right order
+            std::vector<AstClass*> virtualBases;
+            collectVirtualBasesInDepthFirstOrder(classp, virtualBases);
+
+            for (AstClass* vbase : virtualBases) {
+                if (doneClassesr.find(vbase) != doneClassesr.end()) continue;
+                puts(doneClassesr.empty() ? "" : "\n    , ");
+                doneClassesr.emplace(vbase);
+                puts(prefixNameProtect(vbase));
+                if (constructorNeedsProcess(vbase)) {
+                    puts("(vlProcess, vlSymsp)");
+                } else {
+                    puts("(vlSymsp)");
+                }
+            }
+            // Direct non-virtual bases in declaration order
+            for (const AstClassExtends* extp = classp->extendsp(); extp;
+                extp = VN_AS(extp->nextp(), ClassExtends)) {
+                if (extp->classp()->useVirtualPublic()) continue;
+                if (doneClassesr.find(extp->classp()) != doneClassesr.end()) continue;
+
                 puts(doneClassesr.empty() ? "" : "\n    , ");
                 doneClassesr.emplace(extp->classp());
                 puts(prefixNameProtect(extp->classp()));
@@ -279,8 +293,8 @@ public:
                 } else {
                     puts("(vlSymsp");
                 }
-                // Only pass super.new() args for top-level class parents (not interfaces)
-                if (top && !extp->isImplements()) {
+                // Handle super.new() args for concrete parents only
+                if (!extp->classp()->isInterfaceClass()) {
                     const AstCNew* const superNewCallp = getSuperNewCallRecursep(cfuncp->stmtsp());
                     if (superNewCallp) {
                         putCommaIterateNext(superNewCallp->argsp(), true);
@@ -288,7 +302,42 @@ public:
                 }
                 puts(")");
             }
-            top = false;
+        } else {
+            // Non-top: just emit direct parents normally
+            for (const AstClassExtends* extp = classp->extendsp(); extp;
+                extp = VN_AS(extp->nextp(), ClassExtends)) {
+                if (doneClassesr.find(extp->classp()) != doneClassesr.end()) continue;
+                puts(doneClassesr.empty() ? "" : "\n    , ");
+                doneClassesr.emplace(extp->classp());
+                puts(prefixNameProtect(extp->classp()));
+                if (constructorNeedsProcess(extp->classp())) {
+                    puts("(vlProcess, vlSymsp)");
+                } else {
+                    puts("(vlSymsp)");
+                }
+            }
+        }
+    }
+    void collectVirtualBasesInDepthFirstOrder(const AstClass* classp,
+                                             std::vector<AstClass*>& virtualBases) {
+        std::set<const AstClass*> visited;
+        collectVirtualBasesRecursive(classp, virtualBases, visited);
+    }
+    void collectVirtualBasesRecursive(const AstClass* classp,
+        std::vector<AstClass*>& virtualBases,
+                                     std::set<const AstClass*>& visited) {
+        if (visited.find(classp) != visited.end()) return;
+        visited.insert(classp);
+        for (const AstClassExtends* extp = classp->extendsp(); extp;
+            extp = VN_AS(extp->nextp(), ClassExtends)) {
+            // Depth-first: recurse into this base first
+            collectVirtualBasesRecursive(extp->classp(), virtualBases, visited);
+            if (extp->classp()->useVirtualPublic()) {
+                if (std::find(virtualBases.begin(), virtualBases.end(),
+                    extp->classp()) == virtualBases.end()) {
+                    virtualBases.push_back(extp->classp());
+                }
+            }
         }
     }
 

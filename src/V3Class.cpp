@@ -64,12 +64,12 @@ class ClassVisitor final : public VNVisitor {
             nodep->useVirtualPublic(true);
             return;
         }
-        // For concrete classes, check if they implement interfaces, but don't 
+        // For concrete classes, check if they implement interfaces, but don't
         // make the concrete chain virtual
         for (const AstClassExtends* extp = nodep->extendsp(); extp;
             extp = VN_AS(extp->nextp(), ClassExtends)) {
             // Don't propagate to concrete parents
-            recurseImplements(extp->classp());  
+            recurseImplements(extp->classp());
         }
         return;
     }
