@@ -265,28 +265,30 @@ public:
     void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp, bool top,
                                std::set<AstClass*>& doneClassesr) {
         for (const AstClassExtends* extp = classp->extendsp(); extp;
-             extp = VN_AS(extp->nextp(), ClassExtends)) {
-            if (extp->classp()->useVirtualPublic()) {
-                // It's a c++ virtual class (diamond relation)
-                // Must get the subclasses initialized first
-                putConstructorSubinit(extp->classp(), cfuncp, false, doneClassesr);
-            }
+            extp = VN_AS(extp->nextp(), ClassExtends)) {
+            // Always recurse to find all virtual interfaces in ancestry
+            putConstructorSubinit(extp->classp(), cfuncp, false, doneClassesr);
             // Diamond pattern with same base class twice?
             if (doneClassesr.find(extp->classp()) != doneClassesr.end()) continue;
-            puts(doneClassesr.empty() ? "" : "\n    , ");
-            doneClassesr.emplace(extp->classp());
-            puts(prefixNameProtect(extp->classp()));
-            if (constructorNeedsProcess(extp->classp())) {
-                puts("(vlProcess, vlSymsp");
-            } else {
-                puts("(vlSymsp");
+            // Only emit: top-level direct parents OR interfaces (from recursion)
+            if (top || extp->isImplements()) {
+                puts(doneClassesr.empty() ? "" : "\n    , ");
+                doneClassesr.emplace(extp->classp());
+                puts(prefixNameProtect(extp->classp()));
+                if (constructorNeedsProcess(extp->classp())) {
+                    puts("(vlProcess, vlSymsp");
+                } else {
+                    puts("(vlSymsp");
+                }
+                // Only pass super.new() args for top-level class parents (not interfaces)
+                if (top && !extp->isImplements()) {
+                    const AstCNew* const superNewCallp = getSuperNewCallRecursep(cfuncp->stmtsp());
+                    if (superNewCallp) {
+                        putCommaIterateNext(superNewCallp->argsp(), true);
+                    }
+                }
+                puts(")");
             }
-            if (top) {
-                const AstCNew* const superNewCallp = getSuperNewCallRecursep(cfuncp->stmtsp());
-                UASSERT_OBJ(superNewCallp, cfuncp, "super.new call not found");
-                putCommaIterateNext(superNewCallp->argsp(), true);
-            }
-            puts(")");
             top = false;
         }
     }
