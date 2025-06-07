@@ -569,8 +569,10 @@ class EmitCHeader final : public EmitCConstInit {
                 for (const AstClassExtends* extp = classp->extendsp(); extp;
                     extp = VN_AS(extp->nextp(), ClassExtends)) {
                     if (needComma) puts(", ");
-                    // Use virtual only for interfaces (implements), not for class inheritance (extends)
-                    const string virtpub = extp->isImplements() ? "virtual public " : "public ";
+                    // Use virtual only for interfaces for class inheritance 
+                    // (extends)
+                    const string virtpub = extp->classp()->useVirtualPublic() 
+                        ? "virtual public " : "public ";
                     puts(virtpub);
                     putns(extp, prefixNameProtect(extp->classp()));
                     needComma = true;

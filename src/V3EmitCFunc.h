@@ -261,7 +261,6 @@ public:
         if (const AstCNew* const cnewp = getSuperNewCallRecursep(nodep->nextp())) return cnewp;
         return nullptr;
     }
-
     void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp, bool top,
                                std::set<AstClass*>& doneClassesr) {
         for (const AstClassExtends* extp = classp->extendsp(); extp;
@@ -271,7 +270,7 @@ public:
             // Diamond pattern with same base class twice?
             if (doneClassesr.find(extp->classp()) != doneClassesr.end()) continue;
             // Only emit: top-level direct parents OR interfaces (from recursion)
-            if (top || extp->isImplements()) {
+            if (top || extp->classp()->useVirtualPublic()) {
                 puts(doneClassesr.empty() ? "" : "\n    , ");
                 doneClassesr.emplace(extp->classp());
                 puts(prefixNameProtect(extp->classp()));
