@@ -40,6 +40,7 @@ Verilator 5.037 devel
 * Fix AstAssignW conversion (#5991) (#5992). [Ryszard Rozak, Antmicro Ltd.]
 * Fix const-bit-op-tree with single-bit masks (#5993) (#5998). [Yutetsu TAKATSUKASA]
 * Fix arithmetic right-shift by constants over 32 bits (#5994). [Zhen Yan]
+* Fix array bounds checking with class member selects (#5996) (#5997). [Krzysztof Starecki]
 * Fix checking for too-wide divide and modulus (#6003) (#6006). [Zhen Yan]
 * Fix folding of LteS in DfgPeephole (#6000) (#6004). [Geza Lore]
 * Fix slicing of AstExprStmt nodes (#6005). [Ryszard Rozak, Antmicro Ltd.]
