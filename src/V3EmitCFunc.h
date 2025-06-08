@@ -302,13 +302,13 @@ public:
     void collectVirtualBasesDepthFirst(const AstClass* classp,
                                        std::vector<AstClass*>& virtualBases) {
         std::set<const AstClass*> visited;
-        collectVirtualBasesRecursive(classp, virtualBases, visited);
+        collectVirtualBasesRecurse(classp, virtualBases /*ref*/, visited /*ref*/);
     }
-    void collectVirtualBasesRecursive(const AstClass* classp,
+    void collectVirtualBasesRecurse(const AstClass* classp,
                                       std::vector<AstClass*>& virtualBases,
                                       std::set<const AstClass*>& visited) {
-        if (visited.count(classp)) return;
-        visited.insert(classp);
+        if (visited.exists(classp)) return;
+        visited.emplace(classp);
         for (const AstClassExtends* extp = classp->extendsp(); extp;
             extp = VN_AS(extp->nextp(), ClassExtends)) {
             // Depth-first: recurse into this base first
@@ -337,7 +337,6 @@ public:
         if (nodep->ifdef() != "") putns(nodep, "#ifdef " + nodep->ifdef() + "\n");
         if (nodep->isInline()) putns(nodep, "VL_INLINE_OPT ");
         emitCFuncHeader(nodep, m_modp, /* withScope: */ true);
-
 
         if (nodep->isConstructor()) {
             const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);

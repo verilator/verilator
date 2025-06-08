@@ -571,9 +571,7 @@ class EmitCHeader final : public EmitCConstInit {
                     if (needComma) puts(", ");
                     // Use virtual only for interfaces for class inheritance
                     // (extends)
-                    const string virtpub = extp->classp()->useVirtualPublic()
-                        ? "virtual public " : "public ";
-                    puts(virtpub);
+                    puts(extp->classp()->useVirtualPublic() ? "virtual public " : "public ");
                     putns(extp, prefixNameProtect(extp->classp()));
                     needComma = true;
                 }
