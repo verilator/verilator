@@ -58,8 +58,7 @@ class sky_class extends top_class;
 endclass
 
 
-module t;/*AUTOARG*/
-   // Inputs
+module t;
 
    initial begin
         sky_class s = new("ahoj");

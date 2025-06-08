@@ -265,7 +265,7 @@ public:
         // Virtual bases in depth-first left-to-right order
         std::vector<AstClass*> virtualBases;
         std::set<AstClass*> doneClasses;
-        collectVirtualBasesDepthFirst(classp, virtualBases);
+        collectVirtualBasesRecursep(classp, virtualBases);
         for (AstClass* vbase : virtualBases) {
             if (doneClasses.count(vbase)) continue;
             puts(doneClasses.empty() ? "" : "\n    , ");
@@ -299,12 +299,12 @@ public:
             puts(")");
         }
     }
-    void collectVirtualBasesDepthFirst(const AstClass* classp,
+    void collectVirtualBasesRecursep(const AstClass* classp,
                                        std::vector<AstClass*>& virtualBases) {
         std::set<const AstClass*> visited;
-        collectVirtualBasesRecurse(classp, virtualBases /*ref*/, visited /*ref*/);
+        collectVirtualBasesRecursep(classp, virtualBases /*ref*/, visited /*ref*/);
     }
-    void collectVirtualBasesRecurse(const AstClass* classp,
+    void collectVirtualBasesRecursep(const AstClass* classp,
                                       std::vector<AstClass*>& virtualBases,
                                       std::set<const AstClass*>& visited) {
         if (visited.count(classp)) return;
@@ -312,7 +312,7 @@ public:
         for (const AstClassExtends* extp = classp->extendsp(); extp;
             extp = VN_AS(extp->nextp(), ClassExtends)) {
             // Depth-first: recurse into this base first
-            collectVirtualBasesRecursive(extp->classp(), virtualBases, visited);
+            collectVirtualBasesRecursep(extp->classp(), virtualBases, visited);
             if (extp->classp()->useVirtualPublic()) {
                 virtualBases.push_back(extp->classp());
             }
