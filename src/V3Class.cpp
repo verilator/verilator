@@ -62,7 +62,6 @@ class ClassVisitor final : public VNVisitor {
         // Only mark interface classes as virtual
         if (nodep->isInterfaceClass()) {
             nodep->useVirtualPublic(true);
-            return;
         }
         // For concrete classes, check if they implement interfaces, but don't
         // make the concrete chain virtual
