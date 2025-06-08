@@ -307,7 +307,7 @@ public:
     void collectVirtualBasesRecurse(const AstClass* classp,
                                       std::vector<AstClass*>& virtualBases,
                                       std::set<const AstClass*>& visited) {
-        if (visited.exists(classp)) return;
+        if (visited.count(classp)) return;
         visited.emplace(classp);
         for (const AstClassExtends* extp = classp->extendsp(); extp;
             extp = VN_AS(extp->nextp(), ClassExtends)) {
