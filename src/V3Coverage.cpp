@@ -92,7 +92,7 @@ class CoverageVisitor final : public VNVisitor {
         const string m_comment;  // Comment for coverage dump
         AstNodeExpr* m_varRefp;  // How to get to this element
         AstNodeExpr* m_chgRefp;  // How to get to this element
-        AstNodeExpr* m_initRefp;  // Evaluates to true if variable is initialized
+        AstNodeExpr* m_initRefp;  // Expression that stores initialization status
         ToggleEnt(const string& comment, AstNodeExpr* vp, AstNodeExpr* cp, AstNodeExpr* initp)
             : m_comment{comment}
             , m_varRefp{vp}
@@ -389,7 +389,8 @@ class CoverageVisitor final : public VNVisitor {
 
                 AstVar* initVarp = nullptr;
                 AstVarRef* initWriteRefp = nullptr;
-                // primaryIO is not set yet
+                // We need to exclude top module input ports, because they can't have value x.
+                // TODO: Exclude also variables driven by top module input ports
                 const bool isTopModuleInput
                     = (v3Global.rootp()->topModulep() == m_modp) && nodep->isInput();
                 const AstBasicDType* const basicDTypep
