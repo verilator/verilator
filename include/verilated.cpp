@@ -438,6 +438,30 @@ WDataOutP VL_SCOPED_RAND_RESET_W(int obits, WDataOutP outwp, uint64_t scopeHash,
     return outwp;
 }
 
+IData VL_SCOPED_RAND_RESET_ASSIGN_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE {
+    IData data = ~0;
+    VlRNG rng(Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt);
+    data = rng.rand64();
+    data &= VL_MASK_I(obits);
+    return data;
+}
+
+QData VL_SCOPED_RAND_RESET_ASSIGN_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE {
+    QData data = ~0ULL;
+    VlRNG rng(Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt);
+    data = rng.rand64();
+    data &= VL_MASK_Q(obits);
+    return data;
+}
+
+WDataOutP VL_SCOPED_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp, uint64_t scopeHash,
+                                        uint64_t salt) VL_MT_UNSAFE {
+    VlRNG rng(Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt);
+    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = rng.rand64();
+    outwp[VL_WORDS_I(obits) - 1] = rng.rand64() & VL_MASK_E(obits);
+    return outwp;
+}
+
 IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
     if (Verilated::threadContextp()->randReset() == 0) return 0;
     IData data = ~0;
@@ -447,7 +471,6 @@ IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
     data &= VL_MASK_I(obits);
     return data;
 }
-IData VL_RAND_RESET_ASSIGN_I(int obits) VL_MT_SAFE { return VL_RANDOM_I() & VL_MASK_I(obits); }
 
 QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE {
     if (Verilated::threadContextp()->randReset() == 0) return 0;
@@ -459,16 +482,9 @@ QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE {
     return data;
 }
 
-QData VL_RAND_RESET_ASSIGN_Q(int obits) VL_MT_SAFE { return VL_RANDOM_Q() & VL_MASK_Q(obits); }
-
 WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = VL_RAND_RESET_I(32);
     outwp[VL_WORDS_I(obits) - 1] = VL_RAND_RESET_I(32) & VL_MASK_E(obits);
-    return outwp;
-}
-WDataOutP VL_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp) VL_MT_SAFE {
-    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = VL_RAND_RESET_ASSIGN_I(32);
-    outwp[VL_WORDS_I(obits) - 1] = VL_RAND_RESET_ASSIGN_I(32) & VL_MASK_E(obits);
     return outwp;
 }
 WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
