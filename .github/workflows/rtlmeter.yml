@@ -163,3 +163,64 @@ jobs:
           name: "all-results-clang"
           overwrite: true
           retention-days: 30
+
+  publish-results:
+    name: Publish results to verilator/verilator-rtlmeter-results
+    needs: combine-results
+    if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && contains(needs.*.result, 'success') && !cancelled() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download combined results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: all-results-*
+          path: results
+          merge-multiple: true
+      - name: Extract combined results
+        working-directory: results
+        run: |
+          for f in $(find . -name "all-results*.tar.gz");  do  \
+            tar xzfv $f; \
+          done
+      # Pushing to verilator/verilator-rtlmeter-results requires elevated permissions
+      - name: Generate access token
+        id: generate-token
+        uses: actions/create-github-app-token@v2.0.6
+        with:
+          app-id: ${{ vars.RTLMETER_RESULTS_CI_APP_ID }}
+          private-key: ${{ secrets.RTLMETER_RESULTS_CI_APP_PRIVATE_KEY }}
+          owner: verilator
+          repositories: verilator-rtlmeter-results
+      - name: Checkout verilator-rtlmeter-results
+        uses: actions/checkout@v4
+        with:
+          repository: "verilator/verilator-rtlmeter-results"
+          token: ${{ steps.generate-token.outputs.token }}
+          path: verilator-rtlmeter-results
+          fetch-depth: 20
+      - name: Import results
+        id: import-results
+        working-directory: verilator-rtlmeter-results
+        run: |
+          # Import 'gcc' results
+          for f in $(find ../results -wholename "*all-results-gcc-*/*.json"); do \
+            echo "Importing $f"; \
+            ./bin/add-rtlmeter-result --descr "gcc" $f; \
+          done
+          # Import 'clang --threads 4' results
+          for f in $(find ../results -wholename "*all-results-clang-*/*.json"); do \
+            echo "Importing $f"; \
+            ./bin/add-rtlmeter-result --descr "clang --threads 4" $f; \
+          done
+          test -z "$(git status --porcelain)" || echo "valid=1" >> "$GITHUB_OUTPUT"
+      - name: Push to verilator-rtlmeter-results
+        if: ${{ steps.import-results.outputs.valid }}
+        working-directory: verilator-rtlmeter-results
+        run: |
+          git config --global user.email "action@example.com"
+          git config --global user.name "github action"
+          git add .
+          git commit -m "Verilator CI: Results of 'RTLMeter' workflow run #${{ github.run_number }}"
+          git log --oneline | head -10
+          git show --quiet | cat
+          git push origin
