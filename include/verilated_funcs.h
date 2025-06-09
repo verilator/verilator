@@ -109,19 +109,22 @@ extern QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt
 extern WDataOutP VL_SCOPED_RAND_RESET_W(int obits, WDataOutP outwp, uint64_t scopeHash,
                                         uint64_t salt) VL_MT_UNSAFE;
 
+/// Random reset a signal of given width (assign time only)
+extern IData VL_SCOPED_RAND_RESET_ASSIGN_I(int obits, uint64_t scopeHash,
+                                           uint64_t salt) VL_MT_UNSAFE;
+/// Random reset a signal of given width (assign time only)
+extern QData VL_SCOPED_RAND_RESET_ASSIGN_Q(int obits, uint64_t scopeHash,
+                                           uint64_t salt) VL_MT_UNSAFE;
+/// Random reset a signal of given width (assign time only)
+extern WDataOutP VL_SCOPED_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp, uint64_t scopeHash,
+                                               uint64_t salt) VL_MT_UNSAFE;
+
 /// Random reset a signal of given width (init time only)
 extern IData VL_RAND_RESET_I(int obits) VL_MT_SAFE;
 /// Random reset a signal of given width (init time only)
 extern QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE;
 /// Random reset a signal of given width (init time only)
 extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
-
-/// Random reset a signal of given width (assign time only)
-extern IData VL_RAND_RESET_ASSIGN_I(int obits) VL_MT_SAFE;
-/// Random reset a signal of given width (assign time only)
-extern QData VL_RAND_RESET_ASSIGN_Q(int obits) VL_MT_SAFE;
-/// Random reset a signal of given width (assign time only)
-extern WDataOutP VL_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp) VL_MT_SAFE;
 
 /// Zero reset a signal (slow - else use VL_ZERO_W)
 extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;

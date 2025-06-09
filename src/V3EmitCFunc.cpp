@@ -769,7 +769,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 }
             } else {
                 out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(")
-                              : "VL_SCOPED_RAND_RESET_W(";
+                              : (varp->isXTemp() ? "VL_SCOPED_RAND_RESET_ASSIGN_W("
+                                                 : "VL_SCOPED_RAND_RESET_W(");
                 out += cvtToStr(dtypep->widthMin());
                 out += ", " + varNameProtected + suffix;
                 if (!zeroit) {
@@ -797,6 +798,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 emitVarResetScopeHash();
                 const uint64_t salt = VString::hashMurmur(varp->prettyName());
                 out += " = VL_SCOPED_RAND_RESET_";
+                if (varp->isXTemp()) out += "ASSIGN_";
                 out += dtypep->charIQWN();
                 out += "(" + cvtToStr(dtypep->widthMin()) + ", "
                        + (m_classOrPackage ? m_classOrPackageHash : "__VscopeHash") + ", "
