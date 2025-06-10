@@ -2956,6 +2956,7 @@ public:
 };
 class AstCoverInc final : public AstNodeStmt {
     // Coverage analysis point; increment coverage count
+    // @astgen op1 := toggleExprp : Optional[AstNodeExpr]
     //
     // @astgen ptr := m_declp : AstCoverDecl  // [After V3CoverageJoin] Declaration
 public:
