@@ -48,6 +48,7 @@ jobs:
       runs-on: ubuntu-24.04
       cc: gcc
       cases: ${{ matrix.cases }}
+      run-name: "gcc"
       compileArgs: ""
       executeArgs: ""
     strategy:
@@ -88,6 +89,7 @@ jobs:
       runs-on: ubuntu-24.04
       cc: clang
       cases: ${{ matrix.cases }}
+      run-name: "clang --threads 4"
       compileArgs: "--threads 4"
       executeArgs: ""
     strategy:
@@ -128,38 +130,78 @@ jobs:
     if: ${{ (contains(needs.*.result, 'success') || contains(needs.*.result, 'failure')) && !cancelled() }}
     runs-on: ubuntu-24.04
     steps:
-      - name: Download all GCC results
+      - name: Download all results
         uses: actions/download-artifact@v4
         with:
-          pattern: rtlmeter-results-ubuntu-24.04-gcc-*
-          path: all-results-gcc-${{ github.run_id }}
+          pattern: rtlmeter-results-*
+          path: all-results-${{ github.run_id }}
           merge-multiple: true
-      - name: Download all Clang results
-        uses: actions/download-artifact@v4
-        with:
-          pattern: rtlmeter-results-ubuntu-24.04-clang-*
-          path: all-results-clang-${{ github.run_id }}
-          merge-multiple: true
-      - name: Tar up results
+      - name: Tar up all results into single archive
         run: |
-          # Ensure combined result directories exists in case of no results
-          mkdir -p all-results-gcc-${{ github.run_id }}
-          mkdir -p all-results-clang-${{ github.run_id }}
-          ls -la all-results*
-          # Tar up each directory
-          tar --posix -c -z -f all-results-gcc-${{ github.run_id }}.tar.gz all-results-gcc-${{ github.run_id }}
-          tar --posix -c -z -f all-results-clang-${{ github.run_id }}.tar.gz all-results-clang-${{ github.run_id }}
-      - name: Upload combined GCC results
+          # Ensure combined result directory exists in case of no results
+          mkdir -p all-results-${{ github.run_id }}
+          ls -la all-results-${{ github.run_id }}
+          # Tar up the results directory
+          tar --posix -c -z -f all-results-${{ github.run_id }}.tar.gz all-results-${{ github.run_id }}
+      - name: Upload combined results
         uses: actions/upload-artifact@v4
         with:
-          path: all-results-gcc-${{ github.run_id }}.tar.gz
-          name: "all-results-gcc"
+          path: all-results-${{ github.run_id }}.tar.gz
+          name: all-results
           overwrite: true
           retention-days: 30
-      - name: Upload combined Clang results
-        uses: actions/upload-artifact@v4
+
+  publish-results:
+    name: Publish results to verilator/verilator-rtlmeter-results
+    needs: combine-results
+    # Only run on scheduled builds on the main repository. We also restrict
+    # the publishing to run only on the first run_attempt. This is required
+    # to prevent multiple uploads the same day (if rerunning), as the
+    # dashboard UI currently assumes there is only one data point per
+    # calendar day. Results from reruns can be imported manually if needed.
+    if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && contains(needs.*.result, 'success') && !cancelled() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download combined results
+        uses: actions/download-artifact@v4
         with:
-          path: all-results-clang-${{ github.run_id }}.tar.gz
-          name: "all-results-clang"
-          overwrite: true
-          retention-days: 30
+          name: all-results
+          path: results
+      - name: Extract combined results
+        working-directory: results
+        run: |
+            tar xzfv all-results-${{ github.run_id }}.tar.gz
+            ls -la
+      # Pushing to verilator/verilator-rtlmeter-results requires elevated permissions
+      - name: Generate access token
+        id: generate-token
+        uses: actions/create-github-app-token@v2.0.6
+        with:
+          app-id: ${{ vars.RTLMETER_RESULTS_CI_APP_ID }}
+          private-key: ${{ secrets.RTLMETER_RESULTS_CI_APP_PRIVATE_KEY }}
+          owner: verilator
+          repositories: verilator-rtlmeter-results
+      - name: Checkout verilator-rtlmeter-results
+        uses: actions/checkout@v4
+        with:
+          repository: "verilator/verilator-rtlmeter-results"
+          token: ${{ steps.generate-token.outputs.token }}
+          path: verilator-rtlmeter-results
+      - name: Import results
+        id: import-results
+        working-directory: verilator-rtlmeter-results
+        run: |
+          for f in $(find ../results -name "*.json"); do \
+            echo "Importing $f"; \
+            ./bin/add-rtlmeter-result $f; \
+          done
+          test -z "$(git status --porcelain)" || echo "valid=1" >> "$GITHUB_OUTPUT"
+      - name: Push to verilator-rtlmeter-results
+        if: ${{ steps.import-results.outputs.valid }}
+        working-directory: verilator-rtlmeter-results
+        run: |
+          git config --global user.email "action@example.com"
+          git config --global user.name "github action"
+          git add .
+          git commit -m "Verilator CI: Results of 'RTLMeter' workflow run #${{ github.run_number }}"
+          git push origin
