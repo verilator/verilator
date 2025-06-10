@@ -1944,6 +1944,7 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
     // But for now, we'll just text-bash it.
     const string frName = frPrefix + portp->name() + frSuffix;
     const string toName = portp->name() + toSuffix;
+    const string idx = portp->name() + "__Vidx";
     size_t unpackSize = 1;  // non-unpacked array is treated as size 1
     int unpackDim = 0;
     if (AstUnpackArrayDType* const unpackp
@@ -1954,17 +1955,23 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
     }
     if (portp->basicp()->isDpiBitVec() || portp->basicp()->isDpiLogicVec()) {
         const bool isBit = portp->basicp()->isDpiBitVec();
-        const string idx = portp->name() + "__Vidx";
-        stmt = "for (size_t " + idx + " = 0; " + idx + " < " + cvtToStr(unpackSize) + "; ++" + idx
-               + ") ";
+        const bool needsFor = unpackSize > 1;
+        if (needsFor) {
+            stmt = "for (size_t " + idx + " = 0; " + idx + " < " + cvtToStr(unpackSize) + "; ++"
+                   + idx + ") ";
+        }
+
         stmt += (isBit ? "VL_SET_SVBV_"s : "VL_SET_SVLV_"s)
                 + portp->dtypep()->skipRefp()->charIQWN() + "(" + cvtToStr(portp->width()) + ", ";
-        stmt += toName + " + " + cvtToStr(portp->dtypep()->skipRefp()->widthWords()) + " * " + idx
-                + ", ";
+        stmt += toName;
+        if (needsFor) {
+            stmt += " + " + cvtToStr(portp->dtypep()->skipRefp()->widthWords()) + " * " + idx;
+        }
+        stmt += ", ";
         if (unpackDim > 0) {  // Access multi-dimensional array as a 1D array
             stmt += "(&" + frName;
             for (int i = 0; i < unpackDim; ++i) stmt += "[0]";
-            stmt += ")[" + idx + "])";
+            stmt += ")[" + (needsFor ? idx : "0") + "])";
         } else {
             stmt += frName + ")";
         }
@@ -1973,11 +1980,13 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
             = portp->basicp() && portp->basicp()->keyword() == VBasicDTypeKwd::CHANDLE;
         const bool isString
             = portp->basicp() && portp->basicp()->keyword() == VBasicDTypeKwd::STRING;
-        const string idx = portp->name() + "__Vidx";
-        stmt = "for (size_t " + idx + " = 0; " + idx + " < " + cvtToStr(unpackSize) + "; ++" + idx
-               + ") ";
+        const string unpackAt = unpackSize > 1 ? "[" + idx + "]" : "[0]";
         if (unpackDim > 0) {
-            stmt += toName + "[" + idx + "]";
+            const string forStmt = unpackSize > 1
+                                       ? "for (size_t " + idx + " = 0; " + idx + " < "
+                                             + cvtToStr(unpackSize) + "; ++" + idx + ") "
+                                       : "";
+            stmt += forStmt + toName + unpackAt;
         } else {
             if (isPtr) stmt += "*";  // DPI outputs are pointers
             stmt += toName;
@@ -1990,7 +1999,7 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
         if (unpackDim > 0) {
             stmt += "(&" + frName;
             for (int i = 0; i < unpackDim; ++i) stmt += "[0]";
-            stmt += ")[" + idx + "]";
+            stmt += ")" + unpackAt;
         } else {
             stmt += frName;
         }
