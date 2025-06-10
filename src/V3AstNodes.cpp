@@ -425,7 +425,7 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
         // the Verilog literal parser.
         char* endp;
         const int v = strtol(literal.c_str(), &endp, 0);
-        if ((v != 0) && (endp[0] == 0)) {  // C literal
+        if ((v != 0) && (v != 1) && (endp[0] == 0)) {  // C literal
             return new AstConst{fl, AstConst::Signed32{}, v};
         } else {  // Try a Verilog literal (fatals if not)
             return new AstConst{fl, AstConst::StringToParse{}, literal.c_str()};
