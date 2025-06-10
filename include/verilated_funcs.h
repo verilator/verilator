@@ -1607,13 +1607,15 @@ static inline WDataOutP VL_STREAML_WWI(int lbits, WDataOutP owp, WDataInP const 
 
 static inline IData VL_PACK_I_RI(int obits, int lbits, const VlQueue<CData>& q) {
     IData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= static_cast<IData>(q.at(q.size() - 1 - i)) << (i * lbits);
+    for (size_t i = 0; i < q.size(); ++i)
+        ret |= static_cast<IData>(q.at(q.size() - 1 - i)) << (i * lbits);
     return ret;
 }
 
 static inline IData VL_PACK_I_RI(int obits, int lbits, const VlQueue<SData>& q) {
     IData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= static_cast<IData>(q.at(q.size() - 1 - i)) << (i * lbits);
+    for (size_t i = 0; i < q.size(); ++i)
+        ret |= static_cast<IData>(q.at(q.size() - 1 - i)) << (i * lbits);
     return ret;
 }
 
@@ -1648,19 +1650,22 @@ static inline IData VL_PACK_I_UI(int obits, int lbits, const VlUnpacked<IData, N
 
 static inline QData VL_PACK_Q_RI(int obits, int lbits, const VlQueue<CData>& q) {
     QData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= static_cast<QData>(q.at(q.size() - 1 - i)) << (i * lbits);
+    for (size_t i = 0; i < q.size(); ++i)
+        ret |= static_cast<QData>(q.at(q.size() - 1 - i)) << (i * lbits);
     return ret;
 }
 
 static inline QData VL_PACK_Q_RI(int obits, int lbits, const VlQueue<SData>& q) {
     QData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= static_cast<QData>(q.at(q.size() - 1 - i)) << (i * lbits);
+    for (size_t i = 0; i < q.size(); ++i)
+        ret |= static_cast<QData>(q.at(q.size() - 1 - i)) << (i * lbits);
     return ret;
 }
 
 static inline QData VL_PACK_Q_RI(int obits, int lbits, const VlQueue<IData>& q) {
     QData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= static_cast<QData>(q.at(q.size() - 1 - i)) << (i * lbits);
+    for (size_t i = 0; i < q.size(); ++i)
+        ret |= static_cast<QData>(q.at(q.size() - 1 - i)) << (i * lbits);
     return ret;
 }
 
