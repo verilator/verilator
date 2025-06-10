@@ -100,11 +100,12 @@ class ClockVisitor final : public VNVisitor {
         // if (debug()) nodep->dumpTree("-  ct: ");
         // COVERTOGGLE(INC, ORIG, CHANGE) ->
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
-        AstNode* const incp = nodep->incp()->unlinkFrBack();
+        AstCoverInc* const incp = nodep->incp()->unlinkFrBack();
         AstNodeExpr* const origp = nodep->origp()->unlinkFrBack();
         AstNodeExpr* const changeWrp = nodep->changep()->unlinkFrBack();
         AstNodeExpr* const changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
         AstNodeExpr* comparedp = nullptr;
+        incp->toggleExprp(origp->cloneTree(false));
         // Xor will optimize better than Eq, when CoverToggle has bit selects,
         // but can only use Xor with non-opaque types
         if (const AstBasicDType* const bdtypep
