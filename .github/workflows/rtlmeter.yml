@@ -197,7 +197,6 @@ jobs:
           repository: "verilator/verilator-rtlmeter-results"
           token: ${{ steps.generate-token.outputs.token }}
           path: verilator-rtlmeter-results
-          fetch-depth: 20
       - name: Import results
         id: import-results
         working-directory: verilator-rtlmeter-results
@@ -221,6 +220,4 @@ jobs:
           git config --global user.name "github action"
           git add .
           git commit -m "Verilator CI: Results of 'RTLMeter' workflow run #${{ github.run_number }}"
-          git log --oneline | head -10
-          git show --quiet | cat
           git push origin
