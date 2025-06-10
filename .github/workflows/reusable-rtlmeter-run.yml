@@ -16,8 +16,15 @@ on:
         description: "Compiler to use: 'gcc' or 'clang'"
         type: string
         required: true
+      # Note: The combination of 'cases' and 'run-name' must be unique for all
+      # invocations of this workflow within a run of the parent workflow.
+      # These two are used together to generate a unique results file name.
       cases:
         description: "RTLMeter cases to run"
+        type: string
+        required: true
+      run-name:
+        description: "Run name (identifier) to add to collated results"
         type: string
         required: true
       compileArgs:
@@ -93,10 +100,10 @@ jobs:
         id: results
         working-directory: rtlmeter
         run: |
-          # 'inputs.cases' has special characters, use its md5sum as unique id
-          hash=$(md5sum <<< '${{ inputs.cases }}' | awk '{print $1}')
+          # Use 'inputs.cases' and 'inputs.run-name' to generate a unique file name
+          hash=$(md5sum <<< '${{ inputs.cases }} ${{ inputs.run-name }}' | awk '{print $1}')
           echo "hash=${hash}" >> $GITHUB_OUTPUT
-          ./rtlmeter collate > ../results-${hash}.json
+          ./rtlmeter collate --runName "${{ inputs.run-name }}"  > ../results-${hash}.json
 
       - name: Report results
         working-directory: rtlmeter
@@ -107,7 +114,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: results-${{ steps.results.outputs.hash }}.json
-          name: rtlmeter-results-${{ inputs.runs-on }}-${{ inputs.cc }}-${{ steps.results.outputs.hash }}
+          name: rtlmeter-results-${{ steps.results.outputs.hash }}
           overwrite: true
           retention-days: 2
 
