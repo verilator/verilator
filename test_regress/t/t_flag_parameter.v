@@ -57,6 +57,11 @@ module t;
    parameter int71 = 1;
    parameter int72 = 1;
 
+   parameter bit bit0to0 = 0;
+   parameter bit bit1to1 = 1;
+   parameter bit bit0to1 = 0;
+   parameter bit bit1to0 = 1;
+
    initial begin
       `check(string1,"New String");
       `check(string2,"New String");
@@ -88,6 +93,10 @@ module t;
       `check(int62,32'hdeadbeef);
       `check(int71,-1000);
       `check(int72,-1000);
+      `check(bit0to0, 1'b0);
+      `check(bit1to1, 1'b1);
+      `check(bit0to1, 1'b1);
+      `check(bit1to0, 1'b0);
 
       // Check parameter assigned simple integer literal is signed
       if ((int11 << 27) >>> 31 != -1) $stop;
