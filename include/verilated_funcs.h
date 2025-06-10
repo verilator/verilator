@@ -1607,19 +1607,21 @@ static inline WDataOutP VL_STREAML_WWI(int lbits, WDataOutP owp, WDataInP const 
 
 static inline IData VL_PACK_I_RI(int obits, int lbits, const VlQueue<CData>& q) {
     IData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= static_cast<IData>(q.at(i)) << (i * lbits);
+    for (size_t i = 0; i < q.size(); ++i)
+        ret |= static_cast<IData>(q.at(q.size() - 1 - i)) << (i * lbits);
     return ret;
 }
 
 static inline IData VL_PACK_I_RI(int obits, int lbits, const VlQueue<SData>& q) {
     IData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= static_cast<IData>(q.at(i)) << (i * lbits);
+    for (size_t i = 0; i < q.size(); ++i)
+        ret |= static_cast<IData>(q.at(q.size() - 1 - i)) << (i * lbits);
     return ret;
 }
 
 static inline IData VL_PACK_I_RI(int obits, int lbits, const VlQueue<IData>& q) {
     IData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= q.at(i) << (i * lbits);
+    for (size_t i = 0; i < q.size(); ++i) ret |= q.at(q.size() - 1 - i) << (i * lbits);
     return ret;
 }
 
@@ -1648,19 +1650,22 @@ static inline IData VL_PACK_I_UI(int obits, int lbits, const VlUnpacked<IData, N
 
 static inline QData VL_PACK_Q_RI(int obits, int lbits, const VlQueue<CData>& q) {
     QData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= static_cast<QData>(q.at(i)) << (i * lbits);
+    for (size_t i = 0; i < q.size(); ++i)
+        ret |= static_cast<QData>(q.at(q.size() - 1 - i)) << (i * lbits);
     return ret;
 }
 
 static inline QData VL_PACK_Q_RI(int obits, int lbits, const VlQueue<SData>& q) {
     QData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= static_cast<QData>(q.at(i)) << (i * lbits);
+    for (size_t i = 0; i < q.size(); ++i)
+        ret |= static_cast<QData>(q.at(q.size() - 1 - i)) << (i * lbits);
     return ret;
 }
 
 static inline QData VL_PACK_Q_RI(int obits, int lbits, const VlQueue<IData>& q) {
     QData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= static_cast<QData>(q.at(i)) << (i * lbits);
+    for (size_t i = 0; i < q.size(); ++i)
+        ret |= static_cast<QData>(q.at(q.size() - 1 - i)) << (i * lbits);
     return ret;
 }
 
@@ -1690,7 +1695,7 @@ static inline QData VL_PACK_Q_UI(int obits, int lbits, const VlUnpacked<IData, N
 
 static inline QData VL_PACK_Q_RQ(int obits, int lbits, const VlQueue<QData>& q) {
     QData ret = 0;
-    for (size_t i = 0; i < q.size(); ++i) ret |= q.at(i) << (i * lbits);
+    for (size_t i = 0; i < q.size(); ++i) ret |= q.at(q.size() - 1 - i) << (i * lbits);
     return ret;
 }
 
@@ -1705,7 +1710,7 @@ static inline WDataOutP VL_PACK_W_RI(int obits, int lbits, WDataOutP owp,
                                      const VlQueue<CData>& q) {
     VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
     for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WI(owp, q.at(i), i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WI(owp, q.at(q.size() - i - 1), i * lbits + lbits - 1, i * lbits);
     return owp;
 }
 
@@ -1713,7 +1718,7 @@ static inline WDataOutP VL_PACK_W_RI(int obits, int lbits, WDataOutP owp,
                                      const VlQueue<SData>& q) {
     VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
     for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WI(owp, q.at(i), i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WI(owp, q.at(q.size() - i - 1), i * lbits + lbits - 1, i * lbits);
     return owp;
 }
 
@@ -1721,7 +1726,7 @@ static inline WDataOutP VL_PACK_W_RI(int obits, int lbits, WDataOutP owp,
                                      const VlQueue<IData>& q) {
     VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
     for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WI(owp, q.at(i), i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WI(owp, q.at(q.size() - 1 - i), i * lbits + lbits - 1, i * lbits);
     return owp;
 }
 
@@ -1756,7 +1761,7 @@ static inline WDataOutP VL_PACK_W_RQ(int obits, int lbits, WDataOutP owp,
                                      const VlQueue<QData>& q) {
     VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
     for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WQ(owp, q.at(i), i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WQ(owp, q.at(q.size() - 1 - i), i * lbits + lbits - 1, i * lbits);
     return owp;
 }
 
@@ -1774,7 +1779,7 @@ static inline WDataOutP VL_PACK_W_RW(int obits, int lbits, WDataOutP owp,
                                      const VlQueue<VlWide<N_Words>>& q) {
     VL_MEMSET_ZERO_W(owp + 1, VL_WORDS_I(obits) - 1);
     for (size_t i = 0; i < q.size(); ++i)
-        _vl_insert_WW(owp, q.at(i), i * lbits + lbits - 1, i * lbits);
+        _vl_insert_WW(owp, q.at(q.size() - 1 - i), i * lbits + lbits - 1, i * lbits);
     return owp;
 }
 
@@ -2230,49 +2235,49 @@ static inline void VL_UNPACK_RI_I(int lbits, int rbits, VlQueue<CData>& q, IData
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.atWrite(i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_RI_I(int lbits, int rbits, VlQueue<SData>& q, IData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.atWrite(i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_RI_I(int lbits, int rbits, VlQueue<IData>& q, IData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.atWrite(i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_RI_Q(int lbits, int rbits, VlQueue<CData>& q, QData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.atWrite(i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_RI_Q(int lbits, int rbits, VlQueue<SData>& q, QData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.atWrite(i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_RI_Q(int lbits, int rbits, VlQueue<IData>& q, QData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.atWrite(i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_RQ_Q(int lbits, int rbits, VlQueue<QData>& q, QData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const QData mask = VL_MASK_Q(lbits);
-    for (size_t i = 0; i < size; ++i) q.atWrite(i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_RI_W(int lbits, int rbits, VlQueue<CData>& q, WDataInP rwp) {
