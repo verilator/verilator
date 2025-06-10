@@ -533,12 +533,9 @@ V3Number& V3Number::setMask(int nbits, int lsb) {
 
 string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
     // Correct number of zero bits/width matters
+    if (is1Step()) return "1step";
+    if (isNull()) return "null";
     std::ostringstream out;
-
-    if (is1Step()) {
-        out << "1step";
-        return out.str();
-    }
     if (isDouble()) {
         out.precision(17);
         if (VL_UNCOVERABLE(width() != 64)) {
