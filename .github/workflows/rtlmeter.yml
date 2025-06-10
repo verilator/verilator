@@ -154,6 +154,11 @@ jobs:
   publish-results:
     name: Publish results to verilator/verilator-rtlmeter-results
     needs: combine-results
+    # Only run on scheduled builds on the main repository. We also restrict
+    # the publishing to run only on the first run_attempt. This is required
+    # to prevent multiple uploads the same day (if rerunning), as the
+    # dashboard UI currently assumes there is only one data point per
+    # calendar day. Results from reruns can be imported manually if needed.
     if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && contains(needs.*.result, 'success') && !cancelled() }}
     runs-on: ubuntu-24.04
     steps:
