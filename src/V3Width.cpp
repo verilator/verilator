@@ -2168,7 +2168,7 @@ class WidthVisitor final : public VNVisitor {
             // Note we don't sign fromp() that would make the algorithm O(n^2) if lots of casting.
             AstNodeExpr* newp = nullptr;
             if (bad) {
-            } else if (const AstBasicDType* const basicp = toDtp->basicp()) {
+            } else if (AstBasicDType* const basicp = toDtp->basicp()) {
                 if (!basicp->isString() && fromDtp->isString()) {
                     newp = new AstNToI{nodep->fileline(), nodep->fromp()->unlinkFrBack(), toDtp};
                 } else if (!basicp->isDouble() && !fromDtp->isDouble()) {
@@ -2192,7 +2192,7 @@ class WidthVisitor final : public VNVisitor {
                     }
                 } else if (!basicp->isDouble() && nodep->fromp()->isDouble()) {
                     newp = new AstRToIRoundS{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
-                    newp->dtypeChgSigned(basicp->isSigned());
+                    newp->dtypep(basicp);
                 } else if (basicp->isSigned() && !nodep->fromp()->isSigned()) {
                     newp = new AstSigned{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
                 } else if (!basicp->isSigned() && nodep->fromp()->isSigned()) {
