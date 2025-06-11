@@ -28,6 +28,7 @@ Verilator 5.037 devel
 * Improve hierarchical scheduling visualization in V3ExecGraph (#6009). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Improve DPI temporary 'for' loop performance (#6079). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix --x-initial and --x-assign random stability (#2662) (#5958) (#6018) (#6025) (#6075). [Todd Strader]
+* Fix trace hierarchicalName runtime errors (#5668) (#6076). [Paul Swirhun]
 * Fix filename backslash escapes in C code (#5947).
 * Fix C++ widths in V3Expand (#5953) (#5975). [Geza Lore]
 * Fix dependencies from different hierarchical schedules (#5954). [Bartłomiej Chmiel, Antmicro Ltd.]

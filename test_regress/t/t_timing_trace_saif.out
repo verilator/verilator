@@ -6,8 +6,6 @@
 (DIVIDER / )
 (TIMESCALE 1ps)
 (DURATION 100)
- (INSTANCE $rootio
- )
  (INSTANCE t
   (NET
    (CLK_PERIOD\[0\] (T0 100) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
