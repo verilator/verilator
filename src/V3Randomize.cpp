@@ -637,15 +637,22 @@ class ConstraintExprVisitor final : public VNVisitor {
                 "Size constraint combined with element constraint may not work correctly");
         }
         bool memberSelflag = VN_IS(nodep->backp(), MemberSel);
-        AstMemberSel* membersel = VN_IS(nodep->backp(), MemberSel) ? VN_AS(nodep->backp(), MemberSel)->cloneTree(false) : nullptr;
-        //(nodep->fromp()->name() == "__Vthis") ?  nodep->name() : nodep->fromp()->name() + "." + nodep->name();
-        if(membersel) varp = membersel->varp();
+        AstMemberSel* membersel = VN_IS(nodep->backp(), MemberSel)
+                                      ? VN_AS(nodep->backp(), MemberSel)->cloneTree(false)
+                                      : nullptr;
+        //(nodep->fromp()->name() == "__Vthis") ?  nodep->name() : nodep->fromp()->name() + "." +
+        //nodep->name();
+        if (membersel) varp = membersel->varp();
         AstNodeModule* const classOrPackagep = nodep->classOrPackagep();
         const RandomizeMode randMode = {.asInt = varp->user1()};
         if (!randMode.usesMode && editFormat(nodep)) return;
 
         // In SMT just variable name, but we also ensure write_var for the variable
-        const std::string smtName = membersel ? (membersel->fromp()->name() == "__Vthis") ?  membersel->name() : membersel->fromp()->name() + "." + membersel->name() :  nodep->name();  // Can be anything unique
+        const std::string smtName
+            = membersel ? (membersel->fromp()->name() == "__Vthis")
+                              ? membersel->name()
+                              : membersel->fromp()->name() + "." + membersel->name()
+                        : nodep->name();  // Can be anything unique
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
         AstNodeExpr* exprp = new AstSFormatF{nodep->fileline(), smtName, false, nullptr};
@@ -683,7 +690,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 dimension = 1;
             }
             methodp->dtypeSetVoid();
-            AstClass* const classp = membersel? VN_AS(membersel->user2p(), Class) :   VN_AS(varp->user2p(), Class);
+            AstClass* const classp
+                = membersel ? VN_AS(membersel->user2p(), Class) : VN_AS(varp->user2p(), Class);
             AstVarRef* const varRefp
                 = new AstVarRef{varp->fileline(), classp, varp, VAccess::WRITE};
             varRefp->classOrPackagep(classOrPackagep);
@@ -871,12 +879,14 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (nodep->user1()) {
             nodep->v3warn(CONSTRAINTIGN, "Global constraints ignored (unsupported)");
         }
-        // if(VN_IS(nodep, MemberSel) && VN_AS(nodep, MemberSel)->fromp()->name() == "__Vthis") 
-        //     return new AstSFormatF{nodep->fileline(),  VN_AS(nodep, MemberSel)->name(), false, nullptr};
-        cout<<nodep->user2p()<<endl;
-        cout<<"I AMMMMM HEREEEE"<<endl;
+        // if(VN_IS(nodep, MemberSel) && VN_AS(nodep, MemberSel)->fromp()->name() == "__Vthis")
+        //     return new AstSFormatF{nodep->fileline(),  VN_AS(nodep, MemberSel)->name(), false,
+        //     nullptr};
+        cout << nodep->user2p() << endl;
+        cout << "I AMMMMM HEREEEE" << endl;
         iterateChildren(nodep);
-        // string memselname = (nodep->fromp()->name() == "__Vthis") ?  nodep->name() : nodep->fromp()->name() + "." + nodep->name();
+        // string memselname = (nodep->fromp()->name() == "__Vthis") ?  nodep->name() :
+        // nodep->fromp()->name() + "." + nodep->name();
         nodep->fromp()->dumpTreeJson(cout);
         nodep->replaceWith(nodep->fromp()->unlinkFrBack());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1168,10 +1178,10 @@ class CaptureVisitor final : public VNVisitor {
         m_ignore.emplace(thisRefp);
         AstMemberSel* const memberSelp
             = new AstMemberSel(nodep->fileline(), thisRefp, nodep->varp());
-        
-        // const bool randObject = memberSelp->fromp()->user1() || VN_IS(memberSelp->fromp(), LambdaArgRef);
-        memberSelp->user2p(m_targetp);
 
+        // const bool randObject = memberSelp->fromp()->user1() || VN_IS(memberSelp->fromp(),
+        // LambdaArgRef);
+        memberSelp->user2p(m_targetp);
 
         nodep->replaceWith(memberSelp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);

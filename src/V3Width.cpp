@@ -6258,7 +6258,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstNodeFTaskRef* nodep) override {
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
         // Function hasn't been widthed, so make it so.
-        if(nodep->didWidth()) return;
+        if (nodep->didWidth()) return;
         UINFO(5, "  FTASKREF " << nodep << endl);
         AstWith* withp = nullptr;
         if (nodep->name() == "rand_mode" || nodep->name() == "constraint_mode") {
