@@ -640,6 +640,7 @@ public:
     void visit(AstCoverDecl* nodep) override {
         std::vector<string> pointSuffixes;
         if (nodep->isToggle()) {
+            // Changes 0 -> 1 and 1 -> 0 have separate counters
             pointSuffixes = {"_0", "_1"};
         } else {
             pointSuffixes = {""};
