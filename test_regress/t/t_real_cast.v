@@ -14,6 +14,13 @@ module t (/*AUTOARG*/
     typedef logic [85:0] big_t;
     localparam big_t foo = big_t'(8.531630271583128e+16);
 
+    big_t bar;
+
+    initial begin
+        bar = big_t'(8.531630271583128e+16);
+        if (bar != 86'd85316302715831280) $stop();
+    end
+
     always @(posedge clk) begin
         if (foo != 86'd85316302715831280) $stop();
         $write("*-* All Finished *-*\n");
