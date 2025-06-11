@@ -251,6 +251,10 @@ class CleanVisitor final : public VNVisitor {
         iterateChildren(nodep);
         ensureCleanAndNext(nodep->valuep());
     }
+    void visit(AstCoverInc* nodep) override {
+        iterateChildren(nodep);
+        if (nodep->toggleExprp()) ensureClean(nodep->toggleExprp());
+    }
     void visit(AstTypedef* nodep) override {
         // No cleaning, or would loose pointer to enum
         iterateChildren(nodep);
