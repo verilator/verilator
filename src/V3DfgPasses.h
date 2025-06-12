@@ -30,6 +30,16 @@ class DfgGraph;
 // Various context objects hold data that need to persist across invocations
 // of a DFG pass.
 
+class V3DfgBinToOneHotContext final {
+    const std::string m_label;  // Label to apply to stats
+
+public:
+    VDouble0 m_decodersCreated;  // Number of bianry to one-hot decoders created
+    explicit V3DfgBinToOneHotContext(const std::string& label)
+        : m_label{label} {}
+    ~V3DfgBinToOneHotContext() VL_MT_DISABLED;
+};
+
 class V3DfgCseContext final {
     const std::string m_label;  // Label to apply to stats
 
@@ -82,6 +92,7 @@ public:
     VDouble0 m_nonRepWidth;  // Equations non-representable due to width mismatch
     VDouble0 m_resultEquations;  // Number of result combinational equations
 
+    V3DfgBinToOneHotContext m_binToOneHotContext{m_label};
     V3DfgCseContext m_cseContext0{m_label + " 1st"};
     V3DfgCseContext m_cseContext1{m_label + " 2nd"};
     V3DfgPeepholeContext m_peepholeContext{m_label};
@@ -117,6 +128,8 @@ AstModule* dfgToAst(DfgGraph&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 // Intermediate/internal operations
 //===========================================================================
 
+// Construct binary to oneHot decoders
+void binToOneHot(DfgGraph&, V3DfgBinToOneHotContext&) VL_MT_DISABLED;
 // Common subexpression elimination
 void cse(DfgGraph&, V3DfgCseContext&) VL_MT_DISABLED;
 // Inline fully driven variables

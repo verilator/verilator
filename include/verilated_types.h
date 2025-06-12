@@ -1332,6 +1332,11 @@ public:
     const WData* data() const { return &m_storage[0]; }
 
     constexpr std::size_t size() const { return N_Depth; }
+
+    void fill(const T_Value& value) {
+        for (int index = 0; index < N_Depth; ++index) m_storage[index] = value;
+    }
+
     // To fit C++14
     template <std::size_t N_CurrentDimension = 0, typename U = T_Value>
     int find_length(int dimension, std::false_type) const {

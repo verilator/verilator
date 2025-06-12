@@ -3004,6 +3004,7 @@ void AstCMethodHard::setPurity() {
                                                           {"evaluate", false},
                                                           {"evaluation", false},
                                                           {"exists", true},
+                                                          {"fill", false},
                                                           {"find", true},
                                                           {"find_first", true},
                                                           {"find_first_index", true},

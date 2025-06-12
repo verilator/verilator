@@ -284,6 +284,11 @@ public:
     // or nullptr if no such variable exists in the graph. This is O(fanout).
     DfgVarPacked* getResultVar() VL_MT_DISABLED;
 
+    // If the node has a single sink, return it, otherwise return nullptr
+    DfgVertex* singleSink() const {
+        return m_sinksp && !m_sinksp->m_nextp ? m_sinksp->m_sinkp : nullptr;
+    }
+
     // Unlink from container (graph or builder), then delete this vertex
     void unlinkDelete(DfgGraph& dfg) VL_MT_DISABLED;
 
