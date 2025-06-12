@@ -2752,11 +2752,6 @@ class ConstVisitor final : public VNVisitor {
             } else {
                 AstNode* const fromp = nodep->fromp()->unlinkFrBack();
                 nodep->replaceWithKeepDType(fromp);
-                if (VN_IS(fromp->dtypep()->skipRefp(), NodeArrayDType)) {
-                    // Strip off array to find what array references
-                    fromp->dtypeFrom(
-                        VN_AS(fromp->dtypep()->skipRefp(), NodeArrayDType)->subDTypep());
-                }
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         }
