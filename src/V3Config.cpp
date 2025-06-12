@@ -532,6 +532,18 @@ public:
 //######################################################################
 // Resolve modules and files in the design
 
+class V3ConfigResolverHierWorkerEntry final {
+    const int m_workers;
+    FileLine* const m_flp;
+
+public:
+    explicit V3ConfigResolverHierWorkerEntry(int workers, FileLine* flp)
+        : m_workers{workers}
+        , m_flp{flp} {}
+    int workers() const { return m_workers; }
+    FileLine* flp() const { return m_flp; }
+};
+
 class V3ConfigResolver final {
     enum ProfileDataMode : uint8_t { NONE = 0, MTASK = 1, HIER_DPI = 2 };
     V3ConfigModuleResolver m_modules;  // Access to module names (with wildcards)
@@ -540,8 +552,7 @@ class V3ConfigResolver final {
     std::unordered_map<string, std::unordered_map<string, uint64_t>>
         m_profileData;  // Access to profile_data records
     uint8_t m_mode = NONE;
-    std::unordered_map<string, int> m_hierWorkers;
-    FileLine* m_hierWorkersFileLine = nullptr;
+    std::unordered_map<string, V3ConfigResolverHierWorkerEntry> m_hierWorkers;
     FileLine* m_profileFileLine = nullptr;
 
     V3ConfigResolver() = default;
@@ -572,16 +583,19 @@ public:
         // Empty key for hierarchical DPI wrapper costs.
         return getProfileData(hierDpi, "");
     }
-    void addHierWorkers(FileLine* fl, const string& model, int workers) {
-        if (!m_hierWorkersFileLine) m_hierWorkersFileLine = fl;
-        m_hierWorkers[model] = workers;
+    void addHierWorkers(FileLine* flp, const string& model, int workers) {
+        m_hierWorkers.emplace(std::piecewise_construct, std::forward_as_tuple(model),
+                              std::forward_as_tuple(workers, flp));
     }
     int getHierWorkers(const string& model) const {
         const auto mit = m_hierWorkers.find(model);
         // Assign a single worker if no specified.
-        return mit != m_hierWorkers.cend() ? mit->second : 0;
+        return mit != m_hierWorkers.cend() ? mit->second.workers() : 0;
     }
-    FileLine* getHierWorkersFileLine() const { return m_hierWorkersFileLine; }
+    FileLine* getHierWorkersFileLine(const string& model) const {
+        const auto mit = m_hierWorkers.find(model);
+        return mit != m_hierWorkers.cend() ? mit->second.flp() : v3Global.rootp()->fileline();
+    }
     uint64_t getProfileData(const string& model, const string& key) const {
         const auto mit = m_profileData.find(model);
         if (mit == m_profileData.cend()) return 0;
@@ -760,8 +774,8 @@ void V3Config::applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar
 int V3Config::getHierWorkers(const string& model) {
     return V3ConfigResolver::s().getHierWorkers(model);
 }
-FileLine* V3Config::getHierWorkersFileLine() {
-    return V3ConfigResolver::s().getHierWorkersFileLine();
+FileLine* V3Config::getHierWorkersFileLine(const string& model) {
+    return V3ConfigResolver::s().getHierWorkersFileLine(model);
 }
 uint64_t V3Config::getProfileData(const string& hierDpi) {
     return V3ConfigResolver::s().getProfileData(hierDpi);

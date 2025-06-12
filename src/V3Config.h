@@ -54,7 +54,7 @@ public:
     static void applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp);
 
     static int getHierWorkers(const string& model);
-    static FileLine* getHierWorkersFileLine();
+    static FileLine* getHierWorkersFileLine(const string& model);
     static uint64_t getProfileData(const string& hierDpi);
     static uint64_t getProfileData(const string& model, const string& key);
     static FileLine* getProfileDataFileLine();
