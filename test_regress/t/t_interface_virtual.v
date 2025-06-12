@@ -32,10 +32,17 @@ module t (/*AUTOARG*/);
    Clsgen#(virtual PBus) gen;
 
    initial begin
+      if (va != null) $stop;
+      va = null;
+      if (va != null) $stop;
       va = ia;
-      vb = ia;
-
       if (va == null) $stop;
+      va = null;
+      if (va != null) $stop;
+      va = ia;
+      if (va == null) $stop;
+
+      vb = ia;
 
       $display("va==vb? %b", va==vb);
       $display("va!=vb? %b", va!=vb);
