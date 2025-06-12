@@ -192,8 +192,8 @@ V3StringList V3HierBlock::commandArgs(bool forCMake) const {
     const int blockThreads = V3Config::getHierWorkers(m_modp->origName());
     if (blockThreads > 1) {
         if (hasParent()) {
-            V3Config::getHierWorkersFileLine()->v3warn(
-                E_UNSUPPORTED, "Specifying workers for nested hierarchical blocks");
+            V3Config::getHierWorkersFileLine(m_modp->origName())
+                ->v3warn(E_UNSUPPORTED, "Specifying workers for nested hierarchical blocks");
         } else {
             if (v3Global.opt.threads() < blockThreads) {
                 m_modp->v3error("Hierarchical blocks cannot be scheduled on more threads than in "
