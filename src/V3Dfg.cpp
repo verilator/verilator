@@ -55,6 +55,30 @@ void DfgGraph::addGraph(DfgGraph& other) {
     m_opVertices.splice(m_opVertices.end(), other.m_opVertices);
 }
 
+std::string DfgGraph::makeUniqueName(const std::string& prefix, size_t n) {
+    // Construct the tmpNameStub if we have not done so yet
+    if (m_tmpNameStub.empty()) {
+        // Use the hash of the graph name (avoid long names and non-identifiers)
+        const std::string name = V3Hash{m_name}.toString();
+        // We need to keep every variable globally unique, and graph hashed
+        // names might not be, so keep a static table to track multiplicity
+        static std::unordered_map<std::string, uint32_t> s_multiplicity;
+        m_tmpNameStub += '_' + name + '_' + std::to_string(s_multiplicity[name]++) + '_';
+    }
+    // Assemble the globally unique name
+    return "__Vdfg" + prefix + m_tmpNameStub + std::to_string(n);
+}
+
+DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& name, AstNodeDType* dtypep) {
+    // Add AstVar to containing module
+    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
+    modulep()->addStmtsp(varp);
+
+    // Create and return the corresponding variable vertex
+    if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) return new DfgVarArray{*this, varp};
+    return new DfgVarPacked{*this, varp};
+}
+
 static const string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) + '"'; }
 
 // Dump one DfgVertex in Graphviz format
@@ -409,6 +433,55 @@ uint32_t DfgVertex::fanout() const {
     uint32_t result = 0;
     forEachSinkEdge([&](const DfgEdge&) { ++result; });
     return result;
+}
+
+DfgVarPacked* DfgVertex::getResultVar() {
+    UASSERT_OBJ(!this->is<DfgVarArray>(), this, "Arrays are not supported by " << __FUNCTION__);
+
+    // It's easy if the vertex is already a variable ...
+    if (DfgVarPacked* const varp = this->cast<DfgVarPacked>()) return varp;
+
+    // Inspect existing variables fully written by this vertex, and choose one
+    DfgVarPacked* resp = nullptr;
+    this->forEachSink([&resp](DfgVertex& sink) {
+        DfgVarPacked* const varp = sink.cast<DfgVarPacked>();
+        if (!varp) return;
+        if (!varp->isDrivenFullyByDfg()) return;
+        // Ignore SystemC variables, they cannot participate in expressions or
+        // be assigned rvalue expressions.
+        if (varp->varp()->isSc()) return;
+        // First variable found
+        if (!resp) {
+            resp = varp;
+            return;
+        }
+        // Prefer those variables that must be kept anyway
+        const bool keepOld = resp->keep() || resp->hasDfgRefs();
+        const bool keepNew = varp->keep() || varp->hasDfgRefs();
+        if (keepOld != keepNew) {
+            if (!keepOld) resp = varp;
+            return;
+        }
+        // Prefer those that already have module references
+        if (resp->hasModRefs() != varp->hasModRefs()) {
+            if (!resp->hasModRefs()) resp = varp;
+            return;
+        }
+        // Prefer the earlier one in source order
+        const FileLine& oldFlp = *(resp->fileline());
+        const FileLine& newFlp = *(varp->fileline());
+        if (const int cmp = oldFlp.operatorCompare(newFlp)) {
+            if (cmp > 0) resp = varp;
+            return;
+        }
+        // Prefer the one with the lexically smaller name
+        if (const int cmp = resp->varp()->name().compare(varp->varp()->name())) {
+            if (cmp > 0) resp = varp;
+            return;
+        }
+        // 'resp' and 'varp' are all the same, keep using the existing 'resp'
+    });
+    return resp;
 }
 
 void DfgVertex::unlinkDelete(DfgGraph& dfg) {
