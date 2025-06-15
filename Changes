@@ -17,6 +17,7 @@ Verilator 5.037 devel
 * Support constrained random for associative arrays (#5985) (#5986). [Yilou Wang]
 * Support assignments to concatenations with impure RHS (#6002). [Ryszard Rozak, Antmicro Ltd.]
 * Support SARIF JSON diagnostic output with `--diagnostics-sarif`. (#6017)
+* Support 1-bit params with -G and -pvalue (#6051) (#6082). [Paul Swirhun]
 * Support parameter forward types.
 * Add PROCINITASSIGN on initial assignments to process variables (#2481). [Niraj Menon]
 * Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
@@ -27,8 +28,11 @@ Verilator 5.037 devel
 * Add `MODMISSING` error, in place of unnamed error (#6054). [Paul Swirhun]
 * Improve hierarchical scheduling visualization in V3ExecGraph (#6009). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Improve DPI temporary 'for' loop performance (#6079). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Optimize DFG De Morgan patterns (#6090). [Geza Lore]
+* Optimize DFG variable elimination (#6091). [Geza Lore]
 * Fix --x-initial and --x-assign random stability (#2662) (#5958) (#6018) (#6025) (#6075). [Todd Strader]
-* Fix trace hierarchicalName runtime errors (#5668) (#6076). [Paul Swirhun]
+* Fix trace hierarchical-name runtime errors (#5668) (#6076). [Paul Swirhun]
+* Fix streaming operator packing order (#5903) (#6077). [Paul Swirhun]
 * Fix filename backslash escapes in C code (#5947).
 * Fix C++ widths in V3Expand (#5953) (#5975). [Geza Lore]
 * Fix dependencies from different hierarchical schedules (#5954). [Bartłomiej Chmiel, Antmicro Ltd.]
@@ -59,6 +63,10 @@ Verilator 5.037 devel
 * Fix virtual interface array typedef expressions (#6057).
 * Fix DFG peephole select conditionals (#6064) (#6071). [Geza Lore]
 * Fix `--skip-identical` skipping on some errors (#6066). [Todd Strader]
+* Fix class typedef elaboration (#6080). [Kamil Rakoczy, Antmicro Ltd.]
+* Fix unpacked to packed parameter assignment (#6081) (#6088). [Todd Strader]
+* Fix casting reals to large integrals (#6085). [Todd Strader]
+* Fix nested hier blocks workers error (#6087). [Bartłomiej Chmiel, Antmicro Ltd.]
 
 
 Verilator 5.036 2025-04-27
