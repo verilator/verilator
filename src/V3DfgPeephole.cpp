@@ -774,12 +774,9 @@ class V3DfgPeephole final : public DfgVisitor {
                     DfgSel* const replacementp = make<DfgSel>(vtxp, lhsp, lsb - rhsp->width());
                     replace(vtxp, replacementp);
                 }
-            } else if (lsb == 0 || msb == concatp->width() - 1  //
-                       || lhsp->is<DfgConst>() || rhsp->is<DfgConst>()  //
-                       || !concatp->hasMultipleSinks()) {
-                // If the select straddles both sides, but at least one of the sides is wholly
-                // selected, or at least one of the sides is a Const, or this concat has no other
-                // use, then push the Sel past the Concat
+            } else if (!concatp->hasMultipleSinks()) {
+                // If the select straddles both sides, the Concat has no other use,
+                // then push the Sel past the Concat
                 APPLYING(PUSH_SEL_THROUGH_CONCAT) {
                     const uint32_t rSelWidth = rhsp->width() - lsb;
                     const uint32_t lSelWidth = width - rSelWidth;
