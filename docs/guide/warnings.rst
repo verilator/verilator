@@ -363,8 +363,8 @@ List Of Warnings
 
    Warns that it is better style to use casez, and "?" in place of
    "x"'s.  See
-   `http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase_rev1_1.pdf
-   <http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase_rev1_1.pdf>`_
+   `http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase.pdf
+   <http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase.pdf>`_
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
@@ -438,8 +438,8 @@ List Of Warnings
    is suppressed, Verilator, like synthesis, will convert this to a
    non-delayed assignment, which may result in logic races or other
    nasties.  See
-   `http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA_rev1_2.pdf
-   <http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA_rev1_2.pdf>`_
+   `http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA.pdf
+   <http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA.pdf>`_
 
    Ignoring this warning may make Verilator simulations differ from other
    simulators.

@@ -398,7 +398,7 @@ Summary:
    Enables diagnostics output into a Static Analysis Results Interchange
    Format (SARIF) file, a standard, JSON-based format for the output of
    static analysis tools such as linters.  See
-   [SARIF](http://sarifweb.azurewebsites.net/),
+   [SARIF](https://sarifweb.azurewebsites.net/),
    [sarif-tools](https://github.com/microsoft/sarif-tools), and the [SARIF
    web-based viewer](https://microsoft.github.io/sarif-web-component/).
 

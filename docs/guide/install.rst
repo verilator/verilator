@@ -194,7 +194,7 @@ Install Z3
 ^^^^^^^^^^
 
 In order to use constrained randomization the `Z3 Theorem Prover
-<https://github.com/z3prover/z3#readme>`__ must be installed, however this is
+<https://github.com/z3prover/z3>`__ must be installed, however this is
 not required at Verilator build time. There are other compatible SMT solvers,
 like CVC5/CVC4, but they are not guaranteed to work. Since different solvers are
 faster for different scenarios, the solver to use at run-time can be specified
