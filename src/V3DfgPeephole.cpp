@@ -895,8 +895,8 @@ class V3DfgPeephole final : public DfgVisitor {
         DfgVertex* const rhsp = vtxp->rhsp();
         FileLine* const flp = vtxp->fileline();
 
-        // Bubble pushing
-        if (!vtxp->hasMultipleSinks() && !lhsp->hasMultipleSinks() && !rhsp->hasMultipleSinks()) {
+        // Bubble pushing (De Morgan)
+        if (!lhsp->hasMultipleSinks() && !rhsp->hasMultipleSinks()) {
             if (DfgNot* const lhsNotp = lhsp->cast<DfgNot>()) {
                 if (DfgNot* const rhsNotp = rhsp->cast<DfgNot>()) {
                     APPLYING(REPLACE_AND_OF_NOT_AND_NOT) {
@@ -964,8 +964,8 @@ class V3DfgPeephole final : public DfgVisitor {
         DfgVertex* const rhsp = vtxp->rhsp();
         FileLine* const flp = vtxp->fileline();
 
-        // Bubble pushing
-        if (!vtxp->hasMultipleSinks() && !lhsp->hasMultipleSinks() && !rhsp->hasMultipleSinks()) {
+        // Bubble pushing (De Morgan)
+        if (!lhsp->hasMultipleSinks() && !rhsp->hasMultipleSinks()) {
             if (DfgNot* const lhsNotp = lhsp->cast<DfgNot>()) {
                 if (DfgNot* const rhsNotp = rhsp->cast<DfgNot>()) {
                     APPLYING(REPLACE_OR_OF_NOT_AND_NOT) {
