@@ -263,6 +263,8 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
         DfgVertex* const vtxp = workListp;
         // Detach the head
         workListp = vtxp->getUser<DfgVertex*>();
+        // Reset user pointer so it can be added back to the work list later
+        vtxp->setUser<DfgVertex*>(nullptr);
         // Prefetch next item
         VL_PREFETCH_RW(workListp);
 
