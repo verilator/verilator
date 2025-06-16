@@ -110,6 +110,8 @@ public:
         return static_cast<size_t>(num().toUInt());
     }
 
+    uint32_t toU32() const { return static_cast<size_t>(num().toUInt()); }
+
     bool isZero() const { return num().isEqZero(); }
     bool isOnes() const { return num().isEqAllOnes(width()); }
 
