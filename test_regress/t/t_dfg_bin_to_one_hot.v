@@ -30,7 +30,7 @@ module t (/*AUTOARG*/
       end
    end
 
-   // Shold create decoder
+   // Should create decoder
    wire [127:0] cntAOneHot = {
      cntA == 7'd127,
      cntA == 7'd126,
@@ -162,7 +162,7 @@ module t (/*AUTOARG*/
      cntA == 7'd0
    };
 
-   // Shold create decoder
+   // Should create decoder
    wire stupidWayToWriteConstOne = 1'b0
      + (cntB == 7'd127)
      + (cntB == 7'd126)
@@ -276,7 +276,7 @@ module t (/*AUTOARG*/
      + (cntB == 7'd18)
      + (cntB <= 7'd17);
 
-   // Shold not create decoder
+   // Should not create decoder
    wire [6:0] twiceCntC =
      cntC == 7'd127 ? (7'd127 * 7'd2) :
      cntC == 7'd126 ? (7'd126 * 7'd2) :

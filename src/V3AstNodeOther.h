@@ -1916,7 +1916,7 @@ class AstVar final : public AstNode {
     bool m_isWrittenByDpi : 1;  // This variable can be written by a DPI Export
     bool m_isWrittenBySuspendable : 1;  // This variable can be written by a suspendable process
     bool m_ignorePostWrite : 1;  // Ignore writes in 'Post' blocks during ordering
-    bool m_ignoreSchedWrite : 1;  // Ignore writes in scheduling (for coverage increments)
+    bool m_ignoreSchedWrite : 1;  // Ignore writes in scheduling (for special optimizations)
 
     void init() {
         m_ansi = false;
