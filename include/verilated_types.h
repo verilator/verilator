@@ -1333,9 +1333,7 @@ public:
 
     constexpr std::size_t size() const { return N_Depth; }
 
-    void fill(const T_Value& value) {
-        for (int index = 0; index < N_Depth; ++index) m_storage[index] = value;
-    }
+    void fill(const T_Value& value) { std::fill(m_storage.begin(), m_storage.end(), value); }
 
     // To fit C++14
     template <std::size_t N_CurrentDimension = 0, typename U = T_Value>

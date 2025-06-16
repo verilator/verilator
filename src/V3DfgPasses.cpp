@@ -254,16 +254,18 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
     // Only consider input variables from a reasonable range:
     // - not too big to avoid huge tables, you are doomed anyway at that point..
     // - not too small, as it's probably not worth it
+    constexpr uint32_t WIDTH_MIN = 7;
+    constexpr uint32_t WIDTH_MAX = 20;
     const auto widthOk = [](const DfgVertex* vtxp) {
         const uint32_t width = vtxp->width();
-        return 6 < width && width < 20;
+        return WIDTH_MIN <= width && width <= WIDTH_MAX;
     };
 
     // Do not convert terms that look like they are in a Cond tree
     // the C++ compiler can generate jump tables for these
     const std::function<bool(const DfgVertex*, bool)> useOk
         = [&](const DfgVertex* vtxp, bool inv) -> bool {
-        // Go pats a single 'Not' sink, which is common
+        // Go past a single 'Not' sink, which is common
         if (DfgVertex* const sinkp = vtxp->singleSink()) {
             if (sinkp->is<DfgNot>()) return useOk(sinkp, !inv);
         }
@@ -320,6 +322,8 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
 
     // Somewhat arbitrarily, only apply if more than 64 unique comparisons are required
     constexpr uint32_t TERM_LIMIT = 65;
+    // This should hold, otherwise we do redundant work gathering terms that will never be used
+    static_assert((1U << WIDTH_MIN) >= TERM_LIMIT, "TERM_LIMIT too big relative to 2**WIDTH_MIN");
 
     // Fast path exit if we surely don't need to convet anything
     if (nTerms < TERM_LIMIT) return;
