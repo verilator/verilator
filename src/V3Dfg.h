@@ -280,6 +280,10 @@ public:
     // Fanout (number of sinks) of this vertex (expensive to compute)
     uint32_t fanout() const VL_MT_DISABLED;
 
+    // Return a canonical variable vertex that holds the value of this vertex,
+    // or nullptr if no such variable exists in the graph. This is O(fanout).
+    DfgVarPacked* getResultVar() VL_MT_DISABLED;
+
     // Unlink from container (graph or builder), then delete this vertex
     void unlinkDelete(DfgGraph& dfg) VL_MT_DISABLED;
 
@@ -636,7 +640,8 @@ class DfgGraph final {
     uint32_t m_userCnt = 0;  // Vertex user data generation counter
     // Parent of the graph (i.e.: the module containing the logic represented by this graph).
     AstModule* const m_modulep;
-    const string m_name;  // Name of graph (for debugging)
+    const std::string m_name;  // Name of graph - need not be unique
+    std::string m_tmpNameStub{""};  // Name stub for temporary variables - computed lazy
 
 public:
     // CONSTRUCTOR
@@ -684,6 +689,13 @@ public:
 
     // Add contents of other graph to this graph. Leaves other graph empty.
     void addGraph(DfgGraph& other) VL_MT_DISABLED;
+
+    // Genarete a unique name. The provided 'prefix' and 'n' values will be part of the name, and
+    // must be unique (as a pair) in each invocation for this graph.
+    std::string makeUniqueName(const std::string& prefix, size_t n) VL_MT_DISABLED;
+
+    // Create a new variable with the given name and data type
+    DfgVertexVar* makeNewVar(FileLine*, const std::string& name, AstNodeDType*) VL_MT_DISABLED;
 
     // Split this graph into individual components (unique sub-graphs with no edges between them).
     // Also removes any vertices that are not weakly connected to any variable.
