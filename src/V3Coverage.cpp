@@ -416,21 +416,7 @@ class CoverageVisitor final : public VNVisitor {
     void toggleVarRecurse(const AstNodeDType* const dtypep, const int depth,  // per-iteration
                           const ToggleEnt& above, const AstVar* const varp) {  // Constant
         if (const AstBasicDType* const bdtypep = VN_CAST(dtypep, BasicDType)) {
-            if (bdtypep->isRanged()) {
-                for (int index_docs = bdtypep->lo(); index_docs < bdtypep->hi() + 1;
-                     ++index_docs) {
-                    const int index_code = index_docs - bdtypep->lo();
-                    ToggleEnt newent{above.m_comment + "["s + cvtToStr(index_docs) + "]",
-                                     new AstSel{varp->fileline(),
-                                                above.m_varRefp->cloneTree(false), index_code, 1},
-                                     new AstSel{varp->fileline(),
-                                                above.m_chgRefp->cloneTree(false), index_code, 1}};
-                    toggleVarBottom(newent, varp);
-                    newent.cleanup();
-                }
-            } else {
-                toggleVarBottom(above, varp);
-            }
+            toggleVarBottom(above, varp);
         } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
                 const int index_code = index_docs - adtypep->lo();
