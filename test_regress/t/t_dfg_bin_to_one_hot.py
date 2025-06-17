@@ -16,6 +16,6 @@ test.compile(verilator_flags2=["--stats"])
 test.execute()
 
 test.file_grep(test.stats, r'Optimizations, DFG pre inline BinToOneHot, decoders created\s+(\d+)',
-               2)
+               3)
 
 test.passes()

@@ -374,6 +374,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
                 const std::string name = dfg.makeUniqueName("BinToOneHot_Idx", nTables);
                 varp = dfg.makeNewVar(flp, name, idxDTypep)->as<DfgVarPacked>();
                 varp->varp()->isInternal(true);
+                varp->addDriver(flp, 0, srcp);
             }
             varp->setHasModRefs();
             return varp;
