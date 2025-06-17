@@ -1474,7 +1474,7 @@ V3Number& V3Number::opRepl(const V3Number& lhs,
     if (rhsval > (1UL << 24)) {
         v3error("More than a 16 Mbit replication, perhaps the replication factor"
                 " was two's-complement negative: "
-                << rhsval << " (" << (int32_t)rhsval << ")");
+                << rhsval << " (" << static_cast<int32_t>(rhsval) << ")");
     } else if (rhsval > 8192) {
         v3warn(WIDTHCONCAT, "More than a 8k bit replication is probably wrong: " << rhsval);
     }
