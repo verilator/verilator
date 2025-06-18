@@ -459,8 +459,9 @@ class ProtectVisitor final : public VNVisitor {
         handleInput(varp);
         m_seqPortsp->addNodesp(varp->cloneTree(false));
         if (m_hasClk) {
-            m_seqParamsp->addText(fl, varp->name() + "\n");
-            m_clkSensp->addText(fl, "posedge " + varp->name() + " or negedge " + varp->name());
+            m_seqParamsp->addText(fl, varp->prettyName() + "\n");
+            m_clkSensp->addText(fl, "posedge " + varp->prettyName() + " or negedge "
+                                        + varp->prettyName());
         }
         m_cSeqParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
         m_cSeqClksp->addText(fl, cInputConnection(varp));
@@ -470,9 +471,9 @@ class ProtectVisitor final : public VNVisitor {
         FileLine* const fl = varp->fileline();
         handleInput(varp);
         m_comboPortsp->addNodesp(varp->cloneTree(false));
-        m_comboParamsp->addText(fl, varp->name() + "\n");
+        m_comboParamsp->addText(fl, varp->prettyName() + "\n");
         m_comboIgnorePortsp->addNodesp(varp->cloneTree(false));
-        if (m_hasClk) m_comboIgnoreParamsp->addText(fl, varp->name() + "\n");
+        if (m_hasClk) m_comboIgnoreParamsp->addText(fl, varp->prettyName() + "\n");
         m_cComboParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
         m_cComboInsp->addText(fl, cInputConnection(varp));
         m_cIgnoreParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
@@ -490,10 +491,10 @@ class ProtectVisitor final : public VNVisitor {
         FileLine* const fl = varp->fileline();
         m_modPortsp->addNodesp(varp->cloneTree(false));
         m_comboPortsp->addNodesp(varp->cloneTree(false));
-        m_comboParamsp->addText(fl, varp->name() + "_combo__V\n");
+        m_comboParamsp->addText(fl, varp->prettyName() + "_combo__V\n");
         if (m_hasClk) {
             m_seqPortsp->addNodesp(varp->cloneTree(false));
-            m_seqParamsp->addText(fl, varp->name() + "_tmp__V\n");
+            m_seqParamsp->addText(fl, varp->prettyName() + "_tmp__V\n");
         }
 
         addLocalVariable(m_comboDeclsp, varp, "_combo__V");
@@ -502,10 +503,13 @@ class ProtectVisitor final : public VNVisitor {
             addLocalVariable(m_seqDeclsp, varp, "_seq__V");
             addLocalVariable(m_tmpDeclsp, varp, "_tmp__V");
 
-            m_nbAssignsp->addText(fl, varp->name() + "_seq__V <= " + varp->name() + "_tmp__V;\n");
-            m_seqAssignsp->addText(fl, varp->name() + " = " + varp->name() + "_seq__V;\n");
+            m_nbAssignsp->addText(fl, varp->prettyName() + "_seq__V <= " + varp->prettyName()
+                                          + "_tmp__V;\n");
+            m_seqAssignsp->addText(fl,
+                                   varp->prettyName() + " = " + varp->prettyName() + "_seq__V;\n");
         }
-        m_comboAssignsp->addText(fl, varp->name() + " = " + varp->name() + "_combo__V;\n");
+        m_comboAssignsp->addText(fl,
+                                 varp->prettyName() + " = " + varp->prettyName() + "_combo__V;\n");
         m_cComboParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
         m_cComboOutsp->addText(fl,
                                V3Task::assignInternalToDpi(varp, true, "", "", "handlep__V->"));
