@@ -379,7 +379,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void visit(AstCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use
         if (!nodep->dataDeclNullp()) {  // else duplicate we don't need code for
-            nodep->binNum(m_coverBins++);
+            nodep->binNum(m_coverBins);
+            m_coverBins += nodep->size();
         }
     }
     void visit(AstCFunc* nodep) override {
