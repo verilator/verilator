@@ -411,6 +411,13 @@ public:
         emitOpName(nodep, "(%nw, %rw, %P, %li)", nodep->fromp(), elemDtp, nullptr);
     }
 
+    void visit(AstCvtArrayToArray* nodep) override {
+        AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefp();
+        AstNodeDType* const elemDtp = fromDtp->subDTypep()->skipRefp();
+        puts("VL_CLONE_Q");
+        emitOpName(nodep, "(%P, %li)", nodep->fromp(), elemDtp, nullptr);
+    }
+
     void visit(AstCvtUnpackedToQueue* nodep) override {
         AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
         emitOpName(nodep, nodep->emitC(), nodep->fromp(), elemDTypep, nullptr);
@@ -483,6 +490,18 @@ public:
             puts(", ");
             puts(cvtToStr(castp->fromp()->widthMin()));
             puts(", ");
+            iterateAndNextConstNull(nodep->lhsp());
+            puts(", ");
+            rhs = false;
+            iterateAndNextConstNull(castp->fromp());
+        } else if (const AstCvtArrayToArray* const castp
+                   = VN_CAST(nodep->rhsp(), CvtArrayToArray)) {
+            if (castp->reverse()) {
+                putns(castp, "VL_REVCOPY_Q");
+            } else {
+                putns(castp, "VL_COPY_Q");
+            }
+            puts("(");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
             rhs = false;

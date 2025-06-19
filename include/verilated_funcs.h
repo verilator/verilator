@@ -2228,6 +2228,29 @@ static inline WDataOutP VL_SEL_WWII(int obits, int lbits, WDataOutP owp, WDataIn
     return owp;
 }
 
+template <typename T>
+static inline VlQueue<T> VL_CLONE_Q(const VlQueue<T>& from) {
+    const size_t size = from.size();
+    VlQueue<T> ret;
+    ret.renew(size);
+    for (size_t i = 0; i < from.size(); ++i) ret.atWrite(i) = from.at(i);
+    return ret;
+}
+
+template <typename T>
+static inline void VL_COPY_Q(VlQueue<T>& q, const VlQueue<T>& from) {
+    const size_t size = from.size();
+    q.renew(size);
+    for (size_t i = 0; i < size; ++i) q.atWrite(i) = from.at(i);
+}
+
+template <typename T>
+static inline void VL_REVCOPY_Q(VlQueue<T>& q, const VlQueue<T>& from) {
+    const size_t size = from.size();
+    q.renew(size);
+    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = from.at(i);
+}
+
 //======================================================================
 // Expressions needing insert/select
 
