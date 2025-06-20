@@ -638,6 +638,20 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
+        if VL_CONSTEXPR_CXX17 (std::is_base_of<DfgRedOr, Reduction>::value) {
+            if (DfgOr* const orp = srcp->cast<DfgOr>()) {
+                APPLYING(PUSH_REDOR_THROUGH_OR) {
+                    Reduction* const lRedp
+                        = make<Reduction>(orp->fileline(), m_bitDType, orp->lhsp());
+                    Reduction* const rRedp
+                        = make<Reduction>(orp->fileline(), m_bitDType, orp->rhsp());
+                    Bitwise* const replacementp = make<Bitwise>(flp, m_bitDType, lRedp, rRedp);
+                    replace(vtxp, replacementp);
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 
