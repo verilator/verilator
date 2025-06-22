@@ -137,6 +137,21 @@ AC_ARG_ENABLE([longtests],
 AC_SUBST(CFG_WITH_LONGTESTS)
 AC_MSG_RESULT($CFG_WITH_LONGTESTS)
 
+# Disable version check
+AC_MSG_CHECKING(whether to disable version check)
+AC_ARG_ENABLE([version-check],
+              [AS_HELP_STRING([--disable-version-check],
+                              [disable minimum compile version check.
+                              use only when instructed by developers])],
+              [case "${enableval}" in
+                yes) CFG_VERSION_CHECK=yes ;;
+                no)  CFG_VERSION_CHECK=no ;;
+                *)   AC_MSG_ERROR([bad value ${enableval} for --disable-version-check]) ;;
+               esac],
+              CFG_VERSION_CHECK=yes)
+AC_SUBST(CFG_VERSION_CHECK)
+AC_MSG_RESULT($CFG_VERSION_CHECK)
+
 AC_CHECK_PROG(HAVE_Z3,z3,yes)
 AC_CHECK_PROG(HAVE_CVC5,cvc5,yes)
 AC_CHECK_PROG(HAVE_CVC4,cvc4,yes)
@@ -333,6 +348,7 @@ AC_DEFUN([_MY_CXX_CHECK_CORO_SET],
       if test "$_my_result" = "yes" ; then
         $1="$2"
         AC_DEFINE([HAVE_COROUTINES],[1],[Defined if coroutines are supported by $CXX])
+        CFG_HAVE_COROUTINES=yes
       fi
     fi
   ])
@@ -401,12 +417,12 @@ AC_SUBST(CFG_CXXFLAGS_PROFILE)
 
 # Flag to select newest language standard supported
 # Macros work such that first option that passes is the one we take
-# Currently enable c++17/c++14 due to packaged SystemC dependency
-# c++17 is the newest that Verilator is regularly tested to support
+# Beware using flags that are not required, as can break packaged SystemC
+# c++20 is the newest that Verilator is regularly tested to support
 # c++14 is the oldest that Verilator supports
 # gnu is required for Cygwin to compile verilated.h successfully
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++20)
-#_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++20)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++20)
+_MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++20)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++17)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=c++17)
 _MY_CXX_CHECK_SET(CFG_CXXFLAGS_STD_NEWEST,-std=gnu++14)
@@ -559,7 +575,7 @@ AC_DEFUN([_MY_CXX_CHECK_CXX_VER],
     # Set $_my_result
     AC_LINK_IFELSE(
      [AC_LANG_PROGRAM([#include <thread>
-#if (__cplusplus < 201402L)
+#if (__cplusplus < 202002L)
 # error "Too old"
 #endif
     ], [[ ]])],
@@ -575,13 +591,13 @@ AC_DEFUN([_MY_CXX_CHECK_CXX_VER],
 # Add $CFG_CXXFLAGS_STD only if can't compile correctly otherwise,
 # as adding std= when not needed can cause errors with the C++ std library.
 CFG_CXXFLAGS_STD=$CFG_CXXFLAGS_STD_NEWEST
-AC_MSG_CHECKING(whether $CXX supports C++14)
+AC_MSG_CHECKING(whether $CXX supports C++20)
 _MY_CXX_CHECK_CXX_VER()
 AC_MSG_RESULT($_my_result)
 if test "$_my_result" = "no" ; then
    CXXFLAGS="$CXXFLAGS $CFG_CXXFLAGS_STD"
    CFG_CXX_FLAGS_CMAKE="$CFG_CXX_FLAGS_CMAKE $CFG_CXXFLAGS_STD"
-   AC_MSG_CHECKING(whether $CXX supports C++14 with $CFG_CXXFLAGS_STD)
+   AC_MSG_CHECKING(whether $CXX supports C++20 with $CFG_CXXFLAGS_STD)
    _MY_CXX_CHECK_CXX_VER()
    AC_MSG_RESULT($_my_result)
 else
@@ -589,12 +605,19 @@ else
    # make sure we use the same std flag while compiling verilator and verilated design
    CFG_CXXFLAGS_STD=""
 fi
-if test "$_my_result" = "no" ; then
-   AC_MSG_NOTICE([[]])
-   AC_MSG_ERROR([[the $CXX compiler appears to not support C++14.
+if test "$CFG_VERSION_CHECK" != "no" ; then
+  if test "$_my_result" = "no" ; then
+     AC_MSG_NOTICE([[]])
+     AC_MSG_ERROR([[the $CXX compiler appears to not support C++20.
 
-Verilator requires a C++14 or newer compiler.]])
+Verilator requires a C++20 or newer compiler.]])
+  fi
+  if test "$CFG_HAVE_COROUTINES" != "yes" ; then
+     AC_MSG_NOTICE([[]])
+     AC_MSG_ERROR([[the $CXX compiler appears to not support coroutines.
 
+Verilator requires a C++20 or newer compiler.]])
+  fi
 fi
 AC_SUBST(CFG_CXXFLAGS_STD)
 
