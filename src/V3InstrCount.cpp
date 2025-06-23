@@ -140,7 +140,6 @@ private:
         // the fromp() node which could be disproportionately large.
         const VisitBase vb{this, nodep};
         iterateAndNextConstNull(nodep->lsbp());
-        iterateAndNextConstNull(nodep->widthp());
     }
     void visit(AstConcat* nodep) override {
         if (m_ignoreRemaining) return;

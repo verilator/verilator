@@ -642,11 +642,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         }
         puts("[");
         if (VN_IS(nodep->lsbp(), Const)) {
-            if (nodep->widthp()->isOne()) {
+            if (nodep->widthConst() == 1) {
                 puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt() + offset));
             } else {
-                puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt()
-                              + VN_AS(nodep->widthp(), Const)->toSInt() + offset - 1));
+                puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt() + nodep->widthConst() + offset
+                              - 1));
                 puts(":");
                 puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt() + offset));
             }
@@ -657,7 +657,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
                 puts(cvtToStr(offset));
             }
             putfs(nodep, "+:");
-            iterateAndNextConstNull(nodep->widthp());
+            puts(cvtToStr(nodep->widthConst()));
             puts("]");
         }
         puts("]");

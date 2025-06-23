@@ -972,16 +972,7 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(nodep->fromp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->lsbp(), WidthVP{SELF, PRELIM}.p());
             checkCvtUS(nodep->fromp());
-            iterateCheckSizedSelf(nodep, "Select Width", nodep->widthp(), SELF, BOTH);
             iterateCheckSizedSelf(nodep, "Select LHS", nodep->fromp(), SELF, BOTH);
-            V3Const::constifyParamsEdit(nodep->widthp());  // widthp may change
-            const AstConst* const widthConstp = VN_CAST(nodep->widthp(), Const);
-            if (!widthConstp) {
-                nodep->v3error(
-                    "Width of bit extract isn't a constant");  // Impossible? // LCOV_EXCL_LINE
-                nodep->dtypeSetBit();
-                return;
-            }
             int width = nodep->widthConst();
             if (width <= 0) {
                 nodep->v3error("Width of bit extract must be positive (IEEE 1800-2023 11.5.1)");
@@ -997,8 +988,7 @@ class WidthVisitor final : public VNVisitor {
                                   << nodep->msbConst() << "<" << nodep->lsbConst());
                 width = (nodep->lsbConst() - nodep->msbConst() + 1);
                 nodep->dtypeSetLogicSized(width, VSigning::UNSIGNED);
-                pushDeletep(nodep->widthp());
-                nodep->widthp()->replaceWith(new AstConst(nodep->widthp()->fileline(), width));
+                nodep->widthConst(width);
                 pushDeletep(nodep->lsbp());
                 nodep->lsbp()->replaceWith(new AstConst{nodep->lsbp()->fileline(), 0});
             }

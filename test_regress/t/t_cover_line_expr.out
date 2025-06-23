@@ -282,16 +282,16 @@
 %000000                 if (cyc[loop_var] && t2) $write("");
 -000000  point: comment=if hier=top.t
 -000000  point: comment=else hier=top.t
--000000  point: comment=(cyc[loop_var[4:0]+:32'h1]]==0) => 0 hier=top.t
--000000  point: comment=(cyc[loop_var[4:0]+:32'h1]]==1 && t2==1) => 1 hier=top.t
+-000000  point: comment=(cyc[loop_var[4:0]+:1]]==0) => 0 hier=top.t
+-000000  point: comment=(cyc[loop_var[4:0]+:1]]==1 && t2==1) => 1 hier=top.t
 -000000  point: comment=(t2==0) => 0 hier=top.t
                     end
                 end
                 // stop at the first layer even if there's more to find
 %000007         if ((cyc[3+32'(t1 && t2)+:2] == cyc[5+32'(t3 || t4)+:2]) || cyc[31]) $write("");
 -000002  point: comment=else hier=top.t
--000002  point: comment=((cyc[(32'sh3 + (t1 && t2))[4:0]+:32'sh2]] == cyc[(32'sh5 + (t3 || t4))[4:0]+:32'sh2]])==0 && cyc[31]==0) => 0 hier=top.t
--000007  point: comment=((cyc[(32'sh3 + (t1 && t2))[4:0]+:32'sh2]] == cyc[(32'sh5 + (t3 || t4))[4:0]+:32'sh2]])==1) => 1 hier=top.t
+-000002  point: comment=((cyc[(32'sh3 + (t1 && t2))[4:0]+:2]] == cyc[(32'sh5 + (t3 || t4))[4:0]+:2]])==0 && cyc[31]==0) => 0 hier=top.t
+-000007  point: comment=((cyc[(32'sh3 + (t1 && t2))[4:0]+:2]] == cyc[(32'sh5 + (t3 || t4))[4:0]+:2]])==1) => 1 hier=top.t
 -000000  point: comment=(cyc[31]==1) => 1 hier=top.t
 -000007  point: comment=if hier=top.t
                 // impossible branches and redundant terms
@@ -316,12 +316,12 @@
                 // demonstrate current limitations of term matching scheme
 %000008         if ((cyc[0] && cyc[1]) && ~(cyc[1-1] && cyc[2]) && (cyc[2-2] || cyc[3])) $write("");
 -000008  point: comment=else hier=top.t
--000002  point: comment=(cyc[(32'sh1 - 32'sh1)[4:0]+:32'h1]]==1 && cyc[2]==1) => 0 hier=top.t
--000003  point: comment=(cyc[(32'sh2 - 32'sh2)[4:0]+:32'h1]]==0 && cyc[3]==0) => 0 hier=top.t
+-000002  point: comment=(cyc[(32'sh1 - 32'sh1)[4:0]+:1]]==1 && cyc[2]==1) => 0 hier=top.t
+-000003  point: comment=(cyc[(32'sh2 - 32'sh2)[4:0]+:1]]==0 && cyc[3]==0) => 0 hier=top.t
 -000004  point: comment=(cyc[0]==0) => 0 hier=top.t
--000000  point: comment=(cyc[0]==1 && cyc[1]==1 && cyc[(32'sh1 - 32'sh1)[4:0]+:32'h1]]==0 && cyc[(32'sh2 - 32'sh2)[4:0]+:32'h1]]==1) => 1 hier=top.t
--000000  point: comment=(cyc[0]==1 && cyc[1]==1 && cyc[(32'sh1 - 32'sh1)[4:0]+:32'h1]]==0 && cyc[3]==1) => 1 hier=top.t
--000001  point: comment=(cyc[0]==1 && cyc[1]==1 && cyc[2]==0 && cyc[(32'sh2 - 32'sh2)[4:0]+:32'h1]]==1) => 1 hier=top.t
+-000000  point: comment=(cyc[0]==1 && cyc[1]==1 && cyc[(32'sh1 - 32'sh1)[4:0]+:1]]==0 && cyc[(32'sh2 - 32'sh2)[4:0]+:1]]==1) => 1 hier=top.t
+-000000  point: comment=(cyc[0]==1 && cyc[1]==1 && cyc[(32'sh1 - 32'sh1)[4:0]+:1]]==0 && cyc[3]==1) => 1 hier=top.t
+-000001  point: comment=(cyc[0]==1 && cyc[1]==1 && cyc[2]==0 && cyc[(32'sh2 - 32'sh2)[4:0]+:1]]==1) => 1 hier=top.t
 -000000  point: comment=(cyc[0]==1 && cyc[1]==1 && cyc[2]==0 && cyc[3]==1) => 1 hier=top.t
 -000005  point: comment=(cyc[1]==0) => 0 hier=top.t
 -000001  point: comment=if hier=top.t

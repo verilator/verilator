@@ -457,7 +457,7 @@ class GateClkDecomp final {
 
         // RHS
         if (const AstSel* const rselp = VN_CAST(rhsp, Sel)) {
-            if (VN_IS(rselp->lsbp(), Const) && VN_IS(rselp->widthp(), Const)) {
+            if (VN_IS(rselp->lsbp(), Const)) {
                 if (clkOffset < rselp->lsbConst() || clkOffset > rselp->msbConst()) return;
                 clkOffset -= rselp->lsbConst();
             } else {
@@ -473,7 +473,7 @@ class GateClkDecomp final {
 
         // LHS
         if (const AstSel* const lselp = VN_CAST(lhsp, Sel)) {
-            if (VN_IS(lselp->lsbp(), Const) && VN_IS(lselp->widthp(), Const)) {
+            if (VN_IS(lselp->lsbp(), Const)) {
                 clkOffset += lselp->lsbConst();
             } else {
                 return;
@@ -1248,10 +1248,8 @@ class GateMergeAssignments final {
         if (!pRefp || !cRefp || !cRefp->sameNode(pRefp)) return nullptr;  // not the same var
 
         const AstConst* const pstart = VN_CAST(prevSelp->lsbp(), Const);
-        const AstConst* const pwidth = VN_CAST(prevSelp->widthp(), Const);
         const AstConst* const cstart = VN_CAST(currSelp->lsbp(), Const);
-        const AstConst* const cwidth = VN_CAST(currSelp->widthp(), Const);
-        if (!pstart || !pwidth || !cstart || !cwidth) return nullptr;  // too complicated
+        if (!pstart || !cstart) return nullptr;  // too complicated
 
         if (currSelp->msbConst() + 1 == prevSelp->lsbConst()) {
             return new AstSel{cRefp->fileline(), cRefp->cloneTree(false), currSelp->lsbConst(),

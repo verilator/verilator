@@ -270,7 +270,6 @@ class LinkLValueVisitor final : public VNVisitor {
         // Only set lvalues on the from
         m_setRefLvalue = VAccess::NOCHANGE;
         iterateAndNextNull(nodep->lsbp());
-        iterateAndNextNull(nodep->widthp());
     }
     void visit(AstNodeSel* nodep) override {
         VL_RESTORER(m_setRefLvalue);

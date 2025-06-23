@@ -172,7 +172,7 @@ class AstToDfgVisitor final : public VNVisitor {
         if (AstSel* const selp = VN_CAST(nodep, Sel)) {
             AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
             const AstConst* const lsbp = VN_CAST(selp->lsbp(), Const);
-            if (!vrefp || !lsbp || !VN_IS(selp->widthp(), Const)) {
+            if (!vrefp || !lsbp) {
                 ++m_ctx.m_nonRepLhs;
                 return false;
             }
@@ -555,11 +555,7 @@ class AstToDfgVisitor final : public VNVisitor {
     void visit(AstSel* nodep) override {
         UASSERT_OBJ(!nodep->user1p(), nodep, "Already has Dfg vertex");
         if (unhandled(nodep)) return;
-        if (!VN_IS(nodep->widthp(), Const)) {  // This should never be taken, but paranoia
-            m_foundUnhandled = true;
-            ++m_ctx.m_nonRepNode;
-            return;
-        }
+
         iterate(nodep->fromp());
         if (m_foundUnhandled) return;
 
