@@ -123,7 +123,7 @@ module t (/*AUTOARG*/
             toggle <= '0;
             str_bit.x[3] <= 0;
             str_bit.y[0] <= 0;
-            str_bit_arr[2].x[3] <= 0;
+            str_bit_arr[4].x[3] <= 0;
          end
          else if (cyc == 10) begin
             $write("*-* All Finished *-*\n");
