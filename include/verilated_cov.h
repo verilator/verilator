@@ -75,17 +75,17 @@ class VerilatedCovImp;
         ccontextp->_insertp("hier", name, __VA_ARGS__); \
     } while (false)
 
-static inline void VL_COV_TOGGLE_CHG_S_I(const int width, unsigned int* cov, const IData var,
+static inline void VL_COV_TOGGLE_CHG_S_I(const int width, uint32_t* cov, const IData var,
                                          const IData covVar) {
     for (int i = 0; i < width; ++i) *(cov + i) += ((var ^ covVar) >> i) & 1;
 }
 
-static inline void VL_COV_TOGGLE_CHG_S_Q(const int width, unsigned int* cov, const IData var,
+static inline void VL_COV_TOGGLE_CHG_S_Q(const int width, uint32_t* cov, const IData var,
                                          const IData covVar) {
     for (int i = 0; i < width; ++i) *(cov + i) += ((var ^ covVar) >> i) & 1;
 }
 
-static inline void VL_COV_TOGGLE_CHG_S_W(const int width, unsigned int* cov, WDataInP var,
+static inline void VL_COV_TOGGLE_CHG_S_W(const int width, uint32_t* cov, WDataInP var,
                                          WDataInP covVar) {
     for (int i = 0; i < (width + 31) / 32; ++i) {
         const EData changed = var[i] ^ covVar[i];
