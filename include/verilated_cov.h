@@ -87,10 +87,11 @@ static inline void VL_COV_TOGGLE_CHG_Q(const int width, unsigned int* cov, const
 
 static inline void VL_COV_TOGGLE_CHG_W(const int width, unsigned int* cov, WDataInP var,
                                        WDataInP covVar) {
-    for (int i = 0; i < width; ++i) {
-        const int wdata_i = i / 32;
-        const int elem_i = i % 32;
-        *(cov + i) += ((var[wdata_i] ^ covVar[wdata_i]) >> elem_i) & 1;
+    for (int i = 0; i < (width + 31) / 32; ++i) {
+        const EData changed = var[i] ^ covVar[i];
+        if (changed) {
+            for (int j = 0; j < width - i * 32; ++j) *(cov + i * 32 + j) += (changed >> j) & 1;
+        }
     }
 }
 
