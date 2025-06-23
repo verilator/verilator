@@ -68,6 +68,7 @@ Verilator 5.037 devel
 * Fix casting reals to large integrals (#6085). [Todd Strader]
 * Fix nested hier blocks workers error (#6087). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix `--lib-create` with double-underscore (#6099).
+* Fix decoding octal string escapes with 1-2 digits (#6108).
 
 
 Verilator 5.036 2025-04-27
