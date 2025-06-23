@@ -26,10 +26,15 @@ Verilator 5.037 devel
 * Add `--filter-type` to verilator_coverage (#6030). [Ryszard Rozak, Antmicro Ltd.]
 * Add `--hierarchical-threads` (#6037). [Bartłomiej Chmiel]
 * Add `MODMISSING` error, in place of unnamed error (#6054). [Paul Swirhun]
+* Add DFG binToOneHot pass to generate one-hot decoders (#6096). [Geza Lore]
+* Add hint of the signed right-hand-side in oversized replication error (#6098). [Peter Birch]
 * Improve hierarchical scheduling visualization in V3ExecGraph (#6009). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Improve DPI temporary 'for' loop performance (#6079). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Improve memory usage for SenTrees in V3OrderProcessDomains (#6112). [Geza Lore]
 * Optimize DFG De Morgan patterns (#6090). [Geza Lore]
 * Optimize DFG variable elimination (#6091). [Geza Lore]
+* Optimize DFG PUSH_SEL_THROUGH_CONCAT pattern (#6092). [Geza Lore]
+* Optimize constification within Expand and Subst stages (#6111). [Geza Lore]
 * Fix --x-initial and --x-assign random stability (#2662) (#5958) (#6018) (#6025) (#6075). [Todd Strader]
 * Fix trace hierarchical-name runtime errors (#5668) (#6076). [Paul Swirhun]
 * Fix streaming operator packing order (#5903) (#6077). [Paul Swirhun]
@@ -68,6 +73,7 @@ Verilator 5.037 devel
 * Fix casting reals to large integrals (#6085). [Todd Strader]
 * Fix nested hier blocks workers error (#6087). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix `--lib-create` with double-underscore (#6099).
+* Fix DFG binToOneHot table index missing driver (#6100). [Geza Lore]
 * Fix decoding octal string escapes with 1-2 digits (#6108).
 
 

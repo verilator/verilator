@@ -405,6 +405,7 @@ Stroebel
 Strouble
 Stucki
 Su
+Subst
 Suguimoto
 Sundararajan
 Sunderland
@@ -537,6 +538,7 @@ basename
 bbox
 benchmarking
 biguint
+binToOneHot
 bindir
 biops
 bisonpre
@@ -585,7 +587,9 @@ conf
 config
 const
 constexpr
+constification
 constpool
+contify
 coredump
 coroutine
 coroutines
@@ -878,6 +882,7 @@ onehot
 ooo
 oprofile
 ortegon
+oversized
 oversubscription
 parallelized
 param
