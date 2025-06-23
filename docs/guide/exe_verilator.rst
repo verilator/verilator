@@ -590,6 +590,8 @@ Summary:
 
 .. option:: -fno-const-bit-op-tree
 
+.. option:: -fno-const-eager
+
 .. option:: -fno-dedup
 
 .. option:: -fno-dfg

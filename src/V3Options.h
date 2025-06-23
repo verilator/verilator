@@ -389,6 +389,7 @@ private:
     bool m_fConst;       // main switch: -fno-const: constant folding
     bool m_fConstBeforeDfg = true;  // main switch: -fno-const-before-dfg for testing only!
     bool m_fConstBitOpTree;  // main switch: -fno-const-bit-op-tree constant bit op tree
+    bool m_fConstEager = true;  // main switch: -fno-const-eagerly run V3Const during passes
     bool m_fDedupe;      // main switch: -fno-dedupe: logic deduplication
     bool m_fDfgPeephole = true; // main switch: -fno-dfg-peephole
     bool m_fDfgPreInline;    // main switch: -fno-dfg-pre-inline and -fno-dfg
@@ -701,6 +702,7 @@ public:
     bool fConst() const { return m_fConst; }
     bool fConstBeforeDfg() const { return m_fConstBeforeDfg; }
     bool fConstBitOpTree() const { return m_fConstBitOpTree; }
+    bool fConstEager() const { return m_fConstEager; }
     bool fDedupe() const { return m_fDedupe; }
     bool fDfgPeephole() const { return m_fDfgPeephole; }
     bool fDfgPreInline() const { return m_fDfgPreInline; }
