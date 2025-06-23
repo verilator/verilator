@@ -48,6 +48,12 @@ module t (/*AUTOARG*/
    } str_queue_t;
    str_queue_t str_queue;
 
+   typedef struct packed {
+      bit [5:3] x;
+   } str_bit_t;
+   str_bit_t str_bit;
+   str_bit_t [5:2] str_bit_arr;
+
    assign strl.a = clk;
 
    alpha a1 (/*AUTOINST*/
@@ -107,10 +113,14 @@ module t (/*AUTOARG*/
          if (cyc == 3) begin
             str_queue.q.push_back(1);
             toggle <= '1;
+            str_bit.x <= '1;
+            str_bit_arr[4].x <= '1;
          end
          if (cyc == 4) begin
             if (str_queue.q.size() != 1) $stop;
             toggle <= '0;
+            str_bit.x[3] <= 0;
+            str_bit_arr[2].x[3] <= 0;
          end
          else if (cyc == 10) begin
             $write("*-* All Finished *-*\n");
