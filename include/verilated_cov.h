@@ -75,6 +75,16 @@ class VerilatedCovImp;
         ccontextp->_insertp("hier", name, __VA_ARGS__); \
     } while (false)
 
+static inline void VL_COV_TOGGLE_CHG_I(const int width, unsigned int* cov, const IData var,
+                                       const IData covVar) {
+    for (int i = 0; i < width; i++) *(cov + i) += ((var ^ covVar) >> i) & 1;
+}
+
+static inline void VL_COV_TOGGLE_CHG_Q(const int width, unsigned int* cov, const IData var,
+                                       const IData covVar) {
+    for (int i = 0; i < width; i++) *(cov + i) += ((var ^ covVar) >> i) & 1;
+}
+
 //=============================================================================
 //  VerilatedCov
 /// Per-VerilatedContext coverage data class.
