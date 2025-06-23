@@ -3005,16 +3005,21 @@ class AstCoverDecl final : public AstNodeStmt {
     string m_linescov;
     int m_offset;  // Offset column numbers to uniq-ify IFs
     int m_binNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
-    int m_size;  // Number of points
+    int m_begin;  // If the node corresponds to packed array, m_begin is `lo()`, m_end is
+                  // `hi() + 1`. In other cases they are both 0. It allows to distinguish `bit x`
+                  // from `bit [0:0] x`.
+    int m_end;
+
 public:
     AstCoverDecl(FileLine* fl, const string& page, const string& comment, const string& linescov,
-                 int offset, int size)
+                 int offset, int begin, int end)
         : ASTGEN_SUPER_CoverDecl(fl)
         , m_page{page}
         , m_text{comment}
         , m_linescov{linescov}
         , m_offset{offset}
-        , m_size{size} {}
+        , m_begin{begin}
+        , m_end{end} {}
     ASTGEN_MEMBERS_AstCoverDecl;
     const char* broken() const override {
         if (m_dataDeclp
@@ -3030,7 +3035,9 @@ public:
     int binNum() const { return m_binNum; }
     void binNum(int flag) { m_binNum = flag; }
     int offset() const { return m_offset; }
-    int size() const { return m_size; }
+    int begin() const { return m_begin; }
+    int end() const { return m_end; }
+    int size() const { return std::max(end() - begin(), 1); }
     const string& comment() const { return m_text; }  // text to insert in code
     const string& linescov() const { return m_linescov; }
     const string& page() const { return m_page; }

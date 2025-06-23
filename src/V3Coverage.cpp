@@ -182,7 +182,7 @@ class CoverageVisitor final : public VNVisitor {
 
     AstCoverInc* newCoverInc(FileLine* fl, const string& hier, const string& page_prefix,
                              const string& comment, const string& linescov, int offset,
-                             const string& trace_var_name, const int size) {
+                             const string& trace_var_name, const int begin, const int end) {
         // We could use the basename of the filename to the page, but seems
         // better for code from an include file to be listed under the
         // module using it rather than the include file.
@@ -191,7 +191,8 @@ class CoverageVisitor final : public VNVisitor {
         // Someday the user might be allowed to specify a different page suffix
         const string page = page_prefix + "/" + m_modp->prettyName();
 
-        AstCoverDecl* const declp = new AstCoverDecl{fl, page, comment, linescov, offset, size};
+        AstCoverDecl* const declp
+            = new AstCoverDecl{fl, page, comment, linescov, offset, begin, end};
         declp->hier(hier);
         m_modp->addStmtsp(declp);
         UINFO(9, "new " << declp);
@@ -318,7 +319,7 @@ class CoverageVisitor final : public VNVisitor {
             lineTrack(nodep);
             AstNode* const newp
                 = newCoverInc(nodep->fileline(), "", "v_line", "block", linesCov(m_state, nodep),
-                              0, traceNameForLine(nodep, "block"), 1);
+                              0, traceNameForLine(nodep, "block"), 0, 0);
             insertProcStatement(nodep, newp);
         }
     }
@@ -356,7 +357,7 @@ class CoverageVisitor final : public VNVisitor {
             lineTrack(nodep);
             AstNode* const newp
                 = newCoverInc(nodep->fileline(), "", "v_line", "block", linesCov(m_state, nodep),
-                              0, traceNameForLine(nodep, "block"), 1);
+                              0, traceNameForLine(nodep, "block"), 0, 0);
             insertProcStatement(nodep, newp);
         }
     }
@@ -402,14 +403,14 @@ class CoverageVisitor final : public VNVisitor {
         }
     }
 
-    void toggleVarBottom(const ToggleEnt& above, const AstVar* varp) {
+    void toggleVarBottom(const ToggleEnt& above, const AstVar* varp, const int begin,
+                         const int end) {
         const std::string hierPrefix
             = (m_beginHier != "") ? AstNode::prettyName(m_beginHier) + "." : "";
         AstCoverToggle* const newp = new AstCoverToggle{
             varp->fileline(),
             newCoverInc(varp->fileline(), "", "v_toggle",
-                        hierPrefix + varp->name() + above.m_comment, "", 0, "",
-                        above.m_varRefp->width()),
+                        hierPrefix + varp->name() + above.m_comment, "", 0, "", begin, end),
             above.m_varRefp->cloneTree(false), above.m_chgRefp->cloneTree(false)};
         m_modp->addStmtsp(newp);
     }
@@ -417,7 +418,11 @@ class CoverageVisitor final : public VNVisitor {
     void toggleVarRecurse(const AstNodeDType* const dtypep, const int depth,  // per-iteration
                           const ToggleEnt& above, const AstVar* const varp) {  // Constant
         if (const AstBasicDType* const bdtypep = VN_CAST(dtypep, BasicDType)) {
-            toggleVarBottom(above, varp);
+            if (bdtypep->isRanged()) {
+                toggleVarBottom(above, varp, bdtypep->lo(), bdtypep->hi() + 1);
+            } else {
+                toggleVarBottom(above, varp, 0, 0);
+            }
         } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
                 const int index_code = index_docs - adtypep->lo();
@@ -533,7 +538,7 @@ class CoverageVisitor final : public VNVisitor {
             nodep->thenp(new AstExprStmt{thenp->fileline(),
                                          newCoverInc(nodep->fileline(), "", "v_branch",
                                                      "cond_then", linesCov(m_state, nodep), 0,
-                                                     traceNameForLine(nodep, "cond_then"), 1),
+                                                     traceNameForLine(nodep, "cond_then"), 0, 0),
                                          thenp});
             m_state = lastState;
             createHandle(nodep);
@@ -542,7 +547,7 @@ class CoverageVisitor final : public VNVisitor {
             nodep->elsep(new AstExprStmt{elsep->fileline(),
                                          newCoverInc(nodep->fileline(), "", "v_branch",
                                                      "cond_else", linesCov(m_state, nodep), 1,
-                                                     traceNameForLine(nodep, "cond_else"), 1),
+                                                     traceNameForLine(nodep, "cond_else"), 0, 0),
                                          elsep});
 
             m_state = lastState;
@@ -602,13 +607,13 @@ class CoverageVisitor final : public VNVisitor {
                 UINFO(4, "   COVER-branch: " << nodep);
                 nodep->addThensp(newCoverInc(nodep->fileline(), "", "v_branch", "if",
                                              linesCov(ifState, nodep), 0,
-                                             traceNameForLine(nodep, "if"), 1));
+                                             traceNameForLine(nodep, "if"), 0, 0));
                 // The else has a column offset of 1 to uniquify it relative to the if
                 // As "if" and "else" are more than one character wide, this won't overlap
                 // another token
                 nodep->addElsesp(newCoverInc(nodep->fileline(), "", "v_branch", "else",
                                              linesCov(elseState, nodep), 1,
-                                             traceNameForLine(nodep, "else"), 1));
+                                             traceNameForLine(nodep, "else"), 0, 0));
             }
             // If/else attributes to each block as non-branch coverage
             else if (first_elsif || cont_elsif) {
@@ -616,7 +621,7 @@ class CoverageVisitor final : public VNVisitor {
                 if (ifState.lineCoverageOn(nodep)) {
                     nodep->addThensp(newCoverInc(nodep->fileline(), "", "v_line", "elsif",
                                                  linesCov(ifState, nodep), 0,
-                                                 traceNameForLine(nodep, "elsif"), 1));
+                                                 traceNameForLine(nodep, "elsif"), 0, 0));
                 }
                 // and we don't insert the else as the child if-else will do so
             } else {
@@ -625,13 +630,13 @@ class CoverageVisitor final : public VNVisitor {
                     UINFO(4, "   COVER-half-if: " << nodep);
                     nodep->addThensp(newCoverInc(nodep->fileline(), "", "v_line", "if",
                                                  linesCov(ifState, nodep), 0,
-                                                 traceNameForLine(nodep, "if"), 1));
+                                                 traceNameForLine(nodep, "if"), 0, 0));
                 }
                 if (elseState.lineCoverageOn(nodep)) {
                     UINFO(4, "   COVER-half-el: " << nodep);
                     nodep->addElsesp(newCoverInc(nodep->fileline(), "", "v_line", "else",
                                                  linesCov(elseState, nodep), 1,
-                                                 traceNameForLine(nodep, "else"), 1));
+                                                 traceNameForLine(nodep, "else"), 0, 0));
                 }
             }
             m_state = lastState;
@@ -654,7 +659,7 @@ class CoverageVisitor final : public VNVisitor {
                 UINFO(4, "   COVER: " << nodep);
                 nodep->addStmtsp(newCoverInc(nodep->fileline(), "", "v_line", "case",
                                              linesCov(m_state, nodep), 0,
-                                             traceNameForLine(nodep, "case"), 1));
+                                             traceNameForLine(nodep, "case"), 0, 0));
             }
         }
     }
@@ -669,7 +674,7 @@ class CoverageVisitor final : public VNVisitor {
             lineTrack(nodep);
             nodep->addCoverincsp(newCoverInc(nodep->fileline(), m_beginHier, "v_user", "cover",
                                              linesCov(m_state, nodep), 0,
-                                             m_beginHier + "_vlCoverageUserTrace", 1));
+                                             m_beginHier + "_vlCoverageUserTrace", 0, 0));
         }
     }
     void visit(AstStop* nodep) override {
@@ -741,8 +746,8 @@ class CoverageVisitor final : public VNVisitor {
             }
             comment += ") => ";
             comment += (m_objective ? '1' : '0');
-            AstNode* const newp
-                = newCoverInc(fl, "", "v_expr", comment, "", 0, traceNameForLine(nodep, name), 1);
+            AstNode* const newp = newCoverInc(fl, "", "v_expr", comment, "", 0,
+                                              traceNameForLine(nodep, name), 0, 0);
             UASSERT_OBJ(condp, nodep, "No terms in expression coverage branch");
             AstIf* const ifp = new AstIf{fl, condp, newp, nullptr};
             ifp->user2(true);

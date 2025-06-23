@@ -721,7 +721,8 @@ public:
             puts(", ");
             putsQuoted(protectWordsIf(nodep->page(), nodep->protect()));
             puts(", ");
-            const string index = nodep->size() > 1 ? '[' + cvtToStr(i) + ']' : "";
+            const string index
+                = (nodep->begin() != nodep->end()) ? '[' + cvtToStr(nodep->begin() + i) + ']' : "";
             putsQuoted(protectWordsIf(nodep->comment() + index, nodep->protect()));
             puts(", ");
             putsQuoted(nodep->linescov());
