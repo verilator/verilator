@@ -745,6 +745,7 @@ public:
             puts("(");
             puts(cvtToStr(nodep->declp()->size()));
             puts(", ");
+            puts("vlSymsp->__Vcoverage + ");
             puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
             puts(", ");
             iterateConst(nodep->toggleExprp());
