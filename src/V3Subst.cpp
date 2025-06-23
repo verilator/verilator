@@ -26,6 +26,7 @@
 
 #include "V3Subst.h"
 
+#include "V3Const.h"
 #include "V3Stats.h"
 
 #include <algorithm>
@@ -361,6 +362,12 @@ class SubstVisitor final : public VNVisitor {
         iterateChildren(nodep);
         for (SubstVarEntry& ip : m_entries) ip.deleteUnusedAssign();
         m_entries.clear();
+
+        // Constant fold here, as Ast size can likely be reduced
+        if (v3Global.opt.fConstEager()) {
+            AstNode* const editedp = V3Const::constifyEditCpp(nodep);
+            UASSERT_OBJ(editedp == nodep, editedp, "Should not have replaced CFunc");
+        }
     }
 
     void visit(AstNode* nodep) override {

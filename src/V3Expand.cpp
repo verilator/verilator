@@ -357,6 +357,16 @@ class ExpandVisitor final : public VNVisitor {
     }
 
     // VISITORS
+    void visit(AstCFunc* nodep) override {
+        iterateChildren(nodep);
+
+        // Constant fold here, as Ast size can likely be reduced
+        if (v3Global.opt.fConstEager()) {
+            AstNode* const editedp = V3Const::constifyEditCpp(nodep);
+            UASSERT_OBJ(editedp == nodep, editedp, "Should not have replaced CFunc");
+        }
+    }
+
     void visit(AstExtend* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
