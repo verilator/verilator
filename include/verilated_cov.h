@@ -77,17 +77,17 @@ class VerilatedCovImp;
 
 static inline void VL_COV_TOGGLE_CHG_I(const int width, unsigned int* cov, const IData var,
                                        const IData covVar) {
-    for (int i = 0; i < width; i++) *(cov + i) += ((var ^ covVar) >> i) & 1;
+    for (int i = 0; i < width; ++i) *(cov + i) += ((var ^ covVar) >> i) & 1;
 }
 
 static inline void VL_COV_TOGGLE_CHG_Q(const int width, unsigned int* cov, const IData var,
                                        const IData covVar) {
-    for (int i = 0; i < width; i++) *(cov + i) += ((var ^ covVar) >> i) & 1;
+    for (int i = 0; i < width; ++i) *(cov + i) += ((var ^ covVar) >> i) & 1;
 }
 
 static inline void VL_COV_TOGGLE_CHG_W(const int width, unsigned int* cov, WDataInP var,
                                        WDataInP covVar) {
-    for (int i = 0; i < width; i++) {
+    for (int i = 0; i < width; ++i) {
         const int wdata_i = i / 32;
         const int elem_i = i % 32;
         *(cov + i) += ((var[wdata_i] ^ covVar[wdata_i]) >> elem_i) & 1;
