@@ -75,22 +75,50 @@ class VerilatedCovImp;
         ccontextp->_insertp("hier", name, __VA_ARGS__); \
     } while (false)
 
-static inline void VL_COV_TOGGLE_CHG_I(const int width, unsigned int* cov, const IData var,
-                                       const IData covVar) {
+static inline void VL_COV_TOGGLE_CHG_S_I(const int width, unsigned int* cov, const IData var,
+                                         const IData covVar) {
     for (int i = 0; i < width; ++i) *(cov + i) += ((var ^ covVar) >> i) & 1;
 }
 
-static inline void VL_COV_TOGGLE_CHG_Q(const int width, unsigned int* cov, const IData var,
-                                       const IData covVar) {
+static inline void VL_COV_TOGGLE_CHG_S_Q(const int width, unsigned int* cov, const IData var,
+                                         const IData covVar) {
     for (int i = 0; i < width; ++i) *(cov + i) += ((var ^ covVar) >> i) & 1;
 }
 
-static inline void VL_COV_TOGGLE_CHG_W(const int width, unsigned int* cov, WDataInP var,
-                                       WDataInP covVar) {
+static inline void VL_COV_TOGGLE_CHG_S_W(const int width, unsigned int* cov, WDataInP var,
+                                         WDataInP covVar) {
     for (int i = 0; i < (width + 31) / 32; ++i) {
         const EData changed = var[i] ^ covVar[i];
         if (changed) {
             for (int j = 0; j < width - i * 32; ++j) *(cov + i * 32 + j) += (changed >> j) & 1;
+        }
+    }
+}
+
+static inline void VL_COV_TOGGLE_CHG_M_I(const int width, std::atomic<uint32_t>* cov,
+                                         const IData var, const IData covVar) {
+    for (int i = 0; i < width; ++i) {
+        if (((var ^ covVar) >> i) & 1) (cov + i)->fetch_add(1, std::memory_order_relaxed);
+    }
+}
+
+static inline void VL_COV_TOGGLE_CHG_M_Q(const int width, std::atomic<uint32_t>* cov,
+                                         const IData var, const IData covVar) {
+    for (int i = 0; i < width; ++i) {
+        if (((var ^ covVar) >> i) & 1) (cov + i)->fetch_add(1, std::memory_order_relaxed);
+    }
+}
+
+static inline void VL_COV_TOGGLE_CHG_M_W(const int width, std::atomic<uint32_t>* cov, WDataInP var,
+                                         WDataInP covVar) {
+    for (int i = 0; i < (width + 31) / 32; ++i) {
+        const EData changed = var[i] ^ covVar[i];
+        if (changed) {
+            for (int j = 0; j < width - i * 32; ++j) {
+                if ((changed >> j) & 1) {
+                    (cov + i * 32 + j)->fetch_add(1, std::memory_order_relaxed);
+                }
+            }
         }
     }
 }
