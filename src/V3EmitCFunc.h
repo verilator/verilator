@@ -726,14 +726,28 @@ public:
         puts(");\n");
     }
     void visit(AstCoverInc* nodep) override {
-        if (v3Global.opt.threads() > 1) {
-            putns(nodep, "vlSymsp->__Vcoverage[");
-            puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
-            puts("].fetch_add(1, std::memory_order_relaxed);\n");
+        if (nodep->declp()->size() == 1) {
+            if (v3Global.opt.threads() > 1) {
+                putns(nodep, "vlSymsp->__Vcoverage[");
+                puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
+                puts("].fetch_add(1, std::memory_order_relaxed);\n");
+            } else {
+                putns(nodep, "++(vlSymsp->__Vcoverage[");
+                puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
+                puts("]);\n");
+            }
         } else {
-            putns(nodep, "++(vlSymsp->__Vcoverage[");
+            puts("VL_COV_TOGGLE_CHG_");
+            emitIQW(nodep->toggleExprp());
+            puts("(");
+            puts(cvtToStr(nodep->declp()->size()));
+            puts(", ");
             puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
-            puts("]);\n");
+            puts(", ");
+            iterateConst(nodep->toggleExprp());
+            puts(", ");
+            iterateConst(nodep->toggleCovExprp());
+            puts(");\n");
         }
     }
     void visit(AstDisableFork* nodep) override { putns(nodep, "vlProcess->disableFork();\n"); }
