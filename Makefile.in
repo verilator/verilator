@@ -104,45 +104,45 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 SHELL = /bin/sh
 
 SUBDIRS = docs src test_regress \
-	examples/cmake_hello_c \
-	examples/cmake_hello_sc \
-	examples/cmake_tracing_c \
-	examples/cmake_tracing_sc \
-	examples/cmake_protect_lib \
-	examples/make_hello_binary \
-	examples/make_hello_c \
-	examples/make_hello_sc \
-	examples/make_tracing_c \
-	examples/make_tracing_sc \
-	examples/make_protect_lib \
-	examples/json_py \
+  examples/cmake_hello_c \
+  examples/cmake_hello_sc \
+  examples/cmake_tracing_c \
+  examples/cmake_tracing_sc \
+  examples/cmake_protect_lib \
+  examples/make_hello_binary \
+  examples/make_hello_c \
+  examples/make_hello_sc \
+  examples/make_tracing_c \
+  examples/make_tracing_sc \
+  examples/make_protect_lib \
+  examples/json_py \
 
 INFOS = verilator.html verilator.pdf
 
 INFOS_OLD = README README.html README.pdf
 
 EXAMPLES_FIRST = \
-	examples/make_hello_c \
-	examples/make_hello_sc \
+  examples/make_hello_c \
+  examples/make_hello_sc \
 
 EXAMPLES = $(EXAMPLES_FIRST) $(filter-out $(EXAMPLES_FIRST), $(sort $(wildcard examples/*)))
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
 # No verilator_ccache_report.1, verilator_difftree.1 as those are not bin/ installed
 VL_INST_MAN_FILES = \
-	verilator.1 \
-	verilator_coverage.1 \
-	verilator_gantt.1 \
-	verilator_profcfunc.1 \
+  verilator.1 \
+  verilator_coverage.1 \
+  verilator_gantt.1 \
+  verilator_profcfunc.1 \
 
 default: all
 all: all_nomsg msg_test
 all_nomsg: verilator_exe $(VL_INST_MAN_FILES)
 
-.PHONY:verilator_exe
-.PHONY:verilator_bin$(EXEEXT)
-.PHONY:verilator_bin_dbg$(EXEEXT)
-.PHONY:verilator_coverage_bin_dbg$(EXEEXT)
+.PHONY: verilator_exe
+.PHONY: verilator_bin$(EXEEXT)
+.PHONY: verilator_bin_dbg$(EXEEXT)
+.PHONY: verilator_coverage_bin_dbg$(EXEEXT)
 verilator_exe verilator_bin$(EXEEXT) verilator_bin_dbg$(EXEEXT) verilator_coverage_bin_dbg$(EXEEXT):
 	@echo ------------------------------------------------------------
 	@echo "making verilator in src"
@@ -151,7 +151,7 @@ verilator_exe verilator_bin$(EXEEXT) verilator_bin_dbg$(EXEEXT) verilator_covera
 ######################################################################
 # Tests
 
-.PHONY:msg_test
+.PHONY: msg_test
 msg_test: all_nomsg
 	@echo "Build complete!"
 	@echo
@@ -213,8 +213,8 @@ verilator.html:
 verilator.pdf: Makefile
 	$(MAKE) -C docs verilator.pdf
 
-TAGFILES=${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/*.in \
-	${srcdir}/*.in ${srcdir}/*.pod
+TAGFILES = ${srcdir}/*/*.cpp ${srcdir}/*/*.h ${srcdir}/*/*.in \
+  ${srcdir}/*.in ${srcdir}/*.pod
 
 TAGS: $(TAGFILES)
 	etags $(TAGFILES)
@@ -228,43 +228,45 @@ doxygen:
 spelling:
 	$(MAKE) -C docs spelling
 
-
 ######################################################################
 # Install
 
 # Public executables intended to be invoked directly by the user
 # Don't put wildcards in these variables, it might cause an uninstall of other stuff
-VL_INST_PUBLIC_SCRIPT_FILES = verilator \
-                              verilator_coverage \
-                              verilator_gantt \
-                              verilator_profcfunc \
+VL_INST_PUBLIC_SCRIPT_FILES = \
+  verilator \
+  verilator_coverage \
+  verilator_gantt \
+  verilator_profcfunc \
 
-VL_INST_PUBLIC_BIN_FILES = verilator_bin$(EXEEXT) \
-                           verilator_bin_dbg$(EXEEXT) \
-                           verilator_coverage_bin_dbg$(EXEEXT) \
+VL_INST_PUBLIC_BIN_FILES = \
+  verilator_bin$(EXEEXT) \
+  verilator_bin_dbg$(EXEEXT) \
+  verilator_coverage_bin_dbg$(EXEEXT) \
 
 # Private executabels intended to be invoked by internals
 # Don't put wildcards in these variables, it might cause an uninstall of other stuff
-VL_INST_PRIVATE_SCRIPT_FILES = verilator_ccache_report \
-                               verilator_includer \
+VL_INST_PRIVATE_SCRIPT_FILES = \
+  verilator_ccache_report \
+  verilator_includer \
 
 VL_INST_INC_BLDDIR_FILES = \
-	include/verilated_config.h \
-	include/verilated.mk \
+  include/verilated_config.h \
+  include/verilated.mk \
 
 # Files under srcdir, instead of build time
 VL_INST_INC_SRCDIR_FILES = \
-	include/*.[chv]* \
-	include/*.vlt \
-	include/*.sv \
-	include/gtkwave/*.[chv]* \
-	include/vltstd/*.[chv]* \
+  include/*.[chv]* \
+  include/*.vlt \
+  include/*.sv \
+  include/gtkwave/*.[chv]* \
+  include/vltstd/*.[chv]* \
 
 VL_INST_DATA_SRCDIR_FILES = \
-	examples/*/*.[chv]* \
-	examples/*/CMakeLists.txt \
-	examples/*/Makefile* \
-	examples/*/vl_* \
+  examples/*/*.[chv]* \
+  examples/*/CMakeLists.txt \
+  examples/*/Makefile* \
+  examples/*/vl_* \
 
 mkbindirs:
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/bin
@@ -400,19 +402,20 @@ CPPCHECK6_CPP = $(wildcard $(srcdir)/src/V3[P-Z]*.cpp)
 CPPCHECK7_CPP = $(wildcard $(srcdir)/src/V3[L-R]*.cpp)
 CPPCHECK8_CPP = $(wildcard $(srcdir)/src/V3[S-Z]*.cpp)
 CHECK_CPP = $(CPPCHECK1_CPP) $(CPPCHECK2_CPP) $(CPPCHECK3_CPP) $(CPPCHECK4_CPP) \
-	$(CPPCHECK5_CPP) $(CPPCHECK6_CPP) $(CPPCHECK7_CPP) $(CPPCHECK8_CPP)
+  $(CPPCHECK5_CPP) $(CPPCHECK6_CPP) $(CPPCHECK7_CPP) $(CPPCHECK8_CPP)
 CHECK_H = $(wildcard \
-	$(srcdir)/include/*.h \
-	$(srcdir)/src/*.h )
+  $(srcdir)/include/*.h \
+  $(srcdir)/src/*.h )
 CHECK_YL = $(wildcard \
-	$(srcdir)/src/*.y \
-	$(srcdir)/src/*.l )
+  $(srcdir)/src/*.y \
+  $(srcdir)/src/*.l )
 CPPCHECK = src/cppcheck_filtered cppcheck
 CPPCHECK_FLAGS = --enable=all --inline-suppr \
-	--suppress=cstyleCast --suppress=useInitializationList \
-	--suppress=nullPointer --suppress=nullPointerRedundantCheck --suppress=ctunullpointer \
-	--suppress=unusedFunction --suppress=unusedScopedObject \
-	--suppress=useStlAlgorithm
+  --suppress=cstyleCast --suppress=useInitializationList \
+  --suppress=nullPointer --suppress=nullPointerRedundantCheck --suppress=ctunullpointer \
+  --suppress=unusedFunction --suppress=unusedScopedObject \
+  --suppress=useStlAlgorithm \
+
 CPPCHECK_FLAGS += --xml
 CPPCHECK_DEP = $(subst .cpp,.cppcheck,$(CHECK_CPP))
 CPPCHECK_INC = -I$(srcdir)/include -I$(srcdir)/include/gtkwave -I$(srcdir)/include/vltstd -I$(srcdir)/src/obj_dbg -I$(srcdir)/src
@@ -437,8 +440,8 @@ cppcheck-8:
 
 CLANGTIDY = clang-tidy
 CLANGTIDY_FLAGS = -config='' \
-	-header-filter='.*' \
-	-checks='-fuchsia-*,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-init-variables,-cppcoreguidelines-avoid-goto,-modernize-avoid-c-arrays,-readability-magic-numbers,-readability-simplify-boolean-expr,-cppcoreguidelines-macro-usage' \
+  -header-filter='.*' \
+  -checks='-fuchsia-*,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-init-variables,-cppcoreguidelines-avoid-goto,-modernize-avoid-c-arrays,-readability-magic-numbers,-readability-simplify-boolean-expr,-cppcoreguidelines-macro-usage' \
 
 CLANGTIDY_DEP = $(subst .cpp,.cpp.tidy,$(CHECK_CPP))
 CLANGTIDY_DEFS = -DVL_DEBUG=1 -DVL_CPPCHECK=1
@@ -476,50 +479,58 @@ yamlfix:
 
 # CMake files
 CMAKE_FILES = \
-	CMakeLists.txt \
-	examples/*/CMakeLists.txt \
-	src/CMakeLists.txt \
-	test_regress/CMakeLists.txt \
-	*.cmake.in \
+  CMakeLists.txt \
+  examples/*/CMakeLists.txt \
+  src/CMakeLists.txt \
+  test_regress/CMakeLists.txt \
+  *.cmake.in \
+
+# Makefiles
+MAKE_FILES = \
+  Makefile*.in \
+  docs/Makefile* \
+  include/verilated.mk.in \
+  examples/*/Makefile* \
+  src/Makefile*.in \
+  test_regress/Makefile* \
 
 # Python programs, subject to format and lint
 PY_PROGRAMS = \
-	bin/verilator_ccache_report \
-	bin/verilator_difftree \
-	bin/verilator_gantt \
-	bin/verilator_includer \
-	bin/verilator_profcfunc \
-	examples/json_py/vl_file_copy \
-	examples/json_py/vl_hier_graph \
-	docs/guide/conf.py \
-	docs/bin/vl_sphinx_extract \
-	docs/bin/vl_sphinx_fix \
-	src/astgen \
-	src/bisonpre \
-	src/config_rev \
-	src/cppcheck_filtered \
-	src/flexfix \
-	src/vlcovgen \
-	src/.gdbinit.py \
-	test_regress/*.py \
-	test_regress/t/*.pf \
-	nodist/clang_check_attributes \
-	nodist/code_coverage \
-	nodist/dot_importer \
-	nodist/fuzzer/actual_fail \
-	nodist/fuzzer/generate_dictionary \
-	nodist/install_test \
-	nodist/log_changes \
+  bin/verilator_ccache_report \
+  bin/verilator_difftree \
+  bin/verilator_gantt \
+  bin/verilator_includer \
+  bin/verilator_profcfunc \
+  examples/json_py/vl_file_copy \
+  examples/json_py/vl_hier_graph \
+  docs/guide/conf.py \
+  docs/bin/vl_sphinx_extract \
+  docs/bin/vl_sphinx_fix \
+  src/astgen \
+  src/bisonpre \
+  src/config_rev \
+  src/cppcheck_filtered \
+  src/flexfix \
+  src/vlcovgen \
+  src/.gdbinit.py \
+  test_regress/*.py \
+  test_regress/t/*.pf \
+  nodist/clang_check_attributes \
+  nodist/code_coverage \
+  nodist/dot_importer \
+  nodist/fuzzer/actual_fail \
+  nodist/fuzzer/generate_dictionary \
+  nodist/install_test \
+  nodist/log_changes \
 
 # Python files, subject to format but not lint
 PY_FILES = \
-	$(PY_PROGRAMS) \
-	nodist/code_coverage.dat \
-	test_regress/t/*.py \
+  $(PY_PROGRAMS) \
+  nodist/code_coverage.dat \
+  test_regress/t/*.py \
 
 # Python files, test_regress tests
-PY_TEST_FILES = \
-	test_regress/t/*.py \
+PY_TEST_FILES = test_regress/t/*.py
 
 YAPF = yapf3
 YAPF_FLAGS = -i --parallel
@@ -532,6 +543,12 @@ GERSEMI_FLAGS = -i
 
 format-cmake:
 	$(GERSEMI) $(GERSEMI_FLAGS) $(CMAKE_FILES)
+
+MBAKE = mbake
+MBAKE_FLAGS = format --config ./.bake.toml
+
+format-make:
+	$(MBAKE) $(MBAKE_FLAGS) $(MAKE_FILES)
 
 format-yaml: yamlfix
 

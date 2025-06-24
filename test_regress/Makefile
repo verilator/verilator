@@ -36,7 +36,7 @@ endif
 
 # Run tests in parallel.
 ifeq ($(CFG_WITH_LONGTESTS),yes)
- DRIVER_FLAGS ?= -j 0 --quiet --rerun
+  DRIVER_FLAGS ?= -j 0 --quiet --rerun
 endif
 
 .SUFFIXES:
@@ -75,7 +75,7 @@ random:
 
 random_forever:
 	while ( VERILATOR_NO_DEBUG=1 CPPFLAGS_ADD=-Wno-error $(MAKE) random ) ; do \
-		echo ; \
+	  echo ; \
 	done
 
 #######################################################################
@@ -102,10 +102,11 @@ TEST_SNAP_DIR ?= snapshot
 # Command to diff directories
 TEST_DIFF_TOOL ?= $(if $(shell which icdiff), icdiff -N -r, diff -r)
 
-TEST_SNAP_IGNORE := *.status *.log *.dat *.d *.o *.a *.so *stats*.txt *.html \
-                    *.includecache *.out *.fst *.fst.vcd *.tree *.tree*.json \
-                    *.dot *.csv *.xml *.hash *.cmake gmon.out.* CMakeFiles \
-                    profile_exec.vcd t_pgo_threads
+TEST_SNAP_IGNORE := \
+  *.status *.log *.dat *.d *.o *.a *.so *stats*.txt *.html \
+  *.includecache *.out *.fst *.fst.vcd *.tree *.tree*.json \
+  *.dot *.csv *.xml *.hash *.cmake gmon.out.* CMakeFiles \
+  profile_exec.vcd t_pgo_threads
 
 define TEST_SNAP_template
 mkdir -p $(TEST_SNAP_DIR)

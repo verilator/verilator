@@ -15,10 +15,10 @@
 # package install, and verilator is in your path. Otherwise find the
 # binary relative to $VERILATOR_ROOT (such as when inside the git sources).
 ifeq ($(VERILATOR_ROOT),)
-VERILATOR = verilator
+  VERILATOR = verilator
 else
-export VERILATOR_ROOT
-VERILATOR = $(VERILATOR_ROOT)/bin/verilator
+  export VERILATOR_ROOT
+  VERILATOR = $(VERILATOR_ROOT)/bin/verilator
 endif
 
 DOT = dot
@@ -31,9 +31,9 @@ PYTHON_VERSION_MINOR := $(word 2,${PYTHON_VERSION_FULL})
 PYTHON_GE_3_5 := $(shell [ ${PYTHON_VERSION_MAJOR} -eq 3 -a ${PYTHON_VERSION_MINOR} -ge 5 ] && echo true)
 
 ifeq (${PYTHON_GE_3_5},true)
-default: test
+  default: test
 else
-default: python_message
+  default: python_message
 endif
 
 python_message:
