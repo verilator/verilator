@@ -77,18 +77,18 @@ class VerilatedCovImp;
 
 static inline void VL_COV_TOGGLE_CHG_S_I(const int width, uint32_t* cov, const IData newData,
                                          const IData oldData) {
-    for (int i = 0; i < width; ++i) *(cov + i) += ((var ^ covVar) >> i) & 1;
+    for (int i = 0; i < width; ++i) *(cov + i) += ((newData ^ oldData) >> i) & 1;
 }
 
-static inline void VL_COV_TOGGLE_CHG_S_Q(const int width, uint32_t* cov, const IData var,
-                                         const IData covVar) {
-    for (int i = 0; i < width; ++i) *(cov + i) += ((var ^ covVar) >> i) & 1;
+static inline void VL_COV_TOGGLE_CHG_S_Q(const int width, uint32_t* cov, const IData newData,
+                                         const IData oldData) {
+    for (int i = 0; i < width; ++i) *(cov + i) += ((newData ^ oldData) >> i) & 1;
 }
 
-static inline void VL_COV_TOGGLE_CHG_S_W(const int width, uint32_t* cov, WDataInP var,
-                                         WDataInP covVar) {
+static inline void VL_COV_TOGGLE_CHG_S_W(const int width, uint32_t* cov, WDataInP newData,
+                                         WDataInP oldData) {
     for (int i = 0; i < VL_WORDS_I(width); ++i) {
-        const EData changed = var[i] ^ covVar[i];
+        const EData changed = newData[i] ^ oldData[i];
         if (changed) {
             for (int j = 0; j < width - i * 32; ++j) *(cov + i * 32 + j) += (changed >> j) & 1;
         }
@@ -96,26 +96,30 @@ static inline void VL_COV_TOGGLE_CHG_S_W(const int width, uint32_t* cov, WDataIn
 }
 
 static inline void VL_COV_TOGGLE_CHG_M_I(const int width, std::atomic<uint32_t>* cov,
-                                         const IData var, const IData covVar) {
+                                         const IData newData, const IData oldData) {
     for (int i = 0; i < width; ++i) {
-        if (((var ^ covVar) >> i) & 1) (cov + i)->fetch_add(1, std::memory_order_relaxed);
+        if (VL_BITISSET_I((newData ^ oldData), i)) {
+            (cov + i)->fetch_add(1, std::memory_order_relaxed);
+        }
     }
 }
 
 static inline void VL_COV_TOGGLE_CHG_M_Q(const int width, std::atomic<uint32_t>* cov,
-                                         const IData var, const IData covVar) {
+                                         const IData newData, const IData oldData) {
     for (int i = 0; i < width; ++i) {
-        if (((var ^ covVar) >> i) & 1) (cov + i)->fetch_add(1, std::memory_order_relaxed);
+        if (VL_BITISSET_Q((newData ^ oldData), i)) {
+            (cov + i)->fetch_add(1, std::memory_order_relaxed);
+        }
     }
 }
 
-static inline void VL_COV_TOGGLE_CHG_M_W(const int width, std::atomic<uint32_t>* cov, WDataInP var,
-                                         WDataInP covVar) {
-    for (int i = 0; i < (width + 31) / 32; ++i) {
-        const EData changed = var[i] ^ covVar[i];
+static inline void VL_COV_TOGGLE_CHG_M_W(const int width, std::atomic<uint32_t>* cov,
+                                         WDataInP newData, WDataInP oldData) {
+    for (int i = 0; i < VL_WORDS_I(width); ++i) {
+        const EData changed = newData[i] ^ oldData[i];
         if (changed) {
             for (int j = 0; j < width - i * 32; ++j) {
-                if ((changed >> j) & 1) {
+                if (VL_BITISSET_E(changed, j)) {
                     (cov + i * 32 + j)->fetch_add(1, std::memory_order_relaxed);
                 }
             }
