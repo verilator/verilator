@@ -170,8 +170,8 @@ jobs:
       - name: Extract combined results
         working-directory: results
         run: |
-            tar xzfv all-results-${{ github.run_id }}.tar.gz
-            ls -la
+          tar xzfv all-results-${{ github.run_id }}.tar.gz
+          ls -la
       # Pushing to verilator/verilator-rtlmeter-results requires elevated permissions
       - name: Generate access token
         id: generate-token
