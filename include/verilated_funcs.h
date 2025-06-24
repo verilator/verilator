@@ -2800,7 +2800,8 @@ extern IData VL_SSCANF_INNX(int lbits, const std::string& ld, const std::string&
 extern void VL_SFORMAT_NX(int obits_ignored, std::string& output, const std::string& format,
                           int argc, ...) VL_MT_SAFE;
 extern std::string VL_SFORMATF_N_NX(const std::string& format, int argc, ...) VL_MT_SAFE;
-extern void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix, int width,
+extern void VL_TIMEFORMAT_IINI(bool hasUnits, int units, bool hasPrecision, int precision,
+                               bool hasSuffix, const std::string& suffix, bool hasWidth, int width,
                                VerilatedContext* contextp) VL_MT_SAFE;
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE;
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, CData& rdr) VL_MT_SAFE {

@@ -3490,10 +3490,10 @@ public:
 };
 class AstTimeFormat final : public AstNodeStmt {
     // Parents: stmtlist
-    // @astgen op1 := unitsp : AstNodeExpr
-    // @astgen op2 := precisionp : AstNodeExpr
-    // @astgen op3 := suffixp : AstNodeExpr
-    // @astgen op4 := widthp : AstNodeExpr
+    // @astgen op1 := unitsp : Optional[AstNodeExpr]
+    // @astgen op2 := precisionp : Optional[AstNodeExpr]
+    // @astgen op3 := suffixp : Optional[AstNodeExpr]
+    // @astgen op4 := widthp : Optional[AstNodeExpr]
 public:
     AstTimeFormat(FileLine* fl, AstNodeExpr* unitsp, AstNodeExpr* precisionp, AstNodeExpr* suffixp,
                   AstNodeExpr* widthp)

@@ -1083,13 +1083,33 @@ public:
     }
     void visit(AstTimeFormat* nodep) override {
         putns(nodep, "VL_TIMEFORMAT_IINI(");
-        iterateAndNextConstNull(nodep->unitsp());
+        if (nodep->unitsp()) {
+            puts("true, ");
+            iterateAndNextConstNull(nodep->unitsp());
+        } else {
+            puts("false, 0");
+        }
         puts(", ");
-        iterateAndNextConstNull(nodep->precisionp());
+        if (nodep->precisionp()) {
+            puts("true, ");
+            iterateAndNextConstNull(nodep->precisionp());
+        } else {
+            puts("false, 0");
+        }
         puts(", ");
-        emitCvtPackStr(nodep->suffixp());
+        if (nodep->suffixp()) {
+            puts("true, ");
+            emitCvtPackStr(nodep->suffixp());
+        } else {
+            puts("false, \"\"");
+        }
         puts(", ");
-        iterateAndNextConstNull(nodep->widthp());
+        if (nodep->widthp()) {
+            puts("true, ");
+            iterateAndNextConstNull(nodep->widthp());
+        } else {
+            puts("false, 0");
+        }
         puts(", vlSymsp->_vm_contextp__);\n");
     }
     void visit(AstTimePrecision* nodep) override {

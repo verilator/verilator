@@ -5718,10 +5718,11 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstTimeFormat* nodep) override {
         assertAtStatement(nodep);
-        iterateCheckSigned32(nodep, "units", nodep->unitsp(), BOTH);
-        iterateCheckSigned32(nodep, "precision", nodep->precisionp(), BOTH);
-        iterateCheckString(nodep, "suffix", nodep->suffixp(), BOTH);
-        iterateCheckSigned32(nodep, "width", nodep->widthp(), BOTH);
+        if (nodep->unitsp()) iterateCheckSigned32(nodep, "units", nodep->unitsp(), BOTH);
+        if (nodep->precisionp())
+            iterateCheckSigned32(nodep, "precision", nodep->precisionp(), BOTH);
+        if (nodep->suffixp()) iterateCheckString(nodep, "suffix", nodep->suffixp(), BOTH);
+        if (nodep->widthp()) iterateCheckSigned32(nodep, "width", nodep->widthp(), BOTH);
     }
     void visit(AstUCStmt* nodep) override {
         // Just let all arguments seek their natural sizes

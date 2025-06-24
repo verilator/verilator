@@ -2567,12 +2567,13 @@ void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
     VL_PRINTF_MT("Time scale of %s is %s / %s\n", namep, timeunitp,
                  contextp->timeprecisionString());
 }
-void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix, int width,
+void VL_TIMEFORMAT_IINI(bool hasUnits, int units, bool hasPrecision, int precision, bool hasSuffix,
+                        const std::string& suffix, bool hasWidth, int width,
                         VerilatedContext* contextp) VL_MT_SAFE {
-    contextp->impp()->timeFormatUnits(units);
-    contextp->impp()->timeFormatPrecision(precision);
-    contextp->impp()->timeFormatSuffix(suffix);
-    contextp->impp()->timeFormatWidth(width);
+    if (hasUnits) contextp->impp()->timeFormatUnits(units);
+    if (hasPrecision) contextp->impp()->timeFormatPrecision(precision);
+    if (hasSuffix) contextp->impp()->timeFormatSuffix(suffix);
+    if (hasWidth) contextp->impp()->timeFormatWidth(width);
 }
 
 //======================================================================

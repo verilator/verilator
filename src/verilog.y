@@ -4362,8 +4362,14 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
         |       yD_PRINTTIMESCALE                       { $$ = new AstPrintTimeScale{$1}; }
         |       yD_PRINTTIMESCALE '(' ')'               { $$ = new AstPrintTimeScale{$1}; }
         |       yD_PRINTTIMESCALE '(' idClassSel ')'    { $$ = new AstPrintTimeScale{$1}; DEL($3); }
-        |       yD_TIMEFORMAT '(' expr ',' expr ',' expr ',' expr ')'
+        |       yD_TIMEFORMAT '(' exprE ',' exprE ',' exprE ',' exprE ')'
                         { $$ = new AstTimeFormat{$1, $3, $5, $7, $9}; }
+        |       yD_TIMEFORMAT '(' exprE ',' exprE ',' exprE ')'
+                        { $$ = new AstTimeFormat{$1, $3, $5, $7, nullptr}; }
+        |       yD_TIMEFORMAT '(' exprE ',' exprE ')'
+                        { $$ = new AstTimeFormat{$1, $3, $5, nullptr, nullptr}; }
+        |       yD_TIMEFORMAT '(' exprE ')'
+                        { $$ = new AstTimeFormat{$1, $3, nullptr, nullptr, nullptr}; }
         //
         |       yD_READMEMB '(' expr ',' idClassSel ')'                         { $$ = new AstReadMem{$1, false, $3, $5, nullptr, nullptr}; }
         |       yD_READMEMB '(' expr ',' idClassSel ',' expr ')'                { $$ = new AstReadMem{$1, false, $3, $5, $7, nullptr}; }
