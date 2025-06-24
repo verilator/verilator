@@ -394,14 +394,12 @@ class CoverageVisitor final : public VNVisitor {
         }
     }
 
-    void toggleVarBottom(const ToggleEnt& above, const AstVar* varp,
-                         const AstNodeDType* const dtypep) {
+    void toggleVarBottom(const ToggleEnt& above, const AstVar* varp, const VNumRange& range) {
         const std::string hierPrefix
             = (m_beginHier != "") ? AstNode::prettyName(m_beginHier) + "." : "";
         AstCoverToggleDecl* const declp
             = new AstCoverToggleDecl{varp->fileline(), "v_toggle/" + m_modp->prettyName(),
-                                     hierPrefix + varp->name() + above.m_comment};
-        declp->dtypeFrom(dtypep);
+                                     hierPrefix + varp->name() + above.m_comment, range};
         m_modp->addStmtsp(declp);
         AstCoverToggle* const newp = new AstCoverToggle{
             varp->fileline(), newCoverInc(varp->fileline(), declp, ""),
@@ -411,8 +409,8 @@ class CoverageVisitor final : public VNVisitor {
 
     void toggleVarRecurse(const AstNodeDType* const dtypep, const int depth,  // per-iteration
                           const ToggleEnt& above, const AstVar* const varp) {  // Constant
-        if (VN_IS(dtypep, BasicDType)) {
-            toggleVarBottom(above, varp, dtypep);
+        if (const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
+            toggleVarBottom(above, varp, basicp->nrange());
         } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
                 const int index_code = index_docs - adtypep->lo();

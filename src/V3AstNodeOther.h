@@ -3917,17 +3917,20 @@ public:
 class AstCoverToggleDecl final : public AstNodeCoverDecl {
     // Coverage analysis point declaration
     // Used for toggle coverage
+    const VNumRange m_range;  // packed array ranges
 public:
-    AstCoverToggleDecl(FileLine* fl, const string& page, const string& comment)
-        : ASTGEN_SUPER_CoverToggleDecl(fl, page, comment) {}
+    AstCoverToggleDecl(FileLine* fl, const string& page, const string& comment,
+                       const VNumRange& range)
+        : ASTGEN_SUPER_CoverToggleDecl(fl, page, comment)
+        , m_range{range} {}
     ASTGEN_MEMBERS_AstCoverToggleDecl;
-    bool hasDType() const override VL_MT_SAFE { return true; }
     // void dump(std::ostream& str) const override;
     // void dumpJson(std::ostream& str) const override;
-    int size() const override { return dtypep()->width(); }
+    int size() const override { return m_range.elements(); }
+    const VNumRange& range() const { return m_range; }
     bool sameNode(const AstNode* samep) const override {
         const AstCoverToggleDecl* const asamep = VN_DBG_AS(samep, CoverToggleDecl);
-        return AstNodeCoverDecl::sameNode(samep) && dtypep() == asamep->dtypep();
+        return AstNodeCoverDecl::sameNode(samep) && range() == asamep->range();
     }
 };
 

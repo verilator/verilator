@@ -749,9 +749,8 @@ public:
             puts(", ");
             putsQuoted(protectWordsIf(nodep->page(), nodep->protect()));
             puts(", ");
-            AstBasicDType* const basicp = VN_CAST(nodep->dtypep(), BasicDType);
             const string index
-                = (basicp && basicp->isRanged()) ? '[' + cvtToStr(basicp->lo() + i) + ']' : "";
+                = (nodep->range().ranged()) ? '[' + cvtToStr(nodep->range().lo() + i) + ']' : "";
             putsQuoted(protectWordsIf(nodep->comment() + index, nodep->protect()));
             puts(", \"\");\n");
         }
