@@ -751,7 +751,7 @@ public:
             puts(", ");
             AstBasicDType* const basicp = VN_CAST(nodep->dtypep(), BasicDType);
             const string index
-                = (basicp && basicp->rangep()) ? '[' + cvtToStr(basicp->lo() + i) + ']' : "";
+                = (basicp && basicp->isRanged()) ? '[' + cvtToStr(basicp->lo() + i) + ']' : "";
             putsQuoted(protectWordsIf(nodep->comment() + index, nodep->protect()));
             puts(", \"\");\n");
         }
