@@ -765,7 +765,7 @@ class CoverageVisitor final : public VNVisitor {
             comment += ") => ";
             comment += (m_objective ? '1' : '0');
             AstCoverOtherDecl* const declp = new AstCoverOtherDecl{
-                nodep->fileline(), "v_exp/" + m_modp->prettyName(), comment, "", 0};
+                nodep->fileline(), "v_expr/" + m_modp->prettyName(), comment, "", 0};
             m_modp->addStmtsp(declp);
             AstNode* const newp = newCoverInc(fl, declp, traceNameForLine(nodep, name));
             UASSERT_OBJ(condp, nodep, "No terms in expression coverage branch");
