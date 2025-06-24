@@ -2922,10 +2922,9 @@ void AstBegin::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, needProcess);
     dumpJsonGen(str);
 }
-void AstCoverDecl::dump(std::ostream& str) const {
+void AstNodeCoverDecl::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     if (!page().empty()) str << " page=" << page();
-    if (!linescov().empty()) str << " lc=" << linescov();
     if (this->dataDeclNullp()) {
         static bool s_recursing = false;
         str << " -> ";
@@ -2940,11 +2939,18 @@ void AstCoverDecl::dump(std::ostream& str) const {
         if (binNum()) str << " bin" << std::dec << binNum();
     }
 }
-void AstCoverDecl::dumpJson(std::ostream& str) const {
+void AstNodeCoverDecl::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, page);
-    dumpJsonStrFunc(str, linescov);
     dumpJsonNumFunc(str, binNum);
     dumpJsonGen(str);
+}
+void AstCoverOtherDecl::dump(std::ostream& str) const {
+    this->AstNodeCoverDecl::dump(str);
+    if (!linescov().empty()) str << " lc=" << linescov();
+}
+void AstCoverOtherDecl::dumpJson(std::ostream& str) const {
+    this->AstNodeCoverDecl::dumpJson(str);
+    dumpJsonStrFunc(str, linescov);
 }
 void AstCoverInc::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);

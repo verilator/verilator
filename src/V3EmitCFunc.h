@@ -697,7 +697,35 @@ public:
         }
         iterateChildrenConst(nodep);
     }
-    void visit(AstCoverDecl* nodep) override {
+    void visit(AstCoverOtherDecl* nodep) override {
+        putns(nodep, "vlSelf->__vlCoverInsert(");  // As Declared in emitCoverageDecl
+        puts("&(vlSymsp->__Vcoverage[");
+        puts(cvtToStr(nodep->dataDeclThisp()->binNum()));
+        puts("])");
+        // If this isn't the first instantiation of this module under this
+        // design, don't really count the bucket, and rely on verilator_cov to
+        // aggregate counts.  This is because Verilator combines all
+        // hierarchies itself, and if verilator_cov also did it, you'd end up
+        // with (number-of-instant) times too many counts in this bin.
+        puts(", first");  // Enable, passed from __Vconfigure parameter
+        puts(", ");
+        putsQuoted(protect(nodep->fileline()->filename()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->lineno()));
+        puts(", ");
+        puts(cvtToStr(nodep->offset() + nodep->fileline()->firstColumn()));
+        puts(", ");
+        putsQuoted((!nodep->hier().empty() ? "." : "")
+                   + protectWordsIf(nodep->hier(), nodep->protect()));
+        puts(", ");
+        putsQuoted(protectWordsIf(nodep->page(), nodep->protect()));
+        puts(", ");
+        putsQuoted(protectWordsIf(nodep->comment(), nodep->protect()));
+        puts(", ");
+        putsQuoted(nodep->linescov());
+        puts(");\n");
+    }
+    void visit(AstCoverToggleDecl* nodep) override {
         for (int i = 0; i < nodep->size(); i++) {
             putns(nodep, "vlSelf->__vlCoverInsert(");  // As Declared in emitCoverageDecl
             puts("&(vlSymsp->__Vcoverage[");
@@ -714,19 +742,18 @@ public:
             puts(", ");
             puts(cvtToStr(nodep->fileline()->lineno()));
             puts(", ");
-            puts(cvtToStr(nodep->offset() + nodep->fileline()->firstColumn()));
+            puts(cvtToStr(nodep->fileline()->firstColumn()));
             puts(", ");
             putsQuoted((!nodep->hier().empty() ? "." : "")
                        + protectWordsIf(nodep->hier(), nodep->protect()));
             puts(", ");
             putsQuoted(protectWordsIf(nodep->page(), nodep->protect()));
             puts(", ");
+            AstBasicDType* const basicp = VN_CAST(nodep->dtypep(), BasicDType);
             const string index
-                = (nodep->begin() != nodep->end()) ? '[' + cvtToStr(nodep->begin() + i) + ']' : "";
+                = (basicp && basicp->rangep()) ? '[' + cvtToStr(basicp->lo() + i) + ']' : "";
             putsQuoted(protectWordsIf(nodep->comment() + index, nodep->protect()));
-            puts(", ");
-            putsQuoted(nodep->linescov());
-            puts(");\n");
+            puts(", \"\");\n");
         }
     }
     void visit(AstCoverInc* nodep) override {

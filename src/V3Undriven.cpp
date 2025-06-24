@@ -545,7 +545,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     void visit(AstPrimitive*) override {}
 
     // Coverage artifacts etc shouldn't count as a sink
-    void visit(AstCoverDecl*) override {}
+    void visit(AstNodeCoverDecl*) override {}
     void visit(AstCoverInc*) override {}
     void visit(AstCoverToggle*) override {}
     void visit(AstTraceDecl*) override {}
