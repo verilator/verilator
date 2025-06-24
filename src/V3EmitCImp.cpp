@@ -103,7 +103,7 @@ class EmitCGatherDependencies final : VNVisitorConst {
         addSelfDependency(nodep->selfPointer(), nodep->varp());
         iterateChildrenConst(nodep);
     }
-    void visit(AstCoverDecl* nodep) override {
+    void visit(AstNodeCoverDecl* nodep) override {
         addSymsDependency();
         iterateChildrenConst(nodep);
     }
