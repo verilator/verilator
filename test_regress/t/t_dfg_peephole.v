@@ -198,7 +198,7 @@ module t (
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_AND, (&(rand_a + 64'd105)) & (&(rand_b + 64'd108)));
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_OR,  (|(rand_a + 64'd106)) | (|(rand_b + 64'd109)));
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_XOR, (^(rand_a + 64'd107)) ^ (^(rand_b + 64'd110)));
-   `signal(PUSH_REDOR_THROUGH_OR, |((rand_a[0] ? rand_a : 0) | (rand_b[0] ? rand_b : 0)));
+   `signal(PUSH_REDUCTION_THROUGH_BITWISE, |((rand_a[0] ? rand_a : 0) | (rand_b[0] ? rand_b : 0)));
    `signal(PUSH_REDUCTION_THROUGH_CONCAT_AND, &{1'd1, rand_b});
    `signal(PUSH_REDUCTION_THROUGH_CONCAT_OR,  |{1'd1, rand_b});
    `signal(PUSH_REDUCTION_THROUGH_CONCAT_XOR, ^{1'd1, rand_b});
