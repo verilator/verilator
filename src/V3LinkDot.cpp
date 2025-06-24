@@ -2611,8 +2611,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (oldp->wouldBreak(newp)) {
             newp->v3error(
                 "Data type used where a non-data type is expected: " << newp->prettyNameQ());
+            oldp->replaceWith(new AstConst{newp->fileline(), AstConst::BitFalse{}});
+        } else {
+            oldp->replaceWith(newp);
         }
-        oldp->replaceWith(newp);
     }
 
     // Marks the current module to be revisited after the initial AST iteration
