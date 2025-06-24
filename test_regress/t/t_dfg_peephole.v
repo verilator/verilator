@@ -186,7 +186,7 @@ module t (
    `signal(RIGHT_LEANING_ASSOC, (((rand_a + rand_b) + rand_a) + rand_b));
    `signal(RIGHT_LEANING_CONCET, {{{rand_a, rand_b}, rand_a}, rand_b});
 
-   // Operators that should work wiht mismatched widths
+   // Operators that should work with mismatched widths
    `signal(MISMATCHED_ShiftL,const_a << 4'd2);
    `signal(MISMATCHED_ShiftR,const_a >> 4'd2);
    `signal(MISMATCHED_ShiftRS, const_a >> 4'd2);
@@ -204,8 +204,8 @@ module t (
    `signal(PUSH_SEL_THROUGH_SHIFTL, sel_from_shiftl[20:0]);
    `signal(REPLACE_SEL_FROM_SEL, sel_from_sel[4:3]);
 
-   // Sel from not requires the operand to have a sinle sink, so can't use
-   // the chekc due to the raw expression referencing the operand
+   // Sel from not requires the operand to have a single sink, so can't use
+   // the check due to the raw expression referencing the operand
    wire [63:0] sel_from_not_tmp = ~(rand_a >> rand_b[2:0] << rand_a[3:0]);
    wire        sel_from_not = sel_from_not_tmp[2];
    always @(posedge randbit_a) if ($c(0)) $display(sel_from_not); // Do not remove signal
