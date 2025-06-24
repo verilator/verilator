@@ -738,7 +738,7 @@ class VlTest:
             ("+access+r" if Args.trace else "")
         ]
         self.nc_flags2 = []  # Overridden in some sim files
-        self.nc_run_flags = ["+licqueue", "-q", "+assert", "+sv", "-R"]
+        self.nc_run_flags = ["+licqueue", "-q", "+assert", "+sv", "-R", "-covoverwrite"]
         # ModelSim
         self.ms_define = 'MS'
         self.ms_flags = [
