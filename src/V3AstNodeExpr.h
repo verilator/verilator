@@ -3415,6 +3415,65 @@ public:
     int instrCount() const override { return widthInstrs() * 2; }
     bool stringFlavor() const override { return true; }
 };
+class AstSel final : public AstNodeBiop {
+    // *Resolved* (tyep checked) multiple bit range extraction. Always const width
+    // @astgen alias op1 := fromp
+    // @astgen alias op2 := lsbp
+    VNumRange m_declRange;  // Range of the 'from' array if isRanged() is set, else invalid
+    int m_declElWidth;  // If a packed array, the number of bits per element
+    // Selection width (!= this->width() from V3Clean onwards, != this->widthMin() in V3Width)
+    int m_widthConst;
+
+public:
+    AstSel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* lsbp, int bitwidth)
+        : ASTGEN_SUPER_Sel(fl, fromp, lsbp)
+        , m_declElWidth{1}
+        , m_widthConst{bitwidth} {
+        dtypeSetLogicSized(bitwidth, VSigning::UNSIGNED);
+    }
+    AstSel(FileLine* fl, AstNodeExpr* fromp, int lsb, int bitwidth)
+        : ASTGEN_SUPER_Sel(fl, fromp, new AstConst(fl, lsb))  // Need () constructor
+        , m_declElWidth{1}
+        , m_widthConst{bitwidth} {
+        dtypeSetLogicSized(bitwidth, VSigning::UNSIGNED);
+    }
+    ASTGEN_MEMBERS_AstSel;
+    AstNodeExpr* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
+        return new AstSel{fileline(), lhsp, rhsp, widthConst()};
+    }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit) override {
+        out.opSel(from, bit.toUInt() + widthConst() - 1, bit.toUInt());
+    }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override {
+        return widthConst() == 1 ? "VL_BITSEL_%nq%lq%rqI(%lw, %P, %li, %ri)"
+               : isWide()        ? "VL_SEL_%nq%lq%rqI(%nw, %lw, %P, %li, %ri, %nw)"
+                                 : "VL_SEL_%nq%lq%rqI(%lw, %P, %li, %ri, %nw)";
+    }
+    string emitSMT() const override { return "((_ extract %t %r) %l)"; }
+    bool cleanOut() const override { return false; }
+    bool cleanLhs() const override { return true; }
+    bool cleanRhs() const override { return true; }
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    bool sameNode(const AstNode* otherp) const override {
+        return widthConst() == VN_DBG_AS(otherp, Sel)->widthConst();
+    }
+    int instrCount() const override {
+        return widthInstrs() * (VN_CAST(lsbp(), Const) ? 3 : 10) + 1;
+    }
+    int widthConst() const { return m_widthConst; }
+    void widthConst(int value) { m_widthConst = value; }
+    int lsbConst() const { return VN_AS(lsbp(), Const)->toSInt(); }
+    int msbConst() const { return lsbConst() + widthConst() - 1; }
+    VNumRange& declRange() VL_MT_STABLE { return m_declRange; }
+    const VNumRange& declRange() const VL_MT_STABLE { return m_declRange; }
+    void declRange(const VNumRange& flag) { m_declRange = flag; }
+    int declElWidth() const { return m_declElWidth; }
+    void declElWidth(int flag) { m_declElWidth = flag; }
+};
 class AstShiftL final : public AstNodeBiop {
 public:
     AstShiftL(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, int setwidth = 0)
@@ -4692,59 +4751,6 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool sizeMattersThs() const override { return false; }
-};
-class AstSel final : public AstNodeTriop {
-    // Multiple bit range extraction
-    // @astgen alias op1 := fromp
-    // @astgen alias op2 := lsbp
-    // @astgen alias op3 := widthp
-    VNumRange m_declRange;  // Range of the 'from' array if isRanged() is set, else invalid
-    int m_declElWidth;  // If a packed array, the number of bits per element
-public:
-    AstSel(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* lsbp, AstNodeExpr* widthp)
-        : ASTGEN_SUPER_Sel(fl, fromp, lsbp, widthp)
-        , m_declElWidth{1} {
-        if (VN_IS(widthp, Const)) {
-            dtypeSetLogicSized(VN_AS(widthp, Const)->toUInt(), VSigning::UNSIGNED);
-        }
-    }
-    AstSel(FileLine* fl, AstNodeExpr* fromp, int lsb, int bitwidth)
-        : ASTGEN_SUPER_Sel(fl, fromp, new AstConst(fl, lsb),  // Need () constructor
-                           new AstConst(fl, bitwidth))  // Need () constructor
-        , m_declElWidth{1} {
-        dtypeSetLogicSized(bitwidth, VSigning::UNSIGNED);
-    }
-    ASTGEN_MEMBERS_AstSel;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
-    void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit,
-                       const V3Number& width) override {
-        out.opSel(from, bit.toUInt() + width.toUInt() - 1, bit.toUInt());
-    }
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override {
-        return widthp()->isOne() ? "VL_BITSEL_%nq%lq%rq%tq(%lw, %P, %li, %ri)"
-               : isWide()        ? "VL_SEL_%nq%lq%rq%tq(%nw,%lw, %P, %li, %ri, %ti)"
-                                 : "VL_SEL_%nq%lq%rq%tq(%lw, %P, %li, %ri, %ti)";
-    }
-    string emitSMT() const override { return "((_ extract %t %r) %l)"; }
-    bool cleanOut() const override { return false; }
-    bool cleanLhs() const override { return true; }
-    bool cleanRhs() const override { return true; }
-    bool cleanThs() const override { return true; }
-    bool sizeMattersLhs() const override { return false; }
-    bool sizeMattersRhs() const override { return false; }
-    bool sizeMattersThs() const override { return false; }
-    bool sameNode(const AstNode*) const override { return true; }
-    int instrCount() const override { return widthInstrs() * (VN_CAST(lsbp(), Const) ? 3 : 10); }
-    int widthConst() const { return VN_AS(widthp(), Const)->toSInt(); }
-    int lsbConst() const { return VN_AS(lsbp(), Const)->toSInt(); }
-    int msbConst() const { return lsbConst() + widthConst() - 1; }
-    VNumRange& declRange() VL_MT_STABLE { return m_declRange; }
-    const VNumRange& declRange() const VL_MT_STABLE { return m_declRange; }
-    void declRange(const VNumRange& flag) { m_declRange = flag; }
-    int declElWidth() const { return m_declElWidth; }
-    void declElWidth(int flag) { m_declElWidth = flag; }
 };
 class AstSliceSel final : public AstNodeTriop {
     // Multiple array element extraction

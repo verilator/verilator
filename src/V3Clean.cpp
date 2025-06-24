@@ -233,7 +233,7 @@ class CleanVisitor final : public VNVisitor {
         setClean(nodep, true);
     }
     void visit(AstSel* nodep) override {
-        operandTriop(nodep);
+        operandBiop(nodep);
         setClean(nodep, nodep->cleanOut());
     }
     void visit(AstUCFunc* nodep) override {

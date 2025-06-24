@@ -358,7 +358,7 @@ class DelayedVisitor final : public VNVisitor {
     // Insert new statements before 'insertp'.
     // Returns a read reference to the temporary variable.
     AstVarRef* createWidened(FileLine* flp, AstScope* scopep, AstNodeDType* dtypep,
-                             AstNodeExpr* sLsbp, AstNodeExpr* sWidthp, const std::string& name,
+                             AstNodeExpr* sLsbp, int sWidth, const std::string& name,
                              AstNodeExpr* valuep, AstNode* insertp) {
         // Create temporary variable.
         AstVarScope* const tp = createTemp(flp, scopep, name, dtypep);
@@ -369,7 +369,7 @@ class DelayedVisitor final : public VNVisitor {
             new AstAssign{flp, new AstVarRef{flp, tp, VAccess::WRITE}, zerop});
         // Set the selected bits to 'valuep'
         AstSel* const selp = new AstSel{flp, new AstVarRef{flp, tp, VAccess::WRITE},
-                                        sLsbp->cloneTreePure(true), sWidthp->cloneTreePure(true)};
+                                        sLsbp->cloneTreePure(true), sWidth};
         insertp->addHereThisAsNext(new AstAssign{flp, selp, valuep});
         // This is the expression to get the value of the temporary
         return new AstVarRef{flp, tp, VAccess::READ};
@@ -633,22 +633,21 @@ class DelayedVisitor final : public VNVisitor {
                 // Need to create a mask and widen the value to element size.
                 lhsNodep = lSelp->fromp();
                 AstNodeExpr* const sLsbp = lSelp->lsbp();
-                AstConst* const sWidthp = VN_AS(lSelp->widthp(), Const);
+                const int sWidth = lSelp->widthConst();
 
                 // Create mask value
                 maskp = [&]() -> AstNodeExpr* {
                     // Constant mask we can compute here
                     if (AstConst* const cLsbp = VN_CAST(sLsbp, Const)) {
                         AstConst* const cp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
-                        cp->num().setMask(sWidthp->toSInt(), cLsbp->toSInt());
+                        cp->num().setMask(sWidth, cLsbp->toSInt());
                         return cp;
                     }
 
                     // A non-constant mask we must compute at run-time.
-                    AstConst* const onesp
-                        = new AstConst{flp, AstConst::WidthedValue{}, sWidthp->toSInt(), 0};
+                    AstConst* const onesp = new AstConst{flp, AstConst::WidthedValue{}, sWidth, 0};
                     onesp->num().setAllBits1();
-                    return createWidened(flp, scopep, eDTypep, sLsbp, sWidthp,
+                    return createWidened(flp, scopep, eDTypep, sLsbp, sWidth,
                                          "__VdlyMask" + baseName, onesp, nodep);
                 }();
 
@@ -659,14 +658,13 @@ class DelayedVisitor final : public VNVisitor {
                         if (AstConst* const cLsbp = VN_CAST(sLsbp, Const)) {
                             AstConst* const cp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
                             cp->num().setAllBits0();
-                            cp->num().opSelInto(cValuep->num(), cLsbp->toSInt(),
-                                                sWidthp->toSInt());
+                            cp->num().opSelInto(cValuep->num(), cLsbp->toSInt(), sWidth);
                             return cp;
                         }
                     }
 
                     // A non-constant value we must adjust.
-                    return createWidened(flp, scopep, eDTypep, sLsbp, sWidthp,  //
+                    return createWidened(flp, scopep, eDTypep, sLsbp, sWidth,  //
                                          "__VdlyElem" + baseName, valuep, nodep);
                 }();
             } else {

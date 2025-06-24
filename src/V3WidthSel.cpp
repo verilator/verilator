@@ -262,8 +262,7 @@ class WidthSelVisitor final : public VNVisitor {
             // cppcheck-suppress zerodivcond
             const int elwidth = adtypep->width() / fromRange.elements();
             AstSel* const newp = new AstSel{
-                nodep->fileline(), fromp, newMulConst(nodep->fileline(), elwidth, subp),
-                new AstConst(nodep->fileline(), AstConst::Unsized32{}, elwidth)};
+                nodep->fileline(), fromp, newMulConst(nodep->fileline(), elwidth, subp), elwidth};
             newp->declRange(fromRange);
             newp->declElWidth(elwidth);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
@@ -333,9 +332,7 @@ class WidthSelVisitor final : public VNVisitor {
         } else if (VN_IS(ddtypep, BasicDType)) {
             // SELBIT(range, index) -> SEL(array, index, 1)
             AstSel* const newp
-                = new AstSel{nodep->fileline(), fromp, newSubLsbOf(rhsp, fromRange),
-                             // Unsized so width from user
-                             new AstConst{nodep->fileline(), AstConst::Unsized32{}, 1}};
+                = new AstSel{nodep->fileline(), fromp, newSubLsbOf(rhsp, fromRange), 1};
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp);
             if (debug() >= 9) newp->dumpTree("-  SELBTn: ");
@@ -344,9 +341,7 @@ class WidthSelVisitor final : public VNVisitor {
         } else if (VN_IS(ddtypep, NodeUOrStructDType)) {  // A bit from the packed struct
             // SELBIT(range, index) -> SEL(array, index, 1)
             AstSel* const newp
-                = new AstSel{nodep->fileline(), fromp, newSubLsbOf(rhsp, fromRange),
-                             // Unsized so width from user
-                             new AstConst{nodep->fileline(), AstConst::Unsized32{}, 1}};
+                = new AstSel{nodep->fileline(), fromp, newSubLsbOf(rhsp, fromRange), 1};
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp);
             if (debug() >= 9) newp->dumpTree("-  SELBTn: ");
@@ -449,10 +444,10 @@ class WidthSelVisitor final : public VNVisitor {
                 lsb = x;
             }
             const int elwidth = adtypep->width() / fromRange.elements();
-            AstSel* const newp = new AstSel{
-                nodep->fileline(), fromp,
-                newMulConst(nodep->fileline(), elwidth, newSubLsbOf(lsbp, fromRange)),
-                new AstConst(nodep->fileline(), AstConst::Unsized32{}, (msb - lsb + 1) * elwidth)};
+            AstSel* const newp
+                = new AstSel{nodep->fileline(), fromp,
+                             newMulConst(nodep->fileline(), elwidth, newSubLsbOf(lsbp, fromRange)),
+                             (msb - lsb + 1) * elwidth};
             newp->declRange(fromRange);
             newp->declElWidth(elwidth);
             newp->dtypeFrom(sliceDType(adtypep, msb, lsb));
@@ -477,11 +472,8 @@ class WidthSelVisitor final : public VNVisitor {
                 msb = lsb;
                 lsb = x;
             }
-            AstNodeExpr* const widthp = new AstConst(
-                msbp->fileline(), AstConst::Unsized32{},  // Unsized so width from user
-                msb + 1 - lsb);
-            AstSel* const newp
-                = new AstSel{nodep->fileline(), fromp, newSubLsbOf(lsbp, fromRange), widthp};
+            AstSel* const newp = new AstSel{nodep->fileline(), fromp, newSubLsbOf(lsbp, fromRange),
+                                            msb + 1 - lsb};
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp);
             // if (debug() >= 9) newp->dumpTree("-  SELEXnew: ");
@@ -499,11 +491,8 @@ class WidthSelVisitor final : public VNVisitor {
                 msb = lsb;
                 lsb = x;
             }
-            AstNodeExpr* const widthp = new AstConst(
-                msbp->fileline(), AstConst::Unsized32{},  // Unsized so width from user
-                msb + 1 - lsb);
-            AstSel* const newp
-                = new AstSel{nodep->fileline(), fromp, newSubLsbOf(lsbp, fromRange), widthp};
+            AstSel* const newp = new AstSel{nodep->fileline(), fromp, newSubLsbOf(lsbp, fromRange),
+                                            msb + 1 - lsb};
             newp->declRange(fromRange);
             UINFO(6, "   new " << newp);
             // if (debug() >= 9) newp->dumpTree("-  SELEXnew: ");
@@ -581,11 +570,10 @@ class WidthSelVisitor final : public VNVisitor {
                    || (VN_IS(ddtypep, NodeUOrStructDType)
                        && VN_AS(ddtypep, NodeUOrStructDType)->packedUnsup())) {
             int elwidth = 1;
-            AstNodeExpr* newwidthp = widthp;
+            int newwidth = width;
             if (const AstPackArrayDType* const adtypep = VN_CAST(ddtypep, PackArrayDType)) {
                 elwidth = adtypep->width() / fromRange.elements();
-                newwidthp
-                    = new AstConst(nodep->fileline(), AstConst::Unsized32{}, width * elwidth);
+                newwidth = width * elwidth;
             }
             AstNodeExpr* newlsbp = nullptr;
             if (VN_IS(nodep, SelPlus)) {
@@ -608,7 +596,7 @@ class WidthSelVisitor final : public VNVisitor {
                 nodep->v3fatalSrc("Bad Case");
             }
             if (elwidth != 1) newlsbp = newMulConst(nodep->fileline(), elwidth, newlsbp);
-            AstSel* const newp = new AstSel{nodep->fileline(), fromp, newlsbp, newwidthp};
+            AstSel* const newp = new AstSel{nodep->fileline(), fromp, newlsbp, newwidth};
             newp->declRange(fromRange);
             newp->declElWidth(elwidth);
             UINFO(6, "   new " << newp);

@@ -1160,7 +1160,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     AstNodeExpr* const en1p = getEnp(nodep->fromp());
                     AstNodeExpr* const enp
                         = new AstSel{nodep->fileline(), en1p, nodep->lsbp()->cloneTreePure(true),
-                                     nodep->widthp()->cloneTree(true)};
+                                     nodep->widthConst()};
                     UINFO(9, "       newsel " << enp);
                     nodep->user1p(enp);  // propagate up SEL(fromp->enable, value)
                     m_tgraph.didProcess(nodep);

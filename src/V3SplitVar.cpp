@@ -381,8 +381,6 @@ public:
                 m_refs.erase(refp);
             } else if (AstVarRef* const refp = VN_CAST(selp->lsbp(), VarRef)) {
                 m_refs.erase(refp);
-            } else if (AstVarRef* const refp = VN_CAST(selp->widthp(), VarRef)) {
-                m_refs.erase(refp);
             }
             UASSERT_OBJ(reinterpret_cast<uintptr_t>(selp->op1p()) != 1, selp, "stale");
             visitor->iterate(selp);
@@ -1010,27 +1008,18 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         }
         UASSERT_OBJ(varp->attrSplitVar() || varp->user2(), varp, "must be a split candidate");
 
-        const std::array<AstConst*, 2> consts
-            = {{VN_CAST(nodep->lsbp(), Const),
-                VN_CAST(nodep->widthp(), Const)}};  // GCC 3.8.0 wants {{}}
-        if (consts[0] && consts[1]) {  // OK
+        if (AstConst* const lsbConstp = VN_CAST(nodep->lsbp(), Const)) {  // OK
             refit->second.append(
-                PackedVarRefEntry(nodep, consts[0]->toSInt() + refit->second.basicp()->lo(),
-                                  consts[1]->toUInt()),
+                PackedVarRefEntry(nodep, lsbConstp->toSInt() + refit->second.basicp()->lo(),
+                                  nodep->widthConst()),
                 vrefp->access());
             UINFO(5, varp->prettyName()
-                         << " [" << consts[0]->toSInt() << ":+" << consts[1]->toSInt()
+                         << " [" << lsbConstp->toSInt() << ":+" << nodep->widthConst()
                          << "] lsb:" << refit->second.basicp()->lo());
         } else {
             if (varp->attrSplitVar()) {
                 warnNoSplit(vrefp->varp(), nodep, "its bit range cannot be determined statically");
                 varp->attrSplitVar(false);
-            }
-            if (!consts[0]) {
-                UINFO(4, "LSB " << nodep->lsbp() << " is expected to be constant, but not");
-            }
-            if (!consts[1]) {
-                UINFO(4, "WIDTH " << nodep->widthp() << " is expected to be constant, but not");
             }
             m_refs.erase(varp);
             iterateChildren(nodep);
@@ -1261,15 +1250,10 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                 info.ineligible = true;
                 continue;
             }
-            AstConst* const widthConstp = VN_CAST(selp->widthp(), Const);
-            if (!widthConstp) {
-                info.ineligible = true;
-                continue;
-            }
 
             // All good, record the selection range
             const int32_t lsb = lsbConstp->toSInt();
-            const int32_t msb = lsb + widthConstp->toSInt() - 1;
+            const int32_t msb = lsb + selp->widthConst() - 1;
             info.ranges.emplace_back(lsb, msb);
         }
 

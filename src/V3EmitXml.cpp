@@ -255,6 +255,11 @@ class EmitXmlFileVisitor final : public VNVisitorConst {
         putsQuoted(nodep->funcp() ? nodep->funcp()->name() : nodep->name());
         outputChildrenEnd(nodep, "");
     }
+    void visit(AstSel* nodep) override {
+        outputTag(nodep, "");
+        puts(" widthConst=\"" + cvtToStr(nodep->widthConst()) + "\"");
+        outputChildrenEnd(nodep, "");
+    }
 
     // Data types
     void visit(AstBasicDType* nodep) override {

@@ -59,7 +59,7 @@ module Vt_debug_emitv_t;
                 $write("");
             end
             if (downto_32[(ident('sh21) - 'h20)[5:0] + 32
-                +:'h1]]) begin
+                +:1]]) begin
                 $write("");
             end
             if ((| downto_32[48:40])) begin

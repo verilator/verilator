@@ -585,19 +585,9 @@ private:
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
         if (!m_checkOnly && optimizable()) {
-            nodep->numberOperate(newConst(nodep)->num(), fetchConst(nodep->lhsp())->num(),
-                                 fetchConst(nodep->rhsp())->num());
-        }
-    }
-    void visit(AstNodeTriop* nodep) override {
-        if (!optimizable()) return;  // Accelerate
-        checkNodeInfo(nodep);
-        iterateChildrenConst(nodep);
-        if (!m_checkOnly && optimizable()) {
             AstConst* const valuep = newConst(nodep);
             nodep->numberOperate(newConst(nodep)->num(), fetchConst(nodep->lhsp())->num(),
-                                 fetchConst(nodep->rhsp())->num(),
-                                 fetchConst(nodep->thsp())->num());
+                                 fetchConst(nodep->rhsp())->num());
             // See #5490. 'numberOperate' on partially out of range select yields 'x' bits,
             // but in reality it would yield '0's without V3Table, so force 'x' bits to '0',
             // to ensure the result is the same with and without V3Table.
@@ -605,6 +595,16 @@ private:
                 V3Number num{valuep, valuep->width(), valuep->num()};
                 valuep->num().opBitsOne(num);
             }
+        }
+    }
+    void visit(AstNodeTriop* nodep) override {
+        if (!optimizable()) return;  // Accelerate
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
+        if (!m_checkOnly && optimizable()) {
+            nodep->numberOperate(newConst(nodep)->num(), fetchConst(nodep->lhsp())->num(),
+                                 fetchConst(nodep->rhsp())->num(),
+                                 fetchConst(nodep->thsp())->num());
         }
     }
     void visit(AstNodeQuadop* nodep) override {

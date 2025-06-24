@@ -421,6 +421,7 @@ public:
         bool decind = false;
         bool rhs = true;
         if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
+            UASSERT_OBJ(selp->widthMin() == selp->widthConst(), selp, "Width mismatch");
             if (selp->widthMin() == 1) {
                 putnbs(nodep, "VL_ASSIGNBIT_");
                 emitIQW(selp->fromp());
@@ -1260,7 +1261,8 @@ public:
     }
     void visit(AstSel* nodep) override {
         // Note ASSIGN checks for this on a LHS
-        emitOpName(nodep, nodep->emitC(), nodep->fromp(), nodep->lsbp(), nodep->widthp());
+        UASSERT_OBJ(nodep->widthMin() == nodep->widthConst(), nodep, "Width mismatch");
+        emitOpName(nodep, nodep->emitC(), nodep->fromp(), nodep->lsbp(), nullptr);
     }
     void visit(AstReplicate* nodep) override {
         if (nodep->srcp()->widthMin() == 1 && !nodep->isWide()) {
