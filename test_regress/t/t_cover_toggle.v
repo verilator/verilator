@@ -49,7 +49,9 @@ module t (/*AUTOARG*/
    str_queue_t str_queue;
 
    typedef struct packed {
-      bit [5:3] x;
+      // verilator lint_off ASCRANGE
+      bit [3:5] x;
+      // verilator lint_on ASCRANGE
       bit [0:0] y;
    } str_bit_t;
    str_bit_t str_bit;
