@@ -30,6 +30,16 @@ V3DfgBinToOneHotContext::~V3DfgBinToOneHotContext() {
                      m_decodersCreated);
 }
 
+V3DfgBreakCyclesContext::~V3DfgBreakCyclesContext() {
+    V3Stats::addStat("Optimizations, DFG " + m_label + " BreakCycles, made acyclic", m_nFixed);
+    V3Stats::addStat("Optimizations, DFG " + m_label + " BreakCycles, improved", m_nImproved);
+    V3Stats::addStat("Optimizations, DFG " + m_label + " BreakCycles, left unchanged",
+                     m_nUnchanged);
+    V3Stats::addStat("Optimizations, DFG " + m_label + " BreakCycles, trivial", m_nTrivial);
+    V3Stats::addStat("Optimizations, DFG " + m_label + " BreakCycles, changes applied",
+                     m_nImprovements);
+}
+
 V3DfgCseContext::~V3DfgCseContext() {
     V3Stats::addStat("Optimizations, DFG " + m_label + " CSE, expressions eliminated",
                      m_eliminated);

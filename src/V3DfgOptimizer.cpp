@@ -240,15 +240,33 @@ static void process(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
     // Extract the cyclic sub-graphs. We do this because a lot of the optimizations assume a
     // DAG, and large, mostly acyclic graphs could not be optimized due to the presence of
     // small cycles.
-    const std::vector<std::unique_ptr<DfgGraph>>& cyclicComponents
+    std::vector<std::unique_ptr<DfgGraph>> cyclicComponents
         = dfg.extractCyclicComponents("cyclic");
 
     // Split the remaining acyclic DFG into [weakly] connected components
-    const std::vector<std::unique_ptr<DfgGraph>>& acyclicComponents
-        = dfg.splitIntoComponents("acyclic");
+    std::vector<std::unique_ptr<DfgGraph>> acyclicComponents = dfg.splitIntoComponents("acyclic");
 
     // Quick sanity check
     UASSERT_OBJ(dfg.size() == 0, dfg.modulep(), "DfgGraph should have become empty");
+
+    // Attempt to convert cyclic components into acyclic ones
+    if (v3Global.opt.fDfgBreakCyckes()) {
+        for (auto it = cyclicComponents.begin(); it != cyclicComponents.end();) {
+            auto result = V3DfgPasses::breakCycles(**it, ctx);
+            if (!result.first) {
+                // No improvement, moving on.
+                ++it;
+            } else if (!result.second) {
+                // Improved, but still cyclic. Replace the original cyclic component.
+                *it = std::move(result.first);
+                ++it;
+            } else {
+                // Result became acyclic. Move to acyclicComponents, delete original.
+                acyclicComponents.emplace_back(std::move(result.first));
+                it = cyclicComponents.erase(it);
+            }
+        }
+    }
 
     // For each acyclic component
     for (auto& component : acyclicComponents) {

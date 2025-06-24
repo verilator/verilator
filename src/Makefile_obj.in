@@ -240,6 +240,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Descope.o \
   V3Dfg.o \
   V3DfgAstToDfg.o \
+  V3DfgBreakCycles.o \
   V3DfgCache.o \
   V3DfgDecomposition.o \
   V3DfgDfgToAst.o \

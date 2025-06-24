@@ -606,6 +606,10 @@ Summary:
    optimizer.  Alias for :vlopt:`-fno-dfg-pre-inline`,
    :vlopt:`-fno-dfg-post-inline` and :vlopt:`-fno-dfg-scoped`.
 
+.. option:: -fno-dfg-break-cycles
+
+   Rarely needed. Disable breaking combinational cycles during DFG.
+
 .. option:: -fno-dfg-peephole
 
    Rarely needed. Disable the DFG peephole optimizer.
