@@ -163,6 +163,27 @@ module t;
          if (letterq != 64'h1f) $stop;
          if (letterw != 128'h389712783490823_abcdef689_02348923) $stop;
 
+         chars = $sscanf("@20=0123456789abcdef;random",
+                         "@%2h=%16x;", letterl, letterq);
+         if (`verbose) $write("c=%0d adr=%x dat=%x\n", chars, letterl, letterq);
+         if (chars != 2) $stop;
+         if (letterl != 8'h20) $stop;
+         if (letterq != 64'h0123456789abcdef) $stop;
+
+         chars = $sscanf("@20=0123456789abcdef;random",
+                         "@%2h=%12x;", letterl, letterq);
+         if (`verbose) $write("c=%0d adr=%x dat=%x\n", chars, letterl, letterq);
+         if (chars != 2) $stop;
+         if (letterl != 8'h20) $stop;
+         if (letterq != 64'h0123456789ab) $stop;
+
+         chars = $sscanf("@20=01234567_89abcdef;random",
+                         "@%2h=%12x;", letterl, letterq);
+         if (`verbose) $write("c=%0d adr=%x dat=%x\n", chars, letterl, letterq);
+         if (chars != 2) $stop;
+         if (letterl != 8'h20) $stop;
+         if (letterq != 64'h0123456789a) $stop;
+
          chars = $sscanf("ba=10      bb=110100101010010101012    note_the_two ",
                          "ba=%b bb=%b%s", letterq, letterw, letterz);
          if (`verbose) $write("c=%0d xa=%x xb=%x z=%0s\n", chars, letterq, letterw, letterz);
@@ -208,6 +229,8 @@ module t;
          if (chars != 2) $stop;
          `checkr(r, 0.2);
          if (letterq != 64'hfffffffffffc65a4) $stop;
+
+         // 
 
          // $fscanf
          if ($fscanf(file,"")!=0) $stop;
