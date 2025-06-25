@@ -727,7 +727,7 @@ public:
     }
     void visit(AstCoverToggleDecl* nodep) override {
         for (int i = 0; i < nodep->size(); i++) {
-            putns(nodep, "vlSelf->__vlCoverInsert(");  // As Declared in emitCoverageDecl
+            putns(nodep, "vlSelf->__vlCoverToggleInsert(");  // As Declared in emitCoverageDecl
             puts("&(vlSymsp->__Vcoverage[");
             puts(cvtToStr(nodep->dataDeclThisp()->binNum() + i));
             puts("])");
@@ -752,7 +752,7 @@ public:
             const string index
                 = (nodep->range().ranged()) ? '[' + cvtToStr(nodep->range().lo() + i) + ']' : "";
             putsQuoted(protectWordsIf(nodep->comment() + index, nodep->protect()));
-            puts(", \"\");\n");
+            puts(");\n");
         }
     }
     void visit(AstCoverInc* nodep) override {

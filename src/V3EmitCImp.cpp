@@ -307,17 +307,16 @@ class EmitCImp final : EmitCFunc {
         splitSizeInc(10);
     }
     void emitCoverageImp() {
+        // Rather than putting out VL_COVER_INSERT calls directly, we do it via this
+        // function. This gets around gcc slowness constructing all of the template
+        // arguments.
         if (v3Global.opt.coverage()) {
             puts("\n// Coverage\n");
-            // Rather than putting out VL_COVER_INSERT calls directly, we do it via this
-            // function. This gets around gcc slowness constructing all of the template
-            // arguments.
             puts("void " + prefixNameProtect(m_modp) + "::__vlCoverInsert(");
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
             puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp, const char* "
-                 "linescovp) "
-                 "{\n");
+                 "linescovp) {\n");
             if (v3Global.opt.threads() > 1) {
                 puts("assert(sizeof(uint32_t) == sizeof(std::atomic<uint32_t>));\n");
                 puts("uint32_t* count32p = reinterpret_cast<uint32_t*>(countp);\n");
@@ -340,6 +339,38 @@ class EmitCImp final : EmitCFunc {
             puts("  \"page\",pagep,");
             puts("  \"comment\",commentp,");
             puts("  (linescovp[0] ? \"linescov\" : \"\"), linescovp);\n");
+            puts("}\n");
+            splitSizeInc(10);
+        }
+        if (v3Global.opt.coverageToggle()) {
+            puts("\n// Toggle Coverage\n");
+            puts("void " + prefixNameProtect(m_modp) + "::__vlCoverToggleInsert(");
+            puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
+            puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
+            puts("const char* hierp, const char* pagep, const char* commentp) {\n");
+            if (v3Global.opt.threads() > 1) {
+                puts("assert(sizeof(uint32_t) == sizeof(std::atomic<uint32_t>));\n");
+                puts("uint32_t* count32p = reinterpret_cast<uint32_t*>(countp);\n");
+            } else {
+                puts("uint32_t* count32p = countp;\n");
+            }
+            // static doesn't need save-restore as is constant
+            puts("static uint32_t fake_zero_count = 0;\n");
+            puts("std::string fullhier = std::string{VerilatedModule::name()} + hierp;\n");
+            puts("if (!fullhier.empty() && fullhier[0] == '.') fullhier = fullhier.substr(1);\n");
+            // Used for second++ instantiation of identical bin
+            puts("if (!enable) count32p = &fake_zero_count;\n");
+            puts("*count32p = 0;\n");
+            puts("VL_COVER_INSERT(vlSymsp->_vm_contextp__->coveragep(), VerilatedModule::name(), "
+                 "count32p,");
+            puts("  \"filename\",filenamep,");
+            puts("  \"lineno\",lineno,");
+            puts("  \"column\",column,\n");
+            puts("\"hier\",fullhier,");
+            puts("  \"page\",pagep,");
+            puts("  \"comment\",commentp,");
+            puts("  \"\", \"\");\n");  //  linescov argument, but in toggle coverage it is always
+                                       //  empty
             puts("}\n");
             splitSizeInc(10);
         }
