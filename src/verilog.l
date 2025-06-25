@@ -647,9 +647,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Default PLI rule */
 <V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,S23,SAX>{
   "$"[a-zA-Z0-9_$]+     { const string str (yytext, yyleng);
-                                  yylval.strp = PARSEP->newString(AstNode::encodeName(str));
-                                  FL; return yaD_PLI;
-                                }
+                          yylval.strp = PARSEP->newString(AstNode::encodeName(str));
+                          FL; return yaD_PLI;
+                        }
 }
 
   /************************************************************************/
@@ -896,7 +896,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "@@"                  { FL; return yP_ATAT; }
   "::"                  { FL; return yP_COLONCOLON; }
   ":="                  { FL; return yP_COLONEQ; }
-  ":/"[^\/\*]           { FL; return yP_COLONDIV; }  /* : then comment is not ":/" */
+  ":/"/[^\/\*]          { FL; return yP_COLONDIV; }  /* : then comment is not ":/" */
   "|->"                 { FL; return yP_ORMINUSGT; }
   "|=>"                 { FL; return yP_OREQGT; }
   /* Some simulators allow whitespace here. Grr */

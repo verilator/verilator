@@ -76,6 +76,7 @@ Verilator 5.037 devel
 * Fix `--lib-create` with double-underscore (#6099).
 * Fix DFG binToOneHot table index missing driver (#6100). [Geza Lore]
 * Fix decoding octal string escapes with 1-2 digits (#6108).
+* Fix colon-divide operator without space (#6121). [Alex Solomatnikov]
 
 
 Verilator 5.036 2025-04-27
