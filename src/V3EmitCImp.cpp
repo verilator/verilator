@@ -353,7 +353,8 @@ class EmitCImp final : EmitCFunc {
                 puts("assert(sizeof(uint32_t) == sizeof(std::atomic<uint32_t>));\n");
             }
             puts("int step = (end >= begin) ? 1 : -1;\n");
-            puts("for (int i = begin; i <= end; i += step) {\n");
+            // range is inclusive
+            puts("for (int i = begin; i != end + step; i += step) {\n");
             if (v3Global.opt.threads() > 1) {
                 puts("uint32_t* count32p = reinterpret_cast<uint32_t*>(countp);\n");
             } else {
