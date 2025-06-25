@@ -2952,6 +2952,17 @@ void AstCoverOtherDecl::dumpJson(std::ostream& str) const {
     this->AstNodeCoverDecl::dumpJson(str);
     dumpJsonStrFunc(str, linescov);
 }
+void AstCoverToggleDecl::dump(std::ostream& str) const {
+    this->AstNodeCoverDecl::dump(str);
+    if (range().ranged()) str << " range=[" << range().left() << ":" << range().right() << "]";
+}
+void AstCoverToggleDecl::dumpJson(std::ostream& str) const {
+    this->AstNodeCoverDecl::dumpJson(str);
+    if (range().ranged()) {
+        dumpJsonStr(str, "range",
+                    std::to_string(range().left()) + ":" + std::to_string(range().right()));
+    }
+}
 void AstCoverInc::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     str << " -> ";

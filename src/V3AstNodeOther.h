@@ -3924,8 +3924,8 @@ public:
         : ASTGEN_SUPER_CoverToggleDecl(fl, page, comment)
         , m_range{range} {}
     ASTGEN_MEMBERS_AstCoverToggleDecl;
-    // void dump(std::ostream& str) const override;
-    // void dumpJson(std::ostream& str) const override;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     int size() const override { return m_range.elements(); }
     const VNumRange& range() const { return m_range; }
     bool sameNode(const AstNode* samep) const override {
