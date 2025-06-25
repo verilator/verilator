@@ -183,7 +183,7 @@ class EmitCHeader final : public EmitCConstInit {
 
         if (v3Global.opt.coverageToggle() && !VN_IS(modp, Class)) {
             decorateFirst(first, section);
-            puts("void __vlCoverToggleInsert(");
+            puts("void __vlCoverToggleInsert(int size, ");
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
             puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp);\n");
