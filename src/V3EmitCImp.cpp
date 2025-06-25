@@ -345,14 +345,15 @@ class EmitCImp final : EmitCFunc {
         if (v3Global.opt.coverageToggle()) {
             puts("\n// Toggle Coverage\n");
             puts("void " + prefixNameProtect(m_modp) + "::__vlCoverToggleInsert(");
-            puts("int size, ");
+            puts("int begin, int end, bool ranged, ");
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
             puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp) {\n");
             if (v3Global.opt.threads() > 1) {
                 puts("assert(sizeof(uint32_t) == sizeof(std::atomic<uint32_t>));\n");
             }
-            puts("for (int i = 0; i < size; i++) {\n");
+            puts("int step = (end >= begin) ? 1 : -1;\n");
+            puts("for (int i = begin; i <= end; i += step) {\n");
             if (v3Global.opt.threads() > 1) {
                 puts("uint32_t* count32p = reinterpret_cast<uint32_t*>(countp);\n");
             } else {
@@ -362,8 +363,8 @@ class EmitCImp final : EmitCFunc {
             puts("static uint32_t fake_zero_count = 0;\n");
             puts("std::string fullhier = std::string{VerilatedModule::name()} + hierp;\n");
             puts("if (!fullhier.empty() && fullhier[0] == '.') fullhier = fullhier.substr(1);\n");
-            puts("std::string commentWithIndex = std::string{commentp} + '[' + std::to_string(i) "
-                 "+ ']';\n");
+            puts("std::string commentWithIndex = commentp;\n");
+            puts("if (ranged) commentWithIndex += '[' + std::to_string(i) + ']';\n");
             // Used for second++ instantiation of identical bin
             puts("if (!enable) count32p = &fake_zero_count;\n");
             puts("*count32p = 0;\n");

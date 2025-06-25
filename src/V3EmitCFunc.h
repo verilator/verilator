@@ -727,7 +727,11 @@ public:
     }
     void visit(AstCoverToggleDecl* nodep) override {
         putns(nodep, "vlSelf->__vlCoverToggleInsert(");  // As Declared in emitCoverageDecl
-        puts(cvtToStr(nodep->size()));
+        puts(cvtToStr(nodep->range().lo()));
+        puts(", ");
+        puts(cvtToStr(nodep->range().hi()));
+        puts(", ");
+        puts(cvtToStr(nodep->range().ranged()));
         puts(", ");
         puts("&(vlSymsp->__Vcoverage[");
         puts(cvtToStr(nodep->dataDeclThisp()->binNum()));
