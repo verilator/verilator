@@ -727,9 +727,9 @@ public:
     }
     void visit(AstCoverToggleDecl* nodep) override {
         putns(nodep, "vlSelf->__vlCoverToggleInsert(");  // As Declared in emitCoverageDecl
-        puts(cvtToStr(nodep->range().lo()));
+        puts(cvtToStr(nodep->range().right()));
         puts(", ");
-        puts(cvtToStr(nodep->range().hi()));
+        puts(cvtToStr(nodep->range().left()));
         puts(", ");
         puts(cvtToStr(nodep->range().ranged()));
         puts(", ");
