@@ -423,7 +423,7 @@ static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp, 
                                                                    : VNType::atGteS);
 }
 AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
-    // if (debug()) dumpTree(cout, "-  foreach-old: ");
+    // if (debug()) dumpTree("-  foreach-old: ");
     const AstSelLoopVars* const loopsp = VN_CAST(nodep->arrayp(), SelLoopVars);
     UASSERT_OBJ(loopsp, nodep, "No loop variables under foreach");
     AstNodeExpr* const fromp = loopsp->fromp();

@@ -2203,7 +2203,7 @@ class WidthVisitor final : public VNVisitor {
             // if (debug()) nodep->backp()->dumpTree("-  CastOutUpUp: ");
         }
         if (m_vup->final()) {
-            if (debug() >= 9) nodep->dumpTree(cout, "-  CastFPit: ");
+            if (debug() >= 9) nodep->dumpTree("-  CastFPit: ");
             iterateCheck(nodep, "value", nodep->fromp(), SELF, FINAL, nodep->fromp()->dtypep(),
                          EXTEND_EXP, false);
             if (debug() >= 9) nodep->dumpTree("-  CastFin: ");
