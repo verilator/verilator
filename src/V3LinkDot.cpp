@@ -3123,8 +3123,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 expectWhat = "scope/variable";
                 allowScope = true;
                 allowVar = true;
-            } else if (m_ds.m_dotPos == DP_NONE || m_ds.m_dotPos == DP_FINAL) {
+            } else if (m_ds.m_dotPos == DP_NONE) {
                 expectWhat = "variable";
+                allowVar = true;
+            } else if (m_ds.m_dotPos == DP_FINAL) {
+                expectWhat = "variable/method";
+                allowFTask = true;
                 allowVar = true;
             } else {
                 UINFO(1, "ds=" << m_ds.ascii());

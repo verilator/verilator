@@ -78,6 +78,7 @@ Verilator 5.037 devel
 * Fix decoding octal string escapes with 1-2 digits (#6108).
 * Fix colon-divide operator without space (#6121). [Alex Solomatnikov]
 * Fix variables declared in fork after taskify (#6126). [Kamil Rakoczy, Antmicro Ltd.]
+* Fix method calls without parenthesis (#6127). [Alex Solomatnikov]
 
 
 Verilator 5.036 2025-04-27
