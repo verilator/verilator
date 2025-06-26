@@ -605,6 +605,10 @@ class ForkVisitor final : public VNVisitor {
         m_modp->addStmtsp(taskp);
         UINFO(9, "new " << taskp);
 
+        // We created a task from fork, so make sure that all
+        // local (to this new task) variables are marked as funcLocal
+        for (AstVar* const localp : m_forkLocalsp) localp->funcLocal(true);
+
         AstTaskRef* const taskrefp = new AstTaskRef{nodep->fileline(), taskp, m_capturedVarRefsp};
         AstStmtExpr* const taskcallp = taskrefp->makeStmt();
         // Replaced nodes will be revisited, so we don't need to "lift" the arguments
