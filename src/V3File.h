@@ -389,6 +389,14 @@ public:
     // No automatic indentation yet.
     void puts(const char* strg) { putsNoTracking(strg); }
     void puts(const string& strg) { putsNoTracking(strg); }
+    // Put VARIABLE = VALUE
+    void putSet(const string& var, const string& value) {
+        puts(VString::dot(var + " =", " ", value) + "\n");
+    }
+    // Put VARIABLE ?= VALUE
+    void putSetQ(const string& var, const string& value) {
+        puts(VString::dot(var + " ?=", " ", value) + "\n");
+    }
 };
 
 class V3OutScFile final : public V3OutCFile {
