@@ -461,7 +461,7 @@ analyzer-include:
 	scan-build $(MAKE) -k examples
 
 format:
-	$(MAKE) -j 4 format-c format-py format-exec
+	$(MAKE) -j 5 format-c format-cmake format-exec format-py
 
 CLANGFORMAT = clang-format-14
 CLANGFORMAT_FLAGS = -i
@@ -539,7 +539,7 @@ format-py yapf:
 	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
 
 GERSEMI = gersemi
-GERSEMI_FLAGS = -i
+GERSEMI_FLAGS = -i --no-warn-about-unknown-commands
 
 format-cmake:
 	$(GERSEMI) $(GERSEMI_FLAGS) $(CMAKE_FILES)
