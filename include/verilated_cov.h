@@ -96,7 +96,7 @@ static inline void VL_COV_TOGGLE_CHG_S_W(const int width, uint32_t* cov, WDataIn
 }
 
 static inline void VL_COV_TOGGLE_CHG_MT_I(const int width, std::atomic<uint32_t>* covp,
-                                         const IData newData, const IData oldData) VL_MT_SAFE {
+                                          const IData newData, const IData oldData) VL_MT_SAFE {
     for (int i = 0; i < width; ++i) {
         if (VL_BITISSET_I((newData ^ oldData), i)) {
             (cov + i)->fetch_add(1, std::memory_order_relaxed);
