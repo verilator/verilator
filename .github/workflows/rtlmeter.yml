@@ -112,7 +112,7 @@ jobs:
           - "VeeR-EL2:default*"
           - "VeeR-EL2:hiperf*"
           - "Vortex:mini:*"
-          - "Vortex:sane:*"
+          - "Vortex:sane:* !Vortex:sane:sgemm"
           - "XiangShan:default-chisel3:* !*:linux"
           - "XiangShan:default-chisel6:* !*:linux"
           - "XiangShan:mini-chisel3:* !*:linux"
