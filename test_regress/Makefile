@@ -130,5 +130,5 @@ impl-test-diff:
 
 .PHONY: test-diff
 test-diff:
-	$(MAKE) impl-test-diff | grep -v "Only in obj_" | \
-    $$(git config --default less --global --get core.pager)
+	$(MAKE) impl-test-diff | grep -v "Only in obj_" \
+	| $$(git config --default less --global --get core.pager)

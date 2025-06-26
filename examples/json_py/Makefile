@@ -39,9 +39,7 @@ endif
 python_message:
 	@echo "Found Python version ${PYTHON_VERSION}, but require >= 3.5"
 
-test: \
-	test-vl_file_copy \
-	test-vl_hier_graph \
+test: test-vl_file_copy test-vl_hier_graph
 
 test-vl_file_copy:
 	@echo "-- vl_file_copy example"

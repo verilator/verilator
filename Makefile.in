@@ -469,7 +469,7 @@ CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) test_regress/t/*.c* test
 
 format-c clang-format:
 	@$(CLANGFORMAT) --version | egrep 14.0 > /dev/null \
-		|| echo "*** You are not using clang-format-14, indents may differ from master's ***"
+	|| echo "*** You are not using clang-format-14, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
 YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=130 YAMLFIX_preserve_quotes=true yamlfix
