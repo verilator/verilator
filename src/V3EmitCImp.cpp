@@ -379,7 +379,7 @@ class EmitCImp final : EmitCFunc {
             puts("  \"comment\",commentWithIndex.c_str(),");
             puts("  \"\", \"\");\n");  //  linescov argument, but in toggle coverage it is always
                                        //  empty
-            puts("countp++;\n");
+            puts("++countp;\n");
             puts("}\n");
             puts("}\n");
             splitSizeInc(10);

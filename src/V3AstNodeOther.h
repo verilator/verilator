@@ -404,9 +404,9 @@ class AstNodeCoverDecl VL_NOT_FINAL : public AstNodeStmt {
     //
     // [After V3CoverageJoin] Duplicate declaration to get data from instead
     // @astgen ptr := m_dataDeclp : Optional[AstNodeCoverDecl]
-    string m_page;
-    string m_text;
-    string m_hier;
+    string m_page;  // Coverage point's page tag
+    string m_text;  // Coverage point's text
+    string m_hier;  // Coverage point's hierarchy
     int m_binNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
 public:
     AstNodeCoverDecl(VNType t, FileLine* fl, const string& page, const string& comment)
@@ -3917,7 +3917,7 @@ public:
 class AstCoverToggleDecl final : public AstNodeCoverDecl {
     // Coverage analysis point declaration
     // Used for toggle coverage
-    const VNumRange m_range;  // packed array ranges
+    const VNumRange m_range;  // Packed array range covering each toggle bit
 public:
     AstCoverToggleDecl(FileLine* fl, const string& page, const string& comment,
                        const VNumRange& range)
