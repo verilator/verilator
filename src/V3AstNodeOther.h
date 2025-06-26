@@ -436,7 +436,7 @@ public:
     bool sameNode(const AstNode* samep) const override {
         const AstNodeCoverDecl* const asamep = VN_DBG_AS(samep, NodeCoverDecl);
         return (fileline() == asamep->fileline() && hier() == asamep->hier()
-                && comment() == asamep->comment());
+                && comment() == asamep->comment() && page() == asamep->page());
     }
     bool isPredictOptimizable() const override { return false; }
     void dataDeclp(AstNodeCoverDecl* nodep) { m_dataDeclp = nodep; }

@@ -771,9 +771,9 @@ public:
         } else {
             puts("VL_COV_TOGGLE_CHG_");
             if (v3Global.opt.threads() > 1) {
-                puts("M_");
+                puts("MT_");
             } else {
-                puts("S_");
+                puts("ST_");
             }
             emitIQW(nodep->toggleExprp());
             puts("(");
