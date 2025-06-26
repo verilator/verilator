@@ -3957,6 +3957,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // Resolved in V3Width
                 } else if (nodep->name() == "randomize" || nodep->name() == "srandom"
                            || nodep->name() == "get_randstate" || nodep->name() == "set_randstate"
+                           || nodep->name() == "pre_randomize" || nodep->name() == "post_randomize"
                            || nodep->name() == "rand_mode" || nodep->name() == "constraint_mode") {
                     if (AstClass* const classp = VN_CAST(m_modp, Class)) {
                         nodep->classOrPackagep(classp);
