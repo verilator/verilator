@@ -6792,8 +6792,20 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
 
 covergroup_declarationFront<classp>:  // IEEE: part of covergroup_declaration
                 yCOVERGROUP idAny
-                        { $$ = new AstClass{$<fl>2, *$2, PARSEP->libname()};
-                          BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup"); }
+                        {
+                        $$ = new AstClass{$<fl>2, *$2, PARSEP->libname()};
+
+                        AstFunc *sample = new AstFunc{$<fl>1, "sample", nullptr, nullptr};
+                        sample->classMethod(true);
+                        sample->dtypep(sample->findVoidDType());
+                        $$->addMembersp(sample);
+
+                        AstFunc *get_coverage = new AstFunc{$<fl>1, "get_coverage", nullptr, nullptr};
+                        get_coverage->classMethod(true);
+                        get_coverage->dtypep(get_coverage->findVoidDType());
+                        $$->addMembersp(get_coverage);
+
+                        BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup"); }
         ;
 
 cgexpr<nodeExprp>:  // IEEE-2012: covergroup_expression, before that just expression
@@ -7510,7 +7522,13 @@ class_item<nodep>:                      // ==IEEE: class_item
         |       class_declaration                       { $$ = $1; }
         |       timeunits_declaration                   { $$ = $1; }
         |       covergroup_declaration
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: covergroup within class"); }
+                        {
+                                string cgname = $1->name();
+                                $1->name("__v_anon_covergroup_"+cgname);
+
+                                AstVar *cg_instance = new AstVar($<fl>1, VVarType::VAR, cgname, VFlagChildDType{}, new AstRefDType($<fl>1, $1->name()));
+                                $$ = addNextNull($1, cg_instance);
+                         }
         //                      // local_parameter_declaration under parameter_declaration
         |       parameter_declaration ';'               { $$ = $1; }
         |       ';'                                     { $$ = nullptr; }
