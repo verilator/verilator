@@ -8,12 +8,12 @@ module t (/*AUTOARG*/
     // Inputs
     clk
     );
-    
+
     input clk;
     logic [3:0]  a;
     int   b;
     int cyc = 0;
-    
+
     always @(posedge clk) begin
         cyc <= cyc + 1;
     end
@@ -27,15 +27,15 @@ module t (/*AUTOARG*/
 
     cg the_cg = new;
 
-    assign a = cyc;
+    assign a = cyc[3:0];
     assign b = cyc;
-    
+
     always @(posedge clk) begin
-        if (cyc == 16) begin
+        if (cyc == 14) begin
             $display("coverage a = %f", the_cg.a.get_inst_coverage());
             $display("coverage b = %f", the_cg.b.get_inst_coverage());
-            if (the_cg.a.get_inst_coverage() < 100) $stop();
-            if (the_cg.b.get_inst_coverage() < 100) $stop();
+            if (the_cg.a.get_inst_coverage() != 15/16.0) $stop();
+            if (the_cg.b.get_inst_coverage() != 4/5.0) $stop();
             $write("*-* All Finished *-*\n");
             $finish;
         end
