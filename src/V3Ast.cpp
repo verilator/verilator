@@ -1416,8 +1416,7 @@ void AstNode::dumpTreeDotFile(const string& filename, bool doDump) {
         const std::unique_ptr<std::ofstream> treedotp{V3File::new_ofstream(filename)};
         if (treedotp->fail()) v3fatal("Can't write file: " << filename);
         *treedotp << "digraph vTree{\n";
-        *treedotp << "\tgraph\t[label=\"" << filename + ".dot"
-                  << "\",\n";
+        *treedotp << "\tgraph\t[label=\"" << filename + ".dot" << "\",\n";
         *treedotp << "\t\t labelloc=t, labeljust=l,\n";
         *treedotp << "\t\t //size=\"7.5,10\",\n"
                   << "];\n";
@@ -1587,6 +1586,9 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
         if (VN_IS(fromBaseDtp, EnumDType) && toDtp->sameTree(fromDtp))
             return VCastable::ENUM_IMPLICIT;
         if (fromNumericable) return VCastable::ENUM_EXPLICIT;
+    } else if (VN_IS(toDtp, QueueDType)
+               && (VN_IS(fromDtp, BasicDType) || VN_IS(fromDtp, StreamDType))) {
+        return VCastable::COMPATIBLE;
     } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromConstp, Const)) {
         if (fromConstp->isNull()) return VCastable::COMPATIBLE;
     } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromDtp, ClassRefDType)) {

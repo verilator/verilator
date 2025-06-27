@@ -400,6 +400,24 @@ public:
         emitVarDecl(nodep);
     }
 
+    void visit(AstCvtArrayToArray* nodep) override {
+        AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefp();
+        AstNodeDType* const elemDtp = fromDtp->subDTypep()->skipRefp();
+        if (nodep->reverse()) {
+            puts("VL_REVCLONE_Q(");
+            iterateAndNextConstNull(nodep->fromp());
+            puts(", ");
+            puts(cvtToStr(nodep->blockSize()));
+            puts(", ");
+            puts(cvtToStr(nodep->elementBits()));
+            puts(")");
+        } else {
+            puts("VL_CLONE_Q(");
+            iterateAndNextConstNull(nodep->fromp());
+            puts(")");
+        }
+    }
+
     void visit(AstCvtArrayToPacked* nodep) override {
         AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefp();
         AstNodeDType* const elemDtp = fromDtp->subDTypep()->skipRefp();
@@ -488,6 +506,25 @@ public:
             puts(", ");
             rhs = false;
             iterateAndNextConstNull(castp->fromp());
+        } else if (const AstCvtArrayToArray* const castp
+                   = VN_CAST(nodep->rhsp(), CvtArrayToArray)) {
+            if (castp->reverse()) {
+                putns(castp, "VL_REVCOPY_Q(");
+                iterateAndNextConstNull(nodep->lhsp());
+                puts(", ");
+                rhs = false;
+                iterateAndNextConstNull(castp->fromp());
+                puts(", ");
+                puts(cvtToStr(castp->blockSize()));
+                puts(", ");
+                puts(cvtToStr(castp->elementBits()));
+            } else {
+                putns(castp, "VL_COPY_Q(");
+                iterateAndNextConstNull(nodep->lhsp());
+                puts(", ");
+                rhs = false;
+                iterateAndNextConstNull(castp->fromp());
+            }
         } else if (nodep->isWide() && VN_IS(nodep->lhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), CExpr)  //
                    && !VN_IS(nodep->rhsp(), CMethodHard)  //
