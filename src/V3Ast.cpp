@@ -1416,7 +1416,8 @@ void AstNode::dumpTreeDotFile(const string& filename, bool doDump) {
         const std::unique_ptr<std::ofstream> treedotp{V3File::new_ofstream(filename)};
         if (treedotp->fail()) v3fatal("Can't write file: " << filename);
         *treedotp << "digraph vTree{\n";
-        *treedotp << "\tgraph\t[label=\"" << filename + ".dot" << "\",\n";
+        *treedotp << "\tgraph\t[label=\"" << filename + ".dot"
+                  << "\",\n";
         *treedotp << "\t\t labelloc=t, labeljust=l,\n";
         *treedotp << "\t\t //size=\"7.5,10\",\n"
                   << "];\n";

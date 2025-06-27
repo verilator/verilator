@@ -2309,9 +2309,9 @@ class ConstVisitor final : public VNVisitor {
                         }
                     }
                     streamp->unlinkFrBack();
-                    srcp = new AstCvtArrayToArray{srcp->fileline(), srcp->unlinkFrBack(),
-                                                  dstDTypep,        true,
-                                                  blockSize,        dstElementBits, srcElementBits};
+                    srcp = new AstCvtArrayToArray{
+                        srcp->fileline(), srcp->unlinkFrBack(), dstDTypep,     true,
+                        blockSize,        dstElementBits,       srcElementBits};
                     nodep->rhsp(srcp);
                     VL_DO_DANGLING(pushDeletep(streamp), streamp);
                 } else {
@@ -3146,8 +3146,8 @@ class ConstVisitor final : public VNVisitor {
                     }
                     streamp->unlinkFrBack();
                     AstNodeExpr* newp = new AstCvtArrayToArray{
-                        srcp->fileline(), srcp->unlinkFrBack(), dstDTypep, true,
-                        blockSize,        dstElementBits, srcElementBits};
+                        srcp->fileline(), srcp->unlinkFrBack(), dstDTypep,     true,
+                        blockSize,        dstElementBits,       srcElementBits};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(streamp), streamp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
