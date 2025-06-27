@@ -29,6 +29,7 @@ module t (  /*AUTOARG*/
   input clk;
   integer cyc = 0;
   logic [7:0] d;
+  string s;
 
   initial begin
     begin
@@ -250,6 +251,154 @@ module t (  /*AUTOARG*/
       `checkh(wide_qq[1], 128'h44440000ffffbbbb77773333eeeeaaaa);
       `checkh(wide_qq[2], 128'h2222dddd999955551111cccc88884444);
       `checkh(wide_qq[3], 128'h2d951c84b3af7bbfbeaebfa3fbbe7ab7);
+    end
+
+    begin
+      byte_q_t bytq_init;
+      byte_q_t bytq;
+      bit_q_t  bitq;
+
+      bytq_init.push_back(8'h84);
+      bytq_init.push_back(8'haa);
+      `checkh(bytq_init[0], 8'h84);
+      `checkh(bytq_init[1], 8'haa);
+      s = $sformatf("bytq_init=%p", bytq_init);
+      `checks(s, "bytq_init='{'h84, 'haa} ");
+
+      bytq = bytq_init;
+      bitq = {<<8{bit_q_t'({<<{bytq}})}};
+      bytq = {<<8{bit_q_t'({<<{bitq}})}};
+      s = $sformatf("bitq=%p", bitq);
+      `checks(s,
+              "bitq='{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1} ");
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'h84, 'haa} ");
+
+      /*
+        Generalized block-reversal semantics for the outer left-stream when blockSize > 1.
+        This seemingly complicated approach is what is required to match commercial simulators,
+        otherwise the straggler bit [1] in the padded byte might end up as 0x01 instead of 0x80.
+
+        Starting with result of inner {<<{bitq}}: [1,1,0,1,0,1,0,1,0,1,0,0,0,0,1,0,0] (17 bits),
+        apply outer {<<8{...}} using generalized block-reversal like this:
+          - Reverse all bits: [0,0,1,0,0,0,0,1,0,1,0,1,0,1,0,1,1]
+          - Split into 8-bit blocks from left and pad incomplete blocks on the left:
+              - Block 0: [0,0,1,0,0,0,0,1] (complete)
+              - Block 1: [0,1,0,1,0,1,0,1] (complete)
+              - Block 2: [1] -> pad on left -> [0,0,0,0,0,0,0,1]
+          - Reverse bits within each 8-bit block:
+              - Block 0: [0,0,1,0,0,0,0,1] -> [1,0,0,0,0,1,0,0] = 0x84
+              - Block 1: [0,1,0,1,0,1,0,1] -> [1,0,1,0,1,0,1,0] = 0xaa
+              - Block 2: [0,0,0,0,0,0,0,1] -> [1,0,0,0,0,0,0,0] = 0x80
+      */
+
+      bytq = bytq_init;
+      bitq = {<<8{bit_q_t'({<<{bytq}})}};
+      bitq.push_back(1'b1);
+      bytq = {<<8{bit_q_t'({<<{bitq}})}};
+      s = $sformatf("bitq=%p", bitq);
+      `checks(s,
+              "bitq='{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h1} ");
+      `checkh(bytq[0], 8'h84);
+      `checkh(bytq[1], 8'haa);
+      `checkh(bytq[2], 8'h80);
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'h84, 'haa, 'h80} ");
+
+      bytq = bytq_init;
+      bitq = {<<8{bit_q_t'({<<{bytq}})}};
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bytq = {<<8{bit_q_t'({<<{bitq}})}};
+      s = $sformatf("bitq=%p", bitq);
+      `checks(s,
+              "bitq='{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h1, 'h1} ");
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'h84, 'haa, 'hc0} ");
+
+      bytq = bytq_init;
+      bitq = {<<8{bit_q_t'({<<{bytq}})}};
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bytq = {<<8{bit_q_t'({<<{bitq}})}};
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'h84, 'haa, 'he0} ");
+
+      bytq = bytq_init;
+      bitq = {<<8{bit_q_t'({<<{bytq}})}};
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b0);
+      bytq = {<<8{bit_q_t'({<<{bitq}})}};
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'h84, 'haa, 'h70} ");
+
+      bytq = bytq_init;
+      bitq = {<<8{bit_q_t'({<<{bytq}})}};
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b0);
+      bitq.push_back(1'b1);
+      bytq = {<<8{bit_q_t'({<<{bitq}})}};
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'h84, 'haa, 'hb8} ");
+
+      bytq = bytq_init;
+      bitq = {<<8{bit_q_t'({<<{bytq}})}};
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b0);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b0);
+      bytq = {<<8{bit_q_t'({<<{bitq}})}};
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'h84, 'haa, 'h5c} ");
+
+      bytq = bytq_init;
+      bitq = {<<8{bit_q_t'({<<{bytq}})}};
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b0);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b0);
+      bitq.push_back(1'b0);
+      bytq = {<<8{bit_q_t'({<<{bitq}})}};
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'h84, 'haa, 'h2e} ");
+
+      bytq = bytq_init;
+      bitq = {<<8{bit_q_t'({<<{bytq}})}};
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b0);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b0);
+      bitq.push_back(1'b0);
+      bitq.push_back(1'b1);
+      bytq = {<<8{bit_q_t'({<<{bitq}})}};
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'h84, 'haa, 'h97} ");
+
+      bytq = bytq_init;
+      bitq = {<<8{bit_q_t'({<<{bytq}})}};
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b0);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b0);
+      bitq.push_back(1'b0);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bytq = {<<8{bit_q_t'({<<{bitq}})}};
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'h84, 'haa, 'h97, 'h80} ");
     end
 
     $write("*-* All Finished *-*\n");

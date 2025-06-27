@@ -1681,6 +1681,20 @@ void AstCCast::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, size);
     dumpJsonGen(str);
 }
+void AstCvtArrayToArray::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    str << " reverse=" << reverse();
+    str << " blockSize=" << blockSize();
+    str << " dstElementBits=" << dstElementBits();
+    str << " srcElementBits=" << srcElementBits();
+}
+void AstCvtArrayToArray::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, reverse);
+    dumpJsonNumFunc(str, blockSize);
+    dumpJsonNumFunc(str, dstElementBits);
+    dumpJsonNumFunc(str, srcElementBits);
+    dumpJsonGen(str);
+}
 void AstCell::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (recursive()) str << " [RECURSIVE]";

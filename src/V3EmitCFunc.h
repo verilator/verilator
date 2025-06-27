@@ -401,15 +401,15 @@ public:
     }
 
     void visit(AstCvtArrayToArray* nodep) override {
-        AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefp();
-        AstNodeDType* const elemDtp = fromDtp->subDTypep()->skipRefp();
         if (nodep->reverse()) {
             puts("VL_REVCLONE_Q(");
             iterateAndNextConstNull(nodep->fromp());
             puts(", ");
             puts(cvtToStr(nodep->blockSize()));
             puts(", ");
-            puts(cvtToStr(nodep->elementBits()));
+            puts(cvtToStr(nodep->srcElementBits()));
+            puts(", ");
+            puts(cvtToStr(nodep->dstElementBits()));
             puts(")");
         } else {
             puts("VL_CLONE_Q(");
@@ -517,7 +517,9 @@ public:
                 puts(", ");
                 puts(cvtToStr(castp->blockSize()));
                 puts(", ");
-                puts(cvtToStr(castp->elementBits()));
+                puts(cvtToStr(castp->srcElementBits()));
+                puts(", ");
+                puts(cvtToStr(castp->dstElementBits()));
             } else {
                 putns(castp, "VL_COPY_Q(");
                 iterateAndNextConstNull(nodep->lhsp());

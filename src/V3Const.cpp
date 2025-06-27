@@ -2295,17 +2295,29 @@ class ConstVisitor final : public VNVisitor {
                     int blockSize = 1;
                     if (const AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
                         blockSize = constp->toSInt();
+                        if (VL_UNLIKELY(blockSize <= 0)) {
+                            nodep->v3error("Stream block size must be positive, got " << blockSize);
+                            blockSize = 1;
+                        }
+                    } else {
+                        nodep->v3error("Stream block size must be constant (got " << streamp->rhsp()->prettyTypeName() << ")");
                     }
-                    int elementBits = 0;
+                    int srcElementBits = 0;
                     if (const AstQueueDType* const queueDtp = VN_CAST(srcDTypep, QueueDType)) {
                         if (AstNodeDType* const elemDtp = queueDtp->subDTypep()) {
-                            elementBits = elemDtp->width();
+                            srcElementBits = elemDtp->width();
+                        }
+                    }
+                    int dstElementBits = 0;
+                    if (const AstQueueDType* const queueDtp = VN_CAST(dstDTypep, QueueDType)) {
+                        if (AstNodeDType* const elemDtp = queueDtp->subDTypep()) {
+                            dstElementBits = elemDtp->width();
                         }
                     }
                     streamp->unlinkFrBack();
-                    srcp = new AstCvtArrayToArray{srcp->fileline(), srcp->unlinkFrBack(),
-                                                  dstDTypep,        true,
-                                                  blockSize,        elementBits};
+                    srcp = new AstCvtArrayToArray{
+                        srcp->fileline(), srcp->unlinkFrBack(), dstDTypep,     true,
+                        blockSize,        dstElementBits,       srcElementBits};
                     nodep->rhsp(srcp);
                     VL_DO_DANGLING(pushDeletep(streamp), streamp);
                 } else {
@@ -3125,17 +3137,29 @@ class ConstVisitor final : public VNVisitor {
                     int blockSize = 1;
                     if (AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
                         blockSize = constp->toSInt();
+                        if (VL_UNLIKELY(blockSize <= 0)) {
+                            nodep->v3error("Stream block size must be positive, got " << blockSize);
+                            blockSize = 1;
+                        }
+                    } else {
+                        nodep->v3error("Stream block size must be constant (got " << streamp->rhsp()->prettyTypeName() << ")");
                     }
-                    int elementBits = 0;
+                    int srcElementBits = 0;
                     if (const AstQueueDType* const queueDtp = VN_CAST(srcDTypep, QueueDType)) {
                         if (AstNodeDType* const elemDtp = queueDtp->subDTypep()) {
-                            elementBits = elemDtp->width();
+                            srcElementBits = elemDtp->width();
+                        }
+                    }
+                    int dstElementBits = 0;
+                    if (const AstQueueDType* const queueDtp = VN_CAST(dstDTypep, QueueDType)) {
+                        if (AstNodeDType* const elemDtp = queueDtp->subDTypep()) {
+                            dstElementBits = elemDtp->width();
                         }
                     }
                     streamp->unlinkFrBack();
                     AstNodeExpr* newp = new AstCvtArrayToArray{
-                        srcp->fileline(), srcp->unlinkFrBack(), dstDTypep, true,
-                        blockSize,        elementBits};
+                        srcp->fileline(), srcp->unlinkFrBack(), dstDTypep,     true,
+                        blockSize,        dstElementBits,       srcElementBits};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(streamp), streamp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
