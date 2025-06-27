@@ -1128,6 +1128,32 @@ public:
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
 };
+class AstCvtArrayToArray final : public AstNodeExpr {
+    // Copy/Cast from dynamic/unpacked types to dynamic/unpacked types
+    // @astgen op1 := fromp : AstNodeExpr
+public:
+    AstCvtArrayToArray(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp, bool reverse,
+                       int blockSize = 1, int elementBits = 0)
+        : ASTGEN_SUPER_CvtArrayToArray(fl)
+        , m_reverse(reverse)
+        , m_blockSize(blockSize)
+        , m_elementBits(elementBits) {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCvtArrayToArray;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    bool reverse() const { return m_reverse; }
+    int blockSize() const { return m_blockSize; }
+    int elementBits() const { return m_elementBits; }
+
+private:
+    bool m_reverse;
+    int m_blockSize;
+    int m_elementBits;
+};
 class AstCvtArrayToPacked final : public AstNodeExpr {
     // Cast from dynamic queue data type to packed array
     // @astgen op1 := fromp : AstNodeExpr

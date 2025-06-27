@@ -2196,8 +2196,13 @@ class ConstVisitor final : public VNVisitor {
             AstStreamR* const streamp = VN_AS(nodep->rhsp(), StreamR)->unlinkFrBack();
             AstNodeExpr* srcp = streamp->lhsp()->unlinkFrBack();
             AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
+            const AstNodeDType* const dstDTypep = nodep->lhsp()->dtypep()->skipRefp();
             if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
-                srcp = new AstCvtArrayToPacked{srcp->fileline(), srcp, nodep->dtypep()};
+                if (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType)) {
+                    srcp = new AstCvtArrayToArray{srcp->fileline(), srcp, nodep->dtypep(), false};
+                } else {
+                    srcp = new AstCvtArrayToPacked{srcp->fileline(), srcp, nodep->dtypep()};
+                }
             } else if (VN_IS(srcDTypep, UnpackArrayDType)) {
                 srcp = new AstCvtArrayToPacked{srcp->fileline(), srcp, srcDTypep};
                 // Handling the case where lhs is wider than rhs by inserting zeros. StreamL does
@@ -2280,15 +2285,34 @@ class ConstVisitor final : public VNVisitor {
             // Further reduce, any of the nodes may have more reductions.
             return true;
         } else if (m_doV && VN_IS(nodep->rhsp(), StreamL)) {
-            AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep()->skipRefp();
             AstStreamL* streamp = VN_AS(nodep->rhsp(), StreamL);
-            AstNodeExpr* const srcp = streamp->lhsp();
-            const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
-            if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)
-                || VN_IS(srcDTypep, UnpackArrayDType)) {
-                streamp->lhsp(
-                    new AstCvtArrayToPacked{srcp->fileline(), srcp->unlinkFrBack(), lhsDtypep});
-                streamp->dtypeFrom(lhsDtypep);
+            AstNodeExpr* srcp = streamp->lhsp();
+            AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
+            AstNodeDType* const dstDTypep = nodep->lhsp()->dtypep()->skipRefp();
+            if ((VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)
+                 || VN_IS(srcDTypep, UnpackArrayDType))) {
+                if (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType)) {
+                    int blockSize = 1;
+                    if (const AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
+                        blockSize = constp->toSInt();
+                    }
+                    int elementBits = 0;
+                    if (const AstQueueDType* const queueDtp = VN_CAST(srcDTypep, QueueDType)) {
+                        if (AstNodeDType* const elemDtp = queueDtp->subDTypep()) {
+                            elementBits = elemDtp->width();
+                        }
+                    }
+                    streamp->unlinkFrBack();
+                    srcp = new AstCvtArrayToArray{srcp->fileline(), srcp->unlinkFrBack(),
+                                                  dstDTypep,        true,
+                                                  blockSize,        elementBits};
+                    nodep->rhsp(srcp);
+                    VL_DO_DANGLING(pushDeletep(streamp), streamp);
+                } else {
+                    streamp->lhsp(new AstCvtArrayToPacked{srcp->fileline(), srcp->unlinkFrBack(),
+                                                          dstDTypep});
+                    streamp->dtypeFrom(dstDTypep);
+                }
             }
         } else if (m_doV && replaceAssignMultiSel(nodep)) {
             return true;
@@ -3085,6 +3109,38 @@ class ConstVisitor final : public VNVisitor {
             // Set the initial value right in the variable so we can constant propagate
             AstNode* const initvaluep = exprp->cloneTree(false);
             varrefp->varp()->valuep(initvaluep);
+        }
+    }
+    void visit(AstCvtArrayToArray* nodep) override {
+        iterateChildren(nodep);
+        // Handle the case where we have a stream operation inside a cast conversion
+        // Only process if this is not already a reverse conversion (to avoid infinite loop)
+        if (!nodep->reverse()) {
+            if (AstStreamL* const streamp = VN_CAST(nodep->fromp(), StreamL)) {
+                AstNodeExpr* srcp = streamp->lhsp();
+                AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
+                AstNodeDType* const dstDTypep = nodep->dtypep()->skipRefp();
+
+                if (VN_IS(srcDTypep, QueueDType) && VN_IS(dstDTypep, QueueDType)) {
+                    int blockSize = 1;
+                    if (AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
+                        blockSize = constp->toSInt();
+                    }
+                    int elementBits = 0;
+                    if (const AstQueueDType* const queueDtp = VN_CAST(srcDTypep, QueueDType)) {
+                        if (AstNodeDType* const elemDtp = queueDtp->subDTypep()) {
+                            elementBits = elemDtp->width();
+                        }
+                    }
+                    streamp->unlinkFrBack();
+                    AstNodeExpr* newp = new AstCvtArrayToArray{
+                        srcp->fileline(), srcp->unlinkFrBack(), dstDTypep, true,
+                        blockSize,        elementBits};
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(streamp), streamp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                }
+            }
         }
     }
     void visit(AstRelease* nodep) override {

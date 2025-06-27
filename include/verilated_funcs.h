@@ -279,11 +279,11 @@ static inline IData VL_RTOI_I_D(double lhs) VL_PURE { return static_cast<int32_t
 
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s
 // (Requires clean input)
-#define VL_SIGN_I(nbits, lhs) ((lhs) >> VL_BITBIT_I((nbits)-VL_UL(1)))
-#define VL_SIGN_Q(nbits, lhs) ((lhs) >> VL_BITBIT_Q((nbits)-1ULL))
-#define VL_SIGN_E(nbits, lhs) ((lhs) >> VL_BITBIT_E((nbits)-VL_EUL(1)))
+#define VL_SIGN_I(nbits, lhs) ((lhs) >> VL_BITBIT_I((nbits) - VL_UL(1)))
+#define VL_SIGN_Q(nbits, lhs) ((lhs) >> VL_BITBIT_Q((nbits) - 1ULL))
+#define VL_SIGN_E(nbits, lhs) ((lhs) >> VL_BITBIT_E((nbits) - VL_EUL(1)))
 #define VL_SIGN_W(nbits, rwp) \
-    ((rwp)[VL_BITWORD_E((nbits)-VL_EUL(1))] >> VL_BITBIT_E((nbits)-VL_EUL(1)))
+    ((rwp)[VL_BITWORD_E((nbits) - VL_EUL(1))] >> VL_BITBIT_E((nbits) - VL_EUL(1)))
 #define VL_SIGNONES_E(nbits, lhs) (-(VL_SIGN_E(nbits, lhs)))
 
 // Sign bit extended up to MSB, doesn't include unsigned portion
@@ -554,8 +554,8 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
             lsb += BITS_PER_DIGIT; \
         } \
         if (lsb < (obits)) { \
-            const uint32_t msb_data = VL_SEL_IWII((obits) + 1, (rwp).data(), lsb, (obits)-lsb); \
-            *chunkp = msb_data & VL_MASK_E((obits)-lsb); \
+            const uint32_t msb_data = VL_SEL_IWII((obits) + 1, (rwp).data(), lsb, (obits) - lsb); \
+            *chunkp = msb_data & VL_MASK_E((obits) - lsb); \
         } \
         _butemp.set(0, *(rwp).data() & 1); /* force update the sign */ \
         (svar).write(_butemp); \
@@ -2228,6 +2228,199 @@ static inline WDataOutP VL_SEL_WWII(int obits, int lbits, WDataOutP owp, WDataIn
     return owp;
 }
 
+template <typename T>
+static inline VlQueue<T> VL_CLONE_Q(const VlQueue<T>& from) {
+    VlQueue<T> ret;
+    ret.renew(from.size());
+    for (size_t i = 0; i < from.size(); ++i) ret.atWrite(i) = from.at(i);
+    return ret;
+}
+
+template <typename T>
+static inline VlQueue<T> VL_REVCLONE_Q(const VlQueue<T>& from, int lbits, int elementBits) {
+    VlQueue<T> ret;
+    VL_REVCOPY_Q(ret, from, lbits, elementBits);
+    return ret;
+}
+
+template <typename T>
+static inline void VL_COPY_Q(VlQueue<T>& q, const VlQueue<T>& from) {
+    q.renew(from.size());
+    for (size_t i = 0; i < from.size(); ++i) q.atWrite(i) = from.at(i);
+}
+
+// Helper function to extract a bit from a flat bit stream represented by a queue
+template <typename T>
+static inline bool VL_GET_QUEUE_BIT(const VlQueue<T>& queue, int elementBits,
+                                    size_t bitIndex) VL_PURE {
+    const size_t elementIndex = bitIndex / elementBits;
+    const size_t bitInElement = bitIndex % elementBits;
+    if (elementIndex >= queue.size()) return false;
+    return (queue.at(elementIndex) >> bitInElement) & 1;
+}
+
+// Helper function to set a bit in a flat bit stream represented by a queue
+template <typename T>
+static inline void VL_SET_QUEUE_BIT(VlQueue<T>& queue, int elementBits, size_t bitIndex,
+                                    bool value) VL_MT_SAFE {
+    const size_t elementIndex = bitIndex / elementBits;
+    const size_t bitInElement = bitIndex % elementBits;
+    if (elementIndex >= queue.size()) return;
+
+    T& element = queue.atWrite(elementIndex);
+    if (value) {
+        element |= (static_cast<T>(1) << bitInElement);
+    } else {
+        element &= ~(static_cast<T>(1) << bitInElement);
+    }
+}
+
+template <typename T>
+static inline void VL_REVCOPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int lbits,
+                                int elementBits) {
+    // Flat bit reversal: treat the entire queue as a flat bit stream and reverse it in blocks of
+    // lbits
+
+    if (&q == &from) {
+        // In-place operation - need temporary copy
+        VlQueue<T> temp = from;
+        q.renew(temp.size());
+
+        const size_t totalBits = temp.size() * elementBits;
+        const size_t numBlocks = (totalBits + lbits - 1) / lbits;
+
+        // Clear the output queue
+        for (size_t i = 0; i < q.size(); ++i) { q.atWrite(i) = 0; }
+
+        // Reverse blocks
+        for (size_t block = 0; block < numBlocks; ++block) {
+            const size_t srcBlockStart = block * lbits;
+            const size_t dstBlockStart = (numBlocks - 1 - block) * lbits;
+
+            // Copy bits within the block
+            for (int bit = 0; bit < lbits; ++bit) {
+                const size_t srcBitIndex = srcBlockStart + bit;
+                const size_t dstBitIndex = dstBlockStart + bit;
+
+                if (srcBitIndex < totalBits && dstBitIndex < totalBits) {
+                    bool bitValue = VL_GET_QUEUE_BIT(temp, elementBits, srcBitIndex);
+                    VL_SET_QUEUE_BIT(q, elementBits, dstBitIndex, bitValue);
+                }
+            }
+        }
+    } else {
+        q.renew(from.size());
+
+        const size_t totalBits = from.size() * elementBits;
+        const size_t numBlocks = (totalBits + lbits - 1) / lbits;
+
+        // Clear the output queue
+        for (size_t i = 0; i < q.size(); ++i) { q.atWrite(i) = 0; }
+
+        // Reverse blocks
+        for (size_t block = 0; block < numBlocks; ++block) {
+            const size_t srcBlockStart = block * lbits;
+            const size_t dstBlockStart = (numBlocks - 1 - block) * lbits;
+
+            // Copy bits within the block
+            for (int bit = 0; bit < lbits; ++bit) {
+                const size_t srcBitIndex = srcBlockStart + bit;
+                const size_t dstBitIndex = dstBlockStart + bit;
+
+                if (srcBitIndex < totalBits && dstBitIndex < totalBits) {
+                    bool bitValue = VL_GET_QUEUE_BIT(from, elementBits, srcBitIndex);
+                    VL_SET_QUEUE_BIT(q, elementBits, dstBitIndex, bitValue);
+                }
+            }
+        }
+    }
+}
+
+// Specialized helper functions for VlWide types
+template <std::size_t N_Words>
+static inline bool VL_GET_QUEUE_BIT(const VlQueue<VlWide<N_Words>>& queue, int elementBits,
+                                    size_t bitIndex) VL_PURE {
+    const size_t elementIndex = bitIndex / elementBits;
+    const size_t bitInElement = bitIndex % elementBits;
+    if (elementIndex >= queue.size()) return false;
+    return VL_BITISSET_W(queue.at(elementIndex), bitInElement);
+}
+
+template <std::size_t N_Words>
+static inline void VL_SET_QUEUE_BIT(VlQueue<VlWide<N_Words>>& queue, int elementBits,
+                                    size_t bitIndex, bool value) VL_MT_SAFE {
+    const size_t elementIndex = bitIndex / elementBits;
+    const size_t bitInElement = bitIndex % elementBits;
+    if (elementIndex >= queue.size()) return;
+
+    if (value) {
+        VL_ASSIGNBIT_WO(bitInElement, queue.atWrite(elementIndex));
+    } else {
+        VL_ASSIGNBIT_WI(bitInElement, queue.atWrite(elementIndex), 0);
+    }
+}
+
+template <std::size_t N_Words>
+static inline void VL_REVCOPY_Q(VlQueue<VlWide<N_Words>>& q, const VlQueue<VlWide<N_Words>>& from,
+                                int lbits, int elementBits) {
+    // Flat bit reversal: treat the entire queue as a flat bit stream and reverse it in blocks of
+    // lbits
+
+    if (&q == &from) {
+        // In-place operation - need temporary copy
+        VlQueue<VlWide<N_Words>> temp = from;
+        q.renew(temp.size());
+
+        const size_t totalBits = temp.size() * elementBits;
+        const size_t numBlocks = (totalBits + lbits - 1) / lbits;
+
+        // Clear the output queue
+        for (size_t i = 0; i < q.size(); ++i) { VL_ZERO_W(elementBits, q.atWrite(i)); }
+
+        // Reverse blocks
+        for (size_t block = 0; block < numBlocks; ++block) {
+            const size_t srcBlockStart = block * lbits;
+            const size_t dstBlockStart = (numBlocks - 1 - block) * lbits;
+
+            // Copy bits within the block
+            for (int bit = 0; bit < lbits; ++bit) {
+                const size_t srcBitIndex = srcBlockStart + bit;
+                const size_t dstBitIndex = dstBlockStart + bit;
+
+                if (srcBitIndex < totalBits && dstBitIndex < totalBits) {
+                    bool bitValue = VL_GET_QUEUE_BIT(temp, elementBits, srcBitIndex);
+                    VL_SET_QUEUE_BIT(q, elementBits, dstBitIndex, bitValue);
+                }
+            }
+        }
+    } else {
+        q.renew(from.size());
+
+        const size_t totalBits = from.size() * elementBits;
+        const size_t numBlocks = (totalBits + lbits - 1) / lbits;
+
+        // Clear the output queue
+        for (size_t i = 0; i < q.size(); ++i) { VL_ZERO_W(elementBits, q.atWrite(i)); }
+
+        // Reverse blocks
+        for (size_t block = 0; block < numBlocks; ++block) {
+            const size_t srcBlockStart = block * lbits;
+            const size_t dstBlockStart = (numBlocks - 1 - block) * lbits;
+
+            // Copy bits within the block
+            for (int bit = 0; bit < lbits; ++bit) {
+                const size_t srcBitIndex = srcBlockStart + bit;
+                const size_t dstBitIndex = dstBlockStart + bit;
+
+                if (srcBitIndex < totalBits && dstBitIndex < totalBits) {
+                    bool bitValue = VL_GET_QUEUE_BIT(from, elementBits, srcBitIndex);
+                    VL_SET_QUEUE_BIT(q, elementBits, dstBitIndex, bitValue);
+                }
+            }
+        }
+    }
+}
+
 //======================================================================
 // Expressions needing insert/select
 
@@ -2235,49 +2428,49 @@ static inline void VL_UNPACK_RI_I(int lbits, int rbits, VlQueue<CData>& q, IData
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(size - 1 - i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_RI_I(int lbits, int rbits, VlQueue<SData>& q, IData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(size - 1 - i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_RI_I(int lbits, int rbits, VlQueue<IData>& q, IData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(size - 1 - i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_RI_Q(int lbits, int rbits, VlQueue<CData>& q, QData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(size - 1 - i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_RI_Q(int lbits, int rbits, VlQueue<SData>& q, QData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(size - 1 - i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_RI_Q(int lbits, int rbits, VlQueue<IData>& q, QData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
-    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(size - 1 - i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_RQ_Q(int lbits, int rbits, VlQueue<QData>& q, QData from) {
     const size_t size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     const QData mask = VL_MASK_Q(lbits);
-    for (size_t i = 0; i < size; ++i) q.atWrite(q.size() - 1 - i) = (from >> (i * lbits)) & mask;
+    for (size_t i = 0; i < size; ++i) q.atWrite(size - 1 - i) = (from >> (i * lbits)) & mask;
 }
 
 static inline void VL_UNPACK_RI_W(int lbits, int rbits, VlQueue<CData>& q, WDataInP rwp) {
@@ -2285,7 +2478,11 @@ static inline void VL_UNPACK_RI_W(int lbits, int rbits, VlQueue<CData>& q, WData
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
     for (size_t i = 0; i < size; ++i) {
-        q.atWrite(i) = VL_SEL_IWII(rbits, rwp, i * lbits, lbits) & mask;
+        // Extract from MSB to LSB: MSB goes to index 0
+        const int bitPos = rbits - (i + 1) * lbits;
+        const int actualBitPos = (bitPos < 0) ? 0 : bitPos;
+        const int actualWidth = (bitPos < 0) ? (lbits + bitPos) : lbits;
+        q.atWrite(i) = VL_SEL_IWII(rbits, rwp, actualBitPos, actualWidth) & mask;
     }
 }
 
@@ -2294,7 +2491,11 @@ static inline void VL_UNPACK_RI_W(int lbits, int rbits, VlQueue<SData>& q, WData
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
     for (size_t i = 0; i < size; ++i) {
-        q.atWrite(i) = VL_SEL_IWII(rbits, rwp, i * lbits, lbits) & mask;
+        // Extract from MSB to LSB: MSB goes to index 0
+        const int bitPos = rbits - (i + 1) * lbits;
+        const int actualBitPos = (bitPos < 0) ? 0 : bitPos;
+        const int actualWidth = (bitPos < 0) ? (lbits + bitPos) : lbits;
+        q.atWrite(i) = VL_SEL_IWII(rbits, rwp, actualBitPos, actualWidth) & mask;
     }
 }
 
@@ -2303,7 +2504,11 @@ static inline void VL_UNPACK_RI_W(int lbits, int rbits, VlQueue<IData>& q, WData
     q.renew(size);
     const IData mask = VL_MASK_I(lbits);
     for (size_t i = 0; i < size; ++i) {
-        q.atWrite(i) = VL_SEL_IWII(rbits, rwp, i * lbits, lbits) & mask;
+        // Extract from MSB to LSB: MSB goes to index 0
+        const int bitPos = rbits - (i + 1) * lbits;
+        const int actualBitPos = (bitPos < 0) ? 0 : bitPos;
+        const int actualWidth = (bitPos < 0) ? (lbits + bitPos) : lbits;
+        q.atWrite(i) = VL_SEL_IWII(rbits, rwp, actualBitPos, actualWidth) & mask;
     }
 }
 
@@ -2312,7 +2517,11 @@ static inline void VL_UNPACK_RQ_W(int lbits, int rbits, VlQueue<QData>& q, WData
     q.renew(size);
     const QData mask = VL_MASK_Q(lbits);
     for (size_t i = 0; i < size; ++i) {
-        q.atWrite(i) = VL_SEL_QWII(rbits, rwp, i * lbits, lbits) & mask;
+        // Extract from MSB to LSB: MSB goes to index 0
+        const int bitPos = rbits - (i + 1) * lbits;
+        const int actualBitPos = (bitPos < 0) ? 0 : bitPos;
+        const int actualWidth = (bitPos < 0) ? (lbits + bitPos) : lbits;
+        q.atWrite(i) = VL_SEL_QWII(rbits, rwp, actualBitPos, actualWidth) & mask;
     }
 }
 
@@ -2322,7 +2531,11 @@ static inline void VL_UNPACK_RW_W(int lbits, int rbits, VlQueue<VlWide<N_Words>>
     const int size = (rbits + lbits - 1) / lbits;
     q.renew(size);
     for (size_t i = 0; i < size; ++i) {
-        VL_SEL_WWII(lbits, rbits, q.atWrite(i), rwp, i * lbits, lbits);
+        // Extract from MSB to LSB: MSB goes to index 0
+        const int bitPos = rbits - (i + 1) * lbits;
+        const int actualBitPos = (bitPos < 0) ? 0 : bitPos;
+        const int actualWidth = (bitPos < 0) ? (lbits + bitPos) : lbits;
+        VL_SEL_WWII(actualWidth, rbits, q.atWrite(i), rwp, actualBitPos, actualWidth);
     }
 }
 
