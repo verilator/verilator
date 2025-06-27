@@ -1131,13 +1131,20 @@ public:
 class AstCvtArrayToArray final : public AstNodeExpr {
     // Copy/Cast from dynamic/unpacked types to dynamic/unpacked types
     // @astgen op1 := fromp : AstNodeExpr
+private:
+    bool m_reverse;
+    int m_blockSize;
+    int m_dstElementBits;
+    int m_srcElementBits;
+
 public:
     AstCvtArrayToArray(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp, bool reverse,
-                       int blockSize = 1, int elementBits = 0)
+                       int blockSize = 1, int dstElementBits = 0, int srcElementBits = 0)
         : ASTGEN_SUPER_CvtArrayToArray(fl)
-        , m_reverse(reverse)
-        , m_blockSize(blockSize)
-        , m_elementBits(elementBits) {
+        , m_reverse{reverse}
+        , m_blockSize{blockSize}
+        , m_dstElementBits{dstElementBits}
+        , m_srcElementBits{srcElementBits} {
         this->fromp(fromp);
         dtypeFrom(dtp);
     }
@@ -1147,12 +1154,8 @@ public:
     bool cleanOut() const override { return true; }
     bool reverse() const { return m_reverse; }
     int blockSize() const { return m_blockSize; }
-    int elementBits() const { return m_elementBits; }
-
-private:
-    bool m_reverse;
-    int m_blockSize;
-    int m_elementBits;
+    int dstElementBits() const { return m_dstElementBits; }
+    int srcElementBits() const { return m_srcElementBits; }
 };
 class AstCvtArrayToPacked final : public AstNodeExpr {
     // Cast from dynamic queue data type to packed array

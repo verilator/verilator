@@ -2296,16 +2296,22 @@ class ConstVisitor final : public VNVisitor {
                     if (const AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
                         blockSize = constp->toSInt();
                     }
-                    int elementBits = 0;
+                    int srcElementBits = 0;
                     if (const AstQueueDType* const queueDtp = VN_CAST(srcDTypep, QueueDType)) {
                         if (AstNodeDType* const elemDtp = queueDtp->subDTypep()) {
-                            elementBits = elemDtp->width();
+                            srcElementBits = elemDtp->width();
+                        }
+                    }
+                    int dstElementBits = 0;
+                    if (const AstQueueDType* const queueDtp = VN_CAST(dstDTypep, QueueDType)) {
+                        if (AstNodeDType* const elemDtp = queueDtp->subDTypep()) {
+                            dstElementBits = elemDtp->width();
                         }
                     }
                     streamp->unlinkFrBack();
                     srcp = new AstCvtArrayToArray{srcp->fileline(), srcp->unlinkFrBack(),
                                                   dstDTypep,        true,
-                                                  blockSize,        elementBits};
+                                                  blockSize,        dstElementBits, srcElementBits};
                     nodep->rhsp(srcp);
                     VL_DO_DANGLING(pushDeletep(streamp), streamp);
                 } else {
@@ -3126,16 +3132,22 @@ class ConstVisitor final : public VNVisitor {
                     if (AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
                         blockSize = constp->toSInt();
                     }
-                    int elementBits = 0;
+                    int srcElementBits = 0;
                     if (const AstQueueDType* const queueDtp = VN_CAST(srcDTypep, QueueDType)) {
                         if (AstNodeDType* const elemDtp = queueDtp->subDTypep()) {
-                            elementBits = elemDtp->width();
+                            srcElementBits = elemDtp->width();
+                        }
+                    }
+                    int dstElementBits = 0;
+                    if (const AstQueueDType* const queueDtp = VN_CAST(dstDTypep, QueueDType)) {
+                        if (AstNodeDType* const elemDtp = queueDtp->subDTypep()) {
+                            dstElementBits = elemDtp->width();
                         }
                     }
                     streamp->unlinkFrBack();
                     AstNodeExpr* newp = new AstCvtArrayToArray{
                         srcp->fileline(), srcp->unlinkFrBack(), dstDTypep, true,
-                        blockSize,        elementBits};
+                        blockSize,        dstElementBits, srcElementBits};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(streamp), streamp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);

@@ -409,7 +409,9 @@ public:
             puts(", ");
             puts(cvtToStr(nodep->blockSize()));
             puts(", ");
-            puts(cvtToStr(nodep->elementBits()));
+            puts(cvtToStr(nodep->srcElementBits()));
+            puts(", ");
+            puts(cvtToStr(nodep->dstElementBits()));
             puts(")");
         } else {
             puts("VL_CLONE_Q(");
@@ -517,7 +519,9 @@ public:
                 puts(", ");
                 puts(cvtToStr(castp->blockSize()));
                 puts(", ");
-                puts(cvtToStr(castp->elementBits()));
+                puts(cvtToStr(castp->srcElementBits()));
+                puts(", ");
+                puts(cvtToStr(castp->dstElementBits()));
             } else {
                 putns(castp, "VL_COPY_Q(");
                 iterateAndNextConstNull(nodep->lhsp());

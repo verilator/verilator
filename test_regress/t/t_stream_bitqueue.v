@@ -29,6 +29,7 @@ module t (  /*AUTOARG*/
   input clk;
   integer cyc = 0;
   logic [7:0] d;
+  string s;
 
   initial begin
     begin
