@@ -13,8 +13,8 @@ test.scenarios('simulator')
 
 if test.vlt_all:
     test.lint(expect_filename=test.golden_filename,
-            verilator_flags2=['--assert --error-limit 1000'],
-            fails=True)
+              verilator_flags2=['--assert --error-limit 1000'],
+              fails=True)
 else:
     test.compile()
     test.execute()
