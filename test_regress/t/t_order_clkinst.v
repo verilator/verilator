@@ -14,7 +14,6 @@ module t (/*AUTOARG*/
    // verilator lint_off LATCH
    // verilator lint_off UNOPT
    // verilator lint_off UNOPTFLAT
-   // verilator lint_off BLKANDNBLK
    // verilator lint_off MULTIDRIVEN
 
    reg         c1_start; initial c1_start = 0;

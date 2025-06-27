@@ -200,6 +200,18 @@ class DelayedVisitor final : public VNVisitor {
         void addSensitivity(AstSenTree* nodep) { addSensitivity(nodep->sensesp()); }
     };
 
+    // Data structure to keep track of all writes to
+    struct WriteReference final {
+        AstVarRef* refp = nullptr;  // The reference
+        bool isNBA = false;  // True if an NBA write
+        bool inNonComb = false;  // True if reference is known to be in non-combinational logic
+        WriteReference() = default;
+        WriteReference(AstVarRef* refp, bool isNBA, bool inNonComb)
+            : refp{refp}
+            , isNBA{isNBA}
+            , inNonComb{inNonComb} {}
+    };
+
     // Data required to lower AstAssignDelay later
     struct NBA final {
         AstAssignDly* nodep = nullptr;  // The NBA this record refers to
@@ -213,10 +225,13 @@ class DelayedVisitor final : public VNVisitor {
     //  AstNodeModule::user1p() -> std::unorded_map<std::string, AstVar*> temp map via m_varMap
     //  AstVarScope::user1p()   -> VarScopeInfo via m_vscpInfo
     //  AstVarScope::user2p()   -> AstVarRef*: First write reference to the Variable
+    //  AstVarScope::user3p()   -> std::vector<WriteReference> via m_writeRefs;
     const VNUser1InUse m_user1InUse{};
     const VNUser2InUse m_user2InUse{};
+    const VNUser3InUse m_user3InUse{};
     AstUser1Allocator<AstNodeModule, std::unordered_map<std::string, AstVar*>> m_varMap;
     AstUser1Allocator<AstVarScope, VarScopeInfo> m_vscpInfo;
+    AstUser3Allocator<AstVarScope, std::vector<WriteReference>> m_writeRefs;
 
     // STATE - across all visitors
     std::set<AstSenTree*> m_timingDomains;  // Timing resume domains
@@ -228,6 +243,7 @@ class DelayedVisitor final : public VNVisitor {
     bool m_inLoop = false;  // True in for loops
     bool m_inSuspendableOrFork = false;  // True in suspendable processes and forks
     bool m_ignoreBlkAndNBlk = false;  // Suppress delayed assignment BLKANDNBLK
+    bool m_inNonCombLogic = false;  // We are in non-combinational logic
     AstVarRef* m_currNbaLhsRefp = nullptr;  // Current NBA LHS variable reference
 
     // STATE - during NBA conversion (after visit)
@@ -246,8 +262,122 @@ class DelayedVisitor final : public VNVisitor {
 
     // METHODS
 
+    // Return true iff a variable is assigned by both blocking and nonblocking
+    // assignments. Issue BLKANDNBLK error if we can't prove the mixed
+    // assignments are to independent bits and the blocking assignment can be
+    // in combinational logic, which is something we can't safely implement
+    // still.
+    bool checkMixedUsage(const AstVarScope* vscp, bool isPacked) {
+
+        struct Ref final {
+            AstVarRef* refp;  // The reference
+            bool inNonComb;  // True if known to be in non-combinational logic
+            int lsb;  // LSB of accessed range
+            int msb;  // MSB of accessed range
+            Ref(AstVarRef* refp, bool inNonComb, int lsb, int msb)
+                : refp{refp}
+                , inNonComb{inNonComb}
+                , lsb{lsb}
+                , msb{msb} {}
+        };
+
+        std::vector<Ref> blkRefs;  // Blocking writes
+        std::vector<Ref> nbaRefs;  // Non-blockign writes
+
+        const int width = isPacked ? vscp->width() : 1;
+
+        for (const auto& writeRef : m_writeRefs(vscp)) {
+            int lsb = 0;
+            int msb = width - 1;
+            if (AstSel* const selp = VN_CAST(writeRef.refp->backp(), Sel)) {
+                if (VN_IS(selp->lsbp(), Const)) {
+                    lsb = selp->lsbConst();
+                    msb = selp->msbConst();
+                }
+            }
+            if (writeRef.isNBA) {
+                nbaRefs.emplace_back(writeRef.refp, writeRef.inNonComb, lsb, msb);
+            } else {
+                blkRefs.emplace_back(writeRef.refp, writeRef.inNonComb, lsb, msb);
+            }
+        }
+        // We only run this function on targets of NBAs, so there should be at least one...
+        UASSERT_OBJ(!nbaRefs.empty(), vscp, "Did not record NBA write");
+        // If no blocking upadte, then we are good
+        if (blkRefs.empty()) return false;
+
+        // If the blocking assignment is in non-combinational logic (i.e.:
+        // in logic that has an explicit trigger), then we can safely
+        // implement it (there is no race between clocked logic and post
+        // scheduled logic), so need not error
+        blkRefs.erase(std::remove_if(blkRefs.begin(), blkRefs.end(),
+                                     [](const Ref& ref) { return ref.inNonComb; }),
+                      blkRefs.end());
+
+        // If nothing left, then we need not error
+        if (blkRefs.empty()) return true;
+
+        // If not a packed variable, warn here as we can't prove independence
+        if (!isPacked) {
+            const Ref& blkRef = blkRefs.front();
+            const Ref& nbaRef = nbaRefs.front();
+            vscp->v3warn(
+                BLKANDNBLK,
+                "Unsupported: Blocking and non-blocking assignments to same non-packed variable: "
+                    << vscp->varp()->prettyNameQ() << '\n'
+                    << vscp->warnContextPrimary() << '\n'
+                    << blkRef.refp->warnOther() << "... Location of blocking assignment\n"
+                    << blkRef.refp->warnContextSecondary() << '\n'
+                    << nbaRef.refp->warnOther() << "... Location of nonblocking assignment\n"
+                    << nbaRef.refp->warnContextSecondary());
+            return true;
+        }
+
+        // We need to error if we can't prove the written bits are independent
+
+        // Sort refs by interval
+        const auto lessThanRef = [](const Ref& a, const Ref& b) {
+            if (a.lsb != b.lsb) return a.lsb < b.lsb;
+            return a.msb < b.msb;
+        };
+        std::stable_sort(blkRefs.begin(), blkRefs.end(), lessThanRef);
+        std::stable_sort(nbaRefs.begin(), nbaRefs.end(), lessThanRef);
+        // Iterate both vectors, checking for overlap
+        auto bIt = blkRefs.begin();
+        auto nIt = nbaRefs.begin();
+        while (bIt != blkRefs.end() && nIt != nbaRefs.end()) {
+            if (lessThanRef(*bIt, *nIt)) {
+                if (nIt->lsb <= bIt->msb) break;  // Stop on Overlap
+                ++bIt;
+            } else {
+                if (bIt->lsb <= nIt->msb) break;  // Stop on Overlap
+                ++nIt;
+            }
+        }
+
+        // If we found an overlapping range that cannot be safely implemented, then wran...
+        if (bIt != blkRefs.end() && nIt != nbaRefs.end()) {
+            const Ref& blkRef = *bIt;
+            const Ref& nbaRef = *nIt;
+            vscp->v3warn(BLKANDNBLK, "Unsupported: Blocking and non-blocking assignments to "
+                                     "potentially overlapping bits of same packed variable: "
+                                         << vscp->varp()->prettyNameQ() << '\n'
+                                         << vscp->warnContextPrimary() << '\n'
+                                         << blkRef.refp->warnOther()
+                                         << "... Location of blocking assignment"
+                                         << " (bits [" << blkRef.msb << ":" << blkRef.lsb << "])\n"
+                                         << blkRef.refp->warnContextSecondary() << '\n'
+                                         << nbaRef.refp->warnOther()
+                                         << "... Location of nonblocking assignment"
+                                         << " (bits [" << nbaRef.msb << ":" << nbaRef.lsb << "])\n"
+                                         << nbaRef.refp->warnContextSecondary());
+        }
+
+        return true;
+    }
+
     // Choose the NBA scheme used for the given variable.
-    static Scheme chooseScheme(const AstVarScope* vscp, const VarScopeInfo& vscpInfo) {
+    Scheme chooseScheme(const AstVarScope* vscp, const VarScopeInfo& vscpInfo) {
         UASSERT_OBJ(vscpInfo.m_scheme == Scheme::Undecided, vscp, "NBA scheme already decided");
 
         const AstNodeDType* const dtypep = vscp->dtypep()->skipRefp();
@@ -279,6 +409,14 @@ class DelayedVisitor final : public VNVisitor {
 
         // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
         if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
+
+        // Check for mixed usage (this also warns if not OK)
+        const bool usedMixed = checkMixedUsage(vscp, dtypep->isIntegralOrPacked());
+        // If it's a variable updated by both blocking and non-blocking
+        // asignments, use the FlagUnique scheme. This can handle blocking
+        // and non-blocking updates to inpdendent parts correctly at run-time.
+        if (usedMixed) return Scheme::FlagUnique;
+
         // Otherwise use the simple shadow variable scheme
         return Scheme::ShadowVar;
     }
@@ -348,7 +486,12 @@ class DelayedVisitor final : public VNVisitor {
             nodep = arrSelp->fromp();
         }
         // What remains must be an AstVarRef, or some sort of select, we assume can reuse it.
-        UASSERT_OBJ(nodep->isPure(), lhsp, "Malformed LHS in NBA");
+        if (AstAssocSel* const aselp = VN_CAST(nodep, AssocSel)) {
+            UASSERT_OBJ(aselp->fromp()->isPure() && aselp->bitp()->isPure(), lhsp,
+                        "Malformed LHS in NBA");
+        } else {
+            UASSERT_OBJ(nodep->isPure(), lhsp, "Malformed LHS in NBA");
+        }
         // Now have been converted to use the captured values
         return lhsp;
     }
@@ -703,51 +846,19 @@ class DelayedVisitor final : public VNVisitor {
         pushDeletep(nodep->unlinkFrBack());
     }
 
-    // Record and warn if a variable is assigned by both blocking and nonblocking assignments
-    void checkVarUsage(AstVarRef* nodep, bool nonBlocking) {
+    // Record where a variable is assigned
+    void recordWriteRef(AstVarRef* nodep, bool nonBlocking) {
         // Ignore references in certain contexts
         if (m_ignoreBlkAndNBlk) return;
-        // Ignore if warning is disabled on this reference (used by V3Force).
-        if (nodep->fileline()->warnIsOff(V3ErrorCode::BLKANDNBLK)) return;
         // Ignore if it's an array
         // TODO: we do this because it used to be the previous behaviour.
         //       Is it still required, or should we warn for arrays as well?
         //       Scheduling is no different for them...
+        //       Clarification: This is OK for arrays of primitive types, but
+        //       arrays that use the ShadowVar scheme don't work...
         if (VN_IS(nodep->varScopep()->dtypep()->skipRefp(), UnpackArrayDType)) return;
 
-        // Mark ref as blocking/non-blocking
-        nodep->user1(nonBlocking);
-
-        AstVarScope* const vscp = nodep->varScopep();
-
-        // Pick up/set the first reference to this variable
-        const AstVarRef* const firstRefp = VN_AS(vscp->user2p(), VarRef);
-        if (!firstRefp) {
-            vscp->user2p(nodep);
-            return;
-        }
-
-        // If both blocking/non-blocking, it's OK
-        if (firstRefp->user1() == static_cast<int>(nonBlocking)) return;
-
-        // Otherwise warn that both blocking and non-blocking assignments are used
-        const auto containingAssignment = [](const AstNode* nodep) -> const AstNode* {
-            while (!VN_IS(nodep, NodeAssign)) nodep = nodep->backp();
-            return nodep;
-        };
-
-        const AstNode* nonblockingp = nonBlocking ? nodep : firstRefp;
-        if (const AstNode* np = containingAssignment(nonblockingp)) nonblockingp = np;
-        const AstNode* blockingp = nonBlocking ? firstRefp : nodep;
-        if (const AstNode* np = containingAssignment(blockingp)) blockingp = np;
-        vscp->v3warn(BLKANDNBLK,
-                     "Unsupported: Blocked and non-blocking assignments to same variable: "
-                         << vscp->varp()->prettyNameQ() << '\n'
-                         << vscp->warnContextPrimary() << '\n'
-                         << blockingp->warnOther() << "... Location of blocking assignment\n"
-                         << blockingp->warnContextSecondary() << '\n'
-                         << nonblockingp->warnOther() << "... Location of nonblocking assignment\n"
-                         << nonblockingp->warnContextSecondary());
+        m_writeRefs(nodep->varScopep()).emplace_back(nodep, nonBlocking, m_inNonCombLogic);
     }
 
     // VISITORS
@@ -842,9 +953,11 @@ class DelayedVisitor final : public VNVisitor {
         UASSERT_OBJ(!m_activep, nodep, "Should not nest");
         VL_RESTORER(m_activep);
         VL_RESTORER(m_ignoreBlkAndNBlk);
+        VL_RESTORER(m_inNonCombLogic);
         m_activep = nodep;
         AstSenTree* const senTreep = nodep->sensesp();
         m_ignoreBlkAndNBlk = senTreep->hasStatic() || senTreep->hasInitial();
+        m_inNonCombLogic = senTreep->hasClocked();
         iterateChildren(nodep);
     }
     void visit(AstNodeProcedure* nodep) override {
@@ -852,8 +965,14 @@ class DelayedVisitor final : public VNVisitor {
         {
             VL_RESTORER(m_inSuspendableOrFork);
             VL_RESTORER(m_procp);
+            VL_RESTORER(m_ignoreBlkAndNBlk);
+            VL_RESTORER(m_inNonCombLogic);
             m_inSuspendableOrFork = nodep->isSuspendable();
             m_procp = nodep;
+            if (m_inSuspendableOrFork) {
+                m_ignoreBlkAndNBlk = false;
+                m_inNonCombLogic = true;
+            }
             iterateChildren(nodep);
         }
         if (m_timingDomains.empty()) return;
@@ -1011,8 +1130,8 @@ class DelayedVisitor final : public VNVisitor {
         nba.nodep = nodep;
         nba.vscp = vscp;
 
-        // Check var usage
-        checkVarUsage(m_currNbaLhsRefp, true);
+        // Record write reference
+        recordWriteRef(m_currNbaLhsRefp, true);
 
         iterateChildren(nodep);
     }
@@ -1021,14 +1140,8 @@ class DelayedVisitor final : public VNVisitor {
         if (nodep == m_currNbaLhsRefp) return;
         // Only care about write refs
         if (!nodep->access().isWriteOrRW()) return;
-        // Check var usage
-        checkVarUsage(nodep, false);
-    }
-    void visit(AstNodeReadWriteMem* nodep) override {
-        VL_RESTORER(m_ignoreBlkAndNBlk);
-        // $readmem/$writemem often used in mem models so we suppress BLKANDNBLK warnings
-        m_ignoreBlkAndNBlk = true;
-        iterateChildren(nodep);
+        // Record write reference
+        recordWriteRef(nodep, false);
     }
     void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("For statements should have been converted to while statements");
