@@ -3096,14 +3096,16 @@ public:
     bool isCycleDelay() const { return m_isCycle; }
 };
 class AstDisable final : public AstNodeStmt {
-    string m_name;  // Name of block
+    // @astgen op1 := targetRefp : Optional[AstNodeExpr]  // Reference to link in V3LinkDot
+    // @astgen ptr := m_targetp : Optional[AstNode]  // Task or block after V3LinkDot
 public:
-    AstDisable(FileLine* fl, const string& name)
-        : ASTGEN_SUPER_Disable(fl)
-        , m_name{name} {}
+    AstDisable(FileLine* fl, AstNodeExpr* targetRefp)
+        : ASTGEN_SUPER_Disable(fl) {
+        this->targetRefp(targetRefp);
+    }
     ASTGEN_MEMBERS_AstDisable;
-    string name() const override VL_MT_STABLE { return m_name; }  // * = Block name
-    void name(const string& flag) override { m_name = flag; }
+    void targetp(AstNode* nodep) { m_targetp = nodep; }
+    AstNode* targetp() const { return m_targetp; }
     bool isBrancher() const override {
         return true;  // SPECIAL: We don't process code after breaks
     }

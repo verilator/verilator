@@ -3750,10 +3750,8 @@ statement_item<nodep>:          // IEEE: statement_item
         //
         //                      // IEEE: disable_statement
         |       yDISABLE yFORK ';'                      { $$ = new AstDisableFork{$1}; }
-        |       yDISABLE idAny/*UNSUP: hierarchical_identifier-task_or_block*/ ';'
-                        { $$ = new AstDisable{$1, *$2}; }
-        |       yDISABLE idAny '.' idDottedSel ';'
-                        { $$ = nullptr; BBUNSUP($4, "Unsupported: disable with '.'"); }
+        |       yDISABLE idDotted ';'
+                        { $$ = new AstDisable{$1, $2}; }
         //                      // IEEE: event_trigger
         |       yP_MINUSGT expr ';'
                         { $$ = new AstFireEvent{$1, $2, false}; }
