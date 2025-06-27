@@ -63,7 +63,7 @@ class ExprCoverageEligibleVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit ExprCoverageEligibleVisitor(AstNode* nodep) { iterateChildren(nodep); }
+    explicit ExprCoverageEligibleVisitor(AstNode* nodep) { iterate(nodep); }
     ~ExprCoverageEligibleVisitor() override = default;
 
     bool eligible() { return m_eligible; }

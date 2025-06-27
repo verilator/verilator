@@ -1309,6 +1309,7 @@ public:
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isExprCoverageEligible() const override { return false; }
 };
 class AstFOpen final : public AstNodeExpr {
     // @astgen op2 := filenamep : AstNodeExpr
@@ -1330,6 +1331,7 @@ public:
     bool isOutputter() override { return true; }
     bool isUnlikely() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isExprCoverageEligible() const override { return false; }
 };
 class AstFOpenMcd final : public AstNodeExpr {
     // @astgen op2 := filenamep : AstNodeExpr
@@ -1349,6 +1351,7 @@ public:
     bool isOutputter() override { return true; }
     bool isUnlikely() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isExprCoverageEligible() const override { return false; }
 };
 class AstFRead final : public AstNodeExpr {
     // @astgen op1 := memp : AstNode // VarRef for result
@@ -1373,6 +1376,7 @@ public:
     bool isOutputter() override { return true; }  // SPECIAL: makes output
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isExprCoverageEligible() const override { return false; }
 };
 class AstFRewind final : public AstNodeExpr {
     // @astgen op1 := filep : Optional[AstNode]
@@ -1392,6 +1396,7 @@ public:
     bool isUnlikely() const override { return true; }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isExprCoverageEligible() const override { return false; }
 };
 class AstFScanF final : public AstNodeExpr {
     // @astgen op1 := exprsp : List[AstNode] // VarRefs for results
@@ -1420,6 +1425,7 @@ public:
     }
     string text() const { return m_text; }  // * = Text to display
     void text(const string& text) { m_text = text; }
+    bool isExprCoverageEligible() const override { return false; }
 };
 class AstFSeek final : public AstNodeExpr {
     // @astgen op1 := filep : AstNode // file (must be a VarRef)
@@ -1442,6 +1448,7 @@ public:
     bool isOutputter() override { return true; }  // SPECIAL: makes output
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isExprCoverageEligible() const override { return false; }
 };
 class AstFTell final : public AstNodeExpr {
     // @astgen op1 := filep : AstNode // file (must be a VarRef)
@@ -1461,6 +1468,7 @@ public:
     bool isUnlikely() const override { return true; }
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isExprCoverageEligible() const override { return false; }
 };
 class AstFell final : public AstNodeExpr {
     // Verilog $fell
@@ -1479,6 +1487,7 @@ public:
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isExprCoverageEligible() const override { return false; }
 };
 class AstGatePin final : public AstNodeExpr {
     // Possibly expand a gate primitive input pin value to match the range of the gate primitive
@@ -2637,6 +2646,7 @@ public:
     int instrCount() const override { return widthInstrs() * 64; }
     AstNode* strgp() const { return lhsp(); }
     AstNode* filep() const { return rhsp(); }
+    bool isExprCoverageEligible() const override { return false; }
 };
 class AstFUngetC final : public AstNodeBiop {
 public:
@@ -2664,6 +2674,7 @@ public:
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
     AstNode* filep() const { return lhsp(); }
     AstNode* charp() const { return rhsp(); }
+    bool isExprCoverageEligible() const override { return false; }
 };
 class AstGetcN final : public AstNodeBiop {
     // Verilog string.getc()
@@ -5089,6 +5100,7 @@ public:
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
     AstNode* filep() const { return lhsp(); }
+    bool isExprCoverageEligible() const override { return false; }
 };
 class AstFGetC final : public AstNodeUniop {
 public:
@@ -5106,6 +5118,7 @@ public:
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
     AstNode* filep() const { return lhsp(); }
+    bool isExprCoverageEligible() const override { return false; }
 };
 class AstISToRD final : public AstNodeUniop {
     // $itor where lhs is signed
