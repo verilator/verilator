@@ -24,7 +24,7 @@
 #include "V3String.h"
 #ifndef V3ERROR_NO_GLOBAL_
 # include "V3Global.h"
-# include "V3Config.h"
+# include "V3Control.h"
 # include "V3File.h"
 #endif
 #include "V3Waiver.h"
@@ -305,7 +305,7 @@ void FileLine::forwardToken(const char* textp, size_t size, bool trackLines) {
 
 void FileLine::applyIgnores() {
 #ifndef V3ERROR_NO_GLOBAL_
-    V3Config::applyIgnores(this);  // Toggle warnings based on global config file
+    V3Control::applyIgnores(this);  // Toggle warnings based on global config file
 #endif
 }
 
@@ -441,7 +441,7 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
             nsstr << add;
         }
         const string waiverText = V3Error::stripMetaText(wsstr.str(), false);
-        m_waive = V3Config::waive(this, V3Error::s().errorCode(), waiverText);
+        m_waive = V3Control::waive(this, V3Error::s().errorCode(), waiverText);
         if (m_waive) {
             V3Error::s().suppressThisWarning();
         } else {

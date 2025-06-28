@@ -1808,7 +1808,7 @@ Summary:
    them systematically.
 
    The generated file is in the Verilator Configuration format, see
-   :ref:`Verilator Configuration Files`. The standard file extension is ".vlt".
+   :ref:`Verilator Control Files`. The standard file extension is ".vlt".
    These files can directly be consumed by Verilator, typically by placing
    the filename as part of the Verilator command line options. Waiver files
    need to be listed on the command line before listing the files they are
@@ -2049,20 +2049,20 @@ Summary:
    filenames.
 
 
-.. _Verilator Configuration Files:
+.. _Verilator Control Files:
 
-=============================
-Verilator Configuration Files
-=============================
+=======================
+Verilator Control Files
+=======================
 
 In addition to the command line, warnings and other features for the
-:command:`verilator` command may be controlled with Verilator Configuration
+:command:`verilator` command may be controlled with Verilator Control
 Files, not to be confused with IEEE Configurations blocks
-(`config...endconfig`) inside a file.  Typically named with the `.vlt`
-extension, what makes it a Verilator Configuration File is the
-:option:`\`verilator_config` directive.  These files, when named `.vlt`,
-are read before source code files; if this behavior is undesired, name the
-config file with a `.v` suffix.
+(`config...endconfig`).  Typically named with the `.vlt` extension, what
+makes it a Verilator Control File is the :option:`\`verilator_config`
+directive.  These files, when named `.vlt`, are read before source code
+files; if this behavior is undesired, name the control file with a `.v` or
+other suffix.
 
 An example:
 
@@ -2074,19 +2074,20 @@ An example:
 
 This disables WIDTH warnings globally, and CASEX for a specific file.
 
-Verilator configuration files are fed through the normal Verilog
+Verilator control files are fed through the normal Verilog
 preprocessor prior to parsing, so "\`ifdef", "\`define", and comments may
-be used as if the configuration file was standard Verilog code.
+be used as if the control file was standard Verilog code.
 
-Note that file or line-specific configuration only applies to files read
-after the configuration file. It is therefore recommended to pass the
-configuration file to Verilator as the first file.
+Note that file or line-specific control only applies to files read
+after the control file. It is therefore recommended to pass the
+control file to Verilator as the first file.
 
-The grammar of configuration commands is as follows:
+The grammar of control commands is as follows:
 
 .. option:: `verilator_config
 
-   Take the remaining text and treat it as Verilator configuration commands.
+   Take the remaining text and treat it as Verilator Control File commands.
+   See :ref:`Verilator Control Files`.
 
 .. option:: clock_enable -module "<modulename>" -var "<signame>"
 
@@ -2237,7 +2238,7 @@ The grammar of configuration commands is as follows:
    wildcard should be designed to match a single line; it is unspecified if
    the wildcard is allowed to match across multiple lines. The input
    contents does not include :vlopt:`--std <--no-std>` standard files, nor
-   configuration files (with :code:`verilator_config`). Typical use for
+   control files (with :code:`verilator_config`). Typical use for
    this is to match a version number present in the Verilog sources, so
    that the waiver will only apply to that version of the sources.
 

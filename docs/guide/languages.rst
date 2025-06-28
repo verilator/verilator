@@ -6,7 +6,7 @@ Input Languages
 ***************
 
 This section describes the languages Verilator takes as input.  See also
-:ref:`Verilator Configuration Files`.
+:ref:`Verilator Control Files`.
 
 
 Language Standard Support
@@ -168,7 +168,7 @@ files. The :option:`/*verilator&32;timing_off*/` and
 the encompassed timing controls and forks, regardless of the chosen
 :vlopt:`--timing` or :vlopt:`--no-timing` option. This can also be achieved
 using the :option:`timing_off` and :option:`timing_off` options in Verilator
-configuration files.
+Control Files.
 
 
 .. _Language Limitations:

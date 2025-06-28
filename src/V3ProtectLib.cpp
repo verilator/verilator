@@ -18,7 +18,7 @@
 
 #include "V3ProtectLib.h"
 
-#include "V3Config.h"
+#include "V3Control.h"
 #include "V3Hasher.h"
 #include "V3InstrCount.h"
 #include "V3String.h"
@@ -126,10 +126,10 @@ class ProtectVisitor final : public VNVisitor {
 
         txtp->addText(fl, "hier_workers -hier-dpi \"" + m_libName
                               + "_protectlib_combo_update\" -workers 16'd"
-                              + std::to_string(V3Config::getHierWorkers(m_libName)) + "\n");
+                              + std::to_string(V3Control::getHierWorkers(m_libName)) + "\n");
         txtp->addText(fl, "hier_workers -hier-dpi \"" + m_libName
                               + "_protectlib_seq_update\" -workers 16'd"
-                              + std::to_string(V3Config::getHierWorkers(m_libName)) + "\n");
+                              + std::to_string(V3Control::getHierWorkers(m_libName)) + "\n");
         // No workers for combo_ignore
         txtp->addText(fl, "`verilog\n");
         txtp->addText(fl, "`endif\n");

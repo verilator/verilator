@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Configuration Files
+// DESCRIPTION: Verilator: Verilator Control Files (.vlt) handling
 //
 // Code available from: https://verilator.org
 //
@@ -16,7 +16,7 @@
 
 #include "V3PchAstMT.h"
 
-#include "V3Config.h"
+#include "V3Control.h"
 
 #include "V3String.h"
 
@@ -34,7 +34,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // cache of resolved entities. Entities stored in this container need an update
 // function that takes a reference of this type to join multiple entities into one.
 template <typename T>
-class V3ConfigWildcardResolver final {
+class V3ControlWildcardResolver final {
     mutable V3Mutex m_mutex;  // protects members
     // Pattern strings (wildcard, or simple name) to entities
     std::map<const std::string, T> m_mapPatterns VL_GUARDED_BY(m_mutex);
@@ -42,11 +42,11 @@ class V3ConfigWildcardResolver final {
     std::map<const std::string, std::unique_ptr<T>> m_mapResolved VL_GUARDED_BY(m_mutex);
 
 public:
-    V3ConfigWildcardResolver() = default;
-    ~V3ConfigWildcardResolver() = default;
+    V3ControlWildcardResolver() = default;
+    ~V3ControlWildcardResolver() = default;
 
     /// Update into maps from other
-    void update(const V3ConfigWildcardResolver& other) VL_MT_SAFE_EXCLUDES(m_mutex)
+    void update(const V3ControlWildcardResolver& other) VL_MT_SAFE_EXCLUDES(m_mutex)
         VL_EXCLUDES(other.m_mutex) {
         V3LockGuard lock{m_mutex};
         V3LockGuard otherLock{other.m_mutex};
@@ -84,23 +84,23 @@ public:
 };
 
 // Only public_flat_rw has the sensitity tree
-class V3ConfigVarAttr final {
+class V3ControlVarAttr final {
 public:
     VAttrType m_type;  // Type of attribute
     AstSenTree* m_sentreep;  // Sensitivity tree for public_flat_rw
-    explicit V3ConfigVarAttr(VAttrType type)
+    explicit V3ControlVarAttr(VAttrType type)
         : m_type{type}
         , m_sentreep{nullptr} {}
-    V3ConfigVarAttr(VAttrType type, AstSenTree* sentreep)
+    V3ControlVarAttr(VAttrType type, AstSenTree* sentreep)
         : m_type{type}
         , m_sentreep{sentreep} {}
 };
 
 // Overload vector with the required update function and to apply all entries
-class V3ConfigVar final : public std::vector<V3ConfigVarAttr> {
+class V3ControlVar final : public std::vector<V3ControlVarAttr> {
 public:
     // Update from other by copying all attributes
-    void update(const V3ConfigVar& node) {
+    void update(const V3ControlVar& node) {
         reserve(size() + node.size());
         insert(end(), node.begin(), node.end());
     }
@@ -116,12 +116,12 @@ public:
     }
 };
 
-using V3ConfigVarResolver = V3ConfigWildcardResolver<V3ConfigVar>;
+using V3ControlVarResolver = V3ControlWildcardResolver<V3ControlVar>;
 
 //======================================================================
 
 class WildcardContents final {
-    // Not mutex protected, current calling from V3Config::waive is protected by error's mutex
+    // Not mutex protected, current calling from V3Control::waive is protected by error's mutex
     // MEMBERS
     std::map<const std::string, bool> m_mapPatterns;  // Pattern match results
     std::deque<string> m_lines;  // Source text lines
@@ -185,15 +185,15 @@ public:
 //######################################################################
 // Function or task: Have variables and properties
 
-class V3ConfigFTask final {
-    V3ConfigVarResolver m_vars;  // Variables in function/task
+class V3ControlFTask final {
+    V3ControlVarResolver m_vars;  // Variables in function/task
     bool m_isolate = false;  // Isolate function return
     bool m_noinline = false;  // Don't inline function/task
     bool m_public = false;  // Public function/task
 
 public:
-    V3ConfigFTask() = default;
-    void update(const V3ConfigFTask& f) {
+    V3ControlFTask() = default;
+    void update(const V3ControlFTask& f) {
         // Don't overwrite true with false
         if (f.m_isolate) m_isolate = true;
         if (f.m_noinline) m_noinline = true;
@@ -201,7 +201,7 @@ public:
         m_vars.update(f.m_vars);
     }
 
-    V3ConfigVarResolver& vars() { return m_vars; }
+    V3ControlVarResolver& vars() { return m_vars; }
 
     void setIsolate(bool set) { m_isolate = set; }
     void setNoInline(bool set) { m_noinline = set; }
@@ -217,23 +217,23 @@ public:
     }
 };
 
-using V3ConfigFTaskResolver = V3ConfigWildcardResolver<V3ConfigFTask>;
+using V3ControlFTaskResolver = V3ControlWildcardResolver<V3ControlFTask>;
 
 //######################################################################
 // Modules have tasks, variables, named blocks and properties
 
-class V3ConfigModule final {
-    V3ConfigFTaskResolver m_tasks;  // Functions/tasks in module
-    V3ConfigVarResolver m_vars;  // Variables in module
+class V3ControlModule final {
+    V3ControlFTaskResolver m_tasks;  // Functions/tasks in module
+    V3ControlVarResolver m_vars;  // Variables in module
     std::unordered_set<std::string> m_coverageOffBlocks;  // List of block names for coverage_off
     std::set<VPragmaType> m_modPragmas;  // List of Pragmas for modules
     bool m_inline = false;  // Whether to force the inline
     bool m_inlineValue = false;  // The inline value (on/off)
 
 public:
-    V3ConfigModule() = default;
+    V3ControlModule() = default;
 
-    void update(const V3ConfigModule& m) {
+    void update(const V3ControlModule& m) {
         m_tasks.update(m.m_tasks);
         m_vars.update(m.m_vars);
         for (const string& i : m.m_coverageOffBlocks) m_coverageOffBlocks.insert(i);
@@ -246,8 +246,8 @@ public:
         }
     }
 
-    V3ConfigFTaskResolver& ftasks() { return m_tasks; }
-    V3ConfigVarResolver& vars() { return m_vars; }
+    V3ControlFTaskResolver& ftasks() { return m_tasks; }
+    V3ControlVarResolver& vars() { return m_vars; }
 
     void addCoverageBlockOff(const string& name) { m_coverageOffBlocks.insert(name); }
     void setInline(bool set) {
@@ -284,7 +284,7 @@ public:
     }
 };
 
-using V3ConfigModuleResolver = V3ConfigWildcardResolver<V3ConfigModule>;
+using V3ControlModuleResolver = V3ControlWildcardResolver<V3ControlModule>;
 
 //######################################################################
 // Files have:
@@ -292,17 +292,17 @@ using V3ConfigModuleResolver = V3ConfigWildcardResolver<V3ConfigModule>;
 //  - Line attributes: Attributes attached to lines
 
 // lint/coverage/tracing on/off
-class V3ConfigIgnoresLine final {
+class V3ControlIgnoresLine final {
 public:
     const int m_lineno;  // Line number to make change at
     const V3ErrorCode m_code;  // Error code
     const bool m_on;  // True to enable message
-    V3ConfigIgnoresLine(V3ErrorCode code, int lineno, bool on)
+    V3ControlIgnoresLine(V3ErrorCode code, int lineno, bool on)
         : m_lineno{lineno}
         , m_code{code}
         , m_on{on} {}
-    ~V3ConfigIgnoresLine() = default;
-    bool operator<(const V3ConfigIgnoresLine& rh) const {
+    ~V3ControlIgnoresLine() = default;
+    bool operator<(const V3ControlIgnoresLine& rh) const {
         if (m_lineno < rh.m_lineno) return true;
         if (m_lineno > rh.m_lineno) return false;
         if (m_code < rh.m_code) return true;
@@ -312,13 +312,13 @@ public:
         return (m_on > rh.m_on);
     }
 };
-std::ostream& operator<<(std::ostream& os, const V3ConfigIgnoresLine& rhs) {
+std::ostream& operator<<(std::ostream& os, const V3ControlIgnoresLine& rhs) {
     return os << rhs.m_lineno << ", " << rhs.m_code << ", " << rhs.m_on;
 }
 
 // Some attributes are attached to entities of the occur on a fileline
 // and multiple attributes can be attached to a line
-using V3ConfigLineAttribute = std::bitset<VPragmaType::ENUM_SIZE>;
+using V3ControlLineAttribute = std::bitset<VPragmaType::ENUM_SIZE>;
 
 class WaiverSetting final {
 public:
@@ -339,9 +339,9 @@ public:
 };
 
 // File entity
-class V3ConfigFile final {
-    using LineAttrMap = std::map<int, V3ConfigLineAttribute>;  // Map line->bitset of attributes
-    using IgnLines = std::multiset<V3ConfigIgnoresLine>;  // list of {line,code,on}
+class V3ControlFile final {
+    using LineAttrMap = std::map<int, V3ControlLineAttribute>;  // Map line->bitset of attributes
+    using IgnLines = std::multiset<V3ControlIgnoresLine>;  // list of {line,code,on}
     using Waivers = std::vector<WaiverSetting>;  // List of {code,wildcard string}
 
     LineAttrMap m_lineAttrs;  // Attributes to line mapping
@@ -361,11 +361,11 @@ class V3ConfigFile final {
     }
 
 public:
-    V3ConfigFile() {
+    V3ControlFile() {
         m_lastIgnore.lineno = -1;
         m_lastIgnore.it = m_ignLines.begin();
     }
-    void update(const V3ConfigFile& file) {
+    void update(const V3ControlFile& file) {
         // Copy in all Attributes
         for (const auto& itr : file.m_lineAttrs) m_lineAttrs[itr.first] |= itr.second;
         // Copy in all ignores
@@ -377,7 +377,7 @@ public:
     }
     void addLineAttribute(int lineno, VPragmaType attr) { m_lineAttrs[lineno].set(attr); }
     void addIgnore(V3ErrorCode code, int lineno, bool on) {
-        m_ignLines.insert(V3ConfigIgnoresLine{code, lineno, on});
+        m_ignLines.insert(V3ControlIgnoresLine{code, lineno, on});
         m_lastIgnore.it = m_ignLines.begin();
     }
     void addIgnoreMatch(V3ErrorCode code, const string& contents, const string& match) {
@@ -433,23 +433,23 @@ public:
     }
 };
 
-using V3ConfigFileResolver = V3ConfigWildcardResolver<V3ConfigFile>;
+using V3ControlFileResolver = V3ControlWildcardResolver<V3ControlFile>;
 
 //######################################################################
 // ScopeTrace tracking
 
-class V3ConfigScopeTraceEntry final {
+class V3ControlScopeTraceEntry final {
 public:
     const string m_scope;  // Scope or regexp to match
     const bool m_on = false;  // True to enable message
     int m_levels = 0;  // # levels, 0 = all, 1 = only this, ...
     // CONSTRUCTORS
-    V3ConfigScopeTraceEntry(const string& scope, bool on, int levels)
+    V3ControlScopeTraceEntry(const string& scope, bool on, int levels)
         : m_scope{scope}
         , m_on{on}
         , m_levels{levels} {}
-    ~V3ConfigScopeTraceEntry() = default;
-    bool operator<(const V3ConfigScopeTraceEntry& other) const {
+    ~V3ControlScopeTraceEntry() = default;
+    bool operator<(const V3ControlScopeTraceEntry& other) const {
         if (m_on < other.m_on) return true;
         if (m_on > other.m_on) return false;
         if (m_levels < other.m_levels) return true;
@@ -458,36 +458,36 @@ public:
     }
 };
 
-// Tracks what matches are known to hit against V3ConfigScopeTraceEntries
-class V3ConfigScopeTraceEntryMatch final {
+// Tracks what matches are known to hit against V3ControlScopeTraceEntries
+class V3ControlScopeTraceEntryMatch final {
 public:
-    const V3ConfigScopeTraceEntry* m_entryp;
+    const V3ControlScopeTraceEntry* m_entryp;
     const string m_scopepart;
-    V3ConfigScopeTraceEntryMatch(const V3ConfigScopeTraceEntry* entryp, const string& scopepart)
+    V3ControlScopeTraceEntryMatch(const V3ControlScopeTraceEntry* entryp, const string& scopepart)
         : m_entryp{entryp}
         , m_scopepart{scopepart} {}
-    bool operator<(const V3ConfigScopeTraceEntryMatch& other) const {
+    bool operator<(const V3ControlScopeTraceEntryMatch& other) const {
         if (m_entryp < other.m_entryp) return true;
         if (m_entryp > other.m_entryp) return false;
         return m_scopepart < other.m_scopepart;
     }
 };
 
-class V3ConfigScopeTraceResolver final {
-    std::vector<V3ConfigScopeTraceEntry> m_entries;  // User specified on/offs and levels
-    std::map<V3ConfigScopeTraceEntryMatch, bool> m_matchCache;  // Matching entries for speed
+class V3ControlScopeTraceResolver final {
+    std::vector<V3ControlScopeTraceEntry> m_entries;  // User specified on/offs and levels
+    std::map<V3ControlScopeTraceEntryMatch, bool> m_matchCache;  // Matching entries for speed
 
 public:
     void addScopeTraceOn(bool on, const string& scope, int levels) {
         UINFO(9, "addScopeTraceOn " << on << " '" << scope << "' "
                                     << " levels=" << levels);
-        m_entries.emplace_back(V3ConfigScopeTraceEntry{scope, on, levels});
+        m_entries.emplace_back(V3ControlScopeTraceEntry{scope, on, levels});
         m_matchCache.clear();
     }
 
-    bool getEntryMatch(const V3ConfigScopeTraceEntry* entp, const string& scopepart) {
+    bool getEntryMatch(const V3ControlScopeTraceEntry* entp, const string& scopepart) {
         // Return if a entry matches the scopepart, with memoization
-        const V3ConfigScopeTraceEntryMatch key{entp, scopepart};
+        const V3ControlScopeTraceEntryMatch key{entp, scopepart};
         const auto pair = m_matchCache.emplace(key, false);
         if (pair.second) pair.first->second = VString::wildmatch(scopepart, entp->m_scope);
         return pair.first->second;
@@ -532,40 +532,40 @@ public:
 //######################################################################
 // Resolve modules and files in the design
 
-class V3ConfigResolverHierWorkerEntry final {
+class V3ControlResolverHierWorkerEntry final {
     const int m_workers;
     FileLine* const m_flp;
 
 public:
-    explicit V3ConfigResolverHierWorkerEntry(int workers, FileLine* flp)
+    explicit V3ControlResolverHierWorkerEntry(int workers, FileLine* flp)
         : m_workers{workers}
         , m_flp{flp} {}
     int workers() const { return m_workers; }
     FileLine* flp() const { return m_flp; }
 };
 
-class V3ConfigResolver final {
+class V3ControlResolver final {
     enum ProfileDataMode : uint8_t { NONE = 0, MTASK = 1, HIER_DPI = 2 };
-    V3ConfigModuleResolver m_modules;  // Access to module names (with wildcards)
-    V3ConfigFileResolver m_files;  // Access to file names (with wildcards)
-    V3ConfigScopeTraceResolver m_scopeTraces;  // Regexp to trace enables
+    V3ControlModuleResolver m_modules;  // Access to module names (with wildcards)
+    V3ControlFileResolver m_files;  // Access to file names (with wildcards)
+    V3ControlScopeTraceResolver m_scopeTraces;  // Regexp to trace enables
     std::unordered_map<string, std::unordered_map<string, uint64_t>>
         m_profileData;  // Access to profile_data records
     uint8_t m_mode = NONE;
-    std::unordered_map<string, V3ConfigResolverHierWorkerEntry> m_hierWorkers;
+    std::unordered_map<string, V3ControlResolverHierWorkerEntry> m_hierWorkers;
     FileLine* m_profileFileLine = nullptr;
 
-    V3ConfigResolver() = default;
-    ~V3ConfigResolver() = default;
+    V3ControlResolver() = default;
+    ~V3ControlResolver() = default;
 
 public:
-    static V3ConfigResolver& s() {
-        static V3ConfigResolver s_singleton;
+    static V3ControlResolver& s() {
+        static V3ControlResolver s_singleton;
         return s_singleton;
     }
-    V3ConfigModuleResolver& modules() { return m_modules; }
-    V3ConfigFileResolver& files() { return m_files; }
-    V3ConfigScopeTraceResolver& scopeTraces() { return m_scopeTraces; }
+    V3ControlModuleResolver& modules() { return m_modules; }
+    V3ControlFileResolver& files() { return m_files; }
+    V3ControlScopeTraceResolver& scopeTraces() { return m_scopeTraces; }
 
     void addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost) {
         // Empty key for hierarchical DPI wrapper costs.
@@ -607,76 +607,76 @@ public:
 };
 
 //######################################################################
-// V3Config
+// V3Control
 
-void V3Config::addCaseFull(const string& filename, int lineno) {
-    V3ConfigFile& file = V3ConfigResolver::s().files().at(filename);
+void V3Control::addCaseFull(const string& filename, int lineno) {
+    V3ControlFile& file = V3ControlResolver::s().files().at(filename);
     file.addLineAttribute(lineno, VPragmaType::FULL_CASE);
 }
 
-void V3Config::addCaseParallel(const string& filename, int lineno) {
-    V3ConfigFile& file = V3ConfigResolver::s().files().at(filename);
+void V3Control::addCaseParallel(const string& filename, int lineno) {
+    V3ControlFile& file = V3ControlResolver::s().files().at(filename);
     file.addLineAttribute(lineno, VPragmaType::PARALLEL_CASE);
 }
 
-void V3Config::addCoverageBlockOff(const string& filename, int lineno) {
-    V3ConfigFile& file = V3ConfigResolver::s().files().at(filename);
+void V3Control::addCoverageBlockOff(const string& filename, int lineno) {
+    V3ControlFile& file = V3ControlResolver::s().files().at(filename);
     file.addLineAttribute(lineno, VPragmaType::COVERAGE_BLOCK_OFF);
 }
 
-void V3Config::addCoverageBlockOff(const string& module, const string& blockname) {
-    V3ConfigResolver::s().modules().at(module).addCoverageBlockOff(blockname);
+void V3Control::addCoverageBlockOff(const string& module, const string& blockname) {
+    V3ControlResolver::s().modules().at(module).addCoverageBlockOff(blockname);
 }
 
-void V3Config::addHierWorkers(FileLine* fl, const string& model, int workers) {
-    V3ConfigResolver::s().addHierWorkers(fl, model, workers);
+void V3Control::addHierWorkers(FileLine* fl, const string& model, int workers) {
+    V3ControlResolver::s().addHierWorkers(fl, model, workers);
 }
 
-void V3Config::addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max) {
+void V3Control::addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max) {
     if (filename == "*") {
         FileLine::globalWarnOff(code, !on);
     } else {
-        V3ConfigResolver::s().files().at(filename).addIgnore(code, min, on);
-        if (max) V3ConfigResolver::s().files().at(filename).addIgnore(code, max, !on);
+        V3ControlResolver::s().files().at(filename).addIgnore(code, min, on);
+        if (max) V3ControlResolver::s().files().at(filename).addIgnore(code, max, !on);
     }
 }
 
-void V3Config::addIgnoreMatch(V3ErrorCode code, const string& filename, const string& contents,
-                              const string& match) {
-    V3ConfigResolver::s().files().at(filename).addIgnoreMatch(code, contents, match);
+void V3Control::addIgnoreMatch(V3ErrorCode code, const string& filename, const string& contents,
+                               const string& match) {
+    V3ControlResolver::s().files().at(filename).addIgnoreMatch(code, contents, match);
 }
 
-void V3Config::addInline(FileLine* fl, const string& module, const string& ftask, bool on) {
+void V3Control::addInline(FileLine* fl, const string& module, const string& ftask, bool on) {
     if (ftask.empty()) {
-        V3ConfigResolver::s().modules().at(module).setInline(on);
+        V3ControlResolver::s().modules().at(module).setInline(on);
     } else {
         if (!on) {
             fl->v3error("Unsupported: no_inline for tasks");
         } else {
-            V3ConfigResolver::s().modules().at(module).ftasks().at(ftask).setNoInline(on);
+            V3ControlResolver::s().modules().at(module).ftasks().at(ftask).setNoInline(on);
         }
     }
 }
 
-void V3Config::addModulePragma(const string& module, VPragmaType pragma) {
-    V3ConfigResolver::s().modules().at(module).addModulePragma(pragma);
+void V3Control::addModulePragma(const string& module, VPragmaType pragma) {
+    V3ControlResolver::s().modules().at(module).addModulePragma(pragma);
 }
 
-void V3Config::addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost) {
-    V3ConfigResolver::s().addProfileData(fl, hierDpi, cost);
+void V3Control::addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost) {
+    V3ControlResolver::s().addProfileData(fl, hierDpi, cost);
 }
 
-void V3Config::addProfileData(FileLine* fl, const string& model, const string& key,
-                              uint64_t cost) {
-    V3ConfigResolver::s().addProfileData(fl, model, key, cost);
+void V3Control::addProfileData(FileLine* fl, const string& model, const string& key,
+                               uint64_t cost) {
+    V3ControlResolver::s().addProfileData(fl, model, key, cost);
 }
 
-void V3Config::addScopeTraceOn(bool on, const string& scope, int levels) {
-    V3ConfigResolver::s().scopeTraces().addScopeTraceOn(on, scope, levels);
+void V3Control::addScopeTraceOn(bool on, const string& scope, int levels) {
+    V3ControlResolver::s().scopeTraces().addScopeTraceOn(on, scope, levels);
 }
 
-void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftask,
-                          const string& var, VAttrType attr, AstSenTree* sensep) {
+void V3Control::addVarAttr(FileLine* fl, const string& module, const string& ftask,
+                           const string& var, VAttrType attr, AstSenTree* sensep) {
     // Semantics: sensep only if public_flat_rw
     if ((attr != VAttrType::VAR_PUBLIC_FLAT_RW) && sensep) {
         sensep->v3error("sensitivity not expected for attribute");
@@ -688,15 +688,15 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
             if (ftask.empty()) {
                 fl->v3error("isolate_assignments only applies to signals or functions/tasks");
             } else {
-                V3ConfigResolver::s().modules().at(module).ftasks().at(ftask).setIsolate(true);
+                V3ControlResolver::s().modules().at(module).ftasks().at(ftask).setIsolate(true);
             }
         } else if (attr == VAttrType::VAR_PUBLIC) {
             if (ftask.empty()) {
                 // public module, this is the only exception from var here
-                V3ConfigResolver::s().modules().at(module).addModulePragma(
+                V3ControlResolver::s().modules().at(module).addModulePragma(
                     VPragmaType::PUBLIC_MODULE);
             } else {
-                V3ConfigResolver::s().modules().at(module).ftasks().at(ftask).setPublic(true);
+                V3ControlResolver::s().modules().at(module).ftasks().at(ftask).setPublic(true);
             }
         } else {
             fl->v3error("missing -var");
@@ -708,61 +708,61 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
             } else if (!ftask.empty()) {
                 fl->v3error("Signals inside functions/tasks cannot be marked forceable");
             } else {
-                V3ConfigResolver::s().modules().at(module).vars().at(var).push_back(
-                    V3ConfigVarAttr{attr});
+                V3ControlResolver::s().modules().at(module).vars().at(var).push_back(
+                    V3ControlVarAttr{attr});
             }
         } else {
-            V3ConfigModule& mod = V3ConfigResolver::s().modules().at(module);
+            V3ControlModule& mod = V3ControlResolver::s().modules().at(module);
             if (ftask.empty()) {
-                mod.vars().at(var).push_back(V3ConfigVarAttr{attr, sensep});
+                mod.vars().at(var).push_back(V3ControlVarAttr{attr, sensep});
             } else {
-                mod.ftasks().at(ftask).vars().at(var).push_back(V3ConfigVarAttr{attr, sensep});
+                mod.ftasks().at(ftask).vars().at(var).push_back(V3ControlVarAttr{attr, sensep});
             }
         }
     }
 }
 
-void V3Config::applyCase(AstCase* nodep) {
+void V3Control::applyCase(AstCase* nodep) {
     const string& filename = nodep->fileline()->filename();
-    V3ConfigFile* filep = V3ConfigResolver::s().files().resolve(filename);
+    V3ControlFile* filep = V3ControlResolver::s().files().resolve(filename);
     if (filep) filep->applyCase(nodep);
 }
 
-void V3Config::applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep) {
+void V3Control::applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep) {
     const string& filename = nodep->fileline()->filename();
-    V3ConfigFile* filep = V3ConfigResolver::s().files().resolve(filename);
+    V3ControlFile* filep = V3ControlResolver::s().files().resolve(filename);
     if (filep) filep->applyBlock(nodep);
     const string& modname = modulep->name();
-    V3ConfigModule* modp = V3ConfigResolver::s().modules().resolve(modname);
+    V3ControlModule* modp = V3ControlResolver::s().modules().resolve(modname);
     if (modp) modp->applyBlock(nodep);
 }
 
-void V3Config::applyIgnores(FileLine* filelinep) {
+void V3Control::applyIgnores(FileLine* filelinep) {
     const string& filename = filelinep->filename();
-    V3ConfigFile* filep = V3ConfigResolver::s().files().resolve(filename);
+    V3ControlFile* filep = V3ControlResolver::s().files().resolve(filename);
     if (filep) filep->applyIgnores(filelinep);
 }
 
-void V3Config::applyModule(AstNodeModule* modulep) {
+void V3Control::applyModule(AstNodeModule* modulep) {
     const string& modname = modulep->origName();
-    V3ConfigModule* modp = V3ConfigResolver::s().modules().resolve(modname);
+    V3ControlModule* modp = V3ControlResolver::s().modules().resolve(modname);
     if (modp) modp->apply(modulep);
 }
 
-void V3Config::applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp) {
+void V3Control::applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp) {
     const string& modname = modulep->name();
-    V3ConfigModule* modp = V3ConfigResolver::s().modules().resolve(modname);
+    V3ControlModule* modp = V3ControlResolver::s().modules().resolve(modname);
     if (!modp) return;
-    const V3ConfigFTask* const ftp = modp->ftasks().resolve(ftaskp->name());
+    const V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->name());
     if (ftp) ftp->apply(ftaskp);
 }
 
-void V3Config::applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp) {
-    V3ConfigVar* vp;
-    V3ConfigModule* modp = V3ConfigResolver::s().modules().resolve(modulep->name());
+void V3Control::applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp) {
+    V3ControlVar* vp;
+    V3ControlModule* modp = V3ControlResolver::s().modules().resolve(modulep->name());
     if (!modp) return;
     if (ftaskp) {
-        V3ConfigFTask* ftp = modp->ftasks().resolve(ftaskp->name());
+        V3ControlFTask* ftp = modp->ftasks().resolve(ftaskp->name());
         if (!ftp) return;
         vp = ftp->vars().resolve(varp->name());
     } else {
@@ -771,33 +771,33 @@ void V3Config::applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar
     if (vp) vp->apply(varp);
 }
 
-int V3Config::getHierWorkers(const string& model) {
-    return V3ConfigResolver::s().getHierWorkers(model);
+int V3Control::getHierWorkers(const string& model) {
+    return V3ControlResolver::s().getHierWorkers(model);
 }
-FileLine* V3Config::getHierWorkersFileLine(const string& model) {
-    return V3ConfigResolver::s().getHierWorkersFileLine(model);
+FileLine* V3Control::getHierWorkersFileLine(const string& model) {
+    return V3ControlResolver::s().getHierWorkersFileLine(model);
 }
-uint64_t V3Config::getProfileData(const string& hierDpi) {
-    return V3ConfigResolver::s().getProfileData(hierDpi);
+uint64_t V3Control::getProfileData(const string& hierDpi) {
+    return V3ControlResolver::s().getProfileData(hierDpi);
 }
-uint64_t V3Config::getProfileData(const string& model, const string& key) {
-    return V3ConfigResolver::s().getProfileData(model, key);
+uint64_t V3Control::getProfileData(const string& model, const string& key) {
+    return V3ControlResolver::s().getProfileData(model, key);
 }
-FileLine* V3Config::getProfileDataFileLine() {
-    return V3ConfigResolver::s().getProfileDataFileLine();
+FileLine* V3Control::getProfileDataFileLine() {
+    return V3ControlResolver::s().getProfileDataFileLine();
 }
-bool V3Config::getScopeTraceOn(const string& scope) {
-    return V3ConfigResolver::s().scopeTraces().getScopeTraceOn(scope);
-}
-
-void V3Config::contentsPushText(const string& text) { return WildcardContents::pushText(text); }
-
-bool V3Config::containsMTaskProfileData() {
-    return V3ConfigResolver::s().containsMTaskProfileData();
+bool V3Control::getScopeTraceOn(const string& scope) {
+    return V3ControlResolver::s().scopeTraces().getScopeTraceOn(scope);
 }
 
-bool V3Config::waive(FileLine* filelinep, V3ErrorCode code, const string& message) {
-    V3ConfigFile* filep = V3ConfigResolver::s().files().resolve(filelinep->filename());
+void V3Control::contentsPushText(const string& text) { return WildcardContents::pushText(text); }
+
+bool V3Control::containsMTaskProfileData() {
+    return V3ControlResolver::s().containsMTaskProfileData();
+}
+
+bool V3Control::waive(FileLine* filelinep, V3ErrorCode code, const string& message) {
+    V3ControlFile* filep = V3ControlResolver::s().files().resolve(filelinep->filename());
     if (!filep) return false;
     return filep->waive(code, message);
 }

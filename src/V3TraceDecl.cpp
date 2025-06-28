@@ -24,7 +24,7 @@
 
 #include "V3TraceDecl.h"
 
-#include "V3Config.h"
+#include "V3Control.h"
 #include "V3EmitCBase.h"
 #include "V3Stats.h"
 
@@ -184,7 +184,7 @@ class TraceDeclVisitor final : public VNVisitor {
                 if (!prettyName.empty() && prettyName[0] == '_') return "Leading underscore";
                 if (prettyName.find("._") != string::npos) return "Inlined leading underscore";
             }
-            if (!V3Config::getScopeTraceOn(prettyName)) return "Vlt scope trace_off";
+            if (!V3Control::getScopeTraceOn(prettyName)) return "Vlt scope trace_off";
         }
         return nullptr;
     }

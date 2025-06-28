@@ -38,7 +38,7 @@
 // Here is more detailed internal process.
 // 1) Parser adds VPragmaType::HIER_BLOCK of AstPragma to modules
 //    that are marked with /*verilator hier_block*/ metacomment in Verilator run a).
-// 2) If module type parameters are present, V3Config marks hier param modules
+// 2) If module type parameters are present, V3Control marks hier param modules
 // (marked with hier_params verilator config pragma) as modp->hierParams(true).
 // This is done in run b), de-parametrized modules are mapped with their params one-to-one.
 // 3) AstModule with HIER_BLOCK pragma is marked modp->hierBlock(true)
@@ -88,7 +88,7 @@
 
 #include "V3HierBlock.h"
 
-#include "V3Config.h"
+#include "V3Control.h"
 #include "V3EmitV.h"
 #include "V3File.h"
 #include "V3Os.h"
@@ -189,10 +189,10 @@ V3StringList V3HierBlock::commandArgs(bool forCMake) const {
     if (!params().gTypeParams().empty())
         opts.push_back(" --hierarchical-params-file " + typeParametersFilename());
 
-    const int blockThreads = V3Config::getHierWorkers(m_modp->origName());
+    const int blockThreads = V3Control::getHierWorkers(m_modp->origName());
     if (blockThreads > 1) {
         if (hasParent()) {
-            V3Config::getHierWorkersFileLine(m_modp->origName())
+            V3Control::getHierWorkersFileLine(m_modp->origName())
                 ->v3warn(E_UNSUPPORTED, "Specifying workers for nested hierarchical blocks");
         } else {
             if (v3Global.opt.threads() < blockThreads) {

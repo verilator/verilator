@@ -94,7 +94,7 @@ There are two ways to mark a module:
 
 * Write :option:`/*verilator&32;hier_block*/` metacomment in HDL code.
 
-* Add a :option:`hier_block` line in the :ref:`Verilator Configuration Files`.
+* Add a :option:`hier_block` line in the :ref:`Verilator Control Files`.
 
 Then pass the :vlopt:`--hierarchical` option to Verilator.
 

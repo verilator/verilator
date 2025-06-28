@@ -30,7 +30,7 @@ or "`ifdef`"'s may break other tools.
 
    Specifies the entire begin/end block should be ignored for coverage
    analysis.  Must be inside a code block, e.g., within a begin/end pair.
-   Same as :option:`coverage_block_off` in :ref:`Verilator Configuration Files`.
+   Same as :option:`coverage_block_off` in :ref:`Verilator Control Files`.
 
 .. option:: `error [string]
 
@@ -136,14 +136,14 @@ or "`ifdef`"'s may break other tools.
 .. option:: `verilator_config
 
    Take the remaining text up to the next :option:`\`verilog` mode switch
-   and treat it as Verilator configuration commands.  See :ref:`Verilator
-   Configuration Files`.
+   and treat it as Verilator Control File commands.  See :ref:`Verilator
+   Control Files`.
 
 .. option:: `VERILATOR_TIMING
 
    The VERILATOR_TIMING define is set when :vlopt:`--timing` is used to
    allow an "\`ifdef" of code dependent on this feature.  Note that this define
-   is not affected by the :option:`timing_off` configuration file option
+   is not affected by the :option:`timing_off` control file option
    nor timing metacomments.
 
 .. option:: `verilog
@@ -246,7 +246,7 @@ or "`ifdef`"'s may break other tools.
    the scheduling algorithm, sometimes required for correct clock behavior,
    and always improving performance.
 
-   Same as :option:`clock_enable` configuration file option.
+   Same as :option:`clock_enable` control file option.
 
 
    .. t_dist_docs_style ignore /*verilator&32;no_clocker*/
@@ -265,7 +265,7 @@ or "`ifdef`"'s may break other tools.
    Specifies the entire begin/end block should be ignored for coverage
    analysis purposes.
 
-   Same as :option:`coverage_block_off` configuration file option.
+   Same as :option:`coverage_block_off` control file option.
 
 .. option:: /*verilator&32;coverage_off*/
 
@@ -313,7 +313,7 @@ or "`ifdef`"'s may break other tools.
    submodules will be named :code:`{submodule}__DOT__{subsignal}` as C++
    does not allow "." in signal names.
 
-   Same as :option:`inline` configuration file option.
+   Same as :option:`inline` control file option.
 
 .. option:: /*verilator&32;isolate_assignments*/
 
@@ -356,7 +356,7 @@ or "`ifdef`"'s may break other tools.
            end
          end
 
-   Same as :option:`isolate_assignments` configuration file option.
+   Same as :option:`isolate_assignments` control file option.
 
 .. option:: /*verilator&32;lint_off <msg>*/
 
@@ -395,7 +395,7 @@ or "`ifdef`"'s may break other tools.
    Specifies the module the comment appears in should not be inlined into
    any modules that use this module.
 
-   Same as :option:`no_inline` configuration file option.
+   Same as :option:`no_inline` control file option.
 
 .. option:: /*verilator&32;no_inline_task*/
 
@@ -406,7 +406,7 @@ or "`ifdef`"'s may break other tools.
    must be pure; they cannot reference any variables outside the task
    itself.
 
-   Same as :option:`no_inline` configuration file option.
+   Same as :option:`no_inline` control file option.
 
 .. option:: /*verilator&32;public*/ (on parameter)
 
@@ -440,7 +440,7 @@ or "`ifdef`"'s may break other tools.
    You may want to use DPI exports instead, as it's compatible with other
    simulators.
 
-   Same as :option:`public` configuration file option.
+   Same as :option:`public` control file option.
 
 .. option:: /*verilator&32;public*/ (on typedef enum)
 
@@ -463,7 +463,7 @@ or "`ifdef`"'s may break other tools.
    function that accesses the variable.  This is nicer as it provides an
    obvious entry point compatible across simulators.
 
-   Same as :option:`public` configuration file option.
+   Same as :option:`public` control file option.
 
 .. option:: /*verilator&32;public_[|flat|flat_rd|flat_rw]_on [@(<edge_list>)]*/ (as scope)
 
@@ -496,14 +496,14 @@ or "`ifdef`"'s may break other tools.
    the name of the signal or path to it may change based upon the module
    inlining which takes place.
 
-   Same as :option:`public_flat` configuration file option.
+   Same as :option:`public_flat` control file option.
 
 .. option:: /*verilator&32;public_flat_rd*/ (on variable)
 
    Used after an input, output, register, or wire declaration to indicate
    the signal should be declared public_flat (see above), but read-only.
 
-   Same as :option:`public_flat_rd` configuration file option.
+   Same as :option:`public_flat_rd` control file option.
 
 .. option:: /*verilator&32;public_flat_rw @(<edge_list>)*/ (on variable)
 
@@ -513,7 +513,7 @@ or "`ifdef`"'s may break other tools.
    given sensitivity edge list. Use of this is implied when using the
    :vlopt:`--public-flat-rw` option.
 
-   Same as :option:`public_flat_rw` configuration file option.
+   Same as :option:`public_flat_rw` control file option.
 
 .. option:: /*verilator&32;public_module*/
 
@@ -523,7 +523,7 @@ or "`ifdef`"'s may break other tools.
    contains public signals or \`systemc_ directives.  Use of this is
    implied when using the :vlopt:`--public` option.
 
-   Same as :option:`public` configuration file option.
+   Same as :option:`public` control file option.
 
 .. option:: /*verilator&32;public_off*/
 
@@ -538,7 +538,7 @@ or "`ifdef`"'s may break other tools.
    In general, you should avoid using this attribute when unnecessary, as
    the performance decreases significantly with increasing usage of sc_bv.
 
-   Same as :option:`sc_bv` configuration file option.
+   Same as :option:`sc_bv` control file option.
 
 .. option:: /*verilator&32;sc_clock*/
 
@@ -556,7 +556,7 @@ or "`ifdef`"'s may break other tools.
    $display-like behavior.  See the :file:`test_regress/t/t_dpi_display.v`
    file for an example.
 
-   Same as :option:`sformat` configuration file option.
+   Same as :option:`sformat` control file option.
 
 .. option:: /*verilator&32;split_var*/
 
@@ -603,7 +603,7 @@ or "`ifdef`"'s may break other tools.
          assign bar    = tmp[1] + c;
 
 
-   Same as :option:`split_var` configuration file option.
+   Same as :option:`split_var` control file option.
 
 .. option:: /*verilator&32;tag <text...>*/
 
@@ -618,14 +618,14 @@ or "`ifdef`"'s may break other tools.
    :option:`--no-timing`), and :code:`fork`/:code:`join*` blocks are
    converted into :code:`begin`/:code:`end` blocks.
 
-   Same as :option:`timing_off` configuration file option.
+   Same as :option:`timing_off` control file option.
 
 .. option:: /*verilator&32;timing_on*/
 
    Re-enable all timing constructs after this metacomment (only applicable
    after :option:`timing_off`).
 
-   Same as :option:`timing_on` configuration file option.
+   Same as :option:`timing_on` control file option.
 
 .. option:: /*verilator&32;trace_init_task*/
 

@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Configuration Files
+// DESCRIPTION: Verilator: Verilator Control Files (.vlt) handling
 //
 // Code available from: https://verilator.org
 //
@@ -27,7 +27,7 @@
 
 //######################################################################
 
-class V3Config final {
+class V3Control final {
 public:
     static void addCaseFull(const string& file, int lineno);
     static void addCaseParallel(const string& file, int lineno);

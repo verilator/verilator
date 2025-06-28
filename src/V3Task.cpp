@@ -27,8 +27,8 @@
 
 #include "V3Task.h"
 
-#include "V3Config.h"
 #include "V3Const.h"
+#include "V3Control.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
@@ -997,7 +997,7 @@ class TaskVisitor final : public VNVisitor {
         funcp->protect(false);
         funcp->dpiPure(nodep->dpiPure());
 
-        const int cost = static_cast<int>(V3Config::getProfileData(funcp->name()));
+        const int cost = static_cast<int>(V3Control::getProfileData(funcp->name()));
         m_statHierDpisWithCosts += (cost != 0);
         funcp->cost(cost);
 

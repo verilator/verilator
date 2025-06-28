@@ -61,7 +61,7 @@ set(HEADERS
     V3Clock.h
     V3Combine.h
     V3Common.h
-    V3Config.h
+    V3Control.h
     V3Const.h
     V3Coverage.h
     V3CoverageJoin.h
@@ -216,7 +216,7 @@ set(COMMON_SOURCES
     V3Clock.cpp
     V3Combine.cpp
     V3Common.cpp
-    V3Config.cpp
+    V3Control.cpp
     V3Const__gen.cpp
     V3Coverage.cpp
     V3CoverageJoin.cpp

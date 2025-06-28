@@ -196,7 +196,7 @@ RAW_OBJS_PCH_ASTMT = \
   V3Ast.o \
   V3AstNodes.o \
   V3Broken.o \
-  V3Config.o \
+  V3Control.o \
   V3EmitCBase.o \
   V3EmitCConstPool.o \
   V3EmitCFunc.o \

@@ -21,7 +21,7 @@
 
 #include "V3PreProc.h"
 
-#include "V3Config.h"
+#include "V3Control.h"
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3Global.h"
@@ -846,7 +846,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
     flsp->newContent();
     for (const string& i : wholefile) flsp->contentp()->pushText(i);
 
-    // Save contents for V3Config --contents
+    // Save contents for V3Control --contents
     if (filename != V3Options::getStdPackagePath()) {
         bool containsVlt = false;
         for (const string& i : wholefile) {
@@ -857,7 +857,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
             }
         }
         if (!containsVlt) {
-            for (const string& i : wholefile) V3Config::contentsPushText(i);
+            for (const string& i : wholefile) V3Control::contentsPushText(i);
         }
     }
 
@@ -906,7 +906,7 @@ void V3PreProcImp::openFile(FileLine*, VInFilter* filterp, const string& filenam
         FileLine* const fl = new FileLine{flsp};
         fl->contentLineno(eof_lineno);
         fl->column(eof_newline + 1, eof_newline + 1);
-        V3Config::applyIgnores(fl);  // As preprocessor hasn't otherwise applied yet
+        V3Control::applyIgnores(fl);  // As preprocessor hasn't otherwise applied yet
         fl->v3warn(EOFNEWLINE, "Missing newline at end of file (POSIX 3.206).\n"
                                    << fl->warnMore() << "... Suggest add newline.");
     }
