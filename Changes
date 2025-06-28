@@ -19,6 +19,7 @@ Verilator 5.037 devel
 * Support SARIF JSON diagnostic output with `--diagnostics-sarif`. (#6017)
 * Support 1-bit params with -G and -pvalue (#6051) (#6082). [Paul Swirhun]
 * Support `$timeformat` with missing arguments (#6113). [Alex Solomatnikov]
+* Support `specparam` (#5767).
 * Support parameter forward types.
 * Add PROCINITASSIGN on initial assignments to process variables (#2481). [Niraj Menon]
 * Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]

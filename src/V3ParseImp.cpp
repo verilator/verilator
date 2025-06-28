@@ -688,7 +688,13 @@ void V3ParseImp::tokenPipelineSym() {
     int token = yylval.token;
     if (token == yaID__LEX || token == yaID__CC || token == yaID__aTYPE) {
         importIfInStd(yylval.fl, *(yylval.strp));
-        if (token == yaID__LEX) token = yaID__ETC;
+        if (token == yaID__LEX) {
+            if (VString::startsWith(*(yylval.strp), "PATHPULSE__024a")) {
+                token = yaID__PATHPULSE;
+            } else {
+                token = yaID__ETC;
+            }
+        }
     }
     m_afterColonColon = token == yP_COLONCOLON;
     yylval.token = token;

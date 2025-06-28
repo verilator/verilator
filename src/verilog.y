@@ -426,6 +426,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<strp>            yaID__ETC       "IDENTIFIER"
 %token<strp>            yaID__CC        "IDENTIFIER-::"
 %token<strp>            yaID__LEX       "IDENTIFIER-in-lex"
+%token<strp>            yaID__PATHPULSE "IDENTIFIER-for-pathpulse"
 %token<strp>            yaID__aINST     "IDENTIFIER-for-instance"
 %token<strp>            yaID__aTYPE     "IDENTIFIER-for-type"
 //                      Can't predecode aFUNCTION, can declare after use
@@ -5787,12 +5788,42 @@ specify_itemList<nodep>:            // IEEE: { specify_item }
         ;
 
 specify_item<nodep>:                // ==IEEE: specify_item
-                system_timing_check                     { $$ = $1; }
+                specparam_declaration                   { $$ = $1; }
+        |       system_timing_check                     { $$ = $1; }
         |       junkToSemiList ';'                      { $$ = nullptr; }
         ;
 
 specparam_declaration<nodep>:       // ==IEEE: specparam_declaration
-                ySPECPARAM junkToSemiList ';'           { $$ = nullptr; }
+                specparam_declarationFront list_of_specparam_assignments ';'
+                        { $$ = $2; }
+        ;
+
+specparam_declarationFront:     // IEEE: part of specparam_declaration
+        //                      // Front must execute first so VARDTYPE is ready before list of vars
+                ySPECPARAM
+                        { VARRESET_NONLIST(SPECPARAM);
+                          AstNodeDType* dtp = new AstBasicDType{$1, VBasicDTypeKwd::DOUBLE};
+                          VARDTYPE(dtp); }
+        |       ySPECPARAM packed_dimension
+                        { VARRESET_NONLIST(SPECPARAM);
+                          AstNodeDType* const dtp = GRAMMARP->addRange(
+                                    new AstBasicDType{$2->fileline(), LOGIC_IMPLICIT}, $2, true);
+                          VARDTYPE(dtp); }
+        ;
+
+list_of_specparam_assignments<varp>:  // ==IEEE: list_of_specparam_assignments
+                specparam_assignment                    { $$ = $1; }
+        |       list_of_specparam_assignments ',' specparam_assignment  { $$ = $1->addNext($3); }
+        ;
+
+specparam_assignment<varp>:     // ==IEEE: specparam_assignment
+                idNotPathpulse sigAttrListE '=' minTypMax
+                        { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
+                          if ($4) $$->valuep($4); }
+        //                      //  IEEE: pulse_control_specparam
+        |       idPathpulse sigAttrListE '=' '(' minTypMax ',' minTypMax ')'
+                        { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
+                          if ($5) $$->valuep($5); }
         ;
 
 system_timing_check<nodep>:         // ==IEEE: system_timing_check
@@ -5851,7 +5882,7 @@ junkToSemiList:
         ;
 
 junkToSemi:
-                BISONPRE_NOT(';',yENDSPECIFY,yENDMODULE,yD_SETUPHOLD)        { }
+                BISONPRE_NOT(';',yD_SETUPHOLD,yENDMODULE,yENDSPECIFY,ySPECPARAM)        { }
         |       error {}
         ;
 
@@ -5860,14 +5891,25 @@ junkToSemi:
 
 id<strp>:
                 yaID__ETC                               { $$ = $1; $<fl>$ = $<fl>1; }
+        |       yaID__PATHPULSE                         { $$ = $1; $<fl>$ = $<fl>1; }
         |       idRandomize                             { $$ = $1; $<fl>$ = $<fl>1; }
         ;
 
 idAny<strp>:  // Any kind of identifier
                 yaID__ETC                               { $$ = $1; $<fl>$ = $<fl>1; }
+        |       yaID__PATHPULSE                         { $$ = $1; $<fl>$ = $<fl>1; }
         |       yaID__aINST                             { $$ = $1; $<fl>$ = $<fl>1; }
         |       yaID__aTYPE                             { $$ = $1; $<fl>$ = $<fl>1; }
         |       idRandomize                             { $$ = $1; $<fl>$ = $<fl>1; }
+        ;
+
+idNotPathpulse<strp>:  // Id excluding specparam PATHPULSE$, IEEE: part of specparam_assignment
+                yaID__ETC                               { $$ = $1; $<fl>$ = $<fl>1; }
+        |       idRandomize                             { $$ = $1; $<fl>$ = $<fl>1; }
+        ;
+
+idPathpulse<strp>:  // Id for specparam PATHPULSE$, IEEE: part of pulse_control_specparam
+                yaID__PATHPULSE                         { $$ = $1; $<fl>$ = $<fl>1; }
         ;
 
 idAnyAsParseRef<parseRefp>:  // Any kind of identifier as a ParseRef

@@ -923,6 +923,7 @@ public:
         UNKNOWN,
         GPARAM,
         LPARAM,
+        SPECPARAM,
         GENVAR,
         VAR,  // Reg, integer, logic, etc
         SUPPLY0,
@@ -951,9 +952,10 @@ public:
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[]
-            = {"?",    "GPARAM",    "LPARAM",     "GENVAR",   "VAR",     "SUPPLY0",  "SUPPLY1",
-               "WIRE", "WREAL",     "TRIAND",     "TRIOR",    "TRIWIRE", "TRI0",     "TRI1",
-               "PORT", "BLOCKTEMP", "MODULETEMP", "STMTTEMP", "XTEMP",   "IFACEREF", "MEMBER"};
+            = {"?",        "GPARAM",  "LPARAM",   "SPECPARAM", "GENVAR",    "VAR",
+               "SUPPLY0",  "SUPPLY1", "WIRE",     "WREAL",     "TRIAND",    "TRIOR",
+               "TRIWIRE",  "TRI0",    "TRI1",     "PORT",      "BLOCKTEMP", "MODULETEMP",
+               "STMTTEMP", "XTEMP",   "IFACEREF", "MEMBER"};
         return names[m_e];
     }
     bool isParam() const { return m_e == GPARAM || m_e == LPARAM; }
@@ -983,8 +985,8 @@ public:
         return (m_e == BLOCKTEMP || m_e == MODULETEMP || m_e == STMTTEMP || m_e == XTEMP);
     }
     bool isVPIAccessible() const {
-        return (m_e == VAR || m_e == GPARAM || m_e == LPARAM || m_e == PORT || m_e == WIRE
-                || m_e == TRI0 || m_e == TRI1);
+        return (m_e == VAR || m_e == GPARAM || m_e == LPARAM || m_e == SPECPARAM || m_e == PORT
+                || m_e == WIRE || m_e == TRI0 || m_e == TRI1);
     }
 
     const char* traceSigKind() const {
@@ -993,6 +995,7 @@ public:
             /* UNKNOWN:      */ "",  // Should not be traced
             /* GPARAM:       */ "PARAMETER",
             /* LPARAM:       */ "PARAMETER",
+            /* SPECPARAM:    */ "PARAMETER",
             /* GENVAR:       */ "PARAMETER",
             /* VAR:          */ "VAR",
             /* SUPPLY0:      */ "SUPPLY0",
