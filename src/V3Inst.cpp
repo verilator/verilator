@@ -373,7 +373,7 @@ private:
                         "Unsupported: Non-constant index when passing interface to module");
                     return;
                 }
-                const string index = AstNode::encodeNumber(constp->toSInt());
+                const string index = AstNode::encodeNumber(constp->toSInt() + arrp->lo());
                 if (VN_IS(arrselp->fromp(), SliceSel))
                     arrselp->fromp()->v3error("Unsupported: interface slices");
                 const AstVarRef* const varrefp = VN_CAST(arrselp->fromp(), VarRef);
@@ -482,7 +482,7 @@ private:
                                       "Non-constant index in RHS interface array selection");
                 return;
             }
-            const string index = AstNode::encodeNumber(constp->toSInt());
+            const string index = AstNode::encodeNumber(constp->toSInt() + arrp->lo());
             const AstVarRef* const varrefp = VN_CAST(nodep->fromp(), VarRef);
             UASSERT_OBJ(varrefp, nodep, "No interface varref under array");
             AstVarXRef* const newp = new AstVarXRef{
