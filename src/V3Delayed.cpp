@@ -311,7 +311,7 @@ class DelayedVisitor final : public VNVisitor {
         for (const auto& writeRef : m_writeRefs(vscp)) {
             int lsb = 0;
             int msb = width - 1;
-            if (AstSel* const selp = VN_CAST(writeRef.m_refp->backp(), Sel)) {
+            if (const AstSel* const selp = VN_CAST(writeRef.m_refp->backp(), Sel)) {
                 if (VN_IS(selp->lsbp(), Const)) {
                     lsb = selp->lsbConst();
                     msb = selp->msbConst();
@@ -406,7 +406,7 @@ class DelayedVisitor final : public VNVisitor {
         // Unpacked arrays
         if (const AstUnpackArrayDType* const uaDTypep = VN_CAST(dtypep, UnpackArrayDType)) {
             // Basic underlying type of elements, if any.
-            AstBasicDType* const basicp = uaDTypep->basicp();
+            const AstBasicDType* const basicp = uaDTypep->basicp();
             // If used in a loop, we must have a dynamic commit queue. (Also works in suspendables)
             if (vscpInfo.m_inLoop) {
                 // Arrays with compound element types are currently not supported in loops
@@ -516,7 +516,7 @@ class DelayedVisitor final : public VNVisitor {
             nodep = arrSelp->fromp();
         }
         // What remains must be an AstVarRef, or some sort of select, we assume can reuse it.
-        if (AstAssocSel* const aselp = VN_CAST(nodep, AssocSel)) {
+        if (const AstAssocSel* const aselp = VN_CAST(nodep, AssocSel)) {
             UASSERT_OBJ(aselp->fromp()->isPure() && aselp->bitp()->isPure(), lhsp,
                         "Malformed LHS in NBA");
         } else {
