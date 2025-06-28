@@ -211,12 +211,12 @@ List Of Warnings
    public task, or when the blocking and non-blocking assignments have
    non-overlapping bits and structure members.
 
-   From Verilator 5.038, this warning is only issued when we can't prove that
+   From Verilator 5.038, this warning is only issued when Verilator can't prove that
    the assignments are to non-overlapping sub-parts, and the blocking
    assignment is in combinational logic (which is the case where simulation
-   results might differ from other simulators). You are strongly advised to
-   review the remaining BLKANDNBLK cases carefully, and sign them off as
-   described above if you know for sure the updates are not to overlapping
+   results might differ from other simulators). Review any BLKANDNBLK
+   cases carefully after this version, and sign them off as
+   described above, only if know for sure the updates are not to overlapping
    parts of the signal.
 
    Generally, this is caused by a register driven by both combo logic and a
