@@ -11,11 +11,14 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=["--stats"])
+test.compile(verilator_flags2=["--stats", "--unroll-count", "1"])
 
 test.execute()
 
 test.file_grep(test.stats, r'NBA, variables using ShadowVar scheme\s+(\d+)', 1)
+test.file_grep(test.stats, r'NBA, variables using ShadowVarMasked scheme\s+(\d+)', 2)
 test.file_grep(test.stats, r'NBA, variables using FlagUnique scheme\s+(\d+)', 1)
+test.file_grep(test.stats, r'Optimizations, Unrolled Loops\s+(\d+)', 0)
+test.file_grep(test.stats, r'Warnings, Suppressed BLKANDNBLK\s+(\d+)', 2)
 
 test.passes()
