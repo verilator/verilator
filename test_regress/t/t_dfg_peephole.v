@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2022 by Geza Lore.
+// any use, without warranty, 2022-2025 by Geza Lore and Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
 `define signal(name, expr) wire [$bits(expr)-1:0] ``name = expr
@@ -170,6 +170,7 @@ module t (
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_AND, (&(rand_a + 64'd105)) & (&(rand_b + 64'd108)));
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_OR,  (|(rand_a + 64'd106)) | (|(rand_b + 64'd109)));
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_XOR, (^(rand_a + 64'd107)) ^ (^(rand_b + 64'd110)));
+   `signal(PUSH_REDUCTION_THROUGH_BITWISE, |((rand_a[0] ? rand_a : 0) | (rand_b[0] ? rand_b : 0)));
    `signal(PUSH_REDUCTION_THROUGH_CONCAT_AND, &{1'd1, rand_b});
    `signal(PUSH_REDUCTION_THROUGH_CONCAT_OR,  |{1'd1, rand_b});
    `signal(PUSH_REDUCTION_THROUGH_CONCAT_XOR, ^{1'd1, rand_b});
@@ -185,7 +186,7 @@ module t (
    `signal(RIGHT_LEANING_ASSOC, (((rand_a + rand_b) + rand_a) + rand_b));
    `signal(RIGHT_LEANING_CONCET, {{{rand_a, rand_b}, rand_a}, rand_b});
 
-   // Operators that should work wiht mismatched widths
+   // Operators that should work with mismatched widths
    `signal(MISMATCHED_ShiftL,const_a << 4'd2);
    `signal(MISMATCHED_ShiftR,const_a >> 4'd2);
    `signal(MISMATCHED_ShiftRS, const_a >> 4'd2);
@@ -203,8 +204,8 @@ module t (
    `signal(PUSH_SEL_THROUGH_SHIFTL, sel_from_shiftl[20:0]);
    `signal(REPLACE_SEL_FROM_SEL, sel_from_sel[4:3]);
 
-   // Sel from not requires the operand to have a sinle sink, so can't use
-   // the chekc due to the raw expression referencing the operand
+   // Sel from not requires the operand to have a single sink, so can't use
+   // the check due to the raw expression referencing the operand
    wire [63:0] sel_from_not_tmp = ~(rand_a >> rand_b[2:0] << rand_a[3:0]);
    wire        sel_from_not = sel_from_not_tmp[2];
    always @(posedge randbit_a) if ($c(0)) $display(sel_from_not); // Do not remove signal
