@@ -696,15 +696,14 @@ private:
         }
     }
 
-    void handleAssignArray(AstNodeAssign* nodep, AstArraySel* selp) {
-        iterateAndNextConstNull(nodep->rhsp());  // Value to assign
+    void handleAssignArray(AstNodeAssign* nodep, AstArraySel* selp, AstNodeExpr* valueFromp) {
         // At present we only handle single dimensional assignments
         // To do better, we need the concept of lvalues, or similar, to know where/how to insert
         checkNodeInfo(selp);
         iterateAndNextConstNull(selp->bitp());  // Bit index
         AstVarRef* const varrefp = VN_CAST(selp->fromp(), VarRef);
         if (!varrefp) {
-            clearOptimizable(nodep, "Array select LHS isn't simple variable");
+            clearOptimizable(selp->fromp(), "Array select LHS isn't simple variable");
             return;
         }
         AstUnpackArrayDType* const arrayp
@@ -736,7 +735,7 @@ private:
                 m_reclaimValuesp.push_back(initp);
             }
             const uint32_t index = fetchConst(selp->bitp())->toUInt();
-            AstNodeExpr* const valuep = newTrackedClone(fetchValue(nodep->rhsp()));
+            AstNodeExpr* const valuep = newTrackedClone(fetchValue(valueFromp));
             UINFO(9, "     set val[" << index << "] = " << valuep);
             // Values are in the "real" tree under the InitArray so can eventually extract it,
             // Not in the usual setValue (via m_varAux)
@@ -745,10 +744,9 @@ private:
             assignOutValue(nodep, vscp, initp);
         }
     }
-    void handleAssignSel(AstNodeAssign* nodep, AstSel* selp) {
+    void handleAssignSel(AstNodeAssign* nodep, AstSel* selp, AstNodeExpr* valueFromp) {
         AstVarRef* varrefp = nullptr;
         V3Number lsb{nodep};
-        iterateAndNextConstNull(nodep->rhsp());  // Value to assign
         handleAssignSelRecurse(nodep, selp, varrefp /*ref*/, lsb /*ref*/, 0);
         if (!m_checkOnly && optimizable()) {
             UASSERT_OBJ(varrefp, nodep,
@@ -768,7 +766,7 @@ private:
                     outconstp->num().setAllBitsX();
                 }
             }
-            outconstp->num().opSelInto(fetchConst(nodep->rhsp())->num(), lsb, selp->widthConst());
+            outconstp->num().opSelInto(fetchConst(valueFromp)->num(), lsb, selp->widthConst());
             assignOutValue(nodep, vscp, outconstp);
         }
     }
@@ -790,10 +788,73 @@ private:
                 lsbRef.opAdd(sublsb, fetchConst(selp->lsbp())->num());
             }
         } else {
-            clearOptimizable(nodep, "Select LHS isn't simple variable");
+            clearOptimizable(selp->fromp(), "Select LHS isn't simple variable");
         }
     }
-
+    void handleAssignRecurse(AstNodeAssign* nodep, AstNodeExpr* lhsp, AstNodeExpr* valueFromp) {
+        if (!optimizable()) return;
+        if (AstArraySel* const selp = VN_CAST(lhsp, ArraySel)) {
+            if (!m_params) {
+                clearOptimizable(lhsp, "Assign LHS has select");
+                return;
+            }
+            handleAssignArray(nodep, selp, valueFromp);
+        } else if (AstConcat* const selp = VN_CAST(lhsp, Concat)) {
+            checkNodeInfo(selp);
+            AstBasicDType* const rhsBasicp
+                = VN_CAST(selp->rhsp()->dtypep()->skipRefp(), BasicDType);
+            if (!rhsBasicp) {
+                clearOptimizable(lhsp, "Assign LHS concat of non-basic type");
+                return;
+            }
+            // Split value into left and right concat values
+            if (!m_checkOnly) {
+                {
+                    AstConst* const outconstp
+                        = new AstConst{selp->lhsp()->fileline(), AstConst::WidthedValue{},
+                                       selp->lhsp()->width(), 0};
+                    outconstp->num().opSel(fetchConst(valueFromp)->num(),
+                                           selp->lhsp()->width() + selp->rhsp()->width() + 1,
+                                           selp->rhsp()->width());
+                    newValue(selp->lhsp(), outconstp);
+                }
+                {
+                    AstConst* const outconstp
+                        = new AstConst{selp->rhsp()->fileline(), AstConst::WidthedValue{},
+                                       selp->rhsp()->widthMin(), 0};
+                    outconstp->num().opSel(fetchConst(valueFromp)->num(),
+                                           selp->rhsp()->width() - 1, 0);
+                    newValue(selp->rhsp(), outconstp);
+                }
+            }
+            handleAssignRecurse(nodep, selp->lhsp(), selp->lhsp());
+            handleAssignRecurse(nodep, selp->rhsp(), selp->rhsp());
+        } else if (AstReplicate* const selp = VN_CAST(lhsp, Replicate)) {
+            checkNodeInfo(selp);
+            iterateAndNextConstNull(selp->countp());
+            AstConst* const countp = VN_CAST(selp->countp(), Const);
+            if (!countp || !countp->num().isEqOne()) {
+                clearOptimizable(selp, "Replicate LHS count isn't one");
+                return;
+            }
+            handleAssignRecurse(nodep, selp->srcp(), valueFromp);
+        } else if (AstSel* const selp = VN_CAST(lhsp, Sel)) {
+            if (!m_params) {
+                clearOptimizable(lhsp, "Assign LHS has select");
+                return;
+            }
+            handleAssignSel(nodep, selp, valueFromp);
+        } else if (VN_IS(lhsp, VarRef)) {
+            if (m_checkOnly) {
+                iterateAndNextConstNull(lhsp);
+            } else {
+                AstNode* const vscp = varOrScope(VN_CAST(lhsp, VarRef));
+                assignOutValue(nodep, vscp, fetchValue(valueFromp));
+            }
+        } else {
+            clearOptimizable(lhsp, "Assign LHS isn't simple variable");
+        }
+    }
     void visit(AstNodeAssign* nodep) override {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
@@ -812,28 +873,8 @@ private:
             m_anyAssignComb = true;
         }
 
-        if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
-            if (!m_params) {
-                clearOptimizable(nodep, "LHS has select");
-                return;
-            }
-            handleAssignSel(nodep, selp);
-        } else if (AstArraySel* const selp = VN_CAST(nodep->lhsp(), ArraySel)) {
-            if (!m_params) {
-                clearOptimizable(nodep, "LHS has select");
-                return;
-            }
-            handleAssignArray(nodep, selp);
-        } else if (!VN_IS(nodep->lhsp(), VarRef)) {
-            clearOptimizable(nodep, "LHS isn't simple variable");
-        } else if (m_checkOnly) {
-            iterateChildrenConst(nodep);
-        } else if (optimizable()) {
-            iterateAndNextConstNull(nodep->rhsp());
-            if (!optimizable()) return;
-            AstNode* const vscp = varOrScope(VN_CAST(nodep->lhsp(), VarRef));
-            assignOutValue(nodep, vscp, fetchValue(nodep->rhsp()));
-        }
+        iterateAndNextConstNull(nodep->rhsp());  // Value to assign
+        handleAssignRecurse(nodep, nodep->lhsp(), nodep->rhsp());
     }
     void visit(AstArraySel* nodep) override {
         checkNodeInfo(nodep);

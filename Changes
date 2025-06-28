@@ -21,6 +21,7 @@ Verilator 5.037 devel
 * Support `$timeformat` with missing arguments (#6113). [Alex Solomatnikov]
 * Support `specparam` (#5767).
 * Support parameter forward types.
+* Support constant functions with left-hand-side concatenates.
 * Add PROCINITASSIGN on initial assignments to process variables (#2481). [Niraj Menon]
 * Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
 * Add ternary operator into branch coverage (#5880). [Ryszard Rozak, Antmicro Ltd.]
