@@ -411,10 +411,12 @@ CHECK_YL = $(wildcard \
   $(srcdir)/src/*.l )
 CPPCHECK = src/cppcheck_filtered cppcheck
 CPPCHECK_FLAGS = --enable=all --inline-suppr \
-  --suppress=cstyleCast --suppress=useInitializationList \
-  --suppress=nullPointer --suppress=nullPointerRedundantCheck --suppress=ctunullpointer \
+  --suppress=cstyleCast --suppress=ctunullpointer \
+  --suppress=derefInvalidIteratorRedundantCheck \
+  --suppress=nullPointer --suppress=nullPointerRedundantCheck \
+  --suppress=templateRecursion \
   --suppress=unusedFunction --suppress=unusedScopedObject \
-  --suppress=useStlAlgorithm \
+  --suppress=useInitializationList --suppress=useStlAlgorithm \
 
 CPPCHECK_FLAGS += --xml
 CPPCHECK_DEP = $(subst .cpp,.cppcheck,$(CHECK_CPP))

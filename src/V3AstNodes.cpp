@@ -3072,7 +3072,9 @@ void AstCMethodHard::setPurity() {
         return;
     }
     auto isPureIt = isPureMethod.find(name());
+    // cppcheck-suppress derefInvalidIteratorRedundantCheck
     UASSERT_OBJ(isPureIt != isPureMethod.end(), this, "Unknown purity of method " + name());
+    // cppcheck-suppress derefInvalidIteratorRedundantCheck
     m_pure = isPureIt->second;
     if (!m_pure) return;
     if (!fromp()->isPure()) m_pure = false;

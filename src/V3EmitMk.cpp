@@ -78,7 +78,7 @@ private:
     std::vector<WorkList*> m_concatenableListsByDescSize;  // Lists sorted by size, descending
 
     EmitGroup(std::vector<FilenameWithScore> inputFiles, uint64_t totalScore,
-              std::string groupFilePrefix)
+              const std::string& groupFilePrefix)
         : m_inputFiles{std::move(inputFiles)}
         , m_totalScore{totalScore}
         , m_groupFilePrefix{groupFilePrefix} {}

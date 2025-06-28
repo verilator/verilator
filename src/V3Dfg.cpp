@@ -443,6 +443,7 @@ DfgVarPacked* DfgVertex::getResultVar() {
 
     // Inspect existing variables fully written by this vertex, and choose one
     DfgVarPacked* resp = nullptr;
+    // cppcheck-has-bug-suppress constParameter
     this->forEachSink([&resp](DfgVertex& sink) {
         DfgVarPacked* const varp = sink.cast<DfgVarPacked>();
         if (!varp) return;

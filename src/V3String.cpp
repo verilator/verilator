@@ -204,7 +204,7 @@ string VString::unquoteSVString(const string& text, string& errOut) {
         } else if (*cp == '\\') {
             if (octal_digits) {
                 newtext += octal_val;
-                octal_digits = 0;
+                // below: octal_digits = 0;
                 octal_val = 0;
             }
             quoted = true;

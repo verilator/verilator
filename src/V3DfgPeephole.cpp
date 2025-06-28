@@ -345,14 +345,14 @@ class V3DfgPeephole final : public DfgVisitor {
         // Make associative trees right leaning to reduce pattern variations, and for better CSE
         bool changed = false;
         while (true) {
-            Vertex* const lhsp = vtxp->lhsp()->template cast<Vertex>();
-            if (!lhsp || lhsp->hasMultipleSinks()) break;
+            Vertex* const alhsp = vtxp->lhsp()->template cast<Vertex>();
+            if (!alhsp || alhsp->hasMultipleSinks()) break;
 
             APPLYING(RIGHT_LEANING_ASSOC) {
                 // Rotate the expression tree rooted at 'vtxp' to the right, producing a
                 // right-leaning tree
-                DfgVertex* const ap = lhsp->lhsp();
-                DfgVertex* const bp = lhsp->rhsp();
+                DfgVertex* const ap = alhsp->lhsp();
+                DfgVertex* const bp = alhsp->rhsp();
                 DfgVertex* const cp = vtxp->rhsp();
 
                 AstNodeDType* const rootDtyptp = vtxp->dtypep();
@@ -364,7 +364,7 @@ class V3DfgPeephole final : public DfgVisitor {
                 }
 
                 Vertex* const childp = make<Vertex>(vtxp->fileline(), childDtyptp, bp, cp);
-                Vertex* const rootp = make<Vertex>(lhsp->fileline(), rootDtyptp, ap, childp);
+                Vertex* const rootp = make<Vertex>(alhsp->fileline(), rootDtyptp, ap, childp);
                 replace(vtxp, rootp);
                 changed = true;
                 vtxp = rootp;

@@ -552,8 +552,8 @@ int V3ParseImp::tokenPipelineId(int token) {
     VL_RESTORER(yylval);  // Remember value, as about to read ahead
     if (m_tokenLastBison.token != '@' && m_tokenLastBison.token != '#'
         && m_tokenLastBison.token != '.') {
-        if (const size_t depth = tokenPipeScanIdInst(0)) return yaID__aINST;
-        if (const size_t depth = tokenPipeScanIdType(0)) return yaID__aTYPE;
+        if (tokenPipeScanIdInst(0)) return yaID__aINST;
+        if (tokenPipeScanIdType(0)) return yaID__aTYPE;
     }
     if (nexttok == '#') {  // e.g. class_type parameter_value_assignment '::'
         const size_t depth = tokenPipeScanParam(0, false);

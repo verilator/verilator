@@ -451,12 +451,12 @@ class TaskVisitor final : public VNVisitor {
         AstNodeExpr* postRhsp = new AstVarRef{newvscp->fileline(), newvscp, VAccess::READ};
         if (AstResizeLValue* soutPinp = VN_CAST(outPinp, ResizeLValue)) {
             outPinp = soutPinp->lhsp();
-            if (AstNodeUniop* soutPinp = VN_CAST(outPinp, Extend)) {
-                outPinp = soutPinp->lhsp();
-            } else if (AstNodeUniop* soutPinp = VN_CAST(outPinp, ExtendS)) {
-                outPinp = soutPinp->lhsp();
-            } else if (AstSel* soutPinp = VN_CAST(outPinp, Sel)) {
-                outPinp = soutPinp->fromp();
+            if (AstNodeUniop* aoutPinp = VN_CAST(outPinp, Extend)) {
+                outPinp = aoutPinp->lhsp();
+            } else if (AstNodeUniop* aoutPinp = VN_CAST(outPinp, ExtendS)) {
+                outPinp = aoutPinp->lhsp();
+            } else if (AstSel* aoutPinp = VN_CAST(outPinp, Sel)) {
+                outPinp = aoutPinp->fromp();
             } else {
                 outPinp->v3fatalSrc("Inout pin resizing should have had extend or select");
             }

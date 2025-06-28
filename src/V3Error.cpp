@@ -172,10 +172,12 @@ void V3ErrorGuarded::v3errorEndGuts(std::ostringstream& sstr, const string& extr
 
     // If suppressed print only first line to reduce verbosity
     string firstLine = msg;
-    string::size_type pos;
-    if ((pos = firstLine.find('\n')) != string::npos) {
-        firstLine.erase(pos, firstLine.length() - pos);
-        firstLine += "...";
+    {
+        string::size_type pos;
+        if ((pos = firstLine.find('\n')) != string::npos) {
+            firstLine.erase(pos, firstLine.length() - pos);
+            firstLine += "...";
+        }
     }
     if (m_errorSuppressed) msg = firstLine;
     // Suppress duplicate messages

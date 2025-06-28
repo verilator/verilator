@@ -165,6 +165,7 @@ class AstToDfgVisitor final : public VNVisitor {
         if (AstVarRef* const vrefp = VN_CAST(nodep, VarRef)) {
             m_foundUnhandled = false;
             visit(vrefp);
+            // cppcheck-has-bug-suppress knownConditionTrueFalse
             if (m_foundUnhandled) return false;
             getVertex(vrefp)->as<DfgVarPacked>()->addDriver(flp, 0, vtxp);
             return true;
@@ -178,6 +179,7 @@ class AstToDfgVisitor final : public VNVisitor {
             }
             m_foundUnhandled = false;
             visit(vrefp);
+            // cppcheck-has-bug-suppress knownConditionTrueFalse
             if (m_foundUnhandled) return false;
             getVertex(vrefp)->as<DfgVarPacked>()->addDriver(flp, lsbp->toUInt(), vtxp);
             return true;
@@ -191,6 +193,7 @@ class AstToDfgVisitor final : public VNVisitor {
             }
             m_foundUnhandled = false;
             visit(vrefp);
+            // cppcheck-has-bug-suppress knownConditionTrueFalse
             if (m_foundUnhandled) return false;
             getVertex(vrefp)->as<DfgVarArray>()->addDriver(flp, idxp->toUInt(), vtxp);
             return true;
@@ -244,6 +247,7 @@ class AstToDfgVisitor final : public VNVisitor {
 
         m_foundUnhandled = false;
         iterate(rhsp);
+        // cppcheck-has-bug-suppress knownConditionTrueFalse
         if (m_foundUnhandled) {
             revertUncommittedVertices();
             markReferenced(nodep);

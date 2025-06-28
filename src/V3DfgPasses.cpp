@@ -447,17 +447,17 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             const uint32_t val = pair.first;
             const std::vector<Term>& terms = pair.second;
             // Create the ArraySel
-            FileLine* const flp = terms.front().m_vtxp->fileline();
-            DfgArraySel* const aselp = new DfgArraySel{dfg, flp, bitDTypep};
+            FileLine* const aflp = terms.front().m_vtxp->fileline();
+            DfgArraySel* const aselp = new DfgArraySel{dfg, aflp, bitDTypep};
             aselp->fromp(tabVtxp);
-            aselp->bitp(new DfgConst{dfg, flp, width, val});
+            aselp->bitp(new DfgConst{dfg, aflp, width, val});
             // The inverted value, if needed
             DfgNot* notp = nullptr;
             // Repalce the terms
             for (const Term& term : terms) {
                 if (term.m_inv) {
                     if (!notp) {
-                        notp = new DfgNot{dfg, flp, bitDTypep};
+                        notp = new DfgNot{dfg, aflp, bitDTypep};
                         notp->srcp(aselp);
                     }
                     term.m_vtxp->replaceWith(notp);

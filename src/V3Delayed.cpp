@@ -167,6 +167,8 @@ class DelayedVisitor final : public VNVisitor {
         } m_kitUnion;
 
     public:
+        VarScopeInfo() = default;
+        ~VarScopeInfo() = default;
         // Accessors for the above union fields
         auto& shadowVariableKit() {
             UASSERT(m_scheme == Scheme::ShadowVar, "Inconsistent Scheme");
