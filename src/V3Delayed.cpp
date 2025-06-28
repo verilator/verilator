@@ -71,6 +71,18 @@
 //      if (__VdlySet__LHS) a[__VdlyDim0__LHS][__VdlyDim1__LHS] = __VdlyVal__LHS;
 // Multiple consecutive NBAs of compatible form can share the same  __VdlySet* flag
 //
+// "Shadow variable masked" scheme. Used for packed target variables that
+// have both blocking and non-blocking updates. E.g.:
+//   LHS[Index] <= RHS;
+//   When there is also LHS[SomeNonOverlappingIndex] = RHS2;
+// is converted to:
+//  - In the original logic, replace the AstAssignDelay with:
+//      __Vdly__LHS[Index] = RHS;
+//      __VdlyMask__LHS[Index] = '1;
+//  - Add new "Post-scheduled" logic:
+//      LHS = (__Vdly__LHS & __VdlyMask__LHS) | (LHS & ~__VdlyMask__LHS);
+//      __VdlyMask__LHS = '0;
+//
 // "Unique flag" scheme. Used for all variables updated by NBAs
 // in suspendable processees or forks. E.g.:
 //   #1 LHS <= RHS;
@@ -124,6 +136,7 @@ class DelayedVisitor final : public VNVisitor {
         Undecided = 0,
         UnsupportedCompoundArrayInLoop,
         ShadowVar,
+        ShadowVarMasked,
         FlagShared,
         FlagUnique,
         ValueQueueWhole,
@@ -152,6 +165,10 @@ class DelayedVisitor final : public VNVisitor {
             struct {  // Stuff needed for Scheme::ShadowVar
                 AstVarScope* vscp;  // The shadow variable
             } m_shadowVariableKit;
+            struct {  // Stuff needed for Scheme::ShadowVarMasked
+                AstVarScope* vscp;  // The shadow variable
+                AstVarScope* maskp;  // The mask variable
+            } m_shadowVarMaskedKit;
             struct {  // Stuff needed for Scheme::FlagShared
                 AstActive* activep;  // The active block for the Pre/Post logic
                 AstAlwaysPost* postp;  // The post block for commiting results
@@ -173,6 +190,10 @@ class DelayedVisitor final : public VNVisitor {
         auto& shadowVariableKit() {
             UASSERT(m_scheme == Scheme::ShadowVar, "Inconsistent Scheme");
             return m_kitUnion.m_shadowVariableKit;
+        }
+        auto& shadowVarMaskedKit() {
+            UASSERT(m_scheme == Scheme::ShadowVarMasked, "Inconsistent Scheme");
+            return m_kitUnion.m_shadowVarMaskedKit;
         }
         auto& flagSharedKit() {
             UASSERT(m_scheme == Scheme::FlagShared, "Inconsistent Scheme");
@@ -202,6 +223,18 @@ class DelayedVisitor final : public VNVisitor {
         void addSensitivity(AstSenTree* nodep) { addSensitivity(nodep->sensesp()); }
     };
 
+    // Data structure to keep track of all writes to
+    struct WriteReference final {
+        AstVarRef* m_refp = nullptr;  // The reference
+        bool m_isNBA = false;  // True if an NBA write
+        bool m_inNonComb = false;  // True if reference is known to be in non-combinational logic
+        WriteReference() = default;
+        WriteReference(AstVarRef* refp, bool isNBA, bool inNonComb)
+            : m_refp{refp}
+            , m_isNBA{isNBA}
+            , m_inNonComb{inNonComb} {}
+    };
+
     // Data required to lower AstAssignDelay later
     struct NBA final {
         AstAssignDly* nodep = nullptr;  // The NBA this record refers to
@@ -215,10 +248,13 @@ class DelayedVisitor final : public VNVisitor {
     //  AstNodeModule::user1p() -> std::unorded_map<std::string, AstVar*> temp map via m_varMap
     //  AstVarScope::user1p()   -> VarScopeInfo via m_vscpInfo
     //  AstVarScope::user2p()   -> AstVarRef*: First write reference to the Variable
+    //  AstVarScope::user3p()   -> std::vector<WriteReference> via m_writeRefs;
     const VNUser1InUse m_user1InUse{};
     const VNUser2InUse m_user2InUse{};
+    const VNUser3InUse m_user3InUse{};
     AstUser1Allocator<AstNodeModule, std::unordered_map<std::string, AstVar*>> m_varMap;
     AstUser1Allocator<AstVarScope, VarScopeInfo> m_vscpInfo;
+    AstUser3Allocator<AstVarScope, std::vector<WriteReference>> m_writeRefs;
 
     // STATE - across all visitors
     std::set<AstSenTree*> m_timingDomains;  // Timing resume domains
@@ -230,6 +266,7 @@ class DelayedVisitor final : public VNVisitor {
     bool m_inLoop = false;  // True in for loops
     bool m_inSuspendableOrFork = false;  // True in suspendable processes and forks
     bool m_ignoreBlkAndNBlk = false;  // Suppress delayed assignment BLKANDNBLK
+    bool m_inNonCombLogic = false;  // We are in non-combinational logic
     AstVarRef* m_currNbaLhsRefp = nullptr;  // Current NBA LHS variable reference
 
     // STATE - during NBA conversion (after visit)
@@ -240,6 +277,7 @@ class DelayedVisitor final : public VNVisitor {
 
     // STATE - Statistic tracking
     VDouble0 m_nSchemeShadowVar;  // Number of variables using Scheme::ShadowVar
+    VDouble0 m_nSchemeShadowVarMasked;  // Number of variabels using Scheme::ShadowVarMasked
     VDouble0 m_nSchemeFlagShared;  // Number of variables using Scheme::FlagShared
     VDouble0 m_nSchemeFlagUnique;  // Number of variables using Scheme::FlagUnique
     VDouble0 m_nSchemeValueQueuesWhole;  //  Number of variables using Scheme::ValueQueueWhole
@@ -248,15 +286,129 @@ class DelayedVisitor final : public VNVisitor {
 
     // METHODS
 
+    // Return true iff a variable is assigned by both blocking and nonblocking
+    // assignments. Issue BLKANDNBLK error if we can't prove the mixed
+    // assignments are to independent bits and the blocking assignment can be
+    // in combinational logic, which is something we can't safely implement
+    // still.
+    bool checkMixedUsage(const AstVarScope* vscp, bool isIntegralOrPacked) {
+
+        struct Ref final {
+            AstVarRef* m_refp;  // The reference
+            bool m_inNonComb;  // True if known to be in non-combinational logic
+            int m_lsb;  // LSB of accessed range
+            int m_msb;  // MSB of accessed range
+            Ref(AstVarRef* refp, bool inNonComb, int lsb, int msb)
+                : m_refp{refp}
+                , m_inNonComb{inNonComb}
+                , m_lsb{lsb}
+                , m_msb{msb} {}
+        };
+
+        std::vector<Ref> blkRefs;  // Blocking writes
+        std::vector<Ref> nbaRefs;  // Non-blockign writes
+
+        const int width = isIntegralOrPacked ? vscp->width() : 1;
+
+        for (const auto& writeRef : m_writeRefs(vscp)) {
+            int lsb = 0;
+            int msb = width - 1;
+            if (const AstSel* const selp = VN_CAST(writeRef.m_refp->backp(), Sel)) {
+                if (VN_IS(selp->lsbp(), Const)) {
+                    lsb = selp->lsbConst();
+                    msb = selp->msbConst();
+                }
+            }
+            if (writeRef.m_isNBA) {
+                nbaRefs.emplace_back(writeRef.m_refp, writeRef.m_inNonComb, lsb, msb);
+            } else {
+                blkRefs.emplace_back(writeRef.m_refp, writeRef.m_inNonComb, lsb, msb);
+            }
+        }
+        // We only run this function on targets of NBAs, so there should be at least one...
+        UASSERT_OBJ(!nbaRefs.empty(), vscp, "Did not record NBA write");
+        // If no blocking upadte, then we are good
+        if (blkRefs.empty()) return false;
+
+        // If the blocking assignment is in non-combinational logic (i.e.:
+        // in logic that has an explicit trigger), then we can safely
+        // implement it (there is no race between clocked logic and post
+        // scheduled logic), so need not error
+        blkRefs.erase(std::remove_if(blkRefs.begin(), blkRefs.end(),
+                                     [](const Ref& ref) { return ref.m_inNonComb; }),
+                      blkRefs.end());
+
+        // If nothing left, then we need not error
+        if (blkRefs.empty()) return true;
+
+        // If not a packed variable, warn here as we can't prove independence
+        if (!isIntegralOrPacked) {
+            const Ref& blkRef = blkRefs.front();
+            const Ref& nbaRef = nbaRefs.front();
+            vscp->v3warn(
+                BLKANDNBLK,
+                "Unsupported: Blocking and non-blocking assignments to same non-packed variable: "
+                    << vscp->varp()->prettyNameQ() << '\n'
+                    << vscp->warnContextPrimary() << '\n'
+                    << blkRef.m_refp->warnOther() << "... Location of blocking assignment\n"
+                    << blkRef.m_refp->warnContextSecondary() << '\n'
+                    << nbaRef.m_refp->warnOther() << "... Location of nonblocking assignment\n"
+                    << nbaRef.m_refp->warnContextSecondary());
+            return true;
+        }
+
+        // We need to error if we can't prove the written bits are independent
+
+        // Sort refs by interval
+        const auto lessThanRef = [](const Ref& a, const Ref& b) {
+            if (a.m_lsb != b.m_lsb) return a.m_lsb < b.m_lsb;
+            return a.m_msb < b.m_msb;
+        };
+        std::stable_sort(blkRefs.begin(), blkRefs.end(), lessThanRef);
+        std::stable_sort(nbaRefs.begin(), nbaRefs.end(), lessThanRef);
+        // Iterate both vectors, checking for overlap
+        auto bIt = blkRefs.begin();
+        auto nIt = nbaRefs.begin();
+        while (bIt != blkRefs.end() && nIt != nbaRefs.end()) {
+            if (lessThanRef(*bIt, *nIt)) {
+                if (nIt->m_lsb <= bIt->m_msb) break;  // Stop on Overlap
+                ++bIt;
+            } else {
+                if (bIt->m_lsb <= nIt->m_msb) break;  // Stop on Overlap
+                ++nIt;
+            }
+        }
+
+        // If we found an overlapping range that cannot be safely implemented, then wran...
+        if (bIt != blkRefs.end() && nIt != nbaRefs.end()) {
+            const Ref& blkRef = *bIt;
+            const Ref& nbaRef = *nIt;
+            vscp->v3warn(BLKANDNBLK,
+                         "Unsupported: Blocking and non-blocking assignments to "
+                         "potentially overlapping bits of same packed variable: "
+                             << vscp->varp()->prettyNameQ() << '\n'
+                             << vscp->warnContextPrimary() << '\n'
+                             << blkRef.m_refp->warnOther() << "... Location of blocking assignment"
+                             << " (bits [" << blkRef.m_msb << ":" << blkRef.m_lsb << "])\n"
+                             << blkRef.m_refp->warnContextSecondary() << '\n'
+                             << nbaRef.m_refp->warnOther()
+                             << "... Location of nonblocking assignment"
+                             << " (bits [" << nbaRef.m_msb << ":" << nbaRef.m_lsb << "])\n"
+                             << nbaRef.m_refp->warnContextSecondary());
+        }
+
+        return true;
+    }
+
     // Choose the NBA scheme used for the given variable.
-    static Scheme chooseScheme(const AstVarScope* vscp, const VarScopeInfo& vscpInfo) {
+    Scheme chooseScheme(const AstVarScope* vscp, const VarScopeInfo& vscpInfo) {
         UASSERT_OBJ(vscpInfo.m_scheme == Scheme::Undecided, vscp, "NBA scheme already decided");
 
         const AstNodeDType* const dtypep = vscp->dtypep()->skipRefp();
         // Unpacked arrays
         if (const AstUnpackArrayDType* const uaDTypep = VN_CAST(dtypep, UnpackArrayDType)) {
             // Basic underlying type of elements, if any.
-            AstBasicDType* const basicp = uaDTypep->basicp();
+            const AstBasicDType* const basicp = uaDTypep->basicp();
             // If used in a loop, we must have a dynamic commit queue. (Also works in suspendables)
             if (vscpInfo.m_inLoop) {
                 // Arrays with compound element types are currently not supported in loops
@@ -281,6 +433,25 @@ class DelayedVisitor final : public VNVisitor {
 
         // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
         if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
+
+        const bool isIntegralOrPacked = dtypep->isIntegralOrPacked();
+        // Check for mixed usage (this also warns if not OK)
+        if (checkMixedUsage(vscp, isIntegralOrPacked)) {
+            // If it's a variable updated by both blocking and non-blocking
+            // asignments, use the ShadowVarMasked schem if masked update is
+            // possible. This can handle blocking and non-blocking updates to
+            // inpdendent parts correctly at run-time, and always works, even
+            // in loops or other dynamic context.
+            if (isIntegralOrPacked) return Scheme::ShadowVarMasked;
+            // If it's inside a loop, use Scheme::ShadowVar, which is safe,
+            // but will generate incorrect code if a partial update is used
+            if (vscpInfo.m_inLoop) return Scheme::ShadowVar;
+            // Otherwise (for not packed variables), use the FlagUnique scheme,
+            // which at least handles partial updates correctly, but might break
+            // in loops or other dynamic context
+            return Scheme::FlagUnique;
+        }
+
         // Otherwise use the simple shadow variable scheme
         return Scheme::ShadowVar;
     }
@@ -350,7 +521,12 @@ class DelayedVisitor final : public VNVisitor {
             nodep = arrSelp->fromp();
         }
         // What remains must be an AstVarRef, or some sort of select, we assume can reuse it.
-        UASSERT_OBJ(nodep->isPure(), lhsp, "Malformed LHS in NBA");
+        if (const AstAssocSel* const aselp = VN_CAST(nodep, AssocSel)) {
+            UASSERT_OBJ(aselp->fromp()->isPure() && aselp->bitp()->isPure(), lhsp,
+                        "Malformed LHS in NBA");
+        } else {
+            UASSERT_OBJ(nodep->isPure(), lhsp, "Malformed LHS in NBA");
+        }
         // Now have been converted to use the captured values
         return lhsp;
     }
@@ -408,6 +584,70 @@ class DelayedVisitor final : public VNVisitor {
             refp->varScopep(shadowVscp);
             refp->varp(shadowVscp->varp());
         });
+    }
+
+    // Scheme::ShadowVarMasked
+    void prepareSchemeShadowVarMasked(AstVarScope* vscp, VarScopeInfo& vscpInfo) {
+        UASSERT_OBJ(vscpInfo.m_scheme == Scheme::ShadowVarMasked, vscp, "Inconsistent NBA scheme");
+        FileLine* const flp = vscp->fileline();
+        AstScope* const scopep = vscp->scopep();
+        // Create the shadow variable
+        const std::string shadowName = "__Vdly__" + vscp->varp()->shortName();
+        AstVarScope* const shadowVscp = createTemp(flp, scopep, shadowName, vscp->dtypep());
+        vscpInfo.shadowVarMaskedKit().vscp = shadowVscp;
+        // Create the makk variable
+        const std::string maskName = "__VdlyMask__" + vscp->varp()->shortName();
+        AstVarScope* const maskVscp = createTemp(flp, scopep, maskName, vscp->dtypep());
+        maskVscp->varp()->setIgnorePostWrite();
+        vscpInfo.shadowVarMaskedKit().maskp = maskVscp;
+        // Create the AstActive for the Post logic
+        AstActive* const activep
+            = new AstActive{flp, "nba-shadow-var-masked", vscpInfo.senTreep()};
+        activep->sensesStorep(vscpInfo.senTreep());
+        scopep->addBlocksp(activep);
+        // Add 'Post' scheduled process for the commit and mask clear
+        AstAlwaysPost* const postp = new AstAlwaysPost{flp};
+        activep->addStmtsp(postp);
+        // Add the commit - vscp = (shadowVscp & maskVscp) | (vscp & ~maskVscp);
+        postp->addStmtsp(new AstAssign{
+            flp, new AstVarRef{flp, vscp, VAccess::WRITE},
+            new AstOr{flp,
+                      new AstAnd{flp, new AstVarRef{flp, shadowVscp, VAccess::READ},
+                                 new AstVarRef{flp, maskVscp, VAccess::READ}},
+                      new AstAnd{flp, new AstVarRef{flp, vscp, VAccess::READ},
+                                 new AstNot{flp, new AstVarRef{flp, maskVscp, VAccess::READ}}}}});
+        vscp->varp()->setIgnorePostRead();
+        // Clar the mask - maskVscp = '0;
+        postp->addStmtsp(
+            new AstAssign{flp, new AstVarRef{flp, maskVscp, VAccess::WRITE},
+                          new AstConst{flp, AstConst::WidthedValue{}, maskVscp->width(), 0}});
+    }
+    void convertSchemeShadowVarMasked(AstAssignDly* nodep, AstVarScope* vscp,
+                                      VarScopeInfo& vscpInfo) {
+        UASSERT_OBJ(vscpInfo.m_scheme == Scheme::ShadowVarMasked, vscp, "Inconsistent NBA scheme");
+        AstVarScope* const shadowVscp = vscpInfo.shadowVarMaskedKit().vscp;
+        AstVarScope* const maskVscp = vscpInfo.shadowVarMaskedKit().maskp;
+
+        AstNodeExpr* lhsClonep = nodep->lhsp()->cloneTree(false);
+
+        // Replace the write ref on the LHS with the shadow variable
+        nodep->lhsp()->foreach([&](AstVarRef* const refp) {
+            if (!refp->access().isWriteOnly()) return;
+            UASSERT_OBJ(refp->varScopep() == vscp, nodep, "NBA not setting expected variable");
+            refp->varScopep(shadowVscp);
+            refp->varp(shadowVscp->varp());
+        });
+        // Set the same bits in the mask to 1
+        lhsClonep->foreach([&](AstVarRef* const refp) {
+            if (!refp->access().isWriteOnly()) return;
+            UASSERT_OBJ(refp->varScopep() == vscp, nodep, "NBA not setting expected variable");
+            refp->varScopep(maskVscp);
+            refp->varp(maskVscp->varp());
+        });
+        FileLine* const flp = nodep->fileline();
+        AstConst* const onesp = new AstConst{flp, AstConst::DTyped{}, lhsClonep->dtypep()};
+        onesp->num().setAllBits1();
+        nodep->addNextHere(new AstAssign{flp, lhsClonep, onesp});
     }
 
     // Scheme::FlagShared
@@ -705,51 +945,19 @@ class DelayedVisitor final : public VNVisitor {
         pushDeletep(nodep->unlinkFrBack());
     }
 
-    // Record and warn if a variable is assigned by both blocking and nonblocking assignments
-    void checkVarUsage(AstVarRef* nodep, bool nonBlocking) {
+    // Record where a variable is assigned
+    void recordWriteRef(AstVarRef* nodep, bool nonBlocking) {
         // Ignore references in certain contexts
         if (m_ignoreBlkAndNBlk) return;
-        // Ignore if warning is disabled on this reference (used by V3Force).
-        if (nodep->fileline()->warnIsOff(V3ErrorCode::BLKANDNBLK)) return;
         // Ignore if it's an array
         // TODO: we do this because it used to be the previous behaviour.
         //       Is it still required, or should we warn for arrays as well?
         //       Scheduling is no different for them...
+        //       Clarification: This is OK for arrays of primitive types, but
+        //       arrays that use the ShadowVar scheme don't work...
         if (VN_IS(nodep->varScopep()->dtypep()->skipRefp(), UnpackArrayDType)) return;
 
-        // Mark ref as blocking/non-blocking
-        nodep->user1(nonBlocking);
-
-        AstVarScope* const vscp = nodep->varScopep();
-
-        // Pick up/set the first reference to this variable
-        const AstVarRef* const firstRefp = VN_AS(vscp->user2p(), VarRef);
-        if (!firstRefp) {
-            vscp->user2p(nodep);
-            return;
-        }
-
-        // If both blocking/non-blocking, it's OK
-        if (firstRefp->user1() == static_cast<int>(nonBlocking)) return;
-
-        // Otherwise warn that both blocking and non-blocking assignments are used
-        const auto containingAssignment = [](const AstNode* nodep) -> const AstNode* {
-            while (!VN_IS(nodep, NodeAssign)) nodep = nodep->backp();
-            return nodep;
-        };
-
-        const AstNode* nonblockingp = nonBlocking ? nodep : firstRefp;
-        if (const AstNode* np = containingAssignment(nonblockingp)) nonblockingp = np;
-        const AstNode* blockingp = nonBlocking ? firstRefp : nodep;
-        if (const AstNode* np = containingAssignment(blockingp)) blockingp = np;
-        vscp->v3warn(BLKANDNBLK,
-                     "Unsupported: Blocked and non-blocking assignments to same variable: "
-                         << vscp->varp()->prettyNameQ() << '\n'
-                         << vscp->warnContextPrimary() << '\n'
-                         << blockingp->warnOther() << "... Location of blocking assignment\n"
-                         << blockingp->warnContextSecondary() << '\n'
-                         << nonblockingp->warnOther() << "... Location of nonblocking assignment\n"
-                         << nonblockingp->warnContextSecondary());
+        m_writeRefs(nodep->varScopep()).emplace_back(nodep, nonBlocking, m_inNonCombLogic);
     }
 
     // VISITORS
@@ -771,6 +979,11 @@ class DelayedVisitor final : public VNVisitor {
             case Scheme::ShadowVar: {
                 ++m_nSchemeShadowVar;
                 prepareSchemeShadowVar(vscp, vscpInfo);
+                break;
+            }
+            case Scheme::ShadowVarMasked: {
+                ++m_nSchemeShadowVarMasked;
+                prepareSchemeShadowVarMasked(vscp, vscpInfo);
                 break;
             }
             case Scheme::FlagShared: {
@@ -816,6 +1029,10 @@ class DelayedVisitor final : public VNVisitor {
                 convertSchemeShadowVar(nbap, vscp, vscpInfo);
                 break;
             }
+            case Scheme::ShadowVarMasked: {
+                convertSchemeShadowVarMasked(nbap, vscp, vscpInfo);
+                break;
+            }
             case Scheme::FlagShared: {
                 convertSchemeFlagShared(nbap, vscp, vscpInfo);
                 break;
@@ -844,9 +1061,11 @@ class DelayedVisitor final : public VNVisitor {
         UASSERT_OBJ(!m_activep, nodep, "Should not nest");
         VL_RESTORER(m_activep);
         VL_RESTORER(m_ignoreBlkAndNBlk);
+        VL_RESTORER(m_inNonCombLogic);
         m_activep = nodep;
         AstSenTree* const senTreep = nodep->sensesp();
         m_ignoreBlkAndNBlk = senTreep->hasStatic() || senTreep->hasInitial();
+        m_inNonCombLogic = senTreep->hasClocked();
         iterateChildren(nodep);
     }
     void visit(AstNodeProcedure* nodep) override {
@@ -854,8 +1073,14 @@ class DelayedVisitor final : public VNVisitor {
         {
             VL_RESTORER(m_inSuspendableOrFork);
             VL_RESTORER(m_procp);
+            VL_RESTORER(m_ignoreBlkAndNBlk);
+            VL_RESTORER(m_inNonCombLogic);
             m_inSuspendableOrFork = nodep->isSuspendable();
             m_procp = nodep;
+            if (m_inSuspendableOrFork) {
+                m_ignoreBlkAndNBlk = false;
+                m_inNonCombLogic = true;
+            }
             iterateChildren(nodep);
         }
         if (m_timingDomains.empty()) return;
@@ -1013,8 +1238,8 @@ class DelayedVisitor final : public VNVisitor {
         nba.nodep = nodep;
         nba.vscp = vscp;
 
-        // Check var usage
-        checkVarUsage(m_currNbaLhsRefp, true);
+        // Record write reference
+        recordWriteRef(m_currNbaLhsRefp, true);
 
         iterateChildren(nodep);
     }
@@ -1023,14 +1248,8 @@ class DelayedVisitor final : public VNVisitor {
         if (nodep == m_currNbaLhsRefp) return;
         // Only care about write refs
         if (!nodep->access().isWriteOrRW()) return;
-        // Check var usage
-        checkVarUsage(nodep, false);
-    }
-    void visit(AstNodeReadWriteMem* nodep) override {
-        VL_RESTORER(m_ignoreBlkAndNBlk);
-        // $readmem/$writemem often used in mem models so we suppress BLKANDNBLK warnings
-        m_ignoreBlkAndNBlk = true;
-        iterateChildren(nodep);
+        // Record write reference
+        recordWriteRef(nodep, false);
     }
     void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("For statements should have been converted to while statements");
@@ -1054,6 +1273,7 @@ public:
     explicit DelayedVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~DelayedVisitor() override {
         V3Stats::addStat("NBA, variables using ShadowVar scheme", m_nSchemeShadowVar);
+        V3Stats::addStat("NBA, variables using ShadowVarMasked scheme", m_nSchemeShadowVarMasked);
         V3Stats::addStat("NBA, variables using FlagShared scheme", m_nSchemeFlagShared);
         V3Stats::addStat("NBA, variables using FlagUnique scheme", m_nSchemeFlagUnique);
         V3Stats::addStat("NBA, variables using ValueQueueWhole scheme", m_nSchemeValueQueuesWhole);

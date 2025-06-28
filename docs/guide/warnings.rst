@@ -211,23 +211,32 @@ List Of Warnings
    public task, or when the blocking and non-blocking assignments have
    non-overlapping bits and structure members.
 
+   From Verilator 5.038, this warning is only issued when Verilator can't prove that
+   the assignments are to non-overlapping sub-parts, and the blocking
+   assignment is in combinational logic (which is the case where simulation
+   results might differ from other simulators). Review any BLKANDNBLK
+   cases carefully after this version, and sign them off as
+   described above, only if know for sure the updates are not to overlapping
+   parts of the signal.
+
    Generally, this is caused by a register driven by both combo logic and a
    flop:
 
    .. code-block:: sv
 
-         logic [1:0] foo;
-         always @(posedge clk)  foo[0] <= ...
-         always_comb foo[1] = ...
+         logic [3:0] foo;
+         always @(posedge clk) foo[index] <= ...  // With index != 0
+         always_comb foo[0] = ...
 
    Instead, use a different register for the flop:
 
    .. code-block:: sv
 
-         logic [1:0] foo;
-         always @(posedge clk)  foo_flopped[0] <= ...
-         always_comb foo[0] = foo_flopped[0];
-         always_comb foo[1] = ...
+         logic [3:0] foo;
+         logic [3:1] foo_flopped;
+         always @(posedge clk) foo_flopped[index] <= ... // With index != 0
+         always_comb foo[0] = ...
+         always_comb foo[3:1] = foo_flopped;
 
    Or, this may also avoid the error:
 

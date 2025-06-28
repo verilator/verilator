@@ -272,10 +272,8 @@ class ForceConvertVisitor final : public VNVisitor {
         // it is a variable, and not a net, set the original signal to the forced value, as it
         // needs to retain the forced value until the next procedural update, which might happen on
         // a later eval. Luckily we can do all this in a single assignment.
-        FileLine* const fl_nowarn = new FileLine{flp};
-        fl_nowarn->warnOff(V3ErrorCode::BLKANDNBLK, true);
         AstAssign* const resetRdp
-            = new AstAssign{fl_nowarn, lhsp->cloneTreePure(false), lhsp->unlinkFrBack()};
+            = new AstAssign{flp, lhsp->cloneTreePure(false), lhsp->unlinkFrBack()};
         // Replace write refs on the LHS
         resetRdp->lhsp()->foreach([this](AstNodeVarRef* refp) {
             if (refp->access() != VAccess::WRITE) return;
@@ -283,10 +281,7 @@ class ForceConvertVisitor final : public VNVisitor {
             AstVarScope* const newVscp = vscp->varp()->isContinuously()
                                              ? m_state.getForceComponents(vscp).m_rdVscp
                                              : vscp;
-            // Disable BLKANDNBLK for this reference
-            FileLine* const flp = new FileLine{refp->fileline()};
-            flp->warnOff(V3ErrorCode::BLKANDNBLK, true);
-            AstVarRef* const newpRefp = new AstVarRef{flp, newVscp, VAccess::WRITE};
+            AstVarRef* const newpRefp = new AstVarRef{refp->fileline(), newVscp, VAccess::WRITE};
             refp->replaceWith(newpRefp);
             VL_DO_DANGLING(refp->deleteTree(), refp);
         });
