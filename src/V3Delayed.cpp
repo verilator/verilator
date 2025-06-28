@@ -441,6 +441,9 @@ class DelayedVisitor final : public VNVisitor {
             // inpdendent parts correctly at run-time, and always works, even
             // in loops or other dynamic context.
             if (isIntegralOrPacked) return Scheme::ShadowVarMasked;
+            // If it's inside a loop, use Scheme::ShadowVar, which is safe,
+            // but will generate incorrect code if a partial update is used
+            if (vscpInfo.m_inLoop) return Scheme::ShadowVar;
             // Otherwise (for not packed variables), use the FlagUnique scheme,
             // which at least handles partial updates correctly, but might break
             // in loops or other dynamic context
