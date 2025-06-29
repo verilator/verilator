@@ -2985,14 +2985,17 @@ class AstCoverDecl final : public AstNodeStmt {
     string m_linescov;
     int m_offset;  // Offset column numbers to uniq-ify IFs
     int m_binNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
+    bool m_isToggle;
+
 public:
     AstCoverDecl(FileLine* fl, const string& page, const string& comment, const string& linescov,
-                 int offset)
+                 int offset, bool isToggle)
         : ASTGEN_SUPER_CoverDecl(fl)
         , m_page{page}
         , m_text{comment}
         , m_linescov{linescov}
-        , m_offset{offset} {}
+        , m_offset{offset}
+        , m_isToggle{isToggle} {}
     ASTGEN_MEMBERS_AstCoverDecl;
     const char* broken() const override {
         if (m_dataDeclp
@@ -3012,6 +3015,7 @@ public:
     const string& linescov() const { return m_linescov; }
     const string& page() const { return m_page; }
     const string& hier() const { return m_hier; }
+    bool isToggle() const { return m_isToggle; }
     void hier(const string& flag) { m_hier = flag; }
     void comment(const string& flag) { m_text = flag; }
     bool sameNode(const AstNode* samep) const override {
@@ -3028,6 +3032,8 @@ public:
 };
 class AstCoverInc final : public AstNodeStmt {
     // Coverage analysis point; increment coverage count
+    // @astgen op1 := toggleExprp : Optional[AstNodeExpr]  // [After V3Clock] Expression to which
+    // the node corresponds. Used only in toggle coverage
     //
     // @astgen ptr := m_declp : AstCoverDecl  // [After V3CoverageJoin] Declaration
 public:
