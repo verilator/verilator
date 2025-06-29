@@ -222,7 +222,6 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     // excluding $unit package stuff
     // @astgen op1 := inlinesp : List[AstNode]
     // @astgen op2 := stmtsp : List[AstNode]
-    // @astgen op3 := activesp : List[AstActive]
     string m_name;  // Name of the module
     const string m_origName;  // Name of the module, ignoring name() changes, for dot lookup
     string m_someInstanceName;  // Hierarchical name of some arbitrary instance of this module.
