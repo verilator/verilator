@@ -232,6 +232,8 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
 }
 
 void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
+    UASSERT(dfg.modulep(), "binToOneHot only works with unscoped DfgGraphs for now");
+
     const auto userDataInUse = dfg.userDataInUse();
 
     // Structure to keep track of comparison details
@@ -372,7 +374,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             DfgVarPacked* varp = srcp->getResultVar();
             if (!varp) {
                 const std::string name = dfg.makeUniqueName("BinToOneHot_Idx", nTables);
-                varp = dfg.makeNewVar(flp, name, idxDTypep)->as<DfgVarPacked>();
+                varp = dfg.makeNewVar(flp, name, idxDTypep, nullptr)->as<DfgVarPacked>();
                 varp->varp()->isInternal(true);
                 varp->addDriver(flp, 0, srcp);
             }
@@ -392,7 +394,8 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         // The table variable
         DfgVarArray* const tabVtxp = [&]() {
             const std::string name = dfg.makeUniqueName("BinToOneHot_Tab", nTables);
-            DfgVarArray* const varp = dfg.makeNewVar(flp, name, tabDTypep)->as<DfgVarArray>();
+            DfgVarArray* const varp
+                = dfg.makeNewVar(flp, name, tabDTypep, nullptr)->as<DfgVarArray>();
             varp->varp()->isInternal(true);
             varp->varp()->noReset(true);
             varp->setHasModRefs();
@@ -496,9 +499,10 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
         workListp = &vtx;
     };
 
-    // List of variables we are replacing
-    std::vector<AstVar*> replacedVariables;
+    // List of variables (AstVar or AstVarScope) we are replacing
+    std::vector<AstNode*> replacedVariables;
     // AstVar::user1p() : AstVar* -> The replacement variables
+    // AstVarScope::user1p() : AstVarScope* -> The replacement variables
     const VNUser1InUse user1InUse;
 
     // Process the work list
@@ -541,7 +545,7 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
             // If it is only referenced in this DFG, it can be removed
             ++ctx.m_varsRemoved;
             varp->replaceWith(varp->source(0));
-            varp->varp()->unlinkFrBack()->deleteTree();
+            varp->nodep()->unlinkFrBack()->deleteTree();
         } else if (DfgVarPacked* const driverp = varp->source(0)->cast<DfgVarPacked>()) {
             // If it's driven from another variable, it can be replaced by that. However, we do not
             // want to propagate SystemC variables into the design.
@@ -549,9 +553,11 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
             // Mark it for replacement
             ++ctx.m_varsReplaced;
             UASSERT_OBJ(!varp->hasSinks(), varp, "Variable inlining should make this impossible");
-            UASSERT(!varp->varp()->user1p(), "Replacement already exists");
-            replacedVariables.emplace_back(varp->varp());
-            varp->varp()->user1p(driverp->varp());
+            // Grab the AstVar/AstVarScope
+            AstNode* const nodep = varp->nodep();
+            UASSERT_OBJ(!nodep->user1p(), nodep, "Replacement already exists");
+            replacedVariables.emplace_back(nodep);
+            nodep->user1p(driverp->nodep());
         } else {
             // Otherwise this *is* the canonical var
             continue;
@@ -566,16 +572,24 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
     // Job done if no replacements possible
     if (replacedVariables.empty()) return;
 
-    // Apply variable replacements in the module
-    VNDeleter deleter;
-    dfg.modulep()->foreach([&](AstVarRef* refp) {
-        AstVar* varp = refp->varp();
-        while (AstVar* const replacementp = VN_AS(varp->user1p(), Var)) varp = replacementp;
-        refp->varp(varp);
-    });
+    // Apply variable replacements
+    if (AstModule* const modp = dfg.modulep()) {
+        modp->foreach([&](AstVarRef* refp) {
+            AstVar* varp = refp->varp();
+            while (AstVar* const replacep = VN_AS(varp->user1p(), Var)) varp = replacep;
+            refp->varp(varp);
+        });
+    } else {
+        v3Global.rootp()->foreach([&](AstVarRef* refp) {
+            AstVarScope* vscp = refp->varScopep();
+            while (AstVarScope* const replacep = VN_AS(vscp->user1p(), VarScope)) vscp = replacep;
+            refp->varScopep(vscp);
+            refp->varp(vscp->varp());
+        });
+    }
 
     // Remove the replaced variables
-    for (AstVar* const varp : replacedVariables) varp->unlinkFrBack()->deleteTree();
+    for (AstNode* const nodep : replacedVariables) nodep->unlinkFrBack()->deleteTree();
 }
 
 void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
@@ -599,7 +613,9 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
     apply(3, "input           ", [&]() {});
     apply(4, "inlineVars      ", [&]() { inlineVars(dfg); });
     apply(4, "cse0            ", [&]() { cse(dfg, ctx.m_cseContext0); });
-    apply(4, "binToOneHot     ", [&]() { binToOneHot(dfg, ctx.m_binToOneHotContext); });
+    if (dfg.modulep()) {
+        apply(4, "binToOneHot     ", [&]() { binToOneHot(dfg, ctx.m_binToOneHotContext); });
+    }
     if (v3Global.opt.fDfgPeephole()) {
         apply(4, "peephole        ", [&]() { peephole(dfg, ctx.m_peepholeContext); });
         // We just did CSE above, so without peephole there is no need to run it again these
