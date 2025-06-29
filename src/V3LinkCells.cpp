@@ -562,6 +562,23 @@ class LinkCellsVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->attrsp());
     }
 
+    void visit(AstConfig* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config");
+        iterateChildren(nodep);
+    }
+    void visit(AstConfigCell* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config cell");
+        iterateChildren(nodep);
+    }
+    void visit(AstConfigRule* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config rule");
+        iterateChildren(nodep);
+    }
+    void visit(AstConfigUse* nodep) override {
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: config use");
+        iterateChildren(nodep);
+    }
+
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // METHODS
@@ -623,7 +640,9 @@ public:
         }
         iterate(nodep);
     }
-    ~LinkCellsVisitor() override = default;
+    ~LinkCellsVisitor() override {
+        if (debug() >= 5 || dumpGraphLevel() >= 5) { m_mods.dumpFilePrefixed("linkcells"); }
+    }
 };
 
 //######################################################################

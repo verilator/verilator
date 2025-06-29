@@ -117,7 +117,7 @@ public:
     void exported(bool flag) { m_exported = flag; }
     bool imported() const { return m_imported; }
     void imported(bool flag) { m_imported = flag; }
-    void insert(const string& name, VSymEnt* entp) {
+    VSymEnt* insert(const string& name, VSymEnt* entp) {
         UINFO(9, "     SymInsert se" << cvtToHex(this) << " '" << name << "' se" << cvtToHex(entp)
                                      << "  " << entp->nodep());
         if (name != "" && m_idNameMap.find(name) != m_idNameMap.end()) {
@@ -130,6 +130,7 @@ public:
         } else {
             m_idNameMap.emplace(name, entp);
         }
+        return entp;
     }
     void reinsert(const string& name, VSymEnt* entp) {
         const auto it = m_idNameMap.find(name);
@@ -150,7 +151,7 @@ public:
                      << (it == m_idNameMap.end() ? "NONE"
                                                  : "se" + cvtToHex(it->second)
                                                        + " n=" + cvtToHex(it->second->nodep())));
-        if (it != m_idNameMap.end()) return (it->second);
+        if (it != m_idNameMap.end()) return it->second;
         return nullptr;
     }
     VSymEnt* findIdFallback(const string& name) const {

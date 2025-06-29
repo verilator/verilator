@@ -9,10 +9,17 @@
 
 import vltest_bootstrap
 
-test.scenarios('linter')
+test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--lint-only -Wwarn-REALCVT"],
-          fails=True,
-          expect_filename=test.golden_filename)
+# This doesn't use the general compile rule as we want to make sure we form
+# prefix properly using post-escaped identifiers
+test.run(cmd=[
+    os.environ["VERILATOR_ROOT"] + "/bin/verilator",
+    "--cc",
+    "--Mdir " + test.obj_dir + "/t_mod_dot",
+    "--exe --build --main",
+    't/t_mod_dot.v',
+],
+         verilator_run=True)
 
 test.passes()

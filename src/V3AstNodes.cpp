@@ -1806,6 +1806,22 @@ void AstClocking::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isGlobal);
     dumpJsonGen(str);
 }
+void AstConfigRule::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isCell()) str << " [CELL]";
+}
+void AstConfigRule::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isCell);
+    dumpJsonGen(str);
+}
+void AstConfigUse::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isConfig()) str << " [CONFIG]";
+}
+void AstConfigUse::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isConfig);
+    dumpJsonGen(str);
+}
 void AstDisplay::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     str << " [" << displayType().ascii() << "]";

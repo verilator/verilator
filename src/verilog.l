@@ -441,19 +441,19 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Verilog 2001 Config */
 <V01C,V05,VA5,S05,S09,S12,S17,S23,SAX>{
   /*     Generic unsupported keywords */
-  "cell"                { FL; ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "config"              { FL; ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "design"              { FL; ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "endconfig"           { FL; ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "cell"                { FL; return yCELL; }
+  "config"              { FL; return yCONFIG; }
+  "design"              { FL; return yDESIGN; }
+  "endconfig"           { FL; return yENDCONFIG; }
   "incdir"              { FL; ERROR_RSVD_WORD("Verilog 2001-config lib.map"); }
   "include"             { FL; yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: Verilog 2001-config lib.map reserved word not implemented: 'include'\n"
                                                 << yylval.fl->warnMore() << "... Suggest unless in a lib.map file,"
                                                 " want `include instead");
                           FL_BRK; }
-  "instance"            { FL; ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "liblist"             { FL; ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "instance"            { FL; return yINSTANCE; }
+  "liblist"             { FL; return yLIBLIST; }
   "library"             { FL; ERROR_RSVD_WORD("Verilog 2001-config lib.map"); }
-  "use"                 { FL; ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "use"                 { FL; return yUSE; }
 }
 
   /* Verilog 2005 */

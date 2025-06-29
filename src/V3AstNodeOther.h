@@ -953,9 +953,9 @@ public:
     AstClocking(FileLine* fl, const std::string& name, AstSenItem* sensesp,
                 AstClockingItem* itemsp, bool isDefault, bool isGlobal)
         : ASTGEN_SUPER_Clocking(fl)
+        , m_name{name}
         , m_isDefault{isDefault}
         , m_isGlobal{isGlobal} {
-        m_name = name;
         this->sensesp(sensesp);
         addItemsp(itemsp);
     }
@@ -993,6 +993,78 @@ public:
     AstClockingItem* outputp() const { return m_outputp; }
     void outputp(AstClockingItem* outputp) { m_outputp = outputp; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
+};
+class AstConfig final : public AstNode {
+    // Parents: NETLIST
+    // @astgen op1 := designp : List[AstConfigCell]
+    // @astgen op2 := itemsp : List[AstNode]
+    std::string m_name;  // Config block name
+
+public:
+    AstConfig(FileLine* fl, const std::string& name, AstNode* itemsp)
+        : ASTGEN_SUPER_Config(fl)
+        , m_name{name} {
+        addItemsp(itemsp);
+    }
+    ASTGEN_MEMBERS_AstConfig;
+    std::string name() const override VL_MT_STABLE { return m_name; }
+};
+class AstConfigCell final : public AstNode {
+    // Parents: CONFIGRULE
+    std::string m_libname;  // Cell library, or ""
+    std::string m_cellname;  // Cell name within library
+
+public:
+    AstConfigCell(FileLine* fl, const std::string& libname, const std::string& cellname)
+        : ASTGEN_SUPER_ConfigCell(fl)
+        , m_libname{libname}
+        , m_cellname{cellname} {}
+    ASTGEN_MEMBERS_AstConfigCell;
+    std::string name() const override VL_MT_STABLE { return m_libname + "." + m_cellname; }
+    std::string libname() const VL_MT_STABLE { return m_libname; }
+    std::string cellname() const VL_MT_STABLE { return m_cellname; }
+};
+class AstConfigRule final : public AstNode {
+    // Parents: CONFIG
+    // @astgen op1 := cellp : Optional[AstNode]  // Cells to apply to, or nullptr=default
+    // @astgen op2 := usep : List[AstNode]  // Use or design to apply
+    const bool m_isCell;  // Declared as "cell" versus "instance"
+
+public:
+    AstConfigRule(FileLine* fl, AstNode* cellp, AstNode* usep, bool isCell)
+        : ASTGEN_SUPER_ConfigRule(fl)
+        , m_isCell{isCell} {
+        this->cellp(cellp);
+        addUsep(usep);
+    }
+    ASTGEN_MEMBERS_AstConfigRule;
+    bool isCell() const VL_MT_STABLE { return m_isCell; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+};
+class AstConfigUse final : public AstNode {
+    // Parents: CONFIGRULE
+    // @astgen op1 := paramsp : List[AstPin]
+    std::string m_libname;  // Use library, or ""
+    std::string m_cellname;  // Use name within library
+    const bool m_isConfig;  // ":config"; Config, not module/primitive name
+
+public:
+    AstConfigUse(FileLine* fl, const std::string& libname, const std::string& cellname,
+                 AstPin* paramsp, bool isConfig)
+        : ASTGEN_SUPER_ConfigUse(fl)
+        , m_libname{libname}
+        , m_cellname{cellname}
+        , m_isConfig{isConfig} {
+        addParamsp(paramsp);
+    }
+    ASTGEN_MEMBERS_AstConfigUse;
+    std::string name() const override VL_MT_STABLE { return m_libname + "." + m_cellname; }
+    std::string libname() const VL_MT_STABLE { return m_libname; }
+    std::string cellname() const VL_MT_STABLE { return m_cellname; }
+    bool isConfig() const VL_MT_STABLE { return m_isConfig; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
 };
 class AstConstPool final : public AstNode {
     // Container for const static data

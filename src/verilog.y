@@ -575,11 +575,13 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yCASE           "case"
 %token<fl>              yCASEX          "casex"
 %token<fl>              yCASEZ          "casez"
+%token<fl>              yCELL           "cell"
 %token<fl>              yCHANDLE        "chandle"
 %token<fl>              yCHECKER        "checker"
 %token<fl>              yCLASS          "class"
 %token<fl>              yCLOCKING       "clocking"
 %token<fl>              yCMOS           "cmos"
+%token<fl>              yCONFIG         "config"
 %token<fl>              yCONSTRAINT     "constraint"
 %token<fl>              yCONST__ETC     "const"
 %token<fl>              yCONST__LEX     "const-in-lex"
@@ -593,6 +595,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yDEASSIGN       "deassign"
 %token<fl>              yDEFAULT        "default"
 %token<fl>              yDEFPARAM       "defparam"
+%token<fl>              yDESIGN         "design"
 %token<fl>              yDISABLE        "disable"
 %token<fl>              yDIST           "dist"
 %token<fl>              yDO             "do"
@@ -603,6 +606,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yENDCHECKER     "endchecker"
 %token<fl>              yENDCLASS       "endclass"
 %token<fl>              yENDCLOCKING    "endclocking"
+%token<fl>              yENDCONFIG      "endconfig"
 %token<fl>              yENDFUNCTION    "endfunction"
 %token<fl>              yENDGENERATE    "endgenerate"
 %token<fl>              yENDGROUP       "endgroup"
@@ -650,6 +654,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yINOUT          "inout"
 %token<fl>              yINPUT          "input"
 %token<fl>              yINSIDE         "inside"
+%token<fl>              yINSTANCE       "instance"
 %token<fl>              yINT            "int"
 %token<fl>              yINTEGER        "integer"
 %token<fl>              yINTERCONNECT   "interconnect"
@@ -659,6 +664,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yJOIN_ANY       "join_any"
 %token<fl>              yJOIN_NONE      "join_none"
 %token<fl>              yLET            "let"
+%token<fl>              yLIBLIST        "liblist"
 %token<fl>              yLOCALPARAM     "localparam"
 %token<fl>              yLOCAL__COLONCOLON "local-then-::"
 %token<fl>              yLOCAL__ETC     "local"
@@ -774,6 +780,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yUNTIL          "until"
 %token<fl>              yUNTIL_WITH     "until_with"
 %token<fl>              yUNTYPED        "untyped"
+%token<fl>              yUSE            "use"
 %token<fl>              yVAR            "var"
 %token<fl>              yVECTORED       "vectored"
 %token<fl>              yVIRTUAL__CLASS "virtual-then-class"
@@ -1212,7 +1219,7 @@ description:                    // ==IEEE: description
         |       package_declaration                     { }
         |       package_itemTop                         { if ($1) PARSEP->unitPackage($1->fileline())->addStmtsp($1); }
         |       bind_directive                          { if ($1) PARSEP->unitPackage($1->fileline())->addStmtsp($1); }
-        //UNSUP config_declaration                      { }
+        |       config_declaration                      { }
         //                      // Verilator only
         |       yaT_RESETALL                            { }  // Else, under design, and illegal based on IEEE 22.3
         |       yaT_NOUNCONNECTED                       { PARSEP->unconnectedDrive(VOptionBool::OPT_DEFAULT_FALSE); }
@@ -7720,8 +7727,140 @@ colon<fl>:                      // Generic colon that isn't making a label (e.g.
 //**********************************************************************
 // Config - config...endconfig
 
+config_declaration:  // == IEEE: config_declaration
+                yCONFIG idAny/*config_identifier*/ ';'
+        /*cont*/    configParameterListE design_statement config_rule_statementListE
+        /*cont*/    yENDCONFIG endLabelE
+                { AstConfig* const newp = new AstConfig{$1, *$2, $4};
+                  newp->addItemsp($5);
+                  newp->addItemsp($6);
+                  GRAMMARP->endLabel($<fl>7, *$2, $8);
+                  PARSEP->rootp()->addMiscsp(newp); }
+        ;
+
+configParameterListE<nodep>:  // IEEE: { local_parameter_declaration ';' }
+                /* empty */                             { $$ = nullptr; }
+        |       configParameterList                     { $$ = $1; }
+        ;
+
+configParameterList<nodep>:  // IEEE: part of config_declaration
+                configParameter                         { $$ = nullptr; }
+        |       configParameterList configParameter     { $$ = addNextNull($1, $2); }
+        ;
+
+configParameter<nodep>:  // IEEE: part of config_declaration
+                parameter_declaration ';'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: config localparam declaration"); }
+        ;
+
+design_statement<nodep>:  // == IEEE: design_statement
+                yDESIGN configCellList ';'              { $$ = $2; }
+        ;
+
+configCellList<configCellp>:  // IEEE: part of design_statement
+                configCell                              { $$ = $1; }
+        |       configCellList configCell               { $$ = addNextNull($1, $2); }
+        ;
+
+configCell<configCellp>:  // IEEE: part of design_statement, part of cell_clause
+                idAny/*cell_identifier*/
+                        { $$ = new AstConfigCell{$<fl>1, "", *$1}; }
+        |       idAny/*library_identifier*/ '.' idAny/*cell_identifier*/
+                        { $$ = new AstConfigCell{$<fl>1, *$1, *$3}; }
+        ;
+
+config_rule_statementListE<nodep>:  // IEEE: { config_rule }
+                /* empty */                             { $$ = nullptr; }
+        |       config_rule_statementList               { $$ = $1; }
+        ;
+
+config_rule_statementList<nodep>:  // IEEE: { config_rule }
+                config_rule_statement                   { $$ = $1; }
+        |       config_rule_statementList config_rule_statement   { $$ = addNextNull($1, $2); }
+        ;
+
+config_rule_statement<nodep>:  // == IEEE: config_rule_statement
+        //                      // IEEE: default_clause
+                yDEFAULT liblist_clause ';'
+                        { $$ = new AstConfigRule{$1, nullptr, $2, false}; }
+        //                      // IEEE: inst_clause
+        |       yINSTANCE inst_name liblist_clause ';'
+                        { $$ = new AstConfigRule{$1, $2, $3, false}; }
+        |       yINSTANCE inst_name use_clause ';'
+                        { $$ = new AstConfigRule{$1, $2, $3, false}; }
+        //                      // IEEE: cell_clause
+        |       yCELL configCell liblist_clause ';'
+                        { $$ = new AstConfigRule{$1, $2, $3, true}; }
+        |       yCELL configCell use_clause ';'
+                        { $$ = new AstConfigRule{$1, $2, $3, true}; }
+        |       error ';'
+                        { $$ = nullptr; }
+        ;
+
+inst_name<nodeExprp>:  // == IEEE: inst_name
+                idAnyAsParseRef/*topmodule_identifier*/
+                        { $$ = $1; }
+        |       idAnyAsParseRef/*topmodule_identifier*/ inst_nameInstanceList
+                        { $$ = new AstDot{$<fl>1, false, $1, $2}; }
+        ;
+
+inst_nameInstanceList<nodeExprp>:  // IEEE: part of inst_name
+                '.' idAnyAsParseRef/*instance_identifier*/
+                        { $$ = $2; }
+        |       inst_nameInstanceList '.' idAnyAsParseRef/*instance_identifier*/
+                        { $$ = new AstDot{$<fl>2, false, $1, $3}; }
+        ;
+
+liblist_clause<nodep>:  // == IEEE: liblist_clause
+                yLIBLIST                                { $$ = nullptr; }
+        |       yLIBLIST liblistLibraryList             { $$ = $2; }
+        ;
+
+liblistLibraryList<nodeExprp>:  // IEEE: part of liblist_clause
+                idAnyAsParseRef/*library_identifier*/
+                        { $$ = $1; }
+        |       liblistLibraryList idAnyAsParseRef/*library_identifier*/
+                        { $$ = addNextNull($1, $2); }
+        ;
+
+use_clause<nodep>:  // == IEEE: use_clause
+                yUSE idAny/*cell_identifier*/ useAssignmentListE colonConfigE
+                        { $$ = new AstConfigUse{$1, "", *$2, $3, $4}; }
+        |       yUSE idAny/*library_identifier*/ '.' idAny/*cell_identifier*/ useAssignmentListE colonConfigE
+                        { $$ = new AstConfigUse{$1, *$2, *$4, $5, $6}; }
+        |       yUSE useAssignmentListE colonConfigE
+                        { $$ = new AstConfigUse{$1, "", "", $2, $3}; }
+        ;
+
+useAssignmentListE<pinp>:  // IEEE: part of use clause
+                /* empty */                             { $$ = nullptr; }
+        //                      // IEEE is missing the '#' '(', but examples need it
+        |       '#' '(' ')'                             { $$ = nullptr; }
+        |       '#' '(' useAssignmentList ')'           { $$ = $3; }
+        ;
+
+useAssignmentList<pinp>:  // IEEE: part of use_clause
+                useAssignment                           { $$ = $1; }
+        |       useAssignmentList ',' useAssignment     { $$ = addNextNull($1, $3); }
+        ;
+
+useAssignment<pinp>:  // IEEE: part of use_clause
+        //                      // IEEE: named_parameter_assignment
+                '.' idAny/*parameter_identifier*/ '(' ')'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: 'config use' parameter assignment"); }
+        |       '.' idAny/*parameter_identifier*/ '(' exprOrDataType ')'
+                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: 'config use' parameter assignment"); }
+        ;
+
+colonConfigE<cbool>:  // IEEE: [ ':' yCONFIG]
+                /* empty */                             { $$ = false; }
+        |       ':' yCONFIG                             { $$ = true; }
+        ;
+
 //**********************************************************************
 // Config - lib.map
+//
+// TODO when implement this support, add -libmap option which takes multiple files.
 
 //UNSUP library_text:  // == IEEE: library_text (note is top-level entry point)
 //UNSUP         library_description                     { }
