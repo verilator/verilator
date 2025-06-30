@@ -3084,7 +3084,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
             bool allowVar = false;
             bool allowFTask = false;
             bool staticAccess = false;
-            if (m_ds.m_dotPos == DP_PACKAGE) {
+            if (VN_IS(nodep->backp(), Disable)) {
+                allowScope = true;
+            } else if (m_ds.m_dotPos == DP_PACKAGE) {
                 // {package-or-class}::{a}
                 AstNodeModule* classOrPackagep = nullptr;
                 expectWhat = "scope/variable/func";
@@ -3195,6 +3197,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     m_ds.m_dotPos = DP_SCOPE;
                     if (const AstBegin* const beginp = VN_CAST(foundp->nodep(), Begin)) {
                         if (beginp->generate()) m_ds.m_genBlk = true;
+                        if (AstDisable* const disablep = VN_CAST(nodep->backp(), Disable)) {
+                            disablep->targetp(foundp->nodep());
+                            nodep->unlinkFrBack();
+                            pushDeletep(nodep);
+                        }
                     }
                     // Upper AstDot visitor will handle it from here
                 } else if (VN_IS(foundp->nodep(), Cell) && allowVar) {
