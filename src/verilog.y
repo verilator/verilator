@@ -1250,7 +1250,7 @@ package_declaration:            // ==IEEE: package_declaration
 
 packageFront<nodeModulep>:
                 yPACKAGE lifetimeE idAny ';'
-                        { $$ = new AstPackage{$<fl>3, *$3};
+                        { $$ = new AstPackage{$<fl>3, *$3, PARSEP->libname()};
                           if ($$->name() == "std") {
                               if ($$->fileline()->filename() != V3Options::getStdPackagePath()) {
                                   $$->v3error("Redeclaring the 'std' package is not allowed");
@@ -1394,7 +1394,7 @@ modFront<nodeModulep>:
         //                      // General note: all *Front functions must call symPushNew before
         //                      // any formal arguments, as the arguments must land in the new scope.
                 yMODULE lifetimeE idAny
-                        { $$ = new AstModule{$<fl>3, *$3};
+                        { $$ = new AstModule{$<fl>3, *$3, PARSEP->libname()};
                           $$->lifetime($2);
                           $$->inLibrary(PARSEP->inLibrary() || $$->fileline()->celldefineOn());
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
@@ -1415,7 +1415,7 @@ importsAndParametersE<nodep>:   // IEEE: common part of module_declaration, inte
 
 udpFront<nodeModulep>:
                 yPRIMITIVE lifetimeE idAny
-                        { $$ = new AstPrimitive{$<fl>3, *$3};
+                        { $$ = new AstPrimitive{$<fl>3, *$3, PARSEP->libname()};
                           $$->inLibrary(true);
                           $$->lifetime($2);
                           $$->modTrace(false);
@@ -1685,7 +1685,7 @@ interface_declaration:          // IEEE: interface_declaration + interface_nonan
 
 intFront<nodeModulep>:
                 yINTERFACE lifetimeE idAny/*new_interface*/
-                        { $$ = new AstIface{$<fl>3, *$3};
+                        { $$ = new AstIface{$<fl>3, *$3, PARSEP->libname()};
                           $$->inLibrary(true);
                           $$->lifetime($2);
                           PARSEP->rootp()->addModulesp($$); }
@@ -1772,7 +1772,7 @@ program_declaration:            // IEEE: program_declaration + program_nonansi_h
 
 pgmFront<nodeModulep>:
                 yPROGRAM lifetimeE idAny/*new_program*/
-                        { $$ = new AstModule{$<fl>3, *$3, AstModule::Program{}};
+                        { $$ = new AstModule{$<fl>3, *$3, PARSEP->libname(), AstModule::Program{}};
                           $$->lifetime($2);
                           $$->inLibrary(PARSEP->inLibrary() || $$->fileline()->celldefineOn());
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
@@ -6792,7 +6792,7 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
 
 covergroup_declarationFront<classp>:  // IEEE: part of covergroup_declaration
                 yCOVERGROUP idAny
-                        { $$ = new AstClass{$<fl>2, *$2};
+                        { $$ = new AstClass{$<fl>2, *$2, PARSEP->libname()};
                           BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup"); }
         ;
 
@@ -7196,7 +7196,7 @@ checker_declaration<nodeModulep>:  // ==IEEE: part of checker_declaration
 
 checkerFront<nodeModulep>:  // IEEE: part of checker_declaration
                 yCHECKER idAny/*checker_identifier*/
-                        { $$ = new AstModule{$<fl>2, *$2, AstModule::Checker{}};
+                        { $$ = new AstModule{$<fl>2, *$2, PARSEP->libname(), AstModule::Checker{}};
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
                           $$->unconnectedDrive(PARSEP->unconnectedDrive()); }
@@ -7327,14 +7327,14 @@ class_declaration<nodep>:       // ==IEEE: part of class_declaration
 classFront<classp>:             // IEEE: part of class_declaration
         //                      // IEEE 1800-2023: lifetimeE replaced with final_specifierE
                 classVirtualE yCLASS final_specifierE lifetimeE idAny/*class_identifier*/
-                        { $$ = new AstClass{$2, *$5};
+                        { $$ = new AstClass{$2, *$5, PARSEP->libname()};
                           $$->baseOverride($3);
                           $$->isVirtual($1);
                           v3Global.setHasClasses(); }
         //                      // IEEE: part of interface_class_declaration
         //                      // IEEE 1800-2023: lifetimeE removed
         |       yINTERFACE yCLASS idAny/*class_identifier*/
-                        { $$ = new AstClass{$2, *$3};
+                        { $$ = new AstClass{$2, *$3, PARSEP->libname()};
                           $$->isInterfaceClass(true);
                           v3Global.setHasClasses(); }
         ;

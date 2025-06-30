@@ -116,12 +116,11 @@ static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of
     if (hblockp) topModuleFile = hblockp->vFileIfNecessary();
     if (!forCMake) {
         if (!topModuleFile.empty()) *of << topModuleFile << "\n";
-        const V3StringList& vFiles = v3Global.opt.vFiles();
-        for (const string& i : vFiles) *of << i << "\n";
+        for (const auto& i : v3Global.opt.vFiles()) *of << i.filename() << "\n";
     }
-    const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
-    for (const string& i : libraryFiles) {
-        if (V3Os::filenameRealPath(i) != topModuleFile) *of << "-v " << i << "\n";
+    for (const auto& i : v3Global.opt.libraryFiles()) {
+        if (V3Os::filenameRealPath(i.filename()) != topModuleFile)
+            *of << "-v " << i.filename() << "\n";
     }
 }
 
@@ -251,9 +250,9 @@ string V3HierBlock::hierGeneratedFilenames(bool withDir) const {
 
 string V3HierBlock::vFileIfNecessary() const {
     string filename = V3Os::filenameRealPath(m_modp->fileline()->filename());
-    for (const string& v : v3Global.opt.vFiles()) {
+    for (const auto& v : v3Global.opt.vFiles()) {
         // Already listed in vFiles, so no need to add the file.
-        if (filename == V3Os::filenameRealPath(v)) return "";
+        if (filename == V3Os::filenameRealPath(v.filename())) return "";
     }
     return filename;
 }

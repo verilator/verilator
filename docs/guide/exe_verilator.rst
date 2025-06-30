@@ -1596,8 +1596,8 @@ Summary:
    When the input Verilog contains more than one top-level module,
    it specifies the name of the module to become the top-level module,
    and sets the default for :vlopt:`--prefix` if not explicitly specified.
-   This is not needed with standard designs with only one top.  See also
-   :option:`MULTITOP` warning.
+   This is not needed with standard designs with only one top.
+   See :ref:`Finding and Binding Modules`.
 
 .. option:: --trace
 
@@ -1880,6 +1880,19 @@ Summary:
    ``-Wno-PINNOCONNECT`` ``-Wno-SYNCASYNCNET`` ``-Wno-UNDRIVEN``
    ``-Wno-UNUSEDGENVAR`` ``-Wno-UNUSEDPARAM`` ``-Wno-UNUSEDSIGNAL``
    ``-Wno-VARHIDDEN``.
+
+.. option:: -work <libname>
+
+   Use the specified Verilog config library name for all cells read after
+   this argument.  May be specified multiple times, it will apply to cells
+   read between the given arguments.  E.g. `-work liba a.v -work libb b.v`
+   will use `liba` for modules inside `a.v` or in cells resolved
+   hierarchically under those modules, and will use `libb` for modules
+   inside `b.v` or hierarchically under.
+
+   Defaults to "work" (IEEE 1800-2023 3.3.1).
+
+   See :ref:`Finding and Binding Modules`.
 
 .. option:: -Wpedantic
 

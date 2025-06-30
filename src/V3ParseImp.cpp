@@ -294,6 +294,7 @@ void V3ParseImp::preprocDumps(std::ostream& os, bool forInputs) {
 }
 
 void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
+                           const string& libname,
                            const string& errmsg) {  // "" for no error, make fake node
     const string nondirname = V3Os::filenameNonDir(modfilename);
     const string modname = V3Os::filenameNonDirExt(modfilename);
@@ -303,13 +304,14 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     m_lexFileline->newContent();
     m_bisonLastFileline = m_lexFileline;
     m_inLibrary = inLibrary;
+    m_libname = libname;
 
     // Preprocess into m_ppBuffer
     const bool ok = V3PreShell::preproc(fileline, modfilename, m_filterp, this, errmsg);
     if (!ok) {
         if (errmsg != "") return;  // Threw error already
         // Create fake node for later error reporting
-        AstNodeModule* const nodep = new AstNotFoundModule{fileline, modname};
+        AstNodeModule* const nodep = new AstNotFoundModule{fileline, modname, libname};
         v3Global.rootp()->addModulesp(nodep);
         return;
     }
@@ -745,8 +747,8 @@ V3Parse::~V3Parse() {  //
     VL_DO_CLEAR(delete m_impp, m_impp = nullptr);
 }
 void V3Parse::parseFile(FileLine* fileline, const string& modname, bool inLibrary,
-                        const string& errmsg) {
-    m_impp->parseFile(fileline, modname, inLibrary, errmsg);
+                        const string& libname, const string& errmsg) {
+    m_impp->parseFile(fileline, modname, inLibrary, libname, errmsg);
 }
 void V3Parse::ppPushText(V3ParseImp* impp, const string& text) {
     if (text != "") impp->ppPushText(text);

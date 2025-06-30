@@ -93,7 +93,7 @@ class ClassVisitor final : public VNVisitor {
         // Make containing package
         // Note origName is the same as the class origName so errors look correct
         AstClassPackage* const packagep
-            = new AstClassPackage{nodep->fileline(), nodep->origName()};
+            = new AstClassPackage{nodep->fileline(), nodep->origName(), nodep->libname()};
         packagep->name(nodep->name() + "__Vclpkg");
         nodep->editCountInc();
         nodep->classOrPackagep(packagep);
@@ -138,6 +138,7 @@ class ClassVisitor final : public VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         // Visit for NodeModules that are not AstClass (AstClass is-a AstNodeModule)
+        // Classes are always under a Package (perhaps $unit) or a module
         VL_RESTORER(m_prefix);
         VL_RESTORER(m_modp);
         m_modp = nodep;

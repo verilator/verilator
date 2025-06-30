@@ -814,13 +814,12 @@ class EmitMkHierVerilation final {
         const string verilator_wrapper = V3Os::filenameDir(fullpath_bin) + "/verilator";
         of.puts("VM_HIER_VERILATOR := " + verilator_wrapper + "\n");
         of.puts("VM_HIER_INPUT_FILES := \\\n");
-        const V3StringList& vFiles = v3Global.opt.vFiles();
-        for (const string& i : vFiles) of.puts("  " + V3Os::filenameRealPath(i) + " \\\n");
+        for (const auto& i : v3Global.opt.vFiles())
+            of.puts("  " + V3Os::filenameRealPath(i.filename()) + " \\\n");
         of.puts("\n");
-        const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
         of.puts("VM_HIER_VERILOG_LIBS := \\\n");
-        for (const string& i : libraryFiles) {
-            of.puts("  " + V3Os::filenameRealPath(i) + " \\\n");
+        for (const auto& i : v3Global.opt.libraryFiles()) {
+            of.puts("  " + V3Os::filenameRealPath(i.filename()) + " \\\n");
         }
         of.puts("\n");
     }

@@ -1,8 +1,8 @@
 [0] In top.t: Hi
-[0] In top.t.sub.write_m (sub)
-[0] In top.t.sub.write_m.subblock (sub)
-[0] In top.t.sub2.write_m (sub2)
-[0] In top.t.sub2.write_m.subblock2 (sub2)
+[0] In top.t.sub.write_m (work.sub)
+[0] In top.t.sub.write_m.subblock (work.sub)
+[0] In top.t.sub2.write_m (work.sub2)
+[0] In top.t.sub2.write_m.subblock2 (work.sub2)
 a: -0.4=> 0.4  0  0  0
 [0] Back \ Quote "
 [0] %b=000001100 %0b=1100  %b=00000101010111011101110111100110011001100 %0b=101010111011101110111100110011001100  %b=000001010101111000001001000110100010101100111100000010010001101000101011001111000 %0b=1010101111000001001000110100010101100111100000010010001101000101011001111000

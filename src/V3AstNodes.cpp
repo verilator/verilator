@@ -1353,7 +1353,7 @@ AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
 
 AstConstPool::AstConstPool(FileLine* fl)
     : ASTGEN_SUPER_ConstPool(fl)
-    , m_modp{new AstModule{fl, "@CONST-POOL@"}}
+    , m_modp{new AstModule{fl, "@CONST-POOL@", "work"}}
     , m_scopep{new AstScope{fl, m_modp, "@CONST-POOL@", nullptr, nullptr}} {
     this->modulep(m_modp);
     m_modp->addStmtsp(m_scopep);
@@ -2298,7 +2298,7 @@ void AstNetlist::dumpJson(std::ostream& str) const {
 }
 AstPackage* AstNetlist::dollarUnitPkgAddp() {
     if (!m_dollarUnitPkgp) {
-        m_dollarUnitPkgp = new AstPackage{fileline(), AstPackage::dollarUnitName()};
+        m_dollarUnitPkgp = new AstPackage{fileline(), AstPackage::dollarUnitName(), "work"};
         // packages are always libraries; don't want to make them a "top"
         m_dollarUnitPkgp->inLibrary(true);
         m_dollarUnitPkgp->modTrace(false);  // may reconsider later
@@ -2325,6 +2325,7 @@ void AstNodeModule::dump(std::ostream& str) const {
         str << " [RECURSIVE]";
     }
     str << " [" << timeunit() << "]";
+    if (libname() != "work") str << " libname=" << libname();
 }
 void AstNodeModule::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
@@ -2335,6 +2336,7 @@ void AstNodeModule::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, recursiveClone);
     dumpJsonBoolFunc(str, recursive);
     dumpJsonStr(str, "timeunit", timeunit().ascii());
+    if (libname() != "work") dumpJsonStr(str, "libname=", libname());
     dumpJsonGen(str);
 }
 void AstPackageExport::dump(std::ostream& str) const {

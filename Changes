@@ -26,6 +26,7 @@ Verilator 5.037 devel
 * Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
 * Add ternary operator into branch coverage (#5880). [Ryszard Rozak, Antmicro Ltd.]
 * Add aggregate type error checks (#5570) (#5950). [Shou-Li Hsu]
+* Add `--work` library-selection option (#5891 partial).
 * Add `--filter-type` to verilator_coverage (#6030). [Ryszard Rozak, Antmicro Ltd.]
 * Add `--hierarchical-threads` (#6037). [Bartłomiej Chmiel]
 * Add `MODMISSING` error, in place of unnamed error (#6054). [Paul Swirhun]

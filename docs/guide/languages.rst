@@ -478,7 +478,8 @@ shortreal
   other simulators either do not support float, or convert likewise.
 
 specify specparam
-  All specify blocks and timing checks are ignored.
+  All timing checks and specify blocks (except specparam, which is
+  supported) are ignored.
 
 uwire
   Verilator does not perform warning checking on uwires; it treats the

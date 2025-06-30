@@ -60,42 +60,39 @@ void V3Global::readFiles() {
     if (v3Global.opt.stdWaiver()) {
         parser.parseFile(
             new FileLine{V3Options::getStdWaiverPath()}, V3Options::getStdWaiverPath(), false,
-            "Cannot find verilated_std_waiver.vlt containing built-in lint waivers: ");
+            "work", "Cannot find verilated_std_waiver.vlt containing built-in lint waivers: ");
     }
     // Read .vlt files
-    const V3StringSet& vltFiles = v3Global.opt.vltFiles();
-    for (const string& filename : vltFiles) {
-        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filename, false,
-                         "Cannot find file containing .vlt file: ");
+    for (auto& filelib : v3Global.opt.vltFiles()) {
+        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(), false,
+                         filelib.libname(), "Cannot find file containing .vlt file: ");
     }
 
     // Parse the std package
     if (v3Global.opt.stdPackage()) {
         parser.parseFile(new FileLine{V3Options::getStdPackagePath()},
-                         V3Options::getStdPackagePath(), false,
+                         V3Options::getStdPackagePath(), false, "work",
                          "Cannot find verilated_std.sv containing built-in std:: definitions: ");
     }
 
     // Read top module
-    const V3StringList& vFiles = v3Global.opt.vFiles();
-    for (const string& filename : vFiles) {
-        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filename, false,
-                         "Cannot find file containing module: ");
+    for (const auto& filelib : v3Global.opt.vFiles()) {
+        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(), false,
+                         filelib.libname(), "Cannot find file containing module: ");
     }
 
     // Read libraries
     // To be compatible with other simulators,
     // this needs to be done after the top file is read
-    const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
-    for (const string& filename : libraryFiles) {
-        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filename, true,
-                         "Cannot find file containing library module: ");
+    for (const auto& filelib : v3Global.opt.libraryFiles()) {
+        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(), true,
+                         filelib.libname(), "Cannot find file containing library module: ");
     }
 
     // Read hierarchical type parameter file
-    const string filename = v3Global.opt.hierParamFile();
-    if (!filename.empty()) {
-        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filename, false,
+    for (const auto& filelib : v3Global.opt.hierParamFile()) {
+        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(), false,
+                         filelib.libname(),
                          "Cannot open file containing hierarchical parameter declarations: ");
     }
 

@@ -513,6 +513,7 @@ detailed descriptions of these arguments.
      -Wno-fatal                 Disable fatal exit on warnings
      -Wno-lint                  Disable all lint warnings
      -Wno-style                 Disable all style warnings
+     -work <libname>            Set config library for following files
      -Wpedantic                 Warn on compliance-test issues
      -Wwarn-<message>           Enable specified warning message
      -Wwarn-lint                Enable lint warning message

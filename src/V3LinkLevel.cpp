@@ -164,7 +164,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
         return;
     }
 
-    AstNodeModule* const newmodp = new AstModule{oldmodp->fileline(), "$root"};
+    AstNodeModule* const newmodp = new AstModule{oldmodp->fileline(), "$root", oldmodp->libname()};
     newmodp->name(AstNode::encodeName(newmodp->name()));  // so origName is nice
     // Make the new module first in the list
     oldmodp->unlinkFrBackWithNext();

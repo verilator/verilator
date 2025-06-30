@@ -133,9 +133,9 @@ class V3EmitMkJsonEmitter final {
                 const string vFile = hblockp->vFileIfNecessary();
                 if (!vFile.empty()) sources.emplace_back(vFile);
 
-                const V3StringList& vFiles = v3Global.opt.vFiles();
-                for (const string& i : vFiles)
-                    sources.emplace_back(V3Os::filenameSlashPath(V3Os::filenameRealPath(i)));
+                for (const auto& i : v3Global.opt.vFiles())
+                    sources.emplace_back(
+                        V3Os::filenameSlashPath(V3Os::filenameRealPath(i.filename())));
 
                 std::vector<std::string> cflags;
                 cflags.emplace_back("-fPIC");
@@ -156,9 +156,9 @@ class V3EmitMkJsonEmitter final {
             for (const auto& itr : *planp)
                 sources.emplace_back(makeDir + "/" + itr.second->hierWrapperFilename(true));
 
-            const V3StringList& vFiles = v3Global.opt.vFiles();
-            for (const string& i : vFiles)
-                sources.emplace_back(V3Os::filenameSlashPath(V3Os::filenameRealPath(i)));
+            for (const auto& itr : v3Global.opt.vFiles())
+                sources.emplace_back(
+                    V3Os::filenameSlashPath(V3Os::filenameRealPath(itr.filename())));
 
             of.begin()
                 .put("prefix", v3Global.opt.prefix())

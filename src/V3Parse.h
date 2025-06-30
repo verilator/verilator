@@ -43,7 +43,7 @@ public:
     // METHODS
     // Preprocess and read the Verilog file specified into the netlist database
     void parseFile(FileLine* fileline, const string& modname, bool inLibrary,
-                   const string& errmsg) VL_MT_DISABLED;
+                   const string& libname, const string& errmsg) VL_MT_DISABLED;
 
     // Push preprocessed text to the lexer
     static void ppPushText(V3ParseImp* impp, const string& text) VL_MT_DISABLED;

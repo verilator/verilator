@@ -226,6 +226,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     const string m_origName;  // Name of the module, ignoring name() changes, for dot lookup
     string m_someInstanceName;  // Hierarchical name of some arbitrary instance of this module.
                                 // Used for user messages only.
+    string m_libname;  // Work library
     int m_level = 0;  // 1=top module, 2=cell off top module, ...
     VLifetime m_lifetime;  // Lifetime
     VTimescale m_timeunit;  // Global time unit
@@ -243,10 +244,11 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr
 protected:
-    AstNodeModule(VNType t, FileLine* fl, const string& name)
+    AstNodeModule(VNType t, FileLine* fl, const string& name, const string& libname)
         : AstNode{t, fl}
         , m_name{name}
         , m_origName{name}
+        , m_libname{libname}
         , m_modPublic{false}
         , m_modTrace{false}
         , m_inLibrary{false}
@@ -275,6 +277,8 @@ public:
     void inLibrary(bool flag) { m_inLibrary = flag; }
     void level(int level) { m_level = level; }
     int level() const VL_MT_SAFE { return m_level; }
+    string libname() const { return m_libname; }
+    string prettyLibnameQ() const { return "'" + prettyName(libname()) + "'"; }
     bool isTop() const VL_MT_SAFE { return level() == 1; }
     bool modPublic() const { return m_modPublic; }
     void modPublic(bool flag) { m_modPublic = flag; }
@@ -2507,8 +2511,8 @@ class AstClass final : public AstNodeModule {
     bool m_virtual = false;  // Virtual class
 
 public:
-    AstClass(FileLine* fl, const string& name)
-        : ASTGEN_SUPER_Class(fl, name) {}
+    AstClass(FileLine* fl, const string& name, const string& libname)
+        : ASTGEN_SUPER_Class(fl, name, libname) {}
     ASTGEN_MEMBERS_AstClass;
     string verilogKwd() const override { return "class"; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
@@ -2581,8 +2585,8 @@ class AstClassPackage final : public AstNodeModule {
     // @astgen ptr := m_classp : Optional[AstClass]  // Class package this is under
     //                                     // (weak pointer, hard link is other way)
 public:
-    AstClassPackage(FileLine* fl, const string& name)
-        : ASTGEN_SUPER_ClassPackage(fl, name) {}
+    AstClassPackage(FileLine* fl, const string& name, const string& libname)
+        : ASTGEN_SUPER_ClassPackage(fl, name, libname) {}
     ASTGEN_MEMBERS_AstClassPackage;
     string verilogKwd() const override { return "classpackage"; }
     bool timescaleMatters() const override { return false; }
@@ -2592,8 +2596,8 @@ public:
 class AstIface final : public AstNodeModule {
     // A module declaration
 public:
-    AstIface(FileLine* fl, const string& name)
-        : ASTGEN_SUPER_Iface(fl, name) {}
+    AstIface(FileLine* fl, const string& name, const string& libname)
+        : ASTGEN_SUPER_Iface(fl, name, libname) {}
     ASTGEN_MEMBERS_AstIface;
     // Interfaces have `timescale applicability but lots of code seems to
     // get false warnings if we enable this
@@ -2607,13 +2611,13 @@ class AstModule final : public AstNodeModule {
 public:
     class Checker {};  // for constructor type-overload selection
     class Program {};  // for constructor type-overload selection
-    AstModule(FileLine* fl, const string& name)
-        : ASTGEN_SUPER_Module(fl, name) {}
-    AstModule(FileLine* fl, const string& name, Checker)
-        : ASTGEN_SUPER_Module(fl, name)
+    AstModule(FileLine* fl, const string& name, const string& libname)
+        : ASTGEN_SUPER_Module(fl, name, libname) {}
+    AstModule(FileLine* fl, const string& name, const string& libname, Checker)
+        : ASTGEN_SUPER_Module(fl, name, libname)
         , m_isChecker{true} {}
-    AstModule(FileLine* fl, const string& name, Program)
-        : ASTGEN_SUPER_Module(fl, name)
+    AstModule(FileLine* fl, const string& name, const string& libname, Program)
+        : ASTGEN_SUPER_Module(fl, name, libname)
         , m_isProgram{true} {}
     ASTGEN_MEMBERS_AstModule;
     string verilogKwd() const override {
@@ -2628,8 +2632,8 @@ public:
 class AstNotFoundModule final : public AstNodeModule {
     // A missing module declaration
 public:
-    AstNotFoundModule(FileLine* fl, const string& name)
-        : ASTGEN_SUPER_NotFoundModule(fl, name) {}
+    AstNotFoundModule(FileLine* fl, const string& name, const string& libname)
+        : ASTGEN_SUPER_NotFoundModule(fl, name, libname) {}
     ASTGEN_MEMBERS_AstNotFoundModule;
     string verilogKwd() const override { return "/*not-found-*/ module"; }
     bool timescaleMatters() const override { return false; }
@@ -2637,8 +2641,8 @@ public:
 class AstPackage final : public AstNodeModule {
     // A package declaration
 public:
-    AstPackage(FileLine* fl, const string& name)
-        : ASTGEN_SUPER_Package(fl, name) {}
+    AstPackage(FileLine* fl, const string& name, const string& libname)
+        : ASTGEN_SUPER_Package(fl, name, libname) {}
     ASTGEN_MEMBERS_AstPackage;
     string verilogKwd() const override { return "package"; }
     bool timescaleMatters() const override { return !isDollarUnit(); }
@@ -2648,8 +2652,8 @@ public:
 class AstPrimitive final : public AstNodeModule {
     // A primitive declaration
 public:
-    AstPrimitive(FileLine* fl, const string& name)
-        : ASTGEN_SUPER_Primitive(fl, name) {}
+    AstPrimitive(FileLine* fl, const string& name, const string& libname)
+        : ASTGEN_SUPER_Primitive(fl, name, libname) {}
     ASTGEN_MEMBERS_AstPrimitive;
     string verilogKwd() const override { return "primitive"; }
     bool timescaleMatters() const override { return false; }
