@@ -337,20 +337,21 @@ class LinkJumpVisitor final : public VNVisitor {
     }
     void visit(AstDisable* nodep) override {
         UINFO(8, "   DISABLE " << nodep);
-        iterateChildren(nodep);
-        AstNodeBlock* blockp = nullptr;
+        UASSERT_OBJ(nodep->targetp(), nodep, "Unlinked disable statement");
+        const std::string disableName = nodep->targetp()->name();
+        AstNodeBlock* aboveBlockp = nullptr;
         for (AstNodeBlock* const stackp : vlstd::reverse_view(m_blockStack)) {
             UINFO(9, "    UNDERBLK  " << stackp);
-            if (stackp->name() == nodep->name()) {
-                blockp = stackp;
+            if (stackp->name() == disableName) {
+                aboveBlockp = stackp;
                 break;
             }
         }
-        // if (debug() >= 9) { UINFO(0, "\n"); blockp->dumpTree("-  labeli: "); }
-        if (!blockp) {
+        // if (debug() >= 9) { UINFO(0, "\n"); aboveBlockp->dumpTree("-  labeli: "); }
+        if (!aboveBlockp) {
             nodep->v3warn(E_UNSUPPORTED,
-                          "disable isn't underneath a begin with name: " << nodep->prettyNameQ());
-        } else if (AstBegin* const beginp = VN_CAST(blockp, Begin)) {
+                          "disable isn't underneath a begin with name: " << disableName);
+        } else if (AstBegin* const beginp = VN_CAST(aboveBlockp, Begin)) {
             if (beginp->user3()) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling block that contains a fork");
             } else {
