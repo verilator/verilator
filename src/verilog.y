@@ -6780,7 +6780,15 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
         |       covergroup_declarationFront '(' tf_port_listE ')'
         /*cont*/    coverage_eventE ';' coverage_spec_or_optionListE
         /*cont*/    yENDGROUP endLabelE
-                        { $$ = $1;
+                        {
+                          AstFunc *constructor = new AstFunc{$<fl>1, "new", nullptr, nullptr};
+                          constructor->classMethod(true);
+                          constructor->isConstructor(true);
+                          constructor->dtypep($1->dtypep());
+                          constructor->addStmtsp($3);
+
+                          $1->addMembersp(constructor);
+                          $$ = $1;
                           GRAMMARP->endLabel($<fl>9, $1, $9); }
         //                      // IEEE 1800-2023 added:
         |       covergroup_declarationFront yEXTENDS idAny/*covergroup_identifier*/

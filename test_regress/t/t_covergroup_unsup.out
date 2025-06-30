@@ -402,9 +402,4 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:166:10: Ignoring unsupported: coverpoint
   166 |          coverpoint m_y;
       |          ^~~~~~~~~~
-%Error: t/t_covergroup_unsup.v:176:26: Too many arguments in function call to FUNC 'new'
-                                     : ... note: In instance 't'
-  176 |       cg_args cov2 = new(2);
-      |                          ^
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to
