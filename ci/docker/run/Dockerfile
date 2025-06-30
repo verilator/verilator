@@ -48,7 +48,8 @@ RUN git clone "${REPO}" verilator && \
     make && \
     make install && \
     cd .. && \
-    rm -r verilator
+    rm -r verilator && \
+    ccache -C
 
 COPY verilator-wrap.sh /usr/local/bin/verilator-wrap.sh
 
