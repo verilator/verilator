@@ -350,7 +350,7 @@ class LinkJumpVisitor final : public VNVisitor {
         // if (debug() >= 9) { UINFO(0, "\n"); aboveBlockp->dumpTree("-  labeli: "); }
         if (!aboveBlockp) {
             nodep->v3warn(E_UNSUPPORTED,
-                          "disable isn't underneath a begin with name: " << disableName);
+                          "disable isn't underneath a begin with name: '" << disableName << "'");
         } else if (AstBegin* const beginp = VN_CAST(aboveBlockp, Begin)) {
             if (beginp->user3()) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling block that contains a fork");
