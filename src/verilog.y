@@ -5828,6 +5828,9 @@ specparam_assignment<varp>:     // ==IEEE: specparam_assignment
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
                           if ($4) $$->valuep($4); }
         //                      //  IEEE: pulse_control_specparam
+        |       idPathpulse sigAttrListE '=' '(' minTypMax ')'
+                        { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
+                          if ($5) $$->valuep($5); }
         |       idPathpulse sigAttrListE '=' '(' minTypMax ',' minTypMax ')'
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
                           if ($5) $$->valuep($5); }

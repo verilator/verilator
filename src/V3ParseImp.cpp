@@ -691,7 +691,7 @@ void V3ParseImp::tokenPipelineSym() {
     if (token == yaID__LEX || token == yaID__CC || token == yaID__aTYPE) {
         importIfInStd(yylval.fl, *(yylval.strp));
         if (token == yaID__LEX) {
-            if (VString::startsWith(*(yylval.strp), "PATHPULSE__024a")) {
+            if (VString::startsWith(*(yylval.strp), "PATHPULSE__024")) {
                 token = yaID__PATHPULSE;
             } else {
                 token = yaID__ETC;
