@@ -11,8 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(
-    verilator_flags2=['--binary', '--work liba', 't/t_config_work__liba.v', '--work libb', 't/t_config_work__libb.v'])
+test.compile(verilator_flags2=[
+    '--binary', '--work liba', 't/t_config_work__liba.v', '--work libb', 't/t_config_work__libb.v'
+])
 
 test.execute()
 

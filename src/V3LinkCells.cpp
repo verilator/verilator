@@ -615,7 +615,8 @@ class LinkCellsVisitor final : public VNVisitor {
                 nodep->name(hierIt->first);  // Change name of this module to be mangled name
                                              // considering parameter
             }
-            const AstNodeModule* const libFoundp = findModuleLibSym(nodep->origName(), nodep->libname());
+            const AstNodeModule* const libFoundp
+                = findModuleLibSym(nodep->origName(), nodep->libname());
             const AstNodeModule* const globalFoundp = findModuleLibSym(nodep->name(), "__GLOBAL");
             if (libFoundp && libFoundp == nodep) {
                 // Ok
@@ -674,9 +675,7 @@ public:
         iterate(nodep);
     }
     ~LinkCellsVisitor() override {
-        if (debug() >= 5 || dumpGraphLevel() >= 5) {
-            m_mods.dumpFilePrefixed("linkcells");
-        }
+        if (debug() >= 5 || dumpGraphLevel() >= 5) { m_mods.dumpFilePrefixed("linkcells"); }
     }
 };
 
