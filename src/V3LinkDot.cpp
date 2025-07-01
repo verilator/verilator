@@ -3094,6 +3094,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             bool staticAccess = false;
             if (m_ds.m_disablep) {
                 allowScope = true;
+                allowFTask = true;
             } else if (m_ds.m_dotPos == DP_PACKAGE) {
                 // {package-or-class}::{a}
                 AstNodeModule* classOrPackagep = nullptr;
@@ -4525,9 +4526,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
         iterateChildren(nodep);
-        if (nodep->targetp() && nodep->targetRefp()) {
-            // If the target is already linked, there is no need to store reference as child
-            VL_DO_DANGLING(nodep->targetRefp()->unlinkFrBack()->deleteTree(), nodep);
+        if (nodep->targetRefp()) {
+            if (AstTaskRef* const taskRefp = VN_CAST(nodep->targetRefp(), TaskRef)) {
+                nodep->targetp(taskRefp->taskp());
+            }
+            if (nodep->targetp()) {
+                // If the target is already linked, there is no need to store reference as child
+                VL_DO_DANGLING(nodep->targetRefp()->unlinkFrBack()->deleteTree(), nodep);
+            }
         }
     }
     void visit(AstPackageImport* nodep) override {
