@@ -1737,7 +1737,7 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"NONE", "RAND", "RANDC", "RAND-INLINE"};
+        static const char* const names[] = {"NONE", "RAND", "RANDC", "RAND_INLINE"};
         return names[m_e];
     }
     VRandAttr()
