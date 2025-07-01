@@ -153,17 +153,56 @@ public:
 };
 
 class VirtIfaceTriggers final {
+    // Represents a specific member in a virtual interface
+    struct IfaceMember {
+        const AstIface* m_ifacep;             // Interface type
+        const std::string m_memberName;       // Name of the member field
+
+        IfaceMember(const AstIface* ifacep, const std::string& memberName)
+            : m_ifacep(ifacep), m_memberName(memberName) {}
+
+        bool operator<(const IfaceMember& other) const {
+            if (m_ifacep != other.m_ifacep) return m_ifacep < other.m_ifacep;
+            return m_memberName < other.m_memberName;
+        }
+    };
+
+    using IfaceMemberTrigger = std::pair<IfaceMember, AstVarScope*>;
+    using IfaceMemberTriggerVec = std::vector<IfaceMemberTrigger>;
+    using IfaceMemberSensMap = std::map<IfaceMember, AstSenTree*>;
+
     using IfaceTrigger = std::pair<const AstIface*, AstVarScope*>;
     using IfaceTriggerVec = std::vector<IfaceTrigger>;
     using IfaceSensMap = std::map<const AstIface*, AstSenTree*>;
-    IfaceTriggerVec m_triggers;
+
+    IfaceMemberTriggerVec m_memberTriggers;
+    IfaceTriggerVec m_ifaceTriggers;
 
 public:
-    void emplace_back(IfaceTrigger&& p) { m_triggers.emplace_back(std::move(p)); }
-    IfaceTriggerVec::const_iterator begin() const { return m_triggers.begin(); }
-    IfaceTriggerVec::const_iterator end() const { return m_triggers.end(); }
+    void addMemberTrigger(const AstIface* ifacep, const std::string& memberName,
+                          AstVarScope* triggerVscp) {
+        m_memberTriggers.emplace_back(IfaceMember(ifacep, memberName), triggerVscp);
+    }
+
+    AstVarScope* findMemberTrigger(const AstIface* ifacep, const std::string& memberName) const {
+        IfaceMember target(ifacep, memberName);
+        for (const auto& pair : m_memberTriggers) {
+            if (!(pair.first < target) && !(target < pair.first)) {
+                return pair.second;
+            }
+        }
+        return nullptr;
+    }
+
+    IfaceMemberSensMap makeMemberToSensMap(AstNetlist* netlistp, size_t vifTriggerIndex,
+                                          AstVarScope* trigVscp) const;
+
+    void emplace_back(IfaceTrigger&& p) { m_ifaceTriggers.emplace_back(std::move(p)); }
+    IfaceTriggerVec::const_iterator begin() const { return m_ifaceTriggers.begin(); }
+    IfaceTriggerVec::const_iterator end() const { return m_ifaceTriggers.end(); }
     IfaceSensMap makeIfaceToSensMap(AstNetlist* netlistp, size_t vifTriggerIndex,
                                     AstVarScope* trigVscp) const;
+
     VL_UNCOPYABLE(VirtIfaceTriggers);
     VirtIfaceTriggers() = default;
     VirtIfaceTriggers(VirtIfaceTriggers&&) = default;
