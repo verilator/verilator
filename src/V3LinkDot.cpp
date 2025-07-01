@@ -3187,7 +3187,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             }
             if (!foundp) {
-            } else if (VN_IS(foundp->nodep(), Cell) || VN_IS(foundp->nodep(), Begin)
+            } else if (VN_IS(foundp->nodep(), Cell) || VN_IS(foundp->nodep(), NodeBlock)
                        || VN_IS(foundp->nodep(), Netlist)  // for $root
                        || VN_IS(foundp->nodep(), Module)) {  // if top
                 if (allowScope) {
