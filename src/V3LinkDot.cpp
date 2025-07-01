@@ -3195,13 +3195,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
                     m_ds.m_dotSymp = foundp;
                     m_ds.m_dotPos = DP_SCOPE;
-                    if (const AstBegin* const beginp = VN_CAST(foundp->nodep(), Begin)) {
-                        if (beginp->generate()) m_ds.m_genBlk = true;
+                    if (VN_IS(foundp->nodep(), NodeBlock)) {
                         if (AstDisable* const disablep = VN_CAST(nodep->backp(), Disable)) {
                             disablep->targetp(foundp->nodep());
                             nodep->unlinkFrBack();
                             pushDeletep(nodep);
                         }
+                    }
+                    if (const AstBegin* const beginp = VN_CAST(foundp->nodep(), Begin)) {
+                        if (beginp->generate()) m_ds.m_genBlk = true;
                     }
                     // Upper AstDot visitor will handle it from here
                 } else if (VN_IS(foundp->nodep(), Cell) && allowVar) {

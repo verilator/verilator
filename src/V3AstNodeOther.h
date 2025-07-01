@@ -46,6 +46,7 @@ protected:
 
 public:
     ASTGEN_MEMBERS_AstNodeBlock;
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Block name
@@ -2384,7 +2385,6 @@ public:
         , m_needProcess{false}
         , m_implied{implied} {}
     ASTGEN_MEMBERS_AstBegin;
-    bool maybePointedTo() const override VL_MT_SAFE { return true; }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     bool generate() const { return m_generate; }
