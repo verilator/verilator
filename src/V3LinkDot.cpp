@@ -2831,6 +2831,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (start) {  // Starting dot sequence
                 if (debug() >= 9) nodep->dumpTree("-  dot-in: ");
                 m_ds.init(m_curSymp);  // Start from current point
+                if (AstDisable* const disablep = VN_CAST(nodep->backp(), Disable)) {
+                    m_ds.m_disablep = disablep;
+                }
             }
             m_ds.m_dotp = nodep;  // Always, not just at start
             m_ds.m_dotPos = DP_FIRST;
@@ -3200,12 +3203,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
                     m_ds.m_dotSymp = foundp;
                     m_ds.m_dotPos = DP_SCOPE;
-                    if (VN_IS(foundp->nodep(), NodeBlock)) {
-                        if (m_ds.m_disablep) {
-                            m_ds.m_disablep->targetp(foundp->nodep());
-                            nodep->unlinkFrBack();
-                            pushDeletep(nodep);
-                        }
+                    if (m_ds.m_disablep && VN_IS(foundp->nodep(), NodeBlock)) {
+                        m_ds.m_disablep->targetp(foundp->nodep());
                     }
                     if (const AstBegin* const beginp = VN_CAST(foundp->nodep(), Begin)) {
                         if (beginp->generate()) m_ds.m_genBlk = true;
@@ -4521,6 +4520,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (nodep->cname() != "") taskp->cname(nodep->cname());
         }
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
+    void visit(AstDisable* nodep) override {
+        LINKDOT_VISIT_START();
+        checkNoDot(nodep);
+        iterateChildren(nodep);
+        if (nodep->targetp() && nodep->targetRefp()) {
+            // If the target is already linked, there is no need to store reference as child
+            VL_DO_DANGLING(nodep->targetRefp()->unlinkFrBack()->deleteTree(), nodep);
+        }
     }
     void visit(AstPackageImport* nodep) override {
         // No longer needed
