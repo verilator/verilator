@@ -6300,7 +6300,10 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
-        if (nodep->didWidth()) return;
+        if (nodep->didWidth()) {
+            nodep->addPinsp(withp);
+            return;
+        }
         if ((nodep->taskp()->classMethod() && !nodep->taskp()->isStatic())
             && !VN_IS(m_procedurep, InitialAutomatic)
             && (!m_ftaskp || !m_ftaskp->classMethod() || m_ftaskp->isStatic()) && !m_constraintp) {
