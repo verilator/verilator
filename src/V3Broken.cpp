@@ -166,7 +166,8 @@ private:
         nodep->brokenState(m_brokenCntCurrentUnder);
         const char* const whyp = nodep->brokenGen();
         UASSERT_OBJ(!whyp, nodep,
-                    "Broken link in node (or something without maybePointedTo): " << whyp << " -- " << nodep);
+                    "Broken link in node (or something without maybePointedTo): " << whyp << " -- "
+                                                                                  << nodep);
         if (!s_brokenAllowMidvisitorCheck) nodep->checkIter();
         if (nodep->dtypep()) {
             UASSERT_OBJ(nodep->dtypep()->brokeExists(), nodep,
