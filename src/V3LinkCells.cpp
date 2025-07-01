@@ -621,7 +621,9 @@ class LinkCellsVisitor final : public VNVisitor {
             if (libFoundp && libFoundp == nodep) {
                 // Ok
             } else if (libFoundp && !globalFoundp) {
-                nodep->v3fatalSrc("Module should be found globally if inserted in lib");
+                // Clones are locally made and don't need to user-resolve globally
+                UASSERT_OBJ(nodep->recursiveClone(), nodep,
+                            "Module should be found globally if inserted in lib");
             } else if (libFoundp) {
                 if (!(libFoundp->fileline()->warnIsOff(V3ErrorCode::MODDUP)
                       || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP)
