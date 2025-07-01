@@ -155,11 +155,12 @@ public:
 class VirtIfaceTriggers final {
     // Represents a specific member in a virtual interface
     struct IfaceMember {
-        const AstIface* m_ifacep;             // Interface type
-        const std::string m_memberName;       // Name of the member field
+        const AstIface* m_ifacep;  // Interface type
+        const std::string m_memberName;  // Name of the member field
 
         IfaceMember(const AstIface* ifacep, const std::string& memberName)
-            : m_ifacep(ifacep), m_memberName(memberName) {}
+            : m_ifacep(ifacep)
+            , m_memberName(memberName) {}
 
         bool operator<(const IfaceMember& other) const {
             if (m_ifacep != other.m_ifacep) return m_ifacep < other.m_ifacep;
@@ -187,15 +188,13 @@ public:
     AstVarScope* findMemberTrigger(const AstIface* ifacep, const std::string& memberName) const {
         IfaceMember target(ifacep, memberName);
         for (const auto& pair : m_memberTriggers) {
-            if (!(pair.first < target) && !(target < pair.first)) {
-                return pair.second;
-            }
+            if (!(pair.first < target) && !(target < pair.first)) { return pair.second; }
         }
         return nullptr;
     }
 
     IfaceMemberSensMap makeMemberToSensMap(AstNetlist* netlistp, size_t vifTriggerIndex,
-                                          AstVarScope* trigVscp) const;
+                                           AstVarScope* trigVscp) const;
 
     void emplace_back(IfaceTrigger&& p) { m_ifaceTriggers.emplace_back(std::move(p)); }
     IfaceTriggerVec::const_iterator begin() const { return m_ifaceTriggers.begin(); }

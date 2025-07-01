@@ -49,7 +49,8 @@ private:
 
     // TYPES
     using OnWriteToVirtIface = std::function<void(AstVarRef*, AstIface*)>;
-    using OnWriteToVirtIfaceMember = std::function<void(AstVarRef*, AstIface*, const std::string&)>;
+    using OnWriteToVirtIfaceMember
+        = std::function<void(AstVarRef*, AstIface*, const std::string&)>;
 
     // STATE
     AstNetlist* const m_netlistp;  // Root node
@@ -128,7 +129,7 @@ private:
 
     // Create trigger reference for a specific interface member
     AstVarRef* createVirtIfaceMemberTriggerRefp(FileLine* const flp, AstIface* ifacep,
-                                               const std::string& memberName) {
+                                                const std::string& memberName) {
         // Check if we already have a trigger for this specific member
         AstVarScope* existingTrigger = m_triggers.findMemberTrigger(ifacep, memberName);
         if (!existingTrigger) {
@@ -241,7 +242,8 @@ private:
         }
         FileLine* const flp = nodep->fileline();
 
-        foreachWrittenVirtIfaceMember(nodep, [&](AstVarRef*, AstIface* ifacep, const std::string& memberName) {
+        foreachWrittenVirtIfaceMember(nodep, [&](AstVarRef*, AstIface* ifacep,
+                                                 const std::string& memberName) {
             if (ifacep != m_trigAssignIfacep || memberName != m_trigAssignMemberName) {
                 // Write to different interface member than before - need new trigger assignment
                 m_trigAssignIfacep = ifacep;
@@ -249,8 +251,9 @@ private:
                 m_trigAssignp = nullptr;
             }
             if (!m_trigAssignp) {
-                m_trigAssignp = new AstAssign{flp, createVirtIfaceMemberTriggerRefp(flp, ifacep, memberName),
-                                              new AstConst{flp, AstConst::BitTrue{}}};
+                m_trigAssignp
+                    = new AstAssign{flp, createVirtIfaceMemberTriggerRefp(flp, ifacep, memberName),
+                                    new AstConst{flp, AstConst::BitTrue{}}};
                 nodep->addNextHere(m_trigAssignp);
             }
         });

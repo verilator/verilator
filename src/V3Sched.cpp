@@ -1195,8 +1195,7 @@ VirtIfaceTriggers::makeMemberToSensMap(AstNetlist* const netlistp, size_t vifTri
     std::map<IfaceMember, AstSenTree*> memberToSensMap;
     for (const auto& p : m_memberTriggers) {
         memberToSensMap.emplace(
-            std::make_pair(p.first,
-                           createTriggerSenTree(netlistp, trigVscp, vifTriggerIndex)));
+            std::make_pair(p.first, createTriggerSenTree(netlistp, trigVscp, vifTriggerIndex)));
         ++vifTriggerIndex;
     }
     return memberToSensMap;
