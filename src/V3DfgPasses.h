@@ -117,12 +117,14 @@ namespace V3DfgPasses {
 // constructed DfgGraph.
 DfgGraph* astToDfg(AstModule&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 
+// Same as above, but for the entire netlist, after V3Scope
+DfgGraph* astToDfg(AstNetlist&, V3DfgOptimizationContext&) VL_MT_DISABLED;
+
 // Optimize the given DfgGraph
 void optimize(DfgGraph&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 
-// Convert DfgGraph back into Ast, and insert converted graph back into its parent module.
-// Returns the parent module.
-AstModule* dfgToAst(DfgGraph&, V3DfgOptimizationContext&) VL_MT_DISABLED;
+// Convert DfgGraph back into Ast, and insert converted graph back into the Ast.
+void dfgToAst(DfgGraph&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 
 //===========================================================================
 // Intermediate/internal operations

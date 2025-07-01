@@ -26,8 +26,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // DfgGraph
 //------------------------------------------------------------------------------
 
-DfgGraph::DfgGraph(AstModule& module, const string& name)
-    : m_modulep{&module}
+DfgGraph::DfgGraph(AstModule* modulep, const string& name)
+    : m_modulep{modulep}
     , m_name{name} {}
 
 DfgGraph::~DfgGraph() {
@@ -69,14 +69,31 @@ std::string DfgGraph::makeUniqueName(const std::string& prefix, size_t n) {
     return "__Vdfg" + prefix + m_tmpNameStub + std::to_string(n);
 }
 
-DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& name, AstNodeDType* dtypep) {
-    // Add AstVar to containing module
-    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
-    modulep()->addStmtsp(varp);
+DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& name, AstNodeDType* dtypep,
+                                   AstScope* scopep) {
+    UASSERT_OBJ(!!scopep != !!modulep(), flp,
+                "makeNewVar scopep should only be provided for a scoped DfgGraph");
 
-    // Create and return the corresponding variable vertex
-    if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) return new DfgVarArray{*this, varp};
-    return new DfgVarPacked{*this, varp};
+    // Create AstVar
+    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
+
+    if (scopep) {
+        // Add AstVar to the scope's module
+        scopep->modp()->addStmtsp(varp);
+        // Create AstVarScope
+        AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};
+        // Add to scope
+        scopep->addVarsp(vscp);
+        // Create and return the corresponding variable vertex
+        if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) return new DfgVarArray{*this, vscp};
+        return new DfgVarPacked{*this, vscp};
+    } else {
+        // Add AstVar to containing module
+        modulep()->addStmtsp(varp);
+        // Create and return the corresponding variable vertex
+        if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) return new DfgVarArray{*this, varp};
+        return new DfgVarPacked{*this, varp};
+    }
 }
 
 static const string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) + '"'; }
@@ -85,9 +102,10 @@ static const string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) 
 static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
 
     if (const DfgVarPacked* const varVtxp = vtx.cast<DfgVarPacked>()) {
+        AstNode* const nodep = varVtxp->nodep();
         AstVar* const varp = varVtxp->varp();
         os << toDotId(vtx);
-        os << " [label=\"" << varp->name() << "\nW" << varVtxp->width() << " / F"
+        os << " [label=\"" << nodep->name() << "\nW" << varVtxp->width() << " / F"
            << varVtxp->fanout() << '"';
 
         if (varp->direction() == VDirection::INPUT) {
@@ -112,10 +130,11 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     }
 
     if (const DfgVarArray* const arrVtxp = vtx.cast<DfgVarArray>()) {
+        AstNode* const nodep = arrVtxp->nodep();
         AstVar* const varp = arrVtxp->varp();
         const int elements = VN_AS(arrVtxp->dtypep(), UnpackArrayDType)->elementsConst();
         os << toDotId(vtx);
-        os << " [label=\"" << varp->name() << "[" << elements << "]\"";
+        os << " [label=\"" << nodep->name() << "[" << elements << "]\"";
         if (varp->direction() == VDirection::INPUT) {
             os << ", shape=box3d, style=filled, fillcolor=chartreuse2";  // Green
         } else if (varp->direction() == VDirection::OUTPUT) {
@@ -299,7 +318,7 @@ void DfgGraph::dumpDotAllVarConesPrefixed(const string& label) const {
         if (!sinkp) return;
 
         // Open output file
-        const string coneName{prefix + sinkp->varp()->name()};
+        const string coneName{prefix + sinkp->nodep()->name()};
         const string fileName{v3Global.debugFilename(coneName) + ".dot"};
         const std::unique_ptr<std::ofstream> os{V3File::new_ofstream(fileName)};
         if (os->fail()) v3fatal("Can't write file: " << fileName);
@@ -476,13 +495,45 @@ DfgVarPacked* DfgVertex::getResultVar() {
             return;
         }
         // Prefer the one with the lexically smaller name
-        if (const int cmp = resp->varp()->name().compare(varp->varp()->name())) {
+        if (const int cmp = resp->nodep()->name().compare(varp->nodep()->name())) {
             if (cmp > 0) resp = varp;
             return;
         }
         // 'resp' and 'varp' are all the same, keep using the existing 'resp'
     });
     return resp;
+}
+
+AstScope* DfgVertex::scopep(ScopeCache& cache, bool tryResultVar) VL_MT_DISABLED {
+    // If this is a variable, we are done
+    if (DfgVertexVar* const varp = this->cast<DfgVertexVar>()) return varp->varScopep()->scopep();
+
+    // Try the result var first if instructed (usully only in the recursive case)
+    if (tryResultVar) {
+        if (DfgVertexVar* const varp = this->getResultVar()) return varp->varScopep()->scopep();
+    }
+
+    // Look up cache
+    const auto pair = cache.emplace(this, nullptr);
+    if (pair.second) {
+        // Find scope based on sources, falling back on the root scope
+        AstScope* const rootp = v3Global.rootp()->topScopep()->scopep();
+        AstScope* foundp = rootp;
+        const auto edges = sourceEdges();
+        for (size_t i = 0; i < edges.second; ++i) {
+            DfgEdge& edge = edges.first[i];
+            foundp = edge.sourcep()->scopep(cache, true);
+            if (foundp != rootp) break;
+        }
+        pair.first->second = foundp;
+    }
+
+    // If the cache entry exists, but have not set the mapping yet, then we have a circualr graph
+    UASSERT_OBJ(pair.first->second, this,
+                "DfgVertex::scopep called on graph with circular operations");
+
+    // Done
+    return pair.first->second;
 }
 
 void DfgVertex::unlinkDelete(DfgGraph& dfg) {
@@ -521,15 +572,17 @@ V3Hash DfgSel::selfHash() const { return V3Hash{lsb()}; }
 // DfgVertexVar ----------
 
 bool DfgVertexVar::selfEquals(const DfgVertex& that) const {
-    UASSERT_OBJ(varp() != that.as<DfgVertexVar>()->varp(), this,
-                "There should only be one DfgVertexVar for a given AstVar");
+    UASSERT_OBJ(nodep()->type() == that.as<DfgVertexVar>()->nodep()->type(), this,
+                "Both DfgVertexVar should be scoped or unscoped");
+    UASSERT_OBJ(nodep() != that.as<DfgVertexVar>()->nodep(), this,
+                "There should only be one DfgVertexVar for a given AstVar or AstVarScope");
     return false;
 }
 
 V3Hash DfgVertexVar::selfHash() const {
     V3Hash hash;
-    hash += m_varp->name();
-    hash += m_varp->varType();
+    hash += nodep()->name();
+    hash += varp()->varType();
     return hash;
 }
 

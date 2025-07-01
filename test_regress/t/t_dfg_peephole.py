@@ -96,7 +96,7 @@ def check(name):
     name = name.lower()
     name = re.sub(r'_', ' ', name)
     test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt",
-                   r'DFG\s+(pre|post) inline Peephole, ' + name + r'\s+([1-9]\d*)')
+                   r'DFG\s+(pre inline|post inline|scoped) Peephole, ' + name + r'\s+([1-9]\d*)')
 
 
 # Check all optimizations defined in

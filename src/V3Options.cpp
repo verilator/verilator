@@ -1331,6 +1331,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) {
         m_fDfgPreInline = flag;
         m_fDfgPostInline = flag;
+        m_fDfgScoped = flag;
     });
     DECL_OPTION("-fdfg-peephole", FOnOff, &m_fDfgPeephole);
     DECL_OPTION("-fdfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
@@ -1341,6 +1342,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-fdfg-pre-inline", FOnOff, &m_fDfgPreInline);
     DECL_OPTION("-fdfg-post-inline", FOnOff, &m_fDfgPostInline);
+    DECL_OPTION("-fdfg-scoped", FOnOff, &m_fDfgScoped);
     DECL_OPTION("-fexpand", FOnOff, &m_fExpand);
     DECL_OPTION("-ffunc-opt", CbFOnOff, [this](bool flag) {  //
         m_fFuncSplitCat = flag;
@@ -2182,6 +2184,7 @@ void V3Options::optimize(int level) {
     m_fDedupe = flag;
     m_fDfgPreInline = flag;
     m_fDfgPostInline = flag;
+    m_fDfgScoped = flag;
     m_fDeadAssigns = flag;
     m_fDeadCells = flag;
     m_fExpand = flag;

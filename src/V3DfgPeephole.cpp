@@ -403,8 +403,8 @@ class V3DfgPeephole final : public DfgVisitor {
         // If both sides are variable references, order the side in some defined way. This
         // allows CSE to later merge 'a op b' with 'b op a'.
         if (lhsp->is<DfgVertexVar>() && rhsp->is<DfgVertexVar>()) {
-            AstVar* const lVarp = lhsp->as<DfgVertexVar>()->varp();
-            AstVar* const rVarp = rhsp->as<DfgVertexVar>()->varp();
+            AstNode* const lVarp = lhsp->as<DfgVertexVar>()->nodep();
+            AstNode* const rVarp = rhsp->as<DfgVertexVar>()->nodep();
             if (lVarp->name() > rVarp->name()) {
                 APPLYING(SWAP_VAR_IN_COMMUTATIVE_BINARY) {
                     Vertex* const replacementp = make<Vertex>(vtxp, rhsp, lhsp);

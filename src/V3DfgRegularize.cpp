@@ -38,6 +38,10 @@ class DfgRegularize final {
         : m_dfg{dfg}
         , m_ctx{ctx} {
 
+        // Scope cache for below
+        const bool scoped = !dfg.modulep();
+        DfgVertex::ScopeCache scopeCache;
+
         // Ensure intermediate values used multiple times are written to variables
         for (DfgVertex& vtx : m_dfg.opVertices()) {
             const bool needsIntermediateVariable = [&]() {
@@ -71,8 +75,9 @@ class DfgRegularize final {
                 // Need to create an intermediate variable
                 const std::string name = m_dfg.makeUniqueName("Regularize", m_nTmps);
                 FileLine* const flp = vtx.fileline();
+                AstScope* const scopep = scoped ? vtx.scopep(scopeCache) : nullptr;
                 DfgVarPacked* const newp
-                    = m_dfg.makeNewVar(flp, name, vtx.dtypep())->as<DfgVarPacked>();
+                    = m_dfg.makeNewVar(flp, name, vtx.dtypep(), scopep)->as<DfgVarPacked>();
                 ++m_nTmps;
                 ++m_ctx.m_temporariesIntroduced;
                 // Replace vertex with the variable and add back driver
