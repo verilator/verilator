@@ -911,6 +911,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_ONEHOT       "$onehot"
 %token<fl>              yD_ONEHOT0      "$onehot0"
 %token<fl>              yD_PAST         "$past"
+%token<fl>              yD_PAST_GCLK    "$past_gclk"
 %token<fl>              yD_POW          "$pow"
 %token<fl>              yD_PRINTTIMESCALE "$printtimescale"
 %token<fl>              yD_RANDOM       "$random"
@@ -4491,7 +4492,7 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_LOW '(' exprOrDataType ',' expr ')'  { $$ = new AstAttrOf{$1, VAttrType::DIM_LOW, $3, $5}; }
         |       yD_ONEHOT '(' expr ')'                  { $$ = new AstOneHot{$1, $3}; }
         |       yD_ONEHOT0 '(' expr ')'                 { $$ = new AstOneHot0{$1, $3}; }
-        |       yD_PAST '(' expr ')'                    { $$ = new AstPast{$1, $3, nullptr}; }
+        |       yD_PAST '(' expr ')'                    { $$ = new AstPast{$1, $3}; }
         |       yD_PAST '(' expr ',' exprE ')'          { $$ = new AstPast{$1, $3, $5}; }
         |       yD_PAST '(' expr ',' exprE ',' exprE ')'
                         { if ($7) BBUNSUP($1, "Unsupported: $past expr2 and/or clock arguments");
@@ -4499,6 +4500,7 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_PAST '(' expr ',' exprE ',' exprE ',' clocking_eventE ')'
                         { if ($7 || $9) BBUNSUP($1, "Unsupported: $past expr2 and/or clock arguments");
                           $$ = new AstPast{$1, $3, $5}; }
+        |       yD_PAST_GCLK '(' expr ')'               { $$ = new AstPast{$1, $3, nullptr, GRAMMARP->createGlobalClockSenTree($1)}; }
         |       yD_POW '(' expr ',' expr ')'            { $$ = new AstPowD{$1, $3, $5}; }
         |       yD_RANDOM '(' expr ')'                  { $$ = new AstRand{$1, $3, false}; }
         |       yD_RANDOM parenE                        { $$ = new AstRand{$1, nullptr, false}; }

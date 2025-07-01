@@ -488,6 +488,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$onehot"             { FL; return yD_ONEHOT; }
   "$onehot0"            { FL; return yD_ONEHOT0; }
   "$past"               { FL; return yD_PAST; }
+  "$past_gclk"          { FL; return yD_PAST_GCLK; }
   "$right"              { FL; return yD_RIGHT; }
   "$root"               { FL; return yD_ROOT; }
   "$rose"               { FL; return yD_ROSE; }

@@ -1732,10 +1732,12 @@ class AstPast final : public AstNodeExpr {
     // @astgen op2 := ticksp : Optional[AstNode]
     // @astgen op3 := sentreep : Optional[AstSenTree]
 public:
-    AstPast(FileLine* fl, AstNodeExpr* exprp, AstNode* ticksp)
+    AstPast(FileLine* fl, AstNodeExpr* exprp, AstNode* ticksp = nullptr,
+            AstSenTree* sentreep = nullptr)
         : ASTGEN_SUPER_Past(fl) {
         this->exprp(exprp);
         this->ticksp(ticksp);
+        this->sentreep(sentreep);
     }
     ASTGEN_MEMBERS_AstPast;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }

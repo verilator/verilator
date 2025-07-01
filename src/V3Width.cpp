@@ -1356,6 +1356,7 @@ class WidthVisitor final : public VNVisitor {
                     }
                 }
             }
+            userIterate(nodep->sentreep(), nullptr);
         }
     }
     void visit(AstRose* nodep) override {
