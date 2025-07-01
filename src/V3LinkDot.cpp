@@ -2365,6 +2365,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         bool m_unresolvedClass;  // Unresolved class reference, needs help from V3Param
         bool m_genBlk;  // Contains gen block reference
         AstNode* m_unlinkedScopep;  // Unresolved scope, needs corresponding VarXRef
+        AstDisable* m_disablep;  // Disable statement under which the reference is
         bool m_dotErr;  // Error found in dotted resolution, ignore upwards
         string m_dotText;  // String of dotted names found in below parseref
         DotStates() { init(nullptr); }
@@ -2380,6 +2381,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_unresolvedClass = false;
             m_genBlk = false;
             m_unlinkedScopep = nullptr;
+            m_disablep = nullptr;
         }
         string ascii() const {
             static const char* const names[]
@@ -3035,6 +3037,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.init(m_curSymp);
             // Note m_ds.m_dotp remains nullptr; this is a reference not under a dot
         }
+        if (AstDisable* const disablep = VN_CAST(nodep->backp(), Disable)) {
+            m_ds.m_disablep = disablep;
+        }
         if (nodep->name() == "super") {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
             m_ds.m_dotErr = true;
@@ -3084,7 +3089,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             bool allowVar = false;
             bool allowFTask = false;
             bool staticAccess = false;
-            if (VN_IS(nodep->backp(), Disable)) {
+            if (m_ds.m_disablep) {
                 allowScope = true;
             } else if (m_ds.m_dotPos == DP_PACKAGE) {
                 // {package-or-class}::{a}
@@ -3196,8 +3201,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     m_ds.m_dotSymp = foundp;
                     m_ds.m_dotPos = DP_SCOPE;
                     if (VN_IS(foundp->nodep(), NodeBlock)) {
-                        if (AstDisable* const disablep = VN_CAST(nodep->backp(), Disable)) {
-                            disablep->targetp(foundp->nodep());
+                        if (m_ds.m_disablep) {
+                            m_ds.m_disablep->targetp(foundp->nodep());
                             nodep->unlinkFrBack();
                             pushDeletep(nodep);
                         }
