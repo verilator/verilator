@@ -144,6 +144,7 @@ Gileadi
 Giri
 Gisselquist
 Gladkikh
+GmbH
 Goessling
 Gonnen
 Goorah
@@ -544,6 +545,7 @@ bindir
 biops
 bisonpre
 bitOpTree
+bitaggregat
 bitop
 bitstoreal
 blackbox
