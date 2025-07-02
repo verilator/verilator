@@ -1,0 +1,67 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: Verilog Test module
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain, for
+        // any use, without warranty, 2024 by Wilson Snyder.
+        // SPDX-License-Identifier: CC0-1.0
+        
+        interface intf();
+            logic foo;
+            logic [31:0] bar;
+            logic [127:0] baz;
+        endinterface
+        
+        module t (/*AUTOARG*/
+            // Inputs
+            clk
+            );
+        
+            input clk;
+        
+            integer cyc;
+%000001     initial cyc=1;
+-000001  point: comment=block hier=top.t
+        
+            intf intfs [2] ();
+            intf intf_sel();
+        
+%000001     always_comb begin
+-000001  point: comment=block hier=top.t
+%000001         intfs[0].bar = 123;
+-000001  point: comment=block hier=top.t
+%000001         intfs[1].bar = 456;
+-000001  point: comment=block hier=top.t
+            end
+        
+%000009     always @ (posedge clk) begin
+-000009  point: comment=block hier=top.t
+%000009         {intf_sel.foo, intf_sel.bar, intf_sel.baz} <=
+-000009  point: comment=block hier=top.t
+%000009             cyc[0] ?
+-000009  point: comment=cond_then hier=top.t
+-000009  point: comment=cond_else hier=top.t
+%000009             {intfs[1].foo, intfs[1].bar, intfs[1].baz} :
+-000009  point: comment=cond_then hier=top.t
+%000009             {intfs[0].foo, intfs[0].bar, intfs[0].baz};
+-000009  point: comment=cond_else hier=top.t
+            end
+        
+%000009     always @ (posedge clk) begin
+-000009  point: comment=block hier=top.t
+%000009         cyc <= cyc + 1;
+-000009  point: comment=block hier=top.t
+%000008         if (cyc==9) begin
+-000008  point: comment=else hier=top.t
+-000001  point: comment=if hier=top.t
+%000001             $display("bar = %0d", intf_sel.bar);
+-000001  point: comment=if hier=top.t
+%000001             if (intf_sel.bar != 123) $stop();
+-000001  point: comment=else hier=top.t
+%000001             $write("*-* All Finished *-*\n");
+-000001  point: comment=if hier=top.t
+%000001             $finish;
+-000001  point: comment=if hier=top.t
+                end
+            end
+        endmodule
+        
