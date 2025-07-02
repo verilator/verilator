@@ -531,7 +531,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              ':'  // See also yP_COLON__BEGIN or yP_COLON__FORK
 %token<fl>              ';'
 %token<fl>              '<'
-%token<fl>              '='
+%token<fl>              '='  // See also yP_EQ__NEW
 %token<fl>              '>'
 %token<fl>              '?'
 %token<fl>              '@'
@@ -1024,8 +1024,9 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yP_SSRIGHT      ">>>"
 %token<fl>              yP_POW          "**"
 
-%token<fl>              yP_COLON__BEGIN ":-begin"
-%token<fl>              yP_COLON__FORK  ":-fork"
+%token<fl>              yP_COLON__BEGIN ":-then-begin"
+%token<fl>              yP_COLON__FORK  ":-then-fork"
+%token<fl>              yP_EQ__NEW      "=-then-new"
 %token<fl>              yP_PAR__IGNORE  "(-ignored"     // Used when sequence_expr:expr:( is ignored
 %token<fl>              yP_PAR__STRENGTH "(-for-strength"
 
@@ -2377,10 +2378,12 @@ variable_decl_assignment<varp>: // ==IEEE: variable_decl_assignment
         |       idSVKwd                                 { $$ = nullptr; }
         //
         //                      // IEEE: "dynamic_array_variable_identifier '[' ']' [ '=' dynamic_array_new ]"
-        //                      // Matches above with variable_dimensionE = "[]"
+        |       id variable_dimensionListE sigAttrListE yP_EQ__NEW dynamic_array_new
+                        { $$ = VARDONEA($<fl>1, *$1, $2, $3); $$->valuep($5); }
         //                      // IEEE: "class_variable_identifier [ '=' class_new ]"
         //                      // variable_dimensionE must be empty
-        //                      // Pushed into variable_declExpr:dynamic_array_new
+        |       id variable_dimensionListE sigAttrListE yP_EQ__NEW class_new
+                        { $$ = VARDONEA($<fl>1, *$1, $2, $3); $$->valuep($5); }
         ;
 
 list_of_tf_variable_identifiers<nodep>: // ==IEEE: list_of_tf_variable_identifiers
@@ -3666,8 +3669,8 @@ statement_item<nodep>:          // IEEE: statement_item
         //                      // IEEE: blocking_assignment
         //                      // 1800-2009 restricts LHS of assignment to new to not have a range
         //                      // This is ignored to avoid conflicts
-        |       fexprLvalue '=' class_newNoScope ';'    { $$ = new AstAssign{$2, $1, $3}; }
-        |       fexprLvalue '=' dynamic_array_new ';'   { $$ = new AstAssign{$2, $1, $3}; }
+        |       fexprLvalue yP_EQ__NEW dynamic_array_new ';'   { $$ = new AstAssign{$2, $1, $3}; }
+        |       fexprLvalue yP_EQ__NEW class_new ';'    { $$ = new AstAssign{$2, $1, $3}; }
         //                      // IEEE: inc_or_dec_expression
         |       finc_or_dec_expression ';'              { $$ = $1; }
         //
@@ -3919,7 +3922,19 @@ pinc_or_dec_expression<nodeExprp>:  // IEEE: inc_or_dec_expression (for property
 //UNSUP         BISONPRE_COPY(inc_or_dec_expression,{s/~l~/pev_/g})     // {copied}
 //UNSUP ;
 
-class_newNoScope<nodeExprp>:    // IEEE: class_new but no packageClassScope (issue #4199)
+class_new<nodeExprp>:    // IEEE: class_new
+        //                      // See V3ParseImp::tokenPipeScanEqNew that searches for '=' ... yNEW__LEX
+                class_newNoScope
+                        { $$ = $1; }
+        //                      // Special precedence so (...) doesn't match expr
+        //                      // A scope is not legal in front of a AstNewCopy
+        |       packageClassScopeNoId yNEW__ETC
+                        { $$ = AstDot::newIfPkg($<fl>2, $1, new AstNew{$2,  nullptr, true}); }
+        |       packageClassScopeNoId yNEW__PAREN '(' list_of_argumentsE ')'
+                        { $$ = AstDot::newIfPkg($<fl>2, $1, new AstNew{$2, $4, true}); }
+        ;
+
+class_newNoScope<nodeExprp>:    // IEEE: class_new but no packageClassScope
         //                      // Special precedence so (...) doesn't match expr
                 yNEW__ETC                               { $$ = new AstNew{$1,  nullptr}; }
         |       yNEW__ETC expr                          { $$ = new AstNewCopy{$1, $2}; }
@@ -7425,7 +7440,7 @@ class_typeExtImpOne<nodeExprp>:  // part of IEEE: class_type, where we either ge
 
 //=== Below rules assume special scoping per above
 
-packageClassScopeNoId<nodep>:   // IEEE: [package_scope] not followed by yaID
+packageClassScopeNoId<nodeExprp>:  // IEEE: [package_scope] not followed by yaID
                 packageClassScope                       { $$ = $1; }
         ;
 

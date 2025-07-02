@@ -4383,11 +4383,28 @@ class WidthVisitor final : public VNVisitor {
         bool assign = false;
         if (VN_IS(nodep->backp(), Assign)) {  // assignment case
             assign = true;
-            AstClassRefDType* const refp
-                = m_vup ? VN_CAST(m_vup->dtypeNullSkipRefp(), ClassRefDType) : nullptr;
+            AstNode* warnp = nullptr;
+            AstClassRefDType* refp = nullptr;
+
+            if (nodep->isScoped()) {  // = ClassOrPackage::new
+                UASSERT_OBJ(nodep->classOrPackagep(), nodep, "Unlinked classOrPackage");
+                warnp = nodep->classOrPackagep();
+                if (AstClass* const classp = VN_CAST(warnp, Class)) {
+                    AstClassRefDType* const adtypep
+                        = new AstClassRefDType{nodep->fileline(), classp, nullptr};
+                    v3Global.rootp()->typeTablep()->addTypesp(adtypep);
+                    refp = adtypep;
+                }
+            } else {  // = new
+                warnp = m_vup->dtypeNullp();
+                refp = m_vup ? VN_CAST(m_vup->dtypeNullSkipRefp(), ClassRefDType) : nullptr;
+            }
             if (!refp) {  // e.g. int a = new;
-                nodep->v3error("new() assignment not legal to non-class data type "
-                               + (m_vup->dtypeNullp() ? m_vup->dtypep()->prettyDTypeNameQ() : ""));
+                nodep->v3error("new() assignment not legal to non-class "
+                               + (VN_IS(warnp, NodeDType) ? (
+                                      "data type "s + VN_AS(warnp, NodeDType)->prettyDTypeNameQ())
+                                  : warnp ? warnp->prettyNameQ()
+                                          : ""));
                 nodep->dtypep(m_vup->dtypep());
                 return;
             }

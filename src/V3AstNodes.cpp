@@ -454,6 +454,17 @@ void AstNetlist::timeprecisionMerge(FileLine*, const VTimescale& value) {
     }
 }
 
+void AstNew::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isImplicit()) str << " [IMPLICIT]";
+    if (isScoped()) str << " [SCOPED]";
+}
+void AstNew::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isImplicit);
+    dumpJsonBoolFunc(str, isScoped);
+    dumpJsonGen(str);
+}
+
 bool AstVar::isSigPublic() const {
     return (m_sigPublic || (v3Global.opt.allPublic() && !isTemp() && !isGenVar()))
            && !isIfaceRef();

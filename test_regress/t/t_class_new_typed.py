@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
 test.compile()
 

@@ -557,6 +557,33 @@ size_t V3ParseImp::tokenPipeScanTypeEq(size_t depth) {
     return depth;
 }
 
+size_t V3ParseImp::tokenPipeScanEqNew(size_t depth) {
+    // Search around IEEE class_new to see if is expression
+    // Return location of following token, or input if not found
+    // '=' { packageClassScopeNoId } yNEW__LEX
+    UINFO(9, "tokenPipelineScanEqNew tok=" << yylval.token);
+    UASSERT(yylval.token == '=', "Start with '='");
+    while (true) {
+        const int tok = tokenPeekp(depth)->token;
+        if (tok == 0) {  // LCOV_EXCL_BR_LINE
+            UINFO(9, "tokenPipeScanEqNew hit EOF; probably syntax error to come");
+            break;  // LCOV_EXCL_LINE
+        } else if (tok == yNEW__LEX) {
+            break;
+        } else if (tok == yaID__LEX) {
+            ++depth;  // yaID__LEX
+            depth = tokenPipeScanParam(depth, false);
+            if (tokenPeekp(depth)->token != yP_COLONCOLON) return 0;
+            ++depth;  // yP_COLONCOLON
+            continue;
+        } else {
+            return 0;  // Miss
+        }
+        ++depth;
+    }
+    return depth;
+}
+
 int V3ParseImp::tokenPipelineId(int token) {
     const V3ParseBisonYYSType* nexttokp = tokenPeekp(0);  // First char after yaID
     const int nexttok = nexttokp->token;
@@ -585,6 +612,7 @@ void V3ParseImp::tokenPipeline() {
     // If a paren, read another
     if (token == '('  //
         || token == ':'  //
+        || token == '='  //
         || token == yCONST__LEX  //
         || token == yGLOBAL__LEX  //
         || token == yLOCAL__LEX  //
@@ -609,6 +637,10 @@ void V3ParseImp::tokenPipeline() {
             } else if (nexttok == yFORK) {
                 token = yP_COLON__FORK;
             }
+        } else if (token == '=') {
+            if (nexttokp->token == yNEW__LEX || tokenPipeScanEqNew(0)) {
+                token = yP_EQ__NEW;
+            }  // else still '='
         } else if (token == yCONST__LEX) {
             if (nexttok == yREF) {
                 token = yCONST__REF;
