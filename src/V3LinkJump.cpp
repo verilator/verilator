@@ -337,34 +337,41 @@ class LinkJumpVisitor final : public VNVisitor {
     }
     void visit(AstDisable* nodep) override {
         UINFO(8, "   DISABLE " << nodep);
-        UASSERT_OBJ(nodep->targetp(), nodep, "Unlinked disable statement");
-        const std::string disableName = nodep->targetp()->name();
-        AstNodeBlock* aboveBlockp = nullptr;
-        for (AstNodeBlock* const stackp : vlstd::reverse_view(m_blockStack)) {
-            UINFO(9, "    UNDERBLK  " << stackp);
-            if (stackp->name() == disableName) {
-                aboveBlockp = stackp;
-                break;
+        AstNode* const targetp = nodep->targetp();
+        UASSERT_OBJ(targetp, nodep, "Unlinked disable statement");
+        if (VN_IS(targetp, Task)) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling task by name");
+        } else if (VN_IS(targetp, Fork)) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork by name");
+        } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
+            const std::string targetName = beginp->name();
+            bool aboveBlock = false;
+            for (AstNodeBlock* const stackp : vlstd::reverse_view(m_blockStack)) {
+                UINFO(9, "    UNDERBLK  " << stackp);
+                if (stackp->name() == targetName) {
+                    aboveBlock = true;
+                    break;
+                }
             }
-        }
-        // if (debug() >= 9) { UINFO(0, "\n"); aboveBlockp->dumpTree("-  labeli: "); }
-        if (!aboveBlockp) {
-            nodep->v3warn(E_UNSUPPORTED,
-                          "disable isn't underneath a begin with name: '" << disableName << "'");
-        } else if (AstBegin* const beginp = VN_CAST(aboveBlockp, Begin)) {
-            if (beginp->user3()) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling block that contains a fork");
+            if (aboveBlock) {
+                if (beginp->user3()) {
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: disabling block that contains a fork");
+                } else {
+                    // Jump to the end of the named block
+                    AstJumpLabel* const labelp = findAddLabel(beginp, false);
+                    nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
+                }
             } else {
-                // Jump to the end of the named block
-                AstJumpLabel* const labelp = findAddLabel(beginp, false);
-                nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
+                nodep->v3warn(E_UNSUPPORTED, "disable isn't underneath a begin with name: '"
+                                                 << targetName << "'");
             }
         } else {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork by name");
+            nodep->v3fatalSrc("Disable linked with node of unhandled type "
+                              << targetp->prettyTypeName());
         }
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        // if (debug() >= 9) { UINFO(0, "\n"); beginp->dumpTree("-  labelo: "); }
     }
     void visit(AstVarRef* nodep) override {
         if (m_loopInc && nodep->varp()) nodep->varp()->usedLoopIdx(true);
