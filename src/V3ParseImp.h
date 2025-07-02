@@ -291,6 +291,7 @@ public:
     void parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
                    const string& libname, const string& errmsg) VL_MT_DISABLED;
     void dumpInputsFile() VL_MT_DISABLED;
+    void dumpTokensAhead(int line) VL_MT_DISABLED;
     static void candidatePli(VSpellCheck* spellerp) VL_MT_DISABLED;
 
 private:

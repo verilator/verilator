@@ -380,6 +380,15 @@ void V3ParseImp::dumpInputsFile() {
     VL_DO_DANGLING(delete ofp, ofp);
 }
 
+void V3ParseImp::dumpTokensAhead(int line) {  // LCOV_EXCL_START
+    int i = 0;
+    UINFO(1, "dumpTokensAhead @ " << line << " [ ] " << yylval);
+    for (auto t : m_tokensAhead) {
+        UINFO(1, "dumpTokensAhead @ " << line << " [" << i << "] " << t);
+        ++i;
+    }
+}  // LCOV_EXCL_STOP
+
 void V3ParseImp::lexFile(const string& modname) {
     // Prepare for lexing
     UINFO(3, "Lexing " << modname);
@@ -396,8 +405,11 @@ void V3ParseImp::tokenPull() {
     // Pull token from lex into the pipeline
     // This corrupts yylval, must save/restore if required
     // Fetch next token from prefetch or real lexer
+    VL_RESTORER(yylval);
     yylexReadTok();  // sets yylval
+    UINFO(9, "tokenPulled " << yylval);
     m_tokensAhead.push_back(yylval);
+    if (debug() >= 10) dumpTokensAhead(__LINE__);
 }
 
 const V3ParseBisonYYSType* V3ParseImp::tokenPeekp(size_t depth) {
@@ -583,9 +595,7 @@ void V3ParseImp::tokenPipeline() {
         || token == yWITH__LEX  //
         || token == yaID__LEX  //
     ) {
-        if (debugFlex() >= 6) {
-            cout << "   tokenPipeline: reading ahead to find possible strength" << endl;
-        }
+        if (debugFlex() >= 6) UINFO(0, "tokenPipeline: reading ahead");
         const V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
         const V3ParseBisonYYSType* nexttokp = tokenPeekp(0);
         const int nexttok = nexttokp->token;
@@ -711,6 +721,7 @@ int V3ParseImp::tokenToBison() {
 
     if (debug() >= 6 || debugFlex() >= 6
         || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
+        if (debug() >= 10) dumpTokensAhead(__LINE__);
         cout << "tokenToBison  " << yylval << endl;
     }
     return yylval.token;
