@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_disable_func_bad.v:19:13: Node of type FUNCREF 'increment_x' referenced by disable
+   19 |          #1 disable increment_x;
+      |             ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Internal Error: t/t_disable_func_bad.v:19:13: ../V3LinkJump.cpp:#: Unlinked disable statement
+   19 |          #1 disable increment_x;
+      |             ^~~~~~~
+                        ... This fatal error may be caused by the earlier error(s); resolve those first.
