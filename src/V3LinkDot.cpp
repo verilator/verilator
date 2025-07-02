@@ -3231,7 +3231,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     taskrefp = new AstFuncRef{nodep->fileline(), nodep->name(), nullptr};
                 }
                 nodep->replaceWith(taskrefp);
-                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 m_ds = lastStates;
                 return;
             } else if (AstVar* const varp = foundToVarp(foundp, nodep, VAccess::READ)) {
@@ -3665,7 +3665,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             AstVarRef* const newrefp
                                 = new AstVarRef{nodep->fileline(), nodep->varp(), nodep->access()};
                             nodep->replaceWith(newrefp);
-                            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                            VL_DO_DANGLING(pushDeletep(nodep), nodep);
                         }
                     }
                 }
@@ -3693,7 +3693,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     AstVarRef* const newvscp
                         = new AstVarRef{nodep->fileline(), vscp, nodep->access()};
                     nodep->replaceWith(newvscp);
-                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     UINFO(9, indent() << "new " << newvscp);  // Also prints taskp
                 }
             }
@@ -3991,7 +3991,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                 newp->dtypep(nodep->dtypep());
                             }
                             nodep->replaceWith(newp);
-                            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                            VL_DO_DANGLING(pushDeletep(nodep), nodep);
                             return;
                         } else {
                             VSpellCheck speller;
@@ -4476,7 +4476,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     = new AstClassRefDType{nodep->fileline(), defp, paramsp};
                 newp->classOrPackagep(foundp->classOrPackagep());
                 nodep->replaceWith(newp);
-                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             } else if (m_insideClassExtParam) {
                 return;
