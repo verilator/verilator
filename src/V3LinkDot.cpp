@@ -3452,7 +3452,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     m_ds.m_dotPos = DP_MEMBER;
                 } else {
                     // Cells/interfaces can't be implicit
-                    const bool checkImplicit = (!m_ds.m_dotp && m_ds.m_dotText == "" && !m_ds.m_disablep && !foundp);
+                    const bool checkImplicit
+                        = (!m_ds.m_dotp && m_ds.m_dotText == "" && !m_ds.m_disablep && !foundp);
                     const bool err
                         = !(checkImplicit && m_statep->implicitOk(m_modp, nodep->name()));
                     if (err) {
