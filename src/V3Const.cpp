@@ -2117,8 +2117,9 @@ class ConstVisitor final : public VNVisitor {
                 AstVar* const tempPurep = new AstVar{rhsp->fileline(), VVarType::BLOCKTEMP,
                                                      m_concswapNames.get(rhsp), rhsp->dtypep()};
                 m_modp->addStmtsp(tempPurep);
-                AstAssign* const asnp = new AstAssign(nodep->fileline(),
-                    new AstVarRef{rhsp->fileline(), tempPurep, VAccess::WRITE}, rhsp);
+                AstAssign* const asnp = new AstAssign(
+                    nodep->fileline(), new AstVarRef{rhsp->fileline(), tempPurep, VAccess::WRITE},
+                    rhsp);
                 nodep->addHereThisAsNext(asnp);
                 nodep->rhsp(new AstVarRef{rhsp->fileline(), tempPurep, VAccess::READ});
             } else if (need_temp) {
