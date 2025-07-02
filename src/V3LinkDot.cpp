@@ -4529,6 +4529,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (nodep->targetRefp()) {
             if (AstTaskRef* const taskRefp = VN_CAST(nodep->targetRefp(), TaskRef)) {
                 nodep->targetp(taskRefp->taskp());
+            } else {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Node other than block or task referenced by disable");
             }
             if (nodep->targetp()) {
                 // If the target is already linked, there is no need to store reference as child
