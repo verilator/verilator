@@ -3205,6 +3205,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     m_ds.m_dotSymp = foundp;
                     m_ds.m_dotPos = DP_SCOPE;
                     if (m_ds.m_disablep && VN_IS(foundp->nodep(), NodeBlock)) {
+                        // Possibly it is not the final link. If we are under dot and not in its
+                        // last component, `targetp()` field will be overwritten by next components
                         m_ds.m_disablep->targetp(foundp->nodep());
                     }
                     if (const AstBegin* const beginp = VN_CAST(foundp->nodep(), Begin)) {
