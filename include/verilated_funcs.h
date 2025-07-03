@@ -2229,10 +2229,10 @@ static inline WDataOutP VL_SEL_WWII(int obits, int lbits, WDataOutP owp, WDataIn
 }
 
 template <typename T>
-static inline VlQueue<T> VL_CLONE_Q(const VlQueue<T>& from) {
+static inline VlQueue<T> VL_CLONE_Q(const VlQueue<T>& from, int lbits, int srcElementBits,
+                                   int dstElementBits) {
     VlQueue<T> ret;
-    ret.renew(from.size());
-    for (size_t i = 0; i < from.size(); ++i) ret.atWrite(i) = from.at(i);
+    VL_COPY_Q(ret, from, lbits, srcElementBits, dstElementBits);
     return ret;
 }
 
@@ -2242,12 +2242,6 @@ static inline VlQueue<T> VL_REVCLONE_Q(const VlQueue<T>& from, int lbits, int sr
     VlQueue<T> ret;
     VL_REVCOPY_Q(ret, from, lbits, srcElementBits, dstElementBits);
     return ret;
-}
-
-template <typename T>
-static inline void VL_COPY_Q(VlQueue<T>& q, const VlQueue<T>& from) {
-    q.renew(from.size());
-    for (size_t i = 0; i < from.size(); ++i) q.atWrite(i) = from.at(i);
 }
 
 // Helper function to get a bit from a queue at a specific bit index
@@ -2319,6 +2313,43 @@ static inline void VL_SET_QUEUE_BIT(VlQueue<VlWide<N_Words>>& queue, int dstElem
 }
 
 template <typename T>
+static inline void VL_ZERO_INIT_QUEUE_ELEM(T& elem) {
+    elem = 0;
+}
+
+template <std::size_t N_Words>
+static inline void VL_ZERO_INIT_QUEUE_ELEM(VlWide<N_Words>& elem) {
+    for (size_t j = 0; j < N_Words; ++j) { elem.at(j) = 0; }
+}
+
+// This specialization works for both VlQueue<CData> (and similar) as well
+// as VlQueue<VlWide<N>>.
+template <typename T>
+static inline void VL_COPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int lbits,
+                            int srcElementBits, int dstElementBits) {
+    if (srcElementBits == dstElementBits) {
+        // Simple case: same element bit width, direct copy of each element
+        if (VL_UNLIKELY(&q == &from)) return;  // Skip self-assignment when it's truly a no-op
+        q = from;
+    } else {
+        // Different element bit widths: use streaming conversion
+        VlQueue<T> srcCopy = from;
+        const size_t srcTotalBits = from.size() * srcElementBits;
+        const size_t dstSize = (srcTotalBits + dstElementBits - 1) / dstElementBits;       
+        q.renew(dstSize);
+        for (size_t i = 0; i < dstSize; ++i) { 
+            VL_ZERO_INIT_QUEUE_ELEM(q.atWrite(i)); 
+        }
+        for (size_t bitIndex = 0; bitIndex < srcTotalBits; ++bitIndex) {
+            VL_SET_QUEUE_BIT(q, dstElementBits, bitIndex,
+                             VL_GET_QUEUE_BIT(srcCopy, srcElementBits, bitIndex));
+        }
+    }
+}
+
+// This specialization works for both VlQueue<CData> (and similar) as well
+// as VlQueue<VlWide<N>>.
+template <typename T>
 static inline void VL_REVCOPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int lbits,
                                 int srcElementBits, int dstElementBits) {
     const size_t srcTotalBits = from.size() * srcElementBits;
@@ -2329,57 +2360,9 @@ static inline void VL_REVCOPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int lbits
 
     q.renew(dstSize);
 
-    for (size_t i = 0; i < dstSize; ++i) { q.atWrite(i) = 0; }
-
-    if (lbits == 1) {
-        // Simple bit reversal: write directly to destination
-        for (int i = srcTotalBits - 1; i >= 0; --i) {
-            VL_SET_QUEUE_BIT(q, dstElementBits, srcTotalBits - 1 - i,
-                             VL_GET_QUEUE_BIT(srcCopy, srcElementBits, i));
-        }
-    } else {
-        // Generalized block-reversal for lbits > 1:
-        // 1. Reverse all bits using 1-bit blocks
-        // 2. Split into lbits-sized blocks and pad incomplete blocks on the left
-        // 3. Reverse each lbits-sized block using 1-bit blocks
-
-        const size_t numCompleteBlocks = srcTotalBits / lbits;
-        const size_t remainderBits = srcTotalBits % lbits;
-        const size_t srcBlocks = numCompleteBlocks + (remainderBits > 0 ? 1 : 0);
-
-        size_t dstBitIndex = 0;
-
-        for (size_t block = 0; block < srcBlocks; ++block) {
-            const size_t blockStart = block * lbits;
-            const int bitsToProcess = VL_LIKELY(block < numCompleteBlocks) ? lbits : remainderBits;
-
-            for (int bit = bitsToProcess - 1; bit >= 0; --bit) {
-                const size_t reversedBitIndex = blockStart + bit;
-                const size_t originalBitIndex = srcTotalBits - 1 - reversedBitIndex;
-                VL_SET_QUEUE_BIT(q, dstElementBits, dstBitIndex++,
-                                 VL_GET_QUEUE_BIT(srcCopy, srcElementBits, originalBitIndex));
-            }
-
-            dstBitIndex += lbits - bitsToProcess;
-        }
-    }
-}
-
-template <std::size_t N_Words>
-static inline void VL_REVCOPY_Q(VlQueue<VlWide<N_Words>>& q, const VlQueue<VlWide<N_Words>>& from,
-                                int lbits, int srcElementBits, int dstElementBits) {
-    const size_t srcTotalBits = from.size() * srcElementBits;
-    const size_t dstSize = (srcTotalBits + dstElementBits - 1) / dstElementBits;
-
-    // Always make a copy to handle the case where q and from are the same queue
-    VlQueue<VlWide<N_Words>> srcCopy = from;
-
-    q.renew(dstSize);
-
-    // Initialize all elements to zero
+    // Initialize all elements to zero using appropriate method
     for (size_t i = 0; i < dstSize; ++i) {
-        VlWide<N_Words>& elem = q.atWrite(i);
-        for (size_t j = 0; j < N_Words; ++j) { elem.at(j) = 0; }
+        VL_ZERO_INIT_QUEUE_ELEM(q.atWrite(i));
     }
 
     if (lbits == 1) {

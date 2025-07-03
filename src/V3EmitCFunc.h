@@ -403,19 +403,17 @@ public:
     void visit(AstCvtArrayToArray* nodep) override {
         if (nodep->reverse()) {
             puts("VL_REVCLONE_Q(");
-            iterateAndNextConstNull(nodep->fromp());
-            puts(", ");
-            puts(cvtToStr(nodep->blockSize()));
-            puts(", ");
-            puts(cvtToStr(nodep->srcElementBits()));
-            puts(", ");
-            puts(cvtToStr(nodep->dstElementBits()));
-            puts(")");
         } else {
             puts("VL_CLONE_Q(");
-            iterateAndNextConstNull(nodep->fromp());
-            puts(")");
         }
+        iterateAndNextConstNull(nodep->fromp());
+        puts(", ");
+        puts(cvtToStr(nodep->blockSize()));
+        puts(", ");
+        puts(cvtToStr(nodep->srcElementBits()));
+        puts(", ");
+        puts(cvtToStr(nodep->dstElementBits()));
+        puts(")");
     }
 
     void visit(AstCvtArrayToPacked* nodep) override {
@@ -510,23 +508,19 @@ public:
                    = VN_CAST(nodep->rhsp(), CvtArrayToArray)) {
             if (castp->reverse()) {
                 putns(castp, "VL_REVCOPY_Q(");
-                iterateAndNextConstNull(nodep->lhsp());
-                puts(", ");
-                rhs = false;
-                iterateAndNextConstNull(castp->fromp());
-                puts(", ");
-                puts(cvtToStr(castp->blockSize()));
-                puts(", ");
-                puts(cvtToStr(castp->srcElementBits()));
-                puts(", ");
-                puts(cvtToStr(castp->dstElementBits()));
             } else {
                 putns(castp, "VL_COPY_Q(");
-                iterateAndNextConstNull(nodep->lhsp());
-                puts(", ");
-                rhs = false;
-                iterateAndNextConstNull(castp->fromp());
             }
+            iterateAndNextConstNull(nodep->lhsp());
+            puts(", ");
+            rhs = false;
+            iterateAndNextConstNull(castp->fromp());
+            puts(", ");
+            puts(cvtToStr(castp->blockSize()));
+            puts(", ");
+            puts(cvtToStr(castp->srcElementBits()));
+            puts(", ");
+            puts(cvtToStr(castp->dstElementBits()));
         } else if (nodep->isWide() && VN_IS(nodep->lhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), CExpr)  //
                    && !VN_IS(nodep->rhsp(), CMethodHard)  //

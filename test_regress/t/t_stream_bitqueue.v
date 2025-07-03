@@ -401,6 +401,88 @@ module t (  /*AUTOARG*/
       `checks(s, "bytq='{'h84, 'haa, 'h97, 'h80} ");
     end
 
+    // Test StreamR (>>) operations - fairly simple since this should maintain left-to-right order.
+    begin
+      bit_q_t  bitq;
+      byte_q_t bytq;
+
+      bitq = {1'b1, 1'b0, 1'b1, 1'b0, 1'b1, 1'b0, 1'b1, 1'b0};
+      bitq = {>>4{bit_q_t'({<<{bitq}})}};
+      s = $sformatf("bitq=%p", bitq);
+      `checks(s, "bitq='{'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1} ");
+
+      bytq = {8'h84, 8'haa};
+      bitq = {>>{bit_q_t'({<<{bytq}})}};
+      s = $sformatf("bitq=%p", bitq);
+      `checks(s,
+              "bitq='{'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1} ");
+
+      bitq = {
+        1'b1,
+        1'b0,
+        1'b1,
+        1'b0,
+        1'b1,
+        1'b0,
+        1'b1,
+        1'b0,
+        1'b1,
+        1'b1,
+        1'b0,
+        1'b0,
+        1'b0,
+        1'b0,
+        1'b1,
+        1'b0
+      };
+      bytq = {>>2{byte_q_t'({<<{bitq}})}};
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'h43, 'h55} ");
+
+      bytq = {8'h12, 8'h34, 8'h56};
+      bytq = {>>{byte_q_t'({<<{bytq}})}};
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'h6a, 'h2c, 'h48} ");
+
+      bitq = {1'b1, 1'b0, 1'b1, 1'b0, 1'b1, 1'b0, 1'b1, 1'b0};
+      bitq = {>>6{bit_q_t'({>>{bitq}})}};
+      s = $sformatf("bitq=%p", bitq);
+      `checks(s, "bitq='{'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0} ");
+
+      bytq = {8'h84, 8'haa};
+      bitq = {>>{bit_q_t'({>>{bytq}})}};
+      s = $sformatf("bitq=%p", bitq);
+      `checks(s,
+              "bitq='{'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0} ");
+
+      bitq = {
+        1'b1,
+        1'b0,
+        1'b1,
+        1'b0,
+        1'b1,
+        1'b0,
+        1'b1,
+        1'b0,
+        1'b1,
+        1'b1,
+        1'b0,
+        1'b0,
+        1'b0,
+        1'b0,
+        1'b1,
+        1'b0
+      };
+      bytq = {>>8{byte_q_t'({>>{bitq}})}};
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'haa, 'hc2} ");
+
+      bytq = {8'h12, 8'h34, 8'h56};
+      bytq = {>>{byte_q_t'({>>{bytq}})}};
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'h12, 'h34, 'h56} ");
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -2202,8 +2202,21 @@ class WidthVisitor final : public VNVisitor {
                     newp = new AstCvtPackedToArray{nodep->fileline(),
                                                    nodep->fromp()->unlinkFrBack(), toDtp};
                 } else if (VN_IS(fromDtp, QueueDType) || VN_IS(fromDtp, StreamDType)) {
+                    int srcElementBits = 1;
+                    int dstElementBits = 1;
+                    
+                    if (AstNodeDType* const elemDtp = fromDtp->subDTypep()) {
+                        srcElementBits = elemDtp->width();
+                    }
+                    
+                    const AstQueueDType* const dstQueueDtp = VN_AS(toDtp, QueueDType);
+                    if (AstNodeDType* const elemDtp = dstQueueDtp->subDTypep()) {
+                        dstElementBits = elemDtp->width();
+                    }
+                    
                     newp = new AstCvtArrayToArray{nodep->fileline(),
-                                                  nodep->fromp()->unlinkFrBack(), toDtp, false};
+                                                  nodep->fromp()->unlinkFrBack(), toDtp, false,
+                                                  1, dstElementBits, srcElementBits};
                 }
             } else if (VN_IS(toDtp, ClassRefDType)) {
                 // Can just remove cast

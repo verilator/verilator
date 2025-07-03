@@ -2199,7 +2199,16 @@ class ConstVisitor final : public VNVisitor {
             const AstNodeDType* const dstDTypep = nodep->lhsp()->dtypep()->skipRefp();
             if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
                 if (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType)) {
-                    srcp = new AstCvtArrayToArray{srcp->fileline(), srcp, nodep->dtypep(), false};
+                    int srcElementBits = 0;
+                    if (AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
+                        srcElementBits = elemDtp->width();
+                    }
+                    int dstElementBits = 0;
+                    if (AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                        dstElementBits = elemDtp->width();
+                    }
+                    srcp = new AstCvtArrayToArray{srcp->fileline(), srcp, nodep->dtypep(), false,
+                                                  1, dstElementBits, srcElementBits};
                 } else {
                     srcp = new AstCvtArrayToPacked{srcp->fileline(), srcp, nodep->dtypep()};
                 }
@@ -2303,16 +2312,12 @@ class ConstVisitor final : public VNVisitor {
                         nodep->v3error("Stream block size must be constant (got " << streamp->rhsp()->prettyTypeName() << ")");
                     }
                     int srcElementBits = 0;
-                    if (const AstQueueDType* const queueDtp = VN_CAST(srcDTypep, QueueDType)) {
-                        if (AstNodeDType* const elemDtp = queueDtp->subDTypep()) {
-                            srcElementBits = elemDtp->width();
-                        }
+                    if (AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
+                        srcElementBits = elemDtp->width();
                     }
                     int dstElementBits = 0;
-                    if (const AstQueueDType* const queueDtp = VN_CAST(dstDTypep, QueueDType)) {
-                        if (AstNodeDType* const elemDtp = queueDtp->subDTypep()) {
-                            dstElementBits = elemDtp->width();
-                        }
+                    if (AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                        dstElementBits = elemDtp->width();
                     }
                     streamp->unlinkFrBack();
                     srcp = new AstCvtArrayToArray{
@@ -3126,9 +3131,23 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstCvtArrayToArray* nodep) override {
         iterateChildren(nodep);
         // Handle the case where we have a stream operation inside a cast conversion
-        // Only process if this is not already a reverse conversion (to avoid infinite loop)
-        if (!nodep->reverse()) {
-            if (AstStreamL* const streamp = VN_CAST(nodep->fromp(), StreamL)) {
+        // To avoid infinite recursion, mark the node as processed by setting user1.
+        if (!nodep->user1()) {
+            nodep->user1(true);
+            
+            // Check for both StreamL and StreamR operations
+            AstNodeStream* streamp = nullptr;
+            bool isReverse = false;
+            
+            if (AstStreamL* const streamLp = VN_CAST(nodep->fromp(), StreamL)) {
+                streamp = streamLp;
+                isReverse = true;  // StreamL reverses the operation
+            } else if (AstStreamR* const streamRp = VN_CAST(nodep->fromp(), StreamR)) {
+                streamp = streamRp;
+                isReverse = false; // StreamR doesn't reverse the operation
+            }
+            
+            if (streamp) {
                 AstNodeExpr* srcp = streamp->lhsp();
                 AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
                 AstNodeDType* const dstDTypep = nodep->dtypep()->skipRefp();
@@ -3145,24 +3164,21 @@ class ConstVisitor final : public VNVisitor {
                         nodep->v3error("Stream block size must be constant (got " << streamp->rhsp()->prettyTypeName() << ")");
                     }
                     int srcElementBits = 0;
-                    if (const AstQueueDType* const queueDtp = VN_CAST(srcDTypep, QueueDType)) {
-                        if (AstNodeDType* const elemDtp = queueDtp->subDTypep()) {
-                            srcElementBits = elemDtp->width();
-                        }
+                    if (AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
+                        srcElementBits = elemDtp->width();
                     }
                     int dstElementBits = 0;
-                    if (const AstQueueDType* const queueDtp = VN_CAST(dstDTypep, QueueDType)) {
-                        if (AstNodeDType* const elemDtp = queueDtp->subDTypep()) {
-                            dstElementBits = elemDtp->width();
-                        }
+                    if (AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                        dstElementBits = elemDtp->width();
                     }
                     streamp->unlinkFrBack();
                     AstNodeExpr* newp = new AstCvtArrayToArray{
-                        srcp->fileline(), srcp->unlinkFrBack(), dstDTypep,     true,
+                        srcp->fileline(), srcp->unlinkFrBack(), dstDTypep,     isReverse,
                         blockSize,        dstElementBits,       srcElementBits};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(streamp), streamp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
                 }
             }
         }

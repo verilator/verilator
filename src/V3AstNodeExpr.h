@@ -1139,7 +1139,7 @@ private:
 
 public:
     AstCvtArrayToArray(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp, bool reverse,
-                       int blockSize = 1, int dstElementBits = 0, int srcElementBits = 0)
+                       int blockSize, int dstElementBits, int srcElementBits)
         : ASTGEN_SUPER_CvtArrayToArray(fl)
         , m_reverse{reverse}
         , m_blockSize{blockSize}
