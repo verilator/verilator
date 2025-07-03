@@ -76,12 +76,14 @@ Benchmarking & Optimization
 For best performance, run Verilator with the :vlopt:`-O3`
 :vlopt:`--x-assign fast <--x-assign>`
 :vlopt:`--x-initial fast <--x-initial>`
-:vlopt:`--noassert <--assert>` options.  The :vlopt:`-O3`
+:vlopt:`--no-assert` options.  The :vlopt:`-O3`
 option will require a longer time to run Verilator, and
 :vlopt:`--x-assign fast <--x-assign>`
 :vlopt:`--x-initial fast <--x-assign>`
-may increase the risk of reset bugs in trade for performance; see the above
-documentation for these options.
+may increase the risk of reset bugs in trade for performance.  The
+:vlopt:`--no-assert` will suppress checking assertions, which is faster and
+appropriate for known-good models running software, but may hide design
+errors.  See the above documentation for these options.
 
 If using Verilated multithreaded, consider overriding Verilator's default
 thread-to-processor assignment by using ``numactl``; see
@@ -202,9 +204,6 @@ Functional Coverage
 With :vlopt:`--coverage` or :vlopt:`--coverage-user`, Verilator will
 translate functional coverage points the user has inserted manually in
 SystemVerilog code through into the Verilated model.
-
-Currently, all functional coverage points are specified using SystemVerilog
-assertion syntax, which must be separately enabled with :vlopt:`--assert`.
 
 For example, the following SystemVerilog statement will add a coverage
 point under the coverage name "DefaultClock":

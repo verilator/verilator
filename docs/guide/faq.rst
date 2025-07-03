@@ -335,7 +335,7 @@ How do I prevent my assertions from firing during reset?
 
 Call :code:`Verilated::assertOn(false)` before you first call the model,
 then turn it back on after reset.  It defaults to true.  When false, all
-assertions controlled by :vlopt:`--assert` are disabled.
+assertions are disabled.
 
 
 Why do I get "undefined reference to sc_time_stamp()?

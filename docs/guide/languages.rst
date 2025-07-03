@@ -90,14 +90,14 @@ wreal.
 Synthesis Directive Assertion Support
 -------------------------------------
 
-With the :vlopt:`--assert` option, Verilator reads any
+Verilator reads any :code:`//synopsys full_case` or :code:`//synopsys
+parallel_case` directives.  The same applies to any :code:`//ambit
+synthesis`, :code:`//cadence` or :code:`//pragma` directives of the same
+form.
 
-:code:`//synopsys full_case` or :code:`//synopsys parallel_case`
-directives.  The same applies to any :code:`//ambit synthesis`,
-:code:`//cadence` or :code:`//pragma` directives of the same form.
-
-When these synthesis directives are discovered, Verilator will either
-formally prove the directive to be true, or, failing that, will insert the
+When these synthesis directives are discovered, unless
+:vlopt:`--no-assert-case` option is used, Verilator will either formally
+prove the directive to be true, or, failing that, will insert the
 appropriate code to detect failing cases at simulation runtime and print an
 "Assertion failed" error message.
 

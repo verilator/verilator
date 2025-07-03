@@ -11,6 +11,10 @@ contributors that suggested or implemented a given issue are shown in []. Thanks
 Verilator 5.037 devel
 ==========================
 
+**Important:**
+
+* Change `--assert` to be the default; use `--no-assert` for legacy behavior and faster runtimes.
+
 **Other:**
 
 * Support redeclaring type as non-type; major parsing change (#2412) (#6020) (#6042) (#6044).

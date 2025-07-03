@@ -251,8 +251,8 @@ private:
     bool m_preprocResolve = false;  // main switch: --preproc-resolve
     bool m_makePhony = false;       // main switch: -MP
     bool m_preprocNoLine = false;   // main switch: -P
-    bool m_assert = false;          // main switch: --assert
-    bool m_assertCase = false;      // main switch: --assert-case
+    bool m_assert = true;           // main switch: --assert
+    bool m_assertCase = true;       // main switch: --assert-case
     bool m_autoflush = false;       // main switch: --autoflush
     bool m_bboxSys = false;         // main switch: --bbox-sys
     bool m_bboxUnsup = false;       // main switch: --bbox-unsup
@@ -520,7 +520,7 @@ public:
     bool stdWaiver() const { return m_stdWaiver; }
     bool structsPacked() const { return m_structsPacked; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
-    bool assertCaseOn() const { return m_assertCase || m_assert; }
+    bool assertCase() const { return m_assertCase; }
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }

@@ -333,8 +333,8 @@ List Of Warnings
    Unique case statements that select on an enumerated variable, where all
    of the enumerated values are covered by case items, are considered
    complete even if the case statement does not cover illegal
-   non-enumerated values (IEEE 1800-2023 12.5.3).  To check that illegal
-   values are not hit, use :vlopt:`--assert`.
+   non-enumerated values (IEEE 1800-2023 12.5.3).  Verilator checks that
+   illegal values are not hit, unless :vlopt:`--no-assert-case` was used.
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.

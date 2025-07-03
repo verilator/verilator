@@ -86,13 +86,19 @@ Summary:
       grammar and other semantic extensions which might not be legal when
       set to an older standard.
 
-.. option:: --assert
+.. option:: --no-assert
 
-   Enable all assertions. Implies :vlopt:`--assert-case`.
+   Disable all assertions. Implies :vlopt:`--no-assert-case`.
 
-.. option:: --assert-case
+   In versions before 5.038, these were disabled by default, and `--assert`
+   was required to enable assertions.
 
-   Enable unique/unique0/priority case related checks.
+.. option:: --no-assert-case
+
+   Disable unique/unique0/priority case related checks.
+
+   In versions before 5.038, these were disabled by default, and `--assert`
+   or `--assert-case` was required to enable case assertions.
 
 .. option:: --autoflush
 

@@ -223,7 +223,7 @@ module Vt_debug_emitv_t;
                 $stop;
             end
             case (in)
-                'sh1: begin $display("1");
+                 // synopsys full_case parallel_case'sh1: begin $display("1");
                 end
                 default: begin $display("default");
                 end
