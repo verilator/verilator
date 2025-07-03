@@ -186,9 +186,9 @@ public:
     }
 
     AstVarScope* findMemberTrigger(const AstIface* ifacep, const std::string& memberName) const {
-        IfaceMember target(ifacep, memberName);
+        IfaceMember target{ifacep, memberName};
         for (const auto& pair : m_memberTriggers) {
-            if (!(pair.first < target) && !(target < pair.first)) { return pair.second; }
+            if (!(pair.first < target) && !(target < pair.first)) return pair.second;
         }
         return nullptr;
     }

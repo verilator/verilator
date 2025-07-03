@@ -135,7 +135,7 @@ private:
         if (!existingTrigger) {
             AstScope* const scopeTopp = m_netlistp->topScopep()->scopep();
             // Create a unique name for this member trigger
-            const std::string triggerName = m_vifTriggerNames.get(ifacep) + "__" + memberName;
+            const std::string triggerName = m_vifTriggerNames.get(ifacep) + "_Vtrigm_" + memberName;
             AstVarScope* const vscp = scopeTopp->createTemp(triggerName, 1);
             m_triggers.addMemberTrigger(ifacep, memberName, vscp);
             existingTrigger = vscp;

@@ -8,15 +8,11 @@ interface If;
   logic [31:0] inc;
 endinterface
 
-module top (
-    clk,
-    inc1,
-    inc2
-);
+module top;
 
-  input clk;
-  input [31:0] inc1;
-  input [31:0] inc2;
+  logic clk = 0;
+  logic [31:0] inc1 = 0;
+  logic [31:0] inc2 = 0;
   int cyc = 0;
 
   If intf1();
@@ -24,7 +20,10 @@ module top (
   virtual If vif1 = intf1;
   virtual If vif2 = intf2;
 
-  assign vif1.inc  = inc1;
+  // assign vif1.inc  = inc1;
+  always @(posedge clk) begin
+    vif1.inc <= inc1;
+  end
   assign intf2.inc = inc2;
 
   always @(posedge clk) begin
@@ -35,7 +34,27 @@ module top (
     end
   end
 
-  always_comb $write("[%0t] intf1.inc==%0h\n", $time, intf1.inc);
-  always_comb $write("[%0t] vif2.inc==%0h\n", $time, vif2.inc);
+  always @(intf1.inc) begin
+    $write("[%0t] intf1.inc==%h\n", $time, intf1.inc);
+  end
+  always @(vif2.inc) begin
+    $write("[%0t] vif2.inc==%h\n", $time, vif2.inc);
+  end
+
+  initial begin
+    repeat (30) #5ns clk = ~clk;
+  end
+
+  initial begin
+    inc1 = 1;
+    inc2 = 1;
+
+    repeat (10) begin
+      #15ns;
+      inc1 = inc1 + 1;
+      inc2 = inc2 + 1;
+    end
+
+  end
 
 endmodule
