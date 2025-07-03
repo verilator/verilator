@@ -5541,8 +5541,8 @@ gateDecl<nodep>:
         |       yNOR    driveStrengthE delay_controlE gateNorList ';'     { $$ = $4; STRENGTH_LIST($4, $2, AssignW); DELAY_LIST($3, $4); }
         |       yXOR    driveStrengthE delay_controlE gateXorList ';'     { $$ = $4; STRENGTH_LIST($4, $2, AssignW); DELAY_LIST($3, $4); }
         |       yXNOR   driveStrengthE delay_controlE gateXnorList ';'    { $$ = $4; STRENGTH_LIST($4, $2, AssignW); DELAY_LIST($3, $4); }
-        |       yPULLUP   delay_controlE gatePullupList ';'     { $$ = $3; DELAY_LIST($2, $3); }
-        |       yPULLDOWN delay_controlE gatePulldownList ';'   { $$ = $3; DELAY_LIST($2, $3); }
+        |       yPULLDOWN pulldown_strengthE delay_controlE gatePulldownList ';'   { $$ = $4; DELAY_LIST($3, $4); }
+        |       yPULLUP   pullup_strengthE   delay_controlE gatePullupList ';'     { $$ = $4; DELAY_LIST($3, $4); }
         |       yNMOS     delay_controlE gateBufif1List ';'     { $$ = $3; DELAY_LIST($2, $3); }
         |       yPMOS     delay_controlE gateBufif0List ';'     { $$ = $3; DELAY_LIST($2, $3); }
         //
@@ -5759,7 +5759,6 @@ driveStrengthE<nodep>:
         |       driveStrength                           { $$ = $1; }
         ;
 
-
 driveStrength<nodep>:
                 yP_PAR__STRENGTH strength0 ',' strength1 ')' { $$ = new AstStrengthSpec{$1, $2, $4}; }
         |       yP_PAR__STRENGTH strength1 ',' strength0 ')' { $$ = new AstStrengthSpec{$1, $4, $2}; }
@@ -5767,6 +5766,28 @@ driveStrength<nodep>:
         |       yP_PAR__STRENGTH strength1 ',' yHIGHZ0 ')' { BBUNSUP($<fl>4, "Unsupported: highz strength"); }
         |       yP_PAR__STRENGTH yHIGHZ0 ',' strength1 ')' { BBUNSUP($<fl>2, "Unsupported: highz strength"); }
         |       yP_PAR__STRENGTH yHIGHZ1 ',' strength0 ')' { BBUNSUP($<fl>2, "Unsupported: highz strength"); }
+        ;
+
+pulldown_strengthE<nodep>:  // IEEE: [ pulldown_strength ]
+                /* empty */                             { $$ = nullptr; }
+        |       pulldown_strength                       { $$ = $1; }
+        ;
+
+pulldown_strength<nodep>:  // IEEE: pulldown_strength
+                yP_PAR__STRENGTH strength0 ',' strength1 ')'  { BBUNSUP($<fl>2, "Unsupported: pulldown strength"); }
+        |       yP_PAR__STRENGTH strength1 ',' strength0 ')'  { BBUNSUP($<fl>2, "Unsupported: pulldown strength"); }
+        |       yP_PAR__STRENGTH strength0 ')'                { BBUNSUP($<fl>2, "Unsupported: pulldown strength"); }
+        ;
+
+pullup_strengthE<nodep>:  // IEEE: [ pullup_strength ]
+                /* empty */                             { $$ = nullptr; }
+        |       pullup_strength                         { $$ = $1; }
+        ;
+
+pullup_strength<nodep>:  // IEEE: pullup_strength
+                yP_PAR__STRENGTH strength0 ',' strength1 ')'  { BBUNSUP($<fl>2, "Unsupported: pullup strength"); }
+        |       yP_PAR__STRENGTH strength1 ',' strength0 ')'  { BBUNSUP($<fl>2, "Unsupported: pullup strength"); }
+        |       yP_PAR__STRENGTH strength1 ')'                { BBUNSUP($<fl>2, "Unsupported: pullup strength"); }
         ;
 
 //************************************************
