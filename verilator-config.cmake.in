@@ -89,9 +89,11 @@ function(_verilator_check_cxx_compiler_flag FLAG RESVAR)
     check_cxx_source_compiles(
         "${_VERILATOR_CHECK_CXX_COMPILER_FLAG_SRC}"
         "${RESVAR}"
-        FAIL_REGEX "command[ -]line option .* is valid for .* but not for C[+][+]"
-        FAIL_REGEX "-Werror=.* argument .* is not valid for C[+][+]"
-        ${_common_patterns}
+        FAIL_REGEX
+            "command[ -]line option .* is valid for .* but not for C[+][+]"
+        FAIL_REGEX
+            "-Werror=.* argument .* is not valid for C[+][+]"
+            ${_common_patterns}
     )
     set("${RESVAR}" "${${RESVAR}}" PARENT_SCOPE)
 endfunction()
