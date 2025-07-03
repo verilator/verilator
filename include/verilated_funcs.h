@@ -2335,10 +2335,10 @@ static inline void VL_COPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int lbits,
         // Different element bit widths: use streaming conversion
         VlQueue<T> srcCopy = from;
         const size_t srcTotalBits = from.size() * srcElementBits;
-        const size_t dstSize = (srcTotalBits + dstElementBits - 1) / dstElementBits;       
+        const size_t dstSize = (srcTotalBits + dstElementBits - 1) / dstElementBits;
         q.renew(dstSize);
-        for (size_t i = 0; i < dstSize; ++i) { 
-            VL_ZERO_INIT_QUEUE_ELEM(q.atWrite(i)); 
+        for (size_t i = 0; i < dstSize; ++i) {
+            VL_ZERO_INIT_QUEUE_ELEM(q.atWrite(i));
         }
         for (size_t bitIndex = 0; bitIndex < srcTotalBits; ++bitIndex) {
             VL_SET_QUEUE_BIT(q, dstElementBits, bitIndex,
