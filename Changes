@@ -38,9 +38,11 @@ Verilator 5.037 devel
 * Improve DPI temporary 'for' loop performance (#6079). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Improve memory usage for SenTrees in V3OrderProcessDomains (#6112). [Geza Lore]
 * Improve docker image size (#6139). [Tobias Rosenkranz, bitaggregat GmbH]
+* Update docker base image to Ubuntu 24.04 (#6147). [Tobias Rosenkranz, bitaggregat GmbH]
 * Optimize DFG De Morgan patterns (#6090). [Geza Lore]
 * Optimize DFG variable elimination (#6091). [Geza Lore]
 * Optimize DFG PUSH_SEL_THROUGH_CONCAT pattern (#6092). [Geza Lore]
+* Optimize DFG before V3Gate (#6141). [Geza Lore]
 * Optimize constification within Expand and Subst stages (#6111). [Geza Lore]
 * Fix --x-initial and --x-assign random stability (#2662) (#5958) (#6018) (#6025) (#6075). [Todd Strader]
 * Fix trace hierarchical-name runtime errors (#5668) (#6076). [Paul Swirhun]
@@ -86,8 +88,9 @@ Verilator 5.037 devel
 * Fix variables declared in fork after taskify (#6126). [Kamil Rakoczy, Antmicro Ltd.]
 * Fix method calls without parenthesis (#6127). [Alex Solomatnikov]
 * Fix `pre_randomize`/`post_randomize` when no randomize (#6128). [Alex Solomatnikov]
+* Fix wide non-blocking assignment mis-optimization (#6150) (#6152) (#6155). [Todd Strader]
 * Fix interface array connections with non-zero low declaration index.
-* Update docker base image (#6147). [Tobias Rosenkranz, bitaggregat GmbH]
+* Fix developer build error on MacOS/Flex2.6.4 (#6153). [Paul Swirhun]
 
 
 Verilator 5.036 2025-04-27
