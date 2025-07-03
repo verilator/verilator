@@ -335,14 +335,29 @@ class LinkJumpVisitor final : public VNVisitor {
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
+    AstClass* getProcessClass(AstPackage* packagep) {
+        for (AstNode* itemp = packagep->stmtsp(); itemp; itemp = itemp->nextp()) {
+            if (itemp->name() == "process") return VN_AS(itemp, Class);
+        }
+        return nullptr;
+    }
     void visit(AstDisable* nodep) override {
         UINFO(8, "   DISABLE " << nodep);
         AstNode* const targetp = nodep->targetp();
+        FileLine* const fl = nodep->fileline();
         UASSERT_OBJ(targetp, nodep, "Unlinked disable statement");
         if (VN_IS(targetp, Task)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling task by name");
         } else if (VN_IS(targetp, Fork)) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork by name");
+            AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
+            AstVar* const processQueuep = new AstVar{
+                fl, VVarType::VAR, "fork_X_processes", VFlagChildDType{},
+                new AstQueueDType{
+                    fl, VFlagChildDType{},
+                    new AstClassRefDType{fl, getProcessClass(v3Global.rootp()->stdPackagep()),
+                                         nullptr},
+                    nullptr}};
+            topPkgp->addStmtsp(processQueuep);
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
             const std::string targetName = beginp->name();
             bool aboveBlock = false;
