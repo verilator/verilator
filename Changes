@@ -37,7 +37,7 @@ Verilator 5.037 devel
 * Improve hierarchical scheduling visualization in V3ExecGraph (#6009). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Improve DPI temporary 'for' loop performance (#6079). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Improve memory usage for SenTrees in V3OrderProcessDomains (#6112). [Geza Lore]
-* Improve docker image size (#6139). [Tobias Rosenkranz, bitaggregat GmbH.]
+* Improve docker image size (#6139). [Tobias Rosenkranz, bitaggregat GmbH]
 * Optimize DFG De Morgan patterns (#6090). [Geza Lore]
 * Optimize DFG variable elimination (#6091). [Geza Lore]
 * Optimize DFG PUSH_SEL_THROUGH_CONCAT pattern (#6092). [Geza Lore]
@@ -87,6 +87,7 @@ Verilator 5.037 devel
 * Fix method calls without parenthesis (#6127). [Alex Solomatnikov]
 * Fix `pre_randomize`/`post_randomize` when no randomize (#6128). [Alex Solomatnikov]
 * Fix interface array connections with non-zero low declaration index.
+* Update docker base image (#6147). [Tobias Rosenkranz, bitaggregat GmbH]
 
 
 Verilator 5.036 2025-04-27
