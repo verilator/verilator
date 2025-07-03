@@ -211,7 +211,7 @@ public:
     LinkDotState(AstNetlist* rootp, VLinkDotStep step)
         : m_syms{rootp}
         , m_mods{rootp}
-        , m_step(step) {
+        , m_step{step} {
         UINFO(4, __FUNCTION__ << ": ");
         s_errorThisp = this;
         V3Error::errorExitCb(preErrorDumpHandler);  // If get error, dump self

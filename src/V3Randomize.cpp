@@ -1206,9 +1206,9 @@ class CaptureVisitor final : public VNVisitor {
 
 public:
     explicit CaptureVisitor(AstNode* const nodep, AstNodeModule* callerp, AstClass* const targetp)
-        : m_argsp(nullptr)
-        , m_callerp(callerp)
-        , m_targetp(targetp) {
+        : m_argsp{nullptr}
+        , m_callerp{callerp}
+        , m_targetp{targetp} {
         iterateAndNextNull(nodep);
     }
 
@@ -2355,7 +2355,7 @@ class RandomizeVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     explicit RandomizeVisitor(AstNetlist* nodep)
-        : m_inlineUniqueNames("__Vrandwith") {
+        : m_inlineUniqueNames{"__Vrandwith"} {
         createRandomizeClassVars(nodep);
         iterate(nodep);
         nodep->foreach([&](AstConstraint* constrp) {

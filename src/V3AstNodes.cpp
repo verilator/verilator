@@ -788,7 +788,7 @@ string AstVar::dpiTmpVarType(const string& varName) const {
 
     public:
         explicit converter(const string& name)
-            : m_name(name) {}
+            : m_name{name} {}
     };
     return converter{varName}.convert(this);
 }

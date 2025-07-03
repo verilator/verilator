@@ -820,14 +820,14 @@ public:
         : ASTGEN_SUPER_ConsDynArray(fl) {}
     explicit AstConsDynArray(FileLine* fl, bool lhsIsValue, AstNode* lhsp)
         : ASTGEN_SUPER_ConsDynArray(fl)
-        , m_lhsIsValue(lhsIsValue) {
+        , m_lhsIsValue{lhsIsValue} {
         this->lhsp(lhsp);
     }
     explicit AstConsDynArray(FileLine* fl, bool lhsIsValue, AstNode* lhsp, bool rhsIsValue,
                              AstNode* rhsp)
         : ASTGEN_SUPER_ConsDynArray(fl)
-        , m_lhsIsValue(lhsIsValue)
-        , m_rhsIsValue(rhsIsValue) {
+        , m_lhsIsValue{lhsIsValue}
+        , m_rhsIsValue{rhsIsValue} {
         this->lhsp(lhsp);
         this->rhsp(rhsp);
     }
@@ -902,14 +902,14 @@ public:
         : ASTGEN_SUPER_ConsQueue(fl) {}
     explicit AstConsQueue(FileLine* fl, bool lhsIsValue, AstNode* lhsp)
         : ASTGEN_SUPER_ConsQueue(fl)
-        , m_lhsIsValue(lhsIsValue) {
+        , m_lhsIsValue{lhsIsValue} {
         this->lhsp(lhsp);
     }
     explicit AstConsQueue(FileLine* fl, bool lhsIsValue, AstNode* lhsp, bool rhsIsValue,
                           AstNode* rhsp)
         : ASTGEN_SUPER_ConsQueue(fl)
-        , m_lhsIsValue(lhsIsValue)
-        , m_rhsIsValue(rhsIsValue) {
+        , m_lhsIsValue{lhsIsValue}
+        , m_rhsIsValue{rhsIsValue} {
         this->lhsp(lhsp);
         this->rhsp(rhsp);
     }
@@ -1605,7 +1605,7 @@ public:
     AstLambdaArgRef(FileLine* fl, const string& name, bool index)
         : ASTGEN_SUPER_LambdaArgRef(fl)
         , m_name{name}
-        , m_index(index) {}
+        , m_index{index} {}
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     string emitVerilog() override { return name(); }
     string emitC() override { V3ERROR_NA_RETURN(""); }

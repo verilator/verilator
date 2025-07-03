@@ -1415,7 +1415,7 @@ public:
 
     // cppcheck-suppress noExplicitConstructor
     constexpr VStrength(en strengthLevel)
-        : m_e(strengthLevel) {}
+        : m_e{strengthLevel} {}
     explicit VStrength(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }

@@ -45,11 +45,11 @@ public:
 
     ArrayInfo(const std::string& name, void* datap, int index, const std::vector<IData>& indices,
               const std::vector<size_t>& idxWidths)
-        : m_name(name)
-        , m_datap(datap)
-        , m_index(index)
-        , m_indices(indices)
-        , m_idxWidths(idxWidths) {}
+        : m_name{name}
+        , m_datap{datap}
+        , m_index{index}
+        , m_indices{indices}
+        , m_idxWidths{idxWidths} {}
 };
 using ArrayInfoMap = std::map<std::string, std::shared_ptr<const ArrayInfo>>;
 

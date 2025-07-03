@@ -93,7 +93,7 @@ class EmitCLazyDecls final : public VNVisitorConst {
 
 public:
     explicit EmitCLazyDecls(EmitCBaseVisitorConst& emitter)
-        : m_emitter(emitter) {}
+        : m_emitter{emitter} {}
     void emit(AstNode* nodep) {
         m_needsBlankLine = false;
         iterateChildrenConst(nodep);
@@ -1513,7 +1513,7 @@ public:
     }  // LCOV_EXCL_STOP
 
     EmitCFunc()
-        : m_lazyDecls(*this) {}
+        : m_lazyDecls{*this} {}
     EmitCFunc(AstNode* nodep, V3OutCFile* ofp, AstCFile* cfilep, bool trackText = false)
         : EmitCFunc{} {
         setOutputFile(ofp, cfilep);

@@ -510,7 +510,7 @@ public:
     AstNodeReadWriteMem(VNType t, FileLine* fl, bool hex, AstNodeExpr* filenamep,
                         AstNodeExpr* memp, AstNodeExpr* lsbp, AstNodeExpr* msbp)
         : AstNodeStmt{t, fl}
-        , m_isHex(hex) {
+        , m_isHex{hex} {
         this->filenamep(filenamep);
         this->memp(memp);
         this->lsbp(lsbp);
@@ -1114,7 +1114,7 @@ class AstConstraint final : public AstNode {
 public:
     AstConstraint(FileLine* fl, const string& name, AstNode* itemsp)
         : ASTGEN_SUPER_Constraint(fl)
-        , m_name(name) {
+        , m_name{name} {
         addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstConstraint;
@@ -1579,7 +1579,7 @@ public:
     AstPragma(FileLine* fl, VPragmaType pragType, const VTimescale& timescale)
         : ASTGEN_SUPER_Pragma(fl)
         , m_pragType{pragType}
-        , m_timescale(timescale) {}
+        , m_timescale{timescale} {}
     ASTGEN_MEMBERS_AstPragma;
     VPragmaType pragType() const { return m_pragType; }  // *=type of the pragma
     bool isPredictOptimizable() const override { return false; }
@@ -2880,7 +2880,7 @@ class AstCReset final : public AstNodeStmt {
 public:
     AstCReset(FileLine* fl, AstVarRef* varrefp, bool constructing)
         : ASTGEN_SUPER_CReset(fl)
-        , m_constructing(constructing) {
+        , m_constructing{constructing} {
         this->varrefp(varrefp);
     }
     ASTGEN_MEMBERS_AstCReset;
@@ -3518,7 +3518,7 @@ class AstStop final : public AstNodeStmt {
 public:
     AstStop(FileLine* fl, bool isFatal)
         : ASTGEN_SUPER_Stop(fl)
-        , m_isFatal(isFatal) {}
+        , m_isFatal{isFatal} {}
     ASTGEN_MEMBERS_AstStop;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -4094,7 +4094,7 @@ public:
     explicit AstTextBlock(FileLine* fl, const string& textp = "", bool tracking = false,
                           bool commas = false)
         : ASTGEN_SUPER_TextBlock(fl, textp, tracking)
-        , m_commas(commas) {}
+        , m_commas{commas} {}
     ASTGEN_MEMBERS_AstTextBlock;
     bool commas() const { return m_commas; }
     void commas(bool flag) { m_commas = flag; }

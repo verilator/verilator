@@ -88,7 +88,7 @@ public:
     static std::unordered_map<const ExecMTask*, MTaskState> mtaskState;
 
     explicit ThreadSchedule(uint32_t nThreads)
-        : m_id(s_nextId++)
+        : m_id{s_nextId++}
         , threads{nThreads} {}
     ThreadSchedule(ThreadSchedule&&) = default;
     ThreadSchedule& operator=(ThreadSchedule&&) = default;

@@ -83,7 +83,7 @@ class CoverageVisitor final : public VNVisitor {
         CoverTerm(AstNodeExpr* exprp, bool objective, const string& emitV)
             : m_exprp{exprp}
             , m_objective{objective}
-            , m_emitV(emitV) {}
+            , m_emitV{emitV} {}
     };
     using CoverExpr = std::deque<CoverTerm>;
     using CoverExprs = std::list<CoverExpr>;
