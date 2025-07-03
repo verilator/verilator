@@ -23,7 +23,9 @@
 -000001  point: comment=block hier=top.t
         
             intf intfs [2] ();
-            intf intf_sel();
+            intf intf_sel_ff();
+            intf intf_sel_comb();
+            intf intf_sel_assign();
         
 %000001     always_comb begin
 -000001  point: comment=block hier=top.t
@@ -33,9 +35,9 @@
 -000001  point: comment=block hier=top.t
             end
         
-%000009     always @ (posedge clk) begin
+%000009     always_ff @ (posedge clk) begin
 -000009  point: comment=block hier=top.t
-%000009         {intf_sel.foo, intf_sel.bar, intf_sel.baz} <=
+%000009         {intf_sel_ff.foo, intf_sel_ff.bar, intf_sel_ff.baz} <=
 -000009  point: comment=block hier=top.t
 %000009             cyc[0] ?
 -000009  point: comment=cond_then hier=top.t
@@ -46,6 +48,29 @@
 -000009  point: comment=cond_else hier=top.t
             end
         
+ 000010     always_comb begin
++000010  point: comment=block hier=top.t
+ 000010         {intf_sel_comb.foo, intf_sel_comb.bar, intf_sel_comb.baz} =
++000010  point: comment=block hier=top.t
+ 000010             cyc[0] ?
++000010  point: comment=cond_then hier=top.t
++000010  point: comment=cond_else hier=top.t
+ 000010             {intfs[1].foo, intfs[1].bar, intfs[1].baz} :
++000010  point: comment=cond_then hier=top.t
+ 000010             {intfs[0].foo, intfs[0].bar, intfs[0].baz};
++000010  point: comment=cond_else hier=top.t
+            end
+        
+            assign
+                {intf_sel_assign.foo, intf_sel_assign.bar, intf_sel_assign.baz} =
+ 000010             cyc[0] ?
++000010  point: comment=cond_then hier=top.t
++000010  point: comment=cond_else hier=top.t
+ 000010             {intfs[1].foo, intfs[1].bar, intfs[1].baz} :
++000010  point: comment=cond_then hier=top.t
+ 000010             {intfs[0].foo, intfs[0].bar, intfs[0].baz};
++000010  point: comment=cond_else hier=top.t
+        
 %000009     always @ (posedge clk) begin
 -000009  point: comment=block hier=top.t
 %000009         cyc <= cyc + 1;
@@ -53,9 +78,11 @@
 %000008         if (cyc==9) begin
 -000008  point: comment=else hier=top.t
 -000001  point: comment=if hier=top.t
-%000001             $display("bar = %0d", intf_sel.bar);
--000001  point: comment=if hier=top.t
-%000001             if (intf_sel.bar != 123) $stop();
+%000001             if (intf_sel_ff.bar != 123) $stop();
+-000001  point: comment=else hier=top.t
+%000001             if (intf_sel_comb.bar != 456) $stop();
+-000001  point: comment=else hier=top.t
+%000001             if (intf_sel_assign.bar != 456) $stop();
 -000001  point: comment=else hier=top.t
 %000001             $write("*-* All Finished *-*\n");
 -000001  point: comment=if hier=top.t
