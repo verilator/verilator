@@ -639,11 +639,26 @@ void v3errorEndFatal(std::ostringstream& sstr)
             std::cout << ss.str(); \
         } \
     } while (false)
+
 /// Print the prefix of UINFO, but no newline.  No level argument, as
 /// always need an if() at the caller site to determine if rest of the line
 /// gets printed or not
 #define UINFO_PREFIX(stmsg) \
     do { std::cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; } while (false)
+
+/// Based on debug level, call UINFO then dumpTree on nodep, using given message prefix
+/// If dt_msg = "", use the uinfo_msg; note any uinfo_msg side effects will happen twice.
+#define UINFOTREE(level, nodep, uinfo_msg, dt_msg) \
+    do { \
+        if (VL_UNCOVERABLE(debug() >= (level))) { \
+            UINFO(level, uinfo_msg); \
+            std::ostringstream ss; \
+            ss << dt_msg; \
+            if (ss.str().empty()) ss << uinfo_msg; \
+            if (nodep) \
+                nodep->dumpTree("- "s + V3Error::lineStr(__FILE__, __LINE__) + ss.str() + " - "); \
+        } \
+    } while (false)
 
 /// Compile statements only when debug build
 #ifdef VL_DEBUG
