@@ -6,12 +6,12 @@
 
 /* verilator lint_off COVERIGN */
 module t;
-    covergroup cg_args(int var1, int var2=42);
+    covergroup cgArgs(int var1, int var2=42);
 
     endgroup
 
-    cg_args cov1 = new(69, 77);
-    cg_args cov2 = new(69);
+    cgArgs cov1 = new(69, 77);
+    cgArgs cov2 = new(69);
     function x();
         cov1.sample();
         cov2.get_coverage();

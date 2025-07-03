@@ -388,7 +388,7 @@
   154 |    covergroup cg_more extends cg_empty;
       |    ^~~~~~~~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:157:4: Ignoring unsupported: covergroup
-  157 |    covergroup cg_args(int cg_lim);
+  157 |    covergroup cgArgs(int cg_lim);
       |    ^~~~~~~~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:164:7: Ignoring unsupported: covergroup
   164 |       covergroup cov1 @m_z;

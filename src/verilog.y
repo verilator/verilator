@@ -6808,10 +6808,10 @@ covergroup_declarationFront<classp>:  // IEEE: part of covergroup_declaration
                         sample->dtypep(sample->findVoidDType());
                         $$->addMembersp(sample);
 
-                        AstFunc *get_coverage = new AstFunc{$<fl>1, "get_coverage", nullptr, nullptr};
-                        get_coverage->classMethod(true);
-                        get_coverage->dtypep(get_coverage->findVoidDType());
-                        $$->addMembersp(get_coverage);
+                        AstFunc *getCoverage = new AstFunc{$<fl>1, "get_coverage", nullptr, nullptr};
+                        getCoverage->classMethod(true);
+                        getCoverage->dtypep(getCoverage->findVoidDType());
+                        $$->addMembersp(getCoverage);
 
                         BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup"); }
         ;
@@ -7531,11 +7531,11 @@ class_item<nodep>:                      // ==IEEE: class_item
         |       timeunits_declaration                   { $$ = $1; }
         |       covergroup_declaration
                         {
-                                string cgname = $1->name();
-                                $1->name("__v_anon_covergroup_"+cgname);
+                                string cgName = $1->name();
+                                $1->name("__v_anon_covergroup_"+cgName);
 
-                                AstVar *cg_instance = new AstVar($<fl>1, VVarType::VAR, cgname, VFlagChildDType{}, new AstRefDType($<fl>1, $1->name()));
-                                $$ = addNextNull($1, cg_instance);
+                                AstVar *cgInstance = new AstVar($<fl>1, VVarType::VAR, cgName, VFlagChildDType{}, new AstRefDType($<fl>1, $1->name()));
+                                $$ = addNextNull($1, cgInstance);
                          }
         //                      // local_parameter_declaration under parameter_declaration
         |       parameter_declaration ';'               { $$ = $1; }

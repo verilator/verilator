@@ -6,13 +6,13 @@
 
 /* verilator lint_off COVERIGN */
 class myClass;
-    covergroup embedded_cg;
+    covergroup embeddedCg;
 
     endgroup
-    
+
     function new();
-        embedded_cg = new();
-        embedded_cg.sample();
-        embedded_cg.get_coverage();
+        embeddedCg = new();
+        embeddedCg.sample();
+        embeddedCg.get_coverage();
     endfunction
 endclass
