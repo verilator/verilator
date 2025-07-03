@@ -68,14 +68,41 @@ function(_verilator_check_cxx_libraries LIBRARIES RESVAR)
     set("${RESVAR}" "${${RESVAR}}" PARENT_SCOPE)
 endfunction()
 
+function(_verilator_check_cxx_compiler_flag FLAG RESVAR)
+    # Check whether the compiler understands the flag FLAG
+    set(_VERILATOR_CHECK_CXX_COMPILER_FLAG_SRC
+        "
+        #warning warning
+        int main() { return 0; }
+        "
+    )
+    set(CMAKE_REQUIRED_FLAGS ${FLAG})
+    # Make sure the compiler warning is not turned into an error
+    string(APPEND CMAKE_REQUIRED_FLAGS " -Wno-error=cpp")
+    set(CMAKE_REQUIRED_DEFINITIONS)
+    set(CMAKE_REQUIRED_INCLUDES)
+    set(CMAKE_REQUIRED_LINK_OPTIONS)
+    set(CMAKE_REQUIRED_LIBRARIES)
+    set(CMAKE_REQUIRED_QUIET)
+
+    check_compiler_flag_common_patterns(_common_patterns)
+    check_cxx_source_compiles(
+        "${_VERILATOR_CHECK_CXX_COMPILER_FLAG_SRC}"
+        "${RESVAR}"
+        FAIL_REGEX "command[ -]line option .* is valid for .* but not for C[+][+]"
+        FAIL_REGEX "-Werror=.* argument .* is not valid for C[+][+]"
+        ${_common_patterns}
+    )
+    set("${RESVAR}" "${${RESVAR}}" PARENT_SCOPE)
+endfunction()
+
 # Check compiler flag support. Skip on MSVC, these are all GCC flags.
 if(NOT CMAKE_CXX_COMPILER_ID MATCHES MSVC)
     if(NOT DEFINED VERILATOR_CFLAGS OR NOT DEFINED VERILATOR_MT_CFLAGS)
         include(CheckCXXCompilerFlag)
         foreach(FLAG @CFG_CXX_FLAGS_CMAKE@)
             string(MAKE_C_IDENTIFIER ${FLAG} FLAGNAME)
-            string(REPLACE "-Wno-" "-W" POSITIVE_FLAG ${FLAG})
-            check_cxx_compiler_flag(${POSITIVE_FLAG} ${FLAGNAME})
+            _verilator_check_cxx_compiler_flag(${FLAG} ${FLAGNAME})
             if(${FLAGNAME})
                 list(APPEND VERILATOR_CFLAGS $<$<COMPILE_LANGUAGE:CXX>:${FLAG}>)
             endif()
