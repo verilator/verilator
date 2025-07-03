@@ -3365,6 +3365,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     ok = true;
                     m_ds.m_dotText = "";
+                } else {
+                    (void)defp;  // Prevent unused variable warning
                 }
             } else if (AstEnumItem* const valuep = VN_CAST(foundp->nodep(), EnumItem)) {
                 if (allowVar) {
