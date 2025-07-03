@@ -3105,6 +3105,7 @@ public:
         this->targetRefp(targetRefp);
     }
     ASTGEN_MEMBERS_AstDisable;
+    void dump(std::ostream& str) const override;
     void targetp(AstNode* nodep) { m_targetp = nodep; }
     AstNode* targetp() const { return m_targetp; }
     bool isBrancher() const override {

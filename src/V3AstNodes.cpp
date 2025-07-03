@@ -3166,6 +3166,15 @@ void AstDelay::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isCycleDelay);
     dumpJsonGen(str);
 }
+void AstDisable::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    str << " -> ";
+    if (targetp()) {
+        targetp()->dump(str);
+    } else {
+        str << "UNLINKED";
+    }
+}
 const char* AstAnd::widthMismatch() const VL_MT_STABLE {
     BROKEN_RTN(lhsp()->widthMin() != rhsp()->widthMin());
     BROKEN_RTN(lhsp()->widthMin() != widthMin());
