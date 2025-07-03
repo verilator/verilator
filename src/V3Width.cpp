@@ -2212,8 +2212,12 @@ class WidthVisitor final : public VNVisitor {
                         dstElementBits = elemDtp->width();
                     }
                     newp = new AstCvtArrayToArray{nodep->fileline(),
-                                                  nodep->fromp()->unlinkFrBack(), toDtp, false,
-                                                  1, dstElementBits, srcElementBits};
+                                                  nodep->fromp()->unlinkFrBack(),
+                                                  toDtp,
+                                                  false,
+                                                  1,
+                                                  dstElementBits,
+                                                  srcElementBits};
                 }
             } else if (VN_IS(toDtp, ClassRefDType)) {
                 // Can just remove cast

@@ -2230,7 +2230,7 @@ static inline WDataOutP VL_SEL_WWII(int obits, int lbits, WDataOutP owp, WDataIn
 
 template <typename T>
 static inline VlQueue<T> VL_CLONE_Q(const VlQueue<T>& from, int lbits, int srcElementBits,
-                                   int dstElementBits) {
+                                    int dstElementBits) {
     VlQueue<T> ret;
     VL_COPY_Q(ret, from, lbits, srcElementBits, dstElementBits);
     return ret;
@@ -2325,8 +2325,8 @@ static inline void VL_ZERO_INIT_QUEUE_ELEM(VlWide<N_Words>& elem) {
 // This specialization works for both VlQueue<CData> (and similar) as well
 // as VlQueue<VlWide<N>>.
 template <typename T>
-static inline void VL_COPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int lbits,
-                            int srcElementBits, int dstElementBits) {
+static inline void VL_COPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int lbits, int srcElementBits,
+                             int dstElementBits) {
     if (srcElementBits == dstElementBits) {
         // Simple case: same element bit width, direct copy of each element
         if (VL_UNLIKELY(&q == &from)) return;  // Skip self-assignment when it's truly a no-op
@@ -2337,9 +2337,7 @@ static inline void VL_COPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int lbits,
         const size_t srcTotalBits = from.size() * srcElementBits;
         const size_t dstSize = (srcTotalBits + dstElementBits - 1) / dstElementBits;
         q.renew(dstSize);
-        for (size_t i = 0; i < dstSize; ++i) {
-            VL_ZERO_INIT_QUEUE_ELEM(q.atWrite(i));
-        }
+        for (size_t i = 0; i < dstSize; ++i) { VL_ZERO_INIT_QUEUE_ELEM(q.atWrite(i)); }
         for (size_t bitIndex = 0; bitIndex < srcTotalBits; ++bitIndex) {
             VL_SET_QUEUE_BIT(q, dstElementBits, bitIndex,
                              VL_GET_QUEUE_BIT(srcCopy, srcElementBits, bitIndex));
@@ -2361,9 +2359,7 @@ static inline void VL_REVCOPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int lbits
     q.renew(dstSize);
 
     // Initialize all elements to zero using appropriate method
-    for (size_t i = 0; i < dstSize; ++i) {
-        VL_ZERO_INIT_QUEUE_ELEM(q.atWrite(i));
-    }
+    for (size_t i = 0; i < dstSize; ++i) { VL_ZERO_INIT_QUEUE_ELEM(q.atWrite(i)); }
 
     if (lbits == 1) {
         // Simple bit reversal: write directly to destination
