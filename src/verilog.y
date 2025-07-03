@@ -3750,7 +3750,7 @@ statement_item<nodep>:          // IEEE: statement_item
         //
         //                      // IEEE: disable_statement
         |       yDISABLE yFORK ';'                      { $$ = new AstDisableFork{$1}; }
-        |       yDISABLE idDotted ';'
+        |       yDISABLE idDottedSel ';'
                         { $$ = new AstDisable{$1, $2}; }
         //                      // IEEE: event_trigger
         |       yP_MINUSGT expr ';'
