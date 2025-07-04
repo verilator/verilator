@@ -45,10 +45,6 @@ module t (/*AUTOARG*/
       a s_until_with b;
    endproperty
 
-   property p_implies;
-      a implies b;
-   endproperty
-
    property p_poundminuspound1;
       a #-# b;
    endproperty
@@ -111,10 +107,6 @@ module t (/*AUTOARG*/
 
    property p_syncrejecton;
       sync_reject_on (a) b;
-   endproperty
-
-   property p_iff;
-      a iff b;
    endproperty
 
    property p_arg_propery(property inprop);

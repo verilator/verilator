@@ -6657,10 +6657,10 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       ~o~pexpr yS_UNTIL_WITH pexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: s_until_with (in property expression)"); }
         |       ~o~pexpr yIMPLIES pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: implies (in property expression)"); }
+                        { $$ = new AstLogOr{$2, new AstLogNot{$2, $1}, $3}; }
         //                      // yIFF also used by event_expression
         |       ~o~pexpr yIFF pexpr
-                        { $$ = $1; BBUNSUP($2, "Unsupported: iff (in property expression)"); }
+                        { $$ = new AstLogEq{$2, $1, $3}; }
         |       yACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yACCEPT_ON
                         { $$ = $5; BBUNSUP($2, "Unsupported: accept_on (in property expression)"); }
         |       yREJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yREJECT_ON
