@@ -75,7 +75,7 @@ class CoverageJoinVisitor final : public VNVisitor {
                 // The CoverDecl the duplicate pointed to now needs to point to the
                 // original's data. I.e. the duplicate will get the coverage number
                 // from the non-duplicate
-                AstCoverDecl* const datadeclp = nodep->incp()->declp()->dataDeclThisp();
+                AstNodeCoverDecl* const datadeclp = nodep->incp()->declp()->dataDeclThisp();
                 removep->incp()->declp()->dataDeclp(datadeclp);
                 UINFO(8, "   new " << removep->incp()->declp());
                 // Mark the found node as a duplicate of the first node
