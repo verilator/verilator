@@ -1,4 +1,4 @@
-%Error: t/t_disable_bad.v:9:15: Can't find definition of : 'abcd'
+%Error: t/t_disable_bad.v:9:15: Can't find definition of block/task: 'abcd'
     9 |       disable abcd;
       |               ^~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

@@ -3095,6 +3095,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (m_ds.m_disablep) {
                 allowScope = true;
                 allowFTask = true;
+                expectWhat = "block/task";
             } else if (m_ds.m_dotPos == DP_PACKAGE) {
                 // {package-or-class}::{a}
                 AstNodeModule* classOrPackagep = nullptr;
