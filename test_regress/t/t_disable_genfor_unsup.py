@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--exe --main --timing"])
-
-test.execute()
+test.lint(verilator_flags2=['--timing'], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

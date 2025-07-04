@@ -3210,7 +3210,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         m_ds.m_disablep->targetp(foundp->nodep());
                     }
                     if (const AstBegin* const beginp = VN_CAST(foundp->nodep(), Begin)) {
-                        if (beginp->generate()) m_ds.m_genBlk = true;
+                        if (beginp->generate()) {
+                            m_ds.m_genBlk = true;
+                            if (m_ds.m_disablep) {
+                                m_ds.m_disablep->v3warn(
+                                    E_UNSUPPORTED,
+                                    "Unsupported: Generate block referenced by disable");
+                            }
+                        }
                     }
                     // Upper AstDot visitor will handle it from here
                 } else if (VN_IS(foundp->nodep(), Cell) && allowVar) {
