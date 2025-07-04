@@ -50,7 +50,7 @@ module top;
     inc2 = 1;
 
     repeat (10) begin
-      #15ns;
+      #10ns;
       inc1 = inc1 + 1;
       inc2 = inc2 + 1;
     end
