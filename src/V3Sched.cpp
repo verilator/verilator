@@ -1189,6 +1189,18 @@ VirtIfaceTriggers::makeIfaceToSensMap(AstNetlist* const netlistp, size_t vifTrig
     return ifaceToSensMap;
 }
 
+VirtIfaceTriggers::IfaceMemberSensMap
+VirtIfaceTriggers::makeMemberToSensMap(AstNetlist* const netlistp, size_t vifTriggerIndex,
+                                       AstVarScope* trigVscp) const {
+    IfaceMemberSensMap memberToSensMap;
+    for (const auto& p : m_memberTriggers) {
+        memberToSensMap.emplace(
+            std::make_pair(p.first, createTriggerSenTree(netlistp, trigVscp, vifTriggerIndex)));
+        ++vifTriggerIndex;
+    }
+    return memberToSensMap;
+}
+
 //============================================================================
 // Top level entry-point to scheduling
 
