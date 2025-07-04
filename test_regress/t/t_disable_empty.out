@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_disable_empty.v:12:7: disable isn't underneath a begin with name: 'block'
+   12 |       disable block;
+      |       ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
