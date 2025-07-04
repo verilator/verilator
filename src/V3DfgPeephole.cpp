@@ -241,6 +241,16 @@ class V3DfgPeephole final : public DfgVisitor {
         return make<Vertex>(examplep->fileline(), examplep->dtypep(), operands...);
     }
 
+    // Check two vertex are the same, or the same constant value
+    static bool isSame(const DfgVertex* ap, const DfgVertex* bp) {
+        if (ap == bp) return true;
+        const DfgConst* const aConstp = ap->cast<DfgConst>();
+        if (!aConstp) return false;
+        const DfgConst* const bConstp = bp->cast<DfgConst>();
+        if (!bConstp) return false;
+        return aConstp->num().isCaseEq(bConstp->num());
+    }
+
     // Note: If any of the following transformers return true, then the vertex was replaced and the
     // caller must not do any further changes, so the caller must check the return value, otherwise
     // there will be hard to debug issues.
@@ -881,15 +891,23 @@ class V3DfgPeephole final : public DfgVisitor {
     //=========================================================================
 
     void visit(DfgAnd* vtxp) override {
-        UASSERT_OBJ(vtxp->dtypep() == vtxp->lhsp()->dtypep(), vtxp, "Mismatched LHS width");
-        UASSERT_OBJ(vtxp->dtypep() == vtxp->rhsp()->dtypep(), vtxp, "Mismatched RHS width");
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+
+        UASSERT_OBJ(vtxp->dtypep() == lhsp->dtypep(), vtxp, "Mismatched LHS width");
+        UASSERT_OBJ(vtxp->dtypep() == rhsp->dtypep(), vtxp, "Mismatched RHS width");
+
+        if (lhsp == rhsp) {
+            APPLYING(REMOVE_AND_WITH_SELF) {
+                replace(vtxp, vtxp->lhsp());
+                return;
+            }
+        }
 
         if (associativeBinary(vtxp)) return;
 
         if (commutativeBinary(vtxp)) return;
 
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
         FileLine* const flp = vtxp->fileline();
 
         // Bubble pushing (De Morgan)
@@ -935,6 +953,42 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
+        if (DfgOr* const lAndp = lhsp->cast<DfgOr>()) {
+            if (DfgOr* const rAndp = rhsp->cast<DfgOr>()) {
+                DfgVertex* const llp = lAndp->lhsp();
+                DfgVertex* const lrp = lAndp->rhsp();
+                DfgVertex* const rlp = rAndp->lhsp();
+                DfgVertex* const rrp = rAndp->rhsp();
+                // Result will be 'ap | (bp & cp)'
+                DfgVertex* ap = nullptr;
+                DfgVertex* bp = nullptr;
+                DfgVertex* cp = nullptr;
+                if (llp == rlp) {
+                    ap = llp;
+                    bp = lrp;
+                    cp = rrp;
+                } else if (llp == rrp) {
+                    ap = llp;
+                    bp = lrp;
+                    cp = rlp;
+                } else if (lrp == rlp) {
+                    ap = lrp;
+                    bp = llp;
+                    cp = rrp;
+                } else if (lrp == rrp) {
+                    ap = lrp;
+                    bp = llp;
+                    cp = rlp;
+                }
+                if (ap) {
+                    APPLYING(REPLACE_AND_DISTRIBUTIVE) {
+                        replace(vtxp, make<DfgOr>(vtxp, ap, make<DfgAnd>(lhsp, bp, cp)));
+                        return;
+                    }
+                }
+            }
+        }
+
         if (tryPushBitwiseOpThroughReductions(vtxp)) return;
 
         if (DfgNot* const lhsNotp = lhsp->cast<DfgNot>()) {
@@ -946,19 +1000,38 @@ class V3DfgPeephole final : public DfgVisitor {
                     return;
                 }
             }
+
+            // ~A & (A & _) or ~A & (_ & A) is all zeroes
+            if (DfgAnd* const rhsAndp = rhsp->cast<DfgAnd>()) {
+                if (lhsNotp->srcp() == rhsAndp->lhsp() || lhsNotp->srcp() == rhsAndp->rhsp()) {
+                    APPLYING(REPLACE_CONTRADICTORY_AND_3) {
+                        DfgConst* const replacementp = makeZero(flp, vtxp->width());
+                        replace(vtxp, replacementp);
+                        return;
+                    }
+                }
+            }
         }
     }
 
     void visit(DfgOr* vtxp) override {
-        UASSERT_OBJ(vtxp->dtypep() == vtxp->lhsp()->dtypep(), vtxp, "Mismatched LHS width");
-        UASSERT_OBJ(vtxp->dtypep() == vtxp->rhsp()->dtypep(), vtxp, "Mismatched RHS width");
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+
+        UASSERT_OBJ(vtxp->dtypep() == lhsp->dtypep(), vtxp, "Mismatched LHS width");
+        UASSERT_OBJ(vtxp->dtypep() == rhsp->dtypep(), vtxp, "Mismatched RHS width");
+
+        if (lhsp == rhsp) {
+            APPLYING(REMOVE_OR_WITH_SELF) {
+                replace(vtxp, vtxp->lhsp());
+                return;
+            }
+        }
 
         if (associativeBinary(vtxp)) return;
 
         if (commutativeBinary(vtxp)) return;
 
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
         FileLine* const flp = vtxp->fileline();
 
         // Bubble pushing (De Morgan)
@@ -1027,6 +1100,42 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
+        if (DfgAnd* const lAndp = lhsp->cast<DfgAnd>()) {
+            if (DfgAnd* const rAndp = rhsp->cast<DfgAnd>()) {
+                DfgVertex* const llp = lAndp->lhsp();
+                DfgVertex* const lrp = lAndp->rhsp();
+                DfgVertex* const rlp = rAndp->lhsp();
+                DfgVertex* const rrp = rAndp->rhsp();
+                // Result will be 'ap & (bp | cp)'
+                DfgVertex* ap = nullptr;
+                DfgVertex* bp = nullptr;
+                DfgVertex* cp = nullptr;
+                if (llp == rlp) {
+                    ap = llp;
+                    bp = lrp;
+                    cp = rrp;
+                } else if (llp == rrp) {
+                    ap = llp;
+                    bp = lrp;
+                    cp = rlp;
+                } else if (lrp == rlp) {
+                    ap = lrp;
+                    bp = llp;
+                    cp = rrp;
+                } else if (lrp == rrp) {
+                    ap = lrp;
+                    bp = llp;
+                    cp = rlp;
+                }
+                if (ap) {
+                    APPLYING(REPLACE_OR_DISTRIBUTIVE) {
+                        replace(vtxp, make<DfgAnd>(vtxp, ap, make<DfgOr>(lhsp, bp, cp)));
+                        return;
+                    }
+                }
+            }
+        }
+
         if (tryPushBitwiseOpThroughReductions(vtxp)) return;
 
         if (DfgNot* const lhsNotp = lhsp->cast<DfgNot>()) {
@@ -1039,19 +1148,39 @@ class V3DfgPeephole final : public DfgVisitor {
                     return;
                 }
             }
+
+            // ~A | (A | _) or ~A | (_ | A) is all ones
+            if (DfgOr* const rhsOrp = rhsp->cast<DfgOr>()) {
+                if (lhsNotp->srcp() == rhsOrp->lhsp() || lhsNotp->srcp() == rhsOrp->rhsp()) {
+                    APPLYING(REPLACE_TAUTOLOGICAL_OR_3) {
+                        DfgConst* const replacementp = makeZero(flp, vtxp->width());
+                        replacementp->num().setAllBits1();
+                        replace(vtxp, replacementp);
+                        return;
+                    }
+                }
+            }
         }
     }
 
     void visit(DfgXor* vtxp) override {
-        UASSERT_OBJ(vtxp->dtypep() == vtxp->lhsp()->dtypep(), vtxp, "Mismatched LHS width");
-        UASSERT_OBJ(vtxp->dtypep() == vtxp->rhsp()->dtypep(), vtxp, "Mismatched RHS width");
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+
+        UASSERT_OBJ(vtxp->dtypep() == lhsp->dtypep(), vtxp, "Mismatched LHS width");
+        UASSERT_OBJ(vtxp->dtypep() == rhsp->dtypep(), vtxp, "Mismatched RHS width");
+
+        if (lhsp == rhsp) {
+            APPLYING(REPLACE_XOR_WITH_SELF) {
+                DfgConst* const replacementp = makeZero(vtxp->fileline(), vtxp->width());
+                replace(vtxp, replacementp);
+                return;
+            }
+        }
 
         if (associativeBinary(vtxp)) return;
 
         if (commutativeBinary(vtxp)) return;
-
-        DfgVertex* const lhsp = vtxp->lhsp();
-        DfgVertex* const rhsp = vtxp->rhsp();
 
         if (DfgConst* const lConstp = lhsp->cast<DfgConst>()) {
             if (lConstp->isZero()) {
@@ -1252,6 +1381,16 @@ class V3DfgPeephole final : public DfgVisitor {
 
     void visit(DfgLogAnd* vtxp) override {
         if (foldBinary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+
+        if (lhsp->width() == 1 && rhsp->width() == 1) {
+            APPLYING(REPLACE_LOGAND_WITH_AND) {
+                replace(vtxp, make<DfgAnd>(vtxp, lhsp, rhsp));
+                return;
+            }
+        }
     }
 
     void visit(DfgLogEq* vtxp) override {
@@ -1264,6 +1403,16 @@ class V3DfgPeephole final : public DfgVisitor {
 
     void visit(DfgLogOr* vtxp) override {
         if (foldBinary(vtxp)) return;
+
+        DfgVertex* const lhsp = vtxp->lhsp();
+        DfgVertex* const rhsp = vtxp->rhsp();
+
+        if (lhsp->width() == 1 && rhsp->width() == 1) {
+            APPLYING(REPLACE_LOGOR_WITH_OR) {
+                replace(vtxp, make<DfgOr>(vtxp, lhsp, rhsp));
+                return;
+            }
+        }
     }
 
     void visit(DfgLt* vtxp) override {
@@ -1409,6 +1558,13 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
+        if (isSame(thenp, elsep)) {
+            APPLYING(REMOVE_COND_WITH_BRANCHES_SAME) {
+                replace(vtxp, elsep);
+                return;
+            }
+        }
+
         if (DfgNot* const condNotp = condp->cast<DfgNot>()) {
             if (!condp->hasMultipleSinks() || condNotp->hasMultipleSinks()) {
                 APPLYING(SWAP_COND_WITH_NOT_CONDITION) {
@@ -1491,6 +1647,13 @@ class V3DfgPeephole final : public DfgVisitor {
                 APPLYING(REPLACE_COND_WITH_THEN_BRANCH_ZERO) {
                     DfgNot* const notp = make<DfgNot>(vtxp, condp);
                     DfgAnd* const repalcementp = make<DfgAnd>(vtxp, notp, elsep);
+                    replace(vtxp, repalcementp);
+                    return;
+                }
+            }
+            if (thenp == condp) {  // a ? a : b becomes a | b
+                APPLYING(REPLACE_COND_WITH_THEN_BRANCH_COND) {
+                    DfgOr* const repalcementp = make<DfgOr>(vtxp, condp, elsep);
                     replace(vtxp, repalcementp);
                     return;
                 }
