@@ -4213,6 +4213,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (nodep->classOrNullp()) return;
         LINKDOT_VISIT_START();
         if (m_statep->forPrimary()) {
+            if (nodep->childDTypep()) return;
             AstNode* cprp = nodep->classOrPkgsp();
             VSymEnt* lookSymp = m_curSymp;
             if (AstDot* const dotp = VN_CAST(cprp, Dot)) {
