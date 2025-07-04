@@ -4544,6 +4544,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->v3warn(E_UNSUPPORTED, "Node of type "
                                                  << nodep->targetRefp()->prettyTypeName()
                                                  << " referenced by disable");
+                pushDeletep(nodep->unlinkFrBack());
             }
             if (nodep->targetp()) {
                 // If the target is already linked, there is no need to store reference as child
