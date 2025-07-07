@@ -147,7 +147,7 @@ public:
             insert(name, entp);
         }
     }
-    VSymEnt* findIdFlat(const string& name) const {
+    VSymEnt* findIdFlat(const string& name, bool classOrPackage = false) const {
         // Find identifier without looking upward through symbol hierarchy
         // First, scan this begin/end block or module for the name
         const auto it = m_idNameMap.find(name);
@@ -156,15 +156,47 @@ public:
                      << (it == m_idNameMap.end() ? "NONE"
                                                  : "se" + cvtToHex(it->second)
                                                        + " n=" + cvtToHex(it->second->nodep())));
-        if (it != m_idNameMap.end()) return it->second;
+        if (it != m_idNameMap.end()) {
+            if (!classOrPackage) return it->second;
+            if (VN_IS(it->second->nodep(), Class) || VN_IS(it->second->nodep(), Package))
+                return it->second;
+            const AstRefDType* refDTypep = nullptr;
+            if (const AstTypedef* const typedefp = VN_CAST(it->second->nodep(), Typedef)) {
+                if (const AstClassRefDType* const classRefp
+                    = VN_CAST(typedefp->childDTypep(), ClassRefDType)) {
+                    if (classRefp->classp()) return it->second;
+                }
+                if (const AstRefDType* const refp = VN_CAST(typedefp->childDTypep(), RefDType)) {
+                    refDTypep = refp;
+                }
+            } else if (const AstParamTypeDType* const paramTypep
+                       = VN_CAST(it->second->nodep(), ParamTypeDType)) {
+                return it->second;
+                if (auto x = VN_CAST(paramTypep->childDTypep(), RequireDType)) {
+                    if (const AstRefDType* const refp = VN_CAST(x->lhsp(), RefDType)) {
+                        refDTypep = refp;
+                    }
+                }
+            }
+            // When it is unknown at what type is referenced by AstRefDType it is returned because
+            // it may be a class
+            // TODO: this should be handled properly - case when it is known what type is
+            // referenced by AstRefDType. Right now it is unnecessary since everything works as
+            // intended
+            if (refDTypep && !refDTypep->typeofp() && !refDTypep->classOrPackageOpp()
+                && !refDTypep->paramsp()) {
+                return it->second;
+            }
+            std::cout << "Rejected: " << typeid(*it->second->nodep()).name() << '\n';
+        }
         return nullptr;
     }
-    VSymEnt* findIdFallback(const string& name) const {
+    VSymEnt* findIdFallback(const string& name, bool classOrPackage = false) const {
         // Find identifier looking upward through symbol hierarchy
         // First, scan this begin/end block or module for the name
-        if (VSymEnt* const entp = findIdFlat(name)) return entp;
+        if (VSymEnt* const entp = findIdFlat(name, classOrPackage)) return entp;
         // Then scan the upper begin/end block or module for the name
-        if (m_fallbackp) return m_fallbackp->findIdFallback(name);
+        if (m_fallbackp) return m_fallbackp->findIdFallback(name, classOrPackage);
         return nullptr;
     }
     void candidateIdFlat(VSpellCheck* spellerp, const VNodeMatcher* matcherp) const {

@@ -784,9 +784,9 @@ public:
         if (nodep->classOrPackageSkipp()) return getNodeSym(nodep->classOrPackageSkipp());
         VSymEnt* foundp;
         if (fallback) {
-            foundp = lookSymp->findIdFallback(nodep->name());
+            foundp = lookSymp->findIdFallback(nodep->name(), true);
         } else {
-            foundp = lookSymp->findIdFlat(nodep->name());
+            foundp = lookSymp->findIdFlat(nodep->name(), true);
         }
         if (!foundp && v3Global.rootp()->stdPackagep()) {  // Look under implied std::
             foundp = getNodeSym(v3Global.rootp()->stdPackagep())->findIdFlat(nodep->name());
