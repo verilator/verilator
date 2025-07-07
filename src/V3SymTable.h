@@ -164,10 +164,13 @@ public:
             if (const AstTypedef* const typedefp = VN_CAST(it->second->nodep(), Typedef)) {
                 if (const AstClassRefDType* const classRefp
                     = VN_CAST(typedefp->childDTypep(), ClassRefDType)) {
-                    if (classRefp->classp()) return it->second;
+                    return it->second;
                 }
                 if (const AstRefDType* const refp = VN_CAST(typedefp->childDTypep(), RefDType)) {
                     refDTypep = refp;
+                } else if (!typedefp->childDTypep()) {
+                    // When still unknown - returned because it may be a class
+                    return it->second;
                 }
             } else if (const AstParamTypeDType* const paramTypep
                        = VN_CAST(it->second->nodep(), ParamTypeDType)) {
@@ -183,11 +186,9 @@ public:
             // TODO: this should be handled properly - case when it is known what type is
             // referenced by AstRefDType. Right now it is unnecessary since everything works as
             // intended
-            if (refDTypep && !refDTypep->typeofp() && !refDTypep->classOrPackageOpp()
-                && !refDTypep->paramsp()) {
+            if (refDTypep && !refDTypep->typeofp() && !refDTypep->classOrPackageOpp()) {
                 return it->second;
             }
-            std::cout << "Rejected: " << typeid(*it->second->nodep()).name() << '\n';
         }
         return nullptr;
     }
