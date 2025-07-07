@@ -3037,9 +3037,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.init(m_curSymp);
             // Note m_ds.m_dotp remains nullptr; this is a reference not under a dot
         }
-        if (AstDisable* const disablep = VN_CAST(nodep->backp(), Disable)) {
-            m_ds.m_disablep = disablep;
-        }
         if (nodep->name() == "super") {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: super");
             m_ds.m_dotErr = true;
@@ -3174,7 +3171,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             }
             if (allowScope) {
-                //
                 foundp = m_statep->findDotted(nodep->fileline(), m_ds.m_dotSymp, nodep->name(),
                                               baddot, okSymp, first);  // Maybe nullptr
             } else if (first) {
@@ -3866,7 +3862,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // HERE function() . method_called_on_function_return_value()
             m_ds.m_dotPos = DP_MEMBER;
             m_ds.m_dotText = "";
-        } else {
+        } else if (!m_ds.m_disablep) {
+            // visit(AstDisable*) setup the dot handling
             checkNoDot(nodep);
         }
         if (nodep->classOrPackagep() && nodep->taskp()) {
@@ -4535,11 +4532,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
         VL_RESTORER(m_ds);
-        if (!VN_IS(nodep->targetRefp(), ParseRef)) {
-            m_ds.init(m_curSymp);
-            m_ds.m_dotPos = DP_FIRST;
-            m_ds.m_disablep = nodep;
-        }
+        m_ds.init(m_curSymp);
+        m_ds.m_dotPos = DP_FIRST;
+        m_ds.m_disablep = nodep;
         iterateChildren(nodep);
         if (nodep->targetRefp()) {
             if (AstTaskRef* const taskRefp = VN_CAST(nodep->targetRefp(), TaskRef)) {
