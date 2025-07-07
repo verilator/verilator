@@ -162,10 +162,7 @@ public:
                 return it->second;
             const AstRefDType* refDTypep = nullptr;
             if (const AstTypedef* const typedefp = VN_CAST(it->second->nodep(), Typedef)) {
-                if (const AstClassRefDType* const classRefp
-                    = VN_CAST(typedefp->childDTypep(), ClassRefDType)) {
-                    return it->second;
-                }
+                if (VN_IS(typedefp->childDTypep(), ClassRefDType)) { return it->second; }
                 if (const AstRefDType* const refp = VN_CAST(typedefp->childDTypep(), RefDType)) {
                     refDTypep = refp;
                 } else if (!typedefp->childDTypep()) {
@@ -174,11 +171,21 @@ public:
                 }
             } else if (const AstParamTypeDType* const paramTypep
                        = VN_CAST(it->second->nodep(), ParamTypeDType)) {
-                return it->second;
-                if (auto x = VN_CAST(paramTypep->childDTypep(), RequireDType)) {
-                    if (const AstRefDType* const refp = VN_CAST(x->lhsp(), RefDType)) {
+                if (const AstRequireDType* const requireDTypep
+                    = VN_CAST(paramTypep->childDTypep(), RequireDType)) {
+                    if (const AstRefDType* const refp = VN_CAST(requireDTypep->lhsp(), RefDType)) {
                         refDTypep = refp;
+                    } else if (VN_IS(requireDTypep->lhsp(), VoidDType)
+                               || VN_IS(requireDTypep->lhsp(), BasicDType)
+                               || VN_IS(requireDTypep->lhsp(), ClassRefDType)) {
+                        return it->second;
+                    } else if (!requireDTypep->lhsp()) {
+                        // When still unknown - returned because it may be a class
+                        return it->second;
                     }
+                } else if (!paramTypep->childDTypep()) {
+                    // When still unknown - returned because it may be a class
+                    return it->second;
                 }
             }
             // When it is unknown at what type is referenced by AstRefDType it is returned because
