@@ -28,7 +28,7 @@ module top;
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
-    if (cyc >= 8) begin
+    if (cyc >= 10) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end
@@ -49,7 +49,7 @@ module top;
     inc1 = 1;
     inc2 = 1;
 
-    repeat (10) begin
+    repeat (8) begin
       #10ns;
       inc1 = inc1 + 1;
       inc2 = inc2 + 1;
