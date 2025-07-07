@@ -2831,9 +2831,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (start) {  // Starting dot sequence
                 if (debug() >= 9) nodep->dumpTree("-  dot-in: ");
                 m_ds.init(m_curSymp);  // Start from current point
-                if (AstDisable* const disablep = VN_CAST(nodep->backp(), Disable)) {
-                    m_ds.m_disablep = disablep;
-                }
             }
             m_ds.m_dotp = nodep;  // Always, not just at start
             m_ds.m_dotPos = DP_FIRST;
@@ -3177,6 +3174,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             }
             if (allowScope) {
+                //
                 foundp = m_statep->findDotted(nodep->fileline(), m_ds.m_dotSymp, nodep->name(),
                                               baddot, okSymp, first);  // Maybe nullptr
             } else if (first) {
@@ -4536,6 +4534,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstDisable* nodep) override {
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
+        VL_RESTORER(m_ds);
+        if (!VN_IS(nodep->targetRefp(), ParseRef)) {
+            m_ds.init(m_curSymp);
+            m_ds.m_dotPos = DP_FIRST;
+            m_ds.m_disablep = nodep;
+        }
         iterateChildren(nodep);
         if (nodep->targetRefp()) {
             if (AstTaskRef* const taskRefp = VN_CAST(nodep->targetRefp(), TaskRef)) {
