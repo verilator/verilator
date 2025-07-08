@@ -6781,7 +6781,7 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
         /*cont*/    coverage_eventE ';' coverage_spec_or_optionListE
         /*cont*/    yENDGROUP endLabelE
                         {
-                          AstFunc *constructor = new AstFunc{$<fl>1, "new", nullptr, nullptr};
+                          AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
                           constructor->classMethod(true);
                           constructor->isConstructor(true);
                           constructor->dtypep($1->dtypep());
