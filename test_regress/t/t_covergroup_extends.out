@@ -1,0 +1,5 @@
+%Error: t/t_covergroup_extends.v:25:20: syntax error, unexpected extends
+   25 |         covergroup extends g1;
+      |                    ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
