@@ -277,7 +277,7 @@ class ForceConvertVisitor final : public VNVisitor {
             return m_state.getForceComponents(vscp).m_enVscp;
         });
 
-        // IEEE 1800-2023 10.6.2: When released, then if the variable is not driven by a continuous assignment and does not
+        // IEEE 1800-2023 10.6.2: When released, if the variable is not driven by a continuous assignment and does not
         // currently have an active assign procedural continuous assignment, the variable shall not immediately
         // change value and shall maintain its current value until the next procedural assignment to the variable is
         // executed. Releasing a variable that is driven by a continuous assignment or currently has an active assign
