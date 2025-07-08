@@ -242,7 +242,7 @@ class ForceConvertVisitor final : public VNVisitor {
         transformWritenVarScopes(setValp->lhsp(), [this, rhsp](AstVarScope* vscp) {
             AstVarScope* const valVscp = m_state.getForceComponents(vscp).m_valVscp;
             m_state.setValVscpRhsExpr(valVscp, rhsp->cloneTreePure(false));
-            rhsp->foreach([this, valVscp](AstVarRef* refp) {
+            rhsp->foreach([valVscp](AstVarRef* refp) {
                 ForceState::setValVscp(refp, valVscp);
             });
             return valVscp;
