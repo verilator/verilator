@@ -3754,7 +3754,9 @@ statement_item<nodep>:          // IEEE: statement_item
         //                      // IEEE: disable_statement
         |       yDISABLE yFORK ';'                      { $$ = new AstDisableFork{$1}; }
         |       yDISABLE idDottedSel ';'
-                        { $$ = new AstDisable{$1, $2}; }
+                        { $$ = new AstDisable{$1, $2};
+                          PARSEP->importIfInStd($1, "process");
+                        }
         //                      // IEEE: event_trigger
         |       yP_MINUSGT expr ';'
                         { $$ = new AstFireEvent{$1, $2, false}; }
