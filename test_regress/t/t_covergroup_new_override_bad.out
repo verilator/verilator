@@ -1,0 +1,5 @@
+%Error: t/t_covergroup_new_override_bad.v:10:5: syntax error, unexpected function
+   10 |     function new();
+      |     ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
