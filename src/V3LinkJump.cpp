@@ -361,6 +361,16 @@ class LinkJumpVisitor final : public VNVisitor {
                                          nullptr},
                     nullptr}};
             topPkgp->addStmtsp(processQueuep);
+            for (AstNode* forkItemp = forkp->stmtsp(); forkItemp; forkItemp = forkItemp->nextp()) {
+                AstBegin* beginp = VN_CAST(forkItemp, Begin);
+                if (!beginp) {
+                    beginp = new AstBegin{fl, "", nullptr};
+                    forkItemp->replaceWith(beginp);
+                    beginp->addStmtsp(forkItemp);
+                    // In order to continue the iteration
+                    forkItemp = beginp;
+                }
+            }
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
             const std::string targetName = beginp->name();
             bool aboveBlock = false;
