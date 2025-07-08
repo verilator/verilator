@@ -1,0 +1,8 @@
+%Error: t/t_covergroup_in_class_duplicate_bad.v:13:16: Duplicate declaration of CLASS '__vlAnonCG_embeddedCg': '__vlAnonCG_embeddedCg'
+   13 |     covergroup embeddedCg;
+      |                ^~~~~~~~~~
+        t/t_covergroup_in_class_duplicate_bad.v:9:16: ... Location of original declaration
+    9 |     covergroup embeddedCg;
+      |                ^~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
