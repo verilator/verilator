@@ -35,6 +35,7 @@
 
 #include "V3AstUserAllocator.h"
 #include "V3Error.h"
+#include "V3UniqueNames.h"
 
 #include <vector>
 
@@ -60,6 +61,8 @@ class LinkJumpVisitor final : public VNVisitor {
     int m_modRepeatNum = 0;  // Repeat counter
     VOptionBool m_unrollFull;  // Pragma full, disable, or default unrolling
     std::vector<AstNodeBlock*> m_blockStack;  // All begin blocks above current node
+    V3UniqueNames m_queueNames{
+        "__VprocessQueue"};  // Names for queues needed for 'disable' handling
 
     // METHODS
     AstJumpLabel* findAddLabel(AstNode* nodep, bool endOfIter) {
@@ -348,10 +351,10 @@ class LinkJumpVisitor final : public VNVisitor {
         UASSERT_OBJ(targetp, nodep, "Unlinked disable statement");
         if (VN_IS(targetp, Task)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling task by name");
-        } else if (VN_IS(targetp, Fork)) {
+        } else if (AstFork* const forkp = VN_CAST(targetp, Fork)) {
             AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
             AstVar* const processQueuep = new AstVar{
-                fl, VVarType::VAR, "fork_X_processes", VFlagChildDType{},
+                fl, VVarType::VAR, m_queueNames.get(forkp->name()), VFlagChildDType{},
                 new AstQueueDType{
                     fl, VFlagChildDType{},
                     new AstClassRefDType{fl, getProcessClass(v3Global.rootp()->stdPackagep()),
