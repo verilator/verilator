@@ -2762,7 +2762,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (nodep->name() == "__paramNumber1" && m_cellp
                     && VN_IS(m_cellp->modp(), Primitive)) {
                     // Primitive parameter is really a delay we can just ignore
-                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                     return;
                 } else {
                     const string suggest
@@ -3231,7 +3231,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     taskrefp = new AstFuncRef{nodep->fileline(), nodep->name(), nullptr};
                 }
                 nodep->replaceWith(taskrefp);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 m_ds = lastStates;
                 return;
             } else if (AstVar* const varp = foundToVarp(foundp, nodep, VAccess::READ)) {
@@ -3665,7 +3665,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             AstVarRef* const newrefp
                                 = new AstVarRef{nodep->fileline(), nodep->varp(), nodep->access()};
                             nodep->replaceWith(newrefp);
-                            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                            VL_DO_DANGLING(pushDeletep(nodep), nodep);
                         }
                     }
                 }
@@ -3693,7 +3693,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     AstVarRef* const newvscp
                         = new AstVarRef{nodep->fileline(), vscp, nodep->access()};
                     nodep->replaceWith(newvscp);
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     UINFO(9, indent() << "new " << newvscp);  // Also prints taskp
                 }
             }
@@ -3983,7 +3983,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                     AstNode* addp = pinp;
                                     if (AstArg* const argp = VN_CAST(pinp, Arg)) {
                                         addp = argp->exprp()->unlinkFrBack();
-                                        VL_DO_DANGLING(pinp->deleteTree(), pinp);
+                                        VL_DO_DANGLING(pushDeletep(pinp), pinp);
                                     }
                                     outp = AstNode::addNext(outp, addp);
                                 }
@@ -3991,7 +3991,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                 newp->dtypep(nodep->dtypep());
                             }
                             nodep->replaceWith(newp);
-                            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                            VL_DO_DANGLING(pushDeletep(nodep), nodep);
                             return;
                         } else {
                             VSpellCheck speller;
@@ -4431,7 +4431,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 cpackagep->v3warn(E_UNSUPPORTED,
                                   "Unsupported: Multiple '::' package/class reference");
             }
-            VL_DO_DANGLING(cpackagep->unlinkFrBack()->deleteTree(), cpackagep);
+            VL_DO_DANGLING(pushDeletep(cpackagep->unlinkFrBack()), cpackagep);
         }
         if (m_ds.m_dotp && (m_ds.m_dotPos == DP_PACKAGE || m_ds.m_dotPos == DP_SCOPE)) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),
@@ -4476,7 +4476,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     = new AstClassRefDType{nodep->fileline(), defp, paramsp};
                 newp->classOrPackagep(foundp->classOrPackagep());
                 nodep->replaceWith(newp);
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             } else if (m_insideClassExtParam) {
                 return;
@@ -4508,25 +4508,25 @@ class LinkDotResolveVisitor final : public VNVisitor {
             taskp->dpiExport(true);
             if (nodep->cname() != "") taskp->cname(nodep->cname());
         }
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstPackageImport* nodep) override {
         // No longer needed
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstPackageExport* nodep) override {
         // No longer needed
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstPackageExportStarStar* nodep) override {
         // No longer needed
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstCellRef* nodep) override {
         LINKDOT_VISIT_START();
@@ -4648,7 +4648,7 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     state.computeIfaceVarSyms();
     state.computeScopeAliases();
     state.dumpSelf();
-    { LinkDotResolveVisitor{rootp, &state}; }
+    LinkDotResolveVisitor visitor{rootp, &state};
     state.dumpSelf();
 }
 
