@@ -639,6 +639,20 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
+        if (Bitwise* const bitp = srcp->cast<Bitwise>()) {
+            if (!bitp->hasMultipleSinks()) {
+                APPLYING(PUSH_REDUCTION_THROUGH_BITWISE) {
+                    Reduction* const lRedp
+                        = make<Reduction>(bitp->fileline(), m_bitDType, bitp->lhsp());
+                    Reduction* const rRedp
+                        = make<Reduction>(bitp->fileline(), m_bitDType, bitp->rhsp());
+                    Bitwise* const replacementp = make<Bitwise>(flp, m_bitDType, lRedp, rRedp);
+                    replace(vtxp, replacementp);
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 
