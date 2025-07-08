@@ -6782,12 +6782,12 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
         /*cont*/    yENDGROUP endLabelE
                         {
                           AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
-                          constructor->classMethod(true);
-                          constructor->isConstructor(true);
-                          constructor->dtypep($1->dtypep());
-                          constructor->addStmtsp($3);
+                          newp->classMethod(true);
+                          newp->isConstructor(true);
+                          newp->dtypep($1->dtypep());
+                          newp->addStmtsp($3);
 
-                          $1->addMembersp(constructor);
+                          $1->addMembersp(newp);
                           $$ = $1;
                           GRAMMARP->endLabel($<fl>9, $1, $9); }
         //                      // IEEE 1800-2023 added:
@@ -7532,7 +7532,7 @@ class_item<nodep>:                      // ==IEEE: class_item
         |       covergroup_declaration
                         {
                                 string cgName = $1->name();
-                                $1->name("__v_anon_covergroup_"+cgName);
+                                $1->name("__vlAnonCG_"+cgName);
 
                                 AstVar *cgInstance = new AstVar($<fl>1, VVarType::VAR, cgName, VFlagChildDType{}, new AstRefDType($<fl>1, $1->name()));
                                 $$ = addNextNull($1, cgInstance);
