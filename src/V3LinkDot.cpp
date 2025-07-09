@@ -2365,6 +2365,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         bool m_unresolvedClass;  // Unresolved class reference, needs help from V3Param
         bool m_genBlk;  // Contains gen block reference
         AstNode* m_unlinkedScopep;  // Unresolved scope, needs corresponding VarXRef
+        AstDisable* m_disablep;  // Disable statement under which the reference is
         bool m_dotErr;  // Error found in dotted resolution, ignore upwards
         string m_dotText;  // String of dotted names found in below parseref
         DotStates() { init(nullptr); }
@@ -2380,6 +2381,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_unresolvedClass = false;
             m_genBlk = false;
             m_unlinkedScopep = nullptr;
+            m_disablep = nullptr;
         }
         string ascii() const {
             static const char* const names[]
@@ -3084,7 +3086,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             bool allowVar = false;
             bool allowFTask = false;
             bool staticAccess = false;
-            if (m_ds.m_dotPos == DP_PACKAGE) {
+            if (m_ds.m_disablep) {
+                allowScope = true;
+                allowFTask = true;
+                expectWhat = "block/task";
+            } else if (m_ds.m_dotPos == DP_PACKAGE) {
                 // {package-or-class}::{a}
                 AstNodeModule* classOrPackagep = nullptr;
                 expectWhat = "scope/variable/func";
@@ -3185,7 +3191,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             }
             if (!foundp) {
-            } else if (VN_IS(foundp->nodep(), Cell) || VN_IS(foundp->nodep(), Begin)
+            } else if (VN_IS(foundp->nodep(), Cell) || VN_IS(foundp->nodep(), NodeBlock)
                        || VN_IS(foundp->nodep(), Netlist)  // for $root
                        || VN_IS(foundp->nodep(), Module)) {  // if top
                 if (allowScope) {
@@ -3193,8 +3199,20 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
                     m_ds.m_dotSymp = foundp;
                     m_ds.m_dotPos = DP_SCOPE;
+                    if (m_ds.m_disablep && VN_IS(foundp->nodep(), NodeBlock)) {
+                        // Possibly it is not the final link. If we are under dot and not in its
+                        // last component, `targetp()` field will be overwritten by next components
+                        m_ds.m_disablep->targetp(foundp->nodep());
+                    }
                     if (const AstBegin* const beginp = VN_CAST(foundp->nodep(), Begin)) {
-                        if (beginp->generate()) m_ds.m_genBlk = true;
+                        if (beginp->generate()) {
+                            m_ds.m_genBlk = true;
+                            if (m_ds.m_disablep) {
+                                m_ds.m_disablep->v3warn(
+                                    E_UNSUPPORTED,
+                                    "Unsupported: Generate block referenced by disable");
+                            }
+                        }
                     }
                     // Upper AstDot visitor will handle it from here
                 } else if (VN_IS(foundp->nodep(), Cell) && allowVar) {
@@ -3438,7 +3456,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     m_ds.m_dotPos = DP_MEMBER;
                 } else {
                     // Cells/interfaces can't be implicit
-                    const bool checkImplicit = (!m_ds.m_dotp && m_ds.m_dotText == "" && !foundp);
+                    const bool checkImplicit
+                        = (!m_ds.m_dotp && m_ds.m_dotText == "" && !m_ds.m_disablep && !foundp);
                     const bool err
                         = !(checkImplicit && m_statep->implicitOk(m_modp, nodep->name()));
                     if (err) {
@@ -3845,7 +3864,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // HERE function() . method_called_on_function_return_value()
             m_ds.m_dotPos = DP_MEMBER;
             m_ds.m_dotText = "";
-        } else {
+        } else if (!m_ds.m_disablep) {
+            // visit(AstDisable*) setup the dot handling
             checkNoDot(nodep);
         }
         if (nodep->classOrPackagep() && nodep->taskp()) {
@@ -4509,6 +4529,30 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (nodep->cname() != "") taskp->cname(nodep->cname());
         }
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+    void visit(AstDisable* nodep) override {
+        LINKDOT_VISIT_START();
+        checkNoDot(nodep);
+        VL_RESTORER(m_ds);
+        m_ds.init(m_curSymp);
+        m_ds.m_dotPos = DP_FIRST;
+        m_ds.m_disablep = nodep;
+        iterateChildren(nodep);
+        if (nodep->targetRefp()) {
+            if (AstTaskRef* const taskRefp = VN_CAST(nodep->targetRefp(), TaskRef)) {
+                nodep->targetp(taskRefp->taskp());
+            } else if (!VN_IS(nodep->targetRefp(), ParseRef)) {
+                // If it is a ParseRef, either it couldn't be linked or it is linked to a block
+                nodep->v3warn(E_UNSUPPORTED, "Node of type "
+                                                 << nodep->targetRefp()->prettyTypeName()
+                                                 << " referenced by disable");
+                pushDeletep(nodep->unlinkFrBack());
+            }
+            if (nodep->targetp()) {
+                // If the target is already linked, there is no need to store reference as child
+                VL_DO_DANGLING(nodep->targetRefp()->unlinkFrBack()->deleteTree(), nodep);
+            }
+        }
     }
     void visit(AstPackageImport* nodep) override {
         // No longer needed
