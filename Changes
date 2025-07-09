@@ -15,6 +15,7 @@ Verilator 5.039 devel
 
 * Support disable dotted references (#6154). [Ryszard Rozak, Antmicro Ltd.]
 * Fix class extends dotted error (#6162). [Igor Zaworski]
+* Fix genvar error with `-O0` (#6165). [Max Wipfli]
 
 
 Verilator 5.038 2025-07-08
