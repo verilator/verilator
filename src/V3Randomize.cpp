@@ -2507,7 +2507,7 @@ AstFunc* V3Randomize::newRandomizeStdFunc(VMemberMap& memberMap, AstNodeModule* 
     fvarp->funcLocal(true);
     fvarp->funcReturn(true);
     fvarp->direction(VDirection::OUTPUT);
-    nodep->addStmtsp(funcp);
+    // nodep->addStmtsp(funcp);
     funcp = new AstFunc{nodep->fileline(), name, nullptr, fvarp};
     funcp->dtypep(dtypep);
     funcp->classMethod(true);
