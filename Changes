@@ -13,7 +13,8 @@ Verilator 5.039 devel
 
 **Other:**
 
-* TBD
+* Support disable dotted references (#6154). [Ryszard Rozak, Antmicro Ltd.]
+* Fix class extends dotted error (#6162). [Igor Zaworski]
 
 
 Verilator 5.038 2025-07-08
