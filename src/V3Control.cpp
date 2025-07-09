@@ -724,34 +724,34 @@ void V3Control::addVarAttr(FileLine* fl, const string& module, const string& fta
 
 void V3Control::applyCase(AstCase* nodep) {
     const string& filename = nodep->fileline()->filename();
-    V3ControlFile* filep = V3ControlResolver::s().files().resolve(filename);
+    V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
     if (filep) filep->applyCase(nodep);
 }
 
 void V3Control::applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep) {
     const string& filename = nodep->fileline()->filename();
-    V3ControlFile* filep = V3ControlResolver::s().files().resolve(filename);
+    V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
     if (filep) filep->applyBlock(nodep);
     const string& modname = modulep->name();
-    V3ControlModule* modp = V3ControlResolver::s().modules().resolve(modname);
+    V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (modp) modp->applyBlock(nodep);
 }
 
 void V3Control::applyIgnores(FileLine* filelinep) {
     const string& filename = filelinep->filename();
-    V3ControlFile* filep = V3ControlResolver::s().files().resolve(filename);
+    V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
     if (filep) filep->applyIgnores(filelinep);
 }
 
 void V3Control::applyModule(AstNodeModule* modulep) {
     const string& modname = modulep->origName();
-    V3ControlModule* modp = V3ControlResolver::s().modules().resolve(modname);
+    V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (modp) modp->apply(modulep);
 }
 
 void V3Control::applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp) {
     const string& modname = modulep->name();
-    V3ControlModule* modp = V3ControlResolver::s().modules().resolve(modname);
+    V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (!modp) return;
     const V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->name());
     if (ftp) ftp->apply(ftaskp);
@@ -759,10 +759,10 @@ void V3Control::applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp) {
 
 void V3Control::applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp) {
     V3ControlVar* vp;
-    V3ControlModule* modp = V3ControlResolver::s().modules().resolve(modulep->name());
+    V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modulep->name());
     if (!modp) return;
     if (ftaskp) {
-        V3ControlFTask* ftp = modp->ftasks().resolve(ftaskp->name());
+        V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->name());
         if (!ftp) return;
         vp = ftp->vars().resolve(varp->name());
     } else {
@@ -797,7 +797,7 @@ bool V3Control::containsMTaskProfileData() {
 }
 
 bool V3Control::waive(FileLine* filelinep, V3ErrorCode code, const string& message) {
-    V3ControlFile* filep = V3ControlResolver::s().files().resolve(filelinep->filename());
+    V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filelinep->filename());
     if (!filep) return false;
     return filep->waive(code, message);
 }
