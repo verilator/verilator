@@ -16,14 +16,13 @@ module t;
             c: coverpoint color;
         endgroup
         function new();
-            g1 = new;
+            g1 = new(0);
         endfunction
     endclass
 
     class derived extends base;
         bit d;
         covergroup extends g1;
-        //TODO: Support embedded covergroups inheritance
             option.weight = 1;  // overrides the weight from base g1
                                 // uses per_instance = 1 from base g1
             c: coverpoint color // overrides the c coverpoint in base g1

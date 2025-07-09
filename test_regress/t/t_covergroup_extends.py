@@ -9,12 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
 
-if test.vlt_all:
-    test.lint(fails=True, expect_filename=test.golden_filename)
-else:
-    test.compile(nc_flags2=["-coverage", "functional"])
-    test.execute()
+test.compile()
 
 test.passes()

@@ -6790,31 +6790,31 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
                           $1->addMembersp(newp);
                           $$ = $1;
                           GRAMMARP->endLabel($<fl>9, $1, $9); }
-        //                      // IEEE 1800-2023 added:
-        |       covergroup_declarationFront yEXTENDS idAny/*covergroup_identifier*/
-        /*cont*/    ';' coverage_spec_or_optionListE
-        /*cont*/    yENDGROUP endLabelE
-                        { $$ = $1;
-                          GRAMMARP->endLabel($<fl>7, $1, $7); }
+        ;
+
+// IEEE 1800-2023 added:
+covergroup_extendsE<fl>:
+                /* empty */     { $$ = nullptr; }
+        |       yEXTENDS        { $$ = $1; }
         ;
 
 covergroup_declarationFront<classp>:  // IEEE: part of covergroup_declaration
-                yCOVERGROUP idAny
+                yCOVERGROUP covergroup_extendsE idAny
                         {
-                        $$ = new AstClass{$<fl>2, *$2, PARSEP->libname()};
+                        $$ = new AstClass{$<fl>3, *$3, PARSEP->libname()};
 
-                        AstFunc *sample = new AstFunc{$<fl>1, "sample", nullptr, nullptr};
+                        AstFunc* const sample = new AstFunc{$<fl>1, "sample", nullptr, nullptr};
                         sample->classMethod(true);
                         sample->dtypep(sample->findVoidDType());
                         $$->addMembersp(sample);
 
-                        AstFunc *getCoverage = new AstFunc{$<fl>1, "get_coverage", nullptr, nullptr};
+                        AstFunc* const getCoverage = new AstFunc{$<fl>1, "get_coverage", nullptr, nullptr};
                         getCoverage->classMethod(true);
                         getCoverage->dtypep(getCoverage->findVoidDType());
                         $$->addMembersp(getCoverage);
 
                         BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup"); }
-        ;
+                ;
 
 cgexpr<nodeExprp>:  // IEEE-2012: covergroup_expression, before that just expression
                 expr                                    { $$ = $1; }
