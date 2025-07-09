@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_assert_on.v"
 
-test.compile()
+test.compile(verilator_flags2=['--no-assert'])
 
 test.execute()
 

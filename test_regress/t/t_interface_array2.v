@@ -54,12 +54,14 @@ module t
         genvar j;
         for (j = 0;j < N-1; j++) begin
             initial begin
+               #1;
                if (ifs[j].logic_in_intf != data[j]) $stop;
             end
         end
     endgenerate
 
     initial begin
+       #1;
        if (ifs[5].logic_in_intf != ~ifs[4].logic_in_intf) $stop;
        $write("*-* All Finished *-*\n");
        $finish;

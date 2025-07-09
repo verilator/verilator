@@ -268,6 +268,8 @@ public:
     string asciiLineCol() const;
     int filenameno() const VL_MT_SAFE { return m_filenameno; }
     string filename() const VL_MT_SAFE { return singleton().numberToName(filenameno()); }
+    // Filename with C string escapes
+    string filenameEsc() const VL_MT_SAFE { return VString::quoteBackslash(filename()); }
     bool filenameIsGlobal() const VL_MT_SAFE {
         return (filename() == commandLineFilename() || filename() == builtInFilename());
     }
@@ -299,7 +301,6 @@ public:
     void warnUnusedOff(bool flag);
     void warnStateFrom(const FileLine& from) { m_msgEnIdx = from.m_msgEnIdx; }
     void warnResetDefault() { warnStateFrom(defaultFileLine()); }
-    bool lastWarnWaived() const { return m_waive; }
 
     // Specific flag ACCESSORS/METHODS
     bool celldefineOn() const { return msgEn().test(V3ErrorCode::I_CELLDEFINE); }
@@ -354,7 +355,6 @@ public:
     /// When building an error, prefix for printing secondary information
     /// from a different FileLine than the original error
     string warnOther() const VL_REQUIRES(V3Error::s().m_mutex);
-    string warnOtherStandalone() const VL_EXCLUDES(V3Error::s().m_mutex) VL_MT_UNSAFE;
     /// When building an error, current location in include etc
     /// If not used in a given error, automatically pasted at end of error
     string warnContextPrimary() const VL_REQUIRES(V3Error::s().m_mutex) {

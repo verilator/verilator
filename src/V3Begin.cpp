@@ -30,6 +30,8 @@
 
 #include "V3Begin.h"
 
+#include "V3String.h"
+
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -69,14 +71,10 @@ class BeginVisitor final : public VNVisitor {
 
     // METHODS
 
-    string dot(const string& a, const string& b) {
-        if (a == "") return b;
-        if (b == "") return a;
-        return a + "__DOT__" + b;
-    }
+    string dot(const string& a, const string& b) { return VString::dot(a, "__DOT__", b); }
 
     void dotNames(const AstNodeBlock* const nodep, const char* const blockName) {
-        UINFO(8, "nname " << m_namedScope << endl);
+        UINFO(8, "nname " << m_namedScope);
         if (nodep->name() != "") {  // Else unneeded unnamed block
             // Create data for dotted variable resolution
             string dottedname = nodep->name() + "__DOT__";  // So always found
@@ -151,7 +149,7 @@ class BeginVisitor final : public VNVisitor {
         // Rename it (e.g. class under a generate)
         if (m_unnamedScope != "") {
             nodep->name(dot(m_unnamedScope, nodep->name()));
-            UINFO(8, "     rename to " << nodep->name() << endl);
+            UINFO(8, "     rename to " << nodep->name());
             m_statep->userMarkChanged(nodep);
         }
         VL_RESTORER(m_displayScope);
@@ -163,11 +161,11 @@ class BeginVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
-        UINFO(8, "  " << nodep << endl);
+        UINFO(8, "  " << nodep);
         // Rename it
         if (m_unnamedScope != "") {
             nodep->name(dot(m_unnamedScope, nodep->name()));
-            UINFO(8, "     rename to " << nodep->name() << endl);
+            UINFO(8, "     rename to " << nodep->name());
             m_statep->userMarkChanged(nodep);
         }
         // BEGIN wrapping a function rename that function, but don't affect
@@ -202,7 +200,7 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstBegin* nodep) override {
         // Begin blocks were only useful in variable creation, change names and delete
-        UINFO(8, "  " << nodep << endl);
+        UINFO(8, "  " << nodep);
         VL_RESTORER(m_displayScope);
         VL_RESTORER(m_namedScope);
         VL_RESTORER(m_unnamedScope);
@@ -257,12 +255,12 @@ class BeginVisitor final : public VNVisitor {
         }
     }
     void visit(AstCell* nodep) override {
-        UINFO(8, "   CELL " << nodep << endl);
+        UINFO(8, "   CELL " << nodep);
         if (m_namedScope != "") {
             m_statep->userMarkChanged(nodep);
             // Rename it
             nodep->name(dot(m_namedScope, nodep->name()));
-            UINFO(8, "     rename to " << nodep->name() << endl);
+            UINFO(8, "     rename to " << nodep->name());
             // Move to module
             nodep->unlinkFrBack();
             m_modp->addStmtsp(nodep);
@@ -270,10 +268,10 @@ class BeginVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstVarXRef* nodep) override {
-        UINFO(9, "   VARXREF " << nodep << endl);
+        UINFO(9, "   VARXREF " << nodep);
         if (m_namedScope != "" && nodep->inlinedDots() == "" && !m_ftaskp) {
             nodep->inlinedDots(m_namedScope);
-            UINFO(9, "    rescope to " << nodep << endl);
+            UINFO(9, "    rescope to " << nodep);
         }
     }
     void visit(AstScopeName* nodep) override {
@@ -341,23 +339,23 @@ private:
     void visit(AstNodeFTaskRef* nodep) override {
         UASSERT_OBJ(nodep->taskp(), nodep, "unlinked");
         if (nodep->taskp()->user1()) {  // It was converted
-            UINFO(9, "    relinkFTask " << nodep << endl);
+            UINFO(9, "    relinkFTask " << nodep);
             nodep->name(nodep->taskp()->name());
         }
         iterateChildrenConst(nodep);
     }
     void visit(AstVarRef* nodep) override {
         if (nodep->varp()->user1()) {  // It was converted
-            UINFO(9, "    relinVarRef " << nodep << endl);
+            UINFO(9, "    relinVarRef " << nodep);
         }
         iterateChildrenConst(nodep);
     }
     void visit(AstIfaceRefDType* nodep) override {
         // May have changed cell names
         // TypeTable is always after all modules, so names are stable
-        UINFO(8, "   IFACEREFDTYPE " << nodep << endl);
+        UINFO(8, "   IFACEREFDTYPE " << nodep);
         if (nodep->cellp()) nodep->cellName(nodep->cellp()->name());
-        UINFO(8, "       rename to " << nodep << endl);
+        UINFO(8, "       rename to " << nodep);
         iterateChildrenConst(nodep);
     }
     //--------------------
@@ -373,7 +371,7 @@ public:
 // Task class functions
 
 void V3Begin::debeginAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     {
         BeginState state;
         { BeginVisitor{nodep, &state}; }
@@ -425,7 +423,7 @@ static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp, 
                                                                    : VNType::atGteS);
 }
 AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
-    // if (debug()) dumpTree(cout, "-  foreach-old: ");
+    // if (debug()) dumpTree("-  foreach-old: ");
     const AstSelLoopVars* const loopsp = VN_CAST(nodep->arrayp(), SelLoopVars);
     UASSERT_OBJ(loopsp, nodep, "No loop variables under foreach");
     AstNodeExpr* const fromp = loopsp->fromp();

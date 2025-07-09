@@ -1,0 +1,6 @@
+%Error: t/t_class_new_scoped_bad.v:17:16: new() assignment not legal to non-class 'Pkg'
+                                        : ... note: In instance 't'
+   17 |       c = Pkg::new;   
+      |                ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

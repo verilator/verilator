@@ -39,8 +39,8 @@
 #endif
 
 // clang-format off
-#include "verilatedos.h"
 #include "verilated_config.h"
+#include "verilatedos.h"
 #if VM_SC
 # include "verilated_sc.h"  // Get SYSTEMC_VERSION and time declarations
 #endif
@@ -113,6 +113,7 @@ class VerilatedVcdSc;
 //=========================================================================
 // Basic types
 
+// Type letters
 // clang-format off
 //    P                     // Packed data of bit type (C/S/I/Q/W)
 using CData = uint8_t;    ///< Data representing 'bit' of 1-8 packed bits
@@ -124,6 +125,8 @@ using WData = EData;        ///< Data representing >64 packed bits (used as poin
 //    F     = float;        // No typedef needed; Verilator uses float
 //    D     = double;       // No typedef needed; Verilator uses double
 //    N     = std::string;  // No typedef needed; Verilator uses string
+//    U     = VlUnpacked;
+//    R     = VlQueue;
 // clang-format on
 
 using WDataInP = const WData*;  ///< 'bit' of >64 packed bits as array input to a function

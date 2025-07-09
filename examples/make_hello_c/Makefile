@@ -13,7 +13,7 @@
 # Check for sanity to avoid later confusion
 
 ifneq ($(words $(CURDIR)),1)
- $(error Unsupported: GNU Make cannot build in directories containing spaces, build elsewhere: '$(CURDIR)')
+  $(error Unsupported: GNU Make cannot build in directories containing spaces, build elsewhere: '$(CURDIR)')
 endif
 
 ######################################################################
@@ -26,10 +26,10 @@ endif
 # package install, and verilator is in your path. Otherwise find the
 # binary relative to $VERILATOR_ROOT (such as when inside the git sources).
 ifeq ($(VERILATOR_ROOT),)
-VERILATOR = verilator
+  VERILATOR = verilator
 else
-export VERILATOR_ROOT
-VERILATOR = $(VERILATOR_ROOT)/bin/verilator
+  export VERILATOR_ROOT
+  VERILATOR = $(VERILATOR_ROOT)/bin/verilator
 endif
 
 default:

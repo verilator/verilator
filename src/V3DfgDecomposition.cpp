@@ -96,7 +96,7 @@ class SplitIntoComponents final {
         // Allocate the component graphs
         m_components.resize(m_componentCounter - 1);
         for (size_t i = 1; i < m_componentCounter; ++i) {
-            m_components[i - 1].reset(new DfgGraph{*m_dfg.modulep(), m_prefix + cvtToStr(i - 1)});
+            m_components[i - 1].reset(new DfgGraph{m_dfg.modulep(), m_prefix + cvtToStr(i - 1)});
         }
         // Move the vertices to the component graphs
         moveVertices(m_dfg.varVertices());
@@ -317,9 +317,17 @@ class ExtractCyclicComponents final {
         DfgVertexVar*& clonep = m_clones[&vtx][component];
         if (!clonep) {
             if (DfgVarPacked* const pVtxp = vtx.cast<DfgVarPacked>()) {
-                clonep = new DfgVarPacked{m_dfg, pVtxp->varp()};
+                if (AstVarScope* const vscp = pVtxp->varScopep()) {
+                    clonep = new DfgVarPacked{m_dfg, vscp};
+                } else {
+                    clonep = new DfgVarPacked{m_dfg, pVtxp->varp()};
+                }
             } else if (DfgVarArray* const aVtxp = vtx.cast<DfgVarArray>()) {
-                clonep = new DfgVarArray{m_dfg, aVtxp->varp()};
+                if (AstVarScope* const vscp = aVtxp->varScopep()) {
+                    clonep = new DfgVarArray{m_dfg, vscp};
+                } else {
+                    clonep = new DfgVarArray{m_dfg, aVtxp->varp()};
+                }
             }
             UASSERT_OBJ(clonep, &vtx, "Unhandled 'DfgVertexVar' sub-type");
             if (vtx.hasModRefs()) clonep->setHasModRefs();
@@ -466,7 +474,7 @@ class ExtractCyclicComponents final {
         // Allocate result graphs
         m_components.resize(m_nonTrivialSCCs);
         for (size_t i = 0; i < m_nonTrivialSCCs; ++i) {
-            m_components[i].reset(new DfgGraph{*m_dfg.modulep(), m_prefix + cvtToStr(i)});
+            m_components[i].reset(new DfgGraph{m_dfg.modulep(), m_prefix + cvtToStr(i)});
         }
 
         // Fix up edges crossing components (we can only do this at variable boundaries, and the

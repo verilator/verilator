@@ -168,7 +168,7 @@ public:
 // Name class functions
 
 void V3Name::nameAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { NameVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("name", 0, dumpTreeEitherLevel() >= 6);
 }

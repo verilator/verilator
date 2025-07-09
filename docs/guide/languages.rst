@@ -6,7 +6,7 @@ Input Languages
 ***************
 
 This section describes the languages Verilator takes as input.  See also
-:ref:`Configuration Files`.
+:ref:`Verilator Control Files`.
 
 
 Language Standard Support
@@ -90,14 +90,14 @@ wreal.
 Synthesis Directive Assertion Support
 -------------------------------------
 
-With the :vlopt:`--assert` option, Verilator reads any
+Verilator reads any :code:`//synopsys full_case` or :code:`//synopsys
+parallel_case` directives.  The same applies to any :code:`//ambit
+synthesis`, :code:`//cadence` or :code:`//pragma` directives of the same
+form.
 
-:code:`//synopsys full_case` or :code:`//synopsys parallel_case`
-directives.  The same applies to any :code:`//ambit synthesis`,
-:code:`//cadence` or :code:`//pragma` directives of the same form.
-
-When these synthesis directives are discovered, Verilator will either
-formally prove the directive to be true, or, failing that, will insert the
+When these synthesis directives are discovered, unless
+:vlopt:`--no-assert-case` option is used, Verilator will either formally
+prove the directive to be true, or, failing that, will insert the
 appropriate code to detect failing cases at simulation runtime and print an
 "Assertion failed" error message.
 
@@ -168,7 +168,7 @@ files. The :option:`/*verilator&32;timing_off*/` and
 the encompassed timing controls and forks, regardless of the chosen
 :vlopt:`--timing` or :vlopt:`--no-timing` option. This can also be achieved
 using the :option:`timing_off` and :option:`timing_off` options in Verilator
-configuration files.
+Control Files.
 
 
 .. _Language Limitations:
@@ -478,7 +478,8 @@ shortreal
   other simulators either do not support float, or convert likewise.
 
 specify specparam
-  All specify blocks and timing checks are ignored.
+  All timing checks and specify blocks (except specparam, which is
+  supported) are ignored.
 
 uwire
   Verilator does not perform warning checking on uwires; it treats the
@@ -536,4 +537,4 @@ $test$plusargs, $value$plusargs
         {VerilatedContext*} ->commandArgs(argc, argv);
 
   to register the command line before calling $test$plusargs or
-  $value$plusargs.
+  $value$plusargs. Or use :vlopt:`--binary` or :vlopt:`--main`.

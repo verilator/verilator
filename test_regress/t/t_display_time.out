@@ -3,5 +3,10 @@ default:   [10] 0t time [                  10] No0 time  p=                  10 
 -9,0,,10:  [10] 0t time [        10] No0 time  p=                  10 0p='ha
 -9,0,ns,5: [10ns] 0t time [ 10ns] No0 time  p=                  10 0p='ha
 -9,3,ns,8: [10.000ns] 0t time [10.000ns] No0 time  p=                  10 0p='ha
+-9,3,ns  : [10.000ns] 0t time [10.000ns] No0 time  p=                  10 0p='ha
+-9,3:      [10.000ns] 0t time [10.000ns] No0 time  p=                  10 0p='ha
+-9:        [10.000ns] 0t time [10.000ns] No0 time  p=                  10 0p='ha
+:          [10.000ns] 0t time [10.000ns] No0 time  p=                  10 0p='ha
+-9,,,:     [10.000ns] 0t time [10.000ns] No0 time  p=                  10 0p='ha
 
 *-* All Finished *-*

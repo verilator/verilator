@@ -12,13 +12,16 @@ on:
   schedule:
     - cron: '0 0 * * 0'  # weekly
 
+permissions:
+  contents: read
+
 defaults:
   run:
     shell: bash
     working-directory: repo
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.actor }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:

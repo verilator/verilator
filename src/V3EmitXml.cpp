@@ -255,6 +255,11 @@ class EmitXmlFileVisitor final : public VNVisitorConst {
         putsQuoted(nodep->funcp() ? nodep->funcp()->name() : nodep->name());
         outputChildrenEnd(nodep, "");
     }
+    void visit(AstSel* nodep) override {
+        outputTag(nodep, "");
+        puts(" widthConst=\"" + cvtToStr(nodep->widthConst()) + "\"");
+        outputChildrenEnd(nodep, "");
+    }
 
     // Data types
     void visit(AstBasicDType* nodep) override {
@@ -355,8 +360,8 @@ public:
         // Xml output
         m_os << "<module_files>\n";
         for (const FileLine* ifp : m_nodeModules) {
-            m_os << "<file id=\"" << ifp->filenameLetters() << "\" filename=\"" << ifp->filename()
-                 << "\" language=\"" << ifp->language().ascii() << "\"/>\n";
+            m_os << "<file id=\"" << ifp->filenameLetters() << "\" filename=\""
+                 << ifp->filenameEsc() << "\" language=\"" << ifp->language().ascii() << "\"/>\n";
         }
         m_os << "</module_files>\n";
     }
@@ -436,7 +441,7 @@ public:
 // EmitXml class functions
 
 void V3EmitXml::emitxml() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     // All-in-one file
     const string filename = (v3Global.opt.xmlOutput().empty()
                                  ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".xml"

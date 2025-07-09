@@ -12,7 +12,7 @@
         
  000019    input clk;
            input real check_real; // Check issue #2741
- 000021    input real check_array_real [1:0];
+           input real check_array_real [1:0];
            input string check_string; // Check issue #2766
         
            typedef struct packed {
@@ -69,6 +69,16 @@
                      // Inputs
                      .clk                       (clk),
                      .toggle                    (toggle));
+        
+           param#(1) p1 (/*AUTOINST*/
+                         // Inputs
+                         .clk                   (clk),
+                         .toggle                (toggle));
+        
+           param#() p2 (/*AUTOINST*/
+                        // Inputs
+                        .clk                    (clk),
+                        .toggle                 (toggle));
         
 %000001    reg [1:0]  memory[121:110];
         
@@ -170,5 +180,32 @@
 %000002    input toggle;
            // CHECK_COVER(-1,"top.t.o1","toggle",2)
         
+        endmodule
+        
+        module param #(parameter P = 2) (/*AUTOARG*/
+           // Inputs
+           clk, toggle
+           );
+        
+ 000019    input clk;
+%000002    input toggle;
+        
+%000001    logic z;
+        
+           for (genvar i = 0; i < P; i++) begin
+%000002       logic x;
+              always @ (posedge clk) begin
+                 x <= toggle;
+              end
+              for (genvar j = 0; j < 3; j++) begin
+%000003          logic [2:0] y;
+                 always @ (negedge clk) begin
+                    y <= {toggle, ~toggle, 1'b1};
+                 end
+              end
+           end
+           if (P > 1) begin : gen_1
+              assign z = 1;
+           end
         endmodule
         

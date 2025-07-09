@@ -45,7 +45,7 @@ class CleanVisitor final : public VNVisitor {
     // TYPES
     enum CleanState : uint8_t { CS_UNKNOWN, CS_CLEAN, CS_DIRTY };
 
-    // STATE
+    // STATE - for current visit position (use VL_RESTORER)
     const AstNodeModule* m_modp = nullptr;
 
     // METHODS
@@ -119,7 +119,7 @@ class CleanVisitor final : public VNVisitor {
 
     // Operate on nodes
     void insertClean(AstNodeExpr* nodep) {  // We'll insert ABOVE passed node
-        UINFO(4, "  NeedClean " << nodep << endl);
+        UINFO(4, "  NeedClean " << nodep);
         VNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         //
@@ -202,6 +202,11 @@ class CleanVisitor final : public VNVisitor {
         operandQuadop(nodep);
         setClean(nodep, nodep->cleanOut());
     }
+    void visit(AstExprStmt* nodep) override {
+        iterateChildren(nodep);
+        computeCppWidth(nodep);
+        setClean(nodep, isClean(nodep->resultp()));
+    }
     void visit(AstNodeExpr* nodep) override {
         iterateChildren(nodep);
         computeCppWidth(nodep);
@@ -228,7 +233,7 @@ class CleanVisitor final : public VNVisitor {
         setClean(nodep, true);
     }
     void visit(AstSel* nodep) override {
-        operandTriop(nodep);
+        operandBiop(nodep);
         setClean(nodep, nodep->cleanOut());
     }
     void visit(AstUCFunc* nodep) override {
@@ -321,7 +326,7 @@ public:
 // Clean class functions
 
 void V3Clean::cleanAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { CleanVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("clean", 0, dumpTreeEitherLevel() >= 3);
 }

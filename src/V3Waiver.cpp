@@ -70,8 +70,8 @@ void V3Waiver::addEntry(V3ErrorCode errorCode, const std::string& filename, cons
     }
 
     std::stringstream entry;
-    entry << "lint_off -rule " << errorCode.ascii() << " -file \"*" << filename << "\" -match \""
-          << trimmsg << "\"";
+    entry << "lint_off -rule " << errorCode.ascii() << " -file \"*"
+          << VString::quoteBackslash(filename) << "\" -match \"" << trimmsg << "\"";
     s_waiverList.push_back(entry.str());
 }
 

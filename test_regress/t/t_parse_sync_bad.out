@@ -1,0 +1,11 @@
+%Error: t/t_parse_sync_bad.v:19:22: syntax error, unexpected IDENTIFIER, expecting "'{"
+   19 |       pkg::cls::defi invalid;   
+      |                      ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_parse_sync_bad.v:25:14: syntax error, unexpected /*verilator clocker*/, expecting ',' or ';'
+   25 |    logic clk /*verilator clocker*/ ;
+      |              ^~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_parse_sync_bad.v:29:1: syntax error, unexpected endmodule
+   29 | endmodule
+      | ^~~~~~~~~
+%Error: Exiting due to

@@ -4,6 +4,14 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+package foo_pkg;
+   function int foo_func;
+      input int b;
+      int b_current;
+      return 0;
+   endfunction
+endpackage
+
 module sub;
    int a = 1212;
 endmodule
@@ -13,7 +21,9 @@ module t (/*AUTOARG*/
    clk
    );
    input clk;
-   int   cyc;
+   int cyc;
+
+   import foo_pkg::*;
 
    sub sub();
 

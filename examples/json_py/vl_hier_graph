@@ -58,11 +58,11 @@ class VlHierGraph:
                     top_module = False
                 fh.write("];\n")
 
-                cells = self.flatten(mod, lambda n: n['type'] == "CELL")
-                for cell in cells:
-                    def_number = self.addr_to_vertex_number(cell['modp'])
+                instances = self.flatten(mod, lambda n: n['type'] == "CELL")
+                for inst in instances:
+                    def_number = self.addr_to_vertex_number(inst['modp'])
                     fh.write("  n%d->n%d [label=\"%s\"];\n" %
-                             (mod_number, def_number, cell['name']))
+                             (mod_number, def_number, inst['name']))
 
             fh.write("}\n")
 

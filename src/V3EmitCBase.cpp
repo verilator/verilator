@@ -278,7 +278,7 @@ void EmitCBaseVisitorConst::emitVarAccessors(const AstVar* nodep) {
 
 void EmitCBaseVisitorConst::emitModCUse(const AstNodeModule* modp, VUseType useType) {
     bool nl = false;
-    forModCUse(modp, useType, [&](string entry) {
+    forModCUse(modp, useType, [&](const string& entry) {
         puts(entry);
         nl = true;
     });

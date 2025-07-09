@@ -605,7 +605,7 @@ class EmitCHeader final : public EmitCConstInit {
     }
 
     explicit EmitCHeader(const AstNodeModule* modp) {
-        UINFO(5, "  Emitting header for " << prefixNameProtect(modp) << endl);
+        UINFO(5, "  Emitting header for " << prefixNameProtect(modp));
 
         // Open output file
         const string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(modp) + ".h";
@@ -665,7 +665,7 @@ public:
 // EmitC class functions
 
 void V3EmitC::emitcHeaders() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
 
     // Process each module in turn
     for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {

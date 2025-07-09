@@ -61,11 +61,11 @@ class ActiveTopVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         // Create required actives and add to module
         // We can start ordering at a module, or a scope
-        UINFO(4, " MOD   " << nodep << endl);
+        UINFO(4, " MOD   " << nodep);
         iterateChildren(nodep);
     }
     void visit(AstActive* nodep) override {
-        UINFO(4, "   ACTIVE " << nodep << endl);
+        UINFO(4, "   ACTIVE " << nodep);
         // Remove duplicate clocks and such; sensesp() may change!
         V3Const::constifyExpensiveEdit(nodep);
         AstSenTree* sensesp = nodep->sensesp();
@@ -95,10 +95,10 @@ class ActiveTopVisitor final : public VNVisitor {
         // Move the SENTREE for each active up to the global level.
         // This way we'll easily see what clock domains are identical
         AstSenTree* const wantp = m_finder.getSenTree(sensesp);
-        UINFO(4, "   lookdone\n");
+        UINFO(4, "   lookdone");
         if (wantp != sensesp) {
             // Move the active's contents to the other active
-            UINFO(4, "   merge active " << sensesp << " into " << wantp << endl);
+            UINFO(4, "   merge active " << sensesp << " into " << wantp);
             if (nodep->sensesStorep()) {
                 UASSERT_OBJ(sensesp == nodep->sensesStorep(), nodep,
                             "sensesStore should have been deleted earlier if different");
@@ -155,7 +155,7 @@ public:
 // Active class functions
 
 void V3ActiveTop::activeTopAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { ActiveTopVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("activetop", 0, dumpTreeEitherLevel() >= 3);
 }

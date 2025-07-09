@@ -47,6 +47,7 @@ class LifePostElimVisitor final : public VNVisitor {
     // INPUT:
     //  AstVarScope::user4p()   -> AstVarScope*, If set, replace this
     //                             varscope with specified new one
+
     // STATE
 
     // VISITORS
@@ -54,7 +55,7 @@ class LifePostElimVisitor final : public VNVisitor {
         const AstVarScope* const vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
         if (AstVarScope* const newvscp = reinterpret_cast<AstVarScope*>(vscp->user4p())) {
-            UINFO(9, "  Replace " << nodep << " to " << newvscp << endl);
+            UINFO(9, "  Replace " << nodep << " to " << newvscp);
             AstVarRef* const newrefp = new AstVarRef{nodep->fileline(), newvscp, nodep->access()};
             nodep->replaceWith(newrefp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -242,7 +243,7 @@ class LifePostDlyVisitor final : public VNVisitor {
             if (!canScrunch) continue;
 
             // Delete and mark so LifePostElimVisitor will get it
-            UINFO(4, "    DELETE " << app->nodep << endl);
+            UINFO(4, "    DELETE " << app->nodep);
             dlyVarp->user4p(origVarp);
             VL_DO_DANGLING(app->nodep->unlinkFrBack()->deleteTree(), app->nodep);
             ++m_statAssnDel;
@@ -359,7 +360,7 @@ public:
 // LifePost class functions
 
 void V3LifePost::lifepostAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     // Mark redundant AssignPost
     { LifePostDlyVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("life_post", 0, dumpTreeEitherLevel() >= 3);

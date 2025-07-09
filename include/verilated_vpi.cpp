@@ -205,7 +205,7 @@ public:
     uint32_t size() const override {
         const int maxDimNum = maxDim(isIndexedDimUnpacked());
         int size = 1;
-        for (int dim = indexedDim() + 1; dim <= maxDimNum; dim++)
+        for (int dim = indexedDim() + 1; dim <= maxDimNum; ++dim)
             size *= varp()->range(dim)->elements();
         return size;
     }
@@ -503,7 +503,7 @@ public:
     explicit VerilatedVpioRegIter(const VerilatedVpioVar* vop)
         : m_var{new VerilatedVpioVar(vop)}
         , m_maxDim{vop->varp()->udims() - 1} {
-        for (auto it = vop->indexedDim() + 1; it <= m_maxDim; it++)
+        for (auto it = vop->indexedDim() + 1; it <= m_maxDim; ++it)
             m_ranges.push_back(*vop->varp()->range(it));
         for (auto it : m_ranges) m_nextIndex.push_back(it.right());
     }
@@ -2219,7 +2219,7 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
 
         std::vector<VerilatedRange> ranges;
         const int maxDim = vop->maxDim(vop->isIndexedDimUnpacked());
-        for (int dim = vop->indexedDim() + 1; dim <= maxDim; dim++)
+        for (int dim = vop->indexedDim() + 1; dim <= maxDim; ++dim)
             ranges.emplace_back(*vop->varp()->range(dim));
 
         // allow one more range layer (regbit)
@@ -2537,6 +2537,7 @@ void vl_vpi_put_word_gen(const VerilatedVpioVar* vop, T word, size_t bitCount, s
             = (info.m_datap[info.m_wordOffset + 1] & ~info.m_maskHi)
               | ((word >> (wordBits - info.m_bitOffset)) & info.m_maskHi);
     }
+    // cppcheck-has-bug-suppress unreadVariable
     info.m_datap[info.m_wordOffset] = (info.m_datap[info.m_wordOffset] & ~info.m_maskLo)
                                       | ((word << info.m_bitOffset) & info.m_maskLo);
 }
@@ -2945,7 +2946,7 @@ void vl_get_value_array_integrals(unsigned index, const unsigned num, const unsi
                                   const unsigned packedSize, const bool leftIsLow, const T* src,
                                   K* dst) {
     static_assert(sizeof(K) >= sizeof(T), "size of type K is less than size of type T");
-    for (int i = 0; i < num; i++) {
+    for (int i = 0; i < num; ++i) {
         dst[i] = src[index];
         index = leftIsLow    ? index == (size - 1) ? 0 : index + 1
                 : index == 0 ? size - 1
@@ -2964,7 +2965,7 @@ void vl_put_value_array_integrals(unsigned index, const unsigned num, const unsi
     const T mask = element_size_bytes == sizeof(T)
                        ? static_cast<T>(-1)
                        : ~(static_cast<T>(-1) << (element_size_bytes * 8));
-    for (unsigned i = 0; i < num; i++) {
+    for (unsigned i = 0; i < num; ++i) {
         dst[index] = src[i] & static_cast<T>(mask);
         index = leftIsLow    ? index == (size - 1) ? 0 : index + 1
                 : index == 0 ? size - 1
@@ -2978,10 +2979,9 @@ void vl_get_value_array_vectors(unsigned index, const unsigned num, const unsign
                                 p_vpi_vecval dst) {
     static_assert(std::is_unsigned<T>::value,
                   "type T is not unsigned");  // ensure logical right shift
-    const unsigned element_size_bytes = VL_BYTES_I(packedSize);
     const unsigned element_size_words = VL_WORDS_I(packedSize);
     if (sizeof(T) == sizeof(QData)) {
-        for (unsigned i = 0; i < num; i++) {
+        for (unsigned i = 0; i < num; ++i) {
             dst[i * 2].aval = static_cast<QData>(src[index]);
             dst[i * 2].bval = 0;
             dst[(i * 2) + 1].aval = static_cast<QData>(src[index]) >> 32;
@@ -2991,10 +2991,10 @@ void vl_get_value_array_vectors(unsigned index, const unsigned num, const unsign
                                  : index - 1;
         }
     } else {
-        for (unsigned i = 0; i < num; i++) {
+        for (unsigned i = 0; i < num; ++i) {
             const size_t dst_index = i * element_size_words;
             const size_t src_index = index * element_size_words;
-            for (unsigned j = 0; j < element_size_words; j++) {
+            for (unsigned j = 0; j < element_size_words; ++j) {
                 dst[dst_index + j].aval = src[src_index + j];
                 dst[dst_index + j].bval = 0;
             }
@@ -3017,7 +3017,7 @@ void vl_put_value_array_vectors(unsigned index, const unsigned num, const unsign
         const QData mask = element_size_bytes == sizeof(T)
                                ? static_cast<QData>(-1)
                                : ~(static_cast<QData>(-1) << (element_size_bytes * 8));
-        for (unsigned i = 0; i < num; i++) {
+        for (unsigned i = 0; i < num; ++i) {
             dst[index] = src[i * 2].aval;
             dst[index]
                 |= (static_cast<QData>(src[(i * 2) + 1].aval) << (sizeof(PLI_UINT32) * 8)) & mask;
@@ -3026,9 +3026,9 @@ void vl_put_value_array_vectors(unsigned index, const unsigned num, const unsign
                                  : index - 1;
         }
     } else {
-        for (unsigned i = 0; i < num; i++) {
+        for (unsigned i = 0; i < num; ++i) {
             unsigned bytes_stored = 0;
-            for (unsigned j = 0; j < element_size_words; j++) {
+            for (unsigned j = 0; j < element_size_words; ++j) {
                 if (bytes_stored >= element_size_bytes) break;
                 const T mask
                     = (element_size_bytes - bytes_stored) >= sizeof(PLI_UINT32)
@@ -3057,9 +3057,9 @@ void vl_get_value_array_rawvals(unsigned index, unsigned num, const unsigned siz
     while (num-- > 0) {
         const size_t src_offset = index * element_size_repr;
         unsigned bytes_copied = 0;
-        for (unsigned j = 0; j < element_size_repr; j++) {
+        for (unsigned j = 0; j < element_size_repr; ++j) {
             const T& src_data = src[src_offset + j];
-            for (unsigned k = 0; k < sizeof(T); k++) {
+            for (unsigned k = 0; k < sizeof(T); ++k) {
                 if (bytes_copied++ == element_size_bytes) break;
                 dst[dst_index++] = src_data >> (k * 8);
             }
@@ -3080,13 +3080,13 @@ void vl_put_value_array_rawvals(unsigned index, const unsigned num, const unsign
                                 const bool fourState, const PLI_UBYTE8* src, T* dst) {
     const unsigned element_size_bytes VL_BYTES_I(packedSize);
     const unsigned element_size_repr = (element_size_bytes + sizeof(T) - 1) / sizeof(T);
-    for (unsigned i = 0; i < num; i++) {
+    for (unsigned i = 0; i < num; ++i) {
         unsigned bytes_copied = 0;
         const size_t dst_offset = index * element_size_repr;
         const size_t src_offset = i * element_size_bytes;
-        for (unsigned j = 0; j < element_size_repr; j++) {
+        for (unsigned j = 0; j < element_size_repr; ++j) {
             T& dst_data = dst[dst_offset + j];
-            for (unsigned k = 0; k < sizeof(T); k++) {
+            for (unsigned k = 0; k < sizeof(T); ++k) {
                 if (bytes_copied == element_size_bytes) break;
                 const unsigned src_index
                     = fourState ? (src_offset * 2) + bytes_copied : (src_offset) + bytes_copied;

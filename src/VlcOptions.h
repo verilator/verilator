@@ -20,6 +20,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "VlcPoint.h"
 #include "config_rev.h"
 
 #include <map>
@@ -38,6 +39,7 @@ class VlcOptions final {
     bool m_annotateAll = false;  // main switch: --annotate-all
     int m_annotateMin = 10;     // main switch: --annotate-min I<count>
     bool m_annotatePoints = false;  // main switch: --annotate-points
+    string m_filterType = "*";  // main switch: --filter-type
     VlStringSet m_readFiles;    // main switch: --read
     bool m_rank = false;        // main switch: --rank
     bool m_unlink = false;      // main switch: --unlink
@@ -69,6 +71,9 @@ public:
     bool unlink() const { return m_unlink; }
     string writeFile() const { return m_writeFile; }
     string writeInfoFile() const { return m_writeInfoFile; }
+    bool isTypeMatch(const char* name) const {
+        return VString::wildmatch(VlcPoint::typeExtract(name), m_filterType);
+    }
 
     // METHODS (from main)
     static string version() VL_MT_DISABLED;

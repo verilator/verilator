@@ -144,6 +144,7 @@ Gileadi
 Giri
 Gisselquist
 Gladkikh
+GmbH
 Goessling
 Gonnen
 Goorah
@@ -246,10 +247,12 @@ Lesik
 Libenzi
 Licker
 Liland
+LinkDot
 Liu
 Liwei
 Lockhart
 Longo
+LteS
 Luca
 Luiza
 Lussier
@@ -273,6 +276,7 @@ Mednick
 Mei
 Melo
 Menküc
+Menon
 Michail
 Michiels
 Microsystems
@@ -303,6 +307,7 @@ Nauticus
 Newgard
 Nigam
 Nikana
+Niraj
 Niranjan
 Nitza
 Noack
@@ -329,6 +334,7 @@ Prabhat
 Prabhu
 Prateek
 Pre
+Precompiling
 Preprocess
 Pretet
 Pretl
@@ -402,6 +408,7 @@ Stroebel
 Strouble
 Stucki
 Su
+Subst
 Suguimoto
 Sundararajan
 Sunderland
@@ -437,6 +444,7 @@ UNOPTFLAT
 Ubixum
 Ueno
 Uints
+Undefine
 Undefines
 Unsized
 Urbach
@@ -533,10 +541,12 @@ basename
 bbox
 benchmarking
 biguint
+binToOneHot
 bindir
 biops
 bisonpre
 bitOpTree
+bitaggregat
 bitop
 bitstoreal
 blackbox
@@ -581,7 +591,9 @@ conf
 config
 const
 constexpr
+constification
 constpool
+contify
 coredump
 coroutine
 coroutines
@@ -614,7 +626,9 @@ dep
 deparametrized
 der
 dereference
+dereferenced
 desassign
+deserialize
 destructor
 desynchronization
 detections
@@ -742,6 +756,8 @@ hierCMakeArgs
 hierMkArgs
 hierParameters
 hierVer
+html
+https
 hx
 hyperthreading
 hyperthreads
@@ -790,6 +806,7 @@ libtcmalloc
 libverilated
 linkers
 linter
+linters
 linux
 liu
 livelock
@@ -839,6 +856,7 @@ multithread
 multithreaded
 multithreading
 musl
+mutex
 mutexes
 mux
 muzafferkal
@@ -868,6 +886,7 @@ onehot
 ooo
 oprofile
 ortegon
+oversized
 oversubscription
 parallelized
 param
@@ -904,6 +923,7 @@ pre
 precisions
 precompiled
 predefines
+prefetch
 prepareClone
 prepend
 prepended
@@ -965,6 +985,7 @@ runtimes
 rw
 sVerilator
 saif
+sarif
 sawatzke
 sc
 scalared
@@ -1023,6 +1044,7 @@ swrite
 synthesizeable
 sys
 systemc
+taskify
 tcmalloc
 tenghtt
 testbench
@@ -1060,6 +1082,7 @@ typename
 uint
 un
 unbased
+uncomment
 undef
 undefineall
 undriven

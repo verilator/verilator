@@ -735,10 +735,19 @@ class VlTest:
         self.nc_define = 'NC'
         self.nc_flags = [
             "+licqueue", "+nowarn+LIBNOU", "+define+NC=1", "-q", "+assert", "+sv", "-c",
-            ("+access+r" if Args.trace else "")
+            "-xmlibdirname", (self.obj_dir + "/xcelium.d"), ("+access+r" if Args.trace else "")
         ]
         self.nc_flags2 = []  # Overridden in some sim files
-        self.nc_run_flags = ["+licqueue", "-q", "+assert", "+sv", "-R"]
+        self.nc_run_flags = [
+            "+licqueue",
+            "-q",
+            "+assert",
+            "+sv",
+            "-R",
+            "-covoverwrite",
+            "-xmlibdirname",
+            (self.obj_dir + "/xcelium.d"),
+        ]
         # ModelSim
         self.ms_define = 'MS'
         self.ms_flags = [
@@ -1321,6 +1330,7 @@ class VlTest:
                     entering=self.obj_dir,
                     cmd=[
                         os.environ['MAKE'],
+                        (("-j " + str(Args.driver_build_jobs)) if Args.driver_build_jobs else ""),
                         "-C " + self.obj_dir,
                         "-f " + os.path.abspath(os.path.dirname(__file__)) + "/Makefile_obj",
                         ("" if self.verbose else "--no-print-directory"),
@@ -1733,6 +1743,9 @@ class VlTest:
                     try:
                         data = os.read(fd, 1)
                         self._run_output(data, logfh, tee)
+                        # Parent detects child termination by checking for b''
+                        if not data:
+                            break
                     except OSError:
                         break
 
@@ -2294,10 +2307,13 @@ class VlTest:
                 line = re.sub(r'\r', '<#013>', line)
                 line = re.sub(r'Command Failed[^\n]+', 'Command Failed', line)
                 line = re.sub(r'Version: Verilator[^\n]+', 'Version: Verilator ###', line)
+                line = re.sub(r'"version": "[^"]+"', '"version": "###"', line)
                 line = re.sub(r'CPU Time: +[0-9.]+ seconds[^\n]+', 'CPU Time: ###', line)
                 line = re.sub(r'\?v=[0-9.]+', '?v=latest', line)  # warning URL
                 line = re.sub(r'_h[0-9a-f]{8}_', '_h########_', line)
                 line = re.sub(r'%Error: /[^: ]+/([^/:])', r'%Error: .../\1',
+                              line)  # Avoid absolute paths
+                line = re.sub(r'("file://)/[^: ]+/([^/:])', r'\1/.../\2',
                               line)  # Avoid absolute paths
                 line = re.sub(r' \/[^ ]+\/verilated_std.sv', ' verilated_std.sv', line)
                 #
@@ -2633,6 +2649,7 @@ class VlTest:
                 fhw.write("   :emphasize-lines: " + emph + "\n")
             fhw.write("\n")
             for line in out:
+                line = re.sub(r' +$', '', line)
                 fhw.write(line)
 
         self.files_identical(temp_fn, out_filename)
@@ -2910,6 +2927,7 @@ if __name__ == '__main__':
 
     forker = Forker(Args.jobs)
 
+    Args.driver_build_jobs = None
     if len(Arg_Tests) >= 2 and Args.jobs >= 2:
         # Read supported into master process, so don't call every subprocess
         Capabilities.warmup_cache()
@@ -2918,5 +2936,8 @@ if __name__ == '__main__':
         print("== Many jobs; redirecting STDIN", file=sys.stderr)
         #
         sys.stdin = open("/dev/null", 'r', encoding="utf8")  # pylint: disable=consider-using-with
+    else:
+        # Speed up single-test makes
+        Args.driver_build_jobs = calc_jobs()
 
     run_them()

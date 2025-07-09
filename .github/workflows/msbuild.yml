@@ -10,6 +10,8 @@ on:
   workflow_dispatch:
   schedule:
     - cron: 0 0 * * 0  # weekly
+permissions:
+  contents: read
 env:
   CI_OS_NAME: win
   CI_COMMIT: ${{ github.sha }}
@@ -20,7 +22,7 @@ defaults:
   run:
     working-directory: repo
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.actor }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
 jobs:
   windows:

@@ -203,16 +203,17 @@ public:
 
     // Return data type used to represent the type of 'nodep' when converted to a DfgVertex
     static AstNodeDType* dtypeFor(const AstNode* nodep) {
-        UDEBUGONLY(UASSERT_OBJ(isSupportedDType(nodep->dtypep()), nodep, "Unsupported dtype"););
+        const AstNodeDType* const dtypep = nodep->dtypep()->skipRefp();
+        UDEBUGONLY(UASSERT_OBJ(isSupportedDType(dtypep), nodep, "Unsupported dtype"););
         // For simplicity, all packed types are represented with a fixed type
-        if (AstUnpackArrayDType* const typep = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
+        if (const AstUnpackArrayDType* const typep = VN_CAST(dtypep, UnpackArrayDType)) {
             AstNodeDType* const adtypep = new AstUnpackArrayDType{
                 typep->fileline(), dtypeForWidth(typep->subDTypep()->width()),
                 typep->rangep()->cloneTree(false)};
             v3Global.rootp()->typeTablep()->addTypesp(adtypep);
             return adtypep;
         }
-        return dtypeForWidth(nodep->width());
+        return dtypeForWidth(dtypep->width());
     }
 
     // Source location
@@ -279,6 +280,27 @@ public:
 
     // Fanout (number of sinks) of this vertex (expensive to compute)
     uint32_t fanout() const VL_MT_DISABLED;
+
+    // Return a canonical variable vertex that holds the value of this vertex,
+    // or nullptr if no such variable exists in the graph. This is O(fanout).
+    DfgVarPacked* getResultVar() VL_MT_DISABLED;
+
+    // Cache type for 'scopep' below
+    using ScopeCache = std::unordered_map<const DfgVertex*, AstScope*>;
+
+    // Retrieve the prefred AstScope this vertex belongs to. For variable
+    // vertices this is defined. For operation vertices, we try to find a
+    // scope based on variables in the upstream logic cone (inputs). If
+    // there isn't one, (beceuse the whole upstream cone is constant...),
+    // then the root scope is returned. If 'tryResultVar' is true, we will
+    // condier the scope of 'getResultVar' first, if it exists.
+    // Only call this with a scoped DfgGraph
+    AstScope* scopep(ScopeCache& cache, bool tryResultVar = false) VL_MT_DISABLED;
+
+    // If the node has a single sink, return it, otherwise return nullptr
+    DfgVertex* singleSink() const {
+        return m_sinksp && !m_sinksp->m_nextp ? m_sinksp->m_sinkp : nullptr;
+    }
 
     // Unlink from container (graph or builder), then delete this vertex
     void unlinkDelete(DfgGraph& dfg) VL_MT_DISABLED;
@@ -634,13 +656,15 @@ class DfgGraph final {
     size_t m_size = 0;  // Number of vertices in the graph
     uint32_t m_userCurrent = 0;  // Vertex user data generation number currently in use
     uint32_t m_userCnt = 0;  // Vertex user data generation counter
-    // Parent of the graph (i.e.: the module containing the logic represented by this graph).
+    // Parent of the graph (i.e.: the module containing the logic represented by this graph),
+    // or nullptr when run after V3Scope
     AstModule* const m_modulep;
-    const string m_name;  // Name of graph (for debugging)
+    const std::string m_name;  // Name of graph - need not be unique
+    std::string m_tmpNameStub{""};  // Name stub for temporary variables - computed lazy
 
 public:
     // CONSTRUCTOR
-    explicit DfgGraph(AstModule& module, const string& name = "") VL_MT_DISABLED;
+    explicit DfgGraph(AstModule* modulep, const string& name = "") VL_MT_DISABLED;
     ~DfgGraph() VL_MT_DISABLED;
     VL_UNCOPYABLE(DfgGraph);
 
@@ -652,7 +676,7 @@ public:
     inline void removeVertex(DfgVertex& vtx);
     // Number of vertices in this graph
     size_t size() const { return m_size; }
-    // Parent module
+    // Parent module - or nullptr when run after V3Scope
     AstModule* modulep() const { return m_modulep; }
     // Name of this graph
     const string& name() const { return m_name; }
@@ -684,6 +708,16 @@ public:
 
     // Add contents of other graph to this graph. Leaves other graph empty.
     void addGraph(DfgGraph& other) VL_MT_DISABLED;
+
+    // Genarete a unique name. The provided 'prefix' and 'n' values will be part of the name, and
+    // must be unique (as a pair) in each invocation for this graph.
+    std::string makeUniqueName(const std::string& prefix, size_t n) VL_MT_DISABLED;
+
+    // Create a new variable with the given name and data type. For a Scoped
+    // Dfg, the AstScope where the corresponding AstVarScope will be inserted
+    // must be provided
+    DfgVertexVar* makeNewVar(FileLine*, const std::string& name, AstNodeDType*,
+                             AstScope*) VL_MT_DISABLED;
 
     // Split this graph into individual components (unique sub-graphs with no edges between them).
     // Also removes any vertices that are not weakly connected to any variable.
@@ -871,6 +905,24 @@ bool DfgVertex::isZero() const {
 bool DfgVertex::isOnes() const {
     if (const DfgConst* const constp = cast<DfgConst>()) return constp->isOnes();
     return false;
+}
+
+//------------------------------------------------------------------------------
+// Inline method definitions - for DfgVertexVar
+//------------------------------------------------------------------------------
+
+DfgVertexVar::DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp, uint32_t initialCapacity)
+    : DfgVertexVariadic{dfg, type, varp->fileline(), dtypeFor(varp), initialCapacity}
+    , m_varp{varp}
+    , m_varScopep{nullptr} {
+    UASSERT_OBJ(dfg.modulep(), varp, "Un-scoped DfgVertexVar created in scoped DfgGraph");
+}
+DfgVertexVar::DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVarScope* vscp,
+                           uint32_t initialCapacity)
+    : DfgVertexVariadic{dfg, type, vscp->fileline(), dtypeFor(vscp), initialCapacity}
+    , m_varp{vscp->varp()}
+    , m_varScopep{vscp} {
+    UASSERT_OBJ(!dfg.modulep(), vscp, "Scoped DfgVertexVar created in un-scoped DfgGraph");
 }
 
 //------------------------------------------------------------------------------

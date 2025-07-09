@@ -969,6 +969,7 @@ public:
 
     // Size of array. Verilog: function int size(), or int num()
     int size() const { return m_map.size(); }
+    bool empty() const { return m_map.empty(); }
     // Clear array. Verilog: function void delete([input index])
     void clear() { m_map.clear(); }
     void erase(const T_Key& index) { m_map.erase(index); }
@@ -1265,7 +1266,7 @@ std::string VL_TO_STRING(const VlAssocArray<T_Key, T_Value>& obj) {
 }
 
 template <typename T_Key, typename T_Value>
-struct VlContainsCustomStruct<VlAssocArray<T_Key, T_Value>> : VlContainsCustomStruct<T_Key> {};
+struct VlContainsCustomStruct<VlAssocArray<T_Key, T_Value>> : VlContainsCustomStruct<T_Value> {};
 
 template <typename T_Key, typename T_Value>
 void VL_READMEM_N(bool hex, int bits, const std::string& filename,
@@ -1331,6 +1332,11 @@ public:
     const WData* data() const { return &m_storage[0]; }
 
     constexpr std::size_t size() const { return N_Depth; }
+
+    void fill(const T_Value& value) {
+        std::fill(std::begin(m_storage), std::end(m_storage), value);
+    }
+
     // To fit C++14
     template <std::size_t N_CurrentDimension = 0, typename U = T_Value>
     int find_length(int dimension, std::false_type) const {
@@ -1597,8 +1603,8 @@ std::string VL_TO_STRING(const VlUnpacked<T_Value, N_Depth>& obj) {
     return obj.to_string();
 }
 
-template <typename T, int N>
-struct VlContainsCustomStruct<VlUnpacked<T, N>> : VlContainsCustomStruct<T> {};
+template <typename T_Value, std::size_t N_Depth>
+struct VlContainsCustomStruct<VlUnpacked<T_Value, N_Depth>> : VlContainsCustomStruct<T_Value> {};
 
 //===================================================================
 // Helper to apply the given indices to a target expression

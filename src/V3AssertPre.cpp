@@ -156,7 +156,7 @@ private:
     void visit(AstClocking* const nodep) override {
         VL_RESTORER(m_clockingp);
         m_clockingp = nodep;
-        UINFO(8, "   CLOCKING" << nodep << endl);
+        UINFO(8, "   CLOCKING" << nodep);
         iterateChildren(nodep);
         if (nodep->eventp()) nodep->addNextHere(nodep->eventp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -359,9 +359,9 @@ private:
         }
     }
     void visit(AstNodeVarRef* nodep) override {
-        UINFO(8, " -varref:  " << nodep << endl);
-        UINFO(8, " -varref-var-back:  " << nodep->varp()->backp() << endl);
-        UINFO(8, " -varref-var-user1:  " << nodep->varp()->user1p() << endl);
+        UINFO(8, " -varref:  " << nodep);
+        UINFO(8, " -varref-var-back:  " << nodep->varp()->backp());
+        UINFO(8, " -varref-var-user1:  " << nodep->varp()->user1p());
         if (AstClockingItem* const itemp = VN_CAST(
                 nodep->varp()->user1p() ? nodep->varp()->user1p() : nodep->varp()->firstAbovep(),
                 ClockingItem)) {
@@ -369,12 +369,12 @@ private:
 
             // ensure linking still works, this has to be done only once
             if (AstVarXRef* xrefp = VN_CAST(nodep, VarXRef)) {
-                UINFO(8, " -clockvarxref-in:  " << xrefp << endl);
+                UINFO(8, " -clockvarxref-in:  " << xrefp);
                 string dotted = xrefp->dotted();
                 const size_t dotPos = dotted.rfind('.');
                 dotted.erase(dotPos, string::npos);
                 xrefp->dotted(dotted);
-                UINFO(8, " -clockvarxref-out: " << xrefp << endl);
+                UINFO(8, " -clockvarxref-out: " << xrefp);
                 m_xrefsp.emplace_back(xrefp);
             }
 
@@ -460,7 +460,7 @@ private:
         if (exprp->width() > 1) exprp = new AstSel{fl, exprp, 0, 1};
         AstSenTree* sentreep = nodep->sentreep();
         if (sentreep) sentreep->unlinkFrBack();
-        AstNodeExpr* const past = new AstPast{fl, exprp, nullptr};
+        AstNodeExpr* const past = new AstPast{fl, exprp};
         past->dtypeFrom(exprp);
         exprp = new AstAnd{fl, past, new AstNot{fl, exprp->cloneTreePure(false)}};
         exprp->dtypeSetBit();
@@ -481,7 +481,7 @@ private:
         if (exprp->width() > 1) exprp = new AstSel{fl, exprp, 0, 1};
         AstSenTree* sentreep = nodep->sentreep();
         if (sentreep) sentreep->unlinkFrBack();
-        AstNodeExpr* const past = new AstPast{fl, exprp, nullptr};
+        AstNodeExpr* const past = new AstPast{fl, exprp};
         past->dtypeFrom(exprp);
         exprp = new AstAnd{fl, new AstNot{fl, past}, exprp->cloneTreePure(false)};
         exprp->dtypeSetBit();
@@ -496,7 +496,7 @@ private:
         AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
         AstSenTree* sentreep = nodep->sentreep();
         if (sentreep) sentreep->unlinkFrBack();
-        AstNodeExpr* const past = new AstPast{fl, exprp, nullptr};
+        AstNodeExpr* const past = new AstPast{fl, exprp};
         past->dtypeFrom(exprp);
         exprp = new AstEq{fl, past, exprp->cloneTreePure(false)};
         exprp->dtypeSetBit();
@@ -514,7 +514,7 @@ private:
 
         if (m_disablep) lhsp = new AstAnd{fl, new AstNot{fl, m_disablep}, lhsp};
 
-        AstNodeExpr* const past = new AstPast{fl, lhsp, nullptr};
+        AstNodeExpr* const past = new AstPast{fl, lhsp};
         past->dtypeFrom(lhsp);
         AstNodeExpr* const exprp = new AstOr{fl, new AstNot{fl, past}, rhsp};
         exprp->dtypeSetBit();
@@ -613,7 +613,7 @@ public:
 // Top Assert class
 
 void V3AssertPre::assertPreAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { AssertPreVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("assertpre", 0, dumpTreeEitherLevel() >= 3);
 }

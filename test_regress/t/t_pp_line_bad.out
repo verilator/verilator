@@ -2,27 +2,21 @@
     8 | `line 100
       | ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_pp_line_bad.v:8:1: `line was not properly formed with '`line number "filename" level'
 %Error: t/t_pp_line_bad.v:9:1: `line was not properly formed with '`line number "filename" level'
     9 | `line 200 somefile
       | ^
-%Error: t/t_pp_line_bad.v:9:1: `line was not properly formed with '`line number "filename" level'
 %Error: t/t_pp_line_bad.v:10:1: `line was not properly formed with '`line number "filename" level'
    10 | `line 300 "somefile 1
       | ^
-%Error: t/t_pp_line_bad.v:10:1: `line was not properly formed with '`line number "filename" level'
 %Error: t/t_pp_line_bad.v:11:1: `line was not properly formed with '`line number "filename" level'
    11 | `line 400 "some file"
       | ^
-%Error: t/t_pp_line_bad.v:11:1: `line was not properly formed with '`line number "filename" level'
 %Error: t/t_pp_line_bad.v:12:1: `line was not properly formed with '`line number "filename" level'
    12 | `line 500 "somefile" 3
       | ^
-%Error: t/t_pp_line_bad.v:12:1: `line was not properly formed with '`line number "filename" level'
 %Error: t/t_pp_line_bad.v:13:1: `line was not properly formed with '`line number "filename" level'
    13 | `line 600 "some file" 3
       | ^
-%Error: t/t_pp_line_bad.v:13:1: `line was not properly formed with '`line number "filename" level'
 %Error: t/t_pp_line_bad.v:7:1: Define or directive not defined: '`line'
     7 | `line
       | ^~~~~

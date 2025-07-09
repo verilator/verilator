@@ -189,7 +189,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     }
     void setPackageRefs() {
         for (AstNodeVarRef* staticRefp : m_staticRefs) {
-            UINFO(9, "Updated classOrPackage ref for " << staticRefp->name() << endl);
+            UINFO(9, "Updated classOrPackage ref for " << staticRefp->name());
             staticRefp->classOrPackagep(VN_AS(staticRefp->varp()->user2p(), NodeModule));
         }
     }
@@ -503,9 +503,15 @@ class ConstraintExprVisitor final : public VNVisitor {
         UASSERT_OBJ(smtExpr != "", nodep,
                     "Node needs randomization constraint, but no emitSMT: " << nodep);
 
-        if (lhsp) lhsp = VN_AS(iterateSubtreeReturnEdits(lhsp->unlinkFrBack()), NodeExpr);
-        if (rhsp) rhsp = VN_AS(iterateSubtreeReturnEdits(rhsp->unlinkFrBack()), NodeExpr);
-        if (thsp) thsp = VN_AS(iterateSubtreeReturnEdits(thsp->unlinkFrBack()), NodeExpr);
+        if (lhsp)
+            lhsp = VN_AS(iterateSubtreeReturnEdits(lhsp->backp() ? lhsp->unlinkFrBack() : lhsp),
+                         NodeExpr);
+        if (rhsp)
+            rhsp = VN_AS(iterateSubtreeReturnEdits(rhsp->backp() ? rhsp->unlinkFrBack() : rhsp),
+                         NodeExpr);
+        if (thsp)
+            thsp = VN_AS(iterateSubtreeReturnEdits(thsp->backp() ? thsp->unlinkFrBack() : thsp),
+                         NodeExpr);
 
         AstNodeExpr* argsp = nullptr;
         for (string::iterator pos = smtExpr.begin(); pos != smtExpr.end(); ++pos) {
@@ -541,7 +547,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstSFormatF* const newp = new AstSFormatF{nodep->fileline(), smtExpr, false, argsp};
         if (m_structSel && newp->name() == "(select %@ %@)") {
             newp->name("%@.%@");
-            newp->exprsp()->nextp()->name("%x");
+            if (!VN_IS(nodep, AssocSel)) newp->exprsp()->nextp()->name("%x");
         }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -704,13 +710,11 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstSel* nodep) override {
         if (editFormat(nodep)) return;
         VNRelinker handle;
-        AstNodeExpr* const widthp = nodep->widthp()->unlinkFrBack(&handle);
         FileLine* const fl = nodep->fileline();
-        AstNodeExpr* const msbp
-            = new AstSFormatF{fl, "%1d", false,
-                              new AstAdd{fl, nodep->lsbp()->cloneTreePure(false),
-                                         new AstSub{fl, widthp, new AstConst{fl, 1}}}};
-        handle.relink(msbp);
+        AstNodeExpr* const msbp = new AstSFormatF{
+            fl, "%1d", false,
+            new AstAdd{fl, nodep->lsbp()->cloneTreePure(false),
+                       new AstConst{fl, static_cast<uint32_t>(nodep->widthConst() - 1)}}};
         AstNodeExpr* const lsbp
             = new AstSFormatF{fl, "%1d", false, nodep->lsbp()->unlinkFrBack(&handle)};
         handle.relink(lsbp);
@@ -734,8 +738,10 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
         }
         // Mark Random for structArray
-        if (VN_IS(nodep->fromp(), ArraySel)) {
-            AstNodeExpr* const fromp = VN_AS(nodep->fromp(), ArraySel)->fromp();
+        if (VN_IS(nodep->fromp(), ArraySel) || VN_IS(nodep->fromp(), CMethodHard)) {
+            AstNodeExpr* const fromp = VN_IS(nodep->fromp(), ArraySel)
+                                           ? VN_AS(nodep->fromp(), ArraySel)->fromp()
+                                           : VN_AS(nodep->fromp(), CMethodHard)->fromp();
             AstStructDType* const dtypep
                 = VN_AS(fromp->dtypep()->skipRefp()->subDTypep()->skipRefp(), StructDType);
             dtypep->markConstrainedRand(true);
@@ -755,7 +761,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (VN_AS(nodep->fromp(), SFormatF)->name() == "%@.%@") {
             newp = new AstSFormatF{fl, "%@.%@." + nodep->name(), false,
                                    VN_AS(nodep->fromp(), SFormatF)->exprsp()->cloneTreePure(true)};
-            newp->exprsp()->nextp()->name("%x");
+            if (newp->exprsp()->nextp()->name().rfind("#x", 0) == 0)
+                newp->exprsp()->nextp()->name("%x");  //  for #x%x to %x
         } else {
             newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false,
                                    nullptr};
@@ -767,10 +774,11 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstAssocSel* nodep) override {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
+        // Adaptive formatting and type handling for associative array keys
         if (VN_IS(nodep->bitp(), VarRef) && VN_AS(nodep->bitp(), VarRef)->isString()) {
             VNRelinker handle;
-            AstNodeExpr* const idxp
-                = new AstSFormatF{fl, "#x%32p", false, nodep->bitp()->unlinkFrBack(&handle)};
+            AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32p" : "#x%32p"), false,
+                                                      nodep->bitp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
         } else if (VN_IS(nodep->bitp(), CvtPackString)
@@ -784,8 +792,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                         << stringSize << "bits, limit is 128 bits");
             }
             VNRelinker handle;
-            AstNodeExpr* const idxp
-                = new AstSFormatF{fl, "#x%32x", false, stringp->lhsp()->unlinkFrBack(&handle)};
+            AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32x" : "#x%32x"), false,
+                                                      stringp->lhsp()->unlinkFrBack(&handle)};
             handle.relink(idxp);
             editSMT(nodep, nodep->fromp(), idxp);
         } else {
@@ -799,13 +807,13 @@ class ConstraintExprVisitor final : public VNVisitor {
                 std::string fmt;
                 // Normalize to standard bit width
                 if (actual_width <= 8) {
-                    fmt = "#x%2x";
+                    fmt = m_structSel ? "%2x" : "#x%2x";
                 } else if (actual_width <= 16) {
-                    fmt = "#x%4x";
+                    fmt = m_structSel ? "%4x" : "#x%4x";
                 } else {
-                    fmt = "#x%" + std::to_string(VL_WORDS_I(actual_width) * 8) + "x";
+                    fmt = (m_structSel ? "%" : "#x%")
+                          + std::to_string(VL_WORDS_I(actual_width) * 8) + "x";
                 }
-
                 AstNodeExpr* const idxp
                     = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
                 handle.relink(idxp);
@@ -1198,9 +1206,9 @@ class CaptureVisitor final : public VNVisitor {
 
 public:
     explicit CaptureVisitor(AstNode* const nodep, AstNodeModule* callerp, AstClass* const targetp)
-        : m_argsp(nullptr)
-        , m_callerp(callerp)
-        , m_targetp(targetp) {
+        : m_argsp{nullptr}
+        , m_callerp{callerp}
+        , m_targetp{targetp} {
         iterateAndNextNull(nodep);
     }
 
@@ -1453,7 +1461,7 @@ class RandomizeVisitor final : public VNVisitor {
     }
     AstVar* enumValueTabp(AstEnumDType* const nodep) {
         if (nodep->user2p()) return VN_AS(nodep->user2p(), Var);
-        UINFO(9, "Construct Venumvaltab " << nodep << endl);
+        UINFO(9, "Construct Venumvaltab " << nodep);
         AstNodeArrayDType* const vardtypep = new AstUnpackArrayDType{
             nodep->fileline(), nodep->dtypep(),
             new AstRange{nodep->fileline(), static_cast<int>(nodep->itemCount()), 0}};
@@ -1517,7 +1525,7 @@ class RandomizeVisitor final : public VNVisitor {
             = new AstVar{varp->fileline(), VVarType::MEMBER, varp->name() + "__Vrandc", newdtp};
         newp->isInternal(true);
         varp->addNextHere(newp);
-        UINFO(9, "created " << varp << endl);
+        UINFO(9, "created " << varp);
         return newp;
     }
     AstNodeStmt* createArrayForeachLoop(FileLine* const fl, AstNodeDType* const dtypep,
@@ -1558,9 +1566,7 @@ class RandomizeVisitor final : public VNVisitor {
                         fl,
                         new AstSub{fl, tempRefp,
                                    new AstConst{fl, static_cast<uint32_t>(aryDTypep->lo())}},
-                        new AstConst{fl, 0},
-                        new AstConst{
-                            fl, static_cast<uint32_t>(V3Number::log2b(aryDTypep->hi()) + 1)}}};
+                        new AstConst{fl, 0}, V3Number::log2b(aryDTypep->hi()) + 1}};
             } else if (VN_IS(tempDTypep, AssocArrayDType))
                 tempElementp = new AstAssocSel{fl, tempExprp, tempRefp};
             else if (VN_IS(tempDTypep, QueueDType))
@@ -1993,7 +1999,7 @@ class RandomizeVisitor final : public VNVisitor {
 
         iterateChildren(nodep);
         if (!nodep->user1()) return;  // Doesn't need randomize, or already processed
-        UINFO(9, "Define randomize() for " << nodep << endl);
+        UINFO(9, "Define randomize() for " << nodep);
         nodep->baseMostClassp()->needRNG(true);
         AstFunc* const randomizep = V3Randomize::newRandomizeFunc(m_memberMap, nodep);
         AstVar* const fvarp = VN_AS(randomizep->fvarp(), Var);
@@ -2349,7 +2355,7 @@ class RandomizeVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     explicit RandomizeVisitor(AstNetlist* nodep)
-        : m_inlineUniqueNames("__Vrandwith") {
+        : m_inlineUniqueNames{"__Vrandwith"} {
         createRandomizeClassVars(nodep);
         iterate(nodep);
         nodep->foreach([&](AstConstraint* constrp) {
@@ -2363,7 +2369,7 @@ public:
 // Randomize method class functions
 
 void V3Randomize::randomizeNetlist(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     {
         const RandomizeMarkVisitor markVisitor{nodep};
         RandomizeVisitor randomizeVisitor{nodep};

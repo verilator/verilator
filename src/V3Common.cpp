@@ -157,7 +157,7 @@ static void makeToStringMiddle(AstClass* nodep) {
 // V3Common class functions
 
 void V3Common::commonAll() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     // NODE STATE
     // Entire netlist:
     //  AstClass::user1()     -> bool.  True if class needs to_string dumper

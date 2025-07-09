@@ -1,4 +1,4 @@
-%Warning-PINMISSING: t/t_inst_pin_place_bad.v:21:7: Cell has missing pin: 'pin_1'
+%Warning-PINMISSING: t/t_inst_pin_place_bad.v:21:7: Instance has missing pin: 'pin_1'
    21 |     ) i_sub (
       |       ^~~~~
                      t/t_inst_pin_place_bad.v:11:11: ... Location of port declaration

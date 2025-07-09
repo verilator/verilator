@@ -22,7 +22,7 @@
 
 #include "V3LinkParse.h"
 
-#include "V3Config.h"
+#include "V3Control.h"
 #include "V3Stats.h"
 
 #include <set>
@@ -42,7 +42,7 @@ class LinkParseVisitor final : public VNVisitor {
     const VNUser2InUse m_inuser2;
 
     // TYPES
-    using ImplTypedefMap = std::map<const std::pair<void*, std::string>, AstTypedef*>;
+    using ImplTypedefMap = std::map<std::string, AstTypedef*>;
 
     // STATE
     AstVar* m_varp = nullptr;  // Variable we're under
@@ -134,9 +134,9 @@ class LinkParseVisitor final : public VNVisitor {
         FileLine* const nodeFlp = nodep->fileline();
         FileLine* const childFlp = childp->fileline();
         FileLine* const nextFlp = nextp->fileline();
-        // UINFO(0, "checkInd " << nodeFlp->firstColumn() << " " << nodep << endl);
-        // UINFO(0, "  child  " << childFlp->firstColumn() << " " << childp << endl);
-        // UINFO(0, " next    " << nextFlp->firstColumn() << " " << nextp << endl);
+        // UINFO(0, "checkInd " << nodeFlp->firstColumn() << " " << nodep);
+        // UINFO(0, "  child  " << childFlp->firstColumn() << " " << childp);
+        // UINFO(0, " next    " << nextFlp->firstColumn() << " " << nextp);
         // Same filename, later line numbers (no macro magic going on)
         if (nodeFlp->filenameno() != childFlp->filenameno()) return;
         if (nodeFlp->filenameno() != nextFlp->filenameno()) return;
@@ -181,7 +181,7 @@ class LinkParseVisitor final : public VNVisitor {
             // Mark class methods
             if (VN_IS(m_modp, Class)) nodep->classMethod(true);
 
-            V3Config::applyFTask(m_modp, nodep);
+            V3Control::applyFTask(m_modp, nodep);
             cleanFileline(nodep);
             VL_RESTORER(m_ftaskp);
             VL_RESTORER(m_lifetime);
@@ -231,7 +231,7 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstNodeFTaskRef* nodep) override {
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
-            UINFO(5, "   " << nodep << endl);
+            UINFO(5, "   " << nodep);
             VL_RESTORER(m_valueModp);
             m_valueModp = nullptr;
             iterateChildren(nodep);
@@ -322,23 +322,25 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->v3warn(NEWERSTD,
                           "Parameter requires default value, or use IEEE 1800-2009 or later.");
         }
-        if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
+        if (AstParseTypeDType* const ptypep = VN_CAST(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
-            AstNodeDType* dtypep = VN_CAST(nodep->valuep(), NodeDType);
+            AstNode* dtypep = nodep->valuep();
             if (dtypep) {
                 dtypep->unlinkFrBack();
             } else {
                 dtypep = new AstVoidDType{nodep->fileline()};
             }
-            AstNode* const newp = new AstParamTypeDType{nodep->fileline(), nodep->varType(),
-                                                        nodep->name(), VFlagChildDType{}, dtypep};
+            AstNode* const newp = new AstParamTypeDType{
+                nodep->fileline(), nodep->varType(),
+                ptypep->fwdType(), nodep->name(),
+                VFlagChildDType{}, new AstRequireDType{nodep->fileline(), dtypep}};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
 
         // Maybe this variable has a signal attribute
-        V3Config::applyVarAttr(m_modp, m_ftaskp, nodep);
+        V3Control::applyVarAttr(m_modp, m_ftaskp, nodep);
 
         if (v3Global.opt.anyPublicFlat() && nodep->varType().isVPIAccessible()) {
             if (v3Global.opt.publicFlatRW()) {
@@ -496,16 +498,16 @@ class LinkParseVisitor final : public VNVisitor {
 
     void visit(AstDefImplicitDType* nodep) override {
         cleanFileline(nodep);
-        UINFO(8, "   DEFIMPLICIT " << nodep << endl);
+        UINFO(8, "   DEFIMPLICIT " << nodep);
         // Must remember what names we've already created, and combine duplicates
-        // so that for "var enum {...} a,b" a & b will share a common typedef
-        // Unique name space under each containerp() so that an addition of
+        // so that for "var enum {...} a,b" a & b will share a common typedef.
+        // Change to unique name space per module so that an addition of
         // a new type won't change every verilated module.
         AstTypedef* defp = nullptr;
-        const ImplTypedefMap::iterator it
-            = m_implTypedef.find(std::make_pair(nodep->containerp(), nodep->name()));
+        const ImplTypedefMap::iterator it = m_implTypedef.find(nodep->name());
         if (it != m_implTypedef.end()) {
             defp = it->second;
+            UINFO(9, "Reused impltypedef " << nodep << "  -->  " << defp);
         } else {
             // Definition must be inserted right after the variable (etc) that needed it
             // AstVar, AstTypedef, AstNodeFTask are common containers
@@ -526,7 +528,11 @@ class LinkParseVisitor final : public VNVisitor {
             } else {
                 defp = new AstTypedef{nodep->fileline(), nodep->name(), nullptr, VFlagChildDType{},
                                       dtypep};
-                m_implTypedef.emplace(std::make_pair(nodep->containerp(), defp->name()), defp);
+                m_implTypedef.emplace(defp->name(), defp);
+                // Rename so that name doesn't change if a type is added/removed elsewhere
+                // But the m_implTypedef is stil by old name so we can find it for next new lookups
+                defp->name("__typeimpmod" + cvtToStr(m_implTypedef.size()));
+                UINFO(9, "New impltypedef " << defp);
                 backp->addNextHere(defp);
             }
         }
@@ -543,7 +549,7 @@ class LinkParseVisitor final : public VNVisitor {
 
     void visit(AstNodeForeach* nodep) override {
         // FOREACH(array, loopvars, body)
-        UINFO(9, "FOREACH " << nodep << endl);
+        UINFO(9, "FOREACH " << nodep);
         cleanFileline(nodep);
         // Separate iteration vars from base from variable
         // Input:
@@ -610,7 +616,7 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {
-        V3Config::applyModule(nodep);
+        V3Control::applyModule(nodep);
         ++m_statModules;
 
         VL_RESTORER(m_modp);
@@ -618,6 +624,7 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_genblkAbove);
         VL_RESTORER(m_genblkNum);
         VL_RESTORER(m_beginDepth);
+        VL_RESTORER(m_implTypedef);
         VL_RESTORER(m_lifetime);
         VL_RESTORER(m_lifetimeAllowed);
         {
@@ -630,6 +637,7 @@ class LinkParseVisitor final : public VNVisitor {
             m_genblkAbove = 0;
             m_genblkNum = 0;
             m_beginDepth = 0;
+            m_implTypedef.clear();
             m_valueModp = nodep;
             m_lifetime = nodep->lifetime();
             m_lifetimeAllowed = VN_IS(nodep, Class);
@@ -668,7 +676,7 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstRestrict* nodep) override { visitIterateNoValueMod(nodep); }
 
     void visit(AstBegin* nodep) override {
-        V3Config::applyCoverageBlock(m_modp, nodep);
+        V3Control::applyCoverageBlock(m_modp, nodep);
         cleanFileline(nodep);
         VL_RESTORER(m_beginDepth);
         m_beginDepth++;
@@ -746,7 +754,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
     }
     void visit(AstCase* nodep) override {
-        V3Config::applyCase(nodep);
+        V3Control::applyCase(nodep);
         cleanFileline(nodep);
         iterateChildren(nodep);
     }
@@ -920,7 +928,7 @@ public:
 // Link class functions
 
 void V3LinkParse::linkParse(AstNetlist* rootp) {
-    UINFO(4, __FUNCTION__ << ": " << endl);
+    UINFO(4, __FUNCTION__ << ": ");
     { LinkParseVisitor{rootp}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linkparse", 0, dumpTreeEitherLevel() >= 6);
 }

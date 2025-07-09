@@ -53,10 +53,11 @@ class AssertVisitor final : public VNVisitor {
     // METHODS
     static AstNodeExpr* assertOnCond(FileLine* fl, VAssertType type,
                                      VAssertDirectiveType directiveType) {
+        // cppcheck-suppress missingReturn
         switch (directiveType) {
         case VAssertDirectiveType::INTRINSIC: return new AstConst{fl, AstConst::BitTrue{}};
         case VAssertDirectiveType::VIOLATION_CASE: {
-            if (v3Global.opt.assertCaseOn()) {
+            if (v3Global.opt.assertCase()) {
                 return new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1};
             }
             // If assertions are off, have constant propagation rip them out later
@@ -635,7 +636,7 @@ class AssertVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         switch (nodep->ctlType()) {
         case VAssertCtlType::ON:
-            UINFO(9, "Generating assertctl for a module: " << m_modp << endl);
+            UINFO(9, "Generating assertctl for a module: " << m_modp);
             nodep->replaceWith(new AstCExpr{
                 fl,
                 "vlSymsp->_vm_contextp__->assertOnSet("s + std::to_string(nodep->ctlAssertTypes())
@@ -644,7 +645,7 @@ class AssertVisitor final : public VNVisitor {
             break;
         case VAssertCtlType::OFF:
         case VAssertCtlType::KILL: {
-            UINFO(9, "Generating assertctl for a module: " << m_modp << endl);
+            UINFO(9, "Generating assertctl for a module: " << m_modp);
             nodep->replaceWith(new AstCExpr{fl,
                                             "vlSymsp->_vm_contextp__->assertOnClear("s
                                                 + std::to_string(nodep->ctlAssertTypes()) + " ,"s
@@ -725,7 +726,7 @@ public:
 // Top Assert class
 
 void V3Assert::assertAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { AssertVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("assert", 0, dumpTreeEitherLevel() >= 3);
 }

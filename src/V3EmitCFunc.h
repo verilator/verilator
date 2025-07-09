@@ -93,7 +93,7 @@ class EmitCLazyDecls final : public VNVisitorConst {
 
 public:
     explicit EmitCLazyDecls(EmitCBaseVisitorConst& emitter)
-        : m_emitter(emitter) {}
+        : m_emitter{emitter} {}
     void emit(AstNode* nodep) {
         m_needsBlankLine = false;
         iterateChildrenConst(nodep);
@@ -120,6 +120,7 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     int m_labelNum = 0;  // Next label number
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCExpr
     bool m_emitConstInit = false;  // Emitting constant initializer
+    bool m_createdScopeHash = false;  // Already created a scope hash
 
     // State associated with processing $display style string formatting
     struct EmitDispState final {
@@ -150,6 +151,8 @@ protected:
     const AstNodeModule* m_modp = nullptr;  // Current module being emitted
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
     bool m_instantiatesOwnProcess = false;
+    const AstClassPackage* m_classOrPackage = nullptr;  // Pointer to current class or package
+    string m_classOrPackageHash;  // Hash of class or package name
 
     bool constructorNeedsProcess(const AstClass* const classp) {
         const AstNode* const newp = m_memberMap.findMember(classp, "new");
@@ -186,8 +189,17 @@ public:
 
     bool emitSimpleOk(AstNodeExpr* nodep);
     void emitIQW(AstNode* nodep) {
-        // Other abbrevs: "C"har, "S"hort, "F"loat, "D"ouble, stri"N"g
-        puts(nodep->dtypep()->charIQWN());
+        // See "Type letters" in verilated.h
+        // Other abbrevs: "C"har, "S"hort, "F"loat, "D"ouble, stri"N"g, "R"=queue, "U"npacked
+        puts(nodep->dtypep()->skipRefp()->charIQWN());
+    }
+    void emitRU(AstNode* nodep) {
+        AstNodeDType* dtp = nodep->dtypep()->skipRefp();
+        // See "Type letters" in verilated.h
+        if (VN_IS(dtp, UnpackArrayDType))
+            puts("U");
+        else if (VN_IS(dtp, QueueDType) || VN_IS(dtp, DynArrayDType))
+            puts("R");
     }
     void emitScIQW(AstVar* nodep) {
         UASSERT_OBJ(nodep->isSc(), nodep, "emitting SystemC operator on non-SC variable");
@@ -214,6 +226,7 @@ public:
     string emitVarResetRecurse(const AstVar* varp, bool constructing,
                                const string& varNameProtected, AstNodeDType* dtypep, int depth,
                                const string& suffix);
+    void emitVarResetScopeHash();
     void emitChangeDet();
     void emitConstInit(AstNode* initp) {
         // We should refactor emit to produce output into a provided buffer, not go through members
@@ -285,6 +298,7 @@ public:
         VL_RESTORER(m_useSelfForThis);
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_instantiatesOwnProcess);
+        VL_RESTORER(m_createdScopeHash);
         m_cfuncp = nodep;
         m_instantiatesOwnProcess = false;
 
@@ -387,8 +401,14 @@ public:
     }
 
     void visit(AstCvtArrayToPacked* nodep) override {
-        AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
-        emitOpName(nodep, nodep->emitC(), nodep->fromp(), elemDTypep, nullptr);
+        AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefp();
+        AstNodeDType* const elemDtp = fromDtp->subDTypep()->skipRefp();
+        puts("VL_PACK_");
+        emitIQW(nodep);
+        puts("_");
+        emitRU(fromDtp);
+        emitIQW(elemDtp);
+        emitOpName(nodep, "(%nw, %rw, %P, %li)", nodep->fromp(), elemDtp, nullptr);
     }
 
     void visit(AstCvtUnpackedToQueue* nodep) override {
@@ -401,6 +421,7 @@ public:
         bool decind = false;
         bool rhs = true;
         if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
+            UASSERT_OBJ(selp->widthMin() == selp->widthConst(), selp, "Width mismatch");
             if (selp->widthMin() == 1) {
                 putnbs(nodep, "VL_ASSIGNBIT_");
                 emitIQW(selp->fromp());
@@ -453,7 +474,10 @@ public:
         } else if (const AstCvtPackedToArray* const castp
                    = VN_CAST(nodep->rhsp(), CvtPackedToArray)) {
             putns(castp, "VL_UNPACK_");
+            emitRU(nodep);
             emitIQW(nodep->dtypep()->subDTypep());
+            puts("_");
+            emitRU(castp->fromp());
             emitIQW(castp->fromp());
             puts("(");
             putns(castp->dtypep(), cvtToStr(castp->dtypep()->subDTypep()->widthMin()));
@@ -594,6 +618,7 @@ public:
             putnbs(argrefp, argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
         }
         puts(") {\n");
+        VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->exprp());
         puts("}\n");
     }
@@ -947,12 +972,14 @@ public:
     void visit(AstJumpBlock* nodep) override {
         nodep->labelNum(++m_labelNum);
         putns(nodep, "{\n");  // Make it visually obvious label jumps outside these
+        VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->stmtsp());
         iterateAndNextConstNull(nodep->endStmtsp());
         puts("}\n");
     }
     void visit(AstCLocalScope* nodep) override {
         putns(nodep, "{\n");
+        VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->stmtsp());
         puts("}\n");
     }
@@ -963,6 +990,7 @@ public:
         putns(nodep, "__Vlabel" + cvtToStr(nodep->blockp()->labelNum()) + ": ;\n");
     }
     void visit(AstWhile* nodep) override {
+        VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->precondsp());
         putns(nodep, "while (");
         iterateAndNextConstNull(nodep->condp());
@@ -981,7 +1009,10 @@ public:
         iterateAndNextConstNull(nodep->condp());
         if (!nodep->branchPred().unknown()) puts("))");
         puts(") {\n");
-        iterateAndNextConstNull(nodep->thensp());
+        {
+            VL_RESTORER(m_createdScopeHash);
+            iterateAndNextConstNull(nodep->thensp());
+        }
         puts("}");
         if (!nodep->elsesp()) {
             puts("\n");
@@ -990,6 +1021,7 @@ public:
                 puts(" else ");
                 iterateAndNextConstNull(nodep->elsesp());
             } else {
+                VL_RESTORER(m_createdScopeHash);
                 puts(" else {\n");
                 iterateAndNextConstNull(nodep->elsesp());
                 puts("}\n");
@@ -997,6 +1029,7 @@ public:
         }
     }
     void visit(AstExprStmt* nodep) override {
+        VL_RESTORER(m_createdScopeHash);
         // GCC allows compound statements in expressions, but this is not standard.
         // So we use an immediate-evaluation lambda and comma operator
         putnbs(nodep, "([&]() {\n");
@@ -1050,13 +1083,33 @@ public:
     }
     void visit(AstTimeFormat* nodep) override {
         putns(nodep, "VL_TIMEFORMAT_IINI(");
-        iterateAndNextConstNull(nodep->unitsp());
+        if (nodep->unitsp()) {
+            puts("true, ");
+            iterateAndNextConstNull(nodep->unitsp());
+        } else {
+            puts("false, 0");
+        }
         puts(", ");
-        iterateAndNextConstNull(nodep->precisionp());
+        if (nodep->precisionp()) {
+            puts("true, ");
+            iterateAndNextConstNull(nodep->precisionp());
+        } else {
+            puts("false, 0");
+        }
         puts(", ");
-        emitCvtPackStr(nodep->suffixp());
+        if (nodep->suffixp()) {
+            puts("true, ");
+            emitCvtPackStr(nodep->suffixp());
+        } else {
+            puts("false, \"\"");
+        }
         puts(", ");
-        iterateAndNextConstNull(nodep->widthp());
+        if (nodep->widthp()) {
+            puts("true, ");
+            iterateAndNextConstNull(nodep->widthp());
+        } else {
+            puts("false, 0");
+        }
         puts(", vlSymsp->_vm_contextp__);\n");
     }
     void visit(AstTimePrecision* nodep) override {
@@ -1228,7 +1281,8 @@ public:
     }
     void visit(AstSel* nodep) override {
         // Note ASSIGN checks for this on a LHS
-        emitOpName(nodep, nodep->emitC(), nodep->fromp(), nodep->lsbp(), nodep->widthp());
+        UASSERT_OBJ(nodep->widthMin() == nodep->widthConst(), nodep, "Width mismatch");
+        emitOpName(nodep, nodep->emitC(), nodep->fromp(), nodep->lsbp(), nullptr);
     }
     void visit(AstReplicate* nodep) override {
         if (nodep->srcp()->widthMin() == 1 && !nodep->isWide()) {
@@ -1459,7 +1513,7 @@ public:
     }  // LCOV_EXCL_STOP
 
     EmitCFunc()
-        : m_lazyDecls(*this) {}
+        : m_lazyDecls{*this} {}
     EmitCFunc(AstNode* nodep, V3OutCFile* ofp, AstCFile* cfilep, bool trackText = false)
         : EmitCFunc{} {
         setOutputFile(ofp, cfilep);

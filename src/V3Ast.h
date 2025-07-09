@@ -92,7 +92,7 @@ class VFlagChildDType {};  // Used by parser.y to select constructor that sets c
 #endif
 
 // (V)erilator (N)ode deleted: Pointer to deleted AstNode (for assertions only)
-#define VN_DELETED(nodep) VL_UNLIKELY((uint64_t)(nodep) == 0x1)
+#define VN_DELETED(nodep) VL_UNLIKELY(reinterpret_cast<uint64_t>(nodep) == 0x1)
 
 //######################################################################
 
@@ -287,6 +287,33 @@ public:
 
 // ######################################################################
 
+class VFwdType final {
+public:
+    enum en : uint8_t { NONE, ENUM, STRUCT, UNION, CLASS, INTERFACE_CLASS };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[]
+            = {"none", "enum", "struct", "union", "class", "interface class"};
+        return names[m_e];
+    }
+    VFwdType()
+        : m_e{NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VFwdType(en _e)
+        : m_e{_e} {}
+    explicit VFwdType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+};
+constexpr bool operator==(const VFwdType& lhs, const VFwdType& rhs) { return lhs.m_e == rhs.m_e; }
+constexpr bool operator==(const VFwdType& lhs, VFwdType::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VFwdType::en lhs, const VFwdType& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VFwdType& rhs) {
+    return os << rhs.ascii();
+}
+
+// ######################################################################
+
 class VSigning final {
 public:
     enum en : uint8_t {
@@ -336,6 +363,7 @@ public:
         NO_INLINE_TASK,
         PUBLIC_MODULE,
         PUBLIC_TASK,
+        TIMEUNIT_SET,
         UNROLL_DISABLE,
         UNROLL_FULL,
         FULL_CASE,
@@ -458,6 +486,7 @@ public:
         ILLEGAL,
         //
         DIM_BITS,                       // V3Const converts to constant
+        DIM_BITS_OR_NUMBER,             // V3Const converts to constant
         DIM_DIMENSIONS,                 // V3Width converts to constant
         DIM_HIGH,                       // V3Width processes
         DIM_INCREMENT,                  // V3Width processes
@@ -500,7 +529,8 @@ public:
         // clang-format off
         static const char* const names[] = {
             "%E-AT",
-            "DIM_BITS", "DIM_DIMENSIONS", "DIM_HIGH", "DIM_INCREMENT", "DIM_LEFT",
+            "DIM_BITS", "DIM_BITS_OR_NUMBER", "DIM_DIMENSIONS",
+            "DIM_HIGH", "DIM_INCREMENT", "DIM_LEFT",
             "DIM_LOW", "DIM_RIGHT", "DIM_SIZE", "DIM_UNPK_DIMENSIONS",
             "DT_PUBLIC",
             "ENUM_FIRST", "ENUM_LAST", "ENUM_NUM",
@@ -893,6 +923,7 @@ public:
         UNKNOWN,
         GPARAM,
         LPARAM,
+        SPECPARAM,
         GENVAR,
         VAR,  // Reg, integer, logic, etc
         SUPPLY0,
@@ -921,9 +952,10 @@ public:
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[]
-            = {"?",    "GPARAM",    "LPARAM",     "GENVAR",   "VAR",     "SUPPLY0",  "SUPPLY1",
-               "WIRE", "WREAL",     "TRIAND",     "TRIOR",    "TRIWIRE", "TRI0",     "TRI1",
-               "PORT", "BLOCKTEMP", "MODULETEMP", "STMTTEMP", "XTEMP",   "IFACEREF", "MEMBER"};
+            = {"?",        "GPARAM",  "LPARAM",   "SPECPARAM", "GENVAR",    "VAR",
+               "SUPPLY0",  "SUPPLY1", "WIRE",     "WREAL",     "TRIAND",    "TRIOR",
+               "TRIWIRE",  "TRI0",    "TRI1",     "PORT",      "BLOCKTEMP", "MODULETEMP",
+               "STMTTEMP", "XTEMP",   "IFACEREF", "MEMBER"};
         return names[m_e];
     }
     bool isParam() const { return m_e == GPARAM || m_e == LPARAM; }
@@ -953,8 +985,8 @@ public:
         return (m_e == BLOCKTEMP || m_e == MODULETEMP || m_e == STMTTEMP || m_e == XTEMP);
     }
     bool isVPIAccessible() const {
-        return (m_e == VAR || m_e == GPARAM || m_e == LPARAM || m_e == PORT || m_e == WIRE
-                || m_e == TRI0 || m_e == TRI1);
+        return (m_e == VAR || m_e == GPARAM || m_e == LPARAM || m_e == SPECPARAM || m_e == PORT
+                || m_e == WIRE || m_e == TRI0 || m_e == TRI1);
     }
 
     const char* traceSigKind() const {
@@ -963,6 +995,7 @@ public:
             /* UNKNOWN:      */ "",  // Should not be traced
             /* GPARAM:       */ "PARAMETER",
             /* LPARAM:       */ "PARAMETER",
+            /* SPECPARAM:    */ "PARAMETER",
             /* GENVAR:       */ "PARAMETER",
             /* VAR:          */ "VAR",
             /* SUPPLY0:      */ "SUPPLY0",
@@ -1382,7 +1415,7 @@ public:
 
     // cppcheck-suppress noExplicitConstructor
     constexpr VStrength(en strengthLevel)
-        : m_e(strengthLevel) {}
+        : m_e{strengthLevel} {}
     explicit VStrength(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
@@ -1704,7 +1737,7 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"NONE", "RAND", "RANDC", "RAND-INLINE"};
+        static const char* const names[] = {"NONE", "RAND", "RANDC", "RAND_INLINE"};
         return names[m_e];
     }
     VRandAttr()
@@ -2125,6 +2158,9 @@ protected:
 
     // Use instead isSame(), this is for each Ast* class, and assumes node is of same type
     virtual bool sameNode(const AstNode*) const { return true; }
+    // Generated by 'astgen'. If do an oldp->replaceNode(newp), would cause a broken()
+    virtual bool wouldBreakGen(const AstNode* const oldp,
+                               const AstNode* const newp) const = 0;  // Generated by 'astgen'
 
 public:
     // ACCESSORS
@@ -2415,6 +2451,7 @@ public:
     void addNextHere(AstNode* newp);  // Insert newp at this->nextp
     void addHereThisAsNext(AstNode* newp);  // Adds at old place of this, this becomes next
     void replaceWith(AstNode* newp);  // Replace current node in tree with new node
+    void replaceWithKeepDType(AstNode* newp);  // Replace current node in tree, keep old dtype
     // Unlink this from whoever points to it.
     AstNode* unlinkFrBack(VNRelinker* linkerp = nullptr);
     // Unlink this from whoever points to it, keep entire next list with unlinked node
@@ -2523,6 +2560,8 @@ public:
     virtual const char* broken() const { return nullptr; }
     // Generated by 'astgen'. Calls 'broken()', which can be used to add extra checks
     virtual const char* brokenGen() const = 0;  // Generated by 'astgen'
+    // If do a this->replaceNode(newp), would cause a broken()
+    bool wouldBreak(const AstNode* const newp) const { return backp()->wouldBreakGen(this, newp); }
 
     // INVOKERS
     virtual void accept(VNVisitorConst& v) = 0;

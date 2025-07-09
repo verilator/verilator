@@ -5,7 +5,98 @@ Revision History and Change Log
 ===============================
 
 The changes in each Verilator version are described below.  The
-contributors that suggested a given feature are shown in []. Thanks!
+contributors that suggested or implemented a given issue are shown in []. Thanks!
+
+
+Verilator 5.038 2025-07-08
+==========================
+
+**Important:**
+
+* Change `--assert` to be the default; use `--no-assert` for legacy behavior and faster runtimes.
+
+**Other:**
+
+* Support redeclaring type as non-type; major parsing change (#2412) (#6020) (#6042) (#6044).
+* Support scoped `new` (#4199).
+* Support constrained random for associative arrays (#5985) (#5986). [Yilou Wang]
+* Support assignments to concatenations with impure RHS (#6002). [Ryszard Rozak, Antmicro Ltd.]
+* Support SARIF JSON diagnostic output with `--diagnostics-sarif`. (#6017)
+* Support 1-bit params with -G and -pvalue (#6051) (#6082). [Paul Swirhun]
+* Support `specparam` (#5767) (#6142).
+* Support `$timeformat` with missing arguments (#6113). [Alex Solomatnikov]
+* Support non-overlapping blocking/non-blocking assignments (#6137). [Geza Lore]
+* Support parameter forward types.
+* Support constant functions with left-hand-side concatenates.
+* Add PROCINITASSIGN on initial assignments to process variables (#2481). [Niraj Menon]
+* Add BADVLTPRAGMA on unknown Verilator pragmas (#5945). [Shou-Li Hsu]
+* Add ternary operator into branch coverage (#5880). [Ryszard Rozak, Antmicro Ltd.]
+* Add aggregate type error checks (#5570) (#5950). [Shou-Li Hsu]
+* Add `--work` library-selection option (#5891 partial).
+* Add `--filter-type` to verilator_coverage (#6030). [Ryszard Rozak, Antmicro Ltd.]
+* Add `--hierarchical-threads` (#6037). [Bartłomiej Chmiel]
+* Add `MODMISSING` error, in place of unnamed error (#6054). [Paul Swirhun]
+* Add DFG binToOneHot pass to generate one-hot decoders (#6096). [Geza Lore]
+* Add hint of the signed right-hand-side in oversized replication error (#6098). [Peter Birch]
+* Improve hierarchical scheduling visualization in V3ExecGraph (#6009). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Improve DPI temporary 'for' loop performance (#6079). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Improve memory usage for SenTrees in V3OrderProcessDomains (#6112). [Geza Lore]
+* Improve docker image size (#6139). [Tobias Rosenkranz, bitaggregat GmbH]
+* Update docker base image to Ubuntu 24.04 (#6147). [Tobias Rosenkranz, bitaggregat GmbH]
+* Optimize DFG De Morgan patterns (#6090). [Geza Lore]
+* Optimize DFG variable elimination (#6091). [Geza Lore]
+* Optimize DFG PUSH_SEL_THROUGH_CONCAT pattern (#6092). [Geza Lore]
+* Optimize DFG before V3Gate (#6141). [Geza Lore]
+* Optimize DFG peephole patterns (#6149). [Geza Lore]
+* Optimize constification within Expand and Subst stages (#6111). [Geza Lore]
+* Fix --x-initial and --x-assign random stability (#2662) (#5958) (#6018) (#6025) (#6075). [Todd Strader]
+* Fix trace hierarchical-name runtime errors (#5668) (#6076). [Paul Swirhun]
+* Fix streaming operator packing order (#5903) (#6077). [Paul Swirhun]
+* Fix filename backslash escapes in C code (#5947).
+* Fix C++ widths in V3Expand (#5953) (#5975). [Geza Lore]
+* Fix dependencies from different hierarchical schedules (#5954). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix constant propagation of post-expand stages (#5955) (#5963) (#5969) (#5972) (#5983).
+* Fix sign extension of signed compared with unsigned case items (#5968).
+* Fix always processes ignoring $finish (#5971). [Hennadii Chernyshchyk]
+* Fix method calls and new to access interface arrays (#5973). [Nick Brereton]
+* Fix streaming to/from packed arrays (#5976). [Geza Lore]
+* Fix segfault writing timestamp to VCD after buffer flush (#5978) (#5980). [Dominick Grochowina]
+* Fix inconsistent assignment error with split-var (#5984) (#5988). [Yutetsu TAKATSUKASA]
+* Fix AstAssignW conversion (#5991) (#5992). [Ryszard Rozak, Antmicro Ltd.]
+* Fix const-bit-op-tree with single-bit masks (#5993) (#5998). [Yutetsu TAKATSUKASA]
+* Fix arithmetic right-shift by constants over 32 bits (#5994). [Zhen Yan]
+* Fix array bounds checking with class member selects (#5996) (#5997). [Krzysztof Starecki]
+* Fix checking for too-wide divide and modulus (#6003) (#6006). [Zhen Yan]
+* Fix folding of LteS in DfgPeephole (#6000) (#6004). [Geza Lore]
+* Fix slicing of AstExprStmt nodes (#6005). [Ryszard Rozak, Antmicro Ltd.]
+* Fix skipped generate blocks in toggle coverage (#6010). [Ryszard Rozak, Antmicro Ltd.]
+* Fix arithmetic left-shift by constants over 32 bits (#6007) (#6015). [Zhen Yan]
+* Fix concatenation and type casting (#6012) (#6013). [Todd Strader]
+* Fix wrong optimization result of shifted out variable (#6016) (#6019). [Yutetsu TAKATSUKASA]
+* Fix missing FreeBSD include (#6027) (#6028). [Joel Bodenmann]
+* Fix associative arrays with enum keys (#6034) (#6035). [Petr Nohavica]
+* Fix GCC 10 read-only linker error (#6040). [Todd Strader]
+* Fix WIDTHCONCAT on packed pattern assignment (#6045). [Dan Petrisko]
+* Fix type operator for interface signals (#6049) (#6050). [Todd Strader]
+* Fix V3OrderParallel scoring contraction hang (#6052). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix virtual interface array typedef expressions (#6057).
+* Fix DFG peephole select conditionals (#6064) (#6071). [Geza Lore]
+* Fix `--skip-identical` skipping on some errors (#6066). [Todd Strader]
+* Fix class typedef elaboration (#6080). [Kamil Rakoczy, Antmicro Ltd.]
+* Fix unpacked to packed parameter assignment (#6081) (#6088). [Todd Strader]
+* Fix casting reals to large integrals (#6085). [Todd Strader]
+* Fix nested hier blocks workers error (#6087). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix `--lib-create` with double-underscore (#6099).
+* Fix DFG binToOneHot table index missing driver (#6100). [Geza Lore]
+* Fix decoding octal string escapes with 1-2 digits (#6108).
+* Fix colon-divide operator without space (#6121). [Alex Solomatnikov]
+* Fix variables declared in fork after taskify (#6126). [Kamil Rakoczy, Antmicro Ltd.]
+* Fix method calls without parenthesis (#6127). [Alex Solomatnikov]
+* Fix `pre_randomize`/`post_randomize` when no randomize (#6128). [Alex Solomatnikov]
+* Fix wide non-blocking assignment mis-optimization (#6150) (#6152) (#6155). [Todd Strader]
+* Fix interface array connections with non-zero low declaration index.
+* Fix developer build error on MacOS/Flex2.6.4 (#6153). [Paul Swirhun]
+* Fix crash with --dumpi-V3LinkDot without --debug (#6159). [Igor Zaworski]
 
 
 Verilator 5.036 2025-04-27

@@ -294,7 +294,7 @@ inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, std::string& r
     uint32_t len = 0;
     os >> len;
     rhs.resize(len);
-    // C cast is required below
+    // NOLINTNEXTLINE(google-readability-casting)
     return os.read((void*)(rhs.data()), len);
 }
 VerilatedSerialize& operator<<(VerilatedSerialize& os, VerilatedContext* rhsp);

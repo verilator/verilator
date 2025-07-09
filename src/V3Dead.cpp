@@ -81,7 +81,7 @@ class DeadVisitor final : public VNVisitor {
     // METHODS
 
     void deleting(AstNode* nodep) {
-        UINFO(9, "  deleting " << nodep << endl);
+        UINFO(9, "  deleting " << nodep);
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
@@ -353,7 +353,7 @@ class DeadVisitor final : public VNVisitor {
                 if (modp->dead()
                     || (modp->level() > 2 && modp->user1() == 0 && !modp->internal())) {
                     // > 2 because L1 is the wrapper, L2 is the top user module
-                    UINFO(4, "  Dead module " << modp << endl);
+                    UINFO(4, "  Dead module " << modp);
                     // And its children may now be killable too; correct counts
                     // Recurse, as cells may not be directly under the module but in a generate
                     if (!modp->dead()) {  // If was dead didn't increment user1's
@@ -382,7 +382,7 @@ class DeadVisitor final : public VNVisitor {
                 AstScope* const scp = *it;
                 if (!scp) continue;
                 if (scp->user1() == 0) {
-                    UINFO(4, "  Dead AstScope " << scp << endl);
+                    UINFO(4, "  Dead AstScope " << scp);
                     scp->aboveScopep()->user1Inc(-1);
                     if (scp->dtypep()) scp->dtypep()->user1Inc(-1);
                     deleting(scp);
@@ -422,12 +422,12 @@ class DeadVisitor final : public VNVisitor {
         // Delete any unused varscopes
         for (AstVarScope* vscp : m_vscsp) {
             if (vscp->user1() == 0) {
-                UINFO(4, "  Dead " << vscp << endl);
+                UINFO(4, "  Dead " << vscp);
                 const std::pair<AssignMap::iterator, AssignMap::iterator> eqrange
                     = m_assignMap.equal_range(vscp);
                 for (AssignMap::iterator itr = eqrange.first; itr != eqrange.second; ++itr) {
                     AstNodeAssign* const assp = itr->second;
-                    UINFO(4, "    Dead assign " << assp << endl);
+                    UINFO(4, "    Dead assign " << assp);
                     assp->dtypep()->user1Inc(-1);
                     deleting(assp);
                 }
@@ -442,7 +442,7 @@ class DeadVisitor final : public VNVisitor {
                 AstVar* const varp = *it;
                 if (!varp) continue;
                 if (varp->user1() == 0) {
-                    UINFO(4, "  Dead " << varp << endl);
+                    UINFO(4, "  Dead " << varp);
                     if (varp->dtypep()) varp->dtypep()->user1Inc(-1);
                     deleting(varp);
                     *it = nullptr;
@@ -553,7 +553,7 @@ public:
 // Dead class functions
 
 void V3Dead::deadifyModules(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     {  // node, elimUserVars, elimDTypes, elimScopes, elimCells, elimTopIfaces
         DeadVisitor{nodep, false, false, false, false, !v3Global.opt.topIfacesSupported()};
     }  // Destruct before checking
@@ -561,25 +561,25 @@ void V3Dead::deadifyModules(AstNetlist* nodep) {
 }
 
 void V3Dead::deadifyDTypes(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { DeadVisitor{nodep, false, true, false, false, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadDtypes", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Dead::deadifyDTypesScoped(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { DeadVisitor{nodep, false, true, true, false, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadDtypesScoped", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Dead::deadifyAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { DeadVisitor{nodep, true, true, false, true, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAll", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Dead::deadifyAllScoped(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { DeadVisitor{nodep, true, true, true, true, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAllScoped", 0, dumpTreeEitherLevel() >= 3);
 }

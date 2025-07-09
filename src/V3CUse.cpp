@@ -92,13 +92,13 @@ class CUseVisitor final : public VNVisitorConst {
 public:
     // CONSTRUCTORS
     explicit CUseVisitor(AstNodeModule* modp)
-        : m_modp(modp) {
+        : m_modp{modp} {
         iterateConst(modp);
 
         for (auto& used : m_didUse) {
             AstCUse* const newp = new AstCUse{used.second.first, used.second.second, used.first};
             m_modp->addStmtsp(newp);
-            UINFO(8, "Insert " << newp << endl);
+            UINFO(8, "Insert " << newp);
         }
     }
     ~CUseVisitor() override = default;
@@ -109,7 +109,7 @@ public:
 // Class class functions
 
 void V3CUse::cUseAll() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     // Call visitor separately for each module, so visitor state is cleared
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
          modp = VN_AS(modp->nextp(), NodeModule)) {

@@ -100,17 +100,16 @@ public:
 };
 
 class Graph final : public V3Graph {
-    void loopsVertexCb(V3GraphVertex* vtxp) override {
-        // TODO: 'typeName' is an internal thing. This should be more human readable.
+    string loopsVertexCb(V3GraphVertex* vtxp) override {
         if (SchedAcyclicLogicVertex* const lvtxp = vtxp->cast<SchedAcyclicLogicVertex>()) {
             AstNode* const logicp = lvtxp->logicp();
-            std::cerr << logicp->fileline()->warnOtherStandalone()
-                      << "     Example path: " << logicp->typeName() << endl;
+            return logicp->fileline()->warnOther()
+                   + "     Example path: " + logicp->prettyTypeName() + "\n";
         } else {
             SchedAcyclicVarVertex* const vvtxp = vtxp->as<SchedAcyclicVarVertex>();
             AstVarScope* const vscp = vvtxp->vscp();
-            std::cerr << vscp->fileline()->warnOtherStandalone()
-                      << "     Example path: " << vscp->prettyName() << endl;
+            return vscp->fileline()->warnOther() + "     Example path: " + vscp->prettyName()
+                   + "\n";
         }
     }
 };
@@ -268,7 +267,8 @@ void gatherSCCCandidates(V3GraphVertex* vtxp, std::vector<Candidate>& candidates
 }
 
 // Find all variables in a loop (SCC) that are candidates for splitting to break loops.
-void reportLoopVars(Graph* graphp, SchedAcyclicVarVertex* vvtxp) {
+std::string reportLoopVars(FileLine* warnFl, Graph* graphp, SchedAcyclicVarVertex* vvtxp) {
+    std::ostringstream ss;
     // Vector of variables in UNOPTFLAT loop that are candidates for splitting.
     std::vector<Candidate> candidates;
     {
@@ -281,47 +281,51 @@ void reportLoopVars(Graph* graphp, SchedAcyclicVarVertex* vvtxp) {
     }
 
     // Possible we only have candidates the user cannot do anything about, so don't bother them.
-    if (candidates.empty()) return;
+    if (candidates.empty()) return "";
 
     // There may be a very large number of candidates, so only report up to 10 of the "most
     // important" signals.
     unsigned splittable = 0;
-    const auto reportFirst10 = [&](std::function<bool(const Candidate&, const Candidate&)> less) {
+    const auto reportFirst10
+        = [&](std::function<bool(const Candidate&, const Candidate&)> less) -> string {
         std::stable_sort(candidates.begin(), candidates.end(), less);
+        std::ostringstream ss2;
         for (size_t i = 0; i < 10; i++) {
             if (i == candidates.size()) break;
             const Candidate& candidate = candidates[i];
             AstVar* const varp = candidate.first->varp();
-            std::cerr << V3Error::warnMoreStandalone() << "    " << varp->fileline() << " "
-                      << varp->prettyName() << ", width " << std::dec << varp->width()
-                      << ", circular fanout " << candidate.second;
+
+            ss2 << V3Error::warnMore() << "    " << varp->fileline() << ' ' << varp->prettyName()
+                << ", width " << std::dec << varp->width() << ", circular fanout "
+                << candidate.second;
             if (V3SplitVar::canSplitVar(varp)) {
-                std::cerr << ", can split_var";
+                ss2 << ", can split_var";
                 ++splittable;
             }
-            std::cerr << '\n';
+            ss2 << '\n';
         }
+        return ss2.str();
     };
 
     // Widest variables
-    std::cerr << V3Error::warnMoreStandalone() << "... Widest variables candidate to splitting:\n";
-    reportFirst10([](const Candidate& a, const Candidate& b) {
-        return a.first->varp()->width() > b.first->varp()->width();
-    });
+    ss << V3Error::warnMore() << "... Widest variables candidate to splitting:\n"
+       << reportFirst10([](const Candidate& a, const Candidate& b) {
+              return a.first->varp()->width() > b.first->varp()->width();
+          });
 
     // Highest fanout
-    std::cerr << V3Error::warnMoreStandalone() << "... Candidates with the highest fanout:\n";
-    reportFirst10([](const Candidate& a, const Candidate& b) {  //
-        return a.second > b.second;
-    });
+    ss << V3Error::warnMore() << "... Candidates with the highest fanout:\n"
+       << reportFirst10([](const Candidate& a, const Candidate& b) {  //
+              return a.second > b.second;
+          });
 
     if (splittable) {
-        std::cerr << V3Error::warnMoreStandalone()
-                  << "... Suggest add /*verilator split_var*/ or /*verilator "
-                     "isolate_assignments*/ to appropriate variables above."
-                  << std::endl;
+        ss << V3Error::warnMore()
+           << "... Suggest add /*verilator split_var*/ or /*verilator "
+              "isolate_assignments*/ to appropriate variables above.\n";
     }
     V3Stats::addStat("Scheduling, split_var, candidates", splittable);
+    return ss.str();
 }
 
 void reportCycles(Graph* graphp, const std::vector<SchedAcyclicVarVertex*>& cutVertices) {
@@ -330,17 +334,26 @@ void reportCycles(Graph* graphp, const std::vector<SchedAcyclicVarVertex*>& cutV
         FileLine* const flp = vscp->fileline();
 
         // First v3warn not inside warnIsOff so we can see the suppressions with --debug
-        vscp->v3warn(UNOPTFLAT, "Signal unoptimizable: Circular combinational logic: "
-                                    << vscp->prettyNameQ());
-        if (!flp->warnIsOff(V3ErrorCode::UNOPTFLAT) && !flp->lastWarnWaived()) {
+        if (flp->warnIsOff(V3ErrorCode::UNOPTFLAT)) {
+            // First v3warn not inside warnIsOff so we can see the suppressions with --debug
+            vscp->v3warn(UNOPTFLAT, "Signal unoptimizable: Circular combinational logic: "
+                                        << vscp->prettyNameQ());
+        } else {
+            vscp->v3warn(UNOPTFLAT,
+                         "Signal unoptimizable: Circular combinational logic: "
+                             << vscp->prettyNameQ() << '\n'
+                             << vscp->warnContextPrimary()
+                             << V3Error::warnAdditionalInfo()
+                             // Calls Graph::loopsVertexCb
+                             << graphp->reportLoops(&V3GraphEdge::followAlwaysTrue, vvtxp)
+                             // Report candidate variables for splitting
+                             << (v3Global.opt.reportUnoptflat()
+                                     ? reportLoopVars(vscp->fileline(), graphp, vvtxp)
+                                     : ""));
             // Complain just once
             flp->modifyWarnOff(V3ErrorCode::UNOPTFLAT, true);
-            // Calls Graph::loopsVertexCb
-            graphp->reportLoops(&V3GraphEdge::followAlwaysTrue, vvtxp);
+            // Create a subgraph for the UNOPTFLAT loop
             if (v3Global.opt.reportUnoptflat()) {
-                // Report candidate variables for splitting
-                reportLoopVars(graphp, vvtxp);
-                // Create a subgraph for the UNOPTFLAT loop
                 V3Graph loopGraph;
                 graphp->subtreeLoops(&V3GraphEdge::followAlwaysTrue, vvtxp, &loopGraph);
                 loopGraph.dumpDotFilePrefixedAlways("unoptflat");

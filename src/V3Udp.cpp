@@ -231,7 +231,7 @@ public:
 };
 
 void V3Udp::udpResolve(AstNetlist* rootp) {
-    UINFO(4, __FUNCTION__ << ": " << endl);
+    UINFO(4, __FUNCTION__ << ": ");
     { const UdpVisitor visitor{rootp}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("udp", 0, dumpTreeEitherLevel() >= 3);
 }

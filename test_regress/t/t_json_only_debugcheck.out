@@ -2819,7 +2819,7 @@
       ]}
     ],"finalsp": []},
     {"type":"CUSE","name":"$unit","addr":"(JPB)","loc":"a,0:0,0:0","useType":"INT_FWD"}
-  ],"activesp": []},
+  ]},
   {"type":"PACKAGE","name":"$unit","addr":"(E)","loc":"a,0:0,0:0","origName":"__024unit","level":0,"modPublic":false,"inLibrary":true,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
    "stmtsp": [
     {"type":"VAR","name":"__Venumtab_enum_next1","addr":"(JC)","loc":"d,17:12,17:16","dtypep":"(IC)","origName":"__Venumtab_enum_next1","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":true,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"VSTATIC","varType":"MODULETEMP","dtypeName":"","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],
@@ -2901,7 +2901,7 @@
         {"type":"VARREF","name":"__Venumtab_enum_name1","addr":"(PQB)","loc":"d,17:12,17:16","dtypep":"(OM)","access":"WR","varp":"(PM)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
       ]}
     ],"finalsp": []}
-  ],"activesp": []}
+  ]}
 ],
  "filesp": [
   {"type":"CFILE","name":"obj_vlt/t_json_only_debugcheck/Vt_json_only_debugcheck__Syms.cpp","addr":"(QQB)","loc":"a,0:0,0:0","source":true,"slow":true,"tblockp": []},
@@ -2990,6 +2990,6 @@
     {"type":"MODULE","name":"@CONST-POOL@","addr":"(URB)","loc":"a,0:0,0:0","isChecker":false,"isProgram":false,"origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
      "stmtsp": [
       {"type":"SCOPE","name":"TOP","addr":"(VRB)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(URB)","varsp": [],"blocksp": [],"inlinesp": []}
-    ],"activesp": []}
+    ]}
   ]}
 ]}

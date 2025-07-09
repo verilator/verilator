@@ -91,7 +91,7 @@ string VString::upcase(const string& str) VL_PURE {
     return result;
 }
 
-string VString::quoteAny(const string& str, char tgt, char esc) {
+string VString::quoteAny(const string& str, char tgt, char esc) VL_PURE {
     string result;
     for (const char c : str) {
         if (c == tgt) result += esc;
@@ -160,16 +160,18 @@ string VString::unquoteSVString(const string& text, string& errOut) {
             if (std::isdigit(*cp)) {
                 octal_val = octal_val * 8 + (*cp - '0');
                 if (++octal_digits == 3) {
-                    octal_digits = 0;
-                    quoted = false;
                     newtext += octal_val;
+                    octal_digits = 0;
+                    octal_val = 0;
+                    quoted = false;
                 }
             } else {
                 if (octal_digits) {
                     // Spec allows 1-3 digits
-                    octal_digits = 0;
-                    quoted = false;
                     newtext += octal_val;
+                    octal_digits = 0;
+                    octal_val = 0;
+                    quoted = false;
                     --cp;  // Backup to reprocess terminating character as non-escaped
                     continue;
                 }
@@ -200,6 +202,11 @@ string VString::unquoteSVString(const string& text, string& errOut) {
                 }
             }
         } else if (*cp == '\\') {
+            if (octal_digits) {
+                newtext += octal_val;
+                // below: octal_digits = 0;
+                octal_val = 0;
+            }
             quoted = true;
             octal_digits = 0;
         } else {
@@ -226,6 +233,32 @@ string VString::removeWhitespace(const string& str) {
     result.reserve(str.size());
     for (const char c : str) {
         if (!std::isspace(c)) result += c;
+    }
+    return result;
+}
+
+string VString::trimWhitespace(const string& str) {
+    string result;
+    result.reserve(str.size());
+    string add;
+    bool newline = false;
+    for (const char c : str) {
+        if (newline && std::isspace(c)) continue;
+        if (c == '\n') {
+            add = "\n";
+            newline = true;
+            continue;
+        }
+        if (std::isspace(c)) {
+            add += c;
+            continue;
+        }
+        if (!add.empty()) {
+            result += add;
+            newline = false;
+            add.clear();
+        }
+        result += c;
     }
     return result;
 }
@@ -271,6 +304,16 @@ double VString::parseDouble(const string& str, bool* successp) {
     return d;
 }
 
+string VString::replaceSubstr(const string& str, const string& from, const string& to) {
+    string result = str;
+    const size_t len = from.size();
+    UASSERT_STATIC(len > 0, "Cannot replace empty string");
+    for (size_t pos = 0; (pos = result.find(from, pos)) != string::npos; pos += len) {
+        result.replace(pos, len, to);
+    }
+    return result;
+}
+
 string VString::replaceWord(const string& str, const string& from, const string& to) {
     string result = str;
     const size_t len = from.size();
@@ -304,6 +347,49 @@ string VString::aOrAn(const char* word) {
     case 'u': return "an";
     default: return "a";
     }
+}
+
+// MurmurHash64A
+uint64_t VString::hashMurmur(const string& str) VL_PURE {
+    const char* key = str.c_str();
+    const size_t len = str.size();
+    const uint64_t seed = 0;
+    const uint64_t m = 0xc6a4a7935bd1e995ULL;
+    const int r = 47;
+
+    uint64_t h = seed ^ (len * m);
+
+    const uint64_t* data = (const uint64_t*)key;
+    const uint64_t* end = data + (len / 8);
+
+    while (data != end) {
+        uint64_t k = *data++;
+
+        k *= m;
+        k ^= k >> r;
+        k *= m;
+
+        h ^= k;
+        h *= m;
+    }
+
+    const unsigned char* data2 = (const unsigned char*)data;
+
+    switch (len & 7) {
+    case 7: h ^= uint64_t(data2[6]) << 48; /* fallthrough */
+    case 6: h ^= uint64_t(data2[5]) << 40; /* fallthrough */
+    case 5: h ^= uint64_t(data2[4]) << 32; /* fallthrough */
+    case 4: h ^= uint64_t(data2[3]) << 24; /* fallthrough */
+    case 3: h ^= uint64_t(data2[2]) << 16; /* fallthrough */
+    case 2: h ^= uint64_t(data2[1]) << 8; /* fallthrough */
+    case 1: h ^= uint64_t(data2[0]); h *= m; /* fallthrough */
+    };
+
+    h ^= h >> r;
+    h *= m;
+    h ^= h >> r;
+
+    return h;
 }
 
 //######################################################################
@@ -667,7 +753,7 @@ string VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distance
 
         const EditDistance dist = editDistance(goal, candidate);
         UINFO(9, "EditDistance dist=" << dist << " cutoff=" << cutoff << " goal=" << goal
-                                      << " candidate=" << candidate << endl);
+                                      << " candidate=" << candidate);
         if (dist < distancer && dist <= cutoff) {
             distancer = dist;
             bestCandidate = candidate;

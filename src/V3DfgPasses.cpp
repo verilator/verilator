@@ -25,6 +25,11 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+V3DfgBinToOneHotContext::~V3DfgBinToOneHotContext() {
+    V3Stats::addStat("Optimizations, DFG " + m_label + " BinToOneHot, decoders created",
+                     m_decodersCreated);
+}
+
 V3DfgCseContext::~V3DfgCseContext() {
     V3Stats::addStat("Optimizations, DFG " + m_label + " CSE, expressions eliminated",
                      m_eliminated);
@@ -226,6 +231,248 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
     }
 }
 
+void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
+    UASSERT(dfg.modulep(), "binToOneHot only works with unscoped DfgGraphs for now");
+
+    const auto userDataInUse = dfg.userDataInUse();
+
+    // Structure to keep track of comparison details
+    struct Term final {
+        DfgVertex* m_vtxp;  // Vertex to replace
+        bool m_inv;  // '!=', instead of '=='
+        Term() = default;
+        Term(DfgVertex* vtxp, bool inv)
+            : m_vtxp{vtxp}
+            , m_inv{inv} {}
+    };
+
+    // Map from 'value beign compared' -> 'terms', stored in DfgVertex::user()
+    using Val2Terms = std::map<uint32_t, std::vector<Term>>;
+    // Allocator for Val2Terms, so it's cleaned up on return
+    std::deque<Val2Terms> val2TermsAllocator;
+    // List of vertices that are used as sources
+    std::vector<DfgVertex*> srcps;
+
+    // Only consider input variables from a reasonable range:
+    // - not too big to avoid huge tables, you are doomed anyway at that point..
+    // - not too small, as it's probably not worth it
+    constexpr uint32_t WIDTH_MIN = 7;
+    constexpr uint32_t WIDTH_MAX = 20;
+    const auto widthOk = [](const DfgVertex* vtxp) {
+        const uint32_t width = vtxp->width();
+        return WIDTH_MIN <= width && width <= WIDTH_MAX;
+    };
+
+    // Do not convert terms that look like they are in a Cond tree
+    // the C++ compiler can generate jump tables for these
+    const std::function<bool(const DfgVertex*, bool)> useOk
+        = [&](const DfgVertex* vtxp, bool inv) -> bool {
+        // Go past a single 'Not' sink, which is common
+        if (DfgVertex* const sinkp = vtxp->singleSink()) {
+            if (sinkp->is<DfgNot>()) return useOk(sinkp, !inv);
+        }
+        return !vtxp->findSink<DfgCond>([vtxp, inv](const DfgCond& sink) {
+            if (sink.condp() != vtxp) return false;
+            return inv ? sink.thenp()->is<DfgCond>() : sink.elsep()->is<DfgCond>();
+        });
+    };
+
+    // Look at all comparison nodes and build the 'Val2Terms' map for each source vertex
+    uint32_t nTerms = 0;
+    for (DfgVertex& vtx : dfg.opVertices()) {
+        DfgVertex* srcp = nullptr;
+        uint32_t val = 0;
+        bool inv = false;
+        if (DfgEq* const eqp = vtx.cast<DfgEq>()) {
+            DfgConst* const constp = eqp->lhsp()->cast<DfgConst>();
+            if (!constp || !widthOk(constp) || !useOk(eqp, false)) continue;
+            srcp = eqp->rhsp();
+            val = constp->toU32();
+            inv = false;
+        } else if (DfgNeq* const neqp = vtx.cast<DfgNeq>()) {
+            DfgConst* const constp = neqp->lhsp()->cast<DfgConst>();
+            if (!constp || !widthOk(constp) || !useOk(neqp, true)) continue;
+            srcp = neqp->rhsp();
+            val = constp->toU32();
+            inv = true;
+        } else if (DfgRedAnd* const redAndp = vtx.cast<DfgRedAnd>()) {
+            srcp = redAndp->srcp();
+            if (!widthOk(srcp) || !useOk(redAndp, false)) continue;
+            val = (1U << srcp->width()) - 1;
+            inv = false;
+        } else if (DfgRedOr* const redOrp = vtx.cast<DfgRedOr>()) {
+            srcp = redOrp->srcp();
+            if (!widthOk(srcp) || !useOk(redOrp, true)) continue;
+            val = 0;
+            inv = true;
+        } else {
+            // Not a comparison-like vertex
+            continue;
+        }
+        // Grab the Val2Terms entry
+        Val2Terms*& val2Termspr = srcp->user<Val2Terms*>();
+        if (!val2Termspr) {
+            // Remeber and allocate on first encounter
+            srcps.emplace_back(srcp);
+            val2TermsAllocator.emplace_back();
+            val2Termspr = &val2TermsAllocator.back();
+        }
+        // Record term
+        (*val2Termspr)[val].emplace_back(&vtx, inv);
+        ++nTerms;
+    }
+
+    // Somewhat arbitrarily, only apply if more than 64 unique comparisons are required
+    constexpr uint32_t TERM_LIMIT = 65;
+    // This should hold, otherwise we do redundant work gathering terms that will never be used
+    static_assert((1U << WIDTH_MIN) >= TERM_LIMIT, "TERM_LIMIT too big relative to 2**WIDTH_MIN");
+
+    // Fast path exit if we surely don't need to convet anything
+    if (nTerms < TERM_LIMIT) return;
+
+    // Sequence numbers for name generation
+    size_t nTables = 0;
+
+    // Create decoders for each srcp
+    for (DfgVertex* const srcp : srcps) {
+        const Val2Terms& val2Terms = *srcp->getUser<Val2Terms*>();
+
+        // If not enough terms in this vertex, ignore
+        if (val2Terms.size() < TERM_LIMIT) continue;
+
+        // Width of the decoded binary value
+        const uint32_t width = srcp->width();
+        // Number of bits in the input operand
+        const uint32_t nBits = 1U << width;
+
+        // Construct the decoder by converting many "const == vtx" by:
+        // - Adding a single decoder block, where 'tab' is zero initialized:
+        //     always_comb begin
+        //        tab[pre] = 0;
+        //        tab[vtx] = 1;
+        //        pre = vtx;
+        //     end
+        //   We mark 'pre' so the write is ignored during scheduling, so this
+        //   won't cause a combinational cycle.
+        //   Note that albeit this looks like partial udpates to 'tab', the
+        //   actual result is that only one value in 'tab' is ever one, while
+        //   all the others are always zero.
+        // - and replace the comparisons with 'tab[const]'
+
+        FileLine* const flp = srcp->fileline();
+
+        // Required data types
+        AstNodeDType* const idxDTypep = srcp->dtypep();
+        AstNodeDType* const bitDTypep = DfgVertex::dtypeForWidth(1);
+        AstUnpackArrayDType* const tabDTypep = new AstUnpackArrayDType{
+            flp, bitDTypep, new AstRange{flp, static_cast<int>(nBits - 1), 0}};
+        v3Global.rootp()->typeTablep()->addTypesp(tabDTypep);
+
+        // The index variable
+        DfgVarPacked* const idxVtxp = [&]() {
+            // If there is an existing result variable, use that, otherwise create a new variable
+            DfgVarPacked* varp = srcp->getResultVar();
+            if (!varp) {
+                const std::string name = dfg.makeUniqueName("BinToOneHot_Idx", nTables);
+                varp = dfg.makeNewVar(flp, name, idxDTypep, nullptr)->as<DfgVarPacked>();
+                varp->varp()->isInternal(true);
+                varp->addDriver(flp, 0, srcp);
+            }
+            varp->setHasModRefs();
+            return varp;
+        }();
+        // The previous index variable - we don't need a vertex for this
+        AstVar* const preVarp = [&]() {
+            const std::string name = dfg.makeUniqueName("BinToOneHot_Pre", nTables);
+            AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, idxDTypep};
+            dfg.modulep()->addStmtsp(varp);
+            varp->isInternal(true);
+            varp->noReset(true);
+            varp->setIgnoreSchedWrite();
+            return varp;
+        }();
+        // The table variable
+        DfgVarArray* const tabVtxp = [&]() {
+            const std::string name = dfg.makeUniqueName("BinToOneHot_Tab", nTables);
+            DfgVarArray* const varp
+                = dfg.makeNewVar(flp, name, tabDTypep, nullptr)->as<DfgVarArray>();
+            varp->varp()->isInternal(true);
+            varp->varp()->noReset(true);
+            varp->setHasModRefs();
+            return varp;
+        }();
+
+        ++nTables;
+        ++ctx.m_decodersCreated;
+
+        // Initialize 'tab' and 'pre' variables statically
+        AstInitialStatic* const initp = new AstInitialStatic{flp, nullptr};
+        dfg.modulep()->addStmtsp(initp);
+        {  // pre = 0
+            initp->addStmtsp(new AstAssign{
+                flp,  //
+                new AstVarRef{flp, preVarp, VAccess::WRITE},  //
+                new AstConst{flp, AstConst::WidthedValue{}, static_cast<int>(width), 0}});
+        }
+        {  // tab.fill(0)
+            AstCMethodHard* const callp = new AstCMethodHard{
+                flp, new AstVarRef{flp, tabVtxp->varp(), VAccess::WRITE}, "fill"};
+            callp->addPinsp(new AstConst{flp, AstConst::BitFalse{}});
+            callp->dtypeSetVoid();
+            initp->addStmtsp(callp->makeStmt());
+        }
+
+        // Build the decoder logic
+        AstAlways* const logicp = new AstAlways{flp, VAlwaysKwd::ALWAYS_COMB, nullptr, nullptr};
+        dfg.modulep()->addStmtsp(logicp);
+        {  // tab[pre] = 0;
+            logicp->addStmtsp(new AstAssign{
+                flp,  //
+                new AstArraySel{flp, new AstVarRef{flp, tabVtxp->varp(), VAccess::WRITE},
+                                new AstVarRef{flp, preVarp, VAccess::READ}},  //
+                new AstConst{flp, AstConst::BitFalse{}}});
+        }
+        {  // tab[idx] = 1
+            logicp->addStmtsp(new AstAssign{
+                flp,  //
+                new AstArraySel{flp, new AstVarRef{flp, tabVtxp->varp(), VAccess::WRITE},
+                                new AstVarRef{flp, idxVtxp->varp(), VAccess::READ}},  //
+                new AstConst{flp, AstConst::BitTrue{}}});
+        }
+        {  // pre = idx
+            logicp->addStmtsp(new AstAssign{flp,  //
+                                            new AstVarRef{flp, preVarp, VAccess::WRITE},  //
+                                            new AstVarRef{flp, idxVtxp->varp(), VAccess::READ}});
+        }
+
+        // Replace terms with ArraySels
+        for (const auto& pair : val2Terms) {
+            const uint32_t val = pair.first;
+            const std::vector<Term>& terms = pair.second;
+            // Create the ArraySel
+            FileLine* const aflp = terms.front().m_vtxp->fileline();
+            DfgArraySel* const aselp = new DfgArraySel{dfg, aflp, bitDTypep};
+            aselp->fromp(tabVtxp);
+            aselp->bitp(new DfgConst{dfg, aflp, width, val});
+            // The inverted value, if needed
+            DfgNot* notp = nullptr;
+            // Repalce the terms
+            for (const Term& term : terms) {
+                if (term.m_inv) {
+                    if (!notp) {
+                        notp = new DfgNot{dfg, aflp, bitDTypep};
+                        notp->srcp(aselp);
+                    }
+                    term.m_vtxp->replaceWith(notp);
+                } else {
+                    term.m_vtxp->replaceWith(aselp);
+                }
+                VL_DO_DANGLING(term.m_vtxp->unlinkDelete(dfg), term.m_vtxp);
+            }
+        }
+    }
+}
+
 void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
     const auto userDataInUse = dfg.userDataInUse();
 
@@ -252,9 +499,10 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
         workListp = &vtx;
     };
 
-    // List of variables we are replacing
-    std::vector<AstVar*> replacedVariables;
+    // List of variables (AstVar or AstVarScope) we are replacing
+    std::vector<AstNode*> replacedVariables;
     // AstVar::user1p() : AstVar* -> The replacement variables
+    // AstVarScope::user1p() : AstVarScope* -> The replacement variables
     const VNUser1InUse user1InUse;
 
     // Process the work list
@@ -263,6 +511,8 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
         DfgVertex* const vtxp = workListp;
         // Detach the head
         workListp = vtxp->getUser<DfgVertex*>();
+        // Reset user pointer so it can be added back to the work list later
+        vtxp->setUser<DfgVertex*>(nullptr);
         // Prefetch next item
         VL_PREFETCH_RW(workListp);
 
@@ -295,7 +545,7 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
             // If it is only referenced in this DFG, it can be removed
             ++ctx.m_varsRemoved;
             varp->replaceWith(varp->source(0));
-            varp->varp()->unlinkFrBack()->deleteTree();
+            varp->nodep()->unlinkFrBack()->deleteTree();
         } else if (DfgVarPacked* const driverp = varp->source(0)->cast<DfgVarPacked>()) {
             // If it's driven from another variable, it can be replaced by that. However, we do not
             // want to propagate SystemC variables into the design.
@@ -303,9 +553,11 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
             // Mark it for replacement
             ++ctx.m_varsReplaced;
             UASSERT_OBJ(!varp->hasSinks(), varp, "Variable inlining should make this impossible");
-            UASSERT(!varp->varp()->user1p(), "Replacement already exists");
-            replacedVariables.emplace_back(varp->varp());
-            varp->varp()->user1p(driverp->varp());
+            // Grab the AstVar/AstVarScope
+            AstNode* const nodep = varp->nodep();
+            UASSERT_OBJ(!nodep->user1p(), nodep, "Replacement already exists");
+            replacedVariables.emplace_back(nodep);
+            nodep->user1p(driverp->nodep());
         } else {
             // Otherwise this *is* the canonical var
             continue;
@@ -320,16 +572,24 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
     // Job done if no replacements possible
     if (replacedVariables.empty()) return;
 
-    // Apply variable replacements in the module
-    VNDeleter deleter;
-    dfg.modulep()->foreach([&](AstVarRef* refp) {
-        AstVar* varp = refp->varp();
-        while (AstVar* const replacementp = VN_AS(varp->user1p(), Var)) varp = replacementp;
-        refp->varp(varp);
-    });
+    // Apply variable replacements
+    if (AstModule* const modp = dfg.modulep()) {
+        modp->foreach([&](AstVarRef* refp) {
+            AstVar* varp = refp->varp();
+            while (AstVar* const replacep = VN_AS(varp->user1p(), Var)) varp = replacep;
+            refp->varp(varp);
+        });
+    } else {
+        v3Global.rootp()->foreach([&](AstVarRef* refp) {
+            AstVarScope* vscp = refp->varScopep();
+            while (AstVarScope* const replacep = VN_AS(vscp->user1p(), VarScope)) vscp = replacep;
+            refp->varScopep(vscp);
+            refp->varp(vscp->varp());
+        });
+    }
 
     // Remove the replaced variables
-    for (AstVar* const varp : replacedVariables) varp->unlinkFrBack()->deleteTree();
+    for (AstNode* const nodep : replacedVariables) nodep->unlinkFrBack()->deleteTree();
 }
 
 void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
@@ -353,6 +613,9 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
     apply(3, "input           ", [&]() {});
     apply(4, "inlineVars      ", [&]() { inlineVars(dfg); });
     apply(4, "cse0            ", [&]() { cse(dfg, ctx.m_cseContext0); });
+    if (dfg.modulep()) {
+        apply(4, "binToOneHot     ", [&]() { binToOneHot(dfg, ctx.m_binToOneHotContext); });
+    }
     if (v3Global.opt.fDfgPeephole()) {
         apply(4, "peephole        ", [&]() { peephole(dfg, ctx.m_peepholeContext); });
         // We just did CSE above, so without peephole there is no need to run it again these

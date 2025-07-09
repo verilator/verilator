@@ -25,7 +25,7 @@ BUILDDIR = _build
 
 SPHINXOPTS ?= -c guide -j 4
 ifneq ($(VERILATOR_ANALYTICS_ID),)
-SPHINXOPTS += -D html_theme_options.analytics_id=$(VERILATOR_ANALYTICS_ID)
+  SPHINXOPTS += -D html_theme_options.analytics_id=$(VERILATOR_ANALYTICS_ID)
 endif
 
 ######################################################################

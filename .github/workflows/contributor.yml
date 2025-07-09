@@ -7,10 +7,12 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   Test:
     name: "'docs/CONTRIBUTORS' was signed"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - run: test_regress/t/t_dist_contributors.py

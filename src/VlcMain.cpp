@@ -68,6 +68,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     DECL_OPTION("-annotate-points", OnOff, &m_annotatePoints);
     DECL_OPTION("-debug", CbCall, []() { V3Error::debugDefault(3); });
     DECL_OPTION("-debugi", CbVal, [](int v) { V3Error::debugDefault(v); });
+    DECL_OPTION("-filter-type", Set, &m_filterType);
     DECL_OPTION("-rank", OnOff, &m_rank);
     DECL_OPTION("-unlink", OnOff, &m_unlink);
     DECL_OPTION("-V", CbCall, []() {
@@ -86,7 +87,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     // Note argc and argv DO NOT INCLUDE the filename in [0]!!!
     // May be called recursively when there are -f files.
     for (int i = 0; i < argc;) {
-        UINFO(9, " Option: " << argv[i] << endl);
+        UINFO(9, " Option: " << argv[i]);
         if (argv[i][0] == '-') {
             if (const int consumed = parser.parse(i, argc, argv)) {
                 i += consumed;
@@ -160,7 +161,7 @@ int main(int argc, char** argv) {
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();
 
-    UINFO(1, "Done, Exiting...\n");
+    UINFO(1, "Done, Exiting...");
 }
 
 // Local Variables:

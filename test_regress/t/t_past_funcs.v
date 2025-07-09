@@ -5,9 +5,9 @@
 // SPDX-License-Identifier: Unlicense
 
 module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+  // Inputs
+  clk
+  );
 
    input clk;
    integer cyc; initial cyc=1;
@@ -41,16 +41,16 @@ module t (/*AUTOARG*/
 endmodule
 
 module Test (/*AUTOARG*/
-   // Inputs
-   clk, in
-   );
+  // Inputs
+  clk, in
+  );
 
    input clk;
    input [31:0] in;
 
-   reg [31:0]   dly0 = 0;
-   reg [31:0]   dly1 = 1;
-   reg [31:0]   dly2 = -1;
+   reg [31:0] dly0 = 0;
+   reg [31:0] dly1 = 0;
+   reg [31:0] dly2 = 0;
 
    // If called in an assertion, sequence, or property, the appropriate clocking event.
    // Otherwise, if called in a disable condition or a clock expression in an assertion, sequence, or prop, explicit.
@@ -60,33 +60,34 @@ module Test (/*AUTOARG*/
 
    always @(posedge clk) begin
       dly0 <= in;
-      dly1 <= in;
-      dly2 <= in;
+      dly1 <= dly0;
+      dly2 <= dly1;
       // In clock expression
       $write("in=%0d, dly0=%0d, rose=%0d, past=%0d\n", in, dly0, $rose(dly0), $past(dly0));
       if ($rose(dly0[4])) $stop;
-      if ($fell(dly1[4])) $stop;
-      if ($stable(dly2)) $stop;
-      if (!$changed(dly2)) $stop;
+      if ($fell(dly0[4])) $stop;
+      if (!$stable(dly0[4])) $stop;
+      if ($changed(dly0[4])) $stop;
    end
 
-   assert property (@(posedge clk) $rose(dly0) || dly0%2==0);
-   assert property (@(posedge clk) $fell(dly1) || dly1%2==1);
-   assert property (@(posedge clk) !$stable(dly2));
-   assert property (@(posedge clk) $changed(dly2));
+   assert property (@(posedge clk) $rose(dly0) || dly0%2==0 || dly2 < 3);
+   assert property (@(posedge clk) $fell(dly1) || dly1%2==1 || dly2 < 3);
+   assert property (@(posedge clk) !$stable(dly2) || dly2 < 3);
+   assert property (@(posedge clk) $changed(dly2) || dly2 < 3);
 
    global clocking @(posedge clk); endclocking
-   always @ ($global_clock) $display("%d", in);
+   always @ ($global_clock) $display("gc in=%0d", in);
    //
-   assert property (@(posedge clk) $rose(dly0, $global_clock) || dly0%2==0);
-   assert property (@(posedge clk) $fell(dly1, $global_clock) || dly1%2==1);
-   assert property (@(posedge clk) !$stable(dly2, $global_clock));
-   assert property (@(posedge clk) $changed(dly2, $global_clock));
+   assert property (@(posedge clk) $rose(dly0, $global_clock) || dly0%2==0 || dly2 < 3);
+   assert property (@(posedge clk) $fell(dly1, $global_clock) || dly1%2==1 || dly2 < 3);
+   assert property (@(posedge clk) !$stable(dly2, $global_clock) || dly2 < 3);
+   assert property (@(posedge clk) $changed(dly2, $global_clock) || dly2 < 3);
    //
-   assert property (@(posedge clk) $rose_gclk(dly0) || dly0%2==0);
-   assert property (@(posedge clk) $fell_gclk(dly1) || dly1%2==1);
-   assert property (@(posedge clk) !$stable_gclk(dly2));
-   assert property (@(posedge clk) $changed_gclk(dly2));
+   assert property (@(posedge clk) $rose_gclk(dly0) || dly0%2==0 || dly2 < 3);
+   assert property (@(posedge clk) $fell_gclk(dly1) || dly1%2==1 || dly2 < 3);
+   assert property (@(posedge clk) $past_gclk(dly1) == dly2 || dly2 < 3);
+   assert property (@(posedge clk) !$stable_gclk(dly2) || dly2 < 3);
+   assert property (@(posedge clk) $changed_gclk(dly2) || dly2 < 3);
 
    // global_clocking_future_functions are not supported yet:
    // $changing_gclk     global_clocking_future_function
@@ -99,21 +100,21 @@ endmodule
 
 
 module Test2 (/*AUTOARG*/
-   // Inputs
-   clk, in
-   );
+  // Inputs
+  clk, in
+  );
 
    input clk;
    input [31:0] in;
 
-   reg [31:0]   dly0;
-   reg [31:0]   dly1 = 1;
-   reg [31:0]   dly2;
+   reg [31:0] dly0 = 0;
+   reg [31:0] dly1 = 0;
+   reg [31:0] dly2 = 0;
 
    always @(posedge clk) begin
       dly0 <= in;
-      dly1 <= in;
-      dly2 <= in;
+      dly1 <= dly0;
+      dly2 <= dly1;
       if ($rose(dly0[31:4])) $stop;
       if ($fell(dly1[31:4])) $stop;
       if (!$stable(dly2[31:4])) $stop;
@@ -122,23 +123,21 @@ module Test2 (/*AUTOARG*/
 
    default clocking @(posedge clk); endclocking
 
-   assert property ($rose(dly0[0]) || dly0%2==0);
-   assert property ($fell(dly1[0]) || dly1%2==1);
-   assert property ($stable(dly2[31:4]));
-   assert property (!$changed(dly2[31:4]));
+   assert property ($rose(dly0[0]) || dly0%2==0 || dly2 < 3);
+   assert property ($fell(dly1[0]) || dly1%2==1 || dly2 < 3);
+   assert property ($stable(dly2[31:4]) || dly2 < 3);
+   assert property (!$changed(dly2[31:4]) || dly2 < 3);
 endmodule
 
 module Test3 (/*AUTOARG*/
-   // Inputs
-   clk, in
-   );
+  // Inputs
+  clk, in
+  );
 
    input clk;
    input [31:0] in;
 
    // Check the named form of global clocking
    global clocking gck @(posedge clk); endclocking
-   always @ (gck) $display("%d", in);
-   always @ ($global_clock) $display("%d", in);
 
 endmodule

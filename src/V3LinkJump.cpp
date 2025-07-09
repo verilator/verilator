@@ -64,7 +64,7 @@ class LinkJumpVisitor final : public VNVisitor {
     // METHODS
     AstJumpLabel* findAddLabel(AstNode* nodep, bool endOfIter) {
         // Put label under given node, and if WHILE optionally at end of iteration
-        UINFO(4, "Create label for " << nodep << endl);
+        UINFO(4, "Create label for " << nodep);
         if (VN_IS(nodep, JumpLabel)) return VN_AS(nodep, JumpLabel);  // Done
 
         // Made it previously?  We always jump to the end, so this works out
@@ -113,7 +113,7 @@ class LinkJumpVisitor final : public VNVisitor {
         // see t_func_return test.
         while (underp && VN_IS(underp, Var)) underp = underp->nextp();
         UASSERT_OBJ(underp, nodep, "Break/disable/continue not under expected statement");
-        UINFO(5, "  Underpoint is " << underp << endl);
+        UINFO(5, "  Underpoint is " << underp);
 
         if (VN_IS(underp, JumpLabel)) {
             return VN_AS(underp, JumpLabel);
@@ -175,7 +175,7 @@ class LinkJumpVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeBlock* nodep) override {
-        UINFO(8, "  " << nodep << endl);
+        UINFO(8, "  " << nodep);
         VL_RESTORER(m_inFork);
         VL_RESTORER(m_unrollFull);
         m_blockStack.push_back(nodep);
@@ -336,11 +336,11 @@ class LinkJumpVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstDisable* nodep) override {
-        UINFO(8, "   DISABLE " << nodep << endl);
+        UINFO(8, "   DISABLE " << nodep);
         iterateChildren(nodep);
         AstNodeBlock* blockp = nullptr;
         for (AstNodeBlock* const stackp : vlstd::reverse_view(m_blockStack)) {
-            UINFO(9, "    UNDERBLK  " << stackp << endl);
+            UINFO(9, "    UNDERBLK  " << stackp);
             if (stackp->name() == nodep->name()) {
                 blockp = stackp;
                 break;
@@ -381,7 +381,7 @@ public:
 // Task class functions
 
 void V3LinkJump::linkJump(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { LinkJumpVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linkjump", 0, dumpTreeEitherLevel() >= 3);
 }

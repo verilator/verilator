@@ -40,7 +40,7 @@ class ClassVisitor final : public VNVisitor {
     const VNUser1InUse m_inuser1;
 
     // MEMBERS
-    string m_prefix;  // String prefix to add to name based on hier
+    string m_prefix;  // String prefix to add to class name based on hier
     V3UniqueNames m_names;  // For unique naming of structs and unions
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeModule* m_classPackagep = nullptr;  // Package moving into
@@ -93,7 +93,7 @@ class ClassVisitor final : public VNVisitor {
         // Make containing package
         // Note origName is the same as the class origName so errors look correct
         AstClassPackage* const packagep
-            = new AstClassPackage{nodep->fileline(), nodep->origName()};
+            = new AstClassPackage{nodep->fileline(), nodep->origName(), nodep->libname()};
         packagep->name(nodep->name() + "__Vclpkg");
         nodep->editCountInc();
         nodep->classOrPackagep(packagep);
@@ -138,6 +138,7 @@ class ClassVisitor final : public VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         // Visit for NodeModules that are not AstClass (AstClass is-a AstNodeModule)
+        // Classes are always under a Package (perhaps $unit) or a module
         VL_RESTORER(m_prefix);
         VL_RESTORER(m_modp);
         m_modp = nodep;
@@ -243,7 +244,7 @@ public:
         for (auto moved : m_toScopeMoves) {
             AstNode* const nodep = moved.first;
             AstScope* const scopep = moved.second;
-            UINFO(9, "moving " << nodep << " to " << scopep << endl);
+            UINFO(9, "moving " << nodep << " to " << scopep);
             if (VN_IS(nodep, NodeFTask)) {
                 scopep->addBlocksp(nodep->unlinkFrBack());
             } else if (VN_IS(nodep, Var)) {
@@ -261,7 +262,7 @@ public:
         for (auto moved : m_toPackageMoves) {
             AstNode* const nodep = moved.first;
             AstNodeModule* const modp = moved.second;
-            UINFO(9, "moving " << nodep << " to " << modp << endl);
+            UINFO(9, "moving " << nodep << " to " << modp);
             nodep->unlinkFrBack();
             modp->addStmtsp(nodep);
         }
@@ -294,7 +295,7 @@ public:
 // Class class functions
 
 void V3Class::classAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { ClassVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("class", 0, dumpTreeEitherLevel() >= 3);
 }

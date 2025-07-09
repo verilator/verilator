@@ -228,7 +228,7 @@ void V3Stats::infoHeader(std::ofstream& os, const string& prefix) {
 }
 
 void V3Stats::statsReport() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
 
     // Open stats file
     const string filename

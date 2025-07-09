@@ -3,6 +3,7 @@ under the Developer Certificate of Origin (https://developercertificate.org/).
 
 Please see the Verilator manual for 200+ additional contributors. Thanks to all.
 
+404allen404
 Adam Bagley
 Adrian Sampson
 Adrien Le Masle
@@ -11,7 +12,6 @@ Aidan McNay
 Aleksander Kiryk
 Alex Chadwick
 Alex Solomatnikov
-Àlex Torregrosa
 Aliaksei Chapyzhenka
 Ameya Vikram Singh
 Andrea Calabrese
@@ -37,14 +37,15 @@ Chykon
 Conor McCullough
 Dan Petrisko
 Daniel Bates
+Dave Sargeant
 David Horton
 David Ledger
 David Metz
-Dave Sargeant
 David Stanford
 David Turner
 Dercury
 Diego Roux
+Dominick Grochowina
 Don Williamson
 Drew Ranck
 Drew Taussig
@@ -54,14 +55,13 @@ Eric Müller
 Eric Rippey
 Ethan Sifferman
 Eyck Jentzsch
-Furqan Nadir
 Fabian Keßler
 Fan Shupei
-february cozzocrea
 Felix Neumärker
 Felix Yan
 Frans Skarman
 Fuad Ismail
+Furqan Nadir
 G-A. Kamendje
 Garrett Smith
 Geza Lore
@@ -69,12 +69,12 @@ Gianfranco Costamagna
 Gijs Burghoorn
 Gilberto Abram
 Glen Gibb
-Gökçe Aydos
 Graham Rushton
 Greg Davill
 Guokai Chen
 Gus Smith
 Gustav Svensk
+Gökçe Aydos
 Han Qi
 Harald Heckmann
 Hennadii Chernyshchyk
@@ -83,7 +83,7 @@ Huang Rui
 Huanghuang Zhou
 HungMingWu
 HyungKi Jeong
-Ícaro Lima
+Igor Zaworski
 Ilya Barkov
 Iru Cai
 Ivan Vnučec
@@ -97,16 +97,17 @@ James Shi
 Jamey Hicks
 Jamie Iles
 Jan Van Winkel
-Jiangjie Weng
 Jean Berniolles
 Jeremy Bennett
 Jesse Taube
 Jevin Sweval
 Jiacheng Qian
 Jiamin Zhu
-Jitesh Nayak
+Jiangjie Weng
 Jinyan Xu
+Jitesh Nayak
 Jiuyang Liu
+Joel Bodenmann
 Joey Liu
 John Coiner
 John Demme
@@ -157,8 +158,8 @@ Mateusz Gancarz
 Matthew Ballance
 Michael Bikovitsky
 Michael Killough
-Michaël Lefebvre
 Michal Czyz
+Michaël Lefebvre
 Mike Popoloski
 Miodrag Milanović
 Mladen Slijepcevic
@@ -180,9 +181,11 @@ Paul Wright
 Pawel Jewstafjew
 Pawel Sagan
 Pengcheng Xu
+Peter Birch
 Peter Debacker
 Peter Horvath
 Peter Monsson
+Petr Nohavica
 Philip Axer
 Philipp Wagner
 Pierre-Henri Horrein
@@ -206,29 +209,30 @@ Sean Cross
 Sebastien Van Cauwenberghe
 Sergi Granell
 Seth Pellegrino
+Shou-Li Hsu
 Srinivasan Venkataramanan
 Stefan Wallentowitz
 Stephen Henry
 Steven Hugg
-sumpster
 Szymon Gizler
 Sören Tempel
 Teng Huang
-Tom Manner
 Tim Hutt
 Tim Snyder
+Tobias Jensen
 Tobias Rosenkranz
 Tobias Wölfel
 Todd Strader
+Tom Manner
 Tomasz Gorochowik
 Topa Topino
 Toru Niina
 Trung Nguyen
 Tudor Timi
 Tymoteusz Blazejczyk
+Udaya Raj Subedi
 Udi Finkelstein
 Unai Martinez-Corral
-Udaya Raj Subedi
 Valentin Atepalikhin
 Varun Koyyalagunta
 Vassilis Papaefstathiou
@@ -249,9 +253,11 @@ Yuri Victorovich
 Yutetsu TAKATSUKASA
 Yves Mathieu
 Zhanglei Wang
+Zhen Yan
 Zhou Shen
 Zhouyi Shen
 Zixi Li
-أحمد المحمودي
-404allen404
-Tobias Jensen
+february cozzocrea
+sumpster
+Àlex Torregrosa
+Ícaro Lima

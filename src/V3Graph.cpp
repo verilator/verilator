@@ -108,14 +108,11 @@ template V3GraphEdge* V3GraphVertex::findConnectingEdgep<GraphWay::REVERSE>(V3Gr
 void V3GraphVertex::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
     std::ostringstream nsstr;
     nsstr << str.str();
-    if (debug()) {
-        nsstr << endl;
-        nsstr << "-vertex: " << this << endl;
-    }
+    if (debug()) nsstr << "\n-vertex: " << this << '\n';
     if (FileLine* const flp = fileline()) {
         flp->v3errorEnd(nsstr);
     } else {
-        V3Error::v3errorEnd(nsstr);
+        V3Error::v3errorEnd(nsstr, "", nullptr);
     }
 }
 void V3GraphVertex::v3errorEndFatal(std::ostringstream& str) const
@@ -233,13 +230,16 @@ void V3Graph::clearColors() {
 //======================================================================
 // Dumping
 
-void V3Graph::loopsMessageCb(V3GraphVertex* vertexp) {
-    vertexp->v3fatalSrc("Loops detected in graph: " << vertexp);
+void V3Graph::loopsMessageCb(V3GraphVertex* vertexp, V3EdgeFuncP edgeFuncp) {
+    vertexp->v3fatalSrc("Loops detected in graph: " << vertexp << "\n"
+                                                    << reportLoops(edgeFuncp, vertexp));
 }
-
-void V3Graph::loopsVertexCb(V3GraphVertex* vertexp) {
+string V3Graph::loopsVertexCb(V3GraphVertex* vertexp) {
     // Needed here as V3GraphVertex<< isn't defined until later in header
-    if (debug()) std::cerr << "-Info-Loop: " << cvtToHex(vertexp) << " " << vertexp << endl;
+    if (debug())
+        return "-Info-Loop: "s + cvtToHex(vertexp) + ' ' + cvtToStr(vertexp) + '\n';
+    else
+        return "";
 }
 
 void V3Graph::dump(std::ostream& os) const {

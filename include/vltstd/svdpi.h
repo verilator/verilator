@@ -367,28 +367,28 @@ XXTERN int svIsDisabledState( void );
  */
 XXTERN void svAckDisabledState( void );
 
-/*                                                                                                         Mantis 5713/D9
+/*
  * Retrieve the current simulation time, scaled to the time unit of the scope.
-* If scope is NULL, then time is scaled to the simulation time unit.
-* It is an error to call svGetTime() with an invalid svScope.
-* This function returns -1 for all error cases, 0 upon success.
-*/
+ * If scope is NULL, then time is scaled to the simulation time unit.
+ * It is an error to call svGetTime() with an invalid svScope.
+ * This function returns -1 for all error cases, 0 upon success.
+ */
 XXTERN int svGetTime(const svScope scope, svTimeVal* time);
 
 /*
  * Retrieve the time unit for scope.
  * If scope is NULL, then simulation time unit is retrieved.
-* It is an error to call svGetTimeUnit() with an invalid svScope.
-* This function returns -1 for all error cases, 0 upon success.
-*/
+ * It is an error to call svGetTimeUnit() with an invalid svScope.
+ * This function returns -1 for all error cases, 0 upon success.
+ */
 XXTERN int svGetTimeUnit(const svScope scope, int32_t* time_unit);
 
 /*
  * Retrieve the time precision for scope.
  * If scope is NULL, then simulation time unit is retrieved.
-* It is an error to call svGetTimePrecision() with an invalid svScope.
-* This function returns -1 for all error cases, 0 upon success.
-*/
+ * It is an error to call svGetTimePrecision() with an invalid svScope.
+ * This function returns -1 for all error cases, 0 upon success.
+ */
 XXTERN int svGetTimePrecision(const svScope scope, int32_t* time_precision);
 
 

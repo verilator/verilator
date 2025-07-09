@@ -39,11 +39,21 @@ class CMakeEmitter final {
     template <typename T_List>
     static string cmake_list(const T_List& strs) {
         string s;
-        for (auto it = strs.begin(); it != strs.end(); ++it) {
+        for (auto& itr : strs) {
+            if (!s.empty()) s += ' ';
             s += '"';
-            s += V3OutFormatter::quoteNameControls(*it);
+            s += V3OutFormatter::quoteNameControls(itr);
             s += '"';
-            if (it != strs.end()) s += ' ';
+        }
+        return s;
+    }
+    static string cmake_list(const VFileLibList& strs) {
+        string s;
+        for (auto& itr : strs) {
+            if (!s.empty()) s += ' ';
+            s += '"';
+            s += V3OutFormatter::quoteNameControls(itr.filename());
+            s += '"';
         }
         return s;
     }
@@ -193,8 +203,8 @@ class CMakeEmitter final {
                 *of << " ";
                 const string vFile = hblockp->vFileIfNecessary();
                 if (!vFile.empty()) *of << vFile << " ";
-                const V3StringList& vFiles = v3Global.opt.vFiles();
-                for (const string& i : vFiles) *of << V3Os::filenameRealPath(i) << " ";
+                for (const auto& i : v3Global.opt.vFiles())
+                    *of << V3Os::filenameRealPath(i.filename()) << " ";
                 *of << " VERILATOR_ARGS ";
                 *of << "-f " << hblockp->commandArgsFilename(true)
                     << " -CFLAGS -fPIC"  // hierarchical block will be static, but may be linked
@@ -221,6 +231,6 @@ public:
 };
 
 void V3EmitCMake::emit() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     const CMakeEmitter emitter;
 }

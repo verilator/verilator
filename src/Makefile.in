@@ -30,7 +30,7 @@ debug: dbg
 optimize: opt
 
 ifneq ($(words $(CURDIR)),1)
- $(error Unsupported: GNU Make cannot build in directories containing spaces, build elsewhere: '$(CURDIR)')
+  $(error Unsupported: GNU Make cannot build in directories containing spaces, build elsewhere: '$(CURDIR)')
 endif
 
 UNDER_GIT = $(wildcard ${srcdir}/../.git/logs/HEAD)
@@ -50,9 +50,9 @@ else
 endif
 
 ifneq ($(BEAR),)
-BEAR_OBJ_OPT := $(BEAR) --append --output obj_dbg/compile_commands.json --
+  BEAR_OBJ_OPT := $(BEAR) --append --output obj_dbg/compile_commands.json --
 else
-BEAR_OBJ_OPT :=
+  BEAR_OBJ_OPT :=
 endif
 
 #*********************************************************************
@@ -70,11 +70,11 @@ obj_dbg:
 
 opt: ../bin/verilator_bin$(EXEEXT)
 ifeq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... One build
-../bin/verilator_bin$(EXEEXT): ../bin/verilator_bin_dbg$(EXEEXT)
+  ../bin/verilator_bin$(EXEEXT): ../bin/verilator_bin_dbg$(EXEEXT)
 	-cp -p $< $@.tmp
 	-mv -f $@.tmp $@
 else
-../bin/verilator_bin$(EXEEXT): obj_opt ../bin prefiles
+  ../bin/verilator_bin$(EXEEXT): obj_opt ../bin prefiles
 	$(MAKE) -C obj_opt -j 1  TGT=../$@ -f ../Makefile_obj serial
 	$(MAKE) -C obj_opt       TGT=../$@ -f ../Makefile_obj
 endif
@@ -89,9 +89,9 @@ dbg: ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj
 
 ifneq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... don't rebuild each commit
- ifneq ($(UNDER_GIT),)  # If local git tree... else don't burden users
-GIT_CHANGE_DEP = ${srcdir}/../.git/logs/HEAD
- endif
+  ifneq ($(UNDER_GIT),)  # If local git tree... else don't burden users
+    GIT_CHANGE_DEP = ${srcdir}/../.git/logs/HEAD
+  endif
 endif
 
 prefiles::

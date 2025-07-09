@@ -136,7 +136,7 @@ class V3PreExpr final {
     static void selfTestOne(const string& expr, bool expect) {
         // This hacky self-test parser just looks at first character of
         // operator, and requires space separation of operators/values
-        UINFO(9, "V3PreExpr selfTestOne " << expr << endl);
+        UINFO(9, "V3PreExpr selfTestOne " << expr);
         FileLine* const flp = nullptr;
         V3PreExpr parser;
         parser.reset(flp);
@@ -166,11 +166,11 @@ class V3PreExpr final {
 
     // METHODS
     void pushOp(const V3PreExprToken& token) {
-        // UINFO(9, "  pushOp " << token.ascii() << endl);
+        // UINFO(9, "  pushOp " << token.ascii());
         m_ops.push_back(token);
     }
     void pushValue(const V3PreExprToken& token) {
-        // UINFO(9, "  pushValue " << token.ascii() << endl);
+        // UINFO(9, "  pushValue " << token.ascii());
         m_values.push_back(token);
     }
     V3PreExprToken popValue() {
@@ -180,13 +180,13 @@ class V3PreExpr final {
         }
         const V3PreExprToken tok = m_values.back();
         m_values.pop_back();
-        // UINFO(9, "  popValue " << tok.ascii() << endl;
+        // UINFO(9, "  popValue " << tok.ascii());
         return tok;
     }
     void reduce() {
         UASSERT(!m_ops.empty(), "lost op stack beginning END");
         V3PreExprToken tok = m_ops.back();
-        // UINFO(9, "Reduce " << tok.ascii() << endl);
+        // UINFO(9, "Reduce " << tok.ascii());
         m_ops.pop_back();
         switch (tok.token()) {
         case V3PreExprToken::KET: {
@@ -241,7 +241,7 @@ class V3PreExpr final {
         while (!m_inputs.empty()) {
             V3PreExprToken tok = m_inputs.front();
             m_inputs.pop_front();
-            UINFO(9, "input read " << tok.ascii() << endl);
+            UINFO(9, "input read " << tok.ascii());
             if (tok.isValue()) {
                 pushValue(tok);
                 continue;
@@ -251,7 +251,7 @@ class V3PreExpr final {
             V3PreExprToken topTok = m_ops.back();
             auto action = parseTable[topTok.token()][tok.token()];
             UINFO(9, "pop action " << actionAscii(action) << " from parseTable[" << topTok.ascii()
-                                   << "][" << tok.ascii() << "]\n");
+                                   << "][" << tok.ascii() << "]");
             switch (action) {
             case RR:  // Reduce
                 reduce();
@@ -279,7 +279,7 @@ public:
     }
     void pushInput(const V3PreExprToken& token) {
         if (!m_firstFileline) m_firstFileline = token.fileline();
-        UINFO(9, "pushInput " << token.ascii() << endl);
+        UINFO(9, "pushInput " << token.ascii());
         m_inputs.push_back(token);
     }
     bool result() {

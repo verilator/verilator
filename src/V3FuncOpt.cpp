@@ -110,7 +110,7 @@ class BalanceConcatTree final {
 
     // Returns replacement node, or nullptr if no change
     static AstConcat* balance(AstConcat* const rootp) {
-        UINFO(9, "balanceConcat " << rootp << "\n");
+        UINFO(9, "balanceConcat " << rootp);
         // Gather all input vertices of the tree
         const std::vector<AstNodeExpr*> exprps = gatherTerms(rootp);
         // Don't bother with trivial trees
@@ -219,7 +219,7 @@ class FuncOptVisitor final : public VNVisitor {
     // Split wide assignments with a wide concatenation on the RHS.
     // Returns true if 'nodep' was deleted
     bool splitConcat(AstNodeAssign* nodep) {
-        UINFO(9, "splitConcat " << nodep << "\n");
+        UINFO(9, "splitConcat " << nodep);
         // Only care about concatenations on the right
         AstConcat* const rhsp = VN_CAST(nodep->rhsp(), Concat);
         if (!rhsp) return false;
@@ -253,7 +253,7 @@ class FuncOptVisitor final : public VNVisitor {
         if (!nodep->user1() && readsLhs(nodep)) return false;
 
         // Ok, actually split it now
-        UINFO(5, "splitConcat optimizing " << nodep << "\n");
+        UINFO(5, "splitConcat optimizing " << nodep);
         ++m_concatSplits;
         // The 2 parts and their offsets
         AstNodeExpr* const rrp = rhsp->rhsp()->unlinkFrBack();
@@ -291,7 +291,7 @@ class FuncOptVisitor final : public VNVisitor {
     void visit(AstConcat* nodep) override {
         if (v3Global.opt.fFuncBalanceCat() && !nodep->user1() && !VN_IS(nodep->backp(), Concat)) {
             if (AstConcat* const newp = BalanceConcatTree::apply(nodep)) {
-                UINFO(5, "balanceConcat optimizing " << nodep << "\n");
+                UINFO(5, "balanceConcat optimizing " << nodep);
                 ++m_balancedConcats;
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -319,7 +319,7 @@ public:
 //######################################################################
 
 void V3FuncOpt::funcOptAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     {
         const VNUser1InUse user1InUse;
         V3ThreadScope threadScope;

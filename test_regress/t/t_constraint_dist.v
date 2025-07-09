@@ -28,7 +28,7 @@ class C;
    int arr[3] = '{5, 6, 7};
    constraint distrib {
       x dist { [1:3] := 0, [5:6], [9:15] :/ 0 };
-      y dist { [1:3] := 0, 5, 6 := 8, [9:15] :/ 0 };
+      y dist { [1:3] := 0, 5, 6 := 8, [9:15] :/0 };  // /0 intentional to check yP_COLONDIV
       x < 20;
    };
    constraint distinside {
