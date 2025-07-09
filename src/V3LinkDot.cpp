@@ -4419,6 +4419,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp());
                 if (!VN_IS(nodep->classOrPackagep(), Class)
                     && !VN_IS(nodep->classOrPackagep(), Package)) {
+                    if (m_statep->forPrimary()) {
+                        // It may be a type that comes from parameter class that is not
+                        // instantioned yet
+                        iterate(cpackagep);
+                        return;
+                    }
                     // Likely impossible, as error thrown earlier
                     cpackagerefp->v3error(  // LCOV_EXCL_LINE
                         "'::' expected to reference a class/package but referenced '"
