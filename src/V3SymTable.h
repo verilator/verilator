@@ -158,15 +158,20 @@ public:
                                                        + " n=" + cvtToHex(it->second->nodep())));
         if (it != m_idNameMap.end()) {
             if (!classOrPackage) return it->second;
-            if (VN_IS(it->second->nodep(), Class) || VN_IS(it->second->nodep(), Package))
+            if (VN_IS(it->second->nodep(), Class) || VN_IS(it->second->nodep(), Package)) {
                 return it->second;
+            }
             const AstRefDType* refDTypep = nullptr;
             if (const AstTypedef* const typedefp = VN_CAST(it->second->nodep(), Typedef)) {
                 if (VN_IS(typedefp->childDTypep(), ClassRefDType)) { return it->second; }
                 if (const AstRefDType* const refp = VN_CAST(typedefp->childDTypep(), RefDType)) {
                     refDTypep = refp;
                 } else if (!typedefp->childDTypep()) {
-                    // When still unknown - returned because it may be a class
+                    // When still unknown - return because it may be a class **
+                    // ** - findIdFlat is often called during stages when types
+                    // are not fully resolved and by not returning types that
+                    // may be a classes (but it is still unknown) we are risking
+                    // not compiling a valid code
                     return it->second;
                 }
             } else if (const AstParamTypeDType* const paramTypep
@@ -179,21 +184,14 @@ public:
                                || VN_IS(requireDTypep->lhsp(), BasicDType)
                                || VN_IS(requireDTypep->lhsp(), ClassRefDType)) {
                         return it->second;
-                    } else if (!requireDTypep->lhsp()) {
-                        // When still unknown - returned because it may be a class
-                        return it->second;
                     }
-                } else if (!paramTypep->childDTypep()) {
-                    // When still unknown - returned because it may be a class
-                    return it->second;
                 }
             }
-            // When it is unknown at what type is referenced by AstRefDType it is returned because
-            // it may be a class
             // TODO: this should be handled properly - case when it is known what type is
-            // referenced by AstRefDType. Right now it is unnecessary since everything works as
-            // intended
+            // referenced by AstRefDType (refDTypep->typeofp() is not null
+            // or refDTypep->classOrPackageOpp() is not null)
             if (refDTypep && !refDTypep->typeofp() && !refDTypep->classOrPackageOpp()) {
+                // When still unknown - return because it may be a class **
                 return it->second;
             }
         }
