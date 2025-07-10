@@ -40,6 +40,7 @@ with open(rdFile, 'r', encoding="utf8") as rdFh, \
      open(pdeclFile, 'w', encoding="utf8") as pdeclFh, \
      open(checkFile, 'w', encoding="utf8") as checkFh:
     for line in rdFh:
+        line = line.split("//")[0]
         m = re.search(r'^\s*.*`signal\((\w+),', line)
         if not m:
             continue
