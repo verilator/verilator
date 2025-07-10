@@ -6786,7 +6786,6 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
                           newp->isConstructor(true);
                           newp->dtypep($1->dtypep());
                           newp->addStmtsp($3);
-
                           $1->addMembersp(newp);
                           $$ = $1;
                           GRAMMARP->endLabel($<fl>9, $1, $9); }
