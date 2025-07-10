@@ -344,6 +344,12 @@ class LinkJumpVisitor final : public VNVisitor {
         }
         return nullptr;
     }
+    bool existsBlockAbove(const std::string& name) const {
+        for (AstNodeBlock* const stackp : vlstd::reverse_view(m_blockStack)) {
+            if (stackp->name() == name) return true;
+        }
+        return false;
+    }
     void visit(AstDisable* nodep) override {
         UINFO(8, "   DISABLE " << nodep);
         AstNode* const targetp = nodep->targetp();
@@ -352,6 +358,9 @@ class LinkJumpVisitor final : public VNVisitor {
         if (VN_IS(targetp, Task)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling task by name");
         } else if (AstFork* const forkp = VN_CAST(targetp, Fork)) {
+            if (existsBlockAbove(forkp->name())) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork being inside it");
+            }
             AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
             AstClass* const processClassp
                 = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
@@ -397,15 +406,7 @@ class LinkJumpVisitor final : public VNVisitor {
             nodep->addNextHere(new AstBegin{fl, "", foreachp, false, true});
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
             const std::string targetName = beginp->name();
-            bool aboveBlock = false;
-            for (AstNodeBlock* const stackp : vlstd::reverse_view(m_blockStack)) {
-                UINFO(9, "    UNDERBLK  " << stackp);
-                if (stackp->name() == targetName) {
-                    aboveBlock = true;
-                    break;
-                }
-            }
-            if (aboveBlock) {
+            if (existsBlockAbove(targetName)) {
                 if (beginp->user3()) {
                     nodep->v3warn(E_UNSUPPORTED,
                                   "Unsupported: disabling block that contains a fork");
