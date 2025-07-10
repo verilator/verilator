@@ -6209,10 +6209,12 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
             hasNonNullArgs = true;
-            
+
             if (VN_IS(exprp, MemberSel)) {
-                argp->v3warn(CONSTRAINTIGN, "std::randomize (" << exprp->prettyTypeName() << ") is non-LRM compliant" 
-                    << " but supported for compatibility");
+                argp->v3warn(CONSTRAINTIGN, "std::randomize ("
+                                                << exprp->prettyTypeName()
+                                                << ") is non-LRM compliant"
+                                                << " but supported for compatibility");
             }
             while (exprp) {
                 if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
@@ -6263,7 +6265,7 @@ class WidthVisitor final : public VNVisitor {
                                            adtypep->findBitDType(), adtypep);
                 for (const AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp())
                     userIterateAndNext(VN_AS(argp, Arg)->exprp(), WidthVP{SELF, BOTH}.p());
-                handleStdRandomizeArgs(nodep); // Provided args should be in current scope
+                handleStdRandomizeArgs(nodep);  // Provided args should be in current scope
                 if (withp) {
                     // TODO: std::randomize()with{}
                     nodep->v3warn(CONSTRAINTIGN, "with ignored (unsupported)");

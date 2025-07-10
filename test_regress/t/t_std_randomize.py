@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+
 test.scenarios('simulator')
 
 test.lint(verilator_flags2=["--exe --main --timing"])
