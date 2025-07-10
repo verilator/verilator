@@ -209,9 +209,9 @@ class TraceDriver final : public DfgVisitor {
     // eventually fails) can be cleaned up at the end.
     template <typename Vertex>
     Vertex* make(FileLine* flp, uint32_t width) {
-        static_assert(std::is_base_of_v<DfgVertex, Vertex>  //
-                          && !std::is_base_of_v<DfgVertexVar, Vertex>  //
-                          && !std::is_same_v<DfgConst, DfgVertex>,
+        static_assert(std::is_base_of<DfgVertex, Vertex>::value  //
+                          && !std::is_base_of<DfgVertexVar, Vertex>::value  //
+                          && !std::is_same<DfgConst, DfgVertex>::value,
                       "Should only make operation vertices");
         AstNodeDType* const dtypep = DfgVertex::dtypeForWidth(width);
         Vertex* const vtxp = new Vertex{m_dfg, flp, dtypep};
