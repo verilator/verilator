@@ -39,14 +39,30 @@ class ExprCoverageEligibleVisitor final : public VNVisitor {
     // STATE
     bool m_eligible = true;
 
+    static const AstNodeDType* getElemDTypep(const AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        while (true) {
+            if (const AstBracketArrayDType* const adtypep = VN_CAST(dtypep, BracketArrayDType)) {
+                dtypep = adtypep->virtRefDTypep()->skipRefp();
+            } else if (const AstDynArrayDType* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
+                dtypep = adtypep->virtRefDTypep()->skipRefp();
+            } else if (const AstQueueDType* const adtypep = VN_CAST(dtypep, QueueDType)) {
+                dtypep = adtypep->virtRefDTypep()->skipRefp();
+            } else {
+                break;
+            }
+        }
+        return dtypep;
+    }
+
     void visit(AstNodeVarRef* nodep) override {
         AstNodeDType* dtypep = nodep->varp()->dtypep();
-        // Class objecs and references not supported for expression coverage
+        // Class objects and references not supported for expression coverage
         // because the object may not persist until the point at which
         // coverage data is gathered
         // This could be resolved in the future by protecting against dereferrencing
         // null pointers when cloning the expression for expression coverage
-        if (VN_CAST(dtypep, ClassRefDType)) {
+        if (VN_IS(getElemDTypep(dtypep), ClassRefDType)) {
             m_eligible = false;
         } else {
             iterateChildren(nodep);
@@ -858,7 +874,6 @@ class CoverageVisitor final : public VNVisitor {
                             != strs[!term.m_objective].end())
                             impossible = true;
                     }
-
                     if (!redundant) expr.push_back(term);
                 }
                 if (!impossible) m_exprs.push_back(std::move(expr));
