@@ -388,6 +388,10 @@ class ForceReplaceVisitor final : public VNVisitor {
                 FileLine* const flp = nodep->fileline();
                 AstVarRef* const valp = new AstVarRef{flp, valVscp, VAccess::WRITE};
                 AstNodeExpr* rhsp = m_state.getValVscpRhsExpr(valVscp);
+                if(!rhsp) {
+                    flp->v3error("RHS of force/release is not an AstNodeExpr");
+                    break;
+                }
                 rhsp = rhsp->cloneTreePure(false);
 
                 ForceState::markNonReplaceable(valp);
