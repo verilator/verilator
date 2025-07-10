@@ -382,6 +382,19 @@ class LinkJumpVisitor final : public VNVisitor {
                 }
                 beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp);
             }
+            AstVarRef* const queueReadRefp
+                = new AstVarRef{fl, topPkgp, processQueuep, VAccess::READ};
+            AstVar* const queueIterp
+                = new AstVar{fl, VVarType::BLOCKTEMP, "i", nodep->findSigned32DType()};
+            AstStmtExpr* const processKillp = new AstStmtExpr{
+                fl, new AstMethodCall{fl,
+                                      new AstSelBit{fl, queueReadRefp,
+                                                    new AstVarRef{fl, queueIterp, VAccess::READ}},
+                                      "kill", nullptr}};
+            AstForeach* const foreachp = new AstForeach{
+                fl, new AstSelLoopVars{fl, queueReadRefp->cloneTree(false), queueIterp},
+                processKillp};
+            nodep->addNextHere(new AstBegin{fl, "", foreachp, false, true});
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
             const std::string targetName = beginp->name();
             bool aboveBlock = false;
