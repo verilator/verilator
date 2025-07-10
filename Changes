@@ -14,6 +14,7 @@ Verilator 5.039 devel
 **Other:**
 
 * Support disable dotted references (#6154). [Ryszard Rozak, Antmicro Ltd.]
+* Change control file `public_flat_*` and other signal attributes to support __ in names (#6140).
 * Fix class extends dotted error (#6162). [Igor Zaworski]
 * Fix genvar error with `-O0` (#6165). [Max Wipfli]
 

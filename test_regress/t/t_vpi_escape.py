@@ -18,7 +18,7 @@ test.compile(make_top_shell=False,
              sim_time=100,
              iv_flags2=["-g2005-sv -D USE_VPI_NOT_DPI -DWAVES"],
              v_flags2=["+define+USE_VPI_NOT_DPI"],
-             verilator_flags2=["--exe --vpi --no-l2name --public-flat-rw", test.pli_filename])
+             verilator_flags2=["--exe --vpi --no-l2name t/t_vpi_escape.vlt", test.pli_filename])
 
 test.execute(
     # run_env = "VPI_TRACE=" . Cwd::getcwd() . "/" + test.obj_dir + "/" + test.name + "_vpi.log",

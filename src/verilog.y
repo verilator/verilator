@@ -8087,8 +8087,10 @@ vltDModule<strp>:  // --module <arg>
         ;
 
 vltDModuleE<strp>:  // [--module <arg>]
-                /* empty */                             { static string unit = "__024unit"; $$ = &unit; }
-        |       vltDModule                              { $$ = $1; }
+                /* empty */
+                        { static string unit = "$unit"; $$ = &unit; }  // .vlt uses prettyName
+        |       vltDModule
+                        { $$ = $1; }
         ;
 
 vltDScope<strp>:  // --scope <arg>

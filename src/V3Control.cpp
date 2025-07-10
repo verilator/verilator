@@ -276,7 +276,7 @@ public:
         const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
         if (!nodep->unnamed()) {
             for (const string& i : m_coverageOffBlocks) {
-                if (VString::wildmatch(nodep->name(), i)) {
+                if (VString::wildmatch(nodep->prettyOrigOrName(), i)) {
                     nodep->addStmtsp(new AstPragma{nodep->fileline(), pragma});
                 }
             }
@@ -732,7 +732,7 @@ void V3Control::applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep) {
     const string& filename = nodep->fileline()->filename();
     V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
     if (filep) filep->applyBlock(nodep);
-    const string& modname = modulep->name();
+    const string& modname = modulep->prettyOrigOrName();
     V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (modp) modp->applyBlock(nodep);
 }
@@ -744,29 +744,30 @@ void V3Control::applyIgnores(FileLine* filelinep) {
 }
 
 void V3Control::applyModule(AstNodeModule* modulep) {
-    const string& modname = modulep->origName();
+    const string& modname = modulep->prettyOrigOrName();
     V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (modp) modp->apply(modulep);
 }
 
 void V3Control::applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp) {
-    const string& modname = modulep->name();
+    const string& modname = modulep->prettyOrigOrName();
     V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (!modp) return;
-    const V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->name());
+    const V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->prettyOrigOrName());
     if (ftp) ftp->apply(ftaskp);
 }
 
 void V3Control::applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp) {
     V3ControlVar* vp;
-    V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modulep->name());
+    V3ControlModule* const modp
+        = V3ControlResolver::s().modules().resolve(modulep->prettyOrigOrName());
     if (!modp) return;
     if (ftaskp) {
-        V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->name());
+        V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->prettyOrigOrName());
         if (!ftp) return;
-        vp = ftp->vars().resolve(varp->name());
+        vp = ftp->vars().resolve(varp->prettyOrigOrName());
     } else {
-        vp = modp->vars().resolve(varp->name());
+        vp = modp->vars().resolve(varp->prettyOrigOrName());
     }
     if (vp) vp->apply(varp);
 }

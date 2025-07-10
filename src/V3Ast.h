@@ -2222,6 +2222,9 @@ public:
     // ACCESSORS
     virtual string name() const VL_MT_STABLE { return ""; }
     virtual string origName() const { return ""; }
+    string prettyOrigOrName() const {
+        return prettyName(origName().empty() ? name() : origName());
+    }
     virtual void name(const string& name) {
         this->v3fatalSrc("name() called on object without name() method");
     }
