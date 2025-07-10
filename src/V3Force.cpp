@@ -242,9 +242,7 @@ class ForceConvertVisitor final : public VNVisitor {
         transformWritenVarScopes(setValp->lhsp(), [this, rhsp](AstVarScope* vscp) {
             AstVarScope* const valVscp = m_state.getForceComponents(vscp).m_valVscp;
             m_state.setValVscpRhsExpr(valVscp, rhsp->cloneTreePure(false));
-            rhsp->foreach([valVscp](AstVarRef* refp) {
-                ForceState::setValVscp(refp, valVscp);
-            });
+            rhsp->foreach([valVscp](AstVarRef* refp) { ForceState::setValVscp(refp, valVscp); });
             return valVscp;
         });
 
@@ -277,12 +275,13 @@ class ForceConvertVisitor final : public VNVisitor {
             return m_state.getForceComponents(vscp).m_enVscp;
         });
 
-        // IEEE 1800-2023 10.6.2: When released, then if the variable is not driven by a continuous assignment and does not
-        // currently have an active procedural continuous assignment, the variable shall not immediately
-        // change value and shall maintain its current value until the next procedural assignment to the variable is
-        // executed. Releasing a variable that is driven by a continuous assignment or currently has an active assign
-        // procedural continuous assignment shall reestablish that assignment and schedule a reevaluation in the
-        // continuous assignment's scheduling region.
+        // IEEE 1800-2023 10.6.2: When released, then if the variable is not driven by a continuous
+        // assignment and does not currently have an active procedural continuous assignment, the
+        // variable shall not immediately change value and shall maintain its current value until
+        // the next procedural assignment to the variable is executed. Releasing a variable that is
+        // driven by a continuous assignment or currently has an active assign procedural
+        // continuous assignment shall reestablish that assignment and schedule a reevaluation in
+        // the continuous assignment's scheduling region.
         AstAssign* const resetRdp
             = new AstAssign{flp, lhsp->cloneTreePure(false), lhsp->unlinkFrBack()};
         // Replace write refs on the LHS
@@ -388,16 +387,14 @@ class ForceReplaceVisitor final : public VNVisitor {
                 FileLine* const flp = nodep->fileline();
                 AstVarRef* const valp = new AstVarRef{flp, valVscp, VAccess::WRITE};
                 AstNodeExpr* rhsp = m_state.getValVscpRhsExpr(valVscp);
-                if(!rhsp) {
+                if (!rhsp) {
                     flp->v3error("RHS of force/release is not an AstNodeExpr");
                     break;
                 }
                 rhsp = rhsp->cloneTreePure(false);
 
                 ForceState::markNonReplaceable(valp);
-                rhsp->foreach([](AstVarRef* refp) {
-                    ForceState::markNonReplaceable(refp);
-                });
+                rhsp->foreach([](AstVarRef* refp) { ForceState::markNonReplaceable(refp); });
 
                 m_stmtp->addNextHere(new AstAssign{flp, valp, rhsp});
             }
