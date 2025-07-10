@@ -7529,10 +7529,9 @@ class_item<nodep>:                      // ==IEEE: class_item
         |       timeunits_declaration                   { $$ = $1; }
         |       covergroup_declaration
                         {
-                                string cgName = $1->name();
-                                $1->name("__vlAnonCG_"+cgName);
-
-                                AstVar *cgInstance = new AstVar($<fl>1, VVarType::VAR, cgName, VFlagChildDType{}, new AstRefDType($<fl>1, $1->name()));
+                                const string cgName = $1->name();
+                                $1->name("__vlAnonCG_" + cgName);
+                                AstVar const *cgInstance = new AstVar($<fl>1, VVarType::VAR, cgName, VFlagChildDType{}, new AstRefDType($<fl>1, $1->name()));
                                 $$ = addNextNull($1, cgInstance);
                          }
         //                      // local_parameter_declaration under parameter_declaration
