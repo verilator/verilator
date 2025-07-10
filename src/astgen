@@ -1219,6 +1219,29 @@ def write_dfg_auto_classes(filename):
         fh.write("\n")
 
 
+def write_dfg_clone_cases(filename):
+    with open_file(filename) as fh:
+
+        def emitBlock(pattern, **fmt):
+            fh.write(textwrap.dedent(pattern).format(**fmt))
+
+        for node in DfgVertexList:
+            # Only generate code for automatically derived leaf nodes
+            if (node.file is not None) or not node.isLeaf:
+                continue
+
+            emitBlock('''\
+                      case VDfgType::at{t}: {{
+                        Dfg{t}* const cp = new Dfg{t}{{*clonep, vtx.fileline(), vtx.dtypep()}};
+                        vtxp2clonep.emplace(&vtx, cp);
+                        break;
+                      }}
+                      ''',
+                      t=node.name,
+                      s=node.superClass.name)
+        fh.write("\n")
+
+
 def write_dfg_ast_to_dfg(filename):
     with open_file(filename) as fh:
         for node in DfgVertexList:
@@ -1408,6 +1431,7 @@ if Args.classes:
     write_type_tests("Dfg", DfgVertexList)
     write_dfg_macros("V3Dfg__gen_macros.h")
     write_dfg_auto_classes("V3Dfg__gen_auto_classes.h")
+    write_dfg_clone_cases("V3Dfg__gen_clone_cases.h")
     write_dfg_ast_to_dfg("V3Dfg__gen_ast_to_dfg.h")
     write_dfg_dfg_to_ast("V3Dfg__gen_dfg_to_ast.h")
 

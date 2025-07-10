@@ -1336,6 +1336,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_fDfgPostInline = flag;
         m_fDfgScoped = flag;
     });
+    DECL_OPTION("-fdfg-break-cycles", FOnOff, &m_fDfgBreakCycles);
     DECL_OPTION("-fdfg-peephole", FOnOff, &m_fDfgPeephole);
     DECL_OPTION("-fdfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
         m_fDfgPeepholeDisabled.erase(optp);

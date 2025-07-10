@@ -227,6 +227,7 @@ set(COMMON_SOURCES
     V3Descope.cpp
     V3Dfg.cpp
     V3DfgAstToDfg.cpp
+    V3DfgBreakCycles.cpp
     V3DfgCache.cpp
     V3DfgDecomposition.cpp
     V3DfgDfgToAst.cpp

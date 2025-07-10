@@ -40,6 +40,20 @@ public:
     ~V3DfgBinToOneHotContext() VL_MT_DISABLED;
 };
 
+class V3DfgBreakCyclesContext final {
+    const std::string m_label;  // Label to apply to stats
+
+public:
+    VDouble0 m_nFixed;  // Number of graphs that became acyclic
+    VDouble0 m_nImproved;  // Number of graphs that were imporoved but still cyclic
+    VDouble0 m_nUnchanged;  // Number of graphs that were left unchanged
+    VDouble0 m_nTrivial;  // Number of graphs that were not changed
+    VDouble0 m_nImprovements;  // Number of changes made to graphs
+    explicit V3DfgBreakCyclesContext(const std::string& label)
+        : m_label{label} {}
+    ~V3DfgBreakCyclesContext() VL_MT_DISABLED;
+};
+
 class V3DfgCseContext final {
     const std::string m_label;  // Label to apply to stats
 
@@ -93,6 +107,7 @@ public:
     VDouble0 m_resultEquations;  // Number of result combinational equations
 
     V3DfgBinToOneHotContext m_binToOneHotContext{m_label};
+    V3DfgBreakCyclesContext m_breakCyclesContext{m_label};
     V3DfgCseContext m_cseContext0{m_label + " 1st"};
     V3DfgCseContext m_cseContext1{m_label + " 2nd"};
     V3DfgPeepholeContext m_peepholeContext{m_label};
@@ -119,6 +134,16 @@ DfgGraph* astToDfg(AstModule&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 
 // Same as above, but for the entire netlist, after V3Scope
 DfgGraph* astToDfg(AstNetlist&, V3DfgOptimizationContext&) VL_MT_DISABLED;
+
+// Attempt to make the given cyclic graph into an acyclic, or "less cyclic"
+// equivalent. If the returned pointer is null, then no improvement was
+// possible on the input graph. Otherwise the returned graph is an improvement
+// on the input graph, with at least some cycles eliminated. The returned
+// graph is always independent of the original. If an imporoved graph is
+// returned, then the returned 'bool' flag indicated if the returned graph is
+// acyclic (flag 'true'), or still cyclic (flag 'false').
+std::pair<std::unique_ptr<DfgGraph>, bool> breakCycles(const DfgGraph&,
+                                                       V3DfgOptimizationContext&) VL_MT_DISABLED;
 
 // Optimize the given DfgGraph
 void optimize(DfgGraph&, V3DfgOptimizationContext&) VL_MT_DISABLED;

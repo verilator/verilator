@@ -34,6 +34,131 @@ DfgGraph::~DfgGraph() {
     forEachVertex([](DfgVertex& vtxp) { delete &vtxp; });
 }
 
+std::unique_ptr<DfgGraph> DfgGraph::clone() const {
+    const bool scoped = !modulep();
+
+    DfgGraph* const clonep = new DfgGraph{modulep(), name()};
+
+    // Map from original vertex to clone
+    std::unordered_map<const DfgVertex*, DfgVertex*> vtxp2clonep(size() * 2);
+
+    // Clone constVertices
+    for (const DfgConst& vtx : m_constVertices) {
+        DfgConst* const cp = new DfgConst{*clonep, vtx.fileline(), vtx.num()};
+        vtxp2clonep.emplace(&vtx, cp);
+    }
+    // Clone variable vertices
+    for (const DfgVertexVar& vtx : m_varVertices) {
+        const DfgVertexVar* const vp = vtx.as<DfgVertexVar>();
+        DfgVertexVar* cp = nullptr;
+
+        switch (vtx.type()) {
+        case VDfgType::atVarArray: {
+            if (scoped) {
+                cp = new DfgVarArray{*clonep, vp->varScopep()};
+            } else {
+                cp = new DfgVarArray{*clonep, vp->varp()};
+            }
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
+        case VDfgType::atVarPacked: {
+            if (scoped) {
+                cp = new DfgVarPacked{*clonep, vp->varScopep()};
+            } else {
+                cp = new DfgVarPacked{*clonep, vp->varp()};
+            }
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
+        default: {
+            vtx.v3fatalSrc("Unhandled variable vertex type: " + vtx.typeName());
+            VL_UNREACHABLE;
+            break;
+        }
+        }
+
+        if (vp->hasDfgRefs()) cp->setHasDfgRefs();
+        if (vp->hasModRefs()) cp->setHasModRefs();
+        if (vp->hasExtRefs()) cp->setHasExtRefs();
+    }
+    // Clone operation vertices
+    for (const DfgVertex& vtx : m_opVertices) {
+        switch (vtx.type()) {
+#include "V3Dfg__gen_clone_cases.h"  // From ./astgen
+        case VDfgType::atSel: {
+            DfgSel* const cp = new DfgSel{*clonep, vtx.fileline(), vtx.dtypep()};
+            cp->lsb(vtx.as<DfgSel>()->lsb());
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
+        case VDfgType::atMux: {
+            DfgMux* const cp = new DfgMux{*clonep, vtx.fileline(), vtx.dtypep()};
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
+        default: {
+            vtx.v3fatalSrc("Unhandled operation vertex type: " + vtx.typeName());
+            VL_UNREACHABLE;
+            break;
+        }
+        }
+    }
+    UASSERT(size() == clonep->size(), "Size of clone should be the same");
+
+    // Constants have no inputs
+    // Hook up inputs of cloned variables
+    for (const DfgVertexVar& vtx : m_varVertices) {
+        switch (vtx.type()) {
+        case VDfgType::atVarArray: {
+            const DfgVarArray* const vp = vtx.as<DfgVarArray>();
+            DfgVarArray* const cp = vtxp2clonep.at(vp)->as<DfgVarArray>();
+            vp->forEachSourceEdge([&](const DfgEdge& edge, size_t i) {
+                if (DfgVertex* const srcp = edge.sourcep()) {
+                    cp->addDriver(vp->driverFileLine(i),  //
+                                  vp->driverIndex(i),  //
+                                  vtxp2clonep.at(srcp));
+                }
+            });
+            break;
+        }
+        case VDfgType::atVarPacked: {
+            const DfgVarPacked* const vp = vtx.as<DfgVarPacked>();
+            DfgVarPacked* const cp = vtxp2clonep.at(vp)->as<DfgVarPacked>();
+            vp->forEachSourceEdge([&](const DfgEdge& edge, size_t i) {
+                if (DfgVertex* const srcp = edge.sourcep()) {
+                    cp->addDriver(vp->driverFileLine(i),  //
+                                  vp->driverLsb(i),  //
+                                  vtxp2clonep.at(srcp));
+                }
+            });
+            break;
+        }
+        default: {
+            vtx.v3fatalSrc("Unhandled variable vertex type: " + vtx.typeName());
+            VL_UNREACHABLE;
+            break;
+        }
+        }
+    }
+    // Hook up inputs of cloned operation vertices
+    for (const DfgVertex& vtx : m_opVertices) {
+        DfgVertex* const cp = vtxp2clonep.at(&vtx);
+        // The code below doesn't work for DfgVertexVariadic, but none of the opVertices are such.
+        UASSERT_OBJ(!vtx.is<DfgVertexVariadic>(), &vtx, "DfgVertexVariadic not handled");
+        const auto oSourceEdges = vtx.sourceEdges();
+        auto cSourceEdges = cp->sourceEdges();
+        UASSERT_OBJ(oSourceEdges.second == cSourceEdges.second, &vtx, "Mismatched source count");
+        for (size_t i = 0; i < oSourceEdges.second; ++i) {
+            if (DfgVertex* const srcp = oSourceEdges.first[i].sourcep()) {
+                cSourceEdges.first[i].relinkSource(vtxp2clonep.at(srcp));
+            }
+        }
+    }
+
+    return std::unique_ptr<DfgGraph>{clonep};
+}
+
 void DfgGraph::addGraph(DfgGraph& other) {
     m_size += other.m_size;
     other.m_size = 0;
