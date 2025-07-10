@@ -338,9 +338,9 @@ class LinkJumpVisitor final : public VNVisitor {
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    AstClass* getProcessClass(AstPackage* packagep) {
-        for (AstNode* itemp = packagep->stmtsp(); itemp; itemp = itemp->nextp()) {
-            if (itemp->name() == "process") return VN_AS(itemp, Class);
+    AstNode* getMemberp(AstNodeModule* nodep, const std::string& name) {
+        for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
+            if (itemp->name() == name) return itemp;
         }
         return nullptr;
     }
@@ -353,14 +353,21 @@ class LinkJumpVisitor final : public VNVisitor {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling task by name");
         } else if (AstFork* const forkp = VN_CAST(targetp, Fork)) {
             AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
+            AstClass* const processClassp
+                = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
             AstVar* const processQueuep = new AstVar{
                 fl, VVarType::VAR, m_queueNames.get(forkp->name()), VFlagChildDType{},
-                new AstQueueDType{
-                    fl, VFlagChildDType{},
-                    new AstClassRefDType{fl, getProcessClass(v3Global.rootp()->stdPackagep()),
-                                         nullptr},
-                    nullptr}};
+                new AstQueueDType{fl, VFlagChildDType{},
+                                  new AstClassRefDType{fl, processClassp, nullptr}, nullptr}};
+            processQueuep->isStatic(true);
             topPkgp->addStmtsp(processQueuep);
+            AstVarRef* const queueRefp = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
+            AstFunc* const selfMethodp = VN_AS(getMemberp(processClassp, "self"), Func);
+            AstFuncRef* const processSelfp = new AstFuncRef{fl, selfMethodp, nullptr};
+            processSelfp->classOrPackagep(processClassp);
+            AstStmtExpr* pushCurrentProcessp
+                = new AstStmtExpr{fl, new AstMethodCall{fl, queueRefp, "push_back",
+                                                        new AstArg{fl, "", processSelfp}}};
             for (AstNode* forkItemp = forkp->stmtsp(); forkItemp; forkItemp = forkItemp->nextp()) {
                 AstBegin* beginp = VN_CAST(forkItemp, Begin);
                 if (!beginp) {
@@ -370,6 +377,10 @@ class LinkJumpVisitor final : public VNVisitor {
                     // In order to continue the iteration
                     forkItemp = beginp;
                 }
+                if (pushCurrentProcessp->backp()) {
+                    pushCurrentProcessp = pushCurrentProcessp->cloneTree(false);
+                }
+                beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp);
             }
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
             const std::string targetName = beginp->name();
