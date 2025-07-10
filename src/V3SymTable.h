@@ -166,13 +166,6 @@ public:
                 if (VN_IS(typedefp->childDTypep(), ClassRefDType)) { return it->second; }
                 if (const AstRefDType* const refp = VN_CAST(typedefp->childDTypep(), RefDType)) {
                     refDTypep = refp;
-                } else if (!typedefp->childDTypep()) {
-                    // When still unknown - return because it may be a class **
-                    // ** - findIdFlat is often called during stages when types
-                    // are not fully resolved and by not returning types that
-                    // may be a classes (but it is still unknown) we are risking
-                    // not compiling a valid code
-                    return it->second;
                 }
             } else if (const AstParamTypeDType* const paramTypep
                        = VN_CAST(it->second->nodep(), ParamTypeDType)) {
@@ -191,7 +184,11 @@ public:
             // referenced by AstRefDType (refDTypep->typeofp() is not null
             // or refDTypep->classOrPackageOpp() is not null)
             if (refDTypep && !refDTypep->typeofp() && !refDTypep->classOrPackageOpp()) {
-                // When still unknown - return because it may be a class **
+                // When still unknown - return because it may be a class
+                // findIdFlat is often called during stages when types
+                // are not fully resolved and by not returning types that
+                // may be a classes (but it is still unknown) we are risking
+                // not compiling a valid code
                 return it->second;
             }
         }
