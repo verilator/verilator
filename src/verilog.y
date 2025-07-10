@@ -6791,8 +6791,7 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
                           GRAMMARP->endLabel($<fl>9, $1, $9); }
         ;
 
-// IEEE 1800-2023 added:
-covergroup_extendsE<fl>:
+covergroup_extendsE<fl>:  // IEEE: Part of covergroup_declaration
                 /* empty */     { $$ = nullptr; }
         |       yEXTENDS        { $$ = $1; }
         ;
