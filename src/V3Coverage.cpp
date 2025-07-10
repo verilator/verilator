@@ -54,7 +54,7 @@ class ExprCoverageEligibleVisitor final : public VNVisitor {
     }
 
     void visit(AstNode* nodep) override {
-        if (!nodep->isExprCoverageEligible()) {
+        if (!nodep->isExprCoverageEligible() || !nodep->isPure()) {
             m_eligible = false;
         } else {
             iterateChildren(nodep);
@@ -63,7 +63,7 @@ class ExprCoverageEligibleVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit ExprCoverageEligibleVisitor(AstNode* nodep) { iterateChildren(nodep); }
+    explicit ExprCoverageEligibleVisitor(AstNode* nodep) { iterate(nodep); }
     ~ExprCoverageEligibleVisitor() override = default;
 
     bool eligible() { return m_eligible; }
