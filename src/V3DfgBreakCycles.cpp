@@ -187,7 +187,7 @@ class TraceDriver final : public DfgVisitor {
         };
     };
 
-    // SATE
+    // STATE
     DfgGraph& m_dfg;  // The graph being processed
     // The strongly connected component we are trying to escape
     const uint32_t m_component;
