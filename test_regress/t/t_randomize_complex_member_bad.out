@@ -1,4 +1,4 @@
-%Error: t/t_randomize_complex_member_bad.v:36:28: Class Deep does not contain field named: sc_inst2
+%Error: t/t_randomize_complex_member_bad.v:36:28: Class 'Deep' does not contain field 'sc_inst2'
    36 |     if (cl_inst[1].sc_inst.sc_inst2.sc_inst2[1].randomize() with {field inside {1, 2, 3};} == 0) begin
       |                            ^~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

@@ -2646,23 +2646,22 @@ class LinkDotResolveVisitor final : public VNVisitor {
         m_ds.init(m_curSymp);
         iterateNull(nodep);
     }
-    static const AstNodeDType* getExprDTypep(const AstNodeExpr* selp) {
-        auto getElemDTypep = [](const AstNodeDType* dtypep) {
-            while (true) {
-                if (const AstBracketArrayDType* const bracketArrayp
-                    = VN_CAST(dtypep, BracketArrayDType)) {
-                    dtypep = bracketArrayp->childDTypep();
-                } else if (const AstDynArrayDType* const packArrayDTypep
-                           = VN_CAST(dtypep, DynArrayDType)) {
-                    dtypep = packArrayDTypep->childDTypep();
-                } else if (const AstQueueDType* const queueDTypep = VN_CAST(dtypep, QueueDType)) {
-                    dtypep = queueDTypep->childDTypep();
-                } else {
-                    break;
-                }
+    static const AstNodeDType* getElemDTypep(const AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        while (true) {
+            if (const AstBracketArrayDType* const adtypep = VN_CAST(dtypep, BracketArrayDType)) {
+                dtypep = adtypep->childDTypep()->skipRefp();
+            } else if (const AstDynArrayDType* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
+                dtypep = adtypep->childDTypep()->skipRefp();
+            } else if (const AstQueueDType* const adtypep = VN_CAST(dtypep, QueueDType)) {
+                dtypep = adtypep->childDTypep()->skipRefp();
+            } else {
+                break;
             }
-            return dtypep;
-        };
+        }
+        return dtypep;
+    }
+    static const AstNodeDType* getExprDTypep(const AstNodeExpr* selp) {
         while (const AstNodePreSel* const sp = VN_CAST(selp, NodePreSel)) selp = sp->fromp();
         if (const AstMemberSel* const sp = VN_CAST(selp, MemberSel)) {
             if (const AstNodeDType* dtypep = getExprDTypep(sp->fromp())) {
@@ -2674,12 +2673,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             return nodep->name() == name;
                         });
                     if (found) return getElemDTypep(dtypep);
-                    selp->v3error("Class " << classRefp->name()
-                                           << " does not contain field named: " << selp->name());
+                    selp->v3error("Class " << classRefp->prettyNameQ()
+                                           << " does not contain field " << selp->prettyNameQ());
                 } else {
-                    selp->v3fatalSrc("Member selection on expression of type '"
-                                     << dtypep->prettyTypeName()
-                                     << "', which is not a class type");
+                    selp->v3fatalSrc("Member selection on expression of type "
+                                     << dtypep->prettyDTypeNameQ()
+                                     << ", which is not a class type");
                 }
             }
         } else if (const AstNodeVarRef* const varRefp = VN_CAST(selp, NodeVarRef)) {
