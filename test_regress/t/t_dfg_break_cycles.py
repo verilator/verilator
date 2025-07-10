@@ -20,7 +20,7 @@ if not os.path.exists(root + "/.git"):
 # Read expected source lines hit
 expectedLines = set()
 
-with open("../src/V3DfgBreakCycles.cpp", 'r', encoding="utf8") as fd:
+with open(root + "/src/V3DfgBreakCycles.cpp", 'r', encoding="utf8") as fd:
     for lineno, line in enumerate(fd, 1):
         line = line.split("//")[0]
         if re.match(r'^[^#]*SET_RESULT', line):
@@ -41,7 +41,7 @@ with open(rdFile, 'r', encoding="utf8") as rdFh, \
      open(checkFile, 'w', encoding="utf8") as checkFh:
     for line in rdFh:
         line = line.split("//")[0]
-        m = re.search(r'^\s*.*`signal\((\w+),', line)
+        m = re.search(r'`signal\((\w+),', line)
         if not m:
             continue
         nExpectedCycles += 1
@@ -89,7 +89,7 @@ test.compile(verilator_flags2=[
 
 # Check all source lines hit
 coveredLines = set()
-with open(test.obj_dir + "/obj_opt/V3DfgBreakCycles-TraceDriver-line-coverage.txt",
+with open(test.obj_dir + "/obj_opt/Vopt__V3DfgBreakCycles-TraceDriver-line-coverage.txt",
           'r',
           encoding="utf8") as fd:
     for line in fd:

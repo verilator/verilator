@@ -361,7 +361,8 @@ class TraceDriver final : public DfgVisitor {
         , m_component{component} {
         if (v3Global.opt.debugCheck()) {
             m_lineCoverageFile.open(  //
-                v3Global.opt.makeDir() + "/V3DfgBreakCycles-TraceDriver-line-coverage.txt",  //
+                v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
+                    + "__V3DfgBreakCycles-TraceDriver-line-coverage.txt",  //
                 std::ios_base::out | std::ios_base::app);
         }
     }
