@@ -3056,7 +3056,7 @@ void AstCMethodHard::setPurity() {
                                                           {"unique_index", true},
                                                           {"word", true},
                                                           {"write_var", false},
-                                                          {"basicRandomization", false}};
+                                                          {"basicStdRandomization", false}};
 
     if (name() == "atWriteAppend" || name() == "atWriteAppendBack") {
         m_pure = false;

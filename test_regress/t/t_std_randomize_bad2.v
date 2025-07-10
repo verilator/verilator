@@ -21,9 +21,7 @@ class std_randomize_class;
         old_data = data;
         old_data_x_4 = data_x_4;
 
-        // $display("Before randomization: addr: %0d, data: %0d, data_x_4: %0d", old_addr, old_data, old_data_x_4);
         success = std::randomize(addr, data);
-        // $display("addr: %0d, data: %0d, data_x_4: %0d", addr, data, data_x_4);
 
         valid = success && !(addr == old_addr || data == old_data) && data_x_4 == old_data_x_4;
         if (!valid) return 0;
@@ -46,8 +44,6 @@ module t_std_randomize_bad2;
         test.old_data = test.data;
         test.old_data_x_4 = test.data_x_4;
         success = std::randomize(test.addr, test.data);
-        $display("Before randomization: addr: %0d, data: %0d, data_x_4: %0d", test.old_addr, test.old_data, test.old_data_x_4);
-        $display("test.addr: %0d, test.data: %0d, test.data_x_4: %0d", test.addr, test.data, test.data_x_4);
         valid = success && !(test.addr == test.old_addr || test.data == test.old_data) && test.data_x_4 == test.old_data_x_4;
 
         // valid = test.std_randomize();
@@ -57,4 +53,4 @@ module t_std_randomize_bad2;
         $finish;
     end
 
-endmodule : t_scope_std_randomize_class
+endmodule : t_std_randomize_bad2

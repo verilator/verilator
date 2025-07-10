@@ -549,17 +549,18 @@ public:
 
 class VlStdRandomizer final {
     // MEMBERS
+    VlRNG __Vm_rng;
 
     // PRIVATE METHODS
-    VlRNG __Vm_rng;
 
 public:
     // CONSTRUCTORS
     VlStdRandomizer() = default;
     ~VlStdRandomizer() = default;
+
     template <typename T>
-    bool basicRandomization(T& a, size_t width) {
-        a = ((1ULL << width) - 1) & VL_RANDOM_RNG_I(__Vm_rng);
+    bool basicStdRandomization(T& value, size_t width) {
+        value = ((1ULL << width) - 1) & VL_RANDOM_RNG_I(__Vm_rng);
         return true;
     }
 };

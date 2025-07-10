@@ -6209,21 +6209,10 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
             hasNonNullArgs = true;
-            AstVar* fromVarp = nullptr;  // If it's a method call, the leftmost element
-                                         // of the dot hierarchy
-            if (AstMethodCall* methodCallp = VN_CAST(nodep, MethodCall)) {
-                AstNodeExpr* fromp = methodCallp->fromp();
-                while (AstMemberSel* const memberSelp = VN_CAST(fromp, MemberSel)) {
-                    fromp = memberSelp->fromp();
-                }
-                AstVarRef* const varrefp = VN_AS(fromp, VarRef);
-                fromVarp = varrefp->varp();
-            }
-            if (!VN_IS(exprp, VarRef) && !VN_IS(exprp, MemberSel)) {
-                argp->v3error("'randomize()' argument must be a variable contained in "
-                              << (fromVarp ? fromVarp->prettyNameQ() : "curent scope"));
-                VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
-                continue;
+            
+            if (VN_IS(exprp, MemberSel)) {
+                argp->v3warn(CONSTRAINTIGN, "std::randomize (" << exprp->prettyTypeName() << ") is non-LRM compliant" 
+                    << " but supported for compatibility");
             }
             while (exprp) {
                 if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
@@ -6240,18 +6229,14 @@ class WidthVisitor final : public VNVisitor {
                     }
                     exprp = nullptr;
                 }
-                // All variables in the dot hierarchy must be randomizable
-                if (randVarp && !randVarp->isRand())
-                    randVarp->rand(VRandAttr::RAND_INLINE);  //Wish to make it RAND_STD But lets
-                                                             //see how its useful in later stage
             }
             if (!argp) continue;  // Errored out, bail
         }
         if (nullp) {
             if (hasNonNullArgs) {
-                nullp->v3error("Cannot pass more arguments to 'randomize(null)'");
+                nullp->v3error("Cannot pass more arguments to 'std::randomize(null)'");
             } else {
-                nullp->v3warn(E_UNSUPPORTED, "Unsupported: 'randomize(null)'");
+                nullp->v3warn(E_UNSUPPORTED, "Unsupported: 'std::randomize(null)'");
             }
         }
     }
@@ -6278,9 +6263,9 @@ class WidthVisitor final : public VNVisitor {
                                            adtypep->findBitDType(), adtypep);
                 for (const AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp())
                     userIterateAndNext(VN_AS(argp, Arg)->exprp(), WidthVP{SELF, BOTH}.p());
-                handleStdRandomizeArgs(
-                    nodep);  // Provided arguments should be in the current scope.
+                handleStdRandomizeArgs(nodep); // Provided args should be in current scope
                 if (withp) {
+                    // TODO: std::randomize()with{}
                     nodep->v3warn(CONSTRAINTIGN, "with ignored (unsupported)");
                     nodep->replaceWith(new AstConst{nodep->fileline(), 0});
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -6332,7 +6317,6 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
-        // if (nodep->didWidth()) return;
         if ((nodep->taskp()->classMethod() && !nodep->taskp()->isStatic())
             && !VN_IS(m_procedurep, InitialAutomatic)
             && (!m_ftaskp || !m_ftaskp->classMethod() || m_ftaskp->isStatic()) && !m_constraintp) {

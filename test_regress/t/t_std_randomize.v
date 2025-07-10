@@ -14,20 +14,19 @@ class std_randomize_class;
     bit [31:0] old_data;
     bit [63:0] old_data_x_4;
 
-    function int std_randomize();
-        bit success, valid;
+    function bit std_randomize();
+        int success;
+        bit valid;
 
         old_addr = addr;
         old_data = data;
         old_data_x_4 = data_x_4;
 
-        // $display("Before randomization: addr: %0d, data: %0d, data_x_4: %0d", old_addr, old_data, old_data_x_4);
         success = std::randomize(addr, data);
-        // $display("addr: %0d, data: %0d, data_x_4: %0d", addr, data, data_x_4);
 
-        valid = success && !(addr == old_addr || data == old_data) && data_x_4 == old_data_x_4;
-        if (!valid) return 0;
-        return 1;
+        valid = (success == 1) && !(addr == old_addr || data == old_data) && data_x_4 == old_data_x_4;
+        
+        return valid;
     endfunction
 
 endclass
@@ -38,7 +37,7 @@ module t_scope_std_randomize;
 
     function bit run();
         int ready;
-        bit success;
+        int success;
 
         bit [7:0] old_addr;
         bit [15:0] old_data;
@@ -47,12 +46,9 @@ module t_scope_std_randomize;
         old_addr = addr;
         old_data = data;
         old_ready = ready;
-        // $display("Before randomization: addr=%0h, data=%0h, ready=%0d", addr, data, ready);
-        success = std::randomize(addr, ready);
-        // $display("After: addr=%0h, data=%0h, ready=%0d", addr, data, ready);
-        if (!success) return 0;
+        success = randomize(addr, ready);
+        if (success == 0) return 0;
         if (addr == old_addr && data != old_data && ready == old_ready) begin
-            // $display("Error: Randomization did not change any values.");
             return 0;
         end
         return 1;
@@ -63,7 +59,6 @@ module t_scope_std_randomize;
     initial begin
         bit ok;
         ok = run();
-        // $display("ok=%0d", ok);
         if (!ok) $stop;
         ok = 0;
         ok = test.std_randomize();
