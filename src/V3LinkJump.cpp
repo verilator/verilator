@@ -359,7 +359,7 @@ class LinkJumpVisitor final : public VNVisitor {
                 fl, VVarType::VAR, m_queueNames.get(forkp->name()), VFlagChildDType{},
                 new AstQueueDType{fl, VFlagChildDType{},
                                   new AstClassRefDType{fl, processClassp, nullptr}, nullptr}};
-            processQueuep->isStatic(true);
+            processQueuep->lifetime(VLifetime::STATIC);
             topPkgp->addStmtsp(processQueuep);
             AstVarRef* const queueRefp = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
             AstFunc* const selfMethodp = VN_AS(getMemberp(processClassp, "self"), Func);
