@@ -6799,19 +6799,19 @@ covergroup_extendsE<fl>:  // IEEE: Part of covergroup_declaration
 covergroup_declarationFront<classp>:  // IEEE: part of covergroup_declaration
                 yCOVERGROUP covergroup_extendsE idAny
                         {
-                        $$ = new AstClass{$<fl>3, *$3, PARSEP->libname()};
+                         $$ = new AstClass{$<fl>3, *$3, PARSEP->libname()};
 
-                        AstFunc* const sample = new AstFunc{$<fl>1, "sample", nullptr, nullptr};
-                        sample->classMethod(true);
-                        sample->dtypep(sample->findVoidDType());
-                        $$->addMembersp(sample);
+                         AstFunc* const sample = new AstFunc{$<fl>1, "sample", nullptr, nullptr};
+                         sample->classMethod(true);
+                         sample->dtypep(sample->findVoidDType());
+                         $$->addMembersp(sample);
 
-                        AstFunc* const getCoverage = new AstFunc{$<fl>1, "get_coverage", nullptr, nullptr};
-                        getCoverage->classMethod(true);
-                        getCoverage->dtypep(getCoverage->findVoidDType());
-                        $$->addMembersp(getCoverage);
+                         AstFunc* const getCoverage = new AstFunc{$<fl>1, "get_coverage", nullptr, nullptr};
+                         getCoverage->classMethod(true);
+                         getCoverage->dtypep(getCoverage->findVoidDType());
+                         $$->addMembersp(getCoverage);
 
-                        BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup"); }
+                         BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup"); }
                 ;
 
 cgexpr<nodeExprp>:  // IEEE-2012: covergroup_expression, before that just expression
