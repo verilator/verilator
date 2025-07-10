@@ -12,8 +12,6 @@ class Class2;
   typedef int Some_type2;
 endclass
 
-
-
 module t;
   initial begin
     int value0 = 7;
