@@ -25,6 +25,8 @@ with open(root + "/src/V3DfgBreakCycles.cpp", 'r', encoding="utf8") as fd:
         line = line.split("//")[0]
         if re.match(r'^[^#]*SET_RESULT', line):
             expectedLines.add(lineno)
+        if re.match(r'^[^#]*MASK', line):
+            expectedLines.add(lineno)
 
 if not expectedLines:
     test.error("Failed to read expected source line numbers")
@@ -62,6 +64,8 @@ test.compile(verilator_flags2=[
     "--stats",
     "--build",
     "-fno-dfg-break-cycles",
+    "-fno-dfg-post-inline",
+    "-fno-dfg-scoped",
     "+incdir+" + test.obj_dir,
     "-Mdir", test.obj_dir + "/obj_ref",
     "--prefix", "Vref",
@@ -76,6 +80,8 @@ test.file_grep(test.obj_dir + "/obj_ref/Vref__stats.txt",
 test.compile(verilator_flags2=[
     "--stats",
     "--build",
+    "-fno-dfg-post-inline",
+    "-fno-dfg-scoped",
     "--exe",
     "+incdir+" + test.obj_dir,
     "-Mdir", test.obj_dir + "/obj_opt",
@@ -89,11 +95,16 @@ test.compile(verilator_flags2=[
 
 # Check all source lines hit
 coveredLines = set()
-with open(test.obj_dir + "/obj_opt/Vopt__V3DfgBreakCycles-TraceDriver-line-coverage.txt",
-          'r',
-          encoding="utf8") as fd:
-    for line in fd:
-        coveredLines.add(int(line.strip()))
+
+
+def readCovered(fileName):
+    with open(fileName, 'r', encoding="utf8") as fd:
+        for line in fd:
+            coveredLines.add(int(line.strip()))
+
+
+readCovered(test.obj_dir + "/obj_opt/Vopt__V3DfgBreakCycles-TraceDriver-line-coverage.txt")
+readCovered(test.obj_dir + "/obj_opt/Vopt__V3DfgBreakCycles-IndependentBits-line-coverage.txt")
 
 if coveredLines != expectedLines:
     for n in sorted(expectedLines - coveredLines):
