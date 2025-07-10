@@ -385,21 +385,21 @@
   136 |       cross a, b {
       |       ^~~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:154:4: Ignoring unsupported: covergroup
-  154 |    covergroup cg_more extends cg_empty;
+  154 |    covergroup cgArgs(int cg_lim);
       |    ^~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:157:4: Ignoring unsupported: covergroup
-  157 |    covergroup cgArgs(int cg_lim);
-      |    ^~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:164:7: Ignoring unsupported: covergroup
-  164 |       covergroup cov1 @m_z;
+%Warning-COVERIGN: t/t_covergroup_unsup.v:161:7: Ignoring unsupported: covergroup
+  161 |       covergroup cov1 @m_z;
       |       ^~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:164:23: Ignoring unsupported: coverage clocking event
-  164 |       covergroup cov1 @m_z;
+%Warning-COVERIGN: t/t_covergroup_unsup.v:161:23: Ignoring unsupported: coverage clocking event
+  161 |       covergroup cov1 @m_z;
       |                       ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:165:10: Ignoring unsupported: coverpoint
-  165 |          coverpoint m_x;
+%Warning-COVERIGN: t/t_covergroup_unsup.v:162:10: Ignoring unsupported: coverpoint
+  162 |          coverpoint m_x;
       |          ^~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:166:10: Ignoring unsupported: coverpoint
-  166 |          coverpoint m_y;
+%Warning-COVERIGN: t/t_covergroup_unsup.v:163:10: Ignoring unsupported: coverpoint
+  163 |          coverpoint m_y;
       |          ^~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:171:7: Ignoring unsupported: covergroup
+  171 |       covergroup extends cg_empty;
+      |       ^~~~~~~~~~
 %Error: Exiting due to
