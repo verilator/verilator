@@ -30,11 +30,11 @@ module t (
    assign CONCAT_LHS[0] = CONCAT_LHS[1];
    assign CONCAT_LHS[1] = rand_a[1];
 
-   `signal(CONCAT_MID, 6);
+   `signal(CONCAT_MID, 3);
    assign CONCAT_MID[0] = |CONCAT_MID[2:1];
    assign CONCAT_MID[2:1] = {rand_a[2], ~rand_a[2]};
 
-   `signal(SEL, 4);
+   `signal(SEL, 3);
    assign SEL[0] = rand_a[4];
    assign SEL[1] = SEL[0];
    assign SEL[2] = SEL[1];
