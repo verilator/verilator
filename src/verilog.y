@@ -6780,8 +6780,7 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
         |       covergroup_declarationFront '(' tf_port_listE ')'
         /*cont*/    coverage_eventE ';' coverage_spec_or_optionListE
         /*cont*/    yENDGROUP endLabelE
-                        {
-                          AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
+                        { AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
                           newp->classMethod(true);
                           newp->isConstructor(true);
                           newp->dtypep($1->dtypep());
@@ -6792,8 +6791,8 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
         ;
 
 covergroup_extendsE<fl>:  // IEEE: Part of covergroup_declaration
-                /* empty */     { $$ = nullptr; }
-        |       yEXTENDS        { $$ = $1; }
+                /* empty */                             { $$ = nullptr; }
+        |       yEXTENDS                                { $$ = $1; }
         ;
 
 covergroup_declarationFront<classp>:  // IEEE: part of covergroup_declaration
