@@ -396,17 +396,15 @@ class LinkJumpVisitor final : public VNVisitor {
             }
             AstVarRef* const queueReadRefp
                 = new AstVarRef{fl, topPkgp, processQueuep, VAccess::READ};
-            AstVar* const queueIterp
-                = new AstVar{fl, VVarType::BLOCKTEMP, "i", nodep->findSigned32DType()};
             AstStmtExpr* const processKillp = new AstStmtExpr{
-                fl, new AstMethodCall{fl,
-                                      new AstSelBit{fl, queueReadRefp,
-                                                    new AstVarRef{fl, queueIterp, VAccess::READ}},
-                                      "kill", nullptr}};
-            AstForeach* const foreachp = new AstForeach{
-                fl, new AstSelLoopVars{fl, queueReadRefp->cloneTree(false), queueIterp},
-                processKillp};
-            nodep->addNextHere(new AstBegin{fl, "", foreachp, false, true});
+                fl,
+                new AstMethodCall{fl, new AstMethodCall{fl, queueReadRefp, "pop_back", nullptr},
+                                  "kill", nullptr}};
+            AstGt* const condp = new AstGt{
+                fl, new AstMethodCall{fl, queueReadRefp->cloneTree(false), "size", nullptr},
+                new AstConst{fl, AstConst::Signed32{}, 0}};
+            AstWhile* const whilep = new AstWhile{fl, condp, processKillp};
+            nodep->addNextHere(whilep);
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
             const std::string targetName = beginp->name();
             if (existsBlockAbove(targetName)) {
