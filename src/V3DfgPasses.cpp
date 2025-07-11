@@ -172,7 +172,7 @@ void V3DfgPasses::inlineVars(DfgGraph& dfg) {
             // Don't inline SystemC variables, as SystemC types are not interchangeable with
             // internal types, and hence the variables are not interchangeable either.
             if (varp->hasSinks() && varp->isDrivenFullyByDfg() && !varp->varp()->isSc()) {
-                DfgVertex* const driverp = varp->source(0);
+                DfgVertex* const driverp = varp->srcp();
 
                 // We must keep the original driver in certain cases, when swapping them would
                 // not be functionally or technically (implementation reasons) equivalent:
@@ -381,12 +381,14 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         // The index variable
         DfgVarPacked* const idxVtxp = [&]() {
             // If there is an existing result variable, use that, otherwise create a new variable
-            DfgVarPacked* varp = srcp->getResultVar();
-            if (!varp) {
+            DfgVarPacked* varp = nullptr;
+            if (DfgVertexVar* const vp = srcp->getResultVar()) {
+                varp = vp->as<DfgVarPacked>();
+            } else {
                 const std::string name = dfg.makeUniqueName("BinToOneHot_Idx", nTables);
                 varp = dfg.makeNewVar(flp, name, idxDTypep, nullptr)->as<DfgVarPacked>();
                 varp->varp()->isInternal(true);
-                varp->addDriver(flp, 0, srcp);
+                varp->srcp(srcp);
             }
             varp->setHasModRefs();
             return varp;
@@ -554,9 +556,9 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
         if (!varp->hasModRefs()) {
             // If it is only referenced in this DFG, it can be removed
             ++ctx.m_varsRemoved;
-            varp->replaceWith(varp->source(0));
+            varp->replaceWith(varp->srcp());
             varp->nodep()->unlinkFrBack()->deleteTree();
-        } else if (DfgVarPacked* const driverp = varp->source(0)->cast<DfgVarPacked>()) {
+        } else if (DfgVarPacked* const driverp = varp->srcp()->cast<DfgVarPacked>()) {
             // If it's driven from another variable, it can be replaced by that. However, we do not
             // want to propagate SystemC variables into the design.
             if (driverp->varp()->isSc()) continue;

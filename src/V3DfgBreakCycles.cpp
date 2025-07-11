@@ -363,7 +363,7 @@ class TraceDriver final : public DfgVisitor {
         UINFO(9, "TraceDriver - Unhandled vertex type: " << vtxp->typeName());
     }
 
-    void visit(DfgVarPacked* vtxp) override {
+    void visit(DfgSplicePacked* vtxp) override {
         // Proceed with the driver that wholly covers the searched bits
         const auto pair = vtxp->sourceEdges();
         for (size_t i = 0; i < pair.second; ++i) {
@@ -374,6 +374,13 @@ class TraceDriver final : public DfgVisitor {
             if (m_lsb < lsb || msb < m_msb) continue;
             // Trace this driver
             SET_RESULT(trace(srcp, m_msb - lsb, m_lsb - lsb));
+            return;
+        }
+    }
+
+    void visit(DfgVarPacked* vtxp) override {
+        if (DfgVertex* const srcp = vtxp->srcp()) {
+            SET_RESULT(trace(srcp, m_msb, m_lsb));
             return;
         }
     }
@@ -607,16 +614,21 @@ class IndependentBits final : public DfgVisitor {
         mask(vtxp).setAllBits1();  // intentionally not using MASK here
     }
 
-    void visit(DfgVarPacked* vtxp) override {
-        // The mask of the traced variable is known to be all ones
-        if (vtxp == m_varp) return;
-
+    void visit(DfgSplicePacked* vtxp) override {
         // Combine the masks of all drivers
         V3Number& m = MASK(vtxp);
         vtxp->forEachSourceEdge([&](DfgEdge& edge, size_t i) {
             const DfgVertex* const srcp = edge.sourcep();
             m.opSelInto(MASK(srcp), vtxp->driverLsb(i), srcp->width());
         });
+    }
+
+    void visit(DfgVarPacked* vtxp) override {
+        // The mask of the traced variable is known to be all ones
+        if (vtxp == m_varp) return;
+
+        // Combine the masks of all drivers
+        if (DfgVertex* const srcp = vtxp->srcp()) MASK(vtxp) = MASK(srcp);
     }
 
     void visit(DfgConcat* vtxp) override {
@@ -732,6 +744,13 @@ class IndependentBits final : public DfgVisitor {
             DfgVertex* const currp = m_workList.front();
             m_workList.pop_front();
 
+            if (VN_IS(currp->dtypep(), UnpackArrayDType)) {
+                // For an unpacked array vertex, just enque it's sinks.
+                // (There can be no loops through arrays directly)
+                currp->forEachSink([&](DfgVertex& vtx) { m_workList.emplace_back(&vtx); });
+                continue;
+            }
+
             // Grab current mask of item
             const V3Number& maskCurr = mask(currp);
             // Remember current mask
@@ -764,16 +783,11 @@ public:
     // so bits reported dependent might not actually be, but all bits reported
     // independent are known to be so.
     static V3Number apply(DfgVarPacked* varp) {
+        UASSERT_OBJ(varp->srcp(), varp, "Don't call on undriven variable");
         IndependentBits independentBits{varp};
-        // Combine the masks of all drivers of the variable
+        // The mask represents the dependent bits, so invert it
         V3Number result{varp->fileline(), static_cast<int>(varp->width()), 0};
-        varp->forEachSourceEdge([&](DfgEdge& edge, size_t i) {
-            const DfgVertex* const srcp = edge.sourcep();
-            // The mask represents the dependent bits, so invert it
-            V3Number inverseMask{srcp->fileline(), static_cast<int>(srcp->width()), 0};
-            inverseMask.opNot(independentBits.mask(srcp));
-            result.opSelInto(inverseMask, varp->driverLsb(i), srcp->width());
-        });
+        result.opNot(independentBits.mask(varp->srcp()));
         return result;
     }
 };

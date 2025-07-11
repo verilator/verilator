@@ -183,49 +183,37 @@ class AstToDfgVisitor final : public VNVisitor {
         return m_foundUnhandled;
     }
 
-    // Build DfgEdge representing the LValue assignment. Returns false if unsuccessful.
-    bool convertAssignment(FileLine* flp, AstNode* nodep, DfgVertex* vtxp) {
+    DfgVertexSplice* convertLValue(AstNode* nodep) {
+        FileLine* const flp = nodep->fileline();
+
         if (AstVarRef* const vrefp = VN_CAST(nodep, VarRef)) {
             m_foundUnhandled = false;
             visit(vrefp);
-            // cppcheck-has-bug-suppress knownConditionTrueFalse
-            if (m_foundUnhandled) return false;
-            getVertex(vrefp)->template as<DfgVarPacked>()->addDriver(flp, 0, vtxp);
-            return true;
-        }
-        if (AstSel* const selp = VN_CAST(nodep, Sel)) {
-            AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
-            const AstConst* const lsbp = VN_CAST(selp->lsbp(), Const);
-            if (!vrefp || !lsbp) {
-                ++m_ctx.m_nonRepLhs;
-                return false;
+            if (m_foundUnhandled) return nullptr;
+            DfgVertexVar* const vtxp = getVertex(vrefp)->template as<DfgVertexVar>();
+            // Ensure driving splice vertex exists
+            if (!vtxp->srcp()) {
+                if (VN_IS(vtxp->dtypep(), UnpackArrayDType)) {
+                    vtxp->srcp(new DfgSpliceArray{*m_dfgp, flp, vtxp->dtypep()});
+                } else {
+                    vtxp->srcp(new DfgSplicePacked{*m_dfgp, flp, vtxp->dtypep()});
+                }
             }
-            m_foundUnhandled = false;
-            visit(vrefp);
-            // cppcheck-has-bug-suppress knownConditionTrueFalse
-            if (m_foundUnhandled) return false;
-            getVertex(vrefp)->template as<DfgVarPacked>()->addDriver(flp, lsbp->toUInt(), vtxp);
-            return true;
+            return vtxp->srcp()->as<DfgVertexSplice>();
         }
-        if (AstArraySel* const selp = VN_CAST(nodep, ArraySel)) {
-            AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
-            const AstConst* const idxp = VN_CAST(selp->bitp(), Const);
-            if (!vrefp || !idxp) {
-                ++m_ctx.m_nonRepLhs;
-                return false;
-            }
-            m_foundUnhandled = false;
-            visit(vrefp);
-            // cppcheck-has-bug-suppress knownConditionTrueFalse
-            if (m_foundUnhandled) return false;
-            getVertex(vrefp)->template as<DfgVarArray>()->addDriver(flp, idxp->toUInt(), vtxp);
-            return true;
-        }
+
+        ++m_ctx.m_nonRepLhs;
+        return nullptr;
+    }
+
+    // Build DfgEdge representing the LValue assignment. Returns false if unsuccessful.
+    bool convertAssignment(FileLine* flp, AstNode* nodep, DfgVertex* vtxp) {
+        // Concatenation on the LHS. Select parts of the driving 'vtxp' then convert each part
         if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
             AstNode* const lhsp = concatp->lhsp();
             AstNode* const rhsp = concatp->rhsp();
 
-            {
+            {  // Convet LHS of concat
                 FileLine* const lFlp = lhsp->fileline();
                 DfgSel* const lVtxp = new DfgSel{*m_dfgp, lFlp, DfgVertex::dtypeFor(lhsp)};
                 lVtxp->fromp(vtxp);
@@ -233,7 +221,7 @@ class AstToDfgVisitor final : public VNVisitor {
                 if (!convertAssignment(flp, lhsp, lVtxp)) return false;
             }
 
-            {
+            {  // Convert RHS of concat
                 FileLine* const rFlp = rhsp->fileline();
                 DfgSel* const rVtxp = new DfgSel{*m_dfgp, rFlp, DfgVertex::dtypeFor(rhsp)};
                 rVtxp->fromp(vtxp);
@@ -241,7 +229,37 @@ class AstToDfgVisitor final : public VNVisitor {
                 return convertAssignment(flp, rhsp, rVtxp);
             }
         }
-        ++m_ctx.m_nonRepLhs;
+
+        if (AstSel* const selp = VN_CAST(nodep, Sel)) {
+            AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
+            const AstConst* const lsbp = VN_CAST(selp->lsbp(), Const);
+            if (!vrefp || !lsbp) {
+                ++m_ctx.m_nonRepLhs;
+                return false;
+            }
+            if (DfgVertexSplice* const splicep = convertLValue(vrefp)) {
+                splicep->template as<DfgSplicePacked>()->addDriver(flp, lsbp->toUInt(), vtxp);
+                return true;
+            }
+        } else if (AstArraySel* const selp = VN_CAST(nodep, ArraySel)) {
+            AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
+            const AstConst* const idxp = VN_CAST(selp->bitp(), Const);
+            if (!vrefp || !idxp) {
+                ++m_ctx.m_nonRepLhs;
+                return false;
+            }
+            if (DfgVertexSplice* const splicep = convertLValue(vrefp)) {
+                splicep->template as<DfgSpliceArray>()->addDriver(flp, idxp->toUInt(), vtxp);
+                return true;
+            }
+        } else if (VN_IS(nodep, VarRef)) {
+            if (DfgVertexSplice* const splicep = convertLValue(nodep)) {
+                splicep->template as<DfgSplicePacked>()->addDriver(flp, 0, vtxp);
+                return true;
+            }
+        } else {
+            ++m_ctx.m_nonRepLhs;
+        }
         return false;
     }
 
@@ -315,18 +333,23 @@ class AstToDfgVisitor final : public VNVisitor {
         for (DfgVarPacked* const varp : m_varPackedps) {
             // Delete variables with no sinks nor sources (this can happen due to reverting
             // uncommitted vertices, which does not remove variables)
-            if (!varp->hasSinks() && varp->arity() == 0) {
+            if (!varp->hasSinks() && !varp->srcp()) {
                 VL_DO_DANGLING(varp->unlinkDelete(*m_dfgp), varp);
                 continue;
             }
 
+            // Nothing to do for un-driven (input) variables
+            if (!varp->srcp()) continue;
+
+            DfgSplicePacked* const splicep = varp->srcp()->as<DfgSplicePacked>();
+
             // Gather (and unlink) all drivers
             std::vector<Driver> drivers;
-            drivers.reserve(varp->arity());
-            varp->forEachSourceEdge([this, varp, &drivers](DfgEdge& edge, size_t idx) {
+            drivers.reserve(splicep->arity());
+            splicep->forEachSourceEdge([this, splicep, &drivers](DfgEdge& edge, size_t idx) {
                 DfgVertex* const driverp = edge.sourcep();
                 UASSERT(driverp, "Should not have created undriven sources");
-                addDriver(varp->driverFileLine(idx), varp->driverLsb(idx), driverp, drivers);
+                addDriver(splicep->driverFileLine(idx), splicep->driverLsb(idx), driverp, drivers);
                 edge.unlinkSource();
             });
 
@@ -424,10 +447,10 @@ class AstToDfgVisitor final : public VNVisitor {
             }
 
             // Reinsert drivers in order
-            varp->resetSources();
+            splicep->resetSources();
             for (const Driver& driver : drivers) {
                 if (!driver.m_vtxp) break;  // Stop at end of compacted list
-                varp->addDriver(driver.m_fileline, driver.m_lsb, driver.m_vtxp);
+                splicep->addDriver(driver.m_fileline, driver.m_lsb, driver.m_vtxp);
             }
 
             // Prune vertices potentially unused due to resolving multiple drivers.
@@ -442,6 +465,15 @@ class AstToDfgVisitor final : public VNVisitor {
                 vtxp->forEachSource([&](DfgVertex& src) { prune.emplace(&src); });
                 vtxp->unlinkDelete(*m_dfgp);
             }
+
+            // If the whole variable is driven, remove the splice node
+            if (splicep->arity() == 1  //
+                && splicep->driverLsb(0) == 0  //
+                && splicep->source(0)->width() == varp->width()) {
+                varp->srcp(splicep->source(0));
+                varp->driverFileLine(splicep->driverFileLine(0));
+                splicep->unlinkDelete(*m_dfgp);
+            }
         }
     }
 
@@ -450,7 +482,7 @@ class AstToDfgVisitor final : public VNVisitor {
         for (DfgVarArray* const varp : m_varArrayps) {
             // Delete variables with no sinks nor sources (this can happen due to reverting
             // uncommitted vertices, which does not remove variables)
-            if (!varp->hasSinks() && varp->arity() == 0) {
+            if (!varp->hasSinks() && !varp->srcp()) {
                 VL_DO_DANGLING(varp->unlinkDelete(*m_dfgp), varp);
             }
         }

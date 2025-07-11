@@ -238,8 +238,7 @@ public:
 
     // Width of result
     uint32_t width() const {
-        // This is a hot enough function that this is an expensive check, so in debug build only.
-        UDEBUGONLY(UASSERT_OBJ(VN_IS(dtypep(), BasicDType), this, "non-packed has no 'width()'"););
+        UASSERT_OBJ(VN_IS(dtypep(), BasicDType), this, "non-packed has no 'width()'");
         return dtypep()->width();
     }
 
@@ -283,7 +282,7 @@ public:
 
     // Return a canonical variable vertex that holds the value of this vertex,
     // or nullptr if no such variable exists in the graph. This is O(fanout).
-    DfgVarPacked* getResultVar() VL_MT_DISABLED;
+    DfgVertexVar* getResultVar() VL_MT_DISABLED;
 
     // Cache type for 'scopep' below
     using ScopeCache = std::unordered_map<const DfgVertex*, AstScope*>;
@@ -572,7 +571,7 @@ class DfgVertexVariadic VL_NOT_FINAL : public DfgVertex {
 
 protected:
     DfgVertexVariadic(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep,
-                      uint32_t initialCapacity = 1)
+                      uint32_t initialCapacity)
         : DfgVertex{dfg, type, flp, dtypep}
         , m_srcsp{allocSources(initialCapacity)}
         , m_srcCap{initialCapacity} {}
@@ -914,15 +913,14 @@ bool DfgVertex::isOnes() const {
 // Inline method definitions - for DfgVertexVar
 //------------------------------------------------------------------------------
 
-DfgVertexVar::DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp, uint32_t initialCapacity)
-    : DfgVertexVariadic{dfg, type, varp->fileline(), dtypeFor(varp), initialCapacity}
+DfgVertexVar::DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp)
+    : DfgVertexUnary{dfg, type, varp->fileline(), dtypeFor(varp)}
     , m_varp{varp}
     , m_varScopep{nullptr} {
     UASSERT_OBJ(dfg.modulep(), varp, "Un-scoped DfgVertexVar created in scoped DfgGraph");
 }
-DfgVertexVar::DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVarScope* vscp,
-                           uint32_t initialCapacity)
-    : DfgVertexVariadic{dfg, type, vscp->fileline(), dtypeFor(vscp), initialCapacity}
+DfgVertexVar::DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVarScope* vscp)
+    : DfgVertexUnary{dfg, type, vscp->fileline(), dtypeFor(vscp)}
     , m_varp{vscp->varp()}
     , m_varScopep{vscp} {
     UASSERT_OBJ(!dfg.modulep(), vscp, "Scoped DfgVertexVar created in un-scoped DfgGraph");
