@@ -156,15 +156,15 @@ class VirtIfaceTriggers final {
     // Represents a specific member in a virtual interface
     struct IfaceMember final {
         const AstIface* m_ifacep;  // Interface type
-        const std::string m_memberName;  // Name of the member field
+        const AstVar* m_memberVarp;  // pointer to member field
 
-        IfaceMember(const AstIface* ifacep, const std::string& memberName)
+        IfaceMember(const AstIface* ifacep, const AstVar* memberVarp)
             : m_ifacep(ifacep)
-            , m_memberName(memberName) {}
+            , m_memberVarp(memberVarp) {}
 
         bool operator<(const IfaceMember& other) const {
             if (m_ifacep != other.m_ifacep) return m_ifacep < other.m_ifacep;
-            return m_memberName < other.m_memberName;
+            return m_memberVarp < other.m_memberVarp;
         }
     };
 
@@ -180,13 +180,13 @@ class VirtIfaceTriggers final {
     IfaceTriggerVec m_ifaceTriggers;
 
 public:
-    void addMemberTrigger(const AstIface* ifacep, const std::string& memberName,
+    void addMemberTrigger(const AstIface* ifacep, const AstVar* memberVarp,
                           AstVarScope* triggerVscp) {
-        m_memberTriggers.emplace_back(IfaceMember(ifacep, memberName), triggerVscp);
+        m_memberTriggers.emplace_back(IfaceMember(ifacep, memberVarp), triggerVscp);
     }
 
-    AstVarScope* findMemberTrigger(const AstIface* ifacep, const std::string& memberName) const {
-        IfaceMember target{ifacep, memberName};
+    AstVarScope* findMemberTrigger(const AstIface* ifacep, const AstVar* memberVarp) const {
+        IfaceMember target{ifacep, memberVarp};
         for (const auto& pair : m_memberTriggers) {
             if (!(pair.first < target) && !(target < pair.first)) return pair.second;
         }

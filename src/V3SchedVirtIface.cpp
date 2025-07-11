@@ -57,7 +57,7 @@ private:
     AstAssign* m_trigAssignp = nullptr;  // Previous/current trigger assignment
     AstIface* m_trigAssignIfacep = nullptr;  // Interface type whose trigger is assigned
                                              // by m_trigAssignp
-    std::string m_trigAssignMemberName;  // Member name whose trigger is assigned
+    AstVar* m_trigAssignMemberVarp;  // Member pointer whose trigger is assigned
     V3UniqueNames m_vifTriggerNames{"__VvifTrigger"};  // Unique names for virt iface
                                                        // triggers
     VirtIfaceTriggers m_triggers;  // Interfaces and corresponding trigger vars
@@ -79,21 +79,20 @@ private:
     // For each write across a virtual interface boundary (member-level tracking)
     static void foreachWrittenVirtIfaceMember(
         AstNode* const nodep,
-        const std::function<void(AstVarRef*, AstIface*, const std::string&)>& onWrite) {
+        const std::function<void(AstVarRef*, AstIface*, AstVar*)>& onWrite) {
         nodep->foreach([&](AstVarRef* const refp) {
             if (refp->access().isReadOnly()) return;
             if (AstIfaceRefDType* const dtypep = VN_CAST(refp->varp()->dtypep(), IfaceRefDType)) {
                 if (dtypep->isVirtual()) {
                     if (AstMemberSel* const memberSelp = VN_CAST(refp->firstAbovep(), MemberSel)) {
-                        // Extract the member name from the MemberSel node
-                        const std::string memberName = memberSelp->name();
-                        onWrite(refp, dtypep->ifacep(), memberName);
+                        // Extract the member varp from the MemberSel node
+                        AstVar* memberVarp = memberSelp->varp();
+                        onWrite(refp, dtypep->ifacep(), memberVarp);
                     }
                 }
             } else if (AstIface* const ifacep = refp->varp()->sensIfacep()) {
-                // For variables marked as interface-sensitive, use the variable name as member
-                const std::string memberName = refp->varp()->name();
-                onWrite(refp, ifacep, memberName);
+                AstVar* memberVarp = refp->varp();
+                onWrite(refp, ifacep, memberVarp);
             }
         });
     }
@@ -129,16 +128,16 @@ private:
 
     // Create trigger reference for a specific interface member
     AstVarRef* createVirtIfaceMemberTriggerRefp(FileLine* const flp, AstIface* ifacep,
-                                                const std::string& memberName) {
+                                                const AstVar* memberVarp) {
         // Check if we already have a trigger for this specific member
-        AstVarScope* existingTrigger = m_triggers.findMemberTrigger(ifacep, memberName);
+        AstVarScope* existingTrigger = m_triggers.findMemberTrigger(ifacep, memberVarp);
         if (!existingTrigger) {
             AstScope* const scopeTopp = m_netlistp->topScopep()->scopep();
             // Create a unique name for this member trigger
             const std::string triggerName
-                = m_vifTriggerNames.get(ifacep) + "_Vtrigm_" + memberName;
+                = m_vifTriggerNames.get(ifacep) + "_Vtrigm_" + memberVarp->name();
             AstVarScope* const vscp = scopeTopp->createTemp(triggerName, 1);
-            m_triggers.addMemberTrigger(ifacep, memberName, vscp);
+            m_triggers.addMemberTrigger(ifacep, memberVarp, vscp);
             existingTrigger = vscp;
         }
         return new AstVarRef{flp, existingTrigger, VAccess::WRITE};
@@ -150,8 +149,8 @@ private:
         m_trigAssignp = nullptr;
         VL_RESTORER(m_trigAssignIfacep);
         m_trigAssignIfacep = nullptr;
-        VL_RESTORER(m_trigAssignMemberName);
-        m_trigAssignMemberName.clear();
+        VL_RESTORER(m_trigAssignMemberVarp);
+        m_trigAssignMemberVarp = nullptr;
         iterateChildren(nodep);
     }
     void visit(AstCFunc* nodep) override {
@@ -159,8 +158,8 @@ private:
         m_trigAssignp = nullptr;
         VL_RESTORER(m_trigAssignIfacep);
         m_trigAssignIfacep = nullptr;
-        VL_RESTORER(m_trigAssignMemberName);
-        m_trigAssignMemberName.clear();
+        VL_RESTORER(m_trigAssignMemberVarp);
+        m_trigAssignMemberVarp = nullptr;
         iterateChildren(nodep);
     }
     void visit(AstAssignW* nodep) override {
@@ -185,13 +184,13 @@ private:
         {
             VL_RESTORER(m_trigAssignp);
             VL_RESTORER(m_trigAssignIfacep);
-            VL_RESTORER(m_trigAssignMemberName);
+            VL_RESTORER(m_trigAssignMemberVarp);
             iterateAndNextNull(nodep->thensp());
         }
         {
             VL_RESTORER(m_trigAssignp);
             VL_RESTORER(m_trigAssignIfacep);
-            VL_RESTORER(m_trigAssignMemberName);
+            VL_RESTORER(m_trigAssignMemberVarp);
             iterateAndNextNull(nodep->elsesp());
         }
         if (v3Global.usesTiming()) {
@@ -199,7 +198,7 @@ private:
             // branch
             m_trigAssignp = nullptr;
             m_trigAssignIfacep = nullptr;
-            m_trigAssignMemberName.clear();
+            m_trigAssignMemberVarp = nullptr;
         }
     }
     void visit(AstWhile* nodep) override {
@@ -209,21 +208,21 @@ private:
         {
             VL_RESTORER(m_trigAssignp);
             VL_RESTORER(m_trigAssignIfacep);
-            VL_RESTORER(m_trigAssignMemberName);
+            VL_RESTORER(m_trigAssignMemberVarp);
             iterateAndNextNull(nodep->stmtsp());
         }
         if (v3Global.usesTiming()) {
             // Clear the trigger assignment, as there could have been timing controls in the loop
             m_trigAssignp = nullptr;
             m_trigAssignIfacep = nullptr;
-            m_trigAssignMemberName.clear();
+            m_trigAssignMemberVarp = nullptr;
         }
     }
     void visit(AstJumpBlock* nodep) override {
         {
             VL_RESTORER(m_trigAssignp);
             VL_RESTORER(m_trigAssignIfacep);
-            VL_RESTORER(m_trigAssignMemberName);
+            VL_RESTORER(m_trigAssignMemberVarp);
             iterateChildren(nodep);
         }
         if (v3Global.usesTiming()) {
@@ -231,7 +230,7 @@ private:
             // block
             m_trigAssignp = nullptr;
             m_trigAssignIfacep = nullptr;
-            m_trigAssignMemberName.clear();
+            m_trigAssignMemberVarp = nullptr;
         }
     }
     void visit(AstNodeStmt* nodep) override {
@@ -239,21 +238,21 @@ private:
             && nodep->exists([](AstNode* nodep) { return nodep->isTimingControl(); })) {
             m_trigAssignp = nullptr;
             m_trigAssignIfacep = nullptr;
-            m_trigAssignMemberName.clear();
+            m_trigAssignMemberVarp = nullptr;
         }
         FileLine* const flp = nodep->fileline();
 
         foreachWrittenVirtIfaceMember(nodep, [&](AstVarRef*, AstIface* ifacep,
-                                                 const std::string& memberName) {
-            if (ifacep != m_trigAssignIfacep || memberName != m_trigAssignMemberName) {
+                                                AstVar* memberVarp) {
+            if (ifacep != m_trigAssignIfacep || memberVarp != m_trigAssignMemberVarp) {
                 // Write to different interface member than before - need new trigger assignment
                 m_trigAssignIfacep = ifacep;
-                m_trigAssignMemberName = memberName;
+                m_trigAssignMemberVarp = memberVarp;
                 m_trigAssignp = nullptr;
             }
             if (!m_trigAssignp) {
                 m_trigAssignp
-                    = new AstAssign{flp, createVirtIfaceMemberTriggerRefp(flp, ifacep, memberName),
+                    = new AstAssign{flp, createVirtIfaceMemberTriggerRefp(flp, ifacep, memberVarp),
                                     new AstConst{flp, AstConst::BitTrue{}}};
                 nodep->addNextHere(m_trigAssignp);
             }
@@ -263,7 +262,7 @@ private:
             foreachWrittenVirtIface(nodep, [&](AstVarRef*, AstIface* ifacep) {
                 if (ifacep != m_trigAssignIfacep) {
                     m_trigAssignIfacep = ifacep;
-                    m_trigAssignMemberName.clear();
+                    m_trigAssignMemberVarp = nullptr;
                     m_trigAssignp = nullptr;
                 }
                 if (!m_trigAssignp) {
