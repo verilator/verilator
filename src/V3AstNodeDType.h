@@ -318,6 +318,18 @@ public:
     void name(const string& flag) override { m_name = flag; }
 };
 
+class AstAnyDType final : public AstNodeDType {
+public:
+    AstAnyDType(FileLine* fl)
+        : ASTGEN_SUPER_AnyDType(fl) {}
+    ASTGEN_MEMBERS_AstAnyDType;
+    bool similarDTypeNode(const AstNodeDType* samep) const override { return false; }
+    bool isCompound() const override { return false; }
+    AstBasicDType* basicp() const VL_MT_STABLE override { return nullptr; }
+    int widthAlignBytes() const override { return 0; }
+    int widthTotalBytes() const { return 0; }
+};
+
 // === AstNodeDType ===
 class AstAssocArrayDType final : public AstNodeDType {
     // Associative array data type, ie "[some_dtype]"

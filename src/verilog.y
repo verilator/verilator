@@ -1561,9 +1561,11 @@ port<nodep>:                    // ==IEEE: port
                           VARDTYPE(dtp); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $6, $7)); }
         |       portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
-                        { $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: generic interfaces"); }
+                        { $$ = $3; VARDTYPE(new AstAnyDType($<fl>2)); VARIOANSI();
+                          std::cout << "Begin1 " << $2 << " " << $3 << " end1\n";
+                          addNextNull($$, VARDONEP($$, $4, $5)); }
         |       portDirNetE yINTERFACE      '.' idAny/*modport*/ portSig rangeListE sigAttrListE
-                        { $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: generic interfaces"); }
+                        { $$ = nullptr; std::cout << "Begin2 " << $2 << " " << $3 << " end2\n"; BBUNSUP($<fl>2, "Unsupported: generic interfaces"); }
         //
         |       portDirNetE yINTERCONNECT signingE rangeListE portSig variable_dimensionListE sigAttrListE
                         { $$ = $5;
@@ -1610,6 +1612,7 @@ port<nodep>:                    // ==IEEE: port
         //
         |       portDirNetE data_type           portSig variable_dimensionListE sigAttrListE
                         { $$ = $3; VARDTYPE($2); VARIOANSI();
+                        std::cout << "ABC " << $2 << " " << $3 << " " << $4 << " " << $5 << " " << " ABC\n";
                           addNextNull($$, VARDONEP($$, $4, $5)); }
         |       portDirNetE data_type           portSig variable_dimensionListE sigAttrListE '=' constExpr
                         { $$ = $3; VARDTYPE($2); VARIOANSI();
