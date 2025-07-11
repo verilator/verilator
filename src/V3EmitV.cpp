@@ -231,7 +231,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         putbs("continue");
         if (!m_suppressSemi) puts(";\n");
     }
-    void visit(AstCoverDecl*) override {}  // N/A
+    void visit(AstNodeCoverDecl*) override {}  // N/A
     void visit(AstCoverInc*) override {}  // N/A
     void visit(AstCoverToggle*) override {}  // N/A
 
