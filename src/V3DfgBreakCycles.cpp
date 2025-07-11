@@ -230,12 +230,17 @@ class TraceDriver final : public DfgVisitor {
         if VL_CONSTEXPR_CXX17 (std::is_same<DfgConst, Vertex>::value) {
             DfgConst* const vtxp = new DfgConst{m_dfg, refp->fileline(), width};
             m_newVtxps.emplace_back(vtxp);
-            return vtxp;
+            return reinterpret_cast<Vertex*>(vtxp);
         } else {
+            // TODO: this is a gross hack around lack of C++17 'if constexpr' Vtx is always Vertex
+            // when this code is actually executed, but needs a fudged type to type check when
+            // Vertex is DfgConst, in which case this code is unreachable ...
+            using Vtx = typename std::conditional<std::is_same<DfgConst, Vertex>::value, DfgSel,
+                                                  Vertex>::type;
             AstNodeDType* const dtypep = DfgVertex::dtypeForWidth(width);
-            Vertex* const vtxp = new Vertex{m_dfg, refp->fileline(), dtypep};
+            Vtx* const vtxp = new Vtx{m_dfg, refp->fileline(), dtypep};
             m_newVtxps.emplace_back(vtxp);
-            return vtxp;
+            return reinterpret_cast<Vertex*>(vtxp);
         }
     }
 
