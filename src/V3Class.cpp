@@ -63,12 +63,10 @@ class ClassVisitor final : public VNVisitor {
         //   as there is only single ancestor allowed
         // - implements of concrete classes / extends of interface classes: mapped
         //   to virtual inheritance to allow diamond patterns with multiple ancestors
-        if (nodep->useVirtualPublic()) return; // Short-circuit to exit diamond cycles
-        if (nodep->isInterfaceClass()) {
-            nodep->useVirtualPublic(true);
-        }
+        if (nodep->useVirtualPublic()) return;  // Short-circuit to exit diamond cycles
+        if (nodep->isInterfaceClass()) { nodep->useVirtualPublic(true); }
         for (const AstClassExtends* extp = nodep->extendsp(); extp;
-            extp = VN_AS(extp->nextp(), ClassExtends)) {
+             extp = VN_AS(extp->nextp(), ClassExtends)) {
             recurseImplements(extp->classp());
         }
     }

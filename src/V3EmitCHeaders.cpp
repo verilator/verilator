@@ -568,7 +568,7 @@ class EmitCHeader final : public EmitCConstInit {
             if (classp->extendsp()) {
                 bool needComma = false;
                 for (const AstClassExtends* extp = classp->extendsp(); extp;
-                    extp = VN_AS(extp->nextp(), ClassExtends)) {
+                     extp = VN_AS(extp->nextp(), ClassExtends)) {
                     if (needComma) puts(", ");
                     // Use virtual only for interfaces for class inheritance
                     // (extends)

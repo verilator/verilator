@@ -277,11 +277,10 @@ public:
                 puts("(vlSymsp)");
             }
         }
-        const AstCNew* const superNewCallp =
-            getSuperNewCallRecursep(cfuncp->stmtsp());
+        const AstCNew* const superNewCallp = getSuperNewCallRecursep(cfuncp->stmtsp());
         // Direct non-virtual bases in declaration order
         for (const AstClassExtends* extp = classp->extendsp(); extp;
-            extp = VN_AS(extp->nextp(), ClassExtends)) {
+             extp = VN_AS(extp->nextp(), ClassExtends)) {
             if (extp->classp()->useVirtualPublic()) continue;
             if (doneClasses.count(extp->classp())) continue;
             puts(doneClasses.empty() ? "" : "\n    , ");
@@ -300,22 +299,19 @@ public:
         }
     }
     void collectVirtualBasesRecursep(const AstClass* classp,
-                                       std::vector<AstClass*>& virtualBases) {
+                                     std::vector<AstClass*>& virtualBases) {
         std::set<const AstClass*> visited;
         collectVirtualBasesRecursep(classp, virtualBases /*ref*/, visited /*ref*/);
     }
-    void collectVirtualBasesRecursep(const AstClass* classp,
-                                      std::vector<AstClass*>& virtualBases,
-                                      std::set<const AstClass*>& visited) {
+    void collectVirtualBasesRecursep(const AstClass* classp, std::vector<AstClass*>& virtualBases,
+                                     std::set<const AstClass*>& visited) {
         if (visited.count(classp)) return;
         visited.emplace(classp);
         for (const AstClassExtends* extp = classp->extendsp(); extp;
-            extp = VN_AS(extp->nextp(), ClassExtends)) {
+             extp = VN_AS(extp->nextp(), ClassExtends)) {
             // Depth-first: recurse into this base first
             collectVirtualBasesRecursep(extp->classp(), virtualBases, visited);
-            if (extp->classp()->useVirtualPublic()) {
-                virtualBases.push_back(extp->classp());
-            }
+            if (extp->classp()->useVirtualPublic()) { virtualBases.push_back(extp->classp()); }
         }
     }
 
