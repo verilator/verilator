@@ -338,14 +338,14 @@ class LinkJumpVisitor final : public VNVisitor {
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    AstNode* getMemberp(AstNodeModule* nodep, const std::string& name) {
+    AstNode* getMemberp(const AstNodeModule* const nodep, const std::string& name) {
         for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
             if (itemp->name() == name) return itemp;
         }
         return nullptr;
     }
     bool existsBlockAbove(const std::string& name) const {
-        for (AstNodeBlock* const stackp : vlstd::reverse_view(m_blockStack)) {
+        for (const AstNodeBlock* const stackp : vlstd::reverse_view(m_blockStack)) {
             if (stackp->name() == name) return true;
         }
         return false;
