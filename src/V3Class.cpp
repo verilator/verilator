@@ -71,7 +71,6 @@ class ClassVisitor final : public VNVisitor {
             extp = VN_AS(extp->nextp(), ClassExtends)) {
             recurseImplements(extp->classp());
         }
-        return;
     }
 
     // VISITORS

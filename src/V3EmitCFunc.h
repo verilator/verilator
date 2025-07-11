@@ -264,7 +264,7 @@ public:
     void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp) {
         // Virtual bases in depth-first left-to-right order
         std::vector<AstClass*> virtualBases;
-        std::set<AstClass*> doneClasses;
+        std::unordered_set<AstClass*> doneClasses;
         collectVirtualBasesRecursep(classp, virtualBases);
         for (AstClass* vbase : virtualBases) {
             if (doneClasses.count(vbase)) continue;
