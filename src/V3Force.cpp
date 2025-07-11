@@ -150,9 +150,11 @@ private:
     //  AstVarRef::user2      -> Flag indicating not to replace reference
     //  AstVarScope::user3      -> AstVarScope*, a `valVscp` force component for each VarScope of
     //  forced RHS
+    //  AstVarScope::user4p   -> AstNodeExpr*, the RHS expression
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
+    const VNUser4InUse m_user4InUse;
     AstUser1Allocator<AstVar, ForceComponentsVar> m_forceComponentsVar;
     AstUser1Allocator<AstVarScope, ForceComponentsVarScope> m_forceComponentsVarScope;
 
@@ -184,6 +186,12 @@ public:
     }
     ForceComponentsVarScope* tryGetForceComponents(AstVarRef* nodep) const {
         return m_forceComponentsVarScope.tryGet(nodep->varScopep());
+    }
+    void setValVscpRhsExpr(AstVarScope* valVscp, AstNodeExpr* rhsExpr) {
+        valVscp->user4p(rhsExpr);
+    }
+    AstNodeExpr* getValVscpRhsExpr(AstVarScope* valVscp) const {
+        return VN_CAST(valVscp->user4p(), NodeExpr);
     }
 };
 
@@ -233,9 +241,8 @@ class ForceConvertVisitor final : public VNVisitor {
             = new AstAssign{flp, lhsp->cloneTreePure(false), rhsp->cloneTreePure(false)};
         transformWritenVarScopes(setValp->lhsp(), [this, rhsp](AstVarScope* vscp) {
             AstVarScope* const valVscp = m_state.getForceComponents(vscp).m_valVscp;
-            // TODO support multiple VarRefs on RHS
-            if (AstVarRef* const refp = VN_CAST(rhsp, VarRef))
-                ForceState::setValVscp(refp, valVscp);
+            m_state.setValVscpRhsExpr(valVscp, rhsp->cloneTreePure(false));
+            rhsp->foreach([valVscp](AstVarRef* refp) { ForceState::setValVscp(refp, valVscp); });
             return valVscp;
         });
 
@@ -267,11 +274,14 @@ class ForceConvertVisitor final : public VNVisitor {
         transformWritenVarScopes(resetEnp->lhsp(), [this](AstVarScope* vscp) {
             return m_state.getForceComponents(vscp).m_enVscp;
         });
-        // IEEE 1800-2023 10.6.2: If this is a net, and not a variable, then reset the read
-        // signal directly as well, in case something in the same process reads it later. Also, if
-        // it is a variable, and not a net, set the original signal to the forced value, as it
-        // needs to retain the forced value until the next procedural update, which might happen on
-        // a later eval. Luckily we can do all this in a single assignment.
+
+        // IEEE 1800-2023 10.6.2: When released, then if the variable is not driven by a continuous
+        // assignment and does not currently have an active procedural continuous assignment, the
+        // variable shall not immediately change value and shall maintain its current value until
+        // the next procedural assignment to the variable is executed. Releasing a variable that is
+        // driven by a continuous assignment or currently has an active assign procedural
+        // continuous assignment shall reestablish that assignment and schedule a reevaluation in
+        // the continuous assignment's scheduling region.
         AstAssign* const resetRdp
             = new AstAssign{flp, lhsp->cloneTreePure(false), lhsp->unlinkFrBack()};
         // Replace write refs on the LHS
@@ -376,10 +386,12 @@ class ForceReplaceVisitor final : public VNVisitor {
             if (AstVarScope* const valVscp = ForceState::getValVscp(nodep)) {
                 FileLine* const flp = nodep->fileline();
                 AstVarRef* const valp = new AstVarRef{flp, valVscp, VAccess::WRITE};
-                AstVarRef* const rhsp = new AstVarRef{flp, nodep->varScopep(), VAccess::READ};
+                AstNodeExpr* rhsp = m_state.getValVscpRhsExpr(valVscp);
+                UASSERT_OBJ(rhsp, flp, "RHS of force/release must be an AstNodeExpr");
+                rhsp = rhsp->cloneTreePure(false);
 
                 ForceState::markNonReplaceable(valp);
-                ForceState::markNonReplaceable(rhsp);
+                rhsp->foreach([](AstVarRef* refp) { ForceState::markNonReplaceable(refp); });
 
                 m_stmtp->addNextHere(new AstAssign{flp, valp, rhsp});
             }
