@@ -78,8 +78,7 @@ private:
     }
     // For each write across a virtual interface boundary (member-level tracking)
     static void foreachWrittenVirtIfaceMember(
-        AstNode* const nodep,
-        const std::function<void(AstVarRef*, AstIface*, AstVar*)>& onWrite) {
+        AstNode* const nodep, const std::function<void(AstVarRef*, AstIface*, AstVar*)>& onWrite) {
         nodep->foreach([&](AstVarRef* const refp) {
             if (refp->access().isReadOnly()) return;
             if (AstIfaceRefDType* const dtypep = VN_CAST(refp->varp()->dtypep(), IfaceRefDType)) {
@@ -243,7 +242,7 @@ private:
         FileLine* const flp = nodep->fileline();
 
         foreachWrittenVirtIfaceMember(nodep, [&](AstVarRef*, AstIface* ifacep,
-                                                AstVar* memberVarp) {
+                                                 AstVar* memberVarp) {
             if (ifacep != m_trigAssignIfacep || memberVarp != m_trigAssignMemberVarp) {
                 // Write to different interface member than before - need new trigger assignment
                 m_trigAssignIfacep = ifacep;
