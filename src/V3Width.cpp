@@ -6225,6 +6225,7 @@ class WidthVisitor final : public VNVisitor {
                         randVarp = varrefp->varp();
                     } else {
                         argp->v3error("Invalid argument for 'std::randomize()'.");
+                        randVarp = nullptr;  // Avoid dangling pointer
                         VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
                     }
                     exprp = nullptr;
