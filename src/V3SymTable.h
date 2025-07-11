@@ -181,14 +181,11 @@ public:
                 }
             }
             // TODO: this should be handled properly - case when it is known what type is
-            // referenced by AstRefDType (refDTypep->typeofp() is not null
-            // or refDTypep->classOrPackageOpp() is not null)
+            // referenced by AstRefDType (refDTypep->typeofp() is null or
+            // refDTypep->classOrPackageOpp() is null)
             if (refDTypep && !refDTypep->typeofp() && !refDTypep->classOrPackageOpp()) {
-                // When still unknown - return because it may be a class
-                // findIdFlat is often called during stages when types
-                // are not fully resolved and by not returning types that
-                // may be a classes (but it is still unknown) we are risking
-                // not compiling a valid code
+                // When still unknown - return because it may be a class, classes may not be
+                // linked at this point. Return in case it gets resolved to a class in the future
                 return it->second;
             }
         }
