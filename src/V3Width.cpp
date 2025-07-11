@@ -6214,7 +6214,7 @@ class WidthVisitor final : public VNVisitor {
                                                 << exprp->prettyTypeName()
                                                 << ") is non-LRM compliant"
                                                 << " but supported for compatibility");
-            } else { 
+            } else {
                 if (!VN_IS(exprp, VarRef)) {
                     argp->v3error("Invalid argument for 'std::randomize()'.");
                 }
