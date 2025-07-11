@@ -6200,7 +6200,6 @@ class WidthVisitor final : public VNVisitor {
             nextp = pinp->nextp();
             AstArg* const argp = VN_CAST(pinp, Arg);
             if (!argp) continue;
-            AstVar* randVarp = nullptr;
             AstNodeExpr* exprp = argp->exprp();
             if (AstConst* const constp = VN_CAST(exprp, Const)) {
                 if (constp->num().isNull()) {
@@ -6215,20 +6214,9 @@ class WidthVisitor final : public VNVisitor {
                                                 << exprp->prettyTypeName()
                                                 << ") is non-LRM compliant"
                                                 << " but supported for compatibility");
-            }
-            while (exprp) {
-                if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-                    randVarp = memberSelp->varp();
-                    exprp = memberSelp->fromp();
-                } else {
-                    if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
-                        randVarp = varrefp->varp();
-                    } else {
-                        argp->v3error("Invalid argument for 'std::randomize()'.");
-                        randVarp = nullptr;  // Avoid dangling pointer
-                        VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
-                    }
-                    exprp = nullptr;
+            } else { 
+                if (!VN_IS(exprp, VarRef)) {
+                    argp->v3error("Invalid argument for 'std::randomize()'.");
                 }
             }
             if (!argp) continue;  // Errored out, bail
