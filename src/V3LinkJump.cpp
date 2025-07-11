@@ -174,6 +174,29 @@ class LinkJumpVisitor final : public VNVisitor {
         }
         return false;
     }
+    static AstStmtExpr* getQueuePushProcessSelfp(AstVarRef* const queueRefp) {
+        // Constructs queue.push_back(std::process::self()) statement
+        FileLine* const fl = queueRefp->fileline();
+        AstClass* const processClassp
+            = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
+        AstFunc* const selfMethodp = VN_AS(getMemberp(processClassp, "self"), Func);
+        AstFuncRef* const processSelfp = new AstFuncRef{fl, selfMethodp, nullptr};
+        processSelfp->classOrPackagep(processClassp);
+        return new AstStmtExpr{
+            fl, new AstMethodCall{fl, queueRefp, "push_back", new AstArg{fl, "", processSelfp}}};
+    }
+    static AstWhile* getProcessKillerLoop(AstVarRef* const queueRefp) {
+        // Calls `kill()` method on every process in the queue.
+        // Killed process is removed from the queue
+        FileLine* const fl = queueRefp->fileline();
+        AstStmtExpr* const processKillp = new AstStmtExpr{
+            fl, new AstMethodCall{fl, new AstMethodCall{fl, queueRefp, "pop_back", nullptr},
+                                  "kill", nullptr}};
+        AstGt* const condp
+            = new AstGt{fl, new AstMethodCall{fl, queueRefp->cloneTree(false), "size", nullptr},
+                        new AstConst{fl, AstConst::Signed32{}, 0}};
+        return new AstWhile{fl, condp, processKillp};
+    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -380,14 +403,9 @@ class LinkJumpVisitor final : public VNVisitor {
             processQueuep->lifetime(VLifetime::STATIC);
             topPkgp->addStmtsp(processQueuep);
 
-            // Construct queue.push_back(std::process::self()) statement
             AstVarRef* const queueRefp = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
-            AstFunc* const selfMethodp = VN_AS(getMemberp(processClassp, "self"), Func);
-            AstFuncRef* const processSelfp = new AstFuncRef{fl, selfMethodp, nullptr};
-            processSelfp->classOrPackagep(processClassp);
-            AstStmtExpr* pushCurrentProcessp
-                = new AstStmtExpr{fl, new AstMethodCall{fl, queueRefp, "push_back",
-                                                        new AstArg{fl, "", processSelfp}}};
+            AstStmtExpr* const pushCurrentProcessp = getQueuePushProcessSelfp(queueRefp);
+
             for (AstNode* forkItemp = forkp->stmtsp(); forkItemp; forkItemp = forkItemp->nextp()) {
                 // Add push_back statement at the beginning of each fork.
                 // Wrap into begin block if needed
@@ -400,23 +418,15 @@ class LinkJumpVisitor final : public VNVisitor {
                     forkItemp = beginp;
                 }
                 if (pushCurrentProcessp->backp()) {
-                    pushCurrentProcessp = pushCurrentProcessp->cloneTree(false);
+                    beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp->cloneTree(false));
+                } else {
+                    beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp);
                 }
-                beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp);
             }
 
-            // Replace` disable` with calling `kill()` method on every process in the queue.
-            // Killed process is removed from the queue
             AstVarRef* const queueReadRefp
                 = new AstVarRef{fl, topPkgp, processQueuep, VAccess::READ};
-            AstStmtExpr* const processKillp = new AstStmtExpr{
-                fl,
-                new AstMethodCall{fl, new AstMethodCall{fl, queueReadRefp, "pop_back", nullptr},
-                                  "kill", nullptr}};
-            AstGt* const condp = new AstGt{
-                fl, new AstMethodCall{fl, queueReadRefp->cloneTree(false), "size", nullptr},
-                new AstConst{fl, AstConst::Signed32{}, 0}};
-            AstWhile* const whilep = new AstWhile{fl, condp, processKillp};
+            AstWhile* const whilep = getProcessKillerLoop(queueReadRefp);
             nodep->addNextHere(whilep);
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
             const std::string targetName = beginp->name();
