@@ -170,7 +170,7 @@ module t (/*AUTOARG*/
    class CgEmb;
       covergroup extends cg_empty;
       endgroup
-   endclass;
+   endclass
 
    always @(posedge clk) begin
       cg_empty cov1 = new;
