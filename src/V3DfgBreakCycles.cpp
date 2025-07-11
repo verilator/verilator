@@ -673,7 +673,7 @@ class IndependentBits final : public DfgVisitor {
 
         // Otherwise, as the shift amount is non-negative, any bit at or below
         // the most significant dependent bit might be dependent
-        const V3Number& lMask = MASK(lhsp);
+        V3Number& lMask = MASK(lhsp);
         V3Number& vMask = MASK(vtxp);
         int idx = width - 1;
         while (idx >= 0 && lMask.bitIs0(idx)) --idx;
@@ -697,9 +697,9 @@ class IndependentBits final : public DfgVisitor {
 
         // Otherwise, as the shift amount is non-negative, any bit at or above
         // the least significant dependent bit might be dependent
-        const V3Number& lMask = MASK(lhsp);
+        V3Number& lMask = MASK(lhsp);
         V3Number& vMask = MASK(vtxp);
-        int idx = 0;
+        uint32_t idx = 0;
         while (idx < width && lMask.bitIs0(idx)) ++idx;
         while (idx < width) vMask.setBit(idx++, '1');
     }
