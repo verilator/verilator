@@ -358,6 +358,11 @@ class LinkJumpVisitor final : public VNVisitor {
         if (VN_IS(targetp, Task)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling task by name");
         } else if (AstFork* const forkp = VN_CAST(targetp, Fork)) {
+            // The support is limited only to disabling a fork from outside that fork.
+            // It utilizes the process::kill()` method. For each `disable` a queue of processes is
+            // declared. At the beginning of each fork that can be disabled, its process handle is
+            // pushed to the queue. `disable` statement is replaced with calling `kill()` method on
+            // each element of the queue.
             if (existsBlockAbove(forkp->name())) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork being inside it");
             }
@@ -367,12 +372,15 @@ class LinkJumpVisitor final : public VNVisitor {
             AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
             AstClass* const processClassp
                 = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
+            // Declare queue of processes (as a global variable for simplicity)
             AstVar* const processQueuep = new AstVar{
                 fl, VVarType::VAR, m_queueNames.get(forkp->name()), VFlagChildDType{},
                 new AstQueueDType{fl, VFlagChildDType{},
                                   new AstClassRefDType{fl, processClassp, nullptr}, nullptr}};
             processQueuep->lifetime(VLifetime::STATIC);
             topPkgp->addStmtsp(processQueuep);
+
+            // Construct queue.push_back(std::process::self()) statement
             AstVarRef* const queueRefp = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
             AstFunc* const selfMethodp = VN_AS(getMemberp(processClassp, "self"), Func);
             AstFuncRef* const processSelfp = new AstFuncRef{fl, selfMethodp, nullptr};
@@ -381,6 +389,8 @@ class LinkJumpVisitor final : public VNVisitor {
                 = new AstStmtExpr{fl, new AstMethodCall{fl, queueRefp, "push_back",
                                                         new AstArg{fl, "", processSelfp}}};
             for (AstNode* forkItemp = forkp->stmtsp(); forkItemp; forkItemp = forkItemp->nextp()) {
+                // Add push_back statement at the beginning of each fork.
+                // Wrap into begin block if needed
                 AstBegin* beginp = VN_CAST(forkItemp, Begin);
                 if (!beginp) {
                     beginp = new AstBegin{fl, "", nullptr};
@@ -394,6 +404,9 @@ class LinkJumpVisitor final : public VNVisitor {
                 }
                 beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp);
             }
+
+            // Replace` disable` with calling `kill()` method on every process in the queue.
+            // Killed process is removed from the queue
             AstVarRef* const queueReadRefp
                 = new AstVarRef{fl, topPkgp, processQueuep, VAccess::READ};
             AstStmtExpr* const processKillp = new AstStmtExpr{
