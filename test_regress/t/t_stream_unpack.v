@@ -280,8 +280,8 @@ module t (/*AUTOARG*/);
       o = {<<128{p}};
       `checkh(o, 256'habcd0123456789abfadecafedeadbeeffadecafedeadbeefabcd0123456789ab);
       {>>{p}} = o;
-      `checkh(p[0], 128'hfadecafedeadbeefabcd0123456789ab);
-      `checkh(p[1], 128'habcd0123456789abfadecafedeadbeef);
+      `checkh(p[0], 128'habcd0123456789abfadecafedeadbeef);
+      `checkh(p[1], 128'hfadecafedeadbeefabcd0123456789ab);
 
       $write("*-* All Finished *-*\n");
       $finish;
