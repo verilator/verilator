@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_disable_within_task_unsup.v:8:4: Unsupported: disabling fork from task / function
+    8 |    disable t.init.fork_blk;
+      |    ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

@@ -361,6 +361,9 @@ class LinkJumpVisitor final : public VNVisitor {
             if (existsBlockAbove(forkp->name())) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork being inside it");
             }
+            if (m_ftaskp) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from task / function");
+            }
             AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
             AstClass* const processClassp
                 = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
