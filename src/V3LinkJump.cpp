@@ -387,7 +387,7 @@ class LinkJumpVisitor final : public VNVisitor {
             // pushed to the queue. `disable` statement is replaced with calling `kill()` method on
             // each element of the queue.
             if (existsBlockAbove(forkp->name())) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork being inside it");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from within it");
             }
             if (m_ftaskp) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from task / function");

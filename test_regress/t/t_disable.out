@@ -1,4 +1,4 @@
-%Error-UNSUPPORTED: t/t_disable.v:11:10: Unsupported: disabling fork being inside it
+%Error-UNSUPPORTED: t/t_disable.v:11:10: Unsupported: disabling fork from within it
    11 |          disable foo;
       |          ^~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
