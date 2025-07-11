@@ -144,6 +144,7 @@ Gileadi
 Giri
 Gisselquist
 Gladkikh
+GmbH
 Goessling
 Gonnen
 Goorah
@@ -246,6 +247,7 @@ Lesik
 Libenzi
 Licker
 Liland
+LinkDot
 Liu
 Liwei
 Lockhart
@@ -332,6 +334,7 @@ Prabhat
 Prabhu
 Prateek
 Pre
+Precompiling
 Preprocess
 Pretet
 Pretl
@@ -405,6 +408,7 @@ Stroebel
 Strouble
 Stucki
 Su
+Subst
 Suguimoto
 Sundararajan
 Sunderland
@@ -537,10 +541,12 @@ basename
 bbox
 benchmarking
 biguint
+binToOneHot
 bindir
 biops
 bisonpre
 bitOpTree
+bitaggregat
 bitop
 bitstoreal
 blackbox
@@ -585,7 +591,9 @@ conf
 config
 const
 constexpr
+constification
 constpool
+contify
 coredump
 coroutine
 coroutines
@@ -878,6 +886,7 @@ onehot
 ooo
 oprofile
 ortegon
+oversized
 oversubscription
 parallelized
 param
@@ -1035,6 +1044,7 @@ swrite
 synthesizeable
 sys
 systemc
+taskify
 tcmalloc
 tenghtt
 testbench

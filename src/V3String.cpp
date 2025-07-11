@@ -160,16 +160,18 @@ string VString::unquoteSVString(const string& text, string& errOut) {
             if (std::isdigit(*cp)) {
                 octal_val = octal_val * 8 + (*cp - '0');
                 if (++octal_digits == 3) {
-                    octal_digits = 0;
-                    quoted = false;
                     newtext += octal_val;
+                    octal_digits = 0;
+                    octal_val = 0;
+                    quoted = false;
                 }
             } else {
                 if (octal_digits) {
                     // Spec allows 1-3 digits
-                    octal_digits = 0;
-                    quoted = false;
                     newtext += octal_val;
+                    octal_digits = 0;
+                    octal_val = 0;
+                    quoted = false;
                     --cp;  // Backup to reprocess terminating character as non-escaped
                     continue;
                 }
@@ -200,6 +202,11 @@ string VString::unquoteSVString(const string& text, string& errOut) {
                 }
             }
         } else if (*cp == '\\') {
+            if (octal_digits) {
+                newtext += octal_val;
+                // below: octal_digits = 0;
+                octal_val = 0;
+            }
             quoted = true;
             octal_digits = 0;
         } else {

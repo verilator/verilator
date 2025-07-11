@@ -294,6 +294,7 @@ void V3ParseImp::preprocDumps(std::ostream& os, bool forInputs) {
 }
 
 void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
+                           const string& libname,
                            const string& errmsg) {  // "" for no error, make fake node
     const string nondirname = V3Os::filenameNonDir(modfilename);
     const string modname = V3Os::filenameNonDirExt(modfilename);
@@ -303,13 +304,14 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     m_lexFileline->newContent();
     m_bisonLastFileline = m_lexFileline;
     m_inLibrary = inLibrary;
+    m_libname = libname;
 
     // Preprocess into m_ppBuffer
     const bool ok = V3PreShell::preproc(fileline, modfilename, m_filterp, this, errmsg);
     if (!ok) {
         if (errmsg != "") return;  // Threw error already
         // Create fake node for later error reporting
-        AstNodeModule* const nodep = new AstNotFoundModule{fileline, modname};
+        AstNodeModule* const nodep = new AstNotFoundModule{fileline, modname, libname};
         v3Global.rootp()->addModulesp(nodep);
         return;
     }
@@ -378,6 +380,15 @@ void V3ParseImp::dumpInputsFile() {
     VL_DO_DANGLING(delete ofp, ofp);
 }
 
+void V3ParseImp::dumpTokensAhead(int line) {  // LCOV_EXCL_START
+    int i = 0;
+    UINFO(1, "dumpTokensAhead @ " << line << " [ ] " << yylval);
+    for (auto t : m_tokensAhead) {
+        UINFO(1, "dumpTokensAhead @ " << line << " [" << i << "] " << t);
+        ++i;
+    }
+}  // LCOV_EXCL_STOP
+
 void V3ParseImp::lexFile(const string& modname) {
     // Prepare for lexing
     UINFO(3, "Lexing " << modname);
@@ -394,8 +405,11 @@ void V3ParseImp::tokenPull() {
     // Pull token from lex into the pipeline
     // This corrupts yylval, must save/restore if required
     // Fetch next token from prefetch or real lexer
+    VL_RESTORER(yylval);
     yylexReadTok();  // sets yylval
+    UINFO(9, "tokenPulled " << yylval);
     m_tokensAhead.push_back(yylval);
+    if (debug() >= 10) dumpTokensAhead(__LINE__);
 }
 
 const V3ParseBisonYYSType* V3ParseImp::tokenPeekp(size_t depth) {
@@ -543,6 +557,33 @@ size_t V3ParseImp::tokenPipeScanTypeEq(size_t depth) {
     return depth;
 }
 
+size_t V3ParseImp::tokenPipeScanEqNew(size_t depth) {
+    // Search around IEEE class_new to see if is expression
+    // Return location of following token, or input if not found
+    // '=' { packageClassScopeNoId } yNEW__LEX
+    UINFO(9, "tokenPipelineScanEqNew tok=" << yylval.token);
+    UASSERT(yylval.token == '=', "Start with '='");
+    while (true) {
+        const int tok = tokenPeekp(depth)->token;
+        if (tok == 0) {  // LCOV_EXCL_BR_LINE
+            UINFO(9, "tokenPipeScanEqNew hit EOF; probably syntax error to come");
+            break;  // LCOV_EXCL_LINE
+        } else if (tok == yNEW__LEX) {
+            break;
+        } else if (tok == yaID__LEX) {
+            ++depth;  // yaID__LEX
+            depth = tokenPipeScanParam(depth, false);
+            if (tokenPeekp(depth)->token != yP_COLONCOLON) return 0;
+            ++depth;  // yP_COLONCOLON
+            continue;
+        } else {
+            return 0;  // Miss
+        }
+        ++depth;
+    }
+    return depth;
+}
+
 int V3ParseImp::tokenPipelineId(int token) {
     const V3ParseBisonYYSType* nexttokp = tokenPeekp(0);  // First char after yaID
     const int nexttok = nexttokp->token;
@@ -552,8 +593,8 @@ int V3ParseImp::tokenPipelineId(int token) {
     VL_RESTORER(yylval);  // Remember value, as about to read ahead
     if (m_tokenLastBison.token != '@' && m_tokenLastBison.token != '#'
         && m_tokenLastBison.token != '.') {
-        if (const size_t depth = tokenPipeScanIdInst(0)) return yaID__aINST;
-        if (const size_t depth = tokenPipeScanIdType(0)) return yaID__aTYPE;
+        if (tokenPipeScanIdInst(0)) return yaID__aINST;
+        if (tokenPipeScanIdType(0)) return yaID__aTYPE;
     }
     if (nexttok == '#') {  // e.g. class_type parameter_value_assignment '::'
         const size_t depth = tokenPipeScanParam(0, false);
@@ -571,6 +612,7 @@ void V3ParseImp::tokenPipeline() {
     // If a paren, read another
     if (token == '('  //
         || token == ':'  //
+        || token == '='  //
         || token == yCONST__LEX  //
         || token == yGLOBAL__LEX  //
         || token == yLOCAL__LEX  //
@@ -581,9 +623,7 @@ void V3ParseImp::tokenPipeline() {
         || token == yWITH__LEX  //
         || token == yaID__LEX  //
     ) {
-        if (debugFlex() >= 6) {
-            cout << "   tokenPipeline: reading ahead to find possible strength" << endl;
-        }
+        if (debugFlex() >= 6) UINFO(0, "tokenPipeline: reading ahead");
         const V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
         const V3ParseBisonYYSType* nexttokp = tokenPeekp(0);
         const int nexttok = nexttokp->token;
@@ -597,6 +637,10 @@ void V3ParseImp::tokenPipeline() {
             } else if (nexttok == yFORK) {
                 token = yP_COLON__FORK;
             }
+        } else if (token == '=') {
+            if (nexttokp->token == yNEW__LEX || tokenPipeScanEqNew(0)) {
+                token = yP_EQ__NEW;
+            }  // else still '='
         } else if (token == yCONST__LEX) {
             if (nexttok == yREF) {
                 token = yCONST__REF;
@@ -688,7 +732,13 @@ void V3ParseImp::tokenPipelineSym() {
     int token = yylval.token;
     if (token == yaID__LEX || token == yaID__CC || token == yaID__aTYPE) {
         importIfInStd(yylval.fl, *(yylval.strp));
-        if (token == yaID__LEX) token = yaID__ETC;
+        if (token == yaID__LEX) {
+            if (VString::startsWith(*(yylval.strp), "PATHPULSE__024")) {
+                token = yaID__PATHPULSE;
+            } else {
+                token = yaID__ETC;
+            }
+        }
     }
     m_afterColonColon = token == yP_COLONCOLON;
     yylval.token = token;
@@ -703,6 +753,7 @@ int V3ParseImp::tokenToBison() {
 
     if (debug() >= 6 || debugFlex() >= 6
         || debugBison() >= 6) {  // --debugi-flex and --debugi-bison
+        if (debug() >= 10) dumpTokensAhead(__LINE__);
         cout << "tokenToBison  " << yylval << endl;
     }
     return yylval.token;
@@ -739,8 +790,8 @@ V3Parse::~V3Parse() {  //
     VL_DO_CLEAR(delete m_impp, m_impp = nullptr);
 }
 void V3Parse::parseFile(FileLine* fileline, const string& modname, bool inLibrary,
-                        const string& errmsg) {
-    m_impp->parseFile(fileline, modname, inLibrary, errmsg);
+                        const string& libname, const string& errmsg) {
+    m_impp->parseFile(fileline, modname, inLibrary, libname, errmsg);
 }
 void V3Parse::ppPushText(V3ParseImp* impp, const string& text) {
     if (text != "") impp->ppPushText(text);

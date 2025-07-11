@@ -83,7 +83,7 @@ class CoverageVisitor final : public VNVisitor {
         CoverTerm(AstNodeExpr* exprp, bool objective, const string& emitV)
             : m_exprp{exprp}
             , m_objective{objective}
-            , m_emitV(emitV) {}
+            , m_emitV{emitV} {}
     };
     using CoverExpr = std::deque<CoverTerm>;
     using CoverExprs = std::list<CoverExpr>;
@@ -931,13 +931,11 @@ class CoverageVisitor final : public VNVisitor {
             const int width = lhsp->dtypep()->width();
             const size_t expected = std::is_same<T_Oper, AstXor>::value ? 0x1 << width : width + 1;
             if (checkMaxExprs(expected)) return;
-            AstNodeExpr* unrolledp = new AstSel{fl, lhsp->cloneTree(false),
-                                                new AstConst{fl, static_cast<uint32_t>(width - 1)},
-                                                new AstConst{fl, 1}};
+            AstNodeExpr* unrolledp = new AstSel{
+                fl, lhsp->cloneTree(false), new AstConst{fl, static_cast<uint32_t>(width - 1)}, 1};
             for (int bit = width - 2; bit >= 0; bit--) {
                 AstSel* const selp = new AstSel{fl, lhsp->cloneTree(false),
-                                                new AstConst{fl, static_cast<uint32_t>(bit)},
-                                                new AstConst{fl, 1}};
+                                                new AstConst{fl, static_cast<uint32_t>(bit)}, 1};
                 unrolledp = new T_Oper{fl, selp, unrolledp};
             }
             iterate(unrolledp);

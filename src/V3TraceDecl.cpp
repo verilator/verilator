@@ -24,7 +24,7 @@
 
 #include "V3TraceDecl.h"
 
-#include "V3Config.h"
+#include "V3Control.h"
 #include "V3EmitCBase.h"
 #include "V3Stats.h"
 
@@ -120,14 +120,11 @@ class TraceDeclVisitor final : public VNVisitor {
     // - A sub scope (stored as the cell corresponding to the sub scope)
     // Note: members are non-const to allow copy during sorting
     class TraceEntry final {
-        // AstVarScope under scope being traced
-        AstVarScope* m_vscp{nullptr};
-        // Sub scope (as AstCell) under scope being traced
-        AstCell* m_cellp{nullptr};
-        // Path to enclosing module in original hierarchy (non-trivail due to inlining)
-        std::string m_path;
-        // Name of signal/subscope
-        std::string m_name;
+        AstVarScope* m_vscp = nullptr;  // AstVarScope under scope being traced
+        AstCell* m_cellp = nullptr;  // Sub scope (as AstCell) under scope being traced
+        std::string m_path;  // Path to enclosing module in original hierarchy
+        std::string m_name;  // Name of signal/subscope
+        bool m_rootio = false;  // Is part of $rootio, if model at runtime uses name()=""
 
         void init(const std::string& name) {
             // Compute path in hierarchy and item name
@@ -147,12 +144,21 @@ class TraceDeclVisitor final : public VNVisitor {
             : m_cellp{cellp} {
             init(cellp->name());
         }
-
+        int operatorCompare(const TraceEntry& b) const {
+            if (rootio() && !b.rootio()) return true;
+            if (!rootio() && b.rootio()) return false;
+            if (const int cmp = path().compare(b.path())) return cmp < 0;
+            if (const int cmp = fileline().operatorCompare(b.fileline())) return cmp < 0;
+            return name() < b.name();
+        }
         AstVarScope* vscp() const { return m_vscp; }
         AstCell* cellp() const { return m_cellp; }
         const std::string& path() const { return m_path; }
+        void path(const std::string& path) { m_path = path; }
         const std::string& name() const { return m_name; }
         FileLine& fileline() const { return m_vscp ? *m_vscp->fileline() : *m_cellp->fileline(); }
+        bool rootio() const { return m_rootio; }
+        void rootio(bool flag) { m_rootio = flag; }
     };
     std::vector<TraceEntry> m_entries;  // Trace entries under current scope
     AstVarScope* m_traVscp = nullptr;  // Current AstVarScope we are constructing AstTraceDecls for
@@ -178,7 +184,7 @@ class TraceDeclVisitor final : public VNVisitor {
                 if (!prettyName.empty() && prettyName[0] == '_') return "Leading underscore";
                 if (prettyName.find("._") != string::npos) return "Inlined leading underscore";
             }
-            if (!V3Config::getScopeTraceOn(prettyName)) return "Vlt scope trace_off";
+            if (!V3Control::getScopeTraceOn(prettyName)) return "Vlt scope trace_off";
         }
         return nullptr;
     }
@@ -367,23 +373,29 @@ class TraceDeclVisitor final : public VNVisitor {
         }
 
         if (!m_entries.empty()) {
-            // Sort trace entries, first by enclosing instance (necessary for
-            // single traversal of hierarchy during initialization), then by
-            // source location, then by name.
-            std::stable_sort(m_entries.begin(), m_entries.end(),
-                             [](const TraceEntry& a, const TraceEntry& b) {
-                                 if (const int cmp = a.path().compare(b.path())) return cmp < 0;
-                                 if (const int cmp = a.fileline().operatorCompare(b.fileline()))
-                                     return cmp < 0;
-                                 return a.name() < b.name();
-                             });
+            if (nodep->name() == "TOP") {
+                UINFO(9, " Add $rootio " << nodep);
+                for (TraceEntry& entry : m_entries) {
+                    if (entry.path() == "" && entry.vscp()) entry.rootio(true);
+                }
+            }
+
+            // Sort trace entries, first by if a $root io, then by enclosing instance
+            // (necessary for single traversal of hierarchy during initialization), then
+            // by source location, then by name.
+            std::stable_sort(
+                m_entries.begin(), m_entries.end(),
+                [](const TraceEntry& a, const TraceEntry& b) { return a.operatorCompare(b); });
 
             // Build trace initialization functions for this AstScope
             FileLine* const flp = nodep->fileline();
             PathAdjustor pathAdjustor{flp, [&](AstNodeStmt* stmtp) { addToSubFunc(stmtp); }};
             for (const TraceEntry& entry : m_entries) {
                 // Adjust name prefix based on path in hierarchy
-                pathAdjustor.adjust(entry.path());
+                UINFO(9, "path='" << entry.path() << "' name='" << entry.name() << "' "
+                                  << (entry.cellp() ? static_cast<AstNode*>(entry.cellp())
+                                                    : static_cast<AstNode*>(entry.vscp())));
+                pathAdjustor.adjust(entry.rootio() ? "$rootio" : entry.path());
 
                 m_traName = entry.name();
 

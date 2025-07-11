@@ -460,7 +460,7 @@ private:
         if (exprp->width() > 1) exprp = new AstSel{fl, exprp, 0, 1};
         AstSenTree* sentreep = nodep->sentreep();
         if (sentreep) sentreep->unlinkFrBack();
-        AstNodeExpr* const past = new AstPast{fl, exprp, nullptr};
+        AstNodeExpr* const past = new AstPast{fl, exprp};
         past->dtypeFrom(exprp);
         exprp = new AstAnd{fl, past, new AstNot{fl, exprp->cloneTreePure(false)}};
         exprp->dtypeSetBit();
@@ -481,7 +481,7 @@ private:
         if (exprp->width() > 1) exprp = new AstSel{fl, exprp, 0, 1};
         AstSenTree* sentreep = nodep->sentreep();
         if (sentreep) sentreep->unlinkFrBack();
-        AstNodeExpr* const past = new AstPast{fl, exprp, nullptr};
+        AstNodeExpr* const past = new AstPast{fl, exprp};
         past->dtypeFrom(exprp);
         exprp = new AstAnd{fl, new AstNot{fl, past}, exprp->cloneTreePure(false)};
         exprp->dtypeSetBit();
@@ -496,7 +496,7 @@ private:
         AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
         AstSenTree* sentreep = nodep->sentreep();
         if (sentreep) sentreep->unlinkFrBack();
-        AstNodeExpr* const past = new AstPast{fl, exprp, nullptr};
+        AstNodeExpr* const past = new AstPast{fl, exprp};
         past->dtypeFrom(exprp);
         exprp = new AstEq{fl, past, exprp->cloneTreePure(false)};
         exprp->dtypeSetBit();
@@ -514,7 +514,7 @@ private:
 
         if (m_disablep) lhsp = new AstAnd{fl, new AstNot{fl, m_disablep}, lhsp};
 
-        AstNodeExpr* const past = new AstPast{fl, lhsp, nullptr};
+        AstNodeExpr* const past = new AstPast{fl, lhsp};
         past->dtypeFrom(lhsp);
         AstNodeExpr* const exprp = new AstOr{fl, new AstNot{fl, past}, rhsp};
         exprp->dtypeSetBit();

@@ -425,7 +425,7 @@ AstConst* AstConst::parseParamLiteral(FileLine* fl, const string& literal) {
         // the Verilog literal parser.
         char* endp;
         const int v = strtol(literal.c_str(), &endp, 0);
-        if ((v != 0) && (endp[0] == 0)) {  // C literal
+        if ((v != 0) && (v != 1) && (endp[0] == 0)) {  // C literal
             return new AstConst{fl, AstConst::Signed32{}, v};
         } else {  // Try a Verilog literal (fatals if not)
             return new AstConst{fl, AstConst::StringToParse{}, literal.c_str()};
@@ -452,6 +452,17 @@ void AstNetlist::timeprecisionMerge(FileLine*, const VTimescale& value) {
     } else if (prec < m_timeprecision) {
         m_timeprecision = prec;
     }
+}
+
+void AstNew::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isImplicit()) str << " [IMPLICIT]";
+    if (isScoped()) str << " [SCOPED]";
+}
+void AstNew::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isImplicit);
+    dumpJsonBoolFunc(str, isScoped);
+    dumpJsonGen(str);
 }
 
 bool AstVar::isSigPublic() const {
@@ -777,7 +788,7 @@ string AstVar::dpiTmpVarType(const string& varName) const {
 
     public:
         explicit converter(const string& name)
-            : m_name(name) {}
+            : m_name{name} {}
     };
     return converter{varName}.convert(this);
 }
@@ -1353,7 +1364,7 @@ AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
 
 AstConstPool::AstConstPool(FileLine* fl)
     : ASTGEN_SUPER_ConstPool(fl)
-    , m_modp{new AstModule{fl, "@CONST-POOL@"}}
+    , m_modp{new AstModule{fl, "@CONST-POOL@", "work"}}
     , m_scopep{new AstScope{fl, m_modp, "@CONST-POOL@", nullptr, nullptr}} {
     this->modulep(m_modp);
     m_modp->addStmtsp(m_scopep);
@@ -1804,6 +1815,22 @@ void AstClocking::dump(std::ostream& str) const {
 void AstClocking::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isDefault);
     dumpJsonBoolFunc(str, isGlobal);
+    dumpJsonGen(str);
+}
+void AstConfigRule::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isCell()) str << " [CELL]";
+}
+void AstConfigRule::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isCell);
+    dumpJsonGen(str);
+}
+void AstConfigUse::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isConfig()) str << " [CONFIG]";
+}
+void AstConfigUse::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, isConfig);
     dumpJsonGen(str);
 }
 void AstDisplay::dump(std::ostream& str) const {
@@ -2282,7 +2309,7 @@ void AstNetlist::dumpJson(std::ostream& str) const {
 }
 AstPackage* AstNetlist::dollarUnitPkgAddp() {
     if (!m_dollarUnitPkgp) {
-        m_dollarUnitPkgp = new AstPackage{fileline(), AstPackage::dollarUnitName()};
+        m_dollarUnitPkgp = new AstPackage{fileline(), AstPackage::dollarUnitName(), "work"};
         // packages are always libraries; don't want to make them a "top"
         m_dollarUnitPkgp->inLibrary(true);
         m_dollarUnitPkgp->modTrace(false);  // may reconsider later
@@ -2309,6 +2336,7 @@ void AstNodeModule::dump(std::ostream& str) const {
         str << " [RECURSIVE]";
     }
     str << " [" << timeunit() << "]";
+    if (libname() != "work") str << " libname=" << libname();
 }
 void AstNodeModule::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
@@ -2319,6 +2347,7 @@ void AstNodeModule::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, recursiveClone);
     dumpJsonBoolFunc(str, recursive);
     dumpJsonStr(str, "timeunit", timeunit().ascii());
+    if (libname() != "work") dumpJsonStr(str, "libname=", libname());
     dumpJsonGen(str);
 }
 void AstPackageExport::dump(std::ostream& str) const {
@@ -2358,13 +2387,15 @@ void AstPatMember::dumpJson(std::ostream& str) const {
 void AstNodeTriop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
 void AstNodeTriop::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstSel::dump(std::ostream& str) const {
-    this->AstNodeTriop::dump(str);
+    this->AstNodeBiop::dump(str);
+    str << " widthConst=" << this->widthConst();
     if (declRange().ranged()) {
         str << " decl" << declRange() << "]";
         if (declElWidth() != 1) str << "/" << declElWidth();
     }
 }
 void AstSel::dumpJson(std::ostream& str) const {
+    dumpJsonNumFunc(str, widthConst);
     if (declRange().ranged()) {
         dumpJsonStr(str, "declRange", cvtToStr(declRange()));
         dumpJsonNumFunc(str, declElWidth);
@@ -2573,6 +2604,8 @@ void AstVar::dump(std::ostream& str) const {
     if (isPulldown()) str << " [PULLDOWN]";
     if (isUsedClock()) str << " [CLK]";
     if (isSigPublic()) str << " [P]";
+    if (isSigUserRdPublic()) str << " [PRD]";
+    if (isSigUserRWPublic()) str << " [PWR]";
     if (isInternal()) str << " [INTERNAL]";
     if (isLatched()) str << " [LATCHED]";
     if (isUsedLoopIdx()) str << " [LOOP]";
@@ -3004,6 +3037,7 @@ void AstCMethodHard::setPurity() {
                                                           {"evaluate", false},
                                                           {"evaluation", false},
                                                           {"exists", true},
+                                                          {"fill", false},
                                                           {"find", true},
                                                           {"find_first", true},
                                                           {"find_first_index", true},
@@ -3069,7 +3103,9 @@ void AstCMethodHard::setPurity() {
         return;
     }
     auto isPureIt = isPureMethod.find(name());
+    // cppcheck-suppress derefInvalidIteratorRedundantCheck
     UASSERT_OBJ(isPureIt != isPureMethod.end(), this, "Unknown purity of method " + name());
+    // cppcheck-suppress derefInvalidIteratorRedundantCheck
     m_pure = isPureIt->second;
     if (!m_pure) return;
     if (!fromp()->isPure()) m_pure = false;
@@ -3142,6 +3178,20 @@ void AstDelay::dump(std::ostream& str) const {
 void AstDelay::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isCycleDelay);
     dumpJsonGen(str);
+}
+
+const char* AstDisable::broken() const {
+    BROKEN_RTN((m_targetp && targetRefp()) || ((!m_targetp && !targetRefp())));
+    return nullptr;
+}
+void AstDisable::dump(std::ostream& str) const {
+    this->AstNodeStmt::dump(str);
+    str << " -> ";
+    if (targetp()) {
+        targetp()->dump(str);
+    } else {
+        str << "UNLINKED";
+    }
 }
 const char* AstAnd::widthMismatch() const VL_MT_STABLE {
     BROKEN_RTN(lhsp()->widthMin() != rhsp()->widthMin());

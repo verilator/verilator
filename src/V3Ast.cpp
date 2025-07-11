@@ -193,6 +193,11 @@ string AstNode::prettyName(const string& namein) VL_PURE {
                 pos += 7;
                 continue;
             }
+            if (0 == std::strncmp(pos, "__LIB__", 7)) {
+                pretty = "";  // Trim library name before module name
+                pos += 7;
+                continue;
+            }
             if (0 == std::strncmp(pos, "__PVT__", 7)) {
                 pretty += "";
                 pos += 7;

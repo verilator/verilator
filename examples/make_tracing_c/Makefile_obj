@@ -32,7 +32,7 @@ CPPFLAGS += -DVL_DEBUG=1
 # For testing inside Verilator, "configure --enable-ccwarn" will do this
 # automatically; otherwise you may want this unconditionally enabled
 ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
-USER_CPPFLAGS_WALL += -W -Werror -Wall
+  USER_CPPFLAGS_WALL += -W -Werror -Wall
 endif
 
 # See the benchmarking section of bin/verilator.
@@ -51,5 +51,5 @@ OPT_FAST = -Os -fstrict-aliasing
 
 DEPS := $(wildcard *.d)
 ifneq ($(DEPS),)
-include $(DEPS)
+  include $(DEPS)
 endif

@@ -1167,7 +1167,7 @@ class ParamVisitor final : public VNVisitor {
     void relinkDots() {
         for (AstDot* const dotp : m_dots) {
             const AstClassOrPackageRef* const classRefp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
-            const AstClass* const lhsClassp = VN_AS(classRefp->classOrPackageNodep(), Class);
+            const AstClass* const lhsClassp = VN_AS(classRefp->classOrPackageSkipp(), Class);
             AstClassOrPackageRef* const rhsp = VN_AS(dotp->rhsp(), ClassOrPackageRef);
             for (auto* itemp = lhsClassp->membersp(); itemp; itemp = itemp->nextp()) {
                 if (itemp->name() == rhsp->name()) {
@@ -1323,7 +1323,7 @@ class ParamVisitor final : public VNVisitor {
         // by a class with actual parameter values.
         const AstClass* lhsClassp = nullptr;
         const AstClassOrPackageRef* const classRefp = VN_CAST(nodep->lhsp(), ClassOrPackageRef);
-        if (classRefp) lhsClassp = VN_CAST(classRefp->classOrPackageNodep(), Class);
+        if (classRefp) lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
         AstNode* rhsDefp = nullptr;
         AstClassOrPackageRef* const rhsp = VN_CAST(nodep->rhsp(), ClassOrPackageRef);
         if (rhsp) rhsDefp = rhsp->classOrPackageNodep();

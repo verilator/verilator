@@ -29,8 +29,6 @@ int main(int argc, const char** argv) {
     Verilated::randReset(0);
 #elif defined(T_X_ASSIGN_UNIQUE_1)
     Verilated::randReset(1);
-#elif defined(T_X_ASSIGN_UNIQUE_2)
-    Verilated::randReset(2);
 #endif
 
     VM_PREFIX* top = new VM_PREFIX{};
@@ -41,23 +39,20 @@ int main(int argc, const char** argv) {
     top->clk = 1;
     top->eval();
 
-#if defined(T_X_ASSIGN_UNIQUE_0)
-    if (top->o_int != 0) {
-        vl_fatal(__FILE__, __LINE__, "TOP.t", "x assign was not correct");
-        exit(1);
-    }
-#elif defined(T_X_ASSIGN_UNIQUE_1)
-    if (top->o_int != -1) {
-        vl_fatal(__FILE__, __LINE__, "TOP.t", "x assign was not correct");
-        exit(1);
-    }
-#elif defined(T_X_ASSIGN_UNIQUE_2)
+#if defined(T_X_ASSIGN_UNIQUE_0) || defined(T_X_ASSIGN_UNIQUE_1)
     if (top->o_int == 0 || top->o_int == -1) {
         vl_fatal(__FILE__, __LINE__, "TOP.t", "x assign was not unique");
         exit(1);
     }
 #else
     if (top->o != EXPECTED) {
+        vl_fatal(__FILE__, __LINE__, "TOP.t", "incorrect module output");
+        exit(1);
+    }
+
+    uint32_t o_int_expected = EXPECTED ? 0xffffffff : 0;
+
+    if (top->o_int != o_int_expected) {
         vl_fatal(__FILE__, __LINE__, "TOP.t", "incorrect module output");
         exit(1);
     }

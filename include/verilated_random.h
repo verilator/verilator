@@ -45,11 +45,11 @@ public:
 
     ArrayInfo(const std::string& name, void* datap, int index, const std::vector<IData>& indices,
               const std::vector<size_t>& idxWidths)
-        : m_name(name)
-        , m_datap(datap)
-        , m_index(index)
-        , m_indices(indices)
-        , m_idxWidths(idxWidths) {}
+        : m_name{name}
+        , m_datap{datap}
+        , m_index{index}
+        , m_indices{indices}
+        , m_idxWidths{idxWidths} {}
 };
 using ArrayInfoMap = std::map<std::string, std::shared_ptr<const ArrayInfo>>;
 
@@ -409,7 +409,7 @@ public:
     // Record a flat (non-class) element into the array variable table
     template <typename T>
     typename std::enable_if<!std::is_class<T>::value, void>::type
-    record_arr_table(T& var, const std::string name, int dimension, std::vector<IData> indices,
+    record_arr_table(T& var, const std::string& name, int dimension, std::vector<IData> indices,
                      std::vector<size_t> idxWidths) {
         const std::string key = generateKey(name, m_index);
         m_arr_vars[key] = std::make_shared<ArrayInfo>(name, &var, m_index, indices, idxWidths);
@@ -418,7 +418,7 @@ public:
 
     // Recursively record all elements in an unpacked array
     template <typename T, std::size_t N_Depth>
-    void record_arr_table(VlUnpacked<T, N_Depth>& var, const std::string name, int dimension,
+    void record_arr_table(VlUnpacked<T, N_Depth>& var, const std::string& name, int dimension,
                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (N_Depth != 0)) {
             idxWidths.push_back(32);
@@ -434,7 +434,7 @@ public:
 
     // Recursively record all elements in a queue
     template <typename T>
-    void record_arr_table(VlQueue<T>& var, const std::string name, int dimension,
+    void record_arr_table(VlQueue<T>& var, const std::string& name, int dimension,
                           std::vector<IData> indices, std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (var.size() != 0)) {
             idxWidths.push_back(32);
@@ -449,8 +449,9 @@ public:
 
     // Recursively record all elements in an associative array
     template <typename T_Key, typename T_Value>
-    void record_arr_table(VlAssocArray<T_Key, T_Value>& var, const std::string name, int dimension,
-                          std::vector<IData> indices, std::vector<size_t> idxWidths) {
+    void record_arr_table(VlAssocArray<T_Key, T_Value>& var, const std::string& name,
+                          int dimension, std::vector<IData> indices,
+                          std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (var.size() != 0)) {
             for (auto it = var.begin(); it != var.end(); ++it) {
                 const T_Key& key = it->first;
@@ -478,7 +479,7 @@ public:
     // Register a single structArray element via write_var
     template <typename T>
     typename std::enable_if<VlContainsCustomStruct<T>::value, void>::type
-    record_struct_arr(T& var, const std::string name, int dimension, std::vector<IData> indices,
+    record_struct_arr(T& var, const std::string& name, int dimension, std::vector<IData> indices,
                       std::vector<size_t> idxWidths) {
         std::ostringstream oss;
         for (size_t i = 0; i < indices.size(); ++i) {
@@ -492,7 +493,7 @@ public:
 
     // Recursively process VlUnpacked of structs
     template <typename T, std::size_t N_Depth>
-    void record_struct_arr(VlUnpacked<T, N_Depth>& var, const std::string name, int dimension,
+    void record_struct_arr(VlUnpacked<T, N_Depth>& var, const std::string& name, int dimension,
                            std::vector<IData> indices, std::vector<size_t> idxWidths) {
         if (dimension > 0 && N_Depth != 0) {
             constexpr size_t idx_width = 1 << VL_CLOG2_CE_Q(VL_CLOG2_CE_Q(N_Depth) + 1);
@@ -507,7 +508,7 @@ public:
 
     // Recursively process VlQueue of structs
     template <typename T>
-    void record_struct_arr(VlQueue<T>& var, const std::string name, int dimension,
+    void record_struct_arr(VlQueue<T>& var, const std::string& name, int dimension,
                            std::vector<IData> indices, std::vector<size_t> idxWidths) {
         if ((dimension > 0) && (var.size() != 0)) {
             idxWidths.push_back(32);
@@ -521,9 +522,9 @@ public:
 
     // Recursively process associative arrays of structs
     template <typename T_Key, typename T_Value>
-    void record_struct_arr(VlAssocArray<T_Key, T_Value>& var, const std::string name,
-                           int dimension, std::vector<IData> indices,
-                           std::vector<size_t> idxWidths) {
+    void record_struct_arr(VlAssocArray<T_Key, T_Value>& var, const std::string& name,
+                           int dimension, const std::vector<IData>& indices,
+                           const std::vector<size_t>& idxWidths) {
         if ((dimension > 0) && (!var.empty())) {
             for (auto it = var.begin(); it != var.end(); ++it) {
                 const T_Key& key = it->first;
@@ -551,7 +552,7 @@ public:
 
     // Helper: Register all members of a user-defined struct
     template <typename T, std::size_t... I>
-    void modifyMembers(T& obj, std::index_sequence<I...>, std::string baseName) {
+    void modifyMembers(T& obj, std::index_sequence<I...>, const std::string& baseName) {
         // Use the indices to access each member via std::get
         (void)std::initializer_list<int>{
             (write_var(std::get<I>(obj.getMembers(obj)), obj.memberWidth()[I],

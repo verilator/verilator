@@ -533,12 +533,9 @@ V3Number& V3Number::setMask(int nbits, int lsb) {
 
 string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
     // Correct number of zero bits/width matters
+    if (is1Step()) return "1step";
+    if (isNull()) return "null";
     std::ostringstream out;
-
-    if (is1Step()) {
-        out << "1step";
-        return out.str();
-    }
     if (isDouble()) {
         out.precision(17);
         if (VL_UNCOVERABLE(width() != 64)) {
@@ -1477,7 +1474,7 @@ V3Number& V3Number::opRepl(const V3Number& lhs,
     if (rhsval > (1UL << 24)) {
         v3error("More than a 16 Mbit replication, perhaps the replication factor"
                 " was two's-complement negative: "
-                << rhsval);
+                << rhsval << " (" << static_cast<int32_t>(rhsval) << ")");
     } else if (rhsval > 8192) {
         v3warn(WIDTHCONCAT, "More than a 8k bit replication is probably wrong: " << rhsval);
     }

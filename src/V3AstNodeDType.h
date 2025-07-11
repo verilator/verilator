@@ -245,12 +245,12 @@ protected:
         numeric(VSigning::fromBool(numericUnpack.isSigned()));
     }
     AstNodeUOrStructDType(const AstNodeUOrStructDType& other)
-        : AstNodeDType(other)
-        , m_name(other.m_name)
-        , m_uniqueNum(uniqueNumInc())
-        , m_packed(other.m_packed)
-        , m_isFourstate(other.m_isFourstate)
-        , m_constrainedRand(false) {}
+        : AstNodeDType{other}
+        , m_name{other.m_name}
+        , m_uniqueNum{uniqueNumInc()}
+        , m_packed{other.m_packed}
+        , m_isFourstate{other.m_isFourstate}
+        , m_constrainedRand{false} {}
 
 public:
     ASTGEN_MEMBERS_AstNodeUOrStructDType;
@@ -684,8 +684,8 @@ public:
     }
     AstDefImplicitDType(const AstDefImplicitDType& other)
         : AstNodeDType(other)
-        , m_name(other.m_name)
-        , m_uniqueNum(uniqueNumInc()) {}
+        , m_name{other.m_name}
+        , m_uniqueNum{uniqueNumInc()} {}
     ASTGEN_MEMBERS_AstDefImplicitDType;
     int uniqueNum() const { return m_uniqueNum; }
     bool sameNode(const AstNode* samep) const override {
@@ -800,9 +800,9 @@ public:
         widthFromSub(subDTypep());
     }
     AstEnumDType(const AstEnumDType& other)
-        : AstNodeDType(other)
-        , m_name(other.m_name)
-        , m_uniqueNum(uniqueNumInc()) {}
+        : AstNodeDType{other}
+        , m_name{other.m_name}
+        , m_uniqueNum{uniqueNumInc()} {}
     ASTGEN_MEMBERS_AstEnumDType;
 
     const char* broken() const override;
@@ -925,7 +925,7 @@ public:
                    AstNode* valuep)
         : ASTGEN_SUPER_MemberDType(fl)
         , m_name{name}
-        , m_constrainedRand(false) {
+        , m_constrainedRand{false} {
         childDTypep(dtp);  // Only for parser
         this->valuep(valuep);
         dtypep(nullptr);  // V3Width will resolve
@@ -934,7 +934,7 @@ public:
     AstMemberDType(FileLine* fl, const string& name, AstNodeDType* dtp)
         : ASTGEN_SUPER_MemberDType(fl)
         , m_name{name}
-        , m_constrainedRand(false) {
+        , m_constrainedRand{false} {
         UASSERT(dtp, "AstMember created with no dtype");
         refDTypep(dtp);
         dtypep(this);
@@ -1434,7 +1434,7 @@ public:
     // isSoft implies packed
     AstUnionDType(FileLine* fl, bool isSoft, VSigning numericUnpack)
         : ASTGEN_SUPER_UnionDType(fl, numericUnpack)
-        , m_isSoft(isSoft) {
+        , m_isSoft{isSoft} {
         packed(packed() | m_isSoft);
     }
     ASTGEN_MEMBERS_AstUnionDType;

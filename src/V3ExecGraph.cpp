@@ -18,7 +18,7 @@
 
 #include "V3ExecGraph.h"
 
-#include "V3Config.h"
+#include "V3Control.h"
 #include "V3EmitCBase.h"
 #include "V3File.h"
 #include "V3GraphStream.h"
@@ -88,7 +88,7 @@ public:
     static std::unordered_map<const ExecMTask*, MTaskState> mtaskState;
 
     explicit ThreadSchedule(uint32_t nThreads)
-        : m_id(s_nextId++)
+        : m_id{s_nextId++}
         , threads{nThreads} {}
     ThreadSchedule(ThreadSchedule&&) = default;
     ThreadSchedule& operator=(ThreadSchedule&&) = default;
@@ -799,7 +799,7 @@ void fillinCosts(V3Graph* execMTaskGraphp) {
         // This estimate is 64 bits, but the final mtask graph algorithm needs 32 bits
         const uint64_t costEstimate = V3InstrCount::count(mtp->bodyp(), false);
         const uint64_t costProfiled
-            = V3Config::getProfileData(v3Global.opt.prefix(), mtp->hashName());
+            = V3Control::getProfileData(v3Global.opt.prefix(), mtp->hashName());
         if (costProfiled) {
             UINFO(5, "Profile data for mtask " << mtp->id() << " " << mtp->hashName()
                                                << " cost override " << costProfiled);
@@ -830,8 +830,8 @@ void fillinCosts(V3Graph* execMTaskGraphp) {
     }
 
     if (missingProfiles) {
-        if (FileLine* const fl = V3Config::getProfileDataFileLine()) {
-            if (V3Config::containsMTaskProfileData()) {
+        if (FileLine* const fl = V3Control::getProfileDataFileLine()) {
+            if (V3Control::containsMTaskProfileData()) {
                 fl->v3warn(PROFOUTOFDATE, "Profile data for mtasks may be out of date. "
                                               << missingProfiles << " of " << totalEstimates
                                               << " mtasks had no data");

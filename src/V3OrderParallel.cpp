@@ -20,7 +20,7 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3Config.h"
+#include "V3Control.h"
 #include "V3ExecGraph.h"
 #include "V3File.h"
 #include "V3Graph.h"
@@ -1719,7 +1719,7 @@ class DpiImportCallVisitor final : public VNVisitor {
                                  : !v3Global.opt.threadsDpiUnpure()) {
                 // If hierarchical DPI wrapper cost is not found or is of a 0 cost,
                 // we have a normal DPI which induces DPI hazard by default.
-                m_hasDpiHazard = V3Config::getProfileData(nodep->cname()) == 0;
+                m_hasDpiHazard = V3Control::getProfileData(nodep->cname()) == 0;
                 UINFO(9, "DPI wrapper '" << nodep->cname()
                                          << "' has dpi hazard = " << m_hasDpiHazard);
             }
@@ -1753,7 +1753,7 @@ class DpiThreadsVisitor final : public VNVisitorConst {
 
     // METHODS
     void visit(AstCFunc* nodep) override {
-        m_threads = std::max(m_threads, V3Config::getHierWorkers(nodep->cname()));
+        m_threads = std::max(m_threads, V3Control::getHierWorkers(nodep->cname()));
         iterateChildrenConst(nodep);
     }
     void visit(AstNodeCCall* nodep) override { iterateConst(nodep->funcp()); }

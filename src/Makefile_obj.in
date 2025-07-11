@@ -21,13 +21,13 @@
 # from a level lower, so we need to move up if it's relative, not if absolute.
 config_srcdir = @srcdir@
 ifeq ($(config_srcdir),.)
- srcdir = ..
+  srcdir = ..
 else  # Run an experiment
- ifeq ($(wildcard $(config_srcdir)/../Makefile_obj.in),)
-   srcdir = $(config_srcdir)
- else
-   srcdir = $(config_srcdir)/..
- endif
+  ifeq ($(wildcard $(config_srcdir)/../Makefile_obj.in),)
+    srcdir = $(config_srcdir)
+  else
+    srcdir = $(config_srcdir)/..
+  endif
 endif
 
 incdir = $(srcdir)/../include
@@ -81,14 +81,14 @@ TGT = ../../verilator_bin$(EXEEXT)
 
 #################
 ifeq ($(VL_NOOPT),1)
-CPPFLAGS += -O0
+  CPPFLAGS += -O0
 else ifeq ($(VL_DEBUG),)
-# Optimize
-CPPFLAGS += -O3
+  # Optimize
+  CPPFLAGS += -O3
 else
-# Debug
-CPPFLAGS += @CFG_CXXFLAGS_DEBUG@ -DVL_DEBUG -D_GLIBCXX_DEBUG
-LDFLAGS += @CFG_LDFLAGS_DEBUG@
+  # Debug
+  CPPFLAGS += @CFG_CXXFLAGS_DEBUG@ -DVL_DEBUG -D_GLIBCXX_DEBUG
+  LDFLAGS += @CFG_LDFLAGS_DEBUG@
 endif
 #################
 
@@ -104,35 +104,35 @@ CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir) -I../../include
 #CPPFLAGS += -DVL_LEAK_CHECKS  # If running valgrind or other hunting tool
 CPPFLAGS += -MP # Only works on recent GCC versions
 ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
-CPPFLAGS += -W -Wall $(CFG_CXXFLAGS_WEXTRA) $(CFG_CXXFLAGS_SRC) -Werror
-#CPPFLAGS += -pedantic-errors
+  CPPFLAGS += -W -Wall $(CFG_CXXFLAGS_WEXTRA) $(CFG_CXXFLAGS_SRC) -Werror
+  #CPPFLAGS += -pedantic-errors
 else
-CPPFLAGS += $(CFG_CXXFLAGS_SRC)
+  CPPFLAGS += $(CFG_CXXFLAGS_SRC)
 endif
 LDFLAGS += $(CFG_LDFLAGS_SRC)
 
-CPPFLAGSWALL   = $(CPPFLAGS)
+CPPFLAGSWALL = $(CPPFLAGS)
 CPPFLAGSPARSER = $(CPPFLAGS) $(CFG_CXXFLAGS_PARSER)
 
 # Allow RPM builds to specify hardcoded data directories
 # To do this:
 ifeq ($(CFG_WITH_DEFENV),yes)
- CPPFLAGS += -DDEFENV_SYSTEMC=\"$(SYSTEMC)\"
- CPPFLAGS += -DDEFENV_SYSTEMC_ARCH=\"$(SYSTEMC_ARCH)\"
- CPPFLAGS += -DDEFENV_SYSTEMC_INCLUDE=\"$(SYSTEMC_INCLUDE)\"
- CPPFLAGS += -DDEFENV_SYSTEMC_LIBDIR=\"$(SYSTEMC_LIBDIR)\"
- ifeq ($(VERILATOR_ROOT),)  # Use what we're given, or intuit
-  CPPFLAGS += -DDEFENV_VERILATOR_ROOT=\"$(pkgdatadir)\"
- else
-  CPPFLAGS += -DDEFENV_VERILATOR_ROOT=\"$(VERILATOR_ROOT)\"
- endif
- ifneq ($(CFG_WITH_SOLVER),no)
-  CPPFLAGS += -DDEFENV_VERILATOR_SOLVER='"$(CFG_WITH_SOLVER)"'
- else
-  ifneq ($(VERILATOR_SOLVER),)
-   CPPFLAGS += -DDEFENV_VERILATOR_SOLVER='"$(VERILATOR_SOLVER)"'
+  CPPFLAGS += -DDEFENV_SYSTEMC=\"$(SYSTEMC)\"
+  CPPFLAGS += -DDEFENV_SYSTEMC_ARCH=\"$(SYSTEMC_ARCH)\"
+  CPPFLAGS += -DDEFENV_SYSTEMC_INCLUDE=\"$(SYSTEMC_INCLUDE)\"
+  CPPFLAGS += -DDEFENV_SYSTEMC_LIBDIR=\"$(SYSTEMC_LIBDIR)\"
+  ifeq ($(VERILATOR_ROOT),)  # Use what we're given, or intuit
+    CPPFLAGS += -DDEFENV_VERILATOR_ROOT=\"$(pkgdatadir)\"
+  else
+    CPPFLAGS += -DDEFENV_VERILATOR_ROOT=\"$(VERILATOR_ROOT)\"
   endif
- endif
+  ifneq ($(CFG_WITH_SOLVER),no)
+    CPPFLAGS += -DDEFENV_VERILATOR_SOLVER='"$(CFG_WITH_SOLVER)"'
+  else
+    ifneq ($(VERILATOR_SOLVER),)
+      CPPFLAGS += -DDEFENV_VERILATOR_SOLVER='"$(VERILATOR_SOLVER)"'
+    endif
+  endif
 endif
 
 HEADERS = $(wildcard V*.h v*.h)
@@ -171,175 +171,176 @@ maintainer-copy::
 #### Top executable
 
 RAW_OBJS = \
-	V3Const__gen.o \
-	V3Error.o \
-	V3FileLine.o \
-	V3Graph.o \
-	V3GraphAcyc.o \
-	V3GraphAlg.o \
-	V3GraphPathChecker.o \
-	V3GraphTest.o \
-	V3Hash.o \
-	V3OptionParser.o \
-	V3Os.o \
-	V3ParseGrammar.o \
-	V3ParseImp.o \
-	V3ParseLex.o \
-	V3PreProc.o \
-	V3PreShell.o \
-	V3String.o \
-	V3ThreadPool.o \
-	V3Waiver.o \
-	Verilator.o \
+  V3Const__gen.o \
+  V3Error.o \
+  V3FileLine.o \
+  V3Graph.o \
+  V3GraphAcyc.o \
+  V3GraphAlg.o \
+  V3GraphPathChecker.o \
+  V3GraphTest.o \
+  V3Hash.o \
+  V3OptionParser.o \
+  V3Os.o \
+  V3ParseGrammar.o \
+  V3ParseImp.o \
+  V3ParseLex.o \
+  V3PreProc.o \
+  V3PreShell.o \
+  V3String.o \
+  V3ThreadPool.o \
+  V3Waiver.o \
+  Verilator.o \
 
 RAW_OBJS_PCH_ASTMT = \
-	V3Ast.o \
-	V3AstNodes.o \
-	V3Broken.o \
-	V3Config.o \
-	V3EmitCBase.o \
-	V3EmitCConstPool.o \
-	V3EmitCFunc.o \
-	V3EmitCHeaders.o \
-	V3EmitCImp.o \
-	V3EmitCInlines.o \
-	V3EmitCPch.o \
-	V3EmitV.o \
-	V3File.o \
-	V3FuncOpt.o \
-	V3Global.o \
-	V3Hasher.o \
-	V3Number.o \
-	V3Options.o \
-	V3Stats.o \
-	V3StatsReport.o \
-	V3VariableOrder.o \
+  V3Ast.o \
+  V3AstNodes.o \
+  V3Broken.o \
+  V3Control.o \
+  V3EmitCBase.o \
+  V3EmitCConstPool.o \
+  V3EmitCFunc.o \
+  V3EmitCHeaders.o \
+  V3EmitCImp.o \
+  V3EmitCInlines.o \
+  V3EmitCPch.o \
+  V3EmitV.o \
+  V3File.o \
+  V3FuncOpt.o \
+  V3Global.o \
+  V3Hasher.o \
+  V3Number.o \
+  V3Options.o \
+  V3Stats.o \
+  V3StatsReport.o \
+  V3VariableOrder.o \
 
 RAW_OBJS_PCH_ASTNOMT = \
-	V3Active.o \
-	V3ActiveTop.o \
-	V3Assert.o \
-	V3AssertPre.o \
-	V3Begin.o \
-	V3Branch.o \
-	V3CCtors.o \
-	V3CUse.o \
-	V3Case.o \
-	V3Cast.o \
-	V3Class.o \
-	V3Clean.o \
-	V3Clock.o \
-	V3Combine.o \
-	V3Common.o \
-	V3Coverage.o \
-	V3CoverageJoin.o \
-	V3Dead.o \
-	V3Delayed.o \
-	V3Depth.o \
-	V3DepthBlock.o \
-	V3Descope.o \
-	V3Dfg.o \
-	V3DfgAstToDfg.o \
-	V3DfgCache.o \
-	V3DfgDecomposition.o \
-	V3DfgDfgToAst.o \
-	V3DfgOptimizer.o \
-	V3DfgPasses.o \
-	V3DfgPeephole.o \
-	V3DfgRegularize.o \
-	V3DiagSarif.o \
-	V3DupFinder.o \
-	V3EmitCMain.o \
-	V3EmitCMake.o \
-	V3EmitCModel.o \
-	V3EmitCSyms.o \
-	V3EmitMk.o \
-	V3EmitMkJson.o \
-	V3EmitXml.o \
-	V3ExecGraph.o \
-	V3Expand.o \
-	V3Force.o \
-	V3Fork.o \
-	V3Gate.o \
-	V3HierBlock.o \
-	V3Inline.o \
-	V3Inst.o \
-	V3InstrCount.o \
-	V3Interface.o \
-	V3Life.o \
-	V3LifePost.o \
-	V3LinkCells.o \
-	V3LinkDot.o \
-	V3LinkInc.o \
-	V3LinkJump.o \
-	V3LinkLValue.o \
-	V3LinkLevel.o \
-	V3LinkParse.o \
-	V3LinkResolve.o \
-	V3Localize.o \
-	V3MergeCond.o \
-	V3Name.o \
-	V3Order.o \
-	V3OrderGraphBuilder.o \
-	V3OrderMoveGraph.o \
-	V3OrderParallel.o \
-	V3OrderProcessDomains.o \
-	V3OrderSerial.o \
-	V3Param.o \
-	V3Premit.o \
-	V3ProtectLib.o \
-	V3Randomize.o \
-	V3Reloop.o \
-	V3Sampled.o \
-	V3Sched.o \
-	V3SchedAcyclic.o \
-	V3SchedPartition.o \
-	V3SchedReplicate.o \
-	V3SchedTiming.o \
-	V3SchedVirtIface.o \
-	V3Scope.o \
-	V3Scoreboard.o \
-	V3Slice.o \
-	V3Split.o \
-	V3SplitAs.o \
-	V3SplitVar.o \
-	V3StackCount.o \
-	V3Subst.o \
-	V3TSP.o \
-	V3Table.o \
-	V3Task.o \
-	V3Timing.o \
-	V3Trace.o \
-	V3TraceDecl.o \
-	V3Tristate.o \
-	V3Udp.o \
-	V3Undriven.o \
-	V3Unknown.o \
-	V3Unroll.o \
-	V3Width.o \
-	V3WidthCommit.o \
-	V3WidthSel.o \
+  V3Active.o \
+  V3ActiveTop.o \
+  V3Assert.o \
+  V3AssertPre.o \
+  V3Begin.o \
+  V3Branch.o \
+  V3CCtors.o \
+  V3CUse.o \
+  V3Case.o \
+  V3Cast.o \
+  V3Class.o \
+  V3Clean.o \
+  V3Clock.o \
+  V3Combine.o \
+  V3Common.o \
+  V3Coverage.o \
+  V3CoverageJoin.o \
+  V3Dead.o \
+  V3Delayed.o \
+  V3Depth.o \
+  V3DepthBlock.o \
+  V3Descope.o \
+  V3Dfg.o \
+  V3DfgAstToDfg.o \
+  V3DfgBreakCycles.o \
+  V3DfgCache.o \
+  V3DfgDecomposition.o \
+  V3DfgDfgToAst.o \
+  V3DfgOptimizer.o \
+  V3DfgPasses.o \
+  V3DfgPeephole.o \
+  V3DfgRegularize.o \
+  V3DiagSarif.o \
+  V3DupFinder.o \
+  V3EmitCMain.o \
+  V3EmitCMake.o \
+  V3EmitCModel.o \
+  V3EmitCSyms.o \
+  V3EmitMk.o \
+  V3EmitMkJson.o \
+  V3EmitXml.o \
+  V3ExecGraph.o \
+  V3Expand.o \
+  V3Force.o \
+  V3Fork.o \
+  V3Gate.o \
+  V3HierBlock.o \
+  V3Inline.o \
+  V3Inst.o \
+  V3InstrCount.o \
+  V3Interface.o \
+  V3Life.o \
+  V3LifePost.o \
+  V3LinkCells.o \
+  V3LinkDot.o \
+  V3LinkInc.o \
+  V3LinkJump.o \
+  V3LinkLValue.o \
+  V3LinkLevel.o \
+  V3LinkParse.o \
+  V3LinkResolve.o \
+  V3Localize.o \
+  V3MergeCond.o \
+  V3Name.o \
+  V3Order.o \
+  V3OrderGraphBuilder.o \
+  V3OrderMoveGraph.o \
+  V3OrderParallel.o \
+  V3OrderProcessDomains.o \
+  V3OrderSerial.o \
+  V3Param.o \
+  V3Premit.o \
+  V3ProtectLib.o \
+  V3Randomize.o \
+  V3Reloop.o \
+  V3Sampled.o \
+  V3Sched.o \
+  V3SchedAcyclic.o \
+  V3SchedPartition.o \
+  V3SchedReplicate.o \
+  V3SchedTiming.o \
+  V3SchedVirtIface.o \
+  V3Scope.o \
+  V3Scoreboard.o \
+  V3Slice.o \
+  V3Split.o \
+  V3SplitAs.o \
+  V3SplitVar.o \
+  V3StackCount.o \
+  V3Subst.o \
+  V3TSP.o \
+  V3Table.o \
+  V3Task.o \
+  V3Timing.o \
+  V3Trace.o \
+  V3TraceDecl.o \
+  V3Tristate.o \
+  V3Udp.o \
+  V3Undriven.o \
+  V3Unknown.o \
+  V3Unroll.o \
+  V3Width.o \
+  V3WidthCommit.o \
+  V3WidthSel.o \
 
 # verilator_coverage
 VLCOV_OBJS = \
-	VlcMain.o \
+  VlcMain.o \
 
 NON_STANDALONE_HEADERS = \
-	V3AstInlines.h \
-	V3AstNodeDType.h \
-	V3AstNodeExpr.h \
-	V3AstNodeOther.h \
-	V3DfgVertices.h \
-	V3ThreadPool.h \
-	V3WidthRemove.h \
+  V3AstInlines.h \
+  V3AstNodeDType.h \
+  V3AstNodeExpr.h \
+  V3AstNodeOther.h \
+  V3DfgVertices.h \
+  V3ThreadPool.h \
+  V3WidthRemove.h \
 
 AST_DEFS := \
-	V3AstNodeDType.h \
-	V3AstNodeExpr.h \
-	V3AstNodeOther.h \
+  V3AstNodeDType.h \
+  V3AstNodeExpr.h \
+  V3AstNodeOther.h \
 
 DFG_DEFS := \
-	V3DfgVertices.h
+  V3DfgVertices.h
 
 #### astgen common flags
 
@@ -350,11 +351,11 @@ ASTGENFLAGS += $(foreach f,$(DFG_DEFS),--dfgdef $f)
 #### Linking
 
 ifeq ($(VL_VLCOV),)
-PREDEP_H = V3Ast__gen_forward_class_decls.h
-OBJS += $(RAW_OBJS) $(RAW_OBJS_PCH_ASTMT) $(RAW_OBJS_PCH_ASTNOMT)
+  PREDEP_H = V3Ast__gen_forward_class_decls.h
+  OBJS += $(RAW_OBJS) $(RAW_OBJS_PCH_ASTMT) $(RAW_OBJS_PCH_ASTNOMT)
 else
-PREDEP_H =
-OBJS += $(VLCOV_OBJS)
+  PREDEP_H =
+  OBJS += $(VLCOV_OBJS)
 endif
 
 $(TGT): $(PREDEP_H) $(OBJS)
@@ -454,5 +455,5 @@ header_cc: $(addsuffix __header_cc.o, $(basename $(HEADER_CC_H)))
 
 DEPS := $(wildcard *.d)
 ifneq ($(DEPS),)
-include $(DEPS)
+  include $(DEPS)
 endif

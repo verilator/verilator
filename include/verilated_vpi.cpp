@@ -2537,6 +2537,7 @@ void vl_vpi_put_word_gen(const VerilatedVpioVar* vop, T word, size_t bitCount, s
             = (info.m_datap[info.m_wordOffset + 1] & ~info.m_maskHi)
               | ((word >> (wordBits - info.m_bitOffset)) & info.m_maskHi);
     }
+    // cppcheck-has-bug-suppress unreadVariable
     info.m_datap[info.m_wordOffset] = (info.m_datap[info.m_wordOffset] & ~info.m_maskLo)
                                       | ((word << info.m_bitOffset) & info.m_maskLo);
 }
@@ -2978,7 +2979,6 @@ void vl_get_value_array_vectors(unsigned index, const unsigned num, const unsign
                                 p_vpi_vecval dst) {
     static_assert(std::is_unsigned<T>::value,
                   "type T is not unsigned");  // ensure logical right shift
-    const unsigned element_size_bytes = VL_BYTES_I(packedSize);
     const unsigned element_size_words = VL_WORDS_I(packedSize);
     if (sizeof(T) == sizeof(QData)) {
         for (unsigned i = 0; i < num; ++i) {

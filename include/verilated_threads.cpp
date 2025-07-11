@@ -135,7 +135,7 @@ bool VlThreadPool::isNumactlRunning() {
 }
 
 std::string VlThreadPool::numaAssign() {
-#if defined(__linux) || defined(CPU_ZERO)  // Linux-like; assume we have pthreads etc
+#if defined(__linux) || defined(CPU_ZERO) || defined(VL_CPPCHECK)  // Linux-like pthreads
     // If not under numactl, make a reasonable processor affinity selection
     if (isNumactlRunning()) return "running under numactl";  // User presumably set affinity
     const int num_threads = static_cast<int>(m_workers.size());
@@ -157,24 +157,25 @@ std::string VlThreadPool::numaAssign() {
     std::map<int, int> processor_core;
     std::multimap<int, int> core_processors;
     std::set<int> cores;
-    int processor = -1;
-    int core = -1;
-    while (!is.eof()) {
-        std::string line;
-        std::getline(is, line);
-        static std::string::size_type pos = line.find(":");
-        int number = -1;
-        if (pos != std::string::npos) number = atoi(line.c_str() + pos + 1);
-        if (line.compare(0, std::strlen("processor"), "processor") == 0) {
-            processor = number;
-            core = -1;
-        } else if (line.compare(0, std::strlen("core id"), "core id") == 0) {
-            core = number;
-            // std::cout << "p" << processor << " socket " << socket << " c" << core << std::endl;
-            cores.emplace(core);
-            processor_core[processor] = core;
-            core_processors.emplace(core, processor);
-            unassigned_processors.push_back(processor);
+    {
+        int processor = -1;
+        while (!is.eof()) {
+            std::string line;
+            std::getline(is, line);
+            static std::string::size_type pos = line.find(":");
+            int number = -1;
+            if (pos != std::string::npos) number = atoi(line.c_str() + pos + 1);
+            if (line.compare(0, std::strlen("processor"), "processor") == 0) {
+                processor = number;
+            } else if (line.compare(0, std::strlen("core id"), "core id") == 0) {
+                const int core = number;
+                // std::cout << "p" << processor << " socket " << socket << " c" << core <<
+                // std::endl;
+                cores.emplace(core);
+                processor_core[processor] = core;
+                core_processors.emplace(core, processor);
+                unassigned_processors.push_back(processor);
+            }
         }
     }
 

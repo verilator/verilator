@@ -46,12 +46,12 @@ class VSymEnt final {
     using IdNameMap = std::multimap<std::string, VSymEnt*>;
     IdNameMap m_idNameMap;  // Hash of variables by name
     AstNode* m_nodep;  // Node that entry belongs to
-    VSymEnt* m_fallbackp;  // Table "above" this one in name scope, for fallback resolution
-    VSymEnt* m_parentp;  // Table that created this table, dot notation needed to resolve into it
-    AstNodeModule* m_classOrPackagep;  // Package node is in (for V3LinkDot, unused here)
+    VSymEnt* m_fallbackp = nullptr;  // Table "above" this in name scope, for fallback resolution
+    VSymEnt* m_parentp = nullptr;  // Table that created this
+    AstNodeModule* m_classOrPackagep = nullptr;  // Package node is in (for V3LinkDot, unused here)
     string m_symPrefix;  // String to prefix symbols with (for V3LinkDot, unused here)
-    bool m_exported;  // Allow importing
-    bool m_imported;  // Was imported
+    bool m_exported = true;  // Allow importing
+    bool m_imported = false;  // Was imported
 #ifdef VL_DEBUG
     VL_DEFINE_DEBUG_FUNCTIONS;
 #else
@@ -68,6 +68,11 @@ public:
            << std::setw(0) << std::right;
         os << "  se" << cvtToHex(this) << std::setw(0);
         os << "  fallb=se" << cvtToHex(m_fallbackp);
+        if (m_imported || m_exported) {
+            os << "  ";
+            if (m_imported) os << "[I]";
+            if (m_exported) os << "[E]";
+        }
         if (m_symPrefix != "") os << "  symPrefix=" << m_symPrefix;
         if (nodep()) os << "  n=" << nodep();
         os << '\n';
@@ -117,7 +122,7 @@ public:
     void exported(bool flag) { m_exported = flag; }
     bool imported() const { return m_imported; }
     void imported(bool flag) { m_imported = flag; }
-    void insert(const string& name, VSymEnt* entp) {
+    VSymEnt* insert(const string& name, VSymEnt* entp) {
         UINFO(9, "     SymInsert se" << cvtToHex(this) << " '" << name << "' se" << cvtToHex(entp)
                                      << "  " << entp->nodep());
         if (name != "" && m_idNameMap.find(name) != m_idNameMap.end()) {
@@ -130,6 +135,7 @@ public:
         } else {
             m_idNameMap.emplace(name, entp);
         }
+        return entp;
     }
     void reinsert(const string& name, VSymEnt* entp) {
         const auto it = m_idNameMap.find(name);
@@ -150,7 +156,7 @@ public:
                      << (it == m_idNameMap.end() ? "NONE"
                                                  : "se" + cvtToHex(it->second)
                                                        + " n=" + cvtToHex(it->second->nodep())));
-        if (it != m_idNameMap.end()) return (it->second);
+        if (it != m_idNameMap.end()) return it->second;
         return nullptr;
     }
     VSymEnt* findIdFallback(const string& name) const {
@@ -331,25 +337,20 @@ protected:
 //######################################################################
 
 inline VSymEnt::VSymEnt(VSymGraph* graphp, AstNode* nodep)
-    : m_nodep(nodep) {
+    : m_nodep{nodep} {
     // No argument to set fallbackp, as generally it's wrong to set it in the new call,
     // Instead it needs to be set on a "findOrNew()" return, as it may have been new'ed
     // by an earlier search insertion.
-    m_fallbackp = nullptr;
-    m_parentp = nullptr;
-    m_classOrPackagep = nullptr;
-    m_exported = true;
-    m_imported = false;
     graphp->pushNewEnt(this);
 }
 
 inline VSymEnt::VSymEnt(VSymGraph* graphp, const VSymEnt* symp)
-    : m_nodep(symp->m_nodep) {
-    m_fallbackp = symp->m_fallbackp;
-    m_parentp = symp->m_parentp;
-    m_classOrPackagep = symp->m_classOrPackagep;
-    m_exported = symp->m_exported;
-    m_imported = symp->m_imported;
+    : m_nodep{symp->m_nodep}
+    , m_fallbackp{symp->m_fallbackp}
+    , m_parentp{symp->m_parentp}
+    , m_classOrPackagep{symp->m_classOrPackagep}
+    , m_exported{symp->m_exported}
+    , m_imported{symp->m_imported} {
     graphp->pushNewEnt(this);
 }
 

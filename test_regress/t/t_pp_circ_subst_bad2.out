@@ -1,4 +1,4 @@
 %Error: t/t_pp_circ_subst_bad.v:8:40002: Too many preprocessor tokens on a line (>20000); perhaps recursive `define
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_pp_circ_subst_bad.v:8:5: syntax error, unexpected IDENTIFIER-for-type, expecting IDENTIFIER or do or final or randomize
+%Error: t/t_pp_circ_subst_bad.v:8:5: syntax error, unexpected IDENTIFIER-for-type
 %Error: Exiting due to

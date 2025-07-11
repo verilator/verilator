@@ -40,6 +40,7 @@
 
 class DfgVertexVar VL_NOT_FINAL : public DfgVertexVariadic {
     AstVar* const m_varp;  // The AstVar associated with this vertex (not owned by this vertex)
+    AstVarScope* const m_varScopep;  // The AstVarScope associated with this vertex (not owned)
     bool m_hasDfgRefs = false;  // This AstVar is referenced in a different DFG of the module
     bool m_hasModRefs = false;  // This AstVar is referenced outside the DFG, but in the module
     bool m_hasExtRefs = false;  // This AstVar is referenced from outside the module
@@ -48,14 +49,17 @@ class DfgVertexVar VL_NOT_FINAL : public DfgVertexVariadic {
     V3Hash selfHash() const final VL_MT_DISABLED;
 
 public:
-    DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp, uint32_t initialCapacity)
-        : DfgVertexVariadic{dfg, type, varp->fileline(), dtypeFor(varp), initialCapacity}
-        , m_varp{varp} {}
+    inline DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp, uint32_t initialCapacity);
+    inline DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVarScope* vscp, uint32_t initialCapacity);
     ASTGEN_MEMBERS_DfgVertexVar;
 
     bool isDrivenByDfg() const { return arity() > 0; }
 
     AstVar* varp() const { return m_varp; }
+    AstVarScope* varScopep() const { return m_varScopep; }
+    AstNode* nodep() const {
+        return m_varScopep ? static_cast<AstNode*>(m_varScopep) : static_cast<AstNode*>(m_varp);
+    }
     bool hasDfgRefs() const { return m_hasDfgRefs; }
     void setHasDfgRefs() { m_hasDfgRefs = true; }
     bool hasModRefs() const { return m_hasModRefs; }
@@ -73,7 +77,7 @@ public:
         // Keep if public
         if (varp()->isSigPublic()) return true;
         // Keep if written in non-DFG code
-        if (varp()->user3()) return true;
+        if (nodep()->user3()) return true;
         // Otherwise it can be removed
         return false;
     }
@@ -109,6 +113,8 @@ public:
         }
         return static_cast<size_t>(num().toUInt());
     }
+
+    uint32_t toU32() const { return static_cast<size_t>(num().toUInt()); }
 
     bool isZero() const { return num().isEqZero(); }
     bool isOnes() const { return num().isEqAllOnes(width()); }
@@ -179,7 +185,11 @@ class DfgVarArray final : public DfgVertexVar {
 public:
     DfgVarArray(DfgGraph& dfg, AstVar* varp)
         : DfgVertexVar{dfg, dfgType(), varp, 4u} {
-        UASSERT_OBJ(VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType), varp, "Non array DfgVarArray");
+        UASSERT_OBJ(VN_IS(dtypep(), UnpackArrayDType), varp, "Non array DfgVarArray");
+    }
+    DfgVarArray(DfgGraph& dfg, AstVarScope* vscp)
+        : DfgVertexVar{dfg, dfgType(), vscp, 4u} {
+        UASSERT_OBJ(VN_IS(dtypep(), UnpackArrayDType), vscp, "Non array DfgVarArray");
     }
     ASTGEN_MEMBERS_DfgVarArray;
 
@@ -237,6 +247,8 @@ class DfgVarPacked final : public DfgVertexVar {
 public:
     DfgVarPacked(DfgGraph& dfg, AstVar* varp)
         : DfgVertexVar{dfg, dfgType(), varp, 1u} {}
+    DfgVarPacked(DfgGraph& dfg, AstVarScope* vscp)
+        : DfgVertexVar{dfg, dfgType(), vscp, 1u} {}
     ASTGEN_MEMBERS_DfgVarPacked;
 
     bool isDrivenFullyByDfg() const {

@@ -972,16 +972,7 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(nodep->fromp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->lsbp(), WidthVP{SELF, PRELIM}.p());
             checkCvtUS(nodep->fromp());
-            iterateCheckSizedSelf(nodep, "Select Width", nodep->widthp(), SELF, BOTH);
             iterateCheckSizedSelf(nodep, "Select LHS", nodep->fromp(), SELF, BOTH);
-            V3Const::constifyParamsEdit(nodep->widthp());  // widthp may change
-            const AstConst* const widthConstp = VN_CAST(nodep->widthp(), Const);
-            if (!widthConstp) {
-                nodep->v3error(
-                    "Width of bit extract isn't a constant");  // Impossible? // LCOV_EXCL_LINE
-                nodep->dtypeSetBit();
-                return;
-            }
             int width = nodep->widthConst();
             if (width <= 0) {
                 nodep->v3error("Width of bit extract must be positive (IEEE 1800-2023 11.5.1)");
@@ -997,8 +988,7 @@ class WidthVisitor final : public VNVisitor {
                                   << nodep->msbConst() << "<" << nodep->lsbConst());
                 width = (nodep->lsbConst() - nodep->msbConst() + 1);
                 nodep->dtypeSetLogicSized(width, VSigning::UNSIGNED);
-                pushDeletep(nodep->widthp());
-                nodep->widthp()->replaceWith(new AstConst(nodep->widthp()->fileline(), width));
+                nodep->widthConst(width);
                 pushDeletep(nodep->lsbp());
                 nodep->lsbp()->replaceWith(new AstConst{nodep->lsbp()->fileline(), 0});
             }
@@ -1366,6 +1356,7 @@ class WidthVisitor final : public VNVisitor {
                     }
                 }
             }
+            userIterate(nodep->sentreep(), nullptr);
         }
     }
     void visit(AstRose* nodep) override {
@@ -2168,7 +2159,7 @@ class WidthVisitor final : public VNVisitor {
             // Note we don't sign fromp() that would make the algorithm O(n^2) if lots of casting.
             AstNodeExpr* newp = nullptr;
             if (bad) {
-            } else if (const AstBasicDType* const basicp = toDtp->basicp()) {
+            } else if (AstBasicDType* const basicp = toDtp->basicp()) {
                 if (!basicp->isString() && fromDtp->isString()) {
                     newp = new AstNToI{nodep->fileline(), nodep->fromp()->unlinkFrBack(), toDtp};
                 } else if (!basicp->isDouble() && !fromDtp->isDouble()) {
@@ -2192,7 +2183,7 @@ class WidthVisitor final : public VNVisitor {
                     }
                 } else if (!basicp->isDouble() && nodep->fromp()->isDouble()) {
                     newp = new AstRToIRoundS{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
-                    newp->dtypeChgSigned(basicp->isSigned());
+                    newp->dtypep(basicp);
                 } else if (basicp->isSigned() && !nodep->fromp()->isSigned()) {
                     newp = new AstSigned{nodep->fileline(), nodep->fromp()->unlinkFrBack()};
                 } else if (!basicp->isSigned() && nodep->fromp()->isSigned()) {
@@ -2213,7 +2204,7 @@ class WidthVisitor final : public VNVisitor {
             // if (debug()) nodep->backp()->dumpTree("-  CastOutUpUp: ");
         }
         if (m_vup->final()) {
-            if (debug() >= 9) nodep->dumpTree(cout, "-  CastFPit: ");
+            if (debug() >= 9) nodep->dumpTree("-  CastFPit: ");
             iterateCheck(nodep, "value", nodep->fromp(), SELF, FINAL, nodep->fromp()->dtypep(),
                          EXTEND_EXP, false);
             if (debug() >= 9) nodep->dumpTree("-  CastFin: ");
@@ -2470,11 +2461,11 @@ class WidthVisitor final : public VNVisitor {
         // if (debug() >= 9) nodep->dumpTree("-  VRout: ");
         if (nodep->access().isWriteOrRW() && nodep->varp()->direction() == VDirection::CONSTREF) {
             nodep->v3error("Assigning to const ref variable: " << nodep->prettyNameQ());
-        } else if (!nodep->varp()->isForced() && nodep->access().isWriteOrRW()
-                   && nodep->varp()->isInput() && !nodep->varp()->isFuncLocal()
-                   && nodep->varp()->isReadOnly() && (!m_ftaskp || !m_ftaskp->isConstructor())
-                   && !VN_IS(m_procedurep, InitialAutomatic)
-                   && !VN_IS(m_procedurep, InitialStatic)) {
+        } else if (nodep->access().isWriteOrRW() && nodep->varp()->isInput()
+                   && !nodep->varp()->isFuncLocal() && nodep->varp()->isReadOnly()
+                   && (!m_ftaskp || !m_ftaskp->isConstructor())
+                   && !VN_IS(m_procedurep, InitialAutomatic) && !VN_IS(m_procedurep, InitialStatic)
+                   && !VN_IS(nodep->abovep(), AssignForce) && !VN_IS(nodep->abovep(), Release)) {
             nodep->v3warn(ASSIGNIN, "Assigning to input/const variable: " << nodep->prettyNameQ());
         } else if (nodep->access().isWriteOrRW() && nodep->varp()->isConst() && !m_paramsOnly
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
@@ -4392,11 +4383,28 @@ class WidthVisitor final : public VNVisitor {
         bool assign = false;
         if (VN_IS(nodep->backp(), Assign)) {  // assignment case
             assign = true;
-            AstClassRefDType* const refp
-                = m_vup ? VN_CAST(m_vup->dtypeNullSkipRefp(), ClassRefDType) : nullptr;
+            AstNode* warnp = nullptr;
+            AstClassRefDType* refp = nullptr;
+
+            if (nodep->isScoped()) {  // = ClassOrPackage::new
+                UASSERT_OBJ(nodep->classOrPackagep(), nodep, "Unlinked classOrPackage");
+                warnp = nodep->classOrPackagep();
+                if (AstClass* const classp = VN_CAST(warnp, Class)) {
+                    AstClassRefDType* const adtypep
+                        = new AstClassRefDType{nodep->fileline(), classp, nullptr};
+                    v3Global.rootp()->typeTablep()->addTypesp(adtypep);
+                    refp = adtypep;
+                }
+            } else {  // = new
+                warnp = m_vup->dtypeNullp();
+                refp = m_vup ? VN_CAST(m_vup->dtypeNullSkipRefp(), ClassRefDType) : nullptr;
+            }
             if (!refp) {  // e.g. int a = new;
-                nodep->v3error("new() assignment not legal to non-class data type "
-                               + (m_vup->dtypeNullp() ? m_vup->dtypep()->prettyDTypeNameQ() : ""));
+                nodep->v3error("new() assignment not legal to non-class "
+                               + (VN_IS(warnp, NodeDType) ? (
+                                      "data type "s + VN_AS(warnp, NodeDType)->prettyDTypeNameQ())
+                                  : warnp ? warnp->prettyNameQ()
+                                          : ""));
                 nodep->dtypep(m_vup->dtypep());
                 return;
             }
@@ -5728,10 +5736,11 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstTimeFormat* nodep) override {
         assertAtStatement(nodep);
-        iterateCheckSigned32(nodep, "units", nodep->unitsp(), BOTH);
-        iterateCheckSigned32(nodep, "precision", nodep->precisionp(), BOTH);
-        iterateCheckString(nodep, "suffix", nodep->suffixp(), BOTH);
-        iterateCheckSigned32(nodep, "width", nodep->widthp(), BOTH);
+        if (nodep->unitsp()) iterateCheckSigned32(nodep, "units", nodep->unitsp(), BOTH);
+        if (nodep->precisionp())
+            iterateCheckSigned32(nodep, "precision", nodep->precisionp(), BOTH);
+        if (nodep->suffixp()) iterateCheckString(nodep, "suffix", nodep->suffixp(), BOTH);
+        if (nodep->widthp()) iterateCheckSigned32(nodep, "width", nodep->widthp(), BOTH);
     }
     void visit(AstUCStmt* nodep) override {
         // Just let all arguments seek their natural sizes
@@ -6309,7 +6318,10 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
-        if (nodep->didWidth()) return;
+        if (nodep->didWidth()) {
+            nodep->addPinsp(withp);
+            return;
+        }
         if ((nodep->taskp()->classMethod() && !nodep->taskp()->isStatic())
             && !VN_IS(m_procedurep, InitialAutomatic)
             && (!m_ftaskp || !m_ftaskp->classMethod() || m_ftaskp->isStatic()) && !m_constraintp) {

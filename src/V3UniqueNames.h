@@ -38,7 +38,7 @@ public:
     V3UniqueNames() = default;
     explicit V3UniqueNames(const std::string& prefix, bool addSuffix = true)
         : m_prefix{prefix}
-        , m_addSuffix(addSuffix) {
+        , m_addSuffix{addSuffix} {
         if (!m_prefix.empty()) {
             UASSERT(VString::startsWith(m_prefix, "__V"), "Prefix must start with '__V'");
             UASSERT(!VString::endsWith(m_prefix, "_"), "Prefix must not end with '_'");

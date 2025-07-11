@@ -181,7 +181,7 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
 
 void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
     const AstBasicDType* const basicp = nodep->basicp();
-    bool refNeedParens = VN_IS(nodep->dtypeSkipRefp(), UnpackArrayDType);
+    const bool refNeedParens = VN_IS(nodep->dtypeSkipRefp(), UnpackArrayDType);
 
     const auto emitDeclArrayBrackets = [this](const AstVar* nodep) -> void {
         // This isn't very robust and may need cleanup for other data types
@@ -278,7 +278,7 @@ void EmitCBaseVisitorConst::emitVarAccessors(const AstVar* nodep) {
 
 void EmitCBaseVisitorConst::emitModCUse(const AstNodeModule* modp, VUseType useType) {
     bool nl = false;
-    forModCUse(modp, useType, [&](string entry) {
+    forModCUse(modp, useType, [&](const string& entry) {
         puts(entry);
         nl = true;
     });

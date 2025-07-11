@@ -47,6 +47,14 @@ module t();
     $display("Static variable: %d", static_var);
     if (static_var != 1)
       $stop;
+    fork
+      begin
+          automatic int my_auto_var = 0;
+          my_auto_var++;
+          $display("Automatic variable in fork: %d", my_auto_var);
+          if (my_auto_var != 1) $stop;
+      end
+    join_none
     $write("*-* All Finished *-*\n");
     $finish;
   end

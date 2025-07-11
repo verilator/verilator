@@ -31,7 +31,7 @@ CPPFLAGS += -Wno-deprecated
 # For testing inside Verilator, "configure --enable-ccwarn" will do this
 # automatically; otherwise you may want this unconditionally enabled
 ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
-USER_CPPFLAGS_WALL += -W -Werror -Wall
+  USER_CPPFLAGS_WALL += -W -Werror -Wall
 endif
 
 # If you build your own rules from scratch, note you need to include
@@ -61,5 +61,5 @@ sim_main.o: sim_main.cpp $(VM_PREFIX).h
 
 DEPS := $(wildcard *.d)
 ifneq ($(DEPS),)
-include $(DEPS)
+  include $(DEPS)
 endif

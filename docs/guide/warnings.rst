@@ -37,7 +37,7 @@ Warnings may be disabled in multiple ways:
    propagate upwards to any parent file (file that included the file with
    the lint_off).
 
-#. Disable the warning using :ref:`Verilator Configuration Files` with a
+#. Disable the warning using :ref:`Verilator Control Files` with a
    :option:`lint_off` command.  This is useful when a script suppresses
    warnings, and the Verilog source should not be changed.  This method also
    allows matching on the warning text.
@@ -173,6 +173,8 @@ List Of Warnings
 
    This error may be disabled with a lint_off BADSTDPRAGMA metacomment.
 
+   Ignoring this warning will cause the pragma to be ignored.
+
 
 .. option:: BADVLTPRAGMA
 
@@ -188,6 +190,8 @@ List Of Warnings
    .. include:: ../../docs/gen/ex_BADVLTPRAGMA_msg.rst
 
    This error may be disabled with a lint_off BADVLTPRAGMA metacomment.
+
+   Ignoring this warning will cause the pragma to be ignored.
 
 
 .. option:: BLKANDNBLK
@@ -207,23 +211,32 @@ List Of Warnings
    public task, or when the blocking and non-blocking assignments have
    non-overlapping bits and structure members.
 
+   From Verilator 5.038, this warning is only issued when Verilator can't prove that
+   the assignments are to non-overlapping sub-parts, and the blocking
+   assignment is in combinational logic (which is the case where simulation
+   results might differ from other simulators). Review any BLKANDNBLK
+   cases carefully after this version, and sign them off as
+   described above, only if know for sure the updates are not to overlapping
+   parts of the signal.
+
    Generally, this is caused by a register driven by both combo logic and a
    flop:
 
    .. code-block:: sv
 
-         logic [1:0] foo;
-         always @(posedge clk)  foo[0] <= ...
-         always_comb foo[1] = ...
+         logic [3:0] foo;
+         always @(posedge clk) foo[index] <= ...  // With index != 0
+         always_comb foo[0] = ...
 
    Instead, use a different register for the flop:
 
    .. code-block:: sv
 
-         logic [1:0] foo;
-         always @(posedge clk)  foo_flopped[0] <= ...
-         always_comb foo[0] = foo_flopped[0];
-         always_comb foo[1] = ...
+         logic [3:0] foo;
+         logic [3:1] foo_flopped;
+         always @(posedge clk) foo_flopped[index] <= ... // With index != 0
+         always_comb foo[0] = ...
+         always_comb foo[3:1] = foo_flopped;
 
    Or, this may also avoid the error:
 
@@ -320,8 +333,8 @@ List Of Warnings
    Unique case statements that select on an enumerated variable, where all
    of the enumerated values are covered by case items, are considered
    complete even if the case statement does not cover illegal
-   non-enumerated values (IEEE 1800-2023 12.5.3).  To check that illegal
-   values are not hit, use :vlopt:`--assert`.
+   non-enumerated values (IEEE 1800-2023 12.5.3).  Verilator checks that
+   illegal values are not hit, unless :vlopt:`--no-assert-case` was used.
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
@@ -359,8 +372,8 @@ List Of Warnings
 
    Warns that it is better style to use casez, and "?" in place of
    "x"'s.  See
-   `http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase_rev1_1.pdf
-   <http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase_rev1_1.pdf>`_
+   `http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase.pdf
+   <http://www.sunburst-design.com/papers/CummingsSNUG1999Boston_FullParallelCase.pdf>`_
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
@@ -434,8 +447,8 @@ List Of Warnings
    is suppressed, Verilator, like synthesis, will convert this to a
    non-delayed assignment, which may result in logic races or other
    nasties.  See
-   `http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA_rev1_2.pdf
-   <http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA_rev1_2.pdf>`_
+   `http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA.pdf
+   <http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA.pdf>`_
 
    Ignoring this warning may make Verilator simulations differ from other
    simulators.
@@ -498,7 +511,8 @@ List Of Warnings
 
 .. option:: DEFOVERRIDE
 
-   Warns that a macro definition within the code is being overridden by a command line directive:
+   Warns that a macro definition within the code is being overridden by a
+   command line directive:
 
    For example, running Verilator with :code:`<+define+\<DUP\>=\<def2\>>` and
 
@@ -1103,8 +1117,6 @@ List Of Warnings
 
 .. option:: LITENDIAN
 
-   .. TODO better example
-
    The naming of this warning is in contradiction with the common
    interpretation of little endian. It was therefore renamed to
    :option:`ASCRANGE`. While :option:`LITENDIAN` remains for
@@ -1249,6 +1261,8 @@ List Of Warnings
    modules' signals seem identical, e.g., multiple modules with a "clk"
    input.
 
+   Ignoring this warning will make multiple tops, as described in (3) above.
+
 
 .. option:: NEEDTIMINGOPT
 
@@ -1290,6 +1304,9 @@ List Of Warnings
    equivalent, which might behave differently in corner cases. For example
    :code:`$psprintf` system function is replaced by its standard equivalent
    :code:`$sformatf`.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
 
 
 .. option:: NOTIMING
@@ -1420,6 +1437,7 @@ List Of Warnings
    declared before being used. However, several standard libraries
    including UVM violate this, and other tools do not warn.
 
+
 .. option:: PORTSHORT
 
    Warns that an output port is connected to a constant.
@@ -1466,6 +1484,9 @@ List Of Warnings
 
    The portable way to suppress this warning is to use a define value other
    than zero, when it is to be used in a preprocessor expression.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
 
 
 .. option:: PROCASSINIT
@@ -1529,7 +1550,7 @@ List Of Warnings
    inside the protected region will be partly checked for correctness but is
    otherwise ignored.
 
-   Suppressing the warning may make Verilator differ from a simulator that
+   Ignoring the warning may make Verilator differ from a simulator that
    accepts the protected code.
 
 
@@ -1546,6 +1567,9 @@ List Of Warnings
 
    Warns that a real number is being implicitly rounded to an integer, with
    possible loss of precision.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
 
    Faulty example:
 
@@ -1576,8 +1600,12 @@ List Of Warnings
 
 .. option:: REDEFMACRO
 
-   Warns that the code has redefined the same macro with a different value,
-   for example:
+   Warns that the code has redefined the same macro with a different value.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+   For example:
 
    .. code-block:: sv
       :linenos:

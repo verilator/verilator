@@ -923,6 +923,7 @@ public:
         UNKNOWN,
         GPARAM,
         LPARAM,
+        SPECPARAM,
         GENVAR,
         VAR,  // Reg, integer, logic, etc
         SUPPLY0,
@@ -951,9 +952,10 @@ public:
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[]
-            = {"?",    "GPARAM",    "LPARAM",     "GENVAR",   "VAR",     "SUPPLY0",  "SUPPLY1",
-               "WIRE", "WREAL",     "TRIAND",     "TRIOR",    "TRIWIRE", "TRI0",     "TRI1",
-               "PORT", "BLOCKTEMP", "MODULETEMP", "STMTTEMP", "XTEMP",   "IFACEREF", "MEMBER"};
+            = {"?",        "GPARAM",  "LPARAM",   "SPECPARAM", "GENVAR",    "VAR",
+               "SUPPLY0",  "SUPPLY1", "WIRE",     "WREAL",     "TRIAND",    "TRIOR",
+               "TRIWIRE",  "TRI0",    "TRI1",     "PORT",      "BLOCKTEMP", "MODULETEMP",
+               "STMTTEMP", "XTEMP",   "IFACEREF", "MEMBER"};
         return names[m_e];
     }
     bool isParam() const { return m_e == GPARAM || m_e == LPARAM; }
@@ -983,8 +985,8 @@ public:
         return (m_e == BLOCKTEMP || m_e == MODULETEMP || m_e == STMTTEMP || m_e == XTEMP);
     }
     bool isVPIAccessible() const {
-        return (m_e == VAR || m_e == GPARAM || m_e == LPARAM || m_e == PORT || m_e == WIRE
-                || m_e == TRI0 || m_e == TRI1);
+        return (m_e == VAR || m_e == GPARAM || m_e == LPARAM || m_e == SPECPARAM || m_e == PORT
+                || m_e == WIRE || m_e == TRI0 || m_e == TRI1);
     }
 
     const char* traceSigKind() const {
@@ -993,6 +995,7 @@ public:
             /* UNKNOWN:      */ "",  // Should not be traced
             /* GPARAM:       */ "PARAMETER",
             /* LPARAM:       */ "PARAMETER",
+            /* SPECPARAM:    */ "PARAMETER",
             /* GENVAR:       */ "PARAMETER",
             /* VAR:          */ "VAR",
             /* SUPPLY0:      */ "SUPPLY0",
@@ -1412,7 +1415,7 @@ public:
 
     // cppcheck-suppress noExplicitConstructor
     constexpr VStrength(en strengthLevel)
-        : m_e(strengthLevel) {}
+        : m_e{strengthLevel} {}
     explicit VStrength(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
@@ -1734,7 +1737,7 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"NONE", "RAND", "RANDC", "RAND-INLINE"};
+        static const char* const names[] = {"NONE", "RAND", "RANDC", "RAND_INLINE"};
         return names[m_e];
     }
     VRandAttr()
@@ -2219,6 +2222,9 @@ public:
     // ACCESSORS
     virtual string name() const VL_MT_STABLE { return ""; }
     virtual string origName() const { return ""; }
+    string prettyOrigOrName() const {
+        return prettyName(origName().empty() ? name() : origName());
+    }
     virtual void name(const string& name) {
         this->v3fatalSrc("name() called on object without name() method");
     }

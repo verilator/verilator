@@ -323,43 +323,46 @@ void VerilatedVcd::printIndent(int level_change) {
 
 void VerilatedVcd::pushPrefix(const std::string& name, VerilatedTracePrefixType type) {
     assert(!m_prefixStack.empty());  // Constructor makes an empty entry
-    std::string pname = name;
-    // An empty name means this is the root of a model created with name()=="".  The
-    // tools get upset if we try to pass this as empty, so we put the signals under a
-    // new scope, but the signals further down will be peers, not children (as usual
-    // for name()!="")
-    // Terminate earlier $root?
-    if (m_prefixStack.back().second == VerilatedTracePrefixType::ROOTIO_MODULE) popPrefix();
-    if (pname.empty()) {  // Start new temporary root
-        pname = "$rootio";  // VCD names are not backslash escaped
-        m_prefixStack.emplace_back("", VerilatedTracePrefixType::ROOTIO_WRAPPER);
-        type = VerilatedTracePrefixType::ROOTIO_MODULE;
+    // An empty name means this is the root of a model created with
+    // name()=="".  The tools get upset if we try to pass this as empty, so
+    // we put the signals under a new $rootio scope, but the signals
+    // further down will be peers, not children (as usual for name()!="").
+    const std::string prevPrefix = m_prefixStack.back().first;
+    if (name == "$rootio" && !prevPrefix.empty()) {
+        // Upper has name, we can suppress inserting $rootio, but still push so popPrefix works
+        m_prefixStack.emplace_back(prevPrefix, VerilatedTracePrefixType::ROOTIO_WRAPPER);
+        return;
+    } else if (name.empty()) {
+        m_prefixStack.emplace_back(prevPrefix, VerilatedTracePrefixType::ROOTIO_WRAPPER);
+        return;
     }
-    std::string newPrefix = m_prefixStack.back().first + pname;
+
+    const std::string newPrefix = prevPrefix + name;
+    bool properScope = false;
     switch (type) {
-    case VerilatedTracePrefixType::ROOTIO_MODULE:
     case VerilatedTracePrefixType::SCOPE_MODULE:
     case VerilatedTracePrefixType::SCOPE_INTERFACE:
     case VerilatedTracePrefixType::STRUCT_PACKED:
     case VerilatedTracePrefixType::STRUCT_UNPACKED:
     case VerilatedTracePrefixType::UNION_PACKED: {
+        properScope = true;
+        break;
+    }
+    default: break;
+    }
+    if (properScope) {
         printIndent(1);
         printStr("$scope module ");
         const std::string n = lastWord(newPrefix);
         printStr(n.c_str());
         printStr(" $end\n");
-        newPrefix += ' ';
-        break;
     }
-    default: break;
-    }
-    m_prefixStack.emplace_back(newPrefix, type);
+    m_prefixStack.emplace_back(newPrefix + (properScope ? " " : ""), type);
 }
 
 void VerilatedVcd::popPrefix() {
     assert(!m_prefixStack.empty());
     switch (m_prefixStack.back().second) {
-    case VerilatedTracePrefixType::ROOTIO_MODULE:
     case VerilatedTracePrefixType::SCOPE_MODULE:
     case VerilatedTracePrefixType::SCOPE_INTERFACE:
     case VerilatedTracePrefixType::STRUCT_PACKED:

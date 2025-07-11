@@ -26,7 +26,4 @@
 %Error-UNSUPPORTED: t/t_config_libmap.map:17:1: Unsupported: Verilog 2001-config lib.map reserved word not implemented: 'library'
    17 | library gatelib .
       | ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_config_libmap.map:20:1: Unsupported: Verilog 2001-config reserved word not implemented: 'config'
-%Error-UNSUPPORTED: t/t_config_libmap.map:21:4: Unsupported: Verilog 2001-config reserved word not implemented: 'design'
-%Error-UNSUPPORTED: t/t_config_libmap.map:22:1: Unsupported: Verilog 2001-config reserved word not implemented: 'endconfig'
 %Error: Exiting due to

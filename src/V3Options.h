@@ -59,6 +59,34 @@ constexpr bool operator==(const VOptionBool& lhs, const VOptionBool& rhs) {
 constexpr bool operator==(const VOptionBool& lhs, VOptionBool::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VOptionBool::en lhs, const VOptionBool& rhs) { return lhs == rhs.m_e; }
 
+//######################################################################
+
+class VFileLibName final {
+    // Filename and libname pair
+    const string m_filename;  // Filename
+    const string m_libname;  // Libname
+public:
+    VFileLibName(const string& filename, const string& libname)
+        : m_filename{filename}
+        , m_libname{libname} {}
+    VFileLibName(const VFileLibName& rhs)
+        : m_filename{rhs.m_filename}
+        , m_libname{rhs.m_libname} {}
+    string filename() const { return m_filename; }
+    string libname() const { return m_libname; }
+    bool operator==(const VFileLibName& rhs) const {
+        return m_filename == rhs.m_filename && m_libname == rhs.m_libname;
+    }
+    bool operator<(const VFileLibName& rhs) const {
+        if (m_filename < rhs.m_filename) return true;
+        if (m_filename > rhs.m_filename) return false;
+        return m_libname < rhs.m_libname;
+    }
+};
+
+using VFileLibList = std::vector<VFileLibName>;
+using VFileLibSet = std::set<VFileLibName>;
+
 // ######################################################################
 
 class VTimescale final {
@@ -207,11 +235,11 @@ private:
     V3StringSet m_futures;      // argument: -Wfuture- list
     V3StringSet m_future0s;     // argument: -future list
     V3StringSet m_future1s;     // argument: -future1 list
-    V3StringSet m_libraryFiles; // argument: Verilog -v files
+    VFileLibSet m_libraryFiles; // argument: Verilog -v files
     V3StringSet m_clockers;     // argument: Verilog -clk signals
     V3StringSet m_noClockers;   // argument: Verilog -noclk signals
-    V3StringList m_vFiles;      // argument: Verilog files to read
-    V3StringSet m_vltFiles;     // argument: Verilator config files to read
+    VFileLibList m_vFiles;      // argument: Verilog files to read
+    VFileLibSet m_vltFiles;     // argument: Verilator config files to read
     V3StringList m_forceIncs;   // argument: -FI
     DebugLevelMap m_debugLevel; // argument: --debugi-<srcfile/tag> <level>
     DebugLevelMap m_dumpLevel;  // argument: --dumpi-<srcfile/tag> <level>
@@ -223,8 +251,8 @@ private:
     bool m_preprocResolve = false;  // main switch: --preproc-resolve
     bool m_makePhony = false;       // main switch: -MP
     bool m_preprocNoLine = false;   // main switch: -P
-    bool m_assert = false;          // main switch: --assert
-    bool m_assertCase = false;      // main switch: --assert-case
+    bool m_assert = true;           // main switch: --assert
+    bool m_assertCase = true;       // main switch: --assert-case
     bool m_autoflush = false;       // main switch: --autoflush
     bool m_bboxSys = false;         // main switch: --bbox-sys
     bool m_bboxUnsup = false;       // main switch: --bbox-unsup
@@ -359,7 +387,7 @@ private:
     string      m_diagnosticsSarifOutput;  // main switch: --diagnostics-sarif-output
     string      m_exeName;      // main switch: -o {name}
     string      m_flags;        // main switch: -f {name}
-    string      m_hierParamsFile; // main switch: --hierarchical-params-file
+    VFileLibList m_hierParamsFile; // main switch: --hierarchical-params-file
     string      m_jsonOnlyOutput;    // main switch: --json-only-output
     string      m_jsonOnlyMetaOutput;    // main switch: --json-only-meta-output
     string      m_l2Name;       // main switch: --l2name; "" for top-module's name
@@ -373,6 +401,7 @@ private:
     string      m_topModule;    // main switch: --top-module
     string      m_unusedRegexp; // main switch: --unused-regexp
     string      m_waiverOutput;  // main switch: --waiver-output {filename}
+    string      m_work = "work";  // main switch: --work {libname}
     string      m_xAssign;      // main switch: --x-assign
     string      m_xInitial;     // main switch: --x-initial
     string      m_xmlOutput;    // main switch: --xml-output
@@ -389,10 +418,13 @@ private:
     bool m_fConst;       // main switch: -fno-const: constant folding
     bool m_fConstBeforeDfg = true;  // main switch: -fno-const-before-dfg for testing only!
     bool m_fConstBitOpTree;  // main switch: -fno-const-bit-op-tree constant bit op tree
+    bool m_fConstEager = true;  // main switch: -fno-const-eagerly run V3Const during passes
     bool m_fDedupe;      // main switch: -fno-dedupe: logic deduplication
+    bool m_fDfgBreakCycles = true; // main switch: -fno-dfg-break-cycles
     bool m_fDfgPeephole = true; // main switch: -fno-dfg-peephole
     bool m_fDfgPreInline;    // main switch: -fno-dfg-pre-inline and -fno-dfg
     bool m_fDfgPostInline;   // main switch: -fno-dfg-post-inline and -fno-dfg
+    bool m_fDfgScoped;       // main switch: -fno-dfg-scoped and -fno-dfg
     bool m_fDeadAssigns;     // main switch: -fno-dead-assigns: remove dead assigns
     bool m_fDeadCells;   // main switch: -fno-dead-cells: remove dead cells
     bool m_fExpand;      // main switch: -fno-expand: expansion of C macros
@@ -462,11 +494,11 @@ public:
     void addCompilerIncludes(const string& filename);
     void addLdLibs(const string& filename);
     void addMakeFlags(const string& filename);
-    void addLibraryFile(const string& filename);
+    void addLibraryFile(const string& filename, const string& libname);
     void addClocker(const string& signame);
     void addNoClocker(const string& signame);
-    void addVFile(const string& filename);
-    void addVltFile(const string& filename);
+    void addVFile(const string& filename, const string& libname);
+    void addVltFile(const string& filename, const string& libname);
     void addForceInc(const string& filename);
     bool available() const VL_MT_SAFE { return m_available; }
     void ccSet();
@@ -489,7 +521,7 @@ public:
     bool stdWaiver() const { return m_stdWaiver; }
     bool structsPacked() const { return m_structsPacked; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
-    bool assertCaseOn() const { return m_assertCase || m_assert; }
+    bool assertCase() const { return m_assertCase; }
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
@@ -641,7 +673,7 @@ public:
                                                 : m_diagnosticsSarifOutput;
     }
     string exeName() const { return m_exeName != "" ? m_exeName : prefix(); }
-    string hierParamFile() const { return m_hierParamsFile; }
+    VFileLibList hierParamFile() const { return m_hierParamsFile; }
     string jsonOnlyOutput() const { return m_jsonOnlyOutput; }
     string jsonOnlyMetaOutput() const { return m_jsonOnlyMetaOutput; }
     string l2Name() const { return m_l2Name; }
@@ -667,6 +699,7 @@ public:
     bool noTraceTop() const { return m_noTraceTop; }
     string unusedRegexp() const { return m_unusedRegexp; }
     string waiverOutput() const { return m_waiverOutput; }
+    string work() const { return m_work; }
     bool isWaiverOutput() const { return !m_waiverOutput.empty(); }
     string xAssign() const { return m_xAssign; }
     string xInitial() const { return m_xInitial; }
@@ -677,9 +710,9 @@ public:
     const V3StringSet& compilerIncludes() const { return m_compilerIncludes; }
     const V3StringList& ldLibs() const { return m_ldLibs; }
     const V3StringList& makeFlags() const { return m_makeFlags; }
-    const V3StringSet& libraryFiles() const { return m_libraryFiles; }
-    const V3StringList& vFiles() const { return m_vFiles; }
-    const V3StringSet& vltFiles() const { return m_vltFiles; }
+    const VFileLibSet& libraryFiles() const { return m_libraryFiles; }
+    const VFileLibList& vFiles() const { return m_vFiles; }
+    const VFileLibSet& vltFiles() const { return m_vltFiles; }
     const V3StringList& forceIncs() const { return m_forceIncs; }
 
     bool hasParameter(const string& name);
@@ -689,7 +722,7 @@ public:
     bool isFuture(const string& flag) const;
     bool isFuture0(const string& flag) const;
     bool isFuture1(const string& flag) const;
-    bool isLibraryFile(const string& filename) const;
+    bool isLibraryFile(const string& filename, const string& libname) const;
     bool isClocker(const string& signame) const;
     bool isNoClocker(const string& signame) const;
 
@@ -701,10 +734,13 @@ public:
     bool fConst() const { return m_fConst; }
     bool fConstBeforeDfg() const { return m_fConstBeforeDfg; }
     bool fConstBitOpTree() const { return m_fConstBitOpTree; }
+    bool fConstEager() const { return m_fConstEager; }
     bool fDedupe() const { return m_fDedupe; }
+    bool fDfgBreakCyckes() const { return m_fDfgBreakCycles; }
     bool fDfgPeephole() const { return m_fDfgPeephole; }
     bool fDfgPreInline() const { return m_fDfgPreInline; }
     bool fDfgPostInline() const { return m_fDfgPostInline; }
+    bool fDfgScoped() const { return m_fDfgScoped; }
     bool fDfgPeepholeEnabled(const std::string& name) const {
         return !m_fDfgPeepholeDisabled.count(name);
     }

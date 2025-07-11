@@ -405,6 +405,11 @@ static void process() {
             // forcing.
             V3Force::forceAll(v3Global.rootp());
 
+            if (v3Global.opt.fDfgScoped()) {
+                // Scoped DFG optimization
+                V3DfgOptimizer::optimize(v3Global.rootp(), "scoped");
+            }
+
             // Gate-based logic elimination; eliminate signals and push constant across cell
             // boundaries Instant propagation makes lots-o-constant reduction possibilities.
             if (v3Global.opt.fGate()) {

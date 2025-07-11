@@ -735,10 +735,19 @@ class VlTest:
         self.nc_define = 'NC'
         self.nc_flags = [
             "+licqueue", "+nowarn+LIBNOU", "+define+NC=1", "-q", "+assert", "+sv", "-c",
-            ("+access+r" if Args.trace else "")
+            "-xmlibdirname", (self.obj_dir + "/xcelium.d"), ("+access+r" if Args.trace else "")
         ]
         self.nc_flags2 = []  # Overridden in some sim files
-        self.nc_run_flags = ["+licqueue", "-q", "+assert", "+sv", "-R"]
+        self.nc_run_flags = [
+            "+licqueue",
+            "-q",
+            "+assert",
+            "+sv",
+            "-R",
+            "-covoverwrite",
+            "-xmlibdirname",
+            (self.obj_dir + "/xcelium.d"),
+        ]
         # ModelSim
         self.ms_define = 'MS'
         self.ms_flags = [

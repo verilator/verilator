@@ -92,7 +92,7 @@ class CUseVisitor final : public VNVisitorConst {
 public:
     // CONSTRUCTORS
     explicit CUseVisitor(AstNodeModule* modp)
-        : m_modp(modp) {
+        : m_modp{modp} {
         iterateConst(modp);
 
         for (auto& used : m_didUse) {

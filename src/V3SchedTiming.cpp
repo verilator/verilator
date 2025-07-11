@@ -342,6 +342,7 @@ void transformForks(AstNetlist* const netlistp) {
             m_funcp = nodep;
             m_awaitMoved = false;
             iterateChildren(nodep);
+            // cppcheck-has-bug-suppress knownConditionTrueFalse
             if (nodep->isCoroutine() && m_awaitMoved
                 && !nodep->stmtsp()->exists([](AstCAwait*) { return true; })) {
                 // co_return at the end (either that or a co_await is required in a coroutine

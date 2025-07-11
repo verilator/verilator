@@ -411,7 +411,7 @@ IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT
     if (Verilated::threadContextp()->randReset() == 0) return 0;
     IData data = ~0;
     if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
-        VlRNG rng(Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt);
+        VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
         data = rng.rand64();
     }
     data &= VL_MASK_I(obits);
@@ -422,7 +422,7 @@ QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT
     if (Verilated::threadContextp()->randReset() == 0) return 0;
     QData data = ~0ULL;
     if (Verilated::threadContextp()->randReset() != 1) {  // if 2, randomize
-        VlRNG rng(Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt);
+        VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
         data = rng.rand64();
     }
     data &= VL_MASK_Q(obits);
@@ -432,7 +432,27 @@ QData VL_SCOPED_RAND_RESET_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT
 WDataOutP VL_SCOPED_RAND_RESET_W(int obits, WDataOutP outwp, uint64_t scopeHash,
                                  uint64_t salt) VL_MT_UNSAFE {
     if (Verilated::threadContextp()->randReset() != 2) { return VL_RAND_RESET_W(obits, outwp); }
-    VlRNG rng(Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt);
+    VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
+    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = rng.rand64();
+    outwp[VL_WORDS_I(obits) - 1] = rng.rand64() & VL_MASK_E(obits);
+    return outwp;
+}
+
+IData VL_SCOPED_RAND_RESET_ASSIGN_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE {
+    VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
+    const IData data = rng.rand64() & VL_MASK_I(obits);
+    return data;
+}
+
+QData VL_SCOPED_RAND_RESET_ASSIGN_Q(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE {
+    VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
+    const QData data = rng.rand64() & VL_MASK_Q(obits);
+    return data;
+}
+
+WDataOutP VL_SCOPED_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp, uint64_t scopeHash,
+                                        uint64_t salt) VL_MT_UNSAFE {
+    VlRNG rng{Verilated::threadContextp()->randSeed() ^ scopeHash ^ salt};
     for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = rng.rand64();
     outwp[VL_WORDS_I(obits) - 1] = rng.rand64() & VL_MASK_E(obits);
     return outwp;
@@ -447,7 +467,6 @@ IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
     data &= VL_MASK_I(obits);
     return data;
 }
-IData VL_RAND_RESET_ASSIGN_I(int obits) VL_MT_SAFE { return VL_RANDOM_I() & VL_MASK_I(obits); }
 
 QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE {
     if (Verilated::threadContextp()->randReset() == 0) return 0;
@@ -459,16 +478,9 @@ QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE {
     return data;
 }
 
-QData VL_RAND_RESET_ASSIGN_Q(int obits) VL_MT_SAFE { return VL_RANDOM_Q() & VL_MASK_Q(obits); }
-
 WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = VL_RAND_RESET_I(32);
     outwp[VL_WORDS_I(obits) - 1] = VL_RAND_RESET_I(32) & VL_MASK_E(obits);
-    return outwp;
-}
-WDataOutP VL_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp) VL_MT_SAFE {
-    for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) outwp[i] = VL_RAND_RESET_ASSIGN_I(32);
-    outwp[VL_WORDS_I(obits) - 1] = VL_RAND_RESET_ASSIGN_I(32) & VL_MASK_E(obits);
     return outwp;
 }
 WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
@@ -2551,12 +2563,13 @@ void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
     VL_PRINTF_MT("Time scale of %s is %s / %s\n", namep, timeunitp,
                  contextp->timeprecisionString());
 }
-void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix, int width,
+void VL_TIMEFORMAT_IINI(bool hasUnits, int units, bool hasPrecision, int precision, bool hasSuffix,
+                        const std::string& suffix, bool hasWidth, int width,
                         VerilatedContext* contextp) VL_MT_SAFE {
-    contextp->impp()->timeFormatUnits(units);
-    contextp->impp()->timeFormatPrecision(precision);
-    contextp->impp()->timeFormatSuffix(suffix);
-    contextp->impp()->timeFormatWidth(width);
+    if (hasUnits) contextp->impp()->timeFormatUnits(units);
+    if (hasPrecision) contextp->impp()->timeFormatPrecision(precision);
+    if (hasSuffix) contextp->impp()->timeFormatSuffix(suffix);
+    if (hasWidth) contextp->impp()->timeFormatWidth(width);
 }
 
 //======================================================================

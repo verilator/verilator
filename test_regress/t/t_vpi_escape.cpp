@@ -58,7 +58,13 @@ const char* _my_rooted(const char* obj) {
     return buf.c_str();
 }
 
-#define MY_VPI_HANDLE(signal) vpi_handle_by_name(const_cast<PLI_BYTE8*>(_my_rooted(signal)), NULL);
+TestVpiHandle my_vpi_handle(const char* signal) {
+#ifdef TEST_VERBOSE
+    printf("-my_vpi_handle(\"%s\")\n", _my_rooted(signal));
+#endif
+    TestVpiHandle vh = vpi_handle_by_name(const_cast<PLI_BYTE8*>(_my_rooted(signal)), NULL);
+    return vh;
+}
 
 int _mon_check_var() {
 #ifdef TEST_VERBOSE
@@ -67,7 +73,7 @@ int _mon_check_var() {
     TestVpiHandle vh1 = vpi_handle_by_name(const_cast<PLI_BYTE8*>(_sim_top()), NULL);
     TEST_CHECK_NZ(vh1);
 
-    TestVpiHandle vh2 = MY_VPI_HANDLE("\\check;alias ");
+    TestVpiHandle vh2 = my_vpi_handle("\\check;alias ");
     TEST_CHECK_NZ(vh2);
 
     // scope attributes
@@ -107,15 +113,29 @@ int _mon_check_var() {
         TEST_CHECK_CSTR(p, "vpiNet");
     }
 
-    TestVpiHandle vh4 = MY_VPI_HANDLE("\\x.y ");
+    TestVpiHandle vh4 = my_vpi_handle("\\x.y ");
     TEST_CHECK_NZ(vh4);
 
     // Test that the toplevel TOP.xxxxx search is skipped
     // when the path to the scope has more than one level.
-    TestVpiHandle vh5 = MY_VPI_HANDLE("\\mod.with_dot .\\b.c ");
-    TEST_CHECK_NZ(vh5);
-    p = vpi_get_str(vpiFullName, vh5);
-    TEST_CHECK_CSTR(p, "\\t.has.dots .\\mod.with_dot .\\b.c ");
+    {
+        TestVpiHandle vh5 = my_vpi_handle("\\mod.with_dot .\\b.c ");
+        TEST_CHECK_NZ(vh5);
+        p = vpi_get_str(vpiFullName, vh5);
+        TEST_CHECK_CSTR(p, "\\t.has.dots .\\mod.with_dot .\\b.c ");
+    }
+    {
+        TestVpiHandle vh5 = my_vpi_handle("double__underscore");
+        TEST_CHECK_NZ(vh5);
+        p = vpi_get_str(vpiFullName, vh5);
+        TEST_CHECK_CSTR(p, "TOP.double__underscore");
+    }
+    {
+        TestVpiHandle vh5 = my_vpi_handle("double__underscore__vlt");
+        TEST_CHECK_NZ(vh5);
+        p = vpi_get_str(vpiFullName, vh5);
+        TEST_CHECK_CSTR(p, "TOP.double__underscore__vlt");
+    }
 
     return errors;
 }
@@ -126,7 +146,7 @@ int _mon_check_iter() {
 #endif
     const char* p;
 
-    TestVpiHandle vh2 = MY_VPI_HANDLE("\\mod.with_dot ");
+    TestVpiHandle vh2 = my_vpi_handle("\\mod.with_dot ");
     TEST_CHECK_NZ(vh2);
     p = vpi_get_str(vpiName, vh2);
     TEST_CHECK_CSTR(p, "\\mod.with_dot ");
@@ -135,12 +155,12 @@ int _mon_check_iter() {
         TEST_CHECK_CSTR(p, "sub");
     }
 
-    TestVpiHandle vh_null_name = MY_VPI_HANDLE("___0_");
+    TestVpiHandle vh_null_name = my_vpi_handle("___0_");
     TEST_CHECK_NZ(vh_null_name);
     p = vpi_get_str(vpiName, vh_null_name);
     TEST_CHECK_CSTR(p, "___0_");
 
-    TestVpiHandle vh_hex_name = MY_VPI_HANDLE("___0F_");
+    TestVpiHandle vh_hex_name = my_vpi_handle("___0F_");
     TEST_CHECK_NZ(vh_hex_name);
     p = vpi_get_str(vpiName, vh_hex_name);
     TEST_CHECK_CSTR(p, "___0F_");
@@ -198,7 +218,7 @@ int _mon_check_ports() {
     printf("-mon_check_ports()\n");
 #endif
     // test writing to input port
-    TestVpiHandle vh1 = MY_VPI_HANDLE("a");
+    TestVpiHandle vh1 = my_vpi_handle("a");
     TEST_CHECK_NZ(vh1);
 
     PLI_INT32 d;
@@ -236,7 +256,7 @@ int _mon_check_ports() {
     TEST_CHECK_EQ(v.value.integer, 2);
 
     // get handle of toplevel module
-    TestVpiHandle vht = MY_VPI_HANDLE("");
+    TestVpiHandle vht = my_vpi_handle("");
     TEST_CHECK_NZ(vht);
 
     d = vpi_get(vpiType, vht);
@@ -263,7 +283,7 @@ int _mon_check_ports() {
 
     TEST_CHECK_EQ(handleName1, handleName2);
 
-    TestVpiHandle vh2 = MY_VPI_HANDLE("\\b.c ");
+    TestVpiHandle vh2 = my_vpi_handle("\\b.c ");
     TEST_CHECK_NZ(vh2);
 
     if (TestSimulator::is_verilator()) {

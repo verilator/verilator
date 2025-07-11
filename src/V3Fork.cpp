@@ -81,7 +81,8 @@ public:
     ForkDynScopeInstance& createInstancePrototype() {
         UASSERT_OBJ(!m_instance.initialized(), m_procp, "Dynamic scope already instantiated.");
 
-        m_instance.m_classp = new AstClass{m_procp->fileline(), generateDynScopeClassName()};
+        m_instance.m_classp
+            = new AstClass{m_procp->fileline(), generateDynScopeClassName(), m_modp->libname()};
         UINFO(9, "new dynscope class " << m_instance.m_classp);
         m_instance.m_refDTypep
             = new AstClassRefDType{m_procp->fileline(), m_instance.m_classp, nullptr};
@@ -604,6 +605,10 @@ class ForkVisitor final : public VNVisitor {
 
         m_modp->addStmtsp(taskp);
         UINFO(9, "new " << taskp);
+
+        // We created a task from fork, so make sure that all
+        // local (to this new task) variables are marked as funcLocal
+        for (AstVar* const localp : m_forkLocalsp) localp->funcLocal(true);
 
         AstTaskRef* const taskrefp = new AstTaskRef{nodep->fileline(), taskp, m_capturedVarRefsp};
         AstStmtExpr* const taskcallp = taskrefp->makeStmt();

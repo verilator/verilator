@@ -22,7 +22,7 @@
 
 #include "V3LinkParse.h"
 
-#include "V3Config.h"
+#include "V3Control.h"
 #include "V3Stats.h"
 
 #include <set>
@@ -181,7 +181,7 @@ class LinkParseVisitor final : public VNVisitor {
             // Mark class methods
             if (VN_IS(m_modp, Class)) nodep->classMethod(true);
 
-            V3Config::applyFTask(m_modp, nodep);
+            V3Control::applyFTask(m_modp, nodep);
             cleanFileline(nodep);
             VL_RESTORER(m_ftaskp);
             VL_RESTORER(m_lifetime);
@@ -340,7 +340,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         // Maybe this variable has a signal attribute
-        V3Config::applyVarAttr(m_modp, m_ftaskp, nodep);
+        V3Control::applyVarAttr(m_modp, m_ftaskp, nodep);
 
         if (v3Global.opt.anyPublicFlat() && nodep->varType().isVPIAccessible()) {
             if (v3Global.opt.publicFlatRW()) {
@@ -616,7 +616,7 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {
-        V3Config::applyModule(nodep);
+        V3Control::applyModule(nodep);
         ++m_statModules;
 
         VL_RESTORER(m_modp);
@@ -676,7 +676,7 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstRestrict* nodep) override { visitIterateNoValueMod(nodep); }
 
     void visit(AstBegin* nodep) override {
-        V3Config::applyCoverageBlock(m_modp, nodep);
+        V3Control::applyCoverageBlock(m_modp, nodep);
         cleanFileline(nodep);
         VL_RESTORER(m_beginDepth);
         m_beginDepth++;
@@ -754,7 +754,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
     }
     void visit(AstCase* nodep) override {
-        V3Config::applyCase(nodep);
+        V3Control::applyCase(nodep);
         cleanFileline(nodep);
         iterateChildren(nodep);
     }

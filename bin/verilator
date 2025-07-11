@@ -311,8 +311,8 @@ detailed descriptions of these arguments.
      +1800-2012ext+<ext>        Use SystemVerilog 2012 with file extension <ext>
      +1800-2017ext+<ext>        Use SystemVerilog 2017 with file extension <ext>
      +1800-2023ext+<ext>        Use SystemVerilog 2023 with file extension <ext>
-    --assert                    Enable all assertions
-    --assert-case               Enable unique/unique0/priority case related checks
+    --no-assert                 Disable all assertions
+    --no-assert-case            Disable unique/unique0/priority-case assertions
     --autoflush                 Flush streams after all $displays
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
@@ -513,6 +513,7 @@ detailed descriptions of these arguments.
      -Wno-fatal                 Disable fatal exit on warnings
      -Wno-lint                  Disable all lint warnings
      -Wno-style                 Disable all style warnings
+     -work <libname>            Set config library for following files
      -Wpedantic                 Warn on compliance-test issues
      -Wwarn-<message>           Enable specified warning message
      -Wwarn-lint                Enable lint warning message

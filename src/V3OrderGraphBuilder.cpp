@@ -254,8 +254,15 @@ class OrderGraphBuilder final : public VNVisitor {
             // Update VarUsage
             varscp->user2(varscp->user2() | VU_CON);
             // Add edges
-            if (!m_inClocked || m_inPost) {
+            if (m_inPost) {
                 // Combinational logic
+                if (!varscp->varp()->ignorePostRead() && m_readTriggersCombLogic(varscp)) {
+                    // Ignore explicit sensitivities
+                    OrderVarVertex* const varVxp = getVarVertex(varscp, VarVertexType::STD);
+                    // Add edge from consumed VarStdVertex -> to consuming LogicVertex
+                    m_graphp->addHardEdge(varVxp, m_logicVxp, WEIGHT_MEDIUM);
+                }
+            } else if (!m_inClocked) {  // Combinational logic
                 if (m_readTriggersCombLogic(varscp)) {
                     // Ignore explicit sensitivities
                     OrderVarVertex* const varVxp = getVarVertex(varscp, VarVertexType::STD);

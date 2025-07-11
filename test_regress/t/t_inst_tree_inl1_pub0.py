@@ -15,7 +15,8 @@ test.top_filename = "t/t_inst_tree.v"
 out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
 
 test.compile(v_flags2=[
-    "--no-json-edit-nums", "-fno-dfg-post-inline", test.t_dir + "/t_inst_tree_inl1_pub0.vlt"
+    "--no-json-edit-nums", "-fno-dfg-post-inline", "-fno-dfg-scoped", test.t_dir +
+    "/t_inst_tree_inl1_pub0.vlt"
 ])
 
 if test.vlt_all:

@@ -86,13 +86,19 @@ Summary:
       grammar and other semantic extensions which might not be legal when
       set to an older standard.
 
-.. option:: --assert
+.. option:: --no-assert
 
-   Enable all assertions. Implies :vlopt:`--assert-case`.
+   Disable all assertions. Implies :vlopt:`--no-assert-case`.
 
-.. option:: --assert-case
+   In versions before 5.038, these were disabled by default, and `--assert`
+   was required to enable assertions.
 
-   Enable unique/unique0/priority case related checks.
+.. option:: --no-assert-case
+
+   Disable unique/unique0/priority case related checks.
+
+   In versions before 5.038, these were disabled by default, and `--assert`
+   or `--assert-case` was required to enable case assertions.
 
 .. option:: --autoflush
 
@@ -398,7 +404,7 @@ Summary:
    Enables diagnostics output into a Static Analysis Results Interchange
    Format (SARIF) file, a standard, JSON-based format for the output of
    static analysis tools such as linters.  See
-   [SARIF](http://sarifweb.azurewebsites.net/),
+   [SARIF](https://sarifweb.azurewebsites.net/),
    [sarif-tools](https://github.com/microsoft/sarif-tools), and the [SARIF
    web-based viewer](https://microsoft.github.io/sarif-web-component/).
 
@@ -590,13 +596,19 @@ Summary:
 
 .. option:: -fno-const-bit-op-tree
 
+.. option:: -fno-const-eager
+
 .. option:: -fno-dedup
 
 .. option:: -fno-dfg
 
    Rarely needed. Disable all use of the DFG-based combinational logic
-   optimizer.  Alias for :vlopt:`-fno-dfg-pre-inline` and
-   :vlopt:`-fno-dfg-post-inline`.
+   optimizer.  Alias for :vlopt:`-fno-dfg-pre-inline`,
+   :vlopt:`-fno-dfg-post-inline` and :vlopt:`-fno-dfg-scoped`.
+
+.. option:: -fno-dfg-break-cycles
+
+   Rarely needed. Disable breaking combinational cycles during DFG.
 
 .. option:: -fno-dfg-peephole
 
@@ -613,6 +625,10 @@ Summary:
 .. option:: -fno-dfg-pre-inline
 
    Rarely needed. Do not apply the DFG optimizer before inlining.
+
+.. option:: -fno-dfg-scoped
+
+   Rarely needed. Do not apply the DFG optimizer across module scopes.
 
 .. option:: -fno-expand
 
@@ -1594,8 +1610,8 @@ Summary:
    When the input Verilog contains more than one top-level module,
    it specifies the name of the module to become the top-level module,
    and sets the default for :vlopt:`--prefix` if not explicitly specified.
-   This is not needed with standard designs with only one top.  See also
-   :option:`MULTITOP` warning.
+   This is not needed with standard designs with only one top.
+   See :ref:`Finding and Binding Modules`.
 
 .. option:: --trace
 
@@ -1806,7 +1822,7 @@ Summary:
    them systematically.
 
    The generated file is in the Verilator Configuration format, see
-   :ref:`Verilator Configuration Files`. The standard file extension is ".vlt".
+   :ref:`Verilator Control Files`. The standard file extension is ".vlt".
    These files can directly be consumed by Verilator, typically by placing
    the filename as part of the Verilator command line options. Waiver files
    need to be listed on the command line before listing the files they are
@@ -1878,6 +1894,19 @@ Summary:
    ``-Wno-PINNOCONNECT`` ``-Wno-SYNCASYNCNET`` ``-Wno-UNDRIVEN``
    ``-Wno-UNUSEDGENVAR`` ``-Wno-UNUSEDPARAM`` ``-Wno-UNUSEDSIGNAL``
    ``-Wno-VARHIDDEN``.
+
+.. option:: -work <libname>
+
+   Use the specified Verilog config library name for all cells read after
+   this argument.  May be specified multiple times, it will apply to cells
+   read between the given arguments.  E.g. `-work liba a.v -work libb b.v`
+   will use `liba` for modules inside `a.v` or in cells resolved
+   hierarchically under those modules, and will use `libb` for modules
+   inside `b.v` or hierarchically under.
+
+   Defaults to "work" (IEEE 1800-2023 3.3.1).
+
+   See :ref:`Finding and Binding Modules`.
 
 .. option:: -Wpedantic
 
@@ -2047,20 +2076,20 @@ Summary:
    filenames.
 
 
-.. _Verilator Configuration Files:
+.. _Verilator Control Files:
 
-=============================
-Verilator Configuration Files
-=============================
+=======================
+Verilator Control Files
+=======================
 
 In addition to the command line, warnings and other features for the
-:command:`verilator` command may be controlled with Verilator Configuration
+:command:`verilator` command may be controlled with Verilator Control
 Files, not to be confused with IEEE Configurations blocks
-(`config...endconfig`) inside a file.  Typically named with the `.vlt`
-extension, what makes it a Verilator Configuration File is the
-:option:`\`verilator_config` directive.  These files, when named `.vlt`,
-are read before source code files; if this behavior is undesired, name the
-config file with a `.v` suffix.
+(`config...endconfig`).  Typically named with the `.vlt` extension, what
+makes it a Verilator Control File is the :option:`\`verilator_config`
+directive.  These files, when named `.vlt`, are read before source code
+files; if this behavior is undesired, name the control file with a `.v` or
+other suffix.
 
 An example:
 
@@ -2072,19 +2101,20 @@ An example:
 
 This disables WIDTH warnings globally, and CASEX for a specific file.
 
-Verilator configuration files are fed through the normal Verilog
+Verilator control files are fed through the normal Verilog
 preprocessor prior to parsing, so "\`ifdef", "\`define", and comments may
-be used as if the configuration file was standard Verilog code.
+be used as if the control file was standard Verilog code.
 
-Note that file or line-specific configuration only applies to files read
-after the configuration file. It is therefore recommended to pass the
-configuration file to Verilator as the first file.
+Note that file or line-specific control only applies to files read
+after the control file. It is therefore recommended to pass the
+control file to Verilator as the first file.
 
-The grammar of configuration commands is as follows:
+The grammar of control commands is as follows:
 
 .. option:: `verilator_config
 
-   Take the remaining text and treat it as Verilator configuration commands.
+   Take the remaining text and treat it as Verilator Control File commands.
+   See :ref:`Verilator Control Files`.
 
 .. option:: clock_enable -module "<modulename>" -var "<signame>"
 
@@ -2235,7 +2265,7 @@ The grammar of configuration commands is as follows:
    wildcard should be designed to match a single line; it is unspecified if
    the wildcard is allowed to match across multiple lines. The input
    contents does not include :vlopt:`--std <--no-std>` standard files, nor
-   configuration files (with :code:`verilator_config`). Typical use for
+   control files (with :code:`verilator_config`). Typical use for
    this is to match a version number present in the Verilog sources, so
    that the waiver will only apply to that version of the sources.
 

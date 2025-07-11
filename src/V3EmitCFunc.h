@@ -93,7 +93,7 @@ class EmitCLazyDecls final : public VNVisitorConst {
 
 public:
     explicit EmitCLazyDecls(EmitCBaseVisitorConst& emitter)
-        : m_emitter(emitter) {}
+        : m_emitter{emitter} {}
     void emit(AstNode* nodep) {
         m_needsBlankLine = false;
         iterateChildrenConst(nodep);
@@ -448,6 +448,7 @@ public:
         bool decind = false;
         bool rhs = true;
         if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
+            UASSERT_OBJ(selp->widthMin() == selp->widthConst(), selp, "Width mismatch");
             if (selp->widthMin() == 1) {
                 putnbs(nodep, "VL_ASSIGNBIT_");
                 emitIQW(selp->fromp());
@@ -1109,13 +1110,33 @@ public:
     }
     void visit(AstTimeFormat* nodep) override {
         putns(nodep, "VL_TIMEFORMAT_IINI(");
-        iterateAndNextConstNull(nodep->unitsp());
+        if (nodep->unitsp()) {
+            puts("true, ");
+            iterateAndNextConstNull(nodep->unitsp());
+        } else {
+            puts("false, 0");
+        }
         puts(", ");
-        iterateAndNextConstNull(nodep->precisionp());
+        if (nodep->precisionp()) {
+            puts("true, ");
+            iterateAndNextConstNull(nodep->precisionp());
+        } else {
+            puts("false, 0");
+        }
         puts(", ");
-        emitCvtPackStr(nodep->suffixp());
+        if (nodep->suffixp()) {
+            puts("true, ");
+            emitCvtPackStr(nodep->suffixp());
+        } else {
+            puts("false, \"\"");
+        }
         puts(", ");
-        iterateAndNextConstNull(nodep->widthp());
+        if (nodep->widthp()) {
+            puts("true, ");
+            iterateAndNextConstNull(nodep->widthp());
+        } else {
+            puts("false, 0");
+        }
         puts(", vlSymsp->_vm_contextp__);\n");
     }
     void visit(AstTimePrecision* nodep) override {
@@ -1287,7 +1308,8 @@ public:
     }
     void visit(AstSel* nodep) override {
         // Note ASSIGN checks for this on a LHS
-        emitOpName(nodep, nodep->emitC(), nodep->fromp(), nodep->lsbp(), nodep->widthp());
+        UASSERT_OBJ(nodep->widthMin() == nodep->widthConst(), nodep, "Width mismatch");
+        emitOpName(nodep, nodep->emitC(), nodep->fromp(), nodep->lsbp(), nullptr);
     }
     void visit(AstReplicate* nodep) override {
         if (nodep->srcp()->widthMin() == 1 && !nodep->isWide()) {
@@ -1518,7 +1540,7 @@ public:
     }  // LCOV_EXCL_STOP
 
     EmitCFunc()
-        : m_lazyDecls(*this) {}
+        : m_lazyDecls{*this} {}
     EmitCFunc(AstNode* nodep, V3OutCFile* ofp, AstCFile* cfilep, bool trackText = false)
         : EmitCFunc{} {
         setOutputFile(ofp, cfilep);

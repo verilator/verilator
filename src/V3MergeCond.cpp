@@ -276,7 +276,7 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
 
     // CONSTRUCTOR
     CodeMotionAnalysisVisitor(AstNode* nodep, StmtPropertiesAllocator& stmtProperties)
-        : m_stmtProperties(stmtProperties) {
+        : m_stmtProperties{stmtProperties} {
         iterateAndNextConstNull(nodep);
     }
 
@@ -399,7 +399,7 @@ class CodeMotionOptimizeVisitor final : public VNVisitor {
 
     // CONSTRUCTOR
     CodeMotionOptimizeVisitor(AstNode* nodep, const StmtPropertiesAllocator& stmtProperties)
-        : m_stmtProperties(stmtProperties) {
+        : m_stmtProperties{stmtProperties} {
         // We assert the given node is at the head of the list otherwise we might move a node
         // before the given node. This is easy to fix in the above iteration with a check on a
         // boundary node we should not move past, if we ever need to do so.

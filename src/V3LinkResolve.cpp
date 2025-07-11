@@ -313,7 +313,8 @@ class LinkResolveVisitor final : public VNVisitor {
                         nodep->v3warn(E_UNSUPPORTED, "Unsupported: %l in $fscanf");
                         fmt = "";
                     }
-                    if (m_modp) fmt = VString::quotePercent(m_modp->prettyName());
+                    if (m_modp)
+                        fmt = AstNode::prettyName(m_modp->libname()) + "." + m_modp->prettyName();
                     break;
                 default:  // Most operators, just move to next argument
                     if (!V3Number::displayedFmtLegal(ch, isScan)) {
