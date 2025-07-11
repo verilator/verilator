@@ -41,23 +41,7 @@ class ExprCoverageEligibleVisitor final : public VNVisitor {
 
     static const AstNodeDType* getElemDTypep(const AstNodeDType* dtypep) {
         dtypep = dtypep->skipRefp();
-        while (true) {
-            if (const AstDynArrayDType* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
-                if (VL_LIKELY(adtypep->virtRefDTypep())) {
-                    dtypep = adtypep->virtRefDTypep()->skipRefp();
-                } else {
-                    break;
-                }
-            } else if (const AstQueueDType* const adtypep = VN_CAST(dtypep, QueueDType)) {
-                if (VL_LIKELY(adtypep->virtRefDTypep())) {
-                    dtypep = adtypep->virtRefDTypep()->skipRefp();
-                } else {
-                    break;
-                }
-            } else {
-                break;
-            }
-        }
+        while (dtypep && dtypep->virtRefDTypep()) dtypep = dtypep->virtRefDTypep()->skipRefp();
         return dtypep;
     }
 
