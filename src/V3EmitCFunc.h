@@ -261,33 +261,61 @@ public:
         if (const AstCNew* const cnewp = getSuperNewCallRecursep(nodep->nextp())) return cnewp;
         return nullptr;
     }
-
-    void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp, bool top,
-                               std::set<AstClass*>& doneClassesr) {
-        for (const AstClassExtends* extp = classp->extendsp(); extp;
-             extp = VN_AS(extp->nextp(), ClassExtends)) {
-            if (extp->classp()->useVirtualPublic()) {
-                // It's a c++ virtual class (diamond relation)
-                // Must get the subclasses initialized first
-                putConstructorSubinit(extp->classp(), cfuncp, false, doneClassesr);
+    void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp) {
+        // Virtual bases in depth-first left-to-right order
+        std::vector<AstClass*> virtualBases;
+        std::unordered_set<AstClass*> doneClasses;
+        collectVirtualBasesRecursep(classp, virtualBases);
+        for (AstClass* vbase : virtualBases) {
+            if (doneClasses.count(vbase)) continue;
+            puts(doneClasses.empty() ? "" : "\n    , ");
+            doneClasses.emplace(vbase);
+            puts(prefixNameProtect(vbase));
+            if (constructorNeedsProcess(vbase)) {
+                puts("(vlProcess, vlSymsp)");
+            } else {
+                puts("(vlSymsp)");
             }
-            // Diamond pattern with same base class twice?
-            if (doneClassesr.find(extp->classp()) != doneClassesr.end()) continue;
-            puts(doneClassesr.empty() ? "" : "\n    , ");
-            doneClassesr.emplace(extp->classp());
+        }
+        const AstCNew* const superNewCallp =
+            getSuperNewCallRecursep(cfuncp->stmtsp());
+        // Direct non-virtual bases in declaration order
+        for (const AstClassExtends* extp = classp->extendsp(); extp;
+            extp = VN_AS(extp->nextp(), ClassExtends)) {
+            if (extp->classp()->useVirtualPublic()) continue;
+            if (doneClasses.count(extp->classp())) continue;
+            puts(doneClasses.empty() ? "" : "\n    , ");
+            doneClasses.emplace(extp->classp());
             puts(prefixNameProtect(extp->classp()));
             if (constructorNeedsProcess(extp->classp())) {
                 puts("(vlProcess, vlSymsp");
             } else {
                 puts("(vlSymsp");
             }
-            if (top) {
-                const AstCNew* const superNewCallp = getSuperNewCallRecursep(cfuncp->stmtsp());
-                UASSERT_OBJ(superNewCallp, cfuncp, "super.new call not found");
+            // Handle super.new() args for the concrete parent
+            if (!extp->classp()->isInterfaceClass() && superNewCallp) {
                 putCommaIterateNext(superNewCallp->argsp(), true);
             }
             puts(")");
-            top = false;
+        }
+    }
+    void collectVirtualBasesRecursep(const AstClass* classp,
+                                       std::vector<AstClass*>& virtualBases) {
+        std::set<const AstClass*> visited;
+        collectVirtualBasesRecursep(classp, virtualBases /*ref*/, visited /*ref*/);
+    }
+    void collectVirtualBasesRecursep(const AstClass* classp,
+                                      std::vector<AstClass*>& virtualBases,
+                                      std::set<const AstClass*>& visited) {
+        if (visited.count(classp)) return;
+        visited.emplace(classp);
+        for (const AstClassExtends* extp = classp->extendsp(); extp;
+            extp = VN_AS(extp->nextp(), ClassExtends)) {
+            // Depth-first: recurse into this base first
+            collectVirtualBasesRecursep(extp->classp(), virtualBases, visited);
+            if (extp->classp()->useVirtualPublic()) {
+                virtualBases.push_back(extp->classp());
+            }
         }
     }
 
@@ -314,8 +342,7 @@ public:
             const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
             if (nodep->isConstructor() && classp && classp->extendsp()) {
                 puts("\n    : ");
-                std::set<AstClass*> doneClasses;
-                putConstructorSubinit(classp, nodep, true, doneClasses /*ref*/);
+                putConstructorSubinit(classp, nodep);
             }
         }
         puts(" {\n");

@@ -57,28 +57,20 @@ class ClassVisitor final : public VNVisitor {
 
     // METHODS
 
-    bool recurseImplements(AstClass* nodep, bool setit) {
-        // Returns true to set useVirtualPublic().
-        // If there's an implements of an interface class then we have
-        // multiple classes that point to same object, that need same
-        // VlClass (the diamond problem). C++ will require we use 'virtual
-        // public' for VlClass.  So, we need the interface class, and all
-        // classes above, and any below using any implements to use
-        // 'virtual public' via useVirtualPublic().
-        if (nodep->useVirtualPublic()) return true;  // Short-circuit
-        if (nodep->isInterfaceClass()) setit = true;
-        for (const AstClassExtends* extp = nodep->extendsp(); extp;
-             extp = VN_AS(extp->nextp(), ClassExtends)) {
-            if (recurseImplements(extp->classp(), setit)) setit = true;
-        }
-        if (setit) {
+    void recurseImplements(AstClass* nodep) {
+        // In SystemVerilog, we have two inheritance chains:
+        // - extends of concrete clasess: mapped to non-virtual C++ inheritance
+        //   as there is only single ancestor allowed
+        // - implements of concrete classes / extends of interface classes: mapped
+        //   to virtual inheritance to allow diamond patterns with multiple ancestors
+        if (nodep->useVirtualPublic()) return; // Short-circuit to exit diamond cycles
+        if (nodep->isInterfaceClass()) {
             nodep->useVirtualPublic(true);
-            for (const AstClassExtends* extp = nodep->extendsp(); extp;
-                 extp = VN_AS(extp->nextp(), ClassExtends)) {
-                (void)recurseImplements(extp->classp(), true);
-            }
         }
-        return setit;
+        for (const AstClassExtends* extp = nodep->extendsp(); extp;
+            extp = VN_AS(extp->nextp(), ClassExtends)) {
+            recurseImplements(extp->classp());
+        }
     }
 
     // VISITORS
@@ -89,7 +81,7 @@ class ClassVisitor final : public VNVisitor {
         nodep->name(m_prefix + nodep->name());
         nodep->unlinkFrBack();
         v3Global.rootp()->addModulesp(nodep);
-        (void)recurseImplements(nodep, false);
+        recurseImplements(nodep);
         // Make containing package
         // Note origName is the same as the class origName so errors look correct
         AstClassPackage* const packagep

@@ -564,16 +564,20 @@ class EmitCHeader final : public EmitCConstInit {
         if (!VN_IS(modp, Class)) puts("alignas(VL_CACHE_LINE_BYTES) ");
         puts(prefixNameProtect(modp));
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            const string virtpub = classp->useVirtualPublic() ? "virtual public " : "public ";
-            puts(" : " + virtpub);
+            puts(" : ");
             if (classp->extendsp()) {
+                bool needComma = false;
                 for (const AstClassExtends* extp = classp->extendsp(); extp;
-                     extp = VN_AS(extp->nextp(), ClassExtends)) {
+                    extp = VN_AS(extp->nextp(), ClassExtends)) {
+                    if (needComma) puts(", ");
+                    // Use virtual only for interfaces for class inheritance
+                    // (extends)
+                    puts(extp->classp()->useVirtualPublic() ? "virtual public " : "public ");
                     putns(extp, prefixNameProtect(extp->classp()));
-                    if (extp->nextp()) puts(", " + virtpub);
+                    needComma = true;
                 }
             } else {
-                puts("VlClass");
+                puts("public virtual VlClass");
             }
         } else {
             puts(" final : public VerilatedModule");
