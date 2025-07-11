@@ -629,7 +629,6 @@ class ConstraintExprVisitor final : public VNVisitor {
                 CONSTRAINTIGN,
                 "Size constraint combined with element constraint may not work correctly");
         }
-        bool memberSelflag = VN_IS(nodep->backp(), MemberSel);
         AstMemberSel* membersel = VN_IS(nodep->backp(), MemberSel)
                                       ? VN_AS(nodep->backp(), MemberSel)->cloneTree(false)
                                       : nullptr;
