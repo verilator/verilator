@@ -8,11 +8,15 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
+interface class IBottomMid;
+    pure virtual function void moo(int i);
+endclass
+
 interface class IBottom;
    pure virtual function bit foo();
 endclass
 
-interface class IMid;
+interface class IMid extends IBottomMid;
    pure virtual function string bar();
 endclass
 
@@ -23,20 +27,24 @@ class bottom_class implements IBottom;
         this.name = name;
     endfunction
 
-   virtual function bit foo();
+    virtual function bit foo();
         $display("%s", name);
-   endfunction
+    endfunction
 endclass
 
 class middle_class extends bottom_class implements IMid, IBottom;
-   function new(string name);
-       super.new($sformatf("middle %0s", name));
-   endfunction
+    function new(string name);
+        super.new($sformatf("middle %0s", name));
+    endfunction
 
-   virtual function bit foo();
+    virtual function bit foo();
         $display("%s", name);
         return 0;
    endfunction
+
+    virtual function void moo(int i);
+        $display("moo: %d", i);
+    endfunction
 
    virtual function string bar();
         return name;
@@ -60,16 +68,21 @@ endclass
 
 module t;
 
-   initial begin
+    initial begin
         sky_class s = new("ahoj");
         bottom_class b = s;
         top_class t = s;
-      `checks( b.name, "middle ahoj 42" );
-      `checks( s.name, "middle ahoj 42" );
-      `checks( t.name, "middle ahoj 42" );
-      `checkh( t.i, 42);
-      `checks(s.bar(), "middle ahoj 42");
-      $finish;
-   end
+        IMid im;
+
+        `checks( b.name, "middle ahoj 42" );
+        `checks( s.name, "middle ahoj 42" );
+        `checks( t.name, "middle ahoj 42" );
+        `checkh( t.i, 42);
+        `checks(s.bar(), "middle ahoj 42");
+        im = s;
+        im.moo(42);
+
+        $finish;
+    end
 
 endmodule

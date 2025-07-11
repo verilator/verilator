@@ -58,16 +58,17 @@ class ClassVisitor final : public VNVisitor {
     // METHODS
 
     void recurseImplements(AstClass* nodep) {
-        if (nodep->useVirtualPublic()) return;
-        // Only mark interface classes as virtual
+        // In SystemVerilog, we have two inheritance chains:
+        // - extends of concrete clasess: mapped to non-virtual C++ inheritance
+        //   as there is only single ancestor allowed
+        // - implements of concrete classes / extends of interface classes: mapped
+        //   to virtual inheritance to allow diamond patterns with multiple ancestors
+        if (nodep->useVirtualPublic()) return; // Short-circuit to exit diamond cycles
         if (nodep->isInterfaceClass()) {
             nodep->useVirtualPublic(true);
         }
-        // For concrete classes, check if they implement interfaces, but don't
-        // make the concrete chain virtual
         for (const AstClassExtends* extp = nodep->extendsp(); extp;
             extp = VN_AS(extp->nextp(), ClassExtends)) {
-            // Don't propagate to concrete parents
             recurseImplements(extp->classp());
         }
         return;
