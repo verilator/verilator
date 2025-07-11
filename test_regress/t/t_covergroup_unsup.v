@@ -151,10 +151,7 @@ module t (/*AUTOARG*/
       }
    endgroup
 
-   covergroup cg_more extends cg_empty;
-   endgroup
-
-   covergroup cg_args(int cg_lim);
+   covergroup cgArgs(int cg_lim);
    endgroup
 
    class CgCls;
@@ -170,10 +167,15 @@ module t (/*AUTOARG*/
 `endif
    endclass
 
+   class CgEmb;
+      covergroup extends cg_empty;
+      endgroup
+   endclass
+
    always @(posedge clk) begin
-      cg_more cov1 = new;
+      cg_empty cov1 = new;
 `ifndef T_COVERGROUP_UNSUP_IGN
-      cg_args cov2 = new(2);
+      cgArgs cov2 = new(2);
 `endif
       if (cyc == 10) begin
          $write("*-* All Finished *-*\n");
