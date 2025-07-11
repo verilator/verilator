@@ -596,13 +596,13 @@ class IndependentBits final : public DfgVisitor {
     }(vtxp))
 
     // VISITORS
-    void visit(DfgVertex* vtxp) {
+    void visit(DfgVertex* vtxp) override {
         UINFO(9, "Unhandled vertex type " << vtxp->typeName());
         // Conservatively assume it depends on the variable...
         mask(vtxp).setAllBits1();  // intentionally not using MASK here
     }
 
-    void visit(DfgVarPacked* vtxp) {
+    void visit(DfgVarPacked* vtxp) override {
         // The mask of the traced variable is known to be all ones
         if (vtxp == m_varp) return;
 
@@ -614,7 +614,7 @@ class IndependentBits final : public DfgVisitor {
         });
     }
 
-    void visit(DfgConcat* vtxp) {
+    void visit(DfgConcat* vtxp) override {
         const DfgVertex* const rhsp = vtxp->rhsp();
         const DfgVertex* const lhsp = vtxp->lhsp();
         V3Number& m = MASK(vtxp);
@@ -622,7 +622,7 @@ class IndependentBits final : public DfgVisitor {
         m.opSelInto(MASK(lhsp), rhsp->width(), lhsp->width());
     }
 
-    void visit(DfgReplicate* vtxp) {
+    void visit(DfgReplicate* vtxp) override {
         const uint32_t count = vtxp->countp()->as<DfgConst>()->toU32();
         const DfgVertex* const srcp = vtxp->srcp();
         const uint32_t sWidth = srcp->width();
@@ -631,28 +631,28 @@ class IndependentBits final : public DfgVisitor {
         for (uint32_t i = 0; i < count; ++i) vMask.opSelInto(sMask, i * sWidth, sWidth);
     }
 
-    void visit(DfgSel* vtxp) {
+    void visit(DfgSel* vtxp) override {
         const uint32_t lsb = vtxp->lsb();
         const uint32_t msb = lsb + vtxp->width() - 1;
         MASK(vtxp).opSel(MASK(vtxp->fromp()), msb, lsb);
     }
 
-    void visit(DfgExtend* vtxp) {
+    void visit(DfgExtend* vtxp) override {
         const DfgVertex* const srcp = vtxp->srcp();
         MASK(vtxp).opSelInto(MASK(srcp), 0, srcp->width());
     }
 
-    void visit(DfgNot* vtxp) {  //
+    void visit(DfgNot* vtxp) override {  //
         MASK(vtxp) = MASK(vtxp->srcp());
     }
 
-    void visit(DfgAnd* vtxp) {  //
+    void visit(DfgAnd* vtxp) override {  //
         MASK(vtxp).opOr(MASK(vtxp->lhsp()), MASK(vtxp->rhsp()));
     }
-    void visit(DfgOr* vtxp) {  //
+    void visit(DfgOr* vtxp) override {  //
         MASK(vtxp).opOr(MASK(vtxp->lhsp()), MASK(vtxp->rhsp()));
     }
-    void visit(DfgXor* vtxp) {  //
+    void visit(DfgXor* vtxp) override {  //
         MASK(vtxp).opOr(MASK(vtxp->lhsp()), MASK(vtxp->rhsp()));
     }
 
