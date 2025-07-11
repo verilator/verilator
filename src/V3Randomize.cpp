@@ -2273,7 +2273,7 @@ class RandomizeVisitor final : public VNVisitor {
             nodep->name(randomizeFuncp->name());
             nodep->taskp(randomizeFuncp);
             nodep->dtypeFrom(randomizeFuncp->dtypep());
-            nodep->classOrPackagep(m_modp);
+            if (VN_IS(m_modp, Class)) nodep->classOrPackagep(m_modp);
             pushDeletep(nodep->pinsp()->unlinkFrBackWithNext());
             return;
         }

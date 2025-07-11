@@ -15,7 +15,8 @@ class std_randomize_class;
     bit [63:0] old_data_x_4;
 
     function int std_randomize();
-        bit success, valid;
+        bit valid;
+        int success;
 
         old_addr = addr;
         old_data = data;
@@ -23,7 +24,7 @@ class std_randomize_class;
 
         success = std::randomize(addr, data);
 
-        valid = success && !(addr == old_addr || data == old_data) && data_x_4 == old_data_x_4;
+        valid = (success == 1) && !(addr == old_addr || data == old_data) && data_x_4 == old_data_x_4;
         if (!valid) return 0;
         return 1;
     endfunction
@@ -33,7 +34,8 @@ endclass
 
 module t_std_randomize_bad2;
 
-    bit success, valid;
+    bit valid;
+    int success;
     std_randomize_class test;
 
     initial begin
@@ -44,7 +46,7 @@ module t_std_randomize_bad2;
         test.old_data = test.data;
         test.old_data_x_4 = test.data_x_4;
         success = std::randomize(test.addr, test.data);
-        valid = success && !(test.addr == test.old_addr || test.data == test.old_data) && test.data_x_4 == test.old_data_x_4;
+        valid = (success == 1) && !(test.addr == test.old_addr || test.data == test.old_data) && test.data_x_4 == test.old_data_x_4;
 
         // valid = test.std_randomize();
 

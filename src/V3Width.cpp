@@ -6224,9 +6224,7 @@ class WidthVisitor final : public VNVisitor {
                     if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
                         randVarp = varrefp->varp();
                     } else {
-                        argp->v3warn(
-                            E_UNSUPPORTED,
-                            "Unsupported: Non-variable expression as 'randomize()' argument");
+                        argp->v3error("Invalid argument for 'std::randomize()'.");
                         VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
                     }
                     exprp = nullptr;

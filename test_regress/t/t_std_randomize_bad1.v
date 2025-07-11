@@ -7,16 +7,16 @@
 module t_std_randomize_bad1;
     bit [3:0] a;
 
-    function bit run();
-        bit success;
+    function int run();
+        int success;
         success = std::randomize(a + 1); // ERROR: argument is not a variable
         return success;
     endfunction
 
     initial begin
-        bit ok;
+        int ok;
         ok = run();
-        if (!ok) $stop;
+        if (ok == 0) $stop;
         $write("*-* All Finished *-*\n");
         $finish;
     end
