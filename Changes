@@ -13,6 +13,7 @@ Verilator 5.039 devel
 
 **Other:**
 
+* Add ENUMITEMWIDTH error, and apply to X-extended and ranged values.
 * Support member-level triggers for virtual interfaces (#5166) (#6148). [Yilou Wang]
 * Support disable dotted references (#6154). [Ryszard Rozak, Antmicro Ltd.]
 * Support randomize() on class member selects (#6161). [Igor Zaworski, Antmicro Ltd.]

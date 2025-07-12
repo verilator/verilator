@@ -369,6 +369,10 @@ public:
                 && m_lastLineno == rhs.m_lastLineno && m_lastColumn == rhs.m_lastColumn
                 && m_filenameno == rhs.m_filenameno && m_msgEnIdx == rhs.m_msgEnIdx);
     }
+    bool equalFirstLineCol(const FileLine& rhs) const {
+        return (m_filenameno == rhs.m_filenameno && m_firstLineno == rhs.m_firstLineno
+                && m_firstColumn == rhs.m_firstColumn);
+    }
     // Returns -1 if (*this) should come before rhs after sorted. 1 for the opposite case. 0 for
     // equivalent.
     int operatorCompare(const FileLine& rhs) const {

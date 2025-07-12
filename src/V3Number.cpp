@@ -1188,7 +1188,7 @@ uint32_t V3Number::countOnes() const {
 
 uint32_t V3Number::mostSetBitP1() const {
     for (int bit = width() - 1; bit >= 0; bit--) {
-        if (bitIs1(bit)) return bit + 1;
+        if (!bitIs0(bit)) return bit + 1;
     }
     return 0;
 }

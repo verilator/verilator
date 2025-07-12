@@ -1,6 +1,20 @@
-%Error: t/t_enum_bad_value.v:10:19: Enum value exceeds width of enum type (IEEE 1800-2023 6.19)
-                                  : ... note: In instance 't'
-   10 |       VALUE_BAD = 8
-      |                   ^
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-ENUMITEMWIDTH: t/t_enum_bad_value.v:12:37: Enum value exceeds width of enum type (IEEE 1800-2023 6.19)
+                                                : ... note: In instance 't'
+   12 |   typedef enum [2:0] { VALUE_BAD1 = 8 } enum_t;
+      |                                     ^
+                      ... For error description see https://verilator.org/warn/ENUMITEMWIDTH?v=latest
+%Error-ENUMITEMWIDTH: t/t_enum_bad_value.v:14:29: Enum value exceeds width of enum type (IEEE 1800-2023 6.19)
+                                                : ... note: In instance 't'
+   14 |   enum bit [4:0] {BAD2[4] = 100} bad2;
+      |                             ^~~
+%Warning-WIDTHTRUNC: t/t_enum_bad_value.v:14:19: Operator ADD expects 5 bits on the LHS, but LHS's CONST '?32?sh64' generates 32 or 7 bits.
+                                               : ... note: In instance 't'
+   14 |   enum bit [4:0] {BAD2[4] = 100} bad2;
+      |                   ^~~~
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+%Error-ENUMITEMWIDTH: t/t_enum_bad_value.v:16:28: Enum value exceeds width of enum type (IEEE 1800-2023 6.19)
+                                                : ... note: In instance 't'
+   16 |   enum logic [3:0] {BAD3 = 5'bxxxxx} bad3;
+      |                            ^~~~~~~~
 %Error: Exiting due to

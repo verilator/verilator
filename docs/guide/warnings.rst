@@ -709,6 +709,28 @@ List Of Warnings
    missing."
 
 
+.. option:: ENUMITEMWIDTH
+
+   An error that an enum item value is being assigned from a value which
+   would be truncated (similar to :option:`WIDTHTRUNC`), or from a sized
+   literal constant with a different bit width (similar to
+   :option:`WIDTHTRUNC` or :option:`WIDTHEXPAND`).  IEEE requires this
+   error, but it may be disabled.
+
+   Faulty example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2
+
+         typedef enum [3:0] {
+            WRONG_WIDTH = 33'h3  //<--- Warning
+         } enum_t;
+
+   To repair, correct the size of the item's value directly, or use a cast,
+   so the resulting width matches the enum's width.
+
+
 .. option:: ENUMVALUE
 
    An error that an enum data type value is being assigned from another data

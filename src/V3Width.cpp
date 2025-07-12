@@ -2553,9 +2553,16 @@ class WidthVisitor final : public VNVisitor {
             // Default type is int, but common to assign narrower values, so minwidth from value
             userIterateAndNext(nodep->valuep(), WidthVP{CONTEXT_DET, PRELIM}.p());
             bool warnOn = true;
-            if (const AstConst* const constp = VN_CAST(nodep->valuep(), Const)) {
+            AstNodeExpr* valuep = nodep->valuep();
+            if (const AstAdd* const anodep = VN_CAST(valuep, Add)) {
+                // If constructed by V3LinkParse due to "enumitem[N_REPEATS] value"
+                if (anodep->fileline()->equalFirstLineCol(*(nodep->fileline())))
+                    valuep = anodep->lhsp();
+            }
+            if (const AstConst* const constp = VN_CAST(valuep, Const)) {
                 if (static_cast<int>(constp->num().mostSetBitP1()) > nodep->width()) {
-                    constp->v3error("Enum value exceeds width of enum type (IEEE 1800-2023 6.19)");
+                    constp->v3warn(ENUMITEMWIDTH,
+                                   "Enum value exceeds width of enum type (IEEE 1800-2023 6.19)");
                     warnOn = false;  // Prevent normal WIDTHTRUNC
                 }
             }

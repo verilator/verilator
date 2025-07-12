@@ -267,16 +267,17 @@ class LinkParseVisitor final : public VNVisitor {
             const int left = nodep->rangep()->leftConst();
             const int right = nodep->rangep()->rightConst();
             const int increment = (left > right) ? -1 : 1;
-            int offset_from_init = 0;
+            uint32_t offset_from_init = 0;
             AstEnumItem* addp = nullptr;
             FileLine* const flp = nodep->fileline();
-            for (int i = left; i != (right + increment); i += increment, offset_from_init++) {
+            for (int i = left; i != (right + increment); i += increment, ++offset_from_init) {
                 const string name = nodep->name() + cvtToStr(i);
                 AstNodeExpr* valuep = nullptr;
                 if (nodep->valuep()) {
+                    // V3Width looks for Adds with same fileline as the EnumItem
                     valuep
                         = new AstAdd{flp, nodep->valuep()->cloneTree(true),
-                                     new AstConst(flp, AstConst::Unsized32{}, offset_from_init)};
+                                     new AstConst{flp, AstConst::Unsized32{}, offset_from_init}};
                 }
                 addp = AstNode::addNext(addp, new AstEnumItem{flp, name, nullptr, valuep});
             }
