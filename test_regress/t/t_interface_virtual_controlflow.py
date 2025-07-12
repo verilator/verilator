@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["-fno-reorder"])
+test.compile(verilator_flags2=["--exe --main --timing -fno-reorder"])
 
 test.execute(expect_filename=test.golden_filename)
 
