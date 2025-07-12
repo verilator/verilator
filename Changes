@@ -13,10 +13,19 @@ Verilator 5.039 devel
 
 **Other:**
 
+* Support member-level triggers for virtual interfaces (#5166) (#6148). [Yilou Wang]
 * Support disable dotted references (#6154). [Ryszard Rozak, Antmicro Ltd.]
+* Support randomize() on class member selects (#6161). [Igor Zaworski, Antmicro Ltd.]
+* Support multiple variables on RHS of a `force` assignment (#6163). [Artur Bieniek, Antmicro Ltd.]]
 * Change control file `public_flat_*` and other signal attributes to support __ in names (#6140).
-* Fix class extends dotted error (#6162). [Igor Zaworski]
+* Fix constructor parameters in inheritance hierarchies (#6036) (#6070). [Petr Nohavica]
+* Fix cmake `-Wno` compiler flag testing (#6145). [Martin Stadler]
+* Fix class extends dotted error (#6162). [Igor Zaworski, Antmicro Ltd.]
 * Fix genvar error with `-O0` (#6165). [Max Wipfli]
+* Fix uninitialized thread PGO counters (#6167). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix additional UNOPTFLAT combinational cycles automatically in DFG (#6168) (#6173). [Geza Lore]
+* Fix omitting error when assigning to an input (#6169). [Artur Bieniek, Antmicro Ltd.]]
+* Fix param-dependent class typedef linking (#6171). [Igor Zaworski, Antmicro Ltd.]
 
 
 Verilator 5.038 2025-07-08
@@ -107,7 +116,7 @@ Verilator 5.038 2025-07-08
 * Fix wide non-blocking assignment mis-optimization (#6150) (#6152) (#6155). [Todd Strader]
 * Fix interface array connections with non-zero low declaration index.
 * Fix developer build error on MacOS/Flex2.6.4 (#6153). [Paul Swirhun]
-* Fix crash with --dumpi-V3LinkDot without --debug (#6159). [Igor Zaworski]
+* Fix crash with --dumpi-V3LinkDot without --debug (#6159). [Igor Zaworski, Antmicro Ltd.]
 
 
 Verilator 5.036 2025-04-27
