@@ -1202,13 +1202,14 @@ class V3DfgPeephole final : public DfgVisitor {
     void visit(DfgArraySel* vtxp) override {
         if (DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>()) {
             if (DfgVarArray* const varp = vtxp->fromp()->cast<DfgVarArray>()) {
-                if (varp->srcp()) {
+                if (varp->srcp() && !varp->varp()->isForced() && !varp->varp()->isSc()) {
                     if (DfgSpliceArray* const splicep = varp->srcp()->cast<DfgSpliceArray>()) {
-                        const size_t idx = idxp->toSizeT();
-                        if (DfgVertex* const driverp = splicep->driverAt(idx)) {
-                            APPLYING(INLINE_ARRAYSEL) {
-                                replace(vtxp, driverp);
-                                return;
+                        if (DfgVertex* const driverp = splicep->driverAt(idxp->toSizeT())) {
+                            if (!driverp->is<DfgVertexSplice>()) {
+                                APPLYING(INLINE_ARRAYSEL) {
+                                    replace(vtxp, driverp);
+                                    return;
+                                }
                             }
                         }
                     }

@@ -50,7 +50,7 @@ class DfgRegularize final {
                 if (vtx.is<DfgVertexSplice>()) {
                     const bool hasNonVarSink
                         = vtx.findSink<DfgVertex>([](const DfgVertex& snk) {  //
-                              return !snk.is<DfgVertexVar>();
+                              return !snk.is<DfgVertexVar>() && !snk.is<DfgVertexSplice>();
                           });
                     return hasNonVarSink;
                 }

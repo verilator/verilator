@@ -28,8 +28,11 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
+#include "V3Const.h"
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
+
+#include <iterator>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -40,6 +43,17 @@ namespace {
 template <typename T_Vertex, typename T_Node>
 T_Vertex* makeVertex(const T_Node* nodep, DfgGraph& dfg) {
     return new T_Vertex{dfg, nodep->fileline(), DfgVertex::dtypeFor(nodep)};
+}
+
+template <>
+DfgArraySel* makeVertex<DfgArraySel, AstArraySel>(const AstArraySel* nodep, DfgGraph& dfg) {
+    // Some earlier passes create malformed ArraySels, just bail on those...
+    // See t_bitsel_wire_array_bad
+    if (VN_IS(nodep->fromp(), Const)) return nullptr;
+    AstUnpackArrayDType* const fromDtypep
+        = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
+    if (!fromDtypep) return nullptr;
+    return new DfgArraySel{dfg, nodep->fileline(), DfgVertex::dtypeFor(nodep)};
 }
 
 //======================================================================
@@ -77,17 +91,6 @@ class AstToDfgVisitor final : public VNVisitor {
     const VNUser1InUse m_user1InUse;
 
     // TYPES
-    // Represents a driver during canonicalization
-    struct Driver final {
-        FileLine* m_fileline;
-        DfgVertex* m_vtxp;
-        uint32_t m_lsb;
-        Driver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp)
-            : m_fileline{flp}
-            , m_vtxp{vtxp}
-            , m_lsb{lsb} {}
-    };
-
     using RootType = std::conditional_t<T_Scoped, AstNetlist, AstModule>;
     using VariableType = std::conditional_t<T_Scoped, AstVarScope, AstVar>;
 
@@ -183,93 +186,144 @@ class AstToDfgVisitor final : public VNVisitor {
         return m_foundUnhandled;
     }
 
-    DfgVertexSplice* convertLValue(AstNode* nodep) {
-        FileLine* const flp = nodep->fileline();
-
+    std::pair<DfgVertexSplice*, uint32_t> convertLValue(AstNode* nodep) {
         if (AstVarRef* const vrefp = VN_CAST(nodep, VarRef)) {
             m_foundUnhandled = false;
             visit(vrefp);
-            if (m_foundUnhandled) return nullptr;
+            if (m_foundUnhandled) return {nullptr, 0};
+
+            // Get the variable vertex
             DfgVertexVar* const vtxp = getVertex(vrefp)->template as<DfgVertexVar>();
-            // Ensure driving splice vertex exists
+            // Ensure the Splice driver exists for this variable
             if (!vtxp->srcp()) {
-                if (VN_IS(vtxp->dtypep(), UnpackArrayDType)) {
-                    vtxp->srcp(new DfgSpliceArray{*m_dfgp, flp, vtxp->dtypep()});
+                FileLine* const flp = vtxp->fileline();
+                AstNodeDType* const dtypep = vtxp->dtypep();
+                if (vtxp->is<DfgVarPacked>()) {
+                    vtxp->srcp(new DfgSplicePacked{*m_dfgp, flp, dtypep});
+                } else if (vtxp->is<DfgVarArray>()) {
+                    vtxp->srcp(new DfgSpliceArray{*m_dfgp, flp, dtypep});
                 } else {
-                    vtxp->srcp(new DfgSplicePacked{*m_dfgp, flp, vtxp->dtypep()});
+                    nodep->v3fatalSrc("Unhandled DfgVertexVar sub-type");  // LCOV_EXCL_LINE
                 }
             }
-            return vtxp->srcp()->as<DfgVertexSplice>();
+            // Return the Splice driver
+            return {vtxp->srcp()->as<DfgVertexSplice>(), 0};
+        }
+
+        if (AstSel* selp = VN_CAST(nodep, Sel)) {
+            // Only handle constant selects
+            const AstConst* const lsbp = VN_CAST(selp->lsbp(), Const);
+            if (!lsbp) {
+                ++m_ctx.m_nonRepLhs;
+                return {nullptr, 0};
+            }
+            uint32_t lsb = lsbp->toUInt();
+
+            // Convert the 'fromp' sub-expression
+            const auto pair = convertLValue(selp->fromp());
+            if (!pair.first) return {nullptr, 0};
+            DfgSplicePacked* const splicep = pair.first->template as<DfgSplicePacked>();
+            // Adjust index.
+            lsb += pair.second;
+
+            // AstSel doesn't change type kind (array vs packed), so we can use
+            // the existing splice driver with adjusted lsb
+            return {splicep, lsb};
+        }
+
+        if (AstArraySel* const aselp = VN_CAST(nodep, ArraySel)) {
+            // Only handle constant selects
+            const AstConst* const indexp = VN_CAST(aselp->bitp(), Const);
+            if (!indexp) {
+                ++m_ctx.m_nonRepLhs;
+                return {nullptr, 0};
+            }
+            uint32_t index = indexp->toUInt();
+
+            // Convert the 'fromp' sub-expression
+            const auto pair = convertLValue(aselp->fromp());
+            if (!pair.first) return {nullptr, 0};
+            DfgSpliceArray* const splicep = pair.first->template as<DfgSpliceArray>();
+            // Adjust index. Note pair.second is always 0, but we might handle array slices later..
+            index += pair.second;
+
+            // Ensure the Splice driver exists for this element
+            if (!splicep->driverAt(index)) {
+                FileLine* const flp = nodep->fileline();
+                AstNodeDType* const dtypep = DfgVertex::dtypeFor(nodep);
+                if (VN_IS(dtypep, BasicDType)) {
+                    splicep->addDriver(flp, index, new DfgSplicePacked{*m_dfgp, flp, dtypep});
+                } else if (VN_IS(dtypep, UnpackArrayDType)) {
+                    splicep->addDriver(flp, index, new DfgSpliceArray{*m_dfgp, flp, dtypep});
+                } else {
+                    nodep->v3fatalSrc("Unhandled AstNodeDType sub-type");  // LCOV_EXCL_LINE
+                }
+            }
+
+            // Return the splice driver
+            return {splicep->driverAt(index)->as<DfgVertexSplice>(), 0};
         }
 
         ++m_ctx.m_nonRepLhs;
-        return nullptr;
+        return {nullptr, 0};
     }
 
     // Build DfgEdge representing the LValue assignment. Returns false if unsuccessful.
-    bool convertAssignment(FileLine* flp, AstNode* nodep, DfgVertex* vtxp) {
+    bool convertAssignment(FileLine* flp, AstNode* lhsp, DfgVertex* vtxp) {
+        // Simplify the LHS, to get rid of things like SEL(CONCAT(_, _), _)
+        lhsp = V3Const::constifyExpensiveEdit(lhsp);
+
         // Concatenation on the LHS. Select parts of the driving 'vtxp' then convert each part
-        if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
-            AstNode* const lhsp = concatp->lhsp();
-            AstNode* const rhsp = concatp->rhsp();
+        if (AstConcat* const concatp = VN_CAST(lhsp, Concat)) {
+            AstNode* const cLhsp = concatp->lhsp();
+            AstNode* const cRhsp = concatp->rhsp();
 
             {  // Convet LHS of concat
-                FileLine* const lFlp = lhsp->fileline();
-                DfgSel* const lVtxp = new DfgSel{*m_dfgp, lFlp, DfgVertex::dtypeFor(lhsp)};
+                FileLine* const lFlp = cLhsp->fileline();
+                DfgSel* const lVtxp = new DfgSel{*m_dfgp, lFlp, DfgVertex::dtypeFor(cLhsp)};
                 lVtxp->fromp(vtxp);
-                lVtxp->lsb(rhsp->width());
-                if (!convertAssignment(flp, lhsp, lVtxp)) return false;
+                lVtxp->lsb(cRhsp->width());
+                if (!convertAssignment(flp, cLhsp, lVtxp)) return false;
             }
 
             {  // Convert RHS of concat
-                FileLine* const rFlp = rhsp->fileline();
-                DfgSel* const rVtxp = new DfgSel{*m_dfgp, rFlp, DfgVertex::dtypeFor(rhsp)};
+                FileLine* const rFlp = cRhsp->fileline();
+                DfgSel* const rVtxp = new DfgSel{*m_dfgp, rFlp, DfgVertex::dtypeFor(cRhsp)};
                 rVtxp->fromp(vtxp);
                 rVtxp->lsb(0);
-                return convertAssignment(flp, rhsp, rVtxp);
+                return convertAssignment(flp, cRhsp, rVtxp);
             }
         }
 
-        if (AstSel* const selp = VN_CAST(nodep, Sel)) {
-            AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
-            const AstConst* const lsbp = VN_CAST(selp->lsbp(), Const);
-            if (!vrefp || !lsbp) {
-                ++m_ctx.m_nonRepLhs;
-                return false;
-            }
-            if (DfgVertexSplice* const splicep = convertLValue(vrefp)) {
-                splicep->template as<DfgSplicePacked>()->addDriver(flp, lsbp->toUInt(), vtxp);
-                return true;
-            }
-        } else if (AstArraySel* const selp = VN_CAST(nodep, ArraySel)) {
-            AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
-            const AstConst* const idxp = VN_CAST(selp->bitp(), Const);
-            if (!vrefp || !idxp) {
-                ++m_ctx.m_nonRepLhs;
-                return false;
-            }
-            if (DfgVertexSplice* const splicep = convertLValue(vrefp)) {
-                splicep->template as<DfgSpliceArray>()->addDriver(flp, idxp->toUInt(), vtxp);
-                return true;
-            }
-        } else if (VN_IS(nodep, VarRef)) {
-            if (DfgVertexSplice* const splicep = convertLValue(nodep)) {
-                splicep->template as<DfgSplicePacked>()->addDriver(flp, 0, vtxp);
-                return true;
-            }
+        // Construct LHS
+        const auto pair = convertLValue(lhsp);
+        if (!pair.first) return false;
+
+        // If successful connect the driver
+        if (DfgSplicePacked* const sPackedp = pair.first->template cast<DfgSplicePacked>()) {
+            sPackedp->addDriver(flp, pair.second, vtxp);
+        } else if (DfgSpliceArray* const sArrayp = pair.first->template cast<DfgSpliceArray>()) {
+            sArrayp->addDriver(flp, pair.second, vtxp);
         } else {
-            ++m_ctx.m_nonRepLhs;
+            lhsp->v3fatalSrc("Unhandled DfgVertexSplice sub-type");  // LCOV_EXCL_LINE
         }
-        return false;
+
+        return true;
     }
 
     bool convertEquation(AstNode* nodep, FileLine* flp, AstNode* lhsp, AstNode* rhsp) {
         UASSERT_OBJ(m_uncommittedVertices.empty(), nodep, "Should not nest");
 
-        // Currently cannot handle direct assignments between unpacked types. These arise e.g.
-        // when passing an unpacked array through a module port.
-        if (!DfgVertex::isSupportedPackedDType(lhsp->dtypep())
-            || !DfgVertex::isSupportedPackedDType(rhsp->dtypep())) {
+        // Check data types are compatible.
+        if (!DfgVertex::isSupportedDType(lhsp->dtypep())
+            || !DfgVertex::isSupportedDType(rhsp->dtypep())) {
+            markReferenced(nodep);
+            ++m_ctx.m_nonRepDType;
+            return false;
+        }
+
+        // For now, only direct array assignment is supported (e.g. a = b, but not a = _ ? b : c)
+        if (VN_IS(rhsp->dtypep()->skipRefp(), UnpackArrayDType) && !VN_IS(rhsp, VarRef)) {
             markReferenced(nodep);
             ++m_ctx.m_nonRepDType;
             return false;
@@ -312,180 +366,310 @@ class AstToDfgVisitor final : public VNVisitor {
         return true;
     }
 
-    // Sometime assignment ranges are coalesced by V3Const,
-    // so we unpack concatenations for better error reporting.
-    void addDriver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp,
-                   std::vector<Driver>& drivers) const {
-        if (DfgConcat* const concatp = vtxp->cast<DfgConcat>()) {
-            DfgVertex* const rhsp = concatp->rhsp();
-            auto const rhs_width = rhsp->width();
-            addDriver(rhsp->fileline(), lsb, rhsp, drivers);
-            DfgVertex* const lhsp = concatp->lhsp();
-            addDriver(lhsp->fileline(), lsb + rhs_width, lhsp, drivers);
-            concatp->unlinkDelete(*m_dfgp);
-        } else {
-            drivers.emplace_back(flp, lsb, vtxp);
+    // Prune vertices potentially unused due to resolving multiple drivers.
+    // Having multiple drivers is an error and is hence assumed to be rare,
+    // so performance is not very important, set will suffice.
+    void removeUnused(std::set<DfgVertex*>& prune) {
+        while (!prune.empty()) {
+            // Pop last vertex
+            const auto it = prune.begin();
+            DfgVertex* const vtxp = *it;
+            prune.erase(it);
+            // If used (or a variable), then done
+            if (vtxp->hasSinks() || vtxp->is<DfgVertexVar>()) continue;
+            // If unused, then add sources to work list and delete
+            vtxp->forEachSource([&](DfgVertex& src) { prune.emplace(&src); });
+            vtxp->unlinkDelete(*m_dfgp);
         }
     }
 
-    // Canonicalize packed variables
-    void canonicalizePacked() {
-        for (DfgVarPacked* const varp : m_varPackedps) {
-            // Delete variables with no sinks nor sources (this can happen due to reverting
-            // uncommitted vertices, which does not remove variables)
-            if (!varp->hasSinks() && !varp->srcp()) {
-                VL_DO_DANGLING(varp->unlinkDelete(*m_dfgp), varp);
+    // Normalize packed driver - return the normalized vertex and location for 'splicep'
+    std::pair<DfgVertex*, FileLine*>  //
+    normalizePacked(DfgVertexVar* varp, const std::string& sub, DfgSplicePacked* const splicep) {
+        // Represents a driver of 'splicep'
+        struct Driver final {
+            FileLine* m_fileline;
+            DfgVertex* m_vtxp;
+            uint32_t m_lsb;
+            Driver() = delete;
+            Driver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp)
+                : m_fileline{flp}
+                , m_vtxp{vtxp}
+                , m_lsb{lsb} {}
+        };
+
+        // The drivers of 'splicep'
+        std::vector<Driver> drivers;
+        drivers.reserve(splicep->arity());
+
+        // Sometime assignment ranges are coalesced by V3Const,
+        // so we unpack concatenations for better error reporting.
+        const std::function<void(FileLine*, uint32_t, DfgVertex*)> gather
+            = [&](FileLine* flp, uint32_t lsb, DfgVertex* vtxp) -> void {
+            if (DfgConcat* const concatp = vtxp->cast<DfgConcat>()) {
+                DfgVertex* const rhsp = concatp->rhsp();
+                auto const rhs_width = rhsp->width();
+                gather(rhsp->fileline(), lsb, rhsp);
+                DfgVertex* const lhsp = concatp->lhsp();
+                gather(lhsp->fileline(), lsb + rhs_width, lhsp);
+                concatp->unlinkDelete(*m_dfgp);
+            } else {
+                drivers.emplace_back(flp, lsb, vtxp);
+            }
+        };
+
+        // Gather and unlink all drivers
+        splicep->forEachSourceEdge([&](DfgEdge& edge, size_t idx) {
+            DfgVertex* const driverp = edge.sourcep();
+            UASSERT(driverp, "Should not have created undriven sources");
+            UASSERT_OBJ(!driverp->is<DfgVertexSplice>(), splicep, "Should not be DfgVertexSplice");
+            gather(splicep->driverFileLine(idx), splicep->driverLsb(idx), driverp);
+            edge.unlinkSource();
+        });
+
+        const auto cmp = [](const Driver& a, const Driver& b) {
+            if (a.m_lsb != b.m_lsb) return a.m_lsb < b.m_lsb;
+            return a.m_fileline->operatorCompare(*b.m_fileline) < 0;
+        };
+
+        // Sort drivers by LSB
+        std::stable_sort(drivers.begin(), drivers.end(), cmp);
+
+        // Vertices that might have become unused due to multiple driver resolution. Having
+        // multiple drivers is an error and is hence assumed to be rare, so performance is
+        // not very important, set will suffice.
+        std::set<DfgVertex*> prune;
+
+        // Fix multiply driven ranges
+        for (auto it = drivers.begin(); it != drivers.end();) {
+            Driver& a = *it++;
+            const uint32_t aWidth = a.m_vtxp->width();
+            const uint32_t aEnd = a.m_lsb + aWidth;
+            while (it != drivers.end()) {
+                Driver& b = *it;
+                // If no overlap, then nothing to do
+                if (b.m_lsb >= aEnd) break;
+
+                const uint32_t bWidth = b.m_vtxp->width();
+                const uint32_t bEnd = b.m_lsb + bWidth;
+                const uint32_t overlapEnd = std::min(aEnd, bEnd) - 1;
+
+                if (a.m_fileline->operatorCompare(*b.m_fileline) != 0
+                    && !varp->varp()->isUsedLoopIdx()  // Loop index often abused, so suppress
+                ) {
+                    AstNode* const vp = varp->varScopep()
+                                            ? static_cast<AstNode*>(varp->varScopep())
+                                            : static_cast<AstNode*>(varp->varp());
+
+                    vp->v3warn(  //
+                        MULTIDRIVEN,
+                        "Bits ["  //
+                            << overlapEnd << ":" << b.m_lsb << "] of signal '" << vp->prettyName()
+                            << sub << "' have multiple combinational drivers\n"
+                            << a.m_fileline->warnOther() << "... Location of first driver\n"
+                            << a.m_fileline->warnContextPrimary() << '\n'
+                            << b.m_fileline->warnOther() << "... Location of other driver\n"
+                            << b.m_fileline->warnContextSecondary() << vp->warnOther()
+                            << "... Only the first driver will be respected");
+                }
+
+                // If the first driver completely covers the range of the second driver,
+                // we can just delete the second driver completely, otherwise adjust the
+                // second driver to apply from the end of the range of the first driver.
+                if (aEnd >= bEnd) {
+                    prune.emplace(b.m_vtxp);
+                    it = drivers.erase(it);
+                } else {
+                    const auto dtypep = DfgVertex::dtypeForWidth(bEnd - aEnd);
+                    DfgSel* const selp = new DfgSel{*m_dfgp, b.m_vtxp->fileline(), dtypep};
+                    selp->fromp(b.m_vtxp);
+                    selp->lsb(aEnd - b.m_lsb);
+                    b.m_lsb = aEnd;
+                    b.m_vtxp = selp;
+                    std::stable_sort(it, drivers.end(), cmp);
+                }
+            }
+        }
+
+        // Coalesce adjacent ranges
+        for (size_t i = 0, j = 1; j < drivers.size(); ++j) {
+            Driver& a = drivers[i];
+            Driver& b = drivers[j];
+
+            // Coalesce adjacent range
+            const uint32_t aWidth = a.m_vtxp->width();
+            const uint32_t bWidth = b.m_vtxp->width();
+            if (a.m_lsb + aWidth == b.m_lsb) {
+                const auto dtypep = DfgVertex::dtypeForWidth(aWidth + bWidth);
+                DfgConcat* const concatp = new DfgConcat{*m_dfgp, a.m_fileline, dtypep};
+                concatp->rhsp(a.m_vtxp);
+                concatp->lhsp(b.m_vtxp);
+                a.m_vtxp = concatp;
+                b.m_vtxp = nullptr;  // Mark as moved
+                ++m_ctx.m_coalescedAssignments;
                 continue;
             }
 
-            // Nothing to do for un-driven (input) variables
-            if (!varp->srcp()) continue;
+            ++i;
 
-            DfgSplicePacked* const splicep = varp->srcp()->as<DfgSplicePacked>();
-
-            // Gather (and unlink) all drivers
-            std::vector<Driver> drivers;
-            drivers.reserve(splicep->arity());
-            splicep->forEachSourceEdge([this, splicep, &drivers](DfgEdge& edge, size_t idx) {
-                DfgVertex* const driverp = edge.sourcep();
-                UASSERT(driverp, "Should not have created undriven sources");
-                addDriver(splicep->driverFileLine(idx), splicep->driverLsb(idx), driverp, drivers);
-                edge.unlinkSource();
-            });
-
-            const auto cmp = [](const Driver& a, const Driver& b) {
-                if (a.m_lsb != b.m_lsb) return a.m_lsb < b.m_lsb;
-                return a.m_fileline->operatorCompare(*b.m_fileline) < 0;
-            };
-
-            // Sort drivers by LSB
-            std::stable_sort(drivers.begin(), drivers.end(), cmp);
-
-            // Vertices that might have become unused due to multiple driver resolution. Having
-            // multiple drivers is an error and is hence assumed to be rare, so performance is
-            // not very important, set will suffice.
-            std::set<DfgVertex*> prune;
-
-            // Fix multiply driven ranges
-            for (auto it = drivers.begin(); it != drivers.end();) {
-                Driver& a = *it++;
-                const uint32_t aWidth = a.m_vtxp->width();
-                const uint32_t aEnd = a.m_lsb + aWidth;
-                while (it != drivers.end()) {
-                    Driver& b = *it;
-                    // If no overlap, then nothing to do
-                    if (b.m_lsb >= aEnd) break;
-
-                    const uint32_t bWidth = b.m_vtxp->width();
-                    const uint32_t bEnd = b.m_lsb + bWidth;
-                    const uint32_t overlapEnd = std::min(aEnd, bEnd) - 1;
-
-                    if (a.m_fileline->operatorCompare(*b.m_fileline) != 0
-                        && !varp->varp()->isUsedLoopIdx()  // Loop index often abused, so suppress
-                    ) {
-                        AstNode* const vp = varp->varScopep()
-                                                ? static_cast<AstNode*>(varp->varScopep())
-                                                : static_cast<AstNode*>(varp->varp());
-                        vp->v3warn(  //
-                            MULTIDRIVEN,
-                            "Bits ["  //
-                                << overlapEnd << ":" << b.m_lsb << "] of signal "
-                                << vp->prettyNameQ() << " have multiple combinational drivers\n"
-                                << a.m_fileline->warnOther() << "... Location of first driver\n"
-                                << a.m_fileline->warnContextPrimary() << '\n'
-                                << b.m_fileline->warnOther() << "... Location of other driver\n"
-                                << b.m_fileline->warnContextSecondary() << vp->warnOther()
-                                << "... Only the first driver will be respected");
-                    }
-
-                    // If the first driver completely covers the range of the second driver,
-                    // we can just delete the second driver completely, otherwise adjust the
-                    // second driver to apply from the end of the range of the first driver.
-                    if (aEnd >= bEnd) {
-                        prune.emplace(b.m_vtxp);
-                        it = drivers.erase(it);
-                    } else {
-                        const auto dtypep = DfgVertex::dtypeForWidth(bEnd - aEnd);
-                        DfgSel* const selp = new DfgSel{*m_dfgp, b.m_vtxp->fileline(), dtypep};
-                        selp->fromp(b.m_vtxp);
-                        selp->lsb(aEnd - b.m_lsb);
-                        b.m_lsb = aEnd;
-                        b.m_vtxp = selp;
-                        std::stable_sort(it, drivers.end(), cmp);
-                    }
-                }
-            }
-
-            // Coalesce adjacent ranges
-            for (size_t i = 0, j = 1; j < drivers.size(); ++j) {
-                Driver& a = drivers[i];
-                Driver& b = drivers[j];
-
-                // Coalesce adjacent range
-                const uint32_t aWidth = a.m_vtxp->width();
-                const uint32_t bWidth = b.m_vtxp->width();
-                if (a.m_lsb + aWidth == b.m_lsb) {
-                    const auto dtypep = DfgVertex::dtypeForWidth(aWidth + bWidth);
-                    DfgConcat* const concatp = new DfgConcat{*m_dfgp, a.m_fileline, dtypep};
-                    concatp->rhsp(a.m_vtxp);
-                    concatp->lhsp(b.m_vtxp);
-                    a.m_vtxp = concatp;
-                    b.m_vtxp = nullptr;  // Mark as moved
-                    ++m_ctx.m_coalescedAssignments;
-                    continue;
-                }
-
-                ++i;
-
-                // Compact non-adjacent ranges within the vector
-                if (j != i) {
-                    Driver& c = drivers[i];
-                    UASSERT_OBJ(!c.m_vtxp, c.m_fileline, "Should have been marked moved");
-                    c = b;
-                    b.m_vtxp = nullptr;  // Mark as moved
-                }
-            }
-
-            // Reinsert drivers in order
-            splicep->resetSources();
-            for (const Driver& driver : drivers) {
-                if (!driver.m_vtxp) break;  // Stop at end of compacted list
-                splicep->addDriver(driver.m_fileline, driver.m_lsb, driver.m_vtxp);
-            }
-
-            // Prune vertices potentially unused due to resolving multiple drivers.
-            while (!prune.empty()) {
-                // Pop last vertex
-                const auto it = prune.begin();
-                DfgVertex* const vtxp = *it;
-                prune.erase(it);
-                // If used (or a variable), then done
-                if (vtxp->hasSinks() || vtxp->is<DfgVertexVar>()) continue;
-                // If unused, then add sources to work list and delete
-                vtxp->forEachSource([&](DfgVertex& src) { prune.emplace(&src); });
-                vtxp->unlinkDelete(*m_dfgp);
-            }
-
-            // If the whole variable is driven, remove the splice node
-            if (splicep->arity() == 1  //
-                && splicep->driverLsb(0) == 0  //
-                && splicep->source(0)->width() == varp->width()) {
-                varp->srcp(splicep->source(0));
-                varp->driverFileLine(splicep->driverFileLine(0));
-                splicep->unlinkDelete(*m_dfgp);
+            // Compact non-adjacent ranges within the vector
+            if (j != i) {
+                Driver& c = drivers[i];
+                UASSERT_OBJ(!c.m_vtxp, c.m_fileline, "Should have been marked moved");
+                c = b;
+                b.m_vtxp = nullptr;  // Mark as moved
             }
         }
+
+        // Reinsert drivers in order
+        splicep->resetSources();
+        for (const Driver& driver : drivers) {
+            if (!driver.m_vtxp) break;  // Stop at end of compacted list
+            splicep->addDriver(driver.m_fileline, driver.m_lsb, driver.m_vtxp);
+        }
+
+        removeUnused(prune);
+
+        // If the whole variable is driven whole, we can just use that driver
+        if (splicep->arity() == 1  //
+            && splicep->driverLsb(0) == 0  //
+            && splicep->source(0)->width() == splicep->width()) {
+            const auto result = std::make_pair(splicep->source(0), splicep->driverFileLine(0));
+            VL_DO_DANGLING(splicep->unlinkDelete(*m_dfgp), splicep);
+            return result;
+        }
+        return {splicep, splicep->fileline()};
     }
 
-    // Canonicalize array variables
-    void canonicalizeArray() {
-        for (DfgVarArray* const varp : m_varArrayps) {
-            // Delete variables with no sinks nor sources (this can happen due to reverting
-            // uncommitted vertices, which does not remove variables)
-            if (!varp->hasSinks() && !varp->srcp()) {
-                VL_DO_DANGLING(varp->unlinkDelete(*m_dfgp), varp);
+    // Normalize array driver - return the normalized vertex and location for 'splicep'
+    std::pair<DfgVertex*, FileLine*>  //
+    normalizeArray(DfgVertexVar* varp, const std::string& sub, DfgSpliceArray* const splicep) {
+        // Represents a driver of 'splicep'
+        struct Driver final {
+            FileLine* m_fileline;
+            DfgVertex* m_vtxp;
+            uint32_t m_idx;
+            Driver() = delete;
+            Driver(FileLine* flp, uint32_t idx, DfgVertex* vtxp)
+                : m_fileline{flp}
+                , m_vtxp{vtxp}
+                , m_idx{idx} {}
+        };
+
+        // The drivers of 'splicep'
+        std::vector<Driver> drivers;
+        drivers.reserve(splicep->arity());
+
+        // Normalize, gather, and unlink all drivers
+        splicep->forEachSourceEdge([&](DfgEdge& edge, size_t i) {
+            DfgVertex* const driverp = edge.sourcep();
+            UASSERT(driverp, "Should not have created undriven sources");
+            const uint32_t idx = splicep->driverIndex(i);
+            if (DfgSplicePacked* const spp = driverp->cast<DfgSplicePacked>()) {
+                const auto pair
+                    = normalizePacked(varp, sub + "[" + std::to_string(idx) + "]", spp);
+                drivers.emplace_back(pair.second, idx, pair.first);
+            } else if (DfgSpliceArray* const sap = driverp->cast<DfgSpliceArray>()) {
+                const auto pair = normalizeArray(varp, sub + "[" + std::to_string(idx) + "]", sap);
+                drivers.emplace_back(pair.second, idx, pair.first);
+            } else if (driverp->is<DfgVertexSplice>()) {
+                driverp->v3fatalSrc("Unhandled DfgVertexSplice sub-type");
+            } else {
+                drivers.emplace_back(splicep->driverFileLine(i), idx, driverp);
+            }
+            edge.unlinkSource();
+        });
+
+        const auto cmp = [](const Driver& a, const Driver& b) {
+            if (a.m_idx != b.m_idx) return a.m_idx < b.m_idx;
+            return a.m_fileline->operatorCompare(*b.m_fileline) < 0;
+        };
+
+        // Sort drivers by index
+        std::stable_sort(drivers.begin(), drivers.end(), cmp);
+
+        // Vertices that become unused due to multiple driver resolution
+        std::set<DfgVertex*> prune;
+
+        // Fix multiply driven ranges
+        for (auto it = drivers.begin(); it != drivers.end();) {
+            Driver& a = *it++;
+            AstUnpackArrayDType* aArrayDTypep = VN_CAST(a.m_vtxp->dtypep(), UnpackArrayDType);
+            const uint32_t aElements = aArrayDTypep ? aArrayDTypep->elementsConst() : 1;
+            const uint32_t aEnd = a.m_idx + aElements;
+            while (it != drivers.end()) {
+                Driver& b = *it;
+                // If no overlap, then nothing to do
+                if (b.m_idx >= aEnd) break;
+
+                AstUnpackArrayDType* bArrayDTypep = VN_CAST(b.m_vtxp->dtypep(), UnpackArrayDType);
+                const uint32_t bElements = bArrayDTypep ? bArrayDTypep->elementsConst() : 1;
+                const uint32_t bEnd = b.m_idx + bElements;
+                const uint32_t overlapEnd = std::min(aEnd, bEnd) - 1;
+
+                if (a.m_fileline->operatorCompare(*b.m_fileline) != 0) {
+                    AstNode* const vp = varp->varScopep()
+                                            ? static_cast<AstNode*>(varp->varScopep())
+                                            : static_cast<AstNode*>(varp->varp());
+
+                    vp->v3warn(  //
+                        MULTIDRIVEN,
+                        "Elements ["  //
+                            << overlapEnd << ":" << b.m_idx << "] of signal '" << vp->prettyName()
+                            << sub << "' have multiple combinational drivers\n"
+                            << a.m_fileline->warnOther() << "... Location of first driver\n"
+                            << a.m_fileline->warnContextPrimary() << '\n'
+                            << b.m_fileline->warnOther() << "... Location of other driver\n"
+                            << b.m_fileline->warnContextSecondary() << vp->warnOther()
+                            << "... Only the first driver will be respected");
+                }
+
+                // If the first driver completely covers the range of the second driver,
+                // we can just delete the second driver completely, otherwise adjust the
+                // second driver to apply from the end of the range of the first driver.
+                if (aEnd >= bEnd) {
+                    prune.emplace(b.m_vtxp);
+                    it = drivers.erase(it);
+                } else {
+                    const auto distance = std::distance(drivers.begin(), it);
+                    DfgVertex* const bVtxp = b.m_vtxp;
+                    FileLine* const flp = b.m_vtxp->fileline();
+                    AstNodeDType* const elemDtypep = DfgVertex::dtypeFor(
+                        VN_AS(splicep->dtypep(), UnpackArrayDType)->subDTypep());
+                    // Remove this driver
+                    it = drivers.erase(it);
+                    // Add missing items element-wise
+                    for (uint32_t i = aEnd; i < bEnd; ++i) {
+                        DfgArraySel* const aselp = new DfgArraySel{*m_dfgp, flp, elemDtypep};
+                        aselp->fromp(bVtxp);
+                        aselp->bitp(new DfgConst{*m_dfgp, flp, 32, i});
+                        drivers.emplace_back(flp, i, aselp);
+                    }
+                    it = drivers.begin();
+                    std::advance(it, distance);
+                    std::stable_sort(it, drivers.end(), cmp);
+                }
             }
         }
+
+        // Reinsert drivers in order
+        splicep->resetSources();
+        for (const Driver& driver : drivers) {
+            if (!driver.m_vtxp) break;  // Stop at end of compacted list
+            splicep->addDriver(driver.m_fileline, driver.m_idx, driver.m_vtxp);
+        }
+
+        removeUnused(prune);
+
+        // If the whole variable is driven whole, we can just use that driver
+        if (splicep->arity() == 1  //
+            && splicep->driverIndex(0) == 0  //
+            && splicep->source(0)->dtypep()->isSame(splicep->dtypep())) {
+            const auto result = std::make_pair(splicep->source(0), splicep->driverFileLine(0));
+            VL_DO_DANGLING(splicep->unlinkDelete(*m_dfgp), splicep);
+            return result;
+        }
+        return {splicep, splicep->fileline()};
     }
 
     // VISITORS
@@ -707,9 +891,32 @@ class AstToDfgVisitor final : public VNVisitor {
         iterate(&root);
         UASSERT_OBJ(m_uncommittedVertices.empty(), &root, "Uncommitted vertices remain");
 
-        // Canonicalize variables
-        canonicalizePacked();
-        canonicalizeArray();
+        if (dumpDfgLevel() >= 8) m_dfgp->dumpDotFilePrefixed(ctx.prefix() + "ast2dfg");
+
+        // Normalize variable drivers (remove multiple drivers, remove unnecessary splice vertices)
+        for (DfgVertexVar* const varp : m_dfgp->varVertices().unlinkable()) {
+            // Delete variables with no sinks nor sources (this can happen due to reverting
+            // uncommitted vertices, which does not remove variables)
+            if (!varp->hasSinks() && !varp->srcp()) {
+                VL_DO_DANGLING(varp->unlinkDelete(*m_dfgp), varp);
+                continue;
+            }
+
+            // Nothing to do for un-driven (input) variables
+            if (!varp->srcp()) continue;
+
+            // The driver of a variable must always be a splice vertex, normalize it
+            std::pair<DfgVertex*, FileLine*> normalizedDriver;
+            if (DfgSpliceArray* const sArrayp = varp->srcp()->cast<DfgSpliceArray>()) {
+                normalizedDriver = normalizeArray(varp, "", sArrayp);
+            } else if (DfgSplicePacked* const sPackedp = varp->srcp()->cast<DfgSplicePacked>()) {
+                normalizedDriver = normalizePacked(varp, "", sPackedp);
+            } else {
+                varp->v3fatalSrc("Unhandled DfgSplicePacked sub-type");  // LCOV_EXCL_LINE
+            }
+            varp->srcp(normalizedDriver.first);
+            varp->driverFileLine(normalizedDriver.second);
+        }
     }
 
 public:

@@ -29,9 +29,13 @@ module t (
    wire        logic [63:0] const_b;
    wire        logic signed [63:0] sconst_a;
    wire        logic signed [63:0] sconst_b;
-   wire        logic [63:0] array [3:0];
+               logic [63:0] array [3:0];
    assign array[0] = (rand_a << 32) | (rand_a >> 32);
    assign array[1] = (rand_a << 16) | (rand_a >> 48);
+   assign array[2][3:0] = rand_a[3:0];
+   always @(rand_b) begin  // Intentional non-combinational partial driver
+     array[2][7:4] = rand_a[7:4];
+   end
 
    `signal(FOLD_UNARY_CLog2,       $clog2(const_a));
    `signal(FOLD_UNARY_CountOnes,   $countones(const_a));
@@ -184,6 +188,7 @@ module t (
    `signal(REPLACE_COND_WITH_ELSE_BRANCH_ZERO, rand_a[0] ? rand_a[1] : 1'd0);
    `signal(REPLACE_COND_WITH_ELSE_BRANCH_ONES, rand_a[0] ? rand_a[1] : 1'd1);
    `signal(INLINE_ARRAYSEL, array[0]);
+   `signal(NO_INLINE_ARRAYSEL_PARTIAL, array[2]);
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_AND, (&(rand_a + 64'd105)) & (&(rand_b + 64'd108)));
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_OR,  (|(rand_a + 64'd106)) | (|(rand_b + 64'd109)));
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_XOR, (^(rand_a + 64'd107)) ^ (^(rand_b + 64'd110)));

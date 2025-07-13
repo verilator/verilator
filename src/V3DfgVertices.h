@@ -229,7 +229,14 @@ class DfgSpliceArray final : public DfgVertexSplice {
     friend class DfgVertex;
     friend class DfgVisitor;
 
-    using DriverData = std::pair<FileLine*, uint32_t>;
+    struct DriverData final {
+        FileLine* m_flp;
+        uint32_t m_index;
+        DriverData() = delete;
+        DriverData(FileLine* flp, uint32_t index)
+            : m_flp{flp}
+            , m_index{index} {}
+    };
 
     std::vector<DriverData> m_driverData;  // Additional data associated with each driver
 
@@ -253,8 +260,8 @@ public:
         DfgVertexVariadic::resetSources();
     }
 
-    FileLine* driverFileLine(size_t idx) const { return m_driverData[idx].first; }
-    uint32_t driverIndex(size_t idx) const { return m_driverData[idx].second; }
+    FileLine* driverFileLine(size_t i) const { return m_driverData.at(i).m_flp; }
+    uint32_t driverIndex(size_t i) const { return m_driverData.at(i).m_index; }
 
     DfgVertex* driverAt(size_t idx) const {
         const DfgEdge* const edgep = findSourceEdge([this, idx](const DfgEdge&, size_t i) {  //
@@ -271,8 +278,14 @@ class DfgSplicePacked final : public DfgVertexSplice {
     friend class DfgVertex;
     friend class DfgVisitor;
 
-    using DriverData = std::pair<FileLine*, uint32_t>;
-
+    struct DriverData final {
+        FileLine* m_flp;
+        uint32_t m_lsb;
+        DriverData() = delete;
+        DriverData(FileLine* flp, uint32_t lsb)
+            : m_flp{flp}
+            , m_lsb{lsb} {}
+    };
     std::vector<DriverData> m_driverData;  // Additional data associated with each driver
 
     bool selfEquals(const DfgVertex& that) const override VL_MT_DISABLED;
@@ -295,8 +308,8 @@ public:
         DfgVertexVariadic::resetSources();
     }
 
-    FileLine* driverFileLine(size_t idx) const { return m_driverData[idx].first; }
-    uint32_t driverLsb(size_t idx) const { return m_driverData[idx].second; }
+    FileLine* driverFileLine(size_t i) const { return m_driverData.at(i).m_flp; }
+    uint32_t driverLsb(size_t i) const { return m_driverData.at(i).m_lsb; }
 
     const std::string srcName(size_t idx) const override { return std::to_string(driverLsb(idx)); }
 };
