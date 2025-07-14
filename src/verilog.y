@@ -1561,9 +1561,19 @@ port<nodep>:                    // ==IEEE: port
                           VARDTYPE(dtp); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $6, $7)); }
         |       portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
-                        { $$ = $3; VARDTYPE(new AstAnyDType($<fl>2)); VARIOANSI();
-                          std::cout << "Begin1 " << $2 << " " << $3 << " end1\n";
-                          addNextNull($$, VARDONEP($$, $4, $5)); }
+                        { $$ = $3;
+                          VARRESET_NONLIST(GPARAM);
+                          VARDTYPE(new AstParseTypeDType($<fl>2, VFwdType::INTERFACE_CLASS));
+                          std::string uniqueName = "TODO_UNIQUE_NAME";
+                          addNextNull($$, VARDONEA($$->fileline(), uniqueName, $4, $5));
+                          std::cout << "Begin1 " << $2 << " | " << $3  << " 4: " << $4 << " end1\n";
+                          VARDECL(PORT); VARIO(NONE);  // VARRESET_NONLIST(GPARAM);
+                          // AstIfaceRefDType* const refdtypep = new AstIfaceRefDType($<fl>2, $<fl>4, "", "*$2", "*$4");
+                          // refdtypep->isGeneric(true);
+                          AstRefDType* const refdtypep = new AstRefDType($<fl>2, std::move(uniqueName));
+                          VARDTYPE(refdtypep); VARIOANSI();
+                          addNextNull($$, VARDONEP($$, $4, $5));
+                          }
         |       portDirNetE yINTERFACE      '.' idAny/*modport*/ portSig rangeListE sigAttrListE
                         { $$ = nullptr; std::cout << "Begin2 " << $2 << " " << $3 << " end2\n"; BBUNSUP($<fl>2, "Unsupported: generic interfaces"); }
         //
