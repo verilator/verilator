@@ -1974,7 +1974,7 @@ class AstVar final : public AstNode {
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
-    bool m_isStatic : 1;  // Static C variable (for Verilog see instead isAutomatic)
+    bool m_isStatic : 1;  // Static C variable (for Verilog see instead lifetime())
     bool m_isPulldown : 1;  // Tri0
     bool m_isPullup : 1;  // Tri1
     bool m_isIfaceParent : 1;  // dtype is reference to interface present in this module

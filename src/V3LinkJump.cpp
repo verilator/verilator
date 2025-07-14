@@ -35,6 +35,7 @@
 
 #include "V3AstUserAllocator.h"
 #include "V3Error.h"
+#include "V3UniqueNames.h"
 
 #include <vector>
 
@@ -60,6 +61,8 @@ class LinkJumpVisitor final : public VNVisitor {
     int m_modRepeatNum = 0;  // Repeat counter
     VOptionBool m_unrollFull;  // Pragma full, disable, or default unrolling
     std::vector<AstNodeBlock*> m_blockStack;  // All begin blocks above current node
+    V3UniqueNames m_queueNames{
+        "__VprocessQueue"};  // Names for queues needed for 'disable' handling
 
     // METHODS
     AstJumpLabel* findAddLabel(AstNode* nodep, bool endOfIter) {
@@ -158,6 +161,29 @@ class LinkJumpVisitor final : public VNVisitor {
         if (AstNode* const refp = nodep->op3p()) addPrefixToBlocksRecurse(prefix, refp);
         if (AstNode* const refp = nodep->op4p()) addPrefixToBlocksRecurse(prefix, refp);
         if (AstNode* const refp = nodep->nextp()) addPrefixToBlocksRecurse(prefix, refp);
+    }
+    static AstNode* getMemberp(const AstNodeModule* const nodep, const std::string& name) {
+        for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
+            if (itemp->name() == name) return itemp;
+        }
+        return nullptr;
+    }
+    bool existsBlockAbove(const std::string& name) const {
+        for (const AstNodeBlock* const stackp : vlstd::reverse_view(m_blockStack)) {
+            if (stackp->name() == name) return true;
+        }
+        return false;
+    }
+    static AstStmtExpr* getQueuePushProcessSelfp(AstVarRef* const queueRefp) {
+        // Constructs queue.push_back(std::process::self()) statement
+        FileLine* const fl = queueRefp->fileline();
+        AstClass* const processClassp
+            = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
+        AstFunc* const selfMethodp = VN_AS(getMemberp(processClassp, "self"), Func);
+        AstFuncRef* const processSelfp = new AstFuncRef{fl, selfMethodp, nullptr};
+        processSelfp->classOrPackagep(processClassp);
+        return new AstStmtExpr{
+            fl, new AstMethodCall{fl, queueRefp, "push_back", new AstArg{fl, "", processSelfp}}};
     }
 
     // VISITORS
@@ -338,22 +364,65 @@ class LinkJumpVisitor final : public VNVisitor {
     void visit(AstDisable* nodep) override {
         UINFO(8, "   DISABLE " << nodep);
         AstNode* const targetp = nodep->targetp();
+        FileLine* const fl = nodep->fileline();
         UASSERT_OBJ(targetp, nodep, "Unlinked disable statement");
         if (VN_IS(targetp, Task)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling task by name");
-        } else if (VN_IS(targetp, Fork)) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork by name");
-        } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
-            const std::string targetName = beginp->name();
-            bool aboveBlock = false;
-            for (AstNodeBlock* const stackp : vlstd::reverse_view(m_blockStack)) {
-                UINFO(9, "    UNDERBLK  " << stackp);
-                if (stackp->name() == targetName) {
-                    aboveBlock = true;
-                    break;
+        } else if (AstFork* const forkp = VN_CAST(targetp, Fork)) {
+            // The support is limited only to disabling a fork from outside that fork.
+            // It utilizes the process::kill()` method. For each `disable` a queue of processes is
+            // declared. At the beginning of each fork that can be disabled, its process handle is
+            // pushed to the queue. `disable` statement is replaced with calling `kill()` method on
+            // each element of the queue.
+            if (existsBlockAbove(forkp->name())) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from within same fork");
+            }
+            if (m_ftaskp) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from task / function");
+            }
+            AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
+            AstClass* const processClassp
+                = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
+            // Declare queue of processes (as a global variable for simplicity)
+            AstVar* const processQueuep = new AstVar{
+                fl, VVarType::VAR, m_queueNames.get(forkp->name()), VFlagChildDType{},
+                new AstQueueDType{fl, VFlagChildDType{},
+                                  new AstClassRefDType{fl, processClassp, nullptr}, nullptr}};
+            processQueuep->lifetime(VLifetime::STATIC);
+            topPkgp->addStmtsp(processQueuep);
+
+            AstVarRef* const queueWriteRefp
+                = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
+            AstStmtExpr* const pushCurrentProcessp = getQueuePushProcessSelfp(queueWriteRefp);
+
+            for (AstNode* forkItemp = forkp->stmtsp(); forkItemp; forkItemp = forkItemp->nextp()) {
+                // Add push_back statement at the beginning of each fork.
+                // Wrap into begin block if needed
+                AstBegin* beginp = VN_CAST(forkItemp, Begin);
+                if (!beginp) {
+                    beginp = new AstBegin{fl, "", nullptr};
+                    forkItemp->replaceWith(beginp);
+                    beginp->addStmtsp(forkItemp);
+                    // In order to continue the iteration
+                    forkItemp = beginp;
+                }
+                if (pushCurrentProcessp->backp()) {
+                    beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp->cloneTree(false));
+                } else {
+                    beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp);
                 }
             }
-            if (aboveBlock) {
+
+            AstVarRef* const queueRefp
+                = new AstVarRef{fl, topPkgp, processQueuep, VAccess::READWRITE};
+            AstTaskRef* const killQueueCall
+                = new AstTaskRef{fl, VN_AS(getMemberp(processClassp, "killQueue"), Task),
+                                 new AstArg{fl, "", queueRefp}};
+            killQueueCall->classOrPackagep(processClassp);
+            nodep->addNextHere(new AstStmtExpr{fl, killQueueCall});
+        } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
+            const std::string targetName = beginp->name();
+            if (existsBlockAbove(targetName)) {
                 if (beginp->user3()) {
                     nodep->v3warn(E_UNSUPPORTED,
                                   "Unsupported: disabling block that contains a fork");

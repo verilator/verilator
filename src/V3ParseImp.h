@@ -293,12 +293,12 @@ public:
     void dumpInputsFile() VL_MT_DISABLED;
     void dumpTokensAhead(int line) VL_MT_DISABLED;
     static void candidatePli(VSpellCheck* spellerp) VL_MT_DISABLED;
+    void importIfInStd(FileLine* fileline, const string& id);
 
 private:
     void preprocDumps(std::ostream& os);
     void lexFile(const string& modname) VL_MT_DISABLED;
     void yylexReadTok() VL_MT_DISABLED;
-    void importIfInStd(FileLine* fileline, const string& id);
     void tokenPull() VL_MT_DISABLED;
     void tokenPipeline() VL_MT_DISABLED;  // Internal; called from tokenToBison
     int tokenPipelineId(int token) VL_MT_DISABLED;
