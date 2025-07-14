@@ -922,6 +922,19 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         m_sensesp = nodep->sensesp();
         iterateAndNextConstNull(nodep->stmtsp());
     }
+    void visit(AstDelay* nodep) override {
+        puts(""); // this is for proper alignment
+        puts("#");
+        iterateConst(nodep->lhsp());
+        puts(";\n");
+    }
+    void visit(AstCAwait* nodep) override {
+        AstCMethodHard* methodp = VN_CAST(nodep->exprp(), CMethodHard);
+        UASSERT_OBJ(methodp, nodep, "AstCAwait expression must be an AstCMethodHard");
+        puts(""); // this is for proper alignment
+        puts("#");
+        iterateConst(methodp->pinsp());
+    }
     void visit(AstParseRef* nodep) override { puts(nodep->prettyName()); }
     void visit(AstNodeText*) override {}
     void visit(AstVarScope*) override {}
