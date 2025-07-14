@@ -75,7 +75,6 @@ class DfgRegularize final {
             // This is an op that requires a result variable. Ensure it is
             // assigned to one, and redirect other sinks read that variable.
             if (DfgVertexVar* const varp = vtx.getResultVar()) {
-                FileLine* const flp = varp->fileline();
                 varp->sourceEdge<0>()->unlinkSource();
                 vtx.replaceWith(varp);
                 varp->srcp(&vtx);
