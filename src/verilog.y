@@ -2226,10 +2226,11 @@ data_typeNoRef<nodeDTypep>:             // ==IEEE: data_type, excluding class_ty
                                    new AstDefImplicitDType{$1->fileline(),
                                                            "__typeimpsu" + cvtToStr(GRAMMARP->s_typeImpNum++),
                                                            VFlagChildDType{}, $1}, $2, true); }
-        |       enumDecl
-                        { $$ = new AstDefImplicitDType{$1->fileline(),
-                                                       "__typeimpenum" + cvtToStr(GRAMMARP->s_typeImpNum++),
-                                                       VFlagChildDType{}, $1}; }
+        |       enumDecl packed_dimensionListE
+                        { $$ = GRAMMARP->createArray(
+                                   new AstDefImplicitDType{$1->fileline(),
+                                                           "__typeimpenum" + cvtToStr(GRAMMARP->s_typeImpNum++),
+                                                           VFlagChildDType{}, $1}, $2, true); }
         |       ySTRING
                         { $$ = new AstBasicDType{$1, VBasicDTypeKwd::STRING}; }
         |       yCHANDLE
