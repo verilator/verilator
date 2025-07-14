@@ -1562,14 +1562,23 @@ port<nodep>:                    // ==IEEE: port
                           addNextNull($$, VARDONEP($$, $6, $7)); }
         |       portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
                         { $$ = $3;
-                          VARRESET_NONLIST(GPARAM);
+                          /*std::cout << "Value: " << GRAMMARP->m_pinNum << '\n';
+                          if (GRAMMARP->m_pinNum) {
+                            GRAMMARP->m_pinNum = PINNUMINC();
+                          } else {
+                            GRAMMARP->m_pinNum = 1;
+                          }*/
+                          VARRESET_LIST(GPARAM);
+                          VARDECL(GPARAM); VARIO(NONE);
                           VARDTYPE(new AstParseTypeDType($<fl>2, VFwdType::INTERFACE_CLASS));
+                          VARIOANSI();
                           std::string uniqueName = "TODO_UNIQUE_NAME";
                           addNextNull($$, VARDONEA($$->fileline(), uniqueName, $4, $5));
                           std::cout << "Begin1 " << $2 << " | " << $3  << " 4: " << $4 << " end1\n";
-                          VARDECL(PORT); VARIO(NONE);  // VARRESET_NONLIST(GPARAM);
+                          VARDECL(VAR); VARIO(NONE);  // VARRESET_NONLIST(GPARAM);
                           // AstIfaceRefDType* const refdtypep = new AstIfaceRefDType($<fl>2, $<fl>4, "", "*$2", "*$4");
                           // refdtypep->isGeneric(true);
+                          GRAMMARP->m_pinNum = PINNUMINC();
                           AstRefDType* const refdtypep = new AstRefDType($<fl>2, std::move(uniqueName));
                           VARDTYPE(refdtypep); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $4, $5));

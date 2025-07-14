@@ -2854,6 +2854,24 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // UINFOTREE(1, nodep, "", "linkcell");
                 // UINFOTREE(1, nodep->modp(), "", "linkcemd");
                 iterateChildren(nodep);
+
+                if (m_statep->forPrimary()) {
+                    std::cout << nodep << '\n';
+                    if (nodep->name() == "genericModule") {
+                        std::cout << "HIT!\n";
+                        std::cout << nodep->pinsp()->modVarp() << '\n';
+                        std::cout << VN_AS(nodep->pinsp()->exprp(), VarRef)->varp()->childDTypep()
+                                  << '\n';
+                        AstPin* const pinp
+                            = new AstPin(nodep->pinsp()->fileline(), 1, "__paramNumber1",
+                                         VN_AS(nodep->pinsp()->exprp(), VarRef)
+                                             ->varp()
+                                             ->childDTypep()
+                                             ->cloneTree(false));
+                        visit(pinp);
+                        nodep->addParamsp(pinp);
+                    }
+                }
             }
         }
         // Parent module inherits child's publicity
@@ -2886,6 +2904,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (!nodep->modVarp()) {
             UASSERT_OBJ(m_pinSymp, nodep, "Pin not under instance?");
+            std::cout << "m_pinSymp: " << m_pinSymp << '\n';
             VSymEnt* const foundp = m_pinSymp->findIdFlat(nodep->name());
             const char* const whatp = nodep->param() ? "parameter" : "pin";
             if (!foundp) {
@@ -2923,6 +2942,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 wrongPinType = true;
             }
             // Don't connect parameter pin to module ports or vice versa
+            std::cout << "foundp->nodep(): " << foundp->nodep() << "with: " << refVarType << '\n';
+            std::cout << "sth: " << nodep << " with: " << nodep->param() << '\n';
             if (nodep->param() != (refVarType == VVarType::GPARAM)) wrongPinType = true;
             if (wrongPinType) {
                 string targetType = LinkDotState::nodeTextType(foundp->nodep());
@@ -4854,6 +4875,7 @@ void V3LinkDot::linkDotPrimary(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     linkDotGuts(nodep, LDS_PRIMARY);
     V3Global::dumpCheckGlobalTree("linkdot", 0, dumpTreeEitherLevel() >= 6);
+    std::exit(1);
 }
 
 void V3LinkDot::linkDotParamed(AstNetlist* nodep) {

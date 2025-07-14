@@ -722,8 +722,11 @@ class ParamProcessor final {
 
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstNodeModule* srcModp, string& longnamer,
                         bool& any_overridesr) {
+        std::cout << "nodep: " << nodep << '\n';
+        std::cout << "pinp: " << pinp << '\n';
         if (!pinp->exprp()) return;  // No-connect
         if (AstVar* const modvarp = pinp->modVarp()) {
+            std::cout << "modvarp: " << modvarp << '\n';
             if (!modvarp->isGParam()) {
                 pinp->v3fatalSrc("Attempted parameter setting of non-parameter: Param "
                                  << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
@@ -774,6 +777,7 @@ class ParamProcessor final {
                 }
             }
         } else if (AstParamTypeDType* const modvarp = pinp->modPTypep()) {
+            std::cout << "modvarp2: " << modvarp << '\n';
             AstNodeDType* rawTypep = VN_CAST(pinp->exprp(), NodeDType);
             if (rawTypep) V3Width::widthParamsEdit(rawTypep);
             AstNodeDType* exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;
@@ -809,6 +813,7 @@ class ParamProcessor final {
                 }
             }
         } else {
+            std::cout << "HELP: " << pinp << '\n';
             pinp->v3fatalSrc("Parameter not found in sub-module: Param "
                              << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
         }
