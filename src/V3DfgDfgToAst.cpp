@@ -201,45 +201,52 @@ class DfgToAstVisitor final : DfgVisitor {
         ++m_ctx.m_resultEquations;
     }
 
-    void convertVarDriver(const DfgVarPacked* dfgVarp) {
-        if (dfgVarp->isDrivenFullyByDfg()) {
-            // Whole variable is driven. Render driver and assign directly to whole variable.
-            FileLine* const flp = dfgVarp->driverFileLine(0);
-            AstVarRef* const lhsp = new AstVarRef{flp, getNode(dfgVarp), VAccess::WRITE};
-            AstNodeExpr* const rhsp = convertDfgVertexToAstNodeExpr(dfgVarp->source(0));
-            addResultEquation(dfgVarp, flp, lhsp, rhsp);
-        } else {
+    void convertPackedDriver(const DfgVarPacked* dfgVarp) {
+        if (DfgSplicePacked* const splicep = dfgVarp->srcp()->cast<DfgSplicePacked>()) {
             // Variable is driven partially. Render each driver as a separate assignment.
-            dfgVarp->forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {
+            splicep->forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {
                 UASSERT_OBJ(edge.sourcep(), dfgVarp, "Should have removed undriven sources");
                 // Render the rhs expression
                 AstNodeExpr* const rhsp = convertDfgVertexToAstNodeExpr(edge.sourcep());
                 // Create select LValue
-                FileLine* const flp = dfgVarp->driverFileLine(idx);
+                FileLine* const flp = splicep->driverFileLine(idx);
                 AstVarRef* const refp = new AstVarRef{flp, getNode(dfgVarp), VAccess::WRITE};
-                AstConst* const lsbp = new AstConst{flp, dfgVarp->driverLsb(idx)};
+                AstConst* const lsbp = new AstConst{flp, splicep->driverLsb(idx)};
                 const int width = static_cast<int>(edge.sourcep()->width());
                 AstSel* const lhsp = new AstSel{flp, refp, lsbp, width};
                 // Add assignment of the value to the selected bits
                 addResultEquation(dfgVarp, flp, lhsp, rhsp);
             });
+            return;
         }
+
+        // Whole variable is driven. Render driver and assign directly to whole variable.
+        FileLine* const flp
+            = dfgVarp->driverFileLine() ? dfgVarp->driverFileLine() : dfgVarp->fileline();
+        AstVarRef* const lhsp = new AstVarRef{flp, getNode(dfgVarp), VAccess::WRITE};
+        AstNodeExpr* const rhsp = convertDfgVertexToAstNodeExpr(dfgVarp->srcp());
+        addResultEquation(dfgVarp, flp, lhsp, rhsp);
     }
 
     void convertArrayDiver(const DfgVarArray* dfgVarp) {
-        // Variable is driven partially. Assign from parts of the canonical var.
-        dfgVarp->forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {
-            UASSERT_OBJ(edge.sourcep(), dfgVarp, "Should have removed undriven sources");
-            // Render the rhs expression
-            AstNodeExpr* const rhsp = convertDfgVertexToAstNodeExpr(edge.sourcep());
-            // Create select LValue
-            FileLine* const flp = dfgVarp->driverFileLine(idx);
-            AstVarRef* const refp = new AstVarRef{flp, getNode(dfgVarp), VAccess::WRITE};
-            AstConst* const idxp = new AstConst{flp, dfgVarp->driverIndex(idx)};
-            AstArraySel* const lhsp = new AstArraySel{flp, refp, idxp};
-            // Add assignment of the value to the selected bits
-            addResultEquation(dfgVarp, flp, lhsp, rhsp);
-        });
+        if (DfgSpliceArray* const splicep = dfgVarp->srcp()->cast<DfgSpliceArray>()) {
+            // Variable is driven partially. Assign from parts of the canonical var.
+            splicep->forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {
+                UASSERT_OBJ(edge.sourcep(), dfgVarp, "Should have removed undriven sources");
+                // Render the rhs expression
+                AstNodeExpr* const rhsp = convertDfgVertexToAstNodeExpr(edge.sourcep());
+                // Create select LValue
+                FileLine* const flp = splicep->driverFileLine(idx);
+                AstVarRef* const refp = new AstVarRef{flp, getNode(dfgVarp), VAccess::WRITE};
+                AstConst* const idxp = new AstConst{flp, splicep->driverIndex(idx)};
+                AstArraySel* const lhsp = new AstArraySel{flp, refp, idxp};
+                // Add assignment of the value to the selected bits
+                addResultEquation(dfgVarp, flp, lhsp, rhsp);
+            });
+            return;
+        }
+
+        UASSERT_OBJ(false, dfgVarp, "Should not have wholly driven arrays in Dfg");
     }
 
     // VISITORS
@@ -285,11 +292,11 @@ class DfgToAstVisitor final : DfgVisitor {
         // The graph must have been regularized, so we only need to render assignments
         for (DfgVertexVar& vtx : dfg.varVertices()) {
             // If there is no driver (this vertex is an input to the graph), then nothing to do.
-            if (!vtx.isDrivenByDfg()) continue;
+            if (!vtx.srcp()) continue;
 
             // Render packed variable assignments
             if (const DfgVarPacked* const dfgVarp = vtx.cast<DfgVarPacked>()) {
-                convertVarDriver(dfgVarp);
+                convertPackedDriver(dfgVarp);
                 continue;
             }
 

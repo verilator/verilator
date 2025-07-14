@@ -97,6 +97,16 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
+        case VDfgType::atSpliceArray: {
+            DfgSpliceArray* const cp = new DfgSpliceArray{*clonep, vtx.fileline(), vtx.dtypep()};
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
+        case VDfgType::atSplicePacked: {
+            DfgSplicePacked* const cp = new DfgSplicePacked{*clonep, vtx.fileline(), vtx.dtypep()};
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
         default: {
             vtx.v3fatalSrc("Unhandled operation vertex type: " + vtx.typeName());
             VL_UNREACHABLE;
@@ -109,49 +119,55 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
     // Constants have no inputs
     // Hook up inputs of cloned variables
     for (const DfgVertexVar& vtx : m_varVertices) {
-        switch (vtx.type()) {
-        case VDfgType::atVarArray: {
-            const DfgVarArray* const vp = vtx.as<DfgVarArray>();
-            DfgVarArray* const cp = vtxp2clonep.at(vp)->as<DfgVarArray>();
-            vp->forEachSourceEdge([&](const DfgEdge& edge, size_t i) {
-                if (DfgVertex* const srcp = edge.sourcep()) {
-                    cp->addDriver(vp->driverFileLine(i),  //
-                                  vp->driverIndex(i),  //
-                                  vtxp2clonep.at(srcp));
-                }
-            });
-            break;
-        }
-        case VDfgType::atVarPacked: {
-            const DfgVarPacked* const vp = vtx.as<DfgVarPacked>();
-            DfgVarPacked* const cp = vtxp2clonep.at(vp)->as<DfgVarPacked>();
-            vp->forEachSourceEdge([&](const DfgEdge& edge, size_t i) {
-                if (DfgVertex* const srcp = edge.sourcep()) {
-                    cp->addDriver(vp->driverFileLine(i),  //
-                                  vp->driverLsb(i),  //
-                                  vtxp2clonep.at(srcp));
-                }
-            });
-            break;
-        }
-        default: {
-            vtx.v3fatalSrc("Unhandled variable vertex type: " + vtx.typeName());
-            VL_UNREACHABLE;
-            break;
-        }
+        // All variable vertices are unary
+        if (DfgVertex* const srcp = vtx.srcp()) {
+            vtxp2clonep.at(&vtx)->as<DfgVertexVar>()->srcp(vtxp2clonep.at(srcp));
         }
     }
     // Hook up inputs of cloned operation vertices
     for (const DfgVertex& vtx : m_opVertices) {
-        DfgVertex* const cp = vtxp2clonep.at(&vtx);
-        // The code below doesn't work for DfgVertexVariadic, but none of the opVertices are such.
-        UASSERT_OBJ(!vtx.is<DfgVertexVariadic>(), &vtx, "DfgVertexVariadic not handled");
-        const auto oSourceEdges = vtx.sourceEdges();
-        auto cSourceEdges = cp->sourceEdges();
-        UASSERT_OBJ(oSourceEdges.second == cSourceEdges.second, &vtx, "Mismatched source count");
-        for (size_t i = 0; i < oSourceEdges.second; ++i) {
-            if (DfgVertex* const srcp = oSourceEdges.first[i].sourcep()) {
-                cSourceEdges.first[i].relinkSource(vtxp2clonep.at(srcp));
+        if (vtx.is<DfgVertexVariadic>()) {
+            switch (vtx.type()) {
+            case VDfgType::atSpliceArray: {
+                const DfgSpliceArray* const vp = vtx.as<DfgSpliceArray>();
+                DfgSpliceArray* const cp = vtxp2clonep.at(vp)->as<DfgSpliceArray>();
+                vp->forEachSourceEdge([&](const DfgEdge& edge, size_t i) {
+                    if (DfgVertex* const srcp = edge.sourcep()) {
+                        cp->addDriver(vp->driverFileLine(i),  //
+                                      vp->driverIndex(i),  //
+                                      vtxp2clonep.at(srcp));
+                    }
+                });
+                break;
+            }
+            case VDfgType::atSplicePacked: {
+                const DfgSplicePacked* const vp = vtx.as<DfgSplicePacked>();
+                DfgSplicePacked* const cp = vtxp2clonep.at(vp)->as<DfgSplicePacked>();
+                vp->forEachSourceEdge([&](const DfgEdge& edge, size_t i) {
+                    if (DfgVertex* const srcp = edge.sourcep()) {
+                        cp->addDriver(vp->driverFileLine(i),  //
+                                      vp->driverLsb(i),  //
+                                      vtxp2clonep.at(srcp));
+                    }
+                });
+                break;
+            }
+            default: {
+                vtx.v3fatalSrc("Unhandled DfgVertexVariadic sub type: " + vtx.typeName());
+                VL_UNREACHABLE;
+                break;
+            }
+            }
+        } else {
+            DfgVertex* const cp = vtxp2clonep.at(&vtx);
+            const auto oSourceEdges = vtx.sourceEdges();
+            auto cSourceEdges = cp->sourceEdges();
+            UASSERT_OBJ(oSourceEdges.second == cSourceEdges.second, &vtx,
+                        "Mismatched source count");
+            for (size_t i = 0; i < oSourceEdges.second; ++i) {
+                if (DfgVertex* const srcp = oSourceEdges.first[i].sourcep()) {
+                    cSourceEdges.first[i].relinkSource(vtxp2clonep.at(srcp));
+                }
             }
         }
     }
@@ -313,6 +329,25 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         return;
     }
 
+    if (vtx.is<DfgVertexSplice>()) {
+        os << toDotId(vtx);
+        os << " [label=\"" << vtx.typeName() << "\n";
+        if (const DfgSpliceArray* const sp = vtx.cast<DfgSpliceArray>()) {
+            const int elements = VN_AS(sp->dtypep(), UnpackArrayDType)->elementsConst();
+            os << "_[" << elements << "]";
+        } else {
+            os << "W" << vtx.width();
+        }
+        os << " / F" << vtx.fanout() << '"';
+        if (vtx.hasMultipleSinks()) {
+            os << ", shape=doubleoctagon";
+        } else {
+            os << ", shape=octagon";
+        }
+        os << "]\n";
+        return;
+    }
+
     os << toDotId(vtx);
     os << " [label=\"" << vtx.typeName() << "\nW" << vtx.width() << " / F" << vtx.fanout() << '"';
     if (vtx.hasMultipleSinks()) {
@@ -336,7 +371,7 @@ static void dumpDotVertexAndSourceEdges(std::ostream& os, const DfgVertex& vtx) 
     vtx.forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {  //
         if (edge.sourcep()) {
             string headLabel;
-            if (vtx.arity() > 1 || vtx.is<DfgVertexVar>()) headLabel = vtx.srcName(idx);
+            if (vtx.arity() > 1 || vtx.is<DfgVertexSplice>()) headLabel = vtx.srcName(idx);
             dumpDotEdge(os, edge, headLabel);
         }
     });
@@ -521,24 +556,34 @@ bool DfgVertex::selfEquals(const DfgVertex& that) const { return true; }
 V3Hash DfgVertex::selfHash() const { return V3Hash{}; }
 
 bool DfgVertex::equals(const DfgVertex& that, EqualsCache& cache) const {
+    // If same vertex, then equal
     if (this == &that) return true;
+
+    // If different type, then not equal
     if (this->type() != that.type()) return false;
+
+    // If different data type, then not equal
     if (this->dtypep() != that.dtypep()) return false;
+
+    // If different number of inputs, then not equal
+    auto thisPair = this->sourceEdges();
+    const DfgEdge* const thisSrcEdgesp = thisPair.first;
+    const size_t thisArity = thisPair.second;
+    auto thatPair = that.sourceEdges();
+    const DfgEdge* const thatSrcEdgesp = thatPair.first;
+    const size_t thatArity = thatPair.second;
+    if (thisArity != thatArity) return false;
+
+    // Check vertex specifics
     if (!this->selfEquals(that)) return false;
 
+    // Check sources
     const auto key = (this < &that) ? EqualsCache::key_type{this, &that}  //
                                     : EqualsCache::key_type{&that, this};
     // Note: the recursive invocation can cause a re-hash but that will not invalidate references
     uint8_t& result = cache[key];
     if (!result) {
         result = 2;  // Assume equals
-        auto thisPair = this->sourceEdges();
-        const DfgEdge* const thisSrcEdgesp = thisPair.first;
-        const size_t thisArity = thisPair.second;
-        auto thatPair = that.sourceEdges();
-        const DfgEdge* const thatSrcEdgesp = thatPair.first;
-        const size_t thatArity = thatPair.second;
-        UASSERT_OBJ(thisArity == thatArity, this, "Same type vertices must have same arity!");
         for (size_t i = 0; i < thisArity; ++i) {
             const DfgVertex* const thisSrcVtxp = thisSrcEdgesp[i].m_sourcep;
             const DfgVertex* const thatSrcVtxp = thatSrcEdgesp[i].m_sourcep;
@@ -561,7 +606,12 @@ V3Hash DfgVertex::hash() {
         // variables, which we rely on.
         if (!is<DfgVertexVar>()) {
             hash += m_type;
-            hash += width();  // Currently all non-variable vertices are packed, so this is safe
+            if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep(), UnpackArrayDType)) {
+                hash += adtypep->elementsConst();
+                // TODO: maybe include sub-dtype, but not hugely important at the moment
+            } else {
+                hash += width();
+            }
             const auto pair = sourceEdges();
             const DfgEdge* const edgesp = pair.first;
             const size_t arity = pair.second;
@@ -579,19 +629,16 @@ uint32_t DfgVertex::fanout() const {
     return result;
 }
 
-DfgVarPacked* DfgVertex::getResultVar() {
-    UASSERT_OBJ(!this->is<DfgVarArray>(), this, "Arrays are not supported by " << __FUNCTION__);
-
+DfgVertexVar* DfgVertex::getResultVar() {
     // It's easy if the vertex is already a variable ...
-    if (DfgVarPacked* const varp = this->cast<DfgVarPacked>()) return varp;
+    if (DfgVertexVar* const varp = this->cast<DfgVertexVar>()) return varp;
 
-    // Inspect existing variables fully written by this vertex, and choose one
-    DfgVarPacked* resp = nullptr;
+    // Inspect existing variables written by this vertex, and choose one
+    DfgVertexVar* resp = nullptr;
     // cppcheck-has-bug-suppress constParameter
     this->forEachSink([&resp](DfgVertex& sink) {
-        DfgVarPacked* const varp = sink.cast<DfgVarPacked>();
+        DfgVertexVar* const varp = sink.cast<DfgVertexVar>();
         if (!varp) return;
-        if (!varp->isDrivenFullyByDfg()) return;
         // Ignore SystemC variables, they cannot participate in expressions or
         // be assigned rvalue expressions.
         if (varp->varp()->isSc()) return;
@@ -693,6 +740,42 @@ V3Hash DfgConst::selfHash() const { return num().toHash(); }
 bool DfgSel::selfEquals(const DfgVertex& that) const { return lsb() == that.as<DfgSel>()->lsb(); }
 
 V3Hash DfgSel::selfHash() const { return V3Hash{lsb()}; }
+
+// DfgSpliceArray ----------
+
+bool DfgSpliceArray::selfEquals(const DfgVertex& that) const {
+    const DfgSpliceArray* const thatp = that.as<DfgSpliceArray>();
+    const size_t arity = this->arity();
+    for (size_t i = 0; i < arity; ++i) {
+        if (driverIndex(i) != thatp->driverIndex(i)) return false;
+    }
+    return true;
+}
+
+V3Hash DfgSpliceArray::selfHash() const {
+    V3Hash hash;
+    const size_t arity = this->arity();
+    for (size_t i = 0; i < arity; ++i) hash += driverIndex(i);
+    return hash;
+}
+
+// DfgSplicePacked ----------
+
+bool DfgSplicePacked::selfEquals(const DfgVertex& that) const {
+    const DfgSplicePacked* const thatp = that.as<DfgSplicePacked>();
+    const size_t arity = this->arity();
+    for (size_t i = 0; i < arity; ++i) {
+        if (driverLsb(i) != thatp->driverLsb(i)) return false;
+    }
+    return true;
+}
+
+V3Hash DfgSplicePacked::selfHash() const {
+    V3Hash hash;
+    const size_t arity = this->arity();
+    for (size_t i = 0; i < arity; ++i) hash += driverLsb(i);
+    return hash;
+}
 
 // DfgVertexVar ----------
 

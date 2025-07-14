@@ -341,32 +341,20 @@ class ExtractCyclicComponents final {
         return *clonep;
     }
 
-    // Fix up non-variable sources of a DfgVertexVar that are in a different component,
-    // using the provided 'relink' callback
-    template <typename T_Vertex>
-    void fixSources(T_Vertex& vtx, std::function<void(T_Vertex&, DfgVertex&, size_t)> relink) {
-        static_assert(std::is_base_of<DfgVertexVar, T_Vertex>::value,
-                      "'Vertex' must be a 'DfgVertexVar'");
+    // Fix edges that cross components
+    void fixEdges(DfgVertexVar& vtx) {
         const size_t component = state(vtx).component;
-        vtx.forEachSourceEdge([&](DfgEdge& edge, size_t idx) {
-            DfgVertex& source = *edge.sourcep();
-            // DfgVertexVar sources are fixed up by `fixSinks` on those sources
-            if (source.is<DfgVertexVar>()) return;
-            const size_t sourceComponent = state(source).component;
-            // Same component is OK
-            if (sourceComponent == component) return;
-            // Unlink the source edge (source is reconnected by 'relink'
-            edge.unlinkSource();
-            // Apply the fixup
-            // cppcheck-has-bug-suppress constVariable
-            DfgVertexVar& clone = getClone(vtx, sourceComponent);
-            relink(*(clone.as<T_Vertex>()), source, idx);
-        });
-    }
 
-    // Fix up sinks of given variable vertex that are in a different component
-    void fixSinks(DfgVertexVar& vtx) {
-        const size_t component = state(vtx).component;
+        // All variable vertices have at most a single source, and only variable
+        // vertices can have multiple sinks, therefore the source must be either:
+        // - in the same component as the variable vertex
+        // - be a variable vertex itself, which might be in a different component
+        // The later case will be fixed up when handling the source variable
+        DfgVertex* const srcp = vtx.srcp();
+        UASSERT_OBJ(!srcp || srcp->is<DfgVertexVar>() || state(*srcp).component == component, &vtx,
+                    "Driver of DfgVertexVar must be in the same component");
+
+        // Fix up sinks in a differetn component
         vtx.forEachSinkEdge([&](DfgEdge& edge) {
             const size_t sinkComponent = state(*edge.sinkp()).component;
             // Same component is OK
@@ -374,49 +362,6 @@ class ExtractCyclicComponents final {
             // Relink the sink to read the clone
             edge.relinkSource(&getClone(vtx, sinkComponent));
         });
-    }
-
-    // Fix edges that cross components
-    void fixEdges(DfgVertexVar& vtx) {
-        if (DfgVarPacked* const vvtxp = vtx.cast<DfgVarPacked>()) {
-            fixSources<DfgVarPacked>(
-                *vvtxp, [&](DfgVarPacked& clone, DfgVertex& driver, size_t driverIdx) {
-                    clone.addDriver(vvtxp->driverFileLine(driverIdx),  //
-                                    vvtxp->driverLsb(driverIdx), &driver);
-                });
-            fixSinks(*vvtxp);
-            return;
-        }
-
-        if (DfgVarArray* const vvtxp = vtx.cast<DfgVarArray>()) {
-            fixSources<DfgVarArray>(  //
-                *vvtxp, [&](DfgVarArray& clone, DfgVertex& driver, size_t driverIdx) {
-                    clone.addDriver(vvtxp->driverFileLine(driverIdx),  //
-                                    vvtxp->driverIndex(driverIdx), &driver);
-                });
-            fixSinks(*vvtxp);
-            return;
-        }
-    }
-
-    static void packSources(DfgGraph& dfg) {
-        // Remove undriven variable sources
-        for (DfgVertexVar* const vtxp : dfg.varVertices().unlinkable()) {
-            if (DfgVarPacked* const varp = vtxp->cast<DfgVarPacked>()) {
-                varp->packSources();
-                if (!varp->hasSinks() && varp->arity() == 0) {
-                    VL_DO_DANGLING(varp->unlinkDelete(dfg), varp);
-                }
-                continue;
-            }
-            if (DfgVarArray* const varp = vtxp->cast<DfgVarArray>()) {
-                varp->packSources();
-                if (!varp->hasSinks() && varp->arity() == 0) {
-                    VL_DO_DANGLING(varp->unlinkDelete(dfg), varp);
-                }
-                continue;
-            }
-        }
     }
 
     template <typename Vertex>
@@ -446,11 +391,6 @@ class ExtractCyclicComponents final {
                 UASSERT_OBJ(component == state(snk).component, &vtx,
                             "Edge crossing components without variable involvement");
             });
-            if (const DfgVertexVar* const vtxp = vtx.cast<DfgVertexVar>()) {
-                vtxp->forEachSourceEdge([](const DfgEdge& edge, size_t) {
-                    UASSERT_OBJ(edge.sourcep(), edge.sinkp(), "Missing source on variable vertex");
-                });
-            }
         });
     }
 
@@ -488,11 +428,6 @@ class ExtractCyclicComponents final {
             // Don't iterate clones added during this loop
             if (&vtx == lastp) break;
         }
-
-        // Pack sources of variables to remove the now undriven inputs
-        // (cloning might have unlinked some of the inputs),
-        packSources(m_dfg);
-        for (const auto& dfgp : m_components) packSources(*dfgp);
 
         // Check results for consistency
         if (VL_UNLIKELY(m_doExpensiveChecks)) {

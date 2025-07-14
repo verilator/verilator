@@ -107,4 +107,8 @@ module t (
   `signal(REPLICATE, 4);
   assign REPLICATE = rand_a[3:0] ^ ({2{REPLICATE[3:2]}} >> 2);
 
+  `signal(PARTIAL, 4);
+  assign PARTIAL[0] = rand_a[0];
+  // PARTIAL[1] intentionally unconnected
+  assign PARTIAL[3:2] = rand_a[3:2] ^ {PARTIAL[2], PARTIAL[0]};
 endmodule
