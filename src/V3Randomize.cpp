@@ -644,9 +644,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         //                       : membersel->fromp()->name() + "." + membersel->name()
         //                 : nodep->name();  // Can be anything unique
 
-        const std::string smtName
-            = membersel ? membersel->fromp()->name() + "." + membersel->name()
-                        : nodep->name();  // Can be anything unique
+        const std::string smtName = membersel
+                                        ? membersel->fromp()->name() + "." + membersel->name()
+                                        : nodep->name();  // Can be anything unique
 
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
@@ -874,7 +874,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (nodep->user1()) {
             nodep->v3warn(CONSTRAINTIGN, "Global constraints ignored (unsupported)");
         }
-        if(VN_IS(nodep->fromp(), NodeVarRef) && nodep->varp()->isRand() && m_inlineInitTaskp){
+        if (VN_IS(nodep->fromp(), NodeVarRef) && nodep->varp()->isRand() && m_inlineInitTaskp) {
             iterateChildren(nodep);
             nodep->replaceWith(nodep->fromp()->unlinkFrBack());
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
