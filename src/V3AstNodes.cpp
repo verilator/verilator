@@ -1330,6 +1330,14 @@ AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
     }
     return m_voidp;
 }
+AstIfaceGenericDType* AstTypeTable::findIfaceGenericDType(FileLine* fl) {
+    if (VL_UNLIKELY(!m_voidp)) {
+        AstIfaceGenericDType* const newp = new AstIfaceGenericDType{fl};
+        addTypesp(newp);
+        m_ifaceGenericp = newp;
+    }
+    return m_ifaceGenericp;
+}
 
 AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, VBasicDTypeKwd kwd) {
     if (m_basicps[kwd]) return m_basicps[kwd];
@@ -2553,6 +2561,10 @@ void AstEmptyQueueDType::dumpSmall(std::ostream& str) const {
 void AstVoidDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "void";
+}
+void AstIfaceGenericDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "generic_interface";
 }
 void AstStreamDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);

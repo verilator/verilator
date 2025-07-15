@@ -1659,6 +1659,7 @@ class AstTypeTable final : public AstNode {
     // @astgen ptr := m_queueIndexp : Optional[AstQueueDType]
     // @astgen ptr := m_streamp : Optional[AstStreamDType]
     // @astgen ptr := m_voidp : Optional[AstVoidDType]
+    // @astgen ptr := m_ifaceGenericp : Optional[AstIfaceGenericDType]
     AstBasicDType* m_basicps[VBasicDTypeKwd::_ENUM_MAX]{};
     //
     using DetailedMap = std::map<VBasicTypeKey, AstBasicDType*>;
@@ -1680,6 +1681,7 @@ public:
     AstQueueDType* findQueueIndexDType(FileLine* fl);
     AstStreamDType* findStreamDType(FileLine* fl);
     AstVoidDType* findVoidDType(FileLine* fl);
+    AstIfaceGenericDType* findIfaceGenericDType(FileLine* fl);
     void clearCache();
     void repairCache();
     void dump(std::ostream& str = std::cout) const override;

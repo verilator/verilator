@@ -845,6 +845,28 @@ public:
     const TableMap& tableMap() const { return m_tableMap; }
 };
 
+class AstIfaceGenericDType final : public AstNodeDType {
+    // Generic interface that will be replaced with AstIfaceRefDType
+public:
+    explicit AstIfaceGenericDType(FileLine* fl)
+        : ASTGEN_SUPER_IfaceGenericDType(fl) {
+        dtypep(this);
+    }
+    ASTGEN_MEMBERS_AstIfaceGenericDType;
+    void dumpSmall(std::ostream& str) const override;
+    bool hasDType() const override VL_MT_SAFE { return true; }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
+    bool undead() const override { return true; }
+    AstNodeDType* subDTypep() const override VL_MT_STABLE { return nullptr; }
+    AstNodeDType* virtRefDTypep() const override { return nullptr; }
+    void virtRefDTypep(AstNodeDType* nodep) override {}
+    bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
+    AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
+    int widthAlignBytes() const override { return 1; }
+    int widthTotalBytes() const override { return 1; }
+    bool isCompound() const override { return false; }
+};
+
 class AstIfaceRefDType final : public AstNodeDType {
     // Reference to an interface, either for a port, or inside parent cell
     // @astgen op1 := paramsp : List[AstPin]

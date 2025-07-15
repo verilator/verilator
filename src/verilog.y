@@ -1579,7 +1579,7 @@ port<nodep>:                    // ==IEEE: port
                           // AstIfaceRefDType* const refdtypep = new AstIfaceRefDType($<fl>2, $<fl>4, "", "*$2", "*$4");
                           // refdtypep->isGeneric(true);
                           GRAMMARP->m_pinNum = PINNUMINC();
-                          AstVoidDType* const refdtypep = new AstVoidDType($<fl>2);
+                          AstIfaceGenericDType* const refdtypep = new AstIfaceGenericDType($<fl>2);
                           VARDTYPE(refdtypep); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $4, $5));
                           }

@@ -2860,14 +2860,26 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (nodep->name() == "genericModule") {
                         std::cout << "HIT!\n";
                         std::cout << nodep->pinsp()->modVarp() << '\n';
-                        std::cout << VN_AS(nodep->pinsp()->exprp(), VarRef)->varp()->childDTypep()
-                                  << '\n';
+                        std::cout
+                            << VN_AS(VN_AS(nodep->pinsp()->exprp(), VarRef)->varp()->childDTypep(),
+                                     IfaceRefDType)
+                                   ->cellp()
+                                   ->modp()
+                            << '\n';
+                        auto refp
+                            = VN_AS(VN_AS(nodep->pinsp()->exprp(), VarRef)->varp()->childDTypep(),
+                                    IfaceRefDType);
+                        auto iface = VN_AS(refp->cellp()->modp(), Iface);
+                        auto x
+                            = new AstIfaceRefDType(refp->fileline(), refp->name(), iface->name());
+                        x->ifacep(iface);
                         AstPin* const pinp
-                            = new AstPin(nodep->pinsp()->fileline(), 1, "__paramNumber1",
-                                         VN_AS(nodep->pinsp()->exprp(), VarRef)
-                                             ->varp()
-                                             ->childDTypep()
-                                             ->cloneTree(false));
+                            = new AstPin(nodep->pinsp()->fileline(), 1, "__paramNumber1", x);
+                        // VN_AS(VN_AS(nodep->pinsp()->exprp(), VarRef)->varp()->childDTypep(),
+                        //       IfaceRefDType)
+                        //     ->cellp()
+                        //     ->modp()
+                        //     ->cloneTree(false));
                         pinp->param(true);
                         std::cout << "pinp: " << pinp << '\n';
                         visit(pinp);
@@ -2979,6 +2991,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         const DotStates lastStates = m_ds;
         const bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         VL_RESTORER(m_randSymp);
+        std::cout << nodep << '\n';
         {
             if (start) {  // Starting dot sequence
                 UINFOTREE(9, nodep, "", "dot-in");
@@ -3081,6 +3094,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 iterateAndNextNull(nodep->lhsp());
                 UINFO(8, indent() << "iter.ldone " << m_ds.ascii() << " " << nodep);
                 // UINFOTREE(9, nodep, "", "dot-lho");
+            }
+            std::cout << "LHSP: " << nodep->lhsp() << '\n';
+            if (!m_statep->forParamed()) {
+                if (const AstNodeVarRef* const varRefp = VN_CAST(nodep->lhsp(), NodeVarRef)) {
+                    std::cout << "AAAAAAAAAAA " << varRefp->varp() << '\n';
+                    if (varRefp->varp()
+                        && VN_IS(varRefp->varp()->childDTypep(), IfaceGenericDType)) {
+                        m_ds.m_unresolvedClass = true;
+                    }
+                }
             }
             if (m_statep->forPrimary() && isParamedClassRef(nodep->lhsp())) {
                 // Dots of paramed classes will be linked after deparameterization
@@ -3236,6 +3259,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             string expectWhat;
             bool allowScope = false;
             bool allowVar = false;
+            bool tmp = false;
             bool allowFTask = false;
             bool staticAccess = false;
             if (m_ds.m_disablep) {
@@ -3294,6 +3318,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             // Lookup
             VSymEnt* foundp;
+            std::cout << "Looking for: " << nodep << '\n';
             string baddot;
             VSymEnt* okSymp = nullptr;
             if (m_randSymp) {
@@ -3328,7 +3353,38 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else if (first) {
                 foundp = m_ds.m_dotSymp->findIdFallback(nodep->name());
             } else {
+                std::cout << "Lookup space: " << m_ds.m_dotSymp->nodep() << '\n';
                 foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
+                std::cout << "Uno\n";
+                if (const AstCell* const cellp = VN_CAST(m_ds.m_dotSymp->nodep(), Cell)) {
+                    std::cout << "Dos " << cellp->name() << '\n';
+                    if (cellp->name() == "genericModule") {
+                        auto kk = m_ds.m_dotSymp->findIdFlat("TODO_UNIQUE_NAME");
+                        std::cout << "kk: " << kk << '\n';
+                        if (kk && kk->nodep()) {
+                            std::cout << "Tres " << kk->nodep() << '\n';
+                            if (auto x = m_statep->getNodeSym(kk->nodep())) {
+                                std::cout << "STSAFSDAASD\n";
+                                if (AstParamTypeDType* const pp
+                                    = VN_CAST(kk->nodep(), ParamTypeDType)) {
+                                    std::cout
+                                        << "ROUND 2 "
+                                        << VN_AS(pp->childDTypep()->skipRefp(), IfaceRefDType)
+                                               ->ifacep()
+                                        << '\n';
+                                    if (auto y = m_statep->getNodeSym(
+                                            VN_AS(pp->childDTypep()->skipRefp(), IfaceRefDType)
+                                                ->ifacep())) {
+                                        std::cout << "FINAL\n";
+                                        foundp = y->findIdFlat(nodep->name());
+                                        tmp = true;
+                                        m_ds.m_dotText = "a";
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
             if (foundp) {
                 UINFO(9, indent() << "found=se" << cvtToHex(foundp) << "  exp=" << expectWhat
@@ -3418,13 +3474,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     AstNode* const newp = new AstVarRef{nodep->fileline(), varp, VAccess::READ};
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                } else if (allowVar) {
+                } else if (allowVar || tmp) {
                     AstNode* newp;
                     if (m_ds.m_dotText != "") {
                         AstVarXRef* const refp
                             = new AstVarXRef{nodep->fileline(), nodep->name(), m_ds.m_dotText,
                                              VAccess::READ};  // lvalue'ness computed later
                         refp->varp(varp);
+                        std::cout << "varp: " << varp << '\n';
                         refp->containsGenBlock(m_ds.m_genBlk);
                         if (varp->attrSplitVar()) {
                             refp->v3warn(
@@ -3789,6 +3846,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(8, indent() << "visit " << nodep);
         // No checkNoDot; created and iterated from a parseRef
+        if (nodep->varp()) return;
         if (!m_modSymp) {
             // Module that is not in hierarchy.  We'll be dead code eliminating it later.
             UINFO(9, "Dead module for " << nodep);
@@ -3936,7 +3994,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstVar* nodep) override {
         LINKDOT_VISIT_START();
         if (m_statep->forParamed() && nodep->varType() == VVarType::IFACEREF
-            && VN_IS(nodep->childDTypep(), VoidDType)) {
+            && VN_IS(nodep->childDTypep(), IfaceGenericDType)) {
             // AstIfaceRefDType* const ifacerefp = new AstIfaceRefDType(refDTypep->fileline(),
             // refDTypep->name(), );
             nodep->childDTypep()->unlinkFrBack()->deleteTree();
