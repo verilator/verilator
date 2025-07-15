@@ -288,7 +288,7 @@ public:
 
 class VFwdType final {
 public:
-    enum en : uint8_t { NONE, ENUM, STRUCT, UNION, CLASS, INTERFACE_CLASS };
+    enum en : uint8_t { NONE, ENUM, STRUCT, UNION, CLASS, INTERFACE_CLASS, GENERIC_INTERFACE };
     enum en m_e;
     const char* ascii() const {
         static const char* const names[]

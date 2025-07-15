@@ -2868,12 +2868,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                              ->varp()
                                              ->childDTypep()
                                              ->cloneTree(false));
+                        pinp->param(true);
+                        std::cout << "pinp: " << pinp << '\n';
                         visit(pinp);
                         nodep->addParamsp(pinp);
                     }
                 }
             }
         }
+        std::cout << "DONE\n";
         // Parent module inherits child's publicity
         // This is done bottom up in the LinkBotupVisitor stage
     }
@@ -3625,7 +3628,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             const string suggest = m_statep->suggestSymFallback(
                                 m_ds.m_dotSymp, nodep->name(), VNodeMatcher{});
                             nodep->v3error(
-                                "Can't find definition of "
+                                "Can't find definition offff "
                                 << expectWhat << ": " << nodep->prettyNameQ() << '\n'
                                 << (suggest.empty() ? "" : nodep->warnMore() + suggest));
                         } else {
@@ -3932,6 +3935,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         LINKDOT_VISIT_START();
+        if (m_statep->forParamed() && nodep->varType() == VVarType::IFACEREF
+            && VN_IS(nodep->childDTypep(), VoidDType)) {
+            // AstIfaceRefDType* const ifacerefp = new AstIfaceRefDType(refDTypep->fileline(),
+            // refDTypep->name(), );
+            nodep->childDTypep()->unlinkFrBack()->deleteTree();
+            nodep->childDTypep(
+                VN_AS(
+                    m_statep->getNodeSym(nodep->backp())->findIdFlat("TODO_UNIQUE_NAME")->nodep(),
+                    ParamTypeDType)
+                    ->childDTypep()
+                    ->cloneTree(false));
+        }
         checkNoDot(nodep);
         iterateChildren(nodep);
         if (m_statep->forPrimary() && nodep->isIO() && !m_ftaskp && !nodep->user4()) {
@@ -4875,7 +4890,6 @@ void V3LinkDot::linkDotPrimary(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     linkDotGuts(nodep, LDS_PRIMARY);
     V3Global::dumpCheckGlobalTree("linkdot", 0, dumpTreeEitherLevel() >= 6);
-    std::exit(1);
 }
 
 void V3LinkDot::linkDotParamed(AstNetlist* nodep) {

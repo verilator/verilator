@@ -1570,16 +1570,16 @@ port<nodep>:                    // ==IEEE: port
                           }*/
                           VARRESET_LIST(GPARAM);
                           VARDECL(GPARAM); VARIO(NONE);
-                          VARDTYPE(new AstParseTypeDType($<fl>2, VFwdType::INTERFACE_CLASS));
+                          VARDTYPE(new AstParseTypeDType($<fl>2, VFwdType::GENERIC_INTERFACE));
                           VARIOANSI();
                           std::string uniqueName = "TODO_UNIQUE_NAME";
                           addNextNull($$, VARDONEA($$->fileline(), uniqueName, $4, $5));
                           std::cout << "Begin1 " << $2 << " | " << $3  << " 4: " << $4 << " end1\n";
-                          VARDECL(VAR); VARIO(NONE);  // VARRESET_NONLIST(GPARAM);
+                          VARDECL(IFACEREF); VARIO(NONE);  // VARRESET_NONLIST(GPARAM);
                           // AstIfaceRefDType* const refdtypep = new AstIfaceRefDType($<fl>2, $<fl>4, "", "*$2", "*$4");
                           // refdtypep->isGeneric(true);
                           GRAMMARP->m_pinNum = PINNUMINC();
-                          AstRefDType* const refdtypep = new AstRefDType($<fl>2, std::move(uniqueName));
+                          AstVoidDType* const refdtypep = new AstVoidDType($<fl>2);
                           VARDTYPE(refdtypep); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $4, $5));
                           }
