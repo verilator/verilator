@@ -7675,11 +7675,11 @@ class WidthVisitor final : public VNVisitor {
     // SIGNED/DOUBLE METHODS
 
     AstNodeExpr* checkCvtUS(AstNodeExpr* nodep) {
-        if (nodep && nodep->isDouble()) {
-            nodep->v3error("Expected integral (non-" << nodep->dtypep()->prettyDTypeNameQ()
-                                                     << ") input to "
-                                                     << nodep->backp()->prettyTypeName());
-            nodep = spliceCvtS(nodep, true, 32);
+        if (nodep && nodep->dtypep()->skipRefp()->isDouble()) {
+            nodep->v3warn(REALCVT,
+                          "Implicit conversion of real to integer; expected integral input to "
+                              << nodep->backp()->prettyTypeName());
+            nodep = spliceCvtS(nodep, false, 32);
         }
         return nodep;
     }
