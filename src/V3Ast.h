@@ -2419,6 +2419,7 @@ public:
     AstNodeDType* findQueueIndexDType() const;
     AstNodeDType* findStreamDType() const;
     AstNodeDType* findVoidDType() const;
+    AstNodeDType* findIfaceGenericDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
