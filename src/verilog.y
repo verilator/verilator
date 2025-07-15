@@ -6822,21 +6822,38 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
         |       covergroup_declarationFront '(' tf_port_listE ')'
         /*cont*/    coverage_eventE ';' coverage_spec_or_optionListE
         /*cont*/    yENDGROUP endLabelE
-                        { $$ = $1;
+                        { AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
+                          newp->classMethod(true);
+                          newp->isConstructor(true);
+                          newp->dtypep($1->dtypep());
+                          newp->addStmtsp($3);
+                          $1->addMembersp(newp);
+                          $$ = $1;
                           GRAMMARP->endLabel($<fl>9, $1, $9); }
-        //                      // IEEE 1800-2023 added:
-        |       covergroup_declarationFront yEXTENDS idAny/*covergroup_identifier*/
-        /*cont*/    ';' coverage_spec_or_optionListE
-        /*cont*/    yENDGROUP endLabelE
-                        { $$ = $1;
-                          GRAMMARP->endLabel($<fl>7, $1, $7); }
+        ;
+
+covergroup_extendsE<fl>:  // IEEE: Part of covergroup_declaration
+                /* empty */                             { $$ = nullptr; }
+        |       yEXTENDS                                { $$ = $1; }
         ;
 
 covergroup_declarationFront<classp>:  // IEEE: part of covergroup_declaration
-                yCOVERGROUP idAny
-                        { $$ = new AstClass{$<fl>2, *$2, PARSEP->libname()};
+                yCOVERGROUP covergroup_extendsE idAny
+                        {
+                          $$ = new AstClass{$<fl>3, *$3, PARSEP->libname()};
+
+                          AstFunc* const sample = new AstFunc{$<fl>1, "sample", nullptr, nullptr};
+                          sample->classMethod(true);
+                          sample->dtypep(sample->findVoidDType());
+                          $$->addMembersp(sample);
+
+                          AstFunc* const getCoverage = new AstFunc{$<fl>1, "get_coverage", nullptr, nullptr};
+                          getCoverage->classMethod(true);
+                          getCoverage->dtypep(getCoverage->findVoidDType());
+                          $$->addMembersp(getCoverage);
+
                           BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup"); }
-        ;
+                ;
 
 cgexpr<nodeExprp>:  // IEEE-2012: covergroup_expression, before that just expression
                 expr                                    { $$ = $1; }
@@ -7006,7 +7023,7 @@ cross_itemList<nodep>:  // IEEE: part of list_of_cross_items
         ;
 
 cross_item<nodep>:  // ==IEEE: cross_item
-                idAny/*cover_point_identifier or variable_identifier*/  { $$ = nullptr; /*UNSUP*/ }
+                idDotted/*cover_point_identifier or variable_identifier*/  { $1->deleteTree(); $$ = nullptr; /*UNSUP*/ }
         ;
 
 cross_body<nodep>:  // ==IEEE: cross_body
@@ -7552,7 +7569,12 @@ class_item<nodep>:                      // ==IEEE: class_item
         |       class_declaration                       { $$ = $1; }
         |       timeunits_declaration                   { $$ = $1; }
         |       covergroup_declaration
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: covergroup within class"); }
+                        {
+                          const string cgName = $1->name();
+                          $1->name("__vlAnonCG_" + cgName);
+                          AstVar* const newp = new AstVar{$<fl>1, VVarType::VAR, cgName, VFlagChildDType{}, new AstRefDType($<fl>1, $1->name())};
+                          $$ = addNextNull($1, newp);
+                        }
         //                      // local_parameter_declaration under parameter_declaration
         |       parameter_declaration ';'               { $$ = $1; }
         |       ';'                                     { $$ = nullptr; }
