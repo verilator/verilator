@@ -2272,7 +2272,7 @@ class RandomizeVisitor final : public VNVisitor {
             nodep->name(randomizeFuncp->name());
             nodep->taskp(randomizeFuncp);
             nodep->dtypeFrom(randomizeFuncp->dtypep());
-            if (VN_IS(m_modp, Class)) nodep->classOrPackagep(m_modp);
+            if(VN_IS(m_modp, Class))nodep->classOrPackagep(m_modp);
             pushDeletep(nodep->pinsp()->unlinkFrBackWithNext());
             return;
         }
@@ -2510,7 +2510,12 @@ AstFunc* V3Randomize::newRandomizeStdFunc(VMemberMap& memberMap, AstNodeModule* 
     // nodep->addStmtsp(funcp);
     funcp = new AstFunc{nodep->fileline(), name, nullptr, fvarp};
     funcp->dtypep(dtypep);
-    funcp->classMethod(true);
+    if(VN_IS(nodep, Class)){
+        funcp->classMethod(true);
+    }else{
+        funcp->classMethod(false);
+        funcp->isStatic(true);
+    }
     nodep->addStmtsp(funcp);
     return funcp;
 }
