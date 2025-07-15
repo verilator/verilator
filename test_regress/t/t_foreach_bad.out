@@ -1,8 +1,11 @@
-%Error: t/t_foreach_bad.v:14:7: Syntax error; foreach missing bracketed loop variable (IEEE 1800-2023 12.7.3)
+%Error: t/t_foreach_bad.v:14:7: Foreach missing bracketed loop variable is no-operation (IEEE 1800-2023 12.7.3)
    14 |       foreach (array);   
       |       ^~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_foreach_bad.v:18:23: 'foreach' loop variable expects simple variable name
-   18 |       foreach (array[a.b]);   
+%Error: t/t_foreach_bad.v:16:7: Foreach missing bracketed loop variable is no-operation (IEEE 1800-2023 12.7.3)
+   16 |       foreach (array[]);   
+      |       ^~~~~~~
+%Error: t/t_foreach_bad.v:20:23: 'foreach' loop variable expects simple variable name
+   20 |       foreach (array[a.b]);   
       |                       ^
 %Error: Exiting due to

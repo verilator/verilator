@@ -578,7 +578,7 @@ class LinkParseVisitor final : public VNVisitor {
         } else if (VN_IS(bracketp, SelLoopVars)) {
             // Ok
         } else {
-            nodep->v3error("Syntax error; foreach missing bracketed loop variable"
+            nodep->v3error("Foreach missing bracketed loop variable is no-operation"
                            " (IEEE 1800-2023 12.7.3)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;

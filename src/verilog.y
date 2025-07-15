@@ -6112,6 +6112,7 @@ idArrayedForeach<nodeExprp>:    // IEEE: id + select (under foreach expression)
                 id
                         { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1, nullptr, nullptr}; }
         //                      // IEEE: id + part_select_range/constant_part_select_range
+        |       idArrayed '[' ']'                               { $$ = $1; }  // Or AstArraySel, don't know yet.
         |       idArrayed '[' expr ']'                          { $$ = new AstSelBit{$2, $1, $3}; }  // Or AstArraySel, don't know yet.
         |       idArrayed '[' constExpr ':' constExpr ']'       { $$ = new AstSelExtract{$2, $1, $3, $5}; }
         //                      // IEEE: id + indexed_range/constant_indexed_range
