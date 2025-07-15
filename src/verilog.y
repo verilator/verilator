@@ -104,6 +104,7 @@ public:
         = false;  // Standalone ID is a tf_identifier instead of port_identifier
     bool m_modportImpExpLastIsExport
         = false;  // Last import_export statement in modportPortsDecl is an export
+    bool m_genericIfaceModule = false;  // If current module contains generic interface
 
     int m_pinNum = -1;  // Pin number currently parsing
     std::stack<int> m_pinStack;  // Queue of pin numbers being parsed
@@ -1381,6 +1382,10 @@ module_declaration:             // ==IEEE: module_declaration
         /*cont*/    module_itemListE yENDMODULE endLabelE
                         { $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
                           $1->hasParameterList($<flag>2);
+                          if (GRAMMARP->m_genericIfaceModule) {
+                            VN_AS($1, Module)->hasGenericIface(GRAMMARP->m_genericIfaceModule);
+                            GRAMMARP->m_genericIfaceModule = false;
+                          }
                           if ($2) $1->addStmtsp($2);
                           if ($3) $1->addStmtsp($3);
                           if ($5) $1->addStmtsp($5);
@@ -1562,6 +1567,7 @@ port<nodep>:                    // ==IEEE: port
                           addNextNull($$, VARDONEP($$, $6, $7)); }
         |       portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
                         { $$ = $3;
+                          GRAMMARP->m_genericIfaceModule = true;
                           /*std::cout << "Value: " << GRAMMARP->m_pinNum << '\n';
                           if (GRAMMARP->m_pinNum) {
                             GRAMMARP->m_pinNum = PINNUMINC();
