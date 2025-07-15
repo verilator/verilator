@@ -7528,11 +7528,11 @@ class_item<nodep>:                      // ==IEEE: class_item
         |       timeunits_declaration                   { $$ = $1; }
         |       covergroup_declaration
                         {
-                                const string cgName = $1->name();
-                                $1->name("__vlAnonCG_" + cgName);
-                                AstVar* const newp = new AstVar{$<fl>1, VVarType::VAR, cgName, VFlagChildDType{}, new AstRefDType($<fl>1, $1->name())};
-                                $$ = addNextNull($1, newp);
-                         }
+                          const string cgName = $1->name();
+                          $1->name("__vlAnonCG_" + cgName);
+                          AstVar* const newp = new AstVar{$<fl>1, VVarType::VAR, cgName, VFlagChildDType{}, new AstRefDType($<fl>1, $1->name())};
+                          $$ = addNextNull($1, newp);
+                        }
         //                      // local_parameter_declaration under parameter_declaration
         |       parameter_declaration ';'               { $$ = $1; }
         |       ';'                                     { $$ = nullptr; }
