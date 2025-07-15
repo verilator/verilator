@@ -638,11 +638,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (!randMode.usesMode && editFormat(nodep)) return;
 
         // In SMT just variable name, but we also ensure write_var for the variable
+        // const std::string smtName
+        //     = membersel ? (membersel->fromp()->name() == "__Vthis")
+        //                       ? membersel->name()
+        //                       : membersel->fromp()->name() + "." + membersel->name()
+        //                 : nodep->name();  // Can be anything unique
+
         const std::string smtName
-            = membersel ? (membersel->fromp()->name() == "__Vthis")
-                              ? membersel->name()
-                              : membersel->fromp()->name() + "." + membersel->name()
+            = membersel ? membersel->fromp()->name() + "." + membersel->name()
                         : nodep->name();  // Can be anything unique
+
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
         AstNodeExpr* exprp = new AstSFormatF{nodep->fileline(), smtName, false, nullptr};
@@ -869,9 +874,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (nodep->user1()) {
             nodep->v3warn(CONSTRAINTIGN, "Global constraints ignored (unsupported)");
         }
-        iterateChildren(nodep);
-        nodep->replaceWith(nodep->fromp()->unlinkFrBack());
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        if(VN_IS(nodep->fromp(), NodeVarRef) && nodep->varp()->isRand() && m_inlineInitTaskp){
+            iterateChildren(nodep);
+            nodep->replaceWith(nodep->fromp()->unlinkFrBack());
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
+        }
+        editFormat(nodep);
     }
     void visit(AstSFormatF* nodep) override {}
     void visit(AstStmtExpr* nodep) override {}
@@ -2236,7 +2245,7 @@ class RandomizeVisitor final : public VNVisitor {
 
         if (nodep->name() != "randomize") return;
 
-        if (nodep->classOrPackagep()->name() == "std") {
+        if (nodep->classOrPackagep() && nodep->classOrPackagep()->name() == "std") {
             AstVar* const stdrand = createStdRandomGenerator(m_modp);
             AstFunc* const randomizeFuncp = V3Randomize::newRandomizeStdFunc(
                 m_memberMap, m_modp, m_inlineUniqueStdName.get(nodep));
