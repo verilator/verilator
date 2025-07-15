@@ -870,7 +870,6 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->v3warn(CONSTRAINTIGN, "Global constraints ignored (unsupported)");
         }
         iterateChildren(nodep);
-        nodep->fromp()->dumpTreeJson(cout);
         nodep->replaceWith(nodep->fromp()->unlinkFrBack());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -2322,7 +2321,6 @@ class RandomizeVisitor final : public VNVisitor {
 
         // Detach the expression and prepare variable copies
         const CaptureVisitor captured{withp->exprp(), m_modp, classp};
-        withp->dumpTreeJson(cout);
         // Add function arguments
         captured.addFunctionArguments(randomizeFuncp);
 

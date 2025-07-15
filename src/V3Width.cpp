@@ -6218,35 +6218,6 @@ class WidthVisitor final : public VNVisitor {
                 if (!VN_IS(exprp, VarRef)) {
                     argp->v3error("Invalid argument for 'std::randomize()'.");
                 }
-                AstVarRef* const varrefp = VN_AS(fromp, VarRef);
-                fromVarp = varrefp->varp();
-            }
-            if (!VN_IS(exprp, VarRef) && !VN_IS(exprp, MemberSel)) {
-                argp->v3error("'randomize()' argument must be a variable contained in "
-                              << (fromVarp ? fromVarp->prettyNameQ() : "curent scope"));
-                VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
-                continue;
-            }
-            while (exprp) {
-                if (AstMemberSel* const memberSelp = VN_CAST(exprp, MemberSel)) {
-                    cout <<" NON-LRM Compliant"<<endl;
-                    randVarp = memberSelp->varp();
-                    exprp = memberSelp->fromp();
-                } else {
-                    if (AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
-                        randVarp = varrefp->varp();
-                    } else {
-                        argp->v3warn(
-                            E_UNSUPPORTED,
-                            "Unsupported: Non-variable expression as 'randomize()' argument");
-                        VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
-                    }
-                    exprp = nullptr;
-                }
-                // All variables in the dot hierarchy must be randomizable
-                if (randVarp && !randVarp->isRand())
-                    randVarp->rand(VRandAttr::RAND_INLINE);  //Wish to make it RAND_STD But lets
-                                                             //see how its useful in later stage
             }
             if (!argp) continue;  // Errored out, bail
         }
