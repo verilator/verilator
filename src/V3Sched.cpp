@@ -961,9 +961,9 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
         = virtIfaceTriggers.makeMemberToSensMap(netlistp, firstVifTriggerIndex, trig.m_vscp);
 
     // Create and Order the body function
-    AstCFunc* const icoFuncp
-        = V3Order::order(netlistp, {&logic}, trigToSen, "ico", false, false,
-                         [=](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
+    AstCFunc* const icoFuncp = V3Order::order(
+        netlistp, {&logic}, trigToSen, "ico", false, false,
+        [=](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
             AstVar* const varp = vscp->varp();
             if (varp->isPrimaryInish() || varp->isSigUserRWPublic()) {
                 out.push_back(inputChanged);
@@ -974,7 +974,8 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
                 if (ifaceIt != vifTriggeredIco.end()) {
                     out.push_back(ifaceIt->second);
                 } else {
-                    for (auto memberIt = vifMemberTriggeredIco.begin(); memberIt != vifMemberTriggeredIco.end(); ++memberIt) {
+                    for (auto memberIt = vifMemberTriggeredIco.begin();
+                         memberIt != vifMemberTriggeredIco.end(); ++memberIt) {
                         if (memberIt->first.m_ifacep == vscp->varp()->sensIfacep()) {
                             out.push_back(memberIt->second);
                             break;
@@ -1396,7 +1397,8 @@ void schedule(AstNetlist* netlistp) {
                 if (ifaceIt != vifTriggeredAct.end()) {
                     out.push_back(ifaceIt->second);
                 } else {
-                    for (auto memberIt = vifMemberTriggeredAct.begin(); memberIt != vifMemberTriggeredAct.end(); ++memberIt) {
+                    for (auto memberIt = vifMemberTriggeredAct.begin();
+                         memberIt != vifMemberTriggeredAct.end(); ++memberIt) {
                         if (memberIt->first.m_ifacep == vscp->varp()->sensIfacep()) {
                             out.push_back(memberIt->second);
                             break;
@@ -1445,7 +1447,8 @@ void schedule(AstNetlist* netlistp) {
                     if (ifaceIt != vifTriggered.end()) {
                         out.push_back(ifaceIt->second);
                     } else {
-                        for (auto memberIt = vifMemberTriggered.begin(); memberIt != vifMemberTriggered.end(); ++memberIt) {
+                        for (auto memberIt = vifMemberTriggered.begin();
+                             memberIt != vifMemberTriggered.end(); ++memberIt) {
                             if (memberIt->first.m_ifacep == vscp->varp()->sensIfacep()) {
                                 out.push_back(memberIt->second);
                                 break;
