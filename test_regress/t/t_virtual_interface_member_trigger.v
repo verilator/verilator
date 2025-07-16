@@ -41,7 +41,7 @@ module t_virtual_interface_member_trigger();
     assign intf_read.data = data;
     assign data = intf_write.data;
     virtual INTF vif_read, vif_write;
-    
+
     Dummy cl_1, cl_2;
 
     initial begin
