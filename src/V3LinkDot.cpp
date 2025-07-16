@@ -823,7 +823,7 @@ public:
             } while (!foundp && currentLookSymp);
         } else {
             foundp = lookSymp->findIdFlat(nodep->name());
-            if (!checkIfClassOrPackage(foundp)) foundp = nullptr;
+            if (foundp && !checkIfClassOrPackage(foundp)) foundp = nullptr;
         }
         if (!foundp && v3Global.rootp()->stdPackagep()) {  // Look under implied std::
             foundp = getNodeSym(v3Global.rootp()->stdPackagep())->findIdFlat(nodep->name());
