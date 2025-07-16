@@ -2746,6 +2746,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 dtypep = adtypep->childDTypep()->skipRefp();
             } else if (const AstQueueDType* const adtypep = VN_CAST(dtypep, QueueDType)) {
                 dtypep = adtypep->childDTypep()->skipRefp();
+            } else if (const AstUnpackArrayDType* const adtypep
+                       = VN_CAST(dtypep, UnpackArrayDType)) {
+                dtypep = adtypep->childDTypep()->skipRefp();
             } else {
                 break;
             }
@@ -2863,7 +2866,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (m_statep->forPrimary()) {
                     if (const AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
                         if (modp->hasGenericIface()) {
-                            std::cout << "HIT!\n";
                             size_t paramNum = 1;
                             for (AstPin* const paramp = nodep->paramsp(); paramp;
                                  paramp->nextp()) {
@@ -2871,29 +2873,30 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             }
                             for (const AstPin* pinp = nodep->pinsp(); pinp;
                                  pinp = VN_CAST(pinp->nextp(), Pin)) {
-                                std::cout << pinp->modVarp() << '\n';
-                                std::cout
-                                    << VN_AS(VN_AS(pinp->exprp(), VarRef)->varp()->childDTypep(),
-                                             IfaceRefDType)
-                                           ->cellp()
-                                           ->modp()
-                                    << '\n';
-                                // TODO: make a valid IfaceRefDType extraction
-                                const AstIfaceRefDType* const refp
-                                    = VN_AS(VN_AS(pinp->exprp(), VarRef)->varp()->childDTypep(),
-                                            IfaceRefDType);
-                                AstIface* const iface = VN_AS(refp->cellp()->modp(), Iface);
-                                AstIfaceRefDType* const newIfaceRefp = new AstIfaceRefDType(
-                                    refp->fileline(), refp->name(), iface->name());
-                                newIfaceRefp->ifacep(iface);
-                                AstPin* const newPinp = new AstPin(
-                                    pinp->fileline(), paramNum,
-                                    "__paramNumber" + std::to_string(paramNum), newIfaceRefp);
-                                ++paramNum;
-                                newPinp->param(true);
-                                std::cout << "pinp: " << newPinp << '\n';
-                                visit(newPinp);
-                                nodep->addParamsp(newPinp);
+                                AstNode* exprp = pinp->exprp();
+                                while (const AstNodePreSel* const preSelp
+                                       = VN_CAST(exprp, NodePreSel)) {
+                                    exprp = preSelp->fromp();
+                                }
+                                const AstVar* const varp = VN_AS(exprp, VarRef)->varp();
+                                if (const AstIfaceRefDType* const refp
+                                    = VN_CAST(getElemDTypep(varp->childDTypep()), IfaceRefDType)) {
+                                    AstIface* const iface = VN_AS(refp->cellp()->modp(), Iface);
+                                    AstIfaceRefDType* const newIfaceRefp = new AstIfaceRefDType(
+                                        refp->fileline(), refp->name(), iface->name());
+                                    newIfaceRefp->ifacep(iface);
+                                    AstPin* const newPinp = new AstPin(
+                                        pinp->fileline(), paramNum,
+                                        "__paramNumber" + std::to_string(paramNum), newIfaceRefp);
+                                    ++paramNum;
+                                    newPinp->param(true);
+                                    visit(newPinp);
+                                    nodep->addParamsp(newPinp);
+                                } else {
+                                    varp->v3error("Expected an interface but "
+                                                  << varp->prettyNameQ()
+                                                  << " is not an interface");
+                                }
                             }
                         }
                     }
