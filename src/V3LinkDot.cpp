@@ -3801,7 +3801,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(8, indent() << "visit " << nodep);
         // No checkNoDot; created and iterated from a parseRef
-        if (nodep->varp()) return;  // TODO: this line breaks tests like: t_mod_interface_array5.py
         if (!m_modSymp) {
             // Module that is not in hierarchy.  We'll be dead code eliminating it later.
             UINFO(9, "Dead module for " << nodep);
@@ -3824,6 +3823,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                            okSymp, true);  // Maybe nullptr
+            if (const AstVar* varp = VN_CAST(dotSymp->nodep(), Var)) {
+                if (const AstIfaceRefDType* const ifaceRefp
+                    = VN_CAST(varp->childDTypep(), IfaceRefDType)) {
+                    dotSymp = m_statep->getNodeSym(ifaceRefp->ifacep());
+                }
+            }
             if (!m_statep->forScopeCreation()) {
                 VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
                 if (m_inSens && foundp) {

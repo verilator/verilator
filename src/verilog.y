@@ -1637,7 +1637,6 @@ port<nodep>:                    // ==IEEE: port
         //
         |       portDirNetE data_type           portSig variable_dimensionListE sigAttrListE
                         { $$ = $3; VARDTYPE($2); VARIOANSI();
-                        std::cout << "ABC " << $2 << " " << $3 << " " << $4 << " " << $5 << " " << " ABC\n";
                           addNextNull($$, VARDONEP($$, $4, $5)); }
         |       portDirNetE data_type           portSig variable_dimensionListE sigAttrListE '=' constExpr
                         { $$ = $3; VARDTYPE($2); VARIOANSI();
