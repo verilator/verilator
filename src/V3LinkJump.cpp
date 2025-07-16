@@ -185,6 +185,56 @@ class LinkJumpVisitor final : public VNVisitor {
         return new AstStmtExpr{
             fl, new AstMethodCall{fl, queueRefp, "push_back", new AstArg{fl, "", processSelfp}}};
     }
+    void handleDisableOnFork(AstDisable* const nodep, const std::vector<AstBegin*>& forks) {
+        // The support is limited only to disabling a fork from outside that fork.
+        // It utilizes the process::kill()` method. For each `disable` a queue of processes is
+        // declared. At the beginning of each fork that can be disabled, its process handle is
+        // pushed to the queue. `disable` statement is replaced with calling `kill()` method on
+        // each element of the queue.
+        FileLine* const fl = nodep->fileline();
+        const std::string targetName = nodep->targetp()->name();
+        if (existsBlockAbove(targetName)) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from within same fork");
+        }
+        if (m_ftaskp) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from task / function");
+        }
+        AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
+        AstClass* const processClassp
+            = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
+        // Declare queue of processes (as a global variable for simplicity)
+        AstVar* const processQueuep = new AstVar{
+            fl, VVarType::VAR, m_queueNames.get(targetName), VFlagChildDType{},
+            new AstQueueDType{fl, VFlagChildDType{},
+                              new AstClassRefDType{fl, processClassp, nullptr}, nullptr}};
+        processQueuep->lifetime(VLifetime::STATIC);
+        topPkgp->addStmtsp(processQueuep);
+
+        AstVarRef* const queueWriteRefp
+            = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
+        AstStmtExpr* pushCurrentProcessp = getQueuePushProcessSelfp(queueWriteRefp);
+
+        for (AstBegin* const beginp : forks) {
+            if (pushCurrentProcessp->backp()) {
+                pushCurrentProcessp = pushCurrentProcessp->cloneTree(false);
+            }
+            if (beginp->stmtsp()) {
+                // There is no need to add it to empty block
+                beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp);
+            }
+        }
+        AstVarRef* const queueRefp = new AstVarRef{fl, topPkgp, processQueuep, VAccess::READWRITE};
+        AstTaskRef* const killQueueCall
+            = new AstTaskRef{fl, VN_AS(getMemberp(processClassp, "killQueue"), Task),
+                             new AstArg{fl, "", queueRefp}};
+        killQueueCall->classOrPackagep(processClassp);
+        nodep->addNextHere(new AstStmtExpr{fl, killQueueCall});
+    }
+    static bool directlyUnderFork(const AstNode* const nodep) {
+        if (nodep->backp()->nextp() == nodep) return directlyUnderFork(nodep->backp());
+        if (VN_IS(nodep->backp(), Fork)) return true;
+        return false;
+    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -369,35 +419,9 @@ class LinkJumpVisitor final : public VNVisitor {
         if (VN_IS(targetp, Task)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling task by name");
         } else if (AstFork* const forkp = VN_CAST(targetp, Fork)) {
-            // The support is limited only to disabling a fork from outside that fork.
-            // It utilizes the process::kill()` method. For each `disable` a queue of processes is
-            // declared. At the beginning of each fork that can be disabled, its process handle is
-            // pushed to the queue. `disable` statement is replaced with calling `kill()` method on
-            // each element of the queue.
-            if (existsBlockAbove(forkp->name())) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from within same fork");
-            }
-            if (m_ftaskp) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from task / function");
-            }
-            AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
-            AstClass* const processClassp
-                = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
-            // Declare queue of processes (as a global variable for simplicity)
-            AstVar* const processQueuep = new AstVar{
-                fl, VVarType::VAR, m_queueNames.get(forkp->name()), VFlagChildDType{},
-                new AstQueueDType{fl, VFlagChildDType{},
-                                  new AstClassRefDType{fl, processClassp, nullptr}, nullptr}};
-            processQueuep->lifetime(VLifetime::STATIC);
-            topPkgp->addStmtsp(processQueuep);
-
-            AstVarRef* const queueWriteRefp
-                = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
-            AstStmtExpr* const pushCurrentProcessp = getQueuePushProcessSelfp(queueWriteRefp);
-
+            std::vector<AstBegin*> forks;
             for (AstNode* forkItemp = forkp->stmtsp(); forkItemp; forkItemp = forkItemp->nextp()) {
-                // Add push_back statement at the beginning of each fork.
-                // Wrap into begin block if needed
+                // Further handling of disable stmt requires all forks to be begin blocks
                 AstBegin* beginp = VN_CAST(forkItemp, Begin);
                 if (!beginp) {
                     beginp = new AstBegin{fl, "", nullptr};
@@ -406,34 +430,28 @@ class LinkJumpVisitor final : public VNVisitor {
                     // In order to continue the iteration
                     forkItemp = beginp;
                 }
-                if (pushCurrentProcessp->backp()) {
-                    beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp->cloneTree(false));
-                } else {
-                    beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp);
-                }
+                forks.push_back(beginp);
             }
-
-            AstVarRef* const queueRefp
-                = new AstVarRef{fl, topPkgp, processQueuep, VAccess::READWRITE};
-            AstTaskRef* const killQueueCall
-                = new AstTaskRef{fl, VN_AS(getMemberp(processClassp, "killQueue"), Task),
-                                 new AstArg{fl, "", queueRefp}};
-            killQueueCall->classOrPackagep(processClassp);
-            nodep->addNextHere(new AstStmtExpr{fl, killQueueCall});
+            handleDisableOnFork(nodep, forks);
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
-            const std::string targetName = beginp->name();
-            if (existsBlockAbove(targetName)) {
-                if (beginp->user3()) {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: disabling block that contains a fork");
-                } else {
-                    // Jump to the end of the named block
-                    AstJumpLabel* const labelp = findAddLabel(beginp, false);
-                    nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
-                }
+            if (directlyUnderFork(beginp)) {
+                std::vector<AstBegin*> forks{beginp};
+                handleDisableOnFork(nodep, forks);
             } else {
-                nodep->v3warn(E_UNSUPPORTED, "disable isn't underneath a begin with name: '"
-                                                 << targetName << "'");
+                const std::string targetName = beginp->name();
+                if (existsBlockAbove(targetName)) {
+                    if (beginp->user3()) {
+                        nodep->v3warn(E_UNSUPPORTED,
+                                      "Unsupported: disabling block that contains a fork");
+                    } else {
+                        // Jump to the end of the named block
+                        AstJumpLabel* const labelp = findAddLabel(beginp, false);
+                        nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
+                    }
+                } else {
+                    nodep->v3warn(E_UNSUPPORTED, "disable isn't underneath a begin with name: '"
+                                                     << targetName << "'");
+                }
             }
         } else {
             nodep->v3fatalSrc("Disable linked with node of unhandled type "
