@@ -16,18 +16,22 @@ Verilator 5.039 devel
 * Add ENUMITEMWIDTH error, and apply to X-extended and ranged values.
 * Add NOEFFECT warning, replacing previous `foreach` error.
 * Support member-level triggers for virtual interfaces (#5166) (#6148). [Yilou Wang]
+* Support disabling a fork in additional contexts (#5432 partial) (#6174) (#6183). [Ryszard Rozak, Antmicro Ltd.]
 * Support disable dotted references (#6154). [Ryszard Rozak, Antmicro Ltd.]
 * Support randomize() on class member selects (#6161). [Igor Zaworski, Antmicro Ltd.]
 * Support multiple variables on RHS of a `force` assignment (#6163). [Artur Bieniek, Antmicro Ltd.]]
+* Support covergroup extends, etc., as unsupported (#6160). [Artur Bieniek, Antmicro Ltd.]
 * Change control file `public_flat_*` and other signal attributes to support __ in names (#6140).
 * Fix constructor parameters in inheritance hierarchies (#6036) (#6070). [Petr Nohavica]
 * Fix cmake `-Wno` compiler flag testing (#6145). [Martin Stadler]
 * Fix class extends dotted error (#6162). [Igor Zaworski, Antmicro Ltd.]
 * Fix genvar error with `-O0` (#6165). [Max Wipfli]
 * Fix uninitialized thread PGO counters (#6167). [Bartłomiej Chmiel, Antmicro Ltd.]
-* Fix additional UNOPTFLAT combinational cycles automatically in DFG (#6168) (#6173). [Geza Lore]
+* Fix additional UNOPTFLAT combinational cycles automatically in DFG (#6168) (#6173) (#6176). [Geza Lore]
 * Fix omitting error when assigning to an input (#6169). [Artur Bieniek, Antmicro Ltd.]]
 * Fix param-dependent class typedef linking (#6171). [Igor Zaworski, Antmicro Ltd.]
+* Fix `--coverage-expr` null pointer dereference (#6181). [Igor Zaworski, Antmicro Ltd.]
+* Fix conflicting function/class name linking error (#6182). [Igor Zaworski, Antmicro Ltd.]
 
 
 Verilator 5.038 2025-07-08
