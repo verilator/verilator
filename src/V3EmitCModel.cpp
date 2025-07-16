@@ -503,8 +503,11 @@ class EmitCModel final : public EmitCFunc {
                         + "::hierName() const { return vlSymsp->name(); }\n");
         putns(modp, "const char* " + topClassName() + "::modelName() const { return \""
                         + topClassName() + "\"; }\n");
+        const int threads = v3Global.opt.hierChild()
+                                ? v3Global.opt.threads()
+                                : std::max(v3Global.opt.threads(), v3Global.opt.hierThreads());
         putns(modp, "unsigned " + topClassName() + "::threads() const { return "
-                        + cvtToStr(v3Global.opt.threads()) + "; }\n");
+                        + cvtToStr(threads) + "; }\n");
         putns(modp, "void " + topClassName()
                         + "::prepareClone() const { contextp()->prepareClone(); }\n");
         putns(modp, "void " + topClassName() + "::atClone() const {\n");
@@ -697,6 +700,6 @@ public:
 // EmitC class functions
 
 void V3EmitC::emitcModel() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { EmitCModel{v3Global.rootp()}; }
 }

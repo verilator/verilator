@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(make_main=False, v_flags2=["--exe", test.pli_filename])
+test.compile(verilator_flags2=["--exe --main --timing"])
 
 test.execute(expect_filename=test.golden_filename)
 

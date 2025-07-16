@@ -47,6 +47,11 @@ Summary:
 
    Display help and exit.
 
+.. option:: +verilator+noassert
+
+   Disable assert checking per runtime argument. This is the same as
+   calling :code:`VerilatedContext*->assertOn(false)` in the model.
+
 .. option:: +verilator+prof+exec+file+<filename>
 
    When a model was Verilated using :vlopt:`--prof-exec`, sets the
@@ -109,11 +114,6 @@ Summary:
    For $random and :vlopt:`--x-initial unique <--x-initial>`, set the
    simulation runtime random seed value.  If zero or not specified picks a
    value from the system random number generator.
-
-.. option:: +verilator+noassert
-
-   Disable assert checking per runtime argument. This is the same as
-   calling :code:`VerilatedContext*->assertOn(false)` in the model.
 
 .. option:: +verilator+V
 

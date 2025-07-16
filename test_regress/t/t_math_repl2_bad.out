@@ -1,4 +1,4 @@
-%Error: t/t_math_repl2_bad.v:28:30: More than a 16 Mbit replication, perhaps the replication factor was two's-complement negative: 4294967291
+%Error: t/t_math_repl2_bad.v:28:30: More than a 16 Mbit replication, perhaps the replication factor was two's-complement negative: 4294967291 (-5)
                                   : ... note: In instance 't'
    28 |          out <= {{(P24 - P29){1'b0}}, in};
       |                              ^

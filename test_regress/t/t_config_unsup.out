@@ -1,0 +1,77 @@
+%Error-UNSUPPORTED: t/t_config_unsup.v:24:1: Unsupported: config
+   24 | config cfg;
+      | ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_config_unsup.v:25:11: Unsupported: config cell
+   25 |    design t;
+      |           ^
+%Error-UNSUPPORTED: t/t_config_unsup.v:28:4: Unsupported: config rule
+   28 |    default liblist;   
+      |    ^~~~~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:29:4: Unsupported: config rule
+   29 |    default liblist liba libb;
+      |    ^~~~~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:32:4: Unsupported: config rule
+   32 |    instance t.m20 liblist;   
+      |    ^~~~~~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:33:4: Unsupported: config rule
+   33 |    instance t.m21 liblist libc;
+      |    ^~~~~~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:34:4: Unsupported: config rule
+   34 |    instance t.m22 liblist libc libd;   
+      |    ^~~~~~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:35:4: Unsupported: config rule
+   35 |    instance t.m23 liblist libc libd;   
+      |    ^~~~~~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:36:4: Unsupported: config rule
+   36 |    instance t.m24 liblist libc libd;   
+      |    ^~~~~~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:39:4: Unsupported: config rule
+   39 |    instance t.m30 use cell_identifier;
+      |    ^~~~~~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:39:19: Unsupported: config use
+   39 |    instance t.m30 use cell_identifier;
+      |                   ^~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:40:4: Unsupported: config rule
+   40 |    instance t.m31 use lib_id.cell_id;
+      |    ^~~~~~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:40:19: Unsupported: config use
+   40 |    instance t.m31 use lib_id.cell_id;
+      |                   ^~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:41:4: Unsupported: config rule
+   41 |    instance t.m32 use #();
+      |    ^~~~~~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:41:19: Unsupported: config use
+   41 |    instance t.m32 use #();
+      |                   ^~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:44:4: Unsupported: config rule
+   44 |    cell m40 liblist libc libd;
+      |    ^~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:44:9: Unsupported: config cell
+   44 |    cell m40 liblist libc libd;
+      |         ^~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:45:4: Unsupported: config rule
+   45 |    cell work.m41 liblist libc libd;
+      |    ^~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:45:9: Unsupported: config cell
+   45 |    cell work.m41 liblist libc libd;
+      |         ^~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:46:4: Unsupported: config rule
+   46 |    cell m42 use m42alt;
+      |    ^~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:46:9: Unsupported: config cell
+   46 |    cell m42 use m42alt;
+      |         ^~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:46:13: Unsupported: config use
+   46 |    cell m42 use m42alt;
+      |             ^~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:47:4: Unsupported: config rule
+   47 |    cell work.m43 use work.m43alt;
+      |    ^~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:47:9: Unsupported: config cell
+   47 |    cell work.m43 use work.m43alt;
+      |         ^~~~
+%Error-UNSUPPORTED: t/t_config_unsup.v:47:18: Unsupported: config use
+   47 |    cell work.m43 use work.m43alt;
+      |                  ^~~
+%Error: Exiting due to

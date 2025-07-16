@@ -260,7 +260,7 @@ How do I view waveforms (aka dumps or traces)?
 
 Verilator creates standard VCD (Value Change Dump) and FST files.  VCD
 files are viewable with the open-source
-`GTKWave <http://gtkwave.sourceforge.net/>`_,
+`GTKWave <https://gtkwave.sourceforge.net/>`_,
 `Surfer <https://surfer-project.org/>`_, Dinotrace (legacy), or any of the
 many closed-source viewer offerings; FST is supported only by GTKWave and
 Surfer.
@@ -335,7 +335,7 @@ How do I prevent my assertions from firing during reset?
 
 Call :code:`Verilated::assertOn(false)` before you first call the model,
 then turn it back on after reset.  It defaults to true.  When false, all
-assertions controlled by :vlopt:`--assert` are disabled.
+assertions are disabled.
 
 
 Why do I get "undefined reference to sc_time_stamp()?

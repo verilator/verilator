@@ -111,7 +111,7 @@ private:
         return savedCount;
     }
     void endVisitBase(uint32_t savedCount, AstNode* nodep) {
-        UINFO(8, "cost " << std::setw(6) << std::left << m_instrCount << "  " << nodep << endl);
+        UINFO(8, "cost " << std::setw(6) << std::left << m_instrCount << "  " << nodep);
         markCost(nodep);
         if (!m_ignoreRemaining) m_instrCount += savedCount;
     }
@@ -140,7 +140,6 @@ private:
         // the fromp() node which could be disproportionately large.
         const VisitBase vb{this, nodep};
         iterateAndNextConstNull(nodep->lsbp());
-        iterateAndNextConstNull(nodep->widthp());
     }
     void visit(AstConcat* nodep) override {
         if (m_ignoreRemaining) return;
@@ -168,13 +167,13 @@ private:
         iterateAndNextConstNull(nodep->condp());
         const uint32_t savedCount = m_instrCount;
 
-        UINFO(8, "thensp:\n");
+        UINFO(8, "thensp:");
         reset();
         iterateAndNextConstNull(nodep->thensp());
         uint32_t ifCount = m_instrCount;
         if (nodep->branchPred().unlikely()) ifCount = 0;
 
-        UINFO(8, "elsesp:\n");
+        UINFO(8, "elsesp:");
         reset();
         iterateAndNextConstNull(nodep->elsesp());
         uint32_t elseCount = m_instrCount;
@@ -197,12 +196,12 @@ private:
         iterateAndNextConstNull(nodep->condp());
         const uint32_t savedCount = m_instrCount;
 
-        UINFO(8, "?\n");
+        UINFO(8, "?");
         reset();
         iterateAndNextConstNull(nodep->thenp());
         const uint32_t ifCount = m_instrCount;
 
-        UINFO(8, ":\n");
+        UINFO(8, ":");
         reset();
         iterateAndNextConstNull(nodep->elsep());
         const uint32_t elseCount = m_instrCount;

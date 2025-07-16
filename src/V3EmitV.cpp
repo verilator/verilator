@@ -395,9 +395,13 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     void visit(AstPast* nodep) override {
         putfs(nodep, "$past(");
         iterateAndNextConstNull(nodep->exprp());
-        if (nodep->ticksp()) {
+        if (nodep->ticksp() || nodep->sentreep()) {
             puts(", ");
             iterateAndNextConstNull(nodep->ticksp());
+            if (nodep->sentreep()) {
+                puts(", ");
+                iterateAndNextConstNull(nodep->sentreep());
+            }
         }
         puts(")");
     }
@@ -642,11 +646,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         }
         puts("[");
         if (VN_IS(nodep->lsbp(), Const)) {
-            if (nodep->widthp()->isOne()) {
+            if (nodep->widthConst() == 1) {
                 puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt() + offset));
             } else {
-                puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt()
-                              + VN_AS(nodep->widthp(), Const)->toSInt() + offset - 1));
+                puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt() + nodep->widthConst() + offset
+                              - 1));
                 puts(":");
                 puts(cvtToStr(VN_AS(nodep->lsbp(), Const)->toSInt() + offset));
             }
@@ -657,7 +661,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
                 puts(cvtToStr(offset));
             }
             putfs(nodep, "+:");
-            iterateAndNextConstNull(nodep->widthp());
+            puts(cvtToStr(nodep->widthConst()));
             puts("]");
         }
         puts("]");
@@ -779,6 +783,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
             puts("\n???? // "s + nodep->prettyTypeName() + " -> UNLINKED\n");
         }
     }
+    void visit(AstRequireDType* nodep) override { iterateConst(nodep->lhsp()); }
     void visit(AstModport* nodep) override {
         puts(nodep->verilogKwd());
         puts(" ");
@@ -994,7 +999,7 @@ void V3EmitV::verilogForTree(const AstNode* nodep, std::ostream& os) {
 }
 
 void V3EmitV::emitvFiles() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     for (AstNodeFile* filep = v3Global.rootp()->filesp(); filep;
          filep = VN_AS(filep->nextp(), NodeFile)) {
         AstVFile* const vfilep = VN_CAST(filep, VFile);
@@ -1008,7 +1013,7 @@ void V3EmitV::emitvFiles() {
 }
 
 void V3EmitV::debugEmitV(const string& filename) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     V3OutVFile of{filename};
     { EmitVFileVisitor{v3Global.rootp(), &of, true, true}; }
 }

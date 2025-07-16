@@ -42,7 +42,7 @@ if test.vlt_all:
     # We expect to combine sequent functions across multiple instances of
     # l2, l3, l4, l5. If this number drops, please confirm this has not broken.
     test.file_grep(test.stats, r'Optimizations, Combined CFuncs\s+(\d+)',
-                   (85 if test.vltmt else 67))
+                   (91 if test.vltmt else 87))
 
     # Everything should use relative references
     check_relative_refs("t", True)

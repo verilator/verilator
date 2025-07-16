@@ -20,8 +20,18 @@ module t (/*AUTOARG*/
    always_comb array[0] = i;
 
    always @ (posedge clk)
-     array[1] <= array[0];
+     array[0] <= array[0];
 
-   assign o = array[idx];
+   struct {
+     logic [3:0] a;
+     logic [3:0] b;
+   } unpacked;
+
+   always_comb unpacked.a = i;
+
+   always @ (posedge clk)
+     unpacked.b <= unpacked.a;
+
+   assign o = array[idx] + unpacked.a;
 
 endmodule

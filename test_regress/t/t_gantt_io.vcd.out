@@ -44,15 +44,20 @@ b110 v8
 b101 v9
 b1 va
 b10 vb
-#2905
-bz v0
-bz v1
-bz v2
-b0 va
+#3795
+b1010 v0
+b0 v1
+b1010 v2
+b10 va
 #3800
 bz v8
 b111 v9
 b1 vb
+#4850
+bz v0
+bz v1
+bz v2
+b1 va
 #4906
 b1000 v9
 b1 vb
@@ -60,6 +65,11 @@ b1 vb
 b101 v3
 b1 v4
 b101 v5
+b10 va
+#5905
+bz v0
+bz v1
+bz v2
 b1 va
 #6090
 bz v3
@@ -111,10 +121,10 @@ bz v2
 b0 va
 #9917
 b1010 v8
-b10 vb
+b11 vb
 #9954
 b1011 v9
-b10 vb
+b11 vb
 #10255
 b1011 v3
 b1 v4
@@ -199,10 +209,10 @@ b0 va
 bz v6
 #21019
 b1010 v8
-b10 vb
+b11 vb
 #21047
 b1011 v9
-b10 vb
+b11 vb
 #21140
 b1011 v3
 b1 v4

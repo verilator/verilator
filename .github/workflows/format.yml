@@ -7,6 +7,8 @@ on:
   push:
   pull_request_target:
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   format:
     runs-on: ubuntu-22.04
@@ -26,6 +28,7 @@ jobs:
         run: |
           bash ci/ci-install.bash &&
           sudo apt-get install clang-format-14 yapf3 &&
+          sudo pip3 install gersemi mbake &&
           git config --global user.email "action@example.com" &&
           git config --global user.name "github action"
       - name: Format code

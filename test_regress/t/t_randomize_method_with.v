@@ -89,12 +89,12 @@ function automatic int return_2();
 endfunction
 
 class Cls;
-   rand int a;
-   rand int b;
+  rand int a;
+  rand int b;
 endclass
 
 class Cls2 extends Cls;
-   rand int c;
+  rand int c;
 endclass
 
 module mwith();

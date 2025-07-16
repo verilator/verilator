@@ -132,7 +132,7 @@ private:
 class CCtorsVisitor final : public VNVisitor {
     // NODE STATE
 
-    // STATE
+    // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp = nullptr;  // Current module
     AstCFunc* m_cfuncp = nullptr;  // Current function
     V3CCtorsBuilder* m_varResetp = nullptr;  // Builder of _ctor_var_reset
@@ -260,7 +260,7 @@ void V3CCtors::evalAsserts() {
 }
 
 void V3CCtors::cctorsAll() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     evalAsserts();
     { CCtorsVisitor{v3Global.rootp()}; }
     V3Global::dumpCheckGlobalTree("cctors", 0, dumpTreeEitherLevel() >= 3);

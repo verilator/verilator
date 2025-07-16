@@ -1,0 +1,5 @@
+%Error-BADVLTPRAGMA: t/t_lint_badvltpragma_bad.v:7:4: Unknown verilator comment: '/*verilator lintt_off WIDTH <--- Warning (lint_off misspelled)*/'
+    7 |    /*verilator lintt_off WIDTH <--- Warning (lint_off misspelled)*/ 
+      |    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                     ... For error description see https://verilator.org/warn/BADVLTPRAGMA?v=latest
+%Error: Exiting due to

@@ -170,6 +170,7 @@ L<https://verilator.org/guide/latest/exe_verilator_coverage.html>.
     --annotate-all                All files should be shown.
     --annotate-min <count>        Minimum occurrence count for uncovered.
     --annotate-points             Annotates info from each coverage point.
+    --filter-type <regex>         Keep only records of given coverage type.
     --help                        Displays this message and version and exits.
     --rank                        Compute relative importance of tests.
     --unlink                      With --write, unlink all inputs

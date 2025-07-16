@@ -26,12 +26,153 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // DfgGraph
 //------------------------------------------------------------------------------
 
-DfgGraph::DfgGraph(AstModule& module, const string& name)
-    : m_modulep{&module}
+DfgGraph::DfgGraph(AstModule* modulep, const string& name)
+    : m_modulep{modulep}
     , m_name{name} {}
 
 DfgGraph::~DfgGraph() {
     forEachVertex([](DfgVertex& vtxp) { delete &vtxp; });
+}
+
+std::unique_ptr<DfgGraph> DfgGraph::clone() const {
+    const bool scoped = !modulep();
+
+    DfgGraph* const clonep = new DfgGraph{modulep(), name()};
+
+    // Map from original vertex to clone
+    std::unordered_map<const DfgVertex*, DfgVertex*> vtxp2clonep(size() * 2);
+
+    // Clone constVertices
+    for (const DfgConst& vtx : m_constVertices) {
+        DfgConst* const cp = new DfgConst{*clonep, vtx.fileline(), vtx.num()};
+        vtxp2clonep.emplace(&vtx, cp);
+    }
+    // Clone variable vertices
+    for (const DfgVertexVar& vtx : m_varVertices) {
+        const DfgVertexVar* const vp = vtx.as<DfgVertexVar>();
+        DfgVertexVar* cp = nullptr;
+
+        switch (vtx.type()) {
+        case VDfgType::atVarArray: {
+            if (scoped) {
+                cp = new DfgVarArray{*clonep, vp->varScopep()};
+            } else {
+                cp = new DfgVarArray{*clonep, vp->varp()};
+            }
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
+        case VDfgType::atVarPacked: {
+            if (scoped) {
+                cp = new DfgVarPacked{*clonep, vp->varScopep()};
+            } else {
+                cp = new DfgVarPacked{*clonep, vp->varp()};
+            }
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
+        default: {
+            vtx.v3fatalSrc("Unhandled variable vertex type: " + vtx.typeName());
+            VL_UNREACHABLE;
+            break;
+        }
+        }
+
+        if (vp->hasDfgRefs()) cp->setHasDfgRefs();
+        if (vp->hasModRefs()) cp->setHasModRefs();
+        if (vp->hasExtRefs()) cp->setHasExtRefs();
+    }
+    // Clone operation vertices
+    for (const DfgVertex& vtx : m_opVertices) {
+        switch (vtx.type()) {
+#include "V3Dfg__gen_clone_cases.h"  // From ./astgen
+        case VDfgType::atSel: {
+            DfgSel* const cp = new DfgSel{*clonep, vtx.fileline(), vtx.dtypep()};
+            cp->lsb(vtx.as<DfgSel>()->lsb());
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
+        case VDfgType::atMux: {
+            DfgMux* const cp = new DfgMux{*clonep, vtx.fileline(), vtx.dtypep()};
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
+        case VDfgType::atSpliceArray: {
+            DfgSpliceArray* const cp = new DfgSpliceArray{*clonep, vtx.fileline(), vtx.dtypep()};
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
+        case VDfgType::atSplicePacked: {
+            DfgSplicePacked* const cp = new DfgSplicePacked{*clonep, vtx.fileline(), vtx.dtypep()};
+            vtxp2clonep.emplace(&vtx, cp);
+            break;
+        }
+        default: {
+            vtx.v3fatalSrc("Unhandled operation vertex type: " + vtx.typeName());
+            VL_UNREACHABLE;
+            break;
+        }
+        }
+    }
+    UASSERT(size() == clonep->size(), "Size of clone should be the same");
+
+    // Constants have no inputs
+    // Hook up inputs of cloned variables
+    for (const DfgVertexVar& vtx : m_varVertices) {
+        // All variable vertices are unary
+        if (DfgVertex* const srcp = vtx.srcp()) {
+            vtxp2clonep.at(&vtx)->as<DfgVertexVar>()->srcp(vtxp2clonep.at(srcp));
+        }
+    }
+    // Hook up inputs of cloned operation vertices
+    for (const DfgVertex& vtx : m_opVertices) {
+        if (vtx.is<DfgVertexVariadic>()) {
+            switch (vtx.type()) {
+            case VDfgType::atSpliceArray: {
+                const DfgSpliceArray* const vp = vtx.as<DfgSpliceArray>();
+                DfgSpliceArray* const cp = vtxp2clonep.at(vp)->as<DfgSpliceArray>();
+                vp->forEachSourceEdge([&](const DfgEdge& edge, size_t i) {
+                    if (DfgVertex* const srcp = edge.sourcep()) {
+                        cp->addDriver(vp->driverFileLine(i),  //
+                                      vp->driverIndex(i),  //
+                                      vtxp2clonep.at(srcp));
+                    }
+                });
+                break;
+            }
+            case VDfgType::atSplicePacked: {
+                const DfgSplicePacked* const vp = vtx.as<DfgSplicePacked>();
+                DfgSplicePacked* const cp = vtxp2clonep.at(vp)->as<DfgSplicePacked>();
+                vp->forEachSourceEdge([&](const DfgEdge& edge, size_t i) {
+                    if (DfgVertex* const srcp = edge.sourcep()) {
+                        cp->addDriver(vp->driverFileLine(i),  //
+                                      vp->driverLsb(i),  //
+                                      vtxp2clonep.at(srcp));
+                    }
+                });
+                break;
+            }
+            default: {
+                vtx.v3fatalSrc("Unhandled DfgVertexVariadic sub type: " + vtx.typeName());
+                VL_UNREACHABLE;
+                break;
+            }
+            }
+        } else {
+            DfgVertex* const cp = vtxp2clonep.at(&vtx);
+            const auto oSourceEdges = vtx.sourceEdges();
+            auto cSourceEdges = cp->sourceEdges();
+            UASSERT_OBJ(oSourceEdges.second == cSourceEdges.second, &vtx,
+                        "Mismatched source count");
+            for (size_t i = 0; i < oSourceEdges.second; ++i) {
+                if (DfgVertex* const srcp = oSourceEdges.first[i].sourcep()) {
+                    cSourceEdges.first[i].relinkSource(vtxp2clonep.at(srcp));
+                }
+            }
+        }
+    }
+
+    return std::unique_ptr<DfgGraph>{clonep};
 }
 
 void DfgGraph::addGraph(DfgGraph& other) {
@@ -55,15 +196,57 @@ void DfgGraph::addGraph(DfgGraph& other) {
     m_opVertices.splice(m_opVertices.end(), other.m_opVertices);
 }
 
+std::string DfgGraph::makeUniqueName(const std::string& prefix, size_t n) {
+    // Construct the tmpNameStub if we have not done so yet
+    if (m_tmpNameStub.empty()) {
+        // Use the hash of the graph name (avoid long names and non-identifiers)
+        const std::string name = V3Hash{m_name}.toString();
+        // We need to keep every variable globally unique, and graph hashed
+        // names might not be, so keep a static table to track multiplicity
+        static std::unordered_map<std::string, uint32_t> s_multiplicity;
+        m_tmpNameStub += '_' + name + '_' + std::to_string(s_multiplicity[name]++) + '_';
+    }
+    // Assemble the globally unique name
+    return "__Vdfg" + prefix + m_tmpNameStub + std::to_string(n);
+}
+
+DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& name, AstNodeDType* dtypep,
+                                   AstScope* scopep) {
+    UASSERT_OBJ(!!scopep != !!modulep(), flp,
+                "makeNewVar scopep should only be provided for a scoped DfgGraph");
+
+    // Create AstVar
+    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
+
+    if (scopep) {
+        // Add AstVar to the scope's module
+        scopep->modp()->addStmtsp(varp);
+        // Create AstVarScope
+        AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};
+        // Add to scope
+        scopep->addVarsp(vscp);
+        // Create and return the corresponding variable vertex
+        if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) return new DfgVarArray{*this, vscp};
+        return new DfgVarPacked{*this, vscp};
+    } else {
+        // Add AstVar to containing module
+        modulep()->addStmtsp(varp);
+        // Create and return the corresponding variable vertex
+        if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) return new DfgVarArray{*this, varp};
+        return new DfgVarPacked{*this, varp};
+    }
+}
+
 static const string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) + '"'; }
 
 // Dump one DfgVertex in Graphviz format
 static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
 
     if (const DfgVarPacked* const varVtxp = vtx.cast<DfgVarPacked>()) {
+        AstNode* const nodep = varVtxp->nodep();
         AstVar* const varp = varVtxp->varp();
         os << toDotId(vtx);
-        os << " [label=\"" << varp->name() << "\nW" << varVtxp->width() << " / F"
+        os << " [label=\"" << nodep->name() << "\nW" << varVtxp->width() << " / F"
            << varVtxp->fanout() << '"';
 
         if (varp->direction() == VDirection::INPUT) {
@@ -88,10 +271,11 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     }
 
     if (const DfgVarArray* const arrVtxp = vtx.cast<DfgVarArray>()) {
+        AstNode* const nodep = arrVtxp->nodep();
         AstVar* const varp = arrVtxp->varp();
         const int elements = VN_AS(arrVtxp->dtypep(), UnpackArrayDType)->elementsConst();
         os << toDotId(vtx);
-        os << " [label=\"" << varp->name() << "[" << elements << "]\"";
+        os << " [label=\"" << nodep->name() << "[" << elements << "]\"";
         if (varp->direction() == VDirection::INPUT) {
             os << ", shape=box3d, style=filled, fillcolor=chartreuse2";  // Green
         } else if (varp->direction() == VDirection::OUTPUT) {
@@ -145,6 +329,25 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         return;
     }
 
+    if (vtx.is<DfgVertexSplice>()) {
+        os << toDotId(vtx);
+        os << " [label=\"" << vtx.typeName() << "\n";
+        if (const DfgSpliceArray* const sp = vtx.cast<DfgSpliceArray>()) {
+            const int elements = VN_AS(sp->dtypep(), UnpackArrayDType)->elementsConst();
+            os << "_[" << elements << "]";
+        } else {
+            os << "W" << vtx.width();
+        }
+        os << " / F" << vtx.fanout() << '"';
+        if (vtx.hasMultipleSinks()) {
+            os << ", shape=doubleoctagon";
+        } else {
+            os << ", shape=octagon";
+        }
+        os << "]\n";
+        return;
+    }
+
     os << toDotId(vtx);
     os << " [label=\"" << vtx.typeName() << "\nW" << vtx.width() << " / F" << vtx.fanout() << '"';
     if (vtx.hasMultipleSinks()) {
@@ -168,7 +371,7 @@ static void dumpDotVertexAndSourceEdges(std::ostream& os, const DfgVertex& vtx) 
     vtx.forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {  //
         if (edge.sourcep()) {
             string headLabel;
-            if (vtx.arity() > 1 || vtx.is<DfgVertexVar>()) headLabel = vtx.srcName(idx);
+            if (vtx.arity() > 1 || vtx.is<DfgVertexSplice>()) headLabel = vtx.srcName(idx);
             dumpDotEdge(os, edge, headLabel);
         }
     });
@@ -275,7 +478,7 @@ void DfgGraph::dumpDotAllVarConesPrefixed(const string& label) const {
         if (!sinkp) return;
 
         // Open output file
-        const string coneName{prefix + sinkp->varp()->name()};
+        const string coneName{prefix + sinkp->nodep()->name()};
         const string fileName{v3Global.debugFilename(coneName) + ".dot"};
         const std::unique_ptr<std::ofstream> os{V3File::new_ofstream(fileName)};
         if (os->fail()) v3fatal("Can't write file: " << fileName);
@@ -353,24 +556,34 @@ bool DfgVertex::selfEquals(const DfgVertex& that) const { return true; }
 V3Hash DfgVertex::selfHash() const { return V3Hash{}; }
 
 bool DfgVertex::equals(const DfgVertex& that, EqualsCache& cache) const {
+    // If same vertex, then equal
     if (this == &that) return true;
+
+    // If different type, then not equal
     if (this->type() != that.type()) return false;
+
+    // If different data type, then not equal
     if (this->dtypep() != that.dtypep()) return false;
+
+    // If different number of inputs, then not equal
+    auto thisPair = this->sourceEdges();
+    const DfgEdge* const thisSrcEdgesp = thisPair.first;
+    const size_t thisArity = thisPair.second;
+    auto thatPair = that.sourceEdges();
+    const DfgEdge* const thatSrcEdgesp = thatPair.first;
+    const size_t thatArity = thatPair.second;
+    if (thisArity != thatArity) return false;
+
+    // Check vertex specifics
     if (!this->selfEquals(that)) return false;
 
+    // Check sources
     const auto key = (this < &that) ? EqualsCache::key_type{this, &that}  //
                                     : EqualsCache::key_type{&that, this};
     // Note: the recursive invocation can cause a re-hash but that will not invalidate references
     uint8_t& result = cache[key];
     if (!result) {
         result = 2;  // Assume equals
-        auto thisPair = this->sourceEdges();
-        const DfgEdge* const thisSrcEdgesp = thisPair.first;
-        const size_t thisArity = thisPair.second;
-        auto thatPair = that.sourceEdges();
-        const DfgEdge* const thatSrcEdgesp = thatPair.first;
-        const size_t thatArity = thatPair.second;
-        UASSERT_OBJ(thisArity == thatArity, this, "Same type vertices must have same arity!");
         for (size_t i = 0; i < thisArity; ++i) {
             const DfgVertex* const thisSrcVtxp = thisSrcEdgesp[i].m_sourcep;
             const DfgVertex* const thatSrcVtxp = thatSrcEdgesp[i].m_sourcep;
@@ -393,7 +606,12 @@ V3Hash DfgVertex::hash() {
         // variables, which we rely on.
         if (!is<DfgVertexVar>()) {
             hash += m_type;
-            hash += width();  // Currently all non-variable vertices are packed, so this is safe
+            if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep(), UnpackArrayDType)) {
+                hash += adtypep->elementsConst();
+                // TODO: maybe include sub-dtype, but not hugely important at the moment
+            } else {
+                hash += width();
+            }
             const auto pair = sourceEdges();
             const DfgEdge* const edgesp = pair.first;
             const size_t arity = pair.second;
@@ -409,6 +627,85 @@ uint32_t DfgVertex::fanout() const {
     uint32_t result = 0;
     forEachSinkEdge([&](const DfgEdge&) { ++result; });
     return result;
+}
+
+DfgVertexVar* DfgVertex::getResultVar() {
+    // It's easy if the vertex is already a variable ...
+    if (DfgVertexVar* const varp = this->cast<DfgVertexVar>()) return varp;
+
+    // Inspect existing variables written by this vertex, and choose one
+    DfgVertexVar* resp = nullptr;
+    // cppcheck-has-bug-suppress constParameter
+    this->forEachSink([&resp](DfgVertex& sink) {
+        DfgVertexVar* const varp = sink.cast<DfgVertexVar>();
+        if (!varp) return;
+        // Ignore SystemC variables, they cannot participate in expressions or
+        // be assigned rvalue expressions.
+        if (varp->varp()->isSc()) return;
+        // First variable found
+        if (!resp) {
+            resp = varp;
+            return;
+        }
+        // Prefer those variables that must be kept anyway
+        const bool keepOld = resp->keep() || resp->hasDfgRefs();
+        const bool keepNew = varp->keep() || varp->hasDfgRefs();
+        if (keepOld != keepNew) {
+            if (!keepOld) resp = varp;
+            return;
+        }
+        // Prefer those that already have module references
+        if (resp->hasModRefs() != varp->hasModRefs()) {
+            if (!resp->hasModRefs()) resp = varp;
+            return;
+        }
+        // Prefer the earlier one in source order
+        const FileLine& oldFlp = *(resp->fileline());
+        const FileLine& newFlp = *(varp->fileline());
+        if (const int cmp = oldFlp.operatorCompare(newFlp)) {
+            if (cmp > 0) resp = varp;
+            return;
+        }
+        // Prefer the one with the lexically smaller name
+        if (const int cmp = resp->nodep()->name().compare(varp->nodep()->name())) {
+            if (cmp > 0) resp = varp;
+            return;
+        }
+        // 'resp' and 'varp' are all the same, keep using the existing 'resp'
+    });
+    return resp;
+}
+
+AstScope* DfgVertex::scopep(ScopeCache& cache, bool tryResultVar) VL_MT_DISABLED {
+    // If this is a variable, we are done
+    if (DfgVertexVar* const varp = this->cast<DfgVertexVar>()) return varp->varScopep()->scopep();
+
+    // Try the result var first if instructed (usully only in the recursive case)
+    if (tryResultVar) {
+        if (DfgVertexVar* const varp = this->getResultVar()) return varp->varScopep()->scopep();
+    }
+
+    // Look up cache
+    const auto pair = cache.emplace(this, nullptr);
+    if (pair.second) {
+        // Find scope based on sources, falling back on the root scope
+        AstScope* const rootp = v3Global.rootp()->topScopep()->scopep();
+        AstScope* foundp = rootp;
+        const auto edges = sourceEdges();
+        for (size_t i = 0; i < edges.second; ++i) {
+            DfgEdge& edge = edges.first[i];
+            foundp = edge.sourcep()->scopep(cache, true);
+            if (foundp != rootp) break;
+        }
+        pair.first->second = foundp;
+    }
+
+    // If the cache entry exists, but have not set the mapping yet, then we have a circualr graph
+    UASSERT_OBJ(pair.first->second, this,
+                "DfgVertex::scopep called on graph with circular operations");
+
+    // Done
+    return pair.first->second;
 }
 
 void DfgVertex::unlinkDelete(DfgGraph& dfg) {
@@ -444,18 +741,56 @@ bool DfgSel::selfEquals(const DfgVertex& that) const { return lsb() == that.as<D
 
 V3Hash DfgSel::selfHash() const { return V3Hash{lsb()}; }
 
+// DfgSpliceArray ----------
+
+bool DfgSpliceArray::selfEquals(const DfgVertex& that) const {
+    const DfgSpliceArray* const thatp = that.as<DfgSpliceArray>();
+    const size_t arity = this->arity();
+    for (size_t i = 0; i < arity; ++i) {
+        if (driverIndex(i) != thatp->driverIndex(i)) return false;
+    }
+    return true;
+}
+
+V3Hash DfgSpliceArray::selfHash() const {
+    V3Hash hash;
+    const size_t arity = this->arity();
+    for (size_t i = 0; i < arity; ++i) hash += driverIndex(i);
+    return hash;
+}
+
+// DfgSplicePacked ----------
+
+bool DfgSplicePacked::selfEquals(const DfgVertex& that) const {
+    const DfgSplicePacked* const thatp = that.as<DfgSplicePacked>();
+    const size_t arity = this->arity();
+    for (size_t i = 0; i < arity; ++i) {
+        if (driverLsb(i) != thatp->driverLsb(i)) return false;
+    }
+    return true;
+}
+
+V3Hash DfgSplicePacked::selfHash() const {
+    V3Hash hash;
+    const size_t arity = this->arity();
+    for (size_t i = 0; i < arity; ++i) hash += driverLsb(i);
+    return hash;
+}
+
 // DfgVertexVar ----------
 
 bool DfgVertexVar::selfEquals(const DfgVertex& that) const {
-    UASSERT_OBJ(varp() != that.as<DfgVertexVar>()->varp(), this,
-                "There should only be one DfgVertexVar for a given AstVar");
+    UASSERT_OBJ(nodep()->type() == that.as<DfgVertexVar>()->nodep()->type(), this,
+                "Both DfgVertexVar should be scoped or unscoped");
+    UASSERT_OBJ(nodep() != that.as<DfgVertexVar>()->nodep(), this,
+                "There should only be one DfgVertexVar for a given AstVar or AstVarScope");
     return false;
 }
 
 V3Hash DfgVertexVar::selfHash() const {
     V3Hash hash;
-    hash += m_varp->name();
-    hash += m_varp->varType();
+    hash += nodep()->name();
+    hash += varp()->varType();
     return hash;
 }
 

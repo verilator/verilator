@@ -1,0 +1,2 @@
+%Error: Unmatched brackets in variable substitution in file: $(GETENV_NO_END_PAREN
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

@@ -40,7 +40,7 @@ class ClassVisitor final : public VNVisitor {
     const VNUser1InUse m_inuser1;
 
     // MEMBERS
-    string m_prefix;  // String prefix to add to name based on hier
+    string m_prefix;  // String prefix to add to class name based on hier
     V3UniqueNames m_names;  // For unique naming of structs and unions
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeModule* m_classPackagep = nullptr;  // Package moving into
@@ -57,28 +57,18 @@ class ClassVisitor final : public VNVisitor {
 
     // METHODS
 
-    bool recurseImplements(AstClass* nodep, bool setit) {
-        // Returns true to set useVirtualPublic().
-        // If there's an implements of an interface class then we have
-        // multiple classes that point to same object, that need same
-        // VlClass (the diamond problem). C++ will require we use 'virtual
-        // public' for VlClass.  So, we need the interface class, and all
-        // classes above, and any below using any implements to use
-        // 'virtual public' via useVirtualPublic().
-        if (nodep->useVirtualPublic()) return true;  // Short-circuit
-        if (nodep->isInterfaceClass()) setit = true;
+    void recurseImplements(AstClass* nodep) {
+        // In SystemVerilog, we have two inheritance chains:
+        // - extends of concrete clasess: mapped to non-virtual C++ inheritance
+        //   as there is only single ancestor allowed
+        // - implements of concrete classes / extends of interface classes: mapped
+        //   to virtual inheritance to allow diamond patterns with multiple ancestors
+        if (nodep->useVirtualPublic()) return;  // Short-circuit to exit diamond cycles
+        if (nodep->isInterfaceClass()) { nodep->useVirtualPublic(true); }
         for (const AstClassExtends* extp = nodep->extendsp(); extp;
              extp = VN_AS(extp->nextp(), ClassExtends)) {
-            if (recurseImplements(extp->classp(), setit)) setit = true;
+            recurseImplements(extp->classp());
         }
-        if (setit) {
-            nodep->useVirtualPublic(true);
-            for (const AstClassExtends* extp = nodep->extendsp(); extp;
-                 extp = VN_AS(extp->nextp(), ClassExtends)) {
-                (void)recurseImplements(extp->classp(), true);
-            }
-        }
-        return setit;
     }
 
     // VISITORS
@@ -89,11 +79,11 @@ class ClassVisitor final : public VNVisitor {
         nodep->name(m_prefix + nodep->name());
         nodep->unlinkFrBack();
         v3Global.rootp()->addModulesp(nodep);
-        (void)recurseImplements(nodep, false);
+        recurseImplements(nodep);
         // Make containing package
         // Note origName is the same as the class origName so errors look correct
         AstClassPackage* const packagep
-            = new AstClassPackage{nodep->fileline(), nodep->origName()};
+            = new AstClassPackage{nodep->fileline(), nodep->origName(), nodep->libname()};
         packagep->name(nodep->name() + "__Vclpkg");
         nodep->editCountInc();
         nodep->classOrPackagep(packagep);
@@ -138,6 +128,7 @@ class ClassVisitor final : public VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         // Visit for NodeModules that are not AstClass (AstClass is-a AstNodeModule)
+        // Classes are always under a Package (perhaps $unit) or a module
         VL_RESTORER(m_prefix);
         VL_RESTORER(m_modp);
         m_modp = nodep;
@@ -243,7 +234,7 @@ public:
         for (auto moved : m_toScopeMoves) {
             AstNode* const nodep = moved.first;
             AstScope* const scopep = moved.second;
-            UINFO(9, "moving " << nodep << " to " << scopep << endl);
+            UINFO(9, "moving " << nodep << " to " << scopep);
             if (VN_IS(nodep, NodeFTask)) {
                 scopep->addBlocksp(nodep->unlinkFrBack());
             } else if (VN_IS(nodep, Var)) {
@@ -261,7 +252,7 @@ public:
         for (auto moved : m_toPackageMoves) {
             AstNode* const nodep = moved.first;
             AstNodeModule* const modp = moved.second;
-            UINFO(9, "moving " << nodep << " to " << modp << endl);
+            UINFO(9, "moving " << nodep << " to " << modp);
             nodep->unlinkFrBack();
             modp->addStmtsp(nodep);
         }
@@ -294,7 +285,7 @@ public:
 // Class class functions
 
 void V3Class::classAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { ClassVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("class", 0, dumpTreeEitherLevel() >= 3);
 }

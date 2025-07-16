@@ -25,7 +25,7 @@ module t;
 endmodule
 
 module sub (
-    intf intf
+    intf intf   // Having this named same "intf intf" important for V3LinkDot coverage
 );
 
     if (intf.A == 10) begin

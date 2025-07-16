@@ -30,6 +30,21 @@ module t (/*AUTOARG*/
          $timeformat(-9, 3, "ns", 8);
          $write("-9,3,ns,8: [%0t] 0t time [%t] No0 time  p=%p 0p=%0p\n",
                 $time, $time, $time, $time);
+         $timeformat(-9, 3, "ns");
+         $write("-9,3,ns  : [%0t] 0t time [%t] No0 time  p=%p 0p=%0p\n",
+                $time, $time, $time, $time);
+         $timeformat(-9, 3);
+         $write("-9,3:      [%0t] 0t time [%t] No0 time  p=%p 0p=%0p\n",
+                $time, $time, $time, $time);
+         $timeformat(-9);
+         $write("-9:        [%0t] 0t time [%t] No0 time  p=%p 0p=%0p\n",
+                $time, $time, $time, $time);
+         $timeformat();
+         $write(":          [%0t] 0t time [%t] No0 time  p=%p 0p=%0p\n",
+                $time, $time, $time, $time);
+         $timeformat(-9,,,);
+         $write("-9,,,:     [%0t] 0t time [%t] No0 time  p=%p 0p=%0p\n",
+                $time, $time, $time, $time);
          $write("\n");
          $write("*-* All Finished *-*\n");
          $finish;

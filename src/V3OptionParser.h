@@ -153,7 +153,7 @@ public:
 
     // CONSTRUCTORS
     explicit AppendHelper(V3OptionParser& parser)
-        : m_parser(parser) {}
+        : m_parser{parser} {}
 };
 
 #define V3OPTION_PARSER_DECL_TAGS \

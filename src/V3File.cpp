@@ -97,7 +97,7 @@ class V3FileDependImp final {
                     m_stat.st_mtime = 1;
                     m_exists = false;
                     // Not an error... This can occur due to `line directives in the .vpp files
-                    UINFO(1, "-Info: File not statable: " << filename() << endl);
+                    UINFO(1, "-Info: File not statable: " << filename());
                 }
             }
         }
@@ -215,7 +215,7 @@ void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn
 bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn) {
     const std::unique_ptr<std::ifstream> ifp{V3File::new_ifstream_nodepend(filename)};
     if (ifp->fail()) {
-        UINFO(2, "   --check-times failed: no input " << filename << endl);
+        UINFO(2, "   --check-times failed: no input " << filename);
         return false;
     }
     {
@@ -231,7 +231,7 @@ bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn
         const string chkCmdline = V3Os::getline(*ifp, '"');
         const string cmdline = stripQuotes(cmdlineIn);
         if (cmdline != chkCmdline) {
-            UINFO(2, "   --check-times failed: different command line\n");
+            UINFO(2, "   --check-times failed: different command line");
             return false;
         }
     }
@@ -261,7 +261,7 @@ bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn
         struct stat chkStat;
         const int err = stat(chkFilename.c_str(), &chkStat);
         if (err != 0) {
-            UINFO(2, "   --check-times failed: missing " << chkFilename << endl);
+            UINFO(2, "   --check-times failed: missing " << chkFilename);
             return false;
         }
         // UINFO(9," got d="<<chkDir<<" s="<<chkSize<<" ct="<<chkCstime<<"."
@@ -387,7 +387,7 @@ private:
         if (!m_pidExited && waitpid(m_pid, &m_pidStatus, hang ? 0 : WNOHANG)) {
             UINFO(1, "--pipe-filter: Exited, status "
                          << m_pidStatus << " exit=" << WEXITSTATUS(m_pidStatus) << " err"
-                         << std::strerror(errno) << endl);
+                         << std::strerror(errno));
             m_readEof = true;
             m_pidExited = true;
         }
@@ -402,7 +402,7 @@ private:
             if (size > 0 && size < todo) todo = size;
             errno = 0;
             const ssize_t got = read(fd, buf, todo);
-            // UINFO(9,"RD GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);
+            // UINFO(9, "RD GOT g " << got << " e " << errno << " " << strerror(errno));
             // usleep(50*1000);
             if (got > 0) {
                 outl.push_back(string(buf, got));
@@ -424,7 +424,7 @@ private:
     // cppverilator-suppress unusedFunction unusedPrivateFunction
     string readFilterLine() {
         // Slow, but we don't need it much
-        UINFO(9, "readFilterLine\n");
+        UINFO(9, "readFilterLine");
         string line;
         while (!m_readEof) {
             StrList outl;
@@ -458,7 +458,7 @@ private:
         while (!m_readEof && out.length() > offset) {
             errno = 0;
             const int got = write(m_writeFd, (out.c_str()) + offset, out.length() - offset);
-            // UINFO(9,"WR GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);
+            // UINFO(9, "WR GOT g " << got << " e " << errno << " " << strerror(errno));
             // usleep(50*1000);
             if (got > 0) {
                 offset += got;
@@ -502,12 +502,12 @@ private:
             v3fatal("--pipe-filter: stdin/stdout closed before pipe opened\n");
         }
 
-        UINFO(1, "--pipe-filter: /bin/sh -c " << command << endl);
+        UINFO(1, "--pipe-filter: /bin/sh -c " << command);
 
         const pid_t pid = fork();
         if (pid < 0) v3fatal("--pipe-filter: fork failed: " << std::strerror(errno));
         if (pid == 0) {  // Child
-            UINFO(6, "In child\n");
+            UINFO(6, "In child");
             close(fd_stdin[P_WR]);
             dup2(fd_stdin[P_RD], 0);
             close(fd_stdout[P_RD]);
@@ -521,7 +521,7 @@ private:
         } else {  // Parent
             UINFO(6, "In parent, child pid " << pid << " stdin " << fd_stdin[P_WR] << "->"
                                              << fd_stdin[P_RD] << " stdout " << fd_stdout[P_WR]
-                                             << "->" << fd_stdout[P_RD] << endl);
+                                             << "->" << fd_stdout[P_RD]);
             m_pid = pid;
             m_pidExited = false;
             m_pidStatus = 0;
@@ -538,7 +538,7 @@ private:
             flags = fcntl(m_writeFd, F_GETFL, 0);
             fcntl(m_writeFd, F_SETFL, flags | O_NONBLOCK);
         }
-        UINFO(6, "startFilter complete\n");
+        UINFO(6, "startFilter complete");
 #else
         v3fatalSrc("--pipe-filter not implemented on this platform");
 #endif
@@ -548,7 +548,7 @@ private:
         if (m_pid) stopFilter();
     }
     void stopFilter() {
-        UINFO(6, "Stopping filter process\n");
+        UINFO(6, "Stopping filter process");
 #ifdef INFILTER_PIPE
         close(m_writeFd);
         checkFilter(true);
@@ -557,7 +557,7 @@ private:
         }
         m_pid = 0;
         close(m_readFd);
-        UINFO(6, "Closed\n");
+        UINFO(6, "Closed");
 #else
         v3fatalSrc("--pipe-filter not implemented on this platform");
 #endif
@@ -995,7 +995,7 @@ public:
         if (it != m_nameMap.end()) {
             // No way to go back and correct the older crypt name
             UASSERT(old == it->second,
-                    "Passthru request for '" + old + "' after already --protect-ids of it.");
+                    "Pass-thru request for '" + old + "' after already --protect-ids of it.");
         } else {
             m_nameMap.emplace(old, old);
             m_newIdSet.insert(old);

@@ -20,7 +20,7 @@ Waivers = [
     '-fno-',  # Documented differently
     '-no-lineno',  # Deprecated
     '-no-order-clock-delay',  # Deprecated
-    '-prof-threads',  # Deprecated)
+    '-prof-threads',  # Deprecated
 ]
 
 

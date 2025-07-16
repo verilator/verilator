@@ -1,0 +1,24 @@
+%Error: t/t_parse_sync_bad2.v:9:15: Can't find typedef/interface: 'unknown'
+    9 |       typedef unknown defu;
+      |               ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_parse_sync_bad2.v:17:7: Can't find typedef/interface: 'Invalid1'
+   17 |       Invalid1 invalid1;   
+      |       ^~~~~~~~
+%Error-UNSUPPORTED: t/t_parse_sync_bad2.v:18:12: Unsupported: Multiple '::' package/class reference
+   18 |       pkg::cls::defi valid1;   
+      |            ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: t/t_parse_sync_bad2.v:18:17: Can't find typedef/interface: 'defi'
+   18 |       pkg::cls::defi valid1;   
+      |                 ^~~~
+%Error-UNSUPPORTED: t/t_parse_sync_bad2.v:19:12: Unsupported: Multiple '::' package/class reference
+   19 |       pkg::cls::defu valid2;   
+      |            ^~~
+%Error: t/t_parse_sync_bad2.v:19:17: Can't find typedef/interface: 'defu'
+   19 |       pkg::cls::defu valid2;   
+      |                 ^~~~
+%Error: t/t_parse_sync_bad2.v:20:7: Can't find typedef/interface: 'Invalid2'
+   20 |       Invalid2 invalid2;   
+      |       ^~~~~~~~
+%Error: Exiting due to

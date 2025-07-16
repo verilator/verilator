@@ -110,7 +110,7 @@ public:
                       "The emitted value must be of integral type");
 
         const uint64_t dt = time - m_lastTime;
-        for (size_t i = 0; i < std::min(m_width, bits); i++) {
+        for (size_t i = 0; i < std::min(m_width, bits); ++i) {
             m_bits[i].aggregateVal(dt, (newval >> i) & 1);
         }
         updateLastTime(time);
@@ -475,18 +475,25 @@ void VerilatedSaif::printIndent() {
 }
 
 void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType type) {
-    std::string pname = name;
-
-    if (m_prefixStack.back().second == VerilatedTracePrefixType::ROOTIO_MODULE) popPrefix();
-    if (pname.empty()) {
-        pname = "$rootio";
-        type = VerilatedTracePrefixType::ROOTIO_MODULE;
+    assert(!m_prefixStack.empty());  // Constructor makes an empty entry
+    // An empty name means this is the root of a model created with
+    // name()=="".  The tools get upset if we try to pass this as empty, so
+    // we put the signals under a new $rootio scope, but the signals
+    // further down will be peers, not children (as usual for name()!="").
+    const std::string prevPrefix = m_prefixStack.back().first;
+    if (name == "$rootio" && !prevPrefix.empty()) {
+        // Upper has name, we can suppress inserting $rootio, but still push so popPrefix works
+        m_prefixStack.emplace_back(prevPrefix, VerilatedTracePrefixType::ROOTIO_WRAPPER);
+        return;
+    } else if (name.empty()) {
+        m_prefixStack.emplace_back(prevPrefix, VerilatedTracePrefixType::ROOTIO_WRAPPER);
+        return;
     }
 
     if (type != VerilatedTracePrefixType::ARRAY_UNPACKED
         && type != VerilatedTracePrefixType::ARRAY_PACKED) {
 
-        std::string scopePath = m_prefixStack.back().first + pname;
+        std::string scopePath = prevPrefix + name;
         std::string scopeName = lastWord(scopePath);
 
         auto newScope = std::make_unique<VerilatedSaifActivityScope>(
@@ -502,23 +509,22 @@ void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType
         m_currentScope = newScopePtr;
     }
 
-    std::string newPrefix = m_prefixStack.back().first + pname;
-    if (type != VerilatedTracePrefixType::ARRAY_UNPACKED
-        && type != VerilatedTracePrefixType::ARRAY_PACKED) {
-        newPrefix += ' ';
-    }
-
-    m_prefixStack.emplace_back(newPrefix, type);
+    const std::string newPrefix = prevPrefix + name;
+    bool properScope = (type != VerilatedTracePrefixType::ARRAY_UNPACKED
+                        && type != VerilatedTracePrefixType::ARRAY_PACKED
+                        && type != VerilatedTracePrefixType::ROOTIO_WRAPPER);
+    m_prefixStack.emplace_back(newPrefix + (properScope ? " " : ""), type);
 }
 
 void VerilatedSaif::popPrefix() {
     if (m_prefixStack.back().second != VerilatedTracePrefixType::ARRAY_UNPACKED
         && m_prefixStack.back().second != VerilatedTracePrefixType::ARRAY_PACKED
-        && m_currentScope != nullptr) {
+        && m_prefixStack.back().second != VerilatedTracePrefixType::ROOTIO_WRAPPER
+        && m_currentScope) {
         m_currentScope = m_currentScope->parentScope();
     }
-
     m_prefixStack.pop_back();
+    assert(!m_prefixStack.empty());  // Always one left, the constructor's initial one
 }
 
 void VerilatedSaif::declare(const uint32_t code, uint32_t fidx, const char* name,

@@ -12,6 +12,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 test.top_filename = "t_trace_two_a.v"
+test.pli_filename = "t/t_trace_two_cc.cpp"
 
 test.compile(make_main=False,
              verilator_make_gmake=False,
@@ -23,13 +24,11 @@ test.run(
     logfile=test.obj_dir + "/make_first_ALL.log",
     cmd=["make", "-C", "" + test.obj_dir, "-f", "Vt_trace_two_b.mk", "Vt_trace_two_b__ALL.cpp"])
 
-test.compile(make_main=False,
-             top_filename='t_trace_two_a.v',
-             make_flags=['CPPFLAGS_ADD="-DTEST_HDR_TRACE=1 -DTEST_FST=1"'],
-             verilator_flags2=[
-                 '-exe', '--trace-fst --trace-threads 1', '-DTEST_FST',
-                 test.t_dir + "/t_trace_two_cc.cpp"
-             ])
+test.compile(
+    make_main=False,
+    top_filename='t_trace_two_a.v',
+    make_flags=['CPPFLAGS_ADD="-DTEST_HDR_TRACE=1 -DTEST_FST=1"'],
+    verilator_flags2=['-exe', '--trace-fst --trace-threads 1', '-DTEST_FST', test.pli_filename])
 
 test.execute()
 

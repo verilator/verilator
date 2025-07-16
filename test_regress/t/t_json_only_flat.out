@@ -135,7 +135,7 @@
         ],"timingControlp": [],"strengthSpecp": []}
       ],"inlinesp": []}
     ]}
-  ],"activesp": []}
+  ]}
 ],"filesp": [],
  "miscsp": [
   {"type":"TYPETABLE","name":"","addr":"(C)","loc":"a,0:0,0:0","constraintRefp":"UNLINKED","emptyQueuep":"UNLINKED","queueIndexp":"UNLINKED","streamp":"UNLINKED","voidp":"UNLINKED",
@@ -149,6 +149,6 @@
     {"type":"MODULE","name":"@CONST-POOL@","addr":"(BD)","loc":"a,0:0,0:0","isChecker":false,"isProgram":false,"origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
      "stmtsp": [
       {"type":"SCOPE","name":"@CONST-POOL@","addr":"(CD)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(BD)","varsp": [],"blocksp": [],"inlinesp": []}
-    ],"activesp": []}
+    ]}
   ]}
 ]}

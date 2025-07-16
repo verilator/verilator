@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile()
+test.compile(make_main=False, verilator_flags2=["--main", "--exe", "--timing"])
 
 test.execute()
 

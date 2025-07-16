@@ -64,10 +64,12 @@ std::ostream& operator<<(std::ostream& os, VNType rhs);
 const std::shared_ptr<const string> VSelfPointerText::s_emptyp = std::make_shared<string>("");
 const std::shared_ptr<const string> VSelfPointerText::s_thisp = std::make_shared<string>("this");
 
+string VSelfPointerText::replaceThis(bool useSelfForThis, const string& text) {
+    return useSelfForThis ? VString::replaceWord(text, "this", "vlSelf") : text;
+}
+
 string VSelfPointerText::protect(bool useSelfForThis, bool protect) const {
-    const string& sp
-        = useSelfForThis ? VString::replaceWord(asString(), "this", "vlSelf") : asString();
-    return VIdProtect::protectWordsIf(sp, protect);
+    return VIdProtect::protectWordsIf(replaceThis(useSelfForThis, asString()), protect);
 }
 
 //######################################################################
@@ -188,6 +190,11 @@ string AstNode::prettyName(const string& namein) VL_PURE {
             }
             if (0 == std::strncmp(pos, "__DOT__", 7)) {
                 pretty += ".";
+                pos += 7;
+                continue;
+            }
+            if (0 == std::strncmp(pos, "__LIB__", 7)) {
+                pretty = "";  // Trim library name before module name
                 pos += 7;
                 continue;
             }
@@ -322,7 +329,7 @@ void AstNode::debugTreeChange(const AstNode* nodep, const char* prefix, int line
 //  // Commenting out the section below may crash, as the tree state
 //  // between edits is not always consistent for printing
 //  cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<endl;
-//  v3Global.rootp()->dumpTree("-  treeChange: ");
+//  if (debug()) v3Global.rootp()->dumpTree("-  treeChange: ");
 //  if (next||1) nodep->dumpTreeAndNext(cout, prefix);
 //  else nodep->dumpTree(prefix);
 //  nodep->checkTree();
@@ -519,6 +526,10 @@ void AstNode::replaceWith(AstNode* newp) {
     this->unlinkFrBack(&repHandle);
     repHandle.relink(newp);
 }
+void AstNode::replaceWithKeepDType(AstNode* newp) {
+    newp->dtypeFrom(this);
+    replaceWith(newp);
+}
 
 void VNRelinker::dump(std::ostream& str) const {
     str << " BK=" << reinterpret_cast<uint32_t*>(m_backp);
@@ -665,7 +676,7 @@ AstNode* AstNode::unlinkFrBack(VNRelinker* linkerp) {
 
 void AstNode::relink(VNRelinker* linkerp) {
     if (debug() > 8) {
-        UINFO(0, " EDIT:      relink: ");
+        UINFO_PREFIX(" EDIT:      relink: ");
         dumpPtrs();
     }
     AstNode* const newp = this;
@@ -1338,7 +1349,7 @@ void AstNode::dumpTreeFile(const string& filename, bool doDump) {
     // Not const function as calls checkTree
     if (doDump) {
         {  // Write log & close
-            UINFO(2, "Dumping " << filename << endl);
+            UINFO(2, "Dumping " << filename);
             const std::unique_ptr<std::ofstream> logsp{V3File::new_ofstream(filename)};
             if (logsp->fail()) v3fatal("Can't write file: " << filename);
             *logsp << "Verilator Tree Dump (format 0x3900) from <e" << std::dec << editCountLast();
@@ -1383,7 +1394,7 @@ void AstNode::dumpTreeDot(std::ostream& os) const {
 
 void AstNode::dumpTreeJsonFile(const string& filename, bool doDump) {
     if (!doDump) return;
-    UINFO(2, "Dumping " << filename << endl);
+    UINFO(2, "Dumping " << filename);
     const std::unique_ptr<std::ofstream> treejsonp{V3File::new_ofstream(filename)};
     if (treejsonp->fail()) v3fatal("Can't write file: " << filename);
     dumpTreeJson(*treejsonp);
@@ -1392,7 +1403,7 @@ void AstNode::dumpTreeJsonFile(const string& filename, bool doDump) {
 
 void AstNode::dumpJsonMetaFileGdb(const char* filename) { dumpJsonMetaFile(filename); }
 void AstNode::dumpJsonMetaFile(const string& filename) {
-    UINFO(2, "Dumping " << filename << endl);
+    UINFO(2, "Dumping " << filename);
     const std::unique_ptr<std::ofstream> treejsonp{V3File::new_ofstream(filename)};
     if (treejsonp->fail()) v3fatalStatic("Can't write file: " << filename);
     *treejsonp << '{';
@@ -1406,7 +1417,7 @@ void AstNode::dumpJsonMetaFile(const string& filename) {
 
 void AstNode::dumpTreeDotFile(const string& filename, bool doDump) {
     if (doDump) {
-        UINFO(2, "Dumping " << filename << endl);
+        UINFO(2, "Dumping " << filename);
         const std::unique_ptr<std::ofstream> treedotp{V3File::new_ofstream(filename)};
         if (treedotp->fail()) v3fatal("Can't write file: " << filename);
         *treedotp << "digraph vTree{\n";
@@ -1447,7 +1458,7 @@ void AstNode::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().
     const string instanceStrExtra
         = m_fileline->warnIsOff(V3Error::s().errorCode()) ? "" : instanceStr();
     if (!m_fileline) {
-        V3Error::v3errorEnd(str, instanceStrExtra);
+        V3Error::v3errorEnd(str, instanceStrExtra, nullptr);
     } else {
         std::ostringstream nsstr;
         nsstr << str.str();
@@ -1455,7 +1466,7 @@ void AstNode::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().
             nsstr << '\n';
             nsstr << "-node: ";
             const_cast<AstNode*>(this)->dump(nsstr);
-            nsstr << endl;
+            nsstr << '\n';
         }
         m_fileline->v3errorEnd(nsstr, instanceStrExtra);
     }
@@ -1577,7 +1588,7 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
         return VCastable::COMPATIBLE;
     } else if (toNumericable) {
         if (fromNumericable) return VCastable::COMPATIBLE;
-    } else if (VN_IS(toDtp, EnumDType)) {
+    } else if (VN_IS(toBaseDtp, EnumDType)) {
         if (VN_IS(fromBaseDtp, EnumDType) && toDtp->sameTree(fromDtp))
             return VCastable::ENUM_IMPLICIT;
         if (fromNumericable) return VCastable::ENUM_EXPLICIT;
@@ -1602,9 +1613,9 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
 VCastable AstNode::computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
                                    const AstNode* fromConstp) {
     const auto castable = computeCastableImp(toDtp, fromDtp, fromConstp);
-    UINFO(9, "  castable=" << castable << "  for " << toDtp << endl);
-    UINFO(9, "     =?= " << fromDtp << endl);
-    if (fromConstp) UINFO(9, "     const= " << fromConstp << endl);
+    UINFO(9, "  castable=" << castable << "  for " << toDtp);
+    UINFO(9, "     =?= " << fromDtp);
+    if (fromConstp) UINFO(9, "     const= " << fromConstp);
     return castable;
 }
 

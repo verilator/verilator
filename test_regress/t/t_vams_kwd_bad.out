@@ -2,7 +2,7 @@
    12 |    int above;
       |        ^~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_vams_kwd_bad.v:12:13: syntax error, unexpected ';', expecting IDENTIFIER or randomize
+%Error: t/t_vams_kwd_bad.v:12:13: syntax error, unexpected ';', expecting '('
    12 |    int above;
       |             ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

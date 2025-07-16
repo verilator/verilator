@@ -23,8 +23,8 @@ Contributors
 Many people have provided ideas and other assistance with Verilator.
 
 Verilator is receiving significant development support from the `CHIPS
-Alliance <https://chipsalliance.org>`_, `Antmicro Ltd
-<https://antmicro.com>`_ and `Shunyao CAD <https://shunyaocad.com>`_.
+Alliance <https://chipsalliance.org>`_, and `Antmicro Ltd
+<https://antmicro.com>`_.
 
 Previous major corporate sponsors of Verilator, by providing significant
 contributions of time or funds include: Antmicro Ltd., Atmel Corporation,

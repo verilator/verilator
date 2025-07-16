@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_wire_trireg_unsup.v:11:4: Unsupported: trireg
+   11 |    trireg unsup;
+      |    ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

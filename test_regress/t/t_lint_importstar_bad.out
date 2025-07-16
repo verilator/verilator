@@ -1,6 +1,6 @@
-%Warning-IMPORTSTAR: t/t_lint_importstar_bad.v:11:12: Import::* in $unit scope may pollute global namespace
+%Warning-IMPORTSTAR: t/t_lint_importstar_bad.v:11:8: Import::* in $unit scope may pollute global namespace
    11 | import defs::*;
-      |            ^~
+      |        ^~~~
                      ... For warning description see https://verilator.org/warn/IMPORTSTAR?v=latest
                      ... Use "/* verilator lint_off IMPORTSTAR */" and lint_on around source to disable this message.
 %Error: Exiting due to

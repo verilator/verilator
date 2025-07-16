@@ -1,0 +1,42 @@
+%Error: t/t_param_type_fwd_bad.v:25:11: Parameter type expression type 'int' violates parameter's forwarding type 'enum'
+                                      : ... note: In instance 't'
+   25 |    sub #(.E_t(int_t), .S_t(int_t), .U_t(int_t), .C_t(int_t), .IC_t(int_t)) sub();
+      |           ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_param_type_fwd_bad.v:25:24: Parameter type expression type 'int' violates parameter's forwarding type 'struct'
+                                      : ... note: In instance 't'
+   25 |    sub #(.E_t(int_t), .S_t(int_t), .U_t(int_t), .C_t(int_t), .IC_t(int_t)) sub();
+      |                        ^~~
+%Error: t/t_param_type_fwd_bad.v:25:37: Parameter type expression type 'int' violates parameter's forwarding type 'union'
+                                      : ... note: In instance 't'
+   25 |    sub #(.E_t(int_t), .S_t(int_t), .U_t(int_t), .C_t(int_t), .IC_t(int_t)) sub();
+      |                                     ^~~
+%Error: t/t_param_type_fwd_bad.v:25:50: Parameter type expression type 'int' violates parameter's forwarding type 'class'
+                                      : ... note: In instance 't'
+   25 |    sub #(.E_t(int_t), .S_t(int_t), .U_t(int_t), .C_t(int_t), .IC_t(int_t)) sub();
+      |                                                  ^~~
+%Error: t/t_param_type_fwd_bad.v:25:63: Parameter type expression type 'int' violates parameter's forwarding type 'interface class'
+                                      : ... note: In instance 't'
+   25 |    sub #(.E_t(int_t), .S_t(int_t), .U_t(int_t), .C_t(int_t), .IC_t(int_t)) sub();
+      |                                                               ^~~~
+%Error: t/t_param_type_fwd_bad.v:26:11: Parameter type expression type 'int' violates parameter's forwarding type 'enum'
+                                      : ... note: In instance 't'
+   26 |    Cls #(.E_t(int_t), .S_t(int_t), .U_t(int_t), .C_t(int_t), .IC_t(int_t)) c;
+      |           ^~~
+%Error: t/t_param_type_fwd_bad.v:26:24: Parameter type expression type 'int' violates parameter's forwarding type 'struct'
+                                      : ... note: In instance 't'
+   26 |    Cls #(.E_t(int_t), .S_t(int_t), .U_t(int_t), .C_t(int_t), .IC_t(int_t)) c;
+      |                        ^~~
+%Error: t/t_param_type_fwd_bad.v:26:37: Parameter type expression type 'int' violates parameter's forwarding type 'union'
+                                      : ... note: In instance 't'
+   26 |    Cls #(.E_t(int_t), .S_t(int_t), .U_t(int_t), .C_t(int_t), .IC_t(int_t)) c;
+      |                                     ^~~
+%Error: t/t_param_type_fwd_bad.v:26:50: Parameter type expression type 'int' violates parameter's forwarding type 'class'
+                                      : ... note: In instance 't'
+   26 |    Cls #(.E_t(int_t), .S_t(int_t), .U_t(int_t), .C_t(int_t), .IC_t(int_t)) c;
+      |                                                  ^~~
+%Error: t/t_param_type_fwd_bad.v:26:63: Parameter type expression type 'int' violates parameter's forwarding type 'interface class'
+                                      : ... note: In instance 't'
+   26 |    Cls #(.E_t(int_t), .S_t(int_t), .U_t(int_t), .C_t(int_t), .IC_t(int_t)) c;
+      |                                                               ^~~~
+%Error: Exiting due to

@@ -12,6 +12,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 test.top_filename = "t_trace_two_a.v"
+test.pli_filename = "t/t_trace_two_cc.cpp"
 
 test.compile(make_main=False,
              verilator_make_gmake=False,
@@ -25,7 +26,7 @@ test.run(
 
 test.compile(make_main=False,
              top_filename='t_trace_two_a.v',
-             verilator_flags2=['-exe', '-trace', test.t_dir + "/t_trace_two_cc.cpp"],
+             verilator_flags2=['-exe', '-trace', test.pli_filename],
              v_flags2=['+define+TEST_DUMP'])
 
 test.execute()

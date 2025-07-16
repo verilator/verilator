@@ -18,8 +18,7 @@ test.compile(make_top_shell=False,
              make_main=False,
              make_pli=True,
              verilator_flags2=[
-                 "--exe --vpi --public-flat-rw --prefix Vt_vpi_get --no-l2name",
-                 test.t_dir + "/t_vpi_get.cpp"
+                 "--exe --vpi --public-flat-rw --prefix Vt_vpi_get --no-l2name", test.pli_filename
              ],
              iv_flags2=["-g2005-sv -D USE_VPI_NOT_DPI"],
              v_flags2=["+define+USE_VPI_NOT_DPI"])

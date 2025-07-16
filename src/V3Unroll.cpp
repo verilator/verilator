@@ -57,7 +57,7 @@ class UnrollVisitor final : public VNVisitor {
     bool cantUnroll(AstNode* nodep, const char* reason) const {
         if (m_generate)
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Can't unroll generate for; " << reason);
-        UINFO(4, "   Can't Unroll: " << reason << " :" << nodep << endl);
+        UINFO(4, "   Can't Unroll: " << reason << " :" << nodep);
         // if (debug() >= 9) nodep->dumpTree("-  cant: ");
         V3Stats::addStatSum("Unrolling gave up, "s + reason, 1);
         return false;
@@ -85,11 +85,11 @@ class UnrollVisitor final : public VNVisitor {
         AstNode* const incp,  // Maybe under nodep or in bodysp
         AstNode* bodysp) {
         // To keep the IF levels low, we return as each test fails.
-        UINFO(4, " FOR Check " << nodep << endl);
-        if (initp) UINFO(6, "    Init " << initp << endl);
-        if (precondsp) UINFO(6, "    Pcon " << precondsp << endl);
-        if (condp) UINFO(6, "    Cond " << condp << endl);
-        if (incp) UINFO(6, "    Inc  " << incp << endl);
+        UINFO(4, " FOR Check " << nodep);
+        if (initp) UINFO(6, "    Init " << initp);
+        if (precondsp) UINFO(6, "    Pcon " << precondsp);
+        if (condp) UINFO(6, "    Cond " << condp);
+        if (incp) UINFO(6, "    Inc  " << incp);
 
         if (unrollFull.isSetFalse()) return cantUnroll(nodep, "pragma unroll_disable");
 
@@ -143,9 +143,9 @@ class UnrollVisitor final : public VNVisitor {
 
         //
         if (m_forVscp) {
-            UINFO(8, "   Loop Variable: " << m_forVscp << endl);
+            UINFO(8, "   Loop Variable: " << m_forVscp);
         } else {
-            UINFO(8, "   Loop Variable: " << m_forVarp << endl);
+            UINFO(8, "   Loop Variable: " << m_forVarp);
         }
         if (debug() >= 9) nodep->dumpTree("-   for: ");
 
@@ -210,7 +210,7 @@ class UnrollVisitor final : public VNVisitor {
         SimulateVisitor simvis;
         simvis.mainParamEmulate(clonep);
         if (!simvis.optimizable()) {
-            UINFO(4, "Unable to simulate" << endl);
+            UINFO(4, "Unable to simulate");
             if (debug() >= 9) nodep->dumpTree("-  _simtree: ");
             VL_DO_DANGLING(clonep->deleteTree(), clonep);
             return false;
@@ -218,7 +218,7 @@ class UnrollVisitor final : public VNVisitor {
         // Fetch the result
         V3Number* resp = simvis.fetchNumberNull(clonep);
         if (!resp) {
-            UINFO(3, "No number returned from simulation" << endl);
+            UINFO(3, "No number returned from simulation");
             VL_DO_DANGLING(clonep->deleteTree(), clonep);
             return false;
         }
@@ -265,7 +265,7 @@ class UnrollVisitor final : public VNVisitor {
 
     bool forUnroller(AstNode* nodep, const VOptionBool& unrollFull, AstAssign* initp,
                      AstNode* condp, AstNode* precondsp, AstNode* incp, AstNode* bodysp) {
-        UINFO(9, "forUnroller " << nodep << endl);
+        UINFO(9, "forUnroller " << nodep);
         V3Number loopValue{nodep};
         if (!simulateTree(initp->rhsp(), nullptr, initp, loopValue)) {  //
             return false;
@@ -296,7 +296,7 @@ class UnrollVisitor final : public VNVisitor {
         if (stmtsp) {
             int times = 0;
             while (true) {
-                UINFO(8, "      Looping " << loopValue << endl);
+                UINFO(8, "      Looping " << loopValue);
                 V3Number res{nodep};
                 if (!simulateTree(condp, &loopValue, nullptr, res)) {
                     nodep->v3error("Loop unrolling failed.");
@@ -451,7 +451,7 @@ class UnrollVisitor final : public VNVisitor {
     void visit(AstVarRef* nodep) override {
         if (m_varModeCheck && nodep->varp() == m_forVarp && nodep->varScopep() == m_forVscp
             && nodep->access().isWriteOrRW()) {
-            UINFO(8, "   Itervar assigned to: " << nodep << endl);
+            UINFO(8, "   Itervar assigned to: " << nodep);
             m_varAssignHit = true;
         }
 
@@ -506,14 +506,14 @@ UnrollStateful::UnrollStateful()
 UnrollStateful::~UnrollStateful() { delete m_unrollerp; }
 
 void UnrollStateful::unrollGen(AstNodeFor* nodep, const string& beginName) {
-    UINFO(5, __FUNCTION__ << ": " << endl);
+    UINFO(5, __FUNCTION__ << ": ");
     m_unrollerp->process(nodep, true, beginName);
 }
 
 void UnrollStateful::unrollAll(AstNetlist* nodep) { m_unrollerp->process(nodep, false, ""); }
 
 void V3Unroll::unrollAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     {
         UnrollStateful unroller;
         unroller.unrollAll(nodep);

@@ -92,9 +92,9 @@ string V3Os::getenvStr(const string& envvar, const string& defaultValue) {
 
 void V3Os::setenvStr(const string& envvar, const string& value, const string& why) {
     if (why != "") {
-        UINFO(1, "export " << envvar << "='" << value << "'  # " << why << endl);
+        UINFO(1, "export " << envvar << "='" << value << "'  # " << why);
     } else {
-        UINFO(1, "export " << envvar << "='" << value << "'" << endl);
+        UINFO(1, "export " << envvar << "='" << value << "'");
     }
 #if defined(_WIN32) || defined(__MINGW32__)
     _putenv_s(envvar.c_str(), value.c_str());
@@ -263,8 +263,8 @@ string V3Os::filenameRelativePath(const string& filename, const string& base) VL
     auto aIt = a.begin();
     auto bIt = b.begin();
     while (aIt != a.end() && bIt != b.end()) {
-        // UINFO(9, "fnrp scan " << (aIt - a.begin()) << " " << a.substr(aIt - a.begin()) << endl);
-        // UINFO(9, "fnrp scan " << (bIt - b.begin()) << " " << b.substr(bIt - b.begin()) << endl);
+        // UINFO(9, "fnrp scan " << (aIt - a.begin()) << " " << a.substr(aIt - a.begin()));
+        // UINFO(9, "fnrp scan " << (bIt - b.begin()) << " " << b.substr(bIt - b.begin()));
         auto aWordIt = aIt;  // position of next slash
         for (; aWordIt != a.end(); ++aWordIt) {
             if (isSlash(*aWordIt)) break;
@@ -370,7 +370,7 @@ void V3Os::filesystemFlushBuildDir(const string& dirname) {
     // Linux kernel may not reread from NFS unless timestamp modified
     const int err = utimes(dirname.c_str(), nullptr);
     // Not an error
-    if (err != 0) UINFO(1, "-Info: File not utimed: " << dirname << endl);
+    if (err != 0) UINFO(1, "-Info: File not utimed: " << dirname);
 #endif
     filesystemFlush(dirname);
 }
@@ -472,7 +472,7 @@ void V3Os::u_sleep(int64_t usec) {
 // METHODS (sub command)
 
 int V3Os::system(const string& command) {
-    UINFO(1, "Running system: " << command << endl);
+    UINFO(1, "Running system: " << command);
     const int ret = ::system(command.c_str());
     if (VL_UNCOVERABLE(ret == -1)) {
         v3fatal("Failed to execute command:"  // LCOV_EXCL_LINE
@@ -481,7 +481,7 @@ int V3Os::system(const string& command) {
     } else {
         UASSERT(WIFEXITED(ret), "system(" << command << ") returned unexpected value of " << ret);
         const int exit_code = WEXITSTATUS(ret);
-        UINFO(1, command << " returned exit code of " << exit_code << std::endl);
+        UINFO(1, command << " returned exit code of " << exit_code);
         UASSERT(exit_code >= 0, "exit code must not be negative");
         return exit_code;
     }

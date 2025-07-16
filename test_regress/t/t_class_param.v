@@ -62,7 +62,7 @@ class Sum #(type T);
    static int sum;
    static function void add(T element);
       sum += int'(element);
-      endfunction
+   endfunction
 endclass
 
 class IntQueue;
@@ -221,8 +221,11 @@ module t (/*AUTOARG*/);
       qi.q = '{2, 4, 6, 0, 2};
       if (qi.getSum() != 14) $stop;
       Sum#(int)::add(arr[0]);
-      if(Sum#(int)::sum != 16) $stop;
-      if(Sum#(real)::sum != 0) $stop;
+      if (Sum#(int)::sum != 16) $stop;
+
+      if (Sum#(real)::sum != 0) $stop;
+      Sum#(real)::add(1.9);  // rounds
+      if (Sum#(real)::sum != 2) $stop;
 
       if (ClsParam#(ClsStatic)::param_t::x != 1) $stop;
       if (ClsParam#(ClsStatic)::param_t::get_2() != 2) $stop;
@@ -231,7 +234,7 @@ module t (/*AUTOARG*/);
       if (cls_param_field.get(2) != 7) $stop;
 
       dict_op.set("abcd", 1);
-      if(dict_op.get("abcd") != 1) $stop;
+      if (dict_op.get("abcd") != 1) $stop;
 
       if (getter1.get_1() != 1) $stop;
       if (Getter1#()::get_1() != 1) $stop;

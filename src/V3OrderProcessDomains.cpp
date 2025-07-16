@@ -64,13 +64,28 @@ class V3OrderProcessDomains final {
                                              : "");
     }
 
-    // Make a domain that merges the two domains
+    // Make a domain that merges the two domains, but don't yet simplify or add to global list
     AstSenTree* combineDomains(AstSenTree* ap, AstSenTree* bp) {
         if (ap == bp) return ap;
         if (ap == m_deleteDomainp) return bp;
         UASSERT_OBJ(bp != m_deleteDomainp, bp, "'bp' Should not be delete domain");
-        AstSenTree* const senTreep = ap->cloneTree(false);
-        senTreep->addSensesp(bp->sensesp()->cloneTree(true));
+        // If either tree has a backp, it is an existing tree, otherwise it is an intermediae
+        // created in this function.
+        // Clone existing 'ap' tree, or reuse intermediate
+        AstSenTree* const senTreep = ap->backp() ? ap->cloneTree(false) : ap;
+        // Clone or move items from 'bp'
+        if (bp->backp()) {
+            senTreep->addSensesp(bp->sensesp()->cloneTree(true));
+        } else {
+            senTreep->addSensesp(bp->sensesp()->unlinkFrBackWithNext());
+            VL_DO_DANGLING(bp->deleteTree(), bp);
+        }
+        return senTreep;
+    }
+
+    AstSenTree* simplifyDomain(AstSenTree* senTreep) {
+        // If it has a back pointer, then it is already one of the existing global trees
+        if (senTreep->backp()) return senTreep;
         V3Const::constifyExpensiveEdit(senTreep);  // Remove duplicates
         senTreep->multi(true);  // Comment that it was made from 2 domains
         AstSenTree* const resultp = m_finder.getSenTree(senTreep);
@@ -85,13 +100,13 @@ class V3OrderProcessDomains final {
     //     else, if all inputs are from flops, it's end-of-sequential code
     //     else, it's full combo code
     void processDomains() {
-        UINFO(2, "  Domains...\n");
+        UINFO(2, "  Domains...");
         // Buffer to hold external sensitivities
         std::vector<AstSenTree*> externalDomainps;
         // For each vertex
         for (V3GraphVertex& it : m_graph.vertices()) {
             OrderEitherVertex* const vtxp = it.as<OrderEitherVertex>();
-            UINFO(5, "    pdi: " << vtxp << endl);
+            UINFO(5, "    pdi: " << vtxp);
             // Sequential logic already has its domain set
             if (vtxp->domainp()) continue;
 
@@ -99,7 +114,10 @@ class V3OrderProcessDomains final {
             // For logic, start with the explicit hybrid sensitivities
             OrderLogicVertex* const lvtxp = vtxp->cast<OrderLogicVertex>();
             if (lvtxp) domainp = lvtxp->hybridp();
-            if (domainp) UINFO(6, "      hybr d=" << debugDomain(domainp) << " " << vtxp << endl);
+            if (domainp) {
+                UINFO(6, "      hybr d=" << debugDomain(domainp) << " " << vtxp);
+                UASSERT(domainp->backp(), "Hybrid senTree should have backp");
+            }
 
             // For each incoming edge, examine the source vertex
             for (V3GraphEdge& edge : vtxp->inEdges()) {
@@ -111,9 +129,11 @@ class V3OrderProcessDomains final {
 
                 AstSenTree* fromDomainp = fromVtxp->domainp();
 
-                UINFO(6, "      from d=" << debugDomain(fromDomainp) << " " << fromVtxp << endl);
+                UINFO(6, "      from d=" << debugDomain(fromDomainp) << " " << fromVtxp);
                 UASSERT(fromDomainp == m_deleteDomainp || !fromDomainp->hasCombo(),
                         "There should be no need for combinational domains");
+                UASSERT(fromDomainp == m_deleteDomainp || fromDomainp->backp(),
+                        "Driver SenTree should have backp");
 
                 // Add in any external domains of variables
                 if (OrderVarVertex* const varVtxp = fromVtxp->cast<OrderVarVertex>()) {
@@ -122,9 +142,11 @@ class V3OrderProcessDomains final {
                     m_externalDomains(vscp, externalDomainps);
                     for (AstSenTree* const externalDomainp : externalDomainps) {
                         UINFO(6, "      xtrn d=" << debugDomain(externalDomainp) << " " << fromVtxp
-                                                 << " because of " << vscp << endl);
+                                                 << " because of " << vscp);
                         UASSERT_OBJ(!externalDomainp->hasCombo(), vscp,
                                     "There should be no need for combinational domains");
+                        UASSERT_OBJ(externalDomainp->backp(), vscp,
+                                    "External SenTree should have backp()");
                         fromDomainp = combineDomains(fromDomainp, externalDomainp);
                     }
                 }
@@ -145,12 +167,15 @@ class V3OrderProcessDomains final {
             if (!domainp) {
                 domainp = m_deleteDomainp;
                 if (lvtxp) m_logicpsToDelete.push_back(lvtxp);
+            } else {
+                // Simplify and create canonical global SenTree
+                domainp = simplifyDomain(domainp);
             }
 
             // Set the domain of the vertex
             vtxp->domainp(domainp);
 
-            UINFO(5, "      done d=" << debugDomain(domainp) << " " << vtxp << endl);
+            UINFO(5, "      done d=" << debugDomain(domainp) << " " << vtxp);
         }
     }
 

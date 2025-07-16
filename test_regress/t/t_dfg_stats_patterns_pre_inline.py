@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_dfg_stats_patterns.v"
 
-test.compile(verilator_flags2=["--stats --no-skip-identical -fno-dfg-post-inline"])
+test.compile(verilator_flags2=["--stats --no-skip-identical -fno-dfg-post-inline -fno-dfg-scoped"])
 
 fn = test.glob_one(test.obj_dir + "/" + test.vm_prefix + "__stats_dfg_patterns*")
 test.files_identical(fn, test.golden_filename)

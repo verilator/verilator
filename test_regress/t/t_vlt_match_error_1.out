@@ -1,4 +1,4 @@
-%Error: t/t_vlt_match_error.v:17:12: Importing from missing package 'hi'
+%Error: t/t_vlt_match_error.v:17:12: Import package not found: 'hi'
    17 |     import hi::*;
       |            ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

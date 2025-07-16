@@ -28,7 +28,7 @@ class V3DfgPatternStats final {
     static constexpr uint32_t MAX_PATTERN_DEPTH = 4;
 
     std::map<std::string, std::string> m_internedConsts;  // Interned constants
-    std::map<const AstVar*, std::string> m_internedVars;  // Interned variables
+    std::map<const AstNode*, std::string> m_internedVars;  // Interned variables
     std::map<uint32_t, std::string> m_internedSelLsbs;  // Interned lsb value for selects
     std::map<uint32_t, std::string> m_internedWordWidths;  // Interned widths
     std::map<uint32_t, std::string> m_internedWideWidths;  // Interned widths
@@ -51,7 +51,7 @@ class V3DfgPatternStats final {
     }
 
     const std::string& internVar(const DfgVertexVar& vtx) {
-        const auto pair = m_internedVars.emplace(vtx.varp(), "v");
+        const auto pair = m_internedVars.emplace(vtx.nodep(), "v");
         if (pair.second) pair.first->second += toLetters(m_internedVars.size() - 1);
         return pair.first->second;
     }

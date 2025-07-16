@@ -58,7 +58,7 @@ module t;
 
       $swrite(str2, "lib=%l");
 `ifdef TEST_VERBOSE  $display("chkl %0s",str2);  `endif
-      if (str2 !== "lib=t") $stop;
+      if (str2 !== "lib=work.t") $stop;
 
       str3 = $sformatf("u=%u", {"a","b","c","d"}); // Value selected so is printable
 `ifdef TEST_VERBOSE  $display("chku %s", str3);  `endif

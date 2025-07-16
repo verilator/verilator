@@ -1,5 +1,11 @@
 %Error-UNSUPPORTED: t/t_program_extern.v:7:1: Unsupported: extern program
-    7 | extern program pgm;
+    7 | extern program ex_pgm;
       | ^~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_program_extern.v:8:1: Unsupported: extern interface
+    8 | extern interface ex_ifc;
+      | ^~~~~~
+%Error-UNSUPPORTED: t/t_program_extern.v:9:1: Unsupported: extern module
+    9 | extern module ex_mod;
+      | ^~~~~~
 %Error: Exiting due to

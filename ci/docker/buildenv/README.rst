@@ -13,7 +13,7 @@ Verilator build. It uses the following parameters:
 
 -  Source revision (default: master)
 
--  Compiler (GCC 10.3.0, clang 10.0.0, default: 10.3.0)
+-  Compiler (GCC 13.3.0, clang 18.1.3, default: 13.3.0)
 
 The container is published as ``verilator/verilator-buildenv`` on `docker
 hub
@@ -31,18 +31,18 @@ To also run tests:
 
    docker run -ti verilator/verilator-buildenv test
 
-To change the compiler:
+To change the compiler use the `-e` switch to pass environment variables:
 
 ::
 
-   docker run -ti -e CC=clang-10 -e CXX=clang++-10 verilator/verilator-buildenv test
+   docker run -ti -e CC=clang-18 -e CXX=clang++-18 verilator/verilator-buildenv test
 
-The tests that involve gdb are not working due to security restrictions.
-To run those too:
+The tests, that involve numactl are not working due to security restrictions.
+To run those too, add the CAP_SYS_NICE capability during the start of the container:
 
 ::
 
-   docker run -ti -e CC=clang-10 -e CXX=clang++-10 --cap-add=SYS_PTRACE --security-opt seccomp=unconfined verilator/verilator-buildenv test
+   docker run -ti --cap-add=CAP_SYS_NICE verilator/verilator-buildenv test
 
 Rather then building using a remote git repository you may prefer to use a
 working copy on the local filesystem. Mount the local working copy path as
@@ -52,7 +52,7 @@ top of a repository:
 
 ::
 
-   docker run -ti -v ${PWD}:/tmp/repo -e REPO=/tmp/repo -e REV=`git rev-parse --short HEAD` --cap-add=SYS_PTRACE --security-opt seccomp=unconfined verilator/verilator-buildenv test
+   docker run -ti -v ${PWD}:/tmp/repo -e REPO=/tmp/repo -e REV=`git rev-parse --short HEAD` verilator/verilator-buildenv test
 
 
 Rebuilding

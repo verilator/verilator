@@ -109,7 +109,8 @@ class EmitCHeader final : public EmitCConstInit {
         // Emit variables in consecutive anon and non-anon batches
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                if (varp->isIO() || varp->isSignal() || varp->isClassMember() || varp->isTemp()) {
+                if (varp->isIO() || varp->isSignal() || varp->isClassMember() || varp->isTemp()
+                    || varp->isGenVar()) {
                     const bool anon = isAnonOk(varp);
                     if (anon != lastAnon) emitCurrentList();
                     lastAnon = anon;
@@ -563,16 +564,20 @@ class EmitCHeader final : public EmitCConstInit {
         if (!VN_IS(modp, Class)) puts("alignas(VL_CACHE_LINE_BYTES) ");
         puts(prefixNameProtect(modp));
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            const string virtpub = classp->useVirtualPublic() ? "virtual public " : "public ";
-            puts(" : " + virtpub);
+            puts(" : ");
             if (classp->extendsp()) {
+                bool needComma = false;
                 for (const AstClassExtends* extp = classp->extendsp(); extp;
                      extp = VN_AS(extp->nextp(), ClassExtends)) {
+                    if (needComma) puts(", ");
+                    // Use virtual only for interfaces for class inheritance
+                    // (extends)
+                    puts(extp->classp()->useVirtualPublic() ? "virtual public " : "public ");
                     putns(extp, prefixNameProtect(extp->classp()));
-                    if (extp->nextp()) puts(", " + virtpub);
+                    needComma = true;
                 }
             } else {
-                puts("VlClass");
+                puts("public virtual VlClass");
             }
         } else {
             puts(" final : public VerilatedModule");
@@ -605,7 +610,7 @@ class EmitCHeader final : public EmitCConstInit {
     }
 
     explicit EmitCHeader(const AstNodeModule* modp) {
-        UINFO(5, "  Emitting header for " << prefixNameProtect(modp) << endl);
+        UINFO(5, "  Emitting header for " << prefixNameProtect(modp));
 
         // Open output file
         const string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(modp) + ".h";
@@ -665,7 +670,7 @@ public:
 // EmitC class functions
 
 void V3EmitC::emitcHeaders() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
 
     // Process each module in turn
     for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {

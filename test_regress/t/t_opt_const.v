@@ -153,6 +153,8 @@ module Test(/*AUTOARG*/
    bug4857 i_bug4857(.clk(clk), .in(d), .out(bug4857_out));
    bug4864 i_bug4864(.clk(clk), .in(d), .out(bug4864_out));
    bug5186 i_bug5186(.clk(clk), .in(d), .out(bug5186_out));
+   bug5993 i_bug5993(.clk(clk), .in(d[10]));
+   bug6016 i_bug6016(.clk(clk), .in(d[10]));
 
 endmodule
 
@@ -565,4 +567,59 @@ module bug5186(input wire clk, input wire [31:0] in, output out);
    always_ff @ (posedge clk)
       result <= bad;
    assign out = result;
+endmodule
+
+
+// See issue #5993
+// "in4[18]" is just one bit width, so " >> 8'd1" shifts out the bit.
+// BitOpTree ignored implicit "& 1". It caused the bug"
+module bug5993(input wire clk, input wire in);
+
+   reg in3;
+   reg [23:16] in4;
+
+   task automatic checkd(logic gotv, logic expv);
+      if ((gotv) !== (expv)) begin
+         $write("%%Error:  got=%0d exp=%0d\n", gotv, expv);
+         $stop;
+      end
+   endtask
+
+   // verilator lint_off WIDTH
+   wire wire_2 = in3 ? {4{14'b010111101}} : (in4[18] >> 8'b1);
+   // verilator lint_on WIDTH
+
+   always @(posedge clk) begin
+      in3 <= '0;
+      in4 <= in ?  8'b00111__0__10 : 8'b00111__1__10;
+      checkd(wire_2, 1'b0);
+   end
+   endmodule
+
+// See issue #6016
+// When traversing a tree, a signal may be shifted out.
+// Then the polarity has to be cleared, but was not.
+// "(!in[18]) > 1" should be 0, but was not.
+module bug6016(input wire clk, input wire in);
+   reg in0;
+   reg signed [7:0] in4;
+   wire [1:0] wire_0;
+   wire out20;
+
+   // verilator lint_off WIDTH
+   assign wire_0 = in4[0:0] ? ({{7{in4[3:1]}}, 12'd201} & 2'h2) : (!(in0) >> 9'b1111);
+   // verilator lint_on WIDTH
+   assign out20 = wire_0[0:0];
+
+   logic in_s1 = 1'b0;
+   always @(posedge clk) begin
+      in_s1 <= in;
+      if (in) begin
+         in4 <= 8'b1111_1110;
+         in0 <= 1'b0;
+      end
+      if (in_s1) begin
+         if (out20 != 1'b0) $stop;
+      end
+   end
 endmodule

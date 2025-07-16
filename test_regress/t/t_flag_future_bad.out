@@ -2,10 +2,11 @@
     8 |       /*verilator lint_off FUTURE1*/ 
       |       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_flag_future.v:11:7: Unknown verilator comment: '/*verilator FUTURE2*/'
+%Error-BADVLTPRAGMA: t/t_flag_future.v:11:7: Unknown verilator comment: '/*verilator FUTURE2*/'
    11 |       /*verilator FUTURE2*/ 
       |       ^~~~~~~~~~~~~~~~~~~~~
-%Error: t/t_flag_future.v:12:7: Unknown verilator comment: '/*verilator FUTURE2 blah blah*/'
+                     ... For error description see https://verilator.org/warn/BADVLTPRAGMA?v=latest
+%Error-BADVLTPRAGMA: t/t_flag_future.v:12:7: Unknown verilator comment: '/*verilator FUTURE2 blah blah*/'
    12 |       /*verilator FUTURE2 blah blah*/ 
       |       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 %Error: Exiting due to

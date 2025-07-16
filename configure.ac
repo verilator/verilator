@@ -10,7 +10,7 @@
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[5.035 devel],
+AC_INIT([Verilator],[5.039 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
@@ -432,10 +432,10 @@ AC_SUBST(HAVE_COROUTINES)
 
 # Flags for compiling Verilator internals including parser always
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Qunused-arguments)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-shadow)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Xclang -fno-pch-timestamp)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-faligned-new)
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-shadow)
 AC_SUBST(CFG_CXXFLAGS_SRC)
 
 # Flags for compiling Verilator parser always (in addition to above CFG_CXXFLAGS_SRC)

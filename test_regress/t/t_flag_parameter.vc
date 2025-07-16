@@ -28,3 +28,11 @@
 -pvalue+int62="32'hdead_beef"
 -Gint71=-1000
 -pvalue+int72=-1000
+-Gbit0to0=0
+-pvalue+bit0to0=0
+-Gbit1to1=1
+-pvalue+bit1to1=1
+-Gbit0to1=1
+-pvalue+bit0to1=1
+-Gbit1to0=0
+-pvalue+bit1to0=0

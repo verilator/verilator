@@ -109,7 +109,7 @@ public:
 
     // METHODS
     void dump(bool bucketsToo) {
-        UINFO(2, "dumpTests...\n");
+        UINFO(2, "dumpTests...");
         VlcTest::dumpHeader();
         for (const auto& testp : m_tests) testp->dump(bucketsToo);
     }

@@ -2,8 +2,4 @@
    46 |    typedef ifc_if.struct_t struct_t;
       |    ^~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_interface_typedef.v:51:16: syntax error, unexpected IDENTIFIER
-   51 |       struct_t substruct;
-      |                ^~~~~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

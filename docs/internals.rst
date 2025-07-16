@@ -1470,7 +1470,7 @@ Preparing to Run Tests
 
 For all tests to pass, you must install the following packages:
 
--  SystemC to compile the SystemC outputs, see http://systemc.org
+-  SystemC to compile the SystemC outputs, see https://systemc.org
 
 -  vcddiff to find differences in VCD outputs. See the readme at
    https://github.com/veripool/vcddiff
@@ -1569,6 +1569,41 @@ environment can check their branches too by enabling the build workflow:
 
 -  Click Enable workflow.
 
+Benchmarking
+------------
+
+For benchmarking the effects of changes (simulation speed, memory consumption,
+verilation time, etc.), you can use `RTLMeter
+<https://github.com/verilator/rtlmeter>`__, a benchmark suite designed for this
+purpose. The scripts provided with RTLMeter have many capabilities. For full
+details, see the `documentation of RTLMeter
+<https://verilator.github.io/rtlmeter>`__ itself.
+
+For a quick check, you an run the following after putting ``verilator`` on your
+``PATH``:
+
+.. code:: shell
+
+  ./rtlmeter run --cases "+standard" --workRoot work-a
+  ./rtlmeter report work-a
+
+To compare against an alternate version, again put that alternate ``verilator``
+on your ``PATH`` then run:
+
+.. code:: shell
+
+  ./rtlmeter run --cases "+standard" --workRoot work-b
+  ./rtlmeter compare work-a work-b
+
+The continuous integration system in GitHub Actions runs this benchmark suite
+nightly on the master branch. The performance numbers from these nightly runs
+can be viewed via the `RTLMeter results dashboard
+<https://verilator.github.io/verilator-rtlmeter-results>`__. Note that these
+results are collected on GitHub hosted runners. These are virtual machines
+operating in a potentially noisy environment, so time measurements can have
+significant variance. Experience shows that a ~20% time difference can be
+reliably measured on GitHub hosted runners, and smaller differences are
+noticeable over a few days of reruns as trends emerge from the noise.
 
 Fuzzing
 -------
@@ -1633,7 +1668,7 @@ scaled so it can be more useful with large graphs.
 
 For interactive graph viewing consider `xdot
 <https://github.com/jrfonseca/xdot.py>`__ or `ZGRViewer
-<http://zvtm.sourceforge.net/zgrviewer.html>`__. If you know of better
+<https://zvtm.sourceforge.net/zgrviewer.html>`__. If you know of better
 viewers (especially for large graphs) please let us know.
 
 
@@ -1903,7 +1938,7 @@ find what made a <e#*#*> line in the tree dumps):
 
 ::
 
-   watch AstNode::s_editCntGbl==####
+   watch AstNode::s_editCntGbl=####
 
 Then, when the watch fires, to break at every following change to that
 node:

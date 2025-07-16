@@ -1,4 +1,4 @@
-%Error: t/t_fuzz_always_bad.v:10:15: Can't find definition of 'a' in dotted variable: 'c.a'
+%Error: t/t_fuzz_always_bad.v:10:15: Can't find definition of 'a' in dotted variable/method: 'c.a'
    10 |    always @ c.a c:h;
       |               ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

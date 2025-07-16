@@ -12,11 +12,9 @@ module t (/*AUTOARG*/
    input clk;
 
    // verilator lint_off ASCRANGE
-   // verilator lint_off BLKANDNBLK
    //               3    3    4
    reg [71:0] memw [2:0][1:3][5:2];
    reg [7:0]  memn [2:0][1:3][5:2];
-   // verilator lint_on  BLKANDNBLK
 
    integer cyc; initial cyc = 0;
    reg [63:0] crc;

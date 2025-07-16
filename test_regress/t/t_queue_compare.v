@@ -18,7 +18,7 @@ module t;
    initial begin
       begin // integers
          int q1[$];
-         bit[31:0] q2[$];
+         bit signed [31:0] q2[$];
          q1.push_back(1);
          q2.push_back(1);
          q1.push_back(-2);

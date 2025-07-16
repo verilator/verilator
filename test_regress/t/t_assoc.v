@@ -37,7 +37,9 @@ module t (/*AUTOARG*/
          v = a[4'd3]; `checks(v, "fooed");
          v = a[4'd2]; `checks(v, "bared");
          i = a.exists(4'd0); `checkh(i, 0);
+         if (a.exists(4'd0)) $stop;  // Check no width warning
          i = a.exists(4'd2); `checkh(i, 1);
+         if (!a.exists(4'd2)) $stop;  // Check no width warning
          i = a.first(k); `checkh(i, 1); `checks(k, 4'd2);
          i = a.next(k); `checkh(i, 1); `checks(k, 4'd3);
          i = a.next(k); `checkh(i, 0);

@@ -7,12 +7,12 @@
 
 module sub
   #(parameter type TYPE_t = logic)
-   (
-    input  TYPE_t in,
-    output TYPE_t out
-    );
+  (
+   input  TYPE_t in,
+   output TYPE_t out
+   );
 
-   // Some simple logic
-   always_comb out = ~in;
+  // Some simple logic
+  always_comb out = ~in;
 
 endmodule

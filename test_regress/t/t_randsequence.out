@@ -149,4 +149,250 @@
 %Error-UNSUPPORTED: t/t_randsequence.v:105:38: Unsupported: randsequence production id
   105 |             one_if: if (i % 10 == 0) count_1 else most;
       |                                      ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:105:51: Unsupported: randsequence production id
+  105 |             one_if: if (i % 10 == 0) count_1 else most;
+      |                                                   ^~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:105:21: Unsupported: randsequence if
+  105 |             one_if: if (i % 10 == 0) count_1 else most;
+      |                     ^~
+%Error-UNSUPPORTED: t/t_randsequence.v:105:19: Unsupported: randsequence production
+  105 |             one_if: if (i % 10 == 0) count_1 else most;
+      |                   ^
+%Error-UNSUPPORTED: t/t_randsequence.v:106:20: Unsupported: randsequence production
+  106 |             count_1: { ++counts[1]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:107:20: Unsupported: randsequence production
+  107 |             count_2: { ++counts[2]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:108:20: Unsupported: randsequence production
+  108 |             count_3: { ++counts[3]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:109:20: Unsupported: randsequence production
+  109 |             count_4: { ++counts[4]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:110:16: Unsupported: randsequence production
+  110 |             bad: { $stop; };
+      |                ^
+%Error-UNSUPPORTED: t/t_randsequence.v:112:24: Unsupported: randsequence production id
+  112 |                     0: bad;
+      |                        ^~~
+%Error-UNSUPPORTED: t/t_randsequence.v:112:22: Unsupported: randsequence case item
+  112 |                     0: bad;
+      |                      ^
+%Error-UNSUPPORTED: t/t_randsequence.v:113:27: Unsupported: randsequence production id
+  113 |                     1, 2: count_2;
+      |                           ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:113:25: Unsupported: randsequence case item
+  113 |                     1, 2: count_2;
+      |                         ^
+%Error-UNSUPPORTED: t/t_randsequence.v:114:30: Unsupported: randsequence production id
+  114 |                     3, 4, 5: count_3;
+      |                              ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:114:28: Unsupported: randsequence case item
+  114 |                     3, 4, 5: count_3;
+      |                            ^
+%Error-UNSUPPORTED: t/t_randsequence.v:115:29: Unsupported: randsequence production id
+  115 |                     default count_4;   
+      |                             ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:115:21: Unsupported: randsequence case item
+  115 |                     default count_4;   
+      |                     ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:111:19: Unsupported: randsequence case
+  111 |             most: case (i % 10)
+      |                   ^~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:111:17: Unsupported: randsequence production
+  111 |             most: case (i % 10)
+      |                 ^
+%Error-UNSUPPORTED: t/t_randsequence.v:103:10: Unsupported: randsequence
+  103 |          randsequence(main)
+      |          ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:127:27: Unsupported: randsequence production id
+  127 |          main: repeat(10) count_1;
+      |                           ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:127:16: Unsupported: randsequence repeat
+  127 |          main: repeat(10) count_1;
+      |                ^~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:127:14: Unsupported: randsequence production
+  127 |          main: repeat(10) count_1;
+      |              ^
+%Error-UNSUPPORTED: t/t_randsequence.v:128:17: Unsupported: randsequence production
+  128 |          count_1: { ++counts[1]; };
+      |                 ^
+%Error-UNSUPPORTED: t/t_randsequence.v:126:7: Unsupported: randsequence
+  126 |       randsequence(main)
+      |       ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:136:29: Unsupported: randsequence production id
+  136 |             main: rand join count_1 count_2;
+      |                             ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:136:37: Unsupported: randsequence production id
+  136 |             main: rand join count_1 count_2;
+      |                                     ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:136:19: Unsupported: randsequence production list
+  136 |             main: rand join count_1 count_2;
+      |                   ^~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:136:17: Unsupported: randsequence production
+  136 |             main: rand join count_1 count_2;
+      |                 ^
+%Error-UNSUPPORTED: t/t_randsequence.v:137:20: Unsupported: randsequence production
+  137 |             count_1: { ++counts[1]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:138:20: Unsupported: randsequence production
+  138 |             count_2: { ++counts[2]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:135:10: Unsupported: randsequence
+  135 |          randsequence(main)
+      |          ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:148:35: Unsupported: randsequence production id
+  148 |             main: rand join (1.0) count_1 count_2;
+      |                                   ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:148:43: Unsupported: randsequence production id
+  148 |             main: rand join (1.0) count_1 count_2;
+      |                                           ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:148:19: Unsupported: randsequence production list
+  148 |             main: rand join (1.0) count_1 count_2;
+      |                   ^~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:148:17: Unsupported: randsequence production
+  148 |             main: rand join (1.0) count_1 count_2;
+      |                 ^
+%Error-UNSUPPORTED: t/t_randsequence.v:149:20: Unsupported: randsequence production
+  149 |             count_1: { ++counts[1]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:150:20: Unsupported: randsequence production
+  150 |             count_2: { ++counts[2]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:147:10: Unsupported: randsequence
+  147 |          randsequence(main)
+      |          ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:153:35: Unsupported: randsequence production id
+  153 |             main: rand join (0.0) count_3 count_4;
+      |                                   ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:153:43: Unsupported: randsequence production id
+  153 |             main: rand join (0.0) count_3 count_4;
+      |                                           ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:153:19: Unsupported: randsequence production list
+  153 |             main: rand join (0.0) count_3 count_4;
+      |                   ^~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:153:17: Unsupported: randsequence production
+  153 |             main: rand join (0.0) count_3 count_4;
+      |                 ^
+%Error-UNSUPPORTED: t/t_randsequence.v:154:20: Unsupported: randsequence production
+  154 |             count_3: { ++counts[3]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:155:20: Unsupported: randsequence production
+  155 |             count_4: { ++counts[4]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:152:10: Unsupported: randsequence
+  152 |          randsequence(main)
+      |          ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:168:19: Unsupported: randsequence production id
+  168 |             main: count_1 check count_2;
+      |                   ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:168:27: Unsupported: randsequence production id
+  168 |             main: count_1 check count_2;
+      |                           ^~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:168:33: Unsupported: randsequence production id
+  168 |             main: count_1 check count_2;
+      |                                 ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:168:17: Unsupported: randsequence production
+  168 |             main: count_1 check count_2;
+      |                 ^
+%Error-UNSUPPORTED: t/t_randsequence.v:169:20: Unsupported: randsequence production id
+  169 |             check: count_3 { if (fiftyfifty) break; } count_4;
+      |                    ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:169:55: Unsupported: randsequence production id
+  169 |             check: count_3 { if (fiftyfifty) break; } count_4;
+      |                                                       ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:169:18: Unsupported: randsequence production
+  169 |             check: count_3 { if (fiftyfifty) break; } count_4;
+      |                  ^
+%Error-UNSUPPORTED: t/t_randsequence.v:170:20: Unsupported: randsequence production
+  170 |             count_1: { ++counts[1]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:171:20: Unsupported: randsequence production
+  171 |             count_2: { ++counts[2]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:172:20: Unsupported: randsequence production
+  172 |             count_3: { ++counts[3]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:173:20: Unsupported: randsequence production
+  173 |             count_4: { ++counts[4]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:167:10: Unsupported: randsequence
+  167 |          randsequence(main)
+      |          ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:186:19: Unsupported: randsequence production id
+  186 |             main: count_1 check count_2;
+      |                   ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:186:27: Unsupported: randsequence production id
+  186 |             main: count_1 check count_2;
+      |                           ^~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:186:33: Unsupported: randsequence production id
+  186 |             main: count_1 check count_2;
+      |                                 ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:186:17: Unsupported: randsequence production
+  186 |             main: count_1 check count_2;
+      |                 ^
+%Error-UNSUPPORTED: t/t_randsequence.v:187:20: Unsupported: randsequence production id
+  187 |             check: count_3 { if (fiftyfifty) return; } count_4;
+      |                    ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:187:56: Unsupported: randsequence production id
+  187 |             check: count_3 { if (fiftyfifty) return; } count_4;
+      |                                                        ^~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:187:18: Unsupported: randsequence production
+  187 |             check: count_3 { if (fiftyfifty) return; } count_4;
+      |                  ^
+%Error-UNSUPPORTED: t/t_randsequence.v:188:20: Unsupported: randsequence production
+  188 |             count_1: { ++counts[1]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:189:20: Unsupported: randsequence production
+  189 |             count_2: { ++counts[2]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:190:20: Unsupported: randsequence production
+  190 |             count_3: { ++counts[3]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:191:20: Unsupported: randsequence production
+  191 |             count_4: { ++counts[4]; };
+      |                    ^
+%Error-UNSUPPORTED: t/t_randsequence.v:185:10: Unsupported: randsequence
+  185 |          randsequence(main)
+      |          ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:203:19: Unsupported: randsequence production id
+  203 |             main: f_1 f_2 f_3;
+      |                   ^~~
+%Error-UNSUPPORTED: t/t_randsequence.v:203:23: Unsupported: randsequence production id
+  203 |             main: f_1 f_2 f_3;
+      |                       ^~~
+%Error-UNSUPPORTED: t/t_randsequence.v:203:27: Unsupported: randsequence production id
+  203 |             main: f_1 f_2 f_3;
+      |                           ^~~
+%Error-UNSUPPORTED: t/t_randsequence.v:203:17: Unsupported: randsequence production
+  203 |             main: f_1 f_2 f_3;
+      |                 ^
+%Error-UNSUPPORTED: t/t_randsequence.v:204:19: Unsupported: randsequence production id
+  204 |             f_1 : func(10);
+      |                   ^~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:204:17: Unsupported: randsequence production
+  204 |             f_1 : func(10);
+      |                 ^
+%Error-UNSUPPORTED: t/t_randsequence.v:205:19: Unsupported: randsequence production id
+  205 |             f_2 : func(20);
+      |                   ^~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:205:17: Unsupported: randsequence production
+  205 |             f_2 : func(20);
+      |                 ^
+%Error-UNSUPPORTED: t/t_randsequence.v:206:19: Unsupported: randsequence production id
+  206 |             f_3 : fnoarg;
+      |                   ^~~~~~
+%Error-UNSUPPORTED: t/t_randsequence.v:206:17: Unsupported: randsequence production
+  206 |             f_3 : fnoarg;
+      |                 ^
+%Error-UNSUPPORTED: t/t_randsequence.v:207:30: Unsupported: randsequence production
+  207 |             void func(int n) : { counts[1] += n; };
+      |                              ^
+%Error-UNSUPPORTED: t/t_randsequence.v:208:25: Unsupported: randsequence production
+  208 |             void fnoarg : { ++counts[2]; };
+      |                         ^
+%Error-UNSUPPORTED: t/t_randsequence.v:202:10: Unsupported: randsequence
+  202 |          randsequence(main)
+      |          ^~~~~~~~~~~~
 %Error: Exiting due to

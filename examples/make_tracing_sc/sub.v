@@ -12,47 +12,47 @@ module sub
    input reset_l
    );
 
-   // Example counter/flop
-   reg [31:0] count_f;
-   always_ff @(posedge fastclk) begin
-      if (!reset_l) begin
-         /*AUTORESET*/
-         // Beginning of autoreset for uninitialized flops
-         count_f <= 32'h0;
-         // End of automatics
-      end
-      else begin
-         count_f <= count_f + 1;
-      end
-   end
+  // Example counter/flop
+  reg [31:0] count_f;
+  always_ff @(posedge fastclk) begin
+    if (!reset_l) begin
+      /*AUTORESET*/
+      // Beginning of autoreset for uninitialized flops
+      count_f <= 32'h0;
+      // End of automatics
+    end
+    else begin
+      count_f <= count_f + 1;
+    end
+  end
 
-   // Another example flop
-   reg [31:0] count_c;
-   always_ff @(posedge clk) begin
-      if (!reset_l) begin
-         /*AUTORESET*/
-         // Beginning of autoreset for uninitialized flops
-         count_c <= 32'h0;
-         // End of automatics
+  // Another example flop
+  reg [31:0] count_c;
+  always_ff @(posedge clk) begin
+    if (!reset_l) begin
+      /*AUTORESET*/
+      // Beginning of autoreset for uninitialized flops
+      count_c <= 32'h0;
+      // End of automatics
+    end
+    else begin
+      count_c <= count_c + 1;
+      if (count_c >= 3) begin
+        $display("[%0t] fastclk is %0d times faster than clk\n", $time, count_f / count_c);
+        // This write is a magic value the Makefile uses to make sure the
+        // test completes successfully.
+        $write("*-* All Finished *-*\n");
+        $finish;
       end
-      else begin
-         count_c <= count_c + 1;
-         if (count_c >= 3) begin
-            $display("[%0t] fastclk is %0d times faster than clk\n", $time, count_f / count_c);
-            // This write is a magic value the Makefile uses to make sure the
-            // test completes successfully.
-            $write("*-* All Finished *-*\n");
-            $finish;
-         end
-      end
-   end
+    end
+  end
 
-   // An example assertion
-   always_ff @(posedge clk) begin
-      AssertionExample : assert (!reset_l || count_c < 100);
-   end
+  // An example assertion
+  always_ff @(posedge clk) begin
+    AssertionExample : assert (!reset_l || count_c < 100);
+  end
 
-   // And example coverage analysis
-   cover property (@(posedge clk) count_c == 3);
+  // And example coverage analysis
+  cover property (@(posedge clk) count_c == 3);
 
 endmodule

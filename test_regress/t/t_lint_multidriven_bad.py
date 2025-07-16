@@ -19,11 +19,11 @@ if not os.path.exists(root + "/.git"):
 test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.top_filename,
-             out_filename="../docs/gen/ex_MULTIDRIVEN_faulty.rst",
+             out_filename=root + "/docs/gen/ex_MULTIDRIVEN_faulty.rst",
              lines="31-36")
 
 test.extract(in_filename=test.golden_filename,
-             out_filename="../docs/gen/ex_MULTIDRIVEN_msg.rst",
+             out_filename=root + "/docs/gen/ex_MULTIDRIVEN_msg.rst",
              lines="10,11,14")
 
 test.passes()

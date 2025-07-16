@@ -1,0 +1,13 @@
+%Error-UNSUPPORTED: t/t_assert_always_unsup.v:21:7: Unsupported: always[] (in property expression)
+   21 |       always [2:5] a;
+      |       ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_assert_always_unsup.v:25:7: Unsupported: s_always (in property expression)
+   25 |       s_always [2:5] a;
+      |       ^~~~~~~~
+%Error: t/t_assert_always_unsup.v:29:20: syntax error, unexpected ':', expecting ']'
+   29 |       eventually [2:5] a;
+      |                    ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Cannot continue
+        ... This fatal error may be caused by the earlier error(s); resolve those first.

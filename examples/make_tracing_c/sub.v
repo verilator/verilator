@@ -11,32 +11,32 @@ module sub
    input reset_l
    );
 
-   // Example counter/flop
-   reg [31:0] count_c;
-   always_ff @(posedge clk) begin
-      if (!reset_l) begin
-         /*AUTORESET*/
-         // Beginning of autoreset for uninitialized flops
-         count_c <= 32'h0;
-         // End of automatics
+  // Example counter/flop
+  reg [31:0] count_c;
+  always_ff @(posedge clk) begin
+    if (!reset_l) begin
+      /*AUTORESET*/
+      // Beginning of autoreset for uninitialized flops
+      count_c <= 32'h0;
+      // End of automatics
+    end
+    else begin
+      count_c <= count_c + 1;
+      if (count_c >= 3) begin
+        // This write is a magic value the Makefile uses to make sure the
+        // test completes successfully.
+        $write("*-* All Finished *-*\n");
+        $finish;
       end
-      else begin
-         count_c <= count_c + 1;
-         if (count_c >= 3) begin
-            // This write is a magic value the Makefile uses to make sure the
-            // test completes successfully.
-            $write("*-* All Finished *-*\n");
-            $finish;
-         end
-      end
-   end
+    end
+  end
 
-   // An example assertion
-   always_ff @(posedge clk) begin
-      AssertionExample : assert (!reset_l || count_c < 100);
-   end
+  // An example assertion
+  always_ff @(posedge clk) begin
+    AssertionExample : assert (!reset_l || count_c < 100);
+  end
 
-   // And example coverage analysis
-   cover property (@(posedge clk) count_c == 3);
+  // And example coverage analysis
+  cover property (@(posedge clk) count_c == 3);
 
 endmodule

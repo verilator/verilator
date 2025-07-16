@@ -69,6 +69,16 @@ module t (/*AUTOARG*/
              .clk                       (clk),
              .toggle                    (toggle));
 
+   param#(1) p1 (/*AUTOINST*/
+                 // Inputs
+                 .clk                   (clk),
+                 .toggle                (toggle));
+
+   param#() p2 (/*AUTOINST*/
+                // Inputs
+                .clk                    (clk),
+                .toggle                 (toggle));
+
    reg [1:0]  memory[121:110];
 
    wire [1023:0] largeish = {992'h0, cyc};
@@ -169,4 +179,31 @@ module off (/*AUTOARG*/
    input toggle;
    // CHECK_COVER(-1,"top.t.o1","toggle",2)
 
+endmodule
+
+module param #(parameter P = 2) (/*AUTOARG*/
+   // Inputs
+   clk, toggle
+   );
+
+   input clk;
+   input toggle;
+
+   logic z;
+
+   for (genvar i = 0; i < P; i++) begin
+      logic x;
+      always @ (posedge clk) begin
+         x <= toggle;
+      end
+      for (genvar j = 0; j < 3; j++) begin
+         logic [2:0] y;
+         always @ (negedge clk) begin
+            y <= {toggle, ~toggle, 1'b1};
+         end
+      end
+   end
+   if (P > 1) begin : gen_1
+      assign z = 1;
+   end
 endmodule

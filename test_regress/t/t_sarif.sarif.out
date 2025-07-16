@@ -1,0 +1,188 @@
+{
+    "$schema": "https://json.schemastore.org/sarif-2.1.0-rtm.5.json",
+    "version": "###",
+    "runs": [
+        {
+            "tool": {
+                "driver": {
+                    "name": "Verilator",
+                    "version": "###",
+                    "informationUri": "https://verilator.org",
+                    "rules": [
+                        {
+                            "id": "MODDUP",
+                            "helpUri": "https://verilator.org/warn/MODDUP?v=latest"
+                        },
+                        {
+                            "id": "MULTIDRIVEN",
+                            "helpUri": "https://verilator.org/warn/MULTIDRIVEN?v=latest"
+                        },
+                        {
+                            "id": "WIDTHTRUNC",
+                            "helpUri": "https://verilator.org/warn/WIDTHTRUNC?v=latest"
+                        }
+                    ]
+                }
+            },
+            "invocations": [
+                {
+                    "commandLine": "--prefix Vt_sarif -cc -Mdir obj_vlt/t_sarif --fdedup --debug-check --comp-limit-members 10 --x-assign unique -Wno-fatal --diagnostics-sarif --clk clk -f input.vc +define+TEST_OBJ_DIR=obj_vlt/t_sarif +define+TEST_DUMPFILE=obj_vlt/t_sarif/simx.vcd t/t_sarif.v +librescan +notimingchecks +libext+.v -y t +incdir+t",
+                    "executionSuccessful": true
+                }
+            ],
+            "results": [
+                {
+                    "level": "warning",
+                    "message": {
+                        "text": "Duplicate declaration of module: 't'\n... Location of original declaration\n... For warning description see https://verilator.org/warn/MODDUP?v=latest\n... Use \"/* verilator lint_off MODDUP */\" and lint_on around source to disable this message.",
+                        "markdown": "```\n%Warning-MODDUP: t/t_sarif.v:21:8: Duplicate declaration of module: 't'\n   21 | module t;   \n      |        ^\n                 t/t_sarif.v:7:8: ... Location of original declaration\n    7 | module t(\n      |        ^\n                 ... For warning description see https://verilator.org/warn/MODDUP?v=latest\n                 ... Use \"/* verilator lint_off MODDUP */\" and lint_on around source to disable this message.\n\n```\n"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///.../t_sarif.v"
+                                },
+                                "region": {
+                                    "sourceLanguage": "systemverilog",
+                                    "startLine": 21,
+                                    "startColumn": 8,
+                                    "endColumn": 9,
+                                    "snippit": {
+                                        "text": "module t;",
+                                        "markdown": "```\n   21 | module t;   \n      |        ^\n\n```\n"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "relatedLocations": [
+                        {
+                            "message": {
+                                "text": "... Location of original declaration\n... For warning description see https://verilator.org/warn/MODDUP?v=latest\n... Use \"/* verilator lint_off MODDUP */\" and lint_on around source to disable this message.",
+                                "markdown": "```\n                 t/t_sarif.v:7:8: ... Location of original declaration\n    7 | module t(\n      |        ^\n                 ... For warning description see https://verilator.org/warn/MODDUP?v=latest\n                 ... Use \"/* verilator lint_off MODDUP */\" and lint_on around source to disable this message.\n\n```\n"
+                            },
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///.../t_sarif.v"
+                                },
+                                "region": {
+                                    "sourceLanguage": "systemverilog",
+                                    "startLine": 7,
+                                    "startColumn": 8,
+                                    "endColumn": 9,
+                                    "snippit": {
+                                        "text": "module t(",
+                                        "markdown": "```\n    7 | module t(\n      |        ^\n\n```\n"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "ruleId": "MODDUP",
+                    "ruleIndex": 0
+                },
+                {
+                    "level": "warning",
+                    "message": {
+                        "text": "Operator ASSIGNW expects 2 bits on the Assign RHS, but Assign RHS's CONST '5'h1f' generates 5 bits.\n... note: In instance 't'\n... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest\n... Use \"/* verilator lint_off WIDTHTRUNC */\" and lint_on around source to disable this message.",
+                        "markdown": "```\n%Warning-WIDTHTRUNC: t/t_sarif.v:12:23: Operator ASSIGNW expects 2 bits on the Assign RHS, but Assign RHS's CONST '5'h1f' generates 5 bits.\n                                      : ... note: In instance 't'\n   12 |    wire [1:0] trunced = 5'b11111;   \n      |                       ^\n                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest\n                     ... Use \"/* verilator lint_off WIDTHTRUNC */\" and lint_on around source to disable this message.\n\n```\n"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///.../t_sarif.v"
+                                },
+                                "region": {
+                                    "sourceLanguage": "systemverilog",
+                                    "startLine": 12,
+                                    "startColumn": 23,
+                                    "endColumn": 24,
+                                    "snippit": {
+                                        "text": "   wire [1:0] trunced = 5'b11111;",
+                                        "markdown": "```\n   12 |    wire [1:0] trunced = 5'b11111;   \n      |                       ^\n\n```\n"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "ruleId": "WIDTHTRUNC",
+                    "ruleIndex": 2
+                },
+                {
+                    "level": "warning",
+                    "message": {
+                        "text": "Signal has multiple driving blocks with different clocking: 'multidriven'\n... Location of first driving block\n... Location of other driving block\n... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.",
+                        "markdown": "```\n%Warning-MULTIDRIVEN: t/t_sarif.v:10:18: Signal has multiple driving blocks with different clocking: 'multidriven'\n                      t/t_sarif.v:15:6: ... Location of first driving block\n   15 |      multidriven <= '1;\n      |      ^~~~~~~~~~~\n                      t/t_sarif.v:17:6: ... Location of other driving block\n   17 |      multidriven <= '0;\n      |      ^~~~~~~~~~~\n                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n                      ... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.\n\n```\n"
+                    },
+                    "locations": [
+                        {
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///.../t_sarif.v"
+                                },
+                                "region": {
+                                    "sourceLanguage": "systemverilog",
+                                    "startLine": 10,
+                                    "startColumn": 18,
+                                    "endColumn": 29,
+                                    "snippit": {
+                                        "text": "    output logic multidriven);",
+                                        "markdown": "```\n   10 |     output logic multidriven);\n      |                  ^~~~~~~~~~~\n\n```\n"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "relatedLocations": [
+                        {
+                            "message": {
+                                "text": "... Location of first driving block",
+                                "markdown": "```\n                      t/t_sarif.v:15:6: ... Location of first driving block\n   15 |      multidriven <= '1;\n      |      ^~~~~~~~~~~\n\n```\n"
+                            },
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///.../t_sarif.v"
+                                },
+                                "region": {
+                                    "sourceLanguage": "systemverilog",
+                                    "startLine": 15,
+                                    "startColumn": 6,
+                                    "endColumn": 17,
+                                    "snippit": {
+                                        "text": "     multidriven <= '1;",
+                                        "markdown": "```\n   15 |      multidriven <= '1;\n      |      ^~~~~~~~~~~\n\n```\n"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "message": {
+                                "text": "... Location of other driving block\n... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.",
+                                "markdown": "```\n                      t/t_sarif.v:17:6: ... Location of other driving block\n   17 |      multidriven <= '0;\n      |      ^~~~~~~~~~~\n                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n                      ... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.\n\n```\n"
+                            },
+                            "physicalLocation": {
+                                "artifactLocation": {
+                                    "uri": "file:///.../t_sarif.v"
+                                },
+                                "region": {
+                                    "sourceLanguage": "systemverilog",
+                                    "startLine": 17,
+                                    "startColumn": 6,
+                                    "endColumn": 17,
+                                    "snippit": {
+                                        "text": "     multidriven <= '0;",
+                                        "markdown": "```\n   17 |      multidriven <= '0;\n      |      ^~~~~~~~~~~\n\n```\n"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "ruleId": "MULTIDRIVEN",
+                    "ruleIndex": 1
+                }
+            ]
+        }
+    ]
+}

@@ -10,7 +10,6 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   // verilator lint_off BLKANDNBLK
    // verilator lint_off COMBDLY
    // verilator lint_off LATCH
    // verilator lint_off UNOPT

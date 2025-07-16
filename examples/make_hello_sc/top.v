@@ -7,8 +7,8 @@
 // See also https://verilator.org/guide/latest/examples.html"
 
 module top;
-   initial begin
-      $display("Hello World!");
-      $finish;
-   end
+  initial begin
+    $display("Hello World!");
+    $finish;
+  end
 endmodule

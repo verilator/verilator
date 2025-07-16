@@ -1,0 +1,4 @@
+Intentional stop
+Filename 'C:\some\windows\path\t_stop_winos_bad.v'  Length = 39
+%Error: C:\some\windows\path\t_stop_winos_bad.v:14: Verilog $stop
+Aborting...

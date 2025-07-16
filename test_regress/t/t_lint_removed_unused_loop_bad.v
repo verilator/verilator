@@ -28,10 +28,10 @@ endmodule
 
 // module unused - no warning for any of statements inside
 module unused(input clk);
-   reg unused_variable_while = 0;
-   reg unused_variable_do_while = 0;
-   reg unused_variable_for = 0;
-   const logic always_false = 0;
+   bit unused_variable_while;
+   bit unused_variable_do_while;
+   bit unused_variable_for;
+   const bit always_false = 0;
 
    always @(posedge clk) begin
       while(unused_variable_while) begin
@@ -259,7 +259,7 @@ module clock_init_race(input clk, input reset_l);
    logic m_3_reset = reset_l;
    assign m_2_clock = clk;
    assign m_3_clock = clk;
-   int m_3_counter = 0;
+   int m_3_counter;
    initial begin
       $write("*-* START TEST *-*\n");
    end
@@ -271,7 +271,7 @@ module clock_init_race(input clk, input reset_l);
       end
    end
 
-   reg m_2_ticked = 1'b0;
+   bit m_2_ticked;
    always @(posedge m_2_clock) if (!m_2_reset) begin
       m_2_ticked = 1'b1;
    end

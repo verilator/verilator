@@ -21,23 +21,17 @@ double sc_time_stamp() { return 0; }
 # define EXPECTED 0
 #elif defined(T_X_ASSIGN_1)
 # define EXPECTED 1
-#elif defined(T_X_ASSIGN_UNIQUE_0)
-# define EXPECTED 0
-#elif defined(T_X_ASSIGN_UNIQUE_1)
-# define EXPECTED 1
-#else
-# error "Don't know expectd output for test" #TEST
 #endif
 // clang-format on
 
 int main(int argc, const char** argv) {
-    VM_PREFIX* top = new VM_PREFIX{};
-
 #if defined(T_X_ASSIGN_UNIQUE_0)
     Verilated::randReset(0);
 #elif defined(T_X_ASSIGN_UNIQUE_1)
     Verilated::randReset(1);
 #endif
+
+    VM_PREFIX* top = new VM_PREFIX{};
 
     // Evaluate one clock posedge
     top->clk = 0;
@@ -52,6 +46,13 @@ int main(int argc, const char** argv) {
     }
 #else
     if (top->o != EXPECTED) {
+        vl_fatal(__FILE__, __LINE__, "TOP.t", "incorrect module output");
+        exit(1);
+    }
+
+    uint32_t o_int_expected = EXPECTED ? 0xffffffff : 0;
+
+    if (top->o_int != o_int_expected) {
         vl_fatal(__FILE__, __LINE__, "TOP.t", "incorrect module output");
         exit(1);
     }

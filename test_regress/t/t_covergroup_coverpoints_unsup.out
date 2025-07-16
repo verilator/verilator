@@ -1,0 +1,29 @@
+%Warning-COVERIGN: t/t_covergroup_coverpoints_unsup.v:21:5: Ignoring unsupported: covergroup
+   21 |     covergroup cg @(posedge clk);
+      |     ^~~~~~~~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_covergroup_coverpoints_unsup.v:21:19: Ignoring unsupported: coverage clocking event
+   21 |     covergroup cg @(posedge clk);
+      |                   ^
+%Warning-COVERIGN: t/t_covergroup_coverpoints_unsup.v:22:9: Ignoring unsupported: coverpoint
+   22 |         coverpoint a;
+      |         ^~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_coverpoints_unsup.v:24:31: Ignoring unsupported: cover bin specification
+   24 |             bins the_bins [5] = { [0:20] };
+      |                               ^
+%Warning-COVERIGN: t/t_covergroup_coverpoints_unsup.v:23:9: Ignoring unsupported: coverpoint
+   23 |         coverpoint b {
+      |         ^~~~~~~~~~
+%Error: t/t_covergroup_coverpoints_unsup.v:35:48: Member 'a' not found in class 'cg'
+                                                : ... note: In instance 't'
+   35 |             $display("coverage a = %f", the_cg.a.get_inst_coverage());
+      |                                                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-UNSUPPORTED: t/t_covergroup_coverpoints_unsup.v:35:50: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'logic''
+                                                            : ... note: In instance 't'
+   35 |             $display("coverage a = %f", the_cg.a.get_inst_coverage());
+      |                                                  ^~~~~~~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Verilator internal fault, sorry. Suggest trying --debug --gdbbt
+%Error: Command Failed

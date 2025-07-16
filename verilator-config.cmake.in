@@ -68,15 +68,45 @@ function(_verilator_check_cxx_libraries LIBRARIES RESVAR)
     set("${RESVAR}" "${${RESVAR}}" PARENT_SCOPE)
 endfunction()
 
+function(_verilator_check_cxx_compiler_flag FLAG RESVAR)
+    # Check whether the compiler understands the flag FLAG
+    set(_VERILATOR_CHECK_CXX_COMPILER_FLAG_SRC
+        "
+        #warning warning
+        int main() { return 0; }
+        "
+    )
+    set(CMAKE_REQUIRED_FLAGS ${FLAG})
+    # Make sure the compiler warning is not turned into an error
+    string(APPEND CMAKE_REQUIRED_FLAGS " -Wno-error=cpp")
+    set(CMAKE_REQUIRED_DEFINITIONS)
+    set(CMAKE_REQUIRED_INCLUDES)
+    set(CMAKE_REQUIRED_LINK_OPTIONS)
+    set(CMAKE_REQUIRED_LIBRARIES)
+    set(CMAKE_REQUIRED_QUIET)
+
+    check_compiler_flag_common_patterns(_common_patterns)
+    check_cxx_source_compiles(
+        "${_VERILATOR_CHECK_CXX_COMPILER_FLAG_SRC}"
+        "${RESVAR}"
+        FAIL_REGEX
+            "command[ -]line option .* is valid for .* but not for C[+][+]"
+        FAIL_REGEX
+            "-Werror=.* argument .* is not valid for C[+][+]"
+            ${_common_patterns}
+    )
+    set("${RESVAR}" "${${RESVAR}}" PARENT_SCOPE)
+endfunction()
+
 # Check compiler flag support. Skip on MSVC, these are all GCC flags.
 if(NOT CMAKE_CXX_COMPILER_ID MATCHES MSVC)
     if(NOT DEFINED VERILATOR_CFLAGS OR NOT DEFINED VERILATOR_MT_CFLAGS)
         include(CheckCXXCompilerFlag)
         foreach(FLAG @CFG_CXX_FLAGS_CMAKE@)
             string(MAKE_C_IDENTIFIER ${FLAG} FLAGNAME)
-            check_cxx_compiler_flag(${FLAG} ${FLAGNAME})
+            _verilator_check_cxx_compiler_flag(${FLAG} ${FLAGNAME})
             if(${FLAGNAME})
-                list(APPEND VERILATOR_CFLAGS ${FLAG})
+                list(APPEND VERILATOR_CFLAGS $<$<COMPILE_LANGUAGE:CXX>:${FLAG}>)
             endif()
         endforeach()
         foreach(FLAG @CFG_LDFLAGS_THREADS_CMAKE@)
@@ -237,7 +267,10 @@ function(verilate TARGET)
         if(NOT VERILATE_TRACE_VCD)
             set(VERILATE_TRACE_VCD TRUE)
         endif()
-        message(DEPRECATION "The `TRACE` argument is deprecated. Please use `TRACE_VCD` instead.")
+        message(
+            DEPRECATION
+            "The `TRACE` argument is deprecated. Please use `TRACE_VCD` instead."
+        )
     endif()
 
     if(NOT VERILATE_SOURCES)
@@ -444,7 +477,9 @@ function(verilate TARGET)
         json_get_list(JSOURCES_USER_CLASSES "${MANIFEST}" sources user_classes)
         json_get_list(JSOURCES_DEPS "${MANIFEST}" sources deps)
 
-        file(WRITE ${VDIR}/${VERILATE_PREFIX}.cmake
+        file(
+            WRITE
+            ${VDIR}/${VERILATE_PREFIX}.cmake
             "# Verilated -*- CMake -*-\n"
             "# DESCRIPTION: Verilator output: CMake include script with class lists\n"
             "#\n"
@@ -496,7 +531,9 @@ function(verilate TARGET)
         json_get_submodules(JSUBMODULES JNSUBMODULES "${MANIFEST}")
 
         if(JNSUBMODULES)
-            file(APPEND ${VDIR}/${VERILATE_PREFIX}.cmake
+            file(
+                APPEND
+                ${VDIR}/${VERILATE_PREFIX}.cmake
                 "# Verilate hierarchical blocks\n"
                 "get_target_property(TOP_TARGET_NAME \"\${TARGET}\" NAME)\n"
             )
@@ -514,30 +551,58 @@ function(verilate TARGET)
                 set(SUBMODULE_VERILATE_ARGS "")
 
                 if(NOT ${I} STREQUAL ${JNSUBMODULES})
-                    string(APPEND SUBMODULE_CMAKE
+                    string(
+                        APPEND
+                        SUBMODULE_CMAKE
                         "add_library(${JSUBMODULE_PREFIX} STATIC)\n"
                         "target_link_libraries(\${TOP_TARGET_NAME} PRIVATE ${JSUBMODULE_PREFIX})\n"
                     )
 
                     if(JSUBMODULE_DEPS)
-                        string(APPEND SUBMODULE_CMAKE "target_link_libraries(${JSUBMODULE_PREFIX} INTERFACE ${JSUBMODULE_DEPS})\n")
+                        string(
+                            APPEND
+                            SUBMODULE_CMAKE
+                            "target_link_libraries(${JSUBMODULE_PREFIX} INTERFACE ${JSUBMODULE_DEPS})\n"
+                        )
                     endif()
 
-                    string(APPEND SUBMODULE_VERILATE_ARGS "${JSUBMODULE_PREFIX} PREFIX ${JSUBMODULE_PREFIX} TOP_MODULE ${JSUBMODULE_TOP} DIRECTORY ${JSUBMODULE_DIRECTORY} SOURCES ${JSUBMODULE_SOURCES}")
+                    string(
+                        APPEND
+                        SUBMODULE_VERILATE_ARGS
+                        "${JSUBMODULE_PREFIX} PREFIX ${JSUBMODULE_PREFIX} TOP_MODULE ${JSUBMODULE_TOP} DIRECTORY ${JSUBMODULE_DIRECTORY} SOURCES ${JSUBMODULE_SOURCES}"
+                    )
                 else()
-                    string(APPEND SUBMODULE_CMAKE "# Verilate the top module that refers to lib-create wrappers of above\n")
-                    string(APPEND SUBMODULE_VERILATE_ARGS "\${TOP_TARGET_NAME} PREFIX ${JSUBMODULE_PREFIX} TOP_MODULE ${JSUBMODULE_TOP} DIRECTORY ${JSUBMODULE_DIRECTORY} SOURCES ${JSUBMODULE_SOURCES}")
+                    string(
+                        APPEND
+                        SUBMODULE_CMAKE
+                        "# Verilate the top module that refers to lib-create wrappers of above\n"
+                    )
+                    string(
+                        APPEND
+                        SUBMODULE_VERILATE_ARGS
+                        "\${TOP_TARGET_NAME} PREFIX ${JSUBMODULE_PREFIX} TOP_MODULE ${JSUBMODULE_TOP} DIRECTORY ${JSUBMODULE_DIRECTORY} SOURCES ${JSUBMODULE_SOURCES}"
+                    )
                 endif()
 
                 if(JSUBMODILE_VERILATOR_ARGS)
-                    string(APPEND SUBMODULE_VERILATE_ARGS " VERILATOR_ARGS -f ${JSUBMODILE_VERILATOR_ARGS}")
+                    string(
+                        APPEND
+                        SUBMODULE_VERILATE_ARGS
+                        " VERILATOR_ARGS -f ${JSUBMODILE_VERILATOR_ARGS}"
+                    )
                 endif()
 
                 if(JSUBMODULE_CFLAGS)
-                    string(APPEND SUBMODULE_VERILATE_ARGS " -CFLAGS ${JSUBMODULE_CFLAGS}")
+                    string(
+                        APPEND
+                        SUBMODULE_VERILATE_ARGS
+                        " -CFLAGS ${JSUBMODULE_CFLAGS}"
+                    )
                 endif()
 
-                file(APPEND ${VDIR}/${VERILATE_PREFIX}.cmake
+                file(
+                    APPEND
+                    ${VDIR}/${VERILATE_PREFIX}.cmake
                     "${SUBMODULE_CMAKE}"
                     "verilate(${SUBMODULE_VERILATE_ARGS})\n"
                 )

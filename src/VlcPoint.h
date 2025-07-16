@@ -61,20 +61,29 @@ public:
         return m_count >= threshi;
     }
     // KEY ACCESSORS
-    string filename() const { return keyExtract(VL_CIK_FILENAME); }
-    string comment() const { return keyExtract(VL_CIK_COMMENT); }
-    string hier() const { return keyExtract(VL_CIK_HIER); }
-    string type() const { return keyExtract(VL_CIK_TYPE); }
-    string thresh() const { return keyExtract(VL_CIK_THRESH); }  // string as maybe ""
-    string linescov() const { return keyExtract(VL_CIK_LINESCOV); }
-    int lineno() const { return std::atoi(keyExtract(VL_CIK_LINENO).c_str()); }
-    int column() const { return std::atoi(keyExtract(VL_CIK_COLUMN).c_str()); }
+    string filename() const { return keyExtract(VL_CIK_FILENAME, m_name.c_str()); }
+    string comment() const { return keyExtract(VL_CIK_COMMENT, m_name.c_str()); }
+    string hier() const { return keyExtract(VL_CIK_HIER, m_name.c_str()); }
+    string type() const { return typeExtract(m_name.c_str()); }
+    string thresh() const {
+        // string as maybe ""
+        return keyExtract(VL_CIK_THRESH, m_name.c_str());
+    }
+    string linescov() const { return keyExtract(VL_CIK_LINESCOV, m_name.c_str()); }
+    int lineno() const {
+        const string lineStr = keyExtract(VL_CIK_LINENO, m_name.c_str());
+        return std::atoi(lineStr.c_str());
+    }
+    int column() const {
+        const string columnStr = keyExtract(VL_CIK_COLUMN, m_name.c_str());
+        return std::atoi(columnStr.c_str());
+    }
     // METHODS
-    string keyExtract(const char* shortKey) const {
+    static string typeExtract(const char* name) { return keyExtract(VL_CIK_TYPE, name); }
+    static string keyExtract(const char* shortKey, const char* name) {
         // Hot function
         const size_t shortLen = std::strlen(shortKey);
-        const string namestr = name();
-        for (const char* cp = namestr.c_str(); *cp; ++cp) {
+        for (const char* cp = name; *cp; ++cp) {
             if (*cp == '\001') {
                 if (0 == std::strncmp(cp + 1, shortKey, shortLen) && cp[shortLen + 1] == '\002') {
                     cp += shortLen + 2;  // Skip \001+short+\002
@@ -129,7 +138,7 @@ public:
 
     // METHODS
     void dump() {
-        UINFO(2, "dumpPoints...\n");
+        UINFO(2, "dumpPoints...");
         VlcPoint::dumpHeader(std::cout);
         for (const auto& i : *this) {
             const VlcPoint& point = pointNumber(i.second);

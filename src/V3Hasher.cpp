@@ -97,7 +97,7 @@ class HasherVisitor final : public VNVisitorConst {
 
     void visit(AstNode* nodep) override {
 #if VL_DEBUG
-        UINFO(0, "%Warning: Hashing node as AstNode: " << nodep << endl);
+        UINFO(0, "%Warning: Hashing node as AstNode: " << nodep);
 #endif
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [=]() {});
     }
@@ -214,6 +214,11 @@ class HasherVisitor final : public VNVisitorConst {
     // AstNodeExpr
     void visit(AstNodeExpr* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
+    }
+    void visit(AstSel* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //
+            m_hash += nodep->widthConst();
+        });
     }
     void visit(AstConst* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //

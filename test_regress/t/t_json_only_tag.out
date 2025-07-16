@@ -47,7 +47,7 @@
         ]}
       ]}
     ]}
-  ],"activesp": []},
+  ]},
   {"type":"IFACE","name":"ifc","addr":"(M)","loc":"d,7:11,7:14","origName":"ifc","level":3,"modPublic":false,"inLibrary":true,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
     {"type":"VAR","name":"value","addr":"(W)","loc":"d,8:12,8:17","dtypep":"(V)","origName":"value","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"VSTATIC","varType":"VAR","dtypeName":"integer","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
@@ -55,7 +55,7 @@
      "varsp": [
       {"type":"MODPORTVARREF","name":"value","addr":"(NB)","loc":"d,9:32,9:37","direction":"OUTPUT","varp":"(W)"}
     ]}
-  ],"activesp": []}
+  ]}
 ],"filesp": [],
  "miscsp": [
   {"type":"TYPETABLE","name":"","addr":"(C)","loc":"a,0:0,0:0","constraintRefp":"UNLINKED","emptyQueuep":"UNLINKED","queueIndexp":"UNLINKED","streamp":"UNLINKED","voidp":"(JB)",
@@ -94,6 +94,6 @@
     {"type":"MODULE","name":"@CONST-POOL@","addr":"(AC)","loc":"a,0:0,0:0","isChecker":false,"isProgram":false,"origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
      "stmtsp": [
       {"type":"SCOPE","name":"@CONST-POOL@","addr":"(BC)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(AC)","varsp": [],"blocksp": [],"inlinesp": []}
-    ],"activesp": []}
+    ]}
   ]}
 ]}

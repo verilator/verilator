@@ -6,7 +6,7 @@
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # Create the user
 RUN groupadd verilator \
@@ -36,12 +36,14 @@ RUN apt-get update \
                         help2man \
                         libfl2 \
                         libfl-dev \
+                        libclang-rt-18-dev \
                         libgoogle-perftools-dev \
                         libsystemc \
                         libsystemc-dev \
                         numactl \
                         perl \
                         python3 \
+                        python3-distro \
                         wget \
                         z3 \
                         zlib1g \

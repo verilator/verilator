@@ -28,6 +28,9 @@ test.execute(all_run_flags=[
 test.file_grep(test.obj_dir + "/profile.vlt", r'profile_data -model "VTest"')
 test.file_grep(test.obj_dir + "/profile.vlt", r'profile_data -model "V' + test.name + '"')
 
+# Check for cost rollovers
+test.file_grep_not(test.obj_dir + "/profile.vlt", r'.*cost 64\'d\d{18}.*')
+
 # Differentiate benchmarksim results
 test.name = test.name + "_optimized"
 test.compile(

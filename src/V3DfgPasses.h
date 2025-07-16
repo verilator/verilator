@@ -30,6 +30,30 @@ class DfgGraph;
 // Various context objects hold data that need to persist across invocations
 // of a DFG pass.
 
+class V3DfgBinToOneHotContext final {
+    const std::string m_label;  // Label to apply to stats
+
+public:
+    VDouble0 m_decodersCreated;  // Number of bianry to one-hot decoders created
+    explicit V3DfgBinToOneHotContext(const std::string& label)
+        : m_label{label} {}
+    ~V3DfgBinToOneHotContext() VL_MT_DISABLED;
+};
+
+class V3DfgBreakCyclesContext final {
+    const std::string m_label;  // Label to apply to stats
+
+public:
+    VDouble0 m_nFixed;  // Number of graphs that became acyclic
+    VDouble0 m_nImproved;  // Number of graphs that were imporoved but still cyclic
+    VDouble0 m_nUnchanged;  // Number of graphs that were left unchanged
+    VDouble0 m_nTrivial;  // Number of graphs that were not changed
+    VDouble0 m_nImprovements;  // Number of changes made to graphs
+    explicit V3DfgBreakCyclesContext(const std::string& label)
+        : m_label{label} {}
+    ~V3DfgBreakCyclesContext() VL_MT_DISABLED;
+};
+
 class V3DfgCseContext final {
     const std::string m_label;  // Label to apply to stats
 
@@ -43,13 +67,8 @@ public:
 class V3DfgRegularizeContext final {
     const std::string m_label;  // Label to apply to stats
 
-    // Used to generate unique names for different DFGs within the same hashed name
-    std::unordered_map<std::string, uint32_t> m_multiplicity;
-
 public:
     VDouble0 m_temporariesIntroduced;  // Number of temporaries introduced
-
-    std::string tmpNamePrefix(const DfgGraph&);  // Return prefix to use for given graph
 
     explicit V3DfgRegularizeContext(const std::string& label)
         : m_label{label} {}
@@ -87,6 +106,8 @@ public:
     VDouble0 m_nonRepWidth;  // Equations non-representable due to width mismatch
     VDouble0 m_resultEquations;  // Number of result combinational equations
 
+    V3DfgBinToOneHotContext m_binToOneHotContext{m_label};
+    V3DfgBreakCyclesContext m_breakCyclesContext{m_label};
     V3DfgCseContext m_cseContext0{m_label + " 1st"};
     V3DfgCseContext m_cseContext1{m_label + " 2nd"};
     V3DfgPeepholeContext m_peepholeContext{m_label};
@@ -111,17 +132,31 @@ namespace V3DfgPasses {
 // constructed DfgGraph.
 DfgGraph* astToDfg(AstModule&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 
+// Same as above, but for the entire netlist, after V3Scope
+DfgGraph* astToDfg(AstNetlist&, V3DfgOptimizationContext&) VL_MT_DISABLED;
+
+// Attempt to make the given cyclic graph into an acyclic, or "less cyclic"
+// equivalent. If the returned pointer is null, then no improvement was
+// possible on the input graph. Otherwise the returned graph is an improvement
+// on the input graph, with at least some cycles eliminated. The returned
+// graph is always independent of the original. If an imporoved graph is
+// returned, then the returned 'bool' flag indicated if the returned graph is
+// acyclic (flag 'true'), or still cyclic (flag 'false').
+std::pair<std::unique_ptr<DfgGraph>, bool> breakCycles(const DfgGraph&,
+                                                       V3DfgOptimizationContext&) VL_MT_DISABLED;
+
 // Optimize the given DfgGraph
 void optimize(DfgGraph&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 
-// Convert DfgGraph back into Ast, and insert converted graph back into its parent module.
-// Returns the parent module.
-AstModule* dfgToAst(DfgGraph&, V3DfgOptimizationContext&) VL_MT_DISABLED;
+// Convert DfgGraph back into Ast, and insert converted graph back into the Ast.
+void dfgToAst(DfgGraph&, V3DfgOptimizationContext&) VL_MT_DISABLED;
 
 //===========================================================================
 // Intermediate/internal operations
 //===========================================================================
 
+// Construct binary to oneHot decoders
+void binToOneHot(DfgGraph&, V3DfgBinToOneHotContext&) VL_MT_DISABLED;
 // Common subexpression elimination
 void cse(DfgGraph&, V3DfgCseContext&) VL_MT_DISABLED;
 // Inline fully driven variables

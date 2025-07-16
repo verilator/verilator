@@ -10,5 +10,5 @@
                         t/t_unoptflat_simple_2.v:16:15:  t.x, width 3, circular fanout 1, can split_var
                     ... Candidates with the highest fanout:
                         t/t_unoptflat_simple_2.v:16:15:  t.x, width 3, circular fanout 1, can split_var
-                    ... Suggest add /*verilator split_var*/ to appropriate variables above.
+                    ... Suggest add /*verilator split_var*/ or /*verilator isolate_assignments*/ to appropriate variables above.
 %Error: Exiting due to

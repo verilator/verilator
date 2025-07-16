@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_disable_func_bad.v:19:13: Node of type FUNCREF 'increment_x' referenced by disable
+   19 |          #1 disable increment_x;
+      |             ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

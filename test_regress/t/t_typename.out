@@ -20,7 +20,7 @@
 "int$[$:3]" ==? "int$[$:3]"
 "bit$[]" ==? "bit$[]"
 
-"enum{A=32'h0;B=32'h1;C=32'h63;}A::__typeimpenum1" ==? "enum{A=32'sd0,B=32'sd1,C=32'sd99}A::<unspecified>"
+"enum{A=32'h0;B=32'h1;C=32'h63;}A::__typeimpmod1" ==? "enum{A=32'sd0,B=32'sd1,C=32'sd99}A::<unspecified>"
 "struct{bit A;bit B;}t.AB_t" ==? "struct{bit A;bit B;}<some_have_typename>"
 "struct{bit A;bit B;}t.AB_t$[0:9]" ==? "struct{bit A;bit B;}top.AB_t$[0:9]"
 "union{bit A;bit B;}t.UAB_t" ==? "union{bit A;bit B;}"

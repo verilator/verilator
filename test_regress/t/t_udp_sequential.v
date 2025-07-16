@@ -48,7 +48,7 @@ module t (/*AUTOARG*/
         if (q != 1) $stop;
      end
      else if (cycle==5) begin
-        $display("d = %d clk = %d cycle = %d", d, clk, cycle);
+        $display("d=%d clk=%d cycle=%0d", d, clk, cycle);
         if (q != 1) $stop;
      end
      else if (cycle==6) begin

@@ -435,8 +435,14 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                         if (VN_IS(procp, Always)) {
                             subFuncp->slow(false);
                             FileLine* const flp = procp->fileline();
-                            bodyp
-                                = new AstWhile{flp, new AstConst{flp, AstConst::BitTrue{}}, bodyp};
+                            bodyp = new AstWhile{
+                                flp,
+                                // If we change to use exceptions to handle finish/stop,
+                                // this can get removed
+                                new AstCExpr{flp,
+                                             "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1,
+                                             true},
+                                bodyp};
                         }
                     }
                     subFuncp->addStmtsp(bodyp);
@@ -1183,6 +1189,18 @@ VirtIfaceTriggers::makeIfaceToSensMap(AstNetlist* const netlistp, size_t vifTrig
     return ifaceToSensMap;
 }
 
+VirtIfaceTriggers::IfaceMemberSensMap
+VirtIfaceTriggers::makeMemberToSensMap(AstNetlist* const netlistp, size_t vifTriggerIndex,
+                                       AstVarScope* trigVscp) const {
+    IfaceMemberSensMap memberToSensMap;
+    for (const auto& p : m_memberTriggers) {
+        memberToSensMap.emplace(
+            std::make_pair(p.first, createTriggerSenTree(netlistp, trigVscp, vifTriggerIndex)));
+        ++vifTriggerIndex;
+    }
+    return memberToSensMap;
+}
+
 //============================================================================
 // Top level entry-point to scheduling
 
@@ -1373,7 +1391,7 @@ void schedule(AstNetlist* netlistp) {
     // Orders a region's logic and creates the region eval function
     const auto order = [&](const std::string& name,
                            const std::vector<V3Sched::LogicByScope*>& logic) -> EvalKit {
-        UINFO(2, "Scheduling " << name << " #logic = " << logic.size() << endl);
+        UINFO(2, "Scheduling " << name << " #logic = " << logic.size());
         AstVarScope* const trigVscp
             = scopeTopp->createTempLike("__V" + name + "Triggered", actTrigVscp);
         const auto trigMap = cloneMapWithNewTriggerReferences(actTrigMap, trigVscp);

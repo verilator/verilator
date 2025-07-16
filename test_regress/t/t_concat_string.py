@@ -12,7 +12,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-signal.alarm(5)  # 5s timeout
+signal.alarm(15)  # 15s timeout
 
 test.compile()
 

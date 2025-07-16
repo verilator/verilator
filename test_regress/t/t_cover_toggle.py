@@ -21,7 +21,7 @@ test.inline_checks()
 test.file_grep_not(test.obj_dir + "/coverage.dat", "largeish")
 
 if test.vlt_all:
-    test.file_grep(test.stats, r'Coverage, Toggle points joined\s+(\d+)', 23)
+    test.file_grep(test.stats, r'Coverage, Toggle points joined\s+(\d+)', 27)
 
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",

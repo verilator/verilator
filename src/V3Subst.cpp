@@ -26,6 +26,7 @@
 
 #include "V3Subst.h"
 
+#include "V3Const.h"
 #include "V3Stats.h"
 
 #include <algorithm>
@@ -146,7 +147,7 @@ public:
         }
     }
     void deleteAssign(AstNodeAssign* nodep) {
-        UINFO(5, "Delete " << nodep << endl);
+        UINFO(5, "Delete " << nodep);
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void deleteUnusedAssign() {
@@ -170,8 +171,8 @@ public:
 class SubstUseVisitor final : public VNVisitorConst {
     // NODE STATE
     // See SubstVisitor
-    //
-    // STATE
+
+    // STATE - across all visitors
     const int m_origStep;  // Step number where subst was recorded
     bool m_ok = true;  // No misassignments found
 
@@ -188,9 +189,7 @@ class SubstUseVisitor final : public VNVisitorConst {
         } else {
             // A simple variable; needs checking.
             if (m_origStep < nodep->varp()->user2()) {
-                if (m_ok) {
-                    UINFO(9, "   RHS variable changed since subst recorded: " << nodep << endl);
-                }
+                if (m_ok) { UINFO(9, "   RHS variable changed since subst recorded: " << nodep); }
                 m_ok = false;
             }
         }
@@ -205,7 +204,7 @@ public:
     // CONSTRUCTORS
     SubstUseVisitor(AstNode* nodep, int origStep)
         : m_origStep{origStep} {
-        UINFO(9, "        SubstUseVisitor " << origStep << " " << nodep << endl);
+        UINFO(9, "        SubstUseVisitor " << origStep << " " << nodep);
         iterateConst(nodep);
     }
     ~SubstUseVisitor() override = default;
@@ -259,10 +258,10 @@ class SubstVisitor final : public VNVisitor {
                 SubstVarEntry* const entryp = getEntryp(varrefp);
                 hit = true;
                 if (m_ops > SUBST_MAX_OPS_SUBST) {
-                    UINFO(8, " ASSIGNtooDeep " << varrefp << endl);
+                    UINFO(8, " ASSIGNtooDeep " << varrefp);
                     entryp->assignComplex();
                 } else {
-                    UINFO(8, " ASSIGNwhole " << varrefp << endl);
+                    UINFO(8, " ASSIGNwhole " << varrefp);
                     entryp->assignWhole(m_assignStep, nodep);
                 }
             }
@@ -273,10 +272,10 @@ class SubstVisitor final : public VNVisitor {
                     SubstVarEntry* const entryp = getEntryp(varrefp);
                     hit = true;
                     if (m_ops > SUBST_MAX_OPS_SUBST) {
-                        UINFO(8, " ASSIGNtooDeep " << varrefp << endl);
+                        UINFO(8, " ASSIGNtooDeep " << varrefp);
                         entryp->assignWordComplex(word);
                     } else {
-                        UINFO(8, " ASSIGNword" << word << " " << varrefp << endl);
+                        UINFO(8, " ASSIGNword" << word << " " << varrefp);
                         entryp->assignWord(m_assignStep, word, nodep);
                     }
                 }
@@ -304,7 +303,7 @@ class SubstVisitor final : public VNVisitor {
             // Nicely formed lvalues handled in NodeAssign
             // Other lvalues handled as unknown mess in AstVarRef
             const int word = constp->toUInt();
-            UINFO(8, " USEword" << word << " " << varrefp << endl);
+            UINFO(8, " USEword" << word << " " << varrefp);
             SubstVarEntry* const entryp = getEntryp(varrefp);
             if (AstNodeExpr* const substp = entryp->substWord(nodep, word)) {
                 // Check that the RHS hasn't changed value since we recorded it.
@@ -327,25 +326,25 @@ class SubstVisitor final : public VNVisitor {
         if (nodep->access().isWriteOrRW()) {
             m_assignStep++;
             nodep->varp()->user2(m_assignStep);
-            UINFO(9, " ASSIGNstep u2=" << nodep->varp()->user2() << " " << nodep << endl);
+            UINFO(9, " ASSIGNstep u2=" << nodep->varp()->user2() << " " << nodep);
         }
         if (isSubstVar(nodep->varp())) {
             SubstVarEntry* const entryp = getEntryp(nodep);
             if (nodep->access().isWriteOrRW()) {
-                UINFO(8, " ASSIGNcpx " << nodep << endl);
+                UINFO(8, " ASSIGNcpx " << nodep);
                 entryp->assignComplex();
             } else if (AstNodeExpr* const substp = entryp->substWhole(nodep)) {
                 // Check that the RHS hasn't changed value since we recorded it.
                 const SubstUseVisitor visitor{substp, entryp->getWholeStep()};
                 if (visitor.ok()) {
-                    UINFO(8, " USEwhole " << nodep << endl);
+                    UINFO(8, " USEwhole " << nodep);
                     VL_DO_DANGLING(replaceSubstEtc(nodep, substp), nodep);
                 } else {
-                    UINFO(8, " USEwholeButChg " << nodep << endl);
+                    UINFO(8, " USEwholeButChg " << nodep);
                     entryp->consumeWhole();
                 }
             } else {  // Consumed w/o substitute
-                UINFO(8, " USEwtf   " << nodep << endl);
+                UINFO(8, " USEwtf   " << nodep);
                 entryp->consumeWhole();
             }
         }
@@ -363,6 +362,12 @@ class SubstVisitor final : public VNVisitor {
         iterateChildren(nodep);
         for (SubstVarEntry& ip : m_entries) ip.deleteUnusedAssign();
         m_entries.clear();
+
+        // Constant fold here, as Ast size can likely be reduced
+        if (v3Global.opt.fConstEager()) {
+            AstNode* const editedp = V3Const::constifyEditCpp(nodep);
+            UASSERT_OBJ(editedp == nodep, editedp, "Should not have replaced CFunc");
+        }
     }
 
     void visit(AstNode* nodep) override {
@@ -384,7 +389,7 @@ public:
 // Subst class functions
 
 void V3Subst::substituteAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { SubstVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("subst", 0, dumpTreeEitherLevel() >= 3);
 }

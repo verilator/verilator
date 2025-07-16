@@ -74,11 +74,11 @@ class ReloopVisitor final : public VNVisitor {
         if (!m_mgAssignps.empty()) {
             const uint32_t items = m_mgIndexHi - m_mgIndexLo + 1;
             UINFO(9, "End merge iter=" << items << " " << m_mgIndexHi << ":" << m_mgIndexLo << " "
-                                       << m_mgOffset << " " << m_mgAssignps[0] << endl);
+                                       << m_mgOffset << " " << m_mgAssignps[0]);
             if (items >= static_cast<uint32_t>(v3Global.opt.reloopLimit())) {
                 UINFO(6, "Reloop merging items=" << items << " " << m_mgIndexHi << ":"
                                                  << m_mgIndexLo << " " << m_mgOffset << " "
-                                                 << m_mgAssignps[0] << endl);
+                                                 << m_mgAssignps[0]);
                 ++m_statReloops;
                 m_statReItems += items;
 
@@ -212,14 +212,14 @@ class ReloopVisitor final : public VNVisitor {
                     m_mgIndexHi = lindex;
                 }
                 UINFO(9, "Continue merge i=" << lindex << " " << m_mgIndexHi << ":" << m_mgIndexLo
-                                             << " " << nodep << endl);
+                                             << " " << nodep);
                 m_mgAssignps.push_back(nodep);
                 m_mgNextp = nodep->nextp();
                 return;
             } else {
-                UINFO(9, "End merge i="
-                             << lindex << " " << m_mgIndexHi << ":" << m_mgIndexLo << " " << nodep
-                             << endl);  // This assign doesn't merge with previous assign,
+                UINFO(9, "End merge i=" << lindex << " " << m_mgIndexHi << ":" << m_mgIndexLo
+                                        << " " << nodep);
+                // This assign doesn't merge with previous assign,
                 // but should start a new merge
                 mergeEnd();
             }
@@ -237,7 +237,7 @@ class ReloopVisitor final : public VNVisitor {
         m_mgConstRp = rconstp;
         m_mgIndexLo = lindex;
         m_mgIndexHi = lindex;
-        UINFO(9, "Start merge i=" << lindex << " o=" << m_mgOffset << nodep << endl);
+        UINFO(9, "Start merge i=" << lindex << " o=" << m_mgOffset << nodep);
     }
     void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
     //--------------------
@@ -258,7 +258,7 @@ public:
 // Reloop class functions
 
 void V3Reloop::reloopAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { ReloopVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("reloop", 0, dumpTreeEitherLevel() >= 6);
 }

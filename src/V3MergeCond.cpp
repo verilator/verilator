@@ -276,7 +276,7 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
 
     // CONSTRUCTOR
     CodeMotionAnalysisVisitor(AstNode* nodep, StmtPropertiesAllocator& stmtProperties)
-        : m_stmtProperties(stmtProperties) {
+        : m_stmtProperties{stmtProperties} {
         iterateAndNextConstNull(nodep);
     }
 
@@ -399,7 +399,7 @@ class CodeMotionOptimizeVisitor final : public VNVisitor {
 
     // CONSTRUCTOR
     CodeMotionOptimizeVisitor(AstNode* nodep, const StmtPropertiesAllocator& stmtProperties)
-        : m_stmtProperties(stmtProperties) {
+        : m_stmtProperties{stmtProperties} {
         // We assert the given node is at the head of the list otherwise we might move a node
         // before the given node. This is easy to fix in the above iteration with a check on a
         // boundary node we should not move past, if we ever need to do so.
@@ -645,7 +645,7 @@ class MergeCondVisitor final : public VNVisitor {
         AstNodeIf* recursivep = nullptr;
         // Merge if list is longer than one node
         if (m_mgFirstp != m_mgLastp) {
-            UINFO(6, "MergeCond - First: " << m_mgFirstp << " Last: " << m_mgLastp << endl);
+            UINFO(6, "MergeCond - First: " << m_mgFirstp << " Last: " << m_mgLastp);
             ++m_statMerges;
             if (m_listLenght > m_statLongestList) m_statLongestList = m_listLenght;
 
@@ -886,7 +886,7 @@ public:
 // MergeConditionals class functions
 
 void V3MergeCond::mergeAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { MergeCondVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("merge_cond", 0, dumpTreeEitherLevel() >= 6);
 }

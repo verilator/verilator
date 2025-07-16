@@ -1,4 +1,4 @@
-%Warning-PINMISSING: t/t_udp_bad.v:10:10: Cell has missing pin: 'c_bad'
+%Warning-PINMISSING: t/t_udp_bad.v:10:10: Instance has missing pin: 'c_bad'
    10 |    udp_x x (a, b);
       |          ^
                      t/t_udp_bad.v:14:28: ... Location of port declaration

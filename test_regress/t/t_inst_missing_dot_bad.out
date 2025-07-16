@@ -2,7 +2,7 @@
     9 |       $display("a=", missing.a);
       |                      ^~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_inst_missing_dot_bad.v:9:30: Can't find definition of 'a' in dotted variable: 'missing.a'
+%Error: t/t_inst_missing_dot_bad.v:9:30: Can't find definition of 'a' in dotted variable/method: 'missing.a'
     9 |       $display("a=", missing.a);
       |                              ^
 %Error: Exiting due to

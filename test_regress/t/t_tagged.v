@@ -15,9 +15,16 @@ module t(/*AUTOARG*/);
    string s;
 
    initial begin
-      u = tagged m_invalid;
-      s = $sformatf("%p", u);
-      $display("%s e.g. '{tagged m_invalid:void}", s);
+      begin
+         u = tagged m_invalid;
+         s = $sformatf("%p", u);
+         $display("%s e.g. '{tagged m_invalid:void}", s);
+      end
+
+      case (u) matches
+        default: ;
+      endcase
+
       case (u) matches
         tagged m_invalid: ;
         tagged m_int: $stop;

@@ -1,0 +1,20 @@
+%Error-UNSUPPORTED: t/t_config_param.v:24:4: Unsupported: config localparam declaration
+   24 |    localparam P1 = "cfg.p1";
+      |    ^~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_config_param.v:25:4: Unsupported: config localparam declaration
+   25 |    localparam P2 = "cfg.p2";
+      |    ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_config_param.v:27:26: Unsupported: 'config use' parameter assignment
+   27 |    instance t.u_1a use #(.P1(), .P2("override.u_a.p2"));
+      |                          ^
+%Error-UNSUPPORTED: t/t_config_param.v:27:33: Unsupported: 'config use' parameter assignment
+   27 |    instance t.u_1a use #(.P1(), .P2("override.u_a.p2"));
+      |                                 ^
+%Error-UNSUPPORTED: t/t_config_param.v:29:26: Unsupported: 'config use' parameter assignment
+   29 |    instance t.u_1c use #(.P1(P1), .P2(P2));
+      |                          ^
+%Error-UNSUPPORTED: t/t_config_param.v:29:35: Unsupported: 'config use' parameter assignment
+   29 |    instance t.u_1c use #(.P1(P1), .P2(P2));
+      |                                   ^
+%Error: Exiting due to

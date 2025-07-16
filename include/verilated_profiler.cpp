@@ -190,13 +190,18 @@ void VlExecutionProfiler::dump(const char* filenamep, uint64_t tickEnd)
                 break;
             case VlExecutionRecord::Type::MTASK_BEGIN: {
                 const auto& payload = er.m_payload.mtaskBegin;
-                fprintf(fp, " id %u predictStart %u cpu %u\n", payload.m_id,
-                        payload.m_predictStart, payload.m_cpu);
+                if (payload.m_hierBlock[0] != '\0') {
+                    fprintf(fp, " id %u predictStart %u cpu %u hierBlock %s\n", payload.m_id,
+                            payload.m_predictStart, payload.m_cpu, payload.m_hierBlock);
+                } else {
+                    fprintf(fp, " id %u predictStart %u cpu %u\n", payload.m_id,
+                            payload.m_predictStart, payload.m_cpu);
+                }
                 break;
             }
             case VlExecutionRecord::Type::MTASK_END: {
                 const auto& payload = er.m_payload.mtaskEnd;
-                fprintf(fp, " id %u predictCost %u\n", payload.m_id, payload.m_predictCost);
+                fprintf(fp, " predictCost %u\n", payload.m_predictCost);
                 break;
             }
             case VlExecutionRecord::Type::THREAD_SCHEDULE_WAIT_BEGIN:

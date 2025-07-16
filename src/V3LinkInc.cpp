@@ -201,7 +201,7 @@ class LinkIncVisitor final : public VNVisitor {
     void unsupported_visit(AstNode* nodep) {
         VL_RESTORER(m_unsupportedHere);
         m_unsupportedHere = true;
-        UINFO(9, "Marking unsupported " << nodep << endl);
+        UINFO(9, "Marking unsupported " << nodep);
         iterateChildren(nodep);
     }
     void visit(AstLogAnd* nodep) override { unsupported_visit(nodep); }
@@ -367,7 +367,7 @@ public:
 // Task class functions
 
 void V3LinkInc::linkIncrements(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { LinkIncVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linkinc", 0, dumpTreeEitherLevel() >= 3);
 }

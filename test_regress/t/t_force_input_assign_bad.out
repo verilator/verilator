@@ -1,0 +1,14 @@
+%Error-ASSIGNIN: t/t_force_input_assign_bad.v:18:10: Assigning to input/const variable: 'i'
+                                                   : ... note: In instance 't'
+   18 |       s1.i = 2;
+      |          ^
+                 ... For error description see https://verilator.org/warn/ASSIGNIN?v=latest
+%Error-ASSIGNIN: t/t_force_input_assign_bad.v:21:10: Assigning to input/const variable: 'i'
+                                                   : ... note: In instance 't'
+   21 |       s2.i = 2;
+      |          ^
+%Error-ASSIGNIN: t/t_force_input_assign_bad.v:25:17: Assigning to input/const variable: 'i'
+                                                   : ... note: In instance 't'
+   25 |       assign s3.i = 2;
+      |                 ^
+%Error: Exiting due to

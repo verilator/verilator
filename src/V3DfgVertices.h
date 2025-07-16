@@ -38,24 +38,30 @@
 
 // === Abstract base node types (DfgVertex*) ===================================
 
-class DfgVertexVar VL_NOT_FINAL : public DfgVertexVariadic {
+class DfgVertexVar VL_NOT_FINAL : public DfgVertexUnary {
     AstVar* const m_varp;  // The AstVar associated with this vertex (not owned by this vertex)
+    AstVarScope* const m_varScopep;  // The AstVarScope associated with this vertex (not owned)
     bool m_hasDfgRefs = false;  // This AstVar is referenced in a different DFG of the module
     bool m_hasModRefs = false;  // This AstVar is referenced outside the DFG, but in the module
     bool m_hasExtRefs = false;  // This AstVar is referenced from outside the module
+    // Location of driver of this variable. Only used for converting back to Ast. Might be nullptr.
+    FileLine* m_driverFileLine = nullptr;
 
     bool selfEquals(const DfgVertex& that) const final VL_MT_DISABLED;
     V3Hash selfHash() const final VL_MT_DISABLED;
 
 public:
-    DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp, uint32_t initialCapacity)
-        : DfgVertexVariadic{dfg, type, varp->fileline(), dtypeFor(varp), initialCapacity}
-        , m_varp{varp} {}
+    inline DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp);
+    inline DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVarScope* vscp);
     ASTGEN_MEMBERS_DfgVertexVar;
 
-    bool isDrivenByDfg() const { return arity() > 0; }
+    const std::string srcName(size_t) const override { return ""; }
 
     AstVar* varp() const { return m_varp; }
+    AstVarScope* varScopep() const { return m_varScopep; }
+    AstNode* nodep() const {
+        return m_varScopep ? static_cast<AstNode*>(m_varScopep) : static_cast<AstNode*>(m_varp);
+    }
     bool hasDfgRefs() const { return m_hasDfgRefs; }
     void setHasDfgRefs() { m_hasDfgRefs = true; }
     bool hasModRefs() const { return m_hasModRefs; }
@@ -63,6 +69,13 @@ public:
     bool hasExtRefs() const { return m_hasExtRefs; }
     void setHasExtRefs() { m_hasExtRefs = true; }
     bool hasNonLocalRefs() const { return hasDfgRefs() || hasModRefs() || hasExtRefs(); }
+
+    FileLine* driverFileLine() const { return m_driverFileLine; }
+    void driverFileLine(FileLine* flp) { m_driverFileLine = flp; }
+
+    bool isDrivenFullyByDfg() const {
+        return srcp() && !srcp()->is<DfgVertexSplice>() && !varp()->isForced();
+    }
 
     // Variable cannot be removed, even if redundant in the DfgGraph (might be used externally)
     bool keep() const {
@@ -73,10 +86,16 @@ public:
         // Keep if public
         if (varp()->isSigPublic()) return true;
         // Keep if written in non-DFG code
-        if (varp()->user3()) return true;
+        if (nodep()->user3()) return true;
         // Otherwise it can be removed
         return false;
     }
+};
+class DfgVertexSplice VL_NOT_FINAL : public DfgVertexVariadic {
+public:
+    DfgVertexSplice(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep)
+        : DfgVertexVariadic{dfg, type, flp, dtypep, 1u} {}
+    ASTGEN_MEMBERS_DfgVertexSplice;
 };
 
 // === Concrete node types =====================================================
@@ -109,6 +128,8 @@ public:
         }
         return static_cast<size_t>(num().toUInt());
     }
+
+    uint32_t toU32() const { return static_cast<size_t>(num().toUInt()); }
 
     bool isZero() const { return num().isEqZero(); }
     bool isOnes() const { return num().isEqAllOnes(width()); }
@@ -178,10 +199,49 @@ class DfgVarArray final : public DfgVertexVar {
 
 public:
     DfgVarArray(DfgGraph& dfg, AstVar* varp)
-        : DfgVertexVar{dfg, dfgType(), varp, 4u} {
-        UASSERT_OBJ(VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType), varp, "Non array DfgVarArray");
+        : DfgVertexVar{dfg, dfgType(), varp} {
+        UASSERT_OBJ(VN_IS(dtypep(), UnpackArrayDType), varp, "Non array DfgVarArray");
+    }
+    DfgVarArray(DfgGraph& dfg, AstVarScope* vscp)
+        : DfgVertexVar{dfg, dfgType(), vscp} {
+        UASSERT_OBJ(VN_IS(dtypep(), UnpackArrayDType), vscp, "Non array DfgVarArray");
     }
     ASTGEN_MEMBERS_DfgVarArray;
+};
+class DfgVarPacked final : public DfgVertexVar {
+    friend class DfgVertex;
+    friend class DfgVisitor;
+
+public:
+    DfgVarPacked(DfgGraph& dfg, AstVar* varp)
+        : DfgVertexVar{dfg, dfgType(), varp} {
+        UASSERT_OBJ(!VN_IS(dtypep(), UnpackArrayDType), varp, "Array DfgVarPacked");
+    }
+    DfgVarPacked(DfgGraph& dfg, AstVarScope* vscp)
+        : DfgVertexVar{dfg, dfgType(), vscp} {
+        UASSERT_OBJ(!VN_IS(dtypep(), UnpackArrayDType), vscp, "Array DfgVarPacked");
+    }
+    ASTGEN_MEMBERS_DfgVarPacked;
+};
+
+// === DfgVertexSplice ===
+class DfgSpliceArray final : public DfgVertexSplice {
+    friend class DfgVertex;
+    friend class DfgVisitor;
+
+    using DriverData = std::pair<FileLine*, uint32_t>;
+
+    std::vector<DriverData> m_driverData;  // Additional data associated with each driver
+
+    bool selfEquals(const DfgVertex& that) const override VL_MT_DISABLED;
+    V3Hash selfHash() const override VL_MT_DISABLED;
+
+public:
+    DfgSpliceArray(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
+        : DfgVertexSplice{dfg, dfgType(), flp, dtypep} {
+        UASSERT_OBJ(VN_IS(dtypep, UnpackArrayDType), flp, "Non array DfgSpliceArray");
+    }
+    ASTGEN_MEMBERS_DfgSpliceArray;
 
     void addDriver(FileLine* flp, uint32_t index, DfgVertex* vtxp) {
         m_driverData.emplace_back(flp, index);
@@ -191,27 +251,6 @@ public:
     void resetSources() {
         m_driverData.clear();
         DfgVertexVariadic::resetSources();
-    }
-
-    // Remove undriven sources
-    void packSources() {
-        // Grab and reset the driver data
-        std::vector<DriverData> driverData;
-        driverData.swap(m_driverData);
-
-        // Grab and unlink the sources
-        std::vector<DfgVertex*> sources{arity()};
-        forEachSourceEdge([&](DfgEdge& edge, size_t idx) {
-            sources[idx] = edge.sourcep();
-            edge.unlinkSource();
-        });
-        DfgVertexVariadic::resetSources();
-
-        // Add back the driven sources
-        for (size_t i = 0; i < sources.size(); ++i) {
-            if (!sources[i]) continue;
-            addDriver(driverData[i].first, driverData[i].second, sources[i]);
-        }
     }
 
     FileLine* driverFileLine(size_t idx) const { return m_driverData[idx].first; }
@@ -224,24 +263,27 @@ public:
         return edgep ? edgep->sourcep() : nullptr;
     }
 
-    const string srcName(size_t idx) const override { return cvtToStr(driverIndex(idx)); }
+    const std::string srcName(size_t idx) const override {
+        return std::to_string(driverIndex(idx));
+    }
 };
-class DfgVarPacked final : public DfgVertexVar {
+class DfgSplicePacked final : public DfgVertexSplice {
     friend class DfgVertex;
     friend class DfgVisitor;
 
     using DriverData = std::pair<FileLine*, uint32_t>;
 
-    std::vector<DriverData> m_driverData;  // Additional data associate with each driver
+    std::vector<DriverData> m_driverData;  // Additional data associated with each driver
+
+    bool selfEquals(const DfgVertex& that) const override VL_MT_DISABLED;
+    V3Hash selfHash() const override VL_MT_DISABLED;
 
 public:
-    DfgVarPacked(DfgGraph& dfg, AstVar* varp)
-        : DfgVertexVar{dfg, dfgType(), varp, 1u} {}
-    ASTGEN_MEMBERS_DfgVarPacked;
-
-    bool isDrivenFullyByDfg() const {
-        return arity() == 1 && source(0)->dtypep() == dtypep() && !varp()->isForced();
+    DfgSplicePacked(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
+        : DfgVertexSplice{dfg, dfgType(), flp, dtypep} {
+        UASSERT_OBJ(!VN_IS(dtypep, UnpackArrayDType), flp, "Array DfgSplicePacked");
     }
+    ASTGEN_MEMBERS_DfgSplicePacked;
 
     void addDriver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp) {
         m_driverData.emplace_back(flp, lsb);
@@ -253,33 +295,10 @@ public:
         DfgVertexVariadic::resetSources();
     }
 
-    // Remove undriven sources
-    void packSources() {
-        // Grab and reset the driver data
-        std::vector<DriverData> driverData;
-        driverData.swap(m_driverData);
-
-        // Grab and unlink the sources
-        std::vector<DfgVertex*> sources{arity()};
-        forEachSourceEdge([&](DfgEdge& edge, size_t idx) {
-            sources[idx] = edge.sourcep();
-            edge.unlinkSource();
-        });
-        DfgVertexVariadic::resetSources();
-
-        // Add back the driven sources
-        for (size_t i = 0; i < sources.size(); ++i) {
-            if (!sources[i]) continue;
-            addDriver(driverData[i].first, driverData[i].second, sources[i]);
-        }
-    }
-
     FileLine* driverFileLine(size_t idx) const { return m_driverData[idx].first; }
     uint32_t driverLsb(size_t idx) const { return m_driverData[idx].second; }
 
-    const string srcName(size_t idx) const override {
-        return isDrivenFullyByDfg() ? "" : cvtToStr(driverLsb(idx));
-    }
+    const std::string srcName(size_t idx) const override { return std::to_string(driverLsb(idx)); }
 };
 
 #endif

@@ -188,7 +188,7 @@ class CaseVisitor final : public VNVisitor {
             m_caseNoOverlapsAllCovered = false;
             return false;  // Too wide for analysis
         }
-        UINFO(8, "Simple case statement: " << nodep << endl);
+        UINFO(8, "Simple case statement: " << nodep);
         const uint32_t numCases = 1UL << m_caseWidth;
         // Zero list of items for each value
         for (uint32_t i = 0; i < numCases; ++i) m_valueItem[i] = nullptr;
@@ -376,7 +376,7 @@ class CaseVisitor final : public VNVisitor {
         if (debug() >= 9) {  // LCOV_EXCL_START
             for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) {
                 if (const AstNode* const itemp = m_valueItem[i]) {
-                    UINFO(9, "Value " << std::hex << i << " " << itemp << endl);
+                    UINFO(9, "Value " << std::hex << i << " " << itemp);
                 }
             }
         }  // LCOV_EXCL_STOP
@@ -600,11 +600,11 @@ public:
 // Case class functions
 
 void V3Case::caseAll(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { CaseVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("case", 0, dumpTreeEitherLevel() >= 3);
 }
 void V3Case::caseLint(AstNodeCase* nodep) {
-    UINFO(4, __FUNCTION__ << ": " << endl);
+    UINFO(4, __FUNCTION__ << ": ");
     { CaseLintVisitor{nodep}; }
 }

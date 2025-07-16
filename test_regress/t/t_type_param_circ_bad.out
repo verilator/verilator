@@ -1,5 +1,6 @@
-%Error: t/t_type_param_circ_bad.v:14:27: Reference to 'SZ' type would form a recursive definition
+%Error: t/t_type_param_circ_bad.v:14:22: Recursive type definition, or over 1000 types deep
+                                       : ... note: In instance 't'
    14 |    # (parameter type SZ = SZ)
-      |                           ^~
+      |                      ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

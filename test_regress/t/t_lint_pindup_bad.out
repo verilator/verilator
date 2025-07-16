@@ -1,4 +1,4 @@
-%Warning-PINMISSING: t/t_lint_pindup_bad.v:18:4: Cell has missing pin: 'exists'
+%Warning-PINMISSING: t/t_lint_pindup_bad.v:18:4: Instance has missing pin: 'exists'
    18 |    sub (.o(o),
       |    ^~~
                      t/t_lint_pindup_bad.v:32:15: ... Location of port declaration

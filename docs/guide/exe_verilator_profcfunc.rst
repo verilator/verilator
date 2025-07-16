@@ -33,8 +33,8 @@ verilator_profcfunc Arguments
 
 .. option:: <filename>
 
-The :command:`gprof`-generated filename to read data from. Typically "gprof.out".
+   The :command:`gprof`-generated filename to read data from. Typically "gprof.out".
 
 .. option:: --help
 
-Displays a help summary, the program version, and exits.
+   Displays a help summary, the program version, and exits.

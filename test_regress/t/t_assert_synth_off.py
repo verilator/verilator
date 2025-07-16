@@ -13,7 +13,8 @@ test.scenarios('simulator')
 test.top_filename = "t/t_assert_synth.v"
 
 test.compile(v_flags2=[
-    '+define+FAILING_FULL', '+define+FAILING_PARALLEL', '+define+FAILING_OH', '+define+FAILING_OC'
+    '--no-assert-case', '+define+FAILING_FULL', '+define+FAILING_PARALLEL', '+define+FAILING_OH',
+    '+define+FAILING_OC'
 ])
 
 test.execute()

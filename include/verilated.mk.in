@@ -69,7 +69,7 @@ export CCACHE_SLOPPINESS
 # Make checks
 
 ifneq ($(words $(CURDIR)),1)
- $(error Unsupported: GNU Make cannot build in directories containing spaces, build elsewhere: '$(CURDIR)')
+  $(error Unsupported: GNU Make cannot build in directories containing spaces, build elsewhere: '$(CURDIR)')
 endif
 
 ######################################################################
@@ -81,20 +81,20 @@ UNAME_S := $(shell uname -s)
 
 # Add -MMD -MP if you're using a recent version of GCC.
 VK_CPPFLAGS_ALWAYS += \
-		-MMD \
-		-I$(VERILATOR_ROOT)/include \
-		-I$(VERILATOR_ROOT)/include/vltstd \
-		-DVM_COVERAGE=$(VM_COVERAGE) \
-		-DVM_SC=$(VM_SC) \
-		-DVM_TIMING=$(VM_TIMING) \
-		-DVM_TRACE=$(VM_TRACE) \
-		-DVM_TRACE_FST=$(VM_TRACE_FST) \
-		-DVM_TRACE_VCD=$(VM_TRACE_VCD) \
-		-DVM_TRACE_SAIF=$(VM_TRACE_SAIF) \
-		$(CFG_CXXFLAGS_NO_UNUSED) \
+  -MMD \
+  -I$(VERILATOR_ROOT)/include \
+  -I$(VERILATOR_ROOT)/include/vltstd \
+  -DVM_COVERAGE=$(VM_COVERAGE) \
+  -DVM_SC=$(VM_SC) \
+  -DVM_TIMING=$(VM_TIMING) \
+  -DVM_TRACE=$(VM_TRACE) \
+  -DVM_TRACE_FST=$(VM_TRACE_FST) \
+  -DVM_TRACE_VCD=$(VM_TRACE_VCD) \
+  -DVM_TRACE_SAIF=$(VM_TRACE_SAIF) \
+  $(CFG_CXXFLAGS_NO_UNUSED) \
 
 ifeq ($(CFG_WITH_CCWARN),yes)  # Local... Else don't burden users
-VK_CPPFLAGS_WALL += -Wall $(CFG_CXXFLAGS_WEXTRA) -Werror
+  VK_CPPFLAGS_WALL += -Wall $(CFG_CXXFLAGS_WEXTRA) -Werror
 endif
 
 CPPFLAGS += -I. $(VK_CPPFLAGS_WALL) $(VK_CPPFLAGS_ALWAYS)
@@ -103,7 +103,7 @@ VPATH += ..
 VPATH += $(VERILATOR_ROOT)/include
 VPATH += $(VERILATOR_ROOT)/include/vltstd
 
-LDFLAGS  += $(CFG_LDFLAGS_VERILATED)
+LDFLAGS += $(CFG_LDFLAGS_VERILATED)
 
 #OPT = -ggdb -DPRINTINITSTR -DDETECTCHANGE
 #OPT = -ggdb -DPRINTINITSTR
@@ -112,19 +112,19 @@ CPPFLAGS += $(OPT)
 # On macOS, specify all weak symbols as dynamic_lookup.
 # Otherwise, you get undefined symbol errors.
 ifeq ($(UNAME_S),Darwin)
-	LDFLAGS += -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv
+  LDFLAGS += -Wl,-U,__Z15vl_time_stamp64v,-U,__Z13sc_time_stampv
 endif
 
 # Allow upper level user makefiles to specify flags they want.
 # These aren't ever set by Verilator, so users are free to override them.
 CPPFLAGS += $(USER_CPPFLAGS)
-LDFLAGS  += $(USER_LDFLAGS)
-LDLIBS   += $(USER_LDLIBS)
+LDFLAGS += $(USER_LDFLAGS)
+LDLIBS += $(USER_LDLIBS)
 
 # Add flags from -CFLAGS and -LDFLAGS on Verilator command line
 CPPFLAGS += $(VM_USER_CFLAGS)
-LDFLAGS  += $(VM_USER_LDFLAGS)
-LDLIBS   += $(VM_USER_LDLIBS)
+LDFLAGS += $(VM_USER_LDFLAGS)
+LDLIBS += $(VM_USER_LDLIBS)
 
 ######################################################################
 # Optimization control.
@@ -148,7 +148,7 @@ OPT_GLOBAL = -Os
 
 ifeq ($(VM_PROFC),1)
   CPPFLAGS += $(CFG_CXXFLAGS_PROFILE)
-  LDFLAGS  += $(CFG_CXXFLAGS_PROFILE)
+  LDFLAGS += $(CFG_CXXFLAGS_PROFILE)
 endif
 
 #######################################################################
@@ -156,12 +156,12 @@ endif
 
 ifeq ($(VM_SC),1)
   CPPFLAGS += $(SYSTEMC_CXX_FLAGS) $(addprefix -I, $(SYSTEMC_INCLUDE))
-  LDFLAGS  += $(SYSTEMC_CXX_FLAGS) $(addprefix -L, $(SYSTEMC_LIBDIR))
-  SC_LIBS   = -lsystemc
- ifneq ($(wildcard $(SYSTEMC_LIBDIR)/*numeric_bit*),)
-  # SystemC 1.2.1beta
-  SC_LIBS   += -lnumeric_bit -lqt
- endif
+  LDFLAGS += $(SYSTEMC_CXX_FLAGS) $(addprefix -L, $(SYSTEMC_LIBDIR))
+  SC_LIBS = -lsystemc
+  ifneq ($(wildcard $(SYSTEMC_LIBDIR)/*numeric_bit*),)
+    # SystemC 1.2.1beta
+    SC_LIBS += -lnumeric_bit -lqt
+  endif
 endif
 
 #######################################################################
@@ -171,11 +171,10 @@ CPPFLAGS += $(CFG_CXXFLAGS_STD)
 LDLIBS += $(CFG_LDLIBS_THREADS)
 
 ifneq ($(VM_TIMING),0)
- ifneq ($(VM_TIMING),)
-  CPPFLAGS += $(CFG_CXXFLAGS_COROUTINES)
- endif
+  ifneq ($(VM_TIMING),)
+    CPPFLAGS += $(CFG_CXXFLAGS_COROUTINES)
+  endif
 endif
-
 
 #######################################################################
 ### Aggregates
@@ -258,7 +257,6 @@ endif
 
 $(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS)
 
-
 ######################################################################
 ### Compile rules
 
@@ -269,24 +267,24 @@ ifneq ($(VM_DEFAULT_RULES),0)
 #
 # These rules put OPT_FAST/OPT_SLOW/OPT_GLOBAL before the other flags to
 # allow USER_CPPFLAGS to override them
-%.o: %.cpp
+  %.o: %.cpp
 	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
-$(VK_OBJS_FAST): %.o: %.cpp $(VK_PCH_H).fast.gch
+  $(VK_OBJS_FAST): %.o: %.cpp $(VK_PCH_H).fast.gch
 	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_FAST) -c -o $@ $<
 
-$(VK_OBJS_SLOW): %.o: %.cpp $(VK_PCH_H).slow.gch
+  $(VK_OBJS_SLOW): %.o: %.cpp $(VK_PCH_H).slow.gch
 	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(VK_PCH_I_SLOW) -c -o $@ $<
 
-$(VK_GLOBAL_OBJS): %.o: %.cpp
+  $(VK_GLOBAL_OBJS): %.o: %.cpp
 	$(OBJCACHE) $(CXX) $(OPT_GLOBAL) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 # Precompile a header file
 # PCH's compiler flags must match exactly the rules' above FAST/SLOW
 # arguments used for the .cpp files, or the PCH file won't be used.
-%.fast.gch: %
+  %.fast.gch: %
 	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
-%.slow.gch: %
+  %.slow.gch: %
 	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
 
 endif
@@ -313,22 +311,22 @@ ifneq ($(findstring ccache-report,$(MAKECMDGOALS)),)
   # Remove previous logfiles and report
   $(shell rm -rf $(VK_CCACHE_LOGDIR) $(VK_CCACHE_REPORT))
 
-$(VK_CCACHE_LOGDIR):
+  $(VK_CCACHE_LOGDIR):
 	mkdir -p $@
 
-$(VK_OBJS): | $(VK_CCACHE_LOGDIR)
+  $(VK_OBJS): | $(VK_CCACHE_LOGDIR)
 
-$(VK_OBJS): export CCACHE_LOGFILE=$(VK_CCACHE_LOGDIR)/$@.log
+  $(VK_OBJS): export CCACHE_LOGFILE=$(VK_CCACHE_LOGDIR)/$@.log
 
-$(VK_CCACHE_REPORT): $(VK_OBJS)
+  $(VK_CCACHE_REPORT): $(VK_OBJS)
 	$(VERILATOR_CCACHE_REPORT) -o $@ $(VK_CCACHE_LOGDIR)
 
-.PHONY: ccache-report
-ccache-report: $(VK_CCACHE_REPORT)
+  .PHONY: ccache-report
+  ccache-report: $(VK_CCACHE_REPORT)
 	@cat $<
 
 # ccache-report runs last
-ccache-report: $(VK_OTHER_GOALS)
+  ccache-report: $(VK_OTHER_GOALS)
 endif
 
 ######################################################################
@@ -358,5 +356,5 @@ debug-make::
 
 DEPS := $(wildcard *.d)
 ifneq ($(DEPS),)
-include $(DEPS)
+  include $(DEPS)
 endif

@@ -77,7 +77,7 @@ private:
         puts("\n");
 
         puts("// Simulate until $finish\n");
-        puts("while (!contextp->gotFinish()) {\n");
+        puts("while (VL_LIKELY(!contextp->gotFinish())) {\n");
         puts(/**/ "// Evaluate model\n");
         puts(/**/ "topp->eval();\n");
         puts(/**/ "// Advance time\n");
@@ -93,7 +93,7 @@ private:
         puts("}\n");
         puts("\n");
 
-        puts("if (!contextp->gotFinish()) {\n");
+        puts("if (VL_LIKELY(!contextp->gotFinish())) {\n");
         puts(/**/ "VL_DEBUG_IF(VL_PRINTF(\"+ Exiting without $finish; no events left\\n\"););\n");
         puts("}\n");
         puts("\n");
@@ -123,6 +123,6 @@ private:
 // EmitC class functions
 
 void V3EmitCMain::emit() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     { EmitCMain visitor; }
 }

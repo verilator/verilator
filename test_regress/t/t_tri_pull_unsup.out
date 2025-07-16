@@ -1,0 +1,38 @@
+%Error-UNSUPPORTED: t/t_tri_pull_unsup.v:15:11: Unsupported: pullup strength
+   15 |   pullup (supply1) pu1(a);
+      |           ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_tri_pull_unsup.v:16:11: Unsupported: pullup strength
+   16 |   pullup (strong1) pu2(a);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_tri_pull_unsup.v:17:11: Unsupported: pullup strength
+   17 |   pullup (pull1) pu3(a);
+      |           ^~~~~
+%Error-UNSUPPORTED: t/t_tri_pull_unsup.v:18:11: Unsupported: pullup strength
+   18 |   pullup (weak1) pu4(a);
+      |           ^~~~~
+%Error-UNSUPPORTED: t/t_tri_pull_unsup.v:19:11: Unsupported: pullup strength
+   19 |   pullup (supply1, supply0) pu5(a);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_tri_pull_unsup.v:20:11: Unsupported: pullup strength
+   20 |   pullup (strong0, strong1) pu6(a);
+      |           ^~~~~~~
+%Error-UNSUPPORTED: t/t_tri_pull_unsup.v:29:13: Unsupported: pulldown strength
+   29 |   pulldown (supply0) pd1(a);
+      |             ^~~~~~~
+%Error-UNSUPPORTED: t/t_tri_pull_unsup.v:30:13: Unsupported: pulldown strength
+   30 |   pulldown (strong0) pd2(a);
+      |             ^~~~~~~
+%Error-UNSUPPORTED: t/t_tri_pull_unsup.v:31:13: Unsupported: pulldown strength
+   31 |   pulldown (pull0) pd3(a);
+      |             ^~~~~
+%Error-UNSUPPORTED: t/t_tri_pull_unsup.v:32:13: Unsupported: pulldown strength
+   32 |   pulldown (weak0) pd4(a);
+      |             ^~~~~
+%Error-UNSUPPORTED: t/t_tri_pull_unsup.v:33:13: Unsupported: pulldown strength
+   33 |   pulldown (supply0, supply1) pd5(a);
+      |             ^~~~~~~
+%Error-UNSUPPORTED: t/t_tri_pull_unsup.v:34:13: Unsupported: pulldown strength
+   34 |   pulldown (strong1, strong0) pd6(a);
+      |             ^~~~~~~
+%Error: Exiting due to

@@ -90,7 +90,7 @@ def process():
 
     print()
     print("You may now want to clean up spelling, and commit:")
-    print("  (cd docs ; make spelling | grep -vi 'writing output')")
+    print("  (make spelling | grep -vi 'writing output')")
     print("  git ci -am 'Commentary: Changes update'")
     print()
 

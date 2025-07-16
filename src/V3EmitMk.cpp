@@ -78,7 +78,7 @@ private:
     std::vector<WorkList*> m_concatenableListsByDescSize;  // Lists sorted by size, descending
 
     EmitGroup(std::vector<FilenameWithScore> inputFiles, uint64_t totalScore,
-              std::string groupFilePrefix)
+              const std::string& groupFilePrefix)
         : m_inputFiles{std::move(inputFiles)}
         , m_totalScore{totalScore}
         , m_groupFilePrefix{groupFilePrefix} {}
@@ -185,13 +185,13 @@ private:
         if (inputFilesCount < MIN_FILES_COUNT
             && inputFilesCount <= static_cast<size_t>(totalBucketsNum)) {
             UINFO(4, "File concatenation skipped: Too few files (" << m_inputFiles.size() << " < "
-                                                                   << MIN_FILES_COUNT << ")\n");
+                                                                   << MIN_FILES_COUNT << ")");
             groupingRedundant = true;
         }
         if (inputFilesCount < (MIN_FILES_PER_BUCKET * totalBucketsNum)) {
             UINFO(4, "File concatenation skipped: Too few files per bucket ("
                          << m_inputFiles.size() << " < " << MIN_FILES_PER_BUCKET << " - "
-                         << totalBucketsNum << ")\n");
+                         << totalBucketsNum << ")");
             groupingRedundant = true;
         }
         if (!groupingRedundant) return false;
@@ -332,9 +332,9 @@ private:
 
                 for (; fileIt != list.m_files.end(); ++fileIt) {
                     const uint64_t diffNow
-                        = std::abs((int64_t)(listIdealBucketScore - bucketScore));
-                    const uint64_t diffIfAdded = std::abs(
-                        (int64_t)(listIdealBucketScore - bucketScore - fileIt->m_score));
+                        = std::abs(static_cast<int64_t>(listIdealBucketScore - bucketScore));
+                    const uint64_t diffIfAdded = std::abs(static_cast<int64_t>(
+                        listIdealBucketScore - bucketScore - fileIt->m_score));
                     if (bucketScore == 0 || fileIt->m_score == 0 || diffNow > diffIfAdded) {
                         // Bucket score will be better with the file in it.
                         bucketScore += fileIt->m_score;
@@ -394,19 +394,19 @@ private:
     }
 
     void process() {
-        UINFO(4, __FUNCTION__ << " group file prefix: " << m_groupFilePrefix << '\n');
-        UINFO(5, "Number of input files: " << m_inputFiles.size() << '\n');
-        UINFO(5, "Total score: " << m_totalScore << '\n');
+        UINFO(4, __FUNCTION__ << " group file prefix: " << m_groupFilePrefix);
+        UINFO(5, "Number of input files: " << m_inputFiles.size());
+        UINFO(5, "Total score: " << m_totalScore);
 
         const int totalBucketsNum = v3Global.opt.outputGroups();
-        UINFO(5, "Number of buckets: " << totalBucketsNum << '\n');
+        UINFO(5, "Number of buckets: " << totalBucketsNum);
         UASSERT(totalBucketsNum > 0, "More than 0 buckets required");
 
         if (fallbackNoGrouping(m_inputFiles.size())) return;
 
         if (debug() >= 6 || dumpLevel() >= 6) {
             const string filename = v3Global.debugFilename("outputgroup") + ".txt";
-            UINFO(5, "Dumping " << filename << endl);
+            UINFO(5, "Dumping " << filename);
             m_logp = std::unique_ptr<std::ofstream>{V3File::new_ofstream(filename)};
             if (m_logp->fail()) v3fatal("Can't write file: " << filename);
         }
@@ -427,7 +427,7 @@ private:
                 list.m_isConcatenable = false;
                 UINFO(5, "Excluding from concatenation: Work List contains only one file: "
                          "Work List #"
-                             << list.m_dbgId << endl);
+                             << list.m_dbgId);
                 continue;
             }
 
@@ -494,7 +494,7 @@ public:
     }
 
     void putMakeClassEntry(V3OutMkFile& of, const string& name) {
-        of.puts("\t" + V3Os::filenameNonDirExt(name) + " \\\n");
+        of.puts("  " + V3Os::filenameNonDirExt(name) + " \\\n");
         ++m_putClassCount;
     }
 
@@ -618,7 +618,6 @@ public:
             }
         }
 
-        of.puts("\n");
         of.putsHeader();
     }
 
@@ -643,43 +642,42 @@ public:
         }
         of.puts("\n### Constants...\n");
         of.puts("# Perl executable (from $PERL, defaults to 'perl' if not set)\n");
-        of.puts("PERL = " + V3OutFormatter::quoteNameControls(V3Options::getenvPERL()) + "\n");
+        of.putSet("PERL", V3OutFormatter::quoteNameControls(V3Options::getenvPERL()));
         of.puts("# Python3 executable (from $PYTHON3, defaults to 'python3' if not set)\n");
-        of.puts("PYTHON3 = " + V3OutFormatter::quoteNameControls(V3Options::getenvPYTHON3())
-                + "\n");
+        of.putSet("PYTHON3", V3OutFormatter::quoteNameControls(V3Options::getenvPYTHON3()));
         of.puts("# Path to Verilator kit (from $VERILATOR_ROOT)\n");
-        of.puts("VERILATOR_ROOT = "
-                + V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_ROOT()) + "\n");
+        of.putSet("VERILATOR_ROOT",
+                  V3OutFormatter::quoteNameControls(V3Options::getenvVERILATOR_ROOT()));
         of.puts("# SystemC include directory with systemc.h (from $SYSTEMC_INCLUDE)\n");
-        of.puts("SYSTEMC_INCLUDE ?= "s + V3Options::getenvSYSTEMC_INCLUDE() + "\n");
+        of.putSetQ("SYSTEMC_INCLUDE", V3Options::getenvSYSTEMC_INCLUDE());
         of.puts("# SystemC library directory with libsystemc.a (from $SYSTEMC_LIBDIR)\n");
-        of.puts("SYSTEMC_LIBDIR ?= "s + V3Options::getenvSYSTEMC_LIBDIR() + "\n");
+        of.putSetQ("SYSTEMC_LIBDIR", V3Options::getenvSYSTEMC_LIBDIR());
 
         // Only check it if we really need the value
         if (v3Global.opt.systemC() && !V3Options::systemCFound()) {
             v3fatal("Need $SYSTEMC_INCLUDE in environment or when Verilator configured,\n"
                     "and need $SYSTEMC_LIBDIR in environment or when Verilator configured\n"
-                    "Probably System-C isn't installed, see http://www.systemc.org\n");
+                    "Probably System-C isn't installed, see https://systemc.org\n");
         }
 
         of.puts("\n### Switches...\n");
         of.puts("# C++ code coverage  0/1 (from --prof-c)\n");
-        of.puts("VM_PROFC = "s + ((v3Global.opt.profC()) ? "1" : "0") + "\n");
+        of.putSet("VM_PROFC", ((v3Global.opt.profC()) ? "1" : "0"));
         of.puts("# SystemC output mode?  0/1 (from --sc)\n");
-        of.puts("VM_SC = "s + ((v3Global.opt.systemC()) ? "1" : "0") + "\n");
+        of.putSet("VM_SC", ((v3Global.opt.systemC()) ? "1" : "0"));
         of.puts("# Legacy or SystemC output mode?  0/1 (from --sc)\n");
-        of.puts("VM_SP_OR_SC = $(VM_SC)\n");
+        of.putSet("VM_SP_OR_SC", "$(VM_SC)");
         of.puts("# Deprecated\n");
-        of.puts("VM_PCLI = "s + (v3Global.opt.systemC() ? "0" : "1") + "\n");
+        of.putSet("VM_PCLI", (v3Global.opt.systemC() ? "0" : "1"));
         of.puts(
             "# Deprecated: SystemC architecture to find link library path (from $SYSTEMC_ARCH)\n");
         of.puts("VM_SC_TARGET_ARCH = "s + V3Options::getenvSYSTEMC_ARCH() + "\n");
 
         of.puts("\n### Vars...\n");
         of.puts("# Design prefix (from --prefix)\n");
-        of.puts("VM_PREFIX = "s + v3Global.opt.prefix() + "\n");
+        of.putSet("VM_PREFIX", v3Global.opt.prefix());
         of.puts("# Module prefix (from --prefix)\n");
-        of.puts("VM_MODPREFIX = "s + v3Global.opt.modPrefix() + "\n");
+        of.putSet("VM_MODPREFIX", v3Global.opt.modPrefix());
 
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");
@@ -689,13 +687,13 @@ public:
                     + "\"' \\\n");
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
         const V3StringList& cFlags = v3Global.opt.cFlags();
-        for (const string& i : cFlags) of.puts("\t" + i + " \\\n");
+        for (const string& i : cFlags) of.puts("  " + i + " \\\n");
         of.puts("\n");
 
         of.puts("# User LDLIBS (from -LDFLAGS on Verilator command line)\n");
         of.puts("VM_USER_LDLIBS = \\\n");
         const V3StringList& ldLibs = v3Global.opt.ldLibs();
-        for (const string& i : ldLibs) of.puts("\t" + i + " \\\n");
+        for (const string& i : ldLibs) of.puts("  " + i + " \\\n");
         of.puts("\n");
 
         V3StringSet dirs;
@@ -703,7 +701,7 @@ public:
         of.puts("VM_USER_CLASSES = \\\n");
         const V3StringSet& cppFiles = v3Global.opt.cppFiles();
         for (const auto& cppfile : cppFiles) {
-            of.puts("\t" + V3Os::filenameNonDirExt(cppfile) + " \\\n");
+            of.puts("  " + V3Os::filenameNonDirExt(cppfile) + " \\\n");
             const string dir
                 = V3Os::filenameRelativePath(V3Os::filenameDir(cppfile), v3Global.opt.makeDir());
             dirs.insert(dir);
@@ -714,10 +712,10 @@ public:
 
         of.puts("# User .cpp directories (from .cpp's on Verilator command line)\n");
         of.puts("VM_USER_DIR = \\\n");
-        for (const auto& i : dirs) of.puts("\t" + i + " \\\n");
+        for (const auto& i : dirs) of.puts("  " + i + " \\\n");
         of.puts("\n");
 
-        of.puts("\n### Default rules...\n");
+        of.puts("### Default rules...\n");
         of.puts("# Include list of all generated classes\n");
         of.puts("include " + v3Global.opt.prefix() + "_classes.mk\n");
         if (v3Global.opt.hierTop()) {
@@ -792,7 +790,6 @@ public:
                     + " libverilated.a $(VM_PREFIX)__ALL.a\n");
         }
 
-        of.puts("\n");
         of.putsHeader();
     }
 
@@ -817,13 +814,12 @@ class EmitMkHierVerilation final {
         const string verilator_wrapper = V3Os::filenameDir(fullpath_bin) + "/verilator";
         of.puts("VM_HIER_VERILATOR := " + verilator_wrapper + "\n");
         of.puts("VM_HIER_INPUT_FILES := \\\n");
-        const V3StringList& vFiles = v3Global.opt.vFiles();
-        for (const string& i : vFiles) of.puts("\t" + V3Os::filenameRealPath(i) + " \\\n");
+        for (const auto& i : v3Global.opt.vFiles())
+            of.puts("  " + V3Os::filenameRealPath(i.filename()) + " \\\n");
         of.puts("\n");
-        const V3StringSet& libraryFiles = v3Global.opt.libraryFiles();
         of.puts("VM_HIER_VERILOG_LIBS := \\\n");
-        for (const string& i : libraryFiles) {
-            of.puts("\t" + V3Os::filenameRealPath(i) + " \\\n");
+        for (const auto& i : v3Global.opt.libraryFiles()) {
+            of.puts("  " + V3Os::filenameRealPath(i.filename()) + " \\\n");
         }
         of.puts("\n");
     }
@@ -851,7 +847,7 @@ class EmitMkHierVerilation final {
             = m_planp->hierBlocksSorted();  // leaf comes first
         // List in order of leaf-last order so that linker can resolve dependency
         for (const auto& block : vlstd::reverse_view(blocks)) {
-            of.puts("\t" + block->hierLibFilename(true) + " \\\n");
+            of.puts("  " + block->hierLibFilename(true) + " \\\n");
         }
         of.puts("\n");
 
@@ -926,11 +922,11 @@ public:
 // Gate class functions
 
 void V3EmitMk::emitmk() {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     const EmitMk emitter;
 }
 
 void V3EmitMk::emitHierVerilation(const V3HierBlockPlan* planp) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     EmitMkHierVerilation{planp};
 }

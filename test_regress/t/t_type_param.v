@@ -4,6 +4,10 @@
 // without warranty, 2019 by Todd Strader.
 // SPDX-License-Identifier: CC0-1.0
 
+package some_package;
+    typedef logic [15:0] two_bytes_t;
+endpackage
+
 module foo
   #(parameter type bar = logic)
    (output int bar_size);
@@ -39,6 +43,25 @@ module t();
 
    foo #(.bar (logic [ $bits(qux3) - 1 : 0]))
    foo_inst3 (.bar_size (bar_size3));
+
+   typedef struct packed {
+       logic foo;
+       logic bar;
+   } some_struct_t;
+   int bar_size4;
+
+   foo #(.bar (some_struct_t [7:0]))
+   foo_inst4 (.bar_size (bar_size4));
+
+   int bar_size5;
+
+   foo #(.bar (some_struct_t [2:0] [5:0]))
+   foo_inst5 (.bar_size (bar_size5));
+
+   int bar_size6;
+
+   foo #(.bar (some_package::two_bytes_t [4-1:0]))
+   foo_inst6 (.bar_size (bar_size6));
 
    localparam bar_bits = 13;
    int bar_size_wrapper;
@@ -80,6 +103,21 @@ module t();
       if (bar_size3 != $bits(qux3)) begin
          $display("%m: bar_size3 != bits of qux3 (%0d, %0d)",
                  bar_size3, $bits(qux3));
+         $stop();
+      end
+      if (bar_size4 != $bits(some_struct_t)*8) begin
+         $display("%m: bar_size4 != bits of some_struct_t * 8 (%0d, %0d)",
+                 bar_size4, $bits(some_struct_t) * 8);
+         $stop();
+      end
+      if (bar_size5 != $bits(some_struct_t)*3*6) begin
+         $display("%m: bar_size5 != bits of some_struct_t * 3 * 6 (%0d, %0d)",
+                 bar_size5, $bits(some_struct_t) * 3 * 6);
+         $stop();
+      end
+      if (bar_size6 != $bits(some_package::two_bytes_t)*4) begin
+         $display("%m: bar_size6 != bits of some_package::two_bytes_t * 4 (%0d, %0d)",
+                 bar_size6, $bits(some_package::two_bytes_t) * 4);
          $stop();
       end
       if (bar_size_wrapper != bar_bits) begin

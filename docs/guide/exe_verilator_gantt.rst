@@ -84,16 +84,16 @@ verilator_gantt Arguments
 
 .. option:: <filename>
 
-The filename to read data from; the default is "profile_exec.dat".
+   The filename to read data from; the default is "profile_exec.dat".
 
 .. option:: --help
 
-Displays a help summary, the program version, and exits.
+   Displays a help summary, the program version, and exits.
 
 .. option:: --no-vcd
 
-Disables creating a .vcd file.
+   Disables creating a .vcd file.
 
 .. option:: --vcd <filename>
 
-Sets the output filename for vcd dump; the default is "verilator_gantt.vcd".
+   Sets the output filename for vcd dump; the default is "verilator_gantt.vcd".

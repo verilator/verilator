@@ -114,7 +114,7 @@ module t(/*AUTOARG*/
          release r;
       end
       else if (cyc == 45) begin
-         `checkr(r, 1.25);
+         `checkr(r, 2.5);
       end
       //
       else if (cyc == 99) begin

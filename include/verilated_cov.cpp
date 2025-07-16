@@ -312,7 +312,7 @@ public:
         const char* fnstartp = m_insertFilenamep;
         while (const char* foundp = std::strchr(fnstartp, '/')) fnstartp = foundp + 1;
         const char* fnendp = fnstartp;
-        for (; *fnendp && *fnendp != '.'; fnendp++) {}
+        for (; *fnendp && *fnendp != '.'; ++fnendp) {}
         const size_t page_len = fnendp - fnstartp;
         const std::string page_default = "sp_user/" + std::string{fnstartp, page_len};
         ckeyps[2] = "page";
@@ -390,6 +390,10 @@ public:
                         hier = val;
                     } else {
                         // Print it
+                        if (key == "page") {
+                            const std::string type = val.substr(2, val.find('/') - 2);
+                            name += keyValueFormatter(VL_CIK_TYPE, type);
+                        }
                         name += keyValueFormatter(key, val);
                     }
                 }

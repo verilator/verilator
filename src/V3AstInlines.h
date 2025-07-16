@@ -34,7 +34,7 @@ int AstNode::widthInstrs() const {
     return (!dtypep() ? 1 : (dtypep()->isWide() ? dtypep()->widthWords() : 1));
 }
 bool AstNode::isDouble() const VL_MT_STABLE {
-    return dtypep() && VN_IS(dtypep(), BasicDType) && VN_AS(dtypep(), BasicDType)->isDouble();
+    return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isDouble();
 }
 bool AstNode::isString() const VL_MT_STABLE {
     return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isString();

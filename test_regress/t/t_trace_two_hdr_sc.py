@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 test.top_filename = "t_trace_two_a.v"
+test.pli_filename = "t/t_trace_two_sc.cpp"
 
 if not test.have_sc:
     test.skip("No SystemC installed")
@@ -27,7 +28,7 @@ test.run(logfile=test.obj_dir + "/make_first_ALL.log",
 test.compile(make_main=False,
              top_filename='t_trace_two_a.v',
              make_flags=['CPPFLAGS_ADD=-DTEST_HDR_TRACE'],
-             verilator_flags2=['-sc', '-exe', '-trace', test.t_dir + "/t_trace_two_sc.cpp"])
+             verilator_flags2=['-sc', '-exe', '-trace', test.pli_filename])
 
 test.execute()
 

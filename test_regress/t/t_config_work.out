@@ -1,0 +1,5 @@
+*-* All Finished *-*
+liba:m1 %m=t.u_1 %l=liba.m1
+liba:m3 %m=t.u_1.u_13 %l=liba.m3
+libb:m2 %m=t.u_2 %l=libb.m2
+libb:m3 %m=t.u_2.u_23 %l=libb.m3

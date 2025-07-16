@@ -1,0 +1,2 @@
+%Error: --threads must be >= 0: -1
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

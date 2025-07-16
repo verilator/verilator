@@ -1,4 +1,4 @@
-%Warning-PINMISSING: t/t_lint_pinmissing_bad.v:8:8: Cell has missing pin: 'port'
+%Warning-PINMISSING: t/t_lint_pinmissing_bad.v:8:8: Instance has missing pin: 'port'
     8 |    sub sub();   
       |        ^~~
                      t/t_lint_pinmissing_bad.v:11:11: ... Location of port declaration

@@ -235,12 +235,12 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                         varBase = whole;
                     }
                     // UINFO(9, "For " << scopep->name() << " - " << varp->name() << "  Scp "
-                    // << scpName << "Var " << varBase << endl);
+                    // << scpName << "Var " << varBase);
                     const string varBasePretty = AstNode::vpiName(VName::dehash(varBase));
                     const string scpPretty = AstNode::prettyName(VName::dehash(scpName));
                     const string scpSym = scopeSymString(VName::dehash(scpName));
                     // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
-                    // << scpSym << endl);
+                    // << scpSym);
                     if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
                     if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
                         // cppcheck-suppress stlFindInsert
@@ -348,7 +348,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void visit(AstScopeName* nodep) override {
         const string name = nodep->scopeSymName();
         // UINFO(9, "scnameins sp " << nodep->name() << " sp " << nodep->scopePrettySymName()
-        // << " ss" << name << endl);
+        // << " ss" << name);
         const int timeunit = m_modp ? m_modp->timeunit().powerOfTen() : 0;
         m_dpiScopeNames.emplace(name, ScopeData{nodep, name, nodep->scopePrettySymName(), "<null>",
                                                 timeunit, "SCOPE_OTHER"});
@@ -402,7 +402,7 @@ public:
 };
 
 void EmitCSyms::emitSymHdr() {
-    UINFO(6, __FUNCTION__ << ": " << endl);
+    UINFO(6, __FUNCTION__ << ": ");
     const string filename = v3Global.opt.makeDir() + "/" + symClassName() + ".h";
     AstCFile* const cfilep = newCFile(filename, true /*slow*/, false /*source*/);
     V3OutCFile* const ofilep = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
@@ -686,7 +686,7 @@ void EmitCSyms::emitScopeHier(bool destroy) {
 }
 
 void EmitCSyms::emitSymImp() {
-    UINFO(6, __FUNCTION__ << ": " << endl);
+    UINFO(6, __FUNCTION__ << ": ");
     const string filename = v3Global.opt.makeDir() + "/" + symClassName() + ".cpp";
     AstCFile* const cfilep = newCFile(filename, true /*slow*/, true /*source*/);
     cfilep->support(true);
@@ -743,13 +743,13 @@ void EmitCSyms::emitSymImp() {
         if (!optSystemC()) {
             puts("\nvoid " + symClassName() + "::_traceDump() {\n");
             // Caller checked for __Vm_dumperp non-nullptr
-            puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+            puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
             puts("__Vm_dumperp->dump(VL_TIME_Q());\n");
             puts("}\n");
         }
 
         puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
-        puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+        puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
         puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
         puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
         puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
@@ -760,7 +760,7 @@ void EmitCSyms::emitSymImp() {
         puts("}\n");
 
         puts("\nvoid " + symClassName() + "::_traceDumpClose() {\n");
-        puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+        puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
         puts("__Vm_dumping = false;\n");
         puts("VL_DO_CLEAR(delete __Vm_dumperp, __Vm_dumperp = nullptr);\n");
         puts("}\n");
@@ -1025,7 +1025,7 @@ void EmitCSyms::emitSymImp() {
 //######################################################################
 
 void EmitCSyms::emitDpiHdr() {
-    UINFO(6, __FUNCTION__ << ": " << endl);
+    UINFO(6, __FUNCTION__ << ": ");
     const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi.h";
     AstCFile* const cfilep = newCFile(filename, false /*slow*/, false /*source*/);
     cfilep->support(true);
@@ -1080,7 +1080,7 @@ void EmitCSyms::emitDpiHdr() {
 //######################################################################
 
 void EmitCSyms::emitDpiImp() {
-    UINFO(6, __FUNCTION__ << ": " << endl);
+    UINFO(6, __FUNCTION__ << ": ");
     const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi.cpp";
     AstCFile* const cfilep = newCFile(filename, false /*slow*/, true /*source*/);
     cfilep->support(true);
@@ -1138,6 +1138,6 @@ void EmitCSyms::emitDpiImp() {
 // EmitC class functions
 
 void V3EmitC::emitcSyms(bool dpiHdrOnly) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
+    UINFO(2, __FUNCTION__ << ":");
     EmitCSyms{v3Global.rootp(), dpiHdrOnly};
 }

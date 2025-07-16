@@ -46,7 +46,7 @@ public:
     }
     VDouble0 operator++(int) {  // postfix
         VDouble0 old = *this;
-        m_d++;
+        ++m_d;
         return old;
     }
     VDouble0& operator=(const double v) {

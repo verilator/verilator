@@ -92,9 +92,7 @@ module Test
    output logic [7:0] datao
    );
 
-   // verilator lint_off BLKANDNBLK
    logic [7:0]        datat;
-   // verilator lint_on BLKANDNBLK
 
    for (genvar i = 0; i < 8; i++) begin
       if (i%4 != 3) begin

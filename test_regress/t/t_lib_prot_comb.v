@@ -4,8 +4,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 `ifdef PROCESS_TOP
-`define CHECK if (out0 != (in0 ^ in1) || out1 != (in0 | in1) || out2 != (in0 & in1)) begin \
-   $display("Mismatch in0:%b in1:%b out0:%b out1:%b out2:%b", in0, in1, out0, out1, out2); \
+`define CHECK if (out0 != (in0 ^ in1) || out1 != (in0 | in1) || out2__under != (in0 & in1)) begin \
+   $display("Mismatch in0:%b in1:%b out0:%b out1:%b out2:%b", in0, in1, out0, out1, out2__under); \
    $stop; \
    end
 
@@ -17,10 +17,10 @@ module t (/*AUTOARG*/
 
 
    logic in0, in1;
-   logic out0, out1, out2;
+   logic out0, out1, out2__under;
    logic [31:0] count = 0;
    // actually XOR and OR and AND
-   secret i_secret(.in0(in0), .in1(in1), .out0(out0), .out1(out1), .out2(out2));
+   secret i_secret(.in0(in0), .in1(in1), .out0(out0), .out1(out1), .out2__under(out2__under));
 
    always @(posedge clk) begin
       count <= count + 32'd1;
@@ -48,9 +48,9 @@ module t (/*AUTOARG*/
 endmodule
 
 `else
-module secret(input in0, input in1, output out0, output out1, output out2);
+module secret(input in0, input in1, output out0, output out1, output out2__under);
    assign out0 = in0 ^ in1;
    assign out1 = in0 | in1;
-   assign out2 = in0 & in1;
+   assign out2__under = in0 & in1;
 endmodule
 `endif
