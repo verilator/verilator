@@ -1559,7 +1559,6 @@ port<nodep>:                    // ==IEEE: port
                 portDirNetE id/*interface*/ '.' idAny/*modport*/ portSig variable_dimensionListE sigAttrListE
                         { // VAR for now, but V3LinkCells may call setIfcaeRef on it later
                           $$ = $5; VARDECL(VAR); VARIO(NONE);
-                          std::cout << "ABC" << *$4 << '\n';
                           AstNodeDType* const dtp = new AstIfaceRefDType{$<fl>2, $<fl>4, "", *$2, *$4};
                           VARDTYPE(dtp); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $6, $7)); }
@@ -1577,7 +1576,7 @@ port<nodep>:                    // ==IEEE: port
                           VARDTYPE(new AstParseTypeDType($<fl>2, VFwdType::GENERIC_INTERFACE));
                           std::string uniqueName = "TODO_UNIQUE_NAME";
                           addNextNull($$, VARDONEA($$->fileline(), uniqueName, $4, $5));
-                          std::cout << "Begin1 " << $2 << " | " << $3  << " 4: " << $4 << " end1\n";
+                          // std::cout << "Begin1 " << $2 << " | " << $3  << " 4: " << $4 << " end1\n";
                           VARDECL(IFACEREF);  // VARRESET_NONLIST(GPARAM);
                           // AstIfaceRefDType* const refdtypep = new AstIfaceRefDType($<fl>2, $<fl>4, "", "*$2", "*$4");
                           // refdtypep->isGeneric(true);
@@ -1601,7 +1600,7 @@ port<nodep>:                    // ==IEEE: port
                           VARDTYPE(new AstParseTypeDType($<fl>2, VFwdType::GENERIC_INTERFACE));
                           std::string uniqueName = "TODO_UNIQUE_NAME";
                           addNextNull($$, VARDONEA($$->fileline(), uniqueName, $6, $7));
-                          std::cout << "Begin2 " << $2 << " | " << $5  << " 4: " << $6 << " end2\n";
+                          // std::cout << "Begin2 " << $2 << " | " << $5  << " 4: " << $6 << " end2\n";
                           VARDECL(IFACEREF);  // VARRESET_NONLIST(GPARAM);
                           // AstIfaceRefDType* const refdtypep = new AstIfaceRefDType($<fl>2, $<fl>6, "", "*$4", "*$6");
                           // refdtypep->isGeneric(true);
