@@ -14,7 +14,7 @@ test.scenarios("vlt")
 test.lint(
     # We also have dump-tree turned on, so hit a lot of AstNode*::dump() functions
     # Likewise XML
-    v_flags=["--lint-only --dumpi-tree 9 --dumpi-V3EmitV 9 --debug-emitv"])
+    v_flags=["--lint-only --dumpi-tree 9 --dumpi-V3EmitV 9 --debug-emitv --timing"])
 
 output_vs = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "_*_width.tree.v")
 

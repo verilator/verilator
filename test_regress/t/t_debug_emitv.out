@@ -74,6 +74,8 @@ module Vt_debug_emitv_t;
             if (the_ifaces[2].ifsig) begin
                 $write("");
             end
+            #64'h1;
+            $write("After #1 delay");
         end
     end
     bit [6:5] [4:3] [2:1]  arraymanyd[10:11][12:13][14:15];
