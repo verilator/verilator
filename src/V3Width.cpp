@@ -629,8 +629,8 @@ class WidthVisitor final : public VNVisitor {
                 iterateCheckString(nodep, "RHS", nodep->rhsp(), BOTH);
                 nodep->dtypeSetString();
             } else {
-                iterateCheckSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
-                iterateCheckSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
+                iterateCheckIntegralSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
+                iterateCheckIntegralSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
 
                 if (m_streamConcat) {
                     packIfUnpacked(nodep->lhsp());
@@ -837,7 +837,7 @@ class WidthVisitor final : public VNVisitor {
             if (vdtypep && vdtypep->isString()) {
                 iterateCheckString(nodep, "LHS", nodep->srcp(), BOTH);
             } else {
-                iterateCheckSelf(nodep, "LHS", nodep->srcp(), SELF, BOTH);
+                iterateCheckIntegralSelf(nodep, "LHS", nodep->srcp(), SELF, BOTH);
             }
 
             if ((vdtypep && vdtypep->isString()) || nodep->srcp()->isString()) {
@@ -971,7 +971,7 @@ class WidthVisitor final : public VNVisitor {
             if (debug() >= 9) nodep->dumpTree("-  selWidth: ");
             userIterateAndNext(nodep->fromp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->lsbp(), WidthVP{SELF, PRELIM}.p());
-            checkCvtUS(nodep->fromp());
+            checkCvtUS(nodep->fromp(), false);
             iterateCheckSizedSelf(nodep, "Select LHS", nodep->fromp(), SELF, BOTH);
             int width = nodep->widthConst();
             if (width <= 0) {
@@ -1510,7 +1510,7 @@ class WidthVisitor final : public VNVisitor {
                 return;
             }
 
-            checkCvtUS(nodep->lhsp());
+            checkCvtUS(nodep->lhsp(), false);
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             nodep->dtypeFrom(nodep->lhsp());
         }
@@ -6826,7 +6826,7 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(!nodep->op2p(), nodep, "For unary ops only!");
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
-            if (!real_ok) checkCvtUS(nodep->lhsp());
+            if (!real_ok) checkCvtUS(nodep->lhsp(), false);
         }
         if (real_ok && nodep->lhsp()->isDouble()) {
             spliceCvtD(nodep->lhsp());
@@ -6867,7 +6867,7 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(!nodep->op2p(), nodep, "For unary ops only!");
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
-            checkCvtUS(nodep->lhsp());
+            checkCvtUS(nodep->lhsp(), true);
             const int width = nodep->lhsp()->width();
             AstNodeDType* const expDTypep = nodep->findLogicDType(width, width, rs_out);
             nodep->dtypep(expDTypep);
@@ -6895,7 +6895,7 @@ class WidthVisitor final : public VNVisitor {
         //   RHS is self-determined. RHS is always treated as unsigned, has no effect on result.
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM}.p());
-            checkCvtUS(nodep->lhsp());
+            checkCvtUS(nodep->lhsp(), false);
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             nodep->dtypeFrom(nodep->lhsp());
         }
@@ -6955,8 +6955,8 @@ class WidthVisitor final : public VNVisitor {
             // Determine expression widths only relying on what's in the subops
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
-            checkCvtUS(nodep->lhsp());
-            checkCvtUS(nodep->rhsp());
+            checkCvtUS(nodep->lhsp(), false);
+            checkCvtUS(nodep->rhsp(), false);
             const int width = std::max(nodep->lhsp()->width(), nodep->rhsp()->width());
             const int mwidth = std::max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
             const bool expSigned = (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned());
@@ -6990,8 +6990,8 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             if (!real_ok) {
-                checkCvtUS(nodep->lhsp());
-                checkCvtUS(nodep->rhsp());
+                checkCvtUS(nodep->lhsp(), false);
+                checkCvtUS(nodep->rhsp(), false);
             }
             if (nodep->lhsp()->isDouble() || nodep->rhsp()->isDouble()) {
                 spliceCvtD(nodep->lhsp());
@@ -7330,8 +7330,12 @@ class WidthVisitor final : public VNVisitor {
         }
         (void)underp;  // cppcheck
     }
+    void iterateCheckIntegralSelf(AstNode* nodep, const char* side, AstNode* underp, Determ determ,
+                                  Stage stage) {
+        iterateCheckSelf(nodep, side, underp, determ, stage, true);
+    }
     void iterateCheckSelf(AstNode* nodep, const char* side, AstNode* underp, Determ determ,
-                          Stage stage) {
+                          Stage stage, bool integralOnly = false) {
         // Coerce child to any data type; child is self-determined
         // i.e. isolated from expected type.
         // e.g. nodep=CONCAT, underp=lhs in CONCAT(lhs,rhs)
@@ -7341,7 +7345,8 @@ class WidthVisitor final : public VNVisitor {
         if (stage & PRELIM) {
             underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, PRELIM}.p());
         }
-        underp = VN_IS(underp, NodeExpr) ? checkCvtUS(VN_AS(underp, NodeExpr)) : underp;
+        underp
+            = VN_IS(underp, NodeExpr) ? checkCvtUS(VN_AS(underp, NodeExpr), integralOnly) : underp;
         AstNodeDType* const expDTypep = underp->dtypep();
         underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         (void)underp;  // cppcheck
@@ -7357,7 +7362,7 @@ class WidthVisitor final : public VNVisitor {
         if (stage & PRELIM) {
             underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, PRELIM}.p());
         }
-        underp = VN_IS(underp, NodeExpr) ? checkCvtUS(VN_AS(underp, NodeExpr)) : underp;
+        underp = VN_IS(underp, NodeExpr) ? checkCvtUS(VN_AS(underp, NodeExpr), false) : underp;
         AstNodeDType* const expDTypep = underp->dtypep();
         underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         AstNodeDType* const checkDtp = expDTypep->skipRefToEnump();
@@ -7674,11 +7679,15 @@ class WidthVisitor final : public VNVisitor {
     //----------------------------------------------------------------------
     // SIGNED/DOUBLE METHODS
 
-    AstNodeExpr* checkCvtUS(AstNodeExpr* nodep) {
+    AstNodeExpr* checkCvtUS(AstNodeExpr* nodep, bool fatal) {
         if (nodep && nodep->dtypep()->skipRefp()->isDouble()) {
-            nodep->v3warn(REALCVT,
-                          "Implicit conversion of real to integer; expected integral input to "
-                              << nodep->backp()->prettyTypeName());
+            if (fatal) {
+                nodep->v3error("Expected integral input to " << nodep->backp()->prettyTypeName());
+            } else {
+                nodep->v3warn(REALCVT,
+                              "Implicit conversion of real to integer; expected integral input to "
+                                  << nodep->backp()->prettyTypeName());
+            }
             nodep = spliceCvtS(nodep, false, 32);
         }
         return nodep;
