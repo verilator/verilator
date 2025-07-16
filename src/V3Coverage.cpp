@@ -39,10 +39,15 @@ class ExprCoverageEligibleVisitor final : public VNVisitor {
     // STATE
     bool m_eligible = true;
 
-    static const AstNodeDType* getElemDTypep(const AstNodeDType* dtypep) {
+    static bool elemDTypeEligible(const AstNodeDType* dtypep) {
         dtypep = dtypep->skipRefp();
-        while (dtypep && dtypep->virtRefDTypep()) dtypep = dtypep->virtRefDTypep()->skipRefp();
-        return dtypep;
+        if (AstNodeDType* const dtp = dtypep->virtRefDTypep()) {
+            if (!elemDTypeEligible(dtp)) return false;
+        }
+        if (AstNodeDType* const dtp = dtypep->virtRefDType2p()) {
+            if (!elemDTypeEligible(dtp)) return false;
+        }
+        return !VN_IS(dtypep, ClassRefDType);
     }
 
     void visit(AstNodeVarRef* nodep) override {
@@ -52,10 +57,10 @@ class ExprCoverageEligibleVisitor final : public VNVisitor {
         // coverage data is gathered
         // This could be resolved in the future by protecting against dereferrencing
         // null pointers when cloning the expression for expression coverage
-        if (VN_IS(getElemDTypep(dtypep), ClassRefDType)) {
-            m_eligible = false;
-        } else {
+        if (dtypep && elemDTypeEligible(dtypep)) {
             iterateChildren(nodep);
+        } else {
+            m_eligible = false;
         }
     }
 
