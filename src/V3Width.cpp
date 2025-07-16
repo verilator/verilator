@@ -6194,7 +6194,6 @@ class WidthVisitor final : public VNVisitor {
     }
 
     void handleStdRandomizeArgs(AstNodeFTaskRef* const nodep) {
-        bool hasNonNullArgs = false;
         AstConst* nullp = nullptr;
         for (AstNode *pinp = nodep->pinsp(), *nextp = nullptr; pinp; pinp = nextp) {
             nextp = pinp->nextp();
@@ -6207,8 +6206,6 @@ class WidthVisitor final : public VNVisitor {
                     continue;
                 }
             }
-            hasNonNullArgs = true;
-
             if (VN_IS(exprp, MemberSel)) {
                 argp->v3warn(CONSTRAINTIGN, "std::randomize ("
                                                 << exprp->prettyTypeName()
@@ -6219,7 +6216,7 @@ class WidthVisitor final : public VNVisitor {
                     argp->v3error("Invalid argument for 'std::randomize()'.");
                 }
             }
-            if (!argp) continue;  // Errored out, bail
+            if (!argp) continue;
         }
         if (nullp) { nullp->v3error("Invalid argument for 'std::randomize()'."); }
     }
