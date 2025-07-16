@@ -4181,6 +4181,7 @@ loop_variables<nodep>:          // IEEE: loop_variables
                 parseRefBase                            { $$ = $1; }
         |       loop_variables ',' parseRefBase         { $$ = $1->addNext($3); }
         |       ',' parseRefBase                        { $$ = new AstEmpty{$1}; $$->addNext($2); }
+        |       ','                                     { $$ = new AstEmpty{$1}; }
         ;
 
 //************************************************
@@ -6112,7 +6113,6 @@ idArrayedForeach<nodeExprp>:    // IEEE: id + select (under foreach expression)
                 id
                         { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1, nullptr, nullptr}; }
         //                      // IEEE: id + part_select_range/constant_part_select_range
-        |       idArrayed '[' ']'                               { $$ = $1; }  // Or AstArraySel, don't know yet.
         |       idArrayed '[' expr ']'                          { $$ = new AstSelBit{$2, $1, $3}; }  // Or AstArraySel, don't know yet.
         |       idArrayed '[' constExpr ':' constExpr ']'       { $$ = new AstSelExtract{$2, $1, $3, $5}; }
         //                      // IEEE: id + indexed_range/constant_indexed_range
@@ -6120,6 +6120,8 @@ idArrayedForeach<nodeExprp>:    // IEEE: id + select (under foreach expression)
         |       idArrayed '[' expr yP_MINUSCOLON constExpr ']'  { $$ = new AstSelMinus{$2, $1, $3, $5}; }
         //                      // IEEE: loop_variables (under foreach expression)
         //                      // To avoid conflicts we allow expr as first element, must post-check
+        |       idArrayed '[' ']'
+                        { $$ = new AstSelLoopVars{$2, $1, new AstEmpty{$3}}; }
         |       idArrayed '[' expr ',' loop_variables ']'
                         { $$ = new AstSelLoopVars{$2, $1, addNextNull(static_cast<AstNode*>($3), $5)}; }
         |       idArrayed '[' ',' loop_variables ']'

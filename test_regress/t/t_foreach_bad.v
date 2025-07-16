@@ -13,8 +13,6 @@ module t (/*AUTOARG*/);
    initial begin
       foreach (array);  // no index
 
-      foreach (array[]);  // no index
-
       foreach (array.array[a]); // not supported
 
       foreach (array[a.b]);  // no index

@@ -1308,6 +1308,21 @@ List Of Warnings
    simulate correctly.
 
 
+.. option:: NOEFFECT
+
+   Warns that the statement will have no effect and is roughly equivalent
+   to not being present.  This is only issued when it is "non-obvious",
+   e.g. a :code:`if (0)` will not result in this warning.
+
+   Faulty example:
+
+   .. code-block:: sv
+
+         foreach (array[]) begin ... end  //<--- Warning
+
+   For a fix, remove the statement.
+
+
 .. option:: NOLATCH
 
    .. TODO better example

@@ -125,6 +125,7 @@ public:
         MULTIDRIVEN,    // Driven from multiple blocks
         MULTITOP,       // Multiple top level modules
         NEWERSTD,       // Newer language standard required
+        NOEFFECT,       // Statement has no effect
         NOLATCH,        // No latch detected in always_latch block
         NONSTD,         // Non-standard feature present in other sims
         NULLPORT,       // Null port detected in module definition
@@ -190,41 +191,33 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const VL_MT_SAFE { return m_e; }
     const char* ascii() const VL_MT_SAFE {
-        // clang-format off
         static const char* const names[] = {
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALMANY", " FATALSRC", " ERROR", " FIRST_NAMED",
             // Boolean
-            " I_CELLDEFINE", " I_COVERAGE",  " I_DEF_NETTYPE_WIRE", " I_LINT", " I_TIMING", " I_TRACING", " I_UNUSED",
+            " I_CELLDEFINE", " I_COVERAGE", " I_DEF_NETTYPE_WIRE", " I_LINT", " I_TIMING",
+            " I_TRACING", " I_UNUSED",
             // Errors
             "LIFETIME", "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT", "TASKNSVAR", "UNSUPPORTED",
             // Warnings
-            " EC_FIRST_WARN",
-            "ALWCOMBORDER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA", "BADVLTPRAGMA",
-            "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
-            "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
-            "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG", "COVERIGN",
-            "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED",
-            "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE",
-            "GENCLK", "GENUNNAMED", "HIERBLOCK",
-            "IFDEPTH", "IGNOREDRETURN",
-            "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
-            "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
-            "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING",
-            "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOLATCH", "NONSTD", "NULLPORT", "PINCONNECTEMPTY",
-            "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE",
-            "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
-            "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPLITVAR",
-            "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
-            "TICKCOUNT", "TIMESCALEMOD",
-            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
-            "UNPACKED", "UNSIGNED", "UNUSEDGENVAR",  "UNUSEDLOOP" ,"UNUSEDPARAM", "UNUSEDSIGNAL",
-            "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
-            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",  "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND",
-            "ZERODLY", "ZEROREPL",
-            " MAX"
-        };
-        // clang-format on
+            " EC_FIRST_WARN", "ALWCOMBORDER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA",
+            "BADVLTPRAGMA", "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE", "CASEINCOMPLETE",
+            "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA", "CMPCONST",
+            "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG", "COVERIGN", "DECLFILENAME",
+            "DEFOVERRIDE", "DEFPARAM", "DEPRECATED", "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH",
+            "ENUMVALUE", "EOFNEWLINE", "GENCLK", "GENUNNAMED", "HIERBLOCK", "IFDEPTH",
+            "IGNOREDRETURN", "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
+            "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE", "LATCH", "LITENDIAN",
+            "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN", "MULTITOP",
+            "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NULLPORT", "PINCONNECTEMPTY",
+            "PINMISSING", "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT",
+            "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO",
+            "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPLITVAR", "STATICVAR",
+            "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN",
+            "UNOPT", "UNOPTFLAT", "UNOPTTHREADS", "UNPACKED", "UNSIGNED", "UNUSEDGENVAR",
+            "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL", "USERERROR", "USERFATAL", "USERINFO",
+            "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT", "WIDTHEXPAND",
+            "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
         return names[m_e];
     }
     // Warnings that default to off

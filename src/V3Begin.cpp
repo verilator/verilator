@@ -530,7 +530,11 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     }
     // The parser validates we don't have "foreach (array[,,,])"
     AstNode* const bodyp = nodep->stmtsp();
-    UASSERT_OBJ(newp, nodep, "foreach has no non-empty loop variable");
+    if (!newp) {
+        nodep->v3warn(NOEFFECT, "foreach with no loop variable has no effect");
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        return nullptr;
+    }
     if (bodyp) {
         bodyPointp->replaceWith(bodyp->unlinkFrBackWithNext());
     } else {
