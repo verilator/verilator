@@ -228,6 +228,11 @@ class LinkJumpVisitor final : public VNVisitor {
         killQueueCall->classOrPackagep(processClassp);
         nodep->addNextHere(new AstStmtExpr{fl, killQueueCall});
     }
+    static bool directlyUnderFork(const AstNode* const nodep) {
+        if (nodep->backp()->nextp() == nodep) return directlyUnderFork(nodep->backp());
+        if (VN_IS(nodep->backp(), Fork)) return true;
+        return false;
+    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -427,19 +432,24 @@ class LinkJumpVisitor final : public VNVisitor {
             }
             handleDisableOnFork(nodep, forks);
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
-            const std::string targetName = beginp->name();
-            if (existsBlockAbove(targetName)) {
-                if (beginp->user3()) {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: disabling block that contains a fork");
-                } else {
-                    // Jump to the end of the named block
-                    AstJumpLabel* const labelp = findAddLabel(beginp, false);
-                    nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
-                }
+            if (directlyUnderFork(beginp)) {
+                std::vector<AstBegin*> forks{beginp};
+                handleDisableOnFork(nodep, forks);
             } else {
-                nodep->v3warn(E_UNSUPPORTED, "disable isn't underneath a begin with name: '"
-                                                 << targetName << "'");
+                const std::string targetName = beginp->name();
+                if (existsBlockAbove(targetName)) {
+                    if (beginp->user3()) {
+                        nodep->v3warn(E_UNSUPPORTED,
+                                      "Unsupported: disabling block that contains a fork");
+                    } else {
+                        // Jump to the end of the named block
+                        AstJumpLabel* const labelp = findAddLabel(beginp, false);
+                        nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
+                    }
+                } else {
+                    nodep->v3warn(E_UNSUPPORTED, "disable isn't underneath a begin with name: '"
+                                                     << targetName << "'");
+                }
             }
         } else {
             nodep->v3fatalSrc("Disable linked with node of unhandled type "
