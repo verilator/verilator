@@ -3968,16 +3968,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (m_statep->forParamed() && nodep->varType() == VVarType::IFACEREF) {
             if (AstIfaceGenericDType* const ifaceGenp
                 = VN_CAST(nodep->childDTypep(), IfaceGenericDType)) {
-                // AstIfaceRefDType* const ifacerefp = new AstIfaceRefDType(refDTypep->fileline(),
-                // refDTypep->name(), );
-                AstIfaceRefDType* const ifaceRefp
-                    = VN_AS(VN_AS(m_statep->getNodeSym(nodep->backp())
-                                      ->findIdFlat("TODO_UNIQUE_NAME")
-                                      ->nodep(),
-                                  ParamTypeDType)
-                                ->childDTypep()
-                                ->cloneTree(false),
-                            IfaceRefDType);
+                string searchedValue = "__VGIfaceParam" + nodep->name();
+                const VSymEnt* const lookupSpacep = m_statep->getNodeSym(m_modp);
+                AstNode* const resultp = lookupSpacep->findIdFlat(searchedValue)->nodep();
+                AstNodeDType* const dtypep = VN_AS(resultp, ParamTypeDType)->childDTypep();
+                AstIfaceRefDType* const ifaceRefp = VN_AS(dtypep->cloneTree(false), IfaceRefDType);
                 ifaceRefp->modportName(ifaceGenp->modportName());
                 ifaceGenp->unlinkFrBack()->deleteTree();
                 nodep->childDTypep(ifaceRefp);
