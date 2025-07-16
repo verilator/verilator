@@ -3,4 +3,8 @@
    12 |         success = std::randomize(a + 1);  
       |                                    ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_std_randomize_bad1.v:19:30: Invalid argument for 'std::randomize()'.
+                                      : ... note: In instance 't_std_randomize_bad1'
+   19 |         void'(std::randomize(null));
+      |                              ^~~~
 %Error: Exiting due to

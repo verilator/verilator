@@ -6222,11 +6222,7 @@ class WidthVisitor final : public VNVisitor {
             if (!argp) continue;  // Errored out, bail
         }
         if (nullp) {
-            if (hasNonNullArgs) {
-                nullp->v3error("Cannot pass more arguments to 'std::randomize(null)'");
-            } else {
-                nullp->v3warn(E_UNSUPPORTED, "Unsupported: 'std::randomize(null)'");
-            }
+            nullp->v3error("Invalid argument for 'std::randomize()'.");
         }
     }
     void visit(AstNodeFTaskRef* nodep) override {

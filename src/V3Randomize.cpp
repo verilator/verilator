@@ -638,12 +638,6 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (!randMode.usesMode && editFormat(nodep)) return;
 
         // In SMT just variable name, but we also ensure write_var for the variable
-        // const std::string smtName
-        //     = membersel ? (membersel->fromp()->name() == "__Vthis")
-        //                       ? membersel->name()
-        //                       : membersel->fromp()->name() + "." + membersel->name()
-        //                 : nodep->name();  // Can be anything unique
-
         const std::string smtName = membersel
                                         ? membersel->fromp()->name() + "." + membersel->name()
                                         : nodep->name();  // Can be anything unique
@@ -2508,13 +2502,12 @@ AstFunc* V3Randomize::newRandomizeStdFunc(VMemberMap& memberMap, AstNodeModule* 
     AstFunc* funcp = nullptr;
     v3Global.useRandomizeMethods(true);
     AstNodeDType* const dtypep
-        = nodep->findBitDType(32, 32, VSigning::SIGNED);  // IEEE says int return of 0/1
+        = nodep->findBitDType(32, 32, VSigning::SIGNED);
     AstVar* const fvarp = new AstVar{nodep->fileline(), VVarType::MEMBER, name, dtypep};
     fvarp->lifetime(VLifetime::AUTOMATIC);
     fvarp->funcLocal(true);
     fvarp->funcReturn(true);
     fvarp->direction(VDirection::OUTPUT);
-    // nodep->addStmtsp(funcp);
     funcp = new AstFunc{nodep->fileline(), name, nullptr, fvarp};
     funcp->dtypep(dtypep);
     if (VN_IS(nodep, Class)) {

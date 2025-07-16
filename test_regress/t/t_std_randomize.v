@@ -25,7 +25,7 @@ class std_randomize_class;
         success = std::randomize(addr, data);
 
         valid = (success == 1) && !(addr == old_addr || data == old_data) && data_x_4 == old_data_x_4;
-        
+
         return valid;
     endfunction
 

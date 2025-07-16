@@ -14,9 +14,9 @@ module t_std_randomize_bad1;
     endfunction
 
     initial begin
-        int ok;
+        int ok, x;
         ok = run();
-        if (ok == 0) $stop;
+        void'(std::randomize(null));
         $write("*-* All Finished *-*\n");
         $finish;
     end
