@@ -2864,28 +2864,37 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (const AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
                         if (modp->hasGenericIface()) {
                             std::cout << "HIT!\n";
-                            std::cout << nodep->pinsp()->modVarp() << '\n';
-                            std::cout << VN_AS(VN_AS(nodep->pinsp()->exprp(), VarRef)
-                                                   ->varp()
-                                                   ->childDTypep(),
-                                               IfaceRefDType)
-                                             ->cellp()
-                                             ->modp()
-                                      << '\n';
-                            // TODO: make a valid IfaceRefDType extraction
-                            auto refp = VN_AS(
-                                VN_AS(nodep->pinsp()->exprp(), VarRef)->varp()->childDTypep(),
-                                IfaceRefDType);
-                            auto iface = VN_AS(refp->cellp()->modp(), Iface);
-                            auto x = new AstIfaceRefDType(refp->fileline(), refp->name(),
-                                                          iface->name());
-                            x->ifacep(iface);
-                            AstPin* const pinp
-                                = new AstPin(nodep->pinsp()->fileline(), 1, "__paramNumber1", x);
-                            pinp->param(true);
-                            std::cout << "pinp: " << pinp << '\n';
-                            visit(pinp);
-                            nodep->addParamsp(pinp);
+                            size_t paramNum = 1;
+                            for (AstPin* const paramp = nodep->paramsp(); paramp;
+                                 paramp->nextp()) {
+                                ++paramNum;
+                            }
+                            for (const AstPin* pinp = nodep->pinsp(); pinp;
+                                 pinp = VN_CAST(pinp->nextp(), Pin)) {
+                                std::cout << pinp->modVarp() << '\n';
+                                std::cout
+                                    << VN_AS(VN_AS(pinp->exprp(), VarRef)->varp()->childDTypep(),
+                                             IfaceRefDType)
+                                           ->cellp()
+                                           ->modp()
+                                    << '\n';
+                                // TODO: make a valid IfaceRefDType extraction
+                                const AstIfaceRefDType* const refp
+                                    = VN_AS(VN_AS(pinp->exprp(), VarRef)->varp()->childDTypep(),
+                                            IfaceRefDType);
+                                AstIface* const iface = VN_AS(refp->cellp()->modp(), Iface);
+                                AstIfaceRefDType* const newIfaceRefp = new AstIfaceRefDType(
+                                    refp->fileline(), refp->name(), iface->name());
+                                newIfaceRefp->ifacep(iface);
+                                AstPin* const newPinp = new AstPin(
+                                    pinp->fileline(), paramNum,
+                                    "__paramNumber" + std::to_string(paramNum), newIfaceRefp);
+                                ++paramNum;
+                                newPinp->param(true);
+                                std::cout << "pinp: " << newPinp << '\n';
+                                visit(newPinp);
+                                nodep->addParamsp(newPinp);
+                            }
                         }
                     }
                 }
