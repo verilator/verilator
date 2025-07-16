@@ -1330,14 +1330,6 @@ AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
     }
     return m_voidp;
 }
-AstIfaceGenericDType* AstTypeTable::findIfaceGenericDType(FileLine* fl) {
-    if (VL_UNLIKELY(!m_voidp)) {
-        AstIfaceGenericDType* const newp = new AstIfaceGenericDType{fl};
-        addTypesp(newp);
-        m_ifaceGenericp = newp;
-    }
-    return m_ifaceGenericp;
-}
 
 AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, VBasicDTypeKwd kwd) {
     if (m_basicps[kwd]) return m_basicps[kwd];

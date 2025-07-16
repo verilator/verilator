@@ -1576,9 +1576,6 @@ AstNodeDType* AstNode::findStreamDType() const {
 AstNodeDType* AstNode::findVoidDType() const {
     return v3Global.rootp()->typeTablep()->findVoidDType(fileline());
 }
-AstNodeDType* AstNode::findIfaceGenericDType() const {
-    return v3Global.rootp()->typeTablep()->findIfaceGenericDType(fileline());
-}
 
 static const AstNodeDType* computeCastableBase(const AstNodeDType* nodep) {
     while (true) {

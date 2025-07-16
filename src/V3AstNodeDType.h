@@ -847,9 +847,15 @@ public:
 
 class AstIfaceGenericDType final : public AstNodeDType {
     // Generic interface that will be replaced with AstIfaceRefDType
+    string m_modportName;  // "" = no modport
 public:
     explicit AstIfaceGenericDType(FileLine* fl)
         : ASTGEN_SUPER_IfaceGenericDType(fl) {
+        dtypep(this);
+    }
+    AstIfaceGenericDType(FileLine* fl, const string& modport)
+        : ASTGEN_SUPER_IfaceGenericDType(fl)
+        , m_modportName(modport) {
         dtypep(this);
     }
     ASTGEN_MEMBERS_AstIfaceGenericDType;
@@ -864,7 +870,9 @@ public:
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
     int widthAlignBytes() const override { return 1; }
     int widthTotalBytes() const override { return 1; }
-    bool isCompound() const override { return false; }
+    string modportName() const { return m_modportName; }
+    bool isModport() { return !m_modportName.empty(); }
+    bool isCompound() const override { return true; }
 };
 
 class AstIfaceRefDType final : public AstNodeDType {
@@ -925,6 +933,7 @@ public:
     string ifaceName() const { return m_ifaceName; }
     string ifaceNameQ() const { return "'" + prettyName(ifaceName()) + "'"; }
     void ifaceName(const string& name) { m_ifaceName = name; }
+    void modportName(const string& modportName) { m_modportName = modportName; }
     string modportName() const { return m_modportName; }
     AstIface* ifaceViaCellp() const;  // Use cellp or ifacep
     AstIface* ifacep() const { return m_ifacep; }
