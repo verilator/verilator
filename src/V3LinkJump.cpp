@@ -212,12 +212,14 @@ class LinkJumpVisitor final : public VNVisitor {
 
         AstVarRef* const queueWriteRefp
             = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
-        AstStmtExpr* const pushCurrentProcessp = getQueuePushProcessSelfp(queueWriteRefp);
+        AstStmtExpr* pushCurrentProcessp = getQueuePushProcessSelfp(queueWriteRefp);
 
         for (AstBegin* const beginp : forks) {
             if (pushCurrentProcessp->backp()) {
-                beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp->cloneTree(false));
-            } else {
+                pushCurrentProcessp = pushCurrentProcessp->cloneTree(false);
+            }
+            if (beginp->stmtsp()) {
+                // There is no need to add it to empty block
                 beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp);
             }
         }
