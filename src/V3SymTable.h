@@ -147,7 +147,7 @@ public:
             insert(name, entp);
         }
     }
-    VSymEnt* findIdFlat(const string& name, bool classOrPackage = false) const {
+    VSymEnt* findIdFlat(const string& name) const {
         // Find identifier without looking upward through symbol hierarchy
         // First, scan this begin/end block or module for the name
         const auto it = m_idNameMap.find(name);
@@ -156,47 +156,15 @@ public:
                      << (it == m_idNameMap.end() ? "NONE"
                                                  : "se" + cvtToHex(it->second)
                                                        + " n=" + cvtToHex(it->second->nodep())));
-        if (it != m_idNameMap.end()) {
-            if (!classOrPackage) return it->second;
-            if (VN_IS(it->second->nodep(), Class) || VN_IS(it->second->nodep(), Package)) {
-                return it->second;
-            }
-            const AstRefDType* refDTypep = nullptr;
-            if (const AstTypedef* const typedefp = VN_CAST(it->second->nodep(), Typedef)) {
-                if (VN_IS(typedefp->childDTypep(), ClassRefDType)) { return it->second; }
-                if (const AstRefDType* const refp = VN_CAST(typedefp->childDTypep(), RefDType)) {
-                    refDTypep = refp;
-                }
-            } else if (const AstParamTypeDType* const paramTypep
-                       = VN_CAST(it->second->nodep(), ParamTypeDType)) {
-                if (const AstRequireDType* const requireDTypep
-                    = VN_CAST(paramTypep->childDTypep(), RequireDType)) {
-                    if (const AstRefDType* const refp = VN_CAST(requireDTypep->lhsp(), RefDType)) {
-                        refDTypep = refp;
-                    } else if (VN_IS(requireDTypep->lhsp(), VoidDType)
-                               || VN_IS(requireDTypep->lhsp(), BasicDType)
-                               || VN_IS(requireDTypep->lhsp(), ClassRefDType)) {
-                        return it->second;
-                    }
-                }
-            }
-            // TODO: this should be handled properly - case when it is known what type is
-            // referenced by AstRefDType (refDTypep->typeofp() is null or
-            // refDTypep->classOrPackageOpp() is null)
-            if (refDTypep && !refDTypep->typeofp() && !refDTypep->classOrPackageOpp()) {
-                // When still unknown - return because it may be a class, classes may not be
-                // linked at this point. Return in case it gets resolved to a class in the future
-                return it->second;
-            }
-        }
+        if (it != m_idNameMap.end()) return it->second;
         return nullptr;
     }
-    VSymEnt* findIdFallback(const string& name, bool classOrPackage = false) const {
+    VSymEnt* findIdFallback(const string& name) const {
         // Find identifier looking upward through symbol hierarchy
         // First, scan this begin/end block or module for the name
-        if (VSymEnt* const entp = findIdFlat(name, classOrPackage)) return entp;
+        if (VSymEnt* const entp = findIdFlat(name)) return entp;
         // Then scan the upper begin/end block or module for the name
-        if (m_fallbackp) return m_fallbackp->findIdFallback(name, classOrPackage);
+        if (m_fallbackp) return m_fallbackp->findIdFallback(name);
         return nullptr;
     }
     void candidateIdFlat(VSpellCheck* spellerp, const VNodeMatcher* matcherp) const {
