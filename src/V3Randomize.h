@@ -23,6 +23,7 @@
 class AstClass;
 class AstFunc;
 class AstNetlist;
+class AstNodeModule;
 
 class VMemberMap;
 
