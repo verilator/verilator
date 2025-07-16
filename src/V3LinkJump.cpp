@@ -185,7 +185,7 @@ class LinkJumpVisitor final : public VNVisitor {
         return new AstStmtExpr{
             fl, new AstMethodCall{fl, queueRefp, "push_back", new AstArg{fl, "", processSelfp}}};
     }
-    void handleDisableOnFork(AstDisable* const nodep, const std::vector<AstBegin*>& blocks) {
+    void handleDisableOnFork(AstDisable* const nodep, const std::vector<AstBegin*>& forks) {
         // The support is limited only to disabling a fork from outside that fork.
         // It utilizes the process::kill()` method. For each `disable` a queue of processes is
         // declared. At the beginning of each fork that can be disabled, its process handle is
@@ -214,7 +214,7 @@ class LinkJumpVisitor final : public VNVisitor {
             = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
         AstStmtExpr* const pushCurrentProcessp = getQueuePushProcessSelfp(queueWriteRefp);
 
-        for (AstBegin* beginp : blocks) {
+        for (AstBegin* const beginp : forks) {
             if (pushCurrentProcessp->backp()) {
                 beginp->stmtsp()->addHereThisAsNext(pushCurrentProcessp->cloneTree(false));
             } else {
@@ -412,7 +412,7 @@ class LinkJumpVisitor final : public VNVisitor {
         if (VN_IS(targetp, Task)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling task by name");
         } else if (AstFork* const forkp = VN_CAST(targetp, Fork)) {
-            std::vector<AstBegin*> blocks;
+            std::vector<AstBegin*> forks;
             for (AstNode* forkItemp = forkp->stmtsp(); forkItemp; forkItemp = forkItemp->nextp()) {
                 // Further handling of disable stmt requires all forks to be begin blocks
                 AstBegin* beginp = VN_CAST(forkItemp, Begin);
@@ -423,9 +423,9 @@ class LinkJumpVisitor final : public VNVisitor {
                     // In order to continue the iteration
                     forkItemp = beginp;
                 }
-                blocks.push_back(beginp);
+                forks.push_back(beginp);
             }
-            handleDisableOnFork(nodep, blocks);
+            handleDisableOnFork(nodep, forks);
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
             const std::string targetName = beginp->name();
             if (existsBlockAbove(targetName)) {
