@@ -6221,9 +6221,7 @@ class WidthVisitor final : public VNVisitor {
             }
             if (!argp) continue;  // Errored out, bail
         }
-        if (nullp) {
-            nullp->v3error("Invalid argument for 'std::randomize()'.");
-        }
+        if (nullp) { nullp->v3error("Invalid argument for 'std::randomize()'."); }
     }
     void visit(AstNodeFTaskRef* nodep) override {
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign

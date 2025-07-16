@@ -2501,8 +2501,7 @@ AstFunc* V3Randomize::newRandomizeStdFunc(VMemberMap& memberMap, AstNodeModule* 
                                           const std::string& name) {
     AstFunc* funcp = nullptr;
     v3Global.useRandomizeMethods(true);
-    AstNodeDType* const dtypep
-        = nodep->findBitDType(32, 32, VSigning::SIGNED);
+    AstNodeDType* const dtypep = nodep->findBitDType(32, 32, VSigning::SIGNED);
     AstVar* const fvarp = new AstVar{nodep->fileline(), VVarType::MEMBER, name, dtypep};
     fvarp->lifetime(VLifetime::AUTOMATIC);
     fvarp->funcLocal(true);
