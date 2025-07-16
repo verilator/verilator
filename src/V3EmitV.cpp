@@ -927,6 +927,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         puts("#");
         iterateConst(nodep->lhsp());
         puts(";\n");
+        iterateAndNextConstNull(nodep->stmtsp());
     }
     void visit(AstCAwait* nodep) override {
         AstCMethodHard* methodp = VN_CAST(nodep->exprp(), CMethodHard);
