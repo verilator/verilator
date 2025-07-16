@@ -470,6 +470,7 @@ CLANGFORMAT_FLAGS = -i
 CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) test_regress/t/*.c* test_regress/t/*.h
 
 format-c clang-format:
+	$(CLANGFORMAT) --version
 	@$(CLANGFORMAT) --version | egrep 14.0 > /dev/null \
 	|| echo "*** You are not using clang-format-14, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
@@ -538,6 +539,7 @@ YAPF = yapf3
 YAPF_FLAGS = -i --parallel
 
 format-py yapf:
+	$(YAPF) --version
 	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
 
 GERSEMI = gersemi
