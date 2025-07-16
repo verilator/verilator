@@ -747,6 +747,8 @@ public:
             /* DYNAMIC_TRIGGER_SCHEDULER: */ "",  // Should not be traced
             /* FORK_SYNC:                 */ "",  // Should not be traced
             /* PROCESS_REFERENCE:         */ "",  // Should not be traced
+            /* RANDOM_GENERATOR:          */ "",  // Should not be traced
+            /* RANDOM_STD_GENERATOR:      */ "",  // Should not be traced
             /* UINT32:                    */ "BIT",
             /* UINT64:                    */ "BIT",
             /* LOGIC_IMPLICIT:            */ "",  // Should not be traced
