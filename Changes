@@ -32,6 +32,7 @@ Verilator 5.039 devel
 * Fix param-dependent class typedef linking (#6171). [Igor Zaworski, Antmicro Ltd.]
 * Fix `--coverage-expr` null pointer dereference (#6181). [Igor Zaworski, Antmicro Ltd.]
 * Fix conflicting function/class name linking error (#6182). [Igor Zaworski, Antmicro Ltd.]
+* Fix structure select causing 'Wide Op' error (#6191). [Danny Oler]
 
 
 Verilator 5.038 2025-07-08
