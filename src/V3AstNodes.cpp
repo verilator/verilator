@@ -189,6 +189,12 @@ void AstNodeCond::numberOperate(V3Number& out, const V3Number& lhs, const V3Numb
     }
 }
 
+void AstAddrOfCFunc::dump(std::ostream& str) const {
+    this->AstNodeExpr::dump(str);
+    str << " -> ";
+    funcp()->dump(str);
+}
+
 void AstBasicDType::init(VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int wantwidthmin,
                          AstRange* rangep) {
     // wantwidth=0 means figure it out, but if a widthmin is >=0
