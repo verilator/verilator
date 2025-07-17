@@ -2867,8 +2867,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (const AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
                         if (modp->hasGenericIface()) {
                             size_t paramNum = 1;
-                            for (AstPin* const paramp = nodep->paramsp(); paramp;
-                                 paramp->nextp()) {
+                            for (AstPin* paramp = nodep->paramsp(); paramp;
+                                 paramp = VN_CAST(paramp->nextp(), Pin)) {
                                 ++paramNum;
                             }
                             for (const AstPin* pinp = nodep->pinsp(); pinp;
