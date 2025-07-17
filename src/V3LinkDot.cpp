@@ -2820,7 +2820,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         = VN_CAST(getElemDTypep(varp->childDTypep()), IfaceRefDType)) {
                         AstIface* const iface = VN_AS(refp->cellp()->modp(), Iface);
                         AstIfaceRefDType* const newIfaceRefp
-                            = new AstIfaceRefDType(refp->fileline(), refp->name(), iface->name());
+                            = refp->modportp()
+                                  ? new AstIfaceRefDType(refp->fileline(), refp->modportFileline(),
+                                                         m_modp->name(), iface->name(),
+                                                         refp->modportName())
+                                  : new AstIfaceRefDType(refp->fileline(), m_modp->name(),
+                                                         iface->name());
                         newIfaceRefp->ifacep(iface);
                         UASSERT_OBJ(pinp->name().find("__pinNumber") == 0
                                         || pinp->name() == modIfaceVarp->name(),
@@ -3859,14 +3864,44 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                            okSymp, true);  // Maybe nullptr
+            bool modport = true;
             if (const AstVar* varp = VN_CAST(dotSymp->nodep(), Var)) {
                 if (const AstIfaceRefDType* const ifaceRefp
                     = VN_CAST(varp->childDTypep(), IfaceRefDType)) {
-                    dotSymp = m_statep->getNodeSym(ifaceRefp->ifacep());
+                    if (ifaceRefp->modportp()) {
+                        dotSymp = m_statep->getNodeSym(ifaceRefp->modportp());
+                        modport = false;
+                    } else {
+                        dotSymp = m_statep->getNodeSym(ifaceRefp->ifacep());
+                    }
                 }
             }
+            std::cout << "NOP!\n";
             if (!m_statep->forScopeCreation()) {
-                VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
+                VSymEnt* foundp;
+                if (modport) {
+                    std::cout << "MODPORT!\n";
+                    string prefix = dotSymp->symPrefix();
+                    while (!foundp) {
+                        foundp = dotSymp->findIdFlat(prefix + nodep->name());
+                        if (foundp) break;
+                        UASSERT(dotSymp->fallbackp(), "Modports shall have fallback");
+                        foundp = dotSymp->fallbackp()->findIdFlat(prefix + nodep->name());
+                        if (const AstVar* const varp
+                            = foundToVarp(foundp, nodep, nodep->access())) {
+                            if (varp->varType() != VVarType::LPARAM
+                                && varp->varType() != VVarType::GPARAM) {
+                                foundp = nullptr;
+                            }
+                        }
+                        if (prefix.empty()) break;
+                        string nextPrefix = LinkDotState::removeLastInlineScope(prefix);
+                        if (prefix == nextPrefix) break;
+                        prefix = std::move(nextPrefix);
+                    }
+                } else {
+                    foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
+                }
                 if (m_inSens && foundp) {
                     if (AstClocking* const clockingp = VN_CAST(foundp->nodep(), Clocking)) {
                         foundp = getCreateClockingEventSymEnt(clockingp);
