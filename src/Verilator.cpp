@@ -649,7 +649,6 @@ static void process() {
 
     // Final statistics
     if (v3Global.opt.stats()) V3Stats::statsStage("emit");
-    reportStatsIfEnabled();
 }
 
 static void verilate(const string& argString) {
@@ -769,6 +768,7 @@ static void verilate(const string& argString) {
 
     V3Os::filesystemFlushBuildDir(v3Global.opt.makeDir());
     if (v3Global.opt.hierTop()) V3Os::filesystemFlushBuildDir(v3Global.opt.hierTopDataDir());
+    if (v3Global.opt.stats()) V3Stats::statsStage("wrote");
 
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();
@@ -867,6 +867,7 @@ int main(int argc, char** argv) {
         execBuildJob();
     }
 
+    reportStatsIfEnabled();
     V3DiagSarif::output(true);
 
     // Explicitly release resources
