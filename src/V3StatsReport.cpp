@@ -215,7 +215,7 @@ void V3Stats::statsStage(const string& name) {
     V3Stats::addStatPerf("Stage, Elapsed time (sec), " + digitName, wallTimeDelta);
     V3Stats::addStatPerf("Stage, Elapsed time (sec), TOTAL", wallTimeDelta);
 
-    const double memory = VlOs::memUsageBytes() / 1024.0 / 1024.0;
+    const double memory = VlOs::memPeakUsageBytes() / 1024.0 / 1024.0;
     V3Stats::addStatPerf("Stage, Memory (MB), " + digitName, memory);
 }
 
@@ -266,7 +266,7 @@ void V3Stats::summaryReport() {
               << ", cvt=" << walltimeCvt << ", bld=" << walltimeBuild << "); cpu " << cputime
               << " s on " << std::max(v3Global.opt.verilateJobs(), v3Global.opt.buildJobs())
               << " threads";
-    const double memory = VlOs::memUsageBytes() / 1024.0 / 1024.0;
+    const double memory = VlOs::memPeakUsageBytes() / 1024.0 / 1024.0;
     if (VL_UNCOVERABLE(memory != 0.0)) std::cout << "; alloced " << memory << " MB";
     std::cout << "\n";
 }

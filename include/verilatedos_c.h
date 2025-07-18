@@ -102,9 +102,9 @@ uint16_t getcpu() VL_MT_SAFE {
 }
 
 //=========================================================================
-// VlOs::memUsageBytes implementation
+// VlOs::memPeakUsageBytes implementation
 
-uint64_t memUsageBytes() VL_MT_SAFE {
+uint64_t memPeakUsageBytes() VL_MT_SAFE {
 #if defined(_WIN32) || defined(__MINGW32__)
     const HANDLE process = GetCurrentProcess();
     PROCESS_MEMORY_COUNTERS pmc;
@@ -124,6 +124,7 @@ uint64_t memUsageBytes() VL_MT_SAFE {
         &size, &resident, &share, &text, &lib, &data, &dt);
     fclose(fp);
     if (VL_UNCOVERABLE(7 != items)) return 0;
+    // Return the vm size, not the current active set size (/proc/self/status VmRSS + VmSwap)
     return (text + data) * getpagesize();
 #endif
 }
