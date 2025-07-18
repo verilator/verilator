@@ -2200,7 +2200,7 @@ class RandomizeVisitor final : public VNVisitor {
         if (AstMethodCall* const callp = VN_CAST(nodep, MethodCall)) {
             UASSERT_OBJ(callp->fromp()->dtypep(), callp->fromp(), "Object dtype is not linked");
             AstClassRefDType* const classrefdtypep
-                = VN_CAST(callp->fromp()->dtypep(), ClassRefDType);
+                = VN_CAST(callp->fromp()->dtypep()->skipRefp(), ClassRefDType);
             if (!classrefdtypep) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Inline constraints are not supported for this node type");
