@@ -1,6 +1,30 @@
-%Error: t/t_enum_base_bad.v:13:12: Enum type must be an integer atom or vector type (IEEE 1800-2023 6.19)
+%Error: t/t_enum_base_bad.v:11:11: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not 'struct{}t.s_t'
                                  : ... note: In instance 't'
-   13 |    typedef enum s_t {
-      |            ^~~~
+   11 |   typedef enum s_t {   
+      |           ^~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_enum_base_bad.v:16:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not 'int[1:0]'
+                                : ... note: In instance 't'
+   16 |   enum int_t [1:0] {   
+      |   ^~~~
+%Error: t/t_enum_base_bad.v:21:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not 'bit[1:0][1:0]'
+                                : ... note: In instance 't'
+   21 |   enum d2_t {   
+      |   ^~~~
+%Error: t/t_enum_base_bad.v:25:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not 'logic[1:0][1:0]'
+                                : ... note: In instance 't'
+   25 |   enum logic [1:0][1:0] {   
+      |   ^~~~
+%Error: t/t_enum_base_bad.v:30:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not 'struct{}t.str_t'
+                                : ... note: In instance 't'
+   30 |   enum str_t {   
+      |   ^~~~
+%Error: t/t_enum_base_bad.v:35:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not 'enum{}t.enum_t'
+                                : ... note: In instance 't'
+   35 |   enum enum_t {   
+      |   ^~~~
+%Error: t/t_enum_base_bad.v:40:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not 'logic$[1:0]'
+                                : ... note: In instance 't'
+   40 |   enum array2_t {   
+      |   ^~~~
 %Error: Exiting due to

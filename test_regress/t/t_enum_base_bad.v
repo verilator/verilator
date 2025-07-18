@@ -4,20 +4,43 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/);
+module t;
 
-   typedef struct {
-      int a;
-   } s_t;
+  typedef struct {int a;} s_t;
 
-   typedef enum s_t {
-                     EN_ZERO } bad_t;
+  typedef enum s_t {  // BAD
+    EN_ZERO
+  } bad_t;
 
-   typedef int int_t;
+  typedef int int_t;
+  enum int_t [1:0] {  // BAD enum type
+    INTRANGE_VAL
+  } intrange_e;
 
-   typedef enum int_t { EN_ONE = 1 } ok1_t;
+  typedef bit [1:0][1:0] d2_t;
+  enum d2_t {  // BAD enum type
+    TD2_VAL
+  } td2_e;
 
-   s_t s;
-   int_t i;
+  enum logic [1:0][1:0] {  // BAD enum type
+    D2_VAL
+  } d2_e;
+
+  typedef struct packed {int x;} str_t;
+  enum str_t {  // BAD enum type
+    STR_VAL
+  } str_e;
+
+  typedef enum {ENUM_VAL} enum_t;
+  enum enum_t {  // BAD enum type
+    ENUMT_VAL
+  } enumt_val;
+
+  typedef logic array2_t[1:0];
+  enum array2_t {  // BAD enum type
+    ARRAY2_VAL
+  } array2_e;
+
+  initial $stop;
 
 endmodule

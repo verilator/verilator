@@ -2483,10 +2483,11 @@ class WidthVisitor final : public VNVisitor {
         UINFO(5, "  ENUMDTYPE " << nodep);
         nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);
-        AstBasicDType* basicp = nodep->dtypep()->skipRefp()->basicp();
-        if (!basicp || !basicp->keyword().isIntNumeric()) {
+        AstNodeDType* basicp = nodep->dtypep()->skipRefp()->basicp();
+        if (!dtypeIsIntAtomOrVecRecurse(nodep->subDTypep())) {
             nodep->v3error(
-                "Enum type must be an integer atom or vector type (IEEE 1800-2023 6.19)");
+                "Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not "
+                << nodep->subDTypep()->prettyDTypeNameQ());
             basicp = nodep->findSigned32DType()->basicp();
             nodep->refDTypep(basicp);
         }
@@ -8307,6 +8308,24 @@ class WidthVisitor final : public VNVisitor {
         // Return true iff this datatype or child has an openarray
         if (VN_IS(nodep, UnsizedArrayDType)) return true;
         if (nodep->subDTypep()) return hasOpenArrayIterateDType(nodep->subDTypep()->skipRefp());
+        return false;
+    }
+    bool dtypeIsIntAtomOrVecRecurse(AstNodeDType* nodep, bool ranged = false) {
+        nodep = nodep->skipRefToEnump();
+        if (AstBasicDType* const dtp = VN_CAST(nodep, BasicDType)) {
+            if (ranged && (!dtp->isBitLogic() || dtp->isRanged())) {
+                UINFO(9, "dtypeIsIntAtomOrVecRecurse false at " << nodep);
+                return false;  // Packed when already packed
+            }
+            if (dtp->keyword().isIntNumeric()) return true;
+        } else if (AstPackArrayDType* const dtp = VN_CAST(nodep, PackArrayDType)) {
+            if (ranged) {
+                UINFO(9, "dtypeIsIntAtomOrVecRecurse false at " << nodep);
+                return false;  // Packed when already packed
+            }
+            return dtypeIsIntAtomOrVecRecurse(nodep->subDTypep(), true);
+        }
+        UINFO(9, "dtypeIsIntAtomOrVecRecurse false at " << nodep);
         return false;
     }
 
