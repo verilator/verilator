@@ -3893,6 +3893,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (!m_statep->forScopeCreation()) {
                 VSymEnt* foundp = nullptr;
                 if (modport) {
+                    // This is a copy of findSymPrefixed with few modifications.
+                    // This searches without a fallback like findSymPrefixed but if lookup fails it
+                    // will check one fallback (fallback of modport shall be interface) and take
+                    // only L and G PARAMs since they should be visible from a modport always.
                     string prefix = dotSymp->symPrefix();
                     while (!foundp) {
                         foundp = dotSymp->findIdFlat(prefix + nodep->name());
@@ -4040,6 +4044,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (m_statep->forParamed() && nodep->varType() == VVarType::IFACEREF) {
             if (AstIfaceGenericDType* const ifaceGenp
                 = VN_CAST(nodep->childDTypep(), IfaceGenericDType)) {
+                // Substitute every IfaceGenericDType with correct type
                 string searchedValue = "__VGIfaceParam" + nodep->name();
                 const VSymEnt* const lookupSpacep = m_statep->getNodeSym(m_modp);
                 AstNode* const resultp = lookupSpacep->findIdFlat(searchedValue)->nodep();

@@ -156,7 +156,6 @@ public:
                      << (it == m_idNameMap.end() ? "NONE"
                                                  : "se" + cvtToHex(it->second)
                                                        + " n=" + cvtToHex(it->second->nodep())));
-        // for (const auto& x : m_idNameMap) { std::cout << "map: " << x.second->nodep() << '\n'; }
         if (it != m_idNameMap.end()) return it->second;
         return nullptr;
     }
