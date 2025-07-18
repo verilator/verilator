@@ -109,6 +109,8 @@ module mwith();
     int c = 30;
     Foo foo = new(c);
     Baz baz = new;
+    typedef Baz baz_t;
+    baz_t baz1 = new;
     Baz2 baz2 = new;
     Bar bar = new;
     Cls2 cls2 = new;
@@ -149,6 +151,7 @@ module mwith();
     if (foo.randomize() with { a > return_2(); } != 1) $stop;
     // Check randomization of class with no constraints
     if (baz.randomize() with { v inside {[2:10]}; } != 1) $stop;
+    if (baz1.randomize() with { v inside {[2:10]}; } != 1) $stop;
     // Check randomization with captured non-static variable from different AstNodeModule
     if (!bar.test_capture_of_callers_derived_var(foo)) $stop;
     // Check randomization with non-captured non-static variable from different AstNodeModule

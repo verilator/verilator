@@ -2198,14 +2198,14 @@ class RandomizeVisitor final : public VNVisitor {
 
         AstClass* classp = nullptr;
         if (AstMethodCall* const callp = VN_CAST(nodep, MethodCall)) {
-            UASSERT_OBJ(callp->fromp()->dtypep(), callp->fromp(), "Object dtype is not linked");
-            AstClassRefDType* const classrefdtypep
-                = VN_CAST(callp->fromp()->dtypep(), ClassRefDType);
-            if (!classrefdtypep) {
-                nodep->v3warn(E_UNSUPPORTED,
-                              "Inline constraints are not supported for this node type");
-                return;
-            }
+            const AstNodeDType* const fromDTypep = callp->fromp()->dtypep();
+            UASSERT_OBJ(fromDTypep, callp->fromp(), "Object dtype is not linked");
+            const AstClassRefDType* const classrefdtypep
+                = VN_CAST(fromDTypep->skipRefp(), ClassRefDType);
+            UASSERT_OBJ(classrefdtypep, callp->fromp(),
+                        "Randomize called on expression of non-class type "
+                            << fromDTypep->skipRefp()->prettyDTypeNameQ()
+                            << " (it should be detected earlier)");
             classp = classrefdtypep->classp();
             UASSERT_OBJ(classp, classrefdtypep, "Class type is unlinked to its ref type");
         } else {
