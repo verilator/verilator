@@ -9,8 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('linter')
+test.scenarios('simulator')
 
-test.lint()
+test.compile()
+
+test.execute()
 
 test.passes()
