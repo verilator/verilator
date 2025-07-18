@@ -110,9 +110,7 @@ AstSenTree* findTriggeredIface(const AstVarScope* vscp,
     const auto ifaceIt = vifTrigged.find(vscp->varp()->sensIfacep());
     if (ifaceIt != vifTrigged.end()) return ifaceIt->second;
     for (const auto& memberIt : vifMemberTriggered) {
-        if (memberIt.first.m_ifacep == vscp->varp()->sensIfacep()) {
-            return memberIt.second;
-        }
+        if (memberIt.first.m_ifacep == vscp->varp()->sensIfacep()) { return memberIt.second; }
     }
     return nullptr;
 }
@@ -974,19 +972,20 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
         = virtIfaceTriggers.makeMemberToSensMap(netlistp, firstVifTriggerIndex, trig.m_vscp);
 
     // Create and Order the body function
-    AstCFunc* const icoFuncp = V3Order::order(
-        netlistp, {&logic}, trigToSen, "ico", false, false,
-        [=](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
-            AstVar* const varp = vscp->varp();
-            if (varp->isPrimaryInish() || varp->isSigUserRWPublic()) {
-                out.push_back(inputChanged);
-            }
-            if (varp->isWrittenByDpi()) out.push_back(dpiExportTriggered);
-            if (vscp->varp()->sensIfacep()) {
-                AstSenTree* ifaceTriggered = findTriggeredIface(vscp, vifTriggeredIco, vifMemberTriggeredIco);
-                out.push_back(ifaceTriggered);
-            }
-        });
+    AstCFunc* const icoFuncp
+        = V3Order::order(netlistp, {&logic}, trigToSen, "ico", false, false,
+                         [=](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
+                             AstVar* const varp = vscp->varp();
+                             if (varp->isPrimaryInish() || varp->isSigUserRWPublic()) {
+                                 out.push_back(inputChanged);
+                             }
+                             if (varp->isWrittenByDpi()) out.push_back(dpiExportTriggered);
+                             if (vscp->varp()->sensIfacep()) {
+                                 AstSenTree* ifaceTriggered = findTriggeredIface(
+                                     vscp, vifTriggeredIco, vifMemberTriggeredIco);
+                                 out.push_back(ifaceTriggered);
+                             }
+                         });
     splitCheck(icoFuncp);
 
     // Create the eval loop
@@ -1396,7 +1395,8 @@ void schedule(AstNetlist* netlistp) {
             if (it != actTimingDomains.end()) out = it->second;
             if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggeredAct);
             if (vscp->varp()->sensIfacep()) {
-                AstSenTree* ifaceTriggered = findTriggeredIface(vscp, vifTriggeredAct, vifMemberTriggeredAct);
+                AstSenTree* ifaceTriggered
+                    = findTriggeredIface(vscp, vifTriggeredAct, vifMemberTriggeredAct);
                 out.push_back(ifaceTriggered);
             }
         });
@@ -1436,7 +1436,8 @@ void schedule(AstNetlist* netlistp) {
                 if (it != timingDomains.end()) out = it->second;
                 if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
                 if (vscp->varp()->sensIfacep()) {
-                    AstSenTree* ifaceTriggered = findTriggeredIface(vscp, vifTriggered, vifMemberTriggered);
+                    AstSenTree* ifaceTriggered
+                        = findTriggeredIface(vscp, vifTriggered, vifMemberTriggered);
                     out.push_back(ifaceTriggered);
                 }
             });

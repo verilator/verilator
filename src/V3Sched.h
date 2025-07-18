@@ -168,7 +168,7 @@ class VirtIfaceTriggers final {
         }
     };
 
-    public:
+public:
     using IfaceMemberTrigger = std::pair<IfaceMember, AstVarScope*>;
     using IfaceMemberTriggerVec = std::vector<IfaceMemberTrigger>;
     using IfaceMemberSensMap = std::map<IfaceMember, AstSenTree*>;
