@@ -1588,7 +1588,7 @@ port<nodep>:                    // ==IEEE: port
                           addNextNull($$, VARDONEA($$->fileline(), uniqueName, $6, $7));
                           VARDECL(IFACEREF);
                           GRAMMARP->m_pinNum = PINNUMINC();
-                          AstIfaceGenericDType* const refdtypep = new AstIfaceGenericDType($<fl>2, *$4);
+                          AstIfaceGenericDType* const refdtypep = new AstIfaceGenericDType($<fl>2, $<fl>4, *$4);
                           VARDTYPE(refdtypep); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $6, $7));
                         }

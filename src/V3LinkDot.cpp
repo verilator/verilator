@@ -2819,13 +2819,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (const AstIfaceRefDType* const refp
                         = VN_CAST(getElemDTypep(varp->childDTypep()), IfaceRefDType)) {
                         AstIface* const iface = VN_AS(refp->cellp()->modp(), Iface);
-                        AstIfaceRefDType* const newIfaceRefp
-                            = refp->modportp()
-                                  ? new AstIfaceRefDType(refp->fileline(), refp->modportFileline(),
-                                                         m_modp->name(), iface->name(),
-                                                         refp->modportName())
-                                  : new AstIfaceRefDType(refp->fileline(), m_modp->name(),
-                                                         iface->name());
+                        AstIfaceRefDType* newIfaceRefp;
+                        if (refp->modportp()) {
+                            newIfaceRefp = new AstIfaceRefDType(
+                                refp->fileline(), refp->modportFileline(), m_modp->name(),
+                                iface->name(), refp->modportName());
+                        } else {
+                            newIfaceRefp = new AstIfaceRefDType(refp->fileline(), m_modp->name(),
+                                                                iface->name());
+                            newIfaceRefp->modportp(refp->modportp());
+                        }
                         newIfaceRefp->ifacep(iface);
                         if (refp->cellp() && refp->cellp()->paramsp()) {
                             newIfaceRefp->addParamsp(refp->cellp()->paramsp()->cloneTree(true));
@@ -4035,6 +4038,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 AstNodeDType* const dtypep = VN_AS(resultp, ParamTypeDType)->childDTypep();
                 AstIfaceRefDType* const ifaceRefp = VN_AS(dtypep->cloneTree(false), IfaceRefDType);
                 ifaceRefp->modportName(ifaceGenp->modportName());
+                ifaceRefp->modportFileline(ifaceGenp->modportFileline());
                 ifaceGenp->unlinkFrBack()->deleteTree();
                 nodep->childDTypep(ifaceRefp);
             }

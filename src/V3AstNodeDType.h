@@ -847,14 +847,16 @@ public:
 
 class AstIfaceGenericDType final : public AstNodeDType {
     // Generic interface that will be replaced with AstIfaceRefDType
+    FileLine* m_modportFileline;
     string m_modportName;  // "" = no modport
 public:
     explicit AstIfaceGenericDType(FileLine* fl)
         : ASTGEN_SUPER_IfaceGenericDType(fl) {
         dtypep(this);
     }
-    AstIfaceGenericDType(FileLine* fl, const string& modport)
+    AstIfaceGenericDType(FileLine* fl, FileLine* modportFl, const string& modport)
         : ASTGEN_SUPER_IfaceGenericDType(fl)
+        , m_modportFileline(modportFl)
         , m_modportName(modport) {
         dtypep(this);
     }
@@ -873,6 +875,7 @@ public:
     string modportName() const { return m_modportName; }
     bool isModport() { return !m_modportName.empty(); }
     bool isCompound() const override { return true; }
+    FileLine* modportFileline() const { return m_modportFileline; }
 };
 
 class AstIfaceRefDType final : public AstNodeDType {
@@ -928,6 +931,7 @@ public:
         if (flag) v3Global.setHasVirtIfaces();
     }
     FileLine* modportFileline() const { return m_modportFileline; }
+    void modportFileline(FileLine* const modportFileline) { m_modportFileline = modportFileline; }
     string cellName() const { return m_cellName; }
     void cellName(const string& name) { m_cellName = name; }
     string ifaceName() const { return m_ifaceName; }
