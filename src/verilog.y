@@ -98,6 +98,7 @@ public:
     bool m_tracingParse = true;  // Tracing disable for parser
     bool m_inImplements = false;  // Is inside class implements list
     bool m_insideProperty = false;  // Is inside property declaration
+    bool m_specifyignWarned = false;  // Issued a SPECIFYIGN warning
     bool m_typedPropertyPort = false;  // Typed property port occurred on port lists
     bool m_modportImpExpActive
         = false;  // Standalone ID is a tf_identifier instead of port_identifier
@@ -926,6 +927,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_ROSE_GCLK    "$rose_gclk"
 %token<fl>              yD_RTOI         "$rtoi"
 %token<fl>              yD_SAMPLED      "$sampled"
+%token<fl>              yD_SDF_ANNOTATE "$sdf_annotate"
 %token<fl>              yD_SETUPHOLD    "$setuphold"
 %token<fl>              yD_SFORMAT      "$sformat"
 %token<fl>              yD_SFORMATF     "$sformatf"
@@ -4284,6 +4286,7 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
         |       yD_DUMPON '(' expr ')'                  { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::ON}; DEL($3); }
         //
         |       yD_C '(' cStrList ')'                   { $$ = (v3Global.opt.ignc() ? nullptr : new AstUCStmt{$1, $3}); }
+        |       yD_SDF_ANNOTATE '(' exprEListE ')'      { $$ = nullptr; $1->v3warn(SPECIFYIGN, "Ignoring unsupported: $sdf_annotate"); }
         |       yD_STACKTRACE parenE                    { $$ = new AstStackTraceT{$1}; }
         |       yD_SYSTEM '(' expr ')'                  { $$ = new AstSystemT{$1, $3}; }
         //
@@ -5353,6 +5356,11 @@ exprList<nodeExprp>:
         |       exprList ',' expr                       { $$ = $1->addNext($3); }
         ;
 
+exprEListE<nodep>:  // expression list with empty commas allowed
+                exprE                                   { $$ = $1; }
+        |       exprEListE ',' exprE                    { $$ = addNextNull($1, $3); }
+        ;
+
 exprDispList<nodeExprp>:            // exprList for within $display
                 expr                                    { $$ = $1; }
         |       exprDispList ',' expr                   { $$ = $1->addNext($3); }
@@ -5825,8 +5833,12 @@ tablelVal<udpTableLineValp>:
 // Specify
 
 specify_block<nodep>:               // ==IEEE: specify_block
-                ySPECIFY specify_itemList yENDSPECIFY   { $$ = $2; }
-        |       ySPECIFY yENDSPECIFY                    { $$ = nullptr; }
+                specifyFront specify_itemList yENDSPECIFY   { $$ = $2; }
+        |       specifyFront yENDSPECIFY                { $$ = nullptr; }
+        ;
+
+specifyFront:  // IEEE: specify_block front
+                ySPECIFY                                { GRAMMARP->m_specifyignWarned = false; }
         ;
 
 specify_itemList<nodep>:            // IEEE: { specify_item }
@@ -5837,7 +5849,13 @@ specify_itemList<nodep>:            // IEEE: { specify_item }
 specify_item<nodep>:                // ==IEEE: specify_item
                 specparam_declaration                   { $$ = $1; }
         |       system_timing_check                     { $$ = $1; }
-        |       junkToSemiList ';'                      { $$ = nullptr; }
+        |       junkToSemiList ';'
+                        { $$ = nullptr;
+                          if (!GRAMMARP->m_specifyignWarned) {
+                              GRAMMARP->m_specifyignWarned = true;
+                              $1->v3warn(SPECIFYIGN, "Ignoring unsupported: specify block construct");
+                          }
+                        }
         ;
 
 specparam_declaration<nodep>:       // ==IEEE: specparam_declaration
@@ -5926,9 +5944,9 @@ idAnyE<strp>:
         |       idAny                                   { $$ = $1; }
         ;
 
-junkToSemiList:
-                junkToSemi                              { } /* ignored */
-        |       junkToSemiList junkToSemi               { } /* ignored */
+junkToSemiList<fl>:
+                junkToSemi                              { $$ = CRELINE(); }
+        |       junkToSemiList junkToSemi               { $$ = CRELINE(); }
         ;
 
 junkToSemi:

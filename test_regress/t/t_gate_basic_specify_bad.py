@@ -9,13 +9,9 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
-test.top_filename = "t/t_gate_basic.v"
-test.main_time_multiplier = 10e-7 / 10e-9
+test.scenarios('vlt')
+test.top_filename = 't/t_gate_basic.v'
 
-test.compile(timing_loop=True,
-             verilator_flags2=["--timing --timescale 10ns/1ns -Wno-RISEFALLDLY -Wno-SPECIFYIGN"])
-
-test.execute()
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

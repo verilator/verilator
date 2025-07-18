@@ -270,6 +270,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$rewind"             { FL; return yD_REWIND; }
   "$rtoi"               { FL; return yD_RTOI; }
   "$sampled"            { FL; return yD_SAMPLED; }
+  "$sdf_annotate"       { FL; return yD_SDF_ANNOTATE; }
   "$setup"              { FL; return yaTIMINGSPEC; }
   "$setuphold"          { FL; return yD_SETUPHOLD; }
   "$sformat"            { FL; return yD_SFORMAT; }

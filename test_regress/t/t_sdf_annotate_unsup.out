@@ -1,0 +1,15 @@
+%Warning-SPECIFYIGN: t/t_sdf_annotate_unsup.v:10:5: Ignoring unsupported: $sdf_annotate
+   10 |     $sdf_annotate("file.sdf");
+      |     ^~~~~~~~~~~~~
+                     ... For warning description see https://verilator.org/warn/SPECIFYIGN?v=latest
+                     ... Use "/* verilator lint_off SPECIFYIGN */" and lint_on around source to disable this message.
+%Warning-SPECIFYIGN: t/t_sdf_annotate_unsup.v:11:5: Ignoring unsupported: $sdf_annotate
+   11 |     $sdf_annotate("file.sdf",);
+      |     ^~~~~~~~~~~~~
+%Warning-SPECIFYIGN: t/t_sdf_annotate_unsup.v:12:5: Ignoring unsupported: $sdf_annotate
+   12 |     $sdf_annotate("file.sdf", t);
+      |     ^~~~~~~~~~~~~
+%Warning-SPECIFYIGN: t/t_sdf_annotate_unsup.v:14:5: Ignoring unsupported: $sdf_annotate
+   14 |     $sdf_annotate("file.sdf", t, "config_file", "log_file", "mtm_spec", "scale_factors",
+      |     ^~~~~~~~~~~~~
+%Error: Exiting due to

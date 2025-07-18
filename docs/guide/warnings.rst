@@ -458,7 +458,7 @@ List Of Warnings
 
    Warns that Verilator does not support certain forms of
    :code:`constraint`, :code:`constraint_mode`, or :code:`rand_mode`, and
-   the construct was are ignored.
+   the construct was ignored.
 
    Ignoring this warning may make Verilator randomize() simulations differ
    from other simulators.
@@ -486,7 +486,7 @@ List Of Warnings
 
    Warns that Verilator does not support certain forms of
    :code:`covergroup`, :code:`coverpoint`, and coverage options, and the
-   construct was are ignored.
+   construct was ignored.
 
    Disabling the :option:`UNSUPPORTED` error also disables this warning.
 
@@ -1777,6 +1777,18 @@ List Of Warnings
 
    Ignoring this warning may make Verilator simulations differ from other
    simulators.
+
+
+.. option:: SPECIFYIGN
+
+   Warns that Verilator does not support certain constructs in
+   :code:`specify` blocks, nor :code:`$sdf_annotate`, and the construct was
+   ignored.
+
+   Disabling the :option:`UNSUPPORTED` error also disables this warning.
+
+   Ignoring this warning may make Verilator ignore lint checking on the
+   construct, and get different results from other simulators.
 
 
 .. option:: SPLITVAR
