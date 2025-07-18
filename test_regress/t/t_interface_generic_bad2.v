@@ -22,7 +22,7 @@ endmodule
 module t;
   inf inf_inst();
   inf2 inf_inst2();
-  GenericModule genericModule (inf_inst, inf_inst2);
+  GenericModule genericModule (inf_inst);
   initial begin
     inf_inst.v = 7;
     inf_inst2.k = 9;
