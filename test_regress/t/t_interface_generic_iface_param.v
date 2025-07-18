@@ -13,7 +13,7 @@ module GenericModule (interface a);
     if (a.v != 7) $stop;
     if (a.PARAM != 13) $stop;
   end
-endmodule      
+endmodule
 
 module t;
   inf  #(.PARAM(13)) inf_inst();

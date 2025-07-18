@@ -12,7 +12,7 @@ module GenericModule#(type T, type Y = int) (interface a);
   initial begin
     if (a.v != 7) $stop;
   end
-endmodule      
+endmodule
 
 module t;
   inf inf_inst();

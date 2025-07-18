@@ -12,7 +12,7 @@ module GenericModule (interface a.mp);
   initial begin
     if (a.v != 7) $stop;
   end
-endmodule      
+endmodule
 
 module t;
   inf inf_inst();

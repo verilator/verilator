@@ -15,7 +15,7 @@ module GenericModule (interface.mp a);
   initial begin
     a.v = 10;
   end
-endmodule      
+endmodule
 
 module t;
   inf inf_inst();

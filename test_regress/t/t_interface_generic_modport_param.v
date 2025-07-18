@@ -18,7 +18,7 @@ module GenericModule (interface.mp a);
     if (a.lparam != 12) $stop;
     if (a.v != 7) $stop;
   end
-endmodule      
+endmodule
 
 module t;
   inf inf_inst();
