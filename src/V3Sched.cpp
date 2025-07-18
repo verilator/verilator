@@ -104,6 +104,19 @@ void invertAndMergeSenTreeMap(
     for (const auto& pair : senTreeMap) result.emplace(pair.second, pair.first);
 }
 
+AstSenTree* findTriggeredIface(const AstVarScope* vscp,
+                               const VirtIfaceTriggers::IfaceSensMap& vifTrigged,
+                               const VirtIfaceTriggers::IfaceMemberSensMap& vifMemberTriggered) {
+    const auto ifaceIt = vifTrigged.find(vscp->varp()->sensIfacep());
+    if (ifaceIt != vifTrigged.end()) return ifaceIt->second;
+    for (const auto& memberIt : vifMemberTriggered) {
+        if (memberIt.first.m_ifacep == vscp->varp()->sensIfacep()) {
+            return memberIt.second;
+        }
+    }
+    return nullptr;
+}
+
 //============================================================================
 // Code generation utility functions
 
@@ -970,18 +983,8 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
             }
             if (varp->isWrittenByDpi()) out.push_back(dpiExportTriggered);
             if (vscp->varp()->sensIfacep()) {
-                const auto ifaceIt = vifTriggeredIco.find(vscp->varp()->sensIfacep());
-                if (ifaceIt != vifTriggeredIco.end()) {
-                    out.push_back(ifaceIt->second);
-                } else {
-                    for (auto memberIt = vifMemberTriggeredIco.begin();
-                         memberIt != vifMemberTriggeredIco.end(); ++memberIt) {
-                        if (memberIt->first.m_ifacep == vscp->varp()->sensIfacep()) {
-                            out.push_back(memberIt->second);
-                            break;
-                        }
-                    }
-                }
+                AstSenTree* ifaceTriggered = findTriggeredIface(vscp, vifTriggeredIco, vifMemberTriggeredIco);
+                out.push_back(ifaceTriggered);
             }
         });
     splitCheck(icoFuncp);
@@ -1393,18 +1396,8 @@ void schedule(AstNetlist* netlistp) {
             if (it != actTimingDomains.end()) out = it->second;
             if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggeredAct);
             if (vscp->varp()->sensIfacep()) {
-                const auto ifaceIt = vifTriggeredAct.find(vscp->varp()->sensIfacep());
-                if (ifaceIt != vifTriggeredAct.end()) {
-                    out.push_back(ifaceIt->second);
-                } else {
-                    for (auto memberIt = vifMemberTriggeredAct.begin();
-                         memberIt != vifMemberTriggeredAct.end(); ++memberIt) {
-                        if (memberIt->first.m_ifacep == vscp->varp()->sensIfacep()) {
-                            out.push_back(memberIt->second);
-                            break;
-                        }
-                    }
-                }
+                AstSenTree* ifaceTriggered = findTriggeredIface(vscp, vifTriggeredAct, vifMemberTriggeredAct);
+                out.push_back(ifaceTriggered);
             }
         });
     splitCheck(actFuncp);
@@ -1443,18 +1436,8 @@ void schedule(AstNetlist* netlistp) {
                 if (it != timingDomains.end()) out = it->second;
                 if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
                 if (vscp->varp()->sensIfacep()) {
-                    const auto ifaceIt = vifTriggered.find(vscp->varp()->sensIfacep());
-                    if (ifaceIt != vifTriggered.end()) {
-                        out.push_back(ifaceIt->second);
-                    } else {
-                        for (auto memberIt = vifMemberTriggered.begin();
-                             memberIt != vifMemberTriggered.end(); ++memberIt) {
-                            if (memberIt->first.m_ifacep == vscp->varp()->sensIfacep()) {
-                                out.push_back(memberIt->second);
-                                break;
-                            }
-                        }
-                    }
+                    AstSenTree* ifaceTriggered = findTriggeredIface(vscp, vifTriggered, vifMemberTriggered);
+                    out.push_back(ifaceTriggered);
                 }
             });
 
