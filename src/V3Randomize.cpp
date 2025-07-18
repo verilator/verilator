@@ -2203,8 +2203,9 @@ class RandomizeVisitor final : public VNVisitor {
             const AstClassRefDType* const classrefdtypep
                 = VN_CAST(fromDTypep->skipRefp(), ClassRefDType);
             UASSERT_OBJ(classrefdtypep, callp->fromp(),
-                        "Inline constraints are not supported for the node type "
-                            << fromDTypep->prettyTypeName());
+                        "Randomize called on expression of non-class type "
+                            << fromDTypep->skipRefp()->prettyDTypeNameQ()
+                            << " (it should be detected earlier)");
             classp = classrefdtypep->classp();
             UASSERT_OBJ(classp, classrefdtypep, "Class type is unlinked to its ref type");
         } else {
