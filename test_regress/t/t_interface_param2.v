@@ -7,7 +7,7 @@
 //bug1104
 
 module t (input clk);
-   simple_bus #(.DWIDTH(16)) sb_intf(clk);
+   simple_bus sb_intf(clk);
    simple_bus #(.DWIDTH(16)) wide_intf(clk);
    mem mem(sb_intf.slave);
    cpu cpu(sb_intf.master);
