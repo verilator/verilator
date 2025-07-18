@@ -14,7 +14,7 @@ module GenericModule (interface a, inf b, interface c);
     if (b.v != 8) $stop;
     if (c.v != 9) $stop;
   end
-endmodule      
+endmodule
 
 module t;
   inf inf_inst[3]();
