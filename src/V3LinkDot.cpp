@@ -2815,38 +2815,41 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     while (const AstNodePreSel* const preSelp = VN_CAST(exprp, NodePreSel)) {
                         exprp = preSelp->fromp();
                     }
-                    const AstVar* const varp = VN_AS(exprp, VarRef)->varp();
-                    if (const AstIfaceRefDType* const refp
-                        = VN_CAST(getElemDTypep(varp->childDTypep()), IfaceRefDType)) {
-                        AstIface* const iface = VN_AS(refp->cellp()->modp(), Iface);
-                        AstIfaceRefDType* newIfaceRefp;
-                        if (refp->modportp()) {
-                            newIfaceRefp = new AstIfaceRefDType(
-                                refp->fileline(), refp->modportFileline(), m_modp->name(),
-                                iface->name(), refp->modportName());
+                    if (const AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
+                        const AstVar* const varp = varRefp->varp();
+                        if (const AstIfaceRefDType* const refp
+                            = VN_CAST(getElemDTypep(varp->childDTypep()), IfaceRefDType)) {
+                            AstIface* const iface = VN_AS(refp->cellp()->modp(), Iface);
+                            AstIfaceRefDType* newIfaceRefp;
+                            if (refp->modportp()) {
+                                newIfaceRefp = new AstIfaceRefDType(
+                                    refp->fileline(), refp->modportFileline(), m_modp->name(),
+                                    iface->name(), refp->modportName());
+                            } else {
+                                newIfaceRefp = new AstIfaceRefDType(refp->fileline(),
+                                                                    m_modp->name(), iface->name());
+                                newIfaceRefp->modportp(refp->modportp());
+                            }
+                            newIfaceRefp->ifacep(iface);
+                            if (refp->cellp() && refp->cellp()->paramsp()) {
+                                newIfaceRefp->addParamsp(
+                                    refp->cellp()->paramsp()->cloneTree(true));
+                            }
+                            UASSERT_OBJ(pinp->name().find("__pinNumber") == 0
+                                            || pinp->name() == modIfaceVarp->name(),
+                                        pinp, "Not found interface with such name");
+                            AstPin* const newPinp = new AstPin(
+                                pinp->fileline(), paramNum,
+                                "__VGIfaceParam" + modIfaceVarp->name(), newIfaceRefp);
+                            newPinp->param(true);
+                            visit(newPinp);
+                            nodep->addParamsp(newPinp);
                         } else {
-                            newIfaceRefp = new AstIfaceRefDType(refp->fileline(), m_modp->name(),
-                                                                iface->name());
-                            newIfaceRefp->modportp(refp->modportp());
+                            varp->v3error("Expected an interface but " << varp->prettyNameQ()
+                                                                       << " is not an interface");
                         }
-                        newIfaceRefp->ifacep(iface);
-                        if (refp->cellp() && refp->cellp()->paramsp()) {
-                            newIfaceRefp->addParamsp(refp->cellp()->paramsp()->cloneTree(true));
-                        }
-                        UASSERT_OBJ(pinp->name().find("__pinNumber") == 0
-                                        || pinp->name() == modIfaceVarp->name(),
-                                    pinp, "Not found interface with such name");
-                        AstPin* const newPinp
-                            = new AstPin(pinp->fileline(), paramNum,
-                                         "__VGIfaceParam" + modIfaceVarp->name(), newIfaceRefp);
-                        ++paramNum;
-                        newPinp->param(true);
-                        visit(newPinp);
-                        nodep->addParamsp(newPinp);
-                    } else {
-                        varp->v3error("Expected an interface but " << varp->prettyNameQ()
-                                                                   << " is not an interface");
                     }
+                    ++paramNum;
                 }
             }
         }
