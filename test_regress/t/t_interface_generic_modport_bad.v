@@ -8,7 +8,7 @@ interface inf;
   int v;
 endinterface
 
-module GenericModule (interface a.mp);
+module GenericModule (interface.mp a);
   initial begin
     if (a.v != 7) $stop;
   end
