@@ -104,6 +104,17 @@ void invertAndMergeSenTreeMap(
     for (const auto& pair : senTreeMap) result.emplace(pair.second, pair.first);
 }
 
+AstSenTree* findTriggeredIface(const AstVarScope* vscp,
+                               const VirtIfaceTriggers::IfaceSensMap& vifTrigged,
+                               const VirtIfaceTriggers::IfaceMemberSensMap& vifMemberTriggered) {
+    const auto ifaceIt = vifTrigged.find(vscp->varp()->sensIfacep());
+    if (ifaceIt != vifTrigged.end()) return ifaceIt->second;
+    for (const auto& memberIt : vifMemberTriggered) {
+        if (memberIt.first.m_ifacep == vscp->varp()->sensIfacep()) { return memberIt.second; }
+    }
+    return nullptr;
+}
+
 //============================================================================
 // Code generation utility functions
 
@@ -955,8 +966,10 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
     AstSenTree* const dpiExportTriggered
         = dpiExportTriggerVscp ? createTriggerSenTree(netlistp, trig.m_vscp, dpiExportTriggerIndex)
                                : nullptr;
-    const auto& vifTriggered
+    const auto& vifTriggeredIco
         = virtIfaceTriggers.makeIfaceToSensMap(netlistp, firstVifTriggerIndex, trig.m_vscp);
+    const auto& vifMemberTriggeredIco
+        = virtIfaceTriggers.makeMemberToSensMap(netlistp, firstVifTriggerIndex, trig.m_vscp);
 
     // Create and Order the body function
     AstCFunc* const icoFuncp
@@ -968,8 +981,9 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
                              }
                              if (varp->isWrittenByDpi()) out.push_back(dpiExportTriggered);
                              if (vscp->varp()->sensIfacep()) {
-                                 const auto it = vifTriggered.find(vscp->varp()->sensIfacep());
-                                 if (it != vifTriggered.end()) out.push_back(it->second);
+                                 AstSenTree* ifaceTriggered = findTriggeredIface(
+                                     vscp, vifTriggeredIco, vifMemberTriggeredIco);
+                                 out.push_back(ifaceTriggered);
                              }
                          });
     splitCheck(icoFuncp);
@@ -1371,6 +1385,8 @@ void schedule(AstNetlist* netlistp) {
 
     const auto& vifTriggeredAct
         = virtIfaceTriggers.makeIfaceToSensMap(netlistp, firstVifTriggerIndex, actTrig.m_vscp);
+    const auto& vifMemberTriggeredAct
+        = virtIfaceTriggers.makeMemberToSensMap(netlistp, firstVifTriggerIndex, actTrig.m_vscp);
 
     AstCFunc* const actFuncp = V3Order::order(
         netlistp, {&logicRegions.m_pre, &logicRegions.m_act, &logicReplicas.m_act}, trigToSenAct,
@@ -1379,8 +1395,9 @@ void schedule(AstNetlist* netlistp) {
             if (it != actTimingDomains.end()) out = it->second;
             if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggeredAct);
             if (vscp->varp()->sensIfacep()) {
-                const auto sit = vifTriggeredAct.find(vscp->varp()->sensIfacep());
-                if (sit != vifTriggeredAct.end()) out.push_back(sit->second);
+                AstSenTree* ifaceTriggered
+                    = findTriggeredIface(vscp, vifTriggeredAct, vifMemberTriggeredAct);
+                out.push_back(ifaceTriggered);
             }
         });
     splitCheck(actFuncp);
@@ -1408,6 +1425,8 @@ void schedule(AstNetlist* netlistp) {
                   : nullptr;
         const auto& vifTriggered
             = virtIfaceTriggers.makeIfaceToSensMap(netlistp, firstVifTriggerIndex, trigVscp);
+        const auto& vifMemberTriggered
+            = virtIfaceTriggers.makeMemberToSensMap(netlistp, firstVifTriggerIndex, trigVscp);
 
         const auto& timingDomains = timingKit.remapDomains(trigMap);
         AstCFunc* const funcp = V3Order::order(
@@ -1417,8 +1436,9 @@ void schedule(AstNetlist* netlistp) {
                 if (it != timingDomains.end()) out = it->second;
                 if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
                 if (vscp->varp()->sensIfacep()) {
-                    const auto sit = vifTriggered.find(vscp->varp()->sensIfacep());
-                    if (sit != vifTriggered.end()) out.push_back(sit->second);
+                    AstSenTree* ifaceTriggered
+                        = findTriggeredIface(vscp, vifTriggered, vifMemberTriggered);
+                    out.push_back(ifaceTriggered);
                 }
             });
 

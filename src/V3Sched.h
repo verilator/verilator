@@ -168,6 +168,7 @@ class VirtIfaceTriggers final {
         }
     };
 
+public:
     using IfaceMemberTrigger = std::pair<IfaceMember, AstVarScope*>;
     using IfaceMemberTriggerVec = std::vector<IfaceMemberTrigger>;
     using IfaceMemberSensMap = std::map<IfaceMember, AstSenTree*>;
@@ -179,7 +180,6 @@ class VirtIfaceTriggers final {
     IfaceMemberTriggerVec m_memberTriggers;
     IfaceTriggerVec m_ifaceTriggers;
 
-public:
     void addMemberTrigger(const AstIface* ifacep, const AstVar* memberVarp,
                           AstVarScope* triggerVscp) {
         m_memberTriggers.emplace_back(IfaceMember(ifacep, memberVarp), triggerVscp);
