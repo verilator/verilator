@@ -1,0 +1,13 @@
+%Warning-PINMISSING: t/t_interface_generic_bad2.v:25:17: Instance has missing pin: 'b'
+   25 |   GenericModule genericModule (inf_inst);
+      |                 ^~~~~~~~~~~~~
+                     t/t_interface_generic_bad2.v:15:46: ... Location of port declaration
+   15 | module GenericModule (interface a, interface b);
+      |                                              ^
+                     ... For warning description see https://verilator.org/warn/PINMISSING?v=latest
+                     ... Use "/* verilator lint_off PINMISSING */" and lint_on around source to disable this message.
+%Error: t/t_interface_generic_bad2.v:15:46: Interface port 'b' is not connected to interface/modport pin expression
+   15 | module GenericModule (interface a, interface b);
+      |                                              ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

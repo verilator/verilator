@@ -7,5 +7,8 @@
                                          : ... note: In instance 't'
    13 |       Cls #(1) c;   
       |       ^~~
-%Error: Verilator internal fault, sorry. Suggest trying --debug --gdbbt
-%Error: Command Failed
+%Error: t/t_class_param_noinit_bad.v:8:32: Parameter type without default value is never given value (IEEE 1800-2023 6.20.1): 'T'
+                                         : ... note: In instance 't'
+    8 | class Cls #(int A, int B, type T);
+      |                                ^
+%Error: Exiting due to
