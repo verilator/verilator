@@ -561,6 +561,7 @@ public:
 
 public:
     ASTGEN_MEMBERS_AstAddrOfCFunc;
+    void dump(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
