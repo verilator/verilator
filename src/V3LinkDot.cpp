@@ -2827,6 +2827,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                   : new AstIfaceRefDType(refp->fileline(), m_modp->name(),
                                                          iface->name());
                         newIfaceRefp->ifacep(iface);
+                        if (refp->cellp() && refp->cellp()->paramsp()) {
+                            newIfaceRefp->addParamsp(refp->cellp()->paramsp()->cloneTree(true));
+                        }
                         UASSERT_OBJ(pinp->name().find("__pinNumber") == 0
                                         || pinp->name() == modIfaceVarp->name(),
                                     pinp, "Not found interface with such name");
