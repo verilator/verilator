@@ -3864,23 +3864,21 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                            okSymp, true);  // Maybe nullptr
-            bool modport = true;
+            bool modport = false;
             if (const AstVar* varp = VN_CAST(dotSymp->nodep(), Var)) {
                 if (const AstIfaceRefDType* const ifaceRefp
                     = VN_CAST(varp->childDTypep(), IfaceRefDType)) {
                     if (ifaceRefp->modportp()) {
                         dotSymp = m_statep->getNodeSym(ifaceRefp->modportp());
-                        modport = false;
+                        modport = true;
                     } else {
                         dotSymp = m_statep->getNodeSym(ifaceRefp->ifacep());
                     }
                 }
             }
-            std::cout << "NOP!\n";
             if (!m_statep->forScopeCreation()) {
-                VSymEnt* foundp;
+                VSymEnt* foundp = nullptr;
                 if (modport) {
-                    std::cout << "MODPORT!\n";
                     string prefix = dotSymp->symPrefix();
                     while (!foundp) {
                         foundp = dotSymp->findIdFlat(prefix + nodep->name());
@@ -3899,6 +3897,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         if (prefix == nextPrefix) break;
                         prefix = std::move(nextPrefix);
                     }
+                    baddot = nodep->name();
                 } else {
                     foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
                 }

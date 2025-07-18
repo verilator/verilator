@@ -9,14 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter')
 
-test.compile(
-    # Verilator unsupported, bug1104
-    fails=test.vlt_all,
-    expect_filename=test.golden_filename)
-
-if not test.vlt_all:
-    test.execute()
+test.lint()
 
 test.passes()
