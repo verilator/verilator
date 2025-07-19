@@ -360,6 +360,24 @@ int _mon_check_var() {
         p = vpi_get_str(vpiType, vh10);
         CHECK_RESULT_CSTR(p, "vpiConstant");
     }
+    TestVpiHandle vh6 = vpi_handle_by_index(vh5, 2);
+    CHECK_RESULT_NZ(vh6);
+    {
+        TestVpiHandle vh10 = vpi_handle(vpiLeftRange, vh6);
+        CHECK_RESULT_NZ(vh10);
+        vpi_get_value(vh10, &tmpValue);
+        CHECK_RESULT(tmpValue.value.integer, 0);
+        p = vpi_get_str(vpiType, vh10);
+        CHECK_RESULT_CSTR(p, "vpiConstant");
+    }
+    {
+        TestVpiHandle vh10 = vpi_handle(vpiRightRange, vh6);
+        CHECK_RESULT_NZ(vh10);
+        vpi_get_value(vh10, &tmpValue);
+        CHECK_RESULT(tmpValue.value.integer, 61);
+        p = vpi_get_str(vpiType, vh10);
+        CHECK_RESULT_CSTR(p, "vpiConstant");
+    }
 
     // C++ keyword collision
     {
