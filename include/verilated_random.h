@@ -580,4 +580,21 @@ public:
 #endif
 };
 
+class VlStdRandomizer final {
+    // MEMBERS
+    VlRNG __Vm_rng;
+
+    // PRIVATE METHODS
+
+public:
+    // CONSTRUCTORS
+    VlStdRandomizer() = default;
+    ~VlStdRandomizer() = default;
+
+    template <typename T>
+    bool basicStdRandomization(T& value, size_t width) {
+        value = ((1ULL << width) - 1) & VL_RANDOM_RNG_I(__Vm_rng);
+        return true;
+    }
+};
 #endif  // Guard

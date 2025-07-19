@@ -1,0 +1,11 @@
+%Warning-CONSTRAINTIGN: t/t_std_randomize_bad2.v:48:38: std::randomize (MEMBERSEL 'addr') is non-LRM compliant but supported for compatibility
+                                                      : ... note: In instance 't_std_randomize_bad2'
+   48 |         success = std::randomize(test.addr, test.data);
+      |                                      ^
+                        ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
+                        ... Use "/* verilator lint_off CONSTRAINTIGN */" and lint_on around source to disable this message.
+%Warning-CONSTRAINTIGN: t/t_std_randomize_bad2.v:48:49: std::randomize (MEMBERSEL 'data') is non-LRM compliant but supported for compatibility
+                                                      : ... note: In instance 't_std_randomize_bad2'
+   48 |         success = std::randomize(test.addr, test.data);
+      |                                                 ^
+%Error: Exiting due to
