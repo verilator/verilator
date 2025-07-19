@@ -1116,7 +1116,7 @@ class ParamVisitor final : public VNVisitor {
                 } else {
                     cellp->v3fatalSrc("Expected module parameterization");
                 }
-                UASSERT_OBJ(srcModp, cellp, "Unlinked class ref");
+                if (!srcModp) continue;
 
                 // Update path
                 string someInstanceName = modp->someInstanceName();

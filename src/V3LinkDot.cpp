@@ -3589,9 +3589,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(9, indent() << m_ds.ascii());
         VL_RESTORER(m_usedPins);
         m_usedPins.clear();
-        UASSERT_OBJ(m_statep->forPrimary() || VN_IS(nodep->classOrPackageNodep(), ParamTypeDType)
-                        || nodep->classOrPackageSkipp(),
-                    nodep, "ClassRef has unlinked class");
         UASSERT_OBJ(m_statep->forPrimary() || !nodep->paramsp(), nodep,
                     "class reference parameter not removed by V3Param");
         {
@@ -3602,6 +3599,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 m_statep->resolveClassOrPackage(m_ds.m_dotSymp, nodep, m_ds.m_dotPos != DP_PACKAGE,
                                                 false, ":: reference");
             }
+            UASSERT_OBJ(m_statep->forPrimary()
+                            || VN_IS(nodep->classOrPackageNodep(), ParamTypeDType)
+                            || nodep->classOrPackageSkipp(),
+                        nodep, "ClassRef has unlinked class");
 
             // ClassRef's have pins, so track
             if (nodep->classOrPackageSkipp()) {
