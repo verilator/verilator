@@ -964,9 +964,9 @@ void EmitCSyms::emitSymImp() {
                     } else {
                         if (basicp->isRanged()) {
                             bounds += " ,";
-                            bounds += cvtToStr(basicp->hi());
+                            bounds += cvtToStr(basicp->left());
                             bounds += ",";
-                            bounds += cvtToStr(basicp->lo());
+                            bounds += cvtToStr(basicp->right());
                             pdim++;
                         }
                         break;  // AstBasicDType - nothing below, 1
