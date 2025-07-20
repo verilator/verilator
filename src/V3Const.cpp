@@ -1267,8 +1267,12 @@ class ConstVisitor final : public VNVisitor {
                 && nodep->lhsp()->isPure());
     }
     bool operandIsTwo(const AstNode* nodep) {
-        return (VN_IS(nodep, Const) && !VN_AS(nodep, Const)->num().isFourState()
-                && nodep->width() <= VL_QUADSIZE && VN_AS(nodep, Const)->toUQuad() == 2);
+        const AstConst* const constp = VN_CAST(nodep, Const);
+        if (!constp) return false;  // not constant
+        if (constp->num().isFourState()) return false;  // four-state
+        if (nodep->width() > VL_QUADSIZE) return false;  // too wide
+        if (nodep->isSigned() && constp->num().isNegative()) return false;  // signed and negative
+        return constp->toUQuad() == 2;
     }
     bool operandIsTwostate(const AstNode* nodep) {
         return (VN_IS(nodep, Const) && !VN_AS(nodep, Const)->num().isFourState());
@@ -3550,6 +3554,7 @@ class ConstVisitor final : public VNVisitor {
     TREEOP ("AstDiv   {$lhsp, operandIsPowTwo($rhsp)}", "replaceDivShift(nodep)");  // a/2^n -> a>>n
     TREEOP ("AstModDiv{$lhsp, operandIsPowTwo($rhsp)}", "replaceModAnd(nodep)");  // a % 2^n -> a&(2^n-1)
     TREEOP ("AstPow   {operandIsTwo($lhsp), !$rhsp.isZero}",    "replacePowShift(nodep)");  // 2**a == 1<<a
+    TREEOP ("AstPowSU {operandIsTwo($lhsp), !$rhsp.isZero}",    "replacePowShift(nodep)");  // 2**a == 1<<a
     TREEOP ("AstSub   {$lhsp.castAdd, operandSubAdd(nodep)}", "AstAdd{AstSub{$lhsp->castAdd()->lhsp(),$rhsp}, $lhsp->castAdd()->rhsp()}");  // ((a+x)-y) -> (a+(x-y))
     TREEOPC("AstAnd   {$lhsp.isOne, matchRedundantClean(nodep)}", "DONE")  // 1 & (a == b) -> (IData)(a == b)
     // Trinary ops
