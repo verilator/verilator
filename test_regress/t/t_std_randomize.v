@@ -46,7 +46,7 @@ module t_scope_std_randomize;
         old_addr = addr;
         old_data = data;
         old_ready = ready;
-        success = randomize(addr, ready);
+        success = randomize(addr, ready); // std::randomize
         if (success == 0) return 0;
         if (addr == old_addr && data != old_data && ready == old_ready) begin
             return 0;
@@ -57,7 +57,18 @@ module t_scope_std_randomize;
     std_randomize_class test;
 
     initial begin
-        bit ok;
+        bit ok = 0;
+        int success;
+
+        test = new();
+        test.old_addr = test.addr;
+        test.old_data = test.data;
+        test.old_data_x_4 = test.data_x_4;
+        success = std::randomize(test.addr, test.data);
+        ok = (success == 1) && !(test.addr == test.old_addr || test.data == test.old_data) && test.data_x_4 == test.old_data_x_4;
+        if (!ok) $stop;
+
+        ok = 0;
         ok = run();
         if (!ok) $stop;
         ok = 0;
