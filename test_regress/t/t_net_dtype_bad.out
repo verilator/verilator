@@ -1,0 +1,37 @@
+%Error: t/t_net_dtype_bad.v:25:15: Net 'bad_real' data type must be 4-state integral or array/union/struct of such (IEEE 1800-2023 6.7.1)
+                                 : ... note: In instance 't'
+   25 |   wire real_t bad_real;   
+      |               ^~~~~~~~
+        t/t_net_dtype_bad.v:11:11: ... Location of failing data type 'real'
+   11 |   typedef real real_t;
+      |           ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_net_dtype_bad.v:27:12: Net 'bad_class' data type must be 4-state integral or array/union/struct of such (IEEE 1800-2023 6.7.1)
+                                 : ... note: In instance 't'
+   27 |   wire Cls bad_class;   
+      |            ^~~~~~~~~
+        t/t_net_dtype_bad.v:27:8: ... Location of failing data type 'class{}Cls'
+   27 |   wire Cls bad_class;   
+      |        ^~~
+%Error: t/t_net_dtype_bad.v:29:15: Net 'bad_string' data type must be 4-state integral or array/union/struct of such (IEEE 1800-2023 6.7.1)
+                                 : ... note: In instance 't'
+   29 |   wire string bad_string;   
+      |               ^~~~~~~~~~
+        t/t_net_dtype_bad.v:29:8: ... Location of failing data type 'string'
+   29 |   wire string bad_string;   
+      |        ^~~~~~
+%Error: t/t_net_dtype_bad.v:31:12: Net 'bad_bit' data type must be 4-state integral or array/union/struct of such (IEEE 1800-2023 6.7.1)
+                                 : ... note: In instance 't'
+   31 |   wire bit bad_bit;     
+      |            ^~~~~~~
+        t/t_net_dtype_bad.v:31:8: ... Location of failing data type 'bit'
+   31 |   wire bit bad_bit;     
+      |        ^~~
+%Error: t/t_net_dtype_bad.v:33:14: Net 'bad_struct' data type must be 4-state integral or array/union/struct of such (IEEE 1800-2023 6.7.1)
+                                 : ... note: In instance 't'
+   33 |   wire bad_t bad_struct;     
+      |              ^~~~~~~~~~
+        t/t_net_dtype_bad.v:14:5: ... Location of failing data type 'bit'
+   14 |     bit m_bit;
+      |     ^~~
+%Error: Exiting due to

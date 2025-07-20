@@ -19,6 +19,6 @@ test.execute(expect_filename=test.golden_filename)
 
 if test.vlt_all:
     test.file_grep(test.stats, r'Optimizations, Prelim extracted value to ConstPool\s+(\d+)', 8)
-    test.file_grep(test.stats, r'ConstPool, Constants emitted\s+(\d+)', 2)
+    test.file_grep(test.stats, r'ConstPool, Constants emitted\s+(\d+)', 1)
 
 test.passes()

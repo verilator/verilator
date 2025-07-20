@@ -2422,6 +2422,18 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetLogicSized(1, bdtypep->numeric());
             VL_DANGLING(bdtypep);
         }
+        if (nodep->isNet()) {
+            AstNodeDType* const badDtp = dtypeNot4StateIntegralRecurse(nodep->dtypep());
+            if (badDtp)
+                nodep->v3error(
+                    "Net " << nodep->prettyNameQ()
+                           << " data type must be 4-state integral or array/union/struct of such"
+                           << " (IEEE 1800-2023 6.7.1)\n"
+                           << nodep->warnContextPrimary() << '\n'
+                           << badDtp->warnOther() << "... Location of failing data type "
+                           << badDtp->prettyDTypeNameQ() << '\n'
+                           << badDtp->warnContextSecondary());
+        }
         if (nodep->valuep() && !didchk) {
             // if (debug()) nodep->dumpTree("-  final: ");
             // AstPattern requires assignments to pass datatype on PRELIM
@@ -8325,6 +8337,25 @@ class WidthVisitor final : public VNVisitor {
         } else if (AstPackArrayDType* const dtp = VN_CAST(nodep, PackArrayDType)) {
             if (ranged) return dtp;  // Packed when already packed
             return dtypeNotIntAtomOrVecRecurse(nodep->subDTypep(), true);
+        }
+        return nodep;
+    }
+    AstNodeDType* dtypeNot4StateIntegralRecurse(AstNodeDType* nodep) {
+        // If node is _not_ inet valid data type, 4-state integral packed or union, return node
+        // that makes it fail
+        nodep = nodep->skipRefp();
+        if (AstBasicDType* const dtp = VN_CAST(nodep, BasicDType)) {
+            if (!dtp->keyword().isFourstate()) return dtp;
+            return nullptr;
+        } else if (AstNodeArrayDType* const dtp = VN_CAST(nodep, NodeArrayDType)) {
+            return dtypeNot4StateIntegralRecurse(nodep->subDTypep());
+        } else if (AstNodeUOrStructDType* const dtp = VN_CAST(nodep, NodeUOrStructDType)) {
+            for (AstMemberDType* itemp = dtp->membersp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                AstNodeDType* const badDtp = dtypeNot4StateIntegralRecurse(itemp->dtypep());
+                if (badDtp) return badDtp;
+            }
+            return nullptr;
         }
         return nodep;
     }

@@ -45,7 +45,8 @@ module t(/*AUTOARG*/
     int cnt = 0;
     always @(posedge gclk[n]) cnt <= cnt + 1;
 
-    wire int cnt_plus_one = cnt + 1;
+    int cnt_plus_one;
+    always_comb cnt_plus_one = cnt + 1;
 
     final begin
       `checkh(cnt_plus_one, ITERATIONS + 1);

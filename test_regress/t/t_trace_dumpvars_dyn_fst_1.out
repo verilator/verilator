@@ -1,5 +1,5 @@
 $date
-	Sat Apr  5 13:56:24 2025
+	Sat Jul 19 22:57:23 2025
 
 $end
 $version
@@ -14,7 +14,7 @@ $var int 32 ! cyc [31:0] $end
 $scope module sub1a $end
 $var parameter 32 " ADD [31:0] $end
 $var wire 32 ! cyc [31:0] $end
-$var wire 32 # value [31:0] $end
+$var int 32 # value [31:0] $end
 $scope module sub2a $end
 $upscope $end
 $scope module sub2b $end
@@ -25,21 +25,21 @@ $upscope $end
 $scope module sub1b $end
 $var parameter 32 $ ADD [31:0] $end
 $var wire 32 ! cyc [31:0] $end
-$var wire 32 % value [31:0] $end
+$var int 32 % value [31:0] $end
 $scope module sub2a $end
 $var parameter 32 & ADD [31:0] $end
 $var wire 32 ! cyc [31:0] $end
-$var wire 32 ' value [31:0] $end
+$var int 32 ' value [31:0] $end
 $upscope $end
 $scope module sub2b $end
 $var parameter 32 ( ADD [31:0] $end
 $var wire 32 ! cyc [31:0] $end
-$var wire 32 ) value [31:0] $end
+$var int 32 ) value [31:0] $end
 $upscope $end
 $scope module sub2c $end
 $var parameter 32 * ADD [31:0] $end
 $var wire 32 ! cyc [31:0] $end
-$var wire 32 + value [31:0] $end
+$var int 32 + value [31:0] $end
 $upscope $end
 $upscope $end
 $upscope $end
