@@ -200,6 +200,7 @@ public:
 #define accept in_WidthVisitor_use_AstNode_iterate_instead_of_AstNode_accept
 
 //######################################################################
+
 class WidthVisitor final : public VNVisitor {
     // TYPES
     using TableMap = std::map<std::pair<const AstNodeDType*, VAttrType>, AstVar*>;
@@ -6263,7 +6264,7 @@ class WidthVisitor final : public VNVisitor {
             nextp = pinp->nextp();
             AstArg* const argp = VN_CAST(pinp, Arg);
             if (!argp) continue;
-            AstNodeExpr* exprp = argp->exprp();
+            AstNodeExpr* const exprp = argp->exprp();
             if (AstConst* const constp = VN_CAST(exprp, Const)) {
                 if (constp->num().isNull()) {
                     nullp = constp;
@@ -6273,16 +6274,17 @@ class WidthVisitor final : public VNVisitor {
             if (VN_IS(exprp, MemberSel)) {
                 argp->v3warn(CONSTRAINTIGN, "std::randomize ("
                                                 << exprp->prettyTypeName()
-                                                << ") is non-LRM compliant"
-                                                << " but supported for compatibility");
+                                                << ") is non-LRM compliant (IEEE 1800-2023 18.12)."
+                                                << "Args should be in current scope, "
+                                                << "but are supported in Verilator for compatibility.");
             } else {
                 if (!VN_IS(exprp, VarRef)) {
-                    argp->v3error("Invalid argument for 'std::randomize()'.");
+                    argp->v3error("Non-variable arguments for 'std::randomize()'.");
                 }
             }
             if (!argp) continue;
         }
-        if (nullp) { nullp->v3error("Invalid argument for 'std::randomize()'."); }
+        if (nullp) { nullp->v3error("'std::randomize()' does not accept 'null' as arguments."); }
     }
     void visit(AstNodeFTaskRef* nodep) override {
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
@@ -6310,7 +6312,7 @@ class WidthVisitor final : public VNVisitor {
                 handleStdRandomizeArgs(nodep);  // Provided args should be in current scope
                 if (withp) {
                     // TODO: std::randomize()with{}
-                    nodep->v3warn(CONSTRAINTIGN, "with ignored (unsupported)");
+                    nodep->v3warn(CONSTRAINTIGN, "Unsupported: std::randomize()'s 'with'");
                     nodep->replaceWith(new AstConst{nodep->fileline(), 0});
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;

@@ -390,8 +390,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     while (backp && (!VN_IS(backp, Class) && !VN_IS(backp, NodeModule))) {
                         backp = backp->backp();
                     }
-                    VN_IS(backp, Class) ? VN_AS(backp, Class)->user1(IS_STD_RANDOMIZED)
-                                        : VN_AS(backp, NodeModule)->user1(IS_STD_RANDOMIZED);
+                    UASSERT_OBJ(VN_IS(backp, NodeModule), randVarp,
+                        "No class or module found for rand variable");
+                    backp->user1(IS_STD_RANDOMIZED);
                 }
             }
             return;

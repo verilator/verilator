@@ -1,4 +1,4 @@
-%Warning-CONSTRAINTIGN: t/t_std_randomize_unsup_bad.v:11:16: with ignored (unsupported)
+%Warning-CONSTRAINTIGN: t/t_std_randomize_unsup_bad.v:11:16: Unsupported: std::randomize()'s 'with'
                                                            : ... note: In instance 't'
    11 |       if (std::randomize(a, b) with { 2 < a; a < 7; b < a; } != 1) $stop;
       |                ^~~~~~~~~
