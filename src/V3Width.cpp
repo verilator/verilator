@@ -6272,11 +6272,12 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
             if (VN_IS(exprp, MemberSel)) {
-                argp->v3warn(CONSTRAINTIGN, "std::randomize ("
-                                                << exprp->prettyTypeName()
-                                                << ") is non-LRM compliant (IEEE 1800-2023 18.12)."
-                                                << "Args should be in current scope, "
-                                                << "but are supported in Verilator for compatibility.");
+                argp->v3warn(CONSTRAINTIGN,
+                             "std::randomize ("
+                                 << exprp->prettyTypeName()
+                                 << ") is non-LRM compliant (IEEE 1800-2023 18.12)."
+                                 << "Args should be in current scope, "
+                                 << "but are supported in Verilator for compatibility.");
             } else {
                 if (!VN_IS(exprp, VarRef)) {
                     argp->v3error("Non-variable arguments for 'std::randomize()'.");

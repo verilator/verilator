@@ -391,7 +391,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                         backp = backp->backp();
                     }
                     UASSERT_OBJ(VN_IS(backp, NodeModule), randVarp,
-                        "No class or module found for rand variable");
+                                "No class or module found for rand variable");
                     backp->user1(IS_STD_RANDOMIZED);
                 }
             }
