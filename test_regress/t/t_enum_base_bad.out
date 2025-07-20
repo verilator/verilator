@@ -1,30 +1,51 @@
-%Error: t/t_enum_base_bad.v:11:11: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not 'struct{}t.s_t'
+%Error: t/t_enum_base_bad.v:11:11: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19)
                                  : ... note: In instance 't'
    11 |   typedef enum s_t {   
       |           ^~~~
+        t/t_enum_base_bad.v:9:11: ... Location of failing data type 'struct{}t.s_t'
+    9 |   typedef struct {int a;} s_t;
+      |           ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_enum_base_bad.v:16:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not 'int[1:0]'
+%Error: t/t_enum_base_bad.v:16:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19)
                                 : ... note: In instance 't'
    16 |   enum int_t [1:0] {   
       |   ^~~~
-%Error: t/t_enum_base_bad.v:21:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not 'bit[1:0][1:0]'
+        t/t_enum_base_bad.v:15:11: ... Location of failing data type 'int'
+   15 |   typedef int int_t;
+      |           ^~~
+%Error: t/t_enum_base_bad.v:21:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19)
                                 : ... note: In instance 't'
    21 |   enum d2_t {   
       |   ^~~~
-%Error: t/t_enum_base_bad.v:25:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not 'logic[1:0][1:0]'
+        t/t_enum_base_bad.v:20:11: ... Location of failing data type 'bit[1:0]'
+   20 |   typedef bit [1:0][1:0] d2_t;
+      |           ^~~
+%Error: t/t_enum_base_bad.v:25:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19)
                                 : ... note: In instance 't'
    25 |   enum logic [1:0][1:0] {   
       |   ^~~~
-%Error: t/t_enum_base_bad.v:30:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not 'struct{}t.str_t'
+        t/t_enum_base_bad.v:25:8: ... Location of failing data type 'logic[1:0]'
+   25 |   enum logic [1:0][1:0] {   
+      |        ^~~~~
+%Error: t/t_enum_base_bad.v:30:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19)
                                 : ... note: In instance 't'
    30 |   enum str_t {   
       |   ^~~~
-%Error: t/t_enum_base_bad.v:35:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not 'enum{}t.enum_t'
+        t/t_enum_base_bad.v:29:11: ... Location of failing data type 'struct{}t.str_t'
+   29 |   typedef struct packed {int x;} str_t;
+      |           ^~~~~~
+%Error: t/t_enum_base_bad.v:35:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19)
                                 : ... note: In instance 't'
    35 |   enum enum_t {   
       |   ^~~~
-%Error: t/t_enum_base_bad.v:40:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not 'logic$[1:0]'
+        t/t_enum_base_bad.v:34:11: ... Location of failing data type 'enum{}t.enum_t'
+   34 |   typedef enum {ENUM_VAL} enum_t;
+      |           ^~~~
+%Error: t/t_enum_base_bad.v:40:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19)
                                 : ... note: In instance 't'
    40 |   enum array2_t {   
       |   ^~~~
+        t/t_enum_base_bad.v:39:25: ... Location of failing data type 'logic$[1:0]'
+   39 |   typedef logic array2_t[1:0];
+      |                         ^
 %Error: Exiting due to

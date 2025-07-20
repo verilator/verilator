@@ -2484,10 +2484,14 @@ class WidthVisitor final : public VNVisitor {
         nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);
         AstNodeDType* basicp = nodep->dtypep()->skipRefp()->basicp();
-        if (!dtypeIsIntAtomOrVecRecurse(nodep->subDTypep())) {
+        AstNodeDType* const badDtp = dtypeNotIntAtomOrVecRecurse(nodep->subDTypep());
+        if (badDtp) {
             nodep->v3error(
-                "Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19), not "
-                << nodep->subDTypep()->prettyDTypeNameQ());
+                "Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19)\n"
+                << nodep->warnContextPrimary() << '\n'
+                << badDtp->warnOther() << "... Location of failing data type "
+                << badDtp->prettyDTypeNameQ() << '\n'
+                << badDtp->warnContextSecondary());
             basicp = nodep->findSigned32DType()->basicp();
             nodep->refDTypep(basicp);
         }
@@ -8310,23 +8314,19 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->subDTypep()) return hasOpenArrayIterateDType(nodep->subDTypep()->skipRefp());
         return false;
     }
-    bool dtypeIsIntAtomOrVecRecurse(AstNodeDType* nodep, bool ranged = false) {
+    AstNodeDType* dtypeNotIntAtomOrVecRecurse(AstNodeDType* nodep, bool ranged = false) {
+        // If node is _not_ integer or atomic, return node that makes it fail
         nodep = nodep->skipRefToEnump();
         if (AstBasicDType* const dtp = VN_CAST(nodep, BasicDType)) {
-            if (ranged && (!dtp->isBitLogic() || dtp->isRanged())) {
-                UINFO(9, "dtypeIsIntAtomOrVecRecurse false at " << nodep);
-                return false;  // Packed when already packed
-            }
-            if (dtp->keyword().isIntNumeric()) return true;
+            if (ranged && (!dtp->isBitLogic() || dtp->isRanged()))
+                return dtp;  // Packed when already packed
+            if (dtp->keyword().isIntNumeric()) return nullptr;
+            return dtp;
         } else if (AstPackArrayDType* const dtp = VN_CAST(nodep, PackArrayDType)) {
-            if (ranged) {
-                UINFO(9, "dtypeIsIntAtomOrVecRecurse false at " << nodep);
-                return false;  // Packed when already packed
-            }
-            return dtypeIsIntAtomOrVecRecurse(nodep->subDTypep(), true);
+            if (ranged) return dtp;  // Packed when already packed
+            return dtypeNotIntAtomOrVecRecurse(nodep->subDTypep(), true);
         }
-        UINFO(9, "dtypeIsIntAtomOrVecRecurse false at " << nodep);
-        return false;
+        return nodep;
     }
 
     //----------------------------------------------------------------------
