@@ -20,7 +20,7 @@ Verilator 5.039 devel
 * Support member-level triggers for virtual interfaces (#5166) (#6148). [Yilou Wang]
 * Support disabling a fork in additional contexts (#5432 partial) (#6174) (#6183). [Ryszard Rozak, Antmicro Ltd.]
 * Support disable dotted references (#6154). [Ryszard Rozak, Antmicro Ltd.]
-* Support randomize() on class member selects (#6161). [Igor Zaworski, Antmicro Ltd.]
+* Support randomize() on class member selects (#6161) (#6195). [Igor Zaworski, Ryszard Rozak, Antmicro Ltd.]
 * Support multiple variables on RHS of a `force` assignment (#6163). [Artur Bieniek, Antmicro Ltd.]]
 * Support covergroup extends, etc., as unsupported (#6160). [Artur Bieniek, Antmicro Ltd.]
 * Change control file `public_flat_*` and other signal attributes to support __ in names (#6140).
@@ -32,8 +32,10 @@ Verilator 5.039 devel
 * Fix additional UNOPTFLAT combinational cycles automatically in DFG (#6168) (#6173) (#6176). [Geza Lore]
 * Fix omitting error when assigning to an input (#6169). [Artur Bieniek, Antmicro Ltd.]]
 * Fix param-dependent class typedef linking (#6171). [Igor Zaworski, Antmicro Ltd.]
+* Fix virtual interface member propagation (#6175) (#6184). [Yilou Wang]
 * Fix `--coverage-expr` null pointer dereference (#6181). [Igor Zaworski, Antmicro Ltd.]
 * Fix conflicting function/class name linking error (#6182). [Igor Zaworski, Antmicro Ltd.]
+* Fix VPI signal range order (#6189) (#6200). [Ibrahim Burak Yorulmaz]
 * Fix structure select causing 'Wide Op' error (#6191). [Danny Oler]
 
 
