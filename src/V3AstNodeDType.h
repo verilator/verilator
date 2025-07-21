@@ -847,7 +847,7 @@ public:
 
 class AstIfaceGenericDType final : public AstNodeDType {
     // Generic interface that will be replaced with AstIfaceRefDType
-    FileLine* m_modportFileline;
+    FileLine* m_modportFileline;  // Where modport token was
     string m_modportName;  // "" = no modport
 public:
     explicit AstIfaceGenericDType(FileLine* fl)
