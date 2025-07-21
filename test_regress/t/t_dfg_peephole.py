@@ -88,9 +88,6 @@ test.compile(verilator_flags2=[
     "../../t/" + test.name + ".cpp"
 ])  # yapf:disable
 
-# Execute test to check equivalence
-test.execute(executable=test.obj_dir + "/obj_opt/Vopt")
-
 
 def check(name):
     name = name.lower()
@@ -102,5 +99,11 @@ def check(name):
 # Check all optimizations defined in
 for opt in optimizations:
     check(opt)
+
+test.file_grep_not(test.obj_dir + "/obj_opt/Vopt__stats.txt",
+                   r'DFG.*non-representable.*\s[1-9]\d*$')
+
+# Execute test to check equivalence
+test.execute(executable=test.obj_dir + "/obj_opt/Vopt")
 
 test.passes()

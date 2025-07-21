@@ -246,8 +246,9 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         AstNode* const nodep = varVtxp->nodep();
         AstVar* const varp = varVtxp->varp();
         os << toDotId(vtx);
-        os << " [label=\"" << nodep->name() << "\nW" << varVtxp->width() << " / F"
-           << varVtxp->fanout() << '"';
+        os << " [label=\"" << nodep->name() << "\n";
+        varVtxp->dtypep()->dumpSmall(os);
+        os << " / F" << varVtxp->fanout() << '"';
 
         if (varp->direction() == VDirection::INPUT) {
             os << ", shape=box, style=filled, fillcolor=chartreuse2";  // Green
@@ -273,9 +274,10 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     if (const DfgVarArray* const arrVtxp = vtx.cast<DfgVarArray>()) {
         AstNode* const nodep = arrVtxp->nodep();
         AstVar* const varp = arrVtxp->varp();
-        const int elements = VN_AS(arrVtxp->dtypep(), UnpackArrayDType)->elementsConst();
         os << toDotId(vtx);
-        os << " [label=\"" << nodep->name() << "[" << elements << "]\"";
+        os << " [label=\"" << nodep->name() << "\n";
+        arrVtxp->dtypep()->dumpSmall(os);
+        os << " / F" << arrVtxp->fanout() << '"';
         if (varp->direction() == VDirection::INPUT) {
             os << ", shape=box3d, style=filled, fillcolor=chartreuse2";  // Green
         } else if (varp->direction() == VDirection::OUTPUT) {
@@ -318,8 +320,9 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         const uint32_t lsb = selVtxp->lsb();
         const uint32_t msb = lsb + selVtxp->width() - 1;
         os << toDotId(vtx);
-        os << " [label=\"SEL\n_[" << msb << ":" << lsb << "]\nW" << vtx.width() << " / F"
-           << vtx.fanout() << '"';
+        os << " [label=\"SEL\n_[" << msb << ":" << lsb << "]\n";
+        vtx.dtypep()->dumpSmall(os);
+        os << " / F" << vtx.fanout() << '"';
         if (vtx.hasMultipleSinks()) {
             os << ", shape=doublecircle";
         } else {
@@ -332,12 +335,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     if (vtx.is<DfgVertexSplice>()) {
         os << toDotId(vtx);
         os << " [label=\"" << vtx.typeName() << "\n";
-        if (const DfgSpliceArray* const sp = vtx.cast<DfgSpliceArray>()) {
-            const int elements = VN_AS(sp->dtypep(), UnpackArrayDType)->elementsConst();
-            os << "_[" << elements << "]";
-        } else {
-            os << "W" << vtx.width();
-        }
+        vtx.dtypep()->dumpSmall(os);
         os << " / F" << vtx.fanout() << '"';
         if (vtx.hasMultipleSinks()) {
             os << ", shape=doubleoctagon";
@@ -349,7 +347,9 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     }
 
     os << toDotId(vtx);
-    os << " [label=\"" << vtx.typeName() << "\nW" << vtx.width() << " / F" << vtx.fanout() << '"';
+    os << " [label=\"" << vtx.typeName() << "\n";
+    vtx.dtypep()->dumpSmall(os);
+    os << " / F" << vtx.fanout() << '"';
     if (vtx.hasMultipleSinks()) {
         os << ", shape=doublecircle";
     } else {

@@ -112,6 +112,9 @@ if coveredLines != expectedLines:
     for n in sorted(coveredLines - expectedLines):
         test.error_keep_going(f"V3DfgBreakCycles.cpp line {n} covered but not expected")
 
+test.file_grep_not(test.obj_dir + "/obj_opt/Vopt__stats.txt",
+                   r'DFG.*non-representable.*\s[1-9]\d*$')
+
 # Execute test to check equivalence
 test.execute(executable=test.obj_dir + "/obj_opt/Vopt")
 
