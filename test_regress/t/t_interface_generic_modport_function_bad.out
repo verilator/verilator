@@ -1,0 +1,7 @@
+%Error: t/t_interface_generic_modport_function_bad.v:23:11: Can't find definition of 'get' in dotted task/function: 'a.get'
+                                                          : ... note: In instance 't.genericModule'
+   23 |     if (a.get() != 4) $stop;
+      |           ^~~
+        ... Known scopes under 'get': <no instances found>
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

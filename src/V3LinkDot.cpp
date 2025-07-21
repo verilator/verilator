@@ -3902,10 +3902,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         foundp = dotSymp->fallbackp()->findIdFlat(prefix + nodep->name());
                         if (const AstVar* const varp
                             = foundToVarp(foundp, nodep, nodep->access())) {
-                            if (varp->varType() != VVarType::LPARAM
-                                && varp->varType() != VVarType::GPARAM) {
-                                foundp = nullptr;
-                            }
+                            if (!varp->isParam()) foundp = nullptr;
                         }
                         if (prefix.empty()) break;
                         string nextPrefix = LinkDotState::removeLastInlineScope(prefix);
@@ -4038,30 +4035,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
     void visit(AstVar* nodep) override {
         LINKDOT_VISIT_START();
-        if (m_statep->forParamed() && nodep->varType() == VVarType::IFACEREF) {
-            if (AstIfaceGenericDType* const ifaceGenp
-                = VN_CAST(nodep->childDTypep(), IfaceGenericDType)) {
-                // Substitute every IfaceGenericDType with correct type
-                string searchedValue = "__VGIfaceParam" + nodep->name();
-                const VSymEnt* const lookupSpacep = m_statep->getNodeSym(m_modp);
-                AstNode* const resultp = lookupSpacep->findIdFlat(searchedValue)->nodep();
-                AstNodeDType* const dtypep = VN_AS(resultp, ParamTypeDType)->childDTypep();
-                AstIfaceRefDType* const ifaceRefp = VN_AS(dtypep->cloneTree(false), IfaceRefDType);
-                ifaceRefp->modportName(ifaceGenp->modportName());
-                ifaceRefp->modportFileline(ifaceGenp->modportFileline());
-                if (VSymEnt* const lookup_space = m_statep->getNodeSym(ifaceRefp->ifacep())) {
-                    const VSymEnt* const foundp
-                        = lookup_space->findIdFlat(ifaceGenp->modportName());
-                    if (foundp) {
-                        if (AstModport* const modportp = VN_CAST(foundp->nodep(), Modport)) {
-                            ifaceRefp->modportp(modportp);
-                        }
-                    }
-                }
-                ifaceGenp->unlinkFrBack()->deleteTree();
-                nodep->childDTypep(ifaceRefp);
-            }
-        }
         checkNoDot(nodep);
         iterateChildren(nodep);
         if (m_statep->forPrimary() && nodep->isIO() && !m_ftaskp && !nodep->user4()) {
