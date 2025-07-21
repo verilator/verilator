@@ -216,6 +216,8 @@ class DfgToAstVisitor final : DfgVisitor {
                 AstSel* const nLhsp = new AstSel{dflp, lhsp->cloneTreePure(false), lsbp, width};
                 // Convert source
                 convertDriver(scopep, dflp, nLhsp, edge.sourcep());
+                // Delete Sel if not consumed
+                if (!nLhsp->backp()) VL_DO_DANGLING(nLhsp->deleteTree(), nLhsp);
             });
             return;
         }
@@ -230,6 +232,8 @@ class DfgToAstVisitor final : DfgVisitor {
                 AstArraySel* const nLhsp = new AstArraySel{dflp, lhsp->cloneTreePure(false), idxp};
                 // Convert source
                 convertDriver(scopep, dflp, nLhsp, edge.sourcep());
+                // Delete ArraySel if not consumed
+                if (!nLhsp->backp()) VL_DO_DANGLING(nLhsp->deleteTree(), nLhsp);
             });
             return;
         }
