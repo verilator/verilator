@@ -650,7 +650,7 @@ class IndependentBits final : public DfgVisitor {
         if (DfgVertex* const srcp = vtxp->srcp()) MASK(vtxp) = MASK(srcp);
     }
 
-    void visit(DfgArraySel* vtxp) {
+    void visit(DfgArraySel* vtxp) override {
         // Only constant select
         DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>();
         if (!idxp) return;
