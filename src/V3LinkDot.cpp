@@ -2845,9 +2845,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         newPinp->param(true);
                         visit(newPinp);
                         nodep->addParamsp(newPinp);
-                    } else {
-                        varp->v3error("Expected an interface but " << varp->prettyNameQ()
-                                                                   << " is not an interface");
                     }
                 } else {
                     modIfaceVarp->v3error(
