@@ -918,12 +918,14 @@ DfgVertexVar::DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp)
     , m_varp{varp}
     , m_varScopep{nullptr} {
     UASSERT_OBJ(dfg.modulep(), varp, "Un-scoped DfgVertexVar created in scoped DfgGraph");
+    UASSERT_OBJ(!m_varp->isSc(), varp, "SystemC variable is not representable by DfgVertexVar");
 }
 DfgVertexVar::DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVarScope* vscp)
     : DfgVertexUnary{dfg, type, vscp->fileline(), dtypeFor(vscp)}
     , m_varp{vscp->varp()}
     , m_varScopep{vscp} {
     UASSERT_OBJ(!dfg.modulep(), vscp, "Scoped DfgVertexVar created in un-scoped DfgGraph");
+    UASSERT_OBJ(!m_varp->isSc(), vscp, "SystemC variable is not representable by DfgVertexVar");
 }
 
 //------------------------------------------------------------------------------

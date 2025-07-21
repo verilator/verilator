@@ -54,14 +54,6 @@ class DfgRegularize final {
                           });
                     return hasNonVarSink;
                 }
-                // Anything that drives an SC variable needs an intermediate,
-                // as we can only assign simple variables to SC variables at runtime.
-                const bool hasScSink = vtx.findSink<DfgVertexVar>([](const DfgVertexVar& var) {  //
-                    return var.varp()->isSc();
-                });
-                if (hasScSink) return true;
-                // // Splice vertices always need a variable as they represent partial updates
-                // if (vtx.is<DfgVertexSplice>()) return true;
                 // Operations without multiple sinks need no variables
                 if (!vtx.hasMultipleSinks()) return false;
                 // Array selects need no variables, they are just memory references

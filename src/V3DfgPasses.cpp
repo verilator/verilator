@@ -169,18 +169,8 @@ void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
 void V3DfgPasses::inlineVars(DfgGraph& dfg) {
     for (DfgVertexVar& vtx : dfg.varVertices()) {
         if (DfgVarPacked* const varp = vtx.cast<DfgVarPacked>()) {
-            // Don't inline SystemC variables, as SystemC types are not interchangeable with
-            // internal types, and hence the variables are not interchangeable either.
-            if (varp->hasSinks() && varp->isDrivenFullyByDfg() && !varp->varp()->isSc()) {
+            if (varp->hasSinks() && varp->isDrivenFullyByDfg()) {
                 DfgVertex* const driverp = varp->srcp();
-
-                // We must keep the original driver in certain cases, when swapping them would
-                // not be functionally or technically (implementation reasons) equivalent:
-                // 1. If driven from a SystemC variable (assignment is non-trivial)
-                if (DfgVertexVar* const driverVarp = driverp->cast<DfgVarPacked>()) {
-                    if (driverVarp->varp()->isSc()) continue;
-                }
-
                 varp->forEachSinkEdge([=](DfgEdge& edge) { edge.relinkSource(driverp); });
             }
         }
@@ -559,9 +549,7 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
             varp->replaceWith(varp->srcp());
             varp->nodep()->unlinkFrBack()->deleteTree();
         } else if (DfgVarPacked* const driverp = varp->srcp()->cast<DfgVarPacked>()) {
-            // If it's driven from another variable, it can be replaced by that. However, we do not
-            // want to propagate SystemC variables into the design.
-            if (driverp->varp()->isSc()) continue;
+            // If it's driven from another variable, it can be replaced by that.
             // Mark it for replacement
             ++ctx.m_varsReplaced;
             UASSERT_OBJ(!varp->hasSinks(), varp, "Variable inlining should make this impossible");
