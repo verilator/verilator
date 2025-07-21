@@ -2435,6 +2435,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         bool m_super;  // Starts with super reference
         bool m_unresolvedCell;  // Unresolved cell, needs help from V3Param
         bool m_unresolvedClass;  // Unresolved class reference, needs help from V3Param
+        bool m_unresolvedGenericIface;  // Unresolved generic interface, needs help from V3Param
         bool m_genBlk;  // Contains gen block reference
         AstNode* m_unlinkedScopep;  // Unresolved scope, needs corresponding VarXRef
         AstDisable* m_disablep;  // Disable statement under which the reference is
@@ -2451,6 +2452,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_dotText = "";
             m_unresolvedCell = false;
             m_unresolvedClass = false;
+            m_unresolvedGenericIface = false;
             m_genBlk = false;
             m_unlinkedScopep = nullptr;
             m_disablep = nullptr;
@@ -2468,6 +2470,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (m_super) sstr << "  [super]";
             if (m_unresolvedCell) sstr << "  [unrCell]";
             if (m_unresolvedClass) sstr << "  [unrClass]";
+            if (m_unresolvedGenericIface) sstr << "  [unrGIface]";
             if (m_genBlk) sstr << "  [genBlk]";
             sstr << "  txt=" << m_dotText;
             return sstr.str();
@@ -3035,13 +3038,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Dot(PackageRef, ParseRef(text))
         // Dot(Dot(ClassOrPackageRef,ClassOrPackageRef), ParseRef(text))
         // Dot(Dot(Dot(ParseRef(text), ...
-        if (m_statep->forPrimary() && m_genericIfaceModule) return;
         if (nodep->user3SetOnce()) return;
         LINKDOT_VISIT_START();
         UINFO(8, indent() << "visit " << nodep);
         UINFO(8, indent() << m_ds.ascii());
         const DotStates lastStates = m_ds;
         const bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
+        const LinkDotResolveVisitor::DotPosition initialDotPos = m_ds.m_dotPos;
         VL_RESTORER(m_randSymp);
         {
             if (start) {  // Starting dot sequence
@@ -3141,9 +3144,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 UINFO(8, indent() << "iter.ldone " << m_ds.ascii() << " " << nodep);
             } else {
                 m_ds.m_dotPos = DP_FIRST;
+                m_ds.m_unresolvedGenericIface = false;
                 UINFO(8, indent() << "iter.lhs   " << m_ds.ascii() << " " << nodep);
                 iterateAndNextNull(nodep->lhsp());
                 UINFO(8, indent() << "iter.ldone " << m_ds.ascii() << " " << nodep);
+                if (m_ds.m_unresolvedGenericIface) {
+                    m_ds.m_dotPos = initialDotPos;
+                    return;
+                }
                 // UINFOTREE(9, nodep, "", "dot-lho");
             }
             if (m_statep->forPrimary() && isParamedClassRef(nodep->lhsp())) {
@@ -3471,7 +3479,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else if (AstVar* const varp = foundToVarp(foundp, nodep, VAccess::READ)) {
                 AstIfaceRefDType* const ifacerefp
                     = LinkDotState::ifaceRefFromArray(varp->subDTypep());
-                if (ifacerefp && varp->isIfaceRef()) {
+                if (varp->isIfaceRef() && m_genericIfaceModule
+                    && VN_IS(varp->childDTypep(), IfaceGenericDType)) {
+                    ok = true;
+                    m_ds.m_unresolvedGenericIface = true;
+                } else if (ifacerefp && varp->isIfaceRef()) {
                     UASSERT_OBJ(ifacerefp->ifaceViaCellp(), ifacerefp, "Unlinked interface");
                     // Really this is a scope reference into an interface
                     UINFO(9, indent() << "varref-ifaceref " << m_ds.m_dotText << "  " << nodep);

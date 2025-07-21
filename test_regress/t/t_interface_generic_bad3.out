@@ -1,7 +1,10 @@
+%Error: t/t_interface_generic_bad3.v:14:9: Can't find definition of scope/variable: 'b'
+   14 |     if (b.k != 9) $stop;
+      |         ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_interface_generic_bad3.v:19:3: Cannot find file containing interface: 'inf'
    19 |   inf inf_inst();
       |   ^~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_interface_generic_bad3.v:20:32: Found definition of 'inf_inst' as a CELL but expected a variable
    20 |   GenericModule genericModule (inf_inst);
       |                                ^~~~~~~~
