@@ -8348,7 +8348,7 @@ class WidthVisitor final : public VNVisitor {
             if (!dtp->keyword().isFourstate()) return dtp;
             return nullptr;
         } else if (AstNodeArrayDType* const dtp = VN_CAST(nodep, NodeArrayDType)) {
-            return dtypeNot4StateIntegralRecurse(nodep->subDTypep());
+            return dtypeNot4StateIntegralRecurse(dtp->subDTypep());
         } else if (AstNodeUOrStructDType* const dtp = VN_CAST(nodep, NodeUOrStructDType)) {
             for (AstMemberDType* itemp = dtp->membersp(); itemp;
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {
