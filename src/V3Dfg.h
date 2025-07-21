@@ -230,7 +230,13 @@ public:
 
     // Retrieve user data, must be current.
     template <typename T>
-    inline T& getUser();
+    inline const T& getUser() const;
+
+    // Retrieve user data, must be current.
+    template <typename T>
+    T& getUser() {
+        return const_cast<T&>(const_cast<const DfgVertex*>(this)->getUser<T>());
+    }
 
     // Set user data, becomes current.
     template <typename T>
@@ -783,12 +789,12 @@ T& DfgVertex::user() {
 }
 
 template <typename T>
-T& DfgVertex::getUser() {
+const T& DfgVertex::getUser() const {
     static_assert(sizeof(T) <= sizeof(UserDataStorage),
                   "Size of user data type 'T' is too large for allocated storage");
     static_assert(alignof(T) <= alignof(UserDataStorage),
                   "Alignment of user data type 'T' is larger than allocated storage");
-    T* const storagep = reinterpret_cast<T*>(&m_userDataStorage);
+    const T* const storagep = reinterpret_cast<const T*>(&m_userDataStorage);
 #if VL_DEBUG
     const uint32_t userCurrent = m_graphp->m_userCurrent;
     UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving");

@@ -2242,6 +2242,13 @@ V3Number& V3Number::opBufIf1(const V3Number& ens, const V3Number& if1s) {
     return *this;
 }
 
+// Sets all bits in range to the given value
+V3Number& V3Number::opSetRange(uint32_t lsb, uint32_t width, char bitValue) {
+    const uint32_t msb = lsb + width - 1;
+    for (uint32_t i = lsb; i <= msb; ++i) setBit(i, bitValue);
+    return *this;
+}
+
 V3Number& V3Number::opAssign(const V3Number& lhs) { return opAssignNonXZ(lhs, false); }
 V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
     // Note may be a width change during the assign.

@@ -580,22 +580,25 @@ public:
 
 class IndependentBits final : public DfgVisitor {
     // STATE
-    DfgVarPacked* const m_varp;  // The variable we are computing dependencies for
-    std::deque<DfgVertex*> m_workList;  // Work list for traversal
+    const uint32_t m_component;  // The component the start vertex is part of
     // Vertex to current bit mask map. The mask is set for the bits that **depend** on 'm_varp'.
     std::unordered_map<const DfgVertex*, V3Number> m_vtxp2Mask;
 
     std::ofstream m_lineCoverageFile;  // Line coverage file, just for testing
 
     // METHODS
-
     // Retrieve the mask for the given vertex (create it with value 0 if needed)
     V3Number& mask(const DfgVertex* vtxp) {
-        return m_vtxp2Mask
-            .emplace(std::piecewise_construct,  //
-                     std::forward_as_tuple(vtxp),  //
-                     std::forward_as_tuple(vtxp->fileline(), static_cast<int>(vtxp->width()), 0))
-            .first->second;
+        // Look up (or create) mask for 'vtxp'
+        auto pair = m_vtxp2Mask.emplace(
+            std::piecewise_construct,  //
+            std::forward_as_tuple(vtxp),  //
+            std::forward_as_tuple(vtxp->fileline(), static_cast<int>(vtxp->width()), 0));
+        // Initialize to all ones if the vertex is part of the same component, otherwise zeroes
+        if (pair.second && vtxp->getUser<uint32_t>() == m_component) {
+            pair.first->second.setAllBits1();
+        }
+        return pair.first->second;
     }
 
     // Use this macro to call 'mask' in 'visit' methods. This also emits
@@ -610,8 +613,7 @@ class IndependentBits final : public DfgVisitor {
     // VISITORS
     void visit(DfgVertex* vtxp) override {
         UINFO(9, "Unhandled vertex type " << vtxp->typeName());
-        // Conservatively assume it depends on the variable...
-        mask(vtxp).setAllBits1();  // intentionally not using MASK here
+        // Conservative assumption about all bits being dependent prevails
     }
 
     void visit(DfgSplicePacked* vtxp) override {
@@ -624,10 +626,6 @@ class IndependentBits final : public DfgVisitor {
     }
 
     void visit(DfgVarPacked* vtxp) override {
-        // The mask of the traced variable is known to be all ones
-        if (vtxp == m_varp) return;
-
-        // Combine the masks of all drivers
         if (DfgVertex* const srcp = vtxp->srcp()) MASK(vtxp) = MASK(srcp);
     }
 
@@ -656,7 +654,10 @@ class IndependentBits final : public DfgVisitor {
 
     void visit(DfgExtend* vtxp) override {
         const DfgVertex* const srcp = vtxp->srcp();
-        MASK(vtxp).opSelInto(MASK(srcp), 0, srcp->width());
+        const uint32_t sWidth = srcp->width();
+        V3Number& m = MASK(vtxp);
+        m.opSelInto(MASK(srcp), 0, sWidth);
+        m.opSetRange(sWidth, vtxp->width() - sWidth, '0');
     }
 
     void visit(DfgNot* vtxp) override {  //
@@ -684,7 +685,9 @@ class IndependentBits final : public DfgVisitor {
             if (shiftAmount >= width) return;
             V3Number shiftedMask{lhsp->fileline(), static_cast<int>(width), 0};
             shiftedMask.opShiftR(MASK(lhsp), rConstp->num());
-            MASK(vtxp).opSelInto(shiftedMask, 0, width - shiftAmount);
+            V3Number& m = MASK(vtxp);
+            m.opSelInto(shiftedMask, 0, width - shiftAmount);
+            m.opSetRange(width - shiftAmount, shiftAmount, '0');
             return;
         }
 
@@ -692,9 +695,9 @@ class IndependentBits final : public DfgVisitor {
         // the most significant dependent bit might be dependent
         V3Number& lMask = MASK(lhsp);
         V3Number& vMask = MASK(vtxp);
-        int idx = width - 1;
-        while (idx >= 0 && lMask.bitIs0(idx)) --idx;
-        while (idx >= 0) vMask.setBit(idx--, '1');
+        uint32_t lzc = 0;  // Leading zero count
+        while (lzc < width && lMask.bitIs0(width - 1 - lzc)) ++lzc;
+        while (lzc > 0) vMask.setBit(width - 1 - (--lzc), '0');
     }
 
     void visit(DfgShiftL* vtxp) override {
@@ -708,7 +711,9 @@ class IndependentBits final : public DfgVisitor {
             if (shiftAmount >= width) return;
             V3Number shiftedMask{lhsp->fileline(), static_cast<int>(width), 0};
             shiftedMask.opShiftL(MASK(lhsp), rConstp->num());
-            MASK(vtxp).opSelInto(shiftedMask, shiftAmount, width - shiftAmount);
+            V3Number& m = MASK(vtxp);
+            m.opSelInto(shiftedMask, shiftAmount, width - shiftAmount);
+            m.opSetRange(0, shiftAmount, '0');
             return;
         }
 
@@ -716,16 +721,16 @@ class IndependentBits final : public DfgVisitor {
         // the least significant dependent bit might be dependent
         V3Number& lMask = MASK(lhsp);
         V3Number& vMask = MASK(vtxp);
-        uint32_t idx = 0;
-        while (idx < width && lMask.bitIs0(idx)) ++idx;
-        while (idx < width) vMask.setBit(idx++, '1');
+        uint32_t tzc = 0;  // Trailing zero count
+        while (tzc < width && lMask.bitIs0(tzc)) ++tzc;
+        while (tzc > 0) vMask.setBit(--tzc, '0');
     }
 
 #undef MASK
 
     // CONSTRUCTOR
-    IndependentBits(DfgVarPacked* varp)
-        : m_varp{varp} {
+    IndependentBits(DfgGraph& dfg, DfgVertex* vtxp)
+        : m_component{vtxp->getUser<uint32_t>()} {
         if (v3Global.opt.debugCheck()) {
             m_lineCoverageFile.open(  //
                 v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
@@ -733,21 +738,24 @@ class IndependentBits final : public DfgVisitor {
                 std::ios_base::out | std::ios_base::app);
         }
 
-        // The starting vertex depends on it's own value, duuhh...
-        mask(varp).setAllBits1();
-        // Enqueue all sinks
-        varp->forEachSink([&](DfgVertex& vtx) { m_workList.emplace_back(&vtx); });
+        // Work list for the traversal
+        std::deque<DfgVertex*> workList;
 
-        // While there is an item on the worklist ..
-        while (!m_workList.empty()) {
+        // Enqueue every operation vertex in the analysed component
+        for (DfgVertex& vtx : dfg.opVertices()) {
+            if (vtx.getUser<uint32_t>() == m_component) workList.emplace_back(&vtx);
+        }
+
+        // While there is an item on the worklist ...
+        while (!workList.empty()) {
             // Grab next item
-            DfgVertex* const currp = m_workList.front();
-            m_workList.pop_front();
+            DfgVertex* const currp = workList.front();
+            workList.pop_front();
 
             if (VN_IS(currp->dtypep(), UnpackArrayDType)) {
                 // For an unpacked array vertex, just enque it's sinks.
                 // (There can be no loops through arrays directly)
-                currp->forEachSink([&](DfgVertex& vtx) { m_workList.emplace_back(&vtx); });
+                currp->forEachSink([&](DfgVertex& vtx) { workList.emplace_back(&vtx); });
                 continue;
             }
 
@@ -761,33 +769,33 @@ class IndependentBits final : public DfgVisitor {
 
             // If mask changed, enqueue sinks
             if (!prevMask.isCaseEq(maskCurr)) {
-                currp->forEachSink([&](DfgVertex& vtx) { m_workList.emplace_back(&vtx); });
+                currp->forEachSink([&](DfgVertex& vtx) { workList.emplace_back(&vtx); });
 
-                // Check the mask only ever expands (no bit goes 1 -> 0)
+                // Check the mask only ever contrects (no bit goes 0 -> 1)
                 if (VL_UNLIKELY(v3Global.opt.debugCheck())) {
-                    V3Number notCurr{maskCurr};
-                    notCurr.opNot(maskCurr);
-                    V3Number prevAndNotCurr{maskCurr};
-                    prevAndNotCurr.opAnd(prevMask, notCurr);
-                    UASSERT_OBJ(prevAndNotCurr.isEqZero(), currp, "Mask should only expand");
+                    V3Number notPrev{prevMask};
+                    notPrev.opNot(prevMask);
+                    V3Number notPrevAndCurr{maskCurr};
+                    notPrevAndCurr.opAnd(notPrev, maskCurr);
+                    UASSERT_OBJ(notPrevAndCurr.isEqZero(), currp, "Mask should only contract");
                 }
             }
         }
     }
 
 public:
-    // Given a variable, compute which bits in this variable are independent of
-    // the variable itself (simple forward dataflow analysis). Returns a bit
-    // mask where a set bit indicates that bit is independent of the variable
-    // itself (logic is not circular). The result is a conservative estimate,
-    // so bits reported dependent might not actually be, but all bits reported
-    // independent are known to be so.
-    static V3Number apply(DfgVarPacked* varp) {
-        UASSERT_OBJ(varp->srcp(), varp, "Don't call on undriven variable");
-        IndependentBits independentBits{varp};
+    // Given a Vertex that is part of an SCC denoted by vtxp->user<uint32_t>(),
+    // compute which bits of this vertex have a value that is independent of
+    // the current value of the Vertex itself (simple forward dataflow
+    // analysis). Returns a bit mask where a set bit indicates that bit is
+    // independent of the vertex itself (logic is not circular). The result is
+    // a conservative estimate, so bits reported dependent might not actually
+    // be, but all bits reported independent are known to be so.
+    static V3Number apply(DfgGraph& dfg, DfgVertex* vtxp) {
+        IndependentBits independentBits{dfg, vtxp};
         // The mask represents the dependent bits, so invert it
-        V3Number result{varp->fileline(), static_cast<int>(varp->width()), 0};
-        result.opNot(independentBits.mask(varp->srcp()));
+        V3Number result{vtxp->fileline(), static_cast<int>(vtxp->width()), 0};
+        result.opNot(independentBits.mask(vtxp));
         return result;
     }
 };
@@ -899,7 +907,7 @@ public:
         if (usedBits.isEqZero()) return 0;
 
         // Figure out which bits of 'varp' are dependent on themselves
-        const V3Number indpBits = IndependentBits::apply(varp);
+        const V3Number indpBits = IndependentBits::apply(dfg, varp);
         UINFO(9, "Independent bits of '" << varp->nodep()->name() << "' are "
                                          << indpBits.displayed(varp->nodep(), "%b"));
         // Can't do anything if all bits are dependent
