@@ -46,6 +46,7 @@ class UnrollVisitor final : public VNVisitor {
     bool m_varModeCheck;  // Just checking RHS assignments
     bool m_varModeReplace;  // Replacing varrefs
     bool m_varAssignHit;  // Assign var hit
+    bool m_forkHit; // Fork hit
     bool m_generate;  // Expand single generate For loop
     string m_beginName;  // What name to give begin iterations
     VDouble0 m_statLoops;  // Statistic tracking
@@ -133,6 +134,7 @@ class UnrollVisitor final : public VNVisitor {
         // Now, make sure there's no assignment to this variable in the loop
         m_varModeCheck = true;
         m_varAssignHit = false;
+        m_forkHit = false;
         m_ignoreIncp = incp;
         iterateAndNextNull(precondsp);
         iterateAndNextNull(bodysp);
@@ -140,6 +142,8 @@ class UnrollVisitor final : public VNVisitor {
         m_varModeCheck = false;
         m_ignoreIncp = nullptr;
         if (m_varAssignHit) return cantUnroll(nodep, "genvar assigned *inside* loop");
+
+        if (m_forkHit) return cantUnroll(nodep, "fork inside loop");
 
         //
         if (m_forVscp) {
@@ -463,6 +467,17 @@ class UnrollVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstFork* nodep) override {
+        if (m_varModeCheck) {
+            if (nodep->joinType().joinNone() || nodep->joinType().joinAny()) {
+                // Forks are not allowed to unroll for loops, so we just set a flag
+                m_forkHit = true;
+            }
+        } else {
+            iterateChildren(nodep);
+        }
+    }
+
     //--------------------
     // Default: Just iterate
     void visit(AstNode* nodep) override {
@@ -489,6 +504,7 @@ public:
         m_varModeCheck = false;
         m_varModeReplace = false;
         m_varAssignHit = false;
+        m_forkHit = false;
         m_generate = generate;
         m_beginName = beginName;
     }
