@@ -111,4 +111,33 @@ module t (
   assign PARTIAL[0] = rand_a[0];
   // PARTIAL[1] intentionally unconnected
   assign PARTIAL[3:2] = rand_a[3:2] ^ {PARTIAL[2], PARTIAL[0]};
+
+  wire [2:0] array_0 [2];
+  assign array_0[0] = rand_a[2:0];
+  assign array_0[1] = array_0[0];
+  `signal(ARRAY_0, 3);
+  assign ARRAY_0 = array_0[1];
+
+  wire [2:0] array_1 [1];
+  assign array_1[0][0] = rand_a[0];
+  assign array_1[0][1] = array_1[0][0];
+  assign array_1[0][2] = array_1[0][1];
+  `signal(ARRAY_1, 3);
+  assign ARRAY_1 = array_1[0];
+
+  wire [2:0] array_2a [2];
+  wire [2:0] array_2b [2];
+  assign array_2a[0][0] = rand_a[0];
+  assign array_2a[0][1] = array_2b[1][0];
+  assign array_2a[0][2] = array_2b[1][1];
+  assign array_2a[1] = array_2a[0];
+  assign array_2b = array_2a;
+  `signal(ARRAY_2, 3);
+  assign ARRAY_2 = array_2a[0];
+
+  wire [2:0] array_3 [2];
+  assign array_3[0] = rand_a[2:0] ^ array_3[1] >> 1;
+  assign array_3[1] = array_3[0];
+  `signal(ARRAY_3, 3);
+  assign ARRAY_3 = array_3[0];
 endmodule
