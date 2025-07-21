@@ -4052,6 +4052,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 AstIfaceRefDType* const ifaceRefp = VN_AS(dtypep->cloneTree(false), IfaceRefDType);
                 ifaceRefp->modportName(ifaceGenp->modportName());
                 ifaceRefp->modportFileline(ifaceGenp->modportFileline());
+                if (VSymEnt* const lookup_space = m_statep->getNodeSym(ifaceRefp->ifacep())) {
+                    const VSymEnt* const foundp
+                        = lookup_space->findIdFlat(ifaceGenp->modportName());
+                    if (foundp) {
+                        if (AstModport* const modportp = VN_CAST(foundp->nodep(), Modport)) {
+                            ifaceRefp->modportp(modportp);
+                        }
+                    }
+                }
                 ifaceGenp->unlinkFrBack()->deleteTree();
                 nodep->childDTypep(ifaceRefp);
             }
