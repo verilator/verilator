@@ -1,0 +1,41 @@
+task_example start:  module 0, channel 0
+task_example end:  module 0, channel 0
+task_example start:  module 0, channel 1
+task_example end:  module 0, channel 1
+task_example start:  module 1, channel 0
+task_example end:  module 1, channel 0
+task_example start:  module 1, channel 1
+task_example end:  module 1, channel 1
+*-* Test 1 Finished *-*
+task_example start:  module 0, channel 0
+task_example end:  module 0, channel 0
+task_example start:  module 0, channel 1
+task_example end:  module 0, channel 1
+task_example start:  module 1, channel 0
+task_example end:  module 1, channel 0
+task_example start:  module 1, channel 1
+task_example end:  module 1, channel 1
+*-* Test 2 Finished *-*
+task_example start:  module 0, channel 0
+extra statement
+task_example start:  module 0, channel 1
+extra statement
+task_example start:  module 1, channel 0
+extra statement
+task_example start:  module 1, channel 1
+extra statement
+task_example end:  module 0, channel 0
+task_example end:  module 0, channel 1
+task_example end:  module 1, channel 0
+task_example end:  module 1, channel 1
+*-* Test 3 Finished *-*
+task_example start:  module 0, channel 0
+task_example start:  module 0, channel 1
+task_example start:  module 1, channel 0
+task_example start:  module 1, channel 1
+task_example end:  module 0, channel 0
+task_example end:  module 0, channel 1
+task_example end:  module 1, channel 0
+task_example end:  module 1, channel 1
+*-* Test 4 Finished *-*
+*-* All Finished *-*
