@@ -587,10 +587,6 @@ class IndependentBits final : public DfgVisitor {
     std::ofstream m_lineCoverageFile;  // Line coverage file, just for testing
 
     // METHODS
-    static void setRangeZero(V3Number& num, uint32_t msb, uint32_t lsb) {
-        for (uint32_t i = lsb; i <= msb; ++i) num.setBit(i, '0');
-    }
-
     // Retrieve the mask for the given vertex (create it with value 0 if needed)
     V3Number& mask(const DfgVertex* vtxp) {
         // Look up (or create) mask for 'vtxp'
@@ -661,7 +657,7 @@ class IndependentBits final : public DfgVisitor {
         const uint32_t sWidth = srcp->width();
         V3Number& m = MASK(vtxp);
         m.opSelInto(MASK(srcp), 0, sWidth);
-        setRangeZero(m, vtxp->width() - 1, sWidth);
+        m.opSetRange(sWidth, vtxp->width() - sWidth, '0');
     }
 
     void visit(DfgNot* vtxp) override {  //
@@ -691,7 +687,7 @@ class IndependentBits final : public DfgVisitor {
             shiftedMask.opShiftR(MASK(lhsp), rConstp->num());
             V3Number& m = MASK(vtxp);
             m.opSelInto(shiftedMask, 0, width - shiftAmount);
-            setRangeZero(m, width - 1, width - shiftAmount);
+            m.opSetRange(width - shiftAmount, shiftAmount, '0');
             return;
         }
 
@@ -717,7 +713,7 @@ class IndependentBits final : public DfgVisitor {
             shiftedMask.opShiftL(MASK(lhsp), rConstp->num());
             V3Number& m = MASK(vtxp);
             m.opSelInto(shiftedMask, shiftAmount, width - shiftAmount);
-            setRangeZero(m, shiftAmount - 1, 0);
+            m.opSetRange(0, shiftAmount, '0');
             return;
         }
 

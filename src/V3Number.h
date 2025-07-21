@@ -716,6 +716,7 @@ public:
     V3Number& opWildEq(const V3Number& lhs, const V3Number& rhs);
     V3Number& opWildNeq(const V3Number& lhs, const V3Number& rhs);
     V3Number& opBufIf1(const V3Number& ens, const V3Number& if1s);
+    V3Number& opSetRange(uint32_t lsb, uint32_t width, char bitValue);
     // "standard" math
     V3Number& opNot(const V3Number& lhs);
     V3Number& opLogNot(const V3Number& lhs);
