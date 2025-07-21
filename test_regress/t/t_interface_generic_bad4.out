@@ -1,0 +1,5 @@
+%Error-PINNOTFOUND: t/t_interface_generic_bad4.v:20:42: Pin not found: '__pinNumber2'
+   20 |   GenericModule genericModule (inf_inst, inf_inst);
+      |                                          ^~~~~~~~
+                    ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
+%Error: Exiting due to

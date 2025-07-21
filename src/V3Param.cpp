@@ -902,6 +902,47 @@ class ParamProcessor final {
         }
     }
 
+    static void genericInterfaceVarSetup(const AstPin* const paramsp, const AstPin* const pinsp) {
+        std::unordered_map<string, const AstPin*> paramspMap;
+        for (const AstNode* nodep = paramsp; nodep; nodep = nodep->nextp()) {
+            if (const AstPin* const pinp = VN_CAST(nodep, Pin)) {
+                if (pinp->name().find("__VGIfaceParam") == 0) {
+                    // 14 is a length of "__VGIfaceParam"
+                    paramspMap.insert({pinp->name().substr(14), pinp});
+                }
+            }
+        }
+
+        if (paramspMap.empty()) return;
+
+        for (const AstNode* nodep = pinsp; nodep; nodep = nodep->nextp()) {
+            if (const AstPin* const pinp = VN_CAST(nodep, Pin)) {
+                if (AstVar* const varp = pinp->modVarp()) {
+                    if (AstIfaceGenericDType* const ifaceGDTypep
+                        = VN_CAST(varp->childDTypep(), IfaceGenericDType)) {
+                        ifaceGDTypep->unlinkFrBack();
+                        const auto iter = paramspMap.find(varp->name());
+                        if (iter == paramspMap.end()) continue;
+                        const AstPin* const paramp = iter->second;
+                        paramspMap.erase(iter);
+                        const AstIfaceRefDType* const ifacerefp
+                            = VN_AS(paramp->exprp(), IfaceRefDType);
+                        AstIfaceRefDType* const newIfacerefp = new AstIfaceRefDType(
+                            ifaceGDTypep->fileline(), ifaceGDTypep->modportFileline(),
+                            ifaceGDTypep->name(), ifacerefp->ifaceName(),
+                            ifaceGDTypep->modportName());
+                        newIfacerefp->ifacep(ifacerefp->ifacep());
+                        varp->childDTypep(newIfacerefp);
+                        ifaceGDTypep->deleteTree();
+                        if (paramspMap.empty()) return;
+                    }
+                }
+            }
+        }
+
+        UASSERT(paramspMap.empty(), "Every generic interface implicit param is used");
+    }
+
     bool nodeDeparamCommon(AstNode* nodep, AstNodeModule*& srcModpr, AstPin* paramsp,
                            AstPin* pinsp, bool any_overrides) {
         // Make sure constification worked
@@ -970,6 +1011,8 @@ class ParamProcessor final {
                 }
             }
         }
+
+        genericInterfaceVarSetup(paramsp, pinsp);
 
         // Delete the parameters from the cell; they're not relevant any longer.
         if (paramsp) paramsp->unlinkFrBackWithNext()->deleteTree();
