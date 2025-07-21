@@ -46,7 +46,7 @@ class UnrollVisitor final : public VNVisitor {
     bool m_varModeCheck;  // Just checking RHS assignments
     bool m_varModeReplace;  // Replacing varrefs
     bool m_varAssignHit;  // Assign var hit
-    bool m_forkHit; // Fork hit
+    bool m_forkHit;  // Fork hit
     bool m_generate;  // Expand single generate For loop
     string m_beginName;  // What name to give begin iterations
     VDouble0 m_statLoops;  // Statistic tracking
