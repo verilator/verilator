@@ -193,10 +193,6 @@ class DfgVarArray final : public DfgVertexVar {
     friend class DfgVertex;
     friend class DfgVisitor;
 
-    using DriverData = std::pair<FileLine*, uint32_t>;
-
-    std::vector<DriverData> m_driverData;  // Additional data associate with each driver
-
 public:
     DfgVarArray(DfgGraph& dfg, AstVar* varp)
         : DfgVertexVar{dfg, dfgType(), varp} {
