@@ -125,8 +125,9 @@ class AstToDfgVisitor final : public VNVisitor {
 
     void markReferenced(AstNode* nodep) {
         nodep->foreach([this](const AstVarRef* refp) {
-            // No need to (and in fact cannot) mark variables with unsupported dtypes
-            if (!DfgVertex::isSupportedDType(refp->varp()->dtypep())) return;
+            // No need to (and in fact cannot) mark variables if:
+            if (!DfgVertex::isSupportedDType(refp->varp()->dtypep())) return;  //  unsupported type
+            if (refp->varp()->isSc()) return;  // SystemC
             VariableType* const tgtp = getTarget(refp);
             // Mark vertex as having a module reference outside current DFG
             getNet(tgtp)->setHasModRefs();
@@ -809,6 +810,7 @@ class AstToDfgVisitor final : public VNVisitor {
             || nodep->varp()->isIfaceRef()  // Cannot handle interface references
             || nodep->varp()->delayp()  // Cannot handle delayed variables
             || nodep->classOrPackagep()  // Cannot represent cross module references
+            || nodep->varp()->isSc()  // SystemC variables are special and rare, we can ignore
         ) {
             markReferenced(nodep);
             m_foundUnhandled = true;

@@ -639,9 +639,6 @@ DfgVertexVar* DfgVertex::getResultVar() {
     this->forEachSink([&resp](DfgVertex& sink) {
         DfgVertexVar* const varp = sink.cast<DfgVertexVar>();
         if (!varp) return;
-        // Ignore SystemC variables, they cannot participate in expressions or
-        // be assigned rvalue expressions.
-        if (varp->varp()->isSc()) return;
         // First variable found
         if (!resp) {
             resp = varp;
