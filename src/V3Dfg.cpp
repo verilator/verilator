@@ -239,20 +239,6 @@ DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& name, AstNo
 
 static const string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) + '"'; }
 
-static void dumpType(std::ostream& os, const AstNodeDType* dtypep) {
-    if (const AstUnpackArrayDType* const typep = VN_CAST(dtypep, UnpackArrayDType)) {
-        os << '(';
-        dumpType(os, typep->subDTypep());
-        os << ")[" << typep->elementsConst() << ']';
-        return;
-    }
-    if (const AstBasicDType* const typep = VN_CAST(dtypep, BasicDType)) {
-        os << "W" << typep->width();
-        return;
-    }
-    dtypep->v3fatalSrc("Unahndled AstNodeDType sub-type");
-}
-
 // Dump one DfgVertex in Graphviz format
 static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
 
@@ -261,7 +247,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         AstVar* const varp = varVtxp->varp();
         os << toDotId(vtx);
         os << " [label=\"" << nodep->name() << "\n";
-        dumpType(os, varVtxp->dtypep());
+        varVtxp->dtypep()->dumpSmall(os);
         os << " / F" << varVtxp->fanout() << '"';
 
         if (varp->direction() == VDirection::INPUT) {
@@ -290,7 +276,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         AstVar* const varp = arrVtxp->varp();
         os << toDotId(vtx);
         os << " [label=\"" << nodep->name() << "\n";
-        dumpType(os, arrVtxp->dtypep());
+        arrVtxp->dtypep()->dumpSmall(os);
         os << " / F" << arrVtxp->fanout() << '"';
         if (varp->direction() == VDirection::INPUT) {
             os << ", shape=box3d, style=filled, fillcolor=chartreuse2";  // Green
@@ -335,7 +321,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         const uint32_t msb = lsb + selVtxp->width() - 1;
         os << toDotId(vtx);
         os << " [label=\"SEL\n_[" << msb << ":" << lsb << "]\n";
-        dumpType(os, vtx.dtypep());
+        vtx.dtypep()->dumpSmall(os);
         os << " / F" << vtx.fanout() << '"';
         if (vtx.hasMultipleSinks()) {
             os << ", shape=doublecircle";
@@ -349,7 +335,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     if (vtx.is<DfgVertexSplice>()) {
         os << toDotId(vtx);
         os << " [label=\"" << vtx.typeName() << "\n";
-        dumpType(os, vtx.dtypep());
+        vtx.dtypep()->dumpSmall(os);
         os << " / F" << vtx.fanout() << '"';
         if (vtx.hasMultipleSinks()) {
             os << ", shape=doubleoctagon";
@@ -362,7 +348,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
 
     os << toDotId(vtx);
     os << " [label=\"" << vtx.typeName() << "\n";
-    dumpType(os, vtx.dtypep());
+    vtx.dtypep()->dumpSmall(os);
     os << " / F" << vtx.fanout() << '"';
     if (vtx.hasMultipleSinks()) {
         os << ", shape=doublecircle";

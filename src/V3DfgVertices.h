@@ -230,8 +230,8 @@ class DfgSpliceArray final : public DfgVertexSplice {
     friend class DfgVisitor;
 
     struct DriverData final {
-        FileLine* m_flp;
-        uint32_t m_index;
+        FileLine* m_flp;  // Location of this driver
+        uint32_t m_index;  // Array index driven by this driver (or low index of range)
         DriverData() = delete;
         DriverData(FileLine* flp, uint32_t index)
             : m_flp{flp}
@@ -279,8 +279,8 @@ class DfgSplicePacked final : public DfgVertexSplice {
     friend class DfgVisitor;
 
     struct DriverData final {
-        FileLine* m_flp;
-        uint32_t m_lsb;
+        FileLine* m_flp;  // Location of this driver
+        uint32_t m_lsb;  // LSB of range driven by this driver
         DriverData() = delete;
         DriverData(FileLine* flp, uint32_t lsb)
             : m_flp{flp}
