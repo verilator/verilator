@@ -902,6 +902,8 @@ class ParamProcessor final {
         }
     }
 
+    // Set interfaces types inside generic modules
+    // to the corresponding values of a implicit parameter
     static void genericInterfaceVarSetup(const AstPin* const paramsp, const AstPin* const pinsp) {
         std::unordered_map<string, const AstPin*> paramspMap;
         for (const AstNode* nodep = paramsp; nodep; nodep = nodep->nextp()) {
@@ -920,9 +922,9 @@ class ParamProcessor final {
                 if (AstVar* const varp = pinp->modVarp()) {
                     if (AstIfaceGenericDType* const ifaceGDTypep
                         = VN_CAST(varp->childDTypep(), IfaceGenericDType)) {
-                        ifaceGDTypep->unlinkFrBack();
                         const auto iter = paramspMap.find(varp->name());
                         if (iter == paramspMap.end()) continue;
+                        ifaceGDTypep->unlinkFrBack();
                         const AstPin* const paramp = iter->second;
                         paramspMap.erase(iter);
                         const AstIfaceRefDType* const ifacerefp
