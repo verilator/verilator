@@ -584,7 +584,7 @@ public:
 // to support scope-level randomization.
 class VlStdRandomizer final {
     // MEMBERS
-    VlRNG __Vm_rng;
+    VlRNG m_rng;  // Random number generator
 
     // PRIVATE METHODS
 
@@ -595,7 +595,7 @@ public:
 
     template <typename T>
     bool basicStdRandomization(T& value, size_t width) {
-        value = VL_MASK_I(width) & VL_RANDOM_RNG_I(__Vm_rng);
+        value = VL_MASK_I(width) & VL_RANDOM_RNG_I(m_rng);
         return true;
     }
 };
