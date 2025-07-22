@@ -24,8 +24,6 @@
 #include "V3String.h"
 #include "V3Task.h"
 
-#include <list>
-
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -104,21 +102,14 @@ class ProtectVisitor final : public VNVisitor {
         txtp->addText(fl, "\n`ifdef VERILATOR\n");
         txtp->addText(fl, "`verilator_config\n");
 
-        // The `eval` function is called inside both update functions. As those functions
-        // are created by text bashing, we need to find cost of `_eval` which is the first function
-        // with a real cost in AST.
-        uint32_t cost = 0;
-        modp->foreach([&cost](AstCFunc* cfuncp) {
-            if (cfuncp->name() == "_eval") cost = V3InstrCount::count(cfuncp, false);
-        });
         txtp->addText(fl, "profile_data -hier-dpi \"" + m_libName
-                              + "_protectlib_combo_update\" -cost 64'd" + std::to_string(cost)
-                              + "\n");
+                              + "_protectlib_combo_update\" -cost 64'd"
+                              + std::to_string(v3Global.currentHierBlockCost()) + "\n");
         txtp->addText(fl, "profile_data -hier-dpi \"" + m_libName
-                              + "_protectlib_seq_update\" -cost 64'd" + std::to_string(cost)
-                              + "\n");
+                              + "_protectlib_seq_update\" -cost 64'd"
+                              + std::to_string(v3Global.currentHierBlockCost()) + "\n");
 
-        // Mark remaining NDA protectlib wrapper DPIs as non-hazardous by deliberately forwarding
+        // Mark remaining NBA protectlib wrapper DPIs as non-hazardous by deliberately forwarding
         // them with non-zero cost.
         // Also, specify hierarchical workers for those tasks for scheduling.
         txtp->addText(fl, "profile_data -hier-dpi \"" + m_libName

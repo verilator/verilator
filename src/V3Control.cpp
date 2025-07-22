@@ -18,6 +18,7 @@
 
 #include "V3Control.h"
 
+#include "V3InstrCount.h"
 #include "V3String.h"
 
 #include <memory>
@@ -574,7 +575,11 @@ public:
                         ProfileDataMode mode = MTASK) {
         if (!m_profileFileLine) m_profileFileLine = fl;
         if (cost == 0) cost = 1;  // Cost 0 means delete (or no data)
-        m_profileData[model][key] += cost;
+        if (mode == MTASK) {
+            m_profileData[model][key] += cost;
+        } else if (mode == HIER_DPI) {
+            m_profileData[model][key] = std::max(m_profileData[model][key], cost);
+        }
         m_mode |= mode;
     }
     bool containsMTaskProfileData() const { return m_mode & MTASK; }
@@ -603,6 +608,16 @@ public:
         return it->second;
     }
     FileLine* getProfileDataFileLine() const { return m_profileFileLine; }  // Maybe null
+    static uint64_t getCurrentHierBlockCost() {
+        if (uint64_t cost = V3Control::getProfileData(v3Global.opt.prefix())) {
+            UINFO(9, "Fetching cost from profile info: " << cost);
+            return cost;
+        } else {
+            cost = V3InstrCount::count(v3Global.rootp()->evalp(), false);
+            UINFO(9, "Evaluating cost: " << cost);
+            return cost;
+        }
+    }
 };
 
 //######################################################################
@@ -795,6 +810,9 @@ void V3Control::contentsPushText(const string& text) { return WildcardContents::
 
 bool V3Control::containsMTaskProfileData() {
     return V3ControlResolver::s().containsMTaskProfileData();
+}
+uint64_t V3Control::getCurrentHierBlockCost() {
+    return V3ControlResolver::s().getCurrentHierBlockCost();
 }
 
 bool V3Control::waive(const FileLine* filelinep, V3ErrorCode code, const string& message) {

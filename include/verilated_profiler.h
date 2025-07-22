@@ -220,12 +220,25 @@ class VlPgoProfiler final {
     // Counters are stored packed, all together to reduce cache effects
     std::array<uint64_t, N_Entries> m_counters{};  // Time spent on this record
     std::vector<Record> m_records;  // Record information
+    const uint64_t
+        m_currentHierBlockCost;  // An original cost of a profiled hier block. During verilation
+                                 // with collected profiling data, costs of hier blocks change
+                                 // thus hashes of original mtasks does not match those from the
+                                 // previous, instrumented, run. We shall not assume that a single
+                                 // top-level mtask will correspond to the hier block as multiple
+                                 // hier block DPIs can be contracted into a single mtask.
+                                 // Therefore, the old cost, from previous instrumented run, is
+                                 // used to stabilize profiled scheduling.
 
 public:
     // METHODS
-    VlPgoProfiler() = default;
+    explicit VlPgoProfiler(uint64_t currentHierBlockCost = 0)
+        : m_currentHierBlockCost{currentHierBlockCost} {}
     ~VlPgoProfiler() = default;
-    void write(const char* modelp, const std::string& filename, bool firstHierCall) VL_MT_SAFE;
+    VL_UNMOVABLE(VlPgoProfiler);
+    VL_UNCOPYABLE(VlPgoProfiler);
+    void writeHeader(const std::string& filename) VL_MT_SAFE;
+    void write(const char* modelp, const std::string& filename) VL_MT_SAFE;
     void addCounter(size_t counter, const std::string& name) {
         VL_DEBUG_IF(assert(counter < N_Entries););
         m_records.emplace_back(Record{name, counter});
@@ -239,8 +252,7 @@ public:
 };
 
 template <std::size_t N_Entries>
-void VlPgoProfiler<N_Entries>::write(const char* modelp, const std::string& filename,
-                                     bool firstHierCall) VL_MT_SAFE {
+void VlPgoProfiler<N_Entries>::writeHeader(const std::string& filename) VL_MT_SAFE {
     static VerilatedMutex s_mutex;
     const VerilatedLockGuard lock{s_mutex};
 
@@ -250,22 +262,38 @@ void VlPgoProfiler<N_Entries>::write(const char* modelp, const std::string& file
     // each will collect is own data correctly.  However when each is
     // destroyed we need to get all the data, not keep overwriting and only
     // get the last model's data.
-    static bool s_firstCall = firstHierCall;
 
-    VL_DEBUG_IF(VL_DBG_MSGF("+prof+vlt+file writing to '%s'\n", filename.c_str()););
-
-    FILE* const fp = std::fopen(filename.c_str(), s_firstCall ? "w" : "a");
+    FILE* const fp = std::fopen(filename.c_str(), "w");
     if (VL_UNLIKELY(!fp)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "+prof+vlt+file file not writable");
     }
-    if (s_firstCall) {
-        // TODO Perhaps merge with verilated_coverage output format, so can
-        // have a common merging and reporting tool, etc.
-        fprintf(fp, "// Verilated model profile-guided optimization data dump file\n");
-        fprintf(fp, "`verilator_config\n");
+
+    VL_DEBUG_IF(VL_DBG_MSGF("+prof+vlt+file initializing '%s'\n", filename.c_str()););
+
+    // TODO Perhaps merge with verilated_coverage output format, so can
+    // have a common merging and reporting tool, etc.
+    fprintf(fp, "// Verilated model profile-guided optimization data dump file\n");
+    fprintf(fp, "`verilator_config\n");
+
+    std::fclose(fp);
+}
+
+template <std::size_t N_Entries>
+void VlPgoProfiler<N_Entries>::write(const char* modelp, const std::string& filename) VL_MT_SAFE {
+    static VerilatedMutex s_mutex;
+    const VerilatedLockGuard lock{s_mutex};
+
+    FILE* const fp = std::fopen(filename.c_str(), "a");
+    if (VL_UNLIKELY(!fp)) {
+        VL_FATAL_MT(filename.c_str(), 0, "", "+prof+vlt+file file not writable");
     }
 
-    s_firstCall = false;
+    VL_DEBUG_IF(VL_DBG_MSGF("+prof+vlt+file writing to '%s'\n", filename.c_str()););
+
+    if (m_currentHierBlockCost) {
+        fprintf(fp, "profile_data -hier-dpi \"%s\" -cost 64'd%lu\n", modelp,
+                m_currentHierBlockCost);
+    }
 
     for (const Record& rec : m_records) {
         fprintf(fp, "profile_data -model \"%s\" -mtask \"%s\" -cost 64'd%" PRIu64 "\n", modelp,

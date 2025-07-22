@@ -64,6 +64,7 @@ public:
     static void contentsPushText(const string& text);
 
     static bool containsMTaskProfileData();
+    static uint64_t getCurrentHierBlockCost();
 
     static bool waive(const FileLine* filelinep, V3ErrorCode code, const string& message);
 };
