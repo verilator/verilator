@@ -103,14 +103,17 @@ class CoverageVisitor final : public VNVisitor {
         const string m_comment;  // Comment for coverage dump
         AstNodeExpr* m_varRefp;  // How to get to this element
         AstNodeExpr* m_chgRefp;  // How to get to this element
-        ToggleEnt(const string& comment, AstNodeExpr* vp, AstNodeExpr* cp)
+        AstNodeExpr* m_initRefp;  // Expression that stores initialization status
+        ToggleEnt(const string& comment, AstNodeExpr* vp, AstNodeExpr* cp, AstNodeExpr* initp)
             : m_comment{comment}
             , m_varRefp{vp}
-            , m_chgRefp{cp} {}
+            , m_chgRefp{cp}
+            , m_initRefp{initp} {}
         ~ToggleEnt() = default;
         void cleanup() {
             VL_DO_CLEAR(m_varRefp->deleteTree(), m_varRefp = nullptr);
             VL_DO_CLEAR(m_chgRefp->deleteTree(), m_chgRefp = nullptr);
+            if (m_initRefp) { VL_DO_CLEAR(m_initRefp->deleteTree(), m_initRefp = nullptr); }
         }
     };
 
@@ -387,16 +390,55 @@ class CoverageVisitor final : public VNVisitor {
                 const string newvarname = "__Vtogcov__"s + m_beginHier + nodep->shortName();
                 FileLine* const fl_nowarn = new FileLine{nodep->fileline()};
                 fl_nowarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
+                fl_nowarn->modifyWarnOff(V3ErrorCode::ALWCOMBORDER, true);
+                fl_nowarn->modifyWarnOff(V3ErrorCode::MULTIDRIVEN, true);
+                fl_nowarn->modifyWarnOff(V3ErrorCode::UNOPTFLAT, true);
+                fl_nowarn->coverageOn(false);
                 AstVar* const chgVarp
                     = new AstVar{fl_nowarn, VVarType::MODULETEMP, newvarname, nodep};
                 m_modp->addStmtsp(chgVarp);
+
+                AstVar* initVarp = nullptr;
+                AstVarRef* initWriteRefp = nullptr;
+                // We need to exclude top module input ports, because they can't have value x.
+                // TODO: Exclude also variables driven by top module input ports
+                const bool isTopModuleInput
+                    = (v3Global.rootp()->topModulep() == m_modp) && nodep->isInput();
+                const AstBasicDType* const basicDTypep
+                    = VN_CAST(nodep->dtypep()->skipRefp(), BasicDType);
+                if (basicDTypep && basicDTypep->isFourstate() && basicDTypep->isBitLogic()
+                    && !basicDTypep->isRanged() && !isTopModuleInput) {
+                    const string initVarName
+                        = "__Vtogcovinit__"s + m_beginHier + nodep->shortName();
+                    AstBasicDType* const initDtypep
+                        = new AstBasicDType{fl_nowarn, VBasicDTypeKwd::INT, VSigning::NOSIGN};
+                    v3Global.rootp()->typeTablep()->addTypesp(initDtypep);
+                    initVarp
+                        = new AstVar{fl_nowarn, VVarType::MODULETEMP, initVarName, initDtypep};
+                    m_modp->addStmtsp(initVarp);
+                    initWriteRefp = new AstVarRef{fl_nowarn, initVarp, VAccess::WRITE};
+                    AstAssign* const assignp
+                        = new AstAssign{fl_nowarn, initWriteRefp->cloneTree(false),
+                                        new AstConst{fl_nowarn, AstConst::All1{}}};
+                    AstIf* const ifp = new AstIf{
+                        fl_nowarn,
+                        new AstEq{fl_nowarn, new AstVarRef{fl_nowarn, initVarp, VAccess::READ},
+                                  new AstConst{fl_nowarn, AstConst::All0{}}},
+                        assignp};
+                    AstSenTree* const sentreep = new AstSenTree{
+                        fl_nowarn, new AstSenItem{fl_nowarn, VEdgeType::ET_CHANGED,
+                                                  new AstVarRef{fl_nowarn, nodep, VAccess::READ}}};
+                    AstAlways* const alwaysp
+                        = new AstAlways{fl_nowarn, VAlwaysKwd::ALWAYS, sentreep, ifp};
+                    m_modp->addStmtsp(alwaysp);
+                }
 
                 // Create bucket for each dimension * bit.
                 // This is necessarily an O(n^2) expansion, which is why
                 // we limit coverage to signals with < 256 bits.
 
                 ToggleEnt newvec{""s, new AstVarRef{fl_nowarn, nodep, VAccess::READ},
-                                 new AstVarRef{fl_nowarn, chgVarp, VAccess::WRITE}};
+                                 new AstVarRef{fl_nowarn, chgVarp, VAccess::WRITE}, initWriteRefp};
                 toggleVarRecurse(nodep->dtypeSkipRefp(), 0, newvec, nodep);
                 newvec.cleanup();
             }
@@ -410,7 +452,8 @@ class CoverageVisitor final : public VNVisitor {
             varp->fileline(),
             newCoverInc(varp->fileline(), "", "v_toggle",
                         hierPrefix + varp->name() + above.m_comment, "", 0, ""),
-            above.m_varRefp->cloneTree(false), above.m_chgRefp->cloneTree(false)};
+            above.m_varRefp->cloneTree(false), above.m_chgRefp->cloneTree(false),
+            above.m_initRefp ? above.m_initRefp->cloneTree(false) : nullptr};
         m_modp->addStmtsp(newp);
     }
 
@@ -425,7 +468,12 @@ class CoverageVisitor final : public VNVisitor {
                                      new AstSel{varp->fileline(),
                                                 above.m_varRefp->cloneTree(false), index_code, 1},
                                      new AstSel{varp->fileline(),
-                                                above.m_chgRefp->cloneTree(false), index_code, 1}};
+                                                above.m_chgRefp->cloneTree(false), index_code, 1},
+                                     above.m_initRefp
+                                         ? new AstSel{varp->fileline(),
+                                                      above.m_initRefp->cloneTree(false),
+                                                      index_code, 1}
+                                         : nullptr};
                     toggleVarBottom(newent, varp);
                     newent.cleanup();
                 }
@@ -439,7 +487,12 @@ class CoverageVisitor final : public VNVisitor {
                                  new AstArraySel{varp->fileline(),
                                                  above.m_varRefp->cloneTree(false), index_code},
                                  new AstArraySel{varp->fileline(),
-                                                 above.m_chgRefp->cloneTree(false), index_code}};
+                                                 above.m_chgRefp->cloneTree(false), index_code},
+                                 above.m_initRefp
+                                     ? new AstArraySel{varp->fileline(),
+                                                       above.m_initRefp->cloneTree(false),
+                                                       index_code}
+                                     : nullptr};
                 toggleVarRecurse(adtypep->subDTypep()->skipRefp(), depth + 1, newent, varp);
                 newent.cleanup();
             }
@@ -447,11 +500,16 @@ class CoverageVisitor final : public VNVisitor {
             for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
                 const AstNodeDType* const subtypep = adtypep->subDTypep()->skipRefp();
                 const int index_code = index_docs - adtypep->lo();
-                ToggleEnt newent{above.m_comment + "["s + cvtToStr(index_docs) + "]",
-                                 new AstSel{varp->fileline(), above.m_varRefp->cloneTree(false),
-                                            index_code * subtypep->width(), subtypep->width()},
-                                 new AstSel{varp->fileline(), above.m_chgRefp->cloneTree(false),
-                                            index_code * subtypep->width(), subtypep->width()}};
+                ToggleEnt newent{
+                    above.m_comment + "["s + cvtToStr(index_docs) + "]",
+                    new AstSel{varp->fileline(), above.m_varRefp->cloneTree(false),
+                               index_code * subtypep->width(), subtypep->width()},
+                    new AstSel{varp->fileline(), above.m_chgRefp->cloneTree(false),
+                               index_code * subtypep->width(), subtypep->width()},
+                    above.m_initRefp
+                        ? new AstSel{varp->fileline(), above.m_initRefp->cloneTree(false),
+                                     index_code * subtypep->width(), subtypep->width()}
+                        : nullptr};
                 toggleVarRecurse(adtypep->subDTypep()->skipRefp(), depth + 1, newent, varp);
                 newent.cleanup();
             }
@@ -466,7 +524,11 @@ class CoverageVisitor final : public VNVisitor {
                         new AstSel{varp->fileline(), above.m_varRefp->cloneTree(false), index_code,
                                    subtypep->width()},
                         new AstSel{varp->fileline(), above.m_chgRefp->cloneTree(false), index_code,
-                                   subtypep->width()}};
+                                   subtypep->width()},
+                        above.m_initRefp
+                            ? new AstSel{varp->fileline(), above.m_initRefp->cloneTree(false),
+                                         index_code, subtypep->width()}
+                            : nullptr};
                     toggleVarRecurse(subtypep, depth + 1, newent, varp);
                     newent.cleanup();
                 }
@@ -478,9 +540,16 @@ class CoverageVisitor final : public VNVisitor {
                         varp->fileline(), above.m_varRefp->cloneTree(false), itemp->name()};
                     AstNodeExpr* const chgRefp = new AstStructSel{
                         varp->fileline(), above.m_chgRefp->cloneTree(false), itemp->name()};
+                    AstNodeExpr* const initRefp
+                        = above.m_initRefp
+                              ? new AstStructSel{varp->fileline(),
+                                                 above.m_initRefp->cloneTree(false), itemp->name()}
+                              : nullptr;
                     varRefp->dtypep(subtypep);
                     chgRefp->dtypep(subtypep);
-                    ToggleEnt newent{above.m_comment + "."s + itemp->name(), varRefp, chgRefp};
+                    initRefp->dtypep(subtypep);
+                    ToggleEnt newent{above.m_comment + "."s + itemp->name(), varRefp, chgRefp,
+                                     initRefp};
                     toggleVarRecurse(subtypep, depth + 1, newent, varp);
                     newent.cleanup();
                 }
@@ -490,9 +559,10 @@ class CoverageVisitor final : public VNVisitor {
             if (const AstMemberDType* const itemp = adtypep->membersp()) {
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
                 if (adtypep->packed()) {
-                    ToggleEnt newent{above.m_comment + "."s + itemp->name(),
-                                     above.m_varRefp->cloneTree(false),
-                                     above.m_chgRefp->cloneTree(false)};
+                    ToggleEnt newent{
+                        above.m_comment + "."s + itemp->name(), above.m_varRefp->cloneTree(false),
+                        above.m_chgRefp->cloneTree(false),
+                        above.m_initRefp ? above.m_initRefp->cloneTree(false) : nullptr};
                     toggleVarRecurse(subtypep, depth + 1, newent, varp);
                     newent.cleanup();
                 } else {
@@ -500,9 +570,16 @@ class CoverageVisitor final : public VNVisitor {
                         varp->fileline(), above.m_varRefp->cloneTree(false), itemp->name()};
                     AstNodeExpr* const chgRefp = new AstStructSel{
                         varp->fileline(), above.m_chgRefp->cloneTree(false), itemp->name()};
+                    AstNodeExpr* const initRefp
+                        = above.m_initRefp
+                              ? new AstStructSel{varp->fileline(),
+                                                 above.m_initRefp->cloneTree(false), itemp->name()}
+                              : nullptr;
                     varRefp->dtypep(subtypep);
                     chgRefp->dtypep(subtypep);
-                    ToggleEnt newent{above.m_comment + "."s + itemp->name(), varRefp, chgRefp};
+                    initRefp->dtypep(subtypep);
+                    ToggleEnt newent{above.m_comment + "."s + itemp->name(), varRefp, chgRefp,
+                                     initRefp};
                     toggleVarRecurse(subtypep, depth + 1, newent, varp);
                     newent.cleanup();
                 }
