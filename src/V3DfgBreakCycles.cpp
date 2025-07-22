@@ -385,6 +385,27 @@ class TraceDriver final : public DfgVisitor {
         }
     }
 
+    void visit(DfgArraySel* vtxp) override {
+        // Only constant select
+        DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>();
+        if (!idxp) return;
+        // From a variable
+        DfgVarArray* varp = vtxp->fromp()->cast<DfgVarArray>();
+        if (!varp) return;
+        // Skip through intermediate variables
+        while (varp->srcp() && varp->srcp()->is<DfgVarArray>()) {
+            varp = varp->srcp()->as<DfgVarArray>();
+        }
+        // Find driver
+        if (!varp->srcp()) return;
+        DfgSpliceArray* const splicep = varp->srcp()->cast<DfgSpliceArray>();
+        if (!splicep) return;
+        DfgVertex* const driverp = splicep->driverAt(idxp->toSizeT());
+        if (!driverp) return;
+        // Trace the driver
+        SET_RESULT(trace(driverp, m_msb, m_lsb));
+    }
+
     void visit(DfgConcat* vtxp) override {
         DfgVertex* const rhsp = vtxp->rhsp();
         DfgVertex* const lhsp = vtxp->lhsp();
@@ -629,6 +650,27 @@ class IndependentBits final : public DfgVisitor {
         if (DfgVertex* const srcp = vtxp->srcp()) MASK(vtxp) = MASK(srcp);
     }
 
+    void visit(DfgArraySel* vtxp) override {
+        // Only constant select
+        DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>();
+        if (!idxp) return;
+        // From a variable
+        DfgVarArray* varp = vtxp->fromp()->cast<DfgVarArray>();
+        if (!varp) return;
+        // Skip through intermediate variables
+        while (varp->srcp() && varp->srcp()->is<DfgVarArray>()) {
+            varp = varp->srcp()->as<DfgVarArray>();
+        }
+        // Find driver
+        if (!varp->srcp()) return;
+        DfgSpliceArray* const splicep = varp->srcp()->cast<DfgSpliceArray>();
+        if (!splicep) return;
+        DfgVertex* const driverp = splicep->driverAt(idxp->toSizeT());
+        if (!driverp) return;
+        // Update mask
+        MASK(vtxp) = MASK(driverp);
+    }
+
     void visit(DfgConcat* vtxp) override {
         const DfgVertex* const rhsp = vtxp->rhsp();
         const DfgVertex* const lhsp = vtxp->lhsp();
@@ -801,40 +843,78 @@ public:
 };
 
 class FixUpSelDrivers final {
-public:
-    // Attempt to push Sel form Var through to the driving
-    // expression of the selected bits. This can fix things like
-    // 'a[1:0] = foo', 'a[2] = a[1]', which are somewhat common.
-    // Returns the number of drivers fixed up.
-    static size_t apply(DfgGraph& dfg, DfgVarPacked* varp) {
-        UINFO(9, "FixUpSelDrivers of " << varp->nodep()->name());
-        const uint32_t component = varp->getUser<uint32_t>();
+    static size_t fixUpSelSinks(DfgGraph& dfg, DfgVertex* vtxp) {
         size_t nImprovements = 0;
-        varp->forEachSink([&](DfgVertex& sink) {
-            // Ignore if sink is not part of cycle
+        const uint32_t component = vtxp->getUser<uint32_t>();
+        vtxp->forEachSink([&](DfgVertex& sink) {
+            // Ignore if sink is not part of same cycle
             if (sink.getUser<uint32_t>() != component) return;
-            // Only Handle Sels now
+            // Only handle Sel
             DfgSel* const selp = sink.cast<DfgSel>();
             if (!selp) return;
             // Try to find of the driver of the selected bits outside the cycle
             DfgVertex* const fixp
-                = TraceDriver::apply(dfg, varp, selp->lsb(), selp->width(), false);
+                = TraceDriver::apply(dfg, vtxp, selp->lsb(), selp->width(), false);
             if (!fixp) return;
             // Found an out-of-cycle driver. We can replace this sel with that.
             selp->replaceWith(fixp);
             selp->unlinkDelete(dfg);
             ++nImprovements;
         });
+        return nImprovements;
+    }
+
+    static size_t fixUpArraySelSinks(DfgGraph& dfg, DfgVertex* vtxp) {
+        size_t nImprovements = 0;
+        const uint32_t component = vtxp->getUser<uint32_t>();
+        vtxp->forEachSink([&](DfgVertex& sink) {
+            // Ignore if sink is not part of same cycle
+            if (sink.getUser<uint32_t>() != component) return;
+            // Only handle ArraySels
+            DfgArraySel* const aselp = sink.cast<DfgArraySel>();
+            if (!aselp) return;
+            // First, try to fix up the whole word
+            DfgVertex* const fixp = TraceDriver::apply(dfg, aselp, 0, aselp->width(), false);
+            if (fixp) {
+                // Found an out-of-cycle driver for the whole ArraySel
+                aselp->replaceWith(fixp);
+                aselp->unlinkDelete(dfg);
+                ++nImprovements;
+            } else {
+                // Attempt to fix up piece-wise at Sels applied to the ArraySel
+                nImprovements += fixUpSelSinks(dfg, aselp);
+                // Remove if became unused
+                if (!aselp->hasSinks()) aselp->unlinkDelete(dfg);
+            }
+        });
+        return nImprovements;
+    }
+
+public:
+    // Attempt to push Sel form Var through to the driving
+    // expression of the selected bits. This can fix things like
+    // 'a[1:0] = foo', 'a[2] = a[1]', which are somewhat common.
+    // Returns the number of drivers fixed up.
+    static size_t apply(DfgGraph& dfg, DfgVertexVar* varp) {
+        UINFO(9, "FixUpSelDrivers of " << varp->nodep()->name());
+        size_t nImprovements = 0;
+        if (varp->is<DfgVarPacked>()) {
+            // For Packed variables, fix up all Sels applied to it
+            nImprovements += fixUpSelSinks(dfg, varp);
+        } else if (varp->is<DfgVarArray>()) {
+            // For Array variables, fix up each ArraySel applied to it
+            nImprovements += fixUpArraySelSinks(dfg, varp);
+        }
         UINFO(9, "FixUpSelDrivers made " << nImprovements << " improvements");
         return nImprovements;
     }
 };
 
 class FixUpIndependentRanges final {
-    // Returns a bitmask set if that bit of 'varp' is used (has a sink)
-    static V3Number computeUsedBits(DfgVarPacked* varp) {
-        V3Number result{varp->fileline(), static_cast<int>(varp->width()), 0};
-        varp->forEachSink([&](DfgVertex& sink) {
+    // Returns a bitmask set if that bit of 'vtxp' is used (has a sink)
+    static V3Number computeUsedBits(DfgVertex* vtxp) {
+        V3Number result{vtxp->fileline(), static_cast<int>(vtxp->width()), 0};
+        vtxp->forEachSink([&result](DfgVertex& sink) {
             // If used via a Sel, mark the selected bits used
             if (DfgSel* const selp = sink.cast<DfgSel>()) {
                 uint32_t lsb = selp->lsb();
@@ -842,19 +922,29 @@ class FixUpIndependentRanges final {
                 for (uint32_t i = lsb; i <= msb; ++i) result.setBit(i, '1');
                 return;
             }
-
             // Used without a Sel, so all bits are used
             result.setAllBits1();
         });
         return result;
     }
 
-    // Trace drivers of independent bits of 'varp' in the range '[hi:lo]'
+    static std::string debugStr(DfgVertex* vtxp) {
+        if (DfgArraySel* const aselp = vtxp->cast<DfgArraySel>()) {
+            const size_t i = aselp->bitp()->as<DfgConst>()->toSizeT();
+            return debugStr(aselp->fromp()) + "[" + std::to_string(i) + "]";
+        }
+        if (DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>()) {
+            return varp->nodep()->name();
+        }
+        vtxp->v3fatalSrc("Unhandled node type");  // LCOV_EXCL_LINE
+    }
+
+    // Trace drivers of independent bits of 'vtxp' in the range '[hi:lo]'
     // append replacement terms to 'termps'. Returns number of successful
     // replacements.
     static size_t gatherTerms(std::vector<DfgVertex*>& termps, DfgGraph& dfg,
-                              DfgVarPacked* const varp, const V3Number& indpBits,
-                              const uint32_t hi, const uint32_t lo) {
+                              DfgVertex* const vtxp, const V3Number& indpBits, const uint32_t hi,
+                              const uint32_t lo) {
         size_t nImprovements = 0;
         // Iterate through consecutive dependent/non-dependet ranges within [hi:lo]
         bool isIndependent = indpBits.bitIs1(lo);
@@ -866,19 +956,19 @@ class FixUpIndependentRanges final {
             DfgVertex* termp = nullptr;
             // If the range is not self-dependent, attempt to trace its driver
             if (isIndependent) {
-                termp = TraceDriver::apply(dfg, varp, lsb, width, true);
+                termp = TraceDriver::apply(dfg, vtxp, lsb, width, true);
                 if (termp) {
                     ++nImprovements;
                 } else {
                     UINFO(5, "TraceDriver of independent range failed for "
-                                 << varp->nodep()->name() << "[" << msb << ":" << lsb << "]");
+                                 << debugStr(vtxp) << "[" << msb << ":" << lsb << "]");
                 }
             }
             // Fall back on using the part of the variable (if dependent, or trace failed)
             if (!termp) {
                 AstNodeDType* const dtypep = DfgVertex::dtypeForWidth(width);
-                DfgSel* const selp = new DfgSel{dfg, varp->fileline(), dtypep};
-                // Do not connect selp->fromp yet, need to do afer replacing 'varp'
+                DfgSel* const selp = new DfgSel{dfg, vtxp->fileline(), dtypep};
+                // Do not connect selp->fromp yet, need to do afer replacing 'vtxp'
                 selp->lsb(lsb);
                 termp = selp;
             }
@@ -891,41 +981,37 @@ class FixUpIndependentRanges final {
         return nImprovements;
     }
 
-public:
-    // Similar to FixUpSelDrivers, but first comptute which bits of the
-    // variable are self dependent, and fix up those that are independent
-    // but used.
-    static size_t apply(DfgGraph& dfg, DfgVarPacked* varp) {
-        UINFO(9, "FixUpIndependentRanges of " << varp->nodep()->name());
+    static size_t fixUpPacked(DfgGraph& dfg, DfgVertex* vtxp) {
+        UASSERT_OBJ(VN_IS(vtxp->dtypep(), BasicDType), vtxp, "Should be a packed BasicDType");
         size_t nImprovements = 0;
 
-        // Figure out which bits of 'varp' are used
-        const V3Number usedBits = computeUsedBits(varp);
-        UINFO(9, "Used        bits of '" << varp->nodep()->name() << "' are "
-                                         << usedBits.displayed(varp->nodep(), "%b"));
+        // Figure out which bits of 'vtxp' are used
+        const V3Number usedBits = computeUsedBits(vtxp);
+        UINFO(9, "Used        bits of '" << debugStr(vtxp) << "' are "
+                                         << usedBits.displayed(vtxp->fileline(), "%b"));
         // Nothing to do if no bits are used
         if (usedBits.isEqZero()) return 0;
 
-        // Figure out which bits of 'varp' are dependent on themselves
-        const V3Number indpBits = IndependentBits::apply(dfg, varp);
-        UINFO(9, "Independent bits of '" << varp->nodep()->name() << "' are "
-                                         << indpBits.displayed(varp->nodep(), "%b"));
+        // Figure out which bits of 'vtxp' are dependent of themselves
+        const V3Number indpBits = IndependentBits::apply(dfg, vtxp);
+        UINFO(9, "Independent bits of '" << debugStr(vtxp) << "' are "
+                                         << indpBits.displayed(vtxp->fileline(), "%b"));
         // Can't do anything if all bits are dependent
         if (indpBits.isEqZero()) return 0;
 
         {
             // Nothing to do if no used bits are independen (all used bits are dependent)
-            V3Number usedAndIndependent{varp->fileline(), static_cast<int>(varp->width()), 0};
+            V3Number usedAndIndependent{vtxp->fileline(), static_cast<int>(vtxp->width()), 0};
             usedAndIndependent.opAnd(usedBits, indpBits);
             if (usedAndIndependent.isEqZero()) return 0;
         }
 
-        // We are computing the terms to concatenate and replace 'varp' with
+        // We are computing the terms to concatenate and replace 'vtxp' with
         std::vector<DfgVertex*> termps;
 
         // Iterate through consecutive used/unused ranges
-        FileLine* const flp = varp->fileline();
-        const uint32_t width = varp->width();
+        FileLine* const flp = vtxp->fileline();
+        const uint32_t width = vtxp->width();
         bool isUsed = usedBits.bitIs1(0);  // Is current range used
         uint32_t lsb = 0;  // LSB of current range
         for (uint32_t msb = 0; msb < width; ++msb) {
@@ -933,7 +1019,7 @@ public:
             if (!endRange) continue;
             if (isUsed) {
                 // The range is used, compute the replacement terms
-                nImprovements += gatherTerms(termps, dfg, varp, indpBits, msb, lsb);
+                nImprovements += gatherTerms(termps, dfg, vtxp, indpBits, msb, lsb);
             } else {
                 // The range is not used, just use constant 0 as a placeholder
                 termps.emplace_back(new DfgConst{dfg, flp, msb - lsb + 1});
@@ -957,14 +1043,45 @@ public:
                 replacementp = catp;
             }
 
-            // Replace the variable
-            varp->replaceWith(replacementp);
+            // Replace the vertex
+            vtxp->replaceWith(replacementp);
             // Connect the Sel nodes in the replacement
             for (DfgVertex* const termp : termps) {
                 if (DfgSel* const selp = termp->cast<DfgSel>()) {
-                    if (!selp->fromp()) selp->fromp(varp);
+                    if (!selp->fromp()) selp->fromp(vtxp);
                 }
             }
+        }
+
+        return nImprovements;
+    }
+
+public:
+    // Similar to FixUpSelDrivers, but first comptute which bits of the
+    // variable are self dependent, and fix up those that are independent
+    // but used.
+    static size_t apply(DfgGraph& dfg, DfgVertexVar* varp) {
+        UINFO(9, "FixUpIndependentRanges of " << varp->nodep()->name());
+        size_t nImprovements = 0;
+
+        if (varp->is<DfgVarPacked>()) {
+            // For Packed variables, fix up as whole
+            nImprovements += fixUpPacked(dfg, varp);
+        } else if (varp->is<DfgVarArray>()) {
+            // For array variables, fix up element-wise
+            const uint32_t component = varp->getUser<uint32_t>();
+            varp->forEachSink([&](DfgVertex& sink) {
+                // Ignore if sink is not part of cycle
+                if (sink.getUser<uint32_t>() != component) return;
+                // Only handle ArraySels with constant index
+                DfgArraySel* const aselp = sink.cast<DfgArraySel>();
+                if (!aselp) return;
+                if (!aselp->bitp()->is<DfgConst>()) return;
+                // Fix up the word
+                nImprovements += fixUpPacked(dfg, aselp);
+                // Remove if became unused
+                if (!aselp->hasSinks()) aselp->unlinkDelete(dfg);
+            });
         }
 
         UINFO(9, "FixUpIndependentRanges made " << nImprovements << " improvements");
@@ -1022,14 +1139,11 @@ V3DfgPasses::breakCycles(const DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
 
         // Method 1: FixUpSelDrivers
         for (DfgVertexVar& vtx : res.varVertices()) {
-            // Only handle DfgVarPacked at this point
-            DfgVarPacked* const varp = vtx.cast<DfgVarPacked>();
-            if (!varp) continue;
             // If Variable is not part of a cycle, move on
-            const uint32_t component = varp->getUser<uint32_t>();
+            const uint32_t component = vtx.getUser<uint32_t>();
             if (!component) continue;
 
-            const size_t nFixed = FixUpSelDrivers::apply(res, varp);
+            const size_t nFixed = FixUpSelDrivers::apply(res, &vtx);
             if (nFixed) {
                 nImprovements += nFixed;
                 ctx.m_breakCyclesContext.m_nImprovements += nFixed;
@@ -1042,14 +1156,11 @@ V3DfgPasses::breakCycles(const DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
 
         // Method 2. FixUpIndependentRanges
         for (DfgVertexVar& vtx : res.varVertices()) {
-            // Only handle DfgVarPacked at this point
-            DfgVarPacked* const varp = vtx.cast<DfgVarPacked>();
-            if (!varp) continue;
             // If Variable is not part of a cycle, move on
-            const uint32_t component = varp->getUser<uint32_t>();
+            const uint32_t component = vtx.getUser<uint32_t>();
             if (!component) continue;
 
-            const size_t nFixed = FixUpIndependentRanges::apply(res, varp);
+            const size_t nFixed = FixUpIndependentRanges::apply(res, &vtx);
             if (nFixed) {
                 nImprovements += nFixed;
                 ctx.m_breakCyclesContext.m_nImprovements += nFixed;

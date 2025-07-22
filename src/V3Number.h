@@ -564,7 +564,6 @@ private:
         }
     }
     static string displayPad(size_t fmtsize, char pad, bool left, const string& in) VL_PURE;
-    string displayed(FileLine* fl, const string& vformat) const VL_MT_STABLE;
     string displayed(const string& vformat) const VL_MT_STABLE {
         return displayed(m_fileline, vformat);
     }
@@ -592,6 +591,7 @@ public:
     // ACCESSORS
     string ascii(bool prefixed = true, bool cleanVerilog = false) const VL_MT_STABLE;
     string displayed(AstNode* nodep, const string& vformat) const VL_MT_STABLE;
+    string displayed(FileLine* fl, const string& vformat) const VL_MT_STABLE;
     static bool displayedFmtLegal(char format, bool isScan);  // Is this a valid format letter?
     int width() const VL_MT_SAFE { return m_data.width(); }
     int widthToFit() const;  // Minimum width that can represent this number (~== log2(num)+1)
