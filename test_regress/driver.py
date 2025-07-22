@@ -4,6 +4,7 @@
 
 import argparse
 import collections
+import ctypes
 import glob
 import hashlib
 import json
@@ -14,6 +15,7 @@ import pickle
 import platform
 import pty
 import re
+import resource
 import runpy
 import shutil
 import signal
@@ -1365,6 +1367,19 @@ class VlTest:
                 VtOs.getenv_def('CFLAGS', ''), self.pli_filename
             ]
             self.run(logfile=self.obj_dir + "/pli_compile.log", fails=param['fails'], cmd=cmd)
+
+    def timeout(self, seconds):
+        """Limit the CPU time of the test - this limit is inherited
+        by all of the spawned child processess"""
+        #  An  unprivileged  process may set only its soft limit
+        #  to a value in the range from 0 up to the hard limit
+        _, hardlimit = resource.getrlimit(resource.RLIMIT_CPU)
+        softlimit = ctypes.c_long(min(seconds, ctypes.c_ulong(hardlimit).value)).value
+        # Casting is required due to a quirk in Python,
+        # rlimit values are interpreted as LONG, instead of ULONG
+        # https://github.com/python/cpython/issues/137044
+        rlimit = (softlimit, hardlimit)
+        resource.setrlimit(resource.RLIMIT_CPU, rlimit)
 
     def execute(self, **kwargs) -> None:
         """Run simulation executable.
