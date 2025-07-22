@@ -2784,7 +2784,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         return nullptr;
     }
-    static const AstVar* getNextGenericIfaceVar(const AstNode* stmtsp) {
+    // Find next variable reprezenting a generic interface inside module
+    static const AstVar* getNextGenericIfaceVarp(const AstNode* stmtsp) {
         if (!stmtsp) return nullptr;
         const AstVar* modIfaceVarp;
         do {
@@ -2793,7 +2794,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         } while ((!modIfaceVarp || modIfaceVarp->varType() != VVarType::IFACEREF) && stmtsp);
         return modIfaceVarp;
     }
-    void handleModuleWithGenericIface(AstCell* const nodep) {
+    // Introduce implicit parameters for modules with generic interafeces
+    void addImplicitParametersOfGenericIface(AstCell* const nodep) {
         if (const AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
             if (!modp->hasGenericIface()) return;
             // Get Param number
@@ -2809,7 +2811,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             for (const AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
                 if (pinp != nodep->pinsp() || !modIfaceVarp
                     || modIfaceVarp->varType() != VVarType::IFACEREF) {
-                    modIfaceVarp = getNextGenericIfaceVar(stmtsp);
+                    modIfaceVarp = getNextGenericIfaceVarp(stmtsp);
                     stmtsp = modIfaceVarp;
                     if (!stmtsp) {
                         // Error related to this is already being created elsewhere
@@ -2943,8 +2945,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // UINFOTREE(1, nodep->modp(), "", "linkcemd");
                 iterateChildren(nodep);
 
-                // Introduce values of implicit parameters of modules with generic interafeces
-                if (m_statep->forPrimary()) handleModuleWithGenericIface(nodep);
+                if (m_statep->forPrimary()) addImplicitParametersOfGenericIface(nodep);
             }
         }
         // Parent module inherits child's publicity
