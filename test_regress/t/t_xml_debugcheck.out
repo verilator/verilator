@@ -530,8 +530,6 @@
         </assign>
         <while loc="d,52,7,52,10">
           <begin>
-          </begin>
-          <begin>
             <neq loc="d,52,32,52,34" dtype_id="8">
               <const loc="d,52,37,52,41" name="4&apos;h4" dtype_id="11"/>
               <ccast loc="d,52,30,52,31" dtype_id="11">
@@ -1596,8 +1594,6 @@
         </assign>
         <while loc="a,0,0,0,0">
           <begin>
-          </begin>
-          <begin>
             <varref loc="a,0,0,0,0" name="__VnbaContinue" dtype_id="8"/>
           </begin>
           <begin>
@@ -1640,8 +1636,6 @@
               <varref loc="d,11,8,11,9" name="__VactContinue" dtype_id="8"/>
             </assign>
             <while loc="a,0,0,0,0">
-              <begin>
-              </begin>
               <begin>
                 <varref loc="a,0,0,0,0" name="__VactContinue" dtype_id="8"/>
               </begin>

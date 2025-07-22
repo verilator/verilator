@@ -81,7 +81,6 @@ class PremitVisitor final : public VNVisitor {
                                   && !constp->num().isString();  // Not a string
 
         AstVar* varp = nullptr;
-        AstAssign* assignp = nullptr;
 
         if (useConstPool) {
             // Extract into constant pool.
@@ -96,23 +95,19 @@ class PremitVisitor final : public VNVisitor {
             m_cfuncp->addInitsp(varp);
             ++m_temporaryVarsCreated;
 
-            // Put assignment before the referencing statement
-            assignp = new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep};
-            if (m_inWhileCondp) {
-                // Statements that are needed for the 'condition' in a while
-                // actually have to be put before & after the loop, since we
-                // can't do any statements in a while's (cond).
-                m_inWhileCondp->addPrecondsp(assignp);
-            } else {
-                m_stmtp->addHereThisAsNext(assignp);
-            }
+            // Assignment to put before the referencing statement
+            AstAssign* const assignp
+                = new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep};
+            // Insert before the statement
+            m_stmtp->addHereThisAsNext(assignp);
+            // Statements that are needed for the 'condition' in a while also
+            // need to be inserted on the back-edge to the loop header.
+            // 'incsp' is just right palce to do this
+            if (m_inWhileCondp) m_inWhileCondp->addIncsp(assignp->cloneTree(false));
         }
 
         // Replace node with VarRef to new Var
         relinker.relink(new AstVarRef{flp, varp, VAccess::READ});
-
-        // Handle wide expressions inside the expression recursively
-        if (assignp) iterate(assignp);
 
         // Return the temporary variable
         return varp;
@@ -186,7 +181,6 @@ class PremitVisitor final : public VNVisitor {
         UINFO(4, "  WHILE  " << nodep);
         // cppcheck-suppress shadowVariable  // Also restored below
         START_STATEMENT_OR_RETURN(nodep);
-        iterateAndNextNull(nodep->precondsp());
         {
             // cppcheck-suppress shadowVariable  // Also restored above
             VL_RESTORER(m_inWhileCondp);

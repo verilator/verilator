@@ -11,7 +11,4 @@
 %Error-UNSUPPORTED: t/t_interface_virtual_unsup.v:24:66: Unsupported: write to virtual interface in loop increment statement
    24 |       for (int i = 0; write_data(vif.data); i += int'(write_data(vif.data)));
       |                                                                  ^~~
-%Error-UNSUPPORTED: t/t_interface_virtual_unsup.v:25:34: Unsupported: write to virtual interface in loop condition
-   25 |       for (int i = 0; write_data(vif.data++); i++);
-      |                                  ^~~
 %Error: Exiting due to

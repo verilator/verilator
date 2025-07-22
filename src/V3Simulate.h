@@ -1043,8 +1043,6 @@ private:
             int loops = 0;
             while (true) {
                 UINFO(5, "    WHILE-ITER " << nodep);
-                iterateAndNextConstNull(nodep->precondsp());
-                if (jumpingOver(nodep)) break;
                 iterateAndNextConstNull(nodep->condp());
                 if (jumpingOver(nodep)) break;
                 if (!optimizable()) break;

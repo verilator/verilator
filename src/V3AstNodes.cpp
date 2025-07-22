@@ -1518,12 +1518,7 @@ void AstNodeStmt::addNextStmt(AstNode* newp, AstNode*) {
 void AstWhile::addNextStmt(AstNode* newp, AstNode* belowp) {
     // Special, as statements need to be put in different places
     // Belowp is how we came to recurse up to this point
-    // Preconditions insert first just before themselves (the normal rule
-    // for other statement types)
-    if (belowp == precondsp()) {
-        // Next in precond list
-        belowp->addNextHere(newp);
-    } else if (belowp == condp()) {
+    if (belowp == condp()) {
         // Becomes first statement in body, body may have been empty
         if (stmtsp()) {
             stmtsp()->addHereThisAsNext(newp);

@@ -75,8 +75,6 @@
             </assign>
             <while loc="d,18,5,18,8">
               <begin>
-              </begin>
-              <begin>
                 <gts loc="d,18,18,18,19" dtype_id="5">
                   <const loc="d,18,20,18,21" name="32&apos;sh7" dtype_id="4"/>
                   <varref loc="d,18,16,18,17" name="__Vfunc_vlvbound_test.foo__0__i" dtype_id="3"/>
@@ -142,8 +140,6 @@
               <varref loc="d,18,10,18,11" name="__Vfunc_vlvbound_test.foo__1__i" dtype_id="3"/>
             </assign>
             <while loc="d,18,5,18,8">
-              <begin>
-              </begin>
               <begin>
                 <gts loc="d,18,18,18,19" dtype_id="5">
                   <const loc="d,18,20,18,21" name="32&apos;sh7" dtype_id="4"/>

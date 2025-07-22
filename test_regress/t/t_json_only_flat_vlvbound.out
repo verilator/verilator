@@ -85,7 +85,7 @@
            "lhsp": [
             {"type":"VARREF","name":"__Vfunc_vlvbound_test.foo__0__i","addr":"(OC)","loc":"d,18:10,18:11","dtypep":"(GB)","access":"WR","varp":"(HB)","varScopep":"(FB)","classOrPackagep":"UNLINKED"}
           ],"timingControlp": []},
-          {"type":"WHILE","name":"","addr":"(PC)","loc":"d,18:5,18:8","precondsp": [],
+          {"type":"WHILE","name":"","addr":"(PC)","loc":"d,18:5,18:8",
            "condp": [
             {"type":"GTS","name":"","addr":"(QC)","loc":"d,18:18,18:19","dtypep":"(RC)",
              "lhsp": [
@@ -195,7 +195,7 @@
            "lhsp": [
             {"type":"VARREF","name":"__Vfunc_vlvbound_test.foo__1__i","addr":"(JE)","loc":"d,18:10,18:11","dtypep":"(GB)","access":"WR","varp":"(PB)","varScopep":"(OB)","classOrPackagep":"UNLINKED"}
           ],"timingControlp": []},
-          {"type":"WHILE","name":"","addr":"(KE)","loc":"d,18:5,18:8","precondsp": [],
+          {"type":"WHILE","name":"","addr":"(KE)","loc":"d,18:5,18:8",
            "condp": [
             {"type":"GTS","name":"","addr":"(LE)","loc":"d,18:18,18:19","dtypep":"(RC)",
              "lhsp": [

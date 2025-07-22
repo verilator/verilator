@@ -323,7 +323,6 @@ class LinkJumpVisitor final : public VNVisitor {
         VL_RESTORER(m_loopInc);
         m_loopp = nodep;
         m_loopInc = false;
-        iterateAndNextNull(nodep->precondsp());
         iterateAndNextNull(nodep->condp());
         iterateAndNextNull(nodep->stmtsp());
         m_loopInc = true;

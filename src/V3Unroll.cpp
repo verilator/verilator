@@ -82,13 +82,12 @@ class UnrollVisitor final : public VNVisitor {
         AstNode* const nodep,
         const VOptionBool& unrollFull,  // Pragma unroll_full, unroll_disable
         AstNode* const initp,  // Maybe under nodep (no nextp), or standalone (ignore nextp)
-        AstNode* const precondsp, AstNode* condp,
+        AstNode* condp,
         AstNode* const incp,  // Maybe under nodep or in bodysp
         AstNode* bodysp) {
         // To keep the IF levels low, we return as each test fails.
         UINFO(4, " FOR Check " << nodep);
         if (initp) UINFO(6, "    Init " << initp);
-        if (precondsp) UINFO(6, "    Pcon " << precondsp);
         if (condp) UINFO(6, "    Cond " << condp);
         if (incp) UINFO(6, "    Inc  " << incp);
 
@@ -136,7 +135,6 @@ class UnrollVisitor final : public VNVisitor {
         m_varAssignHit = false;
         m_forkHit = false;
         m_ignoreIncp = incp;
-        iterateAndNextNull(precondsp);
         iterateAndNextNull(bodysp);
         iterateAndNextNull(incp);
         m_varModeCheck = false;
@@ -172,15 +170,14 @@ class UnrollVisitor final : public VNVisitor {
                 int bodySize = 0;
                 int bodyLimit = v3Global.opt.unrollStmts();
                 if (loops > 0) bodyLimit = v3Global.opt.unrollStmts() / loops;
-                if (bodySizeOverRecurse(precondsp, bodySize /*ref*/, bodyLimit)
-                    || bodySizeOverRecurse(bodysp, bodySize /*ref*/, bodyLimit)
+                if (bodySizeOverRecurse(bodysp, bodySize /*ref*/, bodyLimit)
                     || bodySizeOverRecurse(incp, bodySize /*ref*/, bodyLimit)) {
                     return cantUnroll(nodep, "too many statements");
                 }
             }
         }
         // Finally, we can do it
-        if (!forUnroller(nodep, unrollFull, initAssp, condp, precondsp, incp, bodysp)) {
+        if (!forUnroller(nodep, unrollFull, initAssp, condp, incp, bodysp)) {
             return cantUnroll(nodep, "Unable to unroll loop");
         }
         VL_DANGLING(nodep);
@@ -268,7 +265,7 @@ class UnrollVisitor final : public VNVisitor {
     }
 
     bool forUnroller(AstNode* nodep, const VOptionBool& unrollFull, AstAssign* initp,
-                     AstNode* condp, AstNode* precondsp, AstNode* incp, AstNode* bodysp) {
+                     AstNode* condp, AstNode* incp, AstNode* bodysp) {
         UINFO(9, "forUnroller " << nodep);
         V3Number loopValue{nodep};
         if (!simulateTree(initp->rhsp(), nullptr, initp, loopValue)) {  //
@@ -279,10 +276,6 @@ class UnrollVisitor final : public VNVisitor {
             initp->unlinkFrBack();  // Always a single statement; nextp() may be nodep
             // Don't add to list, we do it once, and setting loop index isn't
             // needed if we have > 1 loop, as we're constant propagating it
-        }
-        if (precondsp) {
-            precondsp->unlinkFrBackWithNext();
-            stmtsp = AstNode::addNext(stmtsp, precondsp);
         }
         if (bodysp) {
             bodysp->unlinkFrBackWithNext();
@@ -374,7 +367,6 @@ class UnrollVisitor final : public VNVisitor {
             nodep->unlinkFrBack();
         }
         if (bodysp) VL_DO_DANGLING(pushDeletep(bodysp), bodysp);
-        if (precondsp) VL_DO_DANGLING(pushDeletep(precondsp), precondsp);
         if (initp) VL_DO_DANGLING(pushDeletep(initp), initp);
         if (incp && !incp->backp()) VL_DO_DANGLING(pushDeletep(incp), incp);
         if (debug() >= 9 && newbodysp) newbodysp->dumpTree("-  _new: ");
@@ -386,9 +378,6 @@ class UnrollVisitor final : public VNVisitor {
         if (m_varModeCheck || m_varModeReplace) {
         } else {
             // Constify before unroll call, as it may change what is underneath.
-            if (nodep->precondsp()) {
-                V3Const::constifyEdit(nodep->precondsp());  // precondsp may change
-            }
             if (nodep->condp()) V3Const::constifyEdit(nodep->condp());  // condp may change
             // Grab initial value
             AstNode* initp = nullptr;  // Should be statement before the while.
@@ -411,8 +400,7 @@ class UnrollVisitor final : public VNVisitor {
                 if (incp == stmtsp) stmtsp = nullptr;
             }
             // And check it
-            if (forUnrollCheck(nodep, nodep->unrollFull(), initp, nodep->precondsp(),
-                               nodep->condp(), incp, stmtsp)) {
+            if (forUnrollCheck(nodep, nodep->unrollFull(), initp, nodep->condp(), incp, stmtsp)) {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Did replacement
             }
         }
@@ -436,8 +424,8 @@ class UnrollVisitor final : public VNVisitor {
                 // condition, but they'll become while's which can be
                 // deleted by V3Const.
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-            } else if (forUnrollCheck(nodep, VOptionBool{}, nodep->initsp(), nullptr,
-                                      nodep->condp(), nodep->incsp(), nodep->stmtsp())) {
+            } else if (forUnrollCheck(nodep, VOptionBool{}, nodep->initsp(), nodep->condp(),
+                                      nodep->incsp(), nodep->stmtsp())) {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Did replacement
             } else {
                 nodep->v3error("For loop doesn't have genvar index, or is malformed");

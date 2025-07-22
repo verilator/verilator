@@ -310,7 +310,6 @@ class CoverageVisitor final : public VNVisitor {
         {
             VL_RESTORER(m_inLoopNotBody);
             m_inLoopNotBody = true;
-            iterateAndNextNull(nodep->precondsp());
             iterateNull(nodep->condp());
             iterateAndNextNull(nodep->incsp());
         }

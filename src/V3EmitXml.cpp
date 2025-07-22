@@ -129,9 +129,6 @@ class EmitXmlFileVisitor final : public VNVisitorConst {
     void visit(AstWhile* nodep) override {
         outputTag(nodep, "while");
         puts(">\n");
-        puts("<begin>\n");
-        iterateAndNextConstNull(nodep->precondsp());
-        puts("</begin>\n");
         if (nodep->condp()) {
             puts("<begin>\n");
             iterateAndNextConstNull(nodep->condp());

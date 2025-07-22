@@ -5189,7 +5189,6 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstWhile* nodep) override {
         assertAtStatement(nodep);
-        userIterateAndNext(nodep->precondsp(), nullptr);
         iterateCheckBool(nodep, "For Test Condition", nodep->condp(),
                          BOTH);  // it's like an if() condition.
         userIterateAndNext(nodep->stmtsp(), nullptr);
