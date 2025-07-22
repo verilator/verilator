@@ -345,16 +345,19 @@ class ExtractCyclicComponents final {
     void fixEdges(DfgVertexVar& vtx) {
         const size_t component = state(vtx).component;
 
-        // All variable vertices have at most a single source, and only variable
-        // vertices can have multiple sinks, therefore the source must be either:
-        // - in the same component as the variable vertex
-        // - be a variable vertex itself, which might be in a different component
-        // The later case will be fixed up when handling the source variable
-        DfgVertex* const srcp = vtx.srcp();
-        UASSERT_OBJ(!srcp || srcp->is<DfgVertexVar>() || state(*srcp).component == component, &vtx,
-                    "Driver of DfgVertexVar must be in the same component");
+        // Fix up sources in a different component
+        vtx.forEachSourceEdge([&](DfgEdge& edge, size_t) {
+            DfgVertex* const srcp = edge.sourcep();
+            if (!srcp) return;
+            const size_t sourceComponent = state(*srcp).component;
+            // Same component is OK
+            if (sourceComponent == component) return;
+            // Relink the source to write the clone
+            edge.unlinkSource();
+            getClone(vtx, sourceComponent).srcp(srcp);
+        });
 
-        // Fix up sinks in a differetn component
+        // Fix up sinks in a different component
         vtx.forEachSinkEdge([&](DfgEdge& edge) {
             const size_t sinkComponent = state(*edge.sinkp()).component;
             // Same component is OK
