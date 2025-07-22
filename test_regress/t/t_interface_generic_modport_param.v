@@ -15,6 +15,7 @@ endinterface
 
 module GenericModule (interface.mp a);
   initial begin
+    #1;
     if (a.lparam != 12) $stop;
     if (a.v != 7) $stop;
   end

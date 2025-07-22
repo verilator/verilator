@@ -2415,7 +2415,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     int m_indent = 0;  // Indentation (tree depth) for debug
     bool m_inSens = false;  // True if in senitem
     bool m_inWith = false;  // True if in with
-    bool m_genericIfaceModule = false;  // If is in module with generic interface
+    bool m_genericIfaceModule = false;  // True if in module containing generic interface
     std::map<std::string, AstNode*> m_ifClassImpNames;  // Names imported from interface class
     std::set<AstClass*> m_extendsParam;  // Classes that have a parameterized super class
                                          // (except the default instances)
@@ -2783,7 +2783,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         return nullptr;
     }
-    // Find next variable reprezenting a generic interface inside module
+    // Find next variable representing a generic interface inside module
     static const AstVar* getNextGenericIfaceVarp(const AstNode* stmtsp) {
         if (!stmtsp) return nullptr;
         const AstVar* modIfaceVarp;
@@ -2794,71 +2794,66 @@ class LinkDotResolveVisitor final : public VNVisitor {
         return modIfaceVarp;
     }
     // Introduce implicit parameters for modules with generic interafeces
-    void addImplicitParametersOfGenericIface(AstCell* const nodep) {
-        if (const AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
-            if (!modp->hasGenericIface()) return;
-            // Get Param number
-            size_t paramNum = 1;
-            for (AstPin* paramp = nodep->paramsp(); paramp;
-                 paramp = VN_CAST(paramp->nextp(), Pin)) {
-                ++paramNum;
-            }
+    void addImplicitParametersOfGenericIface(AstCell* const nodep, const AstModule* const modp) {
+        // Get Param number
+        size_t paramNum = 1;
+        for (AstPin* paramp = nodep->paramsp(); paramp; paramp = VN_CAST(paramp->nextp(), Pin)) {
+            ++paramNum;
+        }
 
-            // Add each implicit parameter type
-            const AstNode* stmtsp = modp->stmtsp();
-            const AstVar* modIfaceVarp = VN_CAST(stmtsp, Var);
-            for (const AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
-                if (pinp != nodep->pinsp() || !modIfaceVarp
-                    || modIfaceVarp->varType() != VVarType::IFACEREF) {
-                    modIfaceVarp = getNextGenericIfaceVarp(stmtsp);
-                    stmtsp = modIfaceVarp;
-                    if (!stmtsp) {
-                        // Error related to this is already being created elsewhere
-                        break;
-                    }
+        // Add each implicit parameter type
+        const AstNode* stmtsp = modp->stmtsp();
+        const AstVar* modIfaceVarp = VN_CAST(stmtsp, Var);
+        for (const AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
+            if (pinp != nodep->pinsp() || !modIfaceVarp
+                || modIfaceVarp->varType() != VVarType::IFACEREF) {
+                modIfaceVarp = getNextGenericIfaceVarp(stmtsp);
+                stmtsp = modIfaceVarp;
+                if (!stmtsp) {
+                    // Error related to this is already being created elsewhere
+                    break;
                 }
-                if (!VN_IS(modIfaceVarp->childDTypep(), IfaceGenericDType)) continue;
-                AstNode* exprp = pinp->exprp();
-                while (const AstNodePreSel* const preSelp = VN_CAST(exprp, NodePreSel)) {
-                    exprp = preSelp->fromp();
-                }
-                if (const AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
-                    const AstVar* const varp = varRefp->varp();
-                    if (const AstIfaceRefDType* const refp
-                        = VN_CAST(getElemDTypep(varp->childDTypep()), IfaceRefDType)) {
-                        AstIface* const iface = VN_AS(refp->cellp()->modp(), Iface);
-                        AstIfaceRefDType* newIfaceRefp;
-                        if (refp->modportp()) {
-                            newIfaceRefp = new AstIfaceRefDType(
-                                refp->fileline(), refp->modportFileline(), m_modp->name(),
-                                iface->name(), refp->modportName());
-                        } else {
-                            newIfaceRefp = new AstIfaceRefDType(refp->fileline(), m_modp->name(),
-                                                                iface->name());
-                            newIfaceRefp->modportp(refp->modportp());
-                        }
-                        newIfaceRefp->ifacep(iface);
-                        if (refp->cellp() && refp->cellp()->paramsp()) {
-                            newIfaceRefp->addParamsp(refp->cellp()->paramsp()->cloneTree(true));
-                        }
-                        UASSERT_OBJ(pinp->name().find("__pinNumber") == 0
-                                        || pinp->name() == modIfaceVarp->name(),
-                                    pinp, "Not found interface with such name");
-                        AstPin* const newPinp
-                            = new AstPin(pinp->fileline(), paramNum,
-                                         "__VGIfaceParam" + modIfaceVarp->name(), newIfaceRefp);
-                        newPinp->param(true);
-                        visit(newPinp);
-                        nodep->addParamsp(newPinp);
-                    }
-                } else {
-                    modIfaceVarp->v3error(
-                        "Interface port "
-                        << modIfaceVarp->prettyNameQ()
-                        << " is not connected to interface/modport pin expression");
-                }
-                ++paramNum;
             }
+            if (!VN_IS(modIfaceVarp->childDTypep(), IfaceGenericDType)) continue;
+            AstNode* exprp = pinp->exprp();
+            while (const AstNodePreSel* const preSelp = VN_CAST(exprp, NodePreSel)) {
+                exprp = preSelp->fromp();
+            }
+            if (const AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
+                const AstVar* const varp = varRefp->varp();
+                if (const AstIfaceRefDType* const refp
+                    = VN_CAST(getElemDTypep(varp->childDTypep()), IfaceRefDType)) {
+                    AstIface* const iface = VN_AS(refp->cellp()->modp(), Iface);
+                    AstIfaceRefDType* newIfaceRefp;
+                    if (refp->modportp()) {
+                        newIfaceRefp = new AstIfaceRefDType(
+                            refp->fileline(), refp->modportFileline(), m_modp->name(),
+                            iface->name(), refp->modportName());
+                    } else {
+                        newIfaceRefp = new AstIfaceRefDType(refp->fileline(), m_modp->name(),
+                                                            iface->name());
+                        newIfaceRefp->modportp(refp->modportp());
+                    }
+                    newIfaceRefp->ifacep(iface);
+                    if (refp->cellp() && refp->cellp()->paramsp()) {
+                        newIfaceRefp->addParamsp(refp->cellp()->paramsp()->cloneTree(true));
+                    }
+                    UASSERT_OBJ(pinp->name().find("__pinNumber") == 0
+                                    || pinp->name() == modIfaceVarp->name(),
+                                pinp, "Not found interface with such name");
+                    AstPin* const newPinp
+                        = new AstPin(pinp->fileline(), paramNum,
+                                     "__VGIfaceParam" + modIfaceVarp->name(), newIfaceRefp);
+                    newPinp->param(true);
+                    visit(newPinp);
+                    nodep->addParamsp(newPinp);
+                }
+            } else {
+                modIfaceVarp->v3error("Interface port "
+                                      << modIfaceVarp->prettyNameQ()
+                                      << " is not connected to interface/modport pin expression");
+            }
+            ++paramNum;
         }
     }
 
@@ -2944,7 +2939,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // UINFOTREE(1, nodep->modp(), "", "linkcemd");
                 iterateChildren(nodep);
 
-                if (m_statep->forPrimary()) addImplicitParametersOfGenericIface(nodep);
+                if (m_statep->forPrimary())
+                    if (const AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
+                        if (modp->hasGenericIface())
+                            addImplicitParametersOfGenericIface(nodep, modp);
+                    }
             }
         }
         // Parent module inherits child's publicity
@@ -3045,7 +3044,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(8, indent() << m_ds.ascii());
         const DotStates lastStates = m_ds;
         const bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
-        const LinkDotResolveVisitor::DotPosition initialDotPos = m_ds.m_dotPos;
+        const DotPosition initialDotPos = m_ds.m_dotPos;
         VL_RESTORER(m_randSymp);
         {
             if (start) {  // Starting dot sequence

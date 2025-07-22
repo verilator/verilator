@@ -1,5 +1,5 @@
-%Warning-PINMISSING: t/t_interface_generic_bad2.v:25:17: Instance has missing pin: 'b'
-   25 |   GenericModule genericModule (inf_inst);
+%Warning-PINMISSING: t/t_interface_generic_bad2.v:26:17: Instance has missing pin: 'b'
+   26 |   GenericModule genericModule (inf_inst);
       |                 ^~~~~~~~~~~~~
                      t/t_interface_generic_bad2.v:15:46: ... Location of port declaration
    15 | module GenericModule (interface a, interface b);

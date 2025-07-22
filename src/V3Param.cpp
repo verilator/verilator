@@ -903,7 +903,7 @@ class ParamProcessor final {
     }
 
     // Set interfaces types inside generic modules
-    // to the corresponding values of a implicit parameter
+    // to the corresponding values of implicit parameters
     static void genericInterfaceVarSetup(const AstPin* const paramsp, const AstPin* const pinsp) {
         std::unordered_map<string, const AstPin*> paramspMap;
         for (const AstNode* nodep = paramsp; nodep; nodep = nodep->nextp()) {

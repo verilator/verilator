@@ -10,6 +10,7 @@ endinterface
 
 module GenericModule#(type T, type Y = int) (interface a);
   initial begin
+    #1;
     if (a.v != 7) $stop;
   end
 endmodule

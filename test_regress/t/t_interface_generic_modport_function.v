@@ -20,6 +20,7 @@ endinterface
 
 module GenericModule (interface.mp a);
   initial begin
+    #1;
     if (a.get() != 4) $stop;
   end
 endmodule

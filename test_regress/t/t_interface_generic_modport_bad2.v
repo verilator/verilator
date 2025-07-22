@@ -13,6 +13,7 @@ endinterface
 
 module GenericModule (interface.mp a);
   initial begin
+    #1;
     a.v = 10;
   end
 endmodule

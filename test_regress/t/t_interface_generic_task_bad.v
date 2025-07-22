@@ -21,7 +21,8 @@ endmodule
 module t;
   inf inf_inst();
   GenericModule genericModule (inf_inst);
-  always begin
+  initial begin
+    #1;
     if (inf_inst.v != 3) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
