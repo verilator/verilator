@@ -10,6 +10,7 @@ endinterface
 
 module GenericModule (interface a);
   initial begin
+    #1;
     if (a.v != 7) $stop;
     if (a.PARAM != 13) $stop;
   end

@@ -16,6 +16,7 @@ endinterface
 
 module GenericModule (interface.mp a);
   initial begin
+    #1;
     if (a.v != 3) $stop;
   end
 endmodule

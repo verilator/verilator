@@ -1,9 +1,9 @@
-%Error: t/t_interface_generic_bad.v:18:3: Cannot find file containing interface: 'inf'
-   18 |   inf inf_inst();
+%Error: t/t_interface_generic_bad.v:19:3: Cannot find file containing interface: 'inf'
+   19 |   inf inf_inst();
       |   ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_interface_generic_bad.v:20:32: Found definition of 'inf_inst' as a CELL but expected a variable
-   20 |   GenericModule genericModule (inf_inst, inf_inst2);
+%Error: t/t_interface_generic_bad.v:21:32: Found definition of 'inf_inst' as a CELL but expected a variable
+   21 |   GenericModule genericModule (inf_inst, inf_inst2);
       |                                ^~~~~~~~
 %Error: t/t_interface_generic_bad.v:11:33: Interface port 'a' is not connected to interface/modport pin expression
    11 | module GenericModule (interface a, interface b);

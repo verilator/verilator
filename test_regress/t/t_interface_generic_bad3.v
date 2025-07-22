@@ -10,6 +10,7 @@ endclass
 
 module GenericModule (interface a);
   initial begin
+    #1;
     if (a.v != 7) $stop;
     if (b.k != 9) $stop;
   end

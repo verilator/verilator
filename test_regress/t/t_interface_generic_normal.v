@@ -10,6 +10,7 @@ endinterface
 
 module GenericModule (interface a, inf b, interface c);
   initial begin
+    #1;
     if (a.v != 7) $stop;
     if (b.v != 8) $stop;
     if (c.v != 9) $stop;

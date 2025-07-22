@@ -14,6 +14,7 @@ endinterface
 
 module GenericModule (interface a);
   initial begin
+    #1;
     if (a.get() != 4) $stop;
   end
 endmodule

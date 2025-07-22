@@ -21,6 +21,7 @@ module t;
   inf inf_inst();
   GenericModule genericModule (inf_inst);
   initial begin
+    #1;
     if (inf_inst.v != 7) $stop;
     $write("*-* All Finished *-*\n");
     $finish;

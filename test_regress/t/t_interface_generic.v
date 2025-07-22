@@ -14,6 +14,7 @@ endinterface
 
 module GenericModule (interface a, interface b);
   initial begin
+    #1;
     if (a.v != 7) $stop;
     if (b.k != 9) $stop;
   end

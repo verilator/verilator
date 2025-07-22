@@ -31,6 +31,7 @@ module t;
   inf i();
   Gm g(.a(i));
   initial begin
+    #1;
     if (i.v != 35) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
