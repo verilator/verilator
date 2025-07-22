@@ -731,11 +731,8 @@ void EmitCSyms::emitSymImp() {
         puts("#endif  // VM_TRACE\n");
     }
     if (v3Global.opt.profPgo()) {
-        // Do not overwrite data during the last hierarchical stage.
-        const string firstHierCall
-            = (v3Global.opt.hierBlocks().empty() || v3Global.opt.hierChild()) ? "true" : "false";
         puts("_vm_pgoProfiler.write(\"" + topClassName()
-             + "\", _vm_contextp__->profVltFilename(), " + firstHierCall + ");\n");
+             + "\", _vm_contextp__->profVltFilename());\n");
     }
     puts("}\n");
 
@@ -837,6 +834,9 @@ void EmitCSyms::emitSymImp() {
 
     if (v3Global.opt.profPgo()) {
         puts("// Configure profiling for PGO\n");
+        if (!v3Global.opt.hierChild()) {
+            puts("_vm_pgoProfiler.configure(_vm_contextp__->profVltFilename());\n");
+        }
         if (v3Global.opt.mtasks()) {
             v3Global.rootp()->topModulep()->foreach([&](const AstExecGraph* execGraphp) {
                 for (const V3GraphVertex& vtx : execGraphp->depGraphp()->vertices()) {
