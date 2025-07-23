@@ -2194,8 +2194,6 @@ public:
     // Used by AstNode::broken()
     bool brokeExists() const { return V3Broken::isLinkable(this); }
     bool brokeExistsAbove() const { return brokeExists() && (m_brokenState >> 7); }
-    bool brokeExistsBelow() const { return brokeExists() && !(m_brokenState >> 7); }
-    // Note: brokeExistsBelow is not quite precise, as it is true for sibling nodes as well
 
     // CONSTRUCTORS
     virtual ~AstNode() = default;
