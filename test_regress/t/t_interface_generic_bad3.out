@@ -1,24 +1,9 @@
-%Error: t/t_interface_generic_bad3.v:15:9: Can't find definition of scope/variable: 'b'
+%Error: t/t_interface_generic_bad4.v:15:9: Can't find definition of scope/variable: 'b'
    15 |     if (b.k != 9) $stop;
       |         ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_interface_generic_bad3.v:20:3: Cannot find file containing interface: 'inf'
-   20 |   inf inf_inst();
-      |   ^~~
-%Error: t/t_interface_generic_bad3.v:21:32: Found definition of 'inf_inst' as a CELL but expected a variable
-   21 |   GenericModule genericModule (inf_inst);
-      |                                ^~~~~~~~
-%Error: t/t_interface_generic_bad3.v:11:33: Interface port 'a' is not connected to interface/modport pin expression
-   11 | module GenericModule (interface a);
-      |                                 ^
-%Error: t/t_interface_generic_bad3.v:23:5: Dotted reference to instance that refers to missing module/interface: 'inf'
-   23 |     inf_inst.v = 7;
-      |     ^~~~~~~~
-%Error: t/t_interface_generic_bad3.v:23:14: Can't find definition of 'v' in dotted variable/method: 'inf_inst.v'
-   23 |     inf_inst.v = 7;
-      |              ^
-%Error: t/t_interface_generic_bad3.v:24:5: Can't find definition of scope/variable: 'inf_inst2'
-                                         : ... Suggested alternative: 'inf_inst'
-   24 |     inf_inst2.k = 9;
-      |     ^~~~~~~~~
+%Error-PINNOTFOUND: t/t_interface_generic_bad4.v:21:42: Pin not found: '__pinNumber2'
+   21 |   GenericModule genericModule (inf_inst, inf_inst);
+      |                                          ^~~~~~~~
+                    ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest
 %Error: Exiting due to
