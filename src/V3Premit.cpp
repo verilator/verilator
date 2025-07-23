@@ -46,6 +46,7 @@ class PremitVisitor final : public VNVisitor {
 
     // STATE - across all visitors
     VDouble0 m_extractedToConstPool;  // Statistic tracking
+    VDouble0 m_temporaryVarsCreated;  // Statistic tracking
 
     // STATE - for current visit position (use VL_RESTORER)
     AstCFunc* m_cfuncp = nullptr;  // Current block
@@ -62,12 +63,12 @@ class PremitVisitor final : public VNVisitor {
         if (!nodep->isWide()) return;  // Not wide
         if (m_assignLhs) return;  // This is an lvalue!
         UASSERT_OBJ(!VN_IS(nodep->firstAbovep(), ArraySel), nodep, "Should have been ignored");
-        createWideTemp(nodep);
+        createTemp(nodep);
     }
 
-    AstVar* createWideTemp(AstNodeExpr* nodep) {
+    AstVar* createTemp(AstNodeExpr* nodep) {
         UASSERT_OBJ(m_stmtp, nodep, "Attempting to create temporary with no insertion point");
-        UINFO(4, "createWideTemp: " << nodep);
+        UINFO(4, "createTemp: " << nodep);
 
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
@@ -93,6 +94,7 @@ class PremitVisitor final : public VNVisitor {
             const std::string name = "__Vtemp_" + std::to_string(++m_tmpVarCnt);
             varp = new AstVar{flp, VVarType::STMTTEMP, name, nodep->dtypep()};
             m_cfuncp->addInitsp(varp);
+            ++m_temporaryVarsCreated;
 
             // Put assignment before the referencing statement
             assignp = new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep};
@@ -221,9 +223,10 @@ class PremitVisitor final : public VNVisitor {
             }
         }
 
-        if (rhsReadsLhs(nodep)) {
-            // Need to do this even if not wide, as e.g. a select may be on a wide operator
-            createWideTemp(nodep->rhsp());
+        // If the RHS reads the LHS, we need a temporary unless the update is atomic
+        const bool isAtomic = VN_IS(nodep->lhsp(), VarRef) && !nodep->lhsp()->isWide();
+        if (!isAtomic && rhsReadsLhs(nodep)) {
+            createTemp(nodep->rhsp());
         } else {
             iterateAndNextNull(nodep->rhsp());
         }
@@ -290,7 +293,7 @@ class PremitVisitor final : public VNVisitor {
     void visit(AstCvtPackedToArray* nodep) override {
         iterateChildren(nodep);
         checkNode(nodep);
-        if (!VN_IS(nodep->backp(), NodeAssign)) createWideTemp(nodep);
+        if (!VN_IS(nodep->backp(), NodeAssign)) createTemp(nodep);
     }
     void visit(AstCvtUnpackedToQueue* nodep) override {
         iterateChildren(nodep);
@@ -330,7 +333,7 @@ class PremitVisitor final : public VNVisitor {
             && !VN_IS(nodep->condp(), VarRef)) {
             // We're going to need the expression several times in the expanded code,
             // so might as well make it a common expression
-            createWideTemp(nodep->condp());
+            createTemp(nodep->condp());
             VIsCached::clearCacheTree();
         }
         checkNode(nodep);
@@ -342,7 +345,7 @@ class PremitVisitor final : public VNVisitor {
         for (AstNodeExpr *expp = nodep->exprsp(), *nextp; expp; expp = nextp) {
             nextp = VN_AS(expp->nextp(), NodeExpr);
             if (expp->isString() && !VN_IS(expp, VarRef)) {
-                AstVar* const varp = createWideTemp(expp);
+                AstVar* const varp = createTemp(expp);
                 // Do not remove VarRefs to this in V3Const
                 varp->noSubst(true);
             }
@@ -360,6 +363,8 @@ public:
     ~PremitVisitor() override {
         V3Stats::addStat("Optimizations, Prelim extracted value to ConstPool",
                          m_extractedToConstPool);
+        V3Stats::addStat("Optimizations, Prelim temporary variables created",
+                         m_temporaryVarsCreated);
     }
 };
 
