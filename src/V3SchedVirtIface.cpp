@@ -201,7 +201,6 @@ private:
         }
     }
     void visit(AstWhile* nodep) override {
-        unsupportedWriteToVirtIface(nodep->precondsp(), "loop condition");
         unsupportedWriteToVirtIface(nodep->condp(), "loop condition");
         unsupportedWriteToVirtIface(nodep->incsp(), "loop increment statement");
         {

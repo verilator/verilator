@@ -401,7 +401,6 @@ class LifeVisitor final : public VNVisitor {
         LifeBlock* const bodyLifep = new LifeBlock{prevLifep, m_statep};
         {
             m_lifep = condLifep;
-            iterateAndNextNull(nodep->precondsp());
             iterateAndNextNull(nodep->condp());
         }
         {

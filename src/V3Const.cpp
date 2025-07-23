@@ -3352,14 +3352,10 @@ class ConstVisitor final : public VNVisitor {
         if (m_doNConst) {
             if (nodep->condp()->isZero()) {
                 UINFO(4, "WHILE(0) => nop " << nodep);
-                if (nodep->precondsp()) {
-                    nodep->replaceWith(nodep->precondsp());
-                } else {
-                    nodep->v3warn(UNUSEDLOOP,
-                                  "Loop condition is always false; body will never execute");
-                    nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
-                    nodep->unlinkFrBack();
-                }
+                nodep->v3warn(UNUSEDLOOP,
+                              "Loop condition is always false; body will never execute");
+                nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
+                nodep->unlinkFrBack();
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (nodep->condp()->isNeqZero()) {
                 if (!thisWhileHasJumpDelay) {

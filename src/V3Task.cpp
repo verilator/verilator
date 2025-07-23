@@ -1588,11 +1588,8 @@ class TaskVisitor final : public VNVisitor {
     }
     void visit(AstWhile* nodep) override {
         // Special, as statements need to be put in different places
-        // Preconditions insert first just before themselves (the normal
-        // rule for other statement types)
-        m_insStmtp = nullptr;  // First thing should be new statement
-        iterateAndNextNull(nodep->precondsp());
         // Conditions insert first at end of precondsp.
+        // TODO: is this right? This is how it used to be.
         m_insStmtp = nodep;
         iterateAndNextNull(nodep->condp());
         // Body insert just before themselves

@@ -365,13 +365,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         putfs(nodep, "end\n");
     }
     void visit(AstWhile* nodep) override {
-        iterateAndNextConstNull(nodep->precondsp());
         putfs(nodep, "while (");
         iterateAndNextConstNull(nodep->condp());
         puts(") begin\n");
         iterateAndNextConstNull(nodep->stmtsp());
         iterateAndNextConstNull(nodep->incsp());
-        iterateAndNextConstNull(nodep->precondsp());  // Need to recompute before next loop
         putfs(nodep, "end\n");
     }
     void visit(AstNodeIf* nodep) override {

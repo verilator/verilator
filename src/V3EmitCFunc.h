@@ -1014,13 +1014,11 @@ public:
     }
     void visit(AstWhile* nodep) override {
         VL_RESTORER(m_createdScopeHash);
-        iterateAndNextConstNull(nodep->precondsp());
         putns(nodep, "while (");
         iterateAndNextConstNull(nodep->condp());
         puts(") {\n");
         iterateAndNextConstNull(nodep->stmtsp());
         iterateAndNextConstNull(nodep->incsp());
-        iterateAndNextConstNull(nodep->precondsp());  // Need to recompute before next loop
         puts("}\n");
     }
     void visit(AstNodeIf* nodep) override {

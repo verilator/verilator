@@ -3737,10 +3737,9 @@ public:
     bool isTimingControl() const override { return true; }
 };
 class AstWhile final : public AstNodeStmt {
-    // @astgen op1 := precondsp : List[AstNode]
-    // @astgen op2 := condp : AstNodeExpr
-    // @astgen op3 := stmtsp : List[AstNode]
-    // @astgen op4 := incsp : List[AstNode]
+    // @astgen op1 := condp : AstNodeExpr
+    // @astgen op2 := stmtsp : List[AstNode]
+    // @astgen op3 := incsp : List[AstNode]
     VOptionBool m_unrollFull;  // Full, disable, or default unrolling
 public:
     AstWhile(FileLine* fl, AstNodeExpr* condp, AstNode* stmtsp = nullptr, AstNode* incsp = nullptr)
