@@ -798,10 +798,18 @@ class WidthVisitor final : public VNVisitor {
             iterateCheckSizedSelf(nodep, "RHS", nodep->countp(), SELF, BOTH);
             V3Const::constifyParamsNoWarnEdit(nodep->countp());  // rhsp may change
 
-            uint32_t times = 1;
+            int32_t times = 1;  // IEEE replicate value is integral
 
             const AstConst* const constp = VN_CAST(nodep->countp(), Const);
-            if (constp) times = constp->toUInt();
+            if (constp) {
+                if (constp->num().isFourState() || constp->num().isNegative()) {
+                    nodep->v3error("Replication value of < 0 or X/Z not legal"
+                                   " (IEEE 1800-2023 11.4.12.1): "
+                                   << constp->prettyNameQ());
+                } else {
+                    times = constp->toSInt();
+                }
+            }
 
             AstNodeDType* const vdtypep = m_vup->dtypeNullSkipRefp();
             if (VN_IS(vdtypep, QueueDType) || VN_IS(vdtypep, DynArrayDType)
