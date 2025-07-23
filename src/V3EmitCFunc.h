@@ -326,6 +326,7 @@ public:
         VL_RESTORER(m_createdScopeHash);
         m_cfuncp = nodep;
         m_instantiatesOwnProcess = false;
+        m_labelNumbers.clear(); // No need to save/restore, all Jumps must be within the function
 
         splitSizeInc(nodep);
 
