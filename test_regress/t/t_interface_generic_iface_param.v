@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface inf #(PARAM);
-  int v;
+  logic[PARAM-1:0] v;
 endinterface
 
 module GenericModule (interface a);

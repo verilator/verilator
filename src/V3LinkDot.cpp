@@ -2823,18 +2823,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 const AstVar* const varp = varRefp->varp();
                 if (const AstIfaceRefDType* const refp
                     = VN_CAST(getElemDTypep(varp->childDTypep()), IfaceRefDType)) {
-                    AstIface* const iface = VN_AS(refp->cellp()->modp(), Iface);
+                    AstIface* const ifacep = VN_AS(refp->cellp()->modp(), Iface);
                     AstIfaceRefDType* newIfaceRefp;
                     if (refp->modportp()) {
                         newIfaceRefp = new AstIfaceRefDType(
                             refp->fileline(), refp->modportFileline(), m_modp->name(),
-                            iface->name(), refp->modportName());
+                            ifacep->name(), refp->modportName());
                     } else {
                         newIfaceRefp = new AstIfaceRefDType(refp->fileline(), m_modp->name(),
-                                                            iface->name());
-                        newIfaceRefp->modportp(refp->modportp());
+                                                            ifacep->name());
                     }
-                    newIfaceRefp->ifacep(iface);
+                    newIfaceRefp->ifacep(ifacep);
                     if (refp->cellp() && refp->cellp()->paramsp()) {
                         newIfaceRefp->addParamsp(refp->cellp()->paramsp()->cloneTree(true));
                     }
