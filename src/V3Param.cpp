@@ -934,7 +934,7 @@ class ParamProcessor final {
             }
         }
 
-        UASSERT(paramspMap.empty(), "Every generic interface implicit param is used");
+        UASSERT(paramspMap.empty(), "Not every generic interface implicit param is used");
     }
 
     bool nodeDeparamCommon(AstNode* nodep, AstNodeModule*& srcModpr, AstPin* paramsp,

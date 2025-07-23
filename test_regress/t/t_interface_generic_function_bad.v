@@ -8,10 +8,6 @@ interface inf;
   int v;
 endinterface
 
-interface inf2;
-  int k;
-endinterface
-
 module GenericModule (interface a);
   initial begin
     #1;
