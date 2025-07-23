@@ -45,8 +45,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class LinkJumpVisitor final : public VNVisitor {
     // NODE STATE
-    //  AstNode::user1()    -> AstJumpLabel*, for this block if endOfIter
-    //  AstNode::user2()    -> AstJumpLabel*, for this block if !endOfIter
+    //  AstNode::user1()       -> AstJumpBlock*, for body of this loop
+    //  AstNode::user2()       -> AstJumpBlock*, for this block
     //  AstNodeBlock::user3()  -> bool, true if contains a fork
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
@@ -65,36 +65,34 @@ class LinkJumpVisitor final : public VNVisitor {
         "__VprocessQueue"};  // Names for queues needed for 'disable' handling
 
     // METHODS
-    AstJumpLabel* findAddLabel(AstNode* nodep, bool endOfIter) {
-        // Put label under given node, and if WHILE optionally at end of iteration
-        UINFO(4, "Create label for " << nodep);
-        if (VN_IS(nodep, JumpLabel)) return VN_AS(nodep, JumpLabel);  // Done
+    // Get (and create if necessary) the JumpBlock for this statement
+    AstJumpBlock* getJumpBlock(AstNode* nodep, bool endOfIter) {
+        // Wrap 'nodep' in JumpBlock. If loop, wrap the body instead if endOfIter is true
+        UINFO(4, "Create JumpBlock for " << nodep);
 
         // Made it previously?  We always jump to the end, so this works out
         if (endOfIter) {
-            if (nodep->user1p()) return VN_AS(nodep->user1p(), JumpLabel);
+            if (nodep->user1p()) return VN_AS(nodep->user1p(), JumpBlock);
         } else {
-            if (nodep->user2p()) return VN_AS(nodep->user2p(), JumpLabel);
+            if (nodep->user2p()) return VN_AS(nodep->user2p(), JumpBlock);
         }
 
         AstNode* underp = nullptr;
         bool under_and_next = true;
-        if (VN_IS(nodep, NodeBlock)) {
-            underp = VN_AS(nodep, NodeBlock)->stmtsp();
-        } else if (VN_IS(nodep, NodeFTask)) {
-            underp = VN_AS(nodep, NodeFTask)->stmtsp();
-        } else if (VN_IS(nodep, Foreach)) {
+        if (AstNodeBlock* const blockp = VN_CAST(nodep, NodeBlock)) {
+            underp = blockp->stmtsp();
+        } else if (AstNodeFTask* const fTaskp = VN_CAST(nodep, NodeFTask)) {
+            underp = fTaskp->stmtsp();
+        } else if (AstForeach* const foreachp = VN_CAST(nodep, Foreach)) {
             if (endOfIter) {
-                underp = VN_AS(nodep, Foreach)->stmtsp();
+                underp = foreachp->stmtsp();
             } else {
                 underp = nodep;
                 under_and_next = false;  // IE we skip the entire foreach
             }
-        } else if (VN_IS(nodep, While)) {
+        } else if (AstWhile* const whilep = VN_CAST(nodep, While)) {
             if (endOfIter) {
-                // Note we jump to end of bodysp; a FOR loop has its
-                // increment under incsp() which we don't skip
-                underp = VN_AS(nodep, While)->stmtsp();
+                underp = whilep->stmtsp();
             } else {
                 underp = nodep;
                 under_and_next = false;  // IE we skip the entire while
@@ -118,36 +116,32 @@ class LinkJumpVisitor final : public VNVisitor {
         UASSERT_OBJ(underp, nodep, "Break/disable/continue not under expected statement");
         UINFO(5, "  Underpoint is " << underp);
 
-        if (VN_IS(underp, JumpLabel)) {
-            return VN_AS(underp, JumpLabel);
-        } else {  // Move underp stuff to be under a new label
-            AstJumpBlock* const blockp = new AstJumpBlock{nodep->fileline(), nullptr};
-            AstJumpLabel* const labelp = new AstJumpLabel{nodep->fileline(), blockp};
-            blockp->labelp(labelp);
-
-            VNRelinker repHandle;
-            if (under_and_next) {
-                underp->unlinkFrBackWithNext(&repHandle);
-            } else {
-                underp->unlinkFrBack(&repHandle);
-            }
-            repHandle.relink(blockp);
-
-            blockp->addStmtsp(underp);
-            // Keep any AstVars under the function not under the new JumpLabel
-            for (AstNode *nextp, *varp = underp; varp; varp = nextp) {
-                nextp = varp->nextp();
-                if (VN_IS(varp, Var)) blockp->addHereThisAsNext(varp->unlinkFrBack());
-            }
-            // Label goes last
-            blockp->addEndStmtsp(labelp);
-            if (endOfIter) {
-                nodep->user1p(labelp);
-            } else {
-                nodep->user2p(labelp);
-            }
-            return labelp;
+        // If already wrapped, we are done ...
+        if (!underp->nextp() || !under_and_next) {
+            if (AstJumpBlock* const blockp = VN_CAST(underp, JumpBlock)) return blockp;
         }
+
+        // Move underp stuff to be under a new AstJumpBlock
+        VNRelinker repHandle;
+        if (under_and_next) {
+            underp->unlinkFrBackWithNext(&repHandle);
+        } else {
+            underp->unlinkFrBack(&repHandle);
+        }
+        AstJumpBlock* const blockp = new AstJumpBlock{nodep->fileline(), underp};
+        if (endOfIter) {
+            nodep->user1p(blockp);
+        } else {
+            nodep->user2p(blockp);
+        }
+        repHandle.relink(blockp);
+
+        // Keep any AstVars under the function not under the new JumpLabel
+        for (AstNode *nextp, *varp = underp; varp; varp = nextp) {
+            nextp = varp->nextp();
+            if (VN_IS(varp, Var)) blockp->addHereThisAsNext(varp->unlinkFrBack());
+        }
+        return blockp;
     }
     void addPrefixToBlocksRecurse(const std::string& prefix, AstNode* const nodep) {
         // Add a prefix to blocks
@@ -379,8 +373,8 @@ class LinkJumpVisitor final : public VNVisitor {
                     nodep->lhsp()->unlinkFrBackWithNext()});
             }
             // Jump to the end of the function call
-            AstJumpLabel* const labelp = findAddLabel(m_ftaskp, false);
-            nodep->addHereThisAsNext(new AstJumpGo{nodep->fileline(), labelp});
+            AstJumpBlock* const blockp = getJumpBlock(m_ftaskp, false);
+            nodep->addHereThisAsNext(new AstJumpGo{nodep->fileline(), blockp});
         }
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -391,8 +385,8 @@ class LinkJumpVisitor final : public VNVisitor {
             nodep->v3error("break isn't underneath a loop");
         } else {
             // Jump to the end of the loop
-            AstJumpLabel* const labelp = findAddLabel(m_loopp, false);
-            nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
+            AstJumpBlock* const blockp = getJumpBlock(m_loopp, false);
+            nodep->addNextHere(new AstJumpGo{nodep->fileline(), blockp});
         }
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -404,8 +398,8 @@ class LinkJumpVisitor final : public VNVisitor {
         } else {
             // Jump to the end of this iteration
             // If a "for" loop then need to still do the post-loop increment
-            AstJumpLabel* const labelp = findAddLabel(m_loopp, true);
-            nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
+            AstJumpBlock* const blockp = getJumpBlock(m_loopp, true);
+            nodep->addNextHere(new AstJumpGo{nodep->fileline(), blockp});
         }
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -444,8 +438,8 @@ class LinkJumpVisitor final : public VNVisitor {
                                       "Unsupported: disabling block that contains a fork");
                     } else {
                         // Jump to the end of the named block
-                        AstJumpLabel* const labelp = findAddLabel(beginp, false);
-                        nodep->addNextHere(new AstJumpGo{nodep->fileline(), labelp});
+                        AstJumpBlock* const blockp = getJumpBlock(beginp, false);
+                        nodep->addNextHere(new AstJumpGo{nodep->fileline(), blockp});
                     }
                 } else {
                     nodep->v3warn(E_UNSUPPORTED, "disable isn't underneath a begin with name: '"

@@ -38,6 +38,7 @@
 #include <algorithm>
 #include <memory>
 #include <type_traits>
+#include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -912,7 +913,6 @@ class ConstVisitor final : public VNVisitor {
     // ** only when m_warn/m_doExpensive is set.  If state is needed other times,
     // ** must track down everywhere V3Const is called and make sure no overlaps.
     // AstVar::user4p           -> Used by variable marking/finding
-    // AstJumpLabel::user4      -> bool.  Set when AstJumpGo uses this label
     // AstEnum::user4           -> bool.  Recursing.
 
     // STATE
@@ -938,6 +938,7 @@ class ConstVisitor final : public VNVisitor {
     static uint32_t s_globalPassNum;  // Counts number of times ConstVisitor invoked as global pass
     V3UniqueNames m_concswapNames;  // For generating unique temporary variable names
     std::map<const AstNode*, bool> m_containsMemberAccess;  // Caches results of matchBiopToBitwise
+    std::unordered_set<AstJumpBlock*> m_usedJumpBlocks;  // JumpBlocks used by some JumpGo
 
     // METHODS
 
@@ -2303,19 +2304,6 @@ class ConstVisitor final : public VNVisitor {
         }
         return false;
     }
-    bool replaceJumpGoNext(AstJumpGo* nodep, AstNode* abovep) {
-        // If JumpGo has an upper JumpBlock that is to same label, then
-        // code will by normal sequential operation do the JUMPGO and it
-        // can be removed.
-        if (nodep->nextp()) return false;  // Label jumps other statements
-        AstJumpBlock* const aboveBlockp = VN_CAST(abovep, JumpBlock);
-        if (!aboveBlockp) return false;
-        if (aboveBlockp != nodep->labelp()->blockp()) return false;
-        if (aboveBlockp->endStmtsp() != nodep->labelp()) return false;
-        UINFO(4, "JUMPGO => last remove " << nodep);
-        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-        return true;
-    }
 
     // Boolean replacements
     bool operandBoolShift(const AstNode* nodep) {
@@ -3402,52 +3390,39 @@ class ConstVisitor final : public VNVisitor {
     // Jump elimination
 
     void visit(AstJumpGo* nodep) override {
-        iterateChildren(nodep);
-        // Jump to label where label immediately follows this JumpGo is not useful
-        if (nodep->labelp() == VN_CAST(nodep->nextp(), JumpLabel)) {
-            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-            // Keep the label, might be other jumps pointing to it, gets cleaned later
-            return;
-        }
-        if (m_doExpensive) {
-            // Any non-label statements (at this statement level) can never execute
-            while (nodep->nextp() && !VN_IS(nodep->nextp(), JumpLabel)) {
-                pushDeletep(nodep->nextp()->unlinkFrBack());
+        // Any statements following the JumpGo (at this statement level) never execute, delete
+        if (nodep->nextp()) pushDeletep(nodep->nextp()->unlinkFrBackWithNext());
+
+        // JumpGo as last statement in target JumpBlock (including last in a last sub-list),
+        // is a no-op, remove it.
+        for (AstNode* abovep = nodep->abovep(); abovep; abovep = abovep->abovep()) {
+            if (abovep == nodep->blockp()) {
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
             }
-            // If last statement in a jump label we have JumpLabel(...., JumpGo)
-            // Often caused by "return" in a Verilog function.  The Go is pointless, remove.
-            if (replaceJumpGoNext(nodep, nodep->abovep())) return;
-            // Also optimize If with a then or else's final statement being this JumpGo
-            // We only do single ifs... Ideally we'd look at control flow and delete any
-            // Jumps where any following control flow point is the label
-            if (!nodep->nextp()) {
-                if (AstNodeIf* const aboveIfp = VN_CAST(nodep->abovep(), NodeIf)) {
-                    if (!aboveIfp->nextp()) {
-                        if (replaceJumpGoNext(nodep, aboveIfp->abovep())) return;
-                    }
-                }
-            }
-            nodep->labelp()->blockp()->user4(true);
+            // Stop if not doing expensive, or if the above node is not the last in its list,
+            // ... or if it's not an 'if' TODO: it would be enough if it was not a branch.
+            if (!m_doExpensive || abovep->nextp() || !VN_IS(abovep, If)) break;
         }
+        // Mark JumpBlock as used
+        m_usedJumpBlocks.emplace(nodep->blockp());
         m_hasJumpDelay = true;
     }
 
     void visit(AstJumpBlock* nodep) override {
-        // Because JumpLabels disable many optimizations,
-        // remove JumpLabels that are not pointed to by any AstJumpGos
-        // Note this assumes all AstJumpGos are underneath the given label; V3Broken asserts this
         iterateChildren(nodep);
-        // AstJumpGo's below here that point to this node will set user4
-        if (m_doExpensive && !nodep->user4()) {
+
+        // Remove if empty
+        if (!nodep->stmtsp()) {
+            UINFO(4, "JUMPLABEL => empty " << nodep);
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+
+        // If no JumpGo points to this node, replace it with its body
+        if (!m_usedJumpBlocks.count(nodep)) {
             UINFO(4, "JUMPLABEL => unused " << nodep);
-            AstNode* underp = nullptr;
-            if (nodep->stmtsp()) underp = nodep->stmtsp()->unlinkFrBackWithNext();
-            if (underp) {
-                nodep->replaceWith(underp);
-            } else {
-                nodep->unlinkFrBack();
-            }
-            pushDeletep(nodep->labelp()->unlinkFrBack());
+            nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }

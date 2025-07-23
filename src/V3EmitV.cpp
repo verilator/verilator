@@ -20,6 +20,7 @@
 
 #include "V3EmitCBase.h"
 
+#include <unordered_map>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -37,6 +38,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     bool m_suppressVarSemi = false;  // Suppress emitting semicolon for AstVars
     bool m_arrayPost = false;  // Print array information that goes after identifier (vs after)
     std::deque<AstNodeArrayDType*> m_packedps;  // Packed arrays to print with BasicDType
+    std::unordered_map<AstJumpBlock*, size_t> m_labelNumbers;  // Label numbers for JumpBlocks
 
     // METHODS
     virtual void puts(const string& str) = 0;
@@ -308,14 +310,23 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         puts(");\n");
     }
     void visit(AstJumpBlock* nodep) override {
-        putbs("begin : label" + cvtToStr(nodep->labelNum()) + "\n");
-        if (nodep->stmtsp()) iterateAndNextConstNull(nodep->stmtsp());
+        // Allocate label number
+        const size_t n = m_labelNumbers.size();
+        const bool newEntry = m_labelNumbers.emplace(nodep, n).second;
+        UASSERT_OBJ(newEntry, nodep, "AstJumpBlock visited twide");
+        // Emit
+        putbs("begin : label" + std::to_string(n) + "\n");
+        iterateAndNextConstNull(nodep->stmtsp());
         puts("end\n");
     }
     void visit(AstJumpGo* nodep) override {
-        putbs("disable label" + cvtToStr(nodep->labelp()->blockp()->labelNum()) + ";\n");
+        // Retrieve target label number - Sometimes EmitV is used by debug code,
+        // so allow printing with an unknown target
+        const auto it = m_labelNumbers.find(nodep->blockp());
+        const std::string label
+            = it != m_labelNumbers.end() ? "label" + std::to_string(it->second) : "<UNKNOWN>";
+        putbs("disable " + label + ";\n");
     }
-    void visit(AstJumpLabel* nodep) override { putbs("// " + cvtToStr(nodep->blockp()) + ":\n"); }
     void visit(AstNodeReadWriteMem* nodep) override {
         putfs(nodep, nodep->verilogKwd());
         putbs("(");

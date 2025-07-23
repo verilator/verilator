@@ -320,9 +320,7 @@ class HasherVisitor final : public VNVisitorConst {
         });
     }
     void visit(AstJumpGo* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
-            iterateConstNull(nodep->labelp());
-        });
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {});
     }
     void visit(AstTraceInc* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //

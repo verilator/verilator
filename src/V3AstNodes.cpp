@@ -1139,10 +1139,6 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep, bool overMembers) {
     return nodep;
 }
 
-const char* AstJumpBlock::broken() const {
-    BROKEN_RTN(!labelp()->brokeExistsBelow());
-    return nullptr;
-}
 bool AstJumpBlock::isPure() {
     if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
     return m_purity.get();
@@ -1979,28 +1975,17 @@ AstNodeExpr* AstInitArray::getIndexDefaultedValuep(uint64_t index) const {
 void AstJumpGo::dump(std::ostream& str) const {
     this->AstNodeStmt::dump(str);
     str << " -> ";
-    if (labelp()) {
-        labelp()->dump(str);
-    } else {
-        str << "%E:UNLINKED";
-    }
-}
-void AstJumpGo::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-const char* AstJumpGo::broken() const {
-    BROKEN_RTN(!labelp()->brokeExistsBelow());
-    return nullptr;
-}
-
-void AstJumpLabel::dump(std::ostream& str) const {
-    this->AstNodeStmt::dump(str);
-    str << " -> ";
     if (blockp()) {
         blockp()->dump(str);
     } else {
         str << "%E:UNLINKED";
     }
 }
-void AstJumpLabel::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstJumpGo::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+const char* AstJumpGo::broken() const {
+    BROKEN_RTN(!blockp()->brokeExistsAbove());
+    return nullptr;
+}
 
 void AstMemberDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);

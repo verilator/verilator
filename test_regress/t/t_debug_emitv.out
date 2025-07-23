@@ -116,10 +116,10 @@ module Vt_debug_emitv_t;
     endtask
     function f;
         input int signed v;
-        begin : label0
+        begin : label1
             $display("stmt");
             f = ((v == 'sh0) ? 'sh63 : ((~ v) + 'sh1));
-            disable label0;
+            disable label1;
         end
     endfunction
     initial begin
@@ -203,12 +203,12 @@ module Vt_debug_emitv_t;
             begin : unnamedblk3
                 int signed i;
                 i = 'sh0;
-                begin : label0
+                begin : label2
                     while ((i < cyc)) begin
                         begin
                             sum = (sum + i);
                             if ((sum > 'sha)) begin
-                                disable label0;
+                                disable label2;
                             end
                             else begin
                                 sum = (sum + 'sh1);
@@ -390,13 +390,13 @@ module Vt_debug_emitv_sub;
     endtask
     function f;
         input int signed v;
-        begin : label0
+        begin : label3
             if ((v == 'sh0)) begin
                 f = 'sh21;
-                disable label0;
+                disable label3;
             end
             f = ({32'h1{{31'h0, v[2]}}} + 32'h1);
-            disable label0;
+            disable label3;
         end
     endfunction
     real r;

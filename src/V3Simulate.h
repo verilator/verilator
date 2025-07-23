@@ -397,10 +397,9 @@ private:
         UASSERT_OBJ(vscp, nodep, "Not linked");
         return vscp;
     }
-    bool jumpingOver(const AstNode* nodep) const {
-        // True to jump over this node - all visitors must call this up front
-        return (m_jumpp && m_jumpp->labelp() != nodep);
-    }
+
+    // True if current node might be jumped over - all visitors must call this up front
+    bool jumpingOver() const { return m_jumpp; }
     void assignOutValue(AstNodeAssign* nodep, AstNode* vscp, const AstNodeExpr* valuep) {
         if (VN_IS(nodep, AssignDly)) {
             // Don't do setValue, as value isn't yet visible to following statements
@@ -413,7 +412,7 @@ private:
 
     // VISITORS
     void visit(AstAlways* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
     }
@@ -421,7 +420,7 @@ private:
         // Sensitivities aren't inputs per se; we'll keep our tree under the same sens.
     }
     void visit(AstVarRef* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!optimizable()) return;  // Accelerate
         UASSERT_OBJ(nodep->varp(), nodep, "Unlinked");
         iterateChildrenConst(nodep->varp());
@@ -490,7 +489,7 @@ private:
         }
     }
     void visit(AstVarXRef* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (m_scoped) {
             badNodeType(nodep);
             return;
@@ -500,7 +499,7 @@ private:
         }
     }
     void visit(AstNodeFTask* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!m_params) {
             badNodeType(nodep);
             return;
@@ -520,7 +519,7 @@ private:
         iterateChildrenConst(nodep);
     }
     void visit(AstInitialStatic* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!m_params) {
             badNodeType(nodep);
             return;
@@ -529,7 +528,7 @@ private:
         iterateChildrenConst(nodep);
     }
     void visit(AstNodeIf* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         UINFO(5, "   IF " << nodep);
         checkNodeInfo(nodep);
         if (m_checkOnly) {
@@ -856,7 +855,7 @@ private:
         }
     }
     void visit(AstNodeAssign* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
 
@@ -900,7 +899,7 @@ private:
         iterateChildrenConst(nodep);
     }
     void visit(AstNodeCase* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         UINFO(5, "   CASE " << nodep);
         checkNodeInfo(nodep);
         if (m_checkOnly) {
@@ -939,7 +938,7 @@ private:
 
     void visit(AstCaseItem* nodep) override {
         // Real handling is in AstNodeCase
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
     }
@@ -947,12 +946,12 @@ private:
     void visit(AstComment*) override {}
 
     void visit(AstStmtExpr* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
     }
     void visit(AstExprStmt* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         checkNodeInfo(nodep);
         iterateAndNextConstNull(nodep->stmtsp());
         if (!optimizable()) return;
@@ -962,30 +961,24 @@ private:
     }
 
     void visit(AstJumpBlock* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         iterateChildrenConst(nodep);
+        if (m_jumpp && m_jumpp->blockp() == nodep) {
+            UINFO(5, "   JUMP DONE " << nodep);
+            m_jumpp = nullptr;
+        }
     }
     void visit(AstJumpGo* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         checkNodeInfo(nodep);
         if (!m_checkOnly) {
             UINFO(5, "   JUMP GO " << nodep);
             m_jumpp = nodep;
         }
     }
-    void visit(AstJumpLabel* nodep) override {
-        // This only supports forward jumps. That's all we make at present,
-        // AstJumpGo::broken uses brokeExistsBelow() to check this.
-        if (jumpingOver(nodep)) return;
-        checkNodeInfo(nodep);
-        iterateChildrenConst(nodep);
-        if (m_jumpp && m_jumpp->labelp() == nodep) {
-            UINFO(5, "   JUMP DONE " << nodep);
-            m_jumpp = nullptr;
-        }
-    }
+
     void visit(AstStop* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (m_params) {  // This message seems better than an obscure $stop
             // The spec says $stop is just ignored, it seems evil to ignore assertions
             clearOptimizable(
@@ -1030,7 +1023,7 @@ private:
 
     void visit(AstWhile* nodep) override {
         // Doing lots of Whiles is slow, so only for parameters
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         UINFO(5, "   WHILE " << nodep);
         if (!m_params) {
             badNodeType(nodep);
@@ -1044,15 +1037,15 @@ private:
             while (true) {
                 UINFO(5, "    WHILE-ITER " << nodep);
                 iterateAndNextConstNull(nodep->condp());
-                if (jumpingOver(nodep)) break;
+                if (jumpingOver()) break;
                 if (!optimizable()) break;
                 if (!fetchConst(nodep->condp())->num().isNeqZero()) {  //
                     break;
                 }
                 iterateAndNextConstNull(nodep->stmtsp());
-                if (jumpingOver(nodep)) break;
+                if (jumpingOver()) break;
                 iterateAndNextConstNull(nodep->incsp());
-                if (jumpingOver(nodep)) break;
+                if (jumpingOver()) break;
 
                 // Prep for next loop
                 if (loops++
@@ -1068,7 +1061,7 @@ private:
     }
 
     void visit(AstFuncRef* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!optimizable()) return;  // Accelerate
         UINFO(5, "   FUNCREF " << nodep);
         checkNodeInfo(nodep);
@@ -1140,7 +1133,7 @@ private:
     }
 
     void visit(AstVar* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!m_params) {
             badNodeType(nodep);
             return;
@@ -1148,12 +1141,12 @@ private:
     }
 
     void visit(AstScopeName* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         // Ignore
     }
 
     void visit(AstSFormatF* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
@@ -1214,7 +1207,7 @@ private:
     }
 
     void visit(AstDisplay* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!optimizable()) return;  // Accelerate
         // We ignore isPredictOptimizable as $display is often in constant
         // functions and we want them to work if used with parameters
@@ -1242,11 +1235,11 @@ private:
         // Some CMethods such as size() on queues could be supported, but
         // instead we should change those methods to new Ast types so we can
         // properly dispatch them
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         knownBadNodeType(nodep);
     }
     void visit(AstMemberSel* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         knownBadNodeType(nodep);
     }
     // ====
@@ -1255,7 +1248,7 @@ private:
     //   AstCoverInc, AstFinish,
     //   AstRand, AstTime, AstUCFunc, AstCCall, AstCStmt, AstUCStmt
     void visit(AstNode* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         badNodeType(nodep);
     }
 
