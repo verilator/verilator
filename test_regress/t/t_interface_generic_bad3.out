@@ -1,8 +1,8 @@
-%Error: t/t_interface_generic_bad4.v:15:9: Can't find definition of scope/variable: 'b'
+%Error: t/t_interface_generic_bad3.v:15:9: Can't find definition of scope/variable: 'b'
    15 |     if (b.k != 9) $stop;
       |         ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error-PINNOTFOUND: t/t_interface_generic_bad4.v:21:42: Pin not found: '__pinNumber2'
+%Error-PINNOTFOUND: t/t_interface_generic_bad3.v:21:42: Pin not found: '__pinNumber2'
    21 |   GenericModule genericModule (inf_inst, inf_inst);
       |                                          ^~~~~~~~
                     ... For error description see https://verilator.org/warn/PINNOTFOUND?v=latest

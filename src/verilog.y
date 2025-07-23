@@ -1577,6 +1577,7 @@ port<nodep>:                    // ==IEEE: port
                           AstIfaceGenericDType* const refdtypep = new AstIfaceGenericDType($<fl>2);
                           VARDTYPE(refdtypep); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $4, $5));
+                          VARDECL(VAR);
                         }
         |       portDirNetE yINTERFACE      '.' idAny/*modport*/ portSig rangeListE sigAttrListE
                         {
@@ -1591,6 +1592,7 @@ port<nodep>:                    // ==IEEE: port
                           AstIfaceGenericDType* const refdtypep = new AstIfaceGenericDType($<fl>2, $<fl>4, *$4);
                           VARDTYPE(refdtypep); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $6, $7));
+                          VARDECL(VAR);
                         }
         //
         |       portDirNetE yINTERCONNECT signingE rangeListE portSig variable_dimensionListE sigAttrListE

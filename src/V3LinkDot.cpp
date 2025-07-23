@@ -2784,13 +2784,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
         return nullptr;
     }
     // Find next variable representing a generic interface inside module
-    static const AstVar* getNextGenericIfaceVarp(const AstNode* stmtsp) {
+    static const AstVar* getNextVarp(const AstNode* stmtsp) {
         if (!stmtsp) return nullptr;
         const AstVar* modIfaceVarp;
         do {
             stmtsp = stmtsp->nextp();
             modIfaceVarp = VN_CAST(stmtsp, Var);
-        } while ((!modIfaceVarp || modIfaceVarp->varType() != VVarType::IFACEREF) && stmtsp);
+        } while (!modIfaceVarp && stmtsp);
         return modIfaceVarp;
     }
     // Introduce implicit parameters for modules with generic interafeces
@@ -2805,16 +2805,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
         const AstNode* stmtsp = modp->stmtsp();
         const AstVar* modIfaceVarp = VN_CAST(stmtsp, Var);
         for (const AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
-            if (pinp != nodep->pinsp() || !modIfaceVarp
-                || modIfaceVarp->varType() != VVarType::IFACEREF) {
-                modIfaceVarp = getNextGenericIfaceVarp(stmtsp);
+            if (pinp != nodep->pinsp() || !modIfaceVarp) {
+                modIfaceVarp = getNextVarp(stmtsp);
+                if (!modIfaceVarp) break;
                 stmtsp = modIfaceVarp;
-                if (!stmtsp) {
-                    // Error related to this is already being created elsewhere
-                    break;
-                }
             }
-            if (!VN_IS(modIfaceVarp->childDTypep(), IfaceGenericDType)) continue;
+            if (!VN_IS(modIfaceVarp->childDTypep(), IfaceGenericDType)
+                || modIfaceVarp->varType() != VVarType::IFACEREF
+                || !VN_IS(modIfaceVarp->childDTypep(), IfaceGenericDType)) {
+                continue;
+            }
             AstNode* exprp = pinp->exprp();
             while (const AstNodePreSel* const preSelp = VN_CAST(exprp, NodePreSel)) {
                 exprp = preSelp->fromp();
