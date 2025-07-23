@@ -266,7 +266,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
         getNeedsProcDepVtx(nodep);
         addFlags(nodep, T_ALLOCS_PROC);
         if (VN_IS(nodep, Always)) {
-            UINFO(1, "Always does " << (nodep->needProcess() ? "" : "NOT ") << "need process");
+            UINFO(9, "Always does " << (nodep->needProcess() ? "" : "NOT ") << "need process");
         }
         iterateChildren(nodep);
     }

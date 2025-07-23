@@ -3340,7 +3340,7 @@ class WidthVisitor final : public VNVisitor {
                                              << nodep->fromp()->prettyTypeName()
                                              << "' which is a '"
                                              << nodep->fromp()->dtypep()->prettyTypeName() << "'");
-            nodep->dtypep(m_vup->dtypeNullp());
+            nodep->dtypeSetVoid();
         }
     }
     AstWith* methodWithArgument(AstNodeFTaskRef* nodep, bool required, bool arbReturn,
