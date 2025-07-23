@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <map>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -117,7 +118,7 @@ public:
 class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     VMemberMap m_memberMap;
     AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
-    int m_labelNum = 0;  // Next label number
+    std::unordered_map<AstJumpBlock*, size_t> m_labelNumbers;  // Label numbers for JumpBlocks
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCExpr
     bool m_emitConstInit = false;  // Emitting constant initializer
     bool m_createdScopeHash = false;  // Already created a scope hash
@@ -325,6 +326,7 @@ public:
         VL_RESTORER(m_createdScopeHash);
         m_cfuncp = nodep;
         m_instantiatesOwnProcess = false;
+        m_labelNumbers.clear();  // No need to save/restore, all Jumps must be within the function
 
         splitSizeInc(nodep);
 
@@ -993,24 +995,28 @@ public:
         puts(";\n");
     }
     void visit(AstJumpBlock* nodep) override {
-        nodep->labelNum(++m_labelNum);
+        // Allocate label number
+        const size_t n = m_labelNumbers.size();
+        const bool newEntry = m_labelNumbers.emplace(nodep, n).second;
+        UASSERT_OBJ(newEntry, nodep, "AstJumpBlock visited twide");
+        // Emit
         putns(nodep, "{\n");  // Make it visually obvious label jumps outside these
         VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->stmtsp());
-        iterateAndNextConstNull(nodep->endStmtsp());
+        puts("__Vlabel" + std::to_string(n) + ": ;\n");
         puts("}\n");
+    }
+    void visit(AstJumpGo* nodep) override {
+        // Retrieve target label number - must already exist (from enclosing AstJumpBlock)
+        const size_t n = m_labelNumbers.at(nodep->blockp());
+        // Emit
+        putns(nodep, "goto __Vlabel" + std::to_string(n) + ";\n");
     }
     void visit(AstCLocalScope* nodep) override {
         putns(nodep, "{\n");
         VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->stmtsp());
         puts("}\n");
-    }
-    void visit(AstJumpGo* nodep) override {
-        putns(nodep, "goto __Vlabel" + cvtToStr(nodep->labelp()->blockp()->labelNum()) + ";\n");
-    }
-    void visit(AstJumpLabel* nodep) override {
-        putns(nodep, "__Vlabel" + cvtToStr(nodep->blockp()->labelNum()) + ": ;\n");
     }
     void visit(AstWhile* nodep) override {
         VL_RESTORER(m_createdScopeHash);

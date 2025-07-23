@@ -3279,14 +3279,13 @@ public:
     bool isDelayed() const { return m_delayed; }
 };
 class AstJumpBlock final : public AstNodeStmt {
-    // Block of code including a single JumpLabel, and 0+ JumpGo's to that label
+    // Block of code that might contain AstJumpGo statements as children,
+    // which when exectued branch to right after the referenced AstJumpBlock.
+    // AstJumpBlocks can nest, and an AstJumpGo can reference any of the
+    // enclosing AstJumpBlocks (can break out of mulitple levels).
     // Parents:  {statement list}
-    // Children: {statement list, with JumpGo and JumpLabel below}
+    // Children: {statement list, with JumpGo below}
     // @astgen op1 := stmtsp : List[AstNode]
-    // @astgen op2 := endStmtsp : List[AstNode]
-    //
-    // @astgen ptr := m_labelp : AstJumpLabel  // [After V3Jump] Pointer to declaration
-    int m_labelNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
     VIsCached m_purity;  // Pure state
 public:
     // After construction must call ->labelp to associate with appropriate label
@@ -3295,65 +3294,34 @@ public:
         addStmtsp(stmtsp);
     }
     ASTGEN_MEMBERS_AstJumpBlock;
-    const char* broken() const override;
     int instrCount() const override { return 0; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
-    int labelNum() const { return m_labelNum; }
-    void labelNum(int flag) { m_labelNum = flag; }
-    AstJumpLabel* labelp() const { return m_labelp; }
-    void labelp(AstJumpLabel* labelp) { m_labelp = labelp; }
     bool isPure() override;
 
 private:
     bool getPurityRecurse() const;
 };
 class AstJumpGo final : public AstNodeStmt {
-    // Jump point; branch down to a JumpLabel
-    // No support for backward jumps at present
-    // Parents:  {statement list with JumpBlock above}
+    // Branch to right after the referenced encloding AstJumpBlock
+    // Parents:  statement, including the referenced AstJumpBlock
     // Children: none
     //
-    // @astgen ptr := m_labelp : AstJumpLabel  // [After V3Jump] Pointer to declaration
+    // @astgen ptr := m_blockp : AstJumpBlock  // The AstJumpBlock we are branching after
 public:
-    AstJumpGo(FileLine* fl, AstJumpLabel* labelp)
+    AstJumpGo(FileLine* fl, AstJumpBlock* blockp)
         : ASTGEN_SUPER_JumpGo(fl)
-        , m_labelp{labelp} {}
+        , m_blockp{blockp} {}
     ASTGEN_MEMBERS_AstJumpGo;
     const char* broken() const override;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     bool sameNode(const AstNode* samep) const override {
-        return labelp() == VN_DBG_AS(samep, JumpGo)->labelp();
+        return blockp() == VN_DBG_AS(samep, JumpGo)->blockp();
     }
     bool isGateOptimizable() const override { return false; }
     bool isBrancher() const override {
         return true;  // SPECIAL: We don't process code after breaks
-    }
-    AstJumpLabel* labelp() const { return m_labelp; }
-};
-class AstJumpLabel final : public AstNodeStmt {
-    // Jump point declaration
-    // Parents:  {statement list with JumpBlock above}
-    // Children: none
-    // @astgen ptr := m_blockp : AstJumpBlock  // [After V3Jump] Pointer to declaration
-public:
-    AstJumpLabel(FileLine* fl, AstJumpBlock* blockp)
-        : ASTGEN_SUPER_JumpLabel(fl)
-        , m_blockp{blockp} {}
-    ASTGEN_MEMBERS_AstJumpLabel;
-    bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    const char* broken() const override {
-        BROKEN_RTN(!blockp()->brokeExistsAbove());
-        BROKEN_RTN(blockp()->labelp() != this);
-        return nullptr;
-    }
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
-    int instrCount() const override { return 0; }
-    bool sameNode(const AstNode* samep) const override {
-        return blockp() == VN_DBG_AS(samep, JumpLabel)->blockp();
     }
     AstJumpBlock* blockp() const { return m_blockp; }
 };
