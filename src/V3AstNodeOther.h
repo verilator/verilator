@@ -3282,7 +3282,7 @@ class AstJumpBlock final : public AstNodeStmt {
     // Block of code that might contain AstJumpGo statements as children,
     // which when exectued branch to right after the referenced AstJumpBlock.
     // AstJumpBlocks can nest, and an AstJumpGo can reference any of the
-    // encolsing AstJumpBlocks (can break out of mulitple levels).
+    // enclosing AstJumpBlocks (can break out of mulitple levels).
     // Parents:  {statement list}
     // Children: {statement list, with JumpGo below}
     // @astgen op1 := stmtsp : List[AstNode]
