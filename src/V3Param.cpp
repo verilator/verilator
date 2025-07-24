@@ -906,12 +906,10 @@ class ParamProcessor final {
     // to the corresponding values of implicit parameters
     static void genericInterfaceVarSetup(const AstPin* const paramsp, const AstPin* const pinsp) {
         std::unordered_map<string, const AstPin*> paramspMap;
-        for (const AstNode* nodep = paramsp; nodep; nodep = nodep->nextp()) {
-            if (const AstPin* const pinp = VN_CAST(nodep, Pin)) {
-                if (pinp->name().find("__VGIfaceParam") == 0) {
-                    // 14 is a length of "__VGIfaceParam"
-                    paramspMap.insert({pinp->name().substr(14), pinp});
-                }
+        for (const AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            if (pinp->name().find("__VGIfaceParam") == 0) {
+                // 14 is a length of "__VGIfaceParam"
+                paramspMap.insert({pinp->name().substr(14), pinp});
             }
         }
 

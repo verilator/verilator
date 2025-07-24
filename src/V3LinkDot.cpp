@@ -2783,7 +2783,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         return nullptr;
     }
-    // Find next variable representing a generic interface inside module
     static const AstVar* getNextVarp(const AstNode* stmtsp) {
         if (!stmtsp) return nullptr;
         const AstVar* modIfaceVarp;
@@ -2802,16 +2801,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
 
         // Add each implicit parameter type
-        const AstNode* stmtsp = modp->stmtsp();
-        const AstVar* modIfaceVarp = VN_CAST(stmtsp, Var);
-        for (const AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
-            if (pinp != nodep->pinsp() || !modIfaceVarp) {
-                modIfaceVarp = getNextVarp(stmtsp);
-                if (!modIfaceVarp) break;
-                stmtsp = modIfaceVarp;
-            }
-            if (!VN_IS(modIfaceVarp->childDTypep(), IfaceGenericDType)
-                || modIfaceVarp->varType() != VVarType::IFACEREF
+        const AstVar* modIfaceVarp = VN_CAST(modp->stmtsp(), Var);
+        if (!modIfaceVarp) modIfaceVarp = getNextVarp(modp->stmtsp());
+        for (const AstPin* pinp = nodep->pinsp(); pinp && modIfaceVarp;
+             pinp = VN_CAST(pinp->nextp(), Pin), modIfaceVarp = getNextVarp(modIfaceVarp)) {
+            if (modIfaceVarp->varType() != VVarType::IFACEREF
                 || !VN_IS(modIfaceVarp->childDTypep(), IfaceGenericDType)) {
                 continue;
             }
