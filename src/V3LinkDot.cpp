@@ -2840,6 +2840,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     newPinp->param(true);
                     visit(newPinp);
                     nodep->addParamsp(newPinp);
+                } else {
+                    varRefp->v3error("Generic interfaces can only connect to an interface and "
+                                     << varp->prettyNameQ() << " is "
+                                     << (varp->childDTypep()
+                                             ? "of type " + varp->childDTypep()->prettyDTypeNameQ()
+                                             : "not an interface"));
                 }
             } else {
                 modIfaceVarp->v3error("Interface port "
