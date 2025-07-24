@@ -210,7 +210,12 @@ class TraceDriver final : public DfgVisitor {
     // Create and return a new Vertex and add it to m_newVtxps. Fileline is
     // taken from 'refp', but 'refp' is otherwise not used. You should
     // always use this to create new vertices, so unused ones (if a trace
-    // eventually fails) can be cleaned up at the end.
+    // eventually fails) can be cleaned up at the end. This also sets the
+    // vertex user<uint32_t> to 0, indicating the new vertex is not part of a
+    // strongly connected component. This should always be true, as all the
+    // vertices we create here are driven from outside the component we are
+    // trying to escape, and will sink into that component. Given those are
+    // separate SCCs, these new vertices must be acyclic.
     template <typename Vertex>
     Vertex* make(const DfgVertex* refp, uint32_t width) {
         static_assert(std::is_base_of<DfgVertex, Vertex>::value  //
@@ -229,6 +234,7 @@ class TraceDriver final : public DfgVisitor {
 
         if VL_CONSTEXPR_CXX17 (std::is_same<DfgConst, Vertex>::value) {
             DfgConst* const vtxp = new DfgConst{m_dfg, refp->fileline(), width};
+            vtxp->template setUser<uint32_t>(0);
             m_newVtxps.emplace_back(vtxp);
             return reinterpret_cast<Vertex*>(vtxp);
         } else {
@@ -239,6 +245,7 @@ class TraceDriver final : public DfgVisitor {
                                                   Vertex>::type;
             AstNodeDType* const dtypep = DfgVertex::dtypeForWidth(width);
             Vtx* const vtxp = new Vtx{m_dfg, refp->fileline(), dtypep};
+            vtxp->template setUser<uint32_t>(0);
             m_newVtxps.emplace_back(vtxp);
             return reinterpret_cast<Vertex*>(vtxp);
         }
@@ -276,7 +283,7 @@ class TraceDriver final : public DfgVisitor {
         // Trace the vertex
         onStackr = true;
 
-        if (vtxp->user<uint32_t>() != m_component) {
+        if (vtxp->getUser<uint32_t>() != m_component) {
             // If the currently traced vertex is in a different component,
             // then we found what we were looking for.
             if (msb != vtxp->width() - 1 || lsb != 0) {
@@ -579,7 +586,7 @@ public:
     // waste a lot of compute.
     static DfgVertex* apply(DfgGraph& dfg, DfgVertex* vtxp, uint32_t lsb, uint32_t width,
                             bool aggressive) {
-        TraceDriver traceDriver{dfg, vtxp->user<uint32_t>(), aggressive};
+        TraceDriver traceDriver{dfg, vtxp->getUser<uint32_t>(), aggressive};
         // Find the out-of-component driver of the given vertex
         DfgVertex* const resultp = traceDriver.trace(vtxp, lsb + width - 1, lsb);
         // Delete unused newly created vertices (these can be created if a
@@ -852,7 +859,7 @@ class FixUpSelDrivers final {
             // Only handle Sel
             DfgSel* const selp = sink.cast<DfgSel>();
             if (!selp) return;
-            // Try to find of the driver of the selected bits outside the cycle
+            // Try to find the driver of the selected bits outside the cycle
             DfgVertex* const fixp
                 = TraceDriver::apply(dfg, vtxp, selp->lsb(), selp->width(), false);
             if (!fixp) return;
@@ -968,6 +975,8 @@ class FixUpIndependentRanges final {
             if (!termp) {
                 AstNodeDType* const dtypep = DfgVertex::dtypeForWidth(width);
                 DfgSel* const selp = new DfgSel{dfg, vtxp->fileline(), dtypep};
+                // Same component as 'vtxp', as reads 'vtxp' and will replace 'vtxp'
+                selp->setUser<uint32_t>(vtxp->getUser<uint32_t>());
                 // Do not connect selp->fromp yet, need to do afer replacing 'vtxp'
                 selp->lsb(lsb);
                 termp = selp;
@@ -1022,7 +1031,9 @@ class FixUpIndependentRanges final {
                 nImprovements += gatherTerms(termps, dfg, vtxp, indpBits, msb, lsb);
             } else {
                 // The range is not used, just use constant 0 as a placeholder
-                termps.emplace_back(new DfgConst{dfg, flp, msb - lsb + 1});
+                DfgConst* const constp = new DfgConst{dfg, flp, msb - lsb + 1};
+                constp->setUser<uint32_t>(0);
+                termps.emplace_back(constp);
             }
             // Next iteration
             isUsed = !isUsed;
@@ -1033,6 +1044,7 @@ class FixUpIndependentRanges final {
         if (nImprovements) {
             // Concatenate all the terms to create the replacement
             DfgVertex* replacementp = termps.front();
+            const uint32_t vComp = vtxp->getUser<uint32_t>();
             for (size_t i = 1; i < termps.size(); ++i) {
                 DfgVertex* const termp = termps[i];
                 const uint32_t catWidth = replacementp->width() + termp->width();
@@ -1040,6 +1052,14 @@ class FixUpIndependentRanges final {
                 DfgConcat* const catp = new DfgConcat{dfg, flp, dtypep};
                 catp->rhsp(replacementp);
                 catp->lhsp(termp);
+                // Need to figure out which component the replacement vertex
+                // belongs to. If any of the terms are of the original
+                // component, it's part of that component, otherwise its not
+                // cyclic (all terms are from outside the original component,
+                // and feed into the original component).
+                const uint32_t tComp = termp->getUser<uint32_t>();
+                const uint32_t rComp = replacementp->getUser<uint32_t>();
+                catp->setUser<uint32_t>(tComp == vComp || rComp == vComp ? vComp : 0);
                 replacementp = catp;
             }
 
@@ -1071,7 +1091,7 @@ public:
             // For array variables, fix up element-wise
             const uint32_t component = varp->getUser<uint32_t>();
             varp->forEachSink([&](DfgVertex& sink) {
-                // Ignore if sink is not part of cycle
+                // Ignore if sink is not part of same cycle
                 if (sink.getUser<uint32_t>() != component) return;
                 // Only handle ArraySels with constant index
                 DfgArraySel* const aselp = sink.cast<DfgArraySel>();
