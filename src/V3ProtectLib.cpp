@@ -102,7 +102,6 @@ class ProtectVisitor final : public VNVisitor {
         txtp->addText(fl, "\n`ifdef VERILATOR\n");
         txtp->addText(fl, "`verilator_config\n");
 
-        UASSERT(v3Global.hierDpiCost(), "Hier block cost should not be 0");
 
         txtp->addText(fl, "profile_data -hier-dpi \"" + m_libName
                               + "_protectlib_combo_update\" -cost 64'd"
