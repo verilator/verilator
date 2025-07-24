@@ -718,6 +718,22 @@ class ConstraintExprVisitor final : public VNVisitor {
             initTaskp->addStmtsp(methodp->makeStmt());
         }
     }
+    void visit(AstCountOnes* nodep) override {
+        // Convert it to (x & 1) + ((x & 2) >> 1) + ((x & 4) >> 2) + ...
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
+        AstNodeExpr* sump = new AstAnd{fl, argp, new AstConst{fl, 1}};
+        for (int i = 1; i < argp->width(); i++) {
+            AstAnd* const andp
+                = new AstAnd{fl, argp->cloneTreePure(false), new AstConst{fl, (uint32_t)1 << i}};
+            AstShiftR* const shiftp = new AstShiftR{fl, andp, new AstConst{fl, (uint32_t)i}};
+            shiftp->dtypeFrom(nodep);
+            sump = new AstAdd{nodep->fileline(), sump, shiftp};
+        }
+        nodep->replaceWith(sump);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        iterate(sump);
+    }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
