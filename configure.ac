@@ -68,6 +68,7 @@ AC_ARG_ENABLE([tcmalloc],
                 *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-tcmalloc]) ;;
                esac],
               [CFG_WITH_TCMALLOC=check;])
+AC_SUBST(CFG_WITH_TCMALLOC)
 AC_MSG_RESULT($CFG_WITH_TCMALLOC)
 
 # Flag to enable coverage build
@@ -546,10 +547,12 @@ _MY_LDLIBS_CHECK_IFELSE(
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-calloc)
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-realloc)
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-free)
+    AC_DEFINE([HAVE_TCMALLOC],[1],[Defined if have tcmalloc])
    fi],
   [if test "$CFG_WITH_TCMALLOC" = "yes"; then
     AC_MSG_ERROR([--enable-tcmalloc was given but test for ${LTCMALLOC} failed])
    fi])
+AC_SUBST(HAVE_TCMALLOC)
 AC_SUBST(CFG_LIBS)
 
 # Need C++14 at least

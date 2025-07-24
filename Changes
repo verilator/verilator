@@ -24,6 +24,7 @@ Verilator 5.039 devel
 * Support multiple variables on RHS of a `force` assignment (#6163). [Artur Bieniek, Antmicro Ltd.]]
 * Support covergroup extends, etc., as unsupported (#6160). [Artur Bieniek, Antmicro Ltd.]
 * Change control file `public_flat_*` and other signal attributes to support __ in names (#6140).
+* Optimize to return memory when using -build (#6192) (#6226). [Michael B. Taylor]
 * Fix constructor parameters in inheritance hierarchies (#6036) (#6070). [Petr Nohavica]
 * Fix replicate of negative giving 'REPLICATE has no expected width' internal error (#6048).
 * Fix cmake `-Wno` compiler flag testing (#6145). [Martin Stadler]
@@ -38,7 +39,6 @@ Verilator 5.039 devel
 * Fix conflicting function/class name linking error (#6182). [Igor Zaworski, Antmicro Ltd.]
 * Fix VPI signal range order (#6189) (#6200). [Ibrahim Burak Yorulmaz]
 * Fix structure select causing 'Wide Op' error (#6191). [Danny Oler]
-
 
 Verilator 5.038 2025-07-08
 ==========================

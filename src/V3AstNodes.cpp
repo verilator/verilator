@@ -2296,6 +2296,25 @@ void AstNetlist::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "timeprecision", timeprecision().ascii());
     dumpJsonGen(str);
 }
+void AstNetlist::deleteContents() {
+    // Delete all netlist memory.  Only for use by Verilator.cpp
+    m_typeTablep = nullptr;
+    m_constPoolp = nullptr;
+    m_dollarUnitPkgp = nullptr;
+    m_stdPackagep = nullptr;
+    m_evalp = nullptr;
+    m_evalNbap = nullptr;
+    m_dpiExportTriggerp = nullptr;
+    m_delaySchedulerp = nullptr;
+    m_nbaEventp = nullptr;
+    m_nbaEventTriggerp = nullptr;
+    m_topScopep = nullptr;
+    if (op1p()) op1p()->unlinkFrBackWithNext()->deleteTree();
+    if (op2p()) op2p()->unlinkFrBackWithNext()->deleteTree();
+    if (op3p()) op3p()->unlinkFrBackWithNext()->deleteTree();
+    if (op4p()) op4p()->unlinkFrBackWithNext()->deleteTree();
+#undef VN_DELETE_ONE
+}
 AstPackage* AstNetlist::dollarUnitPkgAddp() {
     if (!m_dollarUnitPkgp) {
         m_dollarUnitPkgp = new AstPackage{fileline(), AstPackage::dollarUnitName(), "work"};

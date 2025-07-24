@@ -1406,6 +1406,7 @@ class AstNetlist final : public AstNode {
 public:
     AstNetlist();
     ASTGEN_MEMBERS_AstNetlist;
+    void deleteContents();
     void cloneRelink() override { V3ERROR_NA; }
     string name() const override VL_MT_STABLE { return "$root"; }
     void dump(std::ostream& str) const override;
