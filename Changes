@@ -21,10 +21,13 @@ Verilator 5.039 devel
 * Support disabling a fork in additional contexts (#5432 partial) (#6174) (#6183). [Ryszard Rozak, Antmicro Ltd.]
 * Support disable dotted references (#6154). [Ryszard Rozak, Antmicro Ltd.]
 * Support randomize() on class member selects (#6161) (#6195). [Igor Zaworski, Ryszard Rozak, Antmicro Ltd.]
-* Support multiple variables on RHS of a `force` assignment (#6163). [Artur Bieniek, Antmicro Ltd.]]
+* Support multiple variables on RHS of a `force` assignment (#6163). [Artur Bieniek, Antmicro Ltd.]
 * Support covergroup extends, etc., as unsupported (#6160). [Artur Bieniek, Antmicro Ltd.]
 * Change control file `public_flat_*` and other signal attributes to support __ in names (#6140).
 * Optimize to return memory when using -build (#6192) (#6226). [Michael B. Taylor]
+* Optimize 2 ** X to 1 << X if base is signed (#6203). [Max Wipfli]
+* Optimize more complex combinational assignments in DFG (#6205) (#6209). [Geza Lore]
+* Optimize combinational cycles through arrays in DFG (#6210). [Geza Lore]
 * Fix constructor parameters in inheritance hierarchies (#6036) (#6070). [Petr Nohavica]
 * Fix replicate of negative giving 'REPLICATE has no expected width' internal error (#6048).
 * Fix cmake `-Wno` compiler flag testing (#6145). [Martin Stadler]
@@ -32,13 +35,17 @@ Verilator 5.039 devel
 * Fix genvar error with `-O0` (#6165). [Max Wipfli]
 * Fix uninitialized thread PGO counters (#6167). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix additional UNOPTFLAT combinational cycles automatically in DFG (#6168) (#6173) (#6176). [Geza Lore]
-* Fix omitting error when assigning to an input (#6169). [Artur Bieniek, Antmicro Ltd.]]
+* Fix omitting error when assigning to an input (#6169). [Artur Bieniek, Antmicro Ltd.]
+* Fix parameter-dependent type linking (#6170). [Igor Zaworski, Antmicro Ltd.]
 * Fix param-dependent class typedef linking (#6171). [Igor Zaworski, Antmicro Ltd.]
 * Fix virtual interface member propagation (#6175) (#6184). [Yilou Wang]
 * Fix `--coverage-expr` null pointer dereference (#6181). [Igor Zaworski, Antmicro Ltd.]
 * Fix conflicting function/class name linking error (#6182). [Igor Zaworski, Antmicro Ltd.]
+* Fix automatic task variables in unrolled loops with forks (#6194) (#6201). [Danny Oler]
 * Fix VPI signal range order (#6189) (#6200). [Ibrahim Burak Yorulmaz]
 * Fix structure select causing 'Wide Op' error (#6191). [Danny Oler]
+* Fix 'driver same component' assertion (#6211) (#6215). [Geza Lore]
+
 
 Verilator 5.038 2025-07-08
 ==========================
