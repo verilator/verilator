@@ -1129,6 +1129,37 @@ public:
     string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
 };
+class AstCvtArrayToArray final : public AstNodeExpr {
+    // Copy/Cast from dynamic/unpacked types to dynamic/unpacked types
+    // @astgen op1 := fromp : AstNodeExpr
+private:
+    const bool m_reverse;  // whether ordering gets reversed in this operation (ex: {<<{expr}})
+    const int m_blockSize;  // num bits per block in a streaming operation (ex: 4 in {<<4{expr}}))
+    const int m_dstElementBits;  // num bits in lhs (ex: 8 if to byte-queue, 1 if to bit-queue)
+    const int m_srcElementBits;  // num bits in rhs (ex 8 if from byte-queue, 1 if from bit-queue)
+
+public:
+    AstCvtArrayToArray(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp, bool reverse,
+                       int blockSize, int dstElementBits, int srcElementBits)
+        : ASTGEN_SUPER_CvtArrayToArray(fl)
+        , m_reverse{reverse}
+        , m_blockSize{blockSize}
+        , m_dstElementBits{dstElementBits}
+        , m_srcElementBits{srcElementBits} {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCvtArrayToArray;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    bool reverse() const { return m_reverse; }
+    int blockSize() const { return m_blockSize; }
+    int dstElementBits() const { return m_dstElementBits; }
+    int srcElementBits() const { return m_srcElementBits; }
+};
 class AstCvtArrayToPacked final : public AstNodeExpr {
     // Cast from dynamic queue data type to packed array
     // @astgen op1 := fromp : AstNodeExpr

@@ -1,10 +1,18 @@
-%Error: t/t_stream_bad.v:12:32: Expecting expression to be constant, but can't convert a RAND to constant.
+%Error: t/t_stream_bad.v:14:25: Expecting expression to be constant, but can't convert a RAND to constant.
                               : ... note: In instance 't'
-   12 |    initial packed_data_32 = {<<$random{byte_in}};
-      |                                ^~~~~~~
+   14 |     packed_data_32 = {<<$random{byte_in}};
+      |                         ^~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_stream_bad.v:12:30: Slice size isn't a constant or basic data type.
+%Error: t/t_stream_bad.v:14:23: Slice size isn't a constant or basic data type.
                               : ... note: In instance 't'
-   12 |    initial packed_data_32 = {<<$random{byte_in}};
-      |                              ^~
+   14 |     packed_data_32 = {<<$random{byte_in}};
+      |                       ^~
+%Error: t/t_stream_bad.v:15:25: Expecting expression to be constant, but variable isn't const: 'x'
+                              : ... note: In instance 't'
+   15 |     packed_data_32 = {<<x{byte_in}};
+      |                         ^
+%Error: t/t_stream_bad.v:15:23: Slice size isn't a constant or basic data type.
+                              : ... note: In instance 't'
+   15 |     packed_data_32 = {<<x{byte_in}};
+      |                       ^~
 %Error: Exiting due to
