@@ -293,7 +293,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     const VNUser2InUse m_inuser2;
 
     // STATE
-    std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps;  // Nodes to delete when finished
+    std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps = {};  // Nodes to delete when finished
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In continuous assignment
     bool m_inInitialStatic = false;  // In InitialStatic

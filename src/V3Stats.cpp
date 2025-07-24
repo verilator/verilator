@@ -34,11 +34,11 @@ V3Mutex V3Stats::s_mutex;
 class StatsVisitor final : public VNVisitorConst {
     struct Counters final {
         // Nodes of given type
-        uint64_t m_statTypeCount[VNType::_ENUM_END];
+        std::array<uint64_t, VNType::_ENUM_END> m_statTypeCount = {};
         // Nodes of given type with given type immediate child
-        uint64_t m_statAbove[VNType::_ENUM_END][VNType::_ENUM_END];
+        std::array<std::array<uint64_t, VNType::_ENUM_END>, VNType::_ENUM_END> m_statAbove = {};
         // Prediction of given type
-        uint64_t m_statPred[VBranchPred::_ENUM_END];
+        std::array<uint64_t, VBranchPred::_ENUM_END> m_statPred = {};
     };
 
     // STATE
@@ -103,9 +103,6 @@ public:
         : m_fastOnly{fastOnly}
         , m_accump{fastOnly ? &m_dumpster : &m_counters} {
         UINFO(9, "Starting stats, fastOnly=" << fastOnly);
-        memset(&m_counters, 0, sizeof(m_counters));
-        memset(&m_dumpster, 0, sizeof(m_dumpster));
-
         iterateConst(nodep);
 
         // Shorthand
