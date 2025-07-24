@@ -215,8 +215,10 @@ void V3Stats::statsStage(const string& name) {
     V3Stats::addStatPerf("Stage, Elapsed time (sec), " + digitName, wallTimeDelta);
     V3Stats::addStatPerf("Stage, Elapsed time (sec), TOTAL", wallTimeDelta);
 
-    const double memory = VlOs::memPeakUsageBytes() / 1024.0 / 1024.0;
-    V3Stats::addStatPerf("Stage, Memory (MB), " + digitName, memory);
+    uint64_t memPeak, memCurrent;
+    VlOs::memUsageBytes(memPeak /*ref*/, memCurrent /*ref*/);
+    V3Stats::addStatPerf("Stage, Memory current (MB), " + digitName, memCurrent / 1024.0 / 1024.0);
+    V3Stats::addStatPerf("Stage, Memory peak (MB), " + digitName, memPeak / 1024.0 / 1024.0);
 }
 
 void V3Stats::infoHeader(std::ofstream& os, const string& prefix) {
@@ -266,7 +268,9 @@ void V3Stats::summaryReport() {
               << ", cvt=" << walltimeCvt << ", bld=" << walltimeBuild << "); cpu " << cputime
               << " s on " << std::max(v3Global.opt.verilateJobs(), v3Global.opt.buildJobs())
               << " threads";
-    const double memory = VlOs::memPeakUsageBytes() / 1024.0 / 1024.0;
+    uint64_t memPeak, memCurrent;
+    VlOs::memUsageBytes(memPeak /*ref*/, memCurrent /*ref*/);
+    const double memory = memPeak / 1024.0 / 1024.0;
     if (VL_UNCOVERABLE(memory != 0.0)) std::cout << "; alloced " << memory << " MB";
     std::cout << "\n";
 }

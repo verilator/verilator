@@ -3061,7 +3061,9 @@ void VerilatedContext::statsPrintSummary() VL_MT_UNSAFE {
         = vl_timescaled_double((cputime != 0.0) ? (simtimeInUnits / cputime) : 0, "%0.3f %s");
     VL_PRINTF("- Verilator: %s at %s; walltime %0.3f s; speed %s/s\n", endwhy.c_str(),
               simtime.c_str(), walltime, simtimePerf.c_str());
-    const double modelMB = VlOs::memPeakUsageBytes() / 1024.0 / 1024.0;
+    uint64_t memPeak, memCurrent;
+    VlOs::memUsageBytes(memPeak /*ref*/, memCurrent /*ref*/);
+    const double modelMB = memPeak / 1024.0 / 1024.0;
     VL_PRINTF("- Verilator: cpu %0.3f s on %u threads; alloced %0.0f MB\n", cputime,
               threadsInModels(), modelMB);
 }

@@ -179,7 +179,4 @@ void V3Stats::statsStageAll(AstNetlist* nodep, const std::string& stage, bool fa
     StatsVisitor{nodep, stage, fastOnly};
 }
 
-void V3Stats::statsFinalAll(AstNetlist* nodep) {
-    statsStageAll(nodep, "Final all");
-    statsStageAll(nodep, "Final fast", true);
-}
+void V3Stats::statsFinalAll(AstNetlist* nodep) { statsStageAll(nodep, "Final"); }

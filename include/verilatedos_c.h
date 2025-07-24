@@ -25,6 +25,9 @@
 
 #include "verilatedos.h"
 
+#include <fstream>
+#include <sstream>
+
 // clang-format off
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <windows.h>   // LONG for bcrypt.h on MINGW
@@ -104,28 +107,40 @@ uint16_t getcpu() VL_MT_SAFE {
 //=========================================================================
 // VlOs::memPeakUsageBytes implementation
 
-uint64_t memPeakUsageBytes() VL_MT_SAFE {
+void memUsageBytes(uint64_t& peakr, uint64_t& currentr) VL_MT_SAFE {
+    peakr = 0;
+    currentr = 0;
 #if defined(_WIN32) || defined(__MINGW32__)
     const HANDLE process = GetCurrentProcess();
     PROCESS_MEMORY_COUNTERS pmc;
     if (GetProcessMemoryInfo(process, &pmc, sizeof(pmc))) {
         // The best we can do using simple Windows APIs is to get the size of the working set.
-        return pmc.WorkingSetSize;
+        peakr = pmc.PeakWorkingSetSize;
+        currentr = pmc.WorkingSetSize;
     }
-    return 0;
 #else
     // Highly unportable. Sorry
-    const char* const statmFilename = "/proc/self/statm";
-    FILE* const fp = fopen(statmFilename, "r");
-    if (!fp) return 0;
-    uint64_t size, resident, share, text, lib, data, dt;  // All in pages
-    const int items = fscanf(
-        fp, "%" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64 " %" SCNu64,
-        &size, &resident, &share, &text, &lib, &data, &dt);
-    fclose(fp);
-    if (VL_UNCOVERABLE(7 != items)) return 0;
-    // Return the vm size, not the current active set size (/proc/self/status VmRSS + VmSwap)
-    return (text + data) * getpagesize();
+    std::ifstream is{"/proc/self/status"};
+    if (!is) return;
+    std::string line;
+    uint64_t vmPeak = 0;
+    uint64_t vmRss = 0;
+    uint64_t vmSwap = 0;
+    std::string field;
+    while (std::getline(is, line)) {
+        if (line.rfind("VmPeak:", 0) == 0) {
+            std::stringstream ss{line};
+            ss >> field >> vmPeak;
+        } else if (line.rfind("VmRSS:", 0) == 0) {
+            std::stringstream ss{line};
+            ss >> field >> vmRss;
+        } else if (line.rfind("VmSwap:", 0) == 0) {
+            std::stringstream ss{line};
+            ss >> field >> vmSwap;
+        }
+    }
+    peakr = vmPeak * 1024;
+    currentr = (vmRss + vmSwap) * 1024;
 #endif
 }
 

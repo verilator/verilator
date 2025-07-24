@@ -637,7 +637,7 @@ extern std::string getenvStr(const std::string& envvar,
 extern uint16_t getcpu() VL_MT_SAFE;
 
 /// Return memory usage in bytes, or 0 if unknown
-extern uint64_t memPeakUsageBytes() VL_MT_SAFE;
+extern void memUsageBytes(uint64_t& peakr, uint64_t& currentr) VL_MT_SAFE;
 
 // Internal: Record CPU time, starting point on construction, and current delta from that
 class DeltaCpuTime final {
