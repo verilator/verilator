@@ -773,6 +773,12 @@ static void verilate(const string& argString) {
 
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();
+
+    // Free memory so compiler has more for --build
+    UINFO(1, "Releasing netlist memory");
+    v3Global.rootp()->deleteContents();
+    V3Os::releaseMemory();
+    if (v3Global.opt.stats()) V3Stats::statsStage("released");
 }
 
 static string buildMakeCmd(const string& makefile, const string& target) {

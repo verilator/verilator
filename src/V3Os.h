@@ -71,6 +71,9 @@ public:
     static void filesystemFlushBuildDir(const string& dirname);
     static void unlinkRegexp(const string& dir, const string& regexp);
 
+    // METHODS (memory)
+    static void releaseMemory();
+
     // METHODS (random)
     static uint64_t rand64(std::array<uint64_t, 2>& stater);
     static string trueRandom(size_t size) VL_MT_SAFE;
