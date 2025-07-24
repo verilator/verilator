@@ -682,9 +682,11 @@ AstScope* DfgVertex::scopep(ScopeCache& cache, bool tryResultVar) VL_MT_DISABLED
         if (DfgVertexVar* const varp = this->getResultVar()) return varp->varScopep()->scopep();
     }
 
-    // Look up cache
-    const auto pair = cache.emplace(this, nullptr);
-    if (pair.second) {
+    // Note: the recursive invocation can cause a re-hash but that will not invalidate references
+    AstScope*& resultr = cache[this];
+    if (!resultr) {
+        // Mark to prevent infinite recursion on circular graphs - should never be called on such
+        resultr = reinterpret_cast<AstScope*>(1);
         // Find scope based on sources, falling back on the root scope
         AstScope* const rootp = v3Global.rootp()->topScopep()->scopep();
         AstScope* foundp = rootp;
@@ -694,15 +696,15 @@ AstScope* DfgVertex::scopep(ScopeCache& cache, bool tryResultVar) VL_MT_DISABLED
             foundp = edge.sourcep()->scopep(cache, true);
             if (foundp != rootp) break;
         }
-        pair.first->second = foundp;
+        resultr = foundp;
     }
 
-    // If the cache entry exists, but have not set the mapping yet, then we have a circualr graph
-    UASSERT_OBJ(pair.first->second, this,
+    // Die on a graph circular through operation vertices
+    UASSERT_OBJ(resultr != reinterpret_cast<AstScope*>(1), this,
                 "DfgVertex::scopep called on graph with circular operations");
 
     // Done
-    return pair.first->second;
+    return resultr;
 }
 
 void DfgVertex::unlinkDelete(DfgGraph& dfg) {
