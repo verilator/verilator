@@ -43,6 +43,7 @@ module Core(input clk);
 
       Check check(.clk(clk), .crc(crc), .result(result), .rdata(rdata), .rdata2(rdata2));
 endmodule
+
 module CoreHier(input clk);
    // Dummy logic to have two different hier blocks at the same level.
    integer cyc = 0;
