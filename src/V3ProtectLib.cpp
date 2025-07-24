@@ -102,7 +102,6 @@ class ProtectVisitor final : public VNVisitor {
         txtp->addText(fl, "\n`ifdef VERILATOR\n");
         txtp->addText(fl, "`verilator_config\n");
 
-
         txtp->addText(fl, "profile_data -hier-dpi \"" + m_libName
                               + "_protectlib_combo_update\" -cost 64'd"
                               + std::to_string(v3Global.hierDpiCost()) + "\n");
