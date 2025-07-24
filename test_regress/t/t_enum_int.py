@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile()
+test.compile(verilator_flags2=["--debug", "--debugi", "0", "--dumpi-tree", "0"])
 
 test.execute()
 
