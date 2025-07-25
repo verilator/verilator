@@ -23,24 +23,24 @@ begin \
 end
 
 class Rand1;
-   rand bit [4:0] x;
-   constraint c { $countones(x) == 1; }
+  rand bit [4:0] x;
+  constraint c {$countones(x) == 1;}
 endclass
 
 class Rand2;
-   rand bit [5:0] x;
-   rand bit [2:0] y;
-   constraint c { 1 + $countones(x + 6'(y)) == 3; }
+  rand bit [5:0] x;
+  rand bit [2:0] y;
+  constraint c {10'b1 + 10'($countones(x + 6'(y))) == 3;}
 endclass
 
-module t (/*AUTOARG*/);
-   Rand1 r1 = new;
-   Rand2 r2 = new;
-   initial begin
-      `check_rand(r1, r1.x, $countones(r1.x) == 1);
-      `check_rand(r2, r2.x, 1 + $countones(r2.x + 6'(r2.y)) == 3);
+module t (  /*AUTOARG*/);
+  Rand1 r1 = new;
+  Rand2 r2 = new;
+  initial begin
+    `check_rand(r1, r1.x, $countones(r1.x) == 1);
+    `check_rand(r2, r2.x, 10'b1 + 10'($countones(r2.x + 6'(r2.y))) == 3);
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
