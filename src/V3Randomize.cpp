@@ -723,12 +723,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
         AstNodeExpr* sump = new AstAnd{fl, argp, new AstConst{fl, 1}};
+        sump->user1(true);
         for (int i = 1; i < argp->width(); i++) {
             AstAnd* const andp
                 = new AstAnd{fl, argp->cloneTreePure(false), new AstConst{fl, (uint32_t)1 << i}};
+            andp->user1(true);
             AstShiftR* const shiftp = new AstShiftR{fl, andp, new AstConst{fl, (uint32_t)i}};
+            shiftp->user1(true);
             shiftp->dtypeFrom(nodep);
             sump = new AstAdd{nodep->fileline(), sump, shiftp};
+            sump->user1(true);
         }
         nodep->replaceWith(sump);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
