@@ -580,4 +580,22 @@ public:
 #endif
 };
 
+//=============================================================================
+// VlStdRandomizer provides a light wrapper for RNG used by std::randomize()
+// to support scope-level randomization.
+class VlStdRandomizer final {
+    // MEMBERS
+    VlRNG m_rng;  // Random number generator
+
+public:
+    // CONSTRUCTORS
+    VlStdRandomizer() = default;
+    ~VlStdRandomizer() = default;
+
+    template <typename T>
+    bool basicStdRandomization(T& value, size_t width) {
+        value = VL_MASK_I(width) & VL_RANDOM_RNG_I(m_rng);
+        return true;
+    }
+};
 #endif  // Guard

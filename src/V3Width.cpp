@@ -6282,9 +6282,39 @@ class WidthVisitor final : public VNVisitor {
             }
         }
     }
+
+    void handleStdRandomizeArgs(AstNodeFTaskRef* const nodep) {
+        AstConst* nullp = nullptr;
+        for (AstNode *pinp = nodep->pinsp(), *nextp = nullptr; pinp; pinp = nextp) {
+            nextp = pinp->nextp();
+            AstArg* const argp = VN_CAST(pinp, Arg);
+            if (!argp) continue;
+            AstNodeExpr* const exprp = argp->exprp();
+            if (AstConst* const constp = VN_CAST(exprp, Const)) {
+                if (constp->num().isNull()) {
+                    nullp = constp;
+                    continue;
+                }
+            }
+            if (VN_IS(exprp, MemberSel)) {
+                // Non-standard usage: std::randomize() with class-scoped member
+                // IEEE 1800-2023 (18.12) limits args to current scope variables.
+                // Verilator accepts this for compatibility with other simulators.
+                continue;
+            } else if (VN_IS(exprp, VarRef)) {
+                // Valid usage
+                continue;
+            } else {
+                argp->v3error("Non-variable arguments for 'std::randomize()'.");
+            }
+            if (!argp) continue;
+        }
+        if (nullp) { nullp->v3error("'std::randomize()' does not accept 'null' as arguments."); }
+    }
     void visit(AstNodeFTaskRef* nodep) override {
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
         // Function hasn't been widthed, so make it so.
+        if (nodep->didWidth()) return;
         UINFO(5, "  FTASKREF " << nodep);
         AstWith* withp = nullptr;
         if (nodep->name() == "rand_mode" || nodep->name() == "constraint_mode") {
@@ -6297,16 +6327,23 @@ class WidthVisitor final : public VNVisitor {
                            || nodep->name() == "set_randstate"))) {
             // TODO perhaps this should move to V3LinkDot
             AstClass* const classp = VN_CAST(nodep->classOrPackagep(), Class);
-            if (!classp) {
+            if (nodep->classOrPackagep()->name() == "std") {
+                v3Global.useRandomizeMethods(true);
                 AstNodeDType* const adtypep = nodep->findBitDType();
                 withp = methodWithArgument(nodep, false, false, adtypep->findVoidDType(),
                                            adtypep->findBitDType(), adtypep);
                 for (const AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp())
                     userIterateAndNext(VN_AS(argp, Arg)->exprp(), WidthVP{SELF, BOTH}.p());
+                handleStdRandomizeArgs(nodep);  // Provided args should be in current scope
+                if (withp) {
+                    nodep->v3warn(CONSTRAINTIGN, "Unsupported: std::randomize()'s 'with'");
+                    nodep->replaceWith(new AstConst{nodep->fileline(), 0});
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+                processFTaskRefArgs(nodep);
                 nodep->addPinsp(withp);
-                nodep->v3warn(CONSTRAINTIGN, "std::randomize ignored (unsupported)");
-                nodep->replaceWith(new AstConst{nodep->fileline(), 0});
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                nodep->didWidth(true);
                 return;
             }
             UASSERT_OBJ(classp, nodep, "Should have failed in V3LinkDot");
