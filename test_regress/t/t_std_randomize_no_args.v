@@ -9,15 +9,16 @@ module t_no_args;
     bit [15:0] data;
     bit [7:0] old_addr;
     bit [15:0] old_data;
+    int success;
+    bit valid;
 
     initial begin
         old_addr = addr;
         old_data = data;
 
-        if (!std::randomize()) $stop;
-
-        // check if values changed
-        if (!(addr == old_addr && data == old_data)) $stop;
+        success = std::randomize();
+        valid = (success == 1) && (addr == old_addr) && (data == old_data);
+        if (!valid) $stop;
 
         $write("*-* All Finished *-*\n");
         $finish;
