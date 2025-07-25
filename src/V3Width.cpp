@@ -802,7 +802,8 @@ class WidthVisitor final : public VNVisitor {
 
             const AstConst* const constp = VN_CAST(nodep->countp(), Const);
             if (constp) {
-                if (constp->num().isFourState() || constp->num().isNegative()) {
+                if (constp->num().isFourState()
+                    || (constp->dtypep()->isSigned() && constp->num().isNegative())) {
                     nodep->v3error("Replication value of < 0 or X/Z not legal"
                                    " (IEEE 1800-2023 11.4.12.1): "
                                    << constp->prettyNameQ());

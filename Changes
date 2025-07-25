@@ -29,7 +29,7 @@ Verilator 5.039 devel
 * Optimize more complex combinational assignments in DFG (#6205) (#6209). [Geza Lore]
 * Optimize combinational cycles through arrays in DFG (#6210). [Geza Lore]
 * Fix constructor parameters in inheritance hierarchies (#6036) (#6070). [Petr Nohavica]
-* Fix replicate of negative giving 'REPLICATE has no expected width' internal error (#6048).
+* Fix replicate of negative giving 'REPLICATE has no expected width' internal error (#6048) (#6229).
 * Fix cmake `-Wno` compiler flag testing (#6145). [Martin Stadler]
 * Fix class extends dotted error (#6162). [Igor Zaworski, Antmicro Ltd.]
 * Fix genvar error with `-O0` (#6165). [Max Wipfli]

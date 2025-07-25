@@ -15,4 +15,7 @@ module t #(
     end
     other = {32'bz{1'b1}};
   end
+
+  wire ok1 = 1'b1;
+  wire [6:0] ok7 = {3'b111{ok1}};  // Ok
 endmodule
