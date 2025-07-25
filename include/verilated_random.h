@@ -587,7 +587,6 @@ class VlStdRandomizer final {
     // MEMBERS
     VlRNG m_rng;  // Random number generator
 
-
 public:
     // CONSTRUCTORS
     VlStdRandomizer() = default;
