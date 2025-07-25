@@ -737,6 +737,14 @@ class ConstraintExprVisitor final : public VNVisitor {
             sump = new AstAdd{nodep->fileline(), sump, shiftp};
             sump->user1(true);
         }
+        // Restore the original width
+        if (nodep->width() > sump->width()) {
+            sump = new AstExtend{fl, sump, nodep->width()};
+            sump->user1(true);
+        } else if (nodep->width() < sump->width()) {
+            sump = new AstSel{fl, sump, 0, nodep->width()};
+            sump->user1(true);
+        }
         nodep->replaceWith(sump);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(sump);
