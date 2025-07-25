@@ -207,6 +207,7 @@ public:
         puts(nodep->isScBigUint()                           ? "SB"
              : (nodep->isScUint() || nodep->isScUintBool()) ? "SU"
              : nodep->isScBv()                              ? "SW"
+             : nodep->isDouble()                            ? "SD"
                                                             : (nodep->isScQuad() ? "SQ" : "SI"));
     }
     void emitDatap(AstNode* nodep) {

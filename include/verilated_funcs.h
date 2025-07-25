@@ -458,9 +458,11 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
 
 //===================================================================
 // SYSTEMC OPERATORS
-// Copying verilog format to systemc integers and bit vectors.
+// Copying verilog format to systemc integers, doubles, and bit vectors.
 // Get a SystemC variable
 
+#define VL_ASSIGN_DSD(obits, vvar, svar) \
+    { (vvar) = (svar).read(); }
 #define VL_ASSIGN_ISI(obits, vvar, svar) \
     { (vvar) = VL_CLEAN_II((obits), (obits), (svar).read()); }
 #define VL_ASSIGN_QSQ(obits, vvar, svar) \
@@ -504,9 +506,11 @@ static inline void VL_ASSIGNBIT_WO(int bit, WDataOutP owp) VL_MT_SAFE {
         (owp)[words - 1] &= VL_MASK_E(obits); \
     }
 
-// Copying verilog format from systemc integers and bit vectors.
+// Copying verilog format from systemc integers, doubles, and bit vectors.
 // Set a SystemC variable
 
+#define VL_ASSIGN_SDD(obits, svar, vvar) \
+    { (svar).write(vvar); }
 #define VL_ASSIGN_SII(obits, svar, vvar) \
     { (svar).write(vvar); }
 #define VL_ASSIGN_SQQ(obits, svar, vvar) \
@@ -2804,6 +2808,12 @@ extern void VL_TIMEFORMAT_IINI(bool hasUnits, int units, bool hasPrecision, int 
                                bool hasSuffix, const std::string& suffix, bool hasWidth, int width,
                                VerilatedContext* contextp) VL_MT_SAFE;
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE;
+inline IData VL_VALUEPLUSARGS_IND(int rbits, const std::string& ld, double& rdr) VL_MT_SAFE {
+    VlWide<2> rwp;
+    const IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
+    if (got) rdr = VL_CVT_D_Q(VL_SET_QW(rwp));
+    return got;
+}
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, CData& rdr) VL_MT_SAFE {
     VlWide<2> rwp;
     const IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
