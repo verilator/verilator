@@ -16,7 +16,8 @@ bool pass = true;
 
 double sc_time_stamp() { return 0; }
 
-void compareDoubles(double const lwp, double const rwp, double epsilon = std::numeric_limits<double>::epsilon()) {
+void compareDoubles(double const lwp, double const rwp,
+                    double epsilon = std::numeric_limits<double>::epsilon()) {
     auto diff = std::fabs(lwp - rwp);
     if (diff >= epsilon) {
         pass &= false;
