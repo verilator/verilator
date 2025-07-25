@@ -10,27 +10,35 @@
 import vltest_bootstrap
 import time
 
+FileTimes = {}
+
+
+def prep_output_file(filename):
+    oldstats = os.path.getmtime(filename)
+    if not oldstats:
+        test.error("No output file found: " + filename)
+    print("Old %s mtime=%d" % (filename, oldstats))
+    FileTimes[filename] = oldstats
+
+
 test.scenarios('vlt')
 
-test.compile()
+test.compile(verilator_flags2=['--stats'])
 
 print("NOTE: use --debugi, as --debug in driver turns off skip-identical")
 
-outfile = test.obj_dir + "/V" + test.name + ".cpp"
-oldstats = os.path.getmtime(outfile)
-if not oldstats:
-    test.error("No output file found: " + outfile)
-print("Old mtime=", oldstats)
+prep_output_file(test.obj_dir + "/V" + test.name + ".cpp")
+prep_output_file(test.obj_dir + "/V" + test.name + "__stats.txt")
 
 time.sleep(2)  # Or else it might take < 1 second to compile and see no diff.
 
 test.setenv('VERILATOR_DEBUG_SKIP_IDENTICAL', "1")
-test.compile()
+test.compile(verilator_flags2=['--stats'])
 
-newstats = os.path.getmtime(outfile)
-print("New mtime=", newstats)
-
-if oldstats != newstats:
-    test.error("--skip-identical was ignored -- recompiled")
+for filename, oldtime in FileTimes.items():
+    newstats = os.path.getmtime(filename)
+    print("New %s mtime=%d" % (filename, newstats))
+    if oldtime != newstats:
+        test.error("--skip-identical was ignored -- regenerated %s" % (filename))
 
 test.passes()

@@ -45,6 +45,7 @@ Verilator 5.039 devel
 * Fix VPI signal range order (#6189) (#6200). [Ibrahim Burak Yorulmaz]
 * Fix structure select causing 'Wide Op' error (#6191). [Danny Oler]
 * Fix 'driver same component' assertion (#6211) (#6215). [Geza Lore]
+* Fix `--stats` overridden by skipping identical build (#6220). [Geza Lore]
 
 
 Verilator 5.038 2025-07-08

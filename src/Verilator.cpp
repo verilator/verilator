@@ -651,7 +651,8 @@ static void process() {
     if (v3Global.opt.stats()) V3Stats::statsStage("emit");
 }
 
-static void verilate(const string& argString) {
+static bool verilate(const string& argString) {
+    // Run verilation, and return false if skipped
     UINFO(1, "Option --verilate: Start Verilation");
 
     // Can we skip doing everything if times are ok?
@@ -661,7 +662,7 @@ static void verilate(const string& argString) {
                                   + "__verFiles.dat",
                               argString)) {
         UINFO(1, "--skip-identical: No change to any source files, exiting");
-        return;
+        return false;
     }
     // Undocumented debugging - cannot be a switch as then command line
     // would mismatch forcing non-identicalness when we set it
@@ -775,10 +776,12 @@ static void verilate(const string& argString) {
     V3Error::abortIfWarnings();
 
     // Free memory so compiler has more for --build
+    // No need to do this if skipped (above) as didn't alloc much
     UINFO(1, "Releasing netlist memory");
     v3Global.rootp()->deleteContents();
     V3Os::releaseMemory();
     if (v3Global.opt.stats()) V3Stats::statsStage("released");
+    return true;
 }
 
 static string buildMakeCmd(const string& makefile, const string& target) {
@@ -862,8 +865,9 @@ int main(int argc, char** argv) {
 
     V3Error::abortIfErrors();
 
+    bool didVerilate = false;
     if (v3Global.opt.verilate()) {
-        verilate(argString);
+        didVerilate = verilate(argString);
     } else {
         UINFO(1, "Option --no-verilate: Skip Verilation");
     }
@@ -874,7 +878,7 @@ int main(int argc, char** argv) {
         execBuildJob();
     }
 
-    reportStatsIfEnabled();
+    if (didVerilate) reportStatsIfEnabled();
     V3DiagSarif::output(true);
 
     // Explicitly release resources
