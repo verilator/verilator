@@ -579,6 +579,7 @@ public:
     void dump() const;
 #endif
 };
+
 //=============================================================================
 // VlStdRandomizer provides a light wrapper for RNG used by std::randomize()
 // to support scope-level randomization.
@@ -586,7 +587,6 @@ class VlStdRandomizer final {
     // MEMBERS
     VlRNG m_rng;  // Random number generator
 
-    // PRIVATE METHODS
 
 public:
     // CONSTRUCTORS

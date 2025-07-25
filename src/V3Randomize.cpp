@@ -119,7 +119,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     // NODE STATE
     // Cleared on Netlist
     //  AstClass::user1()       -> bool.  Set true to indicate needs randomize processing
-    //  AstNodeModule::user1()   -> bool. Set true to indicate needs std::randomize processing
+    //  AstNodeModule::user1()  -> bool.  Set true to indicate needs std::randomize processing
     //  AstNodeExpr::user1()    -> bool.  Set true to indicate constraint expression depending on a
     //                                    randomized variable
     //  AstVar::user1()         -> bool.  Set true to indicate needs rand_mode
@@ -2282,7 +2282,7 @@ class RandomizeVisitor final : public VNVisitor {
             nodep->taskp(randomizeFuncp);
             nodep->dtypeFrom(randomizeFuncp->dtypep());
             if (VN_IS(m_modp, Class)) nodep->classOrPackagep(m_modp);
-            pushDeletep(nodep->pinsp()->unlinkFrBackWithNext());
+            if (nodep->pinsp()) pushDeletep(nodep->pinsp()->unlinkFrBackWithNext());
             return;
         }
         handleRandomizeArgs(nodep);
