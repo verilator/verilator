@@ -812,6 +812,8 @@ string AstVar::scType() const {
         } else {
             return "uint32_t";
         }
+    } else if (isDouble()) {
+        return "double";
     } else {
         return "uint64_t";
     }
