@@ -722,13 +722,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Convert it to (x & 1) + ((x & 2) >> 1) + ((x & 4) >> 2) + ...
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
-        AstNodeExpr* sump = new AstAnd{fl, argp, new AstConst{fl, 1}};
+        AstNodeExpr* sump
+            = new AstAnd{fl, argp, new AstConst{fl, AstConst::WidthedValue{}, argp->width(), 1}};
         sump->user1(true);
         for (int i = 1; i < argp->width(); i++) {
-            AstAnd* const andp
-                = new AstAnd{fl, argp->cloneTreePure(false), new AstConst{fl, (uint32_t)1 << i}};
+            AstAnd* const andp = new AstAnd{
+                fl, argp->cloneTreePure(false),
+                new AstConst{fl, AstConst::WidthedValue{}, argp->width(), (uint32_t)1 << i}};
             andp->user1(true);
-            AstShiftR* const shiftp = new AstShiftR{fl, andp, new AstConst{fl, (uint32_t)i}};
+            AstShiftR* const shiftp = new AstShiftR{
+                fl, andp, new AstConst{fl, AstConst::WidthedValue{}, argp->width(), (uint32_t)i}};
             shiftp->user1(true);
             shiftp->dtypeFrom(nodep);
             sump = new AstAdd{nodep->fileline(), sump, shiftp};
