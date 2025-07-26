@@ -60,6 +60,7 @@
 #include "V3Global.h"
 #include "V3Graph.h"
 #include "V3HierBlock.h"
+#include "V3HierBlockCost.h"
 #include "V3Inline.h"
 #include "V3Inst.h"
 #include "V3Interface.h"
@@ -589,6 +590,9 @@ static void process() {
 
             // Create AstCUse to determine what class forward declarations/#includes needed in C
             V3CUse::cUseAll();
+
+            // Evaluate cost of a current hierarchical block
+            if (!v3Global.opt.libCreate().empty()) V3HierBlockCost::evaluate();
         }
 
         // Output the text

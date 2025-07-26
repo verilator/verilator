@@ -127,6 +127,7 @@ class V3Global final {
     bool m_hasSCTextSections = false;  // Has `systemc_* sections that need to be emitted
     bool m_useParallelBuild = false;  // Use parallel build for model
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
+    uint64_t m_hierDpiCost = 0;  // Total cost of a hier_block
 
     // Memory address to short string mapping (for debug)
     std::unordered_map<const void*, std::string>
@@ -212,6 +213,8 @@ public:
     const std::string& ptrToId(const void* p);
     std::thread::id mainThreadId() const { return m_mainThreadId; }
     static std::vector<std::string> verilatedCppFiles();
+    uint64_t hierDpiCost() const { return m_hierDpiCost; }
+    void hierDpiCost(uint64_t cost) { m_hierDpiCost = cost; }
 };
 
 extern V3Global v3Global;
