@@ -140,14 +140,19 @@ class FileLine final {
 
     // MEMBERS
     // Columns here means number of chars from beginning (i.e. tabs count as one)
+    // 64-bit word # 0
     msgEnSetIdx_t m_msgEnIdx = 0;  // Message enable bit set (index into interned array)
     fileNameIdx_t m_filenameno = 0;  // `line corrected filename number
     bool m_waive : 1;  // Waive warning - pack next to the line number to save 8 bytes of storage
     unsigned m_contentLineno : 31;  // Line number within source stream
+    // 64-bit word # 1
+    uint32_t m_pad = 0;  // space for project coming soon
     int m_firstLineno = 0;  // `line corrected token's first line number
-    int m_firstColumn = 0;  // `line corrected token's first column number
-    int m_lastLineno = 0;  // `line corrected token's last line number
-    int m_lastColumn = 0;  // `line corrected token's last column number
+    // 64-bit word # 2
+    uint32_t m_firstColumn : 24;  // `line corrected token's first column number
+    uint32_t m_lastColumn : 24;  // `line corrected token's last column number
+    uint16_t m_lastLinenoAdder = 0;  // Last line number as offset from m_firstLineno
+    // 64-bit word # 3/4
     VFileContent* m_contentp = nullptr;  // Source text contents line is within
     FileLine* m_parent = nullptr;  // Parent line that included this line
 
@@ -175,14 +180,18 @@ private:
         : m_msgEnIdx{singleton().defaultMsgEnIndex()}
         , m_filenameno{singleton().nameToNumber(FileLine::builtInFilename())}
         , m_waive{false}
-        , m_contentLineno{0} {}
+        , m_contentLineno{0}
+        , m_firstColumn{0}
+        , m_lastColumn{0} {}
 
 public:
     explicit FileLine(const string& filename)
         : m_msgEnIdx{defaultFileLine().m_msgEnIdx}
         , m_filenameno{singleton().nameToNumber(filename)}
         , m_waive{false}
-        , m_contentLineno{0} {}
+        , m_contentLineno{0}
+        , m_firstColumn{0}
+        , m_lastColumn{0} {}
     explicit FileLine(const FileLine& from)
         : m_msgEnIdx{from.m_msgEnIdx}
         , m_filenameno{from.m_filenameno}
@@ -190,8 +199,8 @@ public:
         , m_contentLineno{from.m_contentLineno}
         , m_firstLineno{from.m_firstLineno}
         , m_firstColumn{from.m_firstColumn}
-        , m_lastLineno{from.m_lastLineno}
         , m_lastColumn{from.m_lastColumn}
+        , m_lastLinenoAdder{from.m_lastLinenoAdder}
         , m_contentp{from.m_contentp}
         , m_parent{from.m_parent} {
         if (m_contentp) m_contentp->refInc();
@@ -203,8 +212,8 @@ public:
         , m_contentLineno{fromp->m_contentLineno}
         , m_firstLineno{fromp->m_firstLineno}
         , m_firstColumn{fromp->m_firstColumn}
-        , m_lastLineno{fromp->m_lastLineno}
         , m_lastColumn{fromp->m_lastColumn}
+        , m_lastLinenoAdder{fromp->m_lastLinenoAdder}
         , m_contentp{fromp->m_contentp}
         , m_parent{fromp->m_parent} {
         if (m_contentp) m_contentp->refInc();
@@ -228,8 +237,9 @@ public:
     void contentLinenoFrom(const FileLine* fromp) { m_contentLineno = fromp->m_contentLineno; }
     void lineno(int num) {
         m_firstLineno = num;
-        m_lastLineno = num;
-        m_firstColumn = m_lastColumn = 1;
+        m_lastLinenoAdder = 0;
+        m_firstColumn = 1;
+        m_lastColumn = 1;
     }
     void column(int firstColumn, int lastColumn) {
         m_firstColumn = firstColumn;
@@ -242,24 +252,34 @@ public:
     void lineDirectiveParse(const char* textp, string& filenameRef, int& linenoRef,
                             int& enterExitRef);
     void linenoInc() {
-        m_lastLineno++;
+        if (m_lastLinenoAdder == 65535) {
+            // Overflow can only happen on super-long comment, adjust
+            // starting first line to deal with it this will make token
+            // start later than in reality, but nothing should refer to it,
+            // and the overall line number will not drift.
+            m_firstLineno += 65535 + 1;
+            m_lastLinenoAdder = 0;
+        } else {
+            ++m_lastLinenoAdder;
+        }
         m_lastColumn = 1;
-        m_contentLineno++;
+        ++m_contentLineno;
     }
     void startToken() {
-        m_firstLineno = m_lastLineno;
+        m_firstLineno = lastLineno();
         m_firstColumn = m_lastColumn;
+        m_lastLinenoAdder = 0;
     }
     // Advance last line/column based on given text
     void forwardToken(const char* textp, size_t size, bool trackLines = true);
     int firstLineno() const VL_MT_SAFE { return m_firstLineno; }
-    int firstColumn() const VL_MT_SAFE { return m_firstColumn; }
-    int lastLineno() const VL_MT_SAFE { return m_lastLineno; }
-    int lastColumn() const VL_MT_SAFE { return m_lastColumn; }
+    int firstColumn() const VL_MT_SAFE { return static_cast<int>(m_firstColumn); }
+    int lastLineno() const VL_MT_SAFE { return m_firstLineno + m_lastLinenoAdder; }
+    int lastColumn() const VL_MT_SAFE { return static_cast<int>(m_lastColumn); }
     VFileContent* contentp() const { return m_contentp; }
     // If not otherwise more specific, use last lineno for errors etc,
     // as the parser errors etc generally make more sense pointing at the last parse point
-    int lineno() const VL_MT_SAFE { return m_lastLineno; }
+    int lineno() const VL_MT_SAFE { return lastLineno(); }
     string source() const VL_MT_SAFE;
     string sourcePrefix(int toColumn) const VL_MT_SAFE;
     string prettySource() const VL_MT_SAFE;  // Source, w/stripped unprintables and newlines
@@ -367,7 +387,7 @@ public:
     string warnContextSecondary() const { return warnContext(); }
     bool operator==(const FileLine& rhs) const {
         return (m_firstLineno == rhs.m_firstLineno && m_firstColumn == rhs.m_firstColumn
-                && m_lastLineno == rhs.m_lastLineno && m_lastColumn == rhs.m_lastColumn
+                && m_lastLinenoAdder == rhs.m_lastLinenoAdder && m_lastColumn == rhs.m_lastColumn
                 && m_filenameno == rhs.m_filenameno && m_msgEnIdx == rhs.m_msgEnIdx);
     }
     bool equalFirstLineCol(const FileLine& rhs) const {
@@ -382,7 +402,8 @@ public:
             return (m_firstLineno < rhs.m_firstLineno) ? -1 : 1;
         if (m_firstColumn != rhs.m_firstColumn)
             return (m_firstColumn < rhs.m_firstColumn) ? -1 : 1;
-        if (m_lastLineno != rhs.m_lastLineno) return (m_lastLineno < rhs.m_lastLineno) ? -1 : 1;
+        if (m_lastLinenoAdder != rhs.m_lastLinenoAdder)
+            return (m_lastLinenoAdder < rhs.m_lastLinenoAdder) ? -1 : 1;
         if (m_lastColumn != rhs.m_lastColumn) return (m_lastColumn < rhs.m_lastColumn) ? -1 : 1;
         for (size_t i = 0; i < msgEn().size(); ++i) {
             if (msgEn().test(i) != rhs.msgEn().test(i)) return rhs.msgEn().test(i) ? -1 : 1;
