@@ -6,6 +6,7 @@
 
 typedef class Bar;
 typedef Bar Baz;
+typedef class Quux;
 typedef Quux #(16, 32) Quux_t;
 typedef Quux_t Quuux_t;
 

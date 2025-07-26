@@ -7592,7 +7592,8 @@ class_item<nodep>:                      // ==IEEE: class_item
                         {
                           const string cgName = $1->name();
                           $1->name("__vlAnonCG_" + cgName);
-                          AstVar* const newp = new AstVar{$<fl>1, VVarType::VAR, cgName, VFlagChildDType{}, new AstRefDType($<fl>1, $1->name())};
+                          AstVar* const newp = new AstVar{$1->fileline(), VVarType::VAR, cgName,
+                              VFlagChildDType{}, new AstRefDType($1->fileline(), $1->name())};
                           $$ = addNextNull($1, newp);
                         }
         //                      // local_parameter_declaration under parameter_declaration
