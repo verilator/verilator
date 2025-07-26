@@ -262,7 +262,7 @@ class DataflowOptimize final {
 
         // Attempt to convert cyclic components into acyclic ones
         std::vector<std::unique_ptr<DfgGraph>> madeAcyclicComponents;
-        if (v3Global.opt.fDfgBreakCyckes()) {
+        if (v3Global.opt.fDfgBreakCycles()) {
             for (auto it = cyclicComponents.begin(); it != cyclicComponents.end();) {
                 auto result = V3DfgPasses::breakCycles(**it, m_ctx);
                 if (!result.first) {
@@ -335,7 +335,7 @@ class DataflowOptimize final {
                 UINFO(4, "Applying DFG optimization to module '" << modp->name() << "'");
                 ++m_ctx.m_modules;
                 // Build the DFG of this module or netlist
-                const std::unique_ptr<DfgGraph> dfgp{V3DfgPasses::astToDfg(*modp, m_ctx)};
+                const std::unique_ptr<DfgGraph> dfgp = V3DfgPasses::astToDfg(*modp, m_ctx);
                 // Actually process the graph
                 optimize(*dfgp);
                 // Convert back to Ast
@@ -345,7 +345,7 @@ class DataflowOptimize final {
             // Post V3Scope application. Run on whole netlist.
             UINFO(4, "Applying DFG optimization to entire netlist");
             // Build the DFG of the entire netlist
-            const std::unique_ptr<DfgGraph> dfgp{V3DfgPasses::astToDfg(*netlistp, m_ctx)};
+            const std::unique_ptr<DfgGraph> dfgp = V3DfgPasses::astToDfg(*netlistp, m_ctx);
             // Actually process the graph
             optimize(*dfgp);
             // Convert back to Ast

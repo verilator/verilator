@@ -171,7 +171,7 @@ public:
 
 private:
     V3DfgDfgToAstContext(V3DfgContext& ctx, const std::string& label)
-        : V3DfgSubContext{ctx, label, "Dfg2Ast"} {}
+        : V3DfgSubContext{ctx, label, "DfgToAst"} {}
     ~V3DfgDfgToAstContext() { addStat("result equations", m_resultEquations); }
 };
 class V3DfgEliminateVarsContext final : public V3DfgSubContext {

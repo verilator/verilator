@@ -736,7 +736,7 @@ public:
     bool fConstBitOpTree() const { return m_fConstBitOpTree; }
     bool fConstEager() const { return m_fConstEager; }
     bool fDedupe() const { return m_fDedupe; }
-    bool fDfgBreakCyckes() const { return m_fDfgBreakCycles; }
+    bool fDfgBreakCycles() const { return m_fDfgBreakCycles; }
     bool fDfgPeephole() const { return m_fDfgPeephole; }
     bool fDfgPreInline() const { return m_fDfgPreInline; }
     bool fDfgPostInline() const { return m_fDfgPostInline; }
