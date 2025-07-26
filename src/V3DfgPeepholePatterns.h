@@ -132,16 +132,4 @@ public:
     operator en() const { return m_e; }
 };
 
-struct V3DfgPeepholeContext final {
-    const std::string m_label;  // Label to apply to stats
-
-    // Enable flags for each optimization
-    std::array<bool, VDfgPeepholePattern::_ENUM_END> m_enabled;
-    // Count of applications for each optimization (for statistics)
-    std::array<VDouble0, VDfgPeepholePattern::_ENUM_END> m_count;
-
-    explicit V3DfgPeepholeContext(const std::string& label) VL_MT_DISABLED;
-    ~V3DfgPeepholeContext() VL_MT_DISABLED;
-};
-
 #endif

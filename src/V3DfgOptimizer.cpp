@@ -236,7 +236,7 @@ void V3DfgOptimizer::extract(AstNetlist* netlistp) {
     V3Global::dumpCheckGlobalTree("dfg-extract", 0, dumpTreeEitherLevel() >= 3);
 }
 
-static void process(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
+static void process(DfgGraph& dfg, V3DfgContext& ctx) {
     // Extract the cyclic sub-graphs. We do this because a lot of the optimizations assume a
     // DAG, and large, mostly acyclic graphs could not be optimized due to the presence of
     // small cycles.
@@ -307,7 +307,7 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
     const VNUser2InUse user2InUse;
     const VNUser3InUse user3InUse;
 
-    V3DfgOptimizationContext ctx{label};
+    V3DfgContext ctx{label};
 
     if (!netlistp->topScopep()) {
         // Pre V3Scope application. Run on each module separately.

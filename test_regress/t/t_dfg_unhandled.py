@@ -14,6 +14,6 @@ test.scenarios('vlt')
 test.compile(verilator_flags2=["--stats"])
 
 test.file_grep(test.stats,
-               r'Optimizations, DFG pre inline Ast2Dfg, non-representable \(impure\)\s+(\d+)', 1)
+               r'Optimizations, DFG pre inline AstToDfg, non-representable \(impure\)\s+(\d+)', 1)
 
 test.passes()

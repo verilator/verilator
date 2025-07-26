@@ -97,7 +97,7 @@ class AstToDfgVisitor final : public VNVisitor {
     // STATE
 
     DfgGraph* const m_dfgp;  // The graph being built
-    V3DfgOptimizationContext& m_ctx;  // The optimization context for stats
+    V3DfgAstToDfgContext& m_ctx;  // The context for stats
     bool m_foundUnhandled = false;  // Found node not implemented as DFG or not implemented 'visit'
     std::vector<DfgVertex*> m_uncommittedVertices;  // Vertices that we might decide to revert
     bool m_converting = false;  // We are trying to convert some logic at the moment
@@ -886,7 +886,7 @@ class AstToDfgVisitor final : public VNVisitor {
     }
 
     // CONSTRUCTOR
-    explicit AstToDfgVisitor(RootType& root, V3DfgOptimizationContext& ctx)
+    explicit AstToDfgVisitor(RootType& root, V3DfgAstToDfgContext& ctx)
         : m_dfgp{makeDfg(root)}
         , m_ctx{ctx} {
         // Build the DFG
@@ -922,15 +922,15 @@ class AstToDfgVisitor final : public VNVisitor {
     }
 
 public:
-    static DfgGraph* apply(RootType& root, V3DfgOptimizationContext& ctx) {
+    static DfgGraph* apply(RootType& root, V3DfgAstToDfgContext& ctx) {
         return AstToDfgVisitor{root, ctx}.m_dfgp;
     }
 };
 
-DfgGraph* V3DfgPasses::astToDfg(AstModule& module, V3DfgOptimizationContext& ctx) {
-    return AstToDfgVisitor</* T_Scoped: */ false>::apply(module, ctx);
+DfgGraph* V3DfgPasses::astToDfg(AstModule& module, V3DfgContext& ctx) {
+    return AstToDfgVisitor</* T_Scoped: */ false>::apply(module, ctx.m_ast2DfgContext);
 }
 
-DfgGraph* V3DfgPasses::astToDfg(AstNetlist& netlist, V3DfgOptimizationContext& ctx) {
-    return AstToDfgVisitor</* T_Scoped: */ true>::apply(netlist, ctx);
+DfgGraph* V3DfgPasses::astToDfg(AstNetlist& netlist, V3DfgContext& ctx) {
+    return AstToDfgVisitor</* T_Scoped: */ true>::apply(netlist, ctx.m_ast2DfgContext);
 }

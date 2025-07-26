@@ -25,92 +25,6 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-V3DfgBinToOneHotContext::~V3DfgBinToOneHotContext() {
-    V3Stats::addStat("Optimizations, DFG " + m_label + " BinToOneHot, decoders created",
-                     m_decodersCreated);
-}
-
-V3DfgBreakCyclesContext::~V3DfgBreakCyclesContext() {
-    V3Stats::addStat("Optimizations, DFG " + m_label + " BreakCycles, made acyclic", m_nFixed);
-    V3Stats::addStat("Optimizations, DFG " + m_label + " BreakCycles, improved", m_nImproved);
-    V3Stats::addStat("Optimizations, DFG " + m_label + " BreakCycles, left unchanged",
-                     m_nUnchanged);
-    V3Stats::addStat("Optimizations, DFG " + m_label + " BreakCycles, trivial", m_nTrivial);
-    V3Stats::addStat("Optimizations, DFG " + m_label + " BreakCycles, changes applied",
-                     m_nImprovements);
-}
-
-V3DfgCseContext::~V3DfgCseContext() {
-    V3Stats::addStat("Optimizations, DFG " + m_label + " CSE, expressions eliminated",
-                     m_eliminated);
-}
-
-V3DfgRegularizeContext::~V3DfgRegularizeContext() {
-    V3Stats::addStat("Optimizations, DFG " + m_label + " Regularize, temporaries introduced",
-                     m_temporariesIntroduced);
-}
-
-V3DfgEliminateVarsContext::~V3DfgEliminateVarsContext() {
-    V3Stats::addStat("Optimizations, DFG " + m_label + " EliminateVars, variables replaced",
-                     m_varsReplaced);
-    V3Stats::addStat("Optimizations, DFG " + m_label + " EliminateVars, variables removed",
-                     m_varsRemoved);
-}
-
-static std::string getPrefix(const std::string& label) {
-    if (label.empty()) return "";
-    std::string str = VString::removeWhitespace(label);
-    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {  //
-        return c == ' ' ? '-' : std::tolower(c);
-    });
-    str += "-";
-    return str;
-}
-
-V3DfgOptimizationContext::V3DfgOptimizationContext(const std::string& label)
-    : m_label{label}
-    , m_prefix{getPrefix(label)} {}
-
-V3DfgOptimizationContext::~V3DfgOptimizationContext() {
-    const string prefix = "Optimizations, DFG " + m_label + " ";
-    V3Stats::addStat(prefix + "General, modules", m_modules);
-    V3Stats::addStat(prefix + "Ast2Dfg, coalesced assignments", m_coalescedAssignments);
-    V3Stats::addStat(prefix + "Ast2Dfg, input equations", m_inputEquations);
-    V3Stats::addStat(prefix + "Ast2Dfg, representable", m_representable);
-    V3Stats::addStat(prefix + "Ast2Dfg, non-representable (dtype)", m_nonRepDType);
-    V3Stats::addStat(prefix + "Ast2Dfg, non-representable (impure)", m_nonRepImpure);
-    V3Stats::addStat(prefix + "Ast2Dfg, non-representable (timing)", m_nonRepTiming);
-    V3Stats::addStat(prefix + "Ast2Dfg, non-representable (lhs)", m_nonRepLhs);
-    V3Stats::addStat(prefix + "Ast2Dfg, non-representable (node)", m_nonRepNode);
-    V3Stats::addStat(prefix + "Ast2Dfg, non-representable (unknown)", m_nonRepUnknown);
-    V3Stats::addStat(prefix + "Ast2Dfg, non-representable (var ref)", m_nonRepVarRef);
-    V3Stats::addStat(prefix + "Ast2Dfg, non-representable (width)", m_nonRepWidth);
-    V3Stats::addStat(prefix + "Dfg2Ast, result equations", m_resultEquations);
-
-    // Print the collected patterns
-    if (v3Global.opt.stats()) {
-        // Label to lowercase, without spaces
-        std::string ident = m_label;
-        std::transform(ident.begin(), ident.end(), ident.begin(), [](unsigned char c) {  //
-            return c == ' ' ? '_' : std::tolower(c);
-        });
-
-        // File to dump to
-        const std::string filename = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix()
-                                     + "__stats_dfg_patterns__" + ident + ".txt";
-        // Open, write, close
-        const std::unique_ptr<std::ofstream> ofp{V3File::new_ofstream(filename)};
-        if (ofp->fail()) v3fatal("Can't write file: " << filename);
-        m_patternStats.dump(m_label, *ofp);
-    }
-
-    // Check the stats are consistent
-    UASSERT(m_inputEquations
-                == m_representable + m_nonRepDType + m_nonRepImpure + m_nonRepTiming + m_nonRepLhs
-                       + m_nonRepNode + m_nonRepUnknown + m_nonRepVarRef + m_nonRepWidth,
-            "Inconsistent statistics");
-}
-
 // Common sub-expression elimination
 void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
     // Remove common sub-expressions
@@ -592,7 +506,7 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
     for (AstNode* const nodep : replacedVariables) nodep->unlinkFrBack()->deleteTree();
 }
 
-void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
+void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgContext& ctx) {
     // There is absolutely nothing useful we can do with a graph of size 2 or less
     if (dfg.size() <= 2) return;
 
