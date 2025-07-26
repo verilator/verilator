@@ -18,13 +18,12 @@
 #include "verilatedos.h"
 
 #if defined(_WIN32) || defined(__MINGW32__)
-# include <io.h>  // open, read, write, close
+#include <io.h>  // open, read, write, close
 #endif
-
-#include "V3String.h"
 
 #include "V3Error.h"
 #include "V3FileLine.h"
+#include "V3String.h"
 
 #ifndef V3ERROR_NO_GLOBAL_
 #include "V3Global.h"
