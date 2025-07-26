@@ -6,13 +6,9 @@
 
 module t;
 
-  logic [31:0] packed_data_32;
-  byte         byte_in           [4];
-  logic [ 3:0] x = 4'($random());
+   logic [31:0] packed_data_32;
+   byte          byte_in[4];
 
-  initial begin
-    packed_data_32 = {<<$random{byte_in}};
-    packed_data_32 = {<<x{byte_in}};
-  end
+   initial packed_data_32 = {<<$random{byte_in}};
 
 endmodule
