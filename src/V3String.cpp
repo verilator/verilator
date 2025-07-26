@@ -17,6 +17,10 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#if defined(_WIN32) || defined(__MINGW32__)
+# include <io.h>  // open, read, write, close
+#endif
+
 #include "V3String.h"
 
 #include "V3Error.h"
@@ -28,6 +32,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 #endif
 
 #include <algorithm>
+#include <fcntl.h>
 
 size_t VName::s_minLength = 32;
 size_t VName::s_maxLength = 0;  // Disabled
@@ -492,6 +497,20 @@ void VHashSha256::insert(const void* datap, size_t length) {
     }
 
     m_remainder = std::string(reinterpret_cast<const char*>(chunkp + posBegin), chunkLen - posEnd);
+}
+
+void VHashSha256::insertFile(const string& filename) {
+    static const size_t BUFFER_SIZE = 64 * 1024;
+
+    const int fd = ::open(filename.c_str(), O_RDONLY);
+    if (fd < 0) return;
+
+    std::array<char, BUFFER_SIZE + 1> buf;
+    while (const size_t got = ::read(fd, &buf, BUFFER_SIZE)) {
+        if (got <= 0) break;
+        insert(&buf, got);
+    }
+    ::close(fd);
 }
 
 void VHashSha256::finalize() {

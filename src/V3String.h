@@ -190,6 +190,7 @@ public:
         insert(data.data(), data.length());
     }  // Process data into the digest
     void insert(uint64_t value) { insert(cvtToStr(value)); }
+    void insertFile(const string& filename);
 
 private:
     static void selfTestOne(const string& data, const string& data2, const string& exp,
