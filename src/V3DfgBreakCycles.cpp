@@ -1109,8 +1109,8 @@ public:
     }
 };
 
-std::pair<std::unique_ptr<DfgGraph>, bool>
-V3DfgPasses::breakCycles(const DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
+std::pair<std::unique_ptr<DfgGraph>, bool>  //
+V3DfgPasses::breakCycles(const DfgGraph& dfg, V3DfgContext& ctx) {
     // Shorthand for dumping graph at given dump level
     const auto dump = [&](int level, const DfgGraph& dfg, const std::string& name) {
         if (dumpDfgLevel() >= level) dfg.dumpDotFilePrefixed(ctx.prefix() + "breakCycles-" + name);

@@ -23,21 +23,20 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3DfgPeephole.h"
-
 #include "V3Dfg.h"
 #include "V3DfgCache.h"
 #include "V3DfgPasses.h"
+#include "V3DfgPeepholePatterns.h"
 #include "V3Stats.h"
 
 #include <cctype>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-V3DfgPeepholeContext::V3DfgPeepholeContext(const std::string& label)
-    : m_label{label} {
+V3DfgPeepholeContext::V3DfgPeepholeContext(V3DfgContext& ctx, const std::string& label)
+    : V3DfgSubContext{ctx, label, "Peephole"} {
     const auto checkEnabled = [this](VDfgPeepholePattern id) {
-        string str{id.ascii()};
+        std::string str{id.ascii()};
         std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {  //
             return c == '_' ? '-' : std::tolower(c);
         });
@@ -50,11 +49,11 @@ V3DfgPeepholeContext::V3DfgPeepholeContext(const std::string& label)
 
 V3DfgPeepholeContext::~V3DfgPeepholeContext() {
     const auto emitStat = [this](VDfgPeepholePattern id) {
-        string str{id.ascii()};
+        std::string str{id.ascii()};
         std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {  //
             return c == '_' ? ' ' : std::tolower(c);
         });
-        V3Stats::addStat("Optimizations, DFG " + m_label + " Peephole, " + str, m_count[id]);
+        addStat(str, m_count[id]);
     };
 #define OPTIMIZATION_EMIT_STATS(id, name) emitStat(VDfgPeepholePattern::id);
     FOR_EACH_DFG_PEEPHOLE_OPTIMIZATION(OPTIMIZATION_EMIT_STATS)

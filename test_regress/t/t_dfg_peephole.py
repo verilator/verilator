@@ -20,7 +20,7 @@ if not os.path.exists(root + "/.git"):
 # Read optimizations
 optimizations = []
 
-hdrFile = "../src/V3DfgPeephole.h"
+hdrFile = "../src/V3DfgPeepholePatterns.h"
 with open(hdrFile, 'r', encoding="utf8") as hdrFh:
     prevOpt = ""
     lineno = 0

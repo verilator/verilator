@@ -72,10 +72,11 @@ set(HEADERS
     V3Descope.h
     V3Dfg.h
     V3DfgCache.h
+    V3DfgContext.h
     V3DfgOptimizer.h
     V3DfgPasses.h
     V3DfgPatternStats.h
-    V3DfgPeephole.h
+    V3DfgPeepholePatterns.h
     V3DfgVertices.h
     V3DiagSarif.h
     V3DupFinder.h

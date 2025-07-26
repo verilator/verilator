@@ -138,7 +138,7 @@ class DfgToAstVisitor final : DfgVisitor {
     // STATE
 
     AstModule* const m_modp;  // The parent/result module - This is nullptr when T_Scoped
-    V3DfgOptimizationContext& m_ctx;  // The optimization context for stats
+    V3DfgDfgToAstContext& m_ctx;  // The context for stats
     AstNodeExpr* m_resultp = nullptr;  // The result node of the current traversal
 
     // METHODS
@@ -276,7 +276,7 @@ class DfgToAstVisitor final : DfgVisitor {
 #include "V3Dfg__gen_dfg_to_ast.h"
 
     // Constructor
-    explicit DfgToAstVisitor(DfgGraph& dfg, V3DfgOptimizationContext& ctx)
+    explicit DfgToAstVisitor(DfgGraph& dfg, V3DfgDfgToAstContext& ctx)
         : m_modp{dfg.modulep()}
         , m_ctx{ctx} {
         // Convert the graph back to combinational assignments
@@ -297,13 +297,13 @@ class DfgToAstVisitor final : DfgVisitor {
     }
 
 public:
-    static void apply(DfgGraph& dfg, V3DfgOptimizationContext& ctx) { DfgToAstVisitor{dfg, ctx}; }
+    static void apply(DfgGraph& dfg, V3DfgDfgToAstContext& ctx) { DfgToAstVisitor{dfg, ctx}; }
 };
 
-void V3DfgPasses::dfgToAst(DfgGraph& dfg, V3DfgOptimizationContext& ctx) {
+void V3DfgPasses::dfgToAst(DfgGraph& dfg, V3DfgContext& ctx) {
     if (dfg.modulep()) {
-        DfgToAstVisitor</* T_Scoped: */ false>::apply(dfg, ctx);
+        DfgToAstVisitor</* T_Scoped: */ false>::apply(dfg, ctx.m_dfg2AstContext);
     } else {
-        DfgToAstVisitor</* T_Scoped: */ true>::apply(dfg, ctx);
+        DfgToAstVisitor</* T_Scoped: */ true>::apply(dfg, ctx.m_dfg2AstContext);
     }
 }
