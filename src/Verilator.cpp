@@ -119,6 +119,7 @@ V3Global v3Global;
 
 static void reportStatsIfEnabled() {
     if (v3Global.opt.stats()) {
+        FileLine::stats();
         V3Stats::statsFinalAll(v3Global.rootp());
         V3Stats::statsReport();
     }

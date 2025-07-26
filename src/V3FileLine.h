@@ -213,6 +213,7 @@ public:
     FileLine* copyOrSameFileLine();
     FileLine* copyOrSameFileLineApplied();
     static void deleteAllRemaining();
+    static void stats();
     ~FileLine();
 #ifdef VL_LEAK_CHECKS
     static void* operator new(size_t size);

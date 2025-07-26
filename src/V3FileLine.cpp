@@ -26,6 +26,7 @@
 # include "V3Global.h"
 # include "V3Control.h"
 # include "V3File.h"
+# include "V3Stats.h"
 #endif
 #include "V3Waiver.h"
 // clang-format on
@@ -550,6 +551,18 @@ void FileLine::operator delete(void* objp, size_t size) {
     ::operator delete(objp);
 }
 #endif
+
+void FileLine::stats() {
+#ifndef V3ERROR_NO_GLOBAL_
+    V3Stats::addStatSum("FileLines, Number of filenames",
+                        singleton().m_names.size());  // Max m_filenameno
+    V3Stats::addStatSum("FileLines, Message enable sets",
+                        singleton().m_internedMsgEns.size());  // Max m_msgEnIdx
+    // Don't currently have a good path to recording max line/column,
+    // Infrequently useful, alternatively we could keep globals we update as make each FileLine
+    // or could use fileLineLeakChecks.
+#endif
+}
 
 void FileLine::deleteAllRemaining() {
 #ifdef VL_LEAK_CHECKS
