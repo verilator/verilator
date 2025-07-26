@@ -304,6 +304,8 @@ public:
     explicit VFwdType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
+    // Is a node type compatible with the declaration
+    bool isNodeCompatible(const AstNode* nodep) const;
 };
 constexpr bool operator==(const VFwdType& lhs, const VFwdType& rhs) { return lhs.m_e == rhs.m_e; }
 constexpr bool operator==(const VFwdType& lhs, VFwdType::en rhs) { return lhs.m_e == rhs; }
@@ -2236,6 +2238,8 @@ public:
     }
     virtual void tag(const string& text) {}
     virtual string tag() const { return ""; }
+    virtual uint32_t declTokenNum() const { return 0; }
+    virtual void declTokenNumSetMin(uint32_t tokenNum) {}
     virtual string verilogKwd() const { return ""; }
     string nameProtect() const VL_MT_STABLE;  // Name with --protect-id applied
     string origNameProtect() const;  // origName with --protect-id applied

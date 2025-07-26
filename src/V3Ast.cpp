@@ -59,6 +59,27 @@ const VNTypeInfo VNType::typeInfoTable[] = {
 std::ostream& operator<<(std::ostream& os, VNType rhs);
 
 //######################################################################
+// VFwdType
+
+bool VFwdType::isNodeCompatible(const AstNode* nodep) const {
+    const AstNode* defp = nodep;
+    if (const AstTypedef* const adefp = VN_CAST(defp, Typedef)) defp = adefp->subDTypep();
+    if (const AstNodeDType* const adefp = VN_CAST(defp, NodeDType))
+        defp = adefp->skipRefToNonRefp();
+    switch (m_e) {
+    case VFwdType::NONE: return true; break;
+    case VFwdType::ENUM: return VN_IS(defp, EnumDType); break;
+    case VFwdType::STRUCT: return VN_IS(defp, StructDType); break;
+    case VFwdType::UNION: return VN_IS(defp, UnionDType); break;
+    case VFwdType::INTERFACE_CLASS:  // FALLTHRU  // TODO: Over permissive for now
+    case VFwdType::CLASS: return VN_IS(defp, ClassRefDType) || VN_IS(defp, Class); break;
+    default: v3fatalSrc("Bad case");
+    }
+    VL_UNREACHABLE;
+    return false;  // LCOV_EXCL_LINE
+}
+
+//######################################################################
 // VSelfPointerText
 
 const std::shared_ptr<const string> VSelfPointerText::s_emptyp = std::make_shared<string>("");

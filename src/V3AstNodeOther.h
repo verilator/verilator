@@ -1829,6 +1829,7 @@ class AstTypedef final : public AstNode {
 
     string m_name;
     string m_tag;  // Holds the string of the verilator tag -- used in XML output.
+    uint32_t m_declTokenNum;  // Declaration token number
     bool m_attrPublic = false;
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
@@ -1838,6 +1839,7 @@ public:
                AstNodeDType* dtp)
         : ASTGEN_SUPER_Typedef(fl)
         , m_name{name}
+        , m_declTokenNum{fl->tokenNum()}
         , m_isHideLocal{false}
         , m_isHideProtected{false} {
         childDTypep(dtp);  // Only for parser
@@ -1852,6 +1854,10 @@ public:
         return dtypep() ? dtypep() : childDTypep();
     }
     // METHODS
+    uint32_t declTokenNum() const override { return m_declTokenNum; }
+    void declTokenNumSetMin(uint32_t tokenNum) override {
+        m_declTokenNum = std::min(m_declTokenNum, tokenNum);
+    }
     string name() const override VL_MT_STABLE { return m_name; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     bool hasDType() const override VL_MT_SAFE { return true; }
@@ -1868,15 +1874,20 @@ public:
 class AstTypedefFwd final : public AstNode {
     // Forward declaration of a type; stripped after netlist parsing is complete
     string m_name;
+    const VFwdType m_fwdType;  // Forward type for lint check
 
 public:
-    AstTypedefFwd(FileLine* fl, const string& name)
+    AstTypedefFwd(FileLine* fl, const string& name, const VFwdType& fwdType)
         : ASTGEN_SUPER_TypedefFwd(fl)
-        , m_name{name} {}
+        , m_name{name}
+        , m_fwdType{fwdType} {}
     ASTGEN_MEMBERS_AstTypedefFwd;
     // METHODS
     string name() const override VL_MT_STABLE { return m_name; }
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
+    VFwdType fwdType() const { return m_fwdType; }
 };
 class AstUdpTable final : public AstNode {
     // @astgen op1 := linesp : List[AstUdpTableLine]
@@ -2505,6 +2516,7 @@ class AstClass final : public AstNodeModule {
     // @astgen op4 := extendsp : List[AstClassExtends]
     // MEMBERS
     // @astgen ptr := m_classOrPackagep : Optional[AstClassPackage]  // Package to be emitted with
+    uint32_t m_declTokenNum;  // Declaration token number
     VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
     bool m_extended = false;  // Is extension or extended by other classes
     bool m_interfaceClass = false;  // Interface class
@@ -2514,7 +2526,8 @@ class AstClass final : public AstNodeModule {
 
 public:
     AstClass(FileLine* fl, const string& name, const string& libname)
-        : ASTGEN_SUPER_Class(fl, name, libname) {}
+        : ASTGEN_SUPER_Class(fl, name, libname)
+        , m_declTokenNum{fl->tokenNum()} {}
     ASTGEN_MEMBERS_AstClass;
     string verilogKwd() const override { return "class"; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
@@ -2538,6 +2551,10 @@ public:
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
+    uint32_t declTokenNum() const override { return m_declTokenNum; }
+    void declTokenNumSetMin(uint32_t tokenNum) override {
+        m_declTokenNum = std::min(m_declTokenNum, tokenNum);
+    }
     void baseOverride(const VBaseOverride& flag) { m_baseOverride = flag; }
     VBaseOverride baseOverride() const { return m_baseOverride; }
     // Return the lowest class extended from, or this class

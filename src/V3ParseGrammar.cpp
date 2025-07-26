@@ -260,7 +260,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     }
     if (VN_IS(dtypep, ParseTypeDType)) {
         // Parser needs to know what is a type
-        AstNode* const newp = new AstTypedefFwd{fileline, name};
+        AstNode* const newp = new AstTypedefFwd{fileline, name, VFwdType::NONE};
         AstNode::addNext<AstNode, AstNode>(nodep, newp);
     }
     // Don't set dtypep in the ranging;

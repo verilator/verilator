@@ -534,7 +534,7 @@
        "childDTypep": [
         {"type":"PARSETYPEDTYPE","name":"","addr":"(PI)","loc":"d,32:20,32:24","dtypep":"UNLINKED","generic":false}
       ],"delayp": [],"valuep": [],"attrsp": []},
-      {"type":"TYPEDEFFWD","name":"T","addr":"(QI)","loc":"d,32:25,32:26"},
+      {"type":"TYPEDEFFWD","name":"T","addr":"(QI)","loc":"d,32:25,32:26","fwdType":"none"},
       {"type":"VAR","name":"m_bound","addr":"(RI)","loc":"d,33:21,33:28","dtypep":"UNLINKED","origName":"m_bound","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"VAR","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED",
        "childDTypep": [
         {"type":"BASICDTYPE","name":"int","addr":"(SI)","loc":"d,33:17,33:20","dtypep":"(SI)","keyword":"int","range":"31:0","generic":false,"rangep": []}

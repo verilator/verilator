@@ -146,7 +146,7 @@ class FileLine final {
     bool m_waive : 1;  // Waive warning - pack next to the line number to save 8 bytes of storage
     unsigned m_contentLineno : 31;  // Line number within source stream
     // 64-bit word # 1
-    uint32_t m_pad = 0;  // space for project coming soon
+    uint32_t m_tokenNum = 0;  // Token number in processing order
     int m_firstLineno = 0;  // `line corrected token's first line number
     // 64-bit word # 2
     uint32_t m_firstColumn : 24;  // `line corrected token's first column number
@@ -197,6 +197,7 @@ public:
         , m_filenameno{from.m_filenameno}
         , m_waive{from.m_waive}
         , m_contentLineno{from.m_contentLineno}
+        , m_tokenNum{from.m_tokenNum}
         , m_firstLineno{from.m_firstLineno}
         , m_firstColumn{from.m_firstColumn}
         , m_lastColumn{from.m_lastColumn}
@@ -210,6 +211,7 @@ public:
         , m_filenameno{fromp->m_filenameno}
         , m_waive{fromp->m_waive}
         , m_contentLineno{fromp->m_contentLineno}
+        , m_tokenNum{fromp->m_tokenNum}
         , m_firstLineno{fromp->m_firstLineno}
         , m_firstColumn{fromp->m_firstColumn}
         , m_lastColumn{fromp->m_lastColumn}
@@ -272,6 +274,7 @@ public:
     }
     // Advance last line/column based on given text
     void forwardToken(const char* textp, size_t size, bool trackLines = true);
+    uint32_t tokenNum() const VL_MT_SAFE { return m_tokenNum; }
     int firstLineno() const VL_MT_SAFE { return m_firstLineno; }
     int firstColumn() const VL_MT_SAFE { return static_cast<int>(m_firstColumn); }
     int lastLineno() const VL_MT_SAFE { return m_firstLineno + m_lastLinenoAdder; }
@@ -386,9 +389,10 @@ public:
     /// Simplified information vs warnContextPrimary() to make dump clearer
     string warnContextSecondary() const { return warnContext(); }
     bool operator==(const FileLine& rhs) const {
-        return (m_firstLineno == rhs.m_firstLineno && m_firstColumn == rhs.m_firstColumn
-                && m_lastLinenoAdder == rhs.m_lastLinenoAdder && m_lastColumn == rhs.m_lastColumn
-                && m_filenameno == rhs.m_filenameno && m_msgEnIdx == rhs.m_msgEnIdx);
+        return (m_tokenNum == rhs.m_tokenNum && m_firstLineno == rhs.m_firstLineno
+                && m_firstColumn == rhs.m_firstColumn && m_lastLinenoAdder == rhs.m_lastLinenoAdder
+                && m_lastColumn == rhs.m_lastColumn && m_filenameno == rhs.m_filenameno
+                && m_msgEnIdx == rhs.m_msgEnIdx);
     }
     bool equalFirstLineCol(const FileLine& rhs) const {
         return (m_filenameno == rhs.m_filenameno && m_firstLineno == rhs.m_firstLineno
@@ -408,6 +412,8 @@ public:
         for (size_t i = 0; i < msgEn().size(); ++i) {
             if (msgEn().test(i) != rhs.msgEn().test(i)) return rhs.msgEn().test(i) ? -1 : 1;
         }
+        // TokenNum is compared last as makes more logical sort order by file/line first
+        if (m_tokenNum != rhs.m_tokenNum) return (m_tokenNum < rhs.m_tokenNum) ? -1 : 1;
         return 0;  // (*this) and rhs are equivalent
     }
 

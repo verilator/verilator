@@ -17,6 +17,7 @@ Verilator 5.039 devel
 * Add NOEFFECT warning, replacing previous `foreach` error.
 * Add SPECIFYIGN warning for specify constructs that were previously silently ignored.
 * Add enum base data type, and wire data type checking per IEEE.
+* Add error on missing forward declarations (#6207). [Alex Solomatnikov]
 * Support member-level triggers for virtual interfaces (#5166) (#6148). [Yilou Wang]
 * Support disabling a fork in additional contexts (#5432 partial) (#6174) (#6183). [Ryszard Rozak, Antmicro Ltd.]
 * Support disable dotted references (#6154). [Ryszard Rozak, Antmicro Ltd.]

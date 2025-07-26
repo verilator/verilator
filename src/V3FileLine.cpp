@@ -293,6 +293,8 @@ void FileLine::lineDirectiveParse(const char* textp, string& filenameRef, int& l
 }
 
 void FileLine::forwardToken(const char* textp, size_t size, bool trackLines) {
+    static int s_tokenNum = 1;
+    m_tokenNum = s_tokenNum++;
     for (const char* sp = textp; size && *sp; ++sp, --size) {
         if (*sp == '\n') {
             if (trackLines) linenoInc();

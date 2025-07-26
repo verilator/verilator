@@ -310,6 +310,8 @@ public:
                                << nodep->warnContextPrimary() << '\n'
                                << fnodep->warnOther() << "... Location of original declaration\n"
                                << fnodep->warnContextSecondary());
+                nodep->declTokenNumSetMin(0);  // Disable checking forward typedefs
+                fnodep->declTokenNumSetMin(0);  // Disable checking forward typedefs
             } else {
                 nodep->v3error("Unsupported in C: "
                                << ucfirst(nodeTextType(nodep)) << " has the same name as "
@@ -2063,8 +2065,13 @@ class LinkDotParamVisitor final : public VNVisitor {
     }
     void visit(AstTypedefFwd* nodep) override {  // ParamVisitor::
         VSymEnt* const foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->name());
-        if (!foundp && v3Global.opt.pedantic()
-            && nodep->name() != "process") {  // Process is dangling as isn't implemented yet
+        if (foundp) {
+            // If the typedef was earlier in source order (tokenNum), then remember that earlier
+            // point to avoid error something wasn't declared
+            // Might be forward declaring something odd (with declTokenNumSetMin not implemented,
+            // but should be harmless to ignore as this is just for error detection
+            foundp->nodep()->declTokenNumSetMin(nodep->fileline()->tokenNum());
+        } else if (v3Global.opt.pedantic()) {
             // We only check it was ever really defined in pedantic mode, as it
             // might have been in a header file referring to a module we never
             // needed so there are false positives
@@ -2643,6 +2650,23 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // e.g. parmaeterization or referring to a "class (type T) extends T"
         // Resolve it so later Class:: references into its base classes work
         symIterateNull(nodep, m_statep->getNodeSym(nodep));
+    }
+
+    void checkDeclOrder(AstNode* nodep, AstNode* declp) {
+        uint32_t declTokenNum = declp->declTokenNum();
+        if (!declTokenNum) return;  // Not implemented/valid on this object
+        if (nodep->fileline()->tokenNum() < declTokenNum) {
+            UINFO(1, "Related node " << nodep->fileline()->tokenNum() << " " << nodep);
+            UINFO(1, "Related decl " << declTokenNum << " " << declp);
+            nodep->v3error("Reference to "
+                           << nodep->prettyNameQ() << " before declaration (IEEE 1800-2023 6.18)\n"
+                           << nodep->warnMore()
+                           << "... Suggest move the declaration before the reference, or use a "
+                              "forward typedef\n"
+                           << nodep->warnContextPrimary() << '\n'
+                           << declp->warnOther() << "... Location of original declaration\n"
+                           << declp->warnContextSecondary());
+        }
     }
 
     void replaceWithCheckBreak(AstNode* oldp, AstNodeDType* newp) {
@@ -3505,6 +3529,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 ok = m_ds.m_dotPos == DP_NONE || m_ds.m_dotPos == DP_SCOPE;
                 if (ok) {
                     AstRefDType* const refp = new AstRefDType{nodep->fileline(), nodep->name()};
+                    // Don't check if typedef is to a <type T>::<reference> as might not be
+                    // resolved yet
+                    if (m_ds.m_dotPos == DP_NONE) checkDeclOrder(nodep, defp);
                     refp->typedefp(defp);
                     if (VN_IS(nodep->backp(), SelExtract)) {
                         m_packedArrayDtp = refp;
@@ -4551,6 +4578,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 foundp = m_curSymp->findIdFlat(nodep->name());
             }
             if (AstTypedef* const defp = foundp ? VN_CAST(foundp->nodep(), Typedef) : nullptr) {
+                // Don't check if typedef is to a <type T>::<reference> as might not be resolved
+                // yet
+                if (!nodep->classOrPackagep()) checkDeclOrder(nodep, defp);
                 nodep->typedefp(defp);
                 nodep->classOrPackagep(foundp->classOrPackagep());
             } else if (AstParamTypeDType* const defp
@@ -4566,6 +4596,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     nodep->classOrPackagep(foundp->classOrPackagep());
                 }
             } else if (AstClass* const defp = foundp ? VN_CAST(foundp->nodep(), Class) : nullptr) {
+                // Don't check if typedef is to a <type T>::<reference> as might not be resolved
+                // yet
+                if (!nodep->classOrPackagep()) checkDeclOrder(nodep, defp);
                 AstPin* const paramsp = nodep->paramsp();
                 if (paramsp) paramsp->unlinkFrBackWithNext();
                 AstClassRefDType* const newp

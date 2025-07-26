@@ -1771,6 +1771,7 @@ void AstClass::dump(std::ostream& str) const {
     if (useVirtualPublic()) str << " [VIRPUB]";
 }
 void AstClass::dumpJson(std::ostream& str) const {
+    // dumpJsonNumFunc(str, declTokenNum);  // Not dumped as adding token changes whole file
     dumpJsonBoolFunc(str, isExtended);
     dumpJsonBoolFunc(str, isInterfaceClass);
     dumpJsonBoolFunc(str, isVirtual);
@@ -2161,7 +2162,16 @@ void AstTypedef::dump(std::ostream& str) const {
     }
 }
 void AstTypedef::dumpJson(std::ostream& str) const {
+    // dumpJsonNumFunc(str, declTokenNum);  // Not dumped as adding token changes whole file
     dumpJsonBoolFunc(str, attrPublic);
+    dumpJsonGen(str);
+}
+void AstTypedefFwd::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " [" << fwdType().ascii() << "]";
+}
+void AstTypedefFwd::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "fwdType", fwdType().ascii());
     dumpJsonGen(str);
 }
 void AstNodeRange::dump(std::ostream& str) const { this->AstNode::dump(str); }

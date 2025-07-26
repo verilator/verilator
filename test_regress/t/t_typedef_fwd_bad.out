@@ -1,0 +1,44 @@
+%Error: t/t_typedef_fwd.v:18:5: Reference to 'enum_t' before declaration (IEEE 1800-2023 6.18)
+                              : ... Suggest move the declaration before the reference, or use a forward typedef
+   18 |     enum_t m_e;   
+      |     ^~~~~~
+        t/t_typedef_fwd.v:26:24: ... Location of original declaration
+   26 |   typedef enum {N = 0} enum_t;
+      |                        ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_typedef_fwd.v:19:5: Reference to 'struct_t' before declaration (IEEE 1800-2023 6.18)
+                              : ... Suggest move the declaration before the reference, or use a forward typedef
+   19 |     struct_t m_s;   
+      |     ^~~~~~~~
+        t/t_typedef_fwd.v:28:34: ... Location of original declaration
+   28 |   typedef struct packed {int s;} struct_t;
+      |                                  ^~~~~~~~
+%Error: t/t_typedef_fwd.v:20:5: Reference to 'union_t' before declaration (IEEE 1800-2023 6.18)
+                              : ... Suggest move the declaration before the reference, or use a forward typedef
+   20 |     union_t m_u;   
+      |     ^~~~~~~
+        t/t_typedef_fwd.v:29:33: ... Location of original declaration
+   29 |   typedef union packed {int s;} union_t;
+      |                                 ^~~~~~~
+%Error: t/t_typedef_fwd.v:21:5: Reference to 'ClsB' before declaration (IEEE 1800-2023 6.18)
+                              : ... Suggest move the declaration before the reference, or use a forward typedef
+   21 |     ClsB m_b;   
+      |     ^~~~
+        t/t_typedef_fwd.v:31:3: ... Location of original declaration
+   31 |   class ClsB;
+      |   ^~~~~
+%Error: t/t_typedef_fwd.v:22:5: Reference to 'IfC' before declaration (IEEE 1800-2023 6.18)
+                              : ... Suggest move the declaration before the reference, or use a forward typedef
+   22 |     IfC m_i;   
+      |     ^~~
+        t/t_typedef_fwd.v:34:13: ... Location of original declaration
+   34 |   interface class IfC;
+      |             ^~~~~
+%Error: t/t_typedef_fwd.v:23:5: Reference to 'generic_t' before declaration (IEEE 1800-2023 6.18)
+                              : ... Suggest move the declaration before the reference, or use a forward typedef
+   23 |     generic_t m_g;   
+      |     ^~~~~~~~~
+        t/t_typedef_fwd.v:37:15: ... Location of original declaration
+   37 |   typedef int generic_t;
+      |               ^~~~~~~~~
+%Error: Exiting due to
