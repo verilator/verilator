@@ -102,7 +102,7 @@ public:
 };
 
 //============================================================================
-// V3OutFormatter: A class for automatic indentation of C++ or Verilog code.
+// V3OutFormatter: A class for automatic indentation of output code.
 
 class V3OutFormatter VL_NOT_FINAL {
     // TYPES
@@ -113,7 +113,6 @@ public:
 
 private:
     // MEMBERS
-    const string m_filename;
     const Language m_lang;  // Indenting Verilog code
     int m_blockIndent;  // Characters per block indent
     int m_commaWidth;  // Width after which to break at ,'s
@@ -132,10 +131,9 @@ private:
     void putcNoTracking(char chr);
 
 public:
-    V3OutFormatter(const string& filename, Language lang);
+    V3OutFormatter(Language lang);
     virtual ~V3OutFormatter() = default;
     // ACCESSORS
-    string filename() const { return m_filename; }
     int column() const { return m_column; }
     int blockIndent() const { return m_blockIndent; }
     void blockIndent(int flag) { m_blockIndent = flag; }
@@ -165,7 +163,7 @@ public:
     void indentInc() { m_indentLevel += m_blockIndent; }
     void indentDec() {
         m_indentLevel -= m_blockIndent;
-        UASSERT(m_indentLevel >= 0, ": " << m_filename << ": Underflow of indentation");
+        UASSERT(m_indentLevel >= 0, "Underflow of indentation");
     }
     void blockInc() { m_parenVec.push(m_indentLevel + m_blockIndent); }
     void blockDec() {
@@ -201,6 +199,7 @@ class V3OutFile VL_NOT_FINAL : public V3OutFormatter {
     static constexpr std::size_t WRITE_BUFFER_SIZE_BYTES = 128 * 1024;
 
     // MEMBERS
+    const std::string m_filename;
     FILE* m_fp = nullptr;
     std::size_t m_usedBytes = 0;  // Number of bytes stored in m_bufferp
     std::size_t m_writtenBytes = 0;  // Number of bytes written to output
@@ -213,6 +212,8 @@ public:
     V3OutFile(V3OutFile&&) = delete;
     V3OutFile& operator=(V3OutFile&&) = delete;
     ~V3OutFile() override;
+
+    std::string filename() const { return m_filename; }
 
     void putsForceIncs();
 
@@ -428,6 +429,24 @@ public:
     }
     ~V3OutXmlFile() override = default;
     virtual void putsHeader() { puts("<?xml version=\"1.0\" ?>\n"); }
+};
+
+//============================================================================
+// V3OutStream: A class for printing formatted code to any std::ostream
+
+class V3OutStream VL_NOT_FINAL : public V3OutFormatter {
+    // MEMBERS
+    std::ostream& m_ostream;
+
+    VL_UNCOPYABLE(V3OutStream);
+    VL_UNMOVABLE(V3OutStream);
+
+public:
+    V3OutStream(std::ostream& ostream, V3OutFormatter::Language lang);
+    ~V3OutStream() override = default;
+
+    void putcOutput(char chr) override { m_ostream << chr; };
+    void putsOutput(const char* str) override { m_ostream << str; };
 };
 
 //============================================================================

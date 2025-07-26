@@ -640,11 +640,10 @@ bool VInFilter::readWholefile(const string& filename, VInFilter::StrList& outl) 
 }
 
 //######################################################################
-// V3OutFormatter: A class for printing to a file, with automatic indentation of C++ code.
+// V3OutFormatter: A class for printing code with automatic indentation.
 
-V3OutFormatter::V3OutFormatter(const string& filename, V3OutFormatter::Language lang)
-    : m_filename{filename}
-    , m_lang{lang} {
+V3OutFormatter::V3OutFormatter(V3OutFormatter::Language lang)
+    : m_lang{lang} {
     m_blockIndent = v3Global.opt.decoration() ? 4 : 1;
     m_commaWidth = v3Global.opt.decoration() ? 50 : 150;
 }
@@ -962,7 +961,8 @@ void V3OutFormatter::printf(const char* fmt...) {
 // V3OutFormatter: A class for printing to a file, with automatic indentation of C++ code.
 
 V3OutFile::V3OutFile(const string& filename, V3OutFormatter::Language lang)
-    : V3OutFormatter{filename, lang}
+    : V3OutFormatter{lang}
+    , m_filename{filename}
     , m_bufferp{new std::array<char, WRITE_BUFFER_SIZE_BYTES>{}} {
     if ((m_fp = V3File::new_fopen_w(filename)) == nullptr) {
         v3fatal("Can't write file: " << filename);
@@ -991,6 +991,13 @@ void V3OutCFile::putsGuard() {
     puts("\n#ifndef " + var + "\n");
     puts("#define " + var + "  // guard\n");
 }
+
+//######################################################################
+// V3OutStream
+
+V3OutStream::V3OutStream(std::ostream& ostream, V3OutFormatter::Language lang)
+    : V3OutFormatter{lang}
+    , m_ostream{ostream} {}
 
 //######################################################################
 // VIdProtect
