@@ -973,6 +973,8 @@ private:
         checkNodeInfo(nodep);
         if (!m_checkOnly) {
             UINFO(5, "   JUMP GO " << nodep);
+            // Should be back at the JumpBlock and clear m_jumpp before another JumpGo
+            UASSERT_OBJ(!m_jumpp, nodep, "Jump inside jump");
             m_jumpp = nodep;
         }
     }

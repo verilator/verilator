@@ -10,10 +10,9 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = 't/t_unroll_double.v'
-test.golden_filename = 't/t_unroll_double.out'
+test.golden_filename = 't/t_unroll_nested.out'
 
-test.compile(v_flags2=['+define+TEST_FULL'])
+test.compile()
 
 test.execute(expect_filename=test.golden_filename)
 
