@@ -3399,11 +3399,16 @@ class WidthVisitor final : public VNVisitor {
         }
         return nullptr;
     }
-    void methodOkArguments(AstNodeFTaskRef* nodep, int minArg, int maxArg) {
+    void methodOkArguments(AstNodeFTaskRef* nodep, int minArg, int maxArg,
+                           bool withUnsup = false) {
         int narg = 0;
         for (AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp()) {
             if (VN_IS(argp, With)) {
-                argp->v3error("'with' not legal on this method");
+                if (withUnsup) {
+                    argp->v3warn(E_UNSUPPORTED, "Unsupported: 'with' on this method");
+                } else {
+                    argp->v3error("'with' not legal on this method");
+                }
                 // Delete all arguments as nextp() otherwise dangling
                 VL_DO_DANGLING(pushDeletep(argp->unlinkFrBackWithNext()), argp);
                 break;
@@ -4266,7 +4271,7 @@ class WidthVisitor final : public VNVisitor {
         }
 
         if (methodId) {
-            methodOkArguments(nodep, 0, 0);
+            methodOkArguments(nodep, 0, 0, true /*withUnsup*/);
             FileLine* const fl = nodep->fileline();
             AstNodeExpr* newp = nullptr;
             for (int i = 0; i < adtypep->elementsConst(); ++i) {
