@@ -153,7 +153,7 @@ need to be present to run Verilator:
 
    sudo apt-get install git autoconf flex bison
 
-Those developing Verilator itself may also want these (see internals.rst):
+Those developing Verilator itself also need these (see internals.rst):
 
 .. code-block:: shell
 
