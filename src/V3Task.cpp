@@ -1486,7 +1486,7 @@ class TaskVisitor final : public VNVisitor {
             ++m_statInlines;
         }
 
-        if (VN_IS(nodep, New)) {   // New not legal as while() condition
+        if (VN_IS(nodep, New)) {  // New not legal as while() condition
             insertBeforeStmt(nodep, beginp);
             UASSERT_OBJ(cnewp, nodep, "didn't create cnew for new");
             nodep->replaceWith(cnewp);
