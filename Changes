@@ -21,6 +21,7 @@ Verilator 5.039 devel
 * Support member-level triggers for virtual interfaces (#5166) (#6148). [Yilou Wang]
 * Support randomization of scope variables with 'std::randomize()' (#5438) (#6185). [Yilou Wang]
 * Support disabling a fork in additional contexts (#5432 partial) (#6174) (#6183). [Ryszard Rozak, Antmicro Ltd.]
+* Support bit queue streaming (#5830) (#6103). [Paul Swirhun]
 * Support Verilog real ports as SystemC double ports (#6136) (#6158). [George Polack]
 * Support disable dotted references (#6154). [Ryszard Rozak, Antmicro Ltd.]
 * Support randomize() on class member selects (#6161) (#6195). [Igor Zaworski, Ryszard Rozak, Antmicro Ltd.]
