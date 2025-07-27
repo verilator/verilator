@@ -630,6 +630,7 @@ deparametrized
 der
 dereference
 dereferenced
+dereferencing
 desassign
 deserialize
 destructor

@@ -17,9 +17,11 @@ Verilator 5.039 devel
 * Add NOEFFECT warning, replacing previous `foreach` error.
 * Add SPECIFYIGN warning for specify constructs that were previously silently ignored.
 * Add enum base data type, and wire data type checking per IEEE.
-* Add error on missing forward declarations (#6207). [Alex Solomatnikov]
+* Add error on missing forward declarations (#6206). [Alex Solomatnikov]
 * Support member-level triggers for virtual interfaces (#5166) (#6148). [Yilou Wang]
+* Support randomization of scope variables with 'std::randomize()' (#5438) (#6185). [Yilou Wang]
 * Support disabling a fork in additional contexts (#5432 partial) (#6174) (#6183). [Ryszard Rozak, Antmicro Ltd.]
+* Support Verilog real ports as SystemC double ports (#6136) (#6158). [George Polack]
 * Support disable dotted references (#6154). [Ryszard Rozak, Antmicro Ltd.]
 * Support randomize() on class member selects (#6161) (#6195). [Igor Zaworski, Ryszard Rozak, Antmicro Ltd.]
 * Support multiple variables on RHS of a `force` assignment (#6163). [Artur Bieniek, Antmicro Ltd.]
@@ -49,6 +51,7 @@ Verilator 5.039 devel
 * Fix structure select causing 'Wide Op' error (#6191). [Danny Oler]
 * Fix 'driver same component' assertion (#6211) (#6215). [Geza Lore]
 * Fix `--stats` overridden by skipping identical build (#6220). [Geza Lore]
+* Fix replicate with unsigned count but MSB set (#6231) (#6233). [Geza Lore]
 
 
 Verilator 5.038 2025-07-08
@@ -140,6 +143,8 @@ Verilator 5.038 2025-07-08
 * Fix interface array connections with non-zero low declaration index.
 * Fix developer build error on MacOS/Flex2.6.4 (#6153). [Paul Swirhun]
 * Fix crash with --dumpi-V3LinkDot without --debug (#6159). [Igor Zaworski, Antmicro Ltd.]
+* Fix dereferencing stale iterator in DfgVertex::scopep() (#6225) (#6227). [Geza Lore]
+* Fix component numbers of new Vertices in V3DfgBreakCycles (#6225) (#6228). [Geza Lore]
 
 
 Verilator 5.036 2025-04-27
