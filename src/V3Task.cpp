@@ -1435,9 +1435,9 @@ class TaskVisitor final : public VNVisitor {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modNCalls);
         m_modp = nodep;
-        m_insStmtp = nullptr;
         m_modNCalls = 0;
         iterateChildren(nodep);
+        UASSERT_OBJ(!m_insStmtp, nodep, "Didn't finish out last statement");
     }
     void visit(AstWith* nodep) override {
         if (nodep->user1SetOnce()) {
@@ -1451,8 +1451,8 @@ class TaskVisitor final : public VNVisitor {
     void visit(AstScope* nodep) override {
         VL_RESTORER(m_scopep);
         m_scopep = nodep;
-        m_insStmtp = nullptr;
         iterateChildren(nodep);
+        UASSERT_OBJ(!m_insStmtp, nodep, "Didn't finish out last statement");
     }
     void visit(AstNodeFTaskRef* nodep) override {
         if (m_inSensesp) {
@@ -1486,7 +1486,7 @@ class TaskVisitor final : public VNVisitor {
             ++m_statInlines;
         }
 
-        if (VN_IS(nodep, New)) {
+        if (VN_IS(nodep, New)) {   // New not legal as while() condition
             insertBeforeStmt(nodep, beginp);
             UASSERT_OBJ(cnewp, nodep, "didn't create cnew for new");
             nodep->replaceWith(cnewp);
@@ -1508,7 +1508,7 @@ class TaskVisitor final : public VNVisitor {
             nodep->replaceWith(beginp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             VIsCached::clearCacheTree();
-        } else {
+        } else {  // VN_IS(nodep->backp(), StmtExpr)
             insertBeforeStmt(nodep, beginp);
             if (nodep->taskp()->isFunction()) {
                 nodep->v3warn(
@@ -1588,16 +1588,18 @@ class TaskVisitor final : public VNVisitor {
     }
     void visit(AstWhile* nodep) override {
         // Special, as statements need to be put in different places
-        // Conditions insert first at end of precondsp.
-        // TODO: is this right? This is how it used to be.
-        m_insStmtp = nodep;
-        iterateAndNextNull(nodep->condp());
-        // Body insert just before themselves
-        m_insStmtp = nullptr;  // First thing should be new statement
-        iterateAndNextNull(nodep->stmtsp());
-        iterateAndNextNull(nodep->incsp());
-        // Done the loop
-        m_insStmtp = nullptr;  // Next thing should be new statement
+        {
+            // Conditions will create a StmtExpr
+            // Leave m_instStmtp = null, so will assert if not
+            iterateAndNextNull(nodep->condp());
+        }
+        {
+            // Body insert just before themselves
+            VL_RESTORER(m_insStmtp);
+            m_insStmtp = nullptr;  // First thing should be new statement
+            iterateAndNextNull(nodep->stmtsp());
+            iterateAndNextNull(nodep->incsp());
+        }
     }
     void visit(AstNodeForeach* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
@@ -1608,15 +1610,15 @@ class TaskVisitor final : public VNVisitor {
             "For statements should have been converted to while statements in V3Begin.cpp");
     }
     void visit(AstNodeStmt* nodep) override {
+        VL_RESTORER(m_insStmtp);
         m_insStmtp = nodep;
         iterateChildren(nodep);
-        m_insStmtp = nullptr;  // Next thing should be new statement
     }
     void visit(AstStmtExpr* nodep) override {
+        VL_RESTORER(m_insStmtp);
         m_insStmtp = nodep;
         iterateChildren(nodep);
         if (!nodep->exprp()) VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        m_insStmtp = nullptr;  // Next thing should be new statement
     }
     void visit(AstSenItem* nodep) override {
         UASSERT_OBJ(!m_inSensesp, nodep, "Senitem under senitem?");
