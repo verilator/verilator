@@ -489,7 +489,20 @@ bool AstVar::isScBigUint() const {
     return ((isSc() && v3Global.opt.pinsScBigUint() && width() >= 65 && width() <= 512)
             && !isScBv());
 }
-
+void AstVar::combineType(const AstVar* otherp) {
+    // "this" is the port var. otherp is the reg var, or vice-versa
+    propagateAttrFrom(otherp);
+    combineType(otherp->varType());
+    if (otherp->isSigPublic()) sigPublic(true);
+    if (otherp->isSigModPublic()) sigModPublic(true);
+    if (otherp->isSigUserRdPublic()) sigUserRdPublic(true);
+    if (otherp->isSigUserRWPublic()) sigUserRWPublic(true);
+    if (otherp->attrScClocked()) attrScClocked(true);
+    if (otherp->varType() == VVarType::PORT) {
+        varType(otherp->varType());
+        direction(otherp->direction());
+    }
+}
 void AstVar::combineType(VVarType type) {
     // These flags get combined with the existing settings of the flags.
     // We don't test varType for certain types, instead set flags since

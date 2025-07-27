@@ -2315,17 +2315,7 @@ public:
         declDirection(fromp->declDirection());
         lifetime(fromp->lifetime());
     }
-    void combineType(const AstVar* typevarp) {
-        // This is same as typevarp (for combining input & reg decls)
-        // "this" is the input var. typevarp is the reg var.
-        propagateAttrFrom(typevarp);
-        combineType(typevarp->varType());
-        if (typevarp->isSigPublic()) sigPublic(true);
-        if (typevarp->isSigModPublic()) sigModPublic(true);
-        if (typevarp->isSigUserRdPublic()) sigUserRdPublic(true);
-        if (typevarp->isSigUserRWPublic()) sigUserRWPublic(true);
-        if (typevarp->attrScClocked()) attrScClocked(true);
-    }
+    void combineType(const AstVar* otherp);
     void inlineAttrReset(const string& name) {
         if (direction() == VDirection::INOUT && varType() == VVarType::WIRE) {
             m_varType = VVarType::TRIWIRE;
