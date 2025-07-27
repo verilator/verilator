@@ -297,6 +297,17 @@ class UnrollVisitor final : public VNVisitor {
 
         ++m_statLoops;
         AstNode* newbodysp = nullptr;
+        if (initp && !m_generate) {  // Set variable to initial value (may optimize away later)
+            AstNode* clonep = initp->cloneTree(true);
+            AstConst* varValuep = new AstConst{nodep->fileline(), loopValue};
+            // Iteration requires a back, so put under temporary node
+            AstBegin* tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", clonep};
+            replaceVarRef(clonep, varValuep);
+            clonep = tempp->stmtsp()->unlinkFrBackWithNext();
+            VL_DO_CLEAR(tempp->deleteTree(), tempp = nullptr);
+            VL_DO_DANGLING(pushDeletep(varValuep), varValuep);
+            newbodysp = clonep;
+        }
         if (stmtsp) {
             int times = 0;
             while (true) {

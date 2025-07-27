@@ -30,6 +30,7 @@ Verilator 5.039 devel
 * Optimize 2 ** X to 1 << X if base is signed (#6203). [Max Wipfli]
 * Optimize more complex combinational assignments in DFG (#6205) (#6209). [Geza Lore]
 * Optimize combinational cycles through arrays in DFG (#6210). [Geza Lore]
+* Fix loop initialization visibility outside loop (#4237).
 * Fix constructor parameters in inheritance hierarchies (#6036) (#6070). [Petr Nohavica]
 * Fix replicate of negative giving 'REPLICATE has no expected width' internal error (#6048) (#6229).
 * Fix cmake `-Wno` compiler flag testing (#6145). [Martin Stadler]
