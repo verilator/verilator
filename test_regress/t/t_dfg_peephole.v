@@ -243,6 +243,10 @@ module t (
    assign ascending_assign[4:7] = arand_b[0:3];
    `signal(ASCENDING_ASSIGN, ascending_assign);
 
+   // Special cases to be covered
+   `signal(REPLICATE_WIDTH, {4'd8{rand_a[0]}});  // Replicate count unsigned, but MSB set
+   if ($bits(REPLICATE_WIDTH) != 8) $fatal("%0d != 8", $bits(REPLICATE_WIDTH));
+
    // Sel from not requires the operand to have a sinle sink, so can't use
    // the chekc due to the raw expression referencing the operand
    wire [63:0] sel_from_not_tmp = ~(rand_a >> rand_b[2:0] << rand_a[3:0]);

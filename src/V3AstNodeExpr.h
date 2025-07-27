@@ -3367,8 +3367,9 @@ public:
         : ASTGEN_SUPER_Replicate(fl, lhsp, rhsp) {
         if (lhsp) {
             if (const AstConst* const constp = VN_CAST(rhsp, Const)) {
-                if (constp->num().isFourState() || constp->num().isNegative()) {  // V3Width warns
-                    dtypeSetLogicSized(lhsp->width(), VSigning::UNSIGNED);
+                if (constp->num().isFourState()
+                    || (constp->dtypep()->isSigned() && constp->num().isNegative())) {
+                    dtypeSetLogicSized(lhsp->width(), VSigning::UNSIGNED);  // V3Width warns
                 } else {
                     dtypeSetLogicSized(lhsp->width() * constp->toSInt(), VSigning::UNSIGNED);
                 }
