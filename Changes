@@ -52,6 +52,7 @@ Verilator 5.039 devel
 * Fix structure select causing 'Wide Op' error (#6191). [Danny Oler]
 * Fix 'driver same component' assertion (#6211) (#6215). [Geza Lore]
 * Fix `--stats` overridden by skipping identical build (#6220). [Geza Lore]
+* Fix MODDUP with duplicate packages to take first package (#6222).
 * Fix replicate with unsigned count but MSB set (#6231) (#6233). [Geza Lore]
 
 

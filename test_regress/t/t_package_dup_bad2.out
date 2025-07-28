@@ -1,0 +1,23 @@
+%Warning-MODDUP: t/t_package_dup_bad2.v:19:9: Duplicate declaration of package: 'Pkg'
+   19 | package Pkg;
+      |         ^~~
+                 t/t_package_dup_bad2.v:7:9: ... Location of original declaration
+    7 | package Pkg;
+      |         ^~~
+                 ... For warning description see https://verilator.org/warn/MODDUP?v=latest
+                 ... Use "/* verilator lint_off MODDUP */" and lint_on around source to disable this message.
+%Error-MODMISSING: t/t_package_dup_bad2.v:11:3: Cannot find file containing module: 'IOBUF'
+   11 |   IOBUF iocell (
+      |   ^~~~~
+                   ... For error description see https://verilator.org/warn/MODMISSING?v=latest
+                   ... Looked in:
+                        t/IOBUF
+                        t/IOBUF.v
+                        t/IOBUF.sv
+                        IOBUF
+                        IOBUF.v
+                        IOBUF.sv
+                        obj_vlt/t_package_dup_bad2/IOBUF
+                        obj_vlt/t_package_dup_bad2/IOBUF.v
+                        obj_vlt/t_package_dup_bad2/IOBUF.sv
+%Error: Exiting due to

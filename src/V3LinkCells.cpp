@@ -628,20 +628,16 @@ class LinkCellsVisitor final : public VNVisitor {
                 if (!(libFoundp->fileline()->warnIsOff(V3ErrorCode::MODDUP)
                       || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP)
                       || hierBlocks.find(nodep->name()) != hierBlocks.end())) {
-                    nodep->v3warn(MODDUP, "Duplicate declaration of module: "
+                    nodep->v3warn(MODDUP, "Duplicate declaration of "
+                                              << nodep->verilogKwd() << ": "
                                               << nodep->prettyNameQ() << '\n'
                                               << nodep->warnContextPrimary() << '\n'
                                               << libFoundp->warnOther()
                                               << "... Location of original declaration\n"
                                               << libFoundp->warnContextSecondary());
                 }
-                if (VN_IS(nodep, Package)) {
-                    // Packages may be imported, we instead rename to be unique
-                    nodep->name(nodep->name() + "__Vdedup" + cvtToStr(m_dedupNum++));
-                } else {
-                    nodep->unlinkFrBack();
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                }
+                nodep->unlinkFrBack();
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (!libFoundp && globalFoundp && globalFoundp != nodep) {
                 // ...__LIB__ stripped by prettyName
                 const string newName = nodep->libname() + "__LIB__" + nodep->origName();
