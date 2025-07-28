@@ -532,8 +532,10 @@ class ConstraintExprVisitor final : public VNVisitor {
                  AstNodeExpr* thsp = nullptr) {
         // Replace incomputable (result-dependent) expression with SMT expression
         std::string smtExpr = nodep->emitSMT();  // Might need child width (AstExtend)
-        UASSERT_OBJ(smtExpr != "", nodep,
-                    "Node needs randomization constraint, but no emitSMT: " << nodep);
+        if (smtExpr == "") {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported expression inside constraint");
+            return;
+        }
 
         if (lhsp)
             lhsp = VN_AS(iterateSubtreeReturnEdits(lhsp->backp() ? lhsp->unlinkFrBack() : lhsp),
