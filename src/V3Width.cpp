@@ -7329,21 +7329,26 @@ class WidthVisitor final : public VNVisitor {
         }
         return false;
     }
-    void checkClassAssign(AstNode* nodep, const char* side, AstNode* rhsp,
+    void checkClassAssign(const AstNode* nodep, const char* side, AstNode* rhsp,
                           AstNodeDType* const lhsDTypep) {
-        if (AstClassRefDType* const lhsClassRefp = VN_CAST(lhsDTypep->skipRefp(), ClassRefDType)) {
-            UASSERT_OBJ(rhsp->dtypep(), rhsp, "Node has no type");
-            AstNodeDType* const rhsDtypep = rhsp->dtypep()->skipRefp();
-            if (AstClassRefDType* const rhsClassRefp = VN_CAST(rhsDtypep, ClassRefDType)) {
+        UASSERT_OBJ(rhsp->dtypep(), rhsp, "Node has no type");
+        const AstNodeDType* const lhsRawDTypep = lhsDTypep->skipRefp();
+        const AstNodeDType* const rhsRawDTypep = rhsp->dtypep()->skipRefp();
+        if (const AstClassRefDType* const lhsClassRefp = VN_CAST(lhsRawDTypep, ClassRefDType)) {
+            if (const AstClassRefDType* const rhsClassRefp
+                = VN_CAST(rhsRawDTypep, ClassRefDType)) {
                 if (isBaseClassRecurse(lhsClassRefp->classp(), rhsClassRefp->classp())) return;
             } else if (rhsp->isNull()) {
                 return;
             }
             nodep->v3error(side << " expects a " << lhsClassRefp->prettyTypeName() << ", got "
-                                << rhsDtypep->prettyTypeName());
+                                << rhsRawDTypep->prettyTypeName());
         }
-        if (VN_IS(lhsDTypep->skipRefp(), DynArrayDType)
-            && VN_IS(rhsp->dtypep()->skipRefp(), UnpackArrayDType)) {
+        if (VN_IS(lhsRawDTypep, BasicDType) && VN_IS(rhsRawDTypep, ClassRefDType)) {
+            nodep->v3error(side << " " << rhsp->dtypep()->prettyDTypeNameQ()
+                                << " cannot be assigned to " << lhsDTypep->prettyDTypeNameQ());
+        }
+        if (VN_IS(lhsRawDTypep, DynArrayDType) && VN_IS(rhsRawDTypep, UnpackArrayDType)) {
             VNRelinker relinker;
             rhsp->unlinkFrBack(&relinker);
             relinker.relink(
@@ -7514,10 +7519,6 @@ class WidthVisitor final : public VNVisitor {
                             lhsStream ? EXTEND_OFF : EXTEND_LHS);
         // if (debug()) nodep->dumpTree("-  checkout: ");
         (void)rhsp;  // cppcheck
-        if (VN_IS(lhsDTypep, BasicDType) && VN_IS(rhsp->dtypep(), ClassRefDType)) {
-            rhsp->v3error(side << rhsp->dtypep()->prettyDTypeNameQ() << " cannot be assigned to "
-                               << lhsDTypep->prettyDTypeNameQ());
-        }
     }
 
     void iterateCheckBool(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
