@@ -33,12 +33,19 @@ class Rand2;
   constraint c {10'b1 + 10'($countones(x + 6'(y))) == 3;}
 endclass
 
+class Rand3;
+  rand bit [32:0] x;
+  constraint c {$countones(x) == 1;}
+endclass
+
 module t (  /*AUTOARG*/);
   Rand1 r1 = new;
   Rand2 r2 = new;
+  Rand3 r3 = new;
   initial begin
     `check_rand(r1, r1.x, $countones(r1.x) == 1);
     `check_rand(r2, r2.x, 10'b1 + 10'($countones(r2.x + 6'(r2.y))) == 3);
+    `check_rand(r3, r3.x, $countones(r3.x) == 1);
 
     $write("*-* All Finished *-*\n");
     $finish;
