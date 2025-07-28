@@ -7343,9 +7343,8 @@ class WidthVisitor final : public VNVisitor {
             }
             nodep->v3error(side << " expects a " << lhsClassRefp->prettyTypeName() << ", got "
                                 << rhsRawDTypep->prettyTypeName());
-        }
-        if (VN_IS(lhsRawDTypep, BasicDType) && VN_IS(rhsRawDTypep, ClassRefDType)) {
-            nodep->v3error(side << " " << rhsp->dtypep()->prettyDTypeNameQ()
+        } else if (VN_IS(rhsRawDTypep, ClassRefDType)) {
+            nodep->v3error(side << " " << rhsRawDTypep->prettyDTypeNameQ()
                                 << " cannot be assigned to " << lhsDTypep->prettyDTypeNameQ());
         }
         if (VN_IS(lhsRawDTypep, DynArrayDType) && VN_IS(rhsRawDTypep, UnpackArrayDType)) {
