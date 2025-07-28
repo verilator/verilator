@@ -84,6 +84,7 @@ VK_CPPFLAGS_ALWAYS += \
   -MMD \
   -I$(VERILATOR_ROOT)/include \
   -I$(VERILATOR_ROOT)/include/vltstd \
+  -DVERILATOR=1 \
   -DVM_COVERAGE=$(VM_COVERAGE) \
   -DVM_SC=$(VM_SC) \
   -DVM_TIMING=$(VM_TIMING) \

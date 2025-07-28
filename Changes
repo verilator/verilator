@@ -18,6 +18,7 @@ Verilator 5.039 devel
 * Add SPECIFYIGN warning for specify constructs that were previously silently ignored.
 * Add enum base data type, and wire data type checking per IEEE.
 * Add error on missing forward declarations (#6206). [Alex Solomatnikov]
+* Add `-DVERILATOR=1` definition to compiler flags when using verilated.mk.
 * Support member-level triggers for virtual interfaces (#5166) (#6148). [Yilou Wang]
 * Support randomization of scope variables with 'std::randomize()' (#5438) (#6185). [Yilou Wang]
 * Support disabling a fork in additional contexts (#5432 partial) (#6174) (#6183). [Ryszard Rozak, Antmicro Ltd.]

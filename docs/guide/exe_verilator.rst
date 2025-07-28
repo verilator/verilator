@@ -32,7 +32,9 @@ Summary:
    makefile's VPATH the appropriate directory to find the file.
 
    See also :vlopt:`-CFLAGS` and :vlopt:`-LDFLAGS` options, which are
-   useful when the C++ files need special compiler flags.
+   useful when the C++ files need special compiler flags.  The compiler
+   flags add by default `-DVERILATOR=1`, so an `#ifdef VERILATOR` may be
+   used to conditionally preprocess .cpp code for different simulators.
 
 .. option:: <file.v>
 
