@@ -7514,6 +7514,10 @@ class WidthVisitor final : public VNVisitor {
                             lhsStream ? EXTEND_OFF : EXTEND_LHS);
         // if (debug()) nodep->dumpTree("-  checkout: ");
         (void)rhsp;  // cppcheck
+        if (VN_IS(lhsDTypep, BasicDType) && VN_IS(rhsp->dtypep(), ClassRefDType)) {
+            rhsp->v3error(side << rhsp->dtypep()->prettyDTypeNameQ() << " cannot be assigned to "
+                               << lhsDTypep->prettyDTypeNameQ());
+        }
     }
 
     void iterateCheckBool(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
