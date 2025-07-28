@@ -8,12 +8,16 @@ class Foo;
   int phase_done;
 
   static function Foo get();
+    Foo ans = new;
+    return ans;
   endfunction
 
   static function int create ();
+    return 3;
   endfunction
 
   function string get_name ();
+    return "bar";
   endfunction
 
   function void add(Foo phase);
