@@ -532,8 +532,10 @@ class ConstraintExprVisitor final : public VNVisitor {
                  AstNodeExpr* thsp = nullptr) {
         // Replace incomputable (result-dependent) expression with SMT expression
         std::string smtExpr = nodep->emitSMT();  // Might need child width (AstExtend)
-        UASSERT_OBJ(smtExpr != "", nodep,
-                    "Node needs randomization constraint, but no emitSMT: " << nodep);
+        if (smtExpr == "") {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported expression inside constraint");
+            return;
+        }
 
         if (lhsp)
             lhsp = VN_AS(iterateSubtreeReturnEdits(lhsp->backp() ? lhsp->unlinkFrBack() : lhsp),
@@ -717,6 +719,38 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
             initTaskp->addStmtsp(methodp->makeStmt());
         }
+    }
+    void visit(AstCountOnes* nodep) override {
+        // Convert it to (x & 1) + ((x & 2) >> 1) + ((x & 4) >> 2) + ...
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* const argp = nodep->lhsp()->unlinkFrBack();
+        V3Number numOne{nodep, argp->width(), 1};
+        AstNodeExpr* sump = new AstAnd{fl, argp, new AstConst{fl, numOne}};
+        sump->user1(true);
+        for (int i = 1; i < argp->width(); i++) {
+            V3Number numBitMask{nodep, argp->width(), 0};
+            numBitMask.setBit(i, 1);
+            AstAnd* const andp
+                = new AstAnd{fl, argp->cloneTreePure(false), new AstConst{fl, numBitMask}};
+            andp->user1(true);
+            AstShiftR* const shiftp = new AstShiftR{
+                fl, andp, new AstConst{fl, AstConst::WidthedValue{}, argp->width(), (uint32_t)i}};
+            shiftp->user1(true);
+            shiftp->dtypeFrom(nodep);
+            sump = new AstAdd{nodep->fileline(), sump, shiftp};
+            sump->user1(true);
+        }
+        // Restore the original width
+        if (nodep->width() > sump->width()) {
+            sump = new AstExtend{fl, sump, nodep->width()};
+            sump->user1(true);
+        } else if (nodep->width() < sump->width()) {
+            sump = new AstSel{fl, sump, 0, nodep->width()};
+            sump->user1(true);
+        }
+        nodep->replaceWith(sump);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        iterate(sump);
     }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
