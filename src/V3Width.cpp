@@ -1469,10 +1469,10 @@ class WidthVisitor final : public VNVisitor {
         AstNode* backp = nodep->backp();
         if (VN_IS(backp, Sub)) backp = backp->backp();
         if (const auto* const selp = VN_CAST(backp, SelExtract)) {
-            if (VN_IS(selp->fromp()->dtypep(), QueueDType)) return;
+            if (VN_IS(selp->fromp()->dtypep()->skipRefp(), QueueDType)) return;
         }
         if (const auto* const selp = VN_CAST(backp, SelBit)) {
-            if (VN_IS(selp->fromp()->dtypep(), QueueDType)) return;
+            if (VN_IS(selp->fromp()->dtypep()->skipRefp(), QueueDType)) return;
         }
         // queue_slice[#:$] and queue_bitsel[$] etc handled in V3WidthSel
         nodep->v3warn(E_UNSUPPORTED, "Unsupported/illegal unbounded ('$') in this context.");

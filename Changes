@@ -56,6 +56,7 @@ Verilator 5.039 devel
 * Fix `--stats` overridden by skipping identical build (#6220). [Geza Lore]
 * Fix MODDUP with duplicate packages to take first package (#6222).
 * Fix replicate with unsigned count but MSB set (#6231) (#6233). [Geza Lore]
+* Fix queue typedef with unbounded slice (#6236).
 
 
 Verilator 5.038 2025-07-08

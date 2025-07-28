@@ -11,7 +11,8 @@
 
 module t (/*AUTOARG*/);
    initial begin
-      string q[$];
+      typedef string q_t[$];
+      q_t q;
       string v;
       int    i;
       int    qi[$:5];
