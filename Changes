@@ -47,9 +47,10 @@ Verilator 5.039 devel
 * Fix virtual interface member propagation (#6175) (#6184). [Yilou Wang]
 * Fix `--coverage-expr` null pointer dereference (#6181). [Igor Zaworski, Antmicro Ltd.]
 * Fix conflicting function/class name linking error (#6182). [Igor Zaworski, Antmicro Ltd.]
-* Fix automatic task variables in unrolled loops with forks (#6194) (#6201). [Danny Oler]
+* Fix negate of wide structure selections (#6186).
 * Fix VPI signal range order (#6189) (#6200). [Ibrahim Burak Yorulmaz]
 * Fix structure select causing 'Wide Op' error (#6191). [Danny Oler]
+* Fix automatic task variables in unrolled loops with forks (#6194) (#6201). [Danny Oler]
 * Fix 'driver same component' assertion (#6211) (#6215). [Geza Lore]
 * Fix `--stats` overridden by skipping identical build (#6220). [Geza Lore]
 * Fix MODDUP with duplicate packages to take first package (#6222).

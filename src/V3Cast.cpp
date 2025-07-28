@@ -173,13 +173,13 @@ class CastVisitor final : public VNVisitor {
     void visit(AstNegate* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1());
-        if (nodep->lhsp()->widthMin() == 1) {
+        if (nodep->lhsp()->widthMin() == 1 && !nodep->lhsp()->isWide()) {
             // We want to avoid a GCC "converting of negative value" warning
             // from our expansion of
             //    out = {32{a<b}}  =>   out = - (a<b)
             insertCast(nodep->lhsp(), castSize(nodep));
         } else {
-            ensureCast(nodep->lhsp());
+            if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         }
     }
     void visit(AstVarRef* nodep) override {
@@ -221,6 +221,11 @@ class CastVisitor final : public VNVisitor {
     void visit(AstMemberSel* nodep) override {
         iterateChildren(nodep);
         ensureNullChecked(nodep->fromp());
+        nodep->user1(true);
+    }
+    void visit(AstStructSel* nodep) override {
+        iterateChildren(nodep);
+        nodep->user1(true);
     }
 
     // NOPs
