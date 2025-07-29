@@ -514,30 +514,38 @@ public:
                 } else {
                     ifacerefp->v3fatalSrc("Unlinked interface");
                 }
-            } else if (ifacerefp->ifaceViaCellp()->dead()) {
-                if (varp->isIfaceRef()) {
-                    if (forPrimary() && !varp->isIfaceParent()
-                        && !v3Global.opt.topIfacesSupported()) {
-                        // Only AstIfaceRefDType's at this point correspond to ports;
-                        // haven't made additional ones for interconnect yet, so assert is simple
-                        // What breaks later is we don't have a Scope/Cell representing
-                        // the interface to attach to
-                        varp->v3warn(E_UNSUPPORTED,
-                                     "Unsupported: Interfaced port on top level module");
-                    }
-                    ifacerefp->v3error("Parent instance's interface is not found: "
-                                       << AstNode::prettyNameQ(ifacerefp->ifaceName()) << '\n'
-                                       << ifacerefp->warnMore()
-                                       << "... Perhaps intended an interface instantiation but "
-                                          "are missing parenthesis (IEEE 1800-2023 25.3)?");
-                } else {
-                    ifacerefp->v3warn(
-                        E_UNSUPPORTED,
-                        "Unsupported: virtual interface never assigned any actual interface");
-                    varp->dtypep(ifacerefp->findCHandleDType());
-                    VL_DO_DANGLING(ifacerefp->unlinkFrBack()->deleteTree(), ifacerefp);
+            } else if (ifacerefp->ifaceViaCellp()->dead() && varp->isIfaceRef()) {
+                if (forPrimary() && !varp->isIfaceParent()
+                    && !v3Global.opt.topIfacesSupported()) {
+                    // Only AstIfaceRefDType's at this point correspond to ports;
+                    // haven't made additional ones for interconnect yet, so assert is simple
+                    // What breaks later is we don't have a Scope/Cell representing
+                    // the interface to attach to
+                    varp->v3warn(E_UNSUPPORTED,
+                                 "Unsupported: Interfaced port on top level module");
                 }
+                ifacerefp->v3error("Parent instance's interface is not found: "
+                                   << AstNode::prettyNameQ(ifacerefp->ifaceName()) << '\n'
+                                   << ifacerefp->warnMore()
+                                   << "... Perhaps intended an interface instantiation but "
+                                      "are missing parenthesis (IEEE 1800-2023 25.3)?");
                 continue;
+            } else if(ifacerefp->ifaceViaCellp()->dead() || !existsNodeSym(ifacerefp->ifaceViaCellp())) {
+                    // virtual interface never assigned any actual interface
+                    ifacerefp->ifacep()->dead(false);
+                    varp->dtypep(ifacerefp->dtypep());
+                    // A dummy cell to keep the virtual interface alive
+                    // (later stages assume that non-dead interface has associated cell)
+                    AstCell* ifacecellp = new AstCell{ifacerefp->ifacep()->fileline(),
+                                      ifacerefp->ifacep()->fileline(),
+                                      ifacerefp->ifacep()->name() + "__02E" + varp->name(),
+                                      ifacerefp->ifaceName(),
+                                      nullptr,
+                                      nullptr,
+                                      nullptr};
+                    ifacecellp->modp(ifacerefp->ifacep());
+                    VSymEnt* const symp = new VSymEnt{&m_syms, ifacecellp};
+                    ifacerefp->ifacep()->user1p(symp);
             }
             VSymEnt* const ifaceSymp = getNodeSym(ifacerefp->ifaceViaCellp());
             VSymEnt* ifOrPortSymp = ifaceSymp;
@@ -2744,7 +2752,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstTypeTable*) override {}
     void visit(AstConstPool*) override {}
     void visit(AstNodeModule* nodep) override {
-        if (nodep->dead()) return;
+        if (nodep->dead() || !m_statep->existsNodeSym(nodep)) return;
         LINKDOT_VISIT_START();
         UINFO(8, indent() << "visit " << nodep);
         checkNoDot(nodep);
