@@ -304,8 +304,14 @@ class GateBuildVisitor final : public VNVisitorConst {
 
         // We use weight of one; if we ref the var more than once, when we simplify,
         // the weight will increase
-        if (nodep->access().isWriteOrRW()) m_graphp->addEdge(m_logicVertexp, vVtxp, 1);
-        if (nodep->access().isReadOrRW()) m_graphp->addEdge(vVtxp, m_logicVertexp, 1);
+        if (VN_IS(nodep->backp(), CoverToggle)) {
+            // Temporary workaround. Otherwise assignments to initp() var are removed
+            m_graphp->addEdge(m_logicVertexp, vVtxp, 1);
+            m_graphp->addEdge(vVtxp, m_logicVertexp, 1);
+        } else {
+            if (nodep->access().isWriteOrRW()) m_graphp->addEdge(m_logicVertexp, vVtxp, 1);
+            if (nodep->access().isReadOrRW()) m_graphp->addEdge(vVtxp, m_logicVertexp, 1);
+        }
     }
     void visit(AstConcat* nodep) override {
         UASSERT_OBJ(!(VN_IS(nodep->backp(), NodeAssign)

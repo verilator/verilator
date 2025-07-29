@@ -11,7 +11,7 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   logic unu3 = 0;
+   bit unu3 = 0;
 
    logic isusd = 0;
    cover property (@(posedge clk) isusd == 0);
