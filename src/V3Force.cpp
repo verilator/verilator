@@ -364,9 +364,6 @@ class ForceReplaceVisitor final : public VNVisitor {
             // Replace VarRef from forced LHS with rdVscp.
             if (ForceState::ForceComponentsVarScope* const fcp
                 = m_state.tryGetForceComponents(nodep)) {
-                FileLine* const flp = nodep->fileline();
-                AstVarRef* const origp = new AstVarRef{flp, nodep->varScopep(), VAccess::READ};
-                ForceState::markNonReplaceable(origp);
                 nodep->varp(fcp->m_rdVscp->varp());
                 nodep->varScopep(fcp->m_rdVscp);
             }
