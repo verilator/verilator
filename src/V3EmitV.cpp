@@ -28,12 +28,13 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // ######################################################################
 //  Emit statements and expressions
 
-class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
+class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     // STATE - across all visitors
-    const bool m_suppressUnknown = false;
+    const bool m_alwaysTrackText;  // Always track all NodeSimpleText
+    const bool m_suppressUnknown;  // Do not error on unknown node
 
     // STATE - for current visit position (use VL_RESTORER)
-    AstSenTree* m_sensesp;  // Domain for printing one a ALWAYS under a ACTIVE
+    AstSenTree* m_sensesp = nullptr;  // Domain for printing one a ALWAYS under a ACTIVE
     bool m_suppressSemi = false;  // Non-statement, don't print ;
     bool m_suppressVarSemi = false;  // Suppress emitting semicolon for AstVars
     bool m_arrayPost = false;  // Print array information that goes after identifier (vs after)
@@ -72,7 +73,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     // VISITORS
     void visit(AstNetlist* nodep) override { iterateAndNextConstNull(nodep->modulesp()); }
     void visit(AstNodeModule* nodep) override {
-        putfs(nodep, nodep->verilogKwd() + " " + prefixNameProtect(nodep) + ";\n");
+        putfs(nodep, nodep->verilogKwd() + " " + EmitCBase::prefixNameProtect(nodep) + ";\n");
         iterateChildrenConst(nodep);
         putqs(nodep, "end" + nodep->verilogKwd() + "\n");
     }
@@ -461,7 +462,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
         puts(";\n");
     }
     void visit(AstNodeSimpleText* nodep) override {
-        if (nodep->tracking() || m_trackText) {
+        if (nodep->tracking() || m_alwaysTrackText) {
             puts(nodep->text());
         } else {
             putsNoTracking(nodep->text());
@@ -965,9 +966,9 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public EmitCBaseVisitorConst {
     }
 
 public:
-    explicit EmitVBaseVisitorConst(bool suppressUnknown, AstSenTree* domainp)
-        : m_suppressUnknown{suppressUnknown}
-        , m_sensesp{domainp} {}
+    explicit EmitVBaseVisitorConst(bool alwaysTrackText, bool suppressUnknown)
+        : m_alwaysTrackText{alwaysTrackText}
+        , m_suppressUnknown{suppressUnknown} {}
     ~EmitVBaseVisitorConst() override = default;
 };
 
@@ -975,18 +976,19 @@ public:
 // Emit to an output file
 
 class EmitVFileVisitor final : public EmitVBaseVisitorConst {
+    // STATE
+    V3OutVFile& m_of;  // The output file
     // METHODS
-    void puts(const string& str) override { ofp()->puts(str); }
-    void putbs(const string& str) override { ofp()->putbs(str); }
+    void putsNoTracking(const string& str) override { m_of.putsNoTracking(str); }
+    void puts(const string& str) override { m_of.puts(str); }
+    void putbs(const string& str) override { m_of.putbs(str); }
     void putfs(AstNode*, const string& str) override { putbs(str); }
     void putqs(AstNode*, const string& str) override { putbs(str); }
-    void putsNoTracking(const string& str) override { ofp()->putsNoTracking(str); }
 
 public:
-    EmitVFileVisitor(AstNode* nodep, V3OutVFile* ofp, bool trackText, bool suppressUnknown)
-        : EmitVBaseVisitorConst{suppressUnknown, nullptr} {
-        m_ofp = ofp;
-        m_trackText = trackText;
+    EmitVFileVisitor(AstNode* nodep, V3OutVFile& of, bool alwaysTrackText, bool suppressUnknown)
+        : EmitVBaseVisitorConst{alwaysTrackText, suppressUnknown}
+        , m_of{of} {
         iterateConst(nodep);
     }
     ~EmitVFileVisitor() override = default;
@@ -996,19 +998,25 @@ public:
 // Emit to a stream (perhaps stringstream)
 
 class EmitVStreamVisitor final : public EmitVBaseVisitorConst {
-    // MEMBERS
-    std::ostream& m_os;
+    // STATE
+    V3OutStream m_os;  // The output stream formatter
+    bool m_tracking;  // Use line tracking
     // METHODS
-    void putsNoTracking(const string& str) override { m_os << str; }
-    void puts(const string& str) override { putsNoTracking(str); }
-    void putbs(const string& str) override { puts(str); }
+    void putsNoTracking(const string& str) override { m_os.putsNoTracking(str); }
+    void puts(const string& str) override {
+        m_tracking ? m_os.puts(str) : m_os.putsNoTracking(str);
+    }
+    void putbs(const string& str) override {
+        m_tracking ? m_os.putbs(str) : m_os.putsNoTracking(str);
+    }
     void putfs(AstNode*, const string& str) override { putbs(str); }
     void putqs(AstNode*, const string& str) override { putbs(str); }
 
 public:
-    EmitVStreamVisitor(const AstNode* nodep, std::ostream& os)
-        : EmitVBaseVisitorConst{false, nullptr}
-        , m_os(os) {  // Need () or GCC 4.8 false warning
+    EmitVStreamVisitor(const AstNode* nodep, std::ostream& os, bool tracking)
+        : EmitVBaseVisitorConst{false, false}
+        , m_os{os, V3OutFormatter::LA_VERILOG}
+        , m_tracking{tracking} {
         iterateConst(const_cast<AstNode*>(nodep));
     }
     ~EmitVStreamVisitor() override = default;
@@ -1018,7 +1026,7 @@ public:
 // EmitV class functions
 
 void V3EmitV::verilogForTree(const AstNode* nodep, std::ostream& os) {
-    { EmitVStreamVisitor{nodep, os}; }
+    { EmitVStreamVisitor{nodep, os, /* tracking: */ false}; }
 }
 
 void V3EmitV::emitvFiles() {
@@ -1028,9 +1036,8 @@ void V3EmitV::emitvFiles() {
         AstVFile* const vfilep = VN_CAST(filep, VFile);
         if (vfilep && vfilep->tblockp()) {
             V3OutVFile of{vfilep->name()};
-            of.puts("// DESCR"
-                    "IPTION: Verilator generated Verilog\n");
-            { EmitVFileVisitor{vfilep->tblockp(), &of, true, false}; }
+            of.puts("// DESCRIPTION: Verilator generated Verilog\n");
+            { EmitVFileVisitor{vfilep->tblockp(), of, true, false}; }
         }
     }
 }
@@ -1038,5 +1045,5 @@ void V3EmitV::emitvFiles() {
 void V3EmitV::debugEmitV(const string& filename) {
     UINFO(2, __FUNCTION__ << ":");
     V3OutVFile of{filename};
-    { EmitVFileVisitor{v3Global.rootp(), &of, true, true}; }
+    { EmitVFileVisitor{v3Global.rootp(), of, true, true}; }
 }
