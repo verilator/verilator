@@ -7345,7 +7345,7 @@ class WidthVisitor final : public VNVisitor {
                                 << rhsRawDTypep->prettyTypeName());
         } else if (VN_IS(rhsRawDTypep, ClassRefDType)) {
             nodep->v3error(side << " " << rhsRawDTypep->prettyDTypeNameQ()
-                                << " cannot be assigned to " << lhsDTypep->prettyDTypeNameQ());
+                                << " cannot be assigned to non-class " << lhsDTypep->prettyDTypeNameQ());
         }
         if (VN_IS(lhsRawDTypep, DynArrayDType) && VN_IS(rhsRawDTypep, UnpackArrayDType)) {
             VNRelinker relinker;
