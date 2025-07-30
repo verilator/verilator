@@ -865,7 +865,7 @@
     ],"extendsp": []},
     {"type":"CLASS","name":"process","addr":"(SN)","loc":"d,124:4,124:9","isExtended":false,"isInterfaceClass":false,"isVirtual":false,"origName":"process","level":5,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","classOrPackagep":"UNLINKED","inlinesp": [],
      "stmtsp": [
-      {"type":"TYPEDEF","name":"state","addr":"(TN)","loc":"d,131:9,131:14","dtypep":"UNLINKED","attrPublic":false,
+      {"type":"TYPEDEF","name":"state","addr":"(TN)","loc":"d,131:9,131:14","dtypep":"UNLINKED","attrPublic":false,"isUnderClass":false,
        "childDTypep": [
         {"type":"DEFIMPLICITDTYPE","name":"__typeimpenum0","addr":"(UN)","loc":"d,125:15,125:19","dtypep":"UNLINKED","generic":false,
          "childDTypep": [

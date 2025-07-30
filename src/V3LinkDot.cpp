@@ -1564,6 +1564,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     }
     void visit(AstTypedef* nodep) override {  // FindVisitor::
         UASSERT_OBJ(m_curSymp, nodep, "Typedef not under module/package/$unit");
+        if (VN_IS(m_classOrPackagep, Class)) nodep->isUnderClass(true);
         iterateChildren(nodep);
         m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
     }
@@ -4580,7 +4581,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (AstTypedef* const defp = foundp ? VN_CAST(foundp->nodep(), Typedef) : nullptr) {
                 // Don't check if typedef is to a <type T>::<reference> as might not be resolved
                 // yet
-                if (!nodep->classOrPackagep()) checkDeclOrder(nodep, defp);
+                if (!nodep->classOrPackagep() && !defp->isUnderClass())
+                    checkDeclOrder(nodep, defp);
                 nodep->typedefp(defp);
                 nodep->classOrPackagep(foundp->classOrPackagep());
             } else if (AstParamTypeDType* const defp

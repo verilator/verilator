@@ -1833,6 +1833,7 @@ class AstTypedef final : public AstNode {
     bool m_attrPublic = false;
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
+    bool m_isUnderClass : 1;  // Underneath class
 
 public:
     AstTypedef(FileLine* fl, const string& name, AstNode* attrsp, VFlagChildDType,
@@ -1841,7 +1842,8 @@ public:
         , m_name{name}
         , m_declTokenNum{fl->tokenNum()}
         , m_isHideLocal{false}
-        , m_isHideProtected{false} {
+        , m_isHideProtected{false}
+        , m_isUnderClass{false} {
         childDTypep(dtp);  // Only for parser
         addAttrsp(attrsp);
         dtypep(nullptr);  // V3Width will resolve
@@ -1868,6 +1870,8 @@ public:
     void isHideLocal(bool flag) { m_isHideLocal = flag; }
     bool isHideProtected() const { return m_isHideProtected; }
     void isHideProtected(bool flag) { m_isHideProtected = flag; }
+    bool isUnderClass() const { return m_isUnderClass; }
+    void isUnderClass(bool flag) { m_isUnderClass = flag; }
     void tag(const string& text) override { m_tag = text; }
     string tag() const override { return m_tag; }
 };

@@ -2169,6 +2169,7 @@ void AstTimeImport::dumpJson(std::ostream& str) const {
 void AstTypedef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (attrPublic()) str << " [PUBLIC]";
+    if (isUnderClass()) str << " [UNDCLS]";
     if (subDTypep()) {
         str << " -> ";
         subDTypep()->dump(str);
@@ -2177,6 +2178,7 @@ void AstTypedef::dump(std::ostream& str) const {
 void AstTypedef::dumpJson(std::ostream& str) const {
     // dumpJsonNumFunc(str, declTokenNum);  // Not dumped as adding token changes whole file
     dumpJsonBoolFunc(str, attrPublic);
+    dumpJsonBoolFunc(str, isUnderClass);
     dumpJsonGen(str);
 }
 void AstTypedefFwd::dump(std::ostream& str) const {
