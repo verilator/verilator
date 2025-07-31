@@ -395,7 +395,11 @@ class ForceReplaceVisitor final : public VNVisitor {
             break;
         }
         default:
-            nodep->v3error("Unsupported: Signals used via read-write reference cannot be forced");
+            if (!m_inLogic) return;
+            if (m_state.tryGetForceComponents(nodep) || ForceState::getValVscp(nodep)) {
+                nodep->v3error(
+                    "Unsupported: Signals used via read-write reference cannot be forced");
+            }
             break;
         }
     }
