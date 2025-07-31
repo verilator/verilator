@@ -1470,7 +1470,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                     const bool nansiBad
                         = (((findvarp->isDeclTyped() || findvarp->isNet())
                             && (nodep->isDeclTyped() || nodep->isNet()))
-                           || (findvarp->isIO() && nodep->isIO()));  // e.g. !(output && output)
+                           || (findvarp->isIO() && nodep->isIO())  // e.g. !(output && output)
+                           || findvarp->gotNansiType());  // e.g. int x && int x
                     const bool ansiBad
                         = findvarp->isAnsi() || nodep->isAnsi();  // dup illegal with ANSI
                     if (ansiBad || nansiBad) {
@@ -1496,6 +1497,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                     } else {
                         findvarp->combineType(nodep);
                         findvarp->fileline()->modifyStateInherit(nodep->fileline());
+                        findvarp->gotNansiType(true);
                         UASSERT_OBJ(nodep->subDTypep(), nodep, "Var has no type");
                         if (nodep->subDTypep()->numeric().isSigned()
                             && !findvarp->subDTypep()->numeric().isSigned()) {
@@ -1512,6 +1514,22 @@ class LinkDotFindVisitor final : public VNVisitor {
                             VL_DO_DANGLING(bdtypep->unlinkFrBack()->deleteTree(), bdtypep);
                             newdtypep->unlinkFrBack();
                             findvarp->childDTypep(newdtypep);
+                        }
+                        if (nodep->childDTypep() && findvarp->childDTypep()
+                            && !(VN_IS(nodep->childDTypep(), BasicDType)
+                                 && VN_AS(nodep->childDTypep(), BasicDType)->keyword()
+                                        == VBasicDTypeKwd::LOGIC_IMPLICIT)
+                            && !(VN_IS(findvarp->childDTypep(), BasicDType)
+                                 && VN_AS(findvarp->childDTypep(), BasicDType)->keyword()
+                                        == VBasicDTypeKwd::LOGIC_IMPLICIT)
+                            && !nodep->sameTree(findvarp)) {
+                            nodep->v3error("Non-ANSI I/O declaration of signal "
+                                           "conflicts with type declaration: "
+                                           << nodep->prettyNameQ() << '\n'
+                                           << nodep->warnContextPrimary() << '\n'
+                                           << findvarp->warnOther()
+                                           << "... Location of other declaration\n"
+                                           << findvarp->warnContextSecondary());
                         }
                     }
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);

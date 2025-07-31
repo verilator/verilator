@@ -1987,6 +1987,7 @@ class AstVar final : public AstNode {
     bool m_attrSFormat : 1;  // User sformat attribute
     bool m_attrSplitVar : 1;  // declared with split_var metacomment
     bool m_fileDescr : 1;  // File descriptor
+    bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
@@ -2034,6 +2035,7 @@ class AstVar final : public AstNode {
         m_attrSFormat = false;
         m_attrSplitVar = false;
         m_fileDescr = false;
+        m_gotNansiType = false;
         m_isConst = false;
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
@@ -2188,6 +2190,8 @@ public:
         if (flag) m_funcLocalSticky = true;
     }
     void funcReturn(bool flag) { m_funcReturn = flag; }
+    void gotNansiType(bool flag) { m_gotNansiType = flag; }
+    bool gotNansiType() { return m_gotNansiType; }
     void hasStrengthAssignment(bool flag) { m_hasStrengthAssignment = flag; }
     bool hasStrengthAssignment() { return m_hasStrengthAssignment; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }

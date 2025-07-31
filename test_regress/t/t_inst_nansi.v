@@ -15,10 +15,10 @@ module t(b, si, i, li, w3, w4);
   output i;  // Output after type
   output li;
 
-  input w3;
+  input [2:0] w3;
   wire [2:0] w3;
   wire [3:0] w4;
-  input w4;
+  input [3:0] w4;
 
   initial begin
     if ($bits(b) != 8) $stop;

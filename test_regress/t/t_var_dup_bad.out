@@ -35,6 +35,12 @@
         t/t_var_dup_bad.v:31:11: ... Location of original declaration
    31 |    output oi;
       |           ^~
+%Error: t/t_var_dup_bad.v:36:11: Duplicate declaration of signal: 'og'
+   36 |    reg    og;
+      |           ^~
+        t/t_var_dup_bad.v:34:11: ... Location of original declaration
+   34 |    output og;
+      |           ^~
 %Error: t/t_var_dup_bad.v:39:15: Duplicate declaration of signal: 'org'
    39 |    output reg org;
       |               ^~~

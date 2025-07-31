@@ -1,0 +1,32 @@
+%Error: t/t_inst_nansi_bad.v:14:12: Non-ANSI I/O declaration of signal conflicts with type declaration: 'bad1'
+   14 |   shortint bad1;   
+      |            ^~~~
+        t/t_inst_nansi_bad.v:13:17: ... Location of other declaration
+   13 |   output [15:0] bad1;
+      |                 ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_inst_nansi_bad.v:17:5: Non-ANSI I/O declaration of signal conflicts with type declaration: 'bad2'
+   17 |   T bad2;   
+      |     ^~~~
+        t/t_inst_nansi_bad.v:16:17: ... Location of other declaration
+   16 |   output [31:0] bad2;
+      |                 ^~~~
+%Error: t/t_inst_nansi_bad.v:20:13: Non-ANSI I/O declaration of signal conflicts with type declaration: 'bad3'
+   20 |   reg [7:0] bad3;   
+      |             ^~~~
+        t/t_inst_nansi_bad.v:19:16: ... Location of other declaration
+   19 |   output [3:0] bad3;
+      |                ^~~~
+%Error: t/t_inst_nansi_bad.v:24:7: Duplicate declaration of signal: 'bad4'
+   24 |   reg bad4;   
+      |       ^~~~
+        t/t_inst_nansi_bad.v:22:10: ... Location of original declaration
+   22 |   output bad4;
+      |          ^~~~
+%Error: t/t_inst_nansi_bad.v:27:10: Duplicate declaration of signal: 'bad5'
+   27 |   output bad5;   
+      |          ^~~~
+        t/t_inst_nansi_bad.v:26:10: ... Location of original declaration
+   26 |   output bad5;
+      |          ^~~~
+%Error: Exiting due to
