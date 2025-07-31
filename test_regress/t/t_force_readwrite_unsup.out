@@ -1,0 +1,8 @@
+%Error: t/t_force_readwrite_unsup.v:25:18: Unsupported: Signals used via read-write reference cannot be forced
+   25 |     cls.take_ref(a);
+      |                  ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_force_readwrite_unsup.v:26:18: Unsupported: Signals used via read-write reference cannot be forced
+   26 |     cls.take_ref(b);
+      |                  ^
+%Error: Exiting due to
