@@ -67,6 +67,35 @@
            } str_queue_t;
            str_queue_t str_queue;
         
+           typedef struct packed {
+              // verilator lint_off ASCRANGE
+              bit [3:5] x;
+              // verilator lint_on ASCRANGE
+              bit [0:0] y;
+           } str_bit_t;
+%000002    str_bit_t str_bit;
+-000002  point: comment=str_bit.x[3] hier=top.t
+-000001  point: comment=str_bit.x[4] hier=top.t
+-000001  point: comment=str_bit.x[5] hier=top.t
+-000002  point: comment=str_bit.y[0] hier=top.t
+%000002    str_bit_t [5:2] str_bit_arr;
+-000000  point: comment=str_bit_arr[2].x[3] hier=top.t
+-000000  point: comment=str_bit_arr[2].x[4] hier=top.t
+-000000  point: comment=str_bit_arr[2].x[5] hier=top.t
+-000000  point: comment=str_bit_arr[2].y[0] hier=top.t
+-000000  point: comment=str_bit_arr[3].x[3] hier=top.t
+-000000  point: comment=str_bit_arr[3].x[4] hier=top.t
+-000000  point: comment=str_bit_arr[3].x[5] hier=top.t
+-000000  point: comment=str_bit_arr[3].y[0] hier=top.t
+-000002  point: comment=str_bit_arr[4].x[3] hier=top.t
+-000001  point: comment=str_bit_arr[4].x[4] hier=top.t
+-000001  point: comment=str_bit_arr[4].x[5] hier=top.t
+-000000  point: comment=str_bit_arr[4].y[0] hier=top.t
+-000000  point: comment=str_bit_arr[5].x[3] hier=top.t
+-000000  point: comment=str_bit_arr[5].x[4] hier=top.t
+-000000  point: comment=str_bit_arr[5].x[5] hier=top.t
+-000000  point: comment=str_bit_arr[5].y[0] hier=top.t
+        
            assign strl.a = clk;
         
            alpha a1 (/*AUTOINST*/
@@ -150,10 +179,16 @@
                  if (cyc == 3) begin
                     str_queue.q.push_back(1);
                     toggle <= '1;
+                    str_bit.x <= '1;
+                    str_bit.y <= '1;
+                    str_bit_arr[4].x <= '1;
                  end
                  if (cyc == 4) begin
                     if (str_queue.q.size() != 1) $stop;
                     toggle <= '0;
+                    str_bit.x[3] <= 0;
+                    str_bit.y[0] <= 0;
+                    str_bit_arr[4].x[3] <= 0;
                  end
                  else if (cyc == 10) begin
                     $write("*-* All Finished *-*\n");
