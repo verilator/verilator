@@ -380,6 +380,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         // Assign numbers to all bins, so we know how big of an array to use
         if (!nodep->dataDeclNullp()) {  // else duplicate we don't need code for
             nodep->binNum(m_coverBins++);
+            if (nodep->isToggle()) {
+                // Toggle coverage coverpoint requires additional counter, because
+                // changes of values 0 -> 1 and 1 -> 0 are counted separately.
+                m_coverBins++;
+            }
         }
     }
     void visit(AstCFunc* nodep) override {
