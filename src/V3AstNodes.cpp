@@ -317,6 +317,16 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* r
     }
 }
 
+AstNodeBiop* AstNeq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
+    if (lhsp->isString() && rhsp->isString()) {
+        return new AstNeqN{fl, lhsp, rhsp};
+    } else if (lhsp->isDouble() && rhsp->isDouble()) {
+        return new AstNeqD{fl, lhsp, rhsp};
+    } else {
+        return new AstNeq{fl, lhsp, rhsp};
+    }
+}
+
 AstExecGraph::AstExecGraph(FileLine* fileline, const string& name) VL_MT_DISABLED
     : ASTGEN_SUPER_ExecGraph(fileline),
       m_depGraphp{new V3Graph},
