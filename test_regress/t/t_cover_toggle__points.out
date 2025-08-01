@@ -318,7 +318,7 @@
            input_struct
            );
         
- 000011    input str_logic input_struct;
-+000011  point: comment=input_struct.a hier=top.t.i_mod_struct
+ 000019    input str_logic input_struct;
++000019  point: comment=input_struct.a hier=top.t.i_mod_struct
         endmodule
         

@@ -225,6 +225,6 @@
            input_struct
            );
         
- 000011    input str_logic input_struct;
+ 000019    input str_logic input_struct;
         endmodule
         
