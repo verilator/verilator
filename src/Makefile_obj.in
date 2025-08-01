@@ -263,6 +263,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Fork.o \
   V3Gate.o \
   V3HierBlock.o \
+  V3HierBlockCost.o \
   V3Inline.o \
   V3Inst.o \
   V3InstrCount.o \
