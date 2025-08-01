@@ -111,7 +111,7 @@ class ClockVisitor final : public VNVisitor {
             = VN_CAST(origp->dtypep()->skipRefp(), BasicDType)) {
             if (!bdtypep->isOpaque()) comparedp = new AstXor{nodep->fileline(), origp, changeRdp};
         }
-        if (!comparedp) comparedp = AstEq::newTyped(nodep->fileline(), origp, changeRdp);
+        if (!comparedp) comparedp = AstNeq::newTyped(nodep->fileline(), origp, changeRdp);
         AstIf* const newp = new AstIf{nodep->fileline(), comparedp, incp};
         // We could add another IF to detect posedges, and only increment if so.
         // It's another whole branch though versus a potential memory miss.

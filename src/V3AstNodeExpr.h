@@ -3895,6 +3895,7 @@ public:
     AstNodeExpr* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         return new AstNeq{fileline(), lhsp, rhsp};
     }
+    static AstNodeBiop* newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp);
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
         out.opNeq(lhs, rhs);
     }
