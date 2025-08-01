@@ -534,9 +534,9 @@ public:
                 // virtual interface never assigned any actual interface
                 ifacerefp->ifacep()->dead(false);
                 varp->dtypep(ifacerefp->dtypep());
-                // A dummy cell to keep the virtual interface alive
+                // Create dummy cell to keep the virtual interface alive
                 // (later stages assume that non-dead interface has associated cell)
-                AstCell* ifacecellp
+                AstCell* const ifacecellp
                     = new AstCell{ifacerefp->ifacep()->fileline(),
                                   ifacerefp->ifacep()->fileline(),
                                   ifacerefp->ifacep()->name() + "__02E" + varp->name(),
