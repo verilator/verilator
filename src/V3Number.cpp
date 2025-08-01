@@ -746,10 +746,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
         if (width() > 8)
             fl->v3warn(WIDTHTRUNC, "$display-like format of %c format of > 8 bit value");
         const unsigned int v = bitsValue(0, 8);
-        char strc[2];
-        strc[0] = v & 0xff;
-        strc[1] = '\0';
-        str = strc;
+        str.push_back(static_cast<char>(v));
         return str;
     }
     case 's': {
