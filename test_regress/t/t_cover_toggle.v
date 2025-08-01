@@ -4,6 +4,8 @@
 // any use, without warranty, 2008 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+typedef struct packed {logic a;} str_logic;
+
 module t (/*AUTOARG*/
    // Inputs
    clk, check_real, check_array_real, check_string
@@ -26,6 +28,8 @@ module t (/*AUTOARG*/
 
    str_t stoggle; initial stoggle='0;
 
+   str_logic strl; initial strl='0;
+
    union {
       real val1;  // TODO use bit [7:0] here
       real val2;  // TODO use bit [3:0] here
@@ -43,6 +47,8 @@ module t (/*AUTOARG*/
       int q[$];
    } str_queue_t;
    str_queue_t str_queue;
+
+   assign strl.a = clk;
 
    alpha a1 (/*AUTOINST*/
              // Outputs
@@ -78,6 +84,11 @@ module t (/*AUTOARG*/
                 // Inputs
                 .clk                    (clk),
                 .toggle                 (toggle));
+
+   mod_struct i_mod_struct (/*AUTOINST*/
+                            // Inputs
+                            .input_struct   (strl));
+
 
    reg [1:0]  memory[121:110];
 
@@ -206,4 +217,12 @@ module param #(parameter P = 2) (/*AUTOARG*/
    if (P > 1) begin : gen_1
       assign z = 1;
    end
+endmodule
+
+module mod_struct(/*AUTOARG*/
+   // Inputs
+   input_struct
+   );
+
+   input str_logic input_struct;
 endmodule
