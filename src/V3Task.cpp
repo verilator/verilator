@@ -337,7 +337,7 @@ struct TaskDpiUtils final {
             const string frSvType = portp->basicp()->isDpiBitVec() ? "SVBV" : "SVLV";
             if (portp->isWide()) {
                 // Need to convert to wide, using special function
-                frstmt = "VL_SET_W_" + frSvType + "(" + cvtToStr(portp->width()) + ",";
+                frstmt = "VL_SET_W_" + frSvType + "(" + cvtToStr(portp->width()) + ", ";
                 return true;
             } else {
                 const AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
@@ -826,7 +826,7 @@ class TaskVisitor final : public VNVisitor {
                 linesp->addNext(srcp);
                 linesp->addNext(
                     new AstText{portvscp->fileline(),
-                                "," + frName + " + " + cvtToStr(i * widthWords) + ");\n"});
+                                ", " + frName + " + " + cvtToStr(i * widthWords) + ");\n"});
                 stmtp = new AstCStmt{portvscp->fileline(), linesp};
             } else {
                 string from = frstmt;
@@ -884,7 +884,7 @@ class TaskVisitor final : public VNVisitor {
             stmt += "if (VL_UNLIKELY(__Vfuncnum == -1)) __Vfuncnum = Verilated::exportFuncNum(\""
                     + nodep->cname() + "\");\n";
             // If the find fails, it will throw an error
-            stmt += "const VerilatedScope* __Vscopep = Verilated::dpiScope();\n";
+            stmt += "const VerilatedScope* const __Vscopep = Verilated::dpiScope();\n";
             // If dpiScope is fails and is null; the exportFind function throws and error
             const string cbtype
                 = VIdProtect::protect(v3Global.opt.prefix() + "__Vcb_" + nodep->cname() + "_t");

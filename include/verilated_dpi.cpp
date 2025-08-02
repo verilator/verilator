@@ -80,6 +80,7 @@ void svPutBitselLogic(svLogicVecVal* dp, int bit, svLogic s) {
 }
 
 void svGetPartselBit(svBitVecVal* dp, const svBitVecVal* sp, int lsb, int width) {
+    // Verilator supports > 32 bit widths, which is an extension to IEEE DPI
     // See also VL_SEL_WWI
     const int msb = lsb + width - 1;
     const int word_shift = VL_BITWORD_I(lsb);
@@ -103,6 +104,7 @@ void svGetPartselBit(svBitVecVal* dp, const svBitVecVal* sp, int lsb, int width)
     dp[VL_WORDS_I(width) - 1] &= VL_MASK_I(width);
 }
 void svGetPartselLogic(svLogicVecVal* dp, const svLogicVecVal* sp, int lsb, int width) {
+    // Verilator supports > 32 bit widths, which is an extension to IEEE DPI
     const int msb = lsb + width - 1;
     const int word_shift = VL_BITWORD_I(lsb);
     if (VL_BITBIT_I(lsb) == 0) {
