@@ -27,6 +27,8 @@ for filename in files.split():
         continue
     if "include/gtkwave/" in filename:  # Standard file - can't change it
         continue
+    if "test_regress/t/uvm/dpi/" in filename:  # Standard file - can't change it
+        continue
     filename = os.path.join(root, filename)
     if not os.path.exists(filename):
         continue
