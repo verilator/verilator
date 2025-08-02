@@ -134,7 +134,7 @@ class UnknownVisitor final : public VNVisitor {
                          fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp}))};
             newp->branchPred(VBranchPred::BP_LIKELY);
             newp->isBoundsCheck(true);
-            if (debug() >= 9) newp->dumpTree("-     _new: ");
+            UINFOTREE(9, newp, "", "_new");
             abovep->addNextStmt(newp, abovep);
             prep->user2p(newp);  // Save so we may LogAnd it next time
         }
@@ -319,7 +319,7 @@ class UnknownVisitor final : public VNVisitor {
     void visit(AstConst* nodep) override {
         if (m_constXCvt && nodep->num().isFourState()) {
             UINFO(4, " CONST4 " << nodep);
-            if (debug() >= 9) nodep->dumpTree("-  Const_old: ");
+            UINFOTREE(9, nodep, "", "Const_old");
             // CONST(num) -> VARREF(newvarp)
             //          -> VAR(newvarp)
             //          -> INITIAL(VARREF(newvarp, OR(num_No_Xs,AND(random,num_1s_Where_X))
@@ -368,9 +368,9 @@ class UnknownVisitor final : public VNVisitor {
                 m_modp->addStmtsp(newvarp);
                 m_modp->addStmtsp(newinitp);
                 m_modp->addStmtsp(afterp);
-                if (debug() >= 9) newref1p->dumpTree("-     _new: ");
-                if (debug() >= 9) newvarp->dumpTree("-     _new: ");
-                if (debug() >= 9) newinitp->dumpTree("-     _new: ");
+                UINFOTREE(9, newref1p, "", "_newref");
+                UINFOTREE(9, newvarp, "", "_newvar");
+                UINFOTREE(9, newinitp, "", "_newini");
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
             }
         }
@@ -388,7 +388,7 @@ class UnknownVisitor final : public VNVisitor {
             // Find range of dtype we are selecting from
             // Similar code in V3Const::warnSelect
             const int maxmsb = nodep->fromp()->dtypep()->width() - 1;
-            if (debug() >= 9) nodep->dumpTree("-  sel_old: ");
+            UINFOTREE(9, nodep, "", "sel_old");
 
             // If (maxmsb >= selected), we're in bound
             AstNodeExpr* condp
@@ -412,7 +412,7 @@ class UnknownVisitor final : public VNVisitor {
                 AstNodeExpr* const newp
                     = condp->isZero() ? xexprp
                                       : new AstCondBound{nodep->fileline(), condp, nodep, xexprp};
-                if (debug() >= 9) newp->dumpTree("-        _new: ");
+                UINFOTREE(9, newp, "", "_new");
                 // Link in conditional
                 replaceHandle.relink(newp);
                 // Added X's, tristate them too
@@ -429,7 +429,7 @@ class UnknownVisitor final : public VNVisitor {
     void visit(AstArraySel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
-            if (debug() == 9) nodep->dumpTree("-  in: ");
+            UINFOTREE(9, nodep, "", "in");
             // Guard against reading/writing past end of arrays
             AstNode* const basefromp = AstArraySel::baseFromp(nodep->fromp(), true);
             bool lvalue = false;
@@ -447,7 +447,7 @@ class UnknownVisitor final : public VNVisitor {
             const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType);
             UASSERT_OBJ(adtypep, nodep, "Select from non-array " << dtypep->prettyTypeName());
             declElements = adtypep->elementsConst();
-            if (debug() >= 9) nodep->dumpTree("-  arraysel_old: ");
+            UINFOTREE(9, nodep, "", "arraysel_old");
 
             // If value MODDIV constant, where constant <= declElements, known ok
             // V3Random makes these to intentionally prevent exceeding enum array bounds.
@@ -487,7 +487,7 @@ class UnknownVisitor final : public VNVisitor {
                 }
                 AstNode* const newp = new AstCondBound{nodep->fileline(), condp, nodep,
                                                        new AstConst{nodep->fileline(), xnum}};
-                if (debug() >= 9) newp->dumpTree("-        _new: ");
+                UINFOTREE(9, newp, "", "_new");
                 // Link in conditional, can blow away temp xor
                 replaceHandle.relink(newp);
                 // Added X's, tristate them too
@@ -500,7 +500,7 @@ class UnknownVisitor final : public VNVisitor {
                     bitp->fileline(), condp, bitp,
                     new AstConst{bitp->fileline(), AstConst::WidthedValue{}, bitp->width(), 0}};
                 // Added X's, tristate them too
-                if (debug() >= 9) newp->dumpTree("-        _new: ");
+                UINFOTREE(9, newp, "", "_new");
                 replaceHandle.relink(newp);
                 iterate(newp);
             } else {  // lvalue

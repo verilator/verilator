@@ -473,7 +473,7 @@ class AssertVisitor final : public VNVisitor {
             AstNode* const assp = new AstAssignDly{
                 nodep->fileline(), new AstVarRef{nodep->fileline(), outvarp, VAccess::WRITE}, inp};
             alwaysp->addStmtsp(assp);
-            // if (debug() >= 9) assp->dumpTree("-  ass: ");
+            // UINFOTREE(9, assp, "", "ass");
             invarp = outvarp;
             inp = new AstVarRef{nodep->fileline(), invarp, VAccess::READ};
         }

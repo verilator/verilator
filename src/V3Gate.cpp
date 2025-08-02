@@ -867,7 +867,7 @@ class GateInline final {
 
                 if (!canInline) continue;  // Cannot optimize this replacement
 
-                if (debug() >= 9) dstVtxp->nodep()->dumpTree("      inside: ");
+                UINFOTREE(9, dstVtxp->nodep(), "", "inside");
 
                 if (logicp == dstVtxp->nodep()) {
                     // This is a bit involved. The graph tells us that the logic is circular

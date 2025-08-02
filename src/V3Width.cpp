@@ -911,6 +911,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstNodeStream* nodep) override {
         VL_RESTORER(m_streamConcat);
+        UINFOTREE(1, nodep, "stream-in vup" << m_vup, "stream-in ");
         if (m_vup->prelim()) {
             m_streamConcat = true;
             iterateCheckSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
@@ -977,7 +978,7 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->didWidth()) return;
         UASSERT_OBJ(m_vup, nodep, "Select under an unexpected context");
         if (m_vup->prelim()) {
-            if (debug() >= 9) nodep->dumpTree("-  selWidth: ");
+            UINFOTREE(9, nodep, "", "selWidth");
             userIterateAndNext(nodep->fromp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->lsbp(), WidthVP{SELF, PRELIM}.p());
             checkCvtUS(nodep->fromp(), false);
@@ -1095,7 +1096,7 @@ class WidthVisitor final : public VNVisitor {
                 widthCheckSized(nodep, "Extract Range", nodep->lsbp(), selwidthDTypep, EXTEND_EXP,
                                 false /*NOWARN*/);
             }
-            // if (debug() >= 9) nodep->dumpTree("-seldone ");
+            // UINFOTREE(9, nodep, "", "seldone");
         }
     }
 
@@ -2131,8 +2132,8 @@ class WidthVisitor final : public VNVisitor {
         UINFO(9, "CAST " << nodep);
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         if (m_vup->prelim()) {
-            if (debug() >= 9) nodep->dumpTree("-  CastPre: ");
-            // if (debug()) nodep->backp()->dumpTree("-  CastPreUpUp: ");
+            UINFOTREE(9, nodep, "", "CastPre");
+            // UINFOTREE(1, nodep->backp(), "", "CastPreUpUp");
             if (AstSigned* const fromp = VN_CAST(nodep->fromp(), Signed)) {
                 if (VN_IS(fromp->lhsp(), NodeStream)) {
                     AstNode* const lhsp = fromp->lhsp()->unlinkFrBack();
@@ -2141,7 +2142,7 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
             userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM}.p());
-            if (debug() >= 9) nodep->dumpTree("-  CastDit: ");
+            UINFOTREE(9, nodep, "", "CastDit");
             AstNodeDType* const toDtp = nodep->dtypep()->skipRefToEnump();
             AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
             const auto castable = AstNode::computeCastable(toDtp, fromDtp, nodep->fromp());
@@ -2237,20 +2238,20 @@ class WidthVisitor final : public VNVisitor {
             }
             if (!newp) newp = nodep->fromp()->unlinkFrBack();
             nodep->fromp(newp);
-            if (debug() >= 9) nodep->dumpTree("-  CastOut: ");
-            // if (debug()) nodep->backp()->dumpTree("-  CastOutUpUp: ");
+            UINFOTREE(9, nodep, "", "CastOut");
+            // UINFOTREE(1, nodep->backp(), "", "CastOutUpUp");
         }
         if (m_vup->final()) {
-            if (debug() >= 9) nodep->dumpTree("-  CastFPit: ");
+            UINFOTREE(9, nodep, "", "CastFPit");
             iterateCheck(nodep, "value", nodep->fromp(), SELF, FINAL, nodep->fromp()->dtypep(),
                          EXTEND_EXP, false);
-            if (debug() >= 9) nodep->dumpTree("-  CastFin: ");
+            UINFOTREE(9, nodep, "", "CastFin");
             AstNodeExpr* const underp = nodep->fromp()->unlinkFrBack();
             underp->dtypeFrom(nodep);
             underp->didWidth(true);
             AstNodeExpr* const newp = new AstCastWrap{nodep->fileline(), underp};
             newp->didWidth(true);
-            if (debug() >= 9) newp->dumpTree("-  CastRep: ");
+            UINFOTREE(9, newp, "", "CastRep");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
@@ -2258,7 +2259,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstCastSize* nodep) override {
         // IEEE: Signedness of result is same as self-determined signedness
         // However, the result is same as BITSEL, so we do not sign extend the LHS
-        // if (debug()) nodep->dumpTree("-  CastSizePre: ");
+        // UINFOTREE(1, nodep, "", "CastSizePre");
         if (m_vup->prelim()) {
             int width = nodep->rhsp()->toSInt();
             if (width < 1) {
@@ -2274,7 +2275,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->replaceWithKeepDType(underp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
-        // if (debug()) nodep->dumpTree("-  CastSizeOut: ");
+        // UINFOTREE(1, nodep, "", "CastSizeOut");
     }
     void visit(AstCastWrap* nodep) override {
         // Inserted by V3Width only so we know has been resolved
@@ -2305,7 +2306,7 @@ class WidthVisitor final : public VNVisitor {
             VL_DANGLING(underp);
             underp = nodep->op1p();  // Above asserts that op1 was underp pre-relink
         }
-        // if (debug()) nodep->dumpTree("-  CastSizeClc: ");
+        // UINFOTREE(1, nodep, "", "CastSizeClc");
         // Next step, make the proper output width
         {
             AstNodeDType* const outDtp
@@ -2337,7 +2338,7 @@ class WidthVisitor final : public VNVisitor {
         nodep->dtypep(nodep->rangep()->dtypep());
     }
     void visit(AstVar* nodep) override {
-        // if (debug()) nodep->dumpTree("-  InitPre: ");
+        // UINFOTREE(1, nodep, "", "InitPre");
         // Must have deterministic constant width
         // We can't skip this step when width()!=0, as creating a AstVar
         // with non-constant range gets size 1, not size 0.  So use didWidth().
@@ -2472,14 +2473,14 @@ class WidthVisitor final : public VNVisitor {
                            << badDtp->warnContextSecondary());
         }
         if (nodep->valuep() && !didchk) {
-            // if (debug()) nodep->dumpTree("-  final: ");
+            // UINFOTREE(1, nodep, "", "final");
             // AstPattern requires assignments to pass datatype on PRELIM
             userIterateAndNext(nodep->valuep(), WidthVP{nodep->dtypep(), PRELIM}.p());
             iterateCheckAssign(nodep, "Initial value", nodep->valuep(), FINAL, nodep->dtypep());
         }
         userIterateAndNext(nodep->delayp(), WidthVP{nodep->dtypep(), PRELIM}.p());
         UINFO(4, "varWidthed " << nodep);
-        // if (debug()) nodep->dumpTree("-  InitOut: ");
+        // UINFOTREE(1, nodep, "", "InitOut");
         nodep->didWidth(true);
         nodep->doingWidth(false);
     }
@@ -2500,14 +2501,14 @@ class WidthVisitor final : public VNVisitor {
             // Var hasn't been widthed, so make it so.
             userIterate(nodep->varp(), nullptr);
         }
-        // if (debug()>=9) { nodep->dumpTree("-  VRin:: ");
-        //  nodep->varp()->dumpTree("-  forvar: "); }
+        // UINFOTREE(9, nodep, "", "VRin");
+        // UINFOTREE(9, nodep->varp(), "", "forvar");
         // Note genvar's are also entered as integers
         nodep->dtypeFrom(nodep->varp());
         if (VN_IS(nodep->backp(), NodeAssign) && nodep->access().isWriteOrRW()) {  // On LHS
             UASSERT_OBJ(nodep->dtypep(), nodep, "LHS var should be dtype completed");
         }
-        // if (debug() >= 9) nodep->dumpTree("-  VRout: ");
+        // UINFOTREE(9, nodep, "", "VRout");
         if (nodep->access().isWriteOrRW() && nodep->varp()->direction() == VDirection::CONSTREF) {
             nodep->v3error("Assigning to const ref variable: " << nodep->prettyNameQ());
         } else if (nodep->access().isWriteOrRW() && nodep->varp()->isInput()
@@ -2848,7 +2849,7 @@ class WidthVisitor final : public VNVisitor {
         }
         if (!newp) newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
 
-        if (debug() >= 9) nodep->dumpTree("-  dist-out: ");
+        UINFOTREE(9, nodep, "", "dist-out");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
@@ -2895,7 +2896,7 @@ class WidthVisitor final : public VNVisitor {
                              EXTEND_EXP);
         }
 
-        if (debug() >= 9) nodep->dumpTree("-  inside-in: ");
+        UINFOTREE(9, nodep, "", "inside-in");
         // Now rip out the inside and replace with simple math
         AstNodeExpr* newp = nullptr;
         for (AstNodeExpr *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
@@ -2905,7 +2906,7 @@ class WidthVisitor final : public VNVisitor {
             newp = newp ? new AstLogOr{nodep->fileline(), newp, inewp} : inewp;
         }
         if (!newp) newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
-        if (debug() >= 9) newp->dumpTree("-  inside-out: ");
+        UINFOTREE(9, newp, "", "inside-out");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
@@ -2951,7 +2952,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstNodeUOrStructDType* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         UINFO(5, "   NODEUORS " << nodep);
-        // if (debug() >= 9) nodep->dumpTree("-  class-in: ");
+        // UINFOTREE(9, nodep, "", "class-in");
         if (!nodep->packed() && v3Global.opt.structsPacked()) nodep->packed(true);
         userIterateChildren(nodep, nullptr);  // First size all members
         nodep->dtypep(nodep);
@@ -3010,7 +3011,7 @@ class WidthVisitor final : public VNVisitor {
         } else {
             nodep->widthForce(1, 1);
         }
-        // if (debug() >= 9) nodep->dumpTree("-  class-out: ");
+        // UINFOTREE(9, nodep, "", "class-out");
     }
     void visit(AstClass* nodep) override {
         if (nodep->didWidthAndSet()) return;
@@ -3088,9 +3089,9 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstMemberSel* nodep) override {
         UINFO(5, "   MEMBERSEL " << nodep);
         if (nodep->didWidth()) return;
-        if (debug() >= 9) nodep->dumpTree("-  mbs-in: ");
+        UINFOTREE(9, nodep, "", "mbs-in");
         userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
-        if (debug() >= 9) nodep->dumpTree("-  mbs-ic: ");
+        UINFOTREE(9, nodep, "", "mbs-ic");
         // Find the fromp dtype - should be a class
         UASSERT_OBJ(nodep->fromp()->dtypep(), nodep->fromp(), "Unlinked data type");
         AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
@@ -3335,7 +3336,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstMethodCall* nodep) override {
         UINFO(5, "   METHODCALL " << nodep);
         if (nodep->didWidth()) return;
-        if (debug() >= 9) nodep->dumpTree("-  mts-in: ");
+        UINFOTREE(9, nodep, "", "mts-in");
         // Should check types the method requires, but at present we don't do much
         userIterate(nodep->fromp(), WidthVP{SELF, BOTH}.p());
         // Args are checked within each particular method's decode
@@ -4869,7 +4870,7 @@ class WidthVisitor final : public VNVisitor {
         } else {
             nodep->v3error("Assignment pattern with no members");
         }
-        // if (debug() >= 9) newp->dumpTree("-  apat-out: ");
+        // UINFOTREE(9, newp, "", "apat-out");
         VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
     }
     void patternAssoc(AstPattern* nodep, AstAssocArrayDType* arrayDtp, AstPatMember* defaultp) {
@@ -4898,7 +4899,7 @@ class WidthVisitor final : public VNVisitor {
             newp = newap;
         }
         nodep->replaceWith(newp);
-        // if (debug() >= 9) newp->dumpTree("-  apat-out: ");
+        // UINFOTREE(9, newp, "", "apat-out");
         VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
     }
     void patternWildcard(AstPattern* nodep, AstWildcardArrayDType* arrayDtp,
@@ -4918,7 +4919,7 @@ class WidthVisitor final : public VNVisitor {
             newp = newap;
         }
         nodep->replaceWith(newp);
-        // if (debug() >= 9) newp->dumpTree("-  apat-out: ");
+        // UINFOTREE(9, newp, "", "apat-out");
         VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
     }
     void patternDynArray(AstPattern* nodep, AstDynArrayDType* arrayp, AstPatMember*) {
@@ -4937,7 +4938,7 @@ class WidthVisitor final : public VNVisitor {
             newp = newap;
         }
         nodep->replaceWith(newp);
-        // if (debug() >= 9) newp->dumpTree("-  apat-out: ");
+        // UINFOTREE(9, newp, "", "apat-out");
         VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
     }
     void patternQueue(AstPattern* nodep, AstQueueDType* arrayp, AstPatMember*) {
@@ -4958,7 +4959,7 @@ class WidthVisitor final : public VNVisitor {
             newp = newap;
         }
         nodep->replaceWith(newp);
-        // if (debug() >= 9) newp->dumpTree("-  apat-out: ");
+        // UINFOTREE(9, newp, "", "apat-out");
         VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
     }
     void patternBasic(AstPattern* nodep, AstNodeDType* vdtypep, AstPatMember* defaultp) {
@@ -5007,7 +5008,7 @@ class WidthVisitor final : public VNVisitor {
         } else {
             nodep->v3error("Assignment pattern with no members");
         }
-        // if (debug() >= 9) newp->dumpTree("-  apat-out: ");
+        // UINFOTREE(9, newp, "", "apat-out");
         VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
     }
     AstNodeExpr* patternMemberValueIterate(AstPatMember* patp) {
@@ -5240,13 +5241,13 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstNodeIf* nodep) override {
         assertAtStatement(nodep);
-        // if (debug()) nodep->dumpTree("-  IfPre: ");
+        // UINFOTREE(1, nodep, "", "IfPre");
         if (!VN_IS(nodep, GenIf)) {  // for m_paramsOnly
             userIterateAndNext(nodep->thensp(), nullptr);
             userIterateAndNext(nodep->elsesp(), nullptr);
         }
         iterateCheckBool(nodep, "If", nodep->condp(), BOTH);  // it's like an if() condition.
-        // if (debug()) nodep->dumpTree("-  IfOut: ");
+        // UINFOTREE(1, nodep, "", "IfOut");
     }
     void visit(AstExprStmt* nodep) override {
         userIterateAndNext(nodep->stmtsp(), nullptr);
@@ -5259,7 +5260,7 @@ class WidthVisitor final : public VNVisitor {
         nodep->didWidth(true);
         const AstSelLoopVars* const loopsp = VN_CAST(nodep->arrayp(), SelLoopVars);
         UASSERT_OBJ(loopsp, nodep, "No loop variables under foreach");
-        // if (debug()) nodep->dumpTree("-  foreach-old: ");
+        // UINFOTREE(1, nodep, "", "foreach-old");
         userIterateAndNext(loopsp->fromp(), WidthVP{SELF, BOTH}.p());
         AstNodeExpr* const fromp = loopsp->fromp();
         UASSERT_OBJ(fromp->dtypep(), fromp, "Missing data type");
@@ -5320,19 +5321,19 @@ class WidthVisitor final : public VNVisitor {
         //       handled in each visitor.
         //    Then LHS sign-extends only if *RHS* is signed
         assertAtStatement(nodep);
-        // if (debug()) nodep->dumpTree("-  AssignPre: ");
+        // UINFOTREE(1, nodep, "", "AssignPre");
         {
-            // if (debug()) nodep->dumpTree("-    assin:: ");
+            // UINFOTREE(1, nodep, "", "assin:");
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
             UASSERT_OBJ(nodep->lhsp()->dtypep(), nodep, "How can LHS be untyped?");
             UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep, "How can LHS be unsized?");
             nodep->dtypeFrom(nodep->lhsp());
             //
             // AstPattern needs to know the proposed data type of the lhs, so pass on the prelim
-            // if (debug()) nodep->dumpTree("-    assrhs: ");
+            // UINFOTREE(1, nodep, "", "assrhs");
             userIterateAndNext(nodep->rhsp(), WidthVP{nodep->dtypep(), PRELIM}.p());
             //
-            // if (debug()) nodep->dumpTree("-    assign: ");
+            // UINFOTREE(1, nodep, "", "assign");
             AstNodeDType* const lhsDTypep
                 = nodep->lhsp()->dtypep();  // Note we use rhsp for context determined
 
@@ -5372,7 +5373,7 @@ class WidthVisitor final : public VNVisitor {
             }
 
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
-            // if (debug()) nodep->dumpTree("-  AssignOut: ");
+            // UINFOTREE(1, nodep, "", "AssignOut");
         }
         if (AstNode* const controlp = nodep->timingControlp()) {
             if (VN_IS(m_ftaskp, Func)) {
@@ -5840,7 +5841,7 @@ class WidthVisitor final : public VNVisitor {
         iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);  // it's like an if() condition.
     }
     void visit(AstPin* nodep) override {
-        // if (debug()) nodep->dumpTree("-  PinPre: ");
+        // UINFOTREE(1, nodep, "", "PinPre");
         // TOP LEVEL NODE
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
             // Widthing handled as special init() case
@@ -5969,7 +5970,7 @@ class WidthVisitor final : public VNVisitor {
                 iterateCheckAssign(nodep, "pin connection", nodep->exprp(), FINAL, subDTypep);
             }
         }
-        // if (debug()) nodep->dumpTree("-  PinOut: ");
+        // UINFOTREE(1, nodep, "", "PinOut");
     }
     void visit(AstCell* nodep) override {
         VL_RESTORER(m_cellp);
@@ -6142,7 +6143,7 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
         }
-        // if (debug()) nodep->dumpTree("-  FuncOut: ");
+        // UINFOTREE(1, nodep, "", "FuncOut");
     }
     // Returns true if dtypep0 and dtypep1 have same dimensions
     static bool areSameSize(AstUnpackArrayDType* dtypep0, AstUnpackArrayDType* dtypep1) {
@@ -7081,7 +7082,7 @@ class WidthVisitor final : public VNVisitor {
         // because the rhs could be larger, and we need to have proper editing to get the widths
         // to be the same for our operations.
         //
-        // if (debug() >= 9) { UINFO(0, "rus " << m_vup); nodep->dumpTree("-  rusin: "); }
+        // UINFOTREE(9, nodep, "rus " << m_vup, "rusin");
         if (m_vup->prelim()) {  // First stage evaluation
             // Determine expression widths only relying on what's in the subops
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
@@ -7137,7 +7138,7 @@ class WidthVisitor final : public VNVisitor {
             iterateCheck(nodep, "RHS", nodep->rhsp(), CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP,
                          rhsWarn);
         }
-        // if (debug() >= 9) nodep->dumpTree("-  rusou: ");
+        // UINFOTREE(9, nodep, "", "rusou");
     }
     void visit_real_add_sub(AstNodeBiop* nodep) {
         // CALLER: AddD, MulD, ...
@@ -7290,8 +7291,8 @@ class WidthVisitor final : public VNVisitor {
                 num.opRepl(constp->num(), expWidth);  // {width{'1}}
                 AstNodeExpr* const newp = new AstConst{constp->fileline(), num};
                 // Spec says always unsigned with proper width
-                if (debug() > 4) constp->dumpTree("-  fixAutoExtend_old: ");
-                if (debug() > 4) newp->dumpTree("-               _new: ");
+                UINFOTREE(5, constp, "", "fixAutoExtend_old");
+                UINFOTREE(5, newp, "", "_new");
                 constp->replaceWith(newp);
                 VL_DO_DANGLING(constp->deleteTree(), constp);
                 // Tell caller the new constp, and that we changed it.
@@ -7309,8 +7310,8 @@ class WidthVisitor final : public VNVisitor {
                 num.opExtendXZ(constp->num(), constp->width());
                 AstNodeExpr* const newp = new AstConst{constp->fileline(), num};
                 // Spec says always unsigned with proper width
-                if (debug() > 4) constp->dumpTree("-  fixUnszExtend_old: ");
-                if (debug() > 4) newp->dumpTree("-               _new: ");
+                UINFOTREE(5, constp, "", "fixUnszExtend_old");
+                UINFOTREE(5, newp, "", "_new");
                 constp->replaceWith(newp);
                 VL_DO_DANGLING(constp->deleteTree(), constp);
                 // Tell caller the new constp, and that we changed it.
@@ -7477,7 +7478,7 @@ class WidthVisitor final : public VNVisitor {
     void iterateCheckAssign(AstNode* nodep, const char* side, AstNode* rhsp, Stage stage,
                             AstNodeDType* lhsDTypep) {
         // Check using assignment-like context rules
-        // if (debug()) nodep->dumpTree("-  checkass: ");
+        // UINFOTREE(1, nodep, "", "checkass");
         UASSERT_OBJ(stage == FINAL, nodep, "Bad width call");
         // Create unpacked byte from string see IEEE 1800-2023 5.9
         if (AstConst* constp = VN_CAST(rhsp, Const)) {
@@ -7517,7 +7518,7 @@ class WidthVisitor final : public VNVisitor {
             = (VN_IS(nodep, NodeAssign) && VN_IS(VN_AS(nodep, NodeAssign)->lhsp(), NodeStream));
         rhsp = iterateCheck(nodep, side, rhsp, ASSIGN, FINAL, lhsDTypep,
                             lhsStream ? EXTEND_OFF : EXTEND_LHS);
-        // if (debug()) nodep->dumpTree("-  checkout: ");
+        // UINFOTREE(1, nodep, "", "checkout");
         (void)rhsp;  // cppcheck
     }
 
@@ -7558,7 +7559,7 @@ class WidthVisitor final : public VNVisitor {
             const bool bad = widthBad(underp, nodep->findBitDType());
             if (bad) {
                 {  // if (warnOn), but not needed here
-                    if (debug() > 4) nodep->backp()->dumpTree("-  back: ");
+                    UINFOTREE(5, nodep->backp(), "", "back");
                     nodep->v3widthWarn(1, underp->width(),
                                        "Logical operator "
                                            << nodep->prettyTypeName() << " expects 1 bit on the "
@@ -7627,7 +7628,7 @@ class WidthVisitor final : public VNVisitor {
                                            << " (IEEE 1800-2023 6.19.3)\n"
                                            << nodep->warnMore()
                                            << "... Suggest use enum's mnemonic, or static cast");
-                        // if (debug()) nodep->backp()->dumpTree("-  back: ");
+                        // UINFOTREE(1, nodep->backp(), "", "back");
                     }
                 }
                 AstNodeDType* subDTypep = expDTypep;
@@ -7747,7 +7748,7 @@ class WidthVisitor final : public VNVisitor {
                 warnOn = false;
             }
             if (bad && warnOn) {
-                if (debug() > 4) nodep->backp()->dumpTree("-  back: ");
+                UINFOTREE(5, nodep->backp(), "", "back");
 
                 nodep->v3widthWarn(
                     expWidth, underp->width(),

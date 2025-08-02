@@ -121,8 +121,8 @@ class ReloopVisitor final : public VNVisitor {
                     rbitp->replaceWith(m_mgOffset < 0 ? new AstAdd{fl, rvrefp, offsetp} : rvrefp);
                     VL_DO_DANGLING(rbitp->deleteTree(), lbitp);
                 }
-                if (debug() >= 9) initp->dumpTree("-  new: ");
-                if (debug() >= 9) whilep->dumpTree("-  new: ");
+                UINFOTREE(9, initp, "", "new");
+                UINFOTREE(9, whilep, "", "new");
 
                 // Remove remaining assigns
                 for (AstNodeAssign* assp : m_mgAssignps) {

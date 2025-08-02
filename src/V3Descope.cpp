@@ -195,7 +195,7 @@ class DescopeVisitor final : public VNVisitor {
                 //                                   "%%Error: "s+name+"() called with bad
                 //                                   scope", nullptr));
                 // newfuncp->addStmtsp(new AstStop(newfuncp->fileline()));
-                if (debug() >= 9) newfuncp->dumpTree("-  newfunc: ");
+                UINFOTREE(9, newfuncp, "", "newfunc");
             } else {
                 // Only a single function under this name, we can rename it
                 UINFO(6, "  Wrapping " << name << " just one " << topFuncp);

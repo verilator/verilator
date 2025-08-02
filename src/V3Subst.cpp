@@ -284,12 +284,12 @@ class SubstVisitor final : public VNVisitor {
         if (!hit) iterate(nodep->lhsp());
     }
     void replaceSubstEtc(AstNode* nodep, AstNodeExpr* substp) {
-        if (debug() > 5) nodep->dumpTree("-  substw_old: ");
+        UINFOTREE(6, nodep, "", "substw_old");
         AstNodeExpr* newp = substp->cloneTreePure(true);
         if (!nodep->isQuad() && newp->isQuad()) {
             newp = new AstCCast{newp->fileline(), newp, nodep};
         }
-        if (debug() > 5) newp->dumpTree("-       w_new: ");
+        UINFOTREE(6, newp, "", "w_new");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         ++m_statSubsts;

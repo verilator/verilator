@@ -530,7 +530,7 @@ class TaskVisitor final : public VNVisitor {
                     }
                 }
             } else if (portp->isInout()) {
-                // if (debug() >= 9) pinp->dumpTree("-pinrsize- ");
+                // UINFOTREE(9, pinp, "", "pinrsize-");
 
                 AstVarScope* const newvscp
                     = createVarScope(portp, namePrefix + "__" + portp->shortName());
@@ -1411,7 +1411,7 @@ class TaskVisitor final : public VNVisitor {
 
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        if (debug() >= 9) cfuncp->dumpTree("-  userFunc: ");
+        UINFOTREE(9, cfuncp, "", "userFunc");
         return cfuncp;
     }
 
@@ -1424,9 +1424,9 @@ class TaskVisitor final : public VNVisitor {
         iterate(nodep);
     }
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
-        if (debug() >= 9) nodep->dumpTree("-  newstmt: ");
+        UINFOTREE(9, nodep, "", "newstmt");
         UASSERT_OBJ(m_insStmtp, nodep, "Function call not underneath a statement");
-        if (debug() >= 9) newp->dumpTree("-  newfunc: ");
+        UINFOTREE(9, newp, "", "newfunc");
         m_insStmtp->addHereThisAsNext(newp);
     }
 
@@ -1464,7 +1464,7 @@ class TaskVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked?");
         iterateIntoFTask(nodep->taskp());  // First, do hierarchical funcs
         UINFO(4, " FTask REF   " << nodep);
-        if (debug() >= 9) nodep->dumpTree("-  inlfunc: ");
+        UINFOTREE(9, nodep, "", "inlfunc");
         UASSERT_OBJ(m_scopep, nodep, "func ref not under scope");
         const string namePrefix = ((VN_IS(nodep, FuncRef) ? "__Vfunc_" : "__Vtask_")
                                    + nodep->taskp()->shortName() + "__" + cvtToStr(m_modNCalls++));
@@ -1853,7 +1853,7 @@ void V3Task::taskConnectWrap(AstNodeFTaskRef* nodep, const V3TaskConnects& tconn
     // Change outside call to connect to new function
     nodep->taskp(newTaskp);
     nodep->name(newTaskp->name());
-    // if (debug() >= 9) nodep->dumpTree("-taskConnectWrap-call ");
+    // UINFOTREE(9, nodep, "", "taskConnectWrap-call");
 }
 
 AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newname,
@@ -1928,7 +1928,7 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
         const auto it = oldNewVars.find(refp->varp());
         if (it != oldNewVars.end()) refp->varp(it->second);
     });
-    // if (debug() >= 9) newTaskp->dumpTree("-taskConnectWrap-new ");
+    // UINFOTREE(9, newTaskp, "", "taskConnectWrap-new");
     return newTaskp;
 }
 

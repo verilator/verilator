@@ -59,7 +59,7 @@ class InstVisitor final : public VNVisitor {
             V3Inst::pinReconnectSimple(nodep, m_cellp, false);
         }
         if (!nodep->exprp()) return;  // No-connect
-        if (debug() >= 9) nodep->dumpTree("-  Pin_oldb: ");
+        UINFOTREE(9, nodep, "", "Pin_oldb");
         V3Inst::checkOutputShort(nodep);
         // Use user1p on the PIN to indicate we created an assign for this pin
         if (!nodep->user1SetOnce()) {
@@ -83,7 +83,7 @@ class InstVisitor final : public VNVisitor {
                                                     m_cellp->name(), VAccess::WRITE},
                                      exprp};
                 m_cellp->addNextHere(assp);
-                if (debug() >= 9) assp->dumpTree("-     _new: ");
+                UINFOTREE(9, assp, "", "_new");
             } else if (nodep->modVarp()->isIfaceRef()
                        || (VN_IS(nodep->modVarp()->dtypep()->skipRefp(), UnpackArrayDType)
                            && VN_IS(VN_AS(nodep->modVarp()->dtypep()->skipRefp(), UnpackArrayDType)
@@ -642,7 +642,7 @@ public:
             // Done. Constant.
         } else {
             // Make a new temp wire
-            // if (1 || debug() >= 9) pinp->dumpTree("-  in_pin: ");
+            // UINFOTREE(9, pinp, "", "in_pin");
             V3Inst::checkOutputShort(pinp);
             AstNodeExpr* const pinexprp = VN_AS(pinp->exprp(), NodeExpr)->unlinkFrBack();
             const string newvarname
@@ -674,8 +674,8 @@ public:
                 pinp->exprp(new AstVarRef{pinexprp->fileline(), newvarp, VAccess::READ});
             }
             if (assignp) cellp->addNextHere(assignp);
-            // if (debug()) pinp->dumpTree("-  out: ");
-            // if (debug()) assignp->dumpTree("-  aout: ");
+            // UINFOTREE(1, pinp, "", "out");
+            // UINFOTREE(1, assignp, "", "aout");
         }
         return assignp;
     }

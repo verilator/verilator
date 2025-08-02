@@ -309,7 +309,7 @@ class TraceVisitor final : public VNVisitor {
             if (TraceTraceVertex* const vtxp = vtx.cast<TraceTraceVertex>()) {
                 ActCodeSet actSet;
                 UINFO(9, "  Add to sort: " << vtxp);
-                if (debug() >= 9) vtxp->nodep()->dumpTree("-   trnode: ");
+                UINFOTREE(9, vtxp->nodep(), "", "trnode");
                 for (const V3GraphEdge& edge : vtxp->inEdges()) {
                     const TraceActivityVertex* const cfvertexp
                         = edge.fromp()->cast<const TraceActivityVertex>();

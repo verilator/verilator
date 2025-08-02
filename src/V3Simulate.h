@@ -739,7 +739,7 @@ private:
             // Values are in the "real" tree under the InitArray so can eventually extract it,
             // Not in the usual setValue (via m_varAux)
             initp->addIndexValuep(index, valuep);
-            if (debug() >= 9) initp->dumpTree("-  array: ");
+            UINFOTREE(9, initp, "", "array");
             assignOutValue(nodep, vscp, initp);
         }
     }

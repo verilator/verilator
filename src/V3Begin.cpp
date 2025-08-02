@@ -423,7 +423,7 @@ static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp, 
                                                                    : VNType::atGteS);
 }
 AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
-    // if (debug()) dumpTree("-  foreach-old: ");
+    // UINFOTREE(1, nodep, "", "foreach-old");
     const AstSelLoopVars* const loopsp = VN_CAST(nodep->arrayp(), SelLoopVars);
     UASSERT_OBJ(loopsp, nodep, "No loop variables under foreach");
     AstNodeExpr* const fromp = loopsp->fromp();
@@ -542,6 +542,6 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     }
     VL_DO_DANGLING(bodyPointp->deleteTree(), bodyPointp);
     VL_DO_DANGLING(nodep->deleteTree(), nodep);
-    // if (debug()) newp->dumpTreeAndNext(cout, "-  foreach-new: ");
+    // UINFOTREE(1, newp, "", "foreach-new");
     return newp;
 }

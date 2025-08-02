@@ -68,7 +68,7 @@ class UnrollVisitor final : public VNVisitor {
         if (m_generate)
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Can't unroll generate for; " << reason);
         UINFO(4, "   Can't Unroll: " << reason << " :" << nodep);
-        // if (debug() >= 9) nodep->dumpTree("-  cant: ");
+        // UINFOTREE(9, nodep, "", "cant");
         V3Stats::addStatSum("Unrolling gave up, "s + reason, 1);
         return false;
     }
@@ -158,7 +158,7 @@ class UnrollVisitor final : public VNVisitor {
         } else {
             UINFO(8, "   Loop Variable: " << m_forVarp);
         }
-        if (debug() >= 9) nodep->dumpTree("-   for: ");
+        UINFOTREE(9, nodep, "", "for");
 
         if (!m_generate) {
             const AstAssign* const incpAssign = VN_AS(incp, Assign);
@@ -219,7 +219,7 @@ class UnrollVisitor final : public VNVisitor {
         simvis.mainParamEmulate(clonep);
         if (!simvis.optimizable()) {
             UINFO(4, "Unable to simulate");
-            if (debug() >= 9) nodep->dumpTree("-  _simtree: ");
+            UINFOTREE(9, nodep, "", "_simtree");
             VL_DO_DANGLING(clonep->deleteTree(), clonep);
             return false;
         }
@@ -383,7 +383,7 @@ class UnrollVisitor final : public VNVisitor {
         if (bodysp) VL_DO_DANGLING(pushDeletep(bodysp), bodysp);
         if (initp) VL_DO_DANGLING(pushDeletep(initp), initp);
         if (incp && !incp->backp()) VL_DO_DANGLING(pushDeletep(incp), incp);
-        if (debug() >= 9 && newbodysp) newbodysp->dumpTree("-  _new: ");
+        if (newbodysp) UINFOTREE(9, newbodysp, "", "_new");
         return true;
     }
 

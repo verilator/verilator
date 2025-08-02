@@ -64,7 +64,7 @@ class CastVisitor final : public VNVisitor {
             = new AstCCast{nodep->fileline(), nodep, needsize, nodep->widthMin()};
         UINFO(4, "  MadeCast " << static_cast<void*>(castp) << " for " << nodep);
         relinkHandle.relink(castp);
-        // if (debug() > 8) castp->dumpTree("-  castins: ");
+        // UINFOTREE(9, castp, "", "castins");
         //
         ensureLower32Cast(castp);
         nodep->user1(1);  // Now must be of known size

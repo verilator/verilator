@@ -89,11 +89,11 @@ class DepthBlockVisitor final : public VNVisitor {
         if (m_depth > v3Global.opt.compLimitBlocks()) {  // Already done
             UINFO(4, "DeepBlocks " << m_depth << " " << nodep);
             const AstNode* const backp = nodep->backp();  // Only for debug
-            if (debug() >= 9) backp->dumpTree("-   pre : ");
+            UINFOTREE(9, backp, "", "pre ");
             AstCFunc* const funcp = createDeepFunc(nodep);
             iterate(funcp);
-            if (debug() >= 9) backp->dumpTree("-   post: ");
-            if (debug() >= 9) funcp->dumpTree("-   func: ");
+            UINFOTREE(9, backp, "", "post");
+            UINFOTREE(9, funcp, "", "func");
         } else {
             iterateChildren(nodep);
         }

@@ -275,7 +275,7 @@ private:
         // Keep sensitivity list, but delete all else
         nodep->stmtsp()->unlinkFrBackWithNext()->deleteTree();
         nodep->addStmtsp(stmtsp);
-        if (debug() >= 6) nodep->dumpTree("-  table_new: ");
+        UINFOTREE(6, nodep, "", "table_new");
     }
 
     void createTables(AstAlways* nodep, TableBuilder& outputAssignedTableBuilder) {

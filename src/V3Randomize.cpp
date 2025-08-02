@@ -2191,7 +2191,7 @@ class RandomizeVisitor final : public VNVisitor {
         //   else warning
         // Note this code assumes that the expressions after V3Const are fast to compute
         // Optimize: we would be better with a binary search tree to reduce ifs that execute
-        if (debug() >= 9) nodep->dumpTree("-  rcin:: ");
+        UINFOTREE(9, nodep, "", "rcin:");
         AstNodeDType* const sumDTypep = nodep->findUInt64DType();
 
         FileLine* const fl = nodep->fileline();

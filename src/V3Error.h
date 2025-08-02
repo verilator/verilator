@@ -643,11 +643,14 @@ void v3errorEndFatal(std::ostringstream& sstr)
     do { std::cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; } while (false)
 
 /// Based on debug level, call UINFO then dumpTree on nodep, using given message prefix
+/// If uinfo_msg = "", suppress the first UINFO
 /// If dt_msg = "", use the uinfo_msg; note any uinfo_msg side effects will happen twice.
 #define UINFOTREE(level, nodep, uinfo_msg, dt_msg) \
     do { \
         if (VL_UNCOVERABLE(debug() >= (level))) { \
-            UINFO(level, uinfo_msg); \
+            std::ostringstream us; \
+            us << uinfo_msg; \
+            if (!us.str().empty()) UINFO(level, us.str()); \
             std::ostringstream ss; \
             ss << dt_msg; \
             if (ss.str().empty()) ss << uinfo_msg; \

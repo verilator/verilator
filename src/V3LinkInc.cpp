@@ -81,7 +81,7 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
-        if (debug() >= 9) newp->dumpTree("-  newstmt: ");
+        UINFOTREE(9, newp, "", "newstmt");
         UASSERT_OBJ(m_insStmtp, nodep, "Expression not underneath a statement");
         // In a while condition, the statement also needs to go on the
         // back-edge to the loop header, 'incsp' is that place.
@@ -209,7 +209,7 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void prepost_stmt_sel_visit(AstNodeTriop* nodep) {
         // Special case array[something]++, see comments at file top
-        // if (debug() >= 9) nodep->dumpTree("-pp-stmt-sel-in:  ");
+        // UINFOTREE(9, nodep, "", "pp-stmt-sel-in");
         iterateChildren(nodep);
         AstConst* const constp = VN_AS(nodep->lhsp(), Const);
         UASSERT_OBJ(nodep, constp, "Expecting CONST");

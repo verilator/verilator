@@ -152,7 +152,7 @@ public:
                 // Redundant assignment, in same level block
                 // Don't delete it now as it will confuse iteration since it maybe WAY
                 // above our current iteration point.
-                if (debug() > 4) oldassp->dumpTree("-      REMOVE/SAMEBLK: ");
+                UINFOTREE(7, oldassp, "", "REMOVE/SAMEBLK");
                 entp->complexAssign();
                 oldassp->unlinkFrBack();
                 if (VN_IS(oldassp, CReset)) {

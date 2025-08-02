@@ -745,7 +745,7 @@ class ParamProcessor final {
                 AstConst* const exprp = VN_CAST(pinp->exprp(), Const);
                 AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
                 if (!exprp) {
-                    if (debug()) pinp->dumpTree("-  ");
+                    UINFOTREE(1, pinp, "", "errnode");
                     pinp->v3error("Can't convert defparam value to constant: Param "
                                   << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
                     pinp->exprp()->replaceWith(new AstConst{
@@ -884,9 +884,9 @@ class ParamProcessor final {
                            AstPin* pinsp, bool any_overrides) {
         // Make sure constification worked
         // Must be a separate loop, as constant conversion may have changed some pointers.
-        // if (debug()) nodep->dumpTree("-  cel2: ");
+        // UINFOTREE(1, nodep, "", "cel2");
         string longname = srcModpr->name() + "_";
-        if (debug() > 8 && paramsp) paramsp->dumpTreeAndNext(cout, "-  cellparams: ");
+        if (debug() >= 9 && paramsp) paramsp->dumpTreeAndNext(cout, "-  cellparams: ");
 
         if (srcModpr->hierBlock()) {
             longname = parameterizedHierBlockName(srcModpr, paramsp);
@@ -991,7 +991,7 @@ public:
         // and remove any recursive references
         UINFO(4, "De-parameterize: " << nodep);
         // Create new module name with _'s between the constants
-        if (debug() >= 10) nodep->dumpTree("-  cell: ");
+        UINFOTREE(10, nodep, "", "cell");
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
         // Set name for warnings for when we param propagate the module

@@ -2210,7 +2210,7 @@ class LinkDotScopeVisitor final : public VNVisitor {
     void visit(AstAssignAlias* nodep) override {  // ScopeVisitor::
         // Track aliases created by V3Inline; if we get a VARXREF(aliased_from)
         // we'll need to replace it with a VARXREF(aliased_to)
-        if (debug() >= 9) nodep->dumpTree("-    alias: ");
+        UINFOTREE(9, nodep, "", "alias");
         AstVarScope* const fromVscp = VN_AS(nodep->lhsp(), VarRef)->varScopep();
         AstVarScope* const toVscp = VN_AS(nodep->rhsp(), VarRef)->varScopep();
         UASSERT_OBJ(fromVscp && toVscp, nodep, "Bad alias scopes");
@@ -2219,7 +2219,7 @@ class LinkDotScopeVisitor final : public VNVisitor {
     }
     void visit(AstAssignVarScope* nodep) override {  // ScopeVisitor::
         UINFO(5, "ASSIGNVARSCOPE  " << nodep);
-        if (debug() >= 9) nodep->dumpTree("-    avs: ");
+        UINFOTREE(9, nodep, "", "avs");
         VSymEnt* rhsSymp;
         {
             AstVarRef* const refp = VN_CAST(nodep->rhsp(), VarRef);
@@ -2852,8 +2852,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             else {
                 m_pinSymp = m_statep->getNodeSym(nodep->modp());
                 UINFO(4, indent() << "(Backto) visit " << nodep);
-                // if (debug()) nodep->dumpTree("-  linkcell: ");
-                // if (debug()) nodep->modp()->dumpTree("-  linkcemd: ");
+                // UINFOTREE(1, nodep, "", "linkcell");
+                // UINFOTREE(1, nodep->modp(), "", "linkcemd");
                 iterateChildren(nodep);
             }
         }
@@ -2875,8 +2875,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // ClassRef's have pins, so track
             m_pinSymp = m_statep->getNodeSym(nodep->classp());
             UINFO(4, indent() << "(Backto) visit " << nodep);
-            // if (debug()) nodep->dumpTree("-  linkcell: ");
-            // if (debug()) nodep->modp()->dumpTree("-  linkcemd: ");
+            // UINFOTREE(1, nodep, "", "linkcell");
+            // UINFOTREE(1, nodep->modp(), "", "linkcemd");
             iterateChildren(nodep);
         }
     }
@@ -2958,7 +2958,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_randSymp);
         {
             if (start) {  // Starting dot sequence
-                if (debug() >= 9) nodep->dumpTree("-  dot-in: ");
+                UINFOTREE(9, nodep, "", "dot-in");
                 m_ds.init(m_curSymp);  // Start from current point
             }
             m_ds.m_dotp = nodep;  // Always, not just at start
@@ -3057,7 +3057,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 UINFO(8, indent() << "iter.lhs   " << m_ds.ascii() << " " << nodep);
                 iterateAndNextNull(nodep->lhsp());
                 UINFO(8, indent() << "iter.ldone " << m_ds.ascii() << " " << nodep);
-                // if (debug() >= 9) nodep->dumpTree("-  dot-lho: ");
+                // UINFOTREE(9, nodep, "", "dot-lho");
             }
             if (m_statep->forPrimary() && isParamedClassRef(nodep->lhsp())) {
                 // Dots of paramed classes will be linked after deparameterization
@@ -3077,7 +3077,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // m_ds.m_dotSymp points at lhsp()'s symbol table, so resolve RHS under that
                 iterateAndNextNull(nodep->rhsp());
                 UINFO(8, indent() << "iter.rdone " << m_ds.ascii() << " " << nodep);
-                // if (debug() >= 9) nodep->dumpTree("-  dot-rho: ");
+                // UINFOTREE(9, nodep, "", "dot-rho");
             }
             if (!m_ds.m_unresolvedClass) {
                 if (start) {
@@ -3087,7 +3087,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     } else {
                         newp = nodep->rhsp()->unlinkFrBack();
                     }
-                    if (debug() >= 9) newp->dumpTree("-  dot-out: ");
+                    UINFOTREE(9, newp, "", "dot-out");
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 } else {  // Dot midpoint
