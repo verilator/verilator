@@ -12,6 +12,9 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.pli_filename = "t/uvm/dpi/uvm_dpi.cc"
 
+if re.search(r'clang', test.cxx_version):
+    test.skip("uvm_regex.cc from upstream has clang warnings")
+
 test.compile(
     verilator_flags2=["--binary", "--build-jobs 4", "--vpi", "+incdir+t/uvm", test.pli_filename])
 
