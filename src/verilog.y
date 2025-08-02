@@ -1485,6 +1485,7 @@ paramPortDeclOrArg<nodep>:      // IEEE: param_assignment + parameter_port_decla
                 paramPortDeclOrArgSub                   { $$ = $1; }
         |       vlTag                                   { $$ = nullptr; }
         ;
+
 paramPortDeclOrArgSub<nodep>:
                 parameter_port_declarationFrontE param_assignment       { $$ = $2; }
         |       parameter_port_declarationTypeFrontE type_assignment    { $$ = $2; }
@@ -1945,7 +1946,12 @@ parameter_port_declarationFrontE: // IEEE: local_ or parameter_port_declaration 
                         { /*VARRESET-in-varParam*/
                           // Keep previous type to handle subsequent declarations.
                           // This rule is also used when the previous parameter is a type parameter
-                        }
+                          if ($1) $1->v3error("parameter port declarations require 'parameter'"
+                                              " keyword before implicit data types"
+                                              " (IEEE 1800-2023 6.20.1/A.2.1.1)\n"
+                                              + $1->warnMore()
+                                              + "... Suggest add 'parameter' before here");
+                       }
         |       data_type                               { /*VARRESET-in-varParam*/ VARDTYPE($1); }
         ;
 
