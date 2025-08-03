@@ -52,7 +52,7 @@ class LinkResolveVisitor final : public VNVisitor {
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
     AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
     int m_senitemCvtNum = 0;  // Temporary signal counter
-    bool m_underGenFor = false;  // Under GenFor
+    std::deque<AstGenFor*> m_underGenFors;  // Stack of GenFor underneath
     bool m_underGenerate = false;  // Under GenFor/GenIf
 
     // VISITORS
@@ -139,9 +139,16 @@ class LinkResolveVisitor final : public VNVisitor {
         if (nodep->varp()) {  // Else due to dead code, might not have var pointer
             // VarRef: Resolve its reference
             nodep->varp()->usedParam(true);
-            // TODO should look for where genvar is valid, but for now catch
-            // just gross errors of using genvar outside any generate
-            if (nodep->varp()->isGenVar() && !m_underGenFor) {
+            // Look for where genvar is valid
+            bool ok = false;
+            for (AstGenFor* forp : m_underGenFors) {
+                if (ok) break;
+                if (forp->initsp())
+                    forp->initsp()->foreach([&](AstVarRef* refp) {  //
+                        if (refp->varp() == nodep->varp()) ok = true;
+                    });
+            }
+            if (nodep->varp()->isGenVar() && !ok) {
                 nodep->v3error("Genvar "
                                << nodep->prettyNameQ()
                                << " used outside generate for loop (IEEE 1800-2023 27.4)");
@@ -503,11 +510,12 @@ class LinkResolveVisitor final : public VNVisitor {
     // We keep Modport's themselves around for XML dump purposes
 
     void visit(AstGenFor* nodep) override {
-        VL_RESTORER(m_underGenFor);
         VL_RESTORER(m_underGenerate);
-        m_underGenFor = true;
         m_underGenerate = true;
+        m_underGenFors.emplace_back(nodep);
         iterateChildren(nodep);
+        UASSERT_OBJ(!m_underGenFors.empty(), nodep, "Underflow");
+        m_underGenFors.pop_back();
     }
     void visit(AstGenIf* nodep) override {
         VL_RESTORER(m_underGenerate);
