@@ -16,6 +16,7 @@ Verilator 5.039 devel
 * Add ENUMITEMWIDTH error, and apply to X-extended and ranged values.
 * Add NOEFFECT warning, replacing previous `foreach` error.
 * Add SPECIFYIGN warning for specify constructs that were previously silently ignored.
+* Add PARAMNODEFAULT error, for parameters without defaults.
 * Add enum base data type, wire data type, and I/O versus data declaration checking per IEEE.
 * Add error on missing forward declarations (#6206). [Alex Solomatnikov]
 * Add error when trying to assign class object to variable of non-class types (#6237). [Igor Zaworski, Antmicro Ltd.]

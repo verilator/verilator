@@ -129,6 +129,7 @@ public:
         NOLATCH,        // No latch detected in always_latch block
         NONSTD,         // Non-standard feature present in other sims
         NULLPORT,       // Null port detected in module definition
+        PARAMNODEFAULT, // Parameter without default
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
         PINMISSING,     // Cell pin not specified
         PINNOCONNECT,   // Cell pin not connected
@@ -210,15 +211,16 @@ public:
             "IGNOREDRETURN", "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE", "LATCH", "LITENDIAN",
             "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN", "MULTITOP",
-            "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NULLPORT", "PINCONNECTEMPTY",
-            "PINMISSING", "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT",
-            "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO",
-            "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN", "SPLITVAR",
-            "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD",
-            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS", "UNPACKED", "UNSIGNED",
-            "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL", "USERERROR", "USERFATAL",
-            "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",
-            "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
+            "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NULLPORT", "PARAMNODEFAULT",
+            "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL",
+            "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED", "RANDC",
+            "REALCVT", "REDEFMACRO", "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT",
+            "SPECIFYIGN", "SPLITVAR", "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
+            "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
+            "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL",
+            "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH",
+            "WIDTHCONCAT", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL",
+            " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
@@ -246,8 +248,8 @@ public:
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BADVLTPRAGMA || m_e == BLKANDNBLK
                 || m_e == BLKLOOPINIT || m_e == CONTASSREG || m_e == ENCAPSULATED
                 || m_e == ENDLABEL || m_e == ENUMITEMWIDTH || m_e == ENUMVALUE || m_e == IMPURE
-                || m_e == MODMISSING || m_e == PINNOTFOUND || m_e == PKGNODECL
-                || m_e == PROCASSWIRE || m_e == ZEROREPL  // Says IEEE
+                || m_e == MODMISSING || m_e == PARAMNODEFAULT || m_e == PINNOTFOUND
+                || m_e == PKGNODECL || m_e == PROCASSWIRE || m_e == ZEROREPL  // Says IEEE
         );
     }
     // Warnings to mention manual

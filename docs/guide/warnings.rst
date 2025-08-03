@@ -1378,6 +1378,27 @@ List Of Warnings
    simulate correctly.
 
 
+.. option:: PARAMNODEFAULT
+
+   An error that a parameter is being declared that has no default value,
+   and this is being done in a non-ANSI block while this is only legal in
+   ANSI-style `#(...)` declarations.  IEEE 1800-2023 6.20.1 requires this
+   error, but some simulators accept this syntax.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_PARAMNODEFAULT_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_PARAMNODEFAULT_msg.rst
+
+   To fix the issue, move to an ANSI-style declaration.
+
+   Suppressing this error will only suppress the IEEE-required check; it
+   will simulate correctly.
+
+
 .. option:: PINCONNECTEMPTY
 
    .. TODO better example

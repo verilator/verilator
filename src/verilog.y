@@ -3276,7 +3276,11 @@ param_assignment<varp>:         // ==IEEE: param_assignment
         //                      // constant_param_expression: '$' is in expr
                 id/*new-parameter*/ variable_dimensionListE sigAttrListE exprOrDataTypeEqE
                         { $$ = VARDONEA($<fl>1, *$1, $2, $3);
-                          if ($4) $$->valuep($4); }
+                          if ($4) $$->valuep($4);
+                          else if (!GRAMMARP->m_pinAnsi)
+                              $$->v3warn(PARAMNODEFAULT, "Parameter without default requires"
+                                         " ANSI-style parameter list (IEEE 1800-2023 6.20.1): "
+                                         << $$->prettyNameQ()); }
         ;
 
 list_of_param_assignments<varp>:        // ==IEEE: list_of_param_assignments
