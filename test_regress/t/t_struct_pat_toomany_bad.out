@@ -1,0 +1,6 @@
+%Error: t/t_struct_pat_toomany_bad.v:12:18: Assignment pattern contains more entries than structure members
+                                          : ... note: In instance 't'
+   12 |   } sp = '{1, 2, 3};   
+      |                  ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

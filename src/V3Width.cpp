@@ -4680,17 +4680,17 @@ class WidthVisitor final : public VNVisitor {
                                 "Assignment pattern key not supported/understood: "
                                 << patp->keyp()->prettyTypeName());
                         }
-                    } else {
+                    } else if (memp) {
                         // constant expr
-                        if (memp) {
-                            const std::pair<PatMap::iterator, bool> ret
-                                = patmap.emplace(memp, patp);
-                            if (!ret.second) {
-                                patp->v3error("Assignment pattern contains duplicate entry: "
-                                              << VN_AS(patp->keyp(), Text)->text());
-                            }
-                            memp = VN_AS(memp->nextp(), MemberDType);
+                        const std::pair<PatMap::iterator, bool> ret = patmap.emplace(memp, patp);
+                        if (!ret.second) {
+                            patp->v3error("Assignment pattern contains duplicate entry: "
+                                          << VN_AS(patp->keyp(), Text)->text());
                         }
+                        memp = VN_AS(memp->nextp(), MemberDType);
+                    } else {
+                        patp->v3error(
+                            "Assignment pattern contains more entries than structure members");
                     }
                 } while (false);
 
