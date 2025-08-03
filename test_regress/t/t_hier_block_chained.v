@@ -20,7 +20,9 @@ module t (clk);
    reg [255:0] v1_5;
    reg [255:0] v1_6;
    reg [255:0] v1_7;
+   // verilator lint_off MULTIDRIVEN
    reg [255:0] dummy;
+   // verilator lint_on MULTIDRIVEN
 
    Calculate calc0(.clk(clk), .reset(reset), .v1_0(v1_0), .v1_1(dummy), .v1_2(dummy), .v1_3(dummy), .v1_4(dummy), .v1_5(dummy), .v1_6(dummy), .v1_7(dummy));
    Calculate calc1(.clk(clk), .reset(reset), .v1_0(dummy), .v1_1(v1_1), .v1_2(dummy), .v1_3(dummy), .v1_4(dummy), .v1_5(dummy), .v1_6(dummy), .v1_7(dummy));

@@ -269,46 +269,67 @@ class AstToDfgVisitor final : public VNVisitor {
         return {nullptr, 0};
     }
 
-    // Build DfgEdge representing the LValue assignment. Returns false if unsuccessful.
+    // Convert assignment. Returns false if unsuccessful.
     bool convertAssignment(FileLine* flp, AstNode* lhsp, DfgVertex* vtxp) {
-        // Simplify the LHS, to get rid of things like SEL(CONCAT(_, _), _)
-        lhsp = V3Const::constifyExpensiveEdit(lhsp);
+        // Represents a DFG assignment contributed by the AST assignment with the above 'lhsp'.
+        // There might be multiple of these if 'lhsp' is a concatenation.
+        struct Assignment final {
+            DfgVertexSplice* m_lhsp;
+            uint32_t m_idx;
+            DfgVertex* m_rhsp;
+            Assignment() = delete;
+            Assignment(DfgVertexSplice* lhsp, uint32_t idx, DfgVertex* rhsp)
+                : m_lhsp{lhsp}
+                , m_idx{idx}
+                , m_rhsp{rhsp} {}
+        };
 
-        // Concatenation on the LHS. Select parts of the driving 'vtxp' then convert each part
-        if (AstConcat* const concatp = VN_CAST(lhsp, Concat)) {
-            AstNode* const cLhsp = concatp->lhsp();
-            AstNode* const cRhsp = concatp->rhsp();
+        // Convert each concatenation LHS separately, gather all assignments
+        // we need to do into 'assignments', return true if all LValues
+        // converted successfully.
+        std::vector<Assignment> assignments;
+        const std::function<bool(AstNode*, DfgVertex*)> convertAllLValues
+            = [&](AstNode* lhsp, DfgVertex* vtxp) -> bool {
+            // Simplify the LHS, to get rid of things like SEL(CONCAT(_, _), _)
+            lhsp = V3Const::constifyExpensiveEdit(lhsp);
 
-            {  // Convet LHS of concat
+            // Concatenation on the LHS, convert each parts
+            if (AstConcat* const concatp = VN_CAST(lhsp, Concat)) {
+                AstNode* const cLhsp = concatp->lhsp();
+                AstNode* const cRhsp = concatp->rhsp();
+                // Convert Left of concat
                 FileLine* const lFlp = cLhsp->fileline();
                 DfgSel* const lVtxp = new DfgSel{*m_dfgp, lFlp, DfgVertex::dtypeFor(cLhsp)};
                 lVtxp->fromp(vtxp);
                 lVtxp->lsb(cRhsp->width());
-                if (!convertAssignment(flp, cLhsp, lVtxp)) return false;
-            }
-
-            {  // Convert RHS of concat
+                if (!convertAllLValues(cLhsp, lVtxp)) return false;
+                // Convert Rigth of concat
                 FileLine* const rFlp = cRhsp->fileline();
                 DfgSel* const rVtxp = new DfgSel{*m_dfgp, rFlp, DfgVertex::dtypeFor(cRhsp)};
                 rVtxp->fromp(vtxp);
                 rVtxp->lsb(0);
-                return convertAssignment(flp, cRhsp, rVtxp);
+                return convertAllLValues(cRhsp, rVtxp);
+            }
+
+            // Non-concatenation, convert the LValue
+            const auto pair = convertLValue(lhsp);
+            if (!pair.first) return false;
+            assignments.emplace_back(pair.first, pair.second, vtxp);
+            return true;
+        };
+        // Convert the given LHS assignment, give up if any LValues failed to convert
+        if (!convertAllLValues(lhsp, vtxp)) return false;
+
+        // All successful, connect the drivers
+        for (const Assignment& a : assignments) {
+            if (DfgSplicePacked* const spp = a.m_lhsp->template cast<DfgSplicePacked>()) {
+                spp->addDriver(flp, a.m_idx, a.m_rhsp);
+            } else if (DfgSpliceArray* const sap = a.m_lhsp->template cast<DfgSpliceArray>()) {
+                sap->addDriver(flp, a.m_idx, a.m_rhsp);
+            } else {
+                a.m_lhsp->v3fatalSrc("Unhandled DfgVertexSplice sub-type");  // LCOV_EXCL_LINE
             }
         }
-
-        // Construct LHS
-        const auto pair = convertLValue(lhsp);
-        if (!pair.first) return false;
-
-        // If successful connect the driver
-        if (DfgSplicePacked* const sPackedp = pair.first->template cast<DfgSplicePacked>()) {
-            sPackedp->addDriver(flp, pair.second, vtxp);
-        } else if (DfgSpliceArray* const sArrayp = pair.first->template cast<DfgSpliceArray>()) {
-            sArrayp->addDriver(flp, pair.second, vtxp);
-        } else {
-            lhsp->v3fatalSrc("Unhandled DfgVertexSplice sub-type");  // LCOV_EXCL_LINE
-        }
-
         return true;
     }
 
@@ -455,9 +476,8 @@ class AstToDfgVisitor final : public VNVisitor {
                 const uint32_t bEnd = b.m_lsb + bWidth;
                 const uint32_t overlapEnd = std::min(aEnd, bEnd) - 1;
 
-                if (a.m_fileline->operatorCompare(*b.m_fileline) != 0
-                    && !varp->varp()->isUsedLoopIdx()  // Loop index often abused, so suppress
-                ) {
+                // Loop index often abused, so suppress
+                if (!varp->varp()->isUsedLoopIdx()) {
                     AstNode* const vp = varp->varScopep()
                                             ? static_cast<AstNode*>(varp->varScopep())
                                             : static_cast<AstNode*>(varp->varp());
@@ -608,22 +628,19 @@ class AstToDfgVisitor final : public VNVisitor {
                 const uint32_t bEnd = b.m_idx + bElements;
                 const uint32_t overlapEnd = std::min(aEnd, bEnd) - 1;
 
-                if (a.m_fileline->operatorCompare(*b.m_fileline) != 0) {
-                    AstNode* const vp = varp->varScopep()
-                                            ? static_cast<AstNode*>(varp->varScopep())
-                                            : static_cast<AstNode*>(varp->varp());
+                AstNode* const vp = varp->varScopep() ? static_cast<AstNode*>(varp->varScopep())
+                                                      : static_cast<AstNode*>(varp->varp());
 
-                    vp->v3warn(  //
-                        MULTIDRIVEN,
-                        "Elements ["  //
-                            << overlapEnd << ":" << b.m_idx << "] of signal '" << vp->prettyName()
-                            << sub << "' have multiple combinational drivers\n"
-                            << a.m_fileline->warnOther() << "... Location of first driver\n"
-                            << a.m_fileline->warnContextPrimary() << '\n'
-                            << b.m_fileline->warnOther() << "... Location of other driver\n"
-                            << b.m_fileline->warnContextSecondary() << vp->warnOther()
-                            << "... Only the first driver will be respected");
-                }
+                vp->v3warn(  //
+                    MULTIDRIVEN,
+                    "Elements ["  //
+                        << overlapEnd << ":" << b.m_idx << "] of signal '" << vp->prettyName()
+                        << sub << "' have multiple combinational drivers\n"
+                        << a.m_fileline->warnOther() << "... Location of first driver\n"
+                        << a.m_fileline->warnContextPrimary() << '\n'
+                        << b.m_fileline->warnOther() << "... Location of other driver\n"
+                        << b.m_fileline->warnContextSecondary() << vp->warnOther()
+                        << "... Only the first driver will be respected");
 
                 // If the first driver completely covers the range of the second driver,
                 // we can just delete the second driver completely, otherwise adjust the
