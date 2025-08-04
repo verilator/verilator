@@ -148,15 +148,14 @@ private:
     //  AstVar::user1p        -> ForceComponentsVar* instance (via m_forceComponentsVar)
     //  AstVarScope::user1p   -> ForceComponentsVarScope* instance (via m_forceComponentsVarScope)
     //  AstVarRef::user2      -> Flag indicating not to replace reference
-    //  AstVarScope::user3      -> AstVarScope*, a `valVscp` force component for each VarScope of
-    //  forced RHS
-    //  AstVarScope::user4p   -> AstNodeExpr*, the RHS expression
+    //  AstVarScope::user3p   -> AstNodeExpr*, the RHS expression
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
-    const VNUser4InUse m_user4InUse;
     AstUser1Allocator<AstVar, ForceComponentsVar> m_forceComponentsVar;
     AstUser1Allocator<AstVarScope, ForceComponentsVarScope> m_forceComponentsVarScope;
+    std::unordered_map<const AstVarScope*, std::vector<AstVarScope*>> m_valVscps;
+    // `valVscp` force components of a forced RHS
 
 public:
     // CONSTRUCTORS
@@ -172,11 +171,17 @@ public:
     }
     static bool isNotReplaceable(const AstVarRef* const nodep) { return nodep->user2(); }
     static void markNonReplaceable(AstVarRef* const nodep) { nodep->user2SetOnce(); }
-    static AstVarScope* getValVscp(AstVarRef* const refp) {
-        return VN_CAST(refp->varScopep()->user3p(), VarScope);
+
+    // Get all ValVscps for a VarScope
+    std::vector<AstVarScope*> getValVscps(AstVarRef* const refp) const {
+        auto it = m_valVscps.find(refp->varScopep());
+        if (it != m_valVscps.end()) { return it->second; }
+        return {};
     }
-    static void setValVscp(AstNodeVarRef* const refp, AstVarScope* const vscp) {
-        refp->varScopep()->user3p(vscp);
+
+    // Add a ValVscp for a VarScope
+    void addValVscp(AstVarRef* const refp, AstVarScope* const valVscp) {
+        m_valVscps[refp->varScopep()].push_back(valVscp);
     }
 
     // METHODS
@@ -188,10 +193,10 @@ public:
         return m_forceComponentsVarScope.tryGet(nodep->varScopep());
     }
     void setValVscpRhsExpr(AstVarScope* valVscp, AstNodeExpr* rhsExpr) {
-        valVscp->user4p(rhsExpr);
+        valVscp->user3p(rhsExpr);
     }
     AstNodeExpr* getValVscpRhsExpr(AstVarScope* valVscp) const {
-        return VN_CAST(valVscp->user4p(), NodeExpr);
+        return VN_CAST(valVscp->user3p(), NodeExpr);
     }
 };
 
@@ -242,7 +247,7 @@ class ForceConvertVisitor final : public VNVisitor {
         transformWritenVarScopes(setValp->lhsp(), [this, rhsp](AstVarScope* vscp) {
             AstVarScope* const valVscp = m_state.getForceComponents(vscp).m_valVscp;
             m_state.setValVscpRhsExpr(valVscp, rhsp->cloneTreePure(false));
-            rhsp->foreach([valVscp](AstVarRef* refp) { ForceState::setValVscp(refp, valVscp); });
+            rhsp->foreach([valVscp, this](AstVarRef* refp) { m_state.addValVscp(refp, valVscp); });
             return valVscp;
         });
 
@@ -380,7 +385,7 @@ class ForceReplaceVisitor final : public VNVisitor {
                 m_stmtp->addNextHere(new AstAssign{flp, lhsp, rhsp});
             }
             // Emit valVscp update after each write to any VarRef on forced RHS.
-            if (AstVarScope* const valVscp = ForceState::getValVscp(nodep)) {
+            for (AstVarScope* const valVscp : m_state.getValVscps(nodep)) {
                 FileLine* const flp = nodep->fileline();
                 AstVarRef* const valp = new AstVarRef{flp, valVscp, VAccess::WRITE};
                 AstNodeExpr* rhsp = m_state.getValVscpRhsExpr(valVscp);
@@ -396,7 +401,7 @@ class ForceReplaceVisitor final : public VNVisitor {
         }
         default:
             if (!m_inLogic) return;
-            if (m_state.tryGetForceComponents(nodep) || ForceState::getValVscp(nodep)) {
+            if (m_state.tryGetForceComponents(nodep) || !m_state.getValVscps(nodep).empty()) {
                 nodep->v3error(
                     "Unsupported: Signals used via read-write reference cannot be forced");
             }
