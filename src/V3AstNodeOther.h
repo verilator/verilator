@@ -2326,7 +2326,10 @@ public:
     ASTGEN_MEMBERS_AstCoverToggleDecl;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    int size() const override { return m_range.elements(); }
+    int size() const override {
+        // Changes 0 -> 1 and 1 -> 0 are counted separately
+        return 2 * m_range.elements();
+    }
     const VNumRange& range() const { return m_range; }
     bool sameNode(const AstNode* samep) const override {
         const AstCoverToggleDecl* const asamep = VN_DBG_AS(samep, CoverToggleDecl);
