@@ -90,7 +90,7 @@ static inline void VL_COV_TOGGLE_CHG_ST_W(const int width, uint32_t* covp, WData
     for (int i = 0; i < VL_WORDS_I(width); ++i) {
         const EData changed = newData[i] ^ oldData[i];
         if (changed) {
-            for (int j = 0; j < width - i * 32; ++j) *(covp + i * 32 + j) += (changed >> j) & 1;
+            for (int j = 0; j < width - i * VL_EDATA_SIZE; ++j) *(covp + i * VL_EDATA_SIZE + j) += (changed >> j) & 1;
         }
     }
 }
@@ -118,9 +118,9 @@ static inline void VL_COV_TOGGLE_CHG_MT_W(const int width, std::atomic<uint32_t>
     for (int i = 0; i < VL_WORDS_I(width); ++i) {
         const EData changed = newData[i] ^ oldData[i];
         if (changed) {
-            for (int j = 0; j < width - i * 32; ++j) {
+            for (int j = 0; j < width - i * VL_EDATA_SIZE; ++j) {
                 if (VL_BITISSET_E(changed, j)) {
-                    (covp + i * 32 + j)->fetch_add(1, std::memory_order_relaxed);
+                    (covp + i * VL_EDATA_SIZE + j)->fetch_add(1, std::memory_order_relaxed);
                 }
             }
         }

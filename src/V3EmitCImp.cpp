@@ -356,9 +356,9 @@ class EmitCImp final : EmitCFunc {
             // range is inclusive
             puts("for (int i = begin; i != end + step; i += step) {\n");
             if (v3Global.opt.threads() > 1) {
-                puts("uint32_t* count32p = reinterpret_cast<uint32_t*>(countp);\n");
+                puts("uint32_t* const count32p = reinterpret_cast<uint32_t*>(countp);\n");
             } else {
-                puts("uint32_t* count32p = countp;\n");
+                puts("uint32_t* const count32p = countp;\n");
             }
             // static doesn't need save-restore as is constant
             puts("static uint32_t fake_zero_count = 0;\n");
