@@ -697,7 +697,7 @@ public:
         }
         iterateChildrenConst(nodep);
     }
-    void visit(AstCoverDecl* nodep) override {
+    void visit(AstCoverOtherDecl* nodep) override {
         putns(nodep, "vlSelf->__vlCoverInsert(");  // As Declared in emitCoverageDecl
         puts("&(vlSymsp->__Vcoverage[");
         puts(cvtToStr(nodep->dataDeclThisp()->binNum()));
@@ -725,15 +725,67 @@ public:
         putsQuoted(nodep->linescov());
         puts(");\n");
     }
+    void visit(AstCoverToggleDecl* nodep) override {
+        putns(nodep, "vlSelf->__vlCoverToggleInsert(");  // As Declared in emitCoverageDecl
+        puts(cvtToStr(nodep->range().right()));
+        puts(", ");
+        puts(cvtToStr(nodep->range().left()));
+        puts(", ");
+        puts(cvtToStr(nodep->range().ranged()));
+        puts(", ");
+        puts("&(vlSymsp->__Vcoverage[");
+        puts(cvtToStr(nodep->dataDeclThisp()->binNum()));
+        puts("])");
+        // If this isn't the first instantiation of this module under this
+        // design, don't really count the bucket, and rely on verilator_cov to
+        // aggregate counts.  This is because Verilator combines all
+        // hierarchies itself, and if verilator_cov also did it, you'd end up
+        // with (number-of-instant) times too many counts in this bin.
+        puts(", first");  // Enable, passed from __Vconfigure parameter
+        puts(", ");
+        putsQuoted(protect(nodep->fileline()->filename()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->lineno()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->firstColumn()));
+        puts(", ");
+        putsQuoted((!nodep->hier().empty() ? "." : "")
+                   + protectWordsIf(nodep->hier(), nodep->protect()));
+        puts(", ");
+        putsQuoted(protectWordsIf(nodep->page(), nodep->protect()));
+        puts(", ");
+        putsQuoted(protectWordsIf(nodep->comment(), nodep->protect()));
+        puts(");\n");
+    }
     void visit(AstCoverInc* nodep) override {
-        if (v3Global.opt.threads() > 1) {
-            putns(nodep, "vlSymsp->__Vcoverage[");
-            puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
-            puts("].fetch_add(1, std::memory_order_relaxed);\n");
+        if (nodep->declp()->size() == 1) {
+            if (v3Global.opt.threads() > 1) {
+                putns(nodep, "vlSymsp->__Vcoverage[");
+                puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
+                puts("].fetch_add(1, std::memory_order_relaxed);\n");
+            } else {
+                putns(nodep, "++(vlSymsp->__Vcoverage[");
+                puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
+                puts("]);\n");
+            }
         } else {
-            putns(nodep, "++(vlSymsp->__Vcoverage[");
+            puts("VL_COV_TOGGLE_CHG_");
+            if (v3Global.opt.threads() > 1) {
+                puts("MT_");
+            } else {
+                puts("ST_");
+            }
+            emitIQW(nodep->toggleExprp());
+            puts("(");
+            puts(cvtToStr(nodep->declp()->size()));
+            puts(", ");
+            puts("vlSymsp->__Vcoverage + ");
             puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
-            puts("]);\n");
+            puts(", ");
+            iterateConst(nodep->toggleExprp());
+            puts(", ");
+            iterateConst(nodep->toggleCovExprp());
+            puts(");\n");
         }
     }
     void visit(AstDisableFork* nodep) override { putns(nodep, "vlProcess->disableFork();\n"); }

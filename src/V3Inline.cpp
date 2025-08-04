@@ -458,7 +458,7 @@ class InlineRelinkVisitor final : public VNVisitor {
         if (afterp) nodep->addScopeEntrp(afterp);
         iterateChildren(nodep);
     }
-    void visit(AstCoverDecl* nodep) override {
+    void visit(AstNodeCoverDecl* nodep) override {
         // Fix path in coverage statements
         nodep->hier(VString::dot(m_cellp->prettyName(), ".", nodep->hier()));
         iterateChildren(nodep);
