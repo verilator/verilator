@@ -129,8 +129,8 @@ template <bool T_Scoped>
 class DfgToAstVisitor final : DfgVisitor {
     // NODE STATE
 
-    // AstScope::user1p  // The combinational AstActive under this scope
-    const VNUser1InUse m_user1InUse;
+    // AstScope::user2p  // The combinational AstActive under this scope
+    const VNUser2InUse m_user2InUse;
 
     // TYPES
     using VariableType = std::conditional_t<T_Scoped, AstVarScope, AstVar>;
@@ -152,28 +152,28 @@ class DfgToAstVisitor final : DfgVisitor {
     }
 
     static AstActive* getCombActive(AstScope* scopep) {
-        if (!scopep->user1p()) {
+        if (!scopep->user2p()) {
             // Try to find the existing combinational AstActive
             for (AstNode* nodep = scopep->blocksp(); nodep; nodep = nodep->nextp()) {
                 AstActive* const activep = VN_CAST(nodep, Active);
                 if (!activep) continue;
                 if (activep->hasCombo()) {
-                    scopep->user1p(activep);
+                    scopep->user2p(activep);
                     break;
                 }
             }
             // If there isn't one, create a new one
-            if (!scopep->user1p()) {
+            if (!scopep->user2p()) {
                 FileLine* const flp = scopep->fileline();
                 AstSenTree* const senTreep
                     = new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}};
                 AstActive* const activep = new AstActive{flp, "", senTreep};
                 activep->sensesStorep(senTreep);
                 scopep->addBlocksp(activep);
-                scopep->user1p(activep);
+                scopep->user2p(activep);
             }
         }
-        return VN_AS(scopep->user1p(), Active);
+        return VN_AS(scopep->user2p(), Active);
     }
 
     AstNodeExpr* convertDfgVertexToAstNodeExpr(DfgVertex* vtxp) {

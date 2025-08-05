@@ -41,9 +41,6 @@
 class DfgVertexVar VL_NOT_FINAL : public DfgVertexUnary {
     AstVar* const m_varp;  // The AstVar associated with this vertex (not owned by this vertex)
     AstVarScope* const m_varScopep;  // The AstVarScope associated with this vertex (not owned)
-    bool m_hasDfgRefs = false;  // This AstVar is referenced in a different DFG of the module
-    bool m_hasModRefs = false;  // This AstVar is referenced outside the DFG, but in the module
-    bool m_hasExtRefs = false;  // This AstVar is referenced from outside the module
     // Location of driver of this variable. Only used for converting back to Ast. Might be nullptr.
     FileLine* m_driverFileLine = nullptr;
 
@@ -62,13 +59,6 @@ public:
     AstNode* nodep() const {
         return m_varScopep ? static_cast<AstNode*>(m_varScopep) : static_cast<AstNode*>(m_varp);
     }
-    bool hasDfgRefs() const { return m_hasDfgRefs; }
-    void setHasDfgRefs() { m_hasDfgRefs = true; }
-    bool hasModRefs() const { return m_hasModRefs; }
-    void setHasModRefs() { m_hasModRefs = true; }
-    bool hasExtRefs() const { return m_hasExtRefs; }
-    void setHasExtRefs() { m_hasExtRefs = true; }
-    bool hasNonLocalRefs() const { return hasDfgRefs() || hasModRefs() || hasExtRefs(); }
 
     FileLine* driverFileLine() const { return m_driverFileLine; }
     void driverFileLine(FileLine* flp) { m_driverFileLine = flp; }
@@ -77,17 +67,32 @@ public:
         return srcp() && !srcp()->is<DfgVertexSplice>() && !varp()->isForced();
     }
 
-    // Variable cannot be removed, even if redundant in the DfgGraph (might be used externally)
-    bool keep() const {
-        // Keep if referenced outside this module
-        if (hasExtRefs()) return true;
-        // Keep if traced
-        if (v3Global.opt.trace() && varp()->isTrace()) return true;
-        // Keep if public
-        if (varp()->isSigPublic()) return true;
-        // Keep if written in non-DFG code
-        if (nodep()->user3()) return true;
-        // Otherwise it can be removed
+    // Variable referenced via an AstVarXRef (hierarchical reference)
+    bool hasXRefs() const { return nodep()->user1() & 0x03; }
+    static void setHasRdXRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x01); }
+    static void setHasWrXRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x02); }
+
+    // Variable referenced from Ast code in the same module/netlist
+    bool hasModRdRefs() const { return nodep()->user1() & 0x04; }
+    bool hasModWrRefs() const { return nodep()->user1() & 0x08; }
+    bool hasModRefs() const { return nodep()->user1() & 0x0c; }
+    static void setHasModRdRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x04); }
+    static void setHasModWrRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x08); }
+    void setHasModRdRefs() const { setHasModRdRefs(nodep()); }
+    void setHasModWrRefs() const { setHasModWrRefs(nodep()); }
+
+    // Variable referenced from other DFG in the same module/netlist
+    bool hasDfgRefs() const { return nodep()->user1() & 0x10; }
+    void setHasDfgRefs() { nodep()->user1(nodep()->user1() | 0x10); }
+
+    // Variable referenced outside the containing module/netlist.
+    bool hasExtRefs() const {
+        if (m_varp->isIO()) return true;  // Ports
+        if (m_varp->isTrace()) return true;  // Traced
+        if (m_varp->isForced()) return true;  // Forced
+        if (hasXRefs()) return true;  // Target of a hierarchical reference
+        if (m_varp->isPrimaryIO()) return true;  // Top level ports
+        if (m_varp->isSigPublic()) return true;  // Public
         return false;
     }
 };
