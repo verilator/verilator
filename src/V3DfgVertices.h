@@ -87,10 +87,13 @@ public:
 
     // Variable referenced outside the containing module/netlist.
     bool hasExtRefs() const {
-        if (m_varp->isIO()) return true;  // Ports
-        if (m_varp->isTrace()) return true;  // Traced
-        if (m_varp->isForced()) return true;  // Forced
-        if (hasXRefs()) return true;  // Target of a hierarchical reference
+        // In scoped mode, we can ignrore some of these as they were made explicit by then
+        if (!m_varScopep) {
+            if (m_varp->isIO()) return true;  // Ports
+            if (m_varp->isTrace()) return true;  // Traced
+            if (m_varp->isForced()) return true;  // Forced
+            if (hasXRefs()) return true;  // Target of a hierarchical reference
+        }
         if (m_varp->isPrimaryIO()) return true;  // Top level ports
         if (m_varp->isSigPublic()) return true;  // Public
         return false;
