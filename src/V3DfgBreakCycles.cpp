@@ -28,135 +28,6 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-// Similar algorithm used in ExtractCyclicComponents.
-// This one sets DfgVertex::user(). See the static 'apply' method below.
-class ColorStronglyConnectedComponents final {
-    static constexpr uint32_t UNASSIGNED = std::numeric_limits<uint32_t>::max();
-
-    // TYPES
-    struct VertexState final {
-        uint32_t component = UNASSIGNED;  // Result component number (0 means not in SCC)
-        uint32_t index = UNASSIGNED;  // Used by Pearce's algorithm for detecting SCCs
-        VertexState() = default;
-        VertexState(uint32_t i, uint32_t n)
-            : component{n}
-            , index{i} {}
-    };
-
-    // STATE
-    DfgGraph& m_dfg;  // The input graph
-    uint32_t m_nonTrivialSCCs = 0;  // Number of non-trivial SCCs in the graph
-    uint32_t m_index = 0;  // Visitation index counter
-    std::vector<DfgVertex*> m_stack;  // The stack used by the algorithm
-
-    // METHODS
-    void visitColorSCCs(DfgVertex& vtx, VertexState& vtxState) {
-        UDEBUGONLY(UASSERT_OBJ(vtxState.index == UNASSIGNED, &vtx, "Already visited vertex"););
-
-        // Visiting vertex
-        const size_t rootIndex = vtxState.index = ++m_index;
-
-        // Visit children
-        vtx.forEachSink([&](DfgVertex& child) {
-            VertexState& childSatate = child.user<VertexState>();
-            // If the child has not yet been visited, then continue traversal
-            if (childSatate.index == UNASSIGNED) visitColorSCCs(child, childSatate);
-            // If the child is not in an SCC
-            if (childSatate.component == UNASSIGNED) {
-                if (vtxState.index > childSatate.index) vtxState.index = childSatate.index;
-            }
-        });
-
-        if (vtxState.index == rootIndex) {
-            // This is the 'root' of an SCC
-
-            // A trivial SCC contains only a single vertex
-            const bool isTrivial = m_stack.empty()  //
-                                   || m_stack.back()->getUser<VertexState>().index < rootIndex;
-            // We also need a separate component for vertices that drive themselves (which can
-            // happen for input like 'assign a = a'), as we want to extract them (they are cyclic).
-            const bool drivesSelf = vtx.findSink<DfgVertex>([&vtx](const DfgVertex& sink) {  //
-                return &vtx == &sink;
-            });
-
-            if (!isTrivial || drivesSelf) {
-                // Allocate new component
-                ++m_nonTrivialSCCs;
-                vtxState.component = m_nonTrivialSCCs;
-                while (!m_stack.empty()) {
-                    VertexState& topState = m_stack.back()->getUser<VertexState>();
-                    // Only higher nodes belong to the same SCC
-                    if (topState.index < rootIndex) break;
-                    m_stack.pop_back();
-                    topState.component = m_nonTrivialSCCs;
-                }
-            } else {
-                // Trivial SCC (and does not drive itself), so acyclic. Keep it in original graph.
-                vtxState.component = 0;
-            }
-        } else {
-            // Not the root of an SCC
-            m_stack.push_back(&vtx);
-        }
-    }
-
-    void colorSCCs() {
-        // Implements Pearce's algorithm to color the strongly connected components. For reference
-        // see "An Improved Algorithm for Finding the Strongly Connected Components of a Directed
-        // Graph", David J.Pearce, 2005.
-
-        // We know constant nodes have no input edges, so they cannot be part
-        // of a non-trivial SCC. Mark them as such without any real traversals.
-        for (DfgConst& vtx : m_dfg.constVertices()) vtx.setUser(VertexState{0, 0});
-
-        // Start traversals through variables
-        for (DfgVertexVar& vtx : m_dfg.varVertices()) {
-            VertexState& vtxState = vtx.user<VertexState>();
-            // If it has no input or no outputs, it cannot be part of a non-trivial SCC.
-            if (vtx.arity() == 0 || !vtx.hasSinks()) {
-                UDEBUGONLY(UASSERT_OBJ(vtxState.index == UNASSIGNED || vtxState.component == 0,
-                                       &vtx, "Non circular variable must be in a trivial SCC"););
-                vtxState.index = 0;
-                vtxState.component = 0;
-                continue;
-            }
-            // If not yet visited, start a traversal
-            if (vtxState.index == UNASSIGNED) visitColorSCCs(vtx, vtxState);
-        }
-
-        // Start traversals through operations
-        for (DfgVertex& vtx : m_dfg.opVertices()) {
-            VertexState& vtxState = vtx.user<VertexState>();
-            // If not yet visited, start a traversal
-            if (vtxState.index == UNASSIGNED) visitColorSCCs(vtx, vtxState);
-        }
-    }
-
-    ColorStronglyConnectedComponents(DfgGraph& dfg)
-        : m_dfg{dfg} {
-        UASSERT(dfg.size() < UNASSIGNED, "Graph too big " << dfg.name());
-        // Yet another implementation of Pearce's algorithm.
-        colorSCCs();
-        // Re-assign user values
-        m_dfg.forEachVertex([](DfgVertex& vtx) {
-            const size_t component = vtx.getUser<VertexState>().component;
-            vtx.setUser<uint32_t>(component);
-        });
-    }
-
-public:
-    // Sets DfgVertex::user<uint32_t>() for all vertext to:
-    // - 0, if the vertex is not part of a non-trivial strongly connected component
-    //   and is not part of a self-loop. That is: the Vertex is not part of any cycle.
-    // - N, if the vertex is part of a non-trivial strongly conneced component or self-loop N.
-    //   That is: each set of vertices that are reachable from each other will have the same
-    //   non-zero value assigned.
-    // Returns the number of non-trivial SCCs (distinct cycles)
-    static uint32_t apply(DfgGraph& dfg) {
-        return ColorStronglyConnectedComponents{dfg}.m_nonTrivialSCCs;
-    }
-};
-
 class TraceDriver final : public DfgVisitor {
     // TYPES
 
@@ -191,7 +62,7 @@ class TraceDriver final : public DfgVisitor {
     // STATE
     DfgGraph& m_dfg;  // The graph being processed
     // The strongly connected component we are trying to escape
-    const uint32_t m_component;
+    const uint64_t m_component;
     const bool m_aggressive;  // Trace aggressively, creating intermediate ops
     uint32_t m_lsb = 0;  // LSB to extract from the currently visited Vertex
     uint32_t m_msb = 0;  // MSB to extract from the currently visited Vertex
@@ -211,7 +82,7 @@ class TraceDriver final : public DfgVisitor {
     // taken from 'refp', but 'refp' is otherwise not used. You should
     // always use this to create new vertices, so unused ones (if a trace
     // eventually fails) can be cleaned up at the end. This also sets the
-    // vertex user<uint32_t> to 0, indicating the new vertex is not part of a
+    // vertex user<uint64_t> to 0, indicating the new vertex is not part of a
     // strongly connected component. This should always be true, as all the
     // vertices we create here are driven from outside the component we are
     // trying to escape, and will sink into that component. Given those are
@@ -234,7 +105,7 @@ class TraceDriver final : public DfgVisitor {
 
         if VL_CONSTEXPR_CXX17 (std::is_same<DfgConst, Vertex>::value) {
             DfgConst* const vtxp = new DfgConst{m_dfg, refp->fileline(), width};
-            vtxp->template setUser<uint32_t>(0);
+            vtxp->template setUser<uint64_t>(0);
             m_newVtxps.emplace_back(vtxp);
             return reinterpret_cast<Vertex*>(vtxp);
         } else {
@@ -245,7 +116,7 @@ class TraceDriver final : public DfgVisitor {
                                                   Vertex>::type;
             AstNodeDType* const dtypep = DfgVertex::dtypeForWidth(width);
             Vtx* const vtxp = new Vtx{m_dfg, refp->fileline(), dtypep};
-            vtxp->template setUser<uint32_t>(0);
+            vtxp->template setUser<uint64_t>(0);
             m_newVtxps.emplace_back(vtxp);
             return reinterpret_cast<Vertex*>(vtxp);
         }
@@ -283,7 +154,7 @@ class TraceDriver final : public DfgVisitor {
         // Trace the vertex
         onStackr = true;
 
-        if (vtxp->getUser<uint32_t>() != m_component) {
+        if (vtxp->getUser<uint64_t>() != m_component) {
             // If the currently traced vertex is in a different component,
             // then we found what we were looking for.
             if (msb != vtxp->width() - 1 || lsb != 0) {
@@ -564,7 +435,7 @@ class TraceDriver final : public DfgVisitor {
 #undef SET_RESULT
 
     // CONSTRUCTOR
-    TraceDriver(DfgGraph& dfg, uint32_t component, bool aggressive)
+    TraceDriver(DfgGraph& dfg, uint64_t component, bool aggressive)
         : m_dfg{dfg}
         , m_component{component}
         , m_aggressive{aggressive} {
@@ -577,7 +448,7 @@ class TraceDriver final : public DfgVisitor {
     }
 
 public:
-    // Given a Vertex that is part of an SCC denoted by vtxp->user<uint32_t>(),
+    // Given a Vertex that is part of an SCC denoted by vtxp->user<uint64_t>(),
     // return a vertex that is equivalent to 'vtxp[lsb +: width]', but is not
     // part of the same SCC. Returns nullptr if such a vertex cannot be
     // computed. This can add new vertices to the graph. The 'aggressive' flag
@@ -586,7 +457,7 @@ public:
     // waste a lot of compute.
     static DfgVertex* apply(DfgGraph& dfg, DfgVertex* vtxp, uint32_t lsb, uint32_t width,
                             bool aggressive) {
-        TraceDriver traceDriver{dfg, vtxp->getUser<uint32_t>(), aggressive};
+        TraceDriver traceDriver{dfg, vtxp->getUser<uint64_t>(), aggressive};
         // Find the out-of-component driver of the given vertex
         DfgVertex* const resultp = traceDriver.trace(vtxp, lsb + width - 1, lsb);
         // Delete unused newly created vertices (these can be created if a
@@ -608,7 +479,7 @@ public:
 
 class IndependentBits final : public DfgVisitor {
     // STATE
-    const uint32_t m_component;  // The component the start vertex is part of
+    const uint64_t m_component;  // The component the start vertex is part of
     // Vertex to current bit mask map. The mask is set for the bits that **depend** on 'm_varp'.
     std::unordered_map<const DfgVertex*, V3Number> m_vtxp2Mask;
 
@@ -623,7 +494,7 @@ class IndependentBits final : public DfgVisitor {
             std::forward_as_tuple(vtxp),  //
             std::forward_as_tuple(vtxp->fileline(), static_cast<int>(vtxp->width()), 0));
         // Initialize to all ones if the vertex is part of the same component, otherwise zeroes
-        if (pair.second && vtxp->getUser<uint32_t>() == m_component) {
+        if (pair.second && vtxp->getUser<uint64_t>() == m_component) {
             pair.first->second.setAllBits1();
         }
         return pair.first->second;
@@ -779,7 +650,7 @@ class IndependentBits final : public DfgVisitor {
 
     // CONSTRUCTOR
     IndependentBits(DfgGraph& dfg, DfgVertex* vtxp)
-        : m_component{vtxp->getUser<uint32_t>()} {
+        : m_component{vtxp->getUser<uint64_t>()} {
         if (v3Global.opt.debugCheck()) {
             m_lineCoverageFile.open(  //
                 v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
@@ -792,7 +663,7 @@ class IndependentBits final : public DfgVisitor {
 
         // Enqueue every operation vertex in the analysed component
         for (DfgVertex& vtx : dfg.opVertices()) {
-            if (vtx.getUser<uint32_t>() == m_component) workList.emplace_back(&vtx);
+            if (vtx.getUser<uint64_t>() == m_component) workList.emplace_back(&vtx);
         }
 
         // While there is an item on the worklist ...
@@ -833,7 +704,7 @@ class IndependentBits final : public DfgVisitor {
     }
 
 public:
-    // Given a Vertex that is part of an SCC denoted by vtxp->user<uint32_t>(),
+    // Given a Vertex that is part of an SCC denoted by vtxp->user<uint64_t>(),
     // compute which bits of this vertex have a value that is independent of
     // the current value of the Vertex itself (simple forward dataflow
     // analysis). Returns a bit mask where a set bit indicates that bit is
@@ -852,10 +723,10 @@ public:
 class FixUpSelDrivers final {
     static size_t fixUpSelSinks(DfgGraph& dfg, DfgVertex* vtxp) {
         size_t nImprovements = 0;
-        const uint32_t component = vtxp->getUser<uint32_t>();
+        const uint64_t component = vtxp->getUser<uint64_t>();
         vtxp->forEachSink([&](DfgVertex& sink) {
             // Ignore if sink is not part of same cycle
-            if (sink.getUser<uint32_t>() != component) return;
+            if (sink.getUser<uint64_t>() != component) return;
             // Only handle Sel
             DfgSel* const selp = sink.cast<DfgSel>();
             if (!selp) return;
@@ -873,10 +744,10 @@ class FixUpSelDrivers final {
 
     static size_t fixUpArraySelSinks(DfgGraph& dfg, DfgVertex* vtxp) {
         size_t nImprovements = 0;
-        const uint32_t component = vtxp->getUser<uint32_t>();
+        const uint64_t component = vtxp->getUser<uint64_t>();
         vtxp->forEachSink([&](DfgVertex& sink) {
             // Ignore if sink is not part of same cycle
-            if (sink.getUser<uint32_t>() != component) return;
+            if (sink.getUser<uint64_t>() != component) return;
             // Only handle ArraySels
             DfgArraySel* const aselp = sink.cast<DfgArraySel>();
             if (!aselp) return;
@@ -976,7 +847,7 @@ class FixUpIndependentRanges final {
                 AstNodeDType* const dtypep = DfgVertex::dtypeForWidth(width);
                 DfgSel* const selp = new DfgSel{dfg, vtxp->fileline(), dtypep};
                 // Same component as 'vtxp', as reads 'vtxp' and will replace 'vtxp'
-                selp->setUser<uint32_t>(vtxp->getUser<uint32_t>());
+                selp->setUser<uint64_t>(vtxp->getUser<uint64_t>());
                 // Do not connect selp->fromp yet, need to do afer replacing 'vtxp'
                 selp->lsb(lsb);
                 termp = selp;
@@ -1032,7 +903,7 @@ class FixUpIndependentRanges final {
             } else {
                 // The range is not used, just use constant 0 as a placeholder
                 DfgConst* const constp = new DfgConst{dfg, flp, msb - lsb + 1};
-                constp->setUser<uint32_t>(0);
+                constp->setUser<uint64_t>(0);
                 termps.emplace_back(constp);
             }
             // Next iteration
@@ -1044,7 +915,7 @@ class FixUpIndependentRanges final {
         if (nImprovements) {
             // Concatenate all the terms to create the replacement
             DfgVertex* replacementp = termps.front();
-            const uint32_t vComp = vtxp->getUser<uint32_t>();
+            const uint64_t vComp = vtxp->getUser<uint64_t>();
             for (size_t i = 1; i < termps.size(); ++i) {
                 DfgVertex* const termp = termps[i];
                 const uint32_t catWidth = replacementp->width() + termp->width();
@@ -1057,9 +928,9 @@ class FixUpIndependentRanges final {
                 // component, it's part of that component, otherwise its not
                 // cyclic (all terms are from outside the original component,
                 // and feed into the original component).
-                const uint32_t tComp = termp->getUser<uint32_t>();
-                const uint32_t rComp = replacementp->getUser<uint32_t>();
-                catp->setUser<uint32_t>(tComp == vComp || rComp == vComp ? vComp : 0);
+                const uint64_t tComp = termp->getUser<uint64_t>();
+                const uint64_t rComp = replacementp->getUser<uint64_t>();
+                catp->setUser<uint64_t>(tComp == vComp || rComp == vComp ? vComp : 0);
                 replacementp = catp;
             }
 
@@ -1089,10 +960,10 @@ public:
             nImprovements += fixUpPacked(dfg, varp);
         } else if (varp->is<DfgVarArray>()) {
             // For array variables, fix up element-wise
-            const uint32_t component = varp->getUser<uint32_t>();
+            const uint64_t component = varp->getUser<uint64_t>();
             varp->forEachSink([&](DfgVertex& sink) {
                 // Ignore if sink is not part of same cycle
-                if (sink.getUser<uint32_t>() != component) return;
+                if (sink.getUser<uint64_t>() != component) return;
                 // Only handle ArraySels with constant index
                 DfgArraySel* const aselp = sink.cast<DfgArraySel>();
                 if (!aselp) return;
@@ -1141,9 +1012,9 @@ V3DfgPasses::breakCycles(const DfgGraph& dfg, V3DfgContext& ctx) {
 
     // Iterate while an improvement can be made and the graph is still cyclic
     do {
-        // Color SCCs (populates DfgVertex::user<uint32_t>())
+        // Color SCCs (populates DfgVertex::user<uint64_t>())
         const auto userDataInUse = res.userDataInUse();
-        const uint32_t numNonTrivialSCCs = ColorStronglyConnectedComponents::apply(res);
+        const uint32_t numNonTrivialSCCs = V3DfgPasses::colorStronglyConnectedComponents(res);
 
         // Congrats if it has become acyclic
         if (!numNonTrivialSCCs) {
@@ -1160,7 +1031,7 @@ V3DfgPasses::breakCycles(const DfgGraph& dfg, V3DfgContext& ctx) {
         // Method 1: FixUpSelDrivers
         for (DfgVertexVar& vtx : res.varVertices()) {
             // If Variable is not part of a cycle, move on
-            const uint32_t component = vtx.getUser<uint32_t>();
+            const uint64_t component = vtx.getUser<uint64_t>();
             if (!component) continue;
 
             const size_t nFixed = FixUpSelDrivers::apply(res, &vtx);
@@ -1177,7 +1048,7 @@ V3DfgPasses::breakCycles(const DfgGraph& dfg, V3DfgContext& ctx) {
         // Method 2. FixUpIndependentRanges
         for (DfgVertexVar& vtx : res.varVertices()) {
             // If Variable is not part of a cycle, move on
-            const uint32_t component = vtx.getUser<uint32_t>();
+            const uint64_t component = vtx.getUser<uint64_t>();
             if (!component) continue;
 
             const size_t nFixed = FixUpIndependentRanges::apply(res, &vtx);
