@@ -777,7 +777,7 @@ public:
             }
             emitIQW(nodep->toggleExprp());
             puts("(");
-            puts(cvtToStr(nodep->declp()->size()));
+            puts(cvtToStr(nodep->declp()->size() / 2));
             puts(", ");
             puts("vlSymsp->__Vcoverage + ");
             puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
