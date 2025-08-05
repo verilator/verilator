@@ -714,8 +714,9 @@ public:
     // Return an identical, independent copy of this graph. Vertex and edge order might differ.
     std::unique_ptr<DfgGraph> clone() const VL_MT_DISABLED;
 
-    // Add contents of other graph to this graph. Leaves other graph empty.
-    void addGraph(DfgGraph& other) VL_MT_DISABLED;
+    // Merge contents of other graphs into this graph. Deletes the other graphs.
+    // DfgVertexVar instances representing the same Ast variable are unified.
+    void mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) VL_MT_DISABLED;
 
     // Genarete a unique name. The provided 'prefix' and 'n' values will be part of the name, and
     // must be unique (as a pair) in each invocation for this graph.
@@ -920,6 +921,9 @@ DfgVertexVar::DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp)
     , m_varScopep{nullptr} {
     UASSERT_OBJ(dfg.modulep(), varp, "Un-scoped DfgVertexVar created in scoped DfgGraph");
     UASSERT_OBJ(!m_varp->isSc(), varp, "SystemC variable is not representable by DfgVertexVar");
+    // Increment reference count
+    varp->user1(varp->user1() + 0x10);
+    UASSERT_OBJ((varp->user1() >> 4) > 0, varp, "Reference count overflow");
 }
 DfgVertexVar::DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVarScope* vscp)
     : DfgVertexUnary{dfg, type, vscp->fileline(), dtypeFor(vscp)}
@@ -927,6 +931,16 @@ DfgVertexVar::DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVarScope* vscp)
     , m_varScopep{vscp} {
     UASSERT_OBJ(!dfg.modulep(), vscp, "Scoped DfgVertexVar created in un-scoped DfgGraph");
     UASSERT_OBJ(!m_varp->isSc(), vscp, "SystemC variable is not representable by DfgVertexVar");
+    // Increment reference count
+    vscp->user1(vscp->user1() + 0x10);
+    UASSERT_OBJ((vscp->user1() >> 4) > 0, vscp, "Reference count overflow");
+}
+
+DfgVertexVar::~DfgVertexVar() {
+    // Decrement reference count
+    AstNode* const nodep = this->nodep();
+    nodep->user1(nodep->user1() - 0x10);
+    UASSERT_OBJ((nodep->user1() >> 4) >= 0, nodep, "Reference count underflow");
 }
 
 //------------------------------------------------------------------------------
@@ -934,7 +948,7 @@ DfgVertexVar::DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVarScope* vscp)
 //------------------------------------------------------------------------------
 
 void DfgGraph::addVertex(DfgVertex& vtx) {
-    // Note: changes here need to be replicated in DfgGraph::addGraph
+    // Note: changes here need to be replicated in DfgGraph::mergeGraph
     ++m_size;
     if (DfgConst* const cVtxp = vtx.cast<DfgConst>()) {
         m_constVertices.linkBack(cVtxp);
@@ -948,7 +962,7 @@ void DfgGraph::addVertex(DfgVertex& vtx) {
 }
 
 void DfgGraph::removeVertex(DfgVertex& vtx) {
-    // Note: changes here need to be replicated in DfgGraph::addGraph
+    // Note: changes here need to be replicated in DfgGraph::mergeGraph
     --m_size;
     if (DfgConst* const cVtxp = vtx.cast<DfgConst>()) {
         m_constVertices.unlink(cVtxp);

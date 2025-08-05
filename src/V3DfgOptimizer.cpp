@@ -243,11 +243,7 @@ static void process(DfgGraph& dfg, V3DfgContext& ctx) {
     std::vector<std::unique_ptr<DfgGraph>> cyclicComponents
         = dfg.extractCyclicComponents("cyclic");
 
-    // Split the remaining acyclic DFG into [weakly] connected components
-    std::vector<std::unique_ptr<DfgGraph>> acyclicComponents = dfg.splitIntoComponents("acyclic");
-
-    // Quick sanity check
-    UASSERT_OBJ(dfg.size() == 0, dfg.modulep(), "DfgGraph should have become empty");
+    std::vector<std::unique_ptr<DfgGraph>> madeAcyclicComponents;
 
     // Attempt to convert cyclic components into acyclic ones
     if (v3Global.opt.fDfgBreakCyckes()) {
@@ -261,21 +257,29 @@ static void process(DfgGraph& dfg, V3DfgContext& ctx) {
                 *it = std::move(result.first);
                 ++it;
             } else {
-                // Result became acyclic. Move to acyclicComponents, delete original.
-                acyclicComponents.emplace_back(std::move(result.first));
+                // Result became acyclic. Move to madeAcyclicComponents, delete original.
+                madeAcyclicComponents.emplace_back(std::move(result.first));
                 it = cyclicComponents.erase(it);
             }
         }
     }
+    // Merge those that were made acyclic back into the acyclic graph, this enables optimizing more
+    dfg.mergeGraphs(std::move(madeAcyclicComponents));
+
+    // Split the acyclic DFG into [weakly] connected components
+    std::vector<std::unique_ptr<DfgGraph>> acyclicComponents = dfg.splitIntoComponents("acyclic");
+
+    // Quick sanity check
+    UASSERT_OBJ(dfg.size() == 0, dfg.modulep(), "DfgGraph should have become empty");
 
     // For each acyclic component
     for (auto& component : acyclicComponents) {
         if (dumpDfgLevel() >= 7) component->dumpDotFilePrefixed(ctx.prefix() + "source");
         // Optimize the component
         V3DfgPasses::optimize(*component, ctx);
-        // Add back under the main DFG (we will convert everything back in one go)
-        dfg.addGraph(*component);
     }
+    // Merge back under the main DFG (we will convert everything back in one go)
+    dfg.mergeGraphs(std::move(acyclicComponents));
 
     // Eliminate redundant variables. Run this on the whole acyclic DFG. It needs to traverse
     // the module/netlist to perform variable substitutions. Doing this by component would do
@@ -287,9 +291,9 @@ static void process(DfgGraph& dfg, V3DfgContext& ctx) {
         if (dumpDfgLevel() >= 7) component->dumpDotFilePrefixed(ctx.prefix() + "source");
         // Converting back to Ast assumes the 'regularize' pass was run, so we must run it
         V3DfgPasses::regularize(*component, ctx.m_regularizeContext);
-        // Add back under the main DFG (we will convert everything back in one go)
-        dfg.addGraph(*component);
     }
+    // Merge back under the main DFG (we will convert everything back in one go)
+    dfg.mergeGraphs(std::move(cyclicComponents));
 }
 
 void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
@@ -301,7 +305,7 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
     // - bit1: Written via AstVarXRef (hierarchical reference)
     // - bit2: Read by logic in same module/netlist not represented in DFG
     // - bit3: Written by logic in same module/netlist not represented in DFG
-    // - bit4: Referenced by other DFG in same module/netlist
+    // - bit31-4: Reference count, how many DfgVertexVar represent this variable
     //
     // AstNode::user2/user3/user4 can be used by various DFG algorithms
     const VNUser1InUse user1InUse;

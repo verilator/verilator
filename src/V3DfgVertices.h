@@ -50,6 +50,7 @@ class DfgVertexVar VL_NOT_FINAL : public DfgVertexUnary {
 public:
     inline DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp);
     inline DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVarScope* vscp);
+    inline ~DfgVertexVar();
     ASTGEN_MEMBERS_DfgVertexVar;
 
     const std::string srcName(size_t) const override { return ""; }
@@ -82,8 +83,7 @@ public:
     void setHasModWrRefs() const { setHasModWrRefs(nodep()); }
 
     // Variable referenced from other DFG in the same module/netlist
-    bool hasDfgRefs() const { return nodep()->user1() & 0x10; }
-    void setHasDfgRefs() { nodep()->user1(nodep()->user1() | 0x10); }
+    bool hasDfgRefs() const { return nodep()->user1() >> 5; }  // I.e.: (nodep()->user1() >> 4) > 1
 
     // Variable referenced outside the containing module/netlist.
     bool hasExtRefs() const {
