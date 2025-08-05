@@ -268,7 +268,8 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         AstNode* const nodep = varVtxp->nodep();
         AstVar* const varp = varVtxp->varp();
         os << toDotId(vtx);
-        os << " [label=\"" << nodep->name() << "\n";
+        os << " [label=\"" << nodep->name() << '\n';
+        os << cvtToHex(varVtxp) << '\n';
         varVtxp->dtypep()->dumpSmall(os);
         os << " / F" << varVtxp->fanout() << '"';
 
@@ -295,7 +296,8 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         AstNode* const nodep = arrVtxp->nodep();
         AstVar* const varp = arrVtxp->varp();
         os << toDotId(vtx);
-        os << " [label=\"" << nodep->name() << "\n";
+        os << " [label=\"" << nodep->name() << '\n';
+        os << cvtToHex(arrVtxp) << '\n';
         arrVtxp->dtypep()->dumpSmall(os);
         os << " / F" << arrVtxp->fanout() << '"';
         if (varp->direction() == VDirection::INPUT) {
@@ -323,11 +325,12 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         os << toDotId(vtx);
         os << " [label=\"";
         if (num.width() <= 32 && !num.isSigned()) {
-            os << constVtxp->width() << "'d" << num.toUInt() << "\n";
-            os << constVtxp->width() << "'h" << std::hex << num.toUInt() << std::dec;
+            os << constVtxp->width() << "'d" << num.toUInt() << '\n';
+            os << constVtxp->width() << "'h" << std::hex << num.toUInt() << std::dec << '\n';
         } else {
-            os << num.ascii();
+            os << num.ascii() << '\n';
         }
+        os << cvtToHex(constVtxp) << '\n';
         os << '"';
         os << ", shape=plain";
         os << "]\n";
@@ -338,7 +341,8 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         const uint32_t lsb = selVtxp->lsb();
         const uint32_t msb = lsb + selVtxp->width() - 1;
         os << toDotId(vtx);
-        os << " [label=\"SEL\n_[" << msb << ":" << lsb << "]\n";
+        os << " [label=\"SEL _[" << msb << ":" << lsb << "]\n";
+        os << cvtToHex(selVtxp) << '\n';
         vtx.dtypep()->dumpSmall(os);
         os << " / F" << vtx.fanout() << '"';
         if (vtx.hasMultipleSinks()) {
@@ -352,7 +356,8 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
 
     if (vtx.is<DfgVertexSplice>()) {
         os << toDotId(vtx);
-        os << " [label=\"" << vtx.typeName() << "\n";
+        os << " [label=\"" << vtx.typeName() << '\n';
+        os << cvtToHex(&vtx) << '\n';
         vtx.dtypep()->dumpSmall(os);
         os << " / F" << vtx.fanout() << '"';
         if (vtx.hasMultipleSinks()) {
@@ -365,7 +370,8 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     }
 
     os << toDotId(vtx);
-    os << " [label=\"" << vtx.typeName() << "\n";
+    os << " [label=\"" << vtx.typeName() << '\n';
+    os << cvtToHex(&vtx) << '\n';
     vtx.dtypep()->dumpSmall(os);
     os << " / F" << vtx.fanout() << '"';
     if (vtx.hasMultipleSinks()) {
@@ -380,7 +386,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
 static void dumpDotEdge(std::ostream& os, const DfgEdge& edge, const string& headlabel) {
     os << toDotId(*edge.sourcep()) << " -> " << toDotId(*edge.sinkp());
     if (!headlabel.empty()) os << " [headlabel=\"" << headlabel << "\"]";
-    os << "\n";
+    os << '\n';
 }
 
 // Dump one DfgVertex and all of its source DfgEdges in Graphviz format
