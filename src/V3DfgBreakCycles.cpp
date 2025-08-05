@@ -54,7 +54,7 @@ class TraceDriver final : public DfgVisitor {
 
         struct Equal final {
             bool operator()(const Visited& a, const Visited& b) const {
-                return a.m_vtxp == b.m_vtxp && a.m_lsb == b.m_lsb && a.m_msb == b.m_lsb;
+                return a.m_vtxp == b.m_vtxp && a.m_lsb == b.m_lsb && a.m_msb == b.m_msb;
             }
         };
     };
