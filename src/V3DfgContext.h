@@ -180,6 +180,7 @@ class V3DfgEliminateVarsContext final : public V3DfgSubContext {
 
 public:
     // STATE
+    std::vector<AstNode*> m_deleteps;  // AstVar/AstVarScope that can be deleted at the end
     VDouble0 m_varsReplaced;  // Number of variables replaced
     VDouble0 m_varsRemoved;  // Number of variables removed
 
@@ -187,6 +188,9 @@ private:
     V3DfgEliminateVarsContext(V3DfgContext& ctx, const std::string& label)
         : V3DfgSubContext{ctx, label, "EliminateVars"} {}
     ~V3DfgEliminateVarsContext() {
+        for (AstNode* const nodep : m_deleteps) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        }
         addStat("variables replaced", m_varsReplaced);
         addStat("variables removed", m_varsRemoved);
     }
