@@ -1143,7 +1143,7 @@ is appreciated if you could match our style:
   calls. (This convention has not been applied retroactively.)
 
 C and Python indentation is automatically maintained with "make format"
-using clang-format version 10.0.0, and yapf for python, and is
+using clang-format version 14.0.0, and yapf for Python, and is
 automatically corrected in the CI actions. For those manually formatting C
 code:
 
@@ -1156,6 +1156,50 @@ code:
 
 - No spaces before semicolons, nor between a function's name and open
   parenthesis (only applies to functions; if/else has a following space).
+
+
+Commit messages
+---------------
+
+Pull requests do not typically edit ``Changes`` in order to reduce
+potential merge conflicts.  Instead, contibutors should use an appropriate
+first line of the git commit message.  Maintainers periodically run
+``nodist/log_changes`` which analyzes the commit messages to suggest edits
+to the ``Changes`` file.
+
+The format of a commit message should be typically of the forms below.  The
+github issue number, and github pull number if different should be
+included.
+
+"Add <some feature> (#1234)"
+   For adding a new feature.
+"Fix <some item> (#1234)"
+   For a bug fix.
+"Improve <some item> (#1234)"
+   For improving something that previously existed.
+"Optimize <some item> (#1234)"
+   For improving performance.
+"Support <some feature> (#1234)"
+   For features that are described by IEEE were previously not supported.
+"Commentary"
+   For a super-trivial change to e.g. documentation.
+   These will typically not get described in the Changes file.
+"CI: <Add/Improve/etc as above> (#1234)"
+   For changes that only concern github actions.
+   These will typically not get described in the Changes file.
+"Tests: <Add/Improve/etc as above> (#1234)"
+   For changes that only concern tests.
+   These will typically not get described in the Changes file.
+"Internals: <Add/Improve/etc as above> (#1234)"
+   For changes that only concern developers, e.g. code cleanups.
+   These will typically not get described in the Changes file.
+
+The line's grammar should match the phrasing used in the Changes file.
+
+If the change does not affect user-visible function, also add "No
+functional change." if it's 99% certain not to change behavior, or "No
+functional change expected." if no change was expected but there may be
+uncertanty.
 
 
 The ``astgen`` Script
