@@ -106,7 +106,9 @@ TEST_SNAP_IGNORE := \
   *.status *.log *.dat *.d *.o *.a *.so *stats*.txt *.html \
   *.includecache *.out *.fst *.fst.vcd *.tree *.tree*.json \
   *.dot *.csv *.xml *.hash *.cmake gmon.out.* CMakeFiles \
-  profile_exec.vcd t_pgo_threads
+  profile_exec.vcd t_pgo_threads *line-coverage*.txt \
+  profile.vlt *linkdot.txt *linkcells.txt *.log.sort *.vpp \
+  *.sarif
 
 define TEST_SNAP_template
 mkdir -p $(TEST_SNAP_DIR)
@@ -124,9 +126,9 @@ test-snap:
 
 .PHONY: impl-test-diff
 impl-test-diff:
-	$(TEST_DIFF_TOOL) $(TEST_SNAP_DIR)/obj_vlt   obj_vlt
-	$(TEST_DIFF_TOOL) $(TEST_SNAP_DIR)/obj_vltmt obj_vltmt
-	$(TEST_DIFF_TOOL) $(TEST_SNAP_DIR)/obj_dist  obj_dist
+	$(TEST_DIFF_TOOL) $(TEST_SNAP_DIR)/obj_vlt   obj_vlt || true
+	$(TEST_DIFF_TOOL) $(TEST_SNAP_DIR)/obj_vltmt obj_vltmt || true
+	$(TEST_DIFF_TOOL) $(TEST_SNAP_DIR)/obj_dist  obj_dist || true
 
 .PHONY: test-diff
 test-diff:
