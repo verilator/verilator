@@ -171,25 +171,51 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
     return std::unique_ptr<DfgGraph>{clonep};
 }
 
-void DfgGraph::addGraph(DfgGraph& other) {
-    m_size += other.m_size;
-    other.m_size = 0;
+void DfgGraph::mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) {
+    if (otherps.empty()) return;
 
-    for (DfgVertexVar& vtx : other.m_varVertices) {
-        vtx.m_userCnt = 0;
-        vtx.m_graphp = this;
+    // NODE STATE
+    // AstVar/AstVarScope::user2p() -> corresponding DfgVertexVar* in 'this' graph
+    const VNUser2InUse user2InUse;
+
+    // Set up Ast Variable -> DfgVertexVar map for 'this' graph
+    for (DfgVertexVar& vtx : m_varVertices) vtx.nodep()->user2p(&vtx);
+
+    // Merge in each of the other graphs
+    for (const std::unique_ptr<DfgGraph>& otherp : otherps) {
+        // Process variables
+        for (DfgVertexVar* const vtxp : otherp->m_varVertices.unlinkable()) {
+            // Variabels that are present in 'this', make them use the DfgVertexVar in 'this'.
+            if (DfgVertexVar* const altp = vtxp->nodep()->user2u().to<DfgVertexVar*>()) {
+                DfgVertex* const srcp = vtxp->srcp();
+                UASSERT_OBJ(!srcp || !altp->srcp(), vtxp, "At most one alias should be driven");
+                vtxp->replaceWith(altp);
+                if (srcp) altp->srcp(srcp);
+                VL_DO_DANGLING(vtxp->unlinkDelete(*otherp), vtxp);
+                continue;
+            }
+            // Otherwise they will be moved
+            vtxp->nodep()->user2p(vtxp);
+            vtxp->m_userCnt = 0;
+            vtxp->m_graphp = this;
+        }
+        m_varVertices.splice(m_varVertices.end(), otherp->m_varVertices);
+        // Process constants
+        for (DfgConst& vtx : otherp->m_constVertices) {
+            vtx.m_userCnt = 0;
+            vtx.m_graphp = this;
+        }
+        m_constVertices.splice(m_constVertices.end(), otherp->m_constVertices);
+        // Process operations
+        for (DfgVertex& vtx : otherp->m_opVertices) {
+            vtx.m_userCnt = 0;
+            vtx.m_graphp = this;
+        }
+        m_opVertices.splice(m_opVertices.end(), otherp->m_opVertices);
+        // Update graph sizes
+        m_size += otherp->m_size;
+        otherp->m_size = 0;
     }
-    m_varVertices.splice(m_varVertices.end(), other.m_varVertices);
-    for (DfgConst& vtx : other.m_constVertices) {
-        vtx.m_userCnt = 0;
-        vtx.m_graphp = this;
-    }
-    m_constVertices.splice(m_constVertices.end(), other.m_constVertices);
-    for (DfgVertex& vtx : other.m_opVertices) {
-        vtx.m_userCnt = 0;
-        vtx.m_graphp = this;
-    }
-    m_opVertices.splice(m_opVertices.end(), other.m_opVertices);
 }
 
 std::string DfgGraph::makeUniqueName(const std::string& prefix, size_t n) {
