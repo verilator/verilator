@@ -22,6 +22,7 @@ Verilator 5.039 devel
 * Add error when trying to assign class object to variable of non-class types (#6237). [Igor Zaworski, Antmicro Ltd.]
 * Add `-DVERILATOR=1` definition to compiler flags when using verilated.mk.
 * Support member-level triggers for virtual interfaces (#5166) (#6148). [Yilou Wang]
+* Support unassigned virtual interfaces (#5265) (#6245). [Szymon Gizler, Antmicro Ltd.]
 * Support randomization of scope variables with 'std::randomize()' (#5438) (#6185). [Yilou Wang]
 * Support disabling a fork in additional contexts (#5432 partial) (#6174) (#6183). [Ryszard Rozak, Antmicro Ltd.]
 * Support bit queue streaming (#5830) (#6103). [Paul Swirhun]
@@ -37,6 +38,8 @@ Verilator 5.039 devel
 * Optimize 2 ** X to 1 << X if base is signed (#6203). [Max Wipfli]
 * Optimize more complex combinational assignments in DFG (#6205) (#6209). [Geza Lore]
 * Optimize combinational cycles through arrays in DFG (#6210). [Geza Lore]
+* Optimize variable removal in scoped DFG (#6260). [Geza Lore]
+* Optimize acyclic DFG components into the original acyclic sub-graph. (#6261). [Geza Lore]
 * Fix loop initialization visibility outside loop (#4237).
 * Fix constructor parameters in inheritance hierarchies (#6036) (#6070). [Petr Nohavica]
 * Fix replicate of negative giving 'REPLICATE has no expected width' internal error (#6048) (#6229).
@@ -61,6 +64,9 @@ Verilator 5.039 devel
 * Fix replicate with unsigned count but MSB set (#6231) (#6233). [Geza Lore]
 * Fix queue typedef with unbounded slice (#6236).
 * Fix error when force assignment is used with ref function args (#6244). [Ryszard Rozak, Antmicro Ltd.]
+* Fix write of 0 in '%c' (#6248) (#6249). [Rodrigo Batista de Moraes]
+* Fix coverage of variables of complex types (#6250). [Ryszard Rozak, Antmicro Ltd.]
+* Fix partial DFG conversion of concat assignments (#6255). [Geza Lore]
 
 
 Verilator 5.038 2025-07-08
