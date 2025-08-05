@@ -692,6 +692,7 @@ static bool verilate(const string& argString) {
     if (v3Global.opt.debugSelfTest()) {
         V3Os::selfTest();
         V3Number::selfTest();
+        VString::selfTest();
         VHashSha256::selfTest();
         VSpellCheck::selfTest();
         V3Graph::selfTest();

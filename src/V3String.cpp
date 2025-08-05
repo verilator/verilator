@@ -310,10 +310,11 @@ double VString::parseDouble(const string& str, bool* successp) {
 
 string VString::replaceSubstr(const string& str, const string& from, const string& to) {
     string result = str;
-    const size_t len = from.size();
-    UASSERT_STATIC(len > 0, "Cannot replace empty string");
-    for (size_t pos = 0; (pos = result.find(from, pos)) != string::npos; pos += len) {
-        result.replace(pos, len, to);
+    const size_t fromLen = from.size();
+    const size_t toLen = to.size();
+    UASSERT_STATIC(fromLen > 0, "Cannot replace empty string");
+    for (size_t pos = 0; (pos = result.find(from, pos)) != string::npos; pos += toLen) {
+        result.replace(pos, fromLen, to);
     }
     return result;
 }
@@ -394,6 +395,10 @@ uint64_t VString::hashMurmur(const string& str) VL_PURE {
     h ^= h >> r;
 
     return h;
+}
+
+void VString::selfTest() {
+    UASSERT_SELFTEST(const string&, VString::replaceSubstr("aa", "a", "ba"), "baba");
 }
 
 //######################################################################
