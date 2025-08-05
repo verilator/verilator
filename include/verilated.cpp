@@ -168,7 +168,12 @@ void vl_fatal(const char* filename, int linenum, const char* hier, const char* m
 
     // Callbacks prior to termination
     Verilated::runExitCallbacks();
-    std::abort();
+
+    if (Verilated::debug()) {
+        std::abort();
+    } else {
+        std::exit(1);
+    }
 }
 #endif
 
