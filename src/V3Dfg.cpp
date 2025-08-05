@@ -407,41 +407,6 @@ void DfgGraph::dumpDotFilePrefixed(const string& label) const {
     dumpDotFile(v3Global.debugFilename(filename) + ".dot", label);
 }
 
-// Dump upstream logic cone starting from given vertex
-static void dumpDotUpstreamConeFromVertex(std::ostream& os, const DfgVertex& vtx) {
-    // Work queue for depth first traversal starting from this vertex
-    std::vector<const DfgVertex*> queue{&vtx};
-
-    // Set of already visited vertices
-    std::unordered_set<const DfgVertex*> visited;
-
-    // Depth first traversal
-    while (!queue.empty()) {
-        // Pop next work item
-        const DfgVertex* const itemp = queue.back();
-        queue.pop_back();
-
-        // Mark vertex as visited
-        const bool isFirstEncounter = visited.insert(itemp).second;
-
-        // If we have already visited this vertex during the traversal, then move on.
-        if (!isFirstEncounter) continue;
-
-        // Enqueue all sources of this vertex.
-        itemp->forEachSource([&](const DfgVertex& src) { queue.push_back(&src); });
-
-        // Emit this vertex and all of its source edges
-        dumpDotVertexAndSourceEdges(os, *itemp);
-    }
-
-    // Emit all DfgVarPacked vertices that have external references driven by this vertex
-    vtx.forEachSink([&](const DfgVertex& dst) {
-        if (const DfgVarPacked* const varVtxp = dst.cast<DfgVarPacked>()) {
-            if (varVtxp->hasNonLocalRefs()) dumpDotVertexAndSourceEdges(os, dst);
-        }
-    });
-}
-
 // LCOV_EXCL_START // Debug function for developer use only
 void DfgGraph::dumpDotUpstreamCone(const string& fileName, const DfgVertex& vtx,
                                    const string& name) const {
@@ -454,8 +419,30 @@ void DfgGraph::dumpDotUpstreamCone(const string& fileName, const DfgVertex& vtx,
     if (!name.empty()) *os << "graph [label=\"" << name << "\", labelloc=t, labeljust=l]\n";
     *os << "graph [rankdir=LR]\n";
 
-    // Dump the cone
-    dumpDotUpstreamConeFromVertex(*os, vtx);
+    // Work queue for depth first traversal starting from this vertex
+    std::vector<const DfgVertex*> queue{&vtx};
+
+    // Set of already visited vertices
+    std::unordered_set<const DfgVertex*> visited;
+
+    // Depth first traversal
+    while (!queue.empty()) {
+        // Pop next work item
+        const DfgVertex* const vtxp = queue.back();
+        queue.pop_back();
+
+        // Mark vertex as visited
+        const bool isFirstEncounter = visited.insert(vtxp).second;
+
+        // If we have already visited this vertex during the traversal, then move on.
+        if (!isFirstEncounter) continue;
+
+        // Enqueue all sources of this vertex.
+        vtxp->forEachSource([&](const DfgVertex& src) { queue.push_back(&src); });
+
+        // Emit this vertex and all of its source edges
+        dumpDotVertexAndSourceEdges(*os, *vtxp);
+    }
 
     // Footer
     *os << "}\n";
@@ -464,40 +451,6 @@ void DfgGraph::dumpDotUpstreamCone(const string& fileName, const DfgVertex& vtx,
     os->close();
 }
 // LCOV_EXCL_STOP
-
-void DfgGraph::dumpDotAllVarConesPrefixed(const string& label) const {
-    const string prefix = label.empty() ? name() + "-cone-" : name() + "-" + label + "-cone-";
-    forEachVertex([&](const DfgVertex& vtx) {
-        // Check if this vertex drives a variable referenced outside the DFG.
-        const DfgVarPacked* const sinkp
-            = vtx.findSink<DfgVarPacked>([](const DfgVarPacked& sink) {  //
-                  return sink.hasNonLocalRefs();
-              });
-
-        // We only dump cones driving an externally referenced variable
-        if (!sinkp) return;
-
-        // Open output file
-        const string coneName{prefix + sinkp->nodep()->name()};
-        const string fileName{v3Global.debugFilename(coneName) + ".dot"};
-        const std::unique_ptr<std::ofstream> os{V3File::new_ofstream(fileName)};
-        if (os->fail()) v3fatal("Can't write file: " << fileName);
-
-        // Header
-        *os << "digraph dfg {\n";
-        *os << "graph [label=\"" << coneName << "\", labelloc=t, labeljust=l]\n";
-        *os << "graph [rankdir=LR]\n";
-
-        // Dump this cone
-        dumpDotUpstreamConeFromVertex(*os, vtx);
-
-        // Footer
-        *os << "}\n";
-
-        // Done with this logic cone
-        os->close();
-    });
-}
 
 //------------------------------------------------------------------------------
 // DfgEdge

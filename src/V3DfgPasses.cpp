@@ -523,7 +523,6 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgContext& ctx) {
         ++passNumber;
     };
 
-    if (dumpDfgLevel() >= 8) dfg.dumpDotAllVarConesPrefixed(ctx.prefix() + "input");
     apply(3, "input           ", [&]() {});
     apply(4, "inlineVars      ", [&]() { inlineVars(dfg); });
     apply(4, "cse0            ", [&]() { cse(dfg, ctx.m_cseContext0); });
@@ -538,5 +537,4 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgContext& ctx) {
     // Accumulate patterns for reporting
     if (v3Global.opt.stats()) ctx.m_patternStats.accumulate(dfg);
     apply(4, "regularize", [&]() { regularize(dfg, ctx.m_regularizeContext); });
-    if (dumpDfgLevel() >= 8) dfg.dumpDotAllVarConesPrefixed(ctx.prefix() + "optimized");
 }

@@ -756,11 +756,6 @@ public:
     // 'filename'. 'name' is the name of the graph, which is included in the output.
     void dumpDotUpstreamCone(const string& filename, const DfgVertex& vtx,
                              const string& name = "") const VL_MT_DISABLED;
-    // Dump all individual logic cones driving external variables in Graphviz format into separate
-    // new automatically numbered debug files. 'label' is added to the name of the graph, which is
-    // included in the file names and the output. This is useful for very large graphs that are
-    // otherwise difficult to browse visually due to their size.
-    void dumpDotAllVarConesPrefixed(const string& label = "") const VL_MT_DISABLED;
 };
 
 // Specializations of privateTypeTest
