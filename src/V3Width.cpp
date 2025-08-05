@@ -2356,6 +2356,23 @@ class WidthVisitor final : public VNVisitor {
         // Make sure dtype is sized
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype determined for var");
+        if (nodep->attrsp()) {
+            nodep->attrsp()->foreach([this, nodep](AstAttrOf* attrp) {
+                if (attrp->attrType() == VAttrType::VAR_PORT_DTYPE) {
+                    V3Const::constifyParamsEdit(attrp->fromp());  // fromp may change
+                    if (!similarDTypeRecurse(nodep->dtypep(), VN_AS(attrp->fromp(), NodeDType))) {
+                        nodep->dtypep()->v3error("Non-ANSI I/O declaration of signal "
+                                                 "conflicts with type declaration: "
+                                                 << nodep->prettyNameQ() << '\n'
+                                                 << nodep->dtypep()->warnContextPrimary() << '\n'
+                                                 << attrp->warnOther()
+                                                 << "... Location of other declaration\n"
+                                                 << attrp->warnContextSecondary());
+                    }
+                    VL_DO_DANGLING(pushDeletep(attrp->unlinkFrBack()), attrp);
+                }
+            });
+        }
         if (m_ftaskp && m_ftaskp->dpiImport()) {
             AstNodeDType* dtp = nodep->dtypep();
             AstNodeDType* np = nullptr;

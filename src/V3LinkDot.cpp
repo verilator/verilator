@@ -1512,33 +1512,32 @@ class LinkDotFindVisitor final : public VNVisitor {
                             && !findvarp->subDTypep()->numeric().isSigned()) {
                             findvarp->subDTypep()->numeric(VSigning{true});
                         }
-                        AstBasicDType* const bdtypep
-                            = VN_CAST(findvarp->childDTypep(), BasicDType);
+                        AstNodeDType* varDtp = findvarp->subDTypep();
+                        AstNodeDType* otherDtp = nodep->subDTypep();
+                        AstBasicDType* const bdtypep = VN_CAST(varDtp, BasicDType);
                         if (bdtypep && bdtypep->implicit()) {
                             // Then have "input foo" and "real foo" so the
                             // dtype comes from the other side.
-                            AstNodeDType* const newdtypep = nodep->subDTypep();
-                            UASSERT_OBJ(newdtypep && nodep->childDTypep(), findvarp,
-                                        "No child type?");
+                            AstNodeDType* const newdtypep = otherDtp;
+                            otherDtp = varDtp;
+                            varDtp = newdtypep;
                             VL_DO_DANGLING(bdtypep->unlinkFrBack()->deleteTree(), bdtypep);
                             newdtypep->unlinkFrBack();
                             findvarp->childDTypep(newdtypep);
                         }
-                        if (nodep->childDTypep() && findvarp->childDTypep()
-                            && !(VN_IS(nodep->childDTypep(), BasicDType)
-                                 && VN_AS(nodep->childDTypep(), BasicDType)->keyword()
+                        if (otherDtp && varDtp
+                            && !(VN_IS(otherDtp, BasicDType)
+                                 && VN_AS(otherDtp, BasicDType)->keyword()
                                         == VBasicDTypeKwd::LOGIC_IMPLICIT)
-                            && !(VN_IS(findvarp->childDTypep(), BasicDType)
-                                 && VN_AS(findvarp->childDTypep(), BasicDType)->keyword()
-                                        == VBasicDTypeKwd::LOGIC_IMPLICIT)
-                            && !nodep->sameTree(findvarp)) {
-                            nodep->v3error("Non-ANSI I/O declaration of signal "
-                                           "conflicts with type declaration: "
-                                           << nodep->prettyNameQ() << '\n'
-                                           << nodep->warnContextPrimary() << '\n'
-                                           << findvarp->warnOther()
-                                           << "... Location of other declaration\n"
-                                           << findvarp->warnContextSecondary());
+                            && !(VN_IS(varDtp, BasicDType)
+                                 && VN_AS(varDtp, BasicDType)->keyword()
+                                        == VBasicDTypeKwd::LOGIC_IMPLICIT)) {
+                            // Can't compare dtypes now as might contain parameters,
+                            // defer to V3Width
+                            AstAttrOf* const newp
+                                = new AstAttrOf{otherDtp->fileline(), VAttrType::VAR_PORT_DTYPE,
+                                                otherDtp->unlinkFrBack()};
+                            findvarp->addAttrsp(newp);
                         }
                     }
                     VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);

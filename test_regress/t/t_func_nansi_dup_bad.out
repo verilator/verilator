@@ -1,0 +1,14 @@
+%Error: t/t_func_nansi_dup_bad.v:14:9: Duplicate declaration of signal: 'bad4'
+   14 |     reg bad4;   
+      |         ^~~~
+        t/t_func_nansi_dup_bad.v:12:17: ... Location of original declaration
+   12 |     input [7:0] bad4;
+      |                 ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_func_nansi_dup_bad.v:19:17: Duplicate declaration of signal: 'bad5'
+   19 |     input [7:0] bad5;   
+      |                 ^~~~
+        t/t_func_nansi_dup_bad.v:18:17: ... Location of original declaration
+   18 |     input [7:0] bad5;
+      |                 ^~~~
+%Error: Exiting due to
