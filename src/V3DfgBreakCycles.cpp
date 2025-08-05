@@ -519,6 +519,7 @@ class IndependentBits final : public DfgVisitor {
         // Combine the masks of all drivers
         V3Number& m = MASK(vtxp);
         vtxp->forEachSourceEdge([&](DfgEdge& edge, size_t i) {
+            UASSERT_OBJ(!vtxp->driverIsUnresolved(i), vtxp, "Should not have unresolved driver");
             const DfgVertex* const srcp = edge.sourcep();
             m.opSelInto(MASK(srcp), vtxp->driverLsb(i), srcp->width());
         });

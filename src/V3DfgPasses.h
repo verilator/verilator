@@ -38,6 +38,9 @@ std::unique_ptr<DfgGraph> astToDfg(AstModule&, V3DfgContext&) VL_MT_DISABLED;
 // Same as above, but for the entire netlist, after V3Scope
 std::unique_ptr<DfgGraph> astToDfg(AstNetlist&, V3DfgContext&) VL_MT_DISABLED;
 
+// Remove all DfgAlways vertices from the graph
+void removeAlwaysVertices(DfgGraph&);
+
 // Attempt to make the given cyclic graph into an acyclic, or "less cyclic"
 // equivalent. If the returned pointer is null, then no improvement was
 // possible on the input graph. Otherwise the returned graph is an improvement
