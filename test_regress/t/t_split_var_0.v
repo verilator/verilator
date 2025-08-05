@@ -351,13 +351,10 @@ module unpack2pack #(parameter WIDTH = 8)
       return tmp;
    endfunction
 
-   /* verilator lint_off UNOPTFLAT*/
    task automatic to_packed1(input logic in[1:0] /*verilator split_var*/, output logic [1:0] out /*verilator split_var*/);
       out[1] = in[1];
       out[0] = in[0];
    endtask
-   /* verilator lint_on UNOPTFLAT*/
-
 
    generate
       for (genvar i = 4; i < WIDTH; i += 4) begin

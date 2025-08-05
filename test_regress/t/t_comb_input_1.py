@@ -14,7 +14,7 @@ test.scenarios('vlt_all')
 test.compile(
     #make_top_shell = False,
     make_main=False,
-    v_flags2=["--exe", test.pli_filename])
+    v_flags2=["--exe", test.pli_filename, "-fno-dfg"])
 
 test.execute()
 

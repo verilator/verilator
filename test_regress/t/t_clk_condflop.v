@@ -15,9 +15,7 @@ module t (clk);
    wire [2:0] q3;
    wire [7:0] q8;
 
-   // verilator lint_off UNOPTFLAT
    reg        ena;
-   // verilator lint_on  UNOPTFLAT
 
    condff #(12) condff
      (.clk(clk), .sen(1'b0), .ena(ena),

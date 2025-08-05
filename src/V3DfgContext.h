@@ -69,45 +69,23 @@ class V3DfgAstToDfgContext final : public V3DfgSubContext {
 
 public:
     // STATE
-    VDouble0 m_coalescedAssignments;  // Number of partial assignments coalesced
-    VDouble0 m_inputEquations;  // Number of input combinational equations
+    VDouble0 m_inputs;  // Number of input processes (logic constructs)
     VDouble0 m_representable;  // Number of combinational equations representable
-    VDouble0 m_nonRepDType;  // Equations non-representable due to data type
-    VDouble0 m_nonRepImpure;  // Equations non-representable due to impure node
-    VDouble0 m_nonRepTiming;  // Equations non-representable due to timing control
-    VDouble0 m_nonRepLhs;  // Equations non-representable due to lhs
-    VDouble0 m_nonRepNode;  // Equations non-representable due to node type
-    VDouble0 m_nonRepUnknown;  // Equations non-representable due to unknown node
-    VDouble0 m_nonRepVarRef;  // Equations non-representable due to variable reference
-    VDouble0 m_nonRepWidth;  // Equations non-representable due to width mismatch
+    VDouble0 m_nonRepCfg;  // Non-representable due to failing to build CFG
+    VDouble0 m_nonRepLive;  // Non-representable due to failing liveness analysis
+    VDouble0 m_nonRepVar;  // Non-representable due to unsupported variable properties
 
 private:
     V3DfgAstToDfgContext(V3DfgContext& ctx, const std::string& label)
         : V3DfgSubContext{ctx, label, "AstToDfg"} {}
     ~V3DfgAstToDfgContext() {
-        addStat("coalesced assignments", m_coalescedAssignments);
-        addStat("input equations", m_inputEquations);
+        addStat("input processes", m_inputs);
         addStat("representable", m_representable);
-        addStat("non-representable (dtype)", m_nonRepDType);
-        addStat("non-representable (impure)", m_nonRepImpure);
-        addStat("non-representable (timing)", m_nonRepTiming);
-        addStat("non-representable (lhs)", m_nonRepLhs);
-        addStat("non-representable (node)", m_nonRepNode);
-        addStat("non-representable (unknown)", m_nonRepUnknown);
-        addStat("non-representable (var ref)", m_nonRepVarRef);
-        addStat("non-representable (width)", m_nonRepWidth);
-
+        addStat("non-representable (cfg)", m_nonRepCfg);
+        addStat("non-representable (live)", m_nonRepLive);
+        addStat("non-representable (var)", m_nonRepVar);
         // Check the stats are consistent
-        UASSERT(m_representable  //
-                        + m_nonRepDType  //
-                        + m_nonRepImpure  //
-                        + m_nonRepTiming  //
-                        + m_nonRepLhs  //
-                        + m_nonRepNode  //
-                        + m_nonRepUnknown  //
-                        + m_nonRepVarRef  //
-                        + m_nonRepWidth  //
-                    == m_inputEquations,
+        UASSERT(m_representable + m_nonRepCfg + m_nonRepLive + m_nonRepVar == m_inputs,
                 "Inconsistent statistics");
     }
 };
@@ -167,12 +145,18 @@ class V3DfgDfgToAstContext final : public V3DfgSubContext {
 
 public:
     // STATE
+    VDouble0 m_outputVariables;  // Number of output variables
+    VDouble0 m_outputVariablesWithDefault;  // Number of outptu variables with a default driver
     VDouble0 m_resultEquations;  // Number of result combinational equations
 
 private:
     V3DfgDfgToAstContext(V3DfgContext& ctx, const std::string& label)
         : V3DfgSubContext{ctx, label, "DfgToAst"} {}
-    ~V3DfgDfgToAstContext() { addStat("result equations", m_resultEquations); }
+    ~V3DfgDfgToAstContext() {
+        addStat("output variables", m_outputVariables);
+        addStat("output variables with default driver", m_outputVariablesWithDefault);
+        addStat("result equations", m_resultEquations);
+    }
 };
 class V3DfgEliminateVarsContext final : public V3DfgSubContext {
     // Only V3DfgContext can create an instance
@@ -223,6 +207,115 @@ private:
         : V3DfgSubContext{ctx, label, "Regularize"} {}
     ~V3DfgRegularizeContext() { addStat("temporaries introduced", m_temporariesIntroduced); }
 };
+class V3DfgSynthesisContext final : public V3DfgSubContext {
+    // Only V3DfgContext can create an instance
+    friend class V3DfgContext;
+
+public:
+    // STATE
+
+    // Stats for conversion
+    struct {
+        // Inputs
+        VDouble0 inputAssignments;  // Number of input assignments
+        VDouble0 inputExpressions;  // Number of input equations
+        // Successful
+        VDouble0 representable;  // Number of representable constructs
+        // Unsuccessful
+        VDouble0 nonRepImpure;  // Non representable: impure
+        VDouble0 nonRepDType;  // Non representable: unsupported data type
+        VDouble0 nonRepLValue;  // Non representable: unsupported LValue form
+        VDouble0 nonRepVarRef;  // Non representable: unsupported var reference
+        VDouble0 nonRepNode;  // Non representable: unsupported AstNode type
+        VDouble0 nonRepUnknown;  // Non representable: unhandled AstNode type
+    } m_conv;
+
+    // Stats for synthesis
+    struct {
+        // Inputs
+        VDouble0 inputAlways;  // Number of always blocks attempted
+        VDouble0 inputAssign;  // Number of continuous assignments attempted
+        // Successful
+        VDouble0 synthAlways;  // Number of always blocks successfully synthesized
+        VDouble0 synthAssign;  // Number of continuous assignments successfully synthesized
+        // Unsuccessful
+        VDouble0 nonSynConv;  // Non synthesizable: non representable (above)
+        VDouble0 nonSynExtWrite;  // Non synthesizable: has externally written variable
+        VDouble0 nonSynLoop;  // Non synthesizable: loop in CFG
+        VDouble0 nonSynStmt;  // Non synthesizable: unsupported statement
+        VDouble0 nonSynMultidrive;  // Non synthesizable: multidriven value within statement
+        VDouble0 nonSynArray;  // Non synthesizable: array type unhandled
+        VDouble0 nonSynLatch;  // Non synthesizable: maybe latch
+        VDouble0 nonSynJoinInput;  // Non synthesizable: needing to join input variable
+        VDouble0 nonSynFalseWrite;  // Non synthesizable: does not write output
+        // Reverted
+        VDouble0 revertNonSyn;  // Reverted due to being driven from non-synthesizable vertex
+        VDouble0 revertMultidrive;  // Reverted due to multiple drivers
+
+    } m_synt;
+
+private:
+    V3DfgSynthesisContext(V3DfgContext& ctx, const std::string& label)
+        : V3DfgSubContext{ctx, label, "Synthesis"} {}
+    ~V3DfgSynthesisContext() {
+        // Conversion statistics
+        addStat("conv / input assignments", m_conv.inputAssignments);
+        addStat("conv / input expressions", m_conv.inputExpressions);
+        addStat("conv / representable inputs", m_conv.representable);
+        addStat("conv / non-representable (impure)", m_conv.nonRepImpure);
+        addStat("conv / non-representable (dtype)", m_conv.nonRepDType);
+        addStat("conv / non-representable (lhs)", m_conv.nonRepLValue);
+        addStat("conv / non-representable (varref)", m_conv.nonRepVarRef);
+        addStat("conv / non-representable (node)", m_conv.nonRepNode);
+        addStat("conv / non-representable (unknown)", m_conv.nonRepUnknown);
+        VDouble0 nConvNonRep;
+        nConvNonRep += m_conv.nonRepImpure;
+        nConvNonRep += m_conv.nonRepDType;
+        nConvNonRep += m_conv.nonRepLValue;
+        nConvNonRep += m_conv.nonRepVarRef;
+        nConvNonRep += m_conv.nonRepNode;
+        nConvNonRep += m_conv.nonRepUnknown;
+        VDouble0 nConvExpect;
+        nConvExpect += m_conv.inputAssignments;
+        nConvExpect += m_conv.inputExpressions;
+        nConvExpect -= m_conv.representable;
+        UASSERT(nConvNonRep == nConvExpect, "Inconsistent statistics / conv");
+
+        // Synthesis statistics
+        addStat("synt / always blocks considered", m_synt.inputAlways);
+        addStat("synt / always blocks synthesized", m_synt.synthAlways);
+        addStat("synt / continuous assignments considered", m_synt.inputAssign);
+        addStat("synt / continuous assignments synthesized", m_synt.synthAssign);
+        addStat("synt / non-synthesizable (conv)", m_synt.nonSynConv);
+        addStat("synt / non-synthesizable (ext write)", m_synt.nonSynExtWrite);
+        addStat("synt / non-synthesizable (loop)", m_synt.nonSynLoop);
+        addStat("synt / non-synthesizable (stmt)", m_synt.nonSynStmt);
+        addStat("synt / non-synthesizable (multidrive)", m_synt.nonSynMultidrive);
+        addStat("synt / non-synthesizable (array)", m_synt.nonSynArray);
+        addStat("synt / non-synthesizable (latch)", m_synt.nonSynLatch);
+        addStat("synt / non-synthesizable (join input)", m_synt.nonSynJoinInput);
+        addStat("synt / non-synthesizable (false write)", m_synt.nonSynFalseWrite);
+        addStat("synt / reverted (non-synthesizable)", m_synt.revertNonSyn);
+        addStat("synt / reverted (multidrive)", m_synt.revertMultidrive);
+
+        VDouble0 nSyntNonSyn;
+        nSyntNonSyn += m_synt.nonSynConv;
+        nSyntNonSyn += m_synt.nonSynExtWrite;
+        nSyntNonSyn += m_synt.nonSynLoop;
+        nSyntNonSyn += m_synt.nonSynStmt;
+        nSyntNonSyn += m_synt.nonSynMultidrive;
+        nSyntNonSyn += m_synt.nonSynArray;
+        nSyntNonSyn += m_synt.nonSynLatch;
+        nSyntNonSyn += m_synt.nonSynJoinInput;
+        nSyntNonSyn += m_synt.nonSynFalseWrite;
+        VDouble0 nSyntExpect;
+        nSyntExpect += m_synt.inputAlways;
+        nSyntExpect += m_synt.inputAssign;
+        nSyntExpect -= m_synt.synthAlways;
+        nSyntExpect -= m_synt.synthAssign;
+        UASSERT(nSyntNonSyn == nSyntExpect, "Inconsistent statistics / synt");
+    }
+};
 
 //////////////////////////////////////////////////////////////////////////////
 // Top level V3DfgContext
@@ -248,6 +341,7 @@ public:
     V3DfgEliminateVarsContext m_eliminateVarsContext{*this, m_label};
     V3DfgPeepholeContext m_peepholeContext{*this, m_label};
     V3DfgRegularizeContext m_regularizeContext{*this, m_label};
+    V3DfgSynthesisContext m_synthContext{*this, m_label};
 
     // Node pattern collector
     V3DfgPatternStats m_patternStats;

@@ -93,12 +93,23 @@ class DfgToAstVisitor final : DfgVisitor {
 
     // TYPES
     using VariableType = std::conditional_t<T_Scoped, AstVarScope, AstVar>;
+    struct Assignment final {
+        FileLine* m_flp;
+        AstNodeExpr* m_lhsp;
+        AstNodeExpr* m_rhsp;
+        Assignment() = delete;
+        Assignment(FileLine* flp, AstNodeExpr* lhsp, AstNodeExpr* m_rhsp)
+            : m_flp{flp}
+            , m_lhsp{lhsp}
+            , m_rhsp{m_rhsp} {}
+    };
 
     // STATE
-
     AstModule* const m_modp;  // The parent/result module - This is nullptr when T_Scoped
     V3DfgDfgToAstContext& m_ctx;  // The context for stats
     AstNodeExpr* m_resultp = nullptr;  // The result node of the current traversal
+    std::vector<Assignment> m_assignments;  // Assignments to currently rendered variable
+    std::vector<Assignment> m_defaults;  // Default assignments to currently rendered variable
 
     // METHODS
 
@@ -147,57 +158,69 @@ class DfgToAstVisitor final : DfgVisitor {
         return resultp;
     }
 
-    void convertDriver(AstScope* scopep, FileLine* flp, AstNodeExpr* lhsp, DfgVertex* driverp) {
-        if (!driverp->is<DfgVertexSplice>()) {
-            // Base case: assign vertex to current lhs
-            AstNodeExpr* const rhsp = convertDfgVertexToAstNodeExpr(driverp);
-            AstAssignW* const assignp = new AstAssignW{flp, lhsp, rhsp};
-            lhsp->foreach([flp](AstNode* nodep) { nodep->fileline(flp); });
-            if VL_CONSTEXPR_CXX17 (T_Scoped) {
-                // Add it to the scope holding the target variable
-                getCombActive(scopep)->addStmtsp(assignp);
-            } else {
-                // Add it to the parend module of the DfgGraph
-                m_modp->addStmtsp(assignp);
-            }
-            ++m_ctx.m_resultEquations;
-            return;
-        }
-
+    void convertDriver(std::vector<Assignment>& assignments, FileLine* flp, AstNodeExpr* lhsp,
+                       DfgVertex* driverp) {
         if (DfgSplicePacked* const sPackedp = driverp->cast<DfgSplicePacked>()) {
-            // Partial assignment of packed value
+            // Render defaults first
+            if (DfgVertex* const defaultp = sPackedp->defaultp()) {
+                convertDriver(m_defaults, flp, lhsp, defaultp);
+            }
+            // Render partial assignments of packed value
             sPackedp->forEachSourceEdge([&](const DfgEdge& edge, size_t i) {
-                UASSERT_OBJ(edge.sourcep(), sPackedp, "Should have removed undriven sources");
+                DfgVertex* const srcp = edge.sourcep();
+                if (srcp == sPackedp->defaultp()) return;
                 // Create Sel
                 FileLine* const dflp = sPackedp->driverFileLine(i);
-                AstConst* const lsbp = new AstConst{dflp, sPackedp->driverLsb(i)};
-                const int width = static_cast<int>(edge.sourcep()->width());
+                AstConst* const lsbp = new AstConst{dflp, sPackedp->driverLo(i)};
+                const int width = static_cast<int>(srcp->width());
                 AstSel* const nLhsp = new AstSel{dflp, lhsp->cloneTreePure(false), lsbp, width};
                 // Convert source
-                convertDriver(scopep, dflp, nLhsp, edge.sourcep());
-                // Delete Sel if not consumed
-                if (!nLhsp->backp()) VL_DO_DANGLING(nLhsp->deleteTree(), nLhsp);
+                convertDriver(assignments, dflp, nLhsp, srcp);
+                // Delete Sel - was cloned
+                VL_DO_DANGLING(nLhsp->deleteTree(), nLhsp);
             });
             return;
         }
 
         if (DfgSpliceArray* const sArrayp = driverp->cast<DfgSpliceArray>()) {
+            UASSERT_OBJ(!sArrayp->defaultp(), flp, "Should not have a default assignment yet");
             // Partial assignment of array variable
             sArrayp->forEachSourceEdge([&](const DfgEdge& edge, size_t i) {
-                UASSERT_OBJ(edge.sourcep(), sArrayp, "Should have removed undriven sources");
+                DfgVertex* const driverp = edge.sourcep();
+                UASSERT_OBJ(driverp, sArrayp, "Should have removed undriven sources");
+                UASSERT_OBJ(driverp->size() == 1, driverp, "We only handle single elements");
                 // Create ArraySel
                 FileLine* const dflp = sArrayp->driverFileLine(i);
-                AstConst* const idxp = new AstConst{dflp, sArrayp->driverIndex(i)};
+                AstConst* const idxp = new AstConst{dflp, sArrayp->driverLo(i)};
                 AstArraySel* const nLhsp = new AstArraySel{dflp, lhsp->cloneTreePure(false), idxp};
                 // Convert source
-                convertDriver(scopep, dflp, nLhsp, edge.sourcep());
-                // Delete ArraySel if not consumed
-                if (!nLhsp->backp()) VL_DO_DANGLING(nLhsp->deleteTree(), nLhsp);
+                if (DfgUnitArray* const uap = driverp->cast<DfgUnitArray>()) {
+                    convertDriver(assignments, dflp, nLhsp, uap->srcp());
+                } else {
+                    convertDriver(assignments, dflp, nLhsp, driverp);
+                }
+                // Delete ArraySel - was cloned
+                VL_DO_DANGLING(nLhsp->deleteTree(), nLhsp);
             });
             return;
         }
 
-        driverp->v3fatalSrc("Unhandled DfgVertexSplice sub-type");  // LCOV_EXCL_LINE
+        if (DfgUnitArray* const uap = driverp->cast<DfgUnitArray>()) {
+            // Single element array being assigned a unit array. Needs an ArraySel.
+            AstConst* const idxp = new AstConst{flp, 0};
+            AstArraySel* const nLhsp = new AstArraySel{flp, lhsp->cloneTreePure(false), idxp};
+            // Convert source
+            convertDriver(assignments, flp, nLhsp, uap->srcp());
+            // Delete ArraySel - was cloned
+            VL_DO_DANGLING(nLhsp->deleteTree(), nLhsp);
+            return;
+        }
+
+        // Base case: assign vertex to current lhs
+        AstNodeExpr* const rhsp = convertDfgVertexToAstNodeExpr(driverp);
+        assignments.emplace_back(flp, lhsp->cloneTreePure(false), rhsp);
+        ++m_ctx.m_resultEquations;
+        return;
     }
 
     // VISITORS
@@ -245,13 +268,53 @@ class DfgToAstVisitor final : DfgVisitor {
             // If there is no driver (this vertex is an input to the graph), then nothing to do.
             if (!vtx.srcp()) continue;
 
+            ++m_ctx.m_outputVariables;
+
             // Render variable assignments
             FileLine* const flp = vtx.driverFileLine() ? vtx.driverFileLine() : vtx.fileline();
-            AstScope* const scopep = T_Scoped ? vtx.varScopep()->scopep() : nullptr;
             AstVarRef* const lhsp = new AstVarRef{flp, getNode(&vtx), VAccess::WRITE};
-            convertDriver(scopep, flp, lhsp, vtx.srcp());
-            // convetDriver clones and might not use up the original lhsp
-            if (!lhsp->backp()) VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+            convertDriver(m_assignments, flp, lhsp, vtx.srcp());
+            // convetDriver always clones lhsp
+            VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+
+            if (m_defaults.empty()) {
+                // If there are no default assignments, render each driver as an AssignW
+                for (const Assignment& a : m_assignments) {
+                    AstAssignW* const assignp = new AstAssignW{a.m_flp, a.m_lhsp, a.m_rhsp};
+                    a.m_lhsp->foreach([&a](AstNode* nodep) { nodep->fileline(a.m_flp); });
+                    if VL_CONSTEXPR_CXX17 (T_Scoped) {
+                        // Add it to the scope holding the target variable
+                        getCombActive(vtx.varScopep()->scopep())->addStmtsp(assignp);
+                    } else {
+                        // Add it to the parent module of the DfgGraph
+                        m_modp->addStmtsp(assignp);
+                    }
+                }
+            } else {
+                ++m_ctx.m_outputVariablesWithDefault;
+                // If there are default assignments, render all drivers under an AstAlways
+                AstAlways* const alwaysp
+                    = new AstAlways{vtx.fileline(), VAlwaysKwd::ALWAYS_COMB, nullptr, nullptr};
+                if VL_CONSTEXPR_CXX17 (T_Scoped) {
+                    // Add it to the scope holding the target variable
+                    getCombActive(vtx.varScopep()->scopep())->addStmtsp(alwaysp);
+                } else {
+                    // Add it to the parent module of the DfgGraph
+                    m_modp->addStmtsp(alwaysp);
+                }
+                for (const Assignment& a : m_defaults) {
+                    AstAssign* const assignp = new AstAssign{a.m_flp, a.m_lhsp, a.m_rhsp};
+                    a.m_lhsp->foreach([&a](AstNode* nodep) { nodep->fileline(a.m_flp); });
+                    alwaysp->addStmtsp(assignp);
+                }
+                for (const Assignment& a : m_assignments) {
+                    AstAssign* const assignp = new AstAssign{a.m_flp, a.m_lhsp, a.m_rhsp};
+                    a.m_lhsp->foreach([&a](AstNode* nodep) { nodep->fileline(a.m_flp); });
+                    alwaysp->addStmtsp(assignp);
+                }
+            }
+            m_assignments.clear();
+            m_defaults.clear();
         }
     }
 

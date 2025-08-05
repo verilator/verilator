@@ -194,4 +194,37 @@ module t (
   `signal(COND_COND, 3); // UNOPTFLAT
   assign COND_COND = {rand_a[0], (COND_COND >> 2) == 3'b001 ? rand_b[3:2] : rand_b[1:0]};
 
+  // verilator lint_off ALWCOMBORDER
+  logic [3:0] always_0;
+  always_comb begin
+    always_0[3] = ~always_0[1];
+    always_0[2] = always_0[1];
+    always_0[0] = rand_a[0];
+  end
+  assign always_0[1] = ~always_0[0];
+  `signal(ALWAYS_0, 4); // UNOPTFLAT
+  assign ALWAYS_0 = always_0;
+  // verilator lint_on ALWCOMBORDER
+
+  // verilator lint_off ALWCOMBORDER
+  logic [4:0] always_1;
+  always_comb begin
+    always_1[4] = always_1[0];
+    always_1[0] = rand_a[0];
+    always_1[3:2] = always_1[1:0];
+  end
+  assign always_1[1] = always_1[0];
+  `signal(ALWAYS_1, 5); // UNOPTFLAT
+  assign ALWAYS_1 = always_1;
+  // verilator lint_on ALWCOMBORDER
+
+  // verilator lint_off ALWCOMBORDER
+  logic [3:0] always_2;
+  always_comb begin
+    always_2[2:0] = 3'((always_2 << 1) | 4'(rand_a[0]));
+    always_2[3] = rand_a[0];
+  end
+  `signal(ALWAYS_2, 4); // UNOPTFLAT
+  assign ALWAYS_2 = always_2;
+  // verilator lint_on ALWCOMBORDER
 endmodule

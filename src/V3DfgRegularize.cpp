@@ -45,15 +45,11 @@ class DfgRegularize final {
         // Ensure intermediate values used multiple times are written to variables
         for (DfgVertex& vtx : m_dfg.opVertices()) {
             const bool needsIntermediateVariable = [&]() {
-                // Splice vertices represent partial assignments, so they need a variable
-                // iff and only if they have a non-variable sink.
-                if (vtx.is<DfgVertexSplice>()) {
-                    const bool hasNonVarSink
-                        = vtx.findSink<DfgVertex>([](const DfgVertex& snk) {  //
-                              return !snk.is<DfgVertexVar>() && !snk.is<DfgVertexSplice>();
-                          });
-                    return hasNonVarSink;
-                }
+                // Splice vertices represent partial assignments. The must flow
+                // into variables, so they should never need a temporary.
+                if (vtx.is<DfgVertexSplice>()) return false;
+                // Smilarly to splice, UnitArray should never need one eitehr
+                if (vtx.is<DfgUnitArray>()) return false;
                 // Operations without multiple sinks need no variables
                 if (!vtx.hasMultipleSinks()) return false;
                 // Array selects need no variables, they are just memory references

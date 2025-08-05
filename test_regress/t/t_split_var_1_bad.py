@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.lint(fails=True, verilator_flags2=['--stats'], expect_filename=test.golden_filename)
+test.lint(fails=True,
+          verilator_flags2=['--stats', "-fno-dfg"],
+          expect_filename=test.golden_filename)
 
 test.passes()

@@ -1,75 +1,120 @@
-%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:16:18: Bits [3:1] of signal 'a' have multiple combinational drivers
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:45:18: Bit [1] of signal 'y' have multiple combinational drivers. This can cause performance degradation.
                                                          : ... note: In instance 't'
-                      t/t_dfg_multidriver_dfg_bad.v:17:19: ... Location of first driver
-   17 |     assign a[3:0] = i[3:0];
-      |                   ^
-                      t/t_dfg_multidriver_dfg_bad.v:18:19: ... Location of other driver
-   18 |     assign a[4:1] = ~i[4:1];
-      |                   ^
-                      t/t_dfg_multidriver_dfg_bad.v:16:18: ... Only the first driver will be respected
+                      t/t_dfg_multidriver_dfg_bad.v:48:24: ... Location of offending driver
+   48 |       {y[1:0], y[2:1]} = i[3:0] + 4'd5;
+      |                        ^
+                      t/t_dfg_multidriver_dfg_bad.v:48:24: ... Location of offending driver
+   48 |       {y[1:0], y[2:1]} = i[3:0] + 4'd5;
+      |                        ^
                       ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
                       ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
-%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:16:18: Bits [3:3] of signal 'a' have multiple combinational drivers
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:16:18: Bits [3:1] of signal 'a' have multiple combinational drivers. This can cause performance degradation.
                                                          : ... note: In instance 't'
-                      t/t_dfg_multidriver_dfg_bad.v:17:19: ... Location of first driver
+                      t/t_dfg_multidriver_dfg_bad.v:17:19: ... Location of offending driver
    17 |     assign a[3:0] = i[3:0];
       |                   ^
-                      t/t_dfg_multidriver_dfg_bad.v:19:17: ... Location of other driver
+                      t/t_dfg_multidriver_dfg_bad.v:18:19: ... Location of offending driver
+   18 |     assign a[4:1] = ~i[4:1];
+      |                   ^
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:16:18: Bit [3] of signal 'a' have multiple combinational drivers. This can cause performance degradation.
+                                                         : ... note: In instance 't'
+                      t/t_dfg_multidriver_dfg_bad.v:17:19: ... Location of offending driver
+   17 |     assign a[3:0] = i[3:0];
+      |                   ^
+                      t/t_dfg_multidriver_dfg_bad.v:19:17: ... Location of offending driver
    19 |     assign a[3] = ~i[3];
       |                 ^
-                      t/t_dfg_multidriver_dfg_bad.v:16:18: ... Only the first driver will be respected
-%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:16:18: Bits [7:6] of signal 'a' have multiple combinational drivers
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:16:18: Bits [7:6] of signal 'a' have multiple combinational drivers. This can cause performance degradation.
                                                          : ... note: In instance 't'
-                      t/t_dfg_multidriver_dfg_bad.v:20:19: ... Location of first driver
+                      t/t_dfg_multidriver_dfg_bad.v:20:19: ... Location of offending driver
    20 |     assign a[8:5] = i[8:5];
       |                   ^
-                      t/t_dfg_multidriver_dfg_bad.v:21:19: ... Location of other driver
+                      t/t_dfg_multidriver_dfg_bad.v:21:19: ... Location of offending driver
    21 |     assign a[7:6] = ~i[7:6];
       |                   ^
-                      t/t_dfg_multidriver_dfg_bad.v:16:18: ... Only the first driver will be respected
-%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:16:18: Bits [9:9] of signal 'a' have multiple combinational drivers
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:16:18: Bit [9] of signal 'a' have multiple combinational drivers. This can cause performance degradation.
                                                          : ... note: In instance 't'
-                      t/t_dfg_multidriver_dfg_bad.v:22:17: ... Location of first driver
+                      t/t_dfg_multidriver_dfg_bad.v:22:17: ... Location of offending driver
    22 |     assign a[9] = i[9];
       |                 ^
-                      t/t_dfg_multidriver_dfg_bad.v:23:19: ... Location of other driver
+                      t/t_dfg_multidriver_dfg_bad.v:23:17: ... Location of offending driver
    23 |     assign a[9] = ~i[9];
-      |                   ^
-                      t/t_dfg_multidriver_dfg_bad.v:16:18: ... Only the first driver will be respected
-%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:26:18: Elements [3:0] of signal 'u' have multiple combinational drivers
+      |                 ^
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:26:18: Elements [3:0] of signal 'u' have multiple combinational drivers. This can cause performance degradation.
                                                          : ... note: In instance 't'
-                      t/t_dfg_multidriver_dfg_bad.v:27:14: ... Location of first driver
+                      t/t_dfg_multidriver_dfg_bad.v:27:14: ... Location of offending driver
    27 |     assign u = j;
       |              ^
-                      t/t_dfg_multidriver_dfg_bad.v:28:14: ... Location of other driver
+                      t/t_dfg_multidriver_dfg_bad.v:28:14: ... Location of offending driver
    28 |     assign u = k;
       |              ^
-                      t/t_dfg_multidriver_dfg_bad.v:26:18: ... Only the first driver will be respected
-%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:30:18: Elements [1:1] of signal 'v' have multiple combinational drivers
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:30:18: Element [1] of signal 'v' have multiple combinational drivers. This can cause performance degradation.
                                                          : ... note: In instance 't'
-                      t/t_dfg_multidriver_dfg_bad.v:31:14: ... Location of first driver
+                      t/t_dfg_multidriver_dfg_bad.v:31:14: ... Location of offending driver
    31 |     assign v = j;
       |              ^
-                      t/t_dfg_multidriver_dfg_bad.v:32:13: ... Location of other driver
+                      t/t_dfg_multidriver_dfg_bad.v:32:13: ... Location of offending driver
    32 |     assign v[1] = i;
       |             ^
-                      t/t_dfg_multidriver_dfg_bad.v:30:18: ... Only the first driver will be respected
-%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:34:18: Elements [0:0] of signal 'w' have multiple combinational drivers
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:34:18: Element [0] of signal 'w' have multiple combinational drivers. This can cause performance degradation.
                                                          : ... note: In instance 't'
-                      t/t_dfg_multidriver_dfg_bad.v:35:13: ... Location of first driver
+                      t/t_dfg_multidriver_dfg_bad.v:35:13: ... Location of offending driver
    35 |     assign w[0] = i;
       |             ^
-                      t/t_dfg_multidriver_dfg_bad.v:36:14: ... Location of other driver
+                      t/t_dfg_multidriver_dfg_bad.v:36:14: ... Location of offending driver
    36 |     assign w = j;
       |              ^
-                      t/t_dfg_multidriver_dfg_bad.v:34:18: ... Only the first driver will be respected
-%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:38:18: Bits [3:2] of signal 'x[3]' have multiple combinational drivers
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:38:18: Bits [3:2] of signal 'x[3]' have multiple combinational drivers. This can cause performance degradation.
                                                          : ... note: In instance 't'
-                      t/t_dfg_multidriver_dfg_bad.v:39:17: ... Location of first driver
+                      t/t_dfg_multidriver_dfg_bad.v:39:17: ... Location of offending driver
    39 |     assign x[3] = i;
       |                 ^
-                      t/t_dfg_multidriver_dfg_bad.v:40:22: ... Location of other driver
+                      t/t_dfg_multidriver_dfg_bad.v:40:22: ... Location of offending driver
    40 |     assign x[3][3:2] = ~i[1:0];
       |                      ^
-                      t/t_dfg_multidriver_dfg_bad.v:38:18: ... Only the first driver will be respected
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:51:18: Bits [2:1] of signal 'z' have multiple combinational drivers. This can cause performance degradation.
+                                                         : ... note: In instance 't'
+                      t/t_dfg_multidriver_dfg_bad.v:53:14: ... Location of offending driver
+   53 |       z[2:0] = i[2:0];
+      |              ^
+                      t/t_dfg_multidriver_dfg_bad.v:58:17: ... Location of offending driver
+   58 |       z[3:1] = i[3:1];
+      |                 ^
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:51:18: Bits [6:5] of signal 'z' have multiple combinational drivers. This can cause performance degradation.
+                                                         : ... note: In instance 't'
+                      t/t_dfg_multidriver_dfg_bad.v:57:14: ... Location of offending driver
+   57 |       z[6:4] = i[6:4];
+      |              ^
+                      t/t_dfg_multidriver_dfg_bad.v:54:14: ... Location of offending driver
+   54 |       z[7:5] = i[7:5];
+      |              ^
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:51:18: Bit [7] of signal 'z' have multiple combinational drivers. This can cause performance degradation.
+                                                         : ... note: In instance 't'
+                      t/t_dfg_multidriver_dfg_bad.v:54:14: ... Location of offending driver
+   54 |       z[7:5] = i[7:5];
+      |              ^
+                      t/t_dfg_multidriver_dfg_bad.v:60:20: ... Location of offending driver
+   60 |     assign z[10:7] = i[10:7];
+      |                    ^
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:74:18: Bits [5:2] of signal 't.sub_1.a' have multiple combinational drivers. This can cause performance degradation.
+                      t/t_dfg_multidriver_dfg_bad.v:63:20: ... Location of offending driver
+   63 |     assign sub_1.a = i;
+      |                    ^
+                      t/t_dfg_multidriver_dfg_bad.v:75:19: ... Location of offending driver
+   75 |     assign a[5:2] = i[5:2];
+      |                   ^
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:74:18: Bits [3:2] of signal 't.sub_2.a' have multiple combinational drivers. This can cause performance degradation.
+                      t/t_dfg_multidriver_dfg_bad.v:67:25: ... Location of offending driver
+   67 |     assign sub_2.a[3:0] = i[3:0];
+      |                         ^
+                      t/t_dfg_multidriver_dfg_bad.v:75:19: ... Location of offending driver
+   75 |     assign a[5:2] = i[5:2];
+      |                   ^
+%Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:74:18: Bit [5] of signal 't.sub_2.a' have multiple combinational drivers. This can cause performance degradation.
+                      t/t_dfg_multidriver_dfg_bad.v:75:19: ... Location of offending driver
+   75 |     assign a[5:2] = i[5:2];
+      |                   ^
+                      t/t_dfg_multidriver_dfg_bad.v:66:26: ... Location of offending driver
+   66 |     assign sub_2.a[10:5] = i[10:5];
+      |                          ^
 %Error: Exiting due to

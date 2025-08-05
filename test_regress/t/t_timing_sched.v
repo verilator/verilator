@@ -37,14 +37,12 @@ module t;
 `endif
    end
 
-   // verilator lint_off UNOPTFLAT
    int c1 = 0;
    int c2 = 0;
    always @(b2, c1) begin
       c2 = c1 >> 3;
       c1 = b2 << 3;
    end
-   // verilator lint_on UNOPTFLAT
 
    always @(posedge clk1) if (a2 != a1 << 1) $stop;
    always @(posedge clk2) #1 if (b2 != b1 << 2) $stop;

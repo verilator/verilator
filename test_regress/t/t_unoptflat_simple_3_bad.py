@@ -13,6 +13,6 @@ test.scenarios('simulator')
 test.top_filename = "t/t_unoptflat_simple_3.v"
 
 # Compile only
-test.compile(fails=True)
+test.compile(verilator_flags2=["-fno-dfg"], fails=True)
 
 test.passes()
