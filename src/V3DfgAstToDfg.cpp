@@ -28,6 +28,7 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
+#include "V3Cfg.h"
 #include "V3Const.h"
 #include "V3Dfg.h"
 #include "V3DfgPasses.h"
@@ -445,6 +446,69 @@ class AstToDfgConverter final : public VNVisitor {
         return false;
     }
 
+    bool convertComplexAlways(AstAlways* nodep) {
+        // Attempt to build CFG of block, give up if failed
+        std::unique_ptr<const ControlFlowGraph> cfgp = V3Cfg::build(nodep);
+        if (!cfgp) return false;
+
+        // Gather written variables, give up if any are not supported.
+        std::unordered_set<DfgVertexVar*> outputs;
+        {
+            bool abort = false;
+            // We can ignore AstVarXRef here. The only thing we can do with DfgAlways is
+            // synthesize it into regular vertices, which will fail on a VarXRef at that point.
+            nodep->foreach([&](AstVarRef* vrefp) {
+                if (!isSupported(vrefp)) {
+                    abort = true;
+                    return;
+                }
+                if (vrefp->access().isReadOnly()) return;
+                outputs.emplace(getNet(getTarget(vrefp)));
+            });
+            if (abort) return false;
+        }
+
+        // Gather read variables, give up if any are not supported
+        std::vector<DfgVertexVar*> inputs;
+        if VL_CONSTEXPR_CXX17 (T_Scoped) {
+            std::unique_ptr<std::vector<AstVarScope*>> readVscps = V3Cfg::liveVarScopes(*cfgp);
+            if (!readVscps) return false;
+            for (AstVarScope* const varp : *readVscps) {
+                if (!DfgVertex::isSupportedDType(varp->varp()->dtypep())) return false;
+                inputs.emplace_back(getNet(reinterpret_cast<Variable*>(varp)));
+            }
+        } else {
+            std::unique_ptr<std::vector<AstVar*>> readVarps = V3Cfg::liveVars(*cfgp);
+            if (!readVarps) return false;
+            for (AstVar* const varp : *readVarps) {
+                if (!DfgVertex::isSupportedDType(varp->dtypep())) return false;
+                inputs.emplace_back(getNet(reinterpret_cast<Variable*>(varp)));
+            }
+        }
+
+        // OK, we can convert the AstAlways into a DfgAlways
+
+        // Create the DfgAlways
+        DfgAlways* const alwaysp = new DfgAlways{m_dfg, nodep, std::move(cfgp)};
+        // Connect inputs
+        for (DfgVertexVar* const vtxp : inputs) alwaysp->addInput(vtxp);
+        // Connect outputs
+        for (DfgVertexVar* const vtxp : outputs) {
+            FileLine* const flp = vtxp->fileline();
+            AstNodeDType* const dtypep = vtxp->dtypep();
+            if (vtxp->is<DfgVarPacked>()) {
+                if (!vtxp->srcp()) vtxp->srcp(new DfgSplicePacked{m_dfg, flp, dtypep});
+                DfgSplicePacked* const splicep = vtxp->srcp()->as<DfgSplicePacked>();
+                splicep->addUnresolvedDriver(alwaysp);
+            } else {
+                nodep->v3fatalSrc("Unhandled DfgVertexVar sub-type");  // LCOV_EXCL_LINE
+            }
+        }
+
+        // Done
+        return true;
+    }
+
     // VISITORS
 
     // Unhandled node
@@ -530,6 +594,12 @@ public:
             return true;
         }
 
+        // Attempt to convert whole process
+        if (convertComplexAlways(nodep)) {
+            // Keep original node, referenced by the resulting DfgAlways
+            return true;
+        }
+
         return false;
     }
 
@@ -567,6 +637,9 @@ class AstToDfgNormalizeDrivers final {
         // The drivers of 'splicep'
         std::vector<Driver> drivers;
         drivers.reserve(splicep->arity());
+        // The unresolved drivers of 'splicep'
+        std::vector<DfgVertex*> udriverps;
+        udriverps.reserve(splicep->arity());
 
         // Sometime assignment ranges are coalesced by V3Const,
         // so we unpack concatenations for better error reporting.
@@ -587,9 +660,19 @@ class AstToDfgNormalizeDrivers final {
         // Gather and unlink all drivers
         splicep->forEachSourceEdge([&](DfgEdge& edge, size_t i) {
             DfgVertex* const driverp = edge.sourcep();
-            UASSERT(driverp, "Should not have created undriven sources");
-            UASSERT_OBJ(!driverp->is<DfgVertexSplice>(), splicep, "Should not be DfgVertexSplice");
-            gather(splicep->driverFileLine(i), splicep->driverLsb(i), driverp);
+            UASSERT_OBJ(driverp, splicep, "Should not have created undriven sources");
+            // Gather
+            if (!splicep->driverIsUnresolved(i)) {
+                // Resolved driver
+                UASSERT_OBJ(!driverp->is<DfgVertexSplice>(), splicep,
+                            "Should not be DfgVertexSplice");
+                gather(splicep->driverFileLine(i), splicep->driverLsb(i), driverp);
+            } else {
+                // Unresolved
+                UASSERT_OBJ(driverp->is<DfgAlways>(), splicep, "Should be DfgAlways");
+                udriverps.emplace_back(driverp);
+            }
+            // Unlink
             edge.unlinkSource();
         });
         splicep->resetSources();
@@ -651,6 +734,7 @@ class AstToDfgNormalizeDrivers final {
 
         // Reinsert drivers in order
         for (const Driver& d : drivers) splicep->addDriver(d.m_flp, d.m_low, d.m_vtxp);
+        for (DfgVertex* const vtxp : udriverps) splicep->addUnresolvedDriver(vtxp);
     }
 
     // Normalize array driver
@@ -798,19 +882,30 @@ class AstToDfgCoalesceDrivers final {
         // The drivers of 'splicep'
         std::vector<Driver> drivers;
         drivers.reserve(splicep->arity());
+        // The unresolved drivers of 'splicep'
+        std::vector<DfgVertex*> udriverps;
+        udriverps.reserve(splicep->arity());
 
         // Gather and unlink all drivers
         int64_t prevHigh = -1;  // High index of previous driven range
         splicep->forEachSourceEdge([&](DfgEdge& edge, size_t i) {
             DfgVertex* const driverp = edge.sourcep();
             UASSERT_OBJ(driverp, splicep, "Should not have created undriven sources");
-            UASSERT_OBJ(!driverp->is<DfgVertexSplice>(), splicep, "Should not be DfgVertexSplice");
-            const uint32_t low = splicep->driverLsb(i);
-            UASSERT_OBJ(static_cast<int64_t>(low) > prevHigh, splicep,
-                        "Drivers should have been normalized");
-            prevHigh = low + driverp->width() - 1;
             // Gather
-            drivers.emplace_back(splicep->driverFileLine(i), low, driverp);
+            if (!splicep->driverIsUnresolved(i)) {
+                // Resolved driver
+                UASSERT_OBJ(!driverp->is<DfgVertexSplice>(), splicep,
+                            "Should not be DfgVertexSplice");
+                const uint32_t low = splicep->driverLsb(i);
+                UASSERT_OBJ(static_cast<int64_t>(low) > prevHigh, splicep,
+                            "Drivers should have been normalized");
+                prevHigh = low + driverp->width() - 1;
+                drivers.emplace_back(splicep->driverFileLine(i), low, driverp);
+            } else {
+                // Unresolved
+                UASSERT_OBJ(driverp->is<DfgAlways>(), splicep, "Should be DfgAlways");
+                udriverps.emplace_back(driverp);
+            }
             // Unlink
             edge.unlinkSource();
         });
@@ -855,7 +950,8 @@ class AstToDfgCoalesceDrivers final {
         }
 
         // If the variable is driven whole, we can just use that driver
-        if (drivers.size() == 1  //
+        if (udriverps.empty()  //
+            && drivers.size() == 1  //
             && drivers[0].m_low == 0  //
             && drivers[0].m_vtxp->width() == splicep->width()) {
             VL_DO_DANGLING(splicep->unlinkDelete(m_dfg), splicep);
@@ -865,6 +961,7 @@ class AstToDfgCoalesceDrivers final {
 
         // Reinsert drivers in order
         for (const Driver& d : drivers) splicep->addDriver(d.m_flp, d.m_low, d.m_vtxp);
+        for (DfgVertex* const vtxp : udriverps) splicep->addUnresolvedDriver(vtxp);
         // Use the original splice
         return {splicep, splicep->fileline()};
     }

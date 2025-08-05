@@ -226,6 +226,9 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3CUse.o \
   V3Case.o \
   V3Cast.o \
+  V3Cfg.o \
+  V3CfgBuilder.o \
+  V3CfgLiveVariables.o \
   V3Class.o \
   V3Clean.o \
   V3Clock.o \

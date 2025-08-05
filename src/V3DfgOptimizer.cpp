@@ -254,6 +254,10 @@ class DataflowOptimize final {
     void optimize(DfgGraph& dfg) {
         if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "whole-input");
 
+        // Delete DfgAlways vertices, there is nothing else we can do about them
+        V3DfgPasses::removeAlwaysVertices(dfg);
+        if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "rmalways");
+
         // Extract the cyclic sub-graphs. We do this because a lot of the optimizations assume a
         // DAG, and large, mostly acyclic graphs could not be optimized due to the presence of
         // small cycles.

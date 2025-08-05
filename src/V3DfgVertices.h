@@ -228,6 +228,28 @@ public:
     ASTGEN_MEMBERS_DfgVarPacked;
 };
 
+// === DfgVertexVariadic ===
+class DfgAlways final : public DfgVertexVariadic {
+    // Vertex representing a whole combinational process
+    AstAlways* const m_nodep;  // The process represented by this vertex
+    const std::unique_ptr<const ControlFlowGraph> m_cfgp;
+
+public:
+    DfgAlways(DfgGraph& dfg, AstAlways* nodep, std::unique_ptr<const ControlFlowGraph> cfgp)
+        : DfgVertexVariadic{dfg, dfgType(), nodep->fileline(), nullptr, 1u}
+        , m_nodep(nodep)
+        , m_cfgp{std::move(cfgp)} {}
+
+    ASTGEN_MEMBERS_DfgAlways;
+
+    void addInput(DfgVertexVar* varp) { addSource()->relinkSource(varp); }
+
+    AstAlways* nodep() const { return m_nodep; }
+    const ControlFlowGraph& cfg() const { return *m_cfgp; }
+
+    const string srcName(size_t) const override { return ""; }
+};
+
 // === DfgVertexSplice ===
 class DfgSpliceArray final : public DfgVertexSplice {
     friend class DfgVertex;
@@ -285,10 +307,12 @@ class DfgSplicePacked final : public DfgVertexSplice {
     struct DriverData final {
         FileLine* m_flp;  // Location of this driver
         uint32_t m_lsb;  // LSB of range driven by this driver
+        bool m_isUnresolved;  // Is a placeholder for a driver from an unresolved DfgAlways
         DriverData() = delete;
-        DriverData(FileLine* flp, uint32_t lsb)
+        DriverData(FileLine* flp, uint32_t lsb, bool isUnresolved)
             : m_flp{flp}
-            , m_lsb{lsb} {}
+            , m_lsb{lsb}
+            , m_isUnresolved{isUnresolved} {}
     };
     std::vector<DriverData> m_driverData;  // Additional data associated with each driver
 
@@ -303,7 +327,13 @@ public:
     ASTGEN_MEMBERS_DfgSplicePacked;
 
     void addDriver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp) {
-        m_driverData.emplace_back(flp, lsb);
+        UASSERT_OBJ(!vtxp->is<DfgAlways>(), vtxp, "addDriver called with DfgAlways");
+        m_driverData.emplace_back(flp, lsb, false);
+        DfgVertexVariadic::addSource()->relinkSource(vtxp);
+    }
+
+    void addUnresolvedDriver(DfgVertex* vtxp) {
+        m_driverData.emplace_back(vtxp->fileline(), 0, true);
         DfgVertexVariadic::addSource()->relinkSource(vtxp);
     }
 
@@ -312,10 +342,39 @@ public:
         DfgVertexVariadic::resetSources();
     }
 
+    // Remove undriven sources
+    void removeUndrivenSources() {
+        // Grab and reset the driver data
+        std::vector<DriverData> driverData;
+        driverData.swap(m_driverData);
+
+        // Grab and unlink the sources
+        std::vector<DfgVertex*> sources{arity()};
+        forEachSourceEdge([&](DfgEdge& edge, size_t idx) {
+            sources[idx] = edge.sourcep();
+            edge.unlinkSource();
+        });
+        DfgVertexVariadic::resetSources();
+
+        // Add back the driven sources
+        for (size_t i = 0; i < sources.size(); ++i) {
+            if (!sources[i]) continue;
+            m_driverData.emplace_back(driverData[i]);
+            DfgVertexVariadic::addSource()->relinkSource(sources[i]);
+        }
+    }
+
     FileLine* driverFileLine(size_t i) const { return m_driverData.at(i).m_flp; }
     uint32_t driverLsb(size_t i) const { return m_driverData.at(i).m_lsb; }
+    uint32_t driverIsUnresolved(size_t i) const { return m_driverData.at(i).m_isUnresolved; }
 
-    const std::string srcName(size_t idx) const override { return std::to_string(driverLsb(idx)); }
+    const std::string srcName(size_t idx) const override {
+        const DriverData& dd = m_driverData.at(idx);
+        if (dd.m_isUnresolved) return "unresolved";
+        const uint32_t lsb = driverLsb(idx);
+        const uint32_t msb = lsb + source(idx)->width() - 1;
+        return '[' + std::to_string(msb) + ':' + std::to_string(lsb) + ']';
+    }
 };
 
 #endif

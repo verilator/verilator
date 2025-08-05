@@ -209,6 +209,8 @@ class DfgToAstVisitor final : DfgVisitor {
             // Partial assignment of packed value
             sPackedp->forEachSourceEdge([&](const DfgEdge& edge, size_t i) {
                 UASSERT_OBJ(edge.sourcep(), sPackedp, "Should have removed undriven sources");
+                UASSERT_OBJ(!sPackedp->driverIsUnresolved(i), sPackedp,
+                            "Unresolved driver should not reach DfgToAst");
                 // Create Sel
                 FileLine* const dflp = sPackedp->driverFileLine(i);
                 AstConst* const lsbp = new AstConst{dflp, sPackedp->driverLsb(i)};
