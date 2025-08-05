@@ -77,10 +77,6 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
             break;
         }
         }
-
-        if (vp->hasDfgRefs()) cp->setHasDfgRefs();
-        if (vp->hasModRefs()) cp->setHasModRefs();
-        if (vp->hasExtRefs()) cp->setHasExtRefs();
     }
     // Clone operation vertices
     for (const DfgVertex& vtx : m_opVertices) {
@@ -262,8 +258,6 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
             os << ", shape=box, style=filled, fillcolor=darkorange1";  // Orange
         } else if (varVtxp->hasDfgRefs()) {
             os << ", shape=box, style=filled, fillcolor=gold2";  // Yellow
-        } else if (varVtxp->keep()) {
-            os << ", shape=box, style=filled, fillcolor=grey";
         } else {
             os << ", shape=box";
         }
@@ -290,8 +284,6 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
             os << ", shape=box3d, style=filled, fillcolor=darkorange1";  // Orange
         } else if (arrVtxp->hasDfgRefs()) {
             os << ", shape=box3d, style=filled, fillcolor=gold2";  // Yellow
-        } else if (arrVtxp->keep()) {
-            os << ", shape=box3d, style=filled, fillcolor=grey";
         } else {
             os << ", shape=box3d";
         }
@@ -597,16 +589,23 @@ DfgVertexVar* DfgVertex::getResultVar() {
             resp = varp;
             return;
         }
+
         // Prefer those variables that must be kept anyway
-        const bool keepOld = resp->keep() || resp->hasDfgRefs();
-        const bool keepNew = varp->keep() || varp->hasDfgRefs();
-        if (keepOld != keepNew) {
-            if (!keepOld) resp = varp;
+        if (resp->hasExtRefs() != varp->hasExtRefs()) {
+            if (!resp->hasExtRefs()) resp = varp;
+            return;
+        }
+        if (resp->hasModWrRefs() != varp->hasModWrRefs()) {
+            if (!resp->hasModWrRefs()) resp = varp;
+            return;
+        }
+        if (resp->hasDfgRefs() != varp->hasDfgRefs()) {
+            if (!resp->hasDfgRefs()) resp = varp;
             return;
         }
         // Prefer those that already have module references
-        if (resp->hasModRefs() != varp->hasModRefs()) {
-            if (!resp->hasModRefs()) resp = varp;
+        if (resp->hasModRdRefs() != varp->hasModRdRefs()) {
+            if (!resp->hasModRdRefs()) resp = varp;
             return;
         }
         // Prefer the earlier one in source order

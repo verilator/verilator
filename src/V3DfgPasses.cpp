@@ -294,7 +294,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
                 varp->varp()->isInternal(true);
                 varp->srcp(srcp);
             }
-            varp->setHasModRefs();
+            varp->setHasModRdRefs();
             return varp;
         }();
         // The previous index variable - we don't need a vertex for this
@@ -314,7 +314,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
                 = dfg.makeNewVar(flp, name, tabDTypep, nullptr)->as<DfgVarArray>();
             varp->varp()->isInternal(true);
             varp->varp()->noReset(true);
-            varp->setHasModRefs();
+            varp->setHasModWrRefs();
             return varp;
         }();
 
@@ -417,9 +417,9 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
 
     // List of variables (AstVar or AstVarScope) we are replacing
     std::vector<AstNode*> replacedVariables;
-    // AstVar::user1p() : AstVar* -> The replacement variables
-    // AstVarScope::user1p() : AstVarScope* -> The replacement variables
-    const VNUser1InUse user1InUse;
+    // AstVar::user2p() : AstVar* -> The replacement variables
+    // AstVarScope::user2p() : AstVarScope* -> The replacement variables
+    const VNUser2InUse user2InUse;
 
     // Process the work list
     while (workListp != sentinelp) {
@@ -448,10 +448,11 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
         // Can't remove if it has external drivers
         if (!varp->isDrivenFullyByDfg()) continue;
 
-        // Can't remove if must be kept (including external, non module references)
-        if (varp->keep()) continue;
-
-        // Can't remove if referenced in other DFGs of the same module (otherwise might rm twice)
+        // Can't remove if referenced external to the module/netlist
+        if (varp->hasExtRefs()) continue;
+        // Can't remove if written in the module
+        if (varp->hasModWrRefs()) continue;
+        // Can't remove if referenced in other DFGs of the same module
         if (varp->hasDfgRefs()) continue;
 
         // If it has multiple sinks, it can't be eliminated
@@ -469,9 +470,9 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
             UASSERT_OBJ(!varp->hasSinks(), varp, "Variable inlining should make this impossible");
             // Grab the AstVar/AstVarScope
             AstNode* const nodep = varp->nodep();
-            UASSERT_OBJ(!nodep->user1p(), nodep, "Replacement already exists");
+            UASSERT_OBJ(!nodep->user2p(), nodep, "Replacement already exists");
             replacedVariables.emplace_back(nodep);
-            nodep->user1p(driverp->nodep());
+            nodep->user2p(driverp->nodep());
         } else {
             // Otherwise this *is* the canonical var
             continue;
@@ -490,13 +491,13 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
     if (AstModule* const modp = dfg.modulep()) {
         modp->foreach([&](AstVarRef* refp) {
             AstVar* varp = refp->varp();
-            while (AstVar* const replacep = VN_AS(varp->user1p(), Var)) varp = replacep;
+            while (AstVar* const replacep = VN_AS(varp->user2p(), Var)) varp = replacep;
             refp->varp(varp);
         });
     } else {
         v3Global.rootp()->foreach([&](AstVarRef* refp) {
             AstVarScope* vscp = refp->varScopep();
-            while (AstVarScope* const replacep = VN_AS(vscp->user1p(), VarScope)) vscp = replacep;
+            while (AstVarScope* const replacep = VN_AS(vscp->user2p(), VarScope)) vscp = replacep;
             refp->varScopep(vscp);
             refp->varp(vscp->varp());
         });

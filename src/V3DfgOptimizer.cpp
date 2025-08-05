@@ -296,16 +296,15 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
     UINFO(2, __FUNCTION__ << ":");
 
     // NODE STATE
-    // AstVar::user1 -> Used by:
-    //                    - V3DfgPasses::astToDfg,
-    //                    - V3DfgPasses::eliminateVars,
-    //                    - V3DfgPasses::dfgToAst,
-    // AstVar::user2 -> bool: Flag indicating referenced by AstVarXRef (set just below)
-    // AstVar::user3, AstVarScope::user3
-    //               -> bool: Flag indicating written by logic not representable as DFG
-    //                        (set by V3DfgPasses::astToDfg)
-    const VNUser2InUse user2InUse;
-    const VNUser3InUse user3InUse;
+    // AstVar::user1, AstVarScope::user1 -> int, used as a bit-field
+    // - bit0: Read via AstVarXRef (hierarchical reference)
+    // - bit1: Written via AstVarXRef (hierarchical reference)
+    // - bit2: Read by logic in same module/netlist not represented in DFG
+    // - bit3: Written by logic in same module/netlist not represented in DFG
+    // - bit4: Referenced by other DFG in same module/netlist
+    //
+    // AstNode::user2/user3/user4 can be used by various DFG algorithms
+    const VNUser1InUse user1InUse;
 
     V3DfgContext ctx{label};
 
@@ -313,7 +312,11 @@ void V3DfgOptimizer::optimize(AstNetlist* netlistp, const string& label) {
         // Pre V3Scope application. Run on each module separately.
 
         // Mark cross-referenced variables
-        netlistp->foreach([](const AstVarXRef* xrefp) { xrefp->varp()->user2(true); });
+        netlistp->foreach([](const AstVarXRef* xrefp) {
+            AstVar* const tgtp = xrefp->varp();
+            if (xrefp->access().isReadOrRW()) DfgVertexVar::setHasRdXRefs(tgtp);
+            if (xrefp->access().isWriteOrRW()) DfgVertexVar::setHasWrXRefs(tgtp);
+        });
 
         // Run the optimization phase
         for (AstNode* nodep = netlistp->modulesp(); nodep; nodep = nodep->nextp()) {
