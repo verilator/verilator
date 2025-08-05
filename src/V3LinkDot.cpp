@@ -2889,9 +2889,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VSymEnt* const foundp = m_pinSymp->findIdFlat(nodep->name());
             const char* const whatp = nodep->param() ? "parameter" : "pin";
             if (!foundp) {
-                if (nodep->name() == "__paramNumber1" && m_cellp
-                    && VN_IS(m_cellp->modp(), Primitive)) {
-                    // Primitive parameter is really a delay we can just ignore
+                if (m_cellp && VN_IS(m_cellp->modp(), Primitive)
+                    && (nodep->name() == "__paramNumber1" || nodep->name() == "__paramNumber2")) {
+                    // Primitive parameter is really a delay2 we can just ignore
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                     return;
                 } else {
