@@ -198,10 +198,11 @@ class LinkParseVisitor final : public VNVisitor {
                     // DPI-imported functions and properties don't have lifetime specifiers
                     m_lifetime = VLifetime::NONE;
                 }
+                nodep->lifetime(m_lifetime);
                 for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
                     AstVar* const varp = VN_CAST(itemp, Var);
                     if (varp && varp->valuep() && varp->lifetime().isNone()
-                        && m_lifetime.isStatic() && !varp->isIO()) {
+                        && nodep->lifetime().isStatic() && !varp->isIO()) {
                         if (VN_IS(m_modp, Module)) {
                             nodep->v3warn(IMPLICITSTATIC,
                                           "Function/task's lifetime implicitly set to static\n"
@@ -223,7 +224,12 @@ class LinkParseVisitor final : public VNVisitor {
                         }
                     }
                 }
-                nodep->lifetime(m_lifetime);
+            }
+            if (nodep->classMethod() && nodep->lifetime().isStatic()) {
+                nodep->v3error("Class function/task cannot be static lifetime ('"
+                               << nodep->verilogKwd() << " static') (IEEE 1800-2023 6.21)\n"
+                               << nodep->warnMore() << "... May have intended 'static "
+                               << nodep->verilogKwd() << "'");
             }
             iterateChildren(nodep);
         }

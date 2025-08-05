@@ -20,6 +20,7 @@ Verilator 5.039 devel
 * Add enum base data type, wire data type, and I/O versus data declaration checking per IEEE.
 * Add error on missing forward declarations (#6206). [Alex Solomatnikov]
 * Add error when trying to assign class object to variable of non-class types (#6237). [Igor Zaworski, Antmicro Ltd.]
+* Add error on class 'function static'.
 * Add `-DVERILATOR=1` definition to compiler flags when using verilated.mk.
 * Support member-level triggers for virtual interfaces (#5166) (#6148). [Yilou Wang]
 * Support unassigned virtual interfaces (#5265) (#6245). [Szymon Gizler, Antmicro Ltd.]

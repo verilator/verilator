@@ -2480,6 +2480,7 @@ public:
     AstNodeFTask* cloneType(const string& name) override {
         return new AstFunc{fileline(), name, nullptr, nullptr};
     }
+    string verilogKwd() const override { return "function"; }
 };
 class AstLet final : public AstNodeFTask {
     // Verilog "let" statement
@@ -2495,6 +2496,7 @@ public:
         return nullptr;
     }
     AstNodeFTask* cloneType(const string& name) override { return new AstLet{fileline(), name}; }
+    string verilogKwd() const override { return "let"; }
 };
 class AstProperty final : public AstNodeFTask {
     // A property inside a module
@@ -2506,6 +2508,7 @@ public:
     AstNodeFTask* cloneType(const string& name) override {
         return new AstProperty{fileline(), name, nullptr};
     }
+    string verilogKwd() const override { return "property"; }
 };
 class AstTask final : public AstNodeFTask {
     // A task inside a module
@@ -2516,6 +2519,7 @@ public:
     AstNodeFTask* cloneType(const string& name) override {
         return new AstTask{fileline(), name, nullptr};
     }
+    string verilogKwd() const override { return "task"; }
 };
 
 // === AstNodeFile ===
