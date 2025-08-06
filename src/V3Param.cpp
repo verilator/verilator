@@ -732,6 +732,14 @@ class ParamProcessor final {
                 AstNode* const exprp = pinp->exprp();
                 longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
                 any_overridesr = true;
+            } else if (VN_IS(pinp->exprp(), InitArray)) {
+                // Array assigned to scalar parameter.  Treat the InitArray as a constant
+                // integer array and include it in the module name.  Constantify nested
+                // expressions before mangling the value number.
+                V3Const::constifyParamsEdit(pinp->exprp());
+                longnamer += "_" + paramSmallName(srcModp, modvarp)
+                    + paramValueNumber(pinp->exprp());
+                any_overridesr = true;
             } else {
                 V3Const::constifyParamsEdit(pinp->exprp());
                 // String constants are parsed as logic arrays and converted to strings in V3Const.
