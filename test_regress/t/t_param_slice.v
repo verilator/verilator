@@ -1,3 +1,9 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2025 by Michael Taylor.
+// SPDX-License-Identifier: CC0-1.0
+
 module issue #(
     parameter int els_p = 1,
     // Parameter array of length els_p
