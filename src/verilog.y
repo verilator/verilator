@@ -1383,7 +1383,7 @@ module_declaration:             // ==IEEE: module_declaration
                         { $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
                           $1->hasParameterList($<flag>2);
                           if (GRAMMARP->m_genericIfaceModule) {
-                            VN_AS($1, Module)->hasGenericIface(GRAMMARP->m_genericIfaceModule);
+                            VN_AS($1, Module)->hasGenericIface(true);
                             GRAMMARP->m_genericIfaceModule = false;
                           }
                           if ($2) $1->addStmtsp($2);

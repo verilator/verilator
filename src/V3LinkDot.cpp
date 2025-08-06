@@ -2785,12 +2785,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
     static const AstVar* getNextVarp(const AstNode* stmtsp) {
         if (!stmtsp) return nullptr;
-        const AstVar* modIfaceVarp;
-        do {
+        const AstVar* varp = VN_CAST(stmtsp, Var);
+        while (!varp && stmtsp) {
             stmtsp = stmtsp->nextp();
-            modIfaceVarp = VN_CAST(stmtsp, Var);
-        } while (!modIfaceVarp && stmtsp);
-        return modIfaceVarp;
+            varp = VN_CAST(stmtsp, Var);
+        }
+        return varp;
     }
     // Introduce implicit parameters for modules with generic interafeces
     void addImplicitParametersOfGenericIface(AstCell* const nodep, const AstModule* const modp) {
@@ -2801,10 +2801,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
 
         // Add each implicit parameter type
-        const AstVar* modIfaceVarp = VN_CAST(modp->stmtsp(), Var);
-        if (!modIfaceVarp) modIfaceVarp = getNextVarp(modp->stmtsp());
+        const AstVar* modIfaceVarp = getNextVarp(modp->stmtsp());
         for (const AstPin* pinp = nodep->pinsp(); pinp && modIfaceVarp;
-             pinp = VN_CAST(pinp->nextp(), Pin), modIfaceVarp = getNextVarp(modIfaceVarp)) {
+             pinp = VN_CAST(pinp->nextp(), Pin),
+                           modIfaceVarp = getNextVarp(modIfaceVarp->nextp())) {
             if (modIfaceVarp->varType() != VVarType::IFACEREF
                 || !VN_IS(modIfaceVarp->childDTypep(), IfaceGenericDType)) {
                 continue;
@@ -2828,7 +2828,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                                             ifacep->name());
                     }
                     newIfaceRefp->ifacep(ifacep);
-                    if (refp->cellp() && refp->cellp()->paramsp()) {
+                    if (refp->cellp()->paramsp()) {
                         newIfaceRefp->addParamsp(refp->cellp()->paramsp()->cloneTree(true));
                     }
                     UASSERT_OBJ(pinp->name().find("__pinNumber") == 0
