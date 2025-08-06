@@ -737,8 +737,8 @@ class ParamProcessor final {
                 // integer array and include it in the module name.  Constantify nested
                 // expressions before mangling the value number.
                 V3Const::constifyParamsEdit(pinp->exprp());
-                longnamer += "_" + paramSmallName(srcModp, modvarp)
-                    + paramValueNumber(pinp->exprp());
+                longnamer
+                    += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(pinp->exprp());
                 any_overridesr = true;
             } else {
                 V3Const::constifyParamsEdit(pinp->exprp());
