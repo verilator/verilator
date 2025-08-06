@@ -2785,7 +2785,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         return nullptr;
     }
     static const AstVar* getNextVarp(const AstNode* stmtsp) {
-        if (!stmtsp) return nullptr;
         const AstVar* varp = VN_CAST(stmtsp, Var);
         while (!varp && stmtsp) {
             stmtsp = stmtsp->nextp();
