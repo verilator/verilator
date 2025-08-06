@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # DESCRIPTION: Verilator: Test constant parameter slicing of unpacked arrays (issue #6257)
 #
-# Copyright 2025 by Michael Taylor. This program is free software; you
+# Copyright 2025 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
