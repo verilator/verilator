@@ -154,7 +154,9 @@ private:
     const VNUser3InUse m_user3InUse;
     AstUser1Allocator<AstVar, ForceComponentsVar> m_forceComponentsVar;
     AstUser1Allocator<AstVarScope, ForceComponentsVarScope> m_forceComponentsVarScope;
-    std::unordered_map<const AstVarScope*, std::pair<std::unordered_set<AstVarScope*>, std::vector<AstVarScope*>>> m_valVscps;
+    std::unordered_map<const AstVarScope*,
+                       std::pair<std::unordered_set<AstVarScope*>, std::vector<AstVarScope*>>>
+        m_valVscps;
     // `valVscp` force components of a forced RHS
 
 public:
@@ -181,7 +183,9 @@ public:
 
     // Add a ValVscp for a VarScope
     void addValVscp(AstVarRef* const refp, AstVarScope* const valVscp) {
-        if(m_valVscps[refp->varScopep()].first.find(valVscp)!=m_valVscps[refp->varScopep()].first.end()) return;
+        if (m_valVscps[refp->varScopep()].first.find(valVscp)
+            != m_valVscps[refp->varScopep()].first.end())
+            return;
         m_valVscps[refp->varScopep()].first.emplace(valVscp);
         m_valVscps[refp->varScopep()].second.push_back(valVscp);
     }
@@ -387,7 +391,7 @@ class ForceReplaceVisitor final : public VNVisitor {
                 m_stmtp->addNextHere(new AstAssign{flp, lhsp, rhsp});
             }
             // Emit valVscp update after each write to any VarRef on forced RHS.
-            if(!m_state.getValVscps(nodep)) break;
+            if (!m_state.getValVscps(nodep)) break;
             for (AstVarScope* const valVscp : *m_state.getValVscps(nodep)) {
                 FileLine* const flp = nodep->fileline();
                 AstVarRef* const valp = new AstVarRef{flp, valVscp, VAccess::WRITE};
