@@ -82,8 +82,8 @@ static inline void VL_COV_TOGGLE_CHG_ST_I(const int width, uint32_t* covp, const
     }
 }
 
-static inline void VL_COV_TOGGLE_CHG_ST_Q(const int width, uint32_t* covp, const IData newData,
-                                          const IData oldData) {
+static inline void VL_COV_TOGGLE_CHG_ST_Q(const int width, uint32_t* covp, const QData newData,
+                                          const QData oldData) {
     for (int i = 0; i < width; ++i) {
         *(covp + 2 * i + ((newData >> i) & 1)) += ((newData ^ oldData) >> i) & 1;
     }
@@ -112,7 +112,7 @@ static inline void VL_COV_TOGGLE_CHG_MT_I(const int width, std::atomic<uint32_t>
 }
 
 static inline void VL_COV_TOGGLE_CHG_MT_Q(const int width, std::atomic<uint32_t>* covp,
-                                          const IData newData, const IData oldData) VL_MT_SAFE {
+                                          const QData newData, const QData oldData) VL_MT_SAFE {
     for (int i = 0; i < width; ++i) {
         if (VL_BITISSET_Q((newData ^ oldData), i)) {
             (covp + 2 * i + ((newData >> i) & 1))->fetch_add(1, std::memory_order_relaxed);
