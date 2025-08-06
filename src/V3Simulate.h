@@ -909,7 +909,7 @@ private:
             const uint32_t sliceElements = sliceRange.elements();
             const int sliceLo = sliceRange.lo();
             // Use this node's dtype for the slice array
-            AstNodeDType* dtypep = nodep->dtypep()->skipRefp();
+            AstNodeDType* const dtypep = nodep->dtypep()->skipRefp();
             // Clone the default value from the base array, if present
             AstNodeExpr* defaultp = nullptr;
             if (initp->defaultp()) defaultp = initp->defaultp()->cloneTree(false);
