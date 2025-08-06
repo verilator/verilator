@@ -181,7 +181,7 @@ public:
 
     // Add a ValVscp for a VarScope
     void addValVscp(AstVarRef* const refp, AstVarScope* const valVscp) {
-        m_valVscps[refp->varScopep()].insert(valVscp);
+        m_valVscps[refp->varScopep()].emplace(valVscp);
     }
 
     // METHODS
