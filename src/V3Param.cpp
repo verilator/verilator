@@ -723,6 +723,48 @@ class ParamProcessor final {
     void cellPinCleanup(AstNode* nodep, AstPin* pinp, AstNodeModule* srcModp, string& longnamer,
                         bool& any_overridesr) {
         if (!pinp->exprp()) return;  // No-connect
+        // -- Special-case parameter array slices: convert a SliceSel into a constant InitArray.
+        // Inspect the expression on this pin and, if it is a slice selection from a constant
+        // parameter array, replace it with a new AstInitArray containing the sliced values.
+        auto convertSliceToInitArray = [&]() {
+            AstSliceSel* slicep = VN_CAST(pinp->exprp(), SliceSel);
+            if (!slicep) return;
+            AstVarRef* varRefp = VN_CAST(slicep->fromp(), VarRef);
+            if (!varRefp) return;
+            AstVar* baseVarp = varRefp->varp();
+            if (!baseVarp || !baseVarp->isParam()) return;
+            AstInitArray* baseInitp = VN_CAST(baseVarp->valuep(), InitArray);
+            if (!baseInitp) return;
+            const VNumRange& sliceRange = slicep->declRange();
+            const uint32_t sliceElements = sliceRange.elements();
+            const int sliceLo = sliceRange.lo();
+            //const bool ascending = sliceRange.ascending();
+            const AstUnpackArrayDType* baseArrayDtp = VN_CAST(baseVarp->dtypep()->skipRefp(), UnpackArrayDType);
+
+            if (!baseArrayDtp) return;
+            AstNodeDType* subDTypep = baseArrayDtp->subDTypep();
+                   
+            if (!subDTypep) return;
+
+            AstRange* newRangep = new AstRange{slicep->fileline(), sliceRange};
+            AstUnpackArrayDType* newArrayDtp = new AstUnpackArrayDType{slicep->fileline(), subDTypep, newRangep};
+            v3Global.rootp()->typeTablep()->addTypesp(newArrayDtp);
+            AstNodeExpr* defaultp = nullptr;
+            if (baseInitp->defaultp()) defaultp = baseInitp->defaultp()->cloneTree(false);
+            AstInitArray* newInitp = new AstInitArray{slicep->fileline(), newArrayDtp, defaultp};
+            for (uint32_t idx = 0; idx < sliceElements; ++idx) {
+                uint32_t baseIdx = (sliceLo + idx);
+                AstNodeExpr* itemp = baseInitp->getIndexDefaultedValuep(baseIdx);
+                AstNodeExpr* clonep = itemp ? itemp->cloneTree(false) : nullptr;
+                newInitp->addIndexValuep(idx, clonep);
+            }
+            slicep->replaceWith(newInitp);
+            slicep->deleteTree();
+        };
+
+       // Perform the slice conversion before any further constantification.
+       convertSliceToInitArray();
+        
         if (AstVar* const modvarp = pinp->modVarp()) {
             if (!modvarp->isGParam()) {
                 pinp->v3fatalSrc("Attempted parameter setting of non-parameter: Param "
@@ -732,6 +774,10 @@ class ParamProcessor final {
                 AstNode* const exprp = pinp->exprp();
                 longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
                 any_overridesr = true;
+           } else if (VN_IS(pinp->exprp(), InitArray)) {
+                V3Const::constifyParamsEdit(pinp->exprp());
+                longnamer += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(pinp->exprp());
+                any_overridesr = true;                   
             } else {
                 V3Const::constifyParamsEdit(pinp->exprp());
                 // String constants are parsed as logic arrays and converted to strings in V3Const.
