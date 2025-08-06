@@ -154,7 +154,7 @@ private:
     const VNUser3InUse m_user3InUse;
     AstUser1Allocator<AstVar, ForceComponentsVar> m_forceComponentsVar;
     AstUser1Allocator<AstVarScope, ForceComponentsVarScope> m_forceComponentsVarScope;
-    std::unordered_map<const AstVarScope*, std::vector<AstVarScope*>> m_valVscps;
+    std::unordered_map<const AstVarScope*, std::unordered_set<AstVarScope*>> m_valVscps;
     // `valVscp` force components of a forced RHS
 
 public:
@@ -173,15 +173,15 @@ public:
     static void markNonReplaceable(AstVarRef* const nodep) { nodep->user2SetOnce(); }
 
     // Get all ValVscps for a VarScope
-    std::vector<AstVarScope*> getValVscps(AstVarRef* const refp) const {
+    std::unordered_set<AstVarScope*> getValVscps(AstVarRef* const refp) const {
         auto it = m_valVscps.find(refp->varScopep());
-        if (it != m_valVscps.end()) { return it->second; }
+        if (it != m_valVscps.end()) return it->second;
         return {};
     }
 
     // Add a ValVscp for a VarScope
     void addValVscp(AstVarRef* const refp, AstVarScope* const valVscp) {
-        m_valVscps[refp->varScopep()].push_back(valVscp);
+        m_valVscps[refp->varScopep()].insert(valVscp);
     }
 
     // METHODS
