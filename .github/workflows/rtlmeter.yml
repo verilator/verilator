@@ -9,6 +9,13 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 2 * * *'  # Daily, starting at 02:00 UTC
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
 
 permissions:
   contents: read
@@ -18,14 +25,29 @@ defaults:
     shell: bash
 
 concurrency:
-  group: RTLMeter
-  cancel-in-progress: false
+  group: ${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
+  start:
+    name: Start
+    # Only run scheduled jobs if explicitly enabled for that repo (e.g.: not on forks)
+    # Only run pull request jobs if labelled as needing an RTLMeter run
+    # Always run workflow dispatch jobs
+    if: |
+      (github.event_name == 'schedule'
+        && vars.ENABLE_SCHEDULED_JOBS == 'true') ||
+      (github.event_name == 'pull_request'
+        && contains(github.event.pull_request.labels.*.name, 'pr: rtlmeter')) ||
+      (github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Startup
+        run: echo
+
   build-gcc:
     name: Build GCC
-    # Only run scheduled jobs if explicitly enabled for that repo (e.g.: not on forks)
-    if: ${{ github.event_name != 'schedule' || vars.ENABLE_SCHEDULED_JOBS == 'true' }}
+    needs: start
     uses: ./.github/workflows/reusable-rtlmeter-build.yml
     with:
       runs-on: ubuntu-24.04
@@ -33,8 +55,7 @@ jobs:
 
   build-clang:
     name: Build Clang
-    # Only run scheduled jobs if explicitly enabled for that repo (e.g.: not on forks)
-    if: ${{ github.event_name != 'schedule' || vars.ENABLE_SCHEDULED_JOBS == 'true' }}
+    needs: start
     uses: ./.github/workflows/reusable-rtlmeter-build.yml
     with:
       runs-on: ubuntu-24.04
@@ -53,7 +74,7 @@ jobs:
       executeArgs: ""
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: ${{ github.event == 'schedule' && 2 || 15 }}
       matrix:
         cases:
           - "NVDLA:*"
@@ -94,7 +115,7 @@ jobs:
       executeArgs: ""
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: ${{ github.event == 'schedule' && 2 || 15 }}
       matrix:
         cases:
           - "NVDLA:*"
