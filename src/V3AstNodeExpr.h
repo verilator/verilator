@@ -2465,7 +2465,7 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     int instrCount() const override { return widthInstrs() * 20; }
-    bool isPure() override { return true; }
+    bool isPure() override { return false; }
 };
 class AstCompareNN final : public AstNodeBiop {
     // Verilog str.compare() and str.icompare()
