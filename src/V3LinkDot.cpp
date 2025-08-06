@@ -2847,9 +2847,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                              : "not an interface"));
                 }
             } else {
-                modIfaceVarp->v3error("Interface port "
-                                      << modIfaceVarp->prettyNameQ()
-                                      << " is not connected to interface/modport pin expression");
+                if (exprp) {
+                    exprp->v3error("Expected an interface but " << exprp->prettyNameQ()
+                                                                << " is not an interface");
+                } else {
+                    modIfaceVarp->v3error(
+                        "Interface port "
+                        << modIfaceVarp->prettyNameQ()
+                        << " is not connected to interface/modport pin expression");
+                }
             }
             ++paramNum;
         }
