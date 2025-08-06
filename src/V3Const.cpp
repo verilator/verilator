@@ -2787,6 +2787,18 @@ class ConstVisitor final : public VNVisitor {
         }
         m_selp = nullptr;
     }
+
+    // Evaluate a slice of an unpacked array.  If constantification is
+    // required (m_required=true), call replaceWithSimulation() to compute
+    // the slice via simulation.  Otherwise just iterate the children.
+    void visit(AstSliceSel* nodep) override {
+       // First constify or width any child nodes
+       iterateChildren(nodep);
+       if (!m_required) return;  // Do nothing unless we are in parameter mode
+       // Fallback to simulation: this will invoke SimulateVisitor::visit(AstSliceSel*)
+       replaceWithSimulation(nodep);
+    }
+
     void visit(AstCAwait* nodep) override {
         m_hasJumpDelay = true;
         iterateChildren(nodep);
