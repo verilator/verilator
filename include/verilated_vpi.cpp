@@ -429,7 +429,7 @@ public:
     void createPrevDatap() {
         if (VL_UNLIKELY(!m_prevDatap)) {
             m_prevDatap = new uint8_t[entSize()];
-            std::memcpy(prevDatap(), varp()->datap(), entSize());
+            std::memcpy(prevDatap(), m_varDatap, entSize());
         }
     }
 };
