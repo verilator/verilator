@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2025 by Michael Taylor.
+// without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
 `timescale 1ns/1ps
