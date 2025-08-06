@@ -913,7 +913,7 @@ private:
             // Clone the default value from the base array, if present
             AstNodeExpr* defaultp = nullptr;
             if (initp->defaultp()) defaultp = initp->defaultp()->cloneTree(false);
-            AstInitArray* newInitp = new AstInitArray{nodep->fileline(), dtypep, defaultp};
+            AstInitArray* const newInitp = new AstInitArray{nodep->fileline(), dtypep, defaultp};
             // Copy slice elements in ascending order
             for (uint32_t idx = 0; idx < sliceElements; ++idx) {
                 const uint32_t baseIdx = sliceLo + idx;
