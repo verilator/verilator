@@ -2809,6 +2809,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 continue;
             }
             AstNode* exprp = pinp->exprp();
+            if (!exprp) {
+                modIfaceVarp->v3error("Interface port "
+                                      << modIfaceVarp->prettyNameQ()
+                                      << " is not connected to interface/modport pin expression");
+                continue;
+            }
             while (const AstNodePreSel* const preSelp = VN_CAST(exprp, NodePreSel)) {
                 exprp = preSelp->fromp();
             }
@@ -2847,15 +2853,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                              : "not an interface"));
                 }
             } else {
-                if (exprp) {
-                    exprp->v3error("Expected an interface but " << exprp->prettyNameQ()
-                                                                << " is not an interface");
-                } else {
-                    modIfaceVarp->v3error(
-                        "Interface port "
-                        << modIfaceVarp->prettyNameQ()
-                        << " is not connected to interface/modport pin expression");
-                }
+                exprp->v3error("Expected an interface but " << exprp->prettyNameQ()
+                                                            << " is not an interface");
             }
             ++paramNum;
         }
