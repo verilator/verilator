@@ -173,9 +173,9 @@ public:
     static void markNonReplaceable(AstVarRef* const nodep) { nodep->user2SetOnce(); }
 
     // Get all ValVscps for a VarScope
-    std::unordered_set<AstVarScope*> getValVscps(AstVarRef* const refp) const {
+    const std::unordered_set<AstVarScope*>* getValVscps(AstVarRef* const refp) const {
         auto it = m_valVscps.find(refp->varScopep());
-        if (it != m_valVscps.end()) return it->second;
+        if (it != m_valVscps.end()) return &(it->second);
         return {};
     }
 
@@ -385,7 +385,8 @@ class ForceReplaceVisitor final : public VNVisitor {
                 m_stmtp->addNextHere(new AstAssign{flp, lhsp, rhsp});
             }
             // Emit valVscp update after each write to any VarRef on forced RHS.
-            for (AstVarScope* const valVscp : m_state.getValVscps(nodep)) {
+            if(!m_state.getValVscps(nodep)) break;
+            for (AstVarScope* const valVscp : *m_state.getValVscps(nodep)) {
                 FileLine* const flp = nodep->fileline();
                 AstVarRef* const valp = new AstVarRef{flp, valVscp, VAccess::WRITE};
                 AstNodeExpr* rhsp = m_state.getValVscpRhsExpr(valVscp);
@@ -401,7 +402,7 @@ class ForceReplaceVisitor final : public VNVisitor {
         }
         default:
             if (!m_inLogic) return;
-            if (m_state.tryGetForceComponents(nodep) || !m_state.getValVscps(nodep).empty()) {
+            if (m_state.tryGetForceComponents(nodep) || m_state.getValVscps(nodep)) {
                 nodep->v3error(
                     "Unsupported: Signals used via read-write reference cannot be forced");
             }
