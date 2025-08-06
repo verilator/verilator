@@ -922,7 +922,7 @@ private:
                 if (itemp) clonep = itemp->cloneTree(false);
                 newInitp->addIndexValuep(idx, clonep);
             }
-            // Assign the new constant array and track it for later deletion                                                                                                                                 
+            // Assign the new constant array and track it for later deletion
             setValue(nodep, newInitp);
             m_reclaimValuesp.push_back(newInitp);
         } else {
