@@ -894,6 +894,42 @@ private:
             clearOptimizable(nodep, "Array select of non-array");
         }
     }
+
+    // Evaluate a slice of an unpacked array.  If the base value is a constant                                                                                                                               
+    // AstInitArray, build a new AstInitArray representing the slice and assign                                                                                                                              
+    // it as this node's value.  New index 0 corresponds to the lowest index of                                                                                                                              
+    // the slice.  Otherwise, mark this node as unoptimizable.                                                                                                                                               
+    void visit(AstSliceSel* nodep) override {
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
+        if (m_checkOnly || !optimizable()) return;
+        // Fetch the base constant array                                                                                                                                                                     
+        if (AstInitArray* const initp = VN_CAST(fetchValueNull(nodep->fromp()), InitArray)) {
+            const VNumRange& sliceRange = nodep->declRange();
+            const uint32_t sliceElements = sliceRange.elements();
+            const int sliceLo = sliceRange.lo();
+            // Use this node's dtype for the slice array                                                                                                                                                     
+            AstNodeDType* dtypep = nodep->dtypep()->skipRefp();
+            // Clone the default value from the base array, if present                                                                                                                                       
+            AstNodeExpr* defaultp = nullptr;
+            if (initp->defaultp()) defaultp = initp->defaultp()->cloneTree(false);
+            AstInitArray* newInitp = new AstInitArray{nodep->fileline(), dtypep, defaultp};
+            // Copy slice elements in ascending order                                                                                                                                                        
+            for (uint32_t idx = 0; idx < sliceElements; ++idx) {
+                const uint32_t baseIdx = sliceLo + idx;
+                AstNodeExpr* const itemp = initp->getIndexDefaultedValuep(baseIdx);
+                AstNodeExpr* clonep = nullptr;
+                if (itemp) clonep = itemp->cloneTree(false);
+                newInitp->addIndexValuep(idx, clonep);
+            }
+            // Assign the new constant array and track it for later deletion                                                                                                                                 
+            setValue(nodep, newInitp);
+            m_reclaimValuesp.push_back(newInitp);
+        } else {
+            clearOptimizable(nodep, "Slice select of non-array");
+        }
+    }
+
     void visit(AstBegin* nodep) override {
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
