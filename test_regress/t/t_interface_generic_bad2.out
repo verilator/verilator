@@ -8,9 +8,9 @@
 %Error: t/t_interface_generic_bad2.v:21:32: Found definition of 'inf_inst' as a CELL but expected a variable
    21 |   GenericModule genericModule (inf_inst);
       |                                ^~~~~~~~
-%Error: t/t_interface_generic_bad2.v:11:33: Interface port 'a' is not connected to interface/modport pin expression
-   11 | module GenericModule (interface a);
-      |                                 ^
+%Error: t/t_interface_generic_bad2.v:21:32: Expected an interface but 'inf_inst' is not an interface
+   21 |   GenericModule genericModule (inf_inst);
+      |                                ^~~~~~~~
 %Error: t/t_interface_generic_bad2.v:23:5: Dotted reference to instance that refers to missing module/interface: 'inf'
    23 |     inf_inst.v = 7;
       |     ^~~~~~~~
