@@ -918,9 +918,7 @@ private:
             for (uint32_t idx = 0; idx < sliceElements; ++idx) {
                 const uint32_t baseIdx = sliceLo + idx;
                 AstNodeExpr* const itemp = initp->getIndexDefaultedValuep(baseIdx);
-                AstNodeExpr* clonep = nullptr;
-                if (itemp) clonep = itemp->cloneTree(false);
-                newInitp->addIndexValuep(idx, clonep);
+                if (itemp) newInitp->addIndexValuep(idx, itemp->cloneTree(false));
             }
             // Assign the new constant array and track it for later deletion
             setValue(nodep, newInitp);
