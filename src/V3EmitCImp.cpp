@@ -366,8 +366,8 @@ class EmitCImp final : EmitCFunc {
             puts("std::string fullhier = std::string{VerilatedModule::name()} + hierp;\n");
             puts("if (!fullhier.empty() && fullhier[0] == '.') fullhier = fullhier.substr(1);\n");
             puts("std::string commentWithIndex = commentp;\n");
-            puts("if (ranged) commentWithIndex += '[' + std::to_string(i) + \"]_\" + "
-                 "std::to_string(j);\n");
+            puts("if (ranged) commentWithIndex += '[' + std::to_string(i) + ']';\n");
+            puts("commentWithIndex += '_' + std::to_string(j);\n");
             // Used for second++ instantiation of identical bin
             puts("if (!enable) count32p = &fake_zero_count;\n");
             puts("*count32p = 0;\n");
