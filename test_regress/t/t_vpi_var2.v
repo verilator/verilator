@@ -75,6 +75,7 @@ extern "C" int mon_check();
    real           real1;
    string         str1;
    localparam int nullptr = 123;
+   logic [31:0] some_mem [4] = {0, 0, 0, 432};
 /*verilator public_off*/
 
    sub sub();
