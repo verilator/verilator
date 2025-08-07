@@ -181,6 +181,7 @@ jobs:
           private-key: ${{ secrets.RTLMETER_RESULTS_CI_APP_PRIVATE_KEY }}
           owner: verilator
           repositories: verilator-rtlmeter-results
+          permission-contents: write
       - name: Checkout verilator-rtlmeter-results
         uses: actions/checkout@v4
         with:
@@ -205,3 +206,31 @@ jobs:
           git add .
           git commit -m "Verilator CI: Results of 'RTLMeter' workflow run #${{ github.run_number }}"
           git push origin
+
+  # Create GitHub issue for failed schedueld jobs
+  # This should always be the last job (we want an issue if anything breaks)
+  create-issue:
+    name: Create issue on failure
+    needs: publish-results
+    if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && !cancelled() }}
+    runs-on: ubuntu-24.04
+    steps:
+      # Creating issues requires elevated privilege
+      - name: Generate access token
+        id: generate-token
+        uses: actions/create-github-app-token@v2.0.6
+        with:
+          app-id: ${{ vars.RTLMETER_RESULTS_CI_APP_ID }}
+          private-key: ${{ secrets.RTLMETER_RESULTS_CI_APP_PRIVATE_KEY }}
+          owner: verilator
+          repositories: verilator
+          permission-issues: write
+      - name: Create issue
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          gh issue --repo ${{ github.repository }} create \
+            --title "Testing - RTLMeter run #${{ github.run_number}} Failed" \
+            --body "See ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --label new \
+            --assignee gezalore,wsnyder
