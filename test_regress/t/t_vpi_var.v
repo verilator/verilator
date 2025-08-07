@@ -59,6 +59,8 @@ extern "C" int mon_check();
    // keyword collision
    localparam int nullptr        /*verilator public */ = 123;
 
+   logic [31:0] some_mem [4] /* verilator public_flat_rd */ = {0, 0, 0, 432};
+
    sub sub();
 
    // Test loop

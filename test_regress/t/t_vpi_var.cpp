@@ -156,6 +156,12 @@ int _value_callback_quad(p_cb_data cb_data) {
     return 0;
 }
 
+int _value_callback_never(p_cb_data cb_data) {
+    printf("%%Error: callback should never be called\n");
+    exit(-1);
+    return 0;
+}
+
 int _mon_check_value_callbacks() {
     s_vpi_value v;
     v.format = vpiIntVal;
@@ -206,6 +212,18 @@ int _mon_check_value_callbacks() {
 
         cb_data.obj = vh2;
         cb_data.cb_rtn = _value_callback_quad;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("some_mem");
+        CHECK_RESULT_NZ(vh1);
+        TestVpiHandle vh2 = vpi_handle_by_index(vh1, 3);
+        CHECK_RESULT_NZ(vh2);
+
+        cb_data.obj = vh2;
+        cb_data.cb_rtn = _value_callback_never;
 
         TestVpiHandle callback_h = vpi_register_cb(&cb_data);
         CHECK_RESULT_NZ(callback_h);
