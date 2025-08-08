@@ -104,7 +104,6 @@ public:
         = false;  // Standalone ID is a tf_identifier instead of port_identifier
     bool m_modportImpExpLastIsExport
         = false;  // Last import_export statement in modportPortsDecl is an export
-    bool m_genericIfaceModule = false;  // If current module contains generic interface
 
     int m_pinNum = -1;  // Pin number currently parsing
     std::stack<int> m_pinStack;  // Queue of pin numbers being parsed
@@ -299,7 +298,6 @@ public:
 
     void createGenericIface(AstNode* const nodep, AstNodeRange* const rangep,
         AstNode* sigAttrListp, FileLine* const modportFileline = nullptr, const string& modportstrp = "") {
-        m_genericIfaceModule = true;
         m_varDecl = VVarType::GPARAM;
         m_varIO = VDirection::NONE;
         setDType(new AstParseTypeDType{nodep->fileline(), VFwdType::GENERIC_INTERFACE});
@@ -1400,10 +1398,6 @@ module_declaration:             // ==IEEE: module_declaration
         /*cont*/    module_itemListE yENDMODULE endLabelE
                         { $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
                           $1->hasParameterList($<flag>2);
-                          if (GRAMMARP->m_genericIfaceModule) {
-                            VN_AS($1, Module)->hasGenericIface(true);
-                            GRAMMARP->m_genericIfaceModule = false;
-                          }
                           if ($2) $1->addStmtsp($2);
                           if ($3) $1->addStmtsp($3);
                           if ($5) $1->addStmtsp($5);
