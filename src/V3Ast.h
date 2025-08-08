@@ -292,7 +292,7 @@ public:
     enum en m_e;
     const char* ascii() const {
         static const char* const names[]
-            = {"none", "enum", "struct", "union", "class", "interface class"};
+            = {"none", "enum", "struct", "union", "class", "interface class", "generic interface"};
         return names[m_e];
     }
     VFwdType()

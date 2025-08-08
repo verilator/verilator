@@ -891,12 +891,11 @@ class ParamProcessor final {
 
     // Set interfaces types inside generic modules
     // to the corresponding values of implicit parameters
-    static void genericInterfaceVarSetup(const AstPin* const paramsp, const AstPin* const pinsp) {
+    void genericInterfaceVarSetup(const AstPin* const paramsp, const AstPin* const pinsp) {
         std::unordered_map<string, const AstPin*> paramspMap;
         for (const AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             if (pinp->name().find("__VGIfaceParam") == 0) {
-                // 14 is a length of "__VGIfaceParam"
-                paramspMap.insert({pinp->name().substr(14), pinp});
+                paramspMap.insert({pinp->name().substr(std::strlen("__VGIfaceParam")), pinp});
             }
         }
 
@@ -914,13 +913,13 @@ class ParamProcessor final {
                         paramspMap.erase(iter);
                         const AstIfaceRefDType* const ifacerefp
                             = VN_AS(paramp->exprp(), IfaceRefDType);
-                        AstIfaceRefDType* const newIfacerefp = new AstIfaceRefDType(
+                        AstIfaceRefDType* const newIfacerefp = new AstIfaceRefDType{
                             ifaceGDTypep->fileline(), ifaceGDTypep->modportFileline(),
                             ifaceGDTypep->name(), ifacerefp->ifaceName(),
-                            ifaceGDTypep->modportName());
+                            ifaceGDTypep->modportName()};
                         newIfacerefp->ifacep(ifacerefp->ifacep());
                         varp->childDTypep(newIfacerefp);
-                        ifaceGDTypep->deleteTree();
+                        VL_DO_DANGLING(m_deleter.pushDeletep(ifaceGDTypep), ifaceGDTypep);
                         if (paramspMap.empty()) return;
                     }
                 }

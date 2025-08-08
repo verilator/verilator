@@ -296,6 +296,24 @@ public:
             forkp->addInitsp(varp);
         }
     }
+
+    void createGenericIface(AstNode* const nodep, AstNodeRange* const rangep,
+        AstNode* sigAttrListp, FileLine* const modportFileline = nullptr, const string& modportstrp = "") {
+        m_genericIfaceModule = true;
+        m_varDecl = VVarType::GPARAM;
+        m_varIO = VDirection::NONE;
+        setDType(new AstParseTypeDType{nodep->fileline(), VFwdType::GENERIC_INTERFACE});
+        m_varDeclTyped = true;
+        const std::string uniqueName = "__VGIfaceParam" + nodep->name();
+        AstNode::addNext(nodep, createVariable(nodep->fileline(), uniqueName, rangep, sigAttrListp));
+        m_varDecl = VVarType::IFACEREF;
+        AstIfaceGenericDType* const refdtypep = new AstIfaceGenericDType{nodep->fileline(), modportFileline, modportstrp};
+        setDType(refdtypep);
+        m_varDeclTyped = true;
+        m_varIO = VDirection::INPUT;
+        AstNode::addNext(nodep, createVariable(nodep->fileline(), nodep->name(), rangep, sigAttrListp));
+        m_varDecl = VVarType::VAR;
+    }
 };
 
 const VBasicDTypeKwd LOGIC = VBasicDTypeKwd::LOGIC;  // Shorthand "LOGIC"
@@ -1566,34 +1584,9 @@ port<nodep>:                    // ==IEEE: port
                           VARDTYPE(dtp); VARIOANSI();
                           addNextNull($$, VARDONEP($$, $6, $7)); }
         |       portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
-                        { $$ = $3;
-                          GRAMMARP->m_genericIfaceModule = true;
-                          VARDECL(GPARAM); VARIO(NONE);
-                          VARDTYPE(new AstParseTypeDType($<fl>2, VFwdType::GENERIC_INTERFACE));
-                          std::string uniqueName = "__VGIfaceParam" + $$->name();
-                          addNextNull($$, VARDONEA($$->fileline(), uniqueName, $4, $5));
-                          VARDECL(IFACEREF);
-                          GRAMMARP->m_pinNum = PINNUMINC();
-                          AstIfaceGenericDType* const refdtypep = new AstIfaceGenericDType($<fl>2);
-                          VARDTYPE(refdtypep); VARIOANSI();
-                          addNextNull($$, VARDONEP($$, $4, $5));
-                          VARDECL(VAR);
-                        }
+                        { $$ = $3; GRAMMARP->createGenericIface($3, $4, $5); }
         |       portDirNetE yINTERFACE      '.' idAny/*modport*/ portSig rangeListE sigAttrListE
-                        {
-                          $$ = $5;
-                          GRAMMARP->m_genericIfaceModule = true;
-                          VARDECL(GPARAM); VARIO(NONE);
-                          VARDTYPE(new AstParseTypeDType($<fl>2, VFwdType::GENERIC_INTERFACE));
-                          std::string uniqueName = "__VGIfaceParam" + $$->name();
-                          addNextNull($$, VARDONEA($$->fileline(), uniqueName, $6, $7));
-                          VARDECL(IFACEREF);
-                          GRAMMARP->m_pinNum = PINNUMINC();
-                          AstIfaceGenericDType* const refdtypep = new AstIfaceGenericDType($<fl>2, $<fl>4, *$4);
-                          VARDTYPE(refdtypep); VARIOANSI();
-                          addNextNull($$, VARDONEP($$, $6, $7));
-                          VARDECL(VAR);
-                        }
+                        { $$ = $5; GRAMMARP->createGenericIface($5, $6, $7, $<fl>4, *$4); }
         //
         |       portDirNetE yINTERCONNECT signingE rangeListE portSig variable_dimensionListE sigAttrListE
                         { $$ = $5;

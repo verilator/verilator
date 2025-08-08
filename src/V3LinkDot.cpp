@@ -2784,12 +2784,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         return nullptr;
     }
     static const AstVar* getNextVarp(const AstNode* stmtsp) {
-        const AstVar* varp = VN_CAST(stmtsp, Var);
-        while (!varp && stmtsp) {
+        while (stmtsp) {
+            if (const AstVar* const varp = VN_CAST(stmtsp, Var)) return varp;
             stmtsp = stmtsp->nextp();
-            varp = VN_CAST(stmtsp, Var);
         }
-        return varp;
+        return nullptr;
     }
     // Introduce implicit parameters for modules with generic interafeces
     void addImplicitParametersOfGenericIface(AstCell* const nodep, const AstModule* const modp) {
