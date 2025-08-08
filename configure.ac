@@ -477,6 +477,7 @@ m4_foreach([cflag],[
         [-Wno-bool-operation],
         [-Wno-c++11-narrowing],
         [-Wno-constant-logical-operand],
+        [-Wno-int-in-bool-context],
         [-Wno-non-pod-varargs],
         [-Wno-parentheses-equality],
         [-Wno-shadow],
