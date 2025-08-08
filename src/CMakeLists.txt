@@ -108,6 +108,7 @@ set(HEADERS
     V3Hash.h
     V3Hasher.h
     V3HierBlock.h
+    V3HierBlockCost.h
     V3Inline.h
     V3Inst.h
     V3InstrCount.h
@@ -272,6 +273,7 @@ set(COMMON_SOURCES
     V3Hash.cpp
     V3Hasher.cpp
     V3HierBlock.cpp
+    V3HierBlockCost.cpp
     V3Inline.cpp
     V3Inst.cpp
     V3InstrCount.cpp
