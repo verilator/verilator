@@ -4524,6 +4524,7 @@ public:
     void isImplicit(bool flag) { m_isImplicit = flag; }
     bool isScoped() const { return m_isScoped; }
     void isScoped(bool flag) { m_isScoped = flag; }
+    bool isPure() override { return false; }
 };
 class AstTaskRef final : public AstNodeFTaskRef {
     // A reference to a task

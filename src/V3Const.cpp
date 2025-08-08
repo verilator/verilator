@@ -3241,10 +3241,16 @@ class ConstVisitor final : public VNVisitor {
             } else if (!AstNode::afterCommentp(nodep->thensp())
                        && !AstNode::afterCommentp(nodep->elsesp())) {
                 if (!nodep->condp()->isPure()) {
-                    // Condition has side effect - leave - perhaps in
-                    // future simplify to remove all but side effect terms
+                    // Condition has side effect - leave, but don't need return value
+                    UINFO(4, "IF({x}) ; => STMTEXPR({x}): " << nodep);
+                    nodep->fileline()->warnOff(V3ErrorCode::IGNOREDRETURN, true);
+                    AstNodeStmt* const newp
+                        = new AstStmtExpr{nodep->fileline(), nodep->condp()->unlinkFrBack()};
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 } else {
                     // Empty block, remove it
+                    UINFO(4, "IF({x}) ; => ; : " << nodep);
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 }
             } else if (!AstNode::afterCommentp(nodep->thensp())) {
@@ -3498,6 +3504,8 @@ class ConstVisitor final : public VNVisitor {
         }
         // TODO if there's an ExprStmt underneath just keep lower statements
         // (No current test case needs this)
+        // TODO if non-pure, can remove keep removing upper pure-itself
+        // NodeUniOp/NodeBiOp until get to the non-pure child-node expression
     }
 
     // Simplify

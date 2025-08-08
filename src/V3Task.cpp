@@ -1510,7 +1510,8 @@ class TaskVisitor final : public VNVisitor {
             VIsCached::clearCacheTree();
         } else {  // VN_IS(nodep->backp(), StmtExpr)
             insertBeforeStmt(nodep, beginp);
-            if (nodep->taskp()->isFunction()) {
+            if (nodep->taskp()->isFunction()
+                && !nodep->backp()->fileline()->warnIsOff(V3ErrorCode::IGNOREDRETURN)) {
                 nodep->v3warn(
                     IGNOREDRETURN,
                     "Ignoring return value of non-void function (IEEE 1800-2023 13.4.1)");

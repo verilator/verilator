@@ -7,7 +7,7 @@
 typedef class Derived;
 class Base;
   function Derived cast();
-    if ($cast(cast,this)) begin end
+    if (!$cast(cast, this)) begin end
   endfunction
 endclass
 

@@ -241,7 +241,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     methodHardp->v3fatalSrc("Unknown rand_mode() receiver");
                 }
             }
-            if (!nodep->pinsp() && VN_IS(nodep->backp(), StmtExpr)) {
+            if (!nodep->pinsp() && VN_IS(nodep->backp(), StmtExpr)
+                && !nodep->backp()->fileline()->warnIsOff(V3ErrorCode::IGNOREDRETURN)) {
                 nodep->v3warn(
                     IGNOREDRETURN,
                     "Ignoring return value of non-void function (IEEE 1800-2023 13.4.1)");
@@ -302,7 +303,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 nodep->v3error(
                     "'constraint_mode()' with arguments cannot be called as a function");
                 valid = false;
-            } else if (!nodep->pinsp() && VN_IS(nodep->backp(), StmtExpr)) {
+            } else if (!nodep->pinsp() && VN_IS(nodep->backp(), StmtExpr)
+                       && !nodep->backp()->fileline()->warnIsOff(V3ErrorCode::IGNOREDRETURN)) {
                 nodep->v3warn(
                     IGNOREDRETURN,
                     "Ignoring return value of non-void function (IEEE 1800-2023 13.4.1)");
