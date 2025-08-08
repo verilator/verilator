@@ -2565,6 +2565,10 @@ void AstVoidDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "void";
 }
+void AstIfaceGenericDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "generic_interface";
+}
 void AstStreamDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "stream";

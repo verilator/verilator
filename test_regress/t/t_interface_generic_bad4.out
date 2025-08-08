@@ -1,0 +1,5 @@
+%Error: t/t_interface_generic_bad4.v:26:32: Generic interfaces can only connect to an interface and 'inf_inst' is of type 'int'
+   26 |   GenericModule genericModule (inf_inst, inf_inst2);
+      |                                ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
