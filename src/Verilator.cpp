@@ -260,7 +260,6 @@ static void process() {
             // Remove cell arrays (must be between V3Width and scoping)
             V3Inst::dearrayAll(v3Global.rootp());
             V3LinkDot::linkDotArrayed(v3Global.rootp());
-            V3Error::abortIfErrors();
 
             if (v3Global.opt.timing().isSetTrue()) {
                 // Generate classes and tasks required to maintain proper lifetimes for references
