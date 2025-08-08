@@ -1028,8 +1028,8 @@
          "childDTypep": [
           {"type":"BASICDTYPE","name":"string","addr":"(KQ)","loc":"d,231:35,231:41","dtypep":"(KQ)","keyword":"string","generic":false,"rangep": []}
         ],"delayp": [],"valuep": [],"attrsp": []},
-        {"type":"SYSFUNCASTASK","name":"","addr":"(LQ)","loc":"d,232:10,232:18",
-         "lhsp": [
+        {"type":"STMTEXPR","name":"","addr":"(LQ)","loc":"d,232:10,232:18",
+         "exprp": [
           {"type":"RAND","name":"","addr":"(MQ)","loc":"d,232:10,232:18","dtypep":"UNLINKED",
            "seedp": [
             {"type":"DOT","name":"","addr":"(NQ)","loc":"d,232:20,232:21","dtypep":"UNLINKED","colon":false,

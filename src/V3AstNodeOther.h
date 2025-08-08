@@ -3522,24 +3522,6 @@ public:
     string emitVerilog() const { return m_isFatal ? "$fatal" : "$stop"; }
     bool isFatal() const { return m_isFatal; }
 };
-class AstSysFuncAsTask final : public AstNodeStmt {
-    // TODO: This is superseded by AstStmtExpr, remove
-    // Call what is normally a system function (with a return) in a non-return context
-    // @astgen op1 := lhsp : AstNodeExpr
-public:
-    AstSysFuncAsTask(FileLine* fl, AstNodeExpr* lhsp)
-        : ASTGEN_SUPER_SysFuncAsTask(fl) {
-        this->lhsp(lhsp);
-    }
-    ASTGEN_MEMBERS_AstSysFuncAsTask;
-    string verilogKwd() const override { return ""; }
-    bool isGateOptimizable() const override { return true; }
-    bool isPredictOptimizable() const override { return true; }
-    bool isPure() override { return true; }
-    bool isOutputter() override { return false; }
-    int instrCount() const override { return 0; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
-};
 class AstSystemT final : public AstNodeStmt {
     // $system used as task
     // @astgen op1 := lhsp : AstNodeExpr

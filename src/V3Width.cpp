@@ -1432,6 +1432,11 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstStmtExpr* nodep) override {
+        assertAtStatement(nodep);
+        userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
+    }
+
     void visit(AstImplication* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->lhsp(), BOTH);
@@ -4193,16 +4198,12 @@ class WidthVisitor final : public VNVisitor {
                     nodep->dtypeFrom(ftaskp);
                     nodep->classOrPackagep(classp);
                     if (VN_IS(ftaskp, Task)) {
-                        if (!m_vup) {
-                            nodep->dtypeSetVoid();
-                        } else {
-                            if (m_vup->prelim()) {
-                                nodep->v3error(
-                                    "Cannot call a task/void-function as a member function: "
-                                    << nodep->prettyNameQ());
-                            }
-                            nodep->dtypeSetVoid();
+                        if (m_vup && m_vup->prelim() && !VN_IS(nodep->backp(), StmtExpr)) {
+                            nodep->v3error(
+                                "Cannot call a task/void-function as a member function: "
+                                << nodep->prettyNameQ());
                         }
+                        nodep->dtypeSetVoid();
                     }
                     if (withp) nodep->addPinsp(withp);
                     processFTaskRefArgs(nodep);
@@ -5766,10 +5767,6 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetSigned32();  // Spec says integer return
         }
     }
-    void visit(AstSysFuncAsTask* nodep) override {
-        assertAtStatement(nodep);
-        userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
-    }
     void visit(AstSystemT* nodep) override {
         assertAtStatement(nodep);
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
@@ -6143,7 +6140,7 @@ class WidthVisitor final : public VNVisitor {
         visit(static_cast<AstNodeFTaskRef*>(nodep));
         if (nodep->taskp() && VN_IS(nodep->taskp(), Task)) {
             UASSERT_OBJ(m_vup, nodep, "Function reference where widthed expression expection");
-            if (m_vup->prelim())
+            if (m_vup->prelim() && !VN_IS(nodep->backp(), StmtExpr))
                 nodep->v3error(
                     "Cannot call a task/void-function as a function: " << nodep->prettyNameQ());
             nodep->dtypeSetVoid();

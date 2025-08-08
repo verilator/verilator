@@ -1044,11 +1044,6 @@ public:
         }
         puts(")");
     }
-    void visit(AstSysFuncAsTask* nodep) override {
-        if (!nodep->lhsp()->isWide()) putns(nodep, "(void)");
-        iterateAndNextConstNull(nodep->lhsp());
-        if (!nodep->lhsp()->isWide()) putns(nodep, ";\n");
-    }
     void visit(AstStackTraceF* nodep) override { putns(nodep, "VL_STACKTRACE_N()"); }
     void visit(AstStackTraceT* nodep) override { putns(nodep, "VL_STACKTRACE();\n"); }
     void visit(AstSystemT* nodep) override {
@@ -1076,7 +1071,11 @@ public:
         puts(")");
     }
     void visit(AstStmtExpr* nodep) override {
-        putns(nodep, "");
+        if (VN_IS(nodep->exprp()->dtypep()->skipRefp(), VoidDType)) {
+            putns(nodep, "");
+        } else {
+            putns(nodep, "(void)");  // Prevent unused expression warning in C
+        }
         iterateConst(nodep->exprp());
         puts(";\n");
     }

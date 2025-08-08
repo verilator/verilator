@@ -344,10 +344,6 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         puts(");\n");
     }
-    void visit(AstSysFuncAsTask* nodep) override {
-        iterateAndNextConstNull(nodep->lhsp());
-        puts(";\n");
-    }
     void visit(AstSysIgnore* nodep) override {
         putfs(nodep, nodep->verilogKwd());
         putbs("(");

@@ -4430,7 +4430,7 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
                                                       nullptr, nullptr}; }
         //
         // Any system function as a task
-        |       system_f_call_or_t                      { $$ = new AstSysFuncAsTask{$<fl>1, $1}; }
+        |       system_f_call_or_t                      { $$ = new AstStmtExpr{$<fl>1, $1}; }
         ;
 
 system_f_call<nodeExprp>:           // IEEE: system_tf_call (as func)
