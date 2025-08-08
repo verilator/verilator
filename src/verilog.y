@@ -297,19 +297,23 @@ public:
     }
 
     void createGenericIface(AstNode* const nodep, AstNodeRange* const rangep,
-        AstNode* sigAttrListp, FileLine* const modportFileline = nullptr, const string& modportstrp = "") {
+                            AstNode* sigAttrListp, FileLine* const modportFileline = nullptr,
+                            const string& modportstrp = "") {
         m_varDecl = VVarType::GPARAM;
         m_varIO = VDirection::NONE;
         setDType(new AstParseTypeDType{nodep->fileline(), VFwdType::GENERIC_INTERFACE});
         m_varDeclTyped = true;
         const std::string uniqueName = "__VGIfaceParam" + nodep->name();
-        AstNode::addNext(nodep, createVariable(nodep->fileline(), uniqueName, rangep, sigAttrListp));
+        AstNode::addNext(nodep,
+                         createVariable(nodep->fileline(), uniqueName, rangep, sigAttrListp));
         m_varDecl = VVarType::IFACEREF;
-        AstIfaceGenericDType* const refdtypep = new AstIfaceGenericDType{nodep->fileline(), modportFileline, modportstrp};
+        AstIfaceGenericDType* const refdtypep
+            = new AstIfaceGenericDType{nodep->fileline(), modportFileline, modportstrp};
         setDType(refdtypep);
         m_varDeclTyped = true;
         m_varIO = VDirection::INPUT;
-        AstNode::addNext(nodep, createVariable(nodep->fileline(), nodep->name(), rangep, sigAttrListp));
+        AstNode::addNext(nodep,
+                         createVariable(nodep->fileline(), nodep->name(), rangep, sigAttrListp));
         m_varDecl = VVarType::VAR;
     }
 };
