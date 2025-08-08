@@ -190,11 +190,11 @@ class DescopeVisitor final : public VNVisitor {
                 }
                 // Not really any way the user could do this, and we'd need
                 // to come up with some return value
-                // newfuncp->addStmtsp(new AstDisplay(newfuncp->fileline(),
+                // newfuncp->addStmtsp(new AstDisplay{newfuncp->fileline(),
                 //                                   VDisplayType::DT_WARNING,
                 //                                   "%%Error: "s+name+"() called with bad
-                //                                   scope", nullptr));
-                // newfuncp->addStmtsp(new AstStop(newfuncp->fileline()));
+                //                                   scope", nullptr});
+                // newfuncp->addStmtsp(new AstStop{newfuncp->fileline()});
                 UINFOTREE(9, newfuncp, "", "newfunc");
             } else {
                 // Only a single function under this name, we can rename it

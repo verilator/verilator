@@ -238,7 +238,7 @@ public:
         return strp;
     }
     string* newString(const char* text, size_t length) {
-        string* const strp = new string(text, length);
+        string* const strp = new string(text, length);  // Need () constructor
         m_stringps.push_back(strp);
         return strp;
     }

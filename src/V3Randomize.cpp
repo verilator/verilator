@@ -1205,7 +1205,7 @@ class CaptureVisitor final : public VNVisitor {
         thisRefp->user1(true);
         m_ignore.emplace(thisRefp);
         AstMemberSel* const memberSelp
-            = new AstMemberSel(nodep->fileline(), thisRefp, nodep->varp());
+            = new AstMemberSel{nodep->fileline(), thisRefp, nodep->varp()};
         memberSelp->user2p(m_targetp);
         nodep->replaceWith(memberSelp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -1259,7 +1259,7 @@ class CaptureVisitor final : public VNVisitor {
             return;
         }
         AstVarRef* const varRefp
-            = new AstVarRef(nodep->fileline(), nodep->varp(), nodep->access());
+            = new AstVarRef{nodep->fileline(), nodep->varp(), nodep->access()};
         fixupClassOrPackage(nodep->varp(), varRefp);
         varRefp->user1(nodep->user1());
         nodep->replaceWith(varRefp);

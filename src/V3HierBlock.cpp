@@ -292,8 +292,8 @@ void V3HierBlock::writeParametersFile() const {
     *of << "module " << moduleName << ";\n";
     for (AstParamTypeDType* const gparam : m_params.gTypeParams()) {
         AstTypedef* tdefp
-            = new AstTypedef(new FileLine{FileLine::builtInFilename()}, gparam->name(), nullptr,
-                             VFlagChildDType{}, gparam->skipRefp()->cloneTreePure(true));
+            = new AstTypedef{new FileLine{FileLine::builtInFilename()}, gparam->name(), nullptr,
+                             VFlagChildDType{}, gparam->skipRefp()->cloneTreePure(true)};
         V3EmitV::verilogForTree(tdefp, *of);
         VL_DO_DANGLING(tdefp->deleteTree(), tdefp);
     }

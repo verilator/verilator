@@ -27,6 +27,7 @@ def get_source_files(root):
 
 
 def check_pattern(filename, contents, pattern, not_pattern, message):
+    # Pattern uses match, so must include skipping leading whitespace if necessary
     lineno = 0
     buffer = "\n"
     for line in contents.splitlines():
@@ -36,9 +37,10 @@ def check_pattern(filename, contents, pattern, not_pattern, message):
             # Build a buffer until a newline so we check a block at a time.
             buffer += line + "\n"
             continue
-        if re.search(r"\n" + pattern, buffer):
+        m = re.search(r"\n" + pattern, buffer)
+        if m:
             if not not_pattern or not re.search(not_pattern, buffer):
-                test.error(filename + ":" + str(lineno) + ": " + message)
+                test.error_keep_going(filename + ":" + str(lineno) + ": " + message + m.group(0))
         buffer = "\n"
 
 
@@ -58,20 +60,28 @@ for filename in sorted(files.keys()):
 
     contents = test.file_contents(filename) + "\n\n"
 
-    check_pattern(filename, contents, r"[^\']*virtual[^{};\n]+override", None,
+    check_pattern(filename, contents, r"[^\']*virtual[^{};\n]+override[^\n]*", None,
                   "'virtual' keyword is redundant on 'override' method")
 
     check_pattern(filename, contents,
-                  r'    \s*(\w+ )*\s*(inline) [^;]+?\([^;]*?\)[^;]+?(?:{|:|=\s*default)', None,
-                  "'inline' keyword is redundant on method definitions inside classes")
+                  r'    \s*(\w+ )*\s*(inline) [^;]+?\([^;]*?\)[^;]+?(?:{|:|=\s*default[^\n]*)',
+                  None, "'inline' keyword is redundant on method definitions inside classes")
 
     check_pattern(
-        filename, contents, r'inline \S+ [^;:(]+::[^;:(]+\([^;]*\)[^;]+{', r'template',
+        filename, contents, r'\s*inline \S+ [^;:(]+::[^;:(]+\([^;]*\)[^;]+{[^\n]*', r'template',
         "Use 'inline' only on declaration inside classes"
         " (except for template specializations)")
 
+    check_pattern(
+        filename,
+        contents,
+        r'.*[( ]new [a-zA-Z0-9]+\([^\n]*',
+        # Ignore common ok narrowing conversions, on int vs uint32_t arguments
+        r'(Need \(\) constructor|new AstArraySel|new AstConst|new AstRange)',
+        "Use brace instead of parenthesis-style constructors e.g. 'new ...{...}'")
+
     if re.search(r'\.(c|cpp)', filename):
-        check_pattern(filename, contents, r'(\w+\s+)*(inline)', None,
+        check_pattern(filename, contents, r'(\w+\s+)*(inline)[^\n]*', None,
                       "'inline' keyword is on functions defined in .cpp files")
 
 test.passes()

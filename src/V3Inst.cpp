@@ -550,7 +550,7 @@ private:
                             VAccess::READ};
                         rhsp->dtypep(rhsarrp->subDTypep()->skipRefp());
                         rhsp->classOrPackagep(rhsrefp->classOrPackagep());
-                        AstAssign* const assignp = new AstAssign(nodep->fileline(), lhsp, rhsp);
+                        AstAssign* const assignp = new AstAssign{nodep->fileline(), lhsp, rhsp};
                         nodep->addNextHere(assignp);
                     }
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);

@@ -310,7 +310,7 @@ public:
             delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
             return nullptr;
         }
-        VerilatedRange* const rangep = new VerilatedRange(*m_iter);
+        VerilatedRange* const rangep = new VerilatedRange{*m_iter};
         ++m_iter;
         return ((new VerilatedVpioRange{rangep})->castVpiHandle());
     }

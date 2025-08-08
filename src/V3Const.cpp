@@ -2116,7 +2116,7 @@ class ConstVisitor final : public VNVisitor {
                     = new AstVarRef{rhsp->fileline(), tempPurep, VAccess::WRITE};
                 AstNodeAssign* const asnp
                     = VN_IS(nodep, AssignDly)
-                          ? new AstAssign(nodep->fileline(), tempPureRefp, rhsp)
+                          ? new AstAssign{nodep->fileline(), tempPureRefp, rhsp}
                           : nodep->cloneType(tempPureRefp, rhsp);
                 nodep->addHereThisAsNext(asnp);
                 nodep->rhsp(new AstVarRef{rhsp->fileline(), tempPurep, VAccess::READ});
