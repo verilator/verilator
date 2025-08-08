@@ -250,8 +250,11 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
+          echo "This issue was created automatically by the GitHub Actions CI due to the failure of a scheduled RTLMeter run." >> body.txt
+          echo "" >> body.txt
+          echo "Workflow status: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> body.txt
           gh issue --repo ${{ github.repository }} create \
             --title "RTLMeter run #${{ github.run_number }} Failed" \
-            --body "See ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --body-file body.txt \
             --label new \
             --assignee gezalore,wsnyder
