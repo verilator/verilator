@@ -50,15 +50,15 @@
                       t/t_dfg_multidriver_dfg_bad.v:31:14: ... Location of first driver
    31 |     assign v = j;
       |              ^
-                      t/t_dfg_multidriver_dfg_bad.v:32:17: ... Location of other driver
+                      t/t_dfg_multidriver_dfg_bad.v:32:13: ... Location of other driver
    32 |     assign v[1] = i;
-      |                 ^
+      |             ^
                       t/t_dfg_multidriver_dfg_bad.v:30:18: ... Only the first driver will be respected
 %Warning-MULTIDRIVEN: t/t_dfg_multidriver_dfg_bad.v:34:18: Elements [0:0] of signal 'w' have multiple combinational drivers
                                                          : ... note: In instance 't'
-                      t/t_dfg_multidriver_dfg_bad.v:35:17: ... Location of first driver
+                      t/t_dfg_multidriver_dfg_bad.v:35:13: ... Location of first driver
    35 |     assign w[0] = i;
-      |                 ^
+      |             ^
                       t/t_dfg_multidriver_dfg_bad.v:36:14: ... Location of other driver
    36 |     assign w = j;
       |              ^

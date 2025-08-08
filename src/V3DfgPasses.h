@@ -33,10 +33,10 @@ namespace V3DfgPasses {
 // Construct a DfGGraph representing the combinational logic in the given AstModule. The logic
 // that is represented by the graph is removed from the given AstModule. Returns the
 // constructed DfgGraph.
-DfgGraph* astToDfg(AstModule&, V3DfgContext&) VL_MT_DISABLED;
+std::unique_ptr<DfgGraph> astToDfg(AstModule&, V3DfgContext&) VL_MT_DISABLED;
 
 // Same as above, but for the entire netlist, after V3Scope
-DfgGraph* astToDfg(AstNetlist&, V3DfgContext&) VL_MT_DISABLED;
+std::unique_ptr<DfgGraph> astToDfg(AstNetlist&, V3DfgContext&) VL_MT_DISABLED;
 
 // Attempt to make the given cyclic graph into an acyclic, or "less cyclic"
 // equivalent. If the returned pointer is null, then no improvement was

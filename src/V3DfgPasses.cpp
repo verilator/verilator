@@ -139,6 +139,11 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
         vtxp->unlinkDelete(dfg);
     }
 
+    // Remove unused and undriven variable vertices
+    for (DfgVertexVar* const vtxp : dfg.varVertices().unlinkable()) {
+        if (!vtxp->hasSinks() && !vtxp->srcp()) VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
+    }
+
     // Finally remove unused constants
     for (DfgConst* const vtxp : dfg.constVertices().unlinkable()) {
         if (!vtxp->hasSinks()) VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);

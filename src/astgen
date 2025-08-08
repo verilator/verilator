@@ -1250,6 +1250,9 @@ def write_dfg_ast_to_dfg(filename):
                 continue
 
             fh.write("void visit(Ast{t}* nodep) override {{\n".format(t=node.name))
+            fh.write(
+                '    UASSERT_OBJ(m_converting, nodep, "AstToDfg visit called without m_converting");\n'
+            )
             fh.write('    UASSERT_OBJ(!nodep->user2p(), nodep, "Already has Dfg vertex");\n\n')
             fh.write("    if (unhandled(nodep)) return;\n\n")
             for i in range(node.arity):
@@ -1259,8 +1262,8 @@ def write_dfg_ast_to_dfg(filename):
                     '    UASSERT_OBJ(nodep->op{j}p()->user2p(), nodep, "Child {j} missing Dfg vertex");\n'
                     .format(j=i + 1))
             fh.write("\n")
-            fh.write("    Dfg{t}* const vtxp = makeVertex<Dfg{t}>(nodep, *m_dfgp);\n".format(
-                t=node.name))
+            fh.write(
+                "    Dfg{t}* const vtxp = makeVertex<Dfg{t}>(nodep, m_dfg);\n".format(t=node.name))
             fh.write("    if (!vtxp) {\n")
             fh.write("        m_foundUnhandled = true;\n")
             fh.write("        ++m_ctx.m_nonRepNode;\n")
@@ -1271,7 +1274,6 @@ def write_dfg_ast_to_dfg(filename):
                     "    vtxp->relinkSource<{i}>(nodep->op{j}p()->user2u().to<DfgVertex*>());\n".
                     format(i=i, j=i + 1))
             fh.write("\n")
-            fh.write("    m_uncommittedVertices.push_back(vtxp);\n")
             fh.write("    nodep->user2p(vtxp);\n")
             fh.write("}\n")
 
