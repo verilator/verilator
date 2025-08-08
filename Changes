@@ -33,6 +33,7 @@ Verilator 5.039 devel
 * Support randomize() on class member selects (#6161) (#6195). [Igor Zaworski, Ryszard Rozak, Antmicro Ltd.]
 * Support multiple variables on RHS of a `force` assignment (#6163). [Artur Bieniek, Antmicro Ltd.]
 * Support covergroup extends, etc., as unsupported (#6160). [Artur Bieniek, Antmicro Ltd.]
+* Support parameter resolution of 1D unpacked array slices (#6257) (#6268). [Michael Bedford Taylor]
 * Change control file `public_flat_*` and other signal attributes to support __ in names (#6140).
 * Change runtime to exit() instead of abort(), unless under +verilated+debug.
 * Improve `--skip-identical` to skip on identical input file contents (#6109).
@@ -69,6 +70,9 @@ Verilator 5.039 devel
 * Fix write of 0 in '%c' (#6248) (#6249). [Rodrigo Batista de Moraes]
 * Fix coverage of variables of complex types (#6250). [Ryszard Rozak, Antmicro Ltd.]
 * Fix partial DFG conversion of concat assignments (#6255). [Geza Lore]
+* Fix dynamic cast purity (#6267). [Igor Zaworski, Antmicro Ltd.]
+* Fix same variable on the RHS forced to two different LHSs. (#6269). [Artur Bieniek, Antmicro Ltd.]
+* Fix spurious VPI value change callbacks (#6274). [Todd Strader]
 
 
 Verilator 5.038 2025-07-08
