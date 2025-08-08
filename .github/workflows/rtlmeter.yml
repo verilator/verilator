@@ -233,7 +233,7 @@ jobs:
   create-issue:
     name: Create issue on failure
     needs: publish-results
-    if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && !cancelled() }}
+    if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && failure() && !cancelled() }}
     runs-on: ubuntu-24.04
     steps:
       # Creating issues requires elevated privilege
@@ -251,7 +251,7 @@ jobs:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           gh issue --repo ${{ github.repository }} create \
-            --title "Testing - RTLMeter run #${{ github.run_number}} Failed" \
+            --title "RTLMeter run #${{ github.run_number }} Failed" \
             --body "See ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --label new \
             --assignee gezalore,wsnyder
