@@ -2793,7 +2793,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     // Introduce implicit parameters for modules with generic interafeces
     void addImplicitParametersOfGenericIface(AstCell* const nodep, const AstModule* const modp) {
         // Get Param number
-        size_t paramNum = 1;
+        int paramNum = 1;
         for (AstPin* paramp = nodep->paramsp(); paramp; paramp = VN_CAST(paramp->nextp(), Pin)) {
             ++paramNum;
         }
@@ -2824,12 +2824,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     AstIface* const ifacep = VN_AS(refp->cellp()->modp(), Iface);
                     AstIfaceRefDType* newIfaceRefp;
                     if (refp->modportp()) {
-                        newIfaceRefp = new AstIfaceRefDType(
+                        newIfaceRefp = new AstIfaceRefDType{
                             refp->fileline(), refp->modportFileline(), m_modp->name(),
-                            ifacep->name(), refp->modportName());
+                            ifacep->name(), refp->modportName()};
                     } else {
-                        newIfaceRefp = new AstIfaceRefDType(refp->fileline(), m_modp->name(),
-                                                            ifacep->name());
+                        newIfaceRefp = new AstIfaceRefDType{refp->fileline(), m_modp->name(),
+                                                            ifacep->name()};
                     }
                     newIfaceRefp->ifacep(ifacep);
                     if (refp->cellp()->paramsp()) {
@@ -2839,8 +2839,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                     || pinp->name() == modIfaceVarp->name(),
                                 pinp, "Not found interface with such name");
                     AstPin* const newPinp
-                        = new AstPin(pinp->fileline(), paramNum,
-                                     "__VGIfaceParam" + modIfaceVarp->name(), newIfaceRefp);
+                        = new AstPin{pinp->fileline(), paramNum,
+                                     "__VGIfaceParam" + modIfaceVarp->name(), newIfaceRefp};
                     newPinp->param(true);
                     visit(newPinp);
                     nodep->addParamsp(newPinp);
