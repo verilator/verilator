@@ -668,7 +668,6 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             }
             putfs(nodep, "+:");
             puts(cvtToStr(nodep->widthConst()));
-            puts("]");
         }
         puts("]");
     }
