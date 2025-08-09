@@ -34,6 +34,7 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
+#include "V3Cfg.h"
 #include "V3Error.h"
 #include "V3Global.h"
 #include "V3Hash.h"
