@@ -5,10 +5,10 @@
     8 |    extern task nodef();
       |                ^~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_class_extern_bad.v:8:16: Definition not found for extern 'nodef'
+%Error: t/t_class_extern_bad.v:8:16: Definition not found for extern prototype 'nodef'
     8 |    extern task nodef();
       |                ^~~~~
-%Error: t/t_class_extern_bad.v:9:16: Definition not found for extern 'nodef'
+%Error: t/t_class_extern_bad.v:9:16: Definition not found for extern prototype 'nodef'
     9 |    extern task nodef();   
       |                ^~~~~
 %Error: t/t_class_extern_bad.v:12:6: extern not found that declares 'noproto'

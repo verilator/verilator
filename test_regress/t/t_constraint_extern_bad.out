@@ -1,4 +1,4 @@
-%Error: t/t_constraint_extern_bad.v:8:22: Definition not found for extern 'missing_bad'
+%Error: t/t_constraint_extern_bad.v:8:22: Definition not found for extern prototype 'missing_bad'
     8 |    extern constraint missing_bad;
       |                      ^~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
