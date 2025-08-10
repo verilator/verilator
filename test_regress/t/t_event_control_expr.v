@@ -63,7 +63,7 @@ function int id(int x); return x; endfunction
 `define CLASS_TEST(name, expr) \
 module t_``name(input int k); \
    class Cls; \
-       int k; \
+       static int k; \
        function int get_k(); return k; endfunction \
    endclass \
    Cls obj = new; \

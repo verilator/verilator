@@ -42,6 +42,7 @@ class WidthCommitVisitor final : public VNVisitor {
 
     // STATE
     AstNodeModule* m_modp = nullptr;
+    std::string m_contNba;  // In continuous- or non-blocking assignment
     VMemberMap m_memberMap;  // Member names cached for fast lookup
 
 public:
@@ -121,6 +122,26 @@ private:
                                                 << nodep->warnOther()
                                                 << "... Location of definition\n"
                                                 << defp->warnContextSecondary());
+            }
+        }
+    }
+    void varLifetimeCheck(AstNode* nodep, AstVar* varp) {
+        if (!m_contNba.empty()) {
+            std::string varType;
+            const AstNodeDType* const varDtp = varp->dtypep()->skipRefp();
+            if (varp->lifetime().isAutomatic() && !VN_IS(varDtp, IfaceRefDType)
+                && !(varp->isFuncLocal() && varp->isIO()))
+                varType = "Automatic lifetime";
+            else if (varp->isClassMember() && !varp->lifetime().isStatic()
+                     && !VN_IS(varDtp, IfaceRefDType))
+                varType = "Class non-static";
+            else if (varDtp->isDynamicallySized())
+                varType = "Dynamically-sized";
+            if (!varType.empty()) {
+                UINFO(1, "    Related var dtype: " << varDtp);
+                nodep->v3error(varType
+                               << " variable not allowed in " << m_contNba
+                               << " assignment (IEEE 1800-2023 6.21): " << varp->prettyNameQ());
             }
         }
     }
@@ -278,6 +299,27 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
         classEncapCheck(nodep, nodep->varp(), VN_CAST(nodep->classOrPackagep(), Class));
+        if (nodep->access().isWriteOrRW()) varLifetimeCheck(nodep, nodep->varp());
+    }
+    void visit(AstAssignDly* nodep) override {
+        iterateAndNextNull(nodep->timingControlp());
+        iterateAndNextNull(nodep->rhsp());
+        {
+            VL_RESTORER(m_contNba);
+            m_contNba = "nonblocking";
+            iterateAndNextNull(nodep->lhsp());
+        }
+        editDType(nodep);
+    }
+    void visit(AstAssignW* nodep) override {
+        iterateAndNextNull(nodep->timingControlp());
+        iterateAndNextNull(nodep->rhsp());
+        {
+            VL_RESTORER(m_contNba);
+            m_contNba = "continuous";
+            iterateAndNextNull(nodep->lhsp());
+        }
+        editDType(nodep);
     }
     void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
@@ -290,6 +332,7 @@ private:
         if (auto* const classrefp = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
             classEncapCheck(nodep, nodep->varp(), classrefp->classp());
         }  // else might be struct, etc
+        varLifetimeCheck(nodep, nodep->varp());
     }
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);

@@ -57,7 +57,7 @@ class intf_driver;
     endtask
 endclass
 
-module t_virtual_interface_member_trigger_realistic_case();
+module t;
     logic clk;
     logic [7:0] data;
     logic valid;

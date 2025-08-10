@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
 
         std::memset(reinterpret_cast<void*>(&tmp), 0xff, sizeof(tmp));
         // `set` function should clear upper bits of `tmp.a`
-        tmp.set(adder->rootp->add__DOT__op2->__PVT__in);
+        tmp.set(adder->rootp->add__DOT__op2);
 
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 3; ++j) {

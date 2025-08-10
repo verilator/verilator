@@ -167,6 +167,7 @@ public:
     string cType(const string& name, bool forFunc, bool isRef, bool packed = false) const;
     // Represents a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_STABLE;
+    virtual bool isDynamicallySized() const { return false; }
 
 private:
     class CTypeRecursed;
@@ -383,6 +384,7 @@ public:
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
     bool isCompound() const override { return true; }
+    bool isDynamicallySized() const override { return true; }
 };
 class AstBasicDType final : public AstNodeDType {
     // Builtin atomic/vectored data type
@@ -756,6 +758,7 @@ public:
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
     bool isCompound() const override { return true; }
+    bool isDynamicallySized() const override { return true; }
 };
 class AstEmptyQueueDType final : public AstNodeDType {
     // For EmptyQueue
@@ -1124,6 +1127,7 @@ public:
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
     bool isCompound() const override { return true; }
+    bool isDynamicallySized() const override { return true; }
 };
 class AstRefDType final : public AstNodeDType {
     // @astgen op1 := typeofp : Optional[AstNode<AstNodeExpr|AstNodeDType>]

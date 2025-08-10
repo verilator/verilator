@@ -69,12 +69,13 @@ module sub (/*AUTOARG*/
          pvec[2][2] <= 32'h10202;
          r <= 1.234;
          s <= "hello";
-         sarr[1] <= "sarr[1]";
-         sarr[2] <= "sarr[2]";
-         assoc["mapped"] <= "Is mapped";
+         // Blocking to avoid delayed to dynamic var
+         sarr[1] = "sarr[1]";
+         sarr[2] = "sarr[2]";
+         assoc["mapped"] = "Is mapped";
       end
       if (cyc==1) begin
-         if ($test$plusargs("save_restore")!=0) begin
+         if ($test$plusargs("save_restore") != 0) begin
             // Don't allow the restored model to run from time 0, it must run from a restore
             $write("%%Error: didn't really restore\n");
             $stop;
