@@ -482,8 +482,8 @@ public:
                 emitIQW(selp->fromp());
                 emitIQW(nodep->rhsp());
                 puts("(");
-                putns(selp->fromp(), cvtToStr(selp->fromp()->widthMin()) + ",");
-                puts(cvtToStr(nodep->widthMin()) + ",");
+                putns(selp->fromp(), cvtToStr(selp->fromp()->widthMin()) + ", ");
+                puts(cvtToStr(nodep->widthMin()) + ", ");
                 iterateAndNextConstNull(selp->lsbp());
                 puts(", ");
                 iterateAndNextConstNull(selp->fromp());
@@ -502,7 +502,7 @@ public:
             emitScIQW(varp);
             emitIQW(nodep);
             puts("(");
-            puts(cvtToStr(nodep->widthMin()) + ",");
+            puts(cvtToStr(nodep->widthMin()) + ", ");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
         } else if (AstVar* const varp = AstVar::scVarRecurse(nodep->rhsp())) {
@@ -510,7 +510,7 @@ public:
             emitIQW(nodep);
             emitScIQW(varp);
             puts("(");
-            puts(cvtToStr(nodep->widthMin()) + ",");
+            puts(cvtToStr(nodep->widthMin()) + ", ");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
         } else if (const AstCvtPackedToArray* const castp
@@ -561,7 +561,7 @@ public:
             paren = false;
         } else if (nodep->isWide() && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
             putnbs(nodep, "VL_ASSIGN_W(");
-            puts(cvtToStr(nodep->widthMin()) + ",");
+            puts(cvtToStr(nodep->widthMin()) + ", ");
             iterateAndNextConstNull(nodep->lhsp());
             puts(", ");
         } else {
@@ -671,7 +671,7 @@ public:
         putnbs(nodep, "[&](");
         if (auto* const argrefp = nodep->indexArgRefp()) {
             putnbs(argrefp, argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
-            puts(",");
+            puts(", ");
         }
         if (auto* const argrefp = nodep->valueArgRefp()) {
             putnbs(argrefp, argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
@@ -974,20 +974,17 @@ public:
         if (!nodep->filep()) {
             putns(nodep, "Verilated::runFlushCallbacks();\n");
         } else {
-            putns(nodep, "if (");
-            iterateAndNextConstNull(nodep->filep());
-            puts(") { ");
             putns(nodep, "VL_FFLUSH_I(");
             iterateAndNextConstNull(nodep->filep());
-            puts("); }\n");
+            puts(");\n");
         }
     }
     void visit(AstFSeek* nodep) override {
         putns(nodep, "(VL_FSEEK_I(");
         iterateAndNextConstNull(nodep->filep());
-        puts(",");
+        puts(", ");
         iterateAndNextConstNull(nodep->offset());
-        puts(",");
+        puts(", ");
         iterateAndNextConstNull(nodep->operation());
         puts(") == -1 ? -1 : 0)");
     }
@@ -1004,7 +1001,7 @@ public:
     void visit(AstFRead* nodep) override {
         putns(nodep, "VL_FREAD_I(");
         puts(cvtToStr(nodep->memp()->widthMin()));  // Need real storage width
-        putbs(",");
+        putbs(", ");
         uint32_t array_lo = 0;
         uint32_t array_size = 0;
         {
@@ -1022,7 +1019,7 @@ public:
             }
         }
         puts(cvtToStr(array_lo));
-        putbs(",");
+        putbs(", ");
         puts(cvtToStr(array_size));
         putbs(", ");
         puts("&(");
@@ -1406,7 +1403,7 @@ public:
             emitIQW(nodep);
             puts("OI(");
             if (nodep->srcp()) puts(cvtToStr(nodep->srcp()->widthMin()));
-            puts(",");
+            puts(", ");
             iterateAndNextConstNull(nodep->srcp());
             puts(", ");
             iterateAndNextConstNull(nodep->countp());
