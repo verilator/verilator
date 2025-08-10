@@ -746,17 +746,27 @@ public:
 
     // Dump graph in Graphviz format into the given stream 'os'. 'label' is added to the name of
     // the graph which is included in the output.
-    void dumpDot(std::ostream& os, const string& label = "") const VL_MT_DISABLED;
+    // If the predicate function 'p' is provided, only those vertices are dumped that satifty it.
+    void dumpDot(std::ostream& os, const std::string& label,
+                 std::function<bool(const DfgVertex&)> p = {}) const VL_MT_DISABLED;
     // Dump graph in Graphviz format into a new file with the given 'filename'. 'label' is added to
     // the name of the graph which is included in the output.
-    void dumpDotFile(const string& filename, const string& label = "") const VL_MT_DISABLED;
+    // If the predicate function 'p' is provided, only those vertices are dumped that satifty it.
+    void dumpDotFile(const std::string& filename, const std::string& label,
+                     std::function<bool(const DfgVertex&)> p = {}) const VL_MT_DISABLED;
+    // Same as dumpDotFile, but returns the contents as a string.
+    std::string dumpDotString(const std::string& label,
+                              std::function<bool(const DfgVertex&)> p = {}) const VL_MT_DISABLED;
     // Dump graph in Graphviz format into a new automatically numbered debug file. 'label' is
     // added to the name of the graph, which is included in the file name and the output.
-    void dumpDotFilePrefixed(const string& label = "") const VL_MT_DISABLED;
+    // If the predicate function 'p' is provided, only those vertices are dumped that satifty it.
+    void dumpDotFilePrefixed(const std::string& label,
+                             std::function<bool(const DfgVertex&)> p = {}) const VL_MT_DISABLED;
+
     // Dump upstream (source) logic cone starting from given vertex into a file with the given
     // 'filename'. 'name' is the name of the graph, which is included in the output.
-    void dumpDotUpstreamCone(const string& filename, const DfgVertex& vtx,
-                             const string& name = "") const VL_MT_DISABLED;
+    void dumpDotUpstreamCone(const std::string& filename, const DfgVertex& vtx,
+                             const std::string& name = "") const VL_MT_DISABLED;
 };
 
 // Specializations of privateTypeTest

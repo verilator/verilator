@@ -1060,6 +1060,13 @@ V3DfgPasses::breakCycles(const DfgGraph& dfg, V3DfgContext& ctx) {
         }
     } while (nImprovements != prevNImprovements);
 
+    if (dumpDfgLevel() >= 9) {
+        const auto userDataInUse = res.userDataInUse();
+        V3DfgPasses::colorStronglyConnectedComponents(res);
+        res.dumpDotFilePrefixed(ctx.prefix() + "breakCycles-remaining",
+                                [](const DfgVertex& vtx) { return vtx.getUser<uint64_t>(); });
+    }
+
     // If an improvement was made, return the still cyclic improved graph
     if (nImprovements) {
         UINFO(7, "Graph was improved " << nImprovements << " times");

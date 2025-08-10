@@ -259,7 +259,7 @@ DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& name, AstNo
     }
 }
 
-static const string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) + '"'; }
+static const std::string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&vtx) + '"'; }
 
 // Dump one DfgVertex in Graphviz format
 static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
@@ -383,25 +383,20 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
 }
 
 // Dump one DfgEdge in Graphviz format
-static void dumpDotEdge(std::ostream& os, const DfgEdge& edge, const string& headlabel) {
-    os << toDotId(*edge.sourcep()) << " -> " << toDotId(*edge.sinkp());
-    if (!headlabel.empty()) os << " [headlabel=\"" << headlabel << "\"]";
+static void dumpDotEdge(std::ostream& os, const DfgEdge& edge, size_t idx) {
+    if (!edge.sourcep()) return;
+    const DfgVertex& sink = *edge.sinkp();  // sink is never nullptr
+    os << toDotId(*edge.sourcep()) << " -> " << toDotId(sink);
+    if (sink.arity() > 1 || sink.is<DfgVertexSplice>()) {
+        os << " [headlabel=\"" << sink.srcName(idx) << "\"]";
+    }
     os << '\n';
 }
 
-// Dump one DfgVertex and all of its source DfgEdges in Graphviz format
-static void dumpDotVertexAndSourceEdges(std::ostream& os, const DfgVertex& vtx) {
-    dumpDotVertex(os, vtx);
-    vtx.forEachSourceEdge([&](const DfgEdge& edge, size_t idx) {  //
-        if (edge.sourcep()) {
-            string headLabel;
-            if (vtx.arity() > 1 || vtx.is<DfgVertexSplice>()) headLabel = vtx.srcName(idx);
-            dumpDotEdge(os, edge, headLabel);
-        }
-    });
-}
+void DfgGraph::dumpDot(std::ostream& os, const std::string& label,
+                       std::function<bool(const DfgVertex&)> p) const {
+    // This generates a graphviz dump, https://www.graphviz.org
 
-void DfgGraph::dumpDot(std::ostream& os, const string& label) const {
     // Header
     os << "digraph dfg {\n";
     os << "graph [label=\"" << name();
@@ -409,31 +404,53 @@ void DfgGraph::dumpDot(std::ostream& os, const string& label) const {
     os << "\", labelloc=t, labeljust=l]\n";
     os << "graph [rankdir=LR]\n";
 
-    // Emit all vertices
-    forEachVertex([&](const DfgVertex& vtx) { dumpDotVertexAndSourceEdges(os, vtx); });
+    if (!p) {
+        // Emit all vertices and edges
+        forEachVertex([&](const DfgVertex& vtx) {
+            dumpDotVertex(os, vtx);
+            vtx.forEachSourceEdge([&](const DfgEdge& e, size_t i) { dumpDotEdge(os, e, i); });
+        });
+    } else {
+        // Emit vertices that satify the predicate 'p'
+        forEachVertex([&](const DfgVertex& vtx) {
+            if (!p(vtx)) return;
+            dumpDotVertex(os, vtx);
+            vtx.forEachSourceEdge([&](const DfgEdge& e, size_t i) {
+                if (!e.sourcep() || !p(*e.sourcep())) return;
+                dumpDotEdge(os, e, i);
+            });
+        });
+    }
 
     // Footer
     os << "}\n";
 }
 
-void DfgGraph::dumpDotFile(const string& filename, const string& label) const {
-    // This generates a file used by graphviz, https://www.graphviz.org
-    // "hardcoded" parameters:
+std::string DfgGraph::dumpDotString(const std::string& label,
+                                    std::function<bool(const DfgVertex&)> p) const {
+    std::stringstream ss;
+    dumpDot(ss, label, p);
+    return ss.str();
+}
+
+void DfgGraph::dumpDotFile(const std::string& filename, const std::string& label,
+                           std::function<bool(const DfgVertex&)> p) const {
     const std::unique_ptr<std::ofstream> os{V3File::new_ofstream(filename)};
     if (os->fail()) v3fatal("Can't write file: " << filename);
-    dumpDot(*os.get(), label);
+    dumpDot(*os.get(), label, p);
     os->close();
 }
 
-void DfgGraph::dumpDotFilePrefixed(const string& label) const {
-    string filename = name();
+void DfgGraph::dumpDotFilePrefixed(const std::string& label,
+                                   std::function<bool(const DfgVertex&)> p) const {
+    std::string filename = name();
     if (!label.empty()) filename += "-" + label;
-    dumpDotFile(v3Global.debugFilename(filename) + ".dot", label);
+    dumpDotFile(v3Global.debugFilename(filename) + ".dot", label, p);
 }
 
-// LCOV_EXCL_START // Debug function for developer use only
-void DfgGraph::dumpDotUpstreamCone(const string& fileName, const DfgVertex& vtx,
-                                   const string& name) const {
+// LCOV_EXCL_START // Debug functions for developer use only
+void DfgGraph::dumpDotUpstreamCone(const std::string& fileName, const DfgVertex& vtx,
+                                   const std::string& name) const {
     // Open output file
     const std::unique_ptr<std::ofstream> os{V3File::new_ofstream(fileName)};
     if (os->fail()) v3fatal("Can't write file: " << fileName);
@@ -465,7 +482,8 @@ void DfgGraph::dumpDotUpstreamCone(const string& fileName, const DfgVertex& vtx,
         vtxp->forEachSource([&](const DfgVertex& src) { queue.push_back(&src); });
 
         // Emit this vertex and all of its source edges
-        dumpDotVertexAndSourceEdges(*os, *vtxp);
+        dumpDotVertex(*os, *vtxp);
+        vtxp->forEachSourceEdge([&](const DfgEdge& e, size_t i) { dumpDotEdge(*os, e, i); });
     }
 
     // Footer
