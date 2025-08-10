@@ -74,7 +74,9 @@ class TraceDriver final : public DfgVisitor {
     // Denotes if a 'Visited' entry appear in m_stack
     std::unordered_map<Visited, bool, Visited::Hash, Visited::Equal> m_visited;
 
+#ifdef VL_DEBUG
     std::ofstream m_lineCoverageFile;  // Line coverage file, just for testing
+#endif
 
     // METHODS
 
@@ -190,7 +192,7 @@ class TraceDriver final : public DfgVisitor {
     }
 
     template <typename Vertex>
-    Vertex* bitwiseBinary(Vertex* vtxp) {
+    Vertex* traceBinary(Vertex* vtxp) {
         static_assert(std::is_base_of<DfgVertexBinary, Vertex>::value,
                       "Should only call on DfgVertexBinary");
         if (DfgVertex* const rp = trace(vtxp->rhsp(), m_msb, m_lsb)) {
@@ -229,11 +231,15 @@ class TraceDriver final : public DfgVisitor {
     // Use this macro to set the result in 'visit' methods. This also emits
     // a line to m_lineCoverageFile for testing.
     // TODO: Use C++20 std::source_location instead of a macro
+#ifdef VL_DEBUG
 #define SET_RESULT(vtxp) \
     do { \
         m_resp = vtxp; \
         if (VL_UNLIKELY(m_lineCoverageFile.is_open())) m_lineCoverageFile << __LINE__ << '\n'; \
     } while (false)
+#else
+#define SET_RESULT(vtxp) m_resp = vtxp;
+#endif
 
     // VISITORS
     void visit(DfgVertex* vtxp) override {
@@ -350,15 +356,47 @@ class TraceDriver final : public DfgVisitor {
 
     void visit(DfgAnd* vtxp) override {
         if (!m_aggressive) return;
-        SET_RESULT(bitwiseBinary(vtxp));
+        SET_RESULT(traceBinary(vtxp));
     }
     void visit(DfgOr* vtxp) override {
         if (!m_aggressive) return;
-        SET_RESULT(bitwiseBinary(vtxp));
+        SET_RESULT(traceBinary(vtxp));
     }
     void visit(DfgXor* vtxp) override {
         if (!m_aggressive) return;
-        SET_RESULT(bitwiseBinary(vtxp));
+        SET_RESULT(traceBinary(vtxp));
+    }
+    void visit(DfgAdd* vtxp) override {
+        if (!m_aggressive) return;
+        SET_RESULT(traceBinary(vtxp));
+    }
+    void visit(DfgSub* vtxp) override {
+        if (!m_aggressive) return;
+        SET_RESULT(traceBinary(vtxp));
+    }
+    void visit(DfgEq* vtxp) override {
+        if (!m_aggressive) return;
+        SET_RESULT(traceBinary(vtxp));
+    }
+    void visit(DfgNeq* vtxp) override {
+        if (!m_aggressive) return;
+        SET_RESULT(traceBinary(vtxp));
+    }
+    void visit(DfgLt* vtxp) override {
+        if (!m_aggressive) return;
+        SET_RESULT(traceBinary(vtxp));
+    }
+    void visit(DfgLte* vtxp) override {
+        if (!m_aggressive) return;
+        SET_RESULT(traceBinary(vtxp));
+    }
+    void visit(DfgGt* vtxp) override {
+        if (!m_aggressive) return;
+        SET_RESULT(traceBinary(vtxp));
+    }
+    void visit(DfgGte* vtxp) override {
+        if (!m_aggressive) return;
+        SET_RESULT(traceBinary(vtxp));
     }
 
     void visit(DfgShiftR* vtxp) override {
@@ -432,6 +470,22 @@ class TraceDriver final : public DfgVisitor {
         }
     }
 
+    void visit(DfgCond* vtxp) override {
+        if (!m_aggressive) return;
+        if (DfgVertex* const condp = trace(vtxp->condp(), 0, 0)) {
+            if (DfgVertex* const thenp = trace(vtxp->thenp(), m_msb, m_lsb)) {
+                if (DfgVertex* const elsep = trace(vtxp->elsep(), m_msb, m_lsb)) {
+                    DfgCond* const resp = make<DfgCond>(vtxp, m_msb - m_lsb + 1);
+                    resp->condp(condp);
+                    resp->thenp(thenp);
+                    resp->elsep(elsep);
+                    SET_RESULT(resp);
+                    return;
+                }
+            }
+        }
+    }
+
 #undef SET_RESULT
 
     // CONSTRUCTOR
@@ -439,12 +493,14 @@ class TraceDriver final : public DfgVisitor {
         : m_dfg{dfg}
         , m_component{component}
         , m_aggressive{aggressive} {
+#ifdef VL_DEBUG
         if (v3Global.opt.debugCheck()) {
             m_lineCoverageFile.open(  //
                 v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
                     + "__V3DfgBreakCycles-TraceDriver-line-coverage.txt",  //
                 std::ios_base::out | std::ios_base::app);
         }
+#endif
     }
 
 public:
@@ -503,15 +559,37 @@ class IndependentBits final : public DfgVisitor {
     // Use this macro to call 'mask' in 'visit' methods. This also emits
     // a line to m_lineCoverageFile for testing.
     // TODO: Use C++20 std::source_location instead of a macro
+#ifdef VL_DEBUG
 #define MASK(vtxp) \
     ([this](const DfgVertex* p) -> V3Number& { \
         if (VL_UNLIKELY(m_lineCoverageFile.is_open())) m_lineCoverageFile << __LINE__ << '\n'; \
         return mask(p); \
     }(vtxp))
+#else
+#define MASK(vtxp) mask(vtxp)
+#endif
+
+    // Set all bits at or below the most signicant set bit
+    void floodTowardsLsb(V3Number& num) {
+        bool set = false;
+        for (int i = num.width() - 1; i >= 0; --i) {
+            if (num.bitIs1(i)) set = true;
+            if (set) num.setBit(i, '1');
+        }
+    }
+
+    // Set all bits at or above the least signicant set bit
+    void floodTowardsMsb(V3Number& num) {
+        bool set = false;
+        for (int i = 0; i < num.width(); ++i) {
+            if (num.bitIs1(i)) set = true;
+            if (set) num.setBit(i, '1');
+        }
+    }
 
     // VISITORS
     void visit(DfgVertex* vtxp) override {
-        UINFO(9, "Unhandled vertex type " << vtxp->typeName());
+        UINFO(9, "IndependentBits - Unhandled vertex type: " << vtxp->typeName());
         // Conservative assumption about all bits being dependent prevails
     }
 
@@ -594,6 +672,42 @@ class IndependentBits final : public DfgVisitor {
         MASK(vtxp).opOr(MASK(vtxp->lhsp()), MASK(vtxp->rhsp()));
     }
 
+    void visit(DfgAdd* vtxp) override {
+        V3Number& m = MASK(vtxp);
+        m.opOr(MASK(vtxp->lhsp()), MASK(vtxp->rhsp()));
+        floodTowardsMsb(m);
+    }
+    void visit(DfgSub* vtxp) override {  // Same as Add: 2's complement (a - b) == (a + ~b + 1)
+        V3Number& m = MASK(vtxp);
+        m.opOr(MASK(vtxp->lhsp()), MASK(vtxp->rhsp()));
+        floodTowardsMsb(m);
+    }
+
+    void visit(DfgEq* vtxp) override {
+        const bool independent = MASK(vtxp->lhsp()).isEqZero() && MASK(vtxp->rhsp()).isEqZero();
+        MASK(vtxp).setBit(0, independent ? '0' : '1');
+    }
+    void visit(DfgNeq* vtxp) override {
+        const bool independent = MASK(vtxp->lhsp()).isEqZero() && MASK(vtxp->rhsp()).isEqZero();
+        MASK(vtxp).setBit(0, independent ? '0' : '1');
+    }
+    void visit(DfgLt* vtxp) override {
+        const bool independent = MASK(vtxp->lhsp()).isEqZero() && MASK(vtxp->rhsp()).isEqZero();
+        MASK(vtxp).setBit(0, independent ? '0' : '1');
+    }
+    void visit(DfgLte* vtxp) override {
+        const bool independent = MASK(vtxp->lhsp()).isEqZero() && MASK(vtxp->rhsp()).isEqZero();
+        MASK(vtxp).setBit(0, independent ? '0' : '1');
+    }
+    void visit(DfgGt* vtxp) override {
+        const bool independent = MASK(vtxp->lhsp()).isEqZero() && MASK(vtxp->rhsp()).isEqZero();
+        MASK(vtxp).setBit(0, independent ? '0' : '1');
+    }
+    void visit(DfgGte* vtxp) override {
+        const bool independent = MASK(vtxp->lhsp()).isEqZero() && MASK(vtxp->rhsp()).isEqZero();
+        MASK(vtxp).setBit(0, independent ? '0' : '1');
+    }
+
     void visit(DfgShiftR* vtxp) override {
         DfgVertex* const rhsp = vtxp->rhsp();
         DfgVertex* const lhsp = vtxp->lhsp();
@@ -602,22 +716,20 @@ class IndependentBits final : public DfgVisitor {
         // Constant shift can be computed precisely
         if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
             const uint32_t shiftAmount = rConstp->toU32();
-            if (shiftAmount >= width) return;
-            V3Number shiftedMask{lhsp->fileline(), static_cast<int>(width), 0};
-            shiftedMask.opShiftR(MASK(lhsp), rConstp->num());
             V3Number& m = MASK(vtxp);
-            m.opSelInto(shiftedMask, 0, width - shiftAmount);
-            m.opSetRange(width - shiftAmount, shiftAmount, '0');
+            if (shiftAmount >= width) {
+                m.setAllBits0();
+            } else {
+                m.opShiftR(MASK(lhsp), rConstp->num());
+            }
             return;
         }
 
         // Otherwise, as the shift amount is non-negative, any bit at or below
         // the most significant dependent bit might be dependent
-        V3Number& lMask = MASK(lhsp);
-        V3Number& vMask = MASK(vtxp);
-        uint32_t lzc = 0;  // Leading zero count
-        while (lzc < width && lMask.bitIs0(width - 1 - lzc)) ++lzc;
-        while (lzc > 0) vMask.setBit(width - 1 - (--lzc), '0');
+        V3Number& m = MASK(vtxp);
+        m = MASK(lhsp);
+        floodTowardsLsb(m);
     }
 
     void visit(DfgShiftL* vtxp) override {
@@ -628,22 +740,28 @@ class IndependentBits final : public DfgVisitor {
         // Constant shift can be computed precisely
         if (DfgConst* const rConstp = rhsp->cast<DfgConst>()) {
             const uint32_t shiftAmount = rConstp->toU32();
-            if (shiftAmount >= width) return;
-            V3Number shiftedMask{lhsp->fileline(), static_cast<int>(width), 0};
-            shiftedMask.opShiftL(MASK(lhsp), rConstp->num());
             V3Number& m = MASK(vtxp);
-            m.opSelInto(shiftedMask, shiftAmount, width - shiftAmount);
-            m.opSetRange(0, shiftAmount, '0');
+            if (shiftAmount >= width) {
+                m.setAllBits0();
+            } else {
+                m.opShiftL(MASK(lhsp), rConstp->num());
+            }
             return;
         }
 
         // Otherwise, as the shift amount is non-negative, any bit at or above
         // the least significant dependent bit might be dependent
-        V3Number& lMask = MASK(lhsp);
-        V3Number& vMask = MASK(vtxp);
-        uint32_t tzc = 0;  // Trailing zero count
-        while (tzc < width && lMask.bitIs0(tzc)) ++tzc;
-        while (tzc > 0) vMask.setBit(--tzc, '0');
+        V3Number& m = MASK(vtxp);
+        m = MASK(lhsp);
+        floodTowardsMsb(m);
+    }
+
+    void visit(DfgCond* vtxp) override {
+        if (!MASK(vtxp->condp()).isEqZero()) {
+            MASK(vtxp).setAllBits1();
+        } else {
+            MASK(vtxp).opOr(MASK(vtxp->thenp()), MASK(vtxp->elsep()));
+        }
     }
 
 #undef MASK
@@ -651,12 +769,15 @@ class IndependentBits final : public DfgVisitor {
     // CONSTRUCTOR
     IndependentBits(DfgGraph& dfg, DfgVertex* vtxp)
         : m_component{vtxp->getUser<uint64_t>()} {
+
+#ifdef VL_DEBUG
         if (v3Global.opt.debugCheck()) {
             m_lineCoverageFile.open(  //
                 v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
                     + "__V3DfgBreakCycles-IndependentBits-line-coverage.txt",  //
                 std::ios_base::out | std::ios_base::app);
         }
+#endif
 
         // Work list for the traversal
         std::deque<DfgVertex*> workList;
