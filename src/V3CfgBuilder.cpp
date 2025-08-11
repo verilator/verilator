@@ -43,10 +43,11 @@ class CFGBuilder final : VNVisitorConst {
     BasicBlock& addBasicBlock() { return *new BasicBlock{m_cfgp.get(), false, false}; }
 
     void addEdge(BasicBlock& src, BasicBlock& dst, EdgeKind kind) {
-        // Do not create duplicate edges
-        for (V3GraphEdge& edge : src.outEdges()) {
-            UASSERT(edge.top() != &dst, "Adding duplicate edge to ControlFlowGraph");
-        }
+        // A block can have at most 2 out edges. We are adding one now, so there should be 0 or 1.
+        UASSERT(src.outEmpty() || src.outSize1(), "Too many out edges from block");
+        // Shouldn't be adding multiple edges pointing to the same successor block.
+        UASSERT(src.outEmpty() || src.outEdges().frontp()->top() != &dst,
+                "Adding duplicate edge to ControlFlowGraph");
         new ControlFlowGraphEdge{m_cfgp.get(), &src, &dst, kind};
     }
 
