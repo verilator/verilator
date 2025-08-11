@@ -1612,6 +1612,19 @@ List Of Warnings
    accepts the protected code.
 
 
+.. option:: PROTOTYPEMIS
+
+   Error that a function prototype does not match in some respects the
+   out-of-block declaration of that function. IEEE requires this error.
+
+   The typical solution is to fix the prototype to match the declaration
+   exactly, including in number of arguments, name of arguments, argument
+   data types, and return data type (for functions).
+
+   Disabling this error will cause Verilator to ignore the prototype and
+   may make the code illegal in other tools.
+
+
 .. option:: RANDC
 
    Historical, never issued since version 5.018, when :code:`randc` became

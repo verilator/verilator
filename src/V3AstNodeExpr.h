@@ -594,6 +594,7 @@ class AstAttrOf final : public AstNodeExpr {
     // @astgen op1 := fromp : Optional[AstNode<AstNodeExpr|AstNodeDType>]
     // @astgen op2 := dimp : Optional[AstNodeExpr]
     VAttrType m_attrType;  // What sort of extraction
+    string m_name;  // Name for some attributes
 public:
     AstAttrOf(FileLine* fl, VAttrType attrtype, AstNode* fromp = nullptr,
               AstNodeExpr* dimp = nullptr)
@@ -603,10 +604,11 @@ public:
         m_attrType = attrtype;
     }
     ASTGEN_MEMBERS_AstAttrOf;
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
+    void name(const string& name) override { m_name = name; }
     VAttrType attrType() const { return m_attrType; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
-
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(true); }

@@ -69,6 +69,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     bool m_taskPublic : 1;  // Public task
     bool m_attrIsolateAssign : 1;  // User isolate_assignments attribute
     bool m_classMethod : 1;  // Class method
+    bool m_didProto : 1;  // Did prototype processing
     bool m_prototype : 1;  // Just a prototype
     bool m_dpiExport : 1;  // DPI exported
     bool m_dpiImport : 1;  // DPI imported
@@ -98,6 +99,7 @@ protected:
         , m_taskPublic{false}
         , m_attrIsolateAssign{false}
         , m_classMethod{false}
+        , m_didProto{false}
         , m_prototype{false}
         , m_dpiExport{false}
         , m_dpiImport{false}
@@ -145,6 +147,8 @@ public:
     void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     bool classMethod() const { return m_classMethod; }
     void classMethod(bool flag) { m_classMethod = flag; }
+    bool didProto() const { return m_didProto; }
+    void didProto(bool flag) { m_didProto = flag; }
     bool isExternProto() const { return m_isExternProto; }
     void isExternProto(bool flag) { m_isExternProto = flag; }
     bool isExternDef() const { return m_isExternDef; }

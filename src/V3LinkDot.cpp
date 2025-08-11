@@ -3717,8 +3717,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         if (nodep->isExternProto()) {
             if (!m_curSymp->findIdFallback(nodep->name()) && nodep->isExternExplicit()) {
-                nodep->v3error("Definition not found for extern prototype "
-                               + nodep->prettyNameQ());
+                nodep->v3warn(PROTOTYPEMIS, "Definition not found for extern prototype "
+                                                << nodep->prettyNameQ());
             }
         }
         VL_RESTORER(m_curSymp);
@@ -4270,7 +4270,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
         checkNoDot(nodep);
-        if (nodep->isExternDef()) {
+        if (nodep->isExternDef() && !nodep->didProto()) {
+            nodep->didProto(true);
             if (const VSymEnt* const foundp
                 = m_curSymp->findIdFallback("extern " + nodep->name())) {
                 const AstNodeFTask* const protop = VN_AS(foundp->nodep(), NodeFTask);
@@ -4281,14 +4282,28 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->isStatic(protop->isStatic());
                 nodep->isVirtual(protop->isVirtual());
                 nodep->lifetime(protop->lifetime());
+                // Always add an FUNC_RETURN_PROTO even if task, so we can locate the prototype
+                nodep->addStmtsp(new AstAttrOf{protop->fileline(), VAttrType::FUNC_RETURN_PROTO,
+                                               protop->fvarp()
+                                                   ? protop->fvarp()->cloneTree(false)
+                                                   : new AstVoidDType{protop->fileline()}});
+                for (AstNode* stmtp = protop->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                    if (AstVar* const portp = VN_CAST(stmtp, Var)) {
+                        AstAttrOf* const attrp
+                            = new AstAttrOf{protop->fileline(), VAttrType::FUNC_ARG_PROTO,
+                                            portp->subDTypep()->cloneTree(false)};
+                        attrp->name(portp->name());
+                        nodep->addStmtsp(attrp);
+                    }
+                }
             } else {
                 nodep->v3error("extern not found that declares " + nodep->prettyNameQ());
             }
         }
         if (nodep->isExternProto()) {
             if (!m_curSymp->findIdFallback(nodep->name())) {
-                nodep->v3error("Definition not found for extern prototype "
-                               + nodep->prettyNameQ());
+                nodep->v3warn(PROTOTYPEMIS,
+                              "Definition not found for extern prototype " + nodep->prettyNameQ());
             }
         }
         VL_RESTORER(m_curSymp);

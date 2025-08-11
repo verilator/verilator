@@ -911,7 +911,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstNodeStream* nodep) override {
         VL_RESTORER(m_streamConcat);
-        UINFOTREE(1, nodep, "stream-in vup" << m_vup, "stream-in ");
+        // UINFOTREE(1, nodep, "stream-in vup" << m_vup, "stream-in ");
         if (m_vup->prelim()) {
             m_streamConcat = true;
             iterateCheckSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
@@ -1669,9 +1669,6 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->dimp()) userIterateAndNext(nodep->dimp(), WidthVP{SELF, BOTH}.p());
         // Don't iterate children, don't want to lose VarRef.
         switch (nodep->attrType()) {
-        case VAttrType::VAR_BASE:
-            // Soon to be handled in V3LinkWidth SEL generation, under attrp() and newSubLsbOf
-            break;
         case VAttrType::DIM_DIMENSIONS:
         case VAttrType::DIM_UNPK_DIMENSIONS: {
             UASSERT_OBJ(nodep->fromp() && nodep->fromp()->dtypep(), nodep, "Unsized expression");
@@ -1795,6 +1792,36 @@ class WidthVisitor final : public VNVisitor {
             }
             break;
         }
+        case VAttrType::FUNC_ARG_PROTO:
+            // Created by V3LinkDot only to check that the prototype was correct when we got here
+            // Checked at bottom of visit(AstNodeFTask)
+            // V3WidthCommit::visit(AstAttrOf) will delete nodep
+            break;
+        case VAttrType::FUNC_RETURN_PROTO: {
+            // Created by V3LinkDot only to check that the prototype was correct when we got here
+            UASSERT_OBJ(m_ftaskp, nodep, "FUNC attr not under function");
+            AstNodeDType* const protoDtp = nodep->fromp()->dtypep();
+            AstNodeDType* const declDtp = m_ftaskp->fvarp()
+                                              ? m_ftaskp->fvarp()->dtypep()
+                                              : new AstVoidDType{m_ftaskp->fileline()};
+            if (!similarDTypeRecurse(protoDtp, declDtp)) {
+                protoDtp->v3warn(
+                    PROTOTYPEMIS,
+                    "In prototype for "
+                        << m_ftaskp->prettyNameQ()
+                        << ", return data type does not match out-of-block"
+                           " declaration data-type (IEEE 1800-2023 8.24)\n"
+                        << protoDtp->warnMore()
+                        << "... Prototype data type: " << protoDtp->prettyDTypeNameQ() << '\n'
+                        << protoDtp->warnMore()
+                        << "... Declaration data type: " << declDtp->prettyDTypeNameQ() << '\n'
+                        << protoDtp->warnContextPrimary() << '\n'
+                        << declDtp->warnOther() << "... Location of out-of-block declaration\n"
+                        << declDtp->warnContextSecondary());
+            }
+            // V3WidthCommit::visit(AstAttrOf) will delete nodep
+            break;
+        }
         case VAttrType::TYPENAME: {
             UASSERT_OBJ(nodep->fromp(), nodep, "Unprovided expression");
             const string result = nodep->fromp()->dtypep()->prettyDTypeName(true);
@@ -1807,6 +1834,9 @@ class WidthVisitor final : public VNVisitor {
         case VAttrType::TYPEID:
             // Soon to be handled in AstEqT
             nodep->dtypeSetSigned32();
+            break;
+        case VAttrType::VAR_BASE:
+            // Soon to be handled in V3LinkWidth SEL generation, under attrp() and newSubLsbOf
             break;
         default: {
             // Everything else resolved earlier
@@ -6075,6 +6105,67 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->dpiImport() && !nodep->dpiOpenParent() && markHasOpenArray(nodep)) {
             nodep->dpiOpenParentInc();  // Mark so V3Task will wait for a child to build calling
                                         // func
+        }
+
+        std::vector<AstVar*> ports;
+        std::vector<AstAttrOf*> protos;
+        AstAttrOf* protop = nullptr;  // Base prototype
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
+                if (portp->isIO() && !portp->isFuncReturn()) { ports.emplace_back(portp); }
+            } else if (AstAttrOf* const attrp = VN_CAST(stmtp, AttrOf)) {
+                if (attrp->attrType() == VAttrType::FUNC_ARG_PROTO) { protos.emplace_back(attrp); }
+                if (attrp->attrType() == VAttrType::FUNC_RETURN_PROTO) { protop = attrp; }
+            }
+        }
+        if (protop) {
+            for (size_t i = 0; i < std::max(ports.size(), protos.size()); ++i) {
+                if (i >= ports.size() || i >= protos.size()) {
+                    protop->v3warn(
+                        PROTOTYPEMIS,
+                        "In prototype for "
+                            << nodep->prettyNameQ()
+                            << ", the argumement counts do not match the out-of-block declaration"
+                            << " (IEEE 1800-2023 8.24)\n"
+                            << protop->warnContextPrimary() << '\n'
+                            << nodep->warnOther() << "... Location of out-of-block declaration\n"
+                            << nodep->warnContextSecondary());
+                    break;
+                } else {
+                    AstVar* const portp = ports[i];
+                    AstAttrOf* const protop = protos[i];
+                    AstNodeDType* const declDtp = portp->dtypep();
+                    AstNodeDType* const protoDtp = protop->fromp()->dtypep();
+                    if (portp->name() != protop->name()) {
+                        protoDtp->v3warn(PROTOTYPEMIS,
+                                         "In prototype for "
+                                             << nodep->prettyNameQ() << ", argument " << (i + 1)
+                                             << " named " << protop->prettyNameQ()
+                                             << " mismatches out-of-block argument name "
+                                             << portp->prettyNameQ() << "  (IEEE 1800-2023 8.24)\n"
+                                             << protoDtp->warnContextPrimary() << '\n'
+                                             << declDtp->warnOther()
+                                             << "... Location of out-of-block declaration\n"
+                                             << declDtp->warnContextSecondary());
+                    } else if (!similarDTypeRecurse(protoDtp, declDtp)) {
+                        protoDtp->v3warn(
+                            PROTOTYPEMIS,
+                            "In prototype for "
+                                << nodep->prettyNameQ() << ", argument " << portp->prettyNameQ()
+                                << " data-type does not match out-of-block"
+                                   " declaration's data-type (IEEE 1800-2023 8.24)\n"
+                                << protoDtp->warnMore() << "... Prototype data type: "
+                                << protoDtp->prettyDTypeNameQ() << '\n'
+                                << protoDtp->warnMore() << "... Declaration data type: "
+                                << declDtp->prettyDTypeNameQ() << '\n'
+                                << protoDtp->warnContextPrimary() << '\n'
+                                << declDtp->warnOther()
+                                << "... Location of out-of-block declaration\n"
+                                << declDtp->warnContextSecondary());
+                    }
+                }
+            }
+            // V3WidthCommit::visit(AstAttrOf) will delete nodep
         }
     }
     void visit(AstConstraint* nodep) override {

@@ -168,6 +168,17 @@ private:
             }
         }
     }
+    void visit(AstAttrOf* nodep) override {
+        switch (nodep->attrType()) {
+        case VAttrType::FUNC_ARG_PROTO:  // FALLTHRU
+        case VAttrType::FUNC_RETURN_PROTO:
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        default:;
+        }
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
     void visit(AstClassExtends* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         // Extend arguments were converted to super.new arguments in V3LinkDot

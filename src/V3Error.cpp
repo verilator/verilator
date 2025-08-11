@@ -300,8 +300,8 @@ void V3Error::init() {
         describedEachWarn(static_cast<V3ErrorCode>(i), false);
         pretendError(static_cast<V3ErrorCode>(i), V3ErrorCode{i}.pretendError());
     }
-    UASSERT(std::string{V3ErrorCode{V3ErrorCode::_ENUM_MAX}.ascii()} == " MAX",
-            "Enum table in V3ErrorCode::EC_ascii() is munged");
+    // Not an UASSERT as failure would call V3Error and it's broken due to this
+    assert(std::string{V3ErrorCode{V3ErrorCode::_ENUM_MAX}.ascii()} == " MAX");
 }
 
 string V3Error::lineStr(const char* filename, int lineno) VL_PURE {

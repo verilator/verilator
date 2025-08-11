@@ -508,6 +508,9 @@ public:
         ENUM_NAME,                      // V3Width processes
         ENUM_VALID,                     // V3Width processes
         //
+        FUNC_ARG_PROTO,                 // V3WidthCommit processes
+        FUNC_RETURN_PROTO,              // V3WidthCommit processes
+        //
         TYPEID,                         // V3Width processes
         TYPENAME,                       // V3Width processes
         //
@@ -538,6 +541,7 @@ public:
             "DT_PUBLIC",
             "ENUM_FIRST", "ENUM_LAST", "ENUM_NUM",
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
+            "FUNC_ARG_PROTO", "FUNC_RETURN_PROTO",
             "TYPEID", "TYPENAME",
             "VAR_BASE", "VAR_CLOCK_ENABLE", "VAR_FORCEABLE", "VAR_PORT_DTYPE", "VAR_PUBLIC",
             "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
