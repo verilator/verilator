@@ -455,7 +455,7 @@ class AstToDfgConverter final : public VNVisitor {
         std::unordered_set<DfgVertexVar*> outputs;
         {
             bool abort = false;
-            // We can ignore AstVarXRef here. The only thing we can do with DfgAlways is
+            // We can ignore AstVarXRef here. The only thing we can do with DfgLogic is
             // synthesize it into regular vertices, which will fail on a VarXRef at that point.
             nodep->foreach([&](AstVarRef* vrefp) {
                 if (!isSupported(vrefp)) {
@@ -486,12 +486,12 @@ class AstToDfgConverter final : public VNVisitor {
             }
         }
 
-        // OK, we can convert the AstAlways into a DfgAlways
+        // OK, we can convert the AstAlways into a DfgLogic
 
-        // Create the DfgAlways
-        DfgAlways* const alwaysp = new DfgAlways{m_dfg, nodep, std::move(cfgp)};
+        // Create the DfgLogic
+        DfgLogic* const logicp = new DfgLogic{m_dfg, nodep, std::move(cfgp)};
         // Connect inputs
-        for (DfgVertexVar* const vtxp : inputs) alwaysp->addInput(vtxp);
+        for (DfgVertexVar* const vtxp : inputs) logicp->addInput(vtxp);
         // Connect outputs
         for (DfgVertexVar* const vtxp : outputs) {
             FileLine* const flp = vtxp->fileline();
@@ -499,7 +499,7 @@ class AstToDfgConverter final : public VNVisitor {
             if (vtxp->is<DfgVarPacked>()) {
                 if (!vtxp->srcp()) vtxp->srcp(new DfgSplicePacked{m_dfg, flp, dtypep});
                 DfgSplicePacked* const splicep = vtxp->srcp()->as<DfgSplicePacked>();
-                splicep->addUnresolvedDriver(alwaysp);
+                splicep->addDriver(logicp);
             } else {
                 nodep->v3fatalSrc("Unhandled DfgVertexVar sub-type");  // LCOV_EXCL_LINE
             }
@@ -596,7 +596,7 @@ public:
 
         // Attempt to convert whole process
         if (convertComplexAlways(nodep)) {
-            // Keep original node, referenced by the resulting DfgAlways
+            // Keep original node, referenced by the resulting DfgLogic
             return true;
         }
 
@@ -638,7 +638,7 @@ class AstToDfgNormalizeDrivers final {
         std::vector<Driver> drivers;
         drivers.reserve(splicep->arity());
         // The unresolved drivers of 'splicep'
-        std::vector<DfgVertex*> udriverps;
+        std::vector<DfgLogic*> udriverps;
         udriverps.reserve(splicep->arity());
 
         // Sometime assignment ranges are coalesced by V3Const,
@@ -662,15 +662,14 @@ class AstToDfgNormalizeDrivers final {
             DfgVertex* const driverp = edge.sourcep();
             UASSERT_OBJ(driverp, splicep, "Should not have created undriven sources");
             // Gather
-            if (!splicep->driverIsUnresolved(i)) {
+            if (DfgLogic* const logicp = driverp->cast<DfgLogic>()) {
+                // Unresolved
+                udriverps.emplace_back(logicp);
+            } else {
                 // Resolved driver
                 UASSERT_OBJ(!driverp->is<DfgVertexSplice>(), splicep,
                             "Should not be DfgVertexSplice");
                 gather(splicep->driverFileLine(i), splicep->driverLsb(i), driverp);
-            } else {
-                // Unresolved
-                UASSERT_OBJ(driverp->is<DfgAlways>(), splicep, "Should be DfgAlways");
-                udriverps.emplace_back(driverp);
             }
             // Unlink
             edge.unlinkSource();
@@ -734,7 +733,7 @@ class AstToDfgNormalizeDrivers final {
 
         // Reinsert drivers in order
         for (const Driver& d : drivers) splicep->addDriver(d.m_flp, d.m_low, d.m_vtxp);
-        for (DfgVertex* const vtxp : udriverps) splicep->addUnresolvedDriver(vtxp);
+        for (DfgLogic* const vtxp : udriverps) splicep->addDriver(vtxp);
     }
 
     // Normalize array driver
@@ -883,7 +882,7 @@ class AstToDfgCoalesceDrivers final {
         std::vector<Driver> drivers;
         drivers.reserve(splicep->arity());
         // The unresolved drivers of 'splicep'
-        std::vector<DfgVertex*> udriverps;
+        std::vector<DfgLogic*> udriverps;
         udriverps.reserve(splicep->arity());
 
         // Gather and unlink all drivers
@@ -892,7 +891,10 @@ class AstToDfgCoalesceDrivers final {
             DfgVertex* const driverp = edge.sourcep();
             UASSERT_OBJ(driverp, splicep, "Should not have created undriven sources");
             // Gather
-            if (!splicep->driverIsUnresolved(i)) {
+            if (DfgLogic* const logicp = driverp->cast<DfgLogic>()) {
+                // Unresolved
+                udriverps.emplace_back();
+            } else {
                 // Resolved driver
                 UASSERT_OBJ(!driverp->is<DfgVertexSplice>(), splicep,
                             "Should not be DfgVertexSplice");
@@ -901,10 +903,6 @@ class AstToDfgCoalesceDrivers final {
                             "Drivers should have been normalized");
                 prevHigh = low + driverp->width() - 1;
                 drivers.emplace_back(splicep->driverFileLine(i), low, driverp);
-            } else {
-                // Unresolved
-                UASSERT_OBJ(driverp->is<DfgAlways>(), splicep, "Should be DfgAlways");
-                udriverps.emplace_back(driverp);
             }
             // Unlink
             edge.unlinkSource();
@@ -961,7 +959,7 @@ class AstToDfgCoalesceDrivers final {
 
         // Reinsert drivers in order
         for (const Driver& d : drivers) splicep->addDriver(d.m_flp, d.m_low, d.m_vtxp);
-        for (DfgVertex* const vtxp : udriverps) splicep->addUnresolvedDriver(vtxp);
+        for (DfgLogic* const vtxp : udriverps) splicep->addDriver(vtxp);
         // Use the original splice
         return {splicep, splicep->fileline()};
     }

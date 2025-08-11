@@ -229,22 +229,22 @@ public:
 };
 
 // === DfgVertexVariadic ===
-class DfgAlways final : public DfgVertexVariadic {
-    // Vertex representing a whole combinational process
-    AstAlways* const m_nodep;  // The process represented by this vertex
+class DfgLogic final : public DfgVertexVariadic {
+    // Generic vertex representing a whole combinational process
+    AstNode* const m_nodep;  // The Ast logic represented by this vertex
     const std::unique_ptr<const ControlFlowGraph> m_cfgp;
 
 public:
-    DfgAlways(DfgGraph& dfg, AstAlways* nodep, std::unique_ptr<const ControlFlowGraph> cfgp)
+    DfgLogic(DfgGraph& dfg, AstNode* nodep, std::unique_ptr<const ControlFlowGraph> cfgp)
         : DfgVertexVariadic{dfg, dfgType(), nodep->fileline(), nullptr, 1u}
         , m_nodep(nodep)
         , m_cfgp{std::move(cfgp)} {}
 
-    ASTGEN_MEMBERS_DfgAlways;
+    ASTGEN_MEMBERS_DfgLogic;
 
     void addInput(DfgVertexVar* varp) { addSource()->relinkSource(varp); }
 
-    AstAlways* nodep() const { return m_nodep; }
+    AstNode* nodep() const { return m_nodep; }
     const ControlFlowGraph& cfg() const { return *m_cfgp; }
 
     const string srcName(size_t) const override { return ""; }
@@ -307,7 +307,7 @@ class DfgSplicePacked final : public DfgVertexSplice {
     struct DriverData final {
         FileLine* m_flp;  // Location of this driver
         uint32_t m_lsb;  // LSB of range driven by this driver
-        bool m_isUnresolved;  // Is a placeholder for a driver from an unresolved DfgAlways
+        bool m_isUnresolved;  // Is a placeholder for a driver from an unresolved DfgLogic
         DriverData() = delete;
         DriverData(FileLine* flp, uint32_t lsb, bool isUnresolved)
             : m_flp{flp}
@@ -326,13 +326,15 @@ public:
     }
     ASTGEN_MEMBERS_DfgSplicePacked;
 
+    // Add resolved driver
     void addDriver(FileLine* flp, uint32_t lsb, DfgVertex* vtxp) {
-        UASSERT_OBJ(!vtxp->is<DfgAlways>(), vtxp, "addDriver called with DfgAlways");
+        UASSERT_OBJ(!vtxp->is<DfgLogic>(), vtxp, "addDriver called with DfgLogic");
         m_driverData.emplace_back(flp, lsb, false);
         DfgVertexVariadic::addSource()->relinkSource(vtxp);
     }
 
-    void addUnresolvedDriver(DfgVertex* vtxp) {
+    // Add unresolved driver
+    void addDriver(DfgLogic* vtxp) {
         m_driverData.emplace_back(vtxp->fileline(), 0, true);
         DfgVertexVariadic::addSource()->relinkSource(vtxp);
     }

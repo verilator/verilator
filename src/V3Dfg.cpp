@@ -104,8 +104,8 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
-        case VDfgType::atAlways: {
-            vtx.v3fatalSrc("DfgAlways cannot be cloned");
+        case VDfgType::atLogic: {
+            vtx.v3fatalSrc("DfgLogic cannot be cloned");
             VL_UNREACHABLE;
             break;
         }
@@ -146,13 +146,10 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
                 const DfgSplicePacked* const vp = vtx.as<DfgSplicePacked>();
                 DfgSplicePacked* const cp = vtxp2clonep.at(vp)->as<DfgSplicePacked>();
                 vp->forEachSourceEdge([&](const DfgEdge& edge, size_t i) {
-                    if (DfgVertex* const srcp = edge.sourcep()) {
-                        DfgVertex* const srcClonep = vtxp2clonep.at(srcp);
-                        if (vp->driverIsUnresolved(i)) {
-                            cp->addUnresolvedDriver(srcClonep);
-                        } else {
-                            cp->addDriver(vp->driverFileLine(i), vp->driverLsb(i), srcClonep);
-                        }
+                    if (DfgVertex* const srcVp = edge.sourcep()) {
+                        DfgVertex* const srcCp = vtxp2clonep.at(srcVp);
+                        UASSERT_OBJ(!srcCp->is<DfgLogic>(), srcCp, "Cannot clone DfgLogic");
+                        cp->addDriver(vp->driverFileLine(i), vp->driverLsb(i), srcCp);
                     }
                 });
                 break;
@@ -378,10 +375,10 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         return;
     }
 
-    if (const DfgAlways* const alwaysp = vtx.cast<DfgAlways>()) {
+    if (const DfgLogic* const logicp = vtx.cast<DfgLogic>()) {
         os << toDotId(vtx);
         std::stringstream ss;
-        V3EmitV::debugVerilogForTree(alwaysp->nodep(), ss);
+        V3EmitV::debugVerilogForTree(logicp->nodep(), ss);
         os << " [label=\"";
         os << VString::replaceSubstr(VString::replaceSubstr(ss.str(), "\n", "\\l"), "\"", "\\\"");
         os << "\\n" << cvtToHex(&vtx);

@@ -125,8 +125,8 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
         VL_PREFETCH_RW(workListp);
         // If used, then nothing to do, so move on
         if (vtxp->hasSinks()) continue;
-        // Keep DfgAlways - might have side-effect
-        if (vtxp->is<DfgAlways>()) continue;
+        // Keep DfgLogic - might have side-effect
+        if (vtxp->is<DfgLogic>()) continue;
         // Add sources of unused vertex to work list
         vtxp->forEachSource([&](DfgVertex& src) {
             // We only remove actual operation vertices in this loop
@@ -515,26 +515,26 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
     }
 }
 
-void V3DfgPasses::removeAlwaysVertices(DfgGraph& dfg) {
+void V3DfgPasses::removeAllDfgLogic(DfgGraph& dfg) {
     std::vector<DfgVertexSplice*> spliceps;
     std::unordered_set<DfgVertexSplice*> unique;
     for (DfgVertex* const vtxp : dfg.opVertices().unlinkable()) {
-        DfgAlways* const alwaysp = vtxp->cast<DfgAlways>();
-        if (!alwaysp) continue;
+        DfgLogic* const logicp = vtxp->cast<DfgLogic>();
+        if (!logicp) continue;
         // Mark source variabels as read in module
-        alwaysp->forEachSource([](DfgVertex& vtx) {  //
+        logicp->forEachSource([](DfgVertex& vtx) {  //
             vtx.as<DfgVertexVar>()->setHasModRdRefs();
         });
 
         // Mark sink variables as written in module, gather splice vertices
-        alwaysp->forEachSink([&](DfgVertex& sink) {
+        logicp->forEachSink([&](DfgVertex& sink) {
             DfgVertexSplice* const splicep = sink.as<DfgVertexSplice>();
             if (!unique.emplace(splicep).second) return;
             spliceps.emplace_back(splicep);
             splicep->singleSink()->as<DfgVertexVar>()->setHasModWrRefs();
         });
 
-        // Delete this DfgAlways
+        // Delete this DfgLogic
         VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
     }
     // Remove undriven sources of splice vertices, and remove subsequently
