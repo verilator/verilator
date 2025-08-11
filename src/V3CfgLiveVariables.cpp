@@ -93,47 +93,37 @@ class CfgLiveVariables final : VNVisitorConst {
     }
 
     void updateGen(AstNode* nodep) {
-        nodep->foreach([&](AstNodeVarRef* refp) {
+        m_abort |= nodep->exists([&](AstNodeVarRef* refp) {
             // Cross reference is ambiguous
-            if (VN_IS(refp, VarXRef)) {
-                m_abort = true;
-                return;
-            }
+            if (VN_IS(refp, VarXRef)) return true;
             // Only care about reads
-            if (refp->access().isWriteOnly()) return;
+            if (refp->access().isWriteOnly()) return false;
             // Grab referenced variable
             Variable* const tgtp = getTarget(refp);
             // Bail if not a compatible type
-            if (incompatible(tgtp)) {
-                m_abort = true;
-                return;
-            }
+            if (incompatible(tgtp)) return true;
             // Add to gen set, if not killed - assume whole variable read
-            if (m_currp->m_kill.count(tgtp)) return;
+            if (m_currp->m_kill.count(tgtp)) return false;
             m_currp->m_gen.emplace(tgtp);
+            return false;
         });
     }
 
     void updateKill(AstNode* nodep) {
-        nodep->foreach([&](AstNodeVarRef* refp) {
+        m_abort |= nodep->exists([&](AstNodeVarRef* refp) {
             // Cross reference is ambiguous
-            if (VN_IS(refp, VarXRef)) {
-                m_abort = true;
-                return;
-            }
+            if (VN_IS(refp, VarXRef)) return true;
             // Only care about writes
-            if (refp->access().isReadOnly()) return;
+            if (refp->access().isReadOnly()) return false;
             // Grab referenced variable
             Variable* const tgtp = getTarget(refp);
             // Bail if not a compatible type
-            if (incompatible(tgtp)) {
-                m_abort = true;
-                return;
-            }
+            if (incompatible(tgtp)) return true;
             // If whole written, add to kill set
-            if (refp->nextp()) return;
-            if (VN_IS(refp->abovep(), Sel)) return;
+            if (refp->nextp()) return false;
+            if (VN_IS(refp->abovep(), Sel)) return false;
             m_currp->m_kill.emplace(tgtp);
+            return false;
         });
     }
 
@@ -181,11 +171,12 @@ class CfgLiveVariables final : VNVisitorConst {
         : m_cfg{cfg} {
         // For each basic block, compute the gen and kill set via visit
         cfg.foreach([&](const BasicBlock& bb) {
+            if (m_abort) return;
             VL_RESTORER(m_currp);
             m_currp = &m_blockState[bb];
             for (AstNode* const stmtp : bb.stmtps()) iterateConst(stmtp);
-            if (m_abort) return;
         });
+        if (m_abort) return;
 
         // Perform the flow analysis
         std::deque<const BasicBlock*> workList;
