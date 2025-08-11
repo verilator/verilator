@@ -893,7 +893,7 @@ class AstToDfgCoalesceDrivers final {
             // Gather
             if (DfgLogic* const logicp = driverp->cast<DfgLogic>()) {
                 // Unresolved
-                udriverps.emplace_back();
+                udriverps.emplace_back(logicp);
             } else {
                 // Resolved driver
                 UASSERT_OBJ(!driverp->is<DfgVertexSplice>(), splicep,
