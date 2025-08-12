@@ -1,0 +1,6 @@
+%Error: t/t_covergroup_with_sample_args_too_few_bad.v:16:10: Missing argument on non-defaulted argument 'is_read' in function call to FUNC 'sample'
+                                                           : ... note: In instance 't'
+   16 |     cov1.sample(1);
+      |          ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
