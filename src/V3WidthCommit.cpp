@@ -44,6 +44,7 @@ class WidthCommitVisitor final : public VNVisitor {
     AstNodeModule* m_modp = nullptr;
     std::string m_contNba;  // In continuous- or non-blocking assignment
     VMemberMap m_memberMap;  // Member names cached for fast lookup
+    bool m_inMembersel = false;  // Whether is currently under AstMemberSel
 
 public:
     // METHODS
@@ -299,7 +300,9 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
         classEncapCheck(nodep, nodep->varp(), VN_CAST(nodep->classOrPackagep(), Class));
-        if (nodep->access().isWriteOrRW()) varLifetimeCheck(nodep, nodep->varp());
+        if (!m_inMembersel && nodep->access().isWriteOrRW()) {
+            varLifetimeCheck(nodep, nodep->varp());
+        }
     }
     void visit(AstAssignDly* nodep) override {
         iterateAndNextNull(nodep->timingControlp());
@@ -327,6 +330,8 @@ private:
         classEncapCheck(nodep, nodep->taskp(), VN_CAST(nodep->classOrPackagep(), Class));
     }
     void visit(AstMemberSel* nodep) override {
+        VL_RESTORER(m_inMembersel);
+        m_inMembersel = true;
         iterateChildren(nodep);
         editDType(nodep);
         if (auto* const classrefp = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
