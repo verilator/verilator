@@ -1543,6 +1543,7 @@ class VlTest:
                 *param['all_run_flags'],
                 ("'" if Args.gdbsim else ""),
             ]
+            cmd += self.driver_verilated_flags
             self.run(
                 cmd=cmd,
                 aslr_off=param['aslr_off'],  # Disable address space layour randomization
@@ -1577,6 +1578,10 @@ class VlTest:
     @property
     def driver_verilator_flags(self) -> list:
         return Args.passdown_verilator_flags
+
+    @property
+    def driver_verilated_flags(self) -> list:
+        return Args.passdown_verilated_flags
 
     @property
     def get_default_vltmt_threads(self) -> int:
@@ -2734,6 +2739,8 @@ def _parameter(param: str) -> None:
             sys.exit("%Error: Expected number following " + _Parameter_Next_Level + ": " + param)
         Args.passdown_verilator_flags.append(param)
         _Parameter_Next_Level = None
+    elif re.match(r'^(\+verilator\+.*)', param):
+        Args.passdown_verilated_flags.append(param)
     elif re.search(r'\.py', param):
         Arg_Tests.append(param)
     elif re.match(r'^-?(-debugi|-dumpi)', param):
@@ -2891,6 +2898,7 @@ if __name__ == '__main__':
 
     (Args, rest) = parser.parse_known_intermixed_args()
     Args.passdown_verilator_flags = []
+    Args.passdown_verilated_flags = []
 
     for arg in rest:
         _parameter(arg)

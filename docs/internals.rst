@@ -2109,6 +2109,14 @@ the regression tests with OBJCACHE enabled and in parallel on a machine
 with many cores.  See the -j option and OBJCACHE environment variable.
 
 
+driver.py Pass-Thru Arguments
+-----------------------------
+
+Arguments not understood by `driver.py` which begin with `+verilator+` are
+passed through as Verilated executable arguments. Other not-understood
+arguments are passed as Verilator arguments.
+
+
 driver.py Non-Scenario Arguments
 --------------------------------
 
