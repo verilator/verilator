@@ -6,7 +6,7 @@
 
 interface Iface;
    bit clk;
-   int x;
+   int x[2:0];
 
    clocking cb @(posedge clk);
       default input #0 output #0;
@@ -16,11 +16,15 @@ endinterface
 
 class Foo;
   virtual Iface iface;
+  int index = 0;
   function new(virtual Iface tmp);
     iface = tmp;
   endfunction
   task update(virtual Iface tmp);
     iface = tmp;
+  endtask
+  task update_index(int i);
+    index = i;
   endtask
 endclass
 
@@ -33,7 +37,7 @@ class Bar;
     foo = tmp;
   endtask
   task assignment();
-    foo.iface.cb.x <= 8;
+    foo.iface.cb.x[foo.index] <= 8;
   endtask
 endclass
 
@@ -55,20 +59,34 @@ module t;
     Foo foo2 = new(iface2);
     Bar bar = new(foo);
     clockSome();
-    if (iface.x != 0) $stop;
-    if (iface2.x != 0) $stop;
+    if (iface.x[0] != 0) $stop;
+    if (iface.x[1] != 0) $stop;
+    if (iface2.x[0] != 0) $stop;
+    if (iface2.x[1] != 0) $stop;
     bar.assignment();
     clockSome();
-    if (iface.x != 8) $stop;
-    if (iface2.x != 0) $stop;
+    if (iface.x[0] != 8) $stop;
+    if (iface.x[1] != 0) $stop;
+    if (iface2.x[0] != 0) $stop;
+    if (iface2.x[1] != 0) $stop;
+    foo.update_index(1);
+    clockSome();
+    if (iface.x[0] != 8) $stop;
+    if (iface.x[1] != 0) $stop;
+    if (iface2.x[0] != 0) $stop;
+    if (iface2.x[1] != 0) $stop;
     foo.update(iface2);
     clockSome();
-    if (iface.x != 8) $stop;
-    if (iface2.x != 0) $stop;
+    if (iface.x[0] != 8) $stop;
+    if (iface.x[1] != 0) $stop;
+    if (iface2.x[0] != 0) $stop;
+    if (iface2.x[1] != 0) $stop;
     bar.update(foo2);
     clockSome();
-    if (iface.x != 8) $stop;
-    if (iface2.x != 0) $stop;
+    if (iface.x[0] != 8) $stop;
+    if (iface.x[1] != 0) $stop;
+    if (iface2.x[0] != 0) $stop;
+    if (iface2.x[1] != 0) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
