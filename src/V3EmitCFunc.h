@@ -758,7 +758,7 @@ public:
         puts(");\n");
     }
     void visit(AstCoverInc* nodep) override {
-        if (nodep->declp()->size() == 1) {
+        if (VN_IS(nodep->declp(), CoverOtherDecl)) {
             if (v3Global.opt.threads() > 1) {
                 putns(nodep, "vlSymsp->__Vcoverage[");
                 puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
@@ -777,7 +777,9 @@ public:
             }
             emitIQW(nodep->toggleExprp());
             puts("(");
-            puts(cvtToStr(nodep->declp()->size()));
+            // Each bit of variable has 2 counters, so the size of variable is half of the size of
+            // coverpoint
+            puts(cvtToStr(nodep->declp()->size() / 2));
             puts(", ");
             puts("vlSymsp->__Vcoverage + ");
             puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
