@@ -7010,18 +7010,8 @@ class WidthVisitor final : public VNVisitor {
                         "Type compare expects type reference");
             UASSERT_OBJ(rhsap->attrType() == VAttrType::TYPEID, rhsap,
                         "Type compare expects type reference");
-            AstNodeDType* lhsDtp = nullptr;
-            AstNodeDType* rhsDtp = nullptr;
-            if (!(lhsDtp = VN_CAST(lhsap->fromp(), NodeDType))) {
-                if (AstNodeExpr* const exprp = VN_CAST(lhsap->fromp(), NodeExpr)) {
-                    lhsDtp = exprp->dtypep();
-                }
-            }
-            if (!(rhsDtp = VN_CAST(rhsap->fromp(), NodeDType))) {
-                if (AstNodeExpr* const exprp = VN_CAST(rhsap->fromp(), NodeExpr)) {
-                    rhsDtp = exprp->dtypep();
-                }
-            }
+            const AstNodeDType* const lhsDtp = lhsap->fromDTypep();
+            const AstNodeDType* const rhsDtp = rhsap->fromDTypep();
             UASSERT_OBJ(lhsDtp, lhsap, "LHS has no data type");
             UASSERT_OBJ(rhsDtp, rhsap, "RHS has no data type");
             UINFO(9, "==type lhsDtp " << lhsDtp);
