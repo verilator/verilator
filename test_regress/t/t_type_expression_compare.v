@@ -12,7 +12,11 @@ module t;
       int value2 = 13;
       if (type(value1) != type(value2)) $stop;
       if (type(value1 + value2) != type(value2 + 18)) $stop;
-      $write("*-* All Finished *-*\n");
-      $finish;
+      if (type(value1) == type(value2) && type(value1 + value2) == type(value2 + 18)) begin
+        $write("*-* All Finished *-*\n");
+        $finish;
+      end else begin
+        $stop;
+      end
    end
 endmodule
