@@ -1462,7 +1462,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             bool ins = false;
             if (!foundp) {
                 ins = true;
-            } else if (!findvarp && m_curSymp->findIdFlat(nodep->name())) {
+            } else if (!findvarp && m_curSymp->findIdFlat(nodep->name()) && !foundp->imported()) {
                 nodep->v3error("Unsupported in C: Variable has same name as "
                                << LinkDotState::nodeTextType(foundp->nodep()) << ": "
                                << nodep->prettyNameQ());

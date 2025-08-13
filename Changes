@@ -73,6 +73,7 @@ Verilator 5.039 devel
 * Fix dynamic cast purity (#6267). [Igor Zaworski, Antmicro Ltd.]
 * Fix same variable on the RHS forced to two different LHSs. (#6269). [Artur Bieniek, Antmicro Ltd.]
 * Fix spurious VPI value change callbacks (#6274). [Todd Strader]
+* Fix variables hiding package imports (#6289). [Johan Wouters]
 
 
 Verilator 5.038 2025-07-08
@@ -904,7 +905,7 @@ Verilator 5.016 2023-09-16
 * Fix nested assignments on the LHS (#4435). [Ryszard Rozak, Antmicro Ltd]
 * Fix false MULTITOP on bound interfaces (#4438). [Alex Solomatnikov]
 * Fix internal error on real conversion (#4447). [vdhotre-ventana]
-* Fix lifetime unknown error on enum.name (#4448). [jwoutersymatra]
+* Fix lifetime unknown error on enum.name (#4448). [Johan Wouters]
 * Fix unstable output of VHashSha256 (#4453). [Anthony Donlon]
 * Fix static cast from a stream type (#4469) (#4485). [Ryszard Rozak, Antmicro Ltd]
 * Fix error on enum with VARHIDDEN of cell (#4482). [Michail Rontionov]
