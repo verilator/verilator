@@ -2395,7 +2395,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->attrsp()->foreach([this, nodep](AstAttrOf* attrp) {
                 if (attrp->attrType() == VAttrType::VAR_PORT_DTYPE) {
                     V3Const::constifyParamsEdit(attrp->fromp());  // fromp may change
-                    if (!similarDTypeRecurse(nodep->dtypep(), VN_AS(attrp->fromp(), NodeDType))) {
+                    if (!similarDTypeRecurse(nodep->dtypep(), attrp->fromDTypep())) {
                         nodep->dtypep()->v3error("Non-ANSI I/O declaration of signal "
                                                  "conflicts with type declaration: "
                                                  << nodep->prettyNameQ() << '\n'
@@ -5186,7 +5186,7 @@ class WidthVisitor final : public VNVisitor {
         // Deal with case(type(data_type))
         if (AstAttrOf* const exprap = VN_CAST(nodep->exprp(), AttrOf)) {
             if (exprap->attrType() == VAttrType::TYPEID) {
-                AstNodeDType* const exprDtp = VN_AS(exprap->fromp(), NodeDType);
+                const AstNodeDType* const exprDtp = exprap->fromDTypep();
                 UINFO(9, "case type exprDtp " << exprDtp);
                 // V3Param may have a pointer to this case statement, and we need
                 // dotted references to remain properly named, so rather than
@@ -5205,7 +5205,7 @@ class WidthVisitor final : public VNVisitor {
                                 condp->v3error(
                                     "Case(type) statement requires items that have type() items");
                             } else {
-                                AstNodeDType* const condDtp = VN_AS(condAttrp->fromp(), NodeDType);
+                                AstNodeDType* const condDtp = condAttrp->fromDTypep();
                                 if (AstNode::computeCastable(exprDtp, condDtp, nodep)
                                     == VCastable::SAMEISH) {
                                     hit = true;
@@ -7012,8 +7012,6 @@ class WidthVisitor final : public VNVisitor {
                         "Type compare expects type reference");
             const AstNodeDType* const lhsDtp = lhsap->fromDTypep();
             const AstNodeDType* const rhsDtp = rhsap->fromDTypep();
-            UASSERT_OBJ(lhsDtp, lhsap, "LHS has no data type");
-            UASSERT_OBJ(rhsDtp, rhsap, "RHS has no data type");
             UINFO(9, "==type lhsDtp " << lhsDtp);
             UINFO(9, "==type rhsDtp " << lhsDtp);
             const bool invert = VN_IS(nodep, NeqT);

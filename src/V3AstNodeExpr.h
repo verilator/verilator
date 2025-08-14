@@ -588,14 +588,8 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
     AstNodeDType* fromDTypep() const {
-        if (m_attrType == VAttrType::TYPEID) {
-            if (AstNodeDType* dtypep = VN_CAST(fromp(), NodeDType)) {
-                return dtypep;
-            } else if (AstNodeExpr* exprp = VN_CAST(fromp(), NodeExpr)) {
-                return exprp->dtypep();
-            }
-        }
-        return nullptr;
+        if (AstNodeDType* dtypep = VN_CAST(fromp(), NodeDType)) return dtypep;
+        return VN_AS(fromp(), NodeExpr)->dtypep();
     }
 };
 class AstCExpr final : public AstNodeExpr {
