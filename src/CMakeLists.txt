@@ -48,6 +48,7 @@ set(HEADERS
     V3AstNodeDType.h
     V3AstNodeExpr.h
     V3AstNodeOther.h
+    V3AstNodeStmt.h
     V3AstUserAllocator.h
     V3Begin.h
     V3Branch.h
@@ -372,7 +373,8 @@ add_custom_command(
     COMMAND ${PYTHON3}
     ARGS
         ${ASTGEN} -I "${srcdir}" --astdef V3AstNodeDType.h --astdef
-        V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h
+        V3AstNodeExpr.h --astdef V3AstNodeOther.h --astdef V3AstNodeStmt.h
+        --dfgdef V3DfgVertices.h
         --classes
 )
 list(
@@ -485,7 +487,8 @@ foreach(astgen_name ${ASTGENERATED_NAMES})
         COMMAND ${PYTHON3}
         ARGS
             ${ASTGEN} -I "${srcdir}" --astdef V3AstNodeDType.h --astdef
-            V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h
+            V3AstNodeExpr.h --astdef V3AstNodeOther.h --astdef V3AstNodeStmt.h
+            --dfgdef V3DfgVertices.h
             ${astgen_name}.cpp
     )
     list(APPEND GENERATED_FILES ${astgen_name}__gen.cpp)
