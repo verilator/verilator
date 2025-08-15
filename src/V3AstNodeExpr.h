@@ -406,31 +406,6 @@ private:
         return lhsp()->isPure() && rhsp()->isPure() && thsp()->isPure();
     }
 };
-class AstNodeCond VL_NOT_FINAL : public AstNodeTriop {
-    // @astgen alias op1 := condp
-    // @astgen alias op2 := thenp
-    // @astgen alias op3 := elsep
-protected:
-    AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp,
-                AstNodeExpr* elsep);
-
-public:
-    ASTGEN_MEMBERS_AstNodeCond;
-    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
-                       const V3Number& ths) override;
-    string emitVerilog() override { return "%k(%l %f? %r %k: %t)"; }
-    string emitC() override { return "VL_COND_%nq%lq%rq%tq(%nw, %P, %li, %ri, %ti)"; }
-    string emitSMT() const override { return "(ite (__Vbool %l) %r %t)"; }
-    bool cleanOut() const override { return false; }  // clean if e1 & e2 clean
-    bool cleanLhs() const override { return true; }
-    bool cleanRhs() const override { return false; }
-    bool cleanThs() const override { return false; }  // Propagates up
-    bool sizeMattersLhs() const override { return false; }
-    bool sizeMattersRhs() const override { return false; }
-    bool sizeMattersThs() const override { return false; }
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    virtual AstNodeExpr* cloneType(AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep) = 0;
-};
 class AstNodeDistTriop VL_NOT_FINAL : public AstNodeTriop {
 public:
     AstNodeDistTriop(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
@@ -4681,6 +4656,30 @@ public:
 };
 
 // === AstNodeTriop ===
+
+class AstCond final : public AstNodeTriop {
+    // @astgen alias op1 := condp
+    // @astgen alias op2 := thenp
+    // @astgen alias op3 := elsep
+public:
+    AstCond(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep);
+    ASTGEN_MEMBERS_AstCond;
+    void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
+                       const V3Number& ths) override {
+        out.opAssign(lhs.isNeqZero() ? rhs : ths);
+    }
+    string emitVerilog() override { return "%k(%l %f? %r %k: %t)"; }
+    string emitC() override { return "VL_COND_%nq%lq%rq%tq(%nw, %P, %li, %ri, %ti)"; }
+    string emitSMT() const override { return "(ite (__Vbool %l) %r %t)"; }
+    bool cleanOut() const override { return false; }  // clean if e1 & e2 clean
+    bool cleanLhs() const override { return true; }
+    bool cleanRhs() const override { return false; }
+    bool cleanThs() const override { return false; }  // Propagates up
+    bool sizeMattersLhs() const override { return false; }
+    bool sizeMattersRhs() const override { return false; }
+    bool sizeMattersThs() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_BRANCH; }
+};
 class AstPostAdd final : public AstNodeTriop {
     // Post-increment/add
     // Children: lhsp: AstConst (1) as currently support only ++ not +=
@@ -4857,28 +4856,6 @@ public:
     bool sizeMattersLhs() const override { return false; }
     bool sizeMattersRhs() const override { return false; }
     bool sizeMattersThs() const override { return false; }
-};
-
-// === AstNodeCond ===
-class AstCond final : public AstNodeCond {
-    // Conditional ?: expression
-public:
-    AstCond(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep)
-        : ASTGEN_SUPER_Cond(fl, condp, thenp, elsep) {}
-    ASTGEN_MEMBERS_AstCond;
-    AstNodeExpr* cloneType(AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep) override {
-        return new AstCond{fileline(), condp, thenp, elsep};
-    }
-};
-class AstCondBound final : public AstNodeCond {
-    // Conditional ?: expression, specially made for safety checking of array bounds
-public:
-    AstCondBound(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep)
-        : ASTGEN_SUPER_CondBound(fl, condp, thenp, elsep) {}
-    ASTGEN_MEMBERS_AstCondBound;
-    AstNodeExpr* cloneType(AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep) override {
-        return new AstCondBound{fileline(), condp, thenp, elsep};
-    }
 };
 
 // === AstNodeDistTriop ===

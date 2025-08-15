@@ -115,7 +115,7 @@ class CastVisitor final : public VNVisitor {
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         if (nodep->sizeMattersRhs()) ensureCast(nodep->rhsp());
     }
-    void visit(AstNodeCond* nodep) override {
+    void visit(AstCond* nodep) override {
         // All class types are castable to each other. If they are of different types,
         // a compilation error will be thrown, so an explicit cast is required. Types were
         // already checked by V3Width and dtypep of a condition operator is a type of their

@@ -672,7 +672,7 @@ private:
             }
         }
     }
-    void visit(AstNodeCond* nodep) override {
+    void visit(AstCond* nodep) override {
         // We could use above visit(AstNodeTriop), but need to do short circuiting.
         // It's also slower even O(n^2) to evaluate both sides when we
         // really only need to evaluate one side.

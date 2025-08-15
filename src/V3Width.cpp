@@ -492,7 +492,7 @@ class WidthVisitor final : public VNVisitor {
         nodep->dtypeSetUInt64();  // A pointer, but not that it matters
     }
 
-    void visit(AstNodeCond* nodep) override {
+    void visit(AstCond* nodep) override {
         // op = cond ? expr1 : expr2
         // See IEEE-2012 11.4.11 and Table 11-21.
         //   LHS is self-determined

@@ -321,7 +321,7 @@ class PremitVisitor final : public VNVisitor {
         }
         checkNode(nodep);
     }
-    void visit(AstNodeCond* nodep) override {
+    void visit(AstCond* nodep) override {
         iterateChildren(nodep);
         if (nodep->thenp()->isWide() && !VN_IS(nodep->condp(), Const)
             && !VN_IS(nodep->condp(), VarRef)) {

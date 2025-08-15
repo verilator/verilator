@@ -1099,17 +1099,17 @@ class ConstVisitor final : public VNVisitor {
         // (otherwise we'd be trading one operation for two operations)
         // V3Clean often makes this pattern, as it postpones the AND until
         // as high as possible, which is usually the right choice, except for this.
-        AstNodeCond* const condp = VN_CAST(nodep->rhsp(), NodeCond);
+        AstCond* const condp = VN_CAST(nodep->rhsp(), Cond);
         if (!condp) return false;
         if (!VN_IS(condp->thenp(), Const) && !VN_IS(condp->elsep(), Const)) return false;
         AstConst* const maskp = VN_CAST(nodep->lhsp(), Const);
         if (!maskp) return false;
         UINFO(4, "AND(CONSTm, CONDcond(c, i, e))->CONDcond(c, AND(m,i), AND(m, e)) " << nodep);
-        AstNodeCond* const newp = static_cast<AstNodeCond*>(condp->cloneType(
-            condp->condp()->unlinkFrBack(),
+        AstCond* const newp = new AstCond{
+            condp->fileline(), condp->condp()->unlinkFrBack(),
             new AstAnd{nodep->fileline(), maskp->cloneTree(false), condp->thenp()->unlinkFrBack()},
             new AstAnd{nodep->fileline(), maskp->cloneTree(false),
-                       condp->elsep()->unlinkFrBack()}));
+                       condp->elsep()->unlinkFrBack()}};
         newp->thenp()->dtypeFrom(nodep);  // As And might have been to change widths
         newp->elsep()->dtypeFrom(nodep);
         nodep->replaceWithKeepDType(newp);
@@ -3658,20 +3658,20 @@ class ConstVisitor final : public VNVisitor {
     TREEOPC("AstAnd   {$lhsp.isOne, matchRedundantClean(nodep)}", "DONE")  // 1 & (a == b) -> (IData)(a == b)
     // Trinary ops
     // Note V3Case::Sel requires Cond to always be conditionally executed in C to prevent core dump!
-    TREEOP ("AstNodeCond{$condp.isZero,       $thenp, $elsep}", "replaceWChild(nodep,$elsep)");
-    TREEOP ("AstNodeCond{$condp.isNeqZero,    $thenp, $elsep}", "replaceWChild(nodep,$thenp)");
-    TREEOPA("AstNodeCond{$condp.isZero,       $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$elsep)");
-    TREEOPA("AstNodeCond{$condp.isNeqZero,    $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$thenp)");
-    TREEOP ("AstNodeCond{$condp, operandsSame($thenp,,$elsep)}","replaceWChild(nodep,$thenp)");
+    TREEOP ("AstCond{$condp.isZero,       $thenp, $elsep}", "replaceWChild(nodep,$elsep)");
+    TREEOP ("AstCond{$condp.isNeqZero,    $thenp, $elsep}", "replaceWChild(nodep,$thenp)");
+    TREEOPA("AstCond{$condp.isZero,       $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$elsep)");
+    TREEOPA("AstCond{$condp.isNeqZero,    $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$thenp)");
+    TREEOP ("AstCond{$condp, operandsSame($thenp,,$elsep)}","replaceWChild(nodep,$thenp)");
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstCond{$condp.isZero}",           "replaceWIteratedThs(nodep)");
     TREEOPS("AstCond{$condp.isNeqZero}",        "replaceWIteratedRhs(nodep)");
     TREEOP ("AstCond{$condp.castNot, $thenp, $elsep}", "AstCond{$condp->castNot()->lhsp(), $elsep, $thenp}");
-    TREEOP ("AstNodeCond{$condp.width1, $thenp.width1, $thenp.isAllOnes, $elsep}", "AstLogOr {$condp, $elsep}");  // a?1:b == a||b
-    TREEOP ("AstNodeCond{$condp.width1, $thenp.width1, $thenp, $elsep.isZero, !$elsep.isClassHandleValue}", "AstLogAnd{$condp, $thenp}");  // a?b:0 == a&&b
-    TREEOP ("AstNodeCond{$condp.width1, $thenp.width1, $thenp, $elsep.isAllOnes}", "AstLogOr {AstNot{$condp}, $thenp}");  // a?b:1 == ~a||b
-    TREEOP ("AstNodeCond{$condp.width1, $thenp.width1, $thenp.isZero, !$thenp.isClassHandleValue, $elsep}", "AstLogAnd{AstNot{$condp}, $elsep}");  // a?0:b == ~a&&b
-    TREEOP ("AstNodeCond{!$condp.width1, operandBoolShift(nodep->condp())}", "replaceBoolShift(nodep->condp())");
+    TREEOP ("AstCond{$condp.width1, $thenp.width1, $thenp.isAllOnes, $elsep}", "AstLogOr {$condp, $elsep}");  // a?1:b == a||b
+    TREEOP ("AstCond{$condp.width1, $thenp.width1, $thenp, $elsep.isZero, !$elsep.isClassHandleValue}", "AstLogAnd{$condp, $thenp}");  // a?b:0 == a&&b
+    TREEOP ("AstCond{$condp.width1, $thenp.width1, $thenp, $elsep.isAllOnes}", "AstLogOr {AstNot{$condp}, $thenp}");  // a?b:1 == ~a||b
+    TREEOP ("AstCond{$condp.width1, $thenp.width1, $thenp.isZero, !$thenp.isClassHandleValue, $elsep}", "AstLogAnd{AstNot{$condp}, $elsep}");  // a?0:b == ~a&&b
+    TREEOP ("AstCond{!$condp.width1, operandBoolShift(nodep->condp())}", "replaceBoolShift(nodep->condp())");
     // Prefer constants on left, since that often needs a shift, it lets
     // constant red remove the shift
     TREEOP ("AstNodeBiCom{!$lhsp.castConst, $rhsp.castConst}",  "swapSides(nodep)");

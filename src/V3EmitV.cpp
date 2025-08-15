@@ -616,7 +616,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         puts("}");
     }
-    void visit(AstNodeCond* nodep) override {
+    void visit(AstCond* nodep) override {
         putbs("(");
         iterateAndNextConstNull(nodep->condp());
         putfs(nodep, " ? ");

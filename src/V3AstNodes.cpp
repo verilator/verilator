@@ -166,9 +166,8 @@ const char* AstNodeQuadop::broken() const {
     return nullptr;
 }
 
-AstNodeCond::AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp,
-                         AstNodeExpr* elsep)
-    : AstNodeTriop{t, fl, condp, thenp, elsep} {
+AstCond::AstCond(FileLine* fl, AstNodeExpr* condp, AstNodeExpr* thenp, AstNodeExpr* elsep)
+    : ASTGEN_SUPER_Cond(fl, condp, thenp, elsep) {
     UASSERT_OBJ(thenp, this, "No thenp expression");
     UASSERT_OBJ(elsep, this, "No elsep expression");
     if (thenp->isClassHandleValue() && elsep->isClassHandleValue()) {
@@ -178,14 +177,6 @@ AstNodeCond::AstNodeCond(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeExpr
         dtypep(commonClassTypep);
     } else {
         dtypeFrom(thenp);
-    }
-}
-void AstNodeCond::numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
-                                const V3Number& ths) {
-    if (lhs.isNeqZero()) {
-        out.opAssign(rhs);
-    } else {
-        out.opAssign(ths);
     }
 }
 
