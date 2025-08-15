@@ -38,7 +38,7 @@
 #if defined(__linux)
 # include <sched.h>  // For sched_getcpu()
 #endif
-#if defined(__APPLE__) && !defined(__arm64__)
+#if defined(__APPLE__) && !defined(__arm64__) && !defined(__POWERPC__)
 # include <cpuid.h>  // For __cpuid_count()
 #endif
 // clang-format on
@@ -88,7 +88,7 @@ double DeltaWallTime::gettime() VL_MT_SAFE {
 uint16_t getcpu() VL_MT_SAFE {
 #if defined(__linux)
     return sched_getcpu();  // TODO: this is a system call. Not exactly cheap.
-#elif defined(__APPLE__) && !defined(__arm64__)
+#elif defined(__APPLE__) && !defined(__arm64__) && !defined(__POWERPC__)
     uint32_t info[4];
     __cpuid_count(1, 0, info[0], info[1], info[2], info[3]);
     // info[1] is EBX, bits 24-31 are APIC ID
