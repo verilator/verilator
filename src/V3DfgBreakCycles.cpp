@@ -192,11 +192,44 @@ class TraceDriver final : public DfgVisitor {
     }
 
     template <typename Vertex>
-    Vertex* traceBinary(Vertex* vtxp) {
+    Vertex* traceBitwiseBinary(Vertex* vtxp) {
         static_assert(std::is_base_of<DfgVertexBinary, Vertex>::value,
                       "Should only call on DfgVertexBinary");
         if (DfgVertex* const rp = trace(vtxp->rhsp(), m_msb, m_lsb)) {
             if (DfgVertex* const lp = trace(vtxp->lhsp(), m_msb, m_lsb)) {
+                Vertex* const resp = make<Vertex>(vtxp, m_msb - m_lsb + 1);
+                resp->rhsp(rp);
+                resp->lhsp(lp);
+                return resp;
+            }
+        }
+        return nullptr;
+    }
+
+    template <typename Vertex>
+    DfgVertex* traceAddSub(Vertex* vtxp) {
+        static_assert(std::is_base_of<DfgVertexBinary, Vertex>::value,
+                      "Should only call on DfgVertexBinary");
+        if (DfgVertex* const rp = trace(vtxp->rhsp(), m_msb, 0)) {
+            if (DfgVertex* const lp = trace(vtxp->lhsp(), m_msb, 0)) {
+                Vertex* const opp = make<Vertex>(vtxp, m_msb + 1);
+                opp->rhsp(rp);
+                opp->lhsp(lp);
+                DfgSel* const selp = make<DfgSel>(vtxp, m_msb - m_lsb + 1);
+                selp->fromp(opp);
+                selp->lsb(m_lsb);
+                return selp;
+            }
+        }
+        return nullptr;
+    }
+
+    template <typename Vertex>
+    Vertex* traceCmp(Vertex* vtxp) {
+        static_assert(std::is_base_of<DfgVertexBinary, Vertex>::value,
+                      "Should only call on DfgVertexBinary");
+        if (DfgVertex* const rp = trace(vtxp->rhsp(), vtxp->rhsp()->width() - 1, 0)) {
+            if (DfgVertex* const lp = trace(vtxp->lhsp(), vtxp->lhsp()->width() - 1, 0)) {
                 Vertex* const resp = make<Vertex>(vtxp, m_msb - m_lsb + 1);
                 resp->rhsp(rp);
                 resp->lhsp(lp);
@@ -356,47 +389,47 @@ class TraceDriver final : public DfgVisitor {
 
     void visit(DfgAnd* vtxp) override {
         if (!m_aggressive) return;
-        SET_RESULT(traceBinary(vtxp));
+        SET_RESULT(traceBitwiseBinary(vtxp));
     }
     void visit(DfgOr* vtxp) override {
         if (!m_aggressive) return;
-        SET_RESULT(traceBinary(vtxp));
+        SET_RESULT(traceBitwiseBinary(vtxp));
     }
     void visit(DfgXor* vtxp) override {
         if (!m_aggressive) return;
-        SET_RESULT(traceBinary(vtxp));
+        SET_RESULT(traceBitwiseBinary(vtxp));
     }
     void visit(DfgAdd* vtxp) override {
         if (!m_aggressive) return;
-        SET_RESULT(traceBinary(vtxp));
+        SET_RESULT(traceAddSub(vtxp));
     }
     void visit(DfgSub* vtxp) override {
         if (!m_aggressive) return;
-        SET_RESULT(traceBinary(vtxp));
+        SET_RESULT(traceAddSub(vtxp));
     }
     void visit(DfgEq* vtxp) override {
         if (!m_aggressive) return;
-        SET_RESULT(traceBinary(vtxp));
+        SET_RESULT(traceCmp(vtxp));
     }
     void visit(DfgNeq* vtxp) override {
         if (!m_aggressive) return;
-        SET_RESULT(traceBinary(vtxp));
+        SET_RESULT(traceCmp(vtxp));
     }
     void visit(DfgLt* vtxp) override {
         if (!m_aggressive) return;
-        SET_RESULT(traceBinary(vtxp));
+        SET_RESULT(traceCmp(vtxp));
     }
     void visit(DfgLte* vtxp) override {
         if (!m_aggressive) return;
-        SET_RESULT(traceBinary(vtxp));
+        SET_RESULT(traceCmp(vtxp));
     }
     void visit(DfgGt* vtxp) override {
         if (!m_aggressive) return;
-        SET_RESULT(traceBinary(vtxp));
+        SET_RESULT(traceCmp(vtxp));
     }
     void visit(DfgGte* vtxp) override {
         if (!m_aggressive) return;
-        SET_RESULT(traceBinary(vtxp));
+        SET_RESULT(traceCmp(vtxp));
     }
 
     void visit(DfgShiftR* vtxp) override {
@@ -1032,39 +1065,45 @@ class FixUpIndependentRanges final {
             lsb = msb + 1;
         }
 
-        // If we managed to imporove something, apply the replacement
-        if (nImprovements) {
-            // Concatenate all the terms to create the replacement
-            DfgVertex* replacementp = termps.front();
-            const uint64_t vComp = vtxp->getUser<uint64_t>();
-            for (size_t i = 1; i < termps.size(); ++i) {
-                DfgVertex* const termp = termps[i];
-                const uint32_t catWidth = replacementp->width() + termp->width();
-                AstNodeDType* const dtypep = DfgVertex::dtypeForWidth(catWidth);
-                DfgConcat* const catp = new DfgConcat{dfg, flp, dtypep};
-                catp->rhsp(replacementp);
-                catp->lhsp(termp);
-                // Need to figure out which component the replacement vertex
-                // belongs to. If any of the terms are of the original
-                // component, it's part of that component, otherwise its not
-                // cyclic (all terms are from outside the original component,
-                // and feed into the original component).
-                const uint64_t tComp = termp->getUser<uint64_t>();
-                const uint64_t rComp = replacementp->getUser<uint64_t>();
-                catp->setUser<uint64_t>(tComp == vComp || rComp == vComp ? vComp : 0);
-                replacementp = catp;
-            }
+        // If no imporovement was possible, delete the terms we just created
+        if (!nImprovements) {
+            for (DfgVertex* const vtxp : termps) VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
+            termps.clear();
+            return 0;
+        }
 
-            // Replace the vertex
-            vtxp->replaceWith(replacementp);
-            // Connect the Sel nodes in the replacement
-            for (DfgVertex* const termp : termps) {
-                if (DfgSel* const selp = termp->cast<DfgSel>()) {
-                    if (!selp->fromp()) selp->fromp(vtxp);
-                }
+        // We managed to imporove something, apply the replacement
+        // Concatenate all the terms to create the replacement
+        DfgVertex* replacementp = termps.front();
+        const uint64_t vComp = vtxp->getUser<uint64_t>();
+        for (size_t i = 1; i < termps.size(); ++i) {
+            DfgVertex* const termp = termps[i];
+            const uint32_t catWidth = replacementp->width() + termp->width();
+            AstNodeDType* const dtypep = DfgVertex::dtypeForWidth(catWidth);
+            DfgConcat* const catp = new DfgConcat{dfg, flp, dtypep};
+            catp->rhsp(replacementp);
+            catp->lhsp(termp);
+            // Need to figure out which component the replacement vertex
+            // belongs to. If any of the terms are of the original
+            // component, it's part of that component, otherwise its not
+            // cyclic (all terms are from outside the original component,
+            // and feed into the original component).
+            const uint64_t tComp = termp->getUser<uint64_t>();
+            const uint64_t rComp = replacementp->getUser<uint64_t>();
+            catp->setUser<uint64_t>(tComp == vComp || rComp == vComp ? vComp : 0);
+            replacementp = catp;
+        }
+
+        // Replace the vertex
+        vtxp->replaceWith(replacementp);
+        // Connect the Sel nodes in the replacement
+        for (DfgVertex* const termp : termps) {
+            if (DfgSel* const selp = termp->cast<DfgSel>()) {
+                if (!selp->fromp()) selp->fromp(vtxp);
             }
         }
 
+        // Done
         return nImprovements;
     }
 

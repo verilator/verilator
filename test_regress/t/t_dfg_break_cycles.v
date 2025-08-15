@@ -26,56 +26,56 @@ module t (
   // Interesting user code to cover
   //////////////////////////////////////////////////////////////////////////
 
-  `signal(GRAY_SEL, 3);
+  `signal(GRAY_SEL, 3); // UNOPTFLAT
   assign GRAY_SEL = rand_a[2:0] ^ 3'(GRAY_SEL[2:1]);
 
-  `signal(GRAY_SHIFT, 3);
+  `signal(GRAY_SHIFT, 3); // UNOPTFLAT
   assign GRAY_SHIFT = rand_a[2:0] ^ (GRAY_SHIFT >> 1);
 
-  `signal(GRAY_REV_SEL, 3);
+  `signal(GRAY_REV_SEL, 3); // UNOPTFLAT
   assign GRAY_REV_SEL = rand_a[2:0] ^ {GRAY_REV_SEL[1:0], 1'b0};
 
-  `signal(GRAY_REV_SHIFT, 3);
+  `signal(GRAY_REV_SHIFT, 3); // UNOPTFLAT
   assign GRAY_REV_SHIFT = rand_a[2:0] ^ (GRAY_REV_SHIFT << 1);
 
   //////////////////////////////////////////////////////////////////////////
   // Fill coverage
   //////////////////////////////////////////////////////////////////////////
 
-  `signal(CONCAT_RHS, 2);
+  `signal(CONCAT_RHS, 2); // UNOPTFLAT
   assign CONCAT_RHS[0] = rand_a[0];
   assign CONCAT_RHS[1] = CONCAT_RHS[0];
 
-  `signal(CONCAT_LHS, 2);
+  `signal(CONCAT_LHS, 2); // UNOPTFLAT
   assign CONCAT_LHS[0] = CONCAT_LHS[1];
   assign CONCAT_LHS[1] = rand_a[1];
 
-  `signal(CONCAT_MID, 3);
+  `signal(CONCAT_MID, 3); // UNOPTFLAT
   assign CONCAT_MID[0] = |CONCAT_MID[2:1];
   assign CONCAT_MID[2:1] = {rand_a[2], ~rand_a[2]};
 
-  `signal(SEL, 3);
+  `signal(SEL, 3); // UNOPTFLAT
   assign SEL[0] = rand_a[4];
   assign SEL[1] = SEL[0];
   assign SEL[2] = SEL[1];
 
-  `signal(EXTEND, 8);
+  `signal(EXTEND, 8); // UNOPTFLAT
   assign EXTEND[0] = rand_a[3];
   assign EXTEND[3:1] = 3'(EXTEND[0]);
   assign EXTEND[4] = EXTEND[1];
   assign EXTEND[6:5] = EXTEND[2:1];
   assign EXTEND[7] = EXTEND[3];
 
-  `signal(NOT, 3);
+  `signal(NOT, 3); // UNOPTFLAT
   assign NOT = ~(rand_a[2:0] ^ 3'(NOT[2:1]));
 
-  `signal(AND, 3);
+  `signal(AND, 3); // UNOPTFLAT
   assign AND = rand_a[2:0] & 3'(AND[2:1]);
 
-  `signal(OR, 3);
+  `signal(OR, 3); // UNOPTFLAT
   assign OR = rand_a[2:0] | 3'(OR[2:1]);
 
-  `signal(SHIFTR, 14);
+  `signal(SHIFTR, 14); // UNOPTFLAT
   assign SHIFTR = {
     SHIFTR[6:5],         // 13:12
     SHIFTR[7:6],         // 11:10
@@ -84,10 +84,10 @@ module t (
     rand_a[3:0]          // 3:0
   };
 
-  `signal(SHIFTR_VARIABLE, 2);
+  `signal(SHIFTR_VARIABLE, 2); // UNOPTFLAT
   assign SHIFTR_VARIABLE = rand_a[1:0] ^ ({1'b0, SHIFTR_VARIABLE[1]} >> rand_b[0]);
 
-  `signal(SHIFTL, 14);
+  `signal(SHIFTL, 14); // UNOPTFLAT
   assign SHIFTL = {
     SHIFTL[6:5],         // 13:12
     SHIFTL[7:6],         // 11:10
@@ -96,18 +96,18 @@ module t (
     rand_a[3:0]          // 3:0
   };
 
-  `signal(SHIFTL_VARIABLE, 2);
+  `signal(SHIFTL_VARIABLE, 2); // UNOPTFLAT
   assign SHIFTL_VARIABLE = rand_a[1:0] ^ ({SHIFTL_VARIABLE[0], 1'b0} << rand_b[0]);
 
-  `signal(VAR_A, 2);
+  `signal(VAR_A, 2); // UNOPTFLAT
   wire logic [1:0] VAR_B;
   assign VAR_A = {rand_a[0], VAR_B[0]};
   assign VAR_B = (VAR_A >> 1) ^ 2'(VAR_B[1]);
 
-  `signal(REPLICATE, 4);
+  `signal(REPLICATE, 4); // UNOPTFLAT
   assign REPLICATE = rand_a[3:0] ^ ({2{REPLICATE[3:2]}} >> 2);
 
-  `signal(PARTIAL, 4);
+  `signal(PARTIAL, 4); // UNOPTFLAT
   assign PARTIAL[0] = rand_a[0];
   // PARTIAL[1] intentionally unconnected
   assign PARTIAL[3:2] = rand_a[3:2] ^ {PARTIAL[2], PARTIAL[0]};
@@ -115,14 +115,14 @@ module t (
   wire [2:0] array_0 [2];
   assign array_0[0] = rand_a[2:0];
   assign array_0[1] = array_0[0];
-  `signal(ARRAY_0, 3);
+  `signal(ARRAY_0, 3); // UNOPTFLAT
   assign ARRAY_0 = array_0[1];
 
   wire [2:0] array_1 [1];
   assign array_1[0][0] = rand_a[0];
   assign array_1[0][1] = array_1[0][0];
   assign array_1[0][2] = array_1[0][1];
-  `signal(ARRAY_1, 3);
+  `signal(ARRAY_1, 3); // UNOPTFLAT
   assign ARRAY_1 = array_1[0];
 
   wire [2:0] array_2a [2];
@@ -132,46 +132,66 @@ module t (
   assign array_2a[0][2] = array_2b[1][1];
   assign array_2a[1] = array_2a[0];
   assign array_2b = array_2a;
-  `signal(ARRAY_2, 3);
+  `signal(ARRAY_2, 3); // UNOPTFLAT
   assign ARRAY_2 = array_2a[0];
 
   wire [2:0] array_3 [2];
   assign array_3[0] = rand_a[2:0] ^ array_3[1] >> 1;
   assign array_3[1] = array_3[0];
-  `signal(ARRAY_3, 3);
+  `signal(ARRAY_3, 3); // UNOPTFLAT
   assign ARRAY_3 = array_3[0];
 
-  `signal(ADD, 8);
-  assign ADD = ((ADD << 4) + 8'(rand_a[3:0]));
+  `signal(ADD_A, 8); // UNOPTFLAT
+  `signal(ADD_B, 8);
+  `signal(ADD_C, 8);
+  assign ADD_C = rand_b[7:0] + ADD_B;
+  assign ADD_B = (ADD_A << 4) + rand_a[7:0];
+  assign ADD_A = {ADD_C[7], 7'd0};
 
-  `signal(SUB, 8);
-  assign SUB = ((SUB << 4) - 8'(rand_a[3:0]));
+  `signal(SUB_A, 8); // UNOPTFLAT
+  `signal(SUB_B, 8);
+  `signal(SUB_C, 8);
+  assign SUB_C = rand_b[7:0] - SUB_B;
+  assign SUB_B = (SUB_A << 4) - rand_a[7:0];
+  assign SUB_A = {SUB_C[7], 7'd0};
 
-  `signal(EQ, 2);
-  assign EQ = {rand_a[0], EQ >> 1 == rand_b[1:0]};
+  `signal(EQ_A, 1); // UNOPTFLAT
+  `signal(EQ_B, 3);
+  assign EQ_A = EQ_B >> 1 == rand_b[2:0];
+  assign EQ_B = {rand_a[1:0], EQ_A};
 
-  `signal(NEQ, 2);
-  assign NEQ = {rand_a[0], NEQ >> 1 != rand_b[1:0]};
+  `signal(NEQ_A, 1); // UNOPTFLAT
+  `signal(NEQ_B, 3);
+  assign NEQ_A = NEQ_B >> 1 != rand_b[2:0];
+  assign NEQ_B = {rand_a[1:0], NEQ_A};
 
-  `signal(LT, 2);
-  assign LT = {rand_a[0], LT >> 1 < rand_b[1:0]};
+  `signal(LT_A, 1); // UNOPTFLAT
+  `signal(LT_B, 3);
+  assign LT_A = LT_B >> 1 < rand_b[2:0];
+  assign LT_B = {rand_a[1:0], LT_A};
 
-  `signal(LTE, 2);
-  assign LTE = {rand_a[0], LTE >> 1 <= rand_b[1:0]};
+  `signal(LTE_A, 1); // UNOPTFLAT
+  `signal(LTE_B, 3);
+  assign LTE_A = LTE_B >> 1 <= rand_b[2:0];
+  assign LTE_B = {rand_a[1:0], LTE_A};
 
-  `signal(GT, 2);
-  assign GT = {rand_a[0], GT >> 1 > rand_b[1:0]};
+  `signal(GT_A, 1); // UNOPTFLAT
+  `signal(GT_B, 3);
+  assign GT_A = GT_B >> 1 > rand_b[2:0];
+  assign GT_B = {rand_a[1:0], GT_A};
 
-  `signal(GTE, 2);
-  assign GTE = {rand_a[0], GTE >> 1 >= rand_b[1:0]};
+  `signal(GTE_A, 1); // UNOPTFLAT
+  `signal(GTE_B, 3);
+  assign GTE_A = GTE_B >> 1 >= rand_b[2:0];
+  assign GTE_B = {rand_a[1:0], GTE_A};
 
-  `signal(COND_THEN, 3);
+  `signal(COND_THEN, 3); // UNOPTFLAT
   assign COND_THEN = {rand_a[0], rand_a[0] ? 2'(COND_THEN << 2) : rand_b[1:0]};
 
-  `signal(COND_ELSE, 3);
+  `signal(COND_ELSE, 3); // UNOPTFLAT
   assign COND_ELSE = {rand_a[0], rand_a[0] ? rand_b[1:0] : 2'(COND_ELSE << 2)};
 
-  `signal(COND_COND, 3);
+  `signal(COND_COND, 3); // UNOPTFLAT
   assign COND_COND = {rand_a[0], (COND_COND >> 2) == 3'b001 ? rand_b[3:2] : rand_b[1:0]};
 
 endmodule
