@@ -43,14 +43,9 @@ module t (
      array[2][7:4] = rand_a[7:4];
    end
 
-   `signal(FOLD_UNARY_CLog2,       $clog2(const_a));
-   `signal(FOLD_UNARY_CountOnes,   $countones(const_a));
-   `signal(FOLD_UNARY_IsUnknown,   $isunknown(const_a));
    `signal(FOLD_UNARY_LogNot,      !const_a[0]);
    `signal(FOLD_UNARY_Negate,      -const_a);
    `signal(FOLD_UNARY_Not,         ~const_a);
-   `signal(FOLD_UNARY_OneHot,      $onehot(const_a));
-   `signal(FOLD_UNARY_OneHot0,     $onehot0(const_a));
    `signal(FOLD_UNARY_RedAnd,      &const_a);
    `signal(FOLD_UNARY_RedOr,       |const_a);
    `signal(FOLD_UNARY_RedXor,      ^const_a);

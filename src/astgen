@@ -1356,6 +1356,116 @@ DfgVertices["Vertex"].addSubClass(DfgVertices["VertexTernary"])
 DfgVertices["VertexVariadic"] = Node("VertexVariadic", DfgVertices["Vertex"])
 DfgVertices["Vertex"].addSubClass(DfgVertices["VertexVariadic"])
 
+# AstNodeExpr that are not representable in Dfg
+DfgIgnored = (
+    # Floating point operations
+    "AcosD",
+    "AcoshD",
+    "AddD",
+    "AsinD",
+    "AsinhD",
+    "Atan2D",
+    "AtanD",
+    "AtanhD",
+    "BitsToRealD",
+    "CeilD",
+    "CosD",
+    "CoshD",
+    "DivD",
+    "EqD",
+    "ExpD",
+    "FloorD",
+    "GtD",
+    "GteD",
+    "HypotD",
+    "ISToRD",
+    "IToRD",
+    "Log10D",
+    "LogD",
+    "LtD",
+    "LteD",
+    "MulD",
+    "NegateD",
+    "NeqD",
+    "PowD",
+    "RealToBits",
+    "RToIRoundS",
+    "RToIS",
+    "SinD",
+    "SinhD",
+    "SqrtD",
+    "SubD",
+    "TanD",
+    "TanhD",
+    # String operations
+    "AtoN",
+    "CompareNN",
+    "ConcatN",
+    "CvtPackString",
+    "EqN",
+    "GetcN",
+    "GetcRefN",
+    "GteN",
+    "GtN",
+    "LenN",
+    "LteN",
+    "LtN",
+    "NeqN",
+    "NToI",
+    "PutcN",
+    "ReplicateN",
+    "SubstrN",
+    "ToLowerN",
+    "ToUpperN",
+    # Effectful
+    "PostAdd",
+    "PostSub",
+    "PreAdd",
+    "PreSub",
+    # Only used after DFG
+    "ShiftLOvr",
+    "ShiftROvr",
+    "ShiftRSOvr",
+    "WordSel",
+    # File operations
+    "FEof",
+    "FGetC",
+    "FGetS",
+    "FUngetC",
+    # Dynamic array operations
+    "AssocSel",
+    "IsUnbounded",
+    "WildcardSel",
+    # Type comparison
+    "EqT",
+    "NeqT",
+    # Distributions
+    "DistChiSquare",
+    "DistErlang",
+    "DistExponential",
+    "DistNormal",
+    "DistPoisson",
+    "DistT",
+    "DistUniform",
+    # Specials
+    "CastDynamic",
+    "CastWrap",
+    "CAwait",
+    "CCast",
+    "CLog2",
+    "CountOnes",
+    "IsUnknown",
+    "NullCheck",
+    "OneHot",
+    "OneHot0",
+    "ResizeLValue",
+    "Signed",
+    "SliceSel",
+    "TimeImport",
+    "Unsigned",
+    "URandomRange",
+)
+
 # Read DfgVertex definitions
 for filename in Args.dfgdef:
     read_types(os.path.join(Args.I, filename), DfgVertices, "Dfg")
@@ -1368,6 +1478,10 @@ for node in AstNodeList:
 
     # Ignore any explicitly defined vertex
     if node.name in DfgVertices:
+        continue
+
+    # Ignore expressions types that DFG cannot handle
+    if node.name in DfgIgnored:
         continue
 
     if node.isSubClassOf(AstNodes["NodeUniop"]):

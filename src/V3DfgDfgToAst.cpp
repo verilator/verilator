@@ -53,15 +53,6 @@ T_Node* makeNode(const T_Vertex* vtxp, Ops... ops) {
 // Vertices needing special conversion
 
 template <>
-AstCountOnes* makeNode<AstCountOnes, DfgCountOnes, AstNodeExpr*>(  //
-    const DfgCountOnes* vtxp, AstNodeExpr* op1) {
-    AstCountOnes* const nodep = new AstCountOnes{vtxp->fileline(), op1};
-    // Set dtype same as V3Width
-    nodep->dtypeSetLogicSized(32, VSigning::UNSIGNED);
-    return nodep;
-}
-
-template <>
 AstExtend* makeNode<AstExtend, DfgExtend, AstNodeExpr*>(  //
     const DfgExtend* vtxp, AstNodeExpr* op1) {
     return new AstExtend{vtxp->fileline(), op1, static_cast<int>(vtxp->width())};
@@ -90,38 +81,6 @@ AstShiftRS* makeNode<AstShiftRS, DfgShiftRS, AstNodeExpr*, AstNodeExpr*>(  //
     const DfgShiftRS* vtxp, AstNodeExpr* op1, AstNodeExpr* op2) {
     return new AstShiftRS{vtxp->fileline(), op1, op2, static_cast<int>(vtxp->width())};
 }
-
-//======================================================================
-// Currently unhandled nodes - see corresponding AstToDfg functions
-// LCOV_EXCL_START
-template <>
-AstCCast* makeNode<AstCCast, DfgCCast, AstNodeExpr*>(const DfgCCast* vtxp, AstNodeExpr*) {
-    vtxp->v3fatalSrc("not implemented");
-    VL_UNREACHABLE;
-    return nullptr;  // LCOV_EXCL_LINE
-}
-template <>
-AstAtoN* makeNode<AstAtoN, DfgAtoN, AstNodeExpr*>(const DfgAtoN* vtxp, AstNodeExpr*) {
-    vtxp->v3fatalSrc("not implemented");
-    VL_UNREACHABLE;
-    return nullptr;  // LCOV_EXCL_LINE
-}
-template <>
-AstCompareNN*
-makeNode<AstCompareNN, DfgCompareNN, AstNodeExpr*, AstNodeExpr*>(const DfgCompareNN* vtxp,
-                                                                 AstNodeExpr*, AstNodeExpr*) {
-    vtxp->v3fatalSrc("not implemented");
-    VL_UNREACHABLE;
-    return nullptr;  // LCOV_EXCL_LINE
-}
-template <>
-AstSliceSel* makeNode<AstSliceSel, DfgSliceSel, AstNodeExpr*, AstNodeExpr*, AstNodeExpr*>(
-    const DfgSliceSel* vtxp, AstNodeExpr*, AstNodeExpr*, AstNodeExpr*) {
-    vtxp->v3fatalSrc("not implemented");
-    VL_UNREACHABLE;
-    return nullptr;  // LCOV_EXCL_LINE
-}
-// LCOV_EXCL_STOP
 
 }  // namespace
 

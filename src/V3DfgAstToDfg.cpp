@@ -50,38 +50,11 @@ DfgArraySel* makeVertex<DfgArraySel, AstArraySel>(const AstArraySel* nodep, DfgG
     // Some earlier passes create malformed ArraySels, just bail on those...
     // See t_bitsel_wire_array_bad
     if (VN_IS(nodep->fromp(), Const)) return nullptr;
-    AstUnpackArrayDType* const fromDtypep
-        = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
-    if (!fromDtypep) return nullptr;
+    if (!VN_IS(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType)) return nullptr;
     return new DfgArraySel{dfg, nodep->fileline(), DfgVertex::dtypeFor(nodep)};
 }
 
-//======================================================================
-// Currently unhandled nodes
-// LCOV_EXCL_START
-// AstCCast changes width, but should not exists where DFG optimization is currently invoked
-template <>
-DfgCCast* makeVertex<DfgCCast, AstCCast>(const AstCCast*, DfgGraph&) {
-    return nullptr;
-}
-// Unhandled in DfgToAst, but also operates on strings which we don't optimize anyway
-template <>
-DfgAtoN* makeVertex<DfgAtoN, AstAtoN>(const AstAtoN*, DfgGraph&) {
-    return nullptr;
-}
-// Unhandled in DfgToAst, but also operates on strings which we don't optimize anyway
-template <>
-DfgCompareNN* makeVertex<DfgCompareNN, AstCompareNN>(const AstCompareNN*, DfgGraph&) {
-    return nullptr;
-}
-// Unhandled in DfgToAst, but also operates on unpacked arrays which we don't optimize anyway
-template <>
-DfgSliceSel* makeVertex<DfgSliceSel, AstSliceSel>(const AstSliceSel*, DfgGraph&) {
-    return nullptr;
-}
-// LCOV_EXCL_STOP
-
-}  // namespace
+}  //namespace
 
 // Visitor that can convert combinational Ast logic constructs/assignments to Dfg
 template <bool T_Scoped>
