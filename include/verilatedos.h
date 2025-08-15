@@ -575,7 +575,9 @@ static inline double VL_ROUND(double n) {
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
 #elif defined(__mips64el__) || defined(__mips__) || defined(__mips64__) || defined(__mips64)
 # define VL_CPU_RELAX() asm volatile("pause" ::: "memory")
-#elif defined(__powerpc64__)
+#elif defined(__POWERPC__) && defined(__APPLE__) // First check for a special case of macOS
+# define VL_CPU_RELAX() asm volatile("or r1, r1, r1; or r2, r2, r2;" ::: "memory")
+#elif defined(__powerpc64__) || defined(__powerpc__) // Generic powerpc
 # define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
 #elif defined(__riscv)  // RiscV does not currently have yield/pause, but one is proposed
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
