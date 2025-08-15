@@ -411,7 +411,7 @@ class UnknownVisitor final : public VNVisitor {
                 AstNodeExpr* const xexprp = new AstConst{nodep->fileline(), xnum};
                 AstNodeExpr* const newp
                     = condp->isZero() ? xexprp
-                                      : new AstCondBound{nodep->fileline(), condp, nodep, xexprp};
+                                      : new AstCond{nodep->fileline(), condp, nodep, xexprp};
                 UINFOTREE(9, newp, "", "_new");
                 // Link in conditional
                 replaceHandle.relink(newp);
@@ -485,8 +485,8 @@ class UnknownVisitor final : public VNVisitor {
                 } else {
                     xnum.setAllBitsX();
                 }
-                AstNode* const newp = new AstCondBound{nodep->fileline(), condp, nodep,
-                                                       new AstConst{nodep->fileline(), xnum}};
+                AstNode* const newp = new AstCond{nodep->fileline(), condp, nodep,
+                                                  new AstConst{nodep->fileline(), xnum}};
                 UINFOTREE(9, newp, "", "_new");
                 // Link in conditional, can blow away temp xor
                 replaceHandle.relink(newp);
@@ -496,7 +496,7 @@ class UnknownVisitor final : public VNVisitor {
                 // ARRAYSEL(...) -> ARRAYSEL(COND(LT(bit<maxbit), bit, 0))
                 VNRelinker replaceHandle;
                 AstNodeExpr* const bitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
-                AstNodeExpr* const newp = new AstCondBound{
+                AstNodeExpr* const newp = new AstCond{
                     bitp->fileline(), condp, bitp,
                     new AstConst{bitp->fileline(), AstConst::WidthedValue{}, bitp->width(), 0}};
                 // Added X's, tristate them too

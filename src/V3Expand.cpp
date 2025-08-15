@@ -221,7 +221,7 @@ class ExpandVisitor final : public VNVisitor {
             // e.g. "logic [95:0] var[0]; logic [0] sel; out = var[sel];"
             // Squash before C++ to avoid getting a C++ compiler warning
             // (even though code would be unreachable as presumably a
-            // AstCondBound is protecting above this node.
+            // AstCond is protecting above this node.
             return new AstConst{fl, AstConst::SizedEData{}, 0};
         } else {
             AstNodeExpr* wordp;
@@ -240,25 +240,13 @@ class ExpandVisitor final : public VNVisitor {
         }
     }
 
-    static AstNodeExpr* dropCondBound(AstNodeExpr* nodep) {
-        // Experimental only...
-        //  If there's a CONDBOUND safety to keep arrays in bounds,
-        //  we're going to AND it to a value that always fits inside a
-        //  word, so we don't need it.
-        // if (VN_IS(nodep, CondBound) && VN_IS(VN_AS(nodep, CondBound)->lhsp(), Lte)) {
-        //    nodep = VN_AS(nodep, CondBound)->rhsp();
-        //}
-        return nodep;
-    }
-
     static AstNodeExpr* newSelBitBit(AstNodeExpr* lsbp) {
         // Return equation to get the VL_BITBIT of a constant or non-constant
         FileLine* const fl = lsbp->fileline();
         if (VN_IS(lsbp, Const)) {
             return new AstConst{fl, VL_BITBIT_E(VN_AS(lsbp, Const)->toUInt())};
         } else {
-            return new AstAnd{fl, new AstConst{fl, VL_EDATASIZE - 1},
-                              dropCondBound(lsbp)->cloneTreePure(true)};
+            return new AstAnd{fl, new AstConst{fl, VL_EDATASIZE - 1}, lsbp->cloneTreePure(true)};
         }
     }
 
@@ -343,7 +331,7 @@ class ExpandVisitor final : public VNVisitor {
         return true;
     }
     //-------- Triops
-    bool expandWide(AstNodeAssign* nodep, AstNodeCond* rhsp) {
+    bool expandWide(AstNodeAssign* nodep, AstCond* rhsp) {
         UINFO(8, "    Wordize ASSIGN(COND) " << nodep);
         if (!doExpandWide(nodep)) return false;
         FileLine* const fl = nodep->fileline();
@@ -498,7 +486,7 @@ class ExpandVisitor final : public VNVisitor {
             AstNodeExpr* const lsbp = nodep->lsbp()->unlinkFrBack();
             if (nodep->isQuad() && !fromp->isQuad()) fromp = new AstCCast{fl, fromp, nodep};
             // {large}>>32 requires 64-bit shift operation; then cast
-            AstNodeExpr* newp = new AstShiftR{fl, fromp, dropCondBound(lsbp), fromp->width()};
+            AstNodeExpr* newp = new AstShiftR{fl, fromp, lsbp, fromp->width()};
             newp->dtypeFrom(fromp);
             if (!nodep->isQuad() && fromp->isQuad()) newp = new AstCCast{fl, newp, nodep};
             newp->dtypeFrom(nodep);
@@ -944,7 +932,7 @@ class ExpandVisitor final : public VNVisitor {
                 did = expandWide(nodep, rhsp);
             } else if (AstXor* const rhsp = VN_CAST(nodep->rhsp(), Xor)) {
                 did = expandWide(nodep, rhsp);
-            } else if (AstNodeCond* const rhsp = VN_CAST(nodep->rhsp(), NodeCond)) {
+            } else if (AstCond* const rhsp = VN_CAST(nodep->rhsp(), Cond)) {
                 did = expandWide(nodep, rhsp);
             }
         } else if (AstSel* const lhsp = VN_CAST(nodep->lhsp(), Sel)) {

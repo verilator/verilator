@@ -1349,7 +1349,7 @@ public:
         iterateAndNextConstNull(nodep->lhsp());
         puts(")");
     }
-    void visit(AstNodeCond* nodep) override {
+    void visit(AstCond* nodep) override {
         // Widths match up already, so we'll just use C++'s operator w/o any temps.
         if (nodep->thenp()->isWide()) {
             emitOpName(nodep, nodep->emitC(), nodep->condp(), nodep->thenp(), nodep->elsep());

@@ -261,7 +261,7 @@ class CleanVisitor final : public VNVisitor {
     }
 
     // Control flow operators
-    void visit(AstNodeCond* nodep) override {
+    void visit(AstCond* nodep) override {
         iterateChildren(nodep);
         ensureClean(nodep->condp());
         setClean(nodep, isClean(nodep->thenp()) && isClean(nodep->elsep()));

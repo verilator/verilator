@@ -188,7 +188,7 @@ private:
             if (nodep->thensp()) nodep->thensp()->user2(0);  // Don't dump it
         }
     }
-    void visit(AstNodeCond* nodep) override {
+    void visit(AstCond* nodep) override {
         if (m_ignoreRemaining) return;
         // Just like if/else above, the ternary operator only evaluates
         // one of the two expressions, so only count the max.

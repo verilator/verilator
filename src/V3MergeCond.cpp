@@ -95,11 +95,11 @@ namespace {
 // if there is one and it is in a supported position, which are:
 // - RHS is the Cond
 // - RHS is And(Const, Cond). This And is inserted often by V3Clean.
-AstNodeCond* extractCondFromRhs(AstNode* rhsp) {
-    if (AstNodeCond* const condp = VN_CAST(rhsp, NodeCond)) {
+AstCond* extractCondFromRhs(AstNode* rhsp) {
+    if (AstCond* const condp = VN_CAST(rhsp, Cond)) {
         return condp;
     } else if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
-        if (AstNodeCond* const condp = VN_CAST(andp->rhsp(), NodeCond)) {
+        if (AstCond* const condp = VN_CAST(andp->rhsp(), Cond)) {
             if (VN_IS(andp->lhsp(), Const)) return condp;
         }
     }
@@ -177,7 +177,7 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
     static AstNodeExpr* extractCondition(const AstNodeStmt* nodep) {
         AstNodeExpr* conditionp = nullptr;
         if (const AstNodeAssign* const assignp = VN_CAST(nodep, NodeAssign)) {
-            if (AstNodeCond* const conditionalp = extractCondFromRhs(assignp->rhsp())) {
+            if (AstCond* const conditionalp = extractCondFromRhs(assignp->rhsp())) {
                 conditionp = conditionalp->condp();
             }
         } else if (const AstNodeIf* const ifp = VN_CAST(nodep, NodeIf)) {
@@ -564,7 +564,7 @@ class MergeCondVisitor final : public VNVisitor {
                 return yieldsOneOrZero(biopp->lhsp()) && yieldsOneOrZero(biopp->rhsp());
             return false;
         }
-        if (const AstNodeCond* const condp = VN_CAST(nodep, NodeCond)) {
+        if (const AstCond* const condp = VN_CAST(nodep, Cond)) {
             return yieldsOneOrZero(condp->thenp()) && yieldsOneOrZero(condp->elsep());
         }
         if (const AstCCast* const castp = VN_CAST(nodep, CCast)) {
@@ -591,7 +591,7 @@ class MergeCondVisitor final : public VNVisitor {
     AstNodeExpr* foldAndUnlink(AstNodeExpr* rhsp, bool condTrue) {
         if (rhsp->sameTree(m_mgCondp)) {
             return new AstConst{rhsp->fileline(), AstConst::BitTrue{}, condTrue};
-        } else if (const AstNodeCond* const condp = extractCondFromRhs(rhsp)) {
+        } else if (const AstCond* const condp = extractCondFromRhs(rhsp)) {
             AstNodeExpr* const resp
                 = condTrue ? condp->thenp()->unlinkFrBack() : condp->elsep()->unlinkFrBack();
             if (condp == rhsp) return resp;
