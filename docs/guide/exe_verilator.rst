@@ -1969,14 +1969,13 @@ Summary:
      different seeds on different executions. This method is the slowest,
      but safest for finding reset bugs.
 
-     If using `--x-assign unique`, you may want to seed your random number
-     generator such that each regression run gets a different randomization
-     sequence. The simplest is to use the
-     :vlopt:`+verilator+seed+\<value\>` runtime option.  Alternatively, use
-     the system's :code:`srand48()` or for Windows :code:`srand()` function
-     to do this.  You'll probably also want to print any seeds selected,
-     and code to enable rerunning with that same seed so you can reproduce
-     bugs.
+     If using `--x-assign unique`, use the
+     :vlopt:`+verilator+rand+reset+2 <+verilator+rand+reset+\<value\>>`
+     runtime option, and seed the runtime random number generator such that
+     each regression run gets a different randomization sequence with
+     :vlopt:`+verilator+seed+\<value\>`.  You'll probably also want to
+     print any seeds selected, and code to enable rerunning with that same
+     seed, so you can reproduce bugs.
 
    .. note::
 
@@ -1998,6 +1997,14 @@ Summary:
      initializes variables using a function, which determines the value to
      use for each initialization. This gives the greatest flexibility and
      allows for finding reset bugs.  See :ref:`Unknown states`.
+
+     If using `--x-initial unique`, use the
+     :vlopt:`+verilator+rand+reset+2 <+verilator+rand+reset+\<value\>>`
+     runtime option, and seed the runtime random number generator such that
+     each regression run gets a different randomization sequence with
+     :vlopt:`+verilator+seed+\<value\>`.  You'll probably also want to
+     print any seeds selected, and code to enable rerunning with that same
+     seed, so you can reproduce bugs.
 
    With "--x-initial fast",
      is best for performance, and initializes all variables to a state

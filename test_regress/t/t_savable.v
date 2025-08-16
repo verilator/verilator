@@ -35,7 +35,7 @@ module sub (/*AUTOARG*/
    reg [127:0]  save128;
    reg [47:0]   save48;
    reg [1:0]    save2;
-   reg [255:0]  cycdone;  // Make sure each cycle executes exactly once
+   bit [255:0]  cycdone;  // Make sure each cycle executes exactly once
    reg [31:0]   vec[2:1][2:1];
    reg [2:1][2:1][31:0] pvec;
    real         r;

@@ -48,9 +48,9 @@ module Test (/*AUTOARG*/
    input clk;
    input [31:0] in;
 
-   reg [31:0] dly0 = 0;
-   reg [31:0] dly1 = 0;
-   reg [31:0] dly2 = 0;
+   bit [31:0] dly0 = 0;
+   bit [31:0] dly1 = 0;
+   bit [31:0] dly2 = 0;
 
    // If called in an assertion, sequence, or property, the appropriate clocking event.
    // Otherwise, if called in a disable condition or a clock expression in an assertion, sequence, or prop, explicit.
@@ -107,9 +107,9 @@ module Test2 (/*AUTOARG*/
    input clk;
    input [31:0] in;
 
-   reg [31:0] dly0 = 0;
-   reg [31:0] dly1 = 0;
-   reg [31:0] dly2 = 0;
+   bit [31:0] dly0 = 0;
+   bit [31:0] dly1 = 0;
+   bit [31:0] dly2 = 0;
 
    always @(posedge clk) begin
       dly0 <= in;

@@ -22,7 +22,7 @@ module t (/*AUTOARG*/
   reg y0 = 1'b0;
   reg y1 = 1'b0;
   // 'z[0]' should equal '{8{x[0]}', 'z[1]' should equal '{8{x[1]}}'
-  reg [1:0][7:0] z;
+  reg [1:0][7:0] z = '{default: 0};
   // 'pair.a' should equal 'x[0]', 'pair.b' should equal 'x[1]'
   struct {
     logic a;

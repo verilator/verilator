@@ -255,6 +255,10 @@ endmodule
 // Of course the correct result is ^d[38:0] = ^d
 module bug3470(input wire clk, input wire [31:0] in, output wire out);
    logic [38:0] d;
+   initial d = 0;
+   initial tmp = 0;
+   initial expected = 0;
+
    always_ff @(posedge clk)
       d <= {d[6:0], in};
 

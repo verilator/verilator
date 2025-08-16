@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   logic clk = 0, foo = 0, bar = 0;
+   bit clk = 0, foo = 0, bar = 0;
 
    always #5 clk = ~clk;
 

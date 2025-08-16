@@ -52,6 +52,7 @@ module t;
   always @(posedge clk) begin
     if (reset) begin
       r_valid <= 0;
+      addr[0] <= '0;
     end
     else begin
       if (r_valid) begin

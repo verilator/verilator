@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   logic clk = 0;
+   bit clk;
 
    assign #5 clk = ~clk;
 
@@ -28,7 +28,7 @@ module t;
        c = a + b;
    end
 
-   logic[5:0] v;
+   bit [5:0] v;
    always @a begin
        v[0] = a[0];
        fork

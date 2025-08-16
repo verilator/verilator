@@ -16,7 +16,7 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   integer cyc;
+   int cyc;
    integer rand_result;
    integer seed = 123;
 

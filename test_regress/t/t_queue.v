@@ -10,18 +10,18 @@
 `define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) != (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
 
 module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+  // Inputs
+  clk
+  );
    input clk;
 
    integer cyc = 0;
 
    integer i;
 
-   typedef integer q_t[$];
+   typedef int q_t[$];
 
-   function void set_val(ref integer lhs, input integer rhs);
+   function void set_val(ref int lhs, input int rhs);
       lhs = rhs;
    endfunction
 

@@ -11,7 +11,7 @@ module test_mod(input reg clk, input reg reset, output integer result);
 endmodule
 
 module Dut(input clk);
-  integer num;
+  int num;
   integer result1;
   integer result2;
   reg reset1;

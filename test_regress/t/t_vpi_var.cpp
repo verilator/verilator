@@ -1031,8 +1031,10 @@ int main(int argc, char** argv) {
     tfp->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 #endif
 
-    topp->eval();
     topp->clk = 0;
+    topp->a = 0;
+
+    topp->eval();
     main_time += 10;
 
     while (vl_time_stamp64() < sim_time && !contextp->gotFinish()) {

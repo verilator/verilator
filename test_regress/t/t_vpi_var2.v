@@ -53,7 +53,7 @@ extern "C" int mon_check();
 
 /*verilator public_flat_on*/
    reg [31:0]      count;
-   reg [31:0]      half_count;
+   reg [31:0]      half_count = 0;
 /*verilator public_off*/
 /*verilator public_flat_rw_on*/
    reg [31:0]      delayed;

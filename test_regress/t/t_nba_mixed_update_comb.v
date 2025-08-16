@@ -8,16 +8,16 @@
 `define check(got ,exp) do if ((got) !== (exp)) begin $write("%%Error: %s:%0d: cyc=%0d got='h%x exp='h%x\n", `__FILE__,`__LINE__, cyc, (got), (exp)); `stop; end while(0)
 
 module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+  // Inputs
+  clk
+  );
   input clk;
 
 
   reg [31:0] cyc = 0;
-  reg [31:0] sameAsCycButCantBeOptimized_0;
-  reg [31:0] sameAsCycButCantBeOptimized_1;
-  reg [31:0] sameAsCycButCantBeOptimized_2;
+  reg [31:0] sameAsCycButCantBeOptimized_0 = '0;
+  reg [31:0] sameAsCycButCantBeOptimized_1 = '0;
+  reg [31:0] sameAsCycButCantBeOptimized_2 = '0;
 
   // 'x' has both blocking and non-blocking update, with the blocking
   // update in **combinational** logic
@@ -27,7 +27,7 @@ module t (/*AUTOARG*/
   reg y1 = 1'b0;
   // 'z[0]' should equal '{8{x[0]}', 'z[1]' should equal '{8{x[1]}}'
   // verilator lint_off BLKANDNBLK
-  reg [1:0][7:0] z;
+  bit [1:0][7:0] z;
   // verilator lint_on BLKANDNBLK
   // 'pair.a' should equal 'x[0]', 'pair.b' should equal 'x[1]'
   // verilator lint_off BLKANDNBLK
