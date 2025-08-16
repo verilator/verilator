@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_mailbox.v"
 
-test.compile(verilator_flags2=["--exe --main --timing -Wall --Wpedantic -DMAILBOX_T=std::mailbox"])
+test.compile(verilator_flags2=["--binary -Wall --Wpedantic -DMAILBOX_T=std::mailbox"])
 
 test.execute()
 

@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_timing_fork_join.v"
 
-test.compile(verilator_flags2=["--exe --main --timing --ftaskify-all-forked"])
+test.compile(verilator_flags2=["--binary --ftaskify-all-forked"])
 
 test.execute(expect_filename=test.golden_filename)
 

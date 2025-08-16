@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator_st')
 test.top_filename = "t/t_tri_struct.v"
 
-test.compile(verilator_flags2=['--exe --pins-inout-enables --main --timing'])
+test.compile(verilator_flags2=['--binary --pins-inout-enables'])
 
 test.execute()
 

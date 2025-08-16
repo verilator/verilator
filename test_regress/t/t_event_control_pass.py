@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--exe --main --timing"], threads=1)
+test.compile(verilator_flags2=["--binary"], threads=1)
 
 test.execute()
 

@@ -52,11 +52,11 @@ def gen(filename):
 gen(test.top_filename)
 
 if test.have_coroutines:
-    test.compile(verilator_flags2=["--exe --build --main --timing"], make_top=1)
+    test.compile(verilator_flags2=["--binary"], make_top=1)
 
     test.execute()
 
-test.compile(verilator_flags2=["--exe --build --main --no-timing -Wno-STMTDLY"], make_top=1)
+test.compile(verilator_flags2=["--binary --no-timing -Wno-STMTDLY"], make_top=1)
 
 test.execute()
 

@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 
 test.compile(
-    verilator_flags2=["--exe --main --timing"],
+    verilator_flags2=["--binary"],
     make_main=False,
     # Multithreading would cause a warning on event assignments
     threads=1)

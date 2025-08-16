@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--exe --main --timing --timescale 1ns/1ns"])
+test.compile(verilator_flags2=["--binary --timescale 1ns/1ns"])
 
 test.execute(expect_filename=test.golden_filename)
 
