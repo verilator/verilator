@@ -3153,6 +3153,7 @@ AstNode* VNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
 #include "V3AstNodeDType.h"
 #include "V3AstNodeExpr.h"
 #include "V3AstNodeOther.h"
+#include "V3AstNodeStmt.h"
 
 // Inline function definitions need to go last
 #include "V3AstInlines.h"

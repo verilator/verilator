@@ -331,6 +331,7 @@ NON_STANDALONE_HEADERS = \
   V3AstNodeDType.h \
   V3AstNodeExpr.h \
   V3AstNodeOther.h \
+  V3AstNodeStmt.h \
   V3DfgVertices.h \
   V3ThreadPool.h \
   V3WidthRemove.h \
@@ -339,6 +340,7 @@ AST_DEFS := \
   V3AstNodeDType.h \
   V3AstNodeExpr.h \
   V3AstNodeOther.h \
+  V3AstNodeStmt.h \
 
 DFG_DEFS := \
   V3DfgVertices.h
