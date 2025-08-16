@@ -3504,8 +3504,11 @@ class ConstVisitor final : public VNVisitor {
         }
         // TODO if there's an ExprStmt underneath just keep lower statements
         // (No current test case needs this)
-        // TODO if non-pure, can remove keep removing upper pure-itself
-        // NodeUniOp/NodeBiOp until get to the non-pure child-node expression
+        // TODO if non-pure, can remove. First need to clean up that many expressions used
+        // under this node do not yet properly indicate non-pure.
+        // Also, under here, a NodeUniOp/NodeBiOp that is pure (but child of such is not
+        // pure) can be peeled off until get to the non-pure child-node expression,
+        // because all that is needed is to execute what causes the side effect.
     }
 
     // Simplify
