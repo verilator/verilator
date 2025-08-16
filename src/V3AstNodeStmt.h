@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: AstNode sub-types representing other constructs
+// DESCRIPTION: Verilator: AstNode sub-types representing statements
 //
 // Code available from: https://verilator.org
 //
@@ -14,8 +14,7 @@
 //
 //*************************************************************************
 //
-// This files contains all 'AstNode' sub-types that relate to other constructs
-// not covered by the more specific V3AstNode*.h files.
+// This files contains all 'AstNode' sub-types that are statements.
 //
 //*************************************************************************
 
