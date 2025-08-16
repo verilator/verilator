@@ -18,7 +18,7 @@ Verilator 5.039 devel
 * Add SPECIFYIGN warning for specify constructs that were previously silently ignored.
 * Add PARAMNODEFAULT error, for parameters without defaults.
 * Add enum base data type, wire data type, and I/O versus data declaration checking per IEEE.
-* Add error on missing and mismatching prototypes (#6206) (#6207). [Alex Solomatnikov]
+* Add PROTOTYPEMIS error on missing and mismatching prototypes (#6206) (#6207). [Alex Solomatnikov]
 * Add error when trying to assign class object to variable of non-class types (#6237). [Igor Zaworski, Antmicro Ltd.]
 * Add error on class 'function static'.
 * Add `-DVERILATOR=1` definition to compiler flags when using verilated.mk.
@@ -73,7 +73,11 @@ Verilator 5.039 devel
 * Fix dynamic cast purity (#6267). [Igor Zaworski, Antmicro Ltd.]
 * Fix same variable on the RHS forced to two different LHSs. (#6269). [Artur Bieniek, Antmicro Ltd.]
 * Fix spurious VPI value change callbacks (#6274). [Todd Strader]
+* Fix stray ']' in Verilog code output for non-constant select (#6277). [Geza Lore]
 * Fix variables hiding package imports (#6289). [Johan Wouters]
+* Fix DFG circular driver tracing. [Geza Lore]
+* Fix no matching function calls for randomized `VlWide` in unpacked and dynamic arrays (#6290). [Mateusz Gancarz]
+* Fix PowerPC support (#6292). [Sergey Fedorov]
 
 
 Verilator 5.038 2025-07-08

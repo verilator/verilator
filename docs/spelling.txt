@@ -471,6 +471,7 @@ Verilog
 Vighnesh
 Viktor
 Vilp
+VlWide
 Vlip
 Vm
 Vukobratovic
