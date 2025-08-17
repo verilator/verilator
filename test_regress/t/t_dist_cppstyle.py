@@ -87,7 +87,7 @@ for filename in sorted(files.keys()):
     check_pattern(
         filename,
         contents,
-        r'.*(\n *:|,\n) +m_[a-zA-Z0-9]+\(',
+        r'.*(\n *[:,]|,\n) +m_[a-zA-Z0-9]+\(',
         # Ignore common m_e enum constructors
         r'.*(Need \(\)|: m_e\()|V3OPTION_PARSER_DEF',
         "Use brace instead of parenthesis-style constructors e.g. ': m_...{...}'")
