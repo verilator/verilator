@@ -74,6 +74,7 @@ Verilator 5.039 devel
 * Fix same variable on the RHS forced to two different LHSs. (#6269). [Artur Bieniek, Antmicro Ltd.]
 * Fix spurious VPI value change callbacks (#6274). [Todd Strader]
 * Fix stray ']' in Verilog code output for non-constant select (#6277). [Geza Lore]
+* Fix hierarchical NBAs (#6286) (#6300). [Geza Lore]
 * Fix variables hiding package imports (#6289). [Johan Wouters]
 * Fix DFG circular driver tracing. [Geza Lore]
 * Fix no matching function calls for randomized `VlWide` in unpacked and dynamic arrays (#6290). [Mateusz Gancarz]
