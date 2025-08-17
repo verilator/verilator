@@ -92,9 +92,9 @@ class ParameterizedHierBlocks final {
 
 public:
     ParameterizedHierBlocks(const V3HierBlockOptSet& hierOpts, AstNetlist* nodep)
-        : m_hierSubRun((!v3Global.opt.hierBlocks().empty() || v3Global.opt.hierChild())
+        : m_hierSubRun{(!v3Global.opt.hierBlocks().empty() || v3Global.opt.hierChild())
                        // Exclude consolidation
-                       && !v3Global.opt.hierParamFile().empty()) {
+                       && !v3Global.opt.hierParamFile().empty()} {
         for (const auto& hierOpt : hierOpts) {
             m_hierBlockOptsByOrigName.emplace(hierOpt.second.origName(), &hierOpt.second);
             const V3HierarchicalBlockOption::ParamStrMap& params = hierOpt.second.params();

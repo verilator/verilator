@@ -693,7 +693,7 @@ struct reverse_wrapper final {
     const T& m_v;
 
     explicit reverse_wrapper(const T& a_v)
-        : m_v(a_v) {}
+        : m_v(a_v) {}  // Need () constructor
     auto begin() -> decltype(m_v.rbegin()) { return m_v.rbegin(); }
     auto end() -> decltype(m_v.rend()) { return m_v.rend(); }
 };

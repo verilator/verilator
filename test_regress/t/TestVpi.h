@@ -25,11 +25,11 @@ class TestVpiHandle {
 
 public:
     TestVpiHandle()
-        : m_handle(NULL)
-        , m_freeit(true) {}
+        : m_handle(NULL)  // Need (), not C++11
+        , m_freeit(true) {}  // Need (), not C++11
     TestVpiHandle(vpiHandle h)
-        : m_handle(h)
-        , m_freeit(true) {}
+        : m_handle(h)  // Need (), not C++11
+        , m_freeit(true) {}  // Need (), not C++11
     ~TestVpiHandle() { release(); }
     operator vpiHandle() const { return m_handle; }
     TestVpiHandle& operator=(vpiHandle h) {

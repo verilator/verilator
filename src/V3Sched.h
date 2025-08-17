@@ -159,8 +159,8 @@ class VirtIfaceTriggers final {
         const AstVar* m_memberVarp;  // pointer to member field
 
         IfaceMember(const AstIface* ifacep, const AstVar* memberVarp)
-            : m_ifacep(ifacep)
-            , m_memberVarp(memberVarp) {}
+            : m_ifacep{ifacep}
+            , m_memberVarp{memberVarp} {}
 
         bool operator<(const IfaceMember& other) const {
             if (m_ifacep != other.m_ifacep) return m_ifacep < other.m_ifacep;

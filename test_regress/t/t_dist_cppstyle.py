@@ -29,9 +29,12 @@ def get_source_files(root):
 def check_pattern(filename, contents, pattern, not_pattern, message):
     # Pattern uses match, so must include skipping leading whitespace if necessary
     lineno = 0
+    buffer_lineno = 0
     buffer = "\n"
     for line in contents.splitlines():
         lineno += 1
+        if buffer == "\n":
+            buffer_lineno = lineno
         if line != "":
             # Don't do whole file at once - see issue #4085
             # Build a buffer until a newline so we check a block at a time.
@@ -40,7 +43,8 @@ def check_pattern(filename, contents, pattern, not_pattern, message):
         m = re.search(r"\n" + pattern, buffer)
         if m:
             if not not_pattern or not re.search(not_pattern, buffer):
-                test.error_keep_going(filename + ":" + str(lineno) + ": " + message + m.group(0))
+                test.error_keep_going(filename + ":" + str(buffer_lineno) + ": " + message +
+                                      m.group(0))
         buffer = "\n"
 
 
@@ -77,8 +81,16 @@ for filename in sorted(files.keys()):
         contents,
         r'.*[( ]new [a-zA-Z0-9]+\([^\n]*',
         # Ignore common ok narrowing conversions, on int vs uint32_t arguments
-        r'(Need \(\) constructor|new AstArraySel|new AstConst|new AstRange)',
-        "Use brace instead of parenthesis-style constructors e.g. 'new ...{...}'")
+        r'(Need \(\)|new AstArraySel|new AstConst|new AstRange)',
+        "Use brace instead of parenthesis-style new constructors e.g. 'new ...{...}'")
+
+    check_pattern(
+        filename,
+        contents,
+        r'.*(\n *:|,\n) +m_[a-zA-Z0-9]+\(',
+        # Ignore common m_e enum constructors
+        r'.*(Need \(\)|: m_e\()|V3OPTION_PARSER_DEF',
+        "Use brace instead of parenthesis-style constructors e.g. ': m_...{...}'")
 
     if re.search(r'\.(c|cpp)', filename):
         check_pattern(filename, contents, r'(\w+\s+)*(inline)[^\n]*', None,

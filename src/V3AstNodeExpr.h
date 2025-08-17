@@ -940,26 +940,26 @@ class AstConst final : public AstNodeExpr {
 public:
     AstConst(FileLine* fl, const V3Number& num)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(num) {
+        , m_num{num} {
         initWithNumber();
     }
     class WidthedValue {};  // for creator type-overload selection
     AstConst(FileLine* fl, WidthedValue, int width, uint32_t value)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, width, value) {
+        , m_num(this, width, value) {  // Need () constructor
         initWithNumber();
     }
     class DTyped {};  // for creator type-overload selection
     // Zero/empty constant with a type matching nodetypep
     AstConst(FileLine* fl, DTyped, const AstNodeDType* nodedtypep)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, nodedtypep) {
+        , m_num{this, nodedtypep} {
         initWithNumber();
     }
     class StringToParse {};  // for creator type-overload selection
     AstConst(FileLine* fl, StringToParse, const char* sourcep)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, sourcep) {
+        , m_num{this, sourcep} {
         initWithNumber();
     }
     class VerilogStringLiteral {};  // for creator type-overload selection
@@ -970,41 +970,41 @@ public:
     }
     AstConst(FileLine* fl, uint32_t num)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, 32, num) {
+        , m_num(this, 32, num) {  // Need () constructor
         dtypeSetLogicUnsized(m_num.width(), 0, VSigning::UNSIGNED);
     }
     class Unsized32 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Unsized32, uint32_t num)  // Unsized 32-bit integer of specified value
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, 32, num) {
+        , m_num(this, 32, num) {  // Need () constructor
         m_num.width(32, false);
         dtypeSetLogicUnsized(32, m_num.widthToFit(), VSigning::UNSIGNED);
     }
     class Signed32 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Signed32, int32_t num)  // Signed 32-bit integer of specified value
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, 32, num) {
+        , m_num(this, 32, num) {  // Need () constructor
         m_num.width(32, true);
         dtypeSetLogicUnsized(32, m_num.widthToFit(), VSigning::SIGNED);
     }
     class Unsized64 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Unsized64, uint64_t num)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, 64, 0) {
+        , m_num(this, 64, 0) {  // Need () constructor
         m_num.setQuad(num);
         dtypeSetLogicSized(64, VSigning::UNSIGNED);
     }
     class SizedEData {};  // for creator type-overload selection
     AstConst(FileLine* fl, SizedEData, uint64_t num)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, VL_EDATASIZE, 0) {
+        , m_num(this, VL_EDATASIZE, 0) {  // Need () constructor
         m_num.setQuad(num);
         dtypeSetLogicSized(VL_EDATASIZE, VSigning::UNSIGNED);
     }
     class RealDouble {};  // for creator type-overload selection
     AstConst(FileLine* fl, RealDouble, double num)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, 64) {
+        , m_num(this, 64) {  // Need () constructor
         m_num.setDouble(num);
         dtypeSetDouble();
     }
@@ -1017,27 +1017,27 @@ public:
     class BitFalse {};
     AstConst(FileLine* fl, BitFalse)  // Shorthand const 0, dtype should be a logic of size 1
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, 1, 0) {
+        , m_num(this, 1, 0) {  // Need () constructor
         dtypeSetBit();
     }
     // Shorthand const 1 (or with argument 0/1), dtype should be a logic of size 1
     class BitTrue {};
     AstConst(FileLine* fl, BitTrue, bool on = true)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, 1, on) {
+        , m_num(this, 1, on) {  // Need () constructor
         dtypeSetBit();
     }
     class All0 {};
     AstConst(FileLine* fl, All0)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, "'0") {
+        , m_num(this, "'0") {  // Need () constructor
         initWithNumber();
         fl->warnOff(V3ErrorCode::NEWERSTD, true);
     }
     class All1 {};
     AstConst(FileLine* fl, All1)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, "'1") {
+        , m_num(this, "'1") {  // Need () constructor
         initWithNumber();
         fl->warnOff(V3ErrorCode::NEWERSTD, true);
     }
