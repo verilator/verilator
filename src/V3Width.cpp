@@ -3550,38 +3550,43 @@ class WidthVisitor final : public VNVisitor {
             }
 
             if (nodep->name() != "name" && nodep->pinsp()) {
-                AstNodeExpr* const stepp = methodArg(nodep, 0);
+                AstNodeExpr* stepp = methodArg(nodep, 0);
+                VL_DO_DANGLING(V3Const::constifyParamsNoWarnEdit(stepp), stepp);
+                stepp = methodArg(nodep, 0);
                 nodep->fileline()->modifyWarnOff(V3ErrorCode::WIDTHEXPAND, true);
                 iterateCheckUInt32(nodep, "argument", stepp, BOTH);
                 if (!VN_IS(stepp, Const)) {
-                    stepp->v3fatalSrc("Unsupported: enum next/prev with non-const argument");
-                } else {
-                    const uint32_t stepWidth = VN_AS(stepp, Const)->toUInt();
-                    if (stepWidth == 0) {
-                        // Step of 0 "legalizes" like $cast, use .next.prev
-                        AstMethodCall* const newp = new AstMethodCall{
-                            nodep->fileline(),
-                            new AstMethodCall{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                              "next", nullptr},
-                            "prev", nullptr};
-                        // No dtype assigned, we will recurse the new method and replace
-                        nodep->replaceWith(newp);
-                        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-                        return;
-                    } else if (stepWidth != 1) {
-                        // Unroll of enumVar.next(k) to enumVar.next(1).next(k - 1)
-                        nodep->pinsp()->unlinkFrBack();
-                        AstMethodCall* const clonep = nodep->cloneTree(false);
-                        VN_AS(stepp, Const)->num().setLong(1);
-                        AstConst* const constp = new AstConst(nodep->fileline(), stepWidth - 1);
-                        AstArg* const argp = new AstArg{nodep->fileline(), "", constp};
-                        AstMethodCall* const newp
-                            = new AstMethodCall{nodep->fileline(), clonep, nodep->name(), argp};
-                        // No dtype assigned, we will recurse the new method and replace
-                        nodep->replaceWith(newp);
-                        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-                        return;
-                    }
+                    stepp->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: enum next/prev with non-constant argument");
+                    AstNodeExpr* const newp = new AstConst{stepp->fileline(), 1};
+                    stepp->replaceWith(newp);
+                    stepp = newp;
+                }
+                const uint32_t stepWidth = VN_AS(stepp, Const)->toUInt();
+                if (stepWidth == 0) {
+                    // Step of 0 "legalizes" like $cast, use .next.prev
+                    AstMethodCall* const newp = new AstMethodCall{
+                        nodep->fileline(),
+                        new AstMethodCall{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                          "next", nullptr},
+                        "prev", nullptr};
+                    // No dtype assigned, we will recurse the new method and replace
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    return;
+                } else if (stepWidth != 1) {
+                    // Unroll of enumVar.next(k) to enumVar.next(1).next(k - 1)
+                    nodep->pinsp()->unlinkFrBack();
+                    AstMethodCall* const clonep = nodep->cloneTree(false);
+                    VN_AS(stepp, Const)->num().setLong(1);
+                    AstConst* const constp = new AstConst(nodep->fileline(), stepWidth - 1);
+                    AstArg* const argp = new AstArg{nodep->fileline(), "", constp};
+                    AstMethodCall* const newp
+                        = new AstMethodCall{nodep->fileline(), clonep, nodep->name(), argp};
+                    // No dtype assigned, we will recurse the new method and replace
+                    nodep->replaceWith(newp);
+                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    return;
                 }
             }
             AstNodeExpr* const newp

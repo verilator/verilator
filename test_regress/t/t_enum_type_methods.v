@@ -40,7 +40,7 @@ module t (/*AUTOARG*/
       `checkh(e.next(2), E01);
       `checkh(e.next(1).next(1).next(1), E03);
       `checkh(e.next(1).next(2), E03);
-      `checkh(e.next(3), E03);
+      `checkh(e.next(THREE), E03);
       `checkh(e.prev, E01);
       `checkh(e.prev(1), E01);
       `checkh(e.prev(1).prev(1), E04);
@@ -56,6 +56,8 @@ module t (/*AUTOARG*/
       all = {all, e.name};
       `checks(all, "E01E03E04");
    end
+
+   localparam THREE = 3;
 
    // Check runtime
    always @ (posedge clk) begin
