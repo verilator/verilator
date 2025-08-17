@@ -644,7 +644,10 @@ public:
             // Make a new temp wire
             // UINFOTREE(9, pinp, "", "in_pin");
             V3Inst::checkOutputShort(pinp);
-            AstNodeExpr* const pinexprp = VN_AS(pinp->exprp(), NodeExpr)->unlinkFrBack();
+            // Simplify, so stuff like '{a[0], b[0]}[1]' produced during
+            // instance array expansion are brought to normal 'a[0]'
+            AstNodeExpr* const pinexprp
+                = V3Const::constifyEdit(VN_AS(pinp->exprp(), NodeExpr)->unlinkFrBack());
             const string newvarname
                 = (string{pinVarp->isWritable() ? "__Vcellout" : "__Vcellinp"}
                    // Prevent name conflict if both tri & non-tri add signals
