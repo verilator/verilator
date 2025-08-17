@@ -2814,8 +2814,8 @@ void AstDot::dumpJson(std::ostream& str) const {
 void AstActive::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " => ";
-    if (sensesp()) {
-        sensesp()->dump(str);
+    if (sentreep()) {
+        sentreep()->dump(str);
     } else {
         str << "UNLINKED";
     }
@@ -3069,9 +3069,9 @@ void AstCFunc::dumpJson(std::ostream& str) const {
 }
 void AstCAwait::dump(std::ostream& str) const {
     this->AstNodeUniop::dump(str);
-    if (sensesp()) {
+    if (sentreep()) {
         str << " => ";
-        sensesp()->dump(str);
+        sentreep()->dump(str);
     }
 }
 void AstCAwait::dumpJson(std::ostream& str) const { dumpJsonGen(str); }

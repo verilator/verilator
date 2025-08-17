@@ -60,7 +60,7 @@
          "lhsp": [
           {"type":"VARREF","name":"vlvbound_test.o_b","addr":"(BC)","loc":"d,12:25,12:28","dtypep":"(K)","access":"WR","varp":"(P)","varScopep":"(Y)","classOrPackagep":"UNLINKED"}
         ],"timingControlp": []},
-        {"type":"ALWAYS","name":"","addr":"(CC)","loc":"d,24:14,24:15","keyword":"always","isSuspendable":false,"needProcess":false,"sensesp": [],
+        {"type":"ALWAYS","name":"","addr":"(CC)","loc":"d,24:14,24:15","keyword":"always","isSuspendable":false,"needProcess":false,"sentreep": [],
          "stmtsp": [
           {"type":"COMMENT","name":"Function: foo","addr":"(DC)","loc":"d,24:16,24:19"},
           {"type":"ASSIGN","name":"","addr":"(EC)","loc":"d,24:20,24:23","dtypep":"(H)",
@@ -170,7 +170,7 @@
             {"type":"VARREF","name":"o_a","addr":"(XD)","loc":"d,24:10,24:13","dtypep":"(K)","access":"WR","varp":"(J)","varScopep":"(T)","classOrPackagep":"UNLINKED"}
           ],"timingControlp": []}
         ]},
-        {"type":"ALWAYS","name":"","addr":"(YD)","loc":"d,25:14,25:15","keyword":"always","isSuspendable":false,"needProcess":false,"sensesp": [],
+        {"type":"ALWAYS","name":"","addr":"(YD)","loc":"d,25:14,25:15","keyword":"always","isSuspendable":false,"needProcess":false,"sentreep": [],
          "stmtsp": [
           {"type":"COMMENT","name":"Function: foo","addr":"(ZD)","loc":"d,25:16,25:19"},
           {"type":"ASSIGN","name":"","addr":"(AE)","loc":"d,25:20,25:23","dtypep":"(H)",

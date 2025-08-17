@@ -837,11 +837,11 @@ class LinkParseVisitor final : public VNVisitor {
                              "(IEEE 1800-2023 9.2.2.2.2)\n"
                              << nodep->warnMore() << "... Suggest use a normal 'always'");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (alwaysp && !alwaysp->sensesp()) {
+        } else if (alwaysp && !alwaysp->sentreep()) {
             // If the event control is at the top, move the sentree to the always
-            if (AstSenTree* const sensesp = nodep->sensesp()) {
-                sensesp->unlinkFrBackWithNext();
-                alwaysp->sensesp(sensesp);
+            if (AstSenTree* const sentreep = nodep->sentreep()) {
+                sentreep->unlinkFrBackWithNext();
+                alwaysp->sentreep(sentreep);
             }
             if (nodep->stmtsp()) alwaysp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);

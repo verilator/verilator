@@ -127,7 +127,7 @@ class DfgToAstVisitor final : DfgVisitor {
                 AstSenTree* const senTreep
                     = new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}};
                 AstActive* const activep = new AstActive{flp, "", senTreep};
-                activep->sensesStorep(senTreep);
+                activep->senTreeStorep(senTreep);
                 scopep->addBlocksp(activep);
                 scopep->user2p(activep);
             }

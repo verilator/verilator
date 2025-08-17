@@ -126,7 +126,7 @@ class OrderGraphBuilder final : public VNVisitor {
 
     // VISITORS
     void visit(AstActive* nodep) override {
-        UASSERT_OBJ(!nodep->sensesStorep(), nodep,
+        UASSERT_OBJ(!nodep->senTreeStorep(), nodep,
                     "AstSenTrees should have been made global in V3ActiveTop");
         UASSERT_OBJ(m_scopep, nodep, "AstActive not under AstScope");
         UASSERT_OBJ(!m_logicVxp, nodep, "AstActive under logic");
@@ -138,8 +138,9 @@ class OrderGraphBuilder final : public VNVisitor {
 
         // This is the original sensitivity of the block (i.e.: not the ref into the TRIGGERVEC)
 
-        const AstSenTree* const senTreep
-            = nodep->sensesp()->hasCombo() ? nodep->sensesp() : m_trigToSen.at(nodep->sensesp());
+        const AstSenTree* const senTreep = nodep->sentreep()->hasCombo()
+                                               ? nodep->sentreep()
+                                               : m_trigToSen.at(nodep->sentreep());
 
         m_inClocked = senTreep->hasClocked();
 
@@ -149,11 +150,11 @@ class OrderGraphBuilder final : public VNVisitor {
 
         // Combinational and hybrid logic will have it's domain assigned based on the driver
         // domains. For clocked logic, we already know its domain.
-        if (!senTreep->hasCombo() && !senTreep->hasHybrid()) m_domainp = nodep->sensesp();
+        if (!senTreep->hasCombo() && !senTreep->hasHybrid()) m_domainp = nodep->sentreep();
 
         // Hybrid logic also includes additional sensitivities
         if (senTreep->hasHybrid()) {
-            m_hybridp = nodep->sensesp();
+            m_hybridp = nodep->sentreep();
             // Mark AstVarScopes that are explicit sensitivities
             AstNode::user3ClearTree();
             senTreep->foreach([](const AstVarRef* refp) {  //

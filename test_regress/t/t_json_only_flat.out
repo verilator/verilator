@@ -87,7 +87,7 @@
           {"type":"VARREF","name":"t.cell1.q","addr":"(HC)","loc":"d,36:30,36:31","dtypep":"(H)","access":"WR","varp":"(U)","varScopep":"(LB)","classOrPackagep":"UNLINKED"}
         ],"timingControlp": []},
         {"type":"ALWAYS","name":"","addr":"(IC)","loc":"d,41:4,41:10","keyword":"always","isSuspendable":false,"needProcess":false,
-         "sensesp": [
+         "sentreep": [
           {"type":"SENTREE","name":"","addr":"(JC)","loc":"d,41:11,41:12","isMulti":false,
            "sensesp": [
             {"type":"SENITEM","name":"","addr":"(KC)","loc":"d,41:13,41:20","edgeType":"POS",

@@ -147,10 +147,10 @@
      "lhsp": [
       {"type":"PARSEREF","name":"result","addr":"(RC)","loc":"e,33:16,33:22","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
     ],"timingControlp": [],"strengthSpecp": []},
-    {"type":"ALWAYS","name":"","addr":"(SC)","loc":"e,36:4,36:10","keyword":"always","isSuspendable":false,"needProcess":false,"sensesp": [],
+    {"type":"ALWAYS","name":"","addr":"(SC)","loc":"e,36:4,36:10","keyword":"always","isSuspendable":false,"needProcess":false,"sentreep": [],
      "stmtsp": [
       {"type":"EVENTCONTROL","name":"","addr":"(TC)","loc":"e,36:11,36:12",
-       "sensesp": [
+       "sentreep": [
         {"type":"SENTREE","name":"","addr":"(UC)","loc":"e,36:11,36:12","isMulti":false,
          "sensesp": [
           {"type":"SENITEM","name":"","addr":"(VC)","loc":"e,36:14,36:21","edgeType":"POS",
@@ -466,10 +466,10 @@
         ]}
       ]}
     ],"delayp": [],"valuep": [],"attrsp": []},
-    {"type":"ALWAYS","name":"","addr":"(PH)","loc":"e,82:4,82:10","keyword":"always","isSuspendable":false,"needProcess":false,"sensesp": [],
+    {"type":"ALWAYS","name":"","addr":"(PH)","loc":"e,82:4,82:10","keyword":"always","isSuspendable":false,"needProcess":false,"sentreep": [],
      "stmtsp": [
       {"type":"EVENTCONTROL","name":"","addr":"(QH)","loc":"e,82:11,82:12",
-       "sensesp": [
+       "sentreep": [
         {"type":"SENTREE","name":"","addr":"(RH)","loc":"e,82:11,82:12","isMulti":false,
          "sensesp": [
           {"type":"SENITEM","name":"","addr":"(SH)","loc":"e,82:13,82:20","edgeType":"POS",

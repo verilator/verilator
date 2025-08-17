@@ -492,7 +492,7 @@ public:
     bool convert(AstAlways* nodep) {
         // Ignore sequential logic
         const VAlwaysKwd kwd = nodep->keyword();
-        if (nodep->sensesp() || (kwd != VAlwaysKwd::ALWAYS && kwd != VAlwaysKwd::ALWAYS_COMB)) {
+        if (nodep->sentreep() || (kwd != VAlwaysKwd::ALWAYS && kwd != VAlwaysKwd::ALWAYS_COMB)) {
             return false;
         }
 

@@ -4945,17 +4945,17 @@ class AstCAwait final : public AstNodeUniop {
     // Emit C++'s co_await expression
     // @astgen alias op1 := exprp
     //
-    // @astgen ptr := m_sensesp : Optional[AstSenTree]  // Sentree related to this await
+    // @astgen ptr := m_sentreep : Optional[AstSenTree]  // Sentree related to this await
 public:
-    AstCAwait(FileLine* fl, AstNodeExpr* exprp, AstSenTree* sensesp = nullptr)
+    AstCAwait(FileLine* fl, AstNodeExpr* exprp, AstSenTree* sentreep = nullptr)
         : ASTGEN_SUPER_CAwait(fl, exprp)
-        , m_sensesp{sensesp} {}
+        , m_sentreep{sentreep} {}
     ASTGEN_MEMBERS_AstCAwait;
     bool isTimingControl() const override { return true; }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    AstSenTree* sensesp() const { return m_sensesp; }
-    void clearSensesp() { m_sensesp = nullptr; }
+    AstSenTree* sentreep() const { return m_sentreep; }
+    void clearSentreep() { m_sentreep = nullptr; }
     void numberOperate(V3Number& out, const V3Number& lhs) override { V3ERROR_NA; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }

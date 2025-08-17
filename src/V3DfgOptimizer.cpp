@@ -153,7 +153,7 @@ class DataflowExtractVisitor final : public VNVisitor {
     void visit(AstAlways* nodep) override {
         VL_RESTORER(m_candidatesp);
         // Only extract from combinational logic under proper modules
-        const bool isComb = !nodep->sensesp()
+        const bool isComb = !nodep->sentreep()
                             && (nodep->keyword() == VAlwaysKwd::ALWAYS
                                 || nodep->keyword() == VAlwaysKwd::ALWAYS_COMB
                                 || nodep->keyword() == VAlwaysKwd::ALWAYS_LATCH);

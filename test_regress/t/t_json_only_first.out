@@ -64,7 +64,7 @@
       {"type":"CONST","name":"32'sh1","addr":"(OB)","loc":"d,39:25,39:26","dtypep":"(LB)"}
     ],"attrsp": []},
     {"type":"ALWAYS","name":"","addr":"(PB)","loc":"d,41:4,41:10","keyword":"always","isSuspendable":false,"needProcess":false,
-     "sensesp": [
+     "sentreep": [
       {"type":"SENTREE","name":"","addr":"(QB)","loc":"d,41:11,41:12","isMulti":false,
        "sensesp": [
         {"type":"SENITEM","name":"","addr":"(RB)","loc":"d,41:13,41:20","edgeType":"POS",

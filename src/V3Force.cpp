@@ -97,7 +97,7 @@ public:
                 AstActive* const activep = new AstActive{
                     flp, "force-init",
                     new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Static{}}}};
-                activep->sensesStorep(activep->sensesp());
+                activep->senTreeStorep(activep->sentreep());
 
                 activep->addStmtsp(new AstInitial{flp, assignp});
                 vscp->scopep()->addBlocksp(activep);
@@ -120,7 +120,7 @@ public:
                     new AstSenItem{flp, VEdgeType::ET_CHANGED, origp->cloneTree(false)});
                 AstActive* const activep
                     = new AstActive{flp, "force-update", new AstSenTree{flp, itemsp}};
-                activep->sensesStorep(activep->sensesp());
+                activep->senTreeStorep(activep->sentreep());
                 activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr,
                                                  new AstAssign{flp, lhsp, rhsp}});
                 vscp->scopep()->addBlocksp(activep);

@@ -583,7 +583,7 @@ class DelayedVisitor final : public VNVisitor {
         vscpInfo.shadowVariableKit().vscp = shadowVscp;
         // Create the AstActive for the Pre/Post logic
         AstActive* const activep = new AstActive{flp, "nba-shadow-variable", vscpInfo.senTreep()};
-        activep->sensesStorep(vscpInfo.senTreep());
+        activep->senTreeStorep(vscpInfo.senTreep());
         scopep->addBlocksp(activep);
         // Add 'Pre' scheduled 'shadowVariable = originalVariable' assignment
         activep->addStmtsp(new AstAssignPre{flp, new AstVarRef{flp, shadowVscp, VAccess::WRITE},
@@ -622,7 +622,7 @@ class DelayedVisitor final : public VNVisitor {
         // Create the AstActive for the Post logic
         AstActive* const activep
             = new AstActive{flp, "nba-shadow-var-masked", vscpInfo.senTreep()};
-        activep->sensesStorep(vscpInfo.senTreep());
+        activep->senTreeStorep(vscpInfo.senTreep());
         scopep->addBlocksp(activep);
         // Add 'Post' scheduled process for the commit and mask clear
         AstAlwaysPost* const postp = new AstAlwaysPost{flp};
@@ -676,7 +676,7 @@ class DelayedVisitor final : public VNVisitor {
         AstScope* const scopep = vscp->scopep();
         // Create the AstActive for the Pre/Post logic
         AstActive* const activep = new AstActive{flp, "nba-flag-shared", vscpInfo.senTreep()};
-        activep->sensesStorep(vscpInfo.senTreep());
+        activep->senTreeStorep(vscpInfo.senTreep());
         scopep->addBlocksp(activep);
         vscpInfo.flagSharedKit().activep = activep;
         // Add 'Post' scheduled process to be populated later
@@ -773,7 +773,7 @@ class DelayedVisitor final : public VNVisitor {
         AstScope* const scopep = vscp->scopep();
         // Create the AstActive for the Pre/Post logic
         AstActive* const activep = new AstActive{flp, "nba-flag-unique", vscpInfo.senTreep()};
-        activep->sensesStorep(vscpInfo.senTreep());
+        activep->senTreeStorep(vscpInfo.senTreep());
         scopep->addBlocksp(activep);
         // Add 'Post' scheduled process to be populated later
         AstAlwaysPost* const postp = new AstAlwaysPost{flp};
@@ -837,7 +837,7 @@ class DelayedVisitor final : public VNVisitor {
         // Create the AstActive for the Post logic
         AstActive* const activep
             = new AstActive{flp, "nba-value-queue-whole", vscpInfo.senTreep()};
-        activep->sensesStorep(vscpInfo.senTreep());
+        activep->senTreeStorep(vscpInfo.senTreep());
         scopep->addBlocksp(activep);
         // Add 'Post' scheduled process for the commit
         AstAlwaysPost* const postp = new AstAlwaysPost{flp};
@@ -1085,7 +1085,7 @@ class DelayedVisitor final : public VNVisitor {
         VL_RESTORER(m_ignoreBlkAndNBlk);
         VL_RESTORER(m_inNonCombLogic);
         m_activep = nodep;
-        AstSenTree* const senTreep = nodep->sensesp();
+        AstSenTree* const senTreep = nodep->sentreep();
         m_ignoreBlkAndNBlk = senTreep->hasStatic() || senTreep->hasInitial();
         m_inNonCombLogic = senTreep->hasClocked();
         iterateChildren(nodep);
@@ -1131,7 +1131,7 @@ class DelayedVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstCAwait* nodep) override {
-        if (nodep->sensesp()) m_timingDomains.insert(nodep->sensesp());
+        if (nodep->sentreep()) m_timingDomains.insert(nodep->sentreep());
     }
     void visit(AstFireEvent* nodep) override {
         UASSERT_OBJ(v3Global.hasEvents(), nodep, "Inconsistent");
@@ -1166,7 +1166,7 @@ class DelayedVisitor final : public VNVisitor {
             }
 
             UASSERT_OBJ(m_activep, nodep, "No active to handle FireEvent");
-            AstActive* const activep = new AstActive{flp, "nba-event", m_activep->sensesp()};
+            AstActive* const activep = new AstActive{flp, "nba-event", m_activep->sentreep()};
             m_activep->addNextHere(activep);
             activep->addStmtsp(prep);
             activep->addStmtsp(postp);
@@ -1238,7 +1238,7 @@ class DelayedVisitor final : public VNVisitor {
         vscpInfo.m_inLoop |= m_inLoop;
         vscpInfo.m_inSuspOrFork |= m_inSuspendableOrFork;
         // Sensitivity might be non-clocked, in a suspendable process, which are handled elsewhere
-        if (m_activep->sensesp()->hasClocked()) {
+        if (m_activep->sentreep()->hasClocked()) {
             if (vscpInfo.m_fistActivep != m_activep) {
                 AstVar* const varp = vscp->varp();
                 if (!varp->user1SetOnce()
@@ -1255,7 +1255,7 @@ class DelayedVisitor final : public VNVisitor {
                 }
             }
             // Add this sensitivity to the variable
-            vscpInfo.addSensitivity(m_activep->sensesp());
+            vscpInfo.addSensitivity(m_activep->sentreep());
         }
 
         // Record the NBA for later processing

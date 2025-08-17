@@ -148,8 +148,8 @@ bool AstBasicDType::ascending() const {
     return (rangep() ? rangep()->ascending() : m.m_nrange.ascending());
 }
 
-bool AstActive::hasClocked() const { return m_sensesp->hasClocked(); }
-bool AstActive::hasCombo() const { return m_sensesp->hasCombo(); }
+bool AstActive::hasClocked() const { return m_sentreep->hasClocked(); }
+bool AstActive::hasCombo() const { return m_sentreep->hasCombo(); }
 
 AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr* exprsp)
     : ASTGEN_SUPER_ElabDisplay(fl) {

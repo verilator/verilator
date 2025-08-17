@@ -215,7 +215,7 @@ class SchedGraphBuilder final : public VNVisitor {
 
     // VISIT methods
     void visit(AstActive* nodep) override {
-        AstSenTree* const senTreep = nodep->sensesp();
+        AstSenTree* const senTreep = nodep->sentreep();
         UASSERT_OBJ(senTreep->hasClocked() || senTreep->hasCombo() || senTreep->hasHybrid(), nodep,
                     "Unhandled");
         UASSERT_OBJ(!m_senTreep, nodep, "Should not nest");
@@ -369,7 +369,7 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
 
         for (const auto& pair : result.m_act) {
             AstActive* const activep = pair.second;
-            markVars(activep->sensesp());
+            markVars(activep->sentreep());
             markVars(activep);
         }
 
@@ -394,12 +394,12 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
                     });
                     LogicByScope& lbs = toActiveRegion ? result.m_pre : result.m_nba;
                     logicp->unlinkFrBack();
-                    lbs.add(scopep, activep->sensesp(), logicp);
+                    lbs.add(scopep, activep->sentreep(), logicp);
                 } else {
                     UASSERT_OBJ(VN_IS(nodep, AssignPost) || VN_IS(nodep, AlwaysPost), nodep,
                                 "Unexpected node type " << nodep->typeName());
                     nodep->unlinkFrBack();
-                    result.m_nba.add(scopep, activep->sensesp(), nodep);
+                    result.m_nba.add(scopep, activep->sentreep(), nodep);
                 }
             }
         }

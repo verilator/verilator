@@ -268,12 +268,12 @@ public:
 class AstAlwaysPublic final : public AstNodeStmt {
     // "Fake" sensitivity created by /*verilator public_flat_rw @(edgelist)*/
     // Body statements are just AstVarRefs to the public signals
-    // @astgen op1 := sensesp : List[AstSenTree]
+    // @astgen op1 := sentreep : Optional[AstSenTree]
     // @astgen op2 := stmtsp : List[AstNode]
 public:
-    AstAlwaysPublic(FileLine* fl, AstSenTree* sensesp, AstNode* stmtsp)
+    AstAlwaysPublic(FileLine* fl, AstSenTree* sentreep, AstNode* stmtsp)
         : ASTGEN_SUPER_AlwaysPublic(fl) {
-        addSensesp(sensesp);
+        this->sentreep(sentreep);
         addStmtsp(stmtsp);
     }
     ASTGEN_MEMBERS_AstAlwaysPublic;
@@ -605,12 +605,12 @@ public:
 };
 class AstEventControl final : public AstNodeStmt {
     // Parents: stmtlist
-    // @astgen op1 := sensesp : Optional[AstSenTree]
+    // @astgen op1 := sentreep : Optional[AstSenTree]
     // @astgen op2 := stmtsp : List[AstNode]
 public:
-    AstEventControl(FileLine* fl, AstSenTree* sensesp, AstNode* stmtsp)
+    AstEventControl(FileLine* fl, AstSenTree* sentreep, AstNode* stmtsp)
         : ASTGEN_SUPER_EventControl(fl) {
-        this->sensesp(sensesp);
+        this->sentreep(sentreep);
         addStmtsp(stmtsp);
     }
     ASTGEN_MEMBERS_AstEventControl;

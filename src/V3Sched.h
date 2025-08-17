@@ -39,7 +39,7 @@ struct LogicByScope final : public std::vector<std::pair<AstScope*, AstActive*>>
     // Add logic
     void add(AstScope* scopep, AstSenTree* senTreep, AstNode* logicp) {
         UASSERT_OBJ(!logicp->backp(), logicp, "Already linked");
-        if (empty() || back().first != scopep || back().second->sensesp() != senTreep) {
+        if (empty() || back().first != scopep || back().second->sentreep() != senTreep) {
             emplace_back(scopep, new AstActive{logicp->fileline(), "", senTreep});
         }
         back().second->addStmtsp(logicp);

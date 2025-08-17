@@ -473,16 +473,16 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     void visit(AstNodeStmt* nodep) override { setContextAndIterateChildren(nodep); }
     void visit(AstCell* nodep) override { setContextAndIterateChildren(nodep); }
     void visit(AstAlways* nodep) override {
-        if (nodep->sensesp()) {  // When visiting sensitivity list, always is the context
-            setContextAndIterate(nodep, nodep->sensesp());
+        if (nodep->sentreep()) {  // When visiting sensitivity list, always is the context
+            setContextAndIterate(nodep, nodep->sentreep());
         }
         for (AstNode* bodysp = nodep->stmtsp(); bodysp; bodysp = bodysp->nextp()) {
             iterate(bodysp);
         }
     };
     void visit(AstAlwaysPublic* nodep) override {
-        if (nodep->sensesp()) {  // When visiting sensitivity list, always is the context
-            setContextAndIterate(nodep, nodep->sensesp());
+        if (nodep->sentreep()) {  // When visiting sensitivity list, always is the context
+            setContextAndIterate(nodep, nodep->sentreep());
         }
         for (AstNode* bodysp = nodep->stmtsp(); bodysp; bodysp = bodysp->nextp()) {
             iterate(bodysp);

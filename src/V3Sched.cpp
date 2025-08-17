@@ -80,7 +80,7 @@ std::vector<const AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicBy
     for (const LogicByScope* const lbsp : lbsps) {
         for (const auto& pair : *lbsp) {
             AstActive* const activep = pair.second;
-            AstSenTree* const senTreep = activep->sensesp();
+            AstSenTree* const senTreep = activep->sentreep();
             if (senTreep->user1SetOnce()) continue;
             if (senTreep->hasClocked() || senTreep->hasHybrid()) result.push_back(senTreep);
         }
@@ -92,9 +92,9 @@ void remapSensitivities(const LogicByScope& lbs,
                         std::unordered_map<const AstSenTree*, AstSenTree*> senTreeMap) {
     for (const auto& pair : lbs) {
         AstActive* const activep = pair.second;
-        AstSenTree* const senTreep = activep->sensesp();
+        AstSenTree* const senTreep = activep->sentreep();
         if (senTreep->hasCombo()) continue;
-        activep->sensesp(senTreeMap.at(senTreep));
+        activep->sentreep(senTreeMap.at(senTreep));
     }
 }
 
@@ -368,7 +368,7 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
 
     netlistp->foreach([&](AstScope* scopep) {
         scopep->foreach([&](AstActive* activep) {
-            AstSenTree* const senTreep = activep->sensesp();
+            AstSenTree* const senTreep = activep->sentreep();
             if (senTreep->hasStatic()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "static initializer with additional sensitivities");

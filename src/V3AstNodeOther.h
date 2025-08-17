@@ -386,26 +386,26 @@ public:
 class AstActive final : public AstNode {
     // Block of code with sensitivity activation
     // Parents:  MODULE | CFUNC
-    // @astgen op1 := sensesStorep : Optional[AstSenTree] // Moved into m_sensesp in V3Active
+    // @astgen op1 := senTreeStorep : Optional[AstSenTree] // Moved into m_sensesp in V3Active
     // @astgen op2 := stmtsp : List[AstNode] // Logic
     //
-    // @astgen ptr := m_sensesp : Optional[AstSenTree]  // Sensitivity list for this process
+    // @astgen ptr := m_sentreep : Optional[AstSenTree]  // Sensitivity list for this process
     string m_name;
 
 public:
-    AstActive(FileLine* fl, const string& name, AstSenTree* sensesp)
+    AstActive(FileLine* fl, const string& name, AstSenTree* sentreep)
         : ASTGEN_SUPER_Active(fl)
         , m_name{name}
-        , m_sensesp{sensesp} {
-        UASSERT(sensesp, "Sensesp required arg");
+        , m_sentreep{sentreep} {
+        UASSERT(sentreep, "Sentreep required arg");
     }
     ASTGEN_MEMBERS_AstActive;
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     // Statements are broken into pieces, as some must come before others.
-    void sensesp(AstSenTree* nodep) { m_sensesp = nodep; }
-    AstSenTree* sensesp() const { return m_sensesp; }
+    void sentreep(AstSenTree* nodep) { m_sentreep = nodep; }
+    AstSenTree* sentreep() const { return m_sentreep; }
     // METHODS
     inline bool hasClocked() const;
     inline bool hasCombo() const;
@@ -2498,14 +2498,14 @@ public:
 
 // === AstNodeProcedure ===
 class AstAlways final : public AstNodeProcedure {
-    // @astgen op1 := sensesp : Optional[AstSenTree] // Sensitivity list iff clocked
+    // @astgen op1 := sentreep : Optional[AstSenTree] // Sensitivity list iff clocked
     const VAlwaysKwd m_keyword;
 
 public:
-    AstAlways(FileLine* fl, VAlwaysKwd keyword, AstSenTree* sensesp, AstNode* stmtsp)
+    AstAlways(FileLine* fl, VAlwaysKwd keyword, AstSenTree* sentreep, AstNode* stmtsp)
         : ASTGEN_SUPER_Always(fl, stmtsp)
         , m_keyword{keyword} {
-        this->sensesp(sensesp);
+        this->sentreep(sentreep);
     }
     ASTGEN_MEMBERS_AstAlways;
     //
@@ -2515,12 +2515,12 @@ public:
 };
 class AstAlwaysObserved final : public AstNodeProcedure {
     // Like always but Observed scheduling region
-    // @astgen op1 := sensesp : Optional[AstSenTree] // Sensitivity list, removed in V3Active
+    // @astgen op1 := sentreep : Optional[AstSenTree] // Sensitivity list, removed in V3Active
 
 public:
-    AstAlwaysObserved(FileLine* fl, AstSenTree* sensesp, AstNode* bodysp)
+    AstAlwaysObserved(FileLine* fl, AstSenTree* sentreep, AstNode* bodysp)
         : ASTGEN_SUPER_AlwaysObserved(fl, bodysp) {
-        this->sensesp(sensesp);
+        this->sentreep(sentreep);
     }
     ASTGEN_MEMBERS_AstAlwaysObserved;
 };
@@ -2542,12 +2542,12 @@ public:
 };
 class AstAlwaysReactive final : public AstNodeProcedure {
     // Like always but Reactive scheduling region
-    // @astgen op1 := sensesp : Optional[AstSenTree] // Sensitivity list, removed in V3Active
+    // @astgen op1 := sentreep : Optional[AstSenTree] // Sensitivity list, removed in V3Active
 
 public:
-    AstAlwaysReactive(FileLine* fl, AstSenTree* sensesp, AstNode* bodysp)
+    AstAlwaysReactive(FileLine* fl, AstSenTree* sentreep, AstNode* bodysp)
         : ASTGEN_SUPER_AlwaysReactive(fl, bodysp) {
-        this->sensesp(sensesp);
+        this->sentreep(sentreep);
     }
     ASTGEN_MEMBERS_AstAlwaysReactive;
 };

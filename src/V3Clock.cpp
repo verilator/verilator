@@ -85,10 +85,10 @@ class ClockVisitor final : public VNVisitor {
         }
         return senEqnp;
     }
-    AstIf* makeActiveIf(AstSenTree* sensesp) {
-        AstNodeExpr* const senEqnp = createSenseEquation(sensesp->sensesp());
-        UASSERT_OBJ(senEqnp, sensesp, "No sense equation, shouldn't be in sequent activation.");
-        AstIf* const newifp = new AstIf{sensesp->fileline(), senEqnp};
+    AstIf* makeActiveIf(AstSenTree* sentreep) {
+        AstNodeExpr* const senEqnp = createSenseEquation(sentreep->sensesp());
+        UASSERT_OBJ(senEqnp, sentreep, "No sense equation, shouldn't be in sequent activation.");
+        AstIf* const newifp = new AstIf{sentreep->fileline(), senEqnp};
         return newifp;
     }
     void clearLastSen() {
@@ -133,11 +133,11 @@ class ClockVisitor final : public VNVisitor {
         AstNode* const stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
 
         // Create 'if' statement, if needed
-        if (!m_lastSenp || !nodep->sensesp()->sameTree(m_lastSenp)) {
+        if (!m_lastSenp || !nodep->sentreep()->sameTree(m_lastSenp)) {
             VNRelinker relinker;
             nodep->unlinkFrBack(&relinker);
             clearLastSen();
-            m_lastSenp = nodep->sensesp();
+            m_lastSenp = nodep->sentreep();
             // Make a new if statement
             m_lastIfp = makeActiveIf(m_lastSenp);
             relinker.relink(m_lastIfp);

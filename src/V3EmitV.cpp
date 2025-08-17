@@ -34,7 +34,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     const bool m_suppressUnknown;  // Do not error on unknown node
 
     // STATE - for current visit position (use VL_RESTORER)
-    AstSenTree* m_sensesp = nullptr;  // Domain for printing one a ALWAYS under a ACTIVE
+    AstSenTree* m_sentreep = nullptr;  // Domain for printing one a ALWAYS under a ACTIVE
     bool m_suppressSemi = false;  // Non-statement, don't print ;
     bool m_suppressVarSemi = false;  // Suppress emitting semicolon for AstVars
     bool m_arrayPost = false;  // Print array information that goes after identifier (vs after)
@@ -122,11 +122,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstInitialStatic* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstAlways* nodep) override {
         putfs(nodep, "always ");
-        if (m_sensesp) {
-            iterateAndNextConstNull(m_sensesp);
+        if (m_sentreep) {
+            iterateAndNextConstNull(m_sentreep);
         }  // In active
         else {
-            iterateAndNextConstNull(nodep->sensesp());
+            iterateAndNextConstNull(nodep->sentreep());
         }
         putbs(" begin\n");
         iterateAndNextConstNull(nodep->stmtsp());
@@ -134,11 +134,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstAlwaysPublic* nodep) override {
         putfs(nodep, "/*verilator public_flat_rw ");
-        if (m_sensesp) {
-            iterateAndNextConstNull(m_sensesp);
+        if (m_sentreep) {
+            iterateAndNextConstNull(m_sentreep);
         }  // In active
         else {
-            iterateAndNextConstNull(nodep->sensesp());
+            iterateAndNextConstNull(nodep->sentreep());
         }
         putqs(nodep, " ");
         iterateAndNextConstNull(nodep->stmtsp());
@@ -923,8 +923,8 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(m_suppressVarSemi ? "\n" : ";\n");
     }
     void visit(AstActive* nodep) override {
-        VL_RESTORER(m_sensesp);
-        m_sensesp = nodep->sensesp();
+        VL_RESTORER(m_sentreep);
+        m_sentreep = nodep->sentreep();
         iterateAndNextConstNull(nodep->stmtsp());
     }
     void visit(AstDelay* nodep) override {
