@@ -3973,8 +3973,7 @@ uint32_t ConstVisitor::s_globalPassNum = 0;
 // Const class functions
 
 //! Force this cell node's parameter list to become a constant
-//! @return  Pointer to the edited node.
-AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
+void V3Const::constifyParamsEdit(AstNode* nodep) {
     // UINFOTREE(1, nodep, "", "forceConPRE");
     // Resize even if the node already has a width, because buried in the tree
     // we may have a node we just created with signing, etc, that isn't sized yet.
@@ -3988,16 +3987,14 @@ AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
         // init value because we need widthing above to handle the var's type.
         if (varp->valuep()) visitor.mainAcceptEdit(varp->valuep());
     } else {
-        nodep = visitor.mainAcceptEdit(nodep);
+        (void)visitor.mainAcceptEdit(nodep);
     }
     // Because we do edits, nodep links may get trashed and core dump if have next line
     // UINFOTREE(1, nodep, "", "forceConDONE");
-    return nodep;
 }
 
 //! Constify this cell node's parameter list if possible
-//! @return  Pointer to the edited node.
-AstNode* V3Const::constifyParamsNoWarnEdit(AstNode* nodep) {
+void V3Const::constifyParamsNoWarnEdit(AstNode* nodep) {
     // UINFOTREE(1, nodep, "", "forceConPRE");
     // Resize even if the node already has a width, because buried in the tree
     // we may have a node we just created with signing, etc, that isn't sized yet.
@@ -4011,11 +4008,10 @@ AstNode* V3Const::constifyParamsNoWarnEdit(AstNode* nodep) {
         // init value because we need widthing above to handle the var's type.
         if (varp->valuep()) visitor.mainAcceptEdit(varp->valuep());
     } else {
-        nodep = visitor.mainAcceptEdit(nodep);
+        (void)visitor.mainAcceptEdit(nodep);
     }
     // Because we do edits, nodep links may get trashed and core dump this.
     // UINFOTREE(1, nodep, "", "forceConDONE");
-    return nodep;
 }
 
 //! Force this cell node's parameter list to become a constant inside generate.

@@ -26,14 +26,8 @@
 
 class V3Const final {
 public:
-    static AstNode* constifyParamsEdit(AstNode* nodep) VL_MT_DISABLED;
-    static AstNodeExpr* constifyParamsEdit(AstNodeExpr* exprp) VL_MT_DISABLED {
-        return VN_AS(constifyParamsEdit(static_cast<AstNode*>(exprp)), NodeExpr);
-    }
-    static AstNode* constifyParamsNoWarnEdit(AstNode* nodep) VL_MT_DISABLED;
-    static AstNodeExpr* constifyParamsNoWarnEdit(AstNodeExpr* exprp) VL_MT_DISABLED {
-        return VN_AS(constifyParamsNoWarnEdit(static_cast<AstNode*>(exprp)), NodeExpr);
-    }
+    static void constifyParamsEdit(AstNode* nodep) VL_MT_DISABLED;
+    static void constifyParamsNoWarnEdit(AstNode* nodep) VL_MT_DISABLED;
     static AstNode* constifyGenerateParamsEdit(AstNode* nodep) VL_MT_DISABLED;
     // Only do constant pushing, without removing dead logic
     static void constifyAllLive(AstNetlist* nodep) VL_MT_DISABLED;
