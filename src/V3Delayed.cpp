@@ -245,7 +245,9 @@ class DelayedVisitor final : public VNVisitor {
     //  AstVar::user1()         -> bool.  Set true if already issued MULTIDRIVEN warning
     //  AstVarRef::user1()      -> bool.  Set true if target of NBA
     //  AstAssignDly::user1()   -> bool.  Set true if already visited
+    //  AstAssignDly::user2p()  -> AstVarScope*: Scope this AstAssignDelay is under
     //  AstNodeModule::user1p() -> std::unorded_map<std::string, AstVar*> temp map via m_varMap
+    //  AstScope::user1()       -> int: Temporary counter for this scope
     //  AstVarScope::user1p()   -> VarScopeInfo via m_vscpInfo
     //  AstVarScope::user2p()   -> AstVarRef*: First write reference to the Variable
     //  AstVarScope::user3p()   -> std::vector<WriteReference> via m_writeRefs;
@@ -263,6 +265,7 @@ class DelayedVisitor final : public VNVisitor {
     AstActive* m_activep = nullptr;  // Current activate
     const AstCFunc* m_cfuncp = nullptr;  // Current public C Function
     AstNodeProcedure* m_procp = nullptr;  // Current process
+    AstScope* m_scopep = nullptr;  // Current scope
     bool m_inLoop = false;  // True in for loops
     bool m_inSuspendableOrFork = false;  // True in suspendable processes and forks
     bool m_ignoreBlkAndNBlk = false;  // Suppress delayed assignment BLKANDNBLK
@@ -466,6 +469,7 @@ class DelayedVisitor final : public VNVisitor {
             varp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
             modp->addStmtsp(varp);
         }
+        UASSERT_OBJ(varp->dtypep()->isSame(dtypep), flp, "Invalid type for temporary AstVar");
         // Create the AstVarScope
         AstVarScope* const varscp = new AstVarScope{flp, scopep, varp};
         scopep->addVarsp(varscp);
@@ -529,6 +533,21 @@ class DelayedVisitor final : public VNVisitor {
         }
         // Now have been converted to use the captured values
         return lhsp;
+    }
+
+    // Create a unique temporary variable name
+    std::string uniqueTmpName(AstScope* scopep, AstVarScope* vscp, VarScopeInfo& vscpInfo) {
+        std::stringstream ss;
+        ss << "__" << vscp->varp()->shortName() + "__v";
+        // If the assignment is in the same scope as the variable, just
+        // use the temporary counter of the variable.
+        if (scopep == vscp->scopep()) {
+            ss << vscpInfo.m_nTmp++;
+        } else {
+            // Otherwise use the temporary counter of the scope of the assignment.
+            ss << scopep->user1Inc() << "_hierarchical";
+        }
+        return ss.str();
     }
 
     // Create a temporary variable in the given 'scopep', with the given 'name', and with 'dtypep'
@@ -671,11 +690,10 @@ class DelayedVisitor final : public VNVisitor {
     void convertSchemeFlagShared(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo) {
         UASSERT_OBJ(vscpInfo.m_scheme == Scheme::FlagShared, vscp, "Inconsistent NBA scheme");
         FileLine* const flp = vscp->fileline();
-        AstScope* const scopep = vscp->scopep();
+        AstScope* const scopep = VN_AS(nodep->user2p(), Scope);
 
         // Base name suffix for signals constructed below
-        const std::string baseName{"__" + vscp->varp()->shortName() + "__v"
-                                   + std::to_string(vscpInfo.m_nTmp++)};
+        const std::string baseName = uniqueTmpName(scopep, vscp, vscpInfo);
 
         // Unlink and capture the RHS value
         AstNodeExpr* const capturedRhsp
@@ -697,6 +715,8 @@ class DelayedVisitor final : public VNVisitor {
             consecutive
             // ... that use the same scheme
             && prevVscpInfop->m_scheme == Scheme::FlagShared
+            // ... and are in the same scope as the target variable
+            && scopep == vscp->scopep()
             // ... and share the same overall update domain
             && prevVscpInfop->senTreep()->sameTree(vscpInfo.senTreep());
 
@@ -763,11 +783,10 @@ class DelayedVisitor final : public VNVisitor {
     void convertSchemeFlagUnique(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo) {
         UASSERT_OBJ(vscpInfo.m_scheme == Scheme::FlagUnique, vscp, "Inconsistent NBA scheme");
         FileLine* const flp = vscp->fileline();
-        AstScope* const scopep = vscp->scopep();
+        AstScope* const scopep = VN_AS(nodep->user2p(), Scope);
 
         // Base name suffix for signals constructed below
-        const std::string baseName{"__" + vscp->varp()->shortName() + "__v"
-                                   + std::to_string(vscpInfo.m_nTmp++)};
+        const std::string baseName = uniqueTmpName(scopep, vscp, vscpInfo);
 
         // Unlink and capture the RHS value
         AstNodeExpr* const capturedRhsp
@@ -837,11 +856,10 @@ class DelayedVisitor final : public VNVisitor {
                             : vscpInfo.m_scheme == Scheme::ValueQueueWhole,
                     vscp, "Inconsistent NBA scheme");
         FileLine* const flp = vscp->fileline();
-        AstScope* const scopep = vscp->scopep();
+        AstScope* const scopep = VN_AS(nodep->user2p(), Scope);
 
         // Base name suffix for signals constructed below
-        const std::string baseName{"__" + vscp->varp()->shortName() + "__v"
-                                   + std::to_string(vscpInfo.m_nTmp++)};
+        const std::string baseName = uniqueTmpName(scopep, vscp, vscpInfo);
 
         // Unlink and capture the RHS value
         AstNodeExpr* const capturedRhsp
@@ -1051,7 +1069,11 @@ class DelayedVisitor final : public VNVisitor {
             }
         }
     }
-    void visit(AstScope* nodep) override { iterateChildren(nodep); }
+    void visit(AstScope* nodep) override {
+        VL_RESTORER(m_scopep);
+        m_scopep = nodep;
+        iterateChildren(nodep);
+    }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
         m_cfuncp = nodep;
@@ -1169,8 +1191,12 @@ class DelayedVisitor final : public VNVisitor {
         }
         UASSERT_OBJ(m_procp, nodep, "Delayed assignment not under process");
         UASSERT_OBJ(m_activep, nodep, "<= not under sensitivity block");
+        UASSERT_OBJ(m_scopep, nodep, "<= not under scope");
         UASSERT_OBJ(m_inSuspendableOrFork || m_activep->hasClocked(), nodep,
                     "<= assignment in non-clocked block, should have been converted in V3Active");
+
+        // Record scope of this NBA
+        nodep->user2p(m_scopep);
 
         // Grab the reference to the target of the NBA, also lift ExprStmt statements on the LHS
         VL_RESTORER(m_currNbaLhsRefp);
