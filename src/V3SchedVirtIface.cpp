@@ -169,6 +169,8 @@ private:
     }
     void visit(AstAssignPost* nodep) override {
         if (writesToVirtIface(nodep)) {
+            // Not sure if needed, but I'm paranoid about debugging this. Didn't optimize before ..
+            nodep->foreach([](AstVarRef* refp) { refp->varScopep()->optimizeLifePost(false); });
             // Convert to always, as we have to assign the trigger var
             FileLine* const flp = nodep->fileline();
             AstAlwaysPost* const postp = new AstAlwaysPost{flp};
