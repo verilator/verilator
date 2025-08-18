@@ -267,9 +267,9 @@ class ProtectVisitor final : public VNVisitor {
         txtp->addText(fl, "end\n\n");
 
         // Combinatorial process
-        addComment(txtp, fl, "Combinatorialy evaluate changes to inputs");
+        addComment(txtp, fl, "Combinatorially evaluate changes to inputs");
         m_comboParamsp = new AstTextBlock{fl,
-                                          "always @* begin\n"
+                                          "always_comb begin\n"
                                           "last_combo_seqnum__V = "
                                               + m_libName + "_protectlib_combo_update(\n",
                                           false, true};
@@ -302,7 +302,7 @@ class ProtectVisitor final : public VNVisitor {
 
         // Select between combinatorial and sequential results
         addComment(txtp, fl, "Select between combinatorial and sequential results");
-        txtp->addText(fl, "always @* begin\n");
+        txtp->addText(fl, "always_comb begin\n");
         if (m_hasClk) {
             m_seqAssignsp = new AstTextBlock{fl, "if (last_seq_seqnum__V > "
                                                  "last_combo_seqnum__V) begin\n"};
