@@ -913,12 +913,6 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (nodep->user1()) {
             nodep->v3warn(CONSTRAINTIGN, "Global constraints ignored (unsupported)");
         }
-        if (VN_IS(nodep->fromp(), NodeVarRef) && nodep->varp()->isRand() && m_inlineInitTaskp) {
-            iterateChildren(nodep);
-            nodep->replaceWith(nodep->fromp()->unlinkFrBack());
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            return;
-        }
         editFormat(nodep);
     }
     void visit(AstSFormatF* nodep) override {}
