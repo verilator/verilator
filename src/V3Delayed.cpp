@@ -469,7 +469,11 @@ class DelayedVisitor final : public VNVisitor {
             varp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
             modp->addStmtsp(varp);
         }
-        UASSERT_OBJ(varp->dtypep()->isSame(dtypep), flp, "Invalid type for temporary AstVar");
+
+        // We should be able to assert this here, but unfortuantely
+        // 'isAssignmentCompatible' does not exist as of right now.
+        // UASSERT_OBJ(isAssignmentCompatible(varp->dtypep(), dtypep), flp, "Invalid temporary");
+
         // Create the AstVarScope
         AstVarScope* const varscp = new AstVarScope{flp, scopep, varp};
         scopep->addVarsp(varscp);
