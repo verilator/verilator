@@ -47,7 +47,7 @@
 // shadow variables. **Proving** that no reads of 'q' happen after the second
 // assignment of 'd' is difficult due to the presence of loops (the whole
 // eval_nba is inside a loop), virtual methods and other dynamic executions.
-// For the NBA schadow variables, we can compute this safely as their use
+// For the NBA shadow variables, we can compute this safely as their use
 // is understood as we schedule their first and last assignments specially.
 //
 // Constraint 2 could be relaxed to "no write of 'q' before the only read of
@@ -282,7 +282,7 @@ class LifePostDlyVisitor final : public VNVisitorConst {
         m_checkers.emplace_back(new GraphPathChecker{nodep->depGraphp()});
         nodep->user1p(m_checkers.back().get());
 
-        // Trace each mtask body. Note: the vertices are in toplogical order,
+        // Trace each mtask body. Note: the vertices are in topological order,
         // and we do not reset m_sequence, so a lower sequence number does
         // guarantee a node is not earlier than a higher sequence number, but
         // might still be concurrent.
