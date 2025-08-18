@@ -1115,7 +1115,8 @@ class DelayedVisitor final : public VNVisitor {
         // First gather all senItems
         AstSenItem* senItemp = nullptr;
         for (AstSenTree* const domainp : m_timingDomains) {
-            senItemp = AstNode::addNext(senItemp, domainp->sensesp()->cloneTree(true));
+            if (domainp->sensesp())
+                senItemp = AstNode::addNext(senItemp, domainp->sensesp()->cloneTree(true));
         }
         m_timingDomains.clear();
         // Add them to all nba targets we gathered in this process

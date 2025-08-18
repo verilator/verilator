@@ -1533,7 +1533,10 @@ public:
     AstNodeVarRef* varrefp() const { return VN_CAST(sensp(), NodeVarRef); }
     //
     bool isClocked() const { return edgeType().clockedStmt(); }
-    bool isCombo() const { return edgeType() == VEdgeType::ET_COMBO; }
+    bool isComboOrStar() const {
+        return edgeType() == VEdgeType::ET_COMBO || edgeType() == VEdgeType::ET_COMBO_STAR;
+    }
+    bool isComboStar() const { return edgeType() == VEdgeType::ET_COMBO_STAR; }
     bool isHybrid() const { return edgeType() == VEdgeType::ET_HYBRID; }
     bool isStatic() const { return edgeType() == VEdgeType::ET_STATIC; }
     bool isInitial() const { return edgeType() == VEdgeType::ET_INITIAL; }
@@ -1550,6 +1553,10 @@ public:
         addSensesp(sensesp);
     }
     ASTGEN_MEMBERS_AstSenTree;
+    bool sameNode(const AstNode* samep) const override {
+        const AstSenTree* const asamep = VN_DBG_AS(samep, SenTree);
+        return m_multi == asamep->m_multi;
+    }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     bool maybePointedTo() const override VL_MT_SAFE { return true; }

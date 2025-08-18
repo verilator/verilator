@@ -168,6 +168,36 @@ private:
             }
         }
     }
+    void visit(AstAlways* nodep) override {
+        // As have not optimized SenTrees yet, an 'always .*' will be on first and only SenItem
+        if (nodep->sentreep() && nodep->sentreep()->sensesp()
+            && nodep->sentreep()->sensesp()->isComboStar()) {
+            const bool noReads = nodep->forall(
+                [&](const AstNodeVarRef* refp) { return !refp->access().isReadOrRW(); });
+            if (noReads) {
+                nodep->v3warn(ALWNEVER, "'always @*' will never execute as expression list is "
+                                        "empty (no variables read)\n"
+                                            << nodep->warnMore()
+                                            << "... Suggest use 'always_comb'");
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+        }
+        // Iterate will delete ComboStar sentrees, so after above
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstSenTree* nodep) override {
+        if (nodep->sensesp() && nodep->sensesp()->isComboStar()) {
+            UASSERT_OBJ(!nodep->sensesp()->nextp(), nodep, "Shouldn't be senitems after .*");
+            // Make look like standalone always
+            // (Rest of code assumed this before .* existed)
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
     void visit(AstAttrOf* nodep) override {
         switch (nodep->attrType()) {
         case VAttrType::FUNC_ARG_PROTO:  // FALLTHRU

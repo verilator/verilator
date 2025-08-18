@@ -214,7 +214,7 @@ module t (/*AUTOARG*/
 
    reg signed [ 82:0] W0226                     ; //=47A4301EE3FB4133EE3DA
 
-   always @* begin : Block144
+   always_comb begin : Block144
       W0226 = 83'sh47A4301EE3FB4133EE3DA;
       if ((W0226 >>> 8'sh1a) != 83'sh7ffffff1e90c07b8fed04) if (check) $stop;
    end

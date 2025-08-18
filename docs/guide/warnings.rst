@@ -111,6 +111,27 @@ List Of Warnings
    simulate correctly.
 
 
+.. option:: ALWNEVER
+
+   Warning that an `always @*` statement has no variables being read,
+   therefore the event list is empty, and as there are no events to wake
+   the process up, the always will never execute.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_ALWNEVER_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_ALWNEVER_msg.rst
+
+   To repair, assuming the intent was to execute the statements at e.g.
+   time zero, instead use an `always_comb` statement.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+
 .. option:: ASCRANGE
 
    .. TODO better example

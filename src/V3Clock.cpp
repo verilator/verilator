@@ -80,8 +80,10 @@ class ClockVisitor final : public VNVisitor {
         AstNodeExpr* senEqnp = nullptr;
         for (AstSenItem* senp = nodesp; senp; senp = VN_AS(senp->nextp(), SenItem)) {
             UASSERT_OBJ(senp->edgeType() == VEdgeType::ET_TRUE, senp, "Should have been lowered");
-            AstNodeExpr* const senOnep = senp->sensp()->cloneTree(false);
-            senEqnp = senEqnp ? new AstOr{senp->fileline(), senEqnp, senOnep} : senOnep;
+            if (senp->sensp()) {
+                AstNodeExpr* const senOnep = senp->sensp()->cloneTree(false);
+                senEqnp = senEqnp ? new AstOr{senp->fileline(), senEqnp, senOnep} : senOnep;
+            }
         }
         return senEqnp;
     }

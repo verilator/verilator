@@ -160,14 +160,17 @@ public:
             return new AstGatePin{rangep->fileline(), exprp, rangep->cloneTree(true)};
         }
     }
-    AstSenTree* createClockSenTree(FileLine* fl, AstNodeExpr* exprp) {
+    AstSenTree* createSenTreeChanged(FileLine* fl, AstNodeExpr* exprp) {
         return new AstSenTree{fl, new AstSenItem{fl, VEdgeType::ET_CHANGED, exprp}};
+    }
+    AstSenTree* createSenTreeDotStar(FileLine* fl) {
+        return new AstSenTree{fl, new AstSenItem{fl, VEdgeType::ET_COMBO_STAR, nullptr}};
     }
     AstNodeExpr* createGlobalClockParseRef(FileLine* fl) {
         return new AstParseRef{fl, VParseRefExp::PX_TEXT, "__024global_clock", nullptr, nullptr};
     }
     AstSenTree* createGlobalClockSenTree(FileLine* fl) {
-        return createClockSenTree(fl, createGlobalClockParseRef(fl));
+        return createSenTreeChanged(fl, createGlobalClockParseRef(fl));
     }
     AstNode* createNettype(FileLine* fl, const string& name) {
         // As nettypes are unsupported, we just alias to logic
@@ -2817,7 +2820,6 @@ module_common_item<nodep>:      // ==IEEE: module_common_item
         ;
 
 always_construct<nodep>:        // IEEE: == always_construct
-        //                      // Verilator only - event_control attached to always
                 yALWAYS       stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS, nullptr, $2}; }
         |       yALWAYS_FF    stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS_FF, nullptr, $2}; }
         |       yALWAYS_LATCH stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS_LATCH, nullptr, $2}; }
@@ -3492,14 +3494,14 @@ attr_event_controlE<senTreep>:
 
 attr_event_control<senTreep>:   // ==IEEE: event_control
                 '@' '(' event_expression ')'            { $$ = new AstSenTree{$1, $3}; }
-        |       '@' '(' '*' ')'                         { $$ = nullptr; }
-        |       '@' '*'                                 { $$ = nullptr; }
+        |       '@' '(' '*' ')'                         { $$ = GRAMMARP->createSenTreeDotStar($1); }
+        |       '@' '*'                                 { $$ = GRAMMARP->createSenTreeDotStar($1); }
         ;
 
 event_control<senTreep>:        // ==IEEE: event_control
         // UNSUP: Needs alignment with IEEE event_control and clocking_event
-                '@' '(' '*' ')'                         { $$ = nullptr; }
-        |       '@' '*'                                 { $$ = nullptr; }
+                '@' '(' '*' ')'                         { $$ = GRAMMARP->createSenTreeDotStar($1); }
+        |       '@' '*'                                 { $$ = GRAMMARP->createSenTreeDotStar($1); }
         //                      // IEEE: clocking_event
         |       '@' '(' event_expression ')'            { $$ = new AstSenTree{$1, $3}; }
         //                      // IEEE: hierarchical_event_identifier
@@ -4464,7 +4466,7 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_CEIL '(' expr ')'                    { $$ = new AstCeilD{$1, $3}; }
         |       yD_CHANGED '(' expr ')'                 { $$ = new AstLogNot{$1, new AstStable{$1, $3, nullptr}}; }
         |       yD_CHANGED '(' expr ',' expr ')'
-                        { $$ = new AstLogNot{$1, new AstStable{$1, $3, GRAMMARP->createClockSenTree($1, $5)}}; }
+                        { $$ = new AstLogNot{$1, new AstStable{$1, $3, GRAMMARP->createSenTreeChanged($1, $5)}}; }
         |       yD_CHANGED_GCLK '(' expr ')'
                         { $$ = new AstLogNot{$1, new AstStable{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}}; }
         |       yD_CLOG2 '(' expr ')'                   { $$ = new AstCLog2{$1, $3}; }
@@ -4487,7 +4489,7 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_DIST_UNIFORM '(' expr ',' expr ',' expr ')'  { $$ = new AstDistUniform{$1, $3, $5, $7}; }
         |       yD_EXP '(' expr ')'                     { $$ = new AstExpD{$1, $3}; }
         |       yD_FELL '(' expr ')'                    { $$ = new AstFell{$1, $3, nullptr}; }
-        |       yD_FELL '(' expr ',' expr ')'           { $$ = new AstFell{$1, $3, GRAMMARP->createClockSenTree($1, $5)}; }
+        |       yD_FELL '(' expr ',' expr ')'           { $$ = new AstFell{$1, $3, GRAMMARP->createSenTreeChanged($1, $5)}; }
         |       yD_FELL_GCLK '(' expr ')'               { $$ = new AstFell{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}; }
         |       yD_FEOF '(' expr ')'                    { $$ = new AstFEof{$1, $3}; }
         |       yD_FERROR '(' expr ',' idClassSel ')'   { $$ = new AstFError{$1, $3, $5}; }
@@ -4539,7 +4541,7 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_RIGHT '(' exprOrDataType ')'         { $$ = new AstAttrOf{$1, VAttrType::DIM_RIGHT, $3, nullptr}; }
         |       yD_RIGHT '(' exprOrDataType ',' expr ')'        { $$ = new AstAttrOf{$1, VAttrType::DIM_RIGHT, $3, $5}; }
         |       yD_ROSE '(' expr ')'                    { $$ = new AstRose{$1, $3, nullptr}; }
-        |       yD_ROSE '(' expr ',' expr ')'           { $$ = new AstRose{$1, $3, GRAMMARP->createClockSenTree($1, $5)}; }
+        |       yD_ROSE '(' expr ',' expr ')'           { $$ = new AstRose{$1, $3, GRAMMARP->createSenTreeChanged($1, $5)}; }
         |       yD_ROSE_GCLK '(' expr ')'               { $$ = new AstRose{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}; }
         |       yD_RTOI '(' expr ')'                    { $$ = new AstRToIS{$1, $3}; }
         |       yD_SAMPLED '(' expr ')'                 { $$ = new AstSampled{$1, $3}; }
@@ -4555,7 +4557,7 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_STIME parenE
                         { $$ = new AstSel{$1, new AstTime{$1, VTimescale{VTimescale::NONE}}, 0, 32}; }
         |       yD_STABLE '(' expr ')'                  { $$ = new AstStable{$1, $3, nullptr}; }
-        |       yD_STABLE '(' expr ',' expr ')'         { $$ = new AstStable{$1, $3, GRAMMARP->createClockSenTree($1, $5)}; }
+        |       yD_STABLE '(' expr ',' expr ')'         { $$ = new AstStable{$1, $3, GRAMMARP->createSenTreeChanged($1, $5)}; }
         |       yD_STABLE_GCLK '(' expr ')'             { $$ = new AstStable{$1, $3, GRAMMARP->createGlobalClockSenTree($1)}; }
         |       yD_TAN '(' expr ')'                     { $$ = new AstTanD{$1, $3}; }
         |       yD_TANH '(' expr ')'                    { $$ = new AstTanhD{$1, $3}; }

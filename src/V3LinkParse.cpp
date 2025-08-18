@@ -835,7 +835,7 @@ class LinkParseVisitor final : public VNVisitor {
         if (alwaysp && alwaysp->keyword() == VAlwaysKwd::ALWAYS_COMB) {
             alwaysp->v3error("Event control statements not legal under always_comb "
                              "(IEEE 1800-2023 9.2.2.2.2)\n"
-                             << nodep->warnMore() << "... Suggest use a normal 'always'");
+                             << alwaysp->warnMore() << "... Suggest use a normal 'always'");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (alwaysp && !alwaysp->sentreep()) {
             // If the event control is at the top, move the sentree to the always

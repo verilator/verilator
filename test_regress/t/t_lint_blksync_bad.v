@@ -26,7 +26,7 @@ module t (/*AUTOARG*/
       sync_nblk <= 1'b1;
    end
 
-   always @* begin
+   always_comb begin
       combo_blk = 1'b1;
       combo_nblk <= 1'b1;
    end

@@ -1,0 +1,8 @@
+%Warning-ALWNEVER: t/t_event_control_star_never.v:9:3: 'always @*' will never execute as expression list is empty (no variables read)
+                                                     : ... note: In instance 't'
+                                                     : ... Suggest use 'always_comb'
+    9 |   always @* a = 100;
+      |   ^~~~~~
+                   ... For warning description see https://verilator.org/warn/ALWNEVER?v=latest
+                   ... Use "/* verilator lint_off ALWNEVER */" and lint_on around source to disable this message.
+%Error: Exiting due to
