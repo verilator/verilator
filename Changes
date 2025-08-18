@@ -20,6 +20,7 @@ Verilator 5.039 devel
 * Add enum base data type, wire data type, and I/O versus data declaration checking per IEEE.
 * Add PROTOTYPEMIS error on missing and mismatching prototypes (#6206) (#6207). [Alex Solomatnikov]
 * Add error when trying to assign class object to variable of non-class types (#6237). [Igor Zaworski, Antmicro Ltd.]
+* Add ALWNEVER warning, for `always @*` that never execute (#6291).
 * Add error on class 'function static'.
 * Add `-DVERILATOR=1` definition to compiler flags when using verilated.mk.
 * Support member-level triggers for virtual interfaces (#5166) (#6148). [Yilou Wang]

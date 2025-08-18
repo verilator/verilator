@@ -162,9 +162,11 @@ class SchedGraphBuilder final : public VNVisitor {
                 SchedSenVertex* const vtxp = new SchedSenVertex{m_graphp, senItemp};
 
                 // Connect up the variable references
-                senItemp->sensp()->foreach([&](AstVarRef* refp) {
-                    new V3GraphEdge{m_graphp, getVarVertex(refp->varScopep()), vtxp, 1};
-                });
+                if (senItemp->sensp()) {
+                    senItemp->sensp()->foreach([&](AstVarRef* refp) {
+                        new V3GraphEdge{m_graphp, getVarVertex(refp->varScopep()), vtxp, 1};
+                    });
+                }
 
                 // Store back to hash map so we can find it next time
                 pair.first->second = vtxp;

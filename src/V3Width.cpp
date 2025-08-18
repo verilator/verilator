@@ -6556,6 +6556,7 @@ class WidthVisitor final : public VNVisitor {
         userIterateChildren(nodep, nullptr);
     }
     void visit(AstSenItem* nodep) override {
+        if (nodep->isComboStar()) return;
         UASSERT_OBJ(nodep->isClocked(), nodep, "Invalid edge");
         // Optimize concat/replicate senitems; this has to be done here at the latest, otherwise we
         // emit WIDTHCONCAT if there are unsized constants

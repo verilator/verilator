@@ -905,8 +905,11 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstEventControl* nodep) override {
         // Do not allow waiting on local named events, as they get enqueued for clearing, but can
         // go out of scope before that happens
-        if (!nodep->sentreep())
+        if (!nodep->sentreep()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: no sense equation (@*)");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
         FileLine* const flp = nodep->fileline();
         // Relink child statements after the event control
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBackWithNext());

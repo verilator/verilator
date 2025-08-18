@@ -1254,7 +1254,7 @@ bool AstSenTree::hasFinal() const {
 bool AstSenTree::hasCombo() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
     for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
-        if (senp->isCombo()) return true;
+        if (senp->isComboOrStar()) return true;
     }
     return false;
 }

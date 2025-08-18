@@ -406,6 +406,7 @@ public:
         ET_TRUE,
         //
         ET_COMBO,  // Sensitive to all combo inputs to this block
+        ET_COMBO_STAR,  // Sensitive to all combo inputs to this block (from .*)
         ET_HYBRID,  // This is like ET_COMB, but with explicit sensitivity to an expression
         ET_STATIC,  // static variable initializers (runs before 'initial')
         ET_INITIAL,  // 'initial' statements
@@ -423,6 +424,7 @@ public:
             true,  // ET_TRUE
 
             false,  // ET_COMBO
+            false,  // ET_COMBO_STAR
             false,  // ET_HYBRID
             false,  // ET_STATIC
             false,  // ET_INITIAL
@@ -443,13 +445,13 @@ public:
     }
     const char* ascii() const {
         static const char* const names[]
-            = {"CHANGED", "BOTH",   "POS",    "NEG",     "EVENT", "TRUE",
-               "COMBO",   "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
+            = {"CHANGED",    "BOTH",   "POS",    "NEG",     "EVENT", "TRUE", "COMBO",
+               "COMBO_STAR", "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
         return names[m_e];
     }
     const char* verilogKwd() const {
         static const char* const names[]
-            = {"[changed]", "edge",     "posedge",  "negedge",   "[event]", "[true]",
+            = {"[changed]", "edge",     "posedge",  "negedge",   "[event]", "[true]", "*",
                "*",         "[hybrid]", "[static]", "[initial]", "[final]", "[never]"};
         return names[m_e];
     }
