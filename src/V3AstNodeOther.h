@@ -2170,6 +2170,7 @@ class AstVarScope final : public AstNode {
     // @astgen ptr := m_scopep : Optional[AstScope]  // Scope variable is underneath
     // @astgen ptr := m_varp : Optional[AstVar]  // [AfterLink] Pointer to variable itself
     bool m_trace : 1;  // Tracing is turned on for this scope
+    bool m_optimizeLifePost : 1;  // One half of an NBA pair using ShadowVariable scheme. Optimize.
 public:
     AstVarScope(FileLine* fl, AstScope* scopep, AstVar* varp)
         : ASTGEN_SUPER_VarScope(fl)
@@ -2178,6 +2179,7 @@ public:
         UASSERT_OBJ(scopep, fl, "Scope must be non-null");
         UASSERT_OBJ(varp, fl, "Var must be non-null");
         m_trace = true;
+        m_optimizeLifePost = false;
         dtypeFrom(varp);
     }
     ASTGEN_MEMBERS_AstVarScope;
@@ -2198,6 +2200,8 @@ public:
     void scopep(AstScope* nodep) { m_scopep = nodep; }
     bool isTrace() const { return m_trace; }
     void trace(bool flag) { m_trace = flag; }
+    bool optimizeLifePost() const { return m_optimizeLifePost; }
+    void optimizeLifePost(bool flag) { m_optimizeLifePost = flag; }
 };
 
 // === AstNodeBlock ===

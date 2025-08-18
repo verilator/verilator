@@ -585,6 +585,9 @@ class DelayedVisitor final : public VNVisitor {
         const std::string name = "__Vdly__" + vscp->varp()->shortName();
         AstVarScope* const shadowVscp = createTemp(flp, scopep, name, vscp->dtypep());
         vscpInfo.shadowVariableKit().vscp = shadowVscp;
+        // Mark both for V3LifePsot
+        vscp->optimizeLifePost(true);
+        shadowVscp->optimizeLifePost(true);
         // Create the AstActive for the Pre/Post logic
         AstActive* const activep = new AstActive{flp, "nba-shadow-variable", vscpInfo.senTreep()};
         activep->senTreeStorep(vscpInfo.senTreep());
