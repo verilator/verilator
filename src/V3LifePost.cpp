@@ -90,12 +90,12 @@ class LifePostDlyVisitor final : public VNVisitorConst {
         uint32_t m_seqNum;  // Location counter
 
     public:
-        Location() = delete;
         Location(T_Node* nodep, const AstExecGraph* egp, const ExecMTask* mtaskp, uint32_t seqNum)
             : m_nodep{nodep}
             , m_egraphp{egp}
             , m_mtaskp{mtaskp}
             , m_seqNum{seqNum} {}
+        Location() = delete;
 
         T_Node* const& nodep() const { return m_nodep; }
 
