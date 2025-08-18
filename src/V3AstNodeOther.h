@@ -2551,6 +2551,14 @@ public:
         : ASTGEN_SUPER_AlwaysPostponed(fl, stmtsp) {}
     ASTGEN_MEMBERS_AstAlwaysPostponed;
 };
+class AstAlwaysPre final : public AstNodeProcedure {
+    // Like always but 'pre' scheduled, e.g. for implementing NBAs
+
+public:
+    explicit AstAlwaysPre(FileLine* fl)
+        : ASTGEN_SUPER_AlwaysPre(fl, nullptr) {}
+    ASTGEN_MEMBERS_AstAlwaysPre;
+};
 class AstAlwaysReactive final : public AstNodeProcedure {
     // Like always but Reactive scheduling region
     // @astgen op1 := sentreep : Optional[AstSenTree] // Sensitivity list, removed in V3Active

@@ -107,12 +107,13 @@ void invertAndMergeSenTreeMap(
 AstSenTree* findTriggeredIface(const AstVarScope* vscp,
                                const VirtIfaceTriggers::IfaceSensMap& vifTrigged,
                                const VirtIfaceTriggers::IfaceMemberSensMap& vifMemberTriggered) {
+    UASSERT_OBJ(vscp->varp()->sensIfacep(), vscp, "Not an virtual interface trigger");
     const auto ifaceIt = vifTrigged.find(vscp->varp()->sensIfacep());
     if (ifaceIt != vifTrigged.end()) return ifaceIt->second;
     for (const auto& memberIt : vifMemberTriggered) {
         if (memberIt.first.m_ifacep == vscp->varp()->sensIfacep()) { return memberIt.second; }
     }
-    return nullptr;
+    vscp->v3fatalSrc("Did not find virtual interface trigger");
 }
 
 //============================================================================

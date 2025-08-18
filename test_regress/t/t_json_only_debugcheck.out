@@ -1161,14 +1161,14 @@
       {"type":"VAR","name":"__Vtemp_3","addr":"(UR)","loc":"d,90:123,90:124","dtypep":"(RB)","origName":"__Vtemp_3","isSc":false,"isPrimaryIO":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isUsedClock":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"attrClocker":"UNKNOWN","lifetime":"NONE","varType":"STMTTEMP","dtypeName":"string","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []}
     ],
      "stmtsp": [
-      {"type":"ASSIGNPRE","name":"","addr":"(VR)","loc":"d,23:17,23:20","dtypep":"(R)",
+      {"type":"ASSIGN","name":"","addr":"(VR)","loc":"d,23:17,23:20","dtypep":"(R)",
        "rhsp": [
         {"type":"VARREF","name":"t.cyc","addr":"(WR)","loc":"d,23:17,23:20","dtypep":"(R)","access":"RD","varp":"(Q)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
       ],
        "lhsp": [
         {"type":"VARREF","name":"__Vdly__t.cyc","addr":"(XR)","loc":"d,23:17,23:20","dtypep":"(R)","access":"WR","varp":"(MR)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
       ],"timingControlp": []},
-      {"type":"ASSIGNPRE","name":"","addr":"(YR)","loc":"d,24:9,24:10","dtypep":"(AC)",
+      {"type":"ASSIGN","name":"","addr":"(YR)","loc":"d,24:9,24:10","dtypep":"(AC)",
        "rhsp": [
         {"type":"VARREF","name":"t.e","addr":"(ZR)","loc":"d,24:9,24:10","dtypep":"(AC)","access":"RD","varp":"(L)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
       ],
@@ -2507,14 +2507,14 @@
           ]}
         ]}
       ]},
-      {"type":"ASSIGNPOST","name":"","addr":"(JKB)","loc":"d,23:17,23:20","dtypep":"(R)",
+      {"type":"ASSIGN","name":"","addr":"(JKB)","loc":"d,23:17,23:20","dtypep":"(R)",
        "rhsp": [
         {"type":"VARREF","name":"__Vdly__t.cyc","addr":"(KKB)","loc":"d,23:17,23:20","dtypep":"(R)","access":"RD","varp":"(MR)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
       ],
        "lhsp": [
         {"type":"VARREF","name":"t.cyc","addr":"(LKB)","loc":"d,23:17,23:20","dtypep":"(R)","access":"WR","varp":"(Q)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
       ],"timingControlp": []},
-      {"type":"ASSIGNPOST","name":"","addr":"(MKB)","loc":"d,24:9,24:10","dtypep":"(AC)",
+      {"type":"ASSIGN","name":"","addr":"(MKB)","loc":"d,24:9,24:10","dtypep":"(AC)",
        "rhsp": [
         {"type":"VARREF","name":"__Vdly__t.e","addr":"(NKB)","loc":"d,24:9,24:10","dtypep":"(AC)","access":"RD","varp":"(PR)","varScopep":"UNLINKED","classOrPackagep":"UNLINKED"}
       ],

@@ -1162,28 +1162,6 @@ public:
     }
     bool brokeLhsMustBeLvalue() const override { return true; }
 };
-class AstAssignPost final : public AstNodeAssign {
-    // Like Assign, but predelayed assignment requiring special order handling
-public:
-    AstAssignPost(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_AssignPost(fl, lhsp, rhsp) {}
-    ASTGEN_MEMBERS_AstAssignPost;
-    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
-        return new AstAssignPost{fileline(), lhsp, rhsp};
-    }
-    bool brokeLhsMustBeLvalue() const override { return true; }
-};
-class AstAssignPre final : public AstNodeAssign {
-    // Like Assign, but predelayed assignment requiring special order handling
-public:
-    AstAssignPre(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_AssignPre(fl, lhsp, rhsp) {}
-    ASTGEN_MEMBERS_AstAssignPre;
-    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
-        return new AstAssignPre{fileline(), lhsp, rhsp};
-    }
-    bool brokeLhsMustBeLvalue() const override { return true; }
-};
 class AstAssignVarScope final : public AstNodeAssign {
     // Assign two VarScopes to each other
 public:

@@ -26,7 +26,7 @@
 // is then assigned to the 'act' region, and all other logic is assigned to
 // the 'nba' region.
 //
-// For later practical purposes, AstAssignPre logic that would be assigned to
+// For later practical purposes, AstAlwaysPre logic that would be assigned to
 // the 'act' region is returned separately. Nevertheless, this logic is part of
 // the 'act' region.
 //
@@ -241,8 +241,7 @@ class SchedGraphBuilder final : public VNVisitor {
     void visit(AstAlwaysPublic* nodep) override { visitLogic(nodep); }
 
     // Pre and Post logic are handled separately
-    void visit(AstAssignPre* nodep) override {}
-    void visit(AstAssignPost* nodep) override {}
+    void visit(AstAlwaysPre* nodep) override {}
     void visit(AstAlwaysPost* nodep) override {}
 
     // LCOV_EXCL_START
@@ -375,14 +374,14 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
             markVars(activep);
         }
 
-        // AstAssignPre, AstAssignPost and AstAlwaysPost should only appear under a clocked
+        // AstAlwaysPre and AstAlwaysPost should only appear under a clocked
         // AstActive, and should be the only thing left at this point.
         for (const auto& pair : clockedLogic) {
             AstScope* const scopep = pair.first;
             AstActive* const activep = pair.second;
             for (AstNode *nodep = activep->stmtsp(), *nextp; nodep; nodep = nextp) {
                 nextp = nodep->nextp();
-                if (AstAssignPre* const logicp = VN_CAST(nodep, AssignPre)) {
+                if (AstAlwaysPre* const logicp = VN_CAST(nodep, AlwaysPre)) {
                     bool toActiveRegion = false;
                     logicp->foreach([&](const AstNodeVarRef* vrefp) {
                         AstVarScope* const vscp = vrefp->varScopep();
@@ -398,7 +397,7 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
                     logicp->unlinkFrBack();
                     lbs.add(scopep, activep->sentreep(), logicp);
                 } else {
-                    UASSERT_OBJ(VN_IS(nodep, AssignPost) || VN_IS(nodep, AlwaysPost), nodep,
+                    UASSERT_OBJ(VN_IS(nodep, AlwaysPost), nodep,
                                 "Unexpected node type " << nodep->typeName());
                     nodep->unlinkFrBack();
                     result.m_nba.add(scopep, activep->sentreep(), nodep);

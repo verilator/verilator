@@ -593,11 +593,15 @@ class DelayedVisitor final : public VNVisitor {
         activep->senTreeStorep(vscpInfo.senTreep());
         scopep->addBlocksp(activep);
         // Add 'Pre' scheduled 'shadowVariable = originalVariable' assignment
-        activep->addStmtsp(new AstAssignPre{flp, new AstVarRef{flp, shadowVscp, VAccess::WRITE},
-                                            new AstVarRef{flp, vscp, VAccess::READ}});
+        AstAlwaysPre* const prep = new AstAlwaysPre{flp};
+        activep->addStmtsp(prep);
+        prep->addStmtsp(new AstAssign{flp, new AstVarRef{flp, shadowVscp, VAccess::WRITE},
+                                      new AstVarRef{flp, vscp, VAccess::READ}});
         // Add 'Post' scheduled 'originalVariable = shadowVariable' assignment
-        activep->addStmtsp(new AstAssignPost{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
-                                             new AstVarRef{flp, shadowVscp, VAccess::READ}});
+        AstAlwaysPost* const postp = new AstAlwaysPost{flp};
+        activep->addStmtsp(postp);
+        postp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
+                                       new AstVarRef{flp, shadowVscp, VAccess::READ}});
     }
     void convertSchemeShadowVar(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo) {
         UASSERT_OBJ(vscpInfo.m_scheme == Scheme::ShadowVar, vscp, "Inconsistent NBA scheme");
@@ -735,9 +739,10 @@ class DelayedVisitor final : public VNVisitor {
                 new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
                               new AstConst{flp, AstConst::BitTrue{}}});
             // Add the 'Pre' scheduled reset for the flag
-            vscpInfo.flagSharedKit().activep->addStmtsp(
-                new AstAssignPre{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
-                                 new AstConst{flp, AstConst::BitFalse{}}});
+            AstAlwaysPre* const prep = new AstAlwaysPre{flp};
+            vscpInfo.flagSharedKit().activep->addStmtsp(prep);
+            prep->addStmtsp(new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
+                                          new AstConst{flp, AstConst::BitFalse{}}});
             // Add the 'Post' scheduled commit
             AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, flagVscp, VAccess::READ}};
             vscpInfo.flagSharedKit().postp->addStmtsp(ifp);
@@ -1164,8 +1169,9 @@ class DelayedVisitor final : public VNVisitor {
                 return new AstVarRef{flp, dlyvscp, access};
             };
 
-            AstAssignPre* const prep = new AstAssignPre{flp, dlyRef(VAccess::WRITE),
-                                                        new AstConst{flp, AstConst::BitFalse{}}};
+            AstAlwaysPre* const prep = new AstAlwaysPre{flp};
+            prep->addStmtsp(new AstAssign{flp, dlyRef(VAccess::WRITE),
+                                          new AstConst{flp, AstConst::BitFalse{}}});
             AstAlwaysPost* const postp = new AstAlwaysPost{flp};
             {
                 AstIf* const ifp = new AstIf{flp, dlyRef(VAccess::READ)};
@@ -1295,8 +1301,7 @@ class DelayedVisitor final : public VNVisitor {
     }
 
     // Pre/Post logic are created here and their content need no further changes, so ignore.
-    void visit(AstAssignPre*) override {}
-    void visit(AstAssignPost*) override {}
+    void visit(AstAlwaysPre*) override {}
     void visit(AstAlwaysPost*) override {}
 
     //--------------------

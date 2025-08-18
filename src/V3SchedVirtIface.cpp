@@ -19,7 +19,7 @@
 // Each interface type written to via virtual interface, or written to normally but read via
 // virtual interface:
 //     Create a trigger var for it
-// Each AssignW, AssignPost:
+// Each AssignW:
 //     If it writes to a virtual interface, or to a variable read via virtual interface:
 //         Convert to an always
 // Each statement:
@@ -150,6 +150,11 @@ private:
         m_trigAssignIfacep = nullptr;
         VL_RESTORER(m_trigAssignMemberVarp);
         m_trigAssignMemberVarp = nullptr;
+        // Not sure if needed, but be paranoid to match previous behavior as didn't optimize
+        // before ..
+        if (VN_IS(nodep, AlwaysPost) && writesToVirtIface(nodep)) {
+            nodep->foreach([](AstVarRef* refp) { refp->varScopep()->optimizeLifePost(false); });
+        }
         iterateChildren(nodep);
     }
     void visit(AstCFunc* nodep) override {
@@ -165,20 +170,6 @@ private:
         if (writesToVirtIface(nodep)) {
             // Convert to always, as we have to assign the trigger var
             nodep->convertToAlways();
-        }
-    }
-    void visit(AstAssignPost* nodep) override {
-        if (writesToVirtIface(nodep)) {
-            // Not sure if needed, but be paranoid to match previous behavior as didn't optimize
-            // before ..
-            nodep->foreach([](AstVarRef* refp) { refp->varScopep()->optimizeLifePost(false); });
-            // Convert to always, as we have to assign the trigger var
-            FileLine* const flp = nodep->fileline();
-            AstAlwaysPost* const postp = new AstAlwaysPost{flp};
-            nodep->replaceWith(postp);
-            postp->addStmtsp(
-                new AstAssign{flp, nodep->lhsp()->unlinkFrBack(), nodep->rhsp()->unlinkFrBack()});
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
     void visit(AstNodeIf* nodep) override {

@@ -450,7 +450,7 @@ as defined in the standard:
 - All other logic is assigned to the 'nba' region.
 
 For completeness, note that a subset of the 'act' region logic, specifically,
-the logic related to the pre-assignments of NBA updates (i.e., AstAssignPre
+the logic related to the pre-assignments of NBA updates (i.e., AstAlwaysPre
 nodes), is handled separately, but is executed as part of the 'act' region.
 
 Also note that all logic representing the committing of an NBA (i.e., Ast*Post)
