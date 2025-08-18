@@ -44,17 +44,17 @@
 // Notes:
 //
 // While these rules could be applied to any variables, not just the NBA
-// shadow variables. **Prooving** that no reads of 'q' happen after the second
+// shadow variables. **Proving** that no reads of 'q' happen after the second
 // assignment of 'd' is difficult due to the presence of loops (the whole
 // eval_nba is inside a loop), virtual methods and other dynamic executions.
 // For the NBA schadow variables, we can compute this safely as their use
 // is understood as we schedule their first and last assignments specially.
 //
 // Constraint 2 could be relaxed to "no write of 'q' before the only read of
-// 'd'"", howvever we only have one write of 'q', creaed in V3Delayed, so
+// 'd', however we only have one write of 'q', created in V3Delayed, so
 // trying harder would just be a code coverage hole today.
 //
-// Constraint 3 shold always hold with V3Delayed, will check assert it.
+// Constraint 3 should always hold with V3Delayed, will check assert it.
 //
 //*************************************************************************
 
