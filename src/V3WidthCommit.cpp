@@ -43,6 +43,8 @@ class WidthCommitVisitor final : public VNVisitor {
     // STATE
     AstNodeModule* m_modp = nullptr;
     std::string m_contNba;  // In continuous- or non-blocking assignment
+    bool m_dynsizedelem
+        = false;  // Writing a dynamically-sized array element, not the array itself
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     bool m_underSel = false;  // Whether is currently under AstMemberSel or AstSel
 
@@ -138,7 +140,7 @@ private:
             else if (varp->isClassMember() && !varp->lifetime().isStatic()
                      && !VN_IS(varDtp, IfaceRefDType))
                 varType = "Class non-static";
-            else if (varDtp->isDynamicallySized())
+            else if (varDtp->isDynamicallySized() && m_dynsizedelem)
                 varType = "Dynamically-sized";
             if (!varType.empty()) {
                 UINFO(1, "    Related var dtype: " << varDtp);
@@ -394,6 +396,20 @@ private:
     void visit(AstNodePreSel* nodep) override {  // LCOV_EXCL_LINE
         // This check could go anywhere after V3Param
         nodep->v3fatalSrc("Presels should have been removed before this point");
+    }
+    void visit(AstCMethodHard* nodep) override {
+        VL_RESTORER(m_dynsizedelem);
+        if (nodep->name() == "atWrite" || nodep->name() == "atWriteAppend"
+            || nodep->name() == "at")
+            m_dynsizedelem = true;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstAssocSel* nodep) override {
+        VL_RESTORER(m_dynsizedelem);
+        m_dynsizedelem = true;
+        iterateChildren(nodep);
+        editDType(nodep);
     }
     void visit(AstSel* nodep) override {
         {
