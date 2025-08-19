@@ -54,6 +54,10 @@ class LinkResolveVisitor final : public VNVisitor {
     int m_senitemCvtNum = 0;  // Temporary signal counter
     std::deque<AstGenFor*> m_underGenFors;  // Stack of GenFor underneath
     bool m_underGenerate = false;  // Under GenFor/GenIf
+    AstVar* m_randomizedVar = nullptr;  // Randomized variable (set if under randomize())
+                                        // Value is set only if randomize is not call on complex
+                                        // membersel - it shall be set always
+    bool m_underWith = false;  // If under With
 
     // VISITORS
     // TODO: Most of these visitors are here for historical reasons.
@@ -184,6 +188,14 @@ class LinkResolveVisitor final : public VNVisitor {
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
     void visit(AstNodeFTaskRef* nodep) override {
+        VL_RESTORER(m_randomizedVar);
+        if (const AstMethodCall* const methodcallp = VN_CAST(nodep, MethodCall)) {
+            if (methodcallp->name() == "randomize") {
+                if (const AstVarRef* const varRefp = VN_CAST(methodcallp->fromp(), VarRef)) {
+                    m_randomizedVar = varRefp->varp();
+                }
+            }
+        }
         iterateChildren(nodep);
         if (AstLet* letp = VN_CAST(nodep->taskp(), Let)) {
             UINFO(7, "letSubstitute() " << nodep << " <- " << letp);
@@ -520,6 +532,25 @@ class LinkResolveVisitor final : public VNVisitor {
     void visit(AstGenIf* nodep) override {
         VL_RESTORER(m_underGenerate);
         m_underGenerate = true;
+        iterateChildren(nodep);
+    }
+
+    void visit(AstMemberSel* nodep) override {
+        iterateChildren(nodep);
+        if (m_underWith && m_randomizedVar) {
+            if (AstVarRef* const varRefp = VN_CAST(nodep->fromp(), VarRef)) {
+                if (m_randomizedVar == varRefp->varp()) {
+                    varRefp->replaceWith(
+                        new AstLambdaArgRef{varRefp->fileline(), varRefp->name(), false});
+                    pushDeletep(varRefp);
+                }
+            }
+        }
+    }
+
+    void visit(AstWith* nodep) override {
+        VL_RESTORER(m_underWith);
+        m_underWith = true;
         iterateChildren(nodep);
     }
 
