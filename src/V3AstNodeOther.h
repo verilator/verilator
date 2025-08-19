@@ -1570,13 +1570,6 @@ public:
     bool hasCombo() const;  // Includes a COMBO SenItem
     bool hasHybrid() const;  // Includes a HYBRID SenItem
 };
-class AstSplitPlaceholder final : public AstNode {
-public:
-    // Dummy node used within V3Split; never exists outside of V3Split.
-    explicit AstSplitPlaceholder(FileLine* fl)
-        : ASTGEN_SUPER_SplitPlaceholder(fl) {}
-    ASTGEN_MEMBERS_AstSplitPlaceholder;
-};
 class AstStrengthSpec final : public AstNode {
     VStrength m_s0;  // Drive 0 strength
     VStrength m_s1;  // Drive 1 strength
