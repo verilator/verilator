@@ -83,7 +83,7 @@ class CfgLiveVariables final : VNVisitorConst {
     // Check and return if variable is incompatible
     bool incompatible(Variable* varp) {
         if (!isSupportedPackedDType(varp->dtypep())) return true;
-        AstVar* astVarp = nullptr;
+        const AstVar* astVarp = nullptr;
         // TODO: remove the useless reinterpret_casts when C++17 'if constexpr' actually works
         if VL_CONSTEXPR_CXX17 (T_Scoped) {
             astVarp = reinterpret_cast<AstVarScope*>(varp)->varp();

@@ -938,10 +938,11 @@ def write_ast_impl(filename):
                     emitBlock("    BROKEN_RTN(!m_{name});\n" +
                               "    BROKEN_RTN(!m_{name}->brokeExists());\n",
                               name=ptr['name'])
-                if ptr['legals'] != '':
+                legals = ptr['legals'].split('|')
+                if legals and legals != ["Node"]:
                     emitBlock("    BROKEN_RTN(m_{name} && !(", name=ptr['name'])
                     eor = ""
-                    for legal in ptr['legals'].split('|'):
+                    for legal in legals:
                         # We use privateTypeTest, as VN_IS would assert that we know
                         # the type is correct, but we want to check regardless,
                         # to find errors after raw node edits/replacements
@@ -956,10 +957,11 @@ def write_ast_impl(filename):
                 if op is None:
                     continue
                 name, _, _, legals = op
-                if legals != '':
+                legals = legals.split('|')
+                if legals and legals != ["Node"]:
                     emitBlock("    BROKEN_RTN({name}() && !(", name=name)
                     eor = ""
-                    for legal in legals.split('|'):
+                    for legal in legals:
                         emitBlock("{eor}privateTypeTest<Ast{legal}>({name}())",
                                   eor=eor,
                                   name=name,
@@ -978,12 +980,13 @@ def write_ast_impl(filename):
                 if op is None:
                     continue
                 name, _, _, legals = op
-                if legals != '':
+                legals = legals.split('|')
+                if legals and legals != ["Node"]:
                     # 'this' is a parent, where oldp replacing newp as op1p, must follow op1p's rules
                     # Could also be on a list, we don't check for speed reasons and as V3Broken doesn't
                     emitBlock("    if (oldp == op{i}p() && !(", i=i)
                     eor = ""
-                    for legal in legals.split('|'):
+                    for legal in legals:
                         emitBlock("{eor}privateTypeTest<Ast{legal}>(newp)",
                                   eor=eor,
                                   name=name,
@@ -994,16 +997,17 @@ def write_ast_impl(filename):
             emitBlock("    return false;\n")
             emitBlock("}}\n")
 
-            emitBlock("void Ast{t}::cloneRelinkGen() {{\n", t=node.name)
-            if node.superClass.name != 'Node':
-                emitBlock("    Ast{base}::cloneRelinkGen();\n", base=node.superClass.name)
-            for ptr in node.ptrs:
-                emitBlock(
-                    "    if (m_{name} && m_{name}->clonep()) m_{name} = m_{name}->clonep();\n",
-                    name=ptr['name'],
-                    kind=ptr['kind'])
+            if node.ptrs:
+                emitBlock("void Ast{t}::cloneRelinkGen() {{\n", t=node.name)
+                if node.superClass.name != 'Node':
+                    emitBlock("    Ast{base}::cloneRelinkGen();\n", base=node.superClass.name)
+                for ptr in node.ptrs:
+                    emitBlock(
+                        "    if (m_{name} && m_{name}->clonep()) m_{name} = m_{name}->clonep();\n",
+                        name=ptr['name'],
+                        kind=ptr['kind'])
 
-            emitBlock("}}\n")
+                emitBlock("}}\n")
 
             emitBlock("void Ast{t}::dumpJsonGen(std::ostream& str) const {{\n", t=node.name)
             if node.superClass.name != 'Node':
@@ -1067,11 +1071,14 @@ def write_ast_macros(filename):
             Ast{t}* addNext(Ast{t}* nodep) {{ return static_cast<Ast{t}*>(AstNode::addNext(this, nodep)); }}
             const char* brokenGen() const override;
             bool wouldBreakGen(const AstNode* const oldp, const AstNode* const newp) const override;
-            void cloneRelinkGen() override;
             void dumpTreeJsonOpGen(std::ostream& str, const string& indent) const override;
             void dumpJsonGen(std::ostream& str) const;
             ''',
                       t=node.name)
+            if node.ptrs:
+                emitBlock('''\
+                void cloneRelinkGen() override;
+                ''')
 
             if node.isLeaf:
                 emitBlock('''\

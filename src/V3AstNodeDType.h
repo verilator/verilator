@@ -792,7 +792,7 @@ public:
 
 private:
     string m_name;  // Name from upper typedef, if any
-    const int m_uniqueNum = 0;
+    const int m_uniqueNum;
     TableMap m_tableMap;  // Created table for V3Width only to remove duplicates
 
 public:

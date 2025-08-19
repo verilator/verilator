@@ -51,7 +51,8 @@ public:
     static void applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp);
     static void applyIgnores(FileLine* filelinep);
     static void applyModule(AstNodeModule* modulep);
-    static void applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp);
+    static void applyVarAttr(const AstNodeModule* modulep, const AstNodeFTask* ftaskp,
+                             AstVar* varp);
 
     static int getHierWorkers(const string& model);
     static FileLine* getHierWorkersFileLine(const string& model);
@@ -64,7 +65,7 @@ public:
 
     static bool containsMTaskProfileData();
 
-    static bool waive(FileLine* filelinep, V3ErrorCode code, const string& message);
+    static bool waive(const FileLine* filelinep, V3ErrorCode code, const string& message);
 };
 
 #endif  // Guard

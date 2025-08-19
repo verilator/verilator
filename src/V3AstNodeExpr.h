@@ -656,6 +656,7 @@ public:
         childDTypep(dtp);
         dtypeFrom(dtp);
     }
+    // cppcheck-suppress constParameterPointer
     AstCast(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
         : ASTGEN_SUPER_Cast(fl) {
         this->fromp(fromp);
@@ -791,14 +792,17 @@ class AstConsDynArray final : public AstNodeExpr {
     // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
     // @astgen op1 := lhsp : Optional[AstNode]
     // @astgen op2 := rhsp : Optional[AstNode]
-    const bool m_lhsIsValue = false;  // LHS constructs value inside the queue, not concat
-    const bool m_rhsIsValue = false;  // RHS constructs value inside the queue, not concat
+    const bool m_lhsIsValue;  // LHS constructs value inside the queue, not concat
+    const bool m_rhsIsValue;  // RHS constructs value inside the queue, not concat
 public:
     explicit AstConsDynArray(FileLine* fl)
-        : ASTGEN_SUPER_ConsDynArray(fl) {}
+        : ASTGEN_SUPER_ConsDynArray(fl)
+        , m_lhsIsValue{false}
+        , m_rhsIsValue{false} {}
     explicit AstConsDynArray(FileLine* fl, bool lhsIsValue, AstNode* lhsp)
         : ASTGEN_SUPER_ConsDynArray(fl)
-        , m_lhsIsValue{lhsIsValue} {
+        , m_lhsIsValue{lhsIsValue}
+        , m_rhsIsValue{false} {
         this->lhsp(lhsp);
     }
     explicit AstConsDynArray(FileLine* fl, bool lhsIsValue, AstNode* lhsp, bool rhsIsValue,
@@ -873,14 +877,17 @@ class AstConsQueue final : public AstNodeExpr {
     // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
     // @astgen op1 := lhsp : Optional[AstNode]
     // @astgen op2 := rhsp : Optional[AstNode]
-    const bool m_lhsIsValue = false;  // LHS constructs value inside the queue, not concat
-    const bool m_rhsIsValue = false;  // RHS constructs value inside the queue, not concat
+    const bool m_lhsIsValue;  // LHS constructs value inside the queue, not concat
+    const bool m_rhsIsValue;  // RHS constructs value inside the queue, not concat
 public:
     explicit AstConsQueue(FileLine* fl)
-        : ASTGEN_SUPER_ConsQueue(fl) {}
+        : ASTGEN_SUPER_ConsQueue(fl)
+        , m_lhsIsValue{false}
+        , m_rhsIsValue{false} {}
     explicit AstConsQueue(FileLine* fl, bool lhsIsValue, AstNode* lhsp)
         : ASTGEN_SUPER_ConsQueue(fl)
-        , m_lhsIsValue{lhsIsValue} {
+        , m_lhsIsValue{lhsIsValue}
+        , m_rhsIsValue{false} {
         this->lhsp(lhsp);
     }
     explicit AstConsQueue(FileLine* fl, bool lhsIsValue, AstNode* lhsp, bool rhsIsValue,
@@ -1116,6 +1123,8 @@ private:
     const int m_srcElementBits;  // num bits in rhs (ex 8 if from byte-queue, 1 if from bit-queue)
 
 public:
+    // cppcheck-suppress constParameterPointer
+    // cppcheck-suppress constParameterCallback
     AstCvtArrayToArray(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp, bool reverse,
                        int blockSize, int dstElementBits, int srcElementBits)
         : ASTGEN_SUPER_CvtArrayToArray(fl)
@@ -1141,6 +1150,8 @@ class AstCvtArrayToPacked final : public AstNodeExpr {
     // Cast from dynamic queue data type to packed array
     // @astgen op1 := fromp : AstNodeExpr
 public:
+    // cppcheck-suppress constParameterPointer
+    // cppcheck-suppress constParameterCallback
     AstCvtArrayToPacked(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
         : ASTGEN_SUPER_CvtArrayToPacked(fl) {
         this->fromp(fromp);
@@ -1155,6 +1166,8 @@ class AstCvtPackedToArray final : public AstNodeExpr {
     // Cast from packed array to dynamic/unpacked queue data type
     // @astgen op1 := fromp : AstNodeExpr
 public:
+    // cppcheck-suppress constParameterPointer
+    // cppcheck-suppress constParameterCallback
     AstCvtPackedToArray(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
         : ASTGEN_SUPER_CvtPackedToArray(fl) {
         this->fromp(fromp);
@@ -1169,6 +1182,8 @@ class AstCvtUnpackedToQueue final : public AstNodeExpr {
     // Cast from unpacked array to dynamic/unpacked queue data type
     // @astgen op1 := fromp : AstNodeExpr
 public:
+    // cppcheck-suppress constParameterPointer
+    // cppcheck-suppress constParameterCallback
     AstCvtUnpackedToQueue(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
         : ASTGEN_SUPER_CvtUnpackedToQueue(fl) {
         this->fromp(fromp);
@@ -1604,7 +1619,6 @@ class AstLambdaArgRef final : public AstNodeExpr {
     // Lambda argument usage
     // These are not AstVarRefs because we need to be able to delete/clone lambdas during
     // optimizations and AstVar's are painful to remove.
-    ASTGEN_MEMBERS_AstLambdaArgRef;
 
 private:
     string m_name;  // Name of variable
@@ -1615,6 +1629,7 @@ public:
         : ASTGEN_SUPER_LambdaArgRef(fl)
         , m_name{name}
         , m_index{index} {}
+    ASTGEN_MEMBERS_AstLambdaArgRef;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     string emitVerilog() override { return name(); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -1812,7 +1827,7 @@ class AstRand final : public AstNodeExpr {
     // $random/$random(seed) or $urandom/$urandom(seed)
     // Return a random number, based upon width()
     // @astgen op1 := seedp : Optional[AstNode]
-    const bool m_urandom = false;  // $urandom vs $random
+    const bool m_urandom;  // $urandom vs $random
 public:
     class Reset {};
     AstRand(FileLine* fl, AstNode* seedp, bool urandom)
@@ -1994,7 +2009,7 @@ class AstScopeName final : public AstNodeExpr {
     // @astgen op1 := scopeAttrp : List[AstText]
     // @astgen op2 := scopeEntrp : List[AstText]
     bool m_dpiExport = false;  // Is for dpiExport
-    const bool m_forFormat = false;  // Is for a format %m
+    const bool m_forFormat;  // Is for a format %m
     string scopeNameFormatter(AstText* scopeTextp) const;
     string scopePrettyNameFormatter(AstText* scopeTextp) const;
 
@@ -4211,7 +4226,7 @@ public:
 
 // === AstNodeSel ===
 class AstArraySel final : public AstNodeSel {
-    void init(AstNode* fromp) {
+    void init(const AstNode* fromp) {
         if (fromp && VN_IS(fromp->dtypep()->skipRefp(), NodeArrayDType)) {
             // Strip off array to find what array references
             dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), NodeArrayDType)->subDTypep());
@@ -4251,7 +4266,7 @@ public:
     static AstNode* baseFromp(AstNode* nodep, bool overMembers);
 };
 class AstAssocSel final : public AstNodeSel {
-    void init(AstNode* fromp) {
+    void init(const AstNode* fromp) {
         if (fromp && VN_IS(fromp->dtypep()->skipRefp(), AssocArrayDType)) {
             // Strip off array to find what array references
             dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), AssocArrayDType)->subDTypep());
@@ -4285,7 +4300,7 @@ public:
     int instrCount() const override { return widthInstrs(); }
 };
 class AstWildcardSel final : public AstNodeSel {
-    void init(AstNode* fromp) {
+    void init(const AstNode* fromp) {
         if (fromp && VN_IS(fromp->dtypep()->skipRefp(), WildcardArrayDType)) {
             // Strip off array to find what array references
             dtypeFrom(VN_AS(fromp->dtypep()->skipRefp(), WildcardArrayDType)->subDTypep());
@@ -4976,6 +4991,8 @@ public:
             dtypeSetLogicUnsized(setwidth, minwidth, VSigning::UNSIGNED);
         }
     }
+    // cppcheck-suppress constParameterPointer
+    // cppcheck-suppress constParameterCallback
     AstCCast(FileLine* fl, AstNodeExpr* lhsp, AstNode* typeFromp)
         : ASTGEN_SUPER_CCast(fl, lhsp) {
         dtypeFrom(typeFromp);
@@ -5768,7 +5785,7 @@ public:
     const char* broken() const override;
     bool sameNode(const AstNode* samep) const override;
     inline bool sameNode(const AstVarRef* samep) const;
-    inline bool sameNoLvalue(AstVarRef* samep) const;
+    inline bool sameNoLvalue(const AstVarRef* samep) const;
     int instrCount() const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }

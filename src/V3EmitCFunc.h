@@ -175,7 +175,7 @@ public:
 
     // ACCESSORS
     void splitSizeInc(int count) { m_splitSize += count; }
-    void splitSizeInc(AstNode* nodep) { splitSizeInc(nodep->nodeCount()); }
+    void splitSizeInc(const AstNode* nodep) { splitSizeInc(nodep->nodeCount()); }
     void splitSizeReset() { m_splitSize = 0; }
     bool splitNeeded() const {
         return v3Global.opt.outputSplit() && m_splitSize >= v3Global.opt.outputSplit();
@@ -189,13 +189,13 @@ public:
                     char fmtLetter);
 
     bool emitSimpleOk(AstNodeExpr* nodep);
-    void emitIQW(AstNode* nodep) {
+    void emitIQW(const AstNode* nodep) {
         // See "Type letters" in verilated.h
         // Other abbrevs: "C"har, "S"hort, "F"loat, "D"ouble, stri"N"g, "R"=queue, "U"npacked
         puts(nodep->dtypep()->skipRefp()->charIQWN());
     }
-    void emitRU(AstNode* nodep) {
-        AstNodeDType* dtp = nodep->dtypep()->skipRefp();
+    void emitRU(const AstNode* nodep) {
+        const AstNodeDType* dtp = nodep->dtypep()->skipRefp();
         // See "Type letters" in verilated.h
         if (VN_IS(dtp, UnpackArrayDType))
             puts("U");
@@ -210,7 +210,7 @@ public:
              : nodep->isDouble()                            ? "SD"
                                                             : (nodep->isScQuad() ? "SQ" : "SI"));
     }
-    void emitDatap(AstNode* nodep) {
+    void emitDatap(const AstNode* nodep) {
         // When passing to a function with va_args the compiler doesn't
         // know need a pointer so when wide, need to look inside VlWide
         if (nodep->isWide()) puts(".data()");
@@ -319,7 +319,7 @@ public:
 
     // VISITORS
     using EmitCConstInit::visit;
-    void visit(AstCFunc* nodep) override {
+    void visit(AstCFunc* const nodep) override {
         if (nodep->emptyBody() && !nodep->isLoose()) return;
         VL_RESTORER(m_useSelfForThis);
         VL_RESTORER(m_cfuncp);
@@ -339,7 +339,7 @@ public:
 
         if (nodep->isConstructor()) {
             const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
-            if (nodep->isConstructor() && classp && classp->extendsp()) {
+            if (classp && classp->extendsp()) {
                 puts("\n    : ");
                 putConstructorSubinit(classp, nodep);
             }

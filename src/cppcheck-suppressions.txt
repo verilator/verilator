@@ -1,0 +1,33 @@
+// DESCRIPTION: Verilator: List of warning names to suppress with 'make cppcheck'
+//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2025 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
+
+cstyleCast
+ctunullpointer
+derefInvalidIteratorRedundantCheck
+nullPointer
+nullPointerRedundantCheck
+templateRecursion
+unusedFunction
+unusedScopedObject
+useInitializationList
+useStlAlgorithm
+
+// Seems useless
+missingIncludeSystem
+// Tedious
+unmatchedSuppression
+// Not our code
+*:include/gtkwave/*
+*:include/vltstd/*
+// We intentionally redefine AstNode methods to improve type safety
+duplInheritedMember:src/V3AstNode*.h
+duplInheritedMember:src/obj_*/V3Ast__gen_impl.h
+// We intentionally redefine DfgVertex methods to match Ast
+duplInheritedMember:src/obj_*/V3Dfg__gen_auto_classes.h
+// TODO: fix - maybe?
+duplInheritedMember:src/V3File*.h
+// They are used after astgen expansion
+unusedPrivateFunction:src/V3Const.cpp

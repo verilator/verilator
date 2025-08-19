@@ -55,11 +55,11 @@ class DescopeVisitor final : public VNVisitor {
 
     // METHODS
 
-    static bool modIsSingleton(AstNodeModule* modp) {
+    static bool modIsSingleton(const AstNodeModule* modp) {
         // True iff there's exactly one instance of this module in the design (including top).
         if (modp->isTop()) return true;
         int instances = 0;
-        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (const AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (VN_IS(stmtp, Scope)) {
                 if (++instances > 1) return false;
             }

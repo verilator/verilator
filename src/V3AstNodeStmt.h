@@ -845,6 +845,7 @@ public:
         this->exprp(exprp);
     }
     ASTGEN_MEMBERS_AstStmtExpr;
+    // cppcheck-suppress uselessOverride
     bool isPure() override { return exprp()->isPure(); }
 };
 class AstStop final : public AstNodeStmt {

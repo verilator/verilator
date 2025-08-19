@@ -724,28 +724,28 @@ class EmitCTrace final : EmitCFunc {
                && m_typeSplitSize >= v3Global.opt.outputSplitCTrace();
     }
 
-    bool emitTraceIsScBv(AstTraceInc* nodep) {
+    bool emitTraceIsScBv(const AstTraceInc* nodep) {
         const AstVarRef* const varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
         if (!varrefp) return false;
-        AstVar* const varp = varrefp->varp();
+        const AstVar* const varp = varrefp->varp();
         return varp->isSc() && varp->isScBv();
     }
 
-    bool emitTraceIsScBigUint(AstTraceInc* nodep) {
+    bool emitTraceIsScBigUint(const AstTraceInc* nodep) {
         const AstVarRef* const varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
         if (!varrefp) return false;
-        AstVar* const varp = varrefp->varp();
+        const AstVar* const varp = varrefp->varp();
         return varp->isSc() && varp->isScBigUint();
     }
 
-    bool emitTraceIsScUint(AstTraceInc* nodep) {
+    bool emitTraceIsScUint(const AstTraceInc* nodep) {
         const AstVarRef* const varrefp = VN_CAST(nodep->declp()->valuep(), VarRef);
         if (!varrefp) return false;
-        AstVar* const varp = varrefp->varp();
+        const AstVar* const varp = varrefp->varp();
         return varp->isSc() && (varp->isScUint() || varp->isScUintBool());
     }
 
-    void emitTraceInitOne(AstTraceDecl* nodep, int enumNum) {
+    void emitTraceInitOne(const AstTraceDecl* nodep, int enumNum) {
         if (nodep->dtypep()->basicp()->isDouble()) {
             puts("tracep->declDouble(");
         } else if (nodep->isWide()) {
@@ -906,7 +906,7 @@ class EmitCTrace final : EmitCFunc {
 
     void emitTraceValue(AstTraceInc* nodep, int arrayindex) {
         if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
-            AstVar* const varp = varrefp->varp();
+            const AstVar* const varp = varrefp->varp();
             if (varp->isEvent()) puts("&");
             puts("(");
             if (emitTraceIsScBigUint(nodep)) {

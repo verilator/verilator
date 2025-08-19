@@ -35,30 +35,30 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-class ExprCoverageEligibleVisitor final : public VNVisitor {
+class ExprCoverageEligibleVisitor final : public VNVisitorConst {
     // STATE
     bool m_eligible = true;
 
     static bool elemDTypeEligible(const AstNodeDType* dtypep) {
         dtypep = dtypep->skipRefp();
-        if (AstNodeDType* const dtp = dtypep->virtRefDTypep()) {
+        if (const AstNodeDType* const dtp = dtypep->virtRefDTypep()) {
             if (!elemDTypeEligible(dtp)) return false;
         }
-        if (AstNodeDType* const dtp = dtypep->virtRefDType2p()) {
+        if (const AstNodeDType* const dtp = dtypep->virtRefDType2p()) {
             if (!elemDTypeEligible(dtp)) return false;
         }
         return !VN_IS(dtypep, ClassRefDType);
     }
 
     void visit(AstNodeVarRef* nodep) override {
-        AstNodeDType* dtypep = nodep->varp()->dtypep();
+        const AstNodeDType* const dtypep = nodep->varp()->dtypep();
         // Class objects and references not supported for expression coverage
         // because the object may not persist until the point at which
         // coverage data is gathered
         // This could be resolved in the future by protecting against dereferrencing
         // null pointers when cloning the expression for expression coverage
         if (dtypep && elemDTypeEligible(dtypep)) {
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         } else {
             m_eligible = false;
         }
@@ -68,13 +68,13 @@ class ExprCoverageEligibleVisitor final : public VNVisitor {
         if (!nodep->isExprCoverageEligible()) {
             m_eligible = false;
         } else {
-            iterateChildren(nodep);
+            iterateChildrenConst(nodep);
         }
     }
 
 public:
     // CONSTRUCTORS
-    explicit ExprCoverageEligibleVisitor(AstNode* nodep) { iterateChildren(nodep); }
+    explicit ExprCoverageEligibleVisitor(AstNode* nodep) { iterateChildrenConst(nodep); }
     ~ExprCoverageEligibleVisitor() override = default;
 
     bool eligible() { return m_eligible; }
@@ -162,7 +162,7 @@ class CoverageVisitor final : public VNVisitor {
 
     // METHODS
 
-    const char* varIgnoreToggle(AstVar* nodep) {
+    const char* varIgnoreToggle(const AstVar* nodep) {
         // Return true if this shouldn't be traced
         // See also similar rule in V3TraceDecl::varIgnoreTrace
         if (!nodep->isToggleCoverable()) return "Not relevant signal type";
@@ -203,7 +203,7 @@ class CoverageVisitor final : public VNVisitor {
         }
         return incp;
     }
-    string traceNameForLine(AstNode* nodep, const string& type) {
+    string traceNameForLine(const AstNode* nodep, const string& type) {
         string name = "vlCoverageLineTrace_" + nodep->fileline()->filebasenameNoExt() + "__"
                       + cvtToStr(nodep->fileline()->lineno()) + "_" + type;
         if (const uint32_t suffix = m_varnames[name]++) name += "_" + cvtToStr(suffix);
@@ -438,7 +438,7 @@ class CoverageVisitor final : public VNVisitor {
             if (adtypep->packed()) {
                 for (AstMemberDType* itemp = adtypep->membersp(); itemp;
                      itemp = VN_AS(itemp->nextp(), MemberDType)) {
-                    AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
+                    const AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
                     const int index_code = itemp->lsb();
                     ToggleEnt newent{
                         above.m_comment + "."s + itemp->name(),
@@ -855,7 +855,7 @@ class CoverageVisitor final : public VNVisitor {
                 // not be flagged as redundant or impossible, however the results will
                 // still be valid, albeit messier
                 for (CoverTerm& term : l) {
-                    if (AstVarRef* const refp = VN_CAST(term.m_exprp, VarRef)) {
+                    if (const AstVarRef* const refp = VN_CAST(term.m_exprp, VarRef)) {
                         varps[term.m_objective].insert(refp->varp());
                     } else {
                         strs[term.m_objective].insert(term.m_emitV);
@@ -865,7 +865,7 @@ class CoverageVisitor final : public VNVisitor {
                 bool impossible = false;
                 for (CoverTerm& term : r) {
                     bool redundant = false;
-                    if (AstNodeVarRef* const refp = VN_CAST(term.m_exprp, NodeVarRef)) {
+                    if (const AstNodeVarRef* const refp = VN_CAST(term.m_exprp, NodeVarRef)) {
                         if (varps[term.m_objective].find(refp->varp())
                             != varps[term.m_objective].end())
                             redundant = true;

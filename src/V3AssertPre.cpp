@@ -102,7 +102,7 @@ private:
     }
     AstPropSpec* substitutePropertyCall(AstPropSpec* nodep) {
         if (AstFuncRef* const funcrefp = VN_CAST(nodep->propp(), FuncRef)) {
-            if (AstProperty* const propp = VN_CAST(funcrefp->taskp(), Property)) {
+            if (const AstProperty* const propp = VN_CAST(funcrefp->taskp(), Property)) {
                 AstPropSpec* propExprp = getPropertyExprp(propp);
                 // Substitute inner property call before copying in order to not doing the same for
                 // each call of outer property call.
@@ -183,7 +183,7 @@ private:
         m_clockingp->addNextHere(varp->unlinkFrBack());
         varp->user1p(nodep);
         if (nodep->direction() == VDirection::OUTPUT) {
-            exprp->foreach([](AstNodeVarRef* varrefp) {
+            exprp->foreach([](const AstNodeVarRef* varrefp) {
                 // Prevent confusing BLKANDNBLK warnings on clockvars due to generated assignments
                 varrefp->fileline()->warnOff(V3ErrorCode::BLKANDNBLK, true);
             });
@@ -318,7 +318,7 @@ private:
         if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBackWithNext());
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
-        AstConst* const constp = VN_CAST(valuep, Const);
+        const AstConst* const constp = VN_CAST(valuep, Const);
         if (constp->isZero()) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: ##0 delays");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);

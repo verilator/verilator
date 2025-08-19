@@ -39,7 +39,7 @@ class CMakeEmitter final {
     template <typename T_List>
     static string cmake_list(const T_List& strs) {
         string s;
-        for (auto& itr : strs) {
+        for (const std::string& itr : strs) {
             if (!s.empty()) s += ' ';
             s += '"';
             s += V3OutFormatter::quoteNameControls(itr);
@@ -49,7 +49,7 @@ class CMakeEmitter final {
     }
     static string cmake_list(const VFileLibList& strs) {
         string s;
-        for (auto& itr : strs) {
+        for (const VFileLibName& itr : strs) {
             if (!s.empty()) s += ' ';
             s += '"';
             s += V3OutFormatter::quoteNameControls(itr.filename());
@@ -191,14 +191,16 @@ class CMakeEmitter final {
                 *of << "target_link_libraries(${TOP_TARGET_NAME}  PRIVATE " << prefix << ")\n";
                 if (!children.empty()) {
                     *of << "target_link_libraries(" << prefix << " INTERFACE";
-                    for (const auto& childr : children) *of << " " << (childr)->hierPrefix();
+                    for (const V3HierBlock* const childp : children) {
+                        *of << " " << childp->hierPrefix();
+                    }
                     *of << ")\n";
                 }
                 *of << "verilate(" << prefix << " PREFIX " << prefix << " TOP_MODULE "
                     << hblockp->modp()->name() << " DIRECTORY "
                     << v3Global.opt.makeDir() + "/" + prefix << " SOURCES ";
-                for (const auto& childr : children) {
-                    *of << " " << v3Global.opt.makeDir() + "/" + childr->hierWrapperFilename(true);
+                for (const V3HierBlock* const childp : children) {
+                    *of << " " << v3Global.opt.makeDir() + "/" + childp->hierWrapperFilename(true);
                 }
                 *of << " ";
                 const string vFile = hblockp->vFileIfNecessary();

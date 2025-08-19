@@ -441,7 +441,7 @@ using V3ControlFileResolver = V3ControlWildcardResolver<V3ControlFile>;
 class V3ControlScopeTraceEntry final {
 public:
     const string m_scope;  // Scope or regexp to match
-    const bool m_on = false;  // True to enable message
+    const bool m_on;  // True to enable message
     int m_levels = 0;  // # levels, 0 = all, 1 = only this, ...
     // CONSTRUCTORS
     V3ControlScopeTraceEntry(const string& scope, bool on, int levels)
@@ -757,7 +757,8 @@ void V3Control::applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp) {
     if (ftp) ftp->apply(ftaskp);
 }
 
-void V3Control::applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp) {
+void V3Control::applyVarAttr(const AstNodeModule* modulep, const AstNodeFTask* ftaskp,
+                             AstVar* varp) {
     V3ControlVar* vp;
     V3ControlModule* const modp
         = V3ControlResolver::s().modules().resolve(modulep->prettyOrigOrName());
@@ -797,7 +798,7 @@ bool V3Control::containsMTaskProfileData() {
     return V3ControlResolver::s().containsMTaskProfileData();
 }
 
-bool V3Control::waive(FileLine* filelinep, V3ErrorCode code, const string& message) {
+bool V3Control::waive(const FileLine* filelinep, V3ErrorCode code, const string& message) {
     V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filelinep->filename());
     if (!filep) return false;
     return filep->waive(code, message);

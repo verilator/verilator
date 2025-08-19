@@ -51,7 +51,7 @@ class BranchVisitor final : public VNVisitorConst {
         m_likely = false;
         m_unlikely = false;
     }
-    void checkUnlikely(AstNode* nodep) {
+    void checkUnlikely(const AstNode* nodep) {
         if (nodep->isUnlikely()) {
             UINFO(4, "  UNLIKELY: " << nodep);
             m_unlikely++;

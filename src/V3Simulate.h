@@ -152,11 +152,11 @@ private:
     VL_DEFINE_DEBUG_FUNCTIONS;
 
     // Potentially very slow, intended for debugging
-    string prettyNumber(const V3Number* nump, AstNodeDType* dtypep) {
-        if (AstRefDType* const refdtypep = VN_CAST(dtypep, RefDType)) {  //
+    string prettyNumber(const V3Number* nump, const AstNodeDType* dtypep) {
+        if (const AstRefDType* const refdtypep = VN_CAST(dtypep, RefDType)) {  //
             dtypep = refdtypep->skipRefp();
         }
-        if (AstNodeUOrStructDType* const stp = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (const AstNodeUOrStructDType* const stp = VN_CAST(dtypep, NodeUOrStructDType)) {
             if (stp->packed()) {
                 std::ostringstream out;
                 out << "'{";
@@ -218,13 +218,13 @@ public:
             m_whyNotOptimizable = why;
             std::ostringstream stack;
             for (const auto& callstack : vlstd::reverse_view(m_callStack)) {
-                AstFuncRef* const funcp = callstack->m_funcp;
+                const AstFuncRef* const funcp = callstack->m_funcp;
                 stack << "\n        " << funcp->fileline() << "... Called from '"
                       << funcp->prettyName() << "()' with parameters:";
                 V3TaskConnects* tconnects = callstack->m_tconnects;
                 for (V3TaskConnects::iterator conIt = tconnects->begin();
                      conIt != tconnects->end(); ++conIt) {
-                    AstVar* const portp = conIt->first;
+                    const AstVar* const portp = conIt->first;
                     AstNodeExpr* const pinp = conIt->second->exprp();
                     AstNodeDType* const dtypep = pinp->dtypep();
                     if (AstConst* const valp = fetchConstNull(pinp)) {
@@ -400,7 +400,7 @@ private:
 
     // True if current node might be jumped over - all visitors must call this up front
     bool jumpingOver() const { return m_jumpp; }
-    void assignOutValue(AstNodeAssign* nodep, AstNode* vscp, const AstNodeExpr* valuep) {
+    void assignOutValue(const AstNodeAssign* nodep, AstNode* vscp, const AstNodeExpr* valuep) {
         if (VN_IS(nodep, AssignDly)) {
             // Don't do setValue, as value isn't yet visible to following statements
             newOutValue(vscp, valuep);
@@ -458,7 +458,7 @@ private:
                 m_varAux(vscp).usage |= VU_RV;
                 const bool varIsConst = (nodep->varp()->isConst() || nodep->varp()->isParam())
                                         && nodep->varp()->valuep();
-                AstNodeExpr* const valuep
+                const AstNodeExpr* const valuep
                     = varIsConst ? fetchValueNull(nodep->varp()->valuep()) : nullptr;
                 // Propagate PARAM constants for constant function analysis
                 if (varIsConst && valuep) {
@@ -800,9 +800,7 @@ private:
             handleAssignArray(nodep, selp, valueFromp);
         } else if (AstConcat* const selp = VN_CAST(lhsp, Concat)) {
             checkNodeInfo(selp);
-            AstBasicDType* const rhsBasicp
-                = VN_CAST(selp->rhsp()->dtypep()->skipRefp(), BasicDType);
-            if (!rhsBasicp) {
+            if (!VN_IS(selp->rhsp()->dtypep()->skipRefp(), BasicDType)) {
                 clearOptimizable(lhsp, "Assign LHS concat of non-basic type");
                 return;
             }
@@ -879,7 +877,7 @@ private:
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
         if (AstInitArray* const initp = VN_CAST(fetchValueNull(nodep->fromp()), InitArray)) {
-            AstConst* const indexp = fetchConst(nodep->bitp());
+            const AstConst* const indexp = fetchConst(nodep->bitp());
             const uint32_t offset = indexp->num().toUInt();
             AstNodeExpr* const itemp = initp->getIndexDefaultedValuep(offset);
             if (!itemp) {
@@ -904,7 +902,7 @@ private:
         iterateChildrenConst(nodep);
         if (m_checkOnly || !optimizable()) return;
         // Fetch the base constant array
-        if (AstInitArray* const initp = VN_CAST(fetchValueNull(nodep->fromp()), InitArray)) {
+        if (const AstInitArray* const initp = VN_CAST(fetchValueNull(nodep->fromp()), InitArray)) {
             const VNumRange& sliceRange = nodep->declRange();
             const uint32_t sliceElements = sliceRange.elements();
             const int sliceLo = sliceRange.lo();
@@ -962,7 +960,7 @@ private:
             for (AstCaseItem* itemp = nodep->itemsp(); itemp;
                  itemp = VN_AS(itemp->nextp(), CaseItem)) {
                 if (hit) break;
-                if (!hit && itemp->isDefault()) {
+                if (itemp->isDefault()) {
                     iterateAndNextConstNull(itemp->stmtsp());
                     hit = true;
                 }
@@ -1250,7 +1248,7 @@ private:
         checkNodeInfo(nodep, /*display:*/ true);
         iterateChildrenConst(nodep);
         if (m_params) {
-            AstConst* const textp = fetchConst(nodep->fmtp());
+            const AstConst* const textp = fetchConst(nodep->fmtp());
             switch (nodep->displayType()) {
             case VDisplayType::DT_DISPLAY:  // FALLTHRU
             case VDisplayType::DT_INFO: v3warn(USERINFO, textp->name()); break;

@@ -257,7 +257,7 @@ public:
             modp->addStmtsp(nodep);
         }
         // BFS to mark public typedefs.
-        std::set<AstNodeUOrStructDType*> pubStrDtypeps;
+        std::set<const AstNodeUOrStructDType*> pubStrDtypeps;
         while (!m_pubStrDtypeps.empty()) {
             AstNodeUOrStructDType* const dtypep = m_pubStrDtypeps.front();
             m_pubStrDtypeps.pop();
@@ -270,7 +270,8 @@ public:
             }
         }
         for (AstTypedef* typedefp : m_typedefps) {
-            AstNodeUOrStructDType* const sdtypep = VN_AS(typedefp->dtypep(), NodeUOrStructDType);
+            const AstNodeUOrStructDType* const sdtypep
+                = VN_AS(typedefp->dtypep(), NodeUOrStructDType);
             if (pubStrDtypeps.count(sdtypep)) typedefp->attrPublic(true);
         }
         // Clear package pointer of non-public packed struct / union type, which will never be

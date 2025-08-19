@@ -33,7 +33,7 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
 
     // METHODS
 
-    uint32_t tabModulus(AstNodeDType* dtypep) {
+    uint32_t tabModulus(const AstNodeDType* dtypep) {
         const uint32_t elemBytes = dtypep->widthTotalBytes();
         return dtypep->isString() ? 1  // String
                : elemBytes <= 2   ? 8  // CData, SData

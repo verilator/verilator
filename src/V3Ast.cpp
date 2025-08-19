@@ -255,14 +255,13 @@ string AstNode::vpiName(const string& namein) {
     // This is slightly different from prettyName, in that when we encounter escaped characters,
     // we change that identifier to an escaped identifier, wrapping it with '\' and ' '
     // as specified in LRM 23.6
-    string name = namein;
-    if (0 == namein.substr(0, 7).compare("__SYM__")) name = namein.substr(7);
+    const size_t offset = VString::startsWith(namein, "__SYM__") ? 7 : 0;
     string pretty;
-    pretty.reserve(name.length());
+    pretty.reserve(namein.length());
     bool inEscapedIdent = false;
     int lastIdent = 0;
 
-    for (const char* pos = name.c_str(); *pos;) {
+    for (const char* pos = namein.c_str() + offset; *pos;) {
         char specialChar = 0;
         if (pos[0] == '-' && pos[1] == '>') {  // ->
             specialChar = '.';
@@ -280,7 +279,7 @@ string AstNode::vpiName(const string& namein) {
             } else if (0 == std::strncmp(pos, "__PVT__", 7)) {
                 pos += 7;
                 continue;
-            } else if (pos[0] == '_' && pos[1] == '_' && pos[2] == '0' && std::isxdigit(pos[3])
+            } else if (0 == std::strncmp(pos, "__0", 3) && std::isxdigit(pos[3])
                        && std::isxdigit(pos[4])) {
                 char value = 0;
                 value += 16
@@ -567,6 +566,7 @@ AstNode* AstNode::unlinkFrBackWithNext(VNRelinker* linkerp) {
     AstNode* const oldp = this;
     UASSERT_OBJ(oldp->m_backp, oldp, "Node has no back, already unlinked?");
     oldp->editCountInc();
+    // cppcheck-suppress shadowFunction
     AstNode* const backp = oldp->m_backp;
     if (linkerp) {
         linkerp->m_oldp = oldp;
@@ -629,6 +629,7 @@ AstNode* AstNode::unlinkFrBack(VNRelinker* linkerp) {
     AstNode* const oldp = this;
     UASSERT_OBJ(oldp->m_backp, oldp, "Node has no back, already unlinked?");
     oldp->editCountInc();
+    // cppcheck-suppress shadowFunction
     AstNode* const backp = oldp->m_backp;
     if (linkerp) {
         linkerp->m_oldp = oldp;
@@ -710,6 +711,7 @@ void AstNode::relink(VNRelinker* linkerp) {
         cout << endl;
     }
 
+    // cppcheck-suppress shadowFunction
     AstNode* const backp = linkerp->m_backp;
     debugTreeChange(this, "-relinkNew: ", __LINE__, true);
     debugTreeChange(backp, "-relinkTre: ", __LINE__, true);
@@ -773,6 +775,7 @@ void AstNode::addHereThisAsNext(AstNode* newp) {
     UASSERT_OBJ(this->m_backp, this, "'this' node has no back, already unlinked?");
     UASSERT_OBJ(newp->m_headtailp, newp, "m_headtailp not set on new node");
     //
+    // cppcheck-suppress shadowFunction
     AstNode* const backp = this->m_backp;
     AstNode* const newLastp = newp->m_headtailp;
     //
@@ -1185,6 +1188,7 @@ void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
             break;
         case VNTypeInfo::OP_LIST:
             if (const AstNode* const headp = nodep) {
+                // cppcheck-suppress shadowFunction
                 const AstNode* backp = this;
                 const AstNode* tailp;
                 const AstNode* opp = headp;
@@ -1457,15 +1461,16 @@ string AstNode::instanceStr() const {
     // in case we have some circular reference bug.
     constexpr unsigned maxIterations = 10000;
     unsigned iterCount = 0;
-    for (const AstNode* backp = this; backp; backp = backp->backp(), ++iterCount) {
+    // Walk 'backp' chain
+    for (const AstNode* currp = this; currp; currp = currp->backp(), ++iterCount) {
         if (VL_UNCOVERABLE(iterCount >= maxIterations)) return "";  // LCOV_EXCL_LINE
         // Prefer the enclosing scope, if there is one. This is always under the enclosing module,
         // so just pick it up when encountered
-        if (const AstScope* const scopep = VN_CAST(backp, Scope)) {
+        if (const AstScope* const scopep = VN_CAST(currp, Scope)) {
             return scopep->isTop() ? "" : "... note: In instance " + scopep->prettyNameQ();
         }
         // If scopes don't exist, report an example instance of the enclosing module
-        if (const AstModule* const modp = VN_CAST(backp, Module)) {
+        if (const AstModule* const modp = VN_CAST(currp, Module)) {
             const string instanceName = modp->someInstanceName();
             return instanceName.empty() ? "" : "... note: In instance '" + instanceName + "'";
         }
@@ -1619,8 +1624,8 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
     } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromConstp, Const)) {
         if (fromConstp->isNull()) return VCastable::COMPATIBLE;
     } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromDtp, ClassRefDType)) {
-        const auto toClassp = VN_AS(toDtp, ClassRefDType)->classp();
-        const auto fromClassp = VN_AS(fromDtp, ClassRefDType)->classp();
+        const AstClass* const toClassp = VN_AS(toDtp, ClassRefDType)->classp();
+        const AstClass* const fromClassp = VN_AS(fromDtp, ClassRefDType)->classp();
         const bool downcast = AstClass::isClassExtendedFrom(toClassp, fromClassp);
         const bool upcast = AstClass::isClassExtendedFrom(fromClassp, toClassp);
         if (upcast) {
@@ -1664,7 +1669,7 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
     while (classDtypep1) {
         const VCastable castable = computeCastable(classDtypep1, node2p->dtypep(), node2p);
         if (castable == VCastable::COMPATIBLE) return classDtypep1;
-        AstClassExtends* const extendsp = classDtypep1->classp()->extendsp();
+        const AstClassExtends* const extendsp = classDtypep1->classp()->extendsp();
         classDtypep1 = extendsp ? VN_AS(extendsp->dtypep(), ClassRefDType) : nullptr;
     }
     return nullptr;
