@@ -5374,7 +5374,6 @@ class WidthVisitor final : public VNVisitor {
         //       handled in each visitor.
         //    Then LHS sign-extends only if *RHS* is signed
         assertAtStatement(nodep);
-        // UINFOTREE(1, nodep, "", "AssignPre");
         {
             // UINFOTREE(1, nodep, "", "assin:");
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());

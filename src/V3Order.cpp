@@ -21,7 +21,7 @@
 //      For seq logic
 //          Add logic_sensitive_vertex for this list of SenItems
 //              Add edge for each sensitive_var->logic_sensitive_vertex
-//          For AssignPre's
+//          For AlwaysPre's
 //              Add vertex for this logic
 //                  Add edge logic_sensitive_vertex->logic_vertex
 //                  Add edge logic_consumed_var_PREVAR->logic_vertex
@@ -38,11 +38,11 @@
 //              Add vertex for this logic
 //                  Add edge logic_sensitive_vertex->logic_vertex
 //                  Add edge logic_generated_var_PREORDER->logic_vertex
-//                      This ensures the AssignPre gets scheduled before this logic
+//                      This ensures the AlwaysPre gets scheduled before this logic
 //                  Add edge logic_vertex->consumed_var_PREVAR
 //                  Add edge logic_vertex->consumed_var_POSTVAR
 //                  Add edge logic_vertex->logic_generated_var (same as if comb)
-//          For AssignPost's
+//          For AlwaysPost's
 //              Add vertex for this logic
 //                  Add edge logic_sensitive_vertex->logic_vertex
 //                  Add edge logic_consumed_var->logic_vertex (same as if comb)

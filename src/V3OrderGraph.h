@@ -34,13 +34,13 @@
 // roles are:
 //
 // OrderVarStdVertex:   Data dependencies for combinational logic and delayed assignment
-//                      updates (AssignPost).
+//                      updates (AlwaysPost).
 // OrderVarPostVertex:  Ensures all sequential logic blocks reading a signal do so before any
 //                      combinational or delayed assignments update that signal.
-// OrderVarPordVertex:  Ensures a _d = _q AssignPre used to implement delayed (non-blocking)
+// OrderVarPordVertex:  Ensures a _d = _q AlwaysPre used to implement delayed (non-blocking)
 //                      assignments is the first write of a _d, before any sequential blocks
 //                      write to that _d.
-// OrderVarPreVertex:   This is an optimization. Try to ensure that a _d = _q AssignPre is the
+// OrderVarPreVertex:   This is an optimization. Try to ensure that a _d = _q AlwaysPre is the
 //                      last read of a _q, after all reads of that _q by sequential logic. The
 //                      model is still correct if we cannot satisfy this due to other interfering
 //                      constraints. If respecting this constraint is possible, then combined

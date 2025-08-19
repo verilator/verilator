@@ -188,7 +188,7 @@ public:
         V3GraphTestVertex* const posedge = n = new V3GraphTestVertex{gp, "*posedge clk*"};
         { new V3GraphEdge{gp, clk, n, 2}; }
 
-        // AssignPre's     VarRefs on LHS:  generate special BLK
+        // AlwaysPre's     VarRefs on LHS:  generate special BLK
         //    normal:      VarRefs on LHS:  generate normal
         //    underSBlock: VarRefs on RHS:  consume 'pre' (required to save cutable tests)
         n = new V3GraphTestVertex{gp, "a_dly<PRE=a"};
@@ -227,7 +227,7 @@ public:
             new V3GraphEdge{gp, posedge, n, 2};
         }
 
-        // AssignPost's
+        // AlwaysPost's
         //    normal:      VarRefs on LHS:  generate normal
         //    underSBlock: VarRefs on RHS:  consume normal
         n = new V3GraphTestVertex{gp, "a=POST=a_dly"};

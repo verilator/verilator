@@ -132,6 +132,16 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateAndNextConstNull(nodep->stmtsp());
         putqs(nodep, "end\n");
     }
+    void visit(AstAlwaysPre* nodep) override {
+        putfs(nodep, "always /* PRE */ begin\n");
+        iterateAndNextConstNull(nodep->stmtsp());
+        putqs(nodep, "end\n");
+    }
+    void visit(AstAlwaysPost* nodep) override {
+        putfs(nodep, "always /* POST */ begin\n");
+        iterateAndNextConstNull(nodep->stmtsp());
+        putqs(nodep, "end\n");
+    }
     void visit(AstAlwaysPublic* nodep) override {
         putfs(nodep, "/*verilator public_flat_rw ");
         if (m_sentreep) {

@@ -94,7 +94,7 @@ struct LogicClasses final {
 // Combinational (including hybrid) logic, and clocked logic in partitioned to compute all clock
 // signals in the 'act' region. For details see the internals documentation.
 struct LogicRegions final {
-    LogicByScope m_pre;  // AstAssignPre logic in 'act' region
+    LogicByScope m_pre;  // AstAlwaysPre logic in 'act' region
     LogicByScope m_act;  // 'act' region logic
     LogicByScope m_nba;  // 'nba' region logic
     LogicByScope m_obs;  // AstAlwaysObserved logic in 'obs' region
