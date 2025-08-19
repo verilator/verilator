@@ -55,9 +55,39 @@ class LinkResolveVisitor final : public VNVisitor {
     std::deque<AstGenFor*> m_underGenFors;  // Stack of GenFor underneath
     bool m_underGenerate = false;  // Under GenFor/GenIf
     AstVar* m_randomizedVar = nullptr;  // Randomized variable (set if under randomize())
-                                        // Value is set only if randomize is not call on complex
-                                        // membersel - it shall be set always
+    std::vector<string> m_randomizedVarLocalPath;
     bool m_underWith = false;  // If under With
+
+    void setRandomizedVar(AstNodeExpr* const nodep) {
+        m_randomizedVarLocalPath.push_back(nodep->name());
+        if (const AstVarRef* const varRefp = VN_CAST(nodep, VarRef)) {
+            m_randomizedVar = varRefp->varp();
+            return;
+        }
+        if (const AstMemberSel* const memberSelp = VN_CAST(nodep, MemberSel)) {
+            return setRandomizedVar(memberSelp->fromp());
+        }
+        m_randomizedVar = nullptr;
+        m_randomizedVarLocalPath.clear();
+    }
+
+    bool isRandomizedVarSelect(const AstNodeExpr* const nodep) {
+        const AstNodeExpr* nodepIter = nodep;
+        bool isNext = true;
+        for (const string& name : m_randomizedVarLocalPath) {
+            if (!isNext || !nodepIter || nodepIter->name() != name) return false;
+            if (const AstMemberSel* const memberSelp = VN_CAST(nodepIter, MemberSel)) {
+                nodepIter = memberSelp->fromp();
+            } else {
+                isNext = false;
+            }
+        }
+        UASSERT_OBJ(nodepIter, nodep, "Member select chain should not end with a nullptr");
+        if (const AstVarRef* const varRefp = VN_CAST(nodepIter, VarRef)) {
+            return varRefp->varp() == m_randomizedVar;
+        }
+        return false;
+    }
 
     // VISITORS
     // TODO: Most of these visitors are here for historical reasons.
@@ -189,26 +219,11 @@ class LinkResolveVisitor final : public VNVisitor {
     }
     void visit(AstNodeFTaskRef* nodep) override {
         VL_RESTORER(m_randomizedVar);
+        VL_RESTORER(m_randomizedVarLocalPath);
         if (nodep->name() == "randomize") {
             if (const AstMethodCall* const methodcallp = VN_CAST(nodep, MethodCall)) {
-                if (const AstVarRef* const varRefp = VN_CAST(methodcallp->fromp(), VarRef)) {
-                    if (AstVar* const varp = varRefp->varp()) {
-                        if (const AstClassRefDType* const classDTypep
-                            = VN_CAST(varp->childDTypep(), ClassRefDType)) {
-                            if (const AstClass* const classp = classDTypep->classp()) {
-                                bool found = false;
-                                for (const AstNode* stmtp = classp->stmtsp(); stmtp;
-                                     stmtp = stmtp->nextp()) {
-                                    if (stmtp->name() == varRefp->name()) {
-                                        found = true;
-                                        break;
-                                    }
-                                }
-                                if (!found) m_randomizedVar = varp;
-                            }
-                        }
-                    }
-                }
+                m_randomizedVarLocalPath.clear();
+                setRandomizedVar(methodcallp->fromp());
             }
         }
         iterateChildren(nodep);
@@ -553,12 +568,11 @@ class LinkResolveVisitor final : public VNVisitor {
     void visit(AstMemberSel* nodep) override {
         iterateChildren(nodep);
         if (m_underWith && m_randomizedVar) {
-            if (AstVarRef* const varRefp = VN_CAST(nodep->fromp(), VarRef)) {
-                if (m_randomizedVar == varRefp->varp()) {
-                    varRefp->replaceWith(
-                        new AstLambdaArgRef{varRefp->fileline(), varRefp->name(), false});
-                    pushDeletep(varRefp);
-                }
+            if (isRandomizedVarSelect(nodep->fromp())) {
+                AstNodeExpr* const prevFromp = nodep->fromp();
+                prevFromp->replaceWith(
+                    new AstLambdaArgRef{prevFromp->fileline(), prevFromp->name(), false});
+                pushDeletep(prevFromp);
             }
         }
     }
