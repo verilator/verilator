@@ -334,8 +334,8 @@ class DeadVisitor final : public VNVisitor {
             checkAll(typedefp);
         }
     }
-    bool shouldDeleteTypedef(AstTypedef* typedefp) {
-        if (auto* const structp = VN_CAST(typedefp->subDTypep(), NodeUOrStructDType)) {
+    bool shouldDeleteTypedef(const AstTypedef* typedefp) {
+        if (const auto* const structp = VN_CAST(typedefp->subDTypep(), NodeUOrStructDType)) {
             if (structp->user1() && !structp->packed()) return false;
         }
         return m_elimCells && !typedefp->attrPublic();
@@ -367,7 +367,7 @@ class DeadVisitor final : public VNVisitor {
             }
         }
     }
-    bool mightElimVar(AstVar* nodep) const {
+    bool mightElimVar(const AstVar* nodep) const {
         if (nodep->isSigPublic()) return false;  // Can't elim publics!
         if (nodep->isIO() || nodep->isClassMember() || nodep->sensIfacep()) return false;
         if (nodep->isTemp() && !nodep->isTrace()) return true;

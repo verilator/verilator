@@ -52,15 +52,13 @@
 // clang and gcc-8.0+ support no_sanitize("string") style attribute
 # if defined(__clang__) || (__GNUC__ >= 8)
 #  define VL_ATTR_NO_SANITIZE_ALIGN __attribute__((no_sanitize("alignment")))
-#else  // The entire undefined sanitizer has to be disabled for older gcc
+# else  // The entire undefined sanitizer has to be disabled for older gcc
 #  define VL_ATTR_NO_SANITIZE_ALIGN __attribute__((no_sanitize_undefined))
-#endif
+# endif
 # define VL_ATTR_PRINTF(fmtArgNum) __attribute__((format(printf, (fmtArgNum), (fmtArgNum) + 1)))
 # define VL_ATTR_PURE __attribute__((pure))
 # define VL_ATTR_UNUSED __attribute__((unused))
-#ifndef VL_ATTR_WARN_UNUSED_RESULT
 # define VL_ATTR_WARN_UNUSED_RESULT __attribute__((warn_unused_result))
-#endif
 # if !defined(_WIN32) && !defined(__MINGW32__)
 // All VL_ATTR_WEAK symbols must be marked with the macOS -U linker flag in verilated.mk.in
 #  define VL_ATTR_WEAK __attribute__((weak))

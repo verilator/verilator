@@ -409,36 +409,39 @@ CHECK_H = $(wildcard \
 CHECK_YL = $(wildcard \
   $(srcdir)/src/*.y \
   $(srcdir)/src/*.l )
-CPPCHECK = src/cppcheck_filtered cppcheck
-CPPCHECK_FLAGS = --enable=all --inline-suppr \
-  --suppress=cstyleCast --suppress=ctunullpointer \
-  --suppress=derefInvalidIteratorRedundantCheck \
-  --suppress=nullPointer --suppress=nullPointerRedundantCheck \
-  --suppress=templateRecursion \
-  --suppress=unusedFunction --suppress=unusedScopedObject \
-  --suppress=useInitializationList --suppress=useStlAlgorithm \
+CPPCHECK = cppcheck
+CPPCHECK_CACHE = $(srcdir)/src/obj_dbg/cppcheck-cache
+CPPCHECK_FLAGS = --enable=all
+CPPCHECK_FLAGS += --inline-suppr
+CPPCHECK_FLAGS += --suppressions-list=$(srcdir)/src/cppcheck-suppressions.txt
+CPPCHECK_FLAGS += --cppcheck-build-dir=$(CPPCHECK_CACHE)
+CPPCHECK_FLAGS += -DVL_DEBUG=1 -DVL_CPPCHECK=1 -D__GNUC__=1
+CPPCHECK_INC = -I$(srcdir)/include
+CPPCHECK_INC += -I$(srcdir)/include/gtkwave
+CPPCHECK_INC += -I$(srcdir)/include/vltstd
+CPPCHECK_INC += -I$(srcdir)/src/obj_dbg
+CPPCHECK_INC += -I$(srcdir)/src
 
-CPPCHECK_FLAGS += --xml
-CPPCHECK_DEP = $(subst .cpp,.cppcheck,$(CHECK_CPP))
-CPPCHECK_INC = -I$(srcdir)/include -I$(srcdir)/include/gtkwave -I$(srcdir)/include/vltstd -I$(srcdir)/src/obj_dbg -I$(srcdir)/src
+$(CPPCHECK_CACHE):
+	mkdir -p $@
 
 cppcheck: cppcheck-1 cppcheck-2 cppcheck-3 cppcheck-4 cppcheck-5 cppcheck-6 cppcheck-7 cppcheck-8
-cppcheck-1:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK1_CPP)
-cppcheck-2:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK2_CPP)
-cppcheck-3:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK3_CPP)
-cppcheck-4:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK4_CPP)
-cppcheck-5:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK5_CPP)
-cppcheck-6:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK6_CPP)
-cppcheck-7:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK7_CPP)
-cppcheck-8:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK8_CPP)
+cppcheck-1: | $(CPPCHECK_CACHE)
+	$(CPPCHECK) $(CPPCHECK_FLAGS) $(CPPCHECK_INC) $(CPPCHECK1_CPP)
+cppcheck-2: | $(CPPCHECK_CACHE)
+	$(CPPCHECK) $(CPPCHECK_FLAGS) $(CPPCHECK_INC) $(CPPCHECK2_CPP)
+cppcheck-3: | $(CPPCHECK_CACHE)
+	$(CPPCHECK) $(CPPCHECK_FLAGS) $(CPPCHECK_INC) $(CPPCHECK3_CPP)
+cppcheck-4: | $(CPPCHECK_CACHE)
+	$(CPPCHECK) $(CPPCHECK_FLAGS) $(CPPCHECK_INC) $(CPPCHECK4_CPP)
+cppcheck-5: | $(CPPCHECK_CACHE)
+	$(CPPCHECK) $(CPPCHECK_FLAGS) $(CPPCHECK_INC) $(CPPCHECK5_CPP)
+cppcheck-6: | $(CPPCHECK_CACHE)
+	$(CPPCHECK) $(CPPCHECK_FLAGS) $(CPPCHECK_INC) $(CPPCHECK6_CPP)
+cppcheck-7: | $(CPPCHECK_CACHE)
+	$(CPPCHECK) $(CPPCHECK_FLAGS) $(CPPCHECK_INC) $(CPPCHECK7_CPP)
+cppcheck-8: | $(CPPCHECK_CACHE)
+	$(CPPCHECK) $(CPPCHECK_FLAGS) $(CPPCHECK_INC) $(CPPCHECK8_CPP)
 
 CLANGTIDY = clang-tidy
 CLANGTIDY_FLAGS = -config='' \
@@ -512,7 +515,6 @@ PY_PROGRAMS = \
   src/astgen \
   src/bisonpre \
   src/config_rev \
-  src/cppcheck_filtered \
   src/flexfix \
   src/vlcovgen \
   src/.gdbinit.py \

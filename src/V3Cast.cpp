@@ -69,7 +69,7 @@ class CastVisitor final : public VNVisitor {
         ensureLower32Cast(castp);
         nodep->user1(1);  // Now must be of known size
     }
-    static int castSize(AstNode* nodep) {
+    static int castSize(const AstNode* nodep) {
         if (nodep->isQuad()) {
             return VL_QUADSIZE;
         } else if (nodep->width() <= 8) {

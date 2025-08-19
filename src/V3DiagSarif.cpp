@@ -33,14 +33,14 @@ class V3DiagSarifImp final {
 
     // METHODS
     void calculate() {
-        for (auto& msgr : m_messages)
+        for (const VErrorMessage& msgr : m_messages)
             if (msgr.code().isNamed()) m_codes.emplace(msgr.code());
         int i = 0;
-        for (const auto& code : m_codes) m_codeIndex[code] = i++;
+        for (const V3ErrorCode& code : m_codes) m_codeIndex[code] = i++;
     }
 
     void putRules(V3OutJsonFile& of) const {
-        for (const auto& code : m_codes) {
+        for (const V3ErrorCode& code : m_codes) {
             of.begin().put("id", code.ascii()).put("helpUri", code.url()).end();
         }
     }
@@ -97,7 +97,7 @@ class V3DiagSarifImp final {
         of.begin("message");
         putText(of, first_clean, first_fmt);
         of.end();
-        if (auto fl = msg.fileline()) {
+        if (const FileLine* const fl = msg.fileline()) {
             of.begin("locations", '[').begin();
             putLocation(of, fl);
             of.end();
@@ -175,7 +175,7 @@ public:
             .end();
 
         of.begin("results", '[');
-        for (auto& msgr : m_messages) putResult(of, msgr);
+        for (const VErrorMessage& msgr : m_messages) putResult(of, msgr);
         of.end();
 
         of.end();  // runs ]

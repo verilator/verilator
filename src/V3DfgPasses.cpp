@@ -181,8 +181,8 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
 
     // Structure to keep track of comparison details
     struct Term final {
-        DfgVertex* m_vtxp;  // Vertex to replace
-        bool m_inv;  // '!=', instead of '=='
+        DfgVertex* m_vtxp = nullptr;  // Vertex to replace
+        bool m_inv = false;  // '!=', instead of '=='
         Term() = default;
         Term(DfgVertex* vtxp, bool inv)
             : m_vtxp{vtxp}

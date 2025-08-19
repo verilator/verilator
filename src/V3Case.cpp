@@ -216,7 +216,7 @@ class CaseVisitor final : public VNVisitor {
                     const uint32_t val = numval.toUInt();
 
                     uint32_t firstOverlap = 0;
-                    AstNode* overlappedCondp = nullptr;
+                    const AstNode* overlappedCondp = nullptr;
                     bool foundHit = false;
                     for (uint32_t i = 0; i < numCases; ++i) {
                         if ((i & mask) == val) {
@@ -307,7 +307,7 @@ class CaseVisitor final : public VNVisitor {
         // Not done earlier, as we may now have a nullptr because it's just a ";" NOP branch
         for (uint32_t i = 0; i < numCases; ++i) {
             if (AstNode* const condp = m_valueItem[i]) {
-                AstCaseItem* caseItemp = caseItemMap[condp];
+                const AstCaseItem* const caseItemp = caseItemMap[condp];
                 UASSERT(caseItemp, "caseItemp should exist");
                 m_valueItem[i] = caseItemp->stmtsp();
             }
@@ -325,7 +325,7 @@ class CaseVisitor final : public VNVisitor {
         } else {
             // Make left and right subtrees
             // cexpr[msb:lsb] == 1
-            AstNode* tree0p = replaceCaseFastRecurse(cexprp, msb - 1, upperValue | 0);
+            AstNode* tree0p = replaceCaseFastRecurse(cexprp, msb - 1, upperValue);
             AstNode* tree1p = replaceCaseFastRecurse(
                 cexprp, msb - 1, upperValue | (1UL << static_cast<uint32_t>(msb)));
 
@@ -548,7 +548,7 @@ class CaseVisitor final : public VNVisitor {
         }
     }
 
-    bool neverItem(AstCase* casep, AstConst* itemp) {
+    bool neverItem(const AstCase* casep, const AstConst* itemp) {
         // Xs in case or casez are impossible due to two state simulations
         if (casep->casex()) {
         } else if (casep->casez() || casep->caseInside()) {

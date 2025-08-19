@@ -540,7 +540,7 @@ class DelayedVisitor final : public VNVisitor {
     }
 
     // Create a unique temporary variable name
-    std::string uniqueTmpName(AstScope* scopep, AstVarScope* vscp, VarScopeInfo& vscpInfo) {
+    std::string uniqueTmpName(AstScope* scopep, const AstVarScope* vscp, VarScopeInfo& vscpInfo) {
         std::stringstream ss;
         ss << "__" << vscp->varp()->shortName() + "__v";
         // If the assignment is in the same scope as the variable, just
@@ -900,7 +900,7 @@ class DelayedVisitor final : public VNVisitor {
                 return dtypep;
             }();
 
-            if (AstSel* const lSelp = VN_CAST(lhsNodep, Sel)) {
+            if (const AstSel* const lSelp = VN_CAST(lhsNodep, Sel)) {
                 // This is a partial assignment.
                 // Need to create a mask and widen the value to element size.
                 lhsNodep = lSelp->fromp();
@@ -910,7 +910,7 @@ class DelayedVisitor final : public VNVisitor {
                 // Create mask value
                 maskp = [&]() -> AstNodeExpr* {
                     // Constant mask we can compute here
-                    if (AstConst* const cLsbp = VN_CAST(sLsbp, Const)) {
+                    if (const AstConst* const cLsbp = VN_CAST(sLsbp, Const)) {
                         AstConst* const cp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
                         cp->num().setMask(sWidth, cLsbp->toSInt());
                         return cp;
@@ -927,7 +927,7 @@ class DelayedVisitor final : public VNVisitor {
                 valuep = [&]() -> AstNodeExpr* {
                     // Constant value with constant select we can compute here
                     if (AstConst* const cValuep = VN_CAST(valuep, Const)) {
-                        if (AstConst* const cLsbp = VN_CAST(sLsbp, Const)) {
+                        if (const AstConst* const cLsbp = VN_CAST(sLsbp, Const)) {
                             AstConst* const cp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
                             cp->num().setAllBits0();
                             cp->num().opSelInto(cValuep->num(), cLsbp->toSInt(), sWidth);
@@ -1097,7 +1097,7 @@ class DelayedVisitor final : public VNVisitor {
         VL_RESTORER(m_ignoreBlkAndNBlk);
         VL_RESTORER(m_inNonCombLogic);
         m_activep = nodep;
-        AstSenTree* const senTreep = nodep->sentreep();
+        const AstSenTree* const senTreep = nodep->sentreep();
         m_ignoreBlkAndNBlk = senTreep->hasStatic() || senTreep->hasInitial();
         m_inNonCombLogic = senTreep->hasClocked();
         iterateChildren(nodep);
@@ -1160,7 +1160,7 @@ class DelayedVisitor final : public VNVisitor {
 
         AstNode* newp = new AstCStmt{flp, blockp};
         if (nodep->isDelayed()) {
-            AstVarRef* const vrefp = VN_AS(eventp, VarRef);
+            const AstVarRef* const vrefp = VN_AS(eventp, VarRef);
             const std::string newvarname = "__Vdly__" + vrefp->varp()->shortName();
             AstVarScope* const dlyvscp
                 = createTemp(flp, vrefp->varScopep()->scopep(), newvarname, 1);

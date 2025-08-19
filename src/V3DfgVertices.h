@@ -234,7 +234,9 @@ public:
 
     uint32_t toU32() const { return static_cast<size_t>(num().toUInt()); }
 
+    // cppcheck-suppress duplInheritedMember
     bool isZero() const { return num().isEqZero(); }
+    // cppcheck-suppress duplInheritedMember
     bool isOnes() const { return num().isEqAllOnes(width()); }
 
     // Does this DfgConst have the given value? Note this is not easy to answer if wider than 32.

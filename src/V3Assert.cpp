@@ -86,7 +86,7 @@ class AssertVisitor final : public VNVisitor {
         }
         VL_UNREACHABLE;
     }
-    string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message,
+    string assertDisplayMessage(const AstNode* nodep, const string& prefix, const string& message,
                                 VDisplayType severity) {
         if (severity == VDisplayType::DT_ERROR || severity == VDisplayType::DT_FATAL) {
             return ("[%0t] "s + prefix + ": " + nodep->fileline()->filebasename() + ":"
@@ -148,7 +148,7 @@ class AssertVisitor final : public VNVisitor {
         sampledp->dtypeFrom(nodep);
         return sampledp;
     }
-    AstVarRef* newMonitorNumVarRefp(AstNode* nodep, VAccess access) {
+    AstVarRef* newMonitorNumVarRefp(const AstNode* nodep, VAccess access) {
         if (!m_monitorNumVarp) {
             m_monitorNumVarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP, "__VmonitorNum",
                                           nodep->findUInt64DType()};
@@ -158,7 +158,7 @@ class AssertVisitor final : public VNVisitor {
         varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgAddp());
         return varrefp;
     }
-    AstVarRef* newMonitorOffVarRefp(AstNode* nodep, VAccess access) {
+    AstVarRef* newMonitorOffVarRefp(const AstNode* nodep, VAccess access) {
         if (!m_monitorOffVarp) {
             m_monitorOffVarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP, "__VmonitorOff",
                                           nodep->findBitDType()};
@@ -181,7 +181,7 @@ class AssertVisitor final : public VNVisitor {
         return newp;
     }
 
-    AstNodeStmt* newFireAssertUnchecked(AstNodeStmt* nodep, const string& message,
+    AstNodeStmt* newFireAssertUnchecked(const AstNodeStmt* nodep, const string& message,
                                         AstNodeExpr* exprsp = nullptr) {
         // Like newFireAssert() but omits the asserts-on check
         AstDisplay* const dispp
@@ -194,7 +194,7 @@ class AssertVisitor final : public VNVisitor {
         return bodysp;
     }
 
-    AstNodeStmt* newFireAssert(AstNodeStmt* nodep, VAssertDirectiveType directiveType,
+    AstNodeStmt* newFireAssert(const AstNodeStmt* nodep, VAssertDirectiveType directiveType,
                                VAssertType assertType, const string& message,
                                AstNodeExpr* exprsp = nullptr) {
         AstNodeStmt* bodysp = newFireAssertUnchecked(nodep, message, exprsp);

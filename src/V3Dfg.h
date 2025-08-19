@@ -79,8 +79,8 @@ struct std::hash<std::pair<const DfgVertex*, const DfgVertex*>> final {
 class VDfgType final {
 public:
 #include "V3Dfg__gen_type_enum.h"  // From ./astgen
-    enum en m_e;
-    VDfgType() = default;
+    const enum en m_e;
+    VDfgType() = delete;
     // cppcheck-suppress noExplicitConstructor
     constexpr VDfgType(en _e)
         : m_e{_e} {}

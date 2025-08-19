@@ -170,8 +170,8 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
 
     struct BitPolarityEntry final {  // Found bit polarity during iterate()
         LeafInfo m_info;
-        bool m_polarity;
-        int m_bit;
+        bool m_polarity = false;
+        int m_bit = 0;
         BitPolarityEntry(const LeafInfo& info, bool pol, int bit)
             : m_info{info}
             , m_polarity{pol}
@@ -392,7 +392,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
 
 #define CONST_BITOP_SET_FAILED(reason, nodep) setFailed(true, reason, nodep, __LINE__)
 
-    bool setFailed(bool fail, const char* reason, AstNode* nodep, int line) {
+    bool setFailed(bool fail, const char* reason, const AstNode* nodep, int line) {
         if (fail && !m_failed) {
             UINFO(9, "cannot optimize " << m_rootp << " reason:" << reason << " called from line:"
                                         << line << " when checking:" << nodep);
@@ -460,7 +460,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     }
     void visit(AstShiftR* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
-        AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
+        const AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
         CONST_BITOP_RETURN_IF(!constp, nodep->rhsp());
         m_lsb += constp->toUInt();
         incrOps(nodep, __LINE__);
@@ -484,7 +484,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     }
     void visit(AstWordSel* nodep) override {
         CONST_BITOP_RETURN_IF(!m_leafp, nodep);
-        AstConst* const constp = VN_CAST(nodep->bitp(), Const);
+        const AstConst* const constp = VN_CAST(nodep->bitp(), Const);
         CONST_BITOP_RETURN_IF(!constp, nodep->bitp());
         UASSERT_OBJ(m_leafp->wordIdx() == -1, nodep, "Unexpected nested WordSel");
         m_leafp->wordIdx(constp->toSInt());
@@ -796,7 +796,7 @@ public:
 
         if (debug() >= 9) {  // LCOV_EXCL_START
             cout << "-  Bitop tree considered:\n";
-            for (AstNodeExpr* const termp : termps) termp->dumpTree("-  Reduced term: ");
+            for (const AstNodeExpr* const termp : termps) termp->dumpTree("-  Reduced term: ");
             for (const std::pair<AstNodeExpr*, FrozenNodeInfo>& termp : visitor.m_frozenNodes) {
                 termp.first->dumpTree("-  Frozen term with lsb "
                                       + std::to_string(termp.second.m_lsb) + " polarity "
@@ -916,7 +916,6 @@ class ConstVisitor final : public VNVisitor {
     // AstEnum::user4           -> bool.  Recursing.
 
     // STATE
-    static constexpr bool m_doShort = true;  // Remove expressions that short circuit
     bool m_params = false;  // If true, propagate parameterized and true numbers only
     bool m_required = false;  // If true, must become a constant
     bool m_wremove = true;  // Inside scope, no assignw removal
@@ -949,12 +948,12 @@ class ConstVisitor final : public VNVisitor {
         const V3Number& numc = VN_AS(nodep, Const)->num();
         return !numc.isNumber() ? numc : V3Number{nodep, nodep->widthMinV(), numc};
     }
-    V3Number toNumC(AstNode* nodep, V3Number& numv) {
+    V3Number toNumC(AstNode* nodep, const V3Number& numv) {
         // Extend V width back to C width for given node
         return !numv.isNumber() ? numv : V3Number{nodep, nodep->width(), numv};
     }
 
-    bool operandConst(AstNode* nodep) { return VN_IS(nodep, Const); }
+    bool operandConst(const AstNode* nodep) { return VN_IS(nodep, Const); }
     bool operandAsvConst(const AstNode* nodep) {
         // BIASV(CONST, BIASV(CONST,...)) -> BIASV( BIASV_CONSTED(a,b), ...)
         const AstNodeBiComAsv* const bnodep = VN_CAST(nodep, NodeBiComAsv);
@@ -1022,8 +1021,9 @@ class ConstVisitor final : public VNVisitor {
         UASSERT_OBJ(constp && constp->isOne(), andp->lhsp(), "TRREEOPC must meet this condition");
         AstNodeExpr* const rhsp = andp->rhsp();
         AstCCast* ccastp = nullptr;
-        const auto isEqOrNeq
-            = [](AstNode* nodep) -> bool { return VN_IS(nodep, Eq) || VN_IS(nodep, Neq); };
+        const auto isEqOrNeq = [](const AstNode* nodep) -> bool {  //
+            return VN_IS(nodep, Eq) || VN_IS(nodep, Neq);
+        };
         if (isEqOrNeq(rhsp)) {
             ccastp = new AstCCast{andp->fileline(), rhsp->unlinkFrBack(), andp};
         } else if (AstCCast* const tmpp = VN_CAST(rhsp, CCast)) {
@@ -1352,8 +1352,8 @@ class ConstVisitor final : public VNVisitor {
             return false;
         }
         AstNodeExpr* const ap = shiftp->lhsp();
-        AstConst* const bp = VN_AS(shiftp->rhsp(), Const);
-        AstConst* const lp = VN_AS(nodep->lsbp(), Const);
+        const AstConst* const bp = VN_AS(shiftp->rhsp(), Const);
+        const AstConst* const lp = VN_AS(nodep->lsbp(), Const);
         if (bp->isWide() || bp->num().isFourState() || bp->num().isNegative() || lp->isWide()
             || lp->num().isFourState() || lp->num().isNegative()) {
             return false;
@@ -1402,7 +1402,7 @@ class ConstVisitor final : public VNVisitor {
         // Avoids compiler warning
         const AstExtend* const extendp = VN_CAST(nodep->rhsp(), Extend);
         if (!extendp) return false;
-        AstNode* const smallerp = extendp->lhsp();
+        const AstNode* const smallerp = extendp->lhsp();
         const int subsize = smallerp->width();
         const AstConst* const constp = VN_CAST(nodep->lhsp(), Const);
         if (!constp) return false;
@@ -1459,7 +1459,7 @@ class ConstVisitor final : public VNVisitor {
         return false;  // Not a transform, so NOP
     }
 
-    static bool operandsSame(AstNode* node1p, AstNode* node2p) {
+    static bool operandsSame(const AstNode* node1p, const AstNode* node2p) {
         // For now we just detect constants & simple vars, though it could be more generic
         if (VN_IS(node1p, Const) && VN_IS(node2p, Const)) return node1p->sameGateTree(node2p);
         if (VN_IS(node1p, VarRef) && VN_IS(node2p, VarRef)) {
@@ -1469,8 +1469,8 @@ class ConstVisitor final : public VNVisitor {
             return node1p->isSame(node2p);
         }
         // Pattern created by coverage-line; avoid compiler tautological-compare warning
-        if (AstAnd* const and1p = VN_CAST(node1p, And)) {
-            if (AstAnd* const and2p = VN_CAST(node2p, And)) {
+        if (const AstAnd* const and1p = VN_CAST(node1p, And)) {
+            if (const AstAnd* const and2p = VN_CAST(node2p, And)) {
                 if (VN_IS(and1p->lhsp(), Const) && VN_IS(and1p->rhsp(), NodeVarRef)
                     && VN_IS(and2p->lhsp(), Const) && VN_IS(and2p->rhsp(), NodeVarRef))
                     return node1p->sameGateTree(node2p);
@@ -1535,11 +1535,11 @@ class ConstVisitor final : public VNVisitor {
         if (!lselp || !rselp) return false;
 
         // a[a:b] a[b-1:c] are adjacent
-        AstNode* const lfromp = lselp->fromp();
-        AstNode* const rfromp = rselp->fromp();
+        const AstNode* const lfromp = lselp->fromp();
+        const AstNode* const rfromp = rselp->fromp();
         if (!lfromp || !rfromp || !lfromp->sameGateTree(rfromp)) return false;
-        AstConst* const lstart = VN_CAST(lselp->lsbp(), Const);
-        AstConst* const rstart = VN_CAST(rselp->lsbp(), Const);
+        const AstConst* const lstart = VN_CAST(lselp->lsbp(), Const);
+        const AstConst* const rstart = VN_CAST(rselp->lsbp(), Const);
         if (!lstart || !rstart) return false;  // too complicated
         const int rend = (rstart->toSInt() + rselp->widthConst());
         // a[i:j] a[j-1:k]
@@ -2209,11 +2209,11 @@ class ConstVisitor final : public VNVisitor {
             if (VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)) {
                 if (VN_IS(dstDTypep, QueueDType) || VN_IS(dstDTypep, DynArrayDType)) {
                     int srcElementBits = 0;
-                    if (AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
+                    if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
                         srcElementBits = elemDtp->width();
                     }
                     int dstElementBits = 0;
-                    if (AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                    if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
                         dstElementBits = elemDtp->width();
                     }
                     srcp = new AstCvtArrayToArray{
@@ -2243,7 +2243,7 @@ class ConstVisitor final : public VNVisitor {
             AstNodeExpr* const dstp = VN_AS(streamp, StreamL)->lhsp()->unlinkFrBack();
             AstNodeDType* const dstDTypep = dstp->dtypep()->skipRefp();
             AstNodeExpr* const srcp = nodep->rhsp()->unlinkFrBack();
-            AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
+            const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
             const int sWidth = srcp->width();
             const int dWidth = dstp->width();
             // Connect the rhs to the stream operator and update its width
@@ -2306,7 +2306,7 @@ class ConstVisitor final : public VNVisitor {
         } else if (m_doV && VN_IS(nodep->rhsp(), StreamL)) {
             AstStreamL* streamp = VN_AS(nodep->rhsp(), StreamL);
             AstNodeExpr* srcp = streamp->lhsp();
-            AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
+            const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
             AstNodeDType* const dstDTypep = nodep->lhsp()->dtypep()->skipRefp();
             if ((VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)
                  || VN_IS(srcDTypep, UnpackArrayDType))) {
@@ -2330,11 +2330,11 @@ class ConstVisitor final : public VNVisitor {
                     // streamp->rhsp()->prettyTypeName() << ")");
                     // }
                     int srcElementBits = 0;
-                    if (AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
+                    if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
                         srcElementBits = elemDtp->width();
                     }
                     int dstElementBits = 0;
-                    if (AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                    if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
                         dstElementBits = elemDtp->width();
                     }
                     streamp->unlinkFrBack();
@@ -2500,7 +2500,7 @@ class ConstVisitor final : public VNVisitor {
     bool matchConcatRand(AstConcat* nodep) {
         //    CONCAT(RAND, RAND) - created by Chisel code
         AstRand* const aRandp = VN_CAST(nodep->lhsp(), Rand);
-        AstRand* const bRandp = VN_CAST(nodep->rhsp(), Rand);
+        const AstRand* const bRandp = VN_CAST(nodep->rhsp(), Rand);
         if (!aRandp || !bRandp) return false;
         if (!aRandp->combinable(bRandp)) return false;
         UINFO(4, "Concat(Rand,Rand) => Rand: " << nodep);
@@ -2518,15 +2518,15 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return true;
     }
-    int operandConcatMove(AstConcat* nodep) {
+    int operandConcatMove(const AstConcat* nodep) {
         //    CONCAT under concat  (See moveConcat)
         // Return value: true indicates to do it; 2 means move to LHS
         const AstConcat* const abConcp = VN_CAST(nodep->lhsp(), Concat);
         const AstConcat* const bcConcp = VN_CAST(nodep->rhsp(), Concat);
         if (!abConcp && !bcConcp) return 0;
         if (bcConcp) {
-            AstNodeExpr* const ap = nodep->lhsp();
-            AstNodeExpr* const bp = bcConcp->lhsp();
+            const AstNodeExpr* const ap = nodep->lhsp();
+            const AstNodeExpr* const bp = bcConcp->lhsp();
             // If a+b == 32,64,96 etc, then we want to have a+b together on LHS
             if (VL_BITBIT_I(ap->width() + bp->width()) == 0) return 2;  // Transform 2: to abConc
         } else {  // abConcp
@@ -2617,7 +2617,7 @@ class ConstVisitor final : public VNVisitor {
             // potentially smaller lsb1p's width, but don't insert a redundant AstExtend.
             // Note that due to some sloppiness in earlier passes, lsb1p might actually be wider,
             // so extend to the wider type.
-            AstNodeExpr* const widep = lsb1p->width() > lsb2p->width() ? lsb1p : lsb2p;
+            const AstNodeExpr* const widep = lsb1p->width() > lsb2p->width() ? lsb1p : lsb2p;
             AstNodeExpr* const lhsp = widep->width() > lsb2p->width()
                                           ? new AstExtend{lsb2p->fileline(), lsb2p}
                                           : lsb2p;
@@ -2895,7 +2895,7 @@ class ConstVisitor final : public VNVisitor {
     // Not constant propagated (for today) because AstNodeExpr::isOpaque is set
     // Someday if lower is constant, convert to quoted "string".
 
-    bool onlySenItemInSenTree(AstSenItem* nodep) {
+    bool onlySenItemInSenTree(const AstSenItem* nodep) {
         // Only one if it's not in a list
         return (!nodep->nextp() && nodep->backp()->nextp() != nodep);
     }
@@ -2981,8 +2981,8 @@ class ConstVisitor final : public VNVisitor {
                 if (aCallp->name() < bCallp->name()) return -1;
                 if (aCallp->name() > bCallp->name()) return 1;
                 if (const int c = cmp(aCallp->fromp(), bCallp->fromp())) return c;
-                AstNodeExpr* aPinsp = aCallp->pinsp();
-                AstNodeExpr* bPinsp = bCallp->pinsp();
+                const AstNodeExpr* aPinsp = aCallp->pinsp();
+                const AstNodeExpr* bPinsp = bCallp->pinsp();
                 while (aPinsp && bPinsp) {
                     if (const int c = cmp(aPinsp, bPinsp)) return c;
                     aPinsp = VN_AS(aPinsp->nextp(), NodeExpr);
@@ -2996,8 +2996,8 @@ class ConstVisitor final : public VNVisitor {
 
     public:
         bool operator()(const AstSenItem* lhsp, const AstSenItem* rhsp) const {
-            AstNodeExpr* const lSensp = lhsp->sensp();
-            AstNodeExpr* const rSensp = rhsp->sensp();
+            const AstNodeExpr* const lSensp = lhsp->sensp();
+            const AstNodeExpr* const rSensp = rhsp->sensp();
             if (lSensp && rSensp) {
                 // If both terms have sensitivity expressions, recursively compare them
                 if (const int c = cmp(lSensp, rSensp)) return c < 0;
@@ -3163,11 +3163,11 @@ class ConstVisitor final : public VNVisitor {
             }
             if (streamp) {
                 AstNodeExpr* srcp = streamp->lhsp();
-                AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
+                const AstNodeDType* const srcDTypep = srcp->dtypep()->skipRefp();
                 AstNodeDType* const dstDTypep = nodep->dtypep()->skipRefp();
                 if (VN_IS(srcDTypep, QueueDType) && VN_IS(dstDTypep, QueueDType)) {
                     int blockSize = 1;
-                    if (AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
+                    if (const AstConst* const constp = VN_CAST(streamp->rhsp(), Const)) {
                         blockSize = constp->toSInt();
                         if (VL_UNLIKELY(blockSize <= 0)) {
                             // Not reachable due to higher level checks when parsing stream
@@ -3184,11 +3184,11 @@ class ConstVisitor final : public VNVisitor {
                     //    streamp->rhsp()->prettyTypeName() << ")");
                     // }
                     int srcElementBits = 0;
-                    if (AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
+                    if (const AstNodeDType* const elemDtp = srcDTypep->subDTypep()) {
                         srcElementBits = elemDtp->width();
                     }
                     int dstElementBits = 0;
-                    if (AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
+                    if (const AstNodeDType* const elemDtp = dstDTypep->subDTypep()) {
                         dstElementBits = elemDtp->width();
                     }
                     streamp->unlinkFrBack();
@@ -3330,9 +3330,7 @@ class ConstVisitor final : public VNVisitor {
         if (!prevp->fmtp() || prevp->fmtp()->nextp() || !nodep->fmtp() || nodep->fmtp()->nextp())
             return false;
         AstSFormatF* const pformatp = prevp->fmtp();
-        if (!pformatp) return false;
         AstSFormatF* const nformatp = nodep->fmtp();
-        if (!nformatp) return false;
         // We don't merge scopeNames as can have only one and might be different scopes (late in
         // process) Also rare for real code to print %m multiple times in same message
         if (nformatp->scopeNamep() && pformatp->scopeNamep()) return false;

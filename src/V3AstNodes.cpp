@@ -542,18 +542,16 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     string ostatic;
     if (isStatic() && namespc.empty()) ostatic = "static ";
 
-    const bool isRef = isDpiOpenArray()
-                       || (forFunc && (isWritable() || this->isRef() || this->isConstRef()))
-                       || asRef;
+    asRef = asRef || isDpiOpenArray() || (forFunc && (isWritable() || isRef() || isConstRef()));
 
-    if (forFunc && isReadOnly() && isRef) ostatic = ostatic + "const ";
+    if (forFunc && isReadOnly() && asRef) ostatic = ostatic + "const ";
 
     string oname;
     if (named) {
         if (!namespc.empty()) oname += namespc + "::";
         oname += VIdProtect::protectIf(name(), protect());
     }
-    return ostatic + dtypep()->cType(oname, forFunc, isRef);
+    return ostatic + dtypep()->cType(oname, forFunc, asRef);
 }
 
 string AstVar::vlEnumType() const {
@@ -687,7 +685,7 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
     if (forReturn) named = false;
     string arg;
     if (isWide() && isReadOnly()) arg += "const ";
-    const bool isRef = !forReturn && (isWritable() || this->isRef() || this->isConstRef());
+    const bool asRef = !forReturn && (isWritable() || this->isRef() || this->isConstRef());
     if (VN_IS(dtypeSkipRefp(), BasicDType) && !dtypeSkipRefp()->isDouble()
         && !dtypeSkipRefp()->isString()) {
         // Backward compatible type declaration
@@ -708,12 +706,12 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
             arg += " (& " + name();
             arg += ")[" + cvtToStr(widthWords()) + "]";
         } else {
-            if (isRef) arg += "&";
+            if (asRef) arg += "&";
             if (named) arg += " " + name();
         }
     } else {
         // Newer internal-compatible types
-        arg += dtypep()->cType((named ? name() : std::string{}), true, isRef);
+        arg += dtypep()->cType((named ? name() : std::string{}), true, asRef);
     }
     return arg;
 }
@@ -775,7 +773,7 @@ string AstVar::dpiTmpVarType(const string& varName) const {
     class converter final : public dpiTypesToStringConverter {
         const string m_name;
         string arraySuffix(const AstVar* varp, size_t n) const {
-            if (AstUnpackArrayDType* const unpackp
+            if (const AstUnpackArrayDType* const unpackp
                 = VN_CAST(varp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 // Convert multi dimensional unpacked array to 1D array
                 if (n == 0) n = 1;
@@ -849,13 +847,13 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
         } else {
             return nullptr;
         }
-    } else if (AstVarRef* const vrefp = VN_CAST(nodep, VarRef)) {
+    } else if (const AstVarRef* const vrefp = VN_CAST(nodep, VarRef)) {
         if (vrefp->varp()->isSc()) {
             return vrefp->varp();
         } else {
             return nullptr;
         }
-    } else if (AstArraySel* const arraySelp = VN_CAST(nodep, ArraySel)) {
+    } else if (const AstArraySel* const arraySelp = VN_CAST(nodep, ArraySel)) {
         if (AstVar* const p = scVarRecurse(arraySelp->fromp())) return p;
     }
     return nullptr;
@@ -1194,7 +1192,7 @@ AstVarScope* AstScope::createTemp(const string& name, AstNodeDType* dtypep) {
     return vscp;
 }
 
-AstVarScope* AstScope::createTempLike(const string& name, AstVarScope* vscp) {
+AstVarScope* AstScope::createTempLike(const string& name, const AstVarScope* vscp) {
     return createTemp(name, vscp->dtypep());
 }
 
@@ -1568,7 +1566,7 @@ void AstNode::dump(std::ostream& str) const {
         } else {
             str << " @dt=" << nodeAddr(dtypep()) << "@";
         }
-        if (AstNodeDType* const dtp = dtypep()) dtp->dumpSmall(str);
+        if (const AstNodeDType* const dtp = dtypep()) dtp->dumpSmall(str);
     } else {  // V3Broken will throw an error
         if (dtypep()) str << " %Error-dtype-exp=null,got=" << nodeAddr(dtypep());
     }
@@ -2217,10 +2215,10 @@ void AstRefDType::dump(std::ostream& str) const {
         if (!s_recursing) {  // Prevent infinite dump if circular typedefs
             s_recursing = true;
             str << " -> ";
-            if (const auto subp = subDTypep()) {
+            if (const AstNodeDType* const subp = subDTypep()) {
                 if (typedefp()) str << "typedef=" << static_cast<void*>(typedefp()) << " -> ";
                 subp->dump(str);
-            } else if (const auto subp = typedefp()) {
+            } else if (const AstTypedef* const subp = typedefp()) {
                 subp->dump(str);
             }
             s_recursing = false;
@@ -2264,7 +2262,7 @@ string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
 void AstNodeDType::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (generic()) str << " [GENERIC]";
-    if (AstNodeDType* const dtp = virtRefDTypep()) {
+    if (const AstNodeDType* const dtp = virtRefDTypep()) {
         str << " refdt=" << nodeAddr(dtp);
         dtp->dumpSmall(str);
     }
@@ -2476,7 +2474,7 @@ void AstMTaskBody::dumpJson(std::ostream& str) const {
 void AstTypeTable::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     for (int i = 0; i < static_cast<int>(VBasicDTypeKwd::_ENUM_MAX); ++i) {
-        if (AstBasicDType* const subnodep = m_basicps[i]) {
+        if (const AstBasicDType* const subnodep = m_basicps[i]) {
             str << '\n';  // Newline from caller, so newline first
             str << "\t\t" << std::setw(8) << VBasicDTypeKwd{i}.ascii();
             str << "  -> ";
@@ -2486,7 +2484,7 @@ void AstTypeTable::dump(std::ostream& str) const {
     {
         const DetailedMap& mapr = m_detailedMap;
         for (const auto& itr : mapr) {
-            AstBasicDType* const dtypep = itr.second;
+            const AstBasicDType* const dtypep = itr.second;
             str << '\n';  // Newline from caller, so newline first
             str << "\t\tdetailed  ->  ";
             dtypep->dump(str);
@@ -2591,15 +2589,21 @@ void AstNodeVarRef::dumpJson(std::ostream& str) const {
 AstNodeVarRef* AstNodeVarRef::varRefLValueRecurse(AstNode* nodep) {
     // Given a (possible) lvalue expression, recurse to find the being-set NodeVarRef, else nullptr
     if (AstNodeVarRef* const anodep = VN_CAST(nodep, NodeVarRef)) return anodep;
-    if (AstNodeSel* const anodep = VN_CAST(nodep, NodeSel))
+    if (const AstNodeSel* const anodep = VN_CAST(nodep, NodeSel)) {
         return varRefLValueRecurse(anodep->fromp());
-    if (AstSel* const anodep = VN_CAST(nodep, Sel)) return varRefLValueRecurse(anodep->fromp());
-    if (AstArraySel* const anodep = VN_CAST(nodep, ArraySel))
+    }
+    if (const AstSel* const anodep = VN_CAST(nodep, Sel)) {
         return varRefLValueRecurse(anodep->fromp());
-    if (AstMemberSel* const anodep = VN_CAST(nodep, MemberSel))
+    }
+    if (const AstArraySel* const anodep = VN_CAST(nodep, ArraySel)) {
         return varRefLValueRecurse(anodep->fromp());
-    if (AstStructSel* const anodep = VN_CAST(nodep, StructSel))
+    }
+    if (const AstMemberSel* const anodep = VN_CAST(nodep, MemberSel)) {
         return varRefLValueRecurse(anodep->fromp());
+    }
+    if (const AstStructSel* const anodep = VN_CAST(nodep, StructSel)) {
+        return varRefLValueRecurse(anodep->fromp());
+    }
     return nullptr;
 }
 
@@ -2796,9 +2800,12 @@ AstNodeModule* AstClassOrPackageRef::classOrPackageSkipp() const {
         if (AstNodeDType* const anodep = VN_CAST(foundp, NodeDType)) {
             foundp = anodep->skipRefOrNullp();
         }
-        if (AstTypedef* const anodep = VN_CAST(foundp, Typedef)) foundp = anodep->subDTypep();
-        if (AstClassRefDType* const anodep = VN_CAST(foundp, ClassRefDType))
+        if (const AstTypedef* const anodep = VN_CAST(foundp, Typedef)) {
+            foundp = anodep->subDTypep();
+        }
+        if (const AstClassRefDType* const anodep = VN_CAST(foundp, ClassRefDType)) {
             foundp = anodep->classp();
+        }
     }
     return VN_CAST(foundp, NodeModule);
 }
@@ -3076,7 +3083,7 @@ void AstCAwait::dump(std::ostream& str) const {
 }
 void AstCAwait::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 int AstCMethodHard::instrCount() const {
-    if (AstBasicDType* const basicp = fromp()->dtypep()->basicp()) {
+    if (const AstBasicDType* const basicp = fromp()->dtypep()->basicp()) {
         // TODO: add a more structured description of library methods, rather than using string
         //       matching. See issue #3715.
         if (basicp->isTriggerVec() && m_name == "word") {
@@ -3165,8 +3172,8 @@ void AstCMethodHard::setPurity() {
     if (name() == "atWriteAppend" || name() == "atWriteAppendBack") {
         m_pure = false;
         // Treat atWriteAppend as pure if the argument is a loop iterator
-        if (AstNodeExpr* const argp = pinsp()) {
-            if (AstVarRef* const varrefp = VN_CAST(argp, VarRef)) {
+        if (const AstNodeExpr* const argp = pinsp()) {
+            if (const AstVarRef* const varrefp = VN_CAST(argp, VarRef)) {
                 if (varrefp->varp()->isUsedLoopIdx()) m_pure = true;
             }
         }

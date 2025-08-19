@@ -784,7 +784,7 @@ class AstClassExtends final : public AstNode {
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     // @astgen op2 := classOrPkgsp : Optional[AstNode]
     // @astgen op3 := argsp : List[AstNodeExpr]
-    const bool m_isImplements = false;  // class implements
+    const bool m_isImplements;  // class implements
     bool m_parameterized = false;  // has parameters in its statement
 
 public:
@@ -812,8 +812,8 @@ class AstClocking final : public AstNode {
     // @astgen op2 := itemsp : List[AstClockingItem]
     // @astgen op3 := eventp : Optional[AstVar]
     std::string m_name;  // Clocking block name
-    const bool m_isDefault = false;  // True if default clocking
-    const bool m_isGlobal = false;  // True if global clocking
+    const bool m_isDefault;  // True if default clocking
+    const bool m_isGlobal;  // True if global clocking
 
 public:
     AstClocking(FileLine* fl, const std::string& name, AstSenItem* sensesp,
@@ -1531,7 +1531,7 @@ public:
     // Create new MODULETEMP variable under this scope
     AstVarScope* createTemp(const string& name, unsigned width);
     AstVarScope* createTemp(const string& name, AstNodeDType* dtypep);
-    AstVarScope* createTempLike(const string& name, AstVarScope* vscp);
+    AstVarScope* createTempLike(const string& name, const AstVarScope* vscp);
 };
 class AstSenItem final : public AstNode {
     // Parents:  SENTREE
@@ -1961,7 +1961,7 @@ public:
         combineType(type);
         dtypeSetBitSized(wantwidth, VSigning::UNSIGNED);
     }
-    AstVar(FileLine* fl, VVarType type, const string& name, AstVar* examplep)
+    AstVar(FileLine* fl, VVarType type, const string& name, const AstVar* examplep)
         : ASTGEN_SUPER_Var(fl)
         , m_name{name}
         , m_origName{name} {
@@ -2133,7 +2133,7 @@ public:
     bool isGParam() const { return varType() == VVarType::GPARAM; }
     bool isGenVar() const { return varType() == VVarType::GENVAR; }
     bool isBitLogic() const {
-        AstBasicDType* bdtypep = basicp();
+        const AstBasicDType* const bdtypep = basicp();
         return bdtypep && bdtypep->isBitLogic();
     }
     bool isUsedClock() const VL_MT_SAFE { return m_usedClock; }
@@ -2486,7 +2486,7 @@ public:
                 && std::is_base_of<AstNode, T_Node>::value,
             "T_Callable 'f' must have a signature compatible with 'void(AstClass*, T_Node*)', "
             "with 'T_Node' being a subtype of 'AstNode'");
-        if (AstClassExtends* const cextendsp = this->extendsp()) {
+        if (const AstClassExtends* const cextendsp = this->extendsp()) {
             cextendsp->classp()->foreachMember(f);
         }
         for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -2502,7 +2502,7 @@ public:
                 && std::is_base_of<AstNode, T_Node>::value,
             "Predicate 'p' must have a signature compatible with 'bool(const AstClass*, "
             "const T_Node*)', with 'T_Node' being a subtype of 'AstNode'");
-        if (AstClassExtends* const cextendsp = this->extendsp()) {
+        if (const AstClassExtends* const cextendsp = this->extendsp()) {
             if (cextendsp->classp()->existsMember(p)) return true;
         }
         for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -2540,18 +2540,22 @@ public:
 };
 class AstModule final : public AstNodeModule {
     // A module declaration
-    const bool m_isChecker = false;  // Module represents a checker
-    const bool m_isProgram = false;  // Module represents a program
+    const bool m_isChecker;  // Module represents a checker
+    const bool m_isProgram;  // Module represents a program
 public:
     class Checker {};  // for constructor type-overload selection
     class Program {};  // for constructor type-overload selection
     AstModule(FileLine* fl, const string& name, const string& libname)
-        : ASTGEN_SUPER_Module(fl, name, libname) {}
+        : ASTGEN_SUPER_Module(fl, name, libname)
+        , m_isChecker{false}
+        , m_isProgram{false} {}
     AstModule(FileLine* fl, const string& name, const string& libname, Checker)
         : ASTGEN_SUPER_Module(fl, name, libname)
-        , m_isChecker{true} {}
+        , m_isChecker{true}
+        , m_isProgram{false} {}
     AstModule(FileLine* fl, const string& name, const string& libname, Program)
         : ASTGEN_SUPER_Module(fl, name, libname)
+        , m_isChecker{false}
         , m_isProgram{true} {}
     ASTGEN_MEMBERS_AstModule;
     string verilogKwd() const override {

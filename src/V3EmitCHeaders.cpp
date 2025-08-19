@@ -259,7 +259,7 @@ class EmitCHeader final : public EmitCConstInit {
         case AttributeType::Width: {
             if (isArrayType) {
                 // For arrays, get innermost element width
-                AstNodeDType* dtype = itemp->dtypep();
+                const AstNodeDType* dtype = itemp->dtypep();
                 while (dtype->subDTypep()) dtype = dtype->subDTypep();
                 return dtype->width();
             }
@@ -461,7 +461,7 @@ class EmitCHeader final : public EmitCConstInit {
 
         AstMemberDType* itemp;
         AstMemberDType* lastItemp;
-        AstMemberDType* witemp = nullptr;
+        const AstMemberDType* witemp = nullptr;
         // LSB is first field in C, so loop backwards
         for (lastItemp = sdtypep->membersp(); lastItemp && lastItemp->nextp();
              lastItemp = VN_AS(lastItemp->nextp(), MemberDType)) {
