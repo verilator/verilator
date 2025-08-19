@@ -29,6 +29,10 @@
 #include <iostream>
 #include <vector>
 
+extern "C" {
+#include <libgen.h>
+}
+
 // These require the above. Comment prevents clang-format moving them
 #include "TestSimulator.h"
 #include "TestVpi.h"

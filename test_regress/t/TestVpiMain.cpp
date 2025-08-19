@@ -21,6 +21,10 @@
 #include <cstdint>
 #include <memory>
 
+extern "C" {
+#include <libgen.h>
+}
+
 #ifndef VM_TRACE_FST
 // emulate new verilator behavior for legacy versions
 #define VM_TRACE_FST 0
