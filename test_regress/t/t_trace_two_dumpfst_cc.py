@@ -21,7 +21,10 @@ test.compile(make_main=False,
              verilator_flags2=['--trace-fst --trace-threads 1 -DTEST_FST'])
 
 test.run(logfile=test.obj_dir + "/make_first_ALL.log",
-         cmd=["make", "-C", test.obj_dir, "-f", "Vt_trace_two_b.mk", "Vt_trace_two_b__ALL.cpp"])
+         cmd=[
+             os.environ["MAKE"], "-C", test.obj_dir, "-f", "Vt_trace_two_b.mk",
+             "Vt_trace_two_b__ALL.cpp"
+         ])
 
 test.compile(
     make_main=False,
