@@ -189,10 +189,25 @@ class LinkResolveVisitor final : public VNVisitor {
     }
     void visit(AstNodeFTaskRef* nodep) override {
         VL_RESTORER(m_randomizedVar);
-        if (const AstMethodCall* const methodcallp = VN_CAST(nodep, MethodCall)) {
-            if (methodcallp->name() == "randomize") {
+        if (nodep->name() == "randomize") {
+            if (const AstMethodCall* const methodcallp = VN_CAST(nodep, MethodCall)) {
                 if (const AstVarRef* const varRefp = VN_CAST(methodcallp->fromp(), VarRef)) {
-                    m_randomizedVar = varRefp->varp();
+                    if (AstVar* const varp = varRefp->varp()) {
+                        if (const AstClassRefDType* const classDTypep
+                            = VN_CAST(varp->childDTypep(), ClassRefDType)) {
+                            if (const AstClass* const classp = classDTypep->classp()) {
+                                bool found = false;
+                                for (const AstNode* stmtp = classp->stmtsp(); stmtp;
+                                     stmtp = stmtp->nextp()) {
+                                    if (stmtp->name() == varRefp->name()) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (!found) m_randomizedVar = varp;
+                            }
+                        }
+                    }
                 }
             }
         }
