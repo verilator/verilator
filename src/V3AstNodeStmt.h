@@ -815,6 +815,13 @@ public:
     ASTGEN_MEMBERS_AstSetuphold;
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
+class AstSplitPlaceholder final : public AstNodeStmt {
+public:
+    // Dummy node used within V3Split; never exists outside of V3Split.
+    explicit AstSplitPlaceholder(FileLine* fl)
+        : ASTGEN_SUPER_SplitPlaceholder(fl) {}
+    ASTGEN_MEMBERS_AstSplitPlaceholder;
+};
 class AstStackTraceT final : public AstNodeStmt {
     // $stacktrace used as task
 public:
