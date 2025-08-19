@@ -54,6 +54,52 @@ public:
     bool unnamed() const { return m_unnamed; }
     bool isFirstInMyListOfStatements(AstNode* nodep) const override { return nodep == stmtsp(); }
 };
+class AstNodeCoverDecl VL_NOT_FINAL : public AstNode {
+    // Coverage analysis point declaration
+    //
+    // [After V3CoverageJoin] Duplicate declaration to get data from instead
+    // @astgen ptr := m_dataDeclp : Optional[AstNodeCoverDecl]
+    string m_page;  // Coverage point's page tag
+    string m_text;  // Coverage point's text
+    string m_hier;  // Coverage point's hierarchy
+    int m_binNum = 0;  // Set by V3EmitCSyms to tell final V3Emit what to increment
+public:
+    AstNodeCoverDecl(VNType t, FileLine* fl, const string& page, const string& comment)
+        : AstNode(t, fl)
+        , m_page{page}
+        , m_text{comment} {}
+    ASTGEN_MEMBERS_AstNodeCoverDecl;
+    const char* broken() const override {
+        if (m_dataDeclp
+            && (m_dataDeclp == this || m_dataDeclp->m_dataDeclp)) {  // Avoid O(n^2) accessing
+            v3fatalSrc("dataDeclp should point to real data, not be a list: " << cvtToHex(this));
+        }
+        return nullptr;
+    }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    int instrCount() const override { return 1 + 2 * INSTR_COUNT_LD; }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
+    int binNum() const { return m_binNum; }
+    void binNum(int flag) { m_binNum = flag; }
+    virtual int size() const = 0;
+    const string& comment() const { return m_text; }  // text to insert in code
+    const string& page() const { return m_page; }
+    const string& hier() const { return m_hier; }
+    void hier(const string& flag) { m_hier = flag; }
+    void comment(const string& flag) { m_text = flag; }
+    bool sameNode(const AstNode* samep) const override {
+        const AstNodeCoverDecl* const asamep = VN_DBG_AS(samep, NodeCoverDecl);
+        return (fileline() == asamep->fileline() && hier() == asamep->hier()
+                && comment() == asamep->comment() && page() == asamep->page());
+    }
+    bool isPredictOptimizable() const override { return false; }
+    void dataDeclp(AstNodeCoverDecl* nodep) { m_dataDeclp = nodep; }
+    // dataDecl nullptr means "use this one", but often you want "this" to
+    // indicate to get data from here
+    AstNodeCoverDecl* dataDeclNullp() const { return m_dataDeclp; }
+    AstNodeCoverDecl* dataDeclThisp() { return dataDeclNullp() ? dataDeclNullp() : this; }
+};
 class AstNodeFTask VL_NOT_FINAL : public AstNode {
     // Output variable in functions, nullptr in tasks
     // @astgen op1 := fvarp : Optional[AstNode]
@@ -2246,6 +2292,49 @@ public:
     void dumpJson(std::ostream& str) const override;
     VJoinType joinType() const { return m_joinType; }
     void joinType(const VJoinType& flag) { m_joinType = flag; }
+};
+
+// === AstNodeCoverDecl ===
+class AstCoverOtherDecl final : public AstNodeCoverDecl {
+    // Coverage analysis point declaration
+    // Used for other than toggle types of coverage
+    string m_linescov;
+    int m_offset;  // Offset column numbers to uniq-ify IFs
+public:
+    AstCoverOtherDecl(FileLine* fl, const string& page, const string& comment,
+                      const string& linescov, int offset)
+        : ASTGEN_SUPER_CoverOtherDecl(fl, page, comment)
+        , m_linescov{linescov}
+        , m_offset{offset} {}
+    ASTGEN_MEMBERS_AstCoverOtherDecl;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    int offset() const { return m_offset; }
+    int size() const override { return 1; }
+    const string& linescov() const { return m_linescov; }
+    bool sameNode(const AstNode* samep) const override {
+        const AstCoverOtherDecl* const asamep = VN_DBG_AS(samep, CoverOtherDecl);
+        return AstNodeCoverDecl::sameNode(samep) && linescov() == asamep->linescov();
+    }
+};
+class AstCoverToggleDecl final : public AstNodeCoverDecl {
+    // Coverage analysis point declaration
+    // Used for toggle coverage
+    const VNumRange m_range;  // Packed array range covering each toggle bit
+public:
+    AstCoverToggleDecl(FileLine* fl, const string& page, const string& comment,
+                       const VNumRange& range)
+        : ASTGEN_SUPER_CoverToggleDecl(fl, page, comment)
+        , m_range{range} {}
+    ASTGEN_MEMBERS_AstCoverToggleDecl;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    int size() const override { return m_range.elements(); }
+    const VNumRange& range() const { return m_range; }
+    bool sameNode(const AstNode* samep) const override {
+        const AstCoverToggleDecl* const asamep = VN_DBG_AS(samep, CoverToggleDecl);
+        return AstNodeCoverDecl::sameNode(samep) && range() == asamep->range();
+    }
 };
 
 // === AstNodeFTask ===
