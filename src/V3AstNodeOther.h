@@ -1873,6 +1873,7 @@ class AstVar final : public AstNode {
     bool m_ignorePostRead : 1;  // Ignore reads in 'Post' blocks during ordering
     bool m_ignorePostWrite : 1;  // Ignore writes in 'Post' blocks during ordering
     bool m_ignoreSchedWrite : 1;  // Ignore writes in scheduling (for special optimizations)
+    bool m_dfgMultidriven : 1;  // Singal is multidriven, used by DFG to avoid repeat processing
 
     void init() {
         m_ansi = false;
@@ -1921,6 +1922,7 @@ class AstVar final : public AstNode {
         m_ignorePostRead = false;
         m_ignorePostWrite = false;
         m_ignoreSchedWrite = false;
+        m_dfgMultidriven = false;
         m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
     }
 
@@ -2084,6 +2086,8 @@ public:
     void setIgnorePostWrite() { m_ignorePostWrite = true; }
     bool ignoreSchedWrite() const { return m_ignoreSchedWrite; }
     void setIgnoreSchedWrite() { m_ignoreSchedWrite = true; }
+    bool dfgMultidriven() const { return m_dfgMultidriven; }
+    void setDfgMultidriven() { m_dfgMultidriven = true; }
 
     // METHODS
     void name(const string& name) override { m_name = name; }

@@ -42,6 +42,35 @@ module t(
     assign x[2][3:2] = ~i[1:0];
     assign x[2][1:0] = ~i[1:0];
 
-    assign o = a ^ u[3] ^ v[3] ^ w[3] ^ x[3];
+    logic [10:0] y;
+    always_comb begin
+      y = i;
+      {y[1:0], y[2:1]} = i[3:0] + 4'd5;
+    end
 
+    logic [10:0] z;
+    always_comb begin
+      z[2:0] = i[2:0];
+      z[7:5] = i[7:5];
+    end
+    always_comb begin
+      z[6:4] = i[6:4];
+      z[3:1] = i[3:1];
+    end
+    assign z[10:7] = i[10:7];
+
+    sub sub_1(i);
+    assign sub_1.a = i;
+
+    sub sub_2(i);
+    assign sub_2.a[10:5] = i[10:5];
+    assign sub_2.a[3:0] = i[3:0];
+
+    assign o = a ^ u[3] ^ v[3] ^ w[3] ^ x[3] ^ y ^ z ^ sub_1.a ^ sub_2.a;
+
+endmodule
+
+module sub(input wire [10:0] i);
+    logic [10:0] a;
+    assign a[5:2] = i[5:2];
 endmodule

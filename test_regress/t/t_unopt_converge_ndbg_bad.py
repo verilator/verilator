@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_unopt_converge.v"
 
-test.compile(v_flags2=['+define+ALLOW_UNOPT'], make_flags=['CPPFLAGS_ADD=-UVL_DEBUG'])
+test.compile(v_flags2=['+define+ALLOW_UNOPT', "-fno-dfg"], make_flags=['CPPFLAGS_ADD=-UVL_DEBUG'])
 
 if test.vlt_all:
     test.execute(fails=True, expect_filename=test.golden_filename)

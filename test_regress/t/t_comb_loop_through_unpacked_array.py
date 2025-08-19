@@ -11,6 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=["-Wno-UNOPTFLAT"])
+test.compile(verilator_flags2=["-Wno-UNOPTFLAT", "-fno-dfg"])
 
 test.passes()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2024 by Wilson Snyder. This program is free software; you
+# Copyright 2025 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -17,38 +17,27 @@ root = ".."
 if not os.path.exists(root + "/.git"):
     test.skip("Not in a git repository")
 
-# Read optimizations
-optimizations = []
-
-hdrFile = "../src/V3DfgPeepholePatterns.h"
-with open(hdrFile, 'r', encoding="utf8") as hdrFh:
-    prevOpt = ""
-    lineno = 0
-    for line in hdrFh:
-        lineno += 1
-        m = re.search(r'^\s*_FOR_EACH_DFG_PEEPHOLE_OPTIMIZATION_APPLY\(macro, (\w+)\)', line)
-        if not m:
-            continue
-        opt = m.group(1)
-        if prevOpt > opt:
-            test.error(hdrFile + ":" + str(lineno) + ": '" + opt + "; is not in sorted order")
-        prevOpt = opt
-        optimizations.append(opt)
-
-if len(optimizations) < 1:
-    test.error("no optimizations defined in " + hdrFile)
-
 # Generate the equivalence checks and declaration boilerplate
 rdFile = test.top_filename
 plistFile = test.obj_dir + "/portlist.vh"
 pdeclFile = test.obj_dir + "/portdecl.vh"
 checkFile = test.obj_dir + "/checks.h"
+nAlwaysSynthesized = 0
+nAlwaysNotSynthesized = 0
+nAlwaysReverted = 0
 with open(rdFile, 'r', encoding="utf8") as rdFh, \
      open(plistFile, 'w', encoding="utf8") as plistFh, \
      open(pdeclFile, 'w', encoding="utf8") as pdeclFh, \
      open(checkFile, 'w', encoding="utf8") as checkFh:
     for line in rdFh:
-        m = re.search(r'^\s*.*`signal\((\w+),', line)
+        if re.search(r'^\s*always.*//\s*nosynth$', line):
+            nAlwaysNotSynthesized += 1
+        elif re.search(r'^\s*always.*//\s*revert$', line):
+            nAlwaysReverted += 1
+        elif re.search(r'^\s*always', line):
+            nAlwaysSynthesized += 1
+        line = line.split("//")[0]
+        m = re.search(r'`signal\((\w+),', line)
         if not m:
             continue
         sig = m.group(1)
@@ -70,39 +59,39 @@ test.compile(verilator_flags2=[
     "-fno-dfg",
     "+incdir+" + test.obj_dir,
     "-Mdir", test.obj_dir + "/obj_ref",
-    "--prefix", "Vref"
+    "--prefix", "Vref",
+    "-Wno-UNOPTFLAT"
 ])  # yapf:disable
+
+test.file_grep_not(test.obj_dir + "/obj_ref/Vref__stats.txt", r'DFG.*Synthesis')
 
 # Compile optimized - also builds executable
 test.compile(verilator_flags2=[
     "--stats",
     "--build",
+    "--fdfg-synthesize-all",
+    "-fno-dfg-post-inline",
+    "-fno-dfg-scoped",
     "--exe",
     "+incdir+" + test.obj_dir,
     "-Mdir", test.obj_dir + "/obj_opt",
     "--prefix", "Vopt",
     "-fno-const-before-dfg",  # Otherwise V3Const makes testing painful
-    "-fdfg-synthesize-all",
-    "--dump-dfg",  # To fill code coverage
+    "--debug", "--debugi", "0", "--dumpi-tree", "0",
     "-CFLAGS \"-I .. -I ../obj_ref\"",
     "../obj_ref/Vref__ALL.a",
     "../../t/" + test.name + ".cpp"
 ])  # yapf:disable
 
-
-def check(name):
-    name = name.lower()
-    name = re.sub(r'_', ' ', name)
-    test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt",
-                   r'DFG\s+(pre inline|post inline|scoped) Peephole, ' + name + r'\s+([1-9]\d*)')
-
-
-# Check all optimizations defined in
-for opt in optimizations:
-    check(opt)
-
-test.file_grep_not(test.obj_dir + "/obj_opt/Vopt__stats.txt",
-                   r'DFG.*non-representable.*\s[1-9]\d*$')
+test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt",
+               r'DFG pre inline Synthesis, synt / always blocks considered\s+(\d+)$',
+               nAlwaysSynthesized + nAlwaysReverted + nAlwaysNotSynthesized)
+test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt",
+               r'DFG pre inline Synthesis, synt / always blocks synthesized\s+(\d+)$',
+               nAlwaysSynthesized + nAlwaysReverted)
+test.file_grep(test.obj_dir + "/obj_opt/Vopt__stats.txt",
+               r'DFG pre inline Synthesis, synt / reverted \(multidrive\)\s+(\d)$',
+               nAlwaysReverted)
 
 # Execute test to check equivalence
 test.execute(executable=test.obj_dir + "/obj_opt/Vopt")

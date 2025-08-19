@@ -9,6 +9,8 @@
 
 import vltest_bootstrap
 
+import os
+
 test.scenarios('vlt_all')
 test.sim_time = 2000000
 
@@ -65,8 +67,6 @@ test.compile(verilator_flags2=[
     "--stats",
     "--build",
     "-fno-dfg-break-cycles",
-    "-fno-dfg-post-inline",
-    "-fno-dfg-scoped",
     "+incdir+" + test.obj_dir,
     "-Mdir", test.obj_dir + "/obj_ref",
     "--prefix", "Vref",
@@ -100,6 +100,9 @@ coveredLines = set()
 
 
 def readCovered(fileName):
+    if not os.path.exists(fileName):
+        test.error_keep_going("Missing coverage file: " + fileName)
+        return
     with open(fileName, 'r', encoding="utf8") as fd:
         for line in fd:
             coveredLines.add(int(line.strip()))

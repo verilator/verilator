@@ -103,9 +103,22 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
     DfgVertex* const sentinelp = reinterpret_cast<DfgVertex*>(&dfg);
     DfgVertex* workListp = sentinelp;
 
-    // Add all unused vertices to the work list. This also allocates all DfgVertex::user.
+    // Add all unused operation vertices to the work list. This also allocates all DfgVertex::user.
     for (DfgVertex& vtx : dfg.opVertices()) {
         if (vtx.hasSinks()) {
+            // This vertex is used. Allocate user, but don't add to work list.
+            vtx.setUser<DfgVertex*>(nullptr);
+        } else {
+            // This vertex is unused. Add to work list.
+            vtx.setUser<DfgVertex*>(workListp);
+            workListp = &vtx;
+        }
+    }
+
+    // Also add all unused temporaries created during synthesis
+    for (DfgVertexVar& vtx : dfg.varVertices()) {
+        if (!vtx.tmpForp()) continue;
+        if (vtx.hasSinks() || vtx.hasDfgRefs()) {
             // This vertex is used. Allocate user, but don't add to work list.
             vtx.setUser<DfgVertex*>(nullptr);
         } else {
@@ -123,12 +136,23 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
         workListp = vtxp->getUser<DfgVertex*>();
         // Prefetch next item
         VL_PREFETCH_RW(workListp);
+        // This item is now off the work list
+        vtxp->setUser<DfgVertex*>(nullptr);
+        // DfgLogic should have been synthesized or removed
+        UASSERT_OBJ(!vtxp->is<DfgLogic>(), vtxp, "Should not be DfgLogic");
         // If used, then nothing to do, so move on
         if (vtxp->hasSinks()) continue;
+        // If temporary used in another graph, we need to keep it
+        if (const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>()) {
+            UASSERT_OBJ(varp->tmpForp(), varp, "Non-temporary variable should not be visited");
+            if (varp->hasDfgRefs()) continue;
+        }
         // Add sources of unused vertex to work list
         vtxp->forEachSource([&](DfgVertex& src) {
-            // We only remove actual operation vertices in this loop
-            if (src.is<DfgConst>() || src.is<DfgVertexVar>()) return;
+            // We only remove actual operation vertices and synthesis temporaries in this loop
+            if (src.is<DfgConst>()) return;
+            const DfgVertexVar* const varp = src.cast<DfgVertexVar>();
+            if (varp && !varp->tmpForp()) return;
             // If already in work list then nothing to do
             if (src.getUser<DfgVertex*>()) return;
             // Actually add to work list.
@@ -282,7 +306,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
 
         // Required data types
         AstNodeDType* const idxDTypep = srcp->dtypep();
-        AstNodeDType* const bitDTypep = DfgVertex::dtypeForWidth(1);
+        AstNodeDType* const bitDTypep = DfgGraph::dtypePacked(1);
         AstUnpackArrayDType* const tabDTypep = new AstUnpackArrayDType{
             flp, bitDTypep, new AstRange{flp, static_cast<int>(nBits - 1), 0}};
         v3Global.rootp()->typeTablep()->addTypesp(tabDTypep);
@@ -453,8 +477,13 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
         DfgVarPacked* const varp = vtxp->cast<DfgVarPacked>();
         if (!varp) continue;
 
-        // Can't remove if it has external drivers
-        if (!varp->isDrivenFullyByDfg()) continue;
+        if (!varp->tmpForp()) {
+            // Can't remove regular variable if it has external drivers
+            if (!varp->isDrivenFullyByDfg()) continue;
+        } else {
+            // Can't remove partially driven used temporaries
+            if (!varp->isDrivenFullyByDfg() && varp->hasSinks()) continue;
+        }
 
         // Can't remove if referenced external to the module/netlist
         if (varp->hasExtRefs()) continue;

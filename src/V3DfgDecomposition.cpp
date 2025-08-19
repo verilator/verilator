@@ -199,6 +199,7 @@ class ExtractCyclicComponents final {
             }
             UASSERT_OBJ(clonep, &vtx, "Unhandled 'DfgVertexVar' sub-type");
             clonep->setUser<uint64_t>(component);
+            clonep->tmpForp(vtx.tmpForp());
         }
         return *clonep;
     }

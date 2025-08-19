@@ -4,8 +4,6 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-// verilator lint_off UNOPTFLAT
-
 module t(i, o);
   localparam N = 2000; // Deliberately not multiple of 32
 

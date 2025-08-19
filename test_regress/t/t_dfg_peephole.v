@@ -36,12 +36,17 @@ module t (
    wire        logic signed [63:0] sconst_a;
    wire        logic signed [63:0] sconst_b;
                logic [63:0] array [3:0];
+               logic [63:0] unitArrayWhole [0:0];
+               logic [63:0] unitArrayParts [0:0];
    assign array[0] = (rand_a << 32) | (rand_a >> 32);
    assign array[1] = (rand_a << 16) | (rand_a >> 48);
    assign array[2][3:0] = rand_a[3:0];
    always @(rand_b) begin  // Intentional non-combinational partial driver
      array[2][7:4] = rand_a[7:4];
    end
+   assign unitArrayWhole[0] = rand_a;
+   assign unitArrayParts[0][1] = rand_a[1];
+   assign unitArrayParts[0][9] = rand_a[9];
 
    `signal(FOLD_UNARY_LogNot,      !const_a[0]);
    `signal(FOLD_UNARY_Negate,      -const_a);
@@ -188,8 +193,10 @@ module t (
    `signal(REPLACE_COND_WITH_THEN_BRANCH_ONES, rand_a[0] ? 1'd1 : rand_a[1]);
    `signal(REPLACE_COND_WITH_ELSE_BRANCH_ZERO, rand_a[0] ? rand_a[1] : 1'd0);
    `signal(REPLACE_COND_WITH_ELSE_BRANCH_ONES, rand_a[0] ? rand_a[1] : 1'd1);
-   `signal(INLINE_ARRAYSEL, array[0]);
-   `signal(NO_INLINE_ARRAYSEL_PARTIAL, array[2]);
+   `signal(INLINE_ARRAYSEL_SPLICE, array[0]);
+   `signal(NO_INLINE_ARRAYSEL_SPLICE_PARTIAL, array[2]);
+   `signal(INLINE_ARRAYSEL_UNIT, unitArrayWhole[0]);
+   `signal(NO_INLINE_ARRAYSEL_UNIT_PARTIAL, unitArrayParts[0]);
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_AND, (&(rand_a + 64'd105)) & (&(rand_b + 64'd108)));
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_OR,  (|(rand_a + 64'd106)) | (|(rand_b + 64'd109)));
    `signal(PUSH_BITWISE_THROUGH_REDUCTION_XOR, (^(rand_a + 64'd107)) ^ (^(rand_b + 64'd110)));
@@ -228,6 +235,15 @@ module t (
    `signal(PUSH_SEL_THROUGH_COND, sel_from_cond[2]);
    `signal(PUSH_SEL_THROUGH_SHIFTL, sel_from_shiftl[20:0]);
    `signal(REPLACE_SEL_FROM_SEL, sel_from_sel[4:3]);
+
+   logic [2:0] sel_from_partial_tmp;;
+   always_comb begin
+     sel_from_partial_tmp[1:0] = 2'd0;
+     if (rand_a[0]) begin
+       sel_from_partial_tmp[0] = rand_b[0];
+     end
+   end
+   `signal(PUSH_SEL_THROUGH_SPLICE, sel_from_partial_tmp[1:0]);
 
    // Asscending ranges
    `signal(ASCENDNG_SEL, arand_a[0:4]);

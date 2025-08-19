@@ -1266,9 +1266,10 @@ def write_dfg_ast_to_dfg(filename):
                 "    Dfg{t}* const vtxp = makeVertex<Dfg{t}>(nodep, m_dfg);\n".format(t=node.name))
             fh.write("    if (!vtxp) {\n")
             fh.write("        m_foundUnhandled = true;\n")
-            fh.write("        ++m_ctx.m_nonRepNode;\n")
+            fh.write("        ++m_ctx.m_conv.nonRepNode;\n")
             fh.write("        return;\n")
             fh.write("    }\n\n")
+            fh.write("    m_logicp->synth().emplace_back(vtxp);")
             for i in range(node.arity):
                 fh.write(
                     "    vtxp->relinkSource<{i}>(nodep->op{j}p()->user2u().to<DfgVertex*>());\n".

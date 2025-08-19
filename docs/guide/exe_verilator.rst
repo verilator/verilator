@@ -564,6 +564,10 @@ Summary:
    Any :code:`$VAR`, :code:`$(VAR)`, or :code:`${VAR}` will be replaced
    with the specified environment variable.
 
+.. option:: -fdfg-synthesize-all
+
+   Rarely needed. Attempt to synthesize all combinational logic in DFG.
+
 .. option:: -FI <file>
 
    Force include of the specified C++ header file.  All generated C++ files

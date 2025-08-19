@@ -12,6 +12,6 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.top_filename = "t/t_unopt_converge.v"
 
-test.compile(fails=True, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=["-fno-dfg"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

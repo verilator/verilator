@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(fails=True, expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["-fdfg-synthesize-all", "-fno-const-before-dfg"],
+          fails=True,
+          expect_filename=test.golden_filename)
 
 test.passes()

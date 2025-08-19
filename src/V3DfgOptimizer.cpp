@@ -252,7 +252,11 @@ class DataflowOptimize final {
     V3DfgContext m_ctx;  // The context holding values that need to persist across multiple graphs
 
     void optimize(DfgGraph& dfg) {
-        if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "whole-input");
+        if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "dfg-in");
+
+        // Synthesize DfgLogic vertices
+        V3DfgPasses::synthesize(dfg, m_ctx);
+        if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "synth");
 
         // Extract the cyclic sub-graphs. We do this because a lot of the optimizations assume a
         // DAG, and large, mostly acyclic graphs could not be optimized due to the presence of
@@ -310,7 +314,7 @@ class DataflowOptimize final {
         // Merge back under the main DFG (we will convert everything back in one go)
         dfg.mergeGraphs(std::move(cyclicComponents));
 
-        if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "whole-optimized");
+        if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "dfg-out");
     }
 
     DataflowOptimize(AstNetlist* netlistp, const string& label)

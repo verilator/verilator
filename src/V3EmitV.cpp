@@ -1018,8 +1018,8 @@ class EmitVStreamVisitor final : public EmitVBaseVisitorConst {
     void putqs(AstNode*, const string& str) override { putbs(str); }
 
 public:
-    EmitVStreamVisitor(const AstNode* nodep, std::ostream& os, bool tracking)
-        : EmitVBaseVisitorConst{false, false}
+    EmitVStreamVisitor(const AstNode* nodep, std::ostream& os, bool tracking, bool suppressUnknown)
+        : EmitVBaseVisitorConst{false, suppressUnknown}
         , m_os{os, V3OutFormatter::LA_VERILOG}
         , m_tracking{tracking} {
         iterateConst(const_cast<AstNode*>(nodep));
@@ -1031,7 +1031,11 @@ public:
 // EmitV class functions
 
 void V3EmitV::verilogForTree(const AstNode* nodep, std::ostream& os) {
-    { EmitVStreamVisitor{nodep, os, /* tracking: */ false}; }
+    { EmitVStreamVisitor{nodep, os, /* tracking: */ false, false}; }
+}
+
+void V3EmitV::debugVerilogForTree(const AstNode* nodep, std::ostream& os) {
+    { EmitVStreamVisitor{nodep, os, /* tracking: */ true, true}; }
 }
 
 void V3EmitV::emitvFiles() {

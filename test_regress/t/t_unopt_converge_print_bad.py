@@ -13,7 +13,7 @@ test.scenarios('simulator')
 test.top_filename = "t/t_unopt_converge.v"
 #test.verilated_debug = 1
 
-test.compile(v_flags2=['+define+ALLOW_UNOPT --output-split 0'],
+test.compile(v_flags2=['+define+ALLOW_UNOPT', '--output-split 0', "-fno-dfg"],
              make_flags=['CPPFLAGS_ADD=-DVL_DEBUG'])
 
 if test.vlt_all:
