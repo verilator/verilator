@@ -2914,7 +2914,7 @@ void AstBegin::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 void AstNodeCoverDecl::dump(std::ostream& str) const {
-    this->AstNodeStmt::dump(str);
+    this->AstNode::dump(str);
     if (!page().empty()) str << " page=" << page();
     if (this->dataDeclNullp()) {
         static bool s_recursing = false;
