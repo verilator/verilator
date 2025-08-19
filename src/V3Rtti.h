@@ -22,110 +22,78 @@
 #include <cstdint>
 #include <type_traits>
 
-// Holds list of types as template parameter pack.
-// Useful in compile-time code generation.
-template <typename... TN>
-struct VTypeList final {
-    template <typename... UN>
-    constexpr VTypeList<TN..., UN...> operator+(VTypeList<UN...>) const {
-        return {};
-    }
-};
+namespace V3Rtti {
 
-// Holds one type.
-// Can be safely used as a return or argument type, and even instantiated, without triggering any
-// potential limitations or effects of the held type.
+// Use 'V3Rtti::isInstanceOf<T>(objp)' to check if 'objp' is of subtype 'T' (downcasting)
+template <typename SubClass, typename SuperClass>
+bool isInstanceOf(SuperClass* objp) {
+    static_assert(std::is_base_of<SuperClass, SubClass>::value, "Impossible 'isInstanceOf'");
+    static_assert(!std::is_same<SuperClass, SubClass>::value, "Useless 'isInstanceOf'");
+    static_assert(std::is_same<  //
+                      typename std::remove_cv<SubClass>::type,  //
+                      typename SubClass::V3RttiThisClass  //
+                      >::value,
+                  "Missing VL_RTTI_IMPL(...) in 'SubClass'");
+    return objp->v3RttiIsInstanceOfImpl(SubClass::v3RttiClassId());
+}
+
+namespace internal {
+
+// Returns true iff 'id' equals the 'rttiClassId()' of either 'T', or any of its base classes
 template <typename T>
-struct VTypeWrapper final {
-    using type_t = T;
-};
-
-// Implementation details of other constructs defined in this header.
-namespace V3RttiInternal {
-
-// Helper function for extracting first type from VTypeList.
-template <typename T0, typename... TN>
-static inline constexpr VTypeWrapper<T0> vlTypeListFront(VTypeList<T0, TN...>) {
-    return {};
+inline bool matchClassId(uintptr_t id) VL_PURE {
+    return id == T::v3RttiClassId() || matchClassId<typename T::V3RttiBaseClass>(id);
 }
 
-// Overload for empty type list. Returns false.
-inline static constexpr bool isClassIdOfOneOf(uintptr_t id, VTypeList<>) VL_PURE { return false; }
-
-// Returns true iff `id` has the same value as `T::rttiClassId()`, where `T` is any type held by
-// `VTypeList` object passed as the second argument.
-template <typename Base0, typename... BaseN>
-inline static constexpr bool isClassIdOfOneOf(uintptr_t id, VTypeList<Base0, BaseN...>) VL_PURE {
-    return id == Base0::rttiClassId() || isClassIdOfOneOf(id, VTypeList<BaseN...>{});
+// Specialization for the root class, which have 'void' for 'V3RttiBaseClass'
+template <>
+inline bool matchClassId<void>(uintptr_t) VL_PURE {
+    return false;
 }
 
-}  // namespace V3RttiInternal
+}  // namespace internal
 
-// Alias for the first (frontmost) type held by type list `TL`.
-template <typename TL>
-using VTypeListFront = typename decltype(::V3RttiInternal::vlTypeListFront(TL{}))::type_t;
-
-// `VTypeList` holding types from type lists `TL1` followed by types from type list `TL2`.
-template <typename TL1, typename TL2>
-using VJoinedTypeLists = decltype(TL1{} + TL2{});
+}  // namespace V3Rtti
 
 // Common code used by VL_RTTI_COMMON_IMPL and VL_RTTI_COMMON_IMPL_BASE.
-#define V3RTTIINTERNAL_VL_RTTI_COMMON_IMPL(ThisClass) \
-private: \
+#define V3RTTIINTERNAL_VL_RTTI_COMMON_IMPL(ThisClass, OVERRIDE) \
+    using V3RttiThisClass = ThisClass; \
     /* A type used only for implementation of the static_assert below. */ \
     struct RttiUniqueTypeForThisClass {}; \
     static_assert( \
         std::is_same<RttiUniqueTypeForThisClass, ThisClass::RttiUniqueTypeForThisClass>::value, \
         "'ThisClass' argument (" #ThisClass ") does not match the class name"); \
-\
-public: \
-    /* Returns unique ID of the class. Useful with `isInstanceOfClassWithId()` method. */ \
-    static uintptr_t rttiClassId() VL_PURE { \
-        /* The only purpose of the following variable is to occupy an unique memory address. */ \
-        /* This address is used as an unique class ID. */ \
-        static char aStaticVariable; \
-        return reinterpret_cast<uintptr_t>(&aStaticVariable); \
+    /* The implementation can pick up the private members */ \
+    template <typename T> \
+    friend bool V3Rtti::internal::matchClassId(uintptr_t id); \
+    template <typename T, typename U> \
+    friend bool V3Rtti::isInstanceOf(U*); \
+    /* Returns unique type ID of the class. */ \
+    static uintptr_t v3RttiClassId() VL_PURE { \
+        /* Don't complain this function is unused */ (void)&v3RttiClassId; \
+        /* The address of this static variable is used as the unique class type ID. */ \
+        static char s_vlrttiClassId; \
+        return reinterpret_cast<uintptr_t>(&s_vlrttiClassId); \
+    } \
+    /* Dispatch to matchClassId with the correct sub type (this type) */ \
+    virtual bool v3RttiIsInstanceOfImpl(uintptr_t id) const OVERRIDE VL_PURE { \
+        return ::V3Rtti::internal::matchClassId<ThisClass>(id); \
     }
 
-// Call this macro at the beginning of class definition if the class derives from a
-// class with VL_RTTI_IMPL or VL_RTTI_IMPL_BASE calls.
+// Call this macro at the beginning of class definition if the class derives
+// from a class with VL_RTTI_IMPL or VL_RTTI_IMPL_BASE calls.
 #define VL_RTTI_IMPL(ThisClass, DirectBaseClass) \
-    V3RTTIINTERNAL_VL_RTTI_COMMON_IMPL(ThisClass) \
-    static_assert( \
-        std::is_same<DirectBaseClass, \
-                     VTypeListFront<DirectBaseClass::RttiThisAndBaseClassesList>>::value, \
-        "Missing VL_RTTI_IMPL(...) in the direct base class (" #DirectBaseClass ")"); \
-\
-public: \
-    /* Type list containing this class and all classes from the inheritance chain. */ \
-    using RttiThisAndBaseClassesList \
-        = VJoinedTypeLists<VTypeList<ThisClass>, \
-                           typename DirectBaseClass::RttiThisAndBaseClassesList>; \
-\
-protected: \
-    /* Returns true iff `id` has the same value as `T::rttiClassId()`, where `T` is either this \
-     * class or any class from this class' inheritance chain. */ \
-    bool isInstanceOfClassWithId(uintptr_t id) const override VL_PURE { \
-        return ::V3RttiInternal::isClassIdOfOneOf(id, RttiThisAndBaseClassesList{}); \
-    } \
-\
-private: /* Revert to private visibility after this macro */
+private: \
+    using V3RttiBaseClass = DirectBaseClass; \
+    V3RTTIINTERNAL_VL_RTTI_COMMON_IMPL(ThisClass, override) \
+private:
 
-// Call this macro at the beginning of a base class to implement class type queries using
-// `p->isInstanceOfClassWithId(ClassName::rttiClassId())`.
+// Call this macro at the beginning of a base class to implement class type
+// usable with V3Rtti::InstanceOf
 #define VL_RTTI_IMPL_BASE(ThisClass) \
-    V3RTTIINTERNAL_VL_RTTI_COMMON_IMPL(ThisClass) \
-public: \
-    /* Type list containing this class and all classes from the inheritance chain. */ \
-    using RttiThisAndBaseClassesList = VTypeList<ThisClass>; \
-\
-protected: \
-    /* Returns true iff `id` has the same value as value returned by this class' \
-       `rttiClassId()` method. */ \
-    virtual bool isInstanceOfClassWithId(uintptr_t id) const VL_PURE { \
-        return id == rttiClassId(); \
-    } \
-\
-private: /* Revert to private visibility after this macro */
+private: \
+    using V3RttiBaseClass = void; \
+    V3RTTIINTERNAL_VL_RTTI_COMMON_IMPL(ThisClass, /* base */) \
+private:
 
 #endif  // Guard

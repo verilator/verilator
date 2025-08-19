@@ -140,10 +140,7 @@ public:
     bool is() const {
         static_assert(std::is_base_of<V3GraphEdge, T>::value,
                       "'T' must be a subtype of V3GraphEdge");
-        static_assert(std::is_same<typename std::remove_cv<T>::type,
-                                   VTypeListFront<typename T::RttiThisAndBaseClassesList>>::value,
-                      "Missing VL_RTTI_IMPL(...) call in 'T'");
-        return this->isInstanceOfClassWithId(T::rttiClassId());
+        return V3Rtti::isInstanceOf<T>(this);
     }
 
     // Return cast to subtype T and assert of that type
@@ -245,10 +242,7 @@ public:
     bool is() const {
         static_assert(std::is_base_of<V3GraphVertex, T>::value,
                       "'T' must be a subtype of V3GraphVertex");
-        static_assert(std::is_same<typename std::remove_cv<T>::type,
-                                   VTypeListFront<typename T::RttiThisAndBaseClassesList>>::value,
-                      "Missing VL_RTTI_IMPL(...) call in 'T'");
-        return this->isInstanceOfClassWithId(T::rttiClassId());
+        return V3Rtti::isInstanceOf<T>(this);
     }
 
     // Return cast to subtype T and assert of that type
