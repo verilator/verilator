@@ -367,7 +367,7 @@ class EmitCImp final : EmitCFunc {
             puts("if (!fullhier.empty() && fullhier[0] == '.') fullhier = fullhier.substr(1);\n");
             puts("std::string commentWithIndex = commentp;\n");
             puts("if (ranged) commentWithIndex += '[' + std::to_string(i) + ']';\n");
-            puts("commentWithIndex += '_' + std::to_string(j);\n");
+            puts("commentWithIndex += j ? \":0->1\" : \":1->0\";\n");
             // Used for second++ instantiation of identical bin
             puts("if (!enable) count32p = &fake_zero_count;\n");
             puts("*count32p = 0;\n");
