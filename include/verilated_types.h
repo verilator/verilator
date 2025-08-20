@@ -621,11 +621,8 @@ public:
     T_Value& atWriteAppend(int32_t index) {
         // cppcheck-suppress variableScope
         static thread_local T_Value t_throwAway;
+        if (index == m_deque.size()) push_back(atDefault());
         if (VL_UNLIKELY(index < 0 || index >= m_deque.size())) {
-            if (index == m_deque.size()) {
-                push_back(atDefault());
-                return m_deque[index];
-            }
             t_throwAway = atDefault();
             return t_throwAway;
         }
