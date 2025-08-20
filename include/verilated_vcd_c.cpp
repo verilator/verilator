@@ -490,6 +490,7 @@ VerilatedVcd::Buffer* VerilatedVcd::getTraceBuffer(uint32_t fidx) {
         // Note: This is called from VerilatedVcd::dump, which already holds the lock
         // If no buffer available, allocate a new one
         if (m_freeBuffers.empty()) {
+            // cppcheck-suppress unreadVariable  // cppcheck bug, used below
             constexpr size_t pageSize = 4096;
             // 4 * m_maxSignalBytes, so we can reserve 2 * m_maxSignalBytes at the end for safety
             size_t startingSize = roundUpToMultipleOf<pageSize>(4 * m_maxSignalBytes);

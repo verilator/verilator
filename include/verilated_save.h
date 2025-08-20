@@ -47,8 +47,10 @@ protected:
     std::string m_filename;  // Filename, for error messages
     VerilatedAssertOneThread m_assertOne;  // Assert only called from single thread
 
-    static constexpr size_t bufferSize() { return 256 * 1024; }  // See below for slack calculation
-    static constexpr size_t bufferInsertSize() { return 16 * 1024; }
+    static constexpr size_t bufferSize() {
+        return 256 * 1024L;
+    }  // See below for slack calculation
+    static constexpr size_t bufferInsertSize() { return 16 * 1024L; }
 
     void header() VL_MT_UNSAFE_ONE;
     void trailer() VL_MT_UNSAFE_ONE;
@@ -119,8 +121,10 @@ protected:
     std::string m_filename;  // Filename, for error messages
     VerilatedAssertOneThread m_assertOne;  // Assert only called from single thread
 
-    static constexpr size_t bufferSize() { return 256 * 1024; }  // See below for slack calculation
-    static constexpr size_t bufferInsertSize() { return 16 * 1024; }
+    static constexpr size_t bufferSize() {
+        return 256 * 1024L;
+    }  // See below for slack calculation
+    static constexpr size_t bufferInsertSize() { return 16 * 1024L; }
 
     virtual void fill() = 0;
     void header() VL_MT_UNSAFE_ONE;

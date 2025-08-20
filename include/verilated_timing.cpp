@@ -99,7 +99,7 @@ void VlDelayScheduler::dump() const {
         VL_DBG_MSGF("         No delayed processes:\n");
     } else {
         VL_DBG_MSGF("         Delayed processes:\n");
-        for (auto& susp : m_zeroDelayed) {
+        for (const auto& susp : m_zeroDelayed) {
             VL_DBG_MSGF("             Awaiting #0-delayed resumption, "
                         "time () %" PRIu64 ": ",
                         m_context.time());

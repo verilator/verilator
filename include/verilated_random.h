@@ -200,7 +200,7 @@ class VlRandomizer final {
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
                                                                        // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
-    const VlQueue<CData>* m_randmode;  // rand_mode state;
+    const VlQueue<CData>* m_randmodep = nullptr;  // rand_mode state;
     int m_index = 0;  // Internal counter for key generation
 
     // PRIVATE METHODS
@@ -574,7 +574,7 @@ public:
 
     void hard(std::string&& constraint);
     void clear();
-    void set_randmode(const VlQueue<CData>& randmode) { m_randmode = &randmode; }
+    void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
 #ifdef VL_DEBUG
     void dump() const;
 #endif

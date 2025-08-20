@@ -290,7 +290,7 @@ static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
         break;
     }
     case VLVT_WDATA: {
-        WDataOutP wdatap = (reinterpret_cast<WDataOutP>(datap));
+        WDataInP wdatap = (reinterpret_cast<WDataInP>(datap));
         for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) d[i] = wdatap[i];
         return;
     }
@@ -329,7 +329,7 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
         break;
     }
     case VLVT_WDATA: {
-        WDataOutP wdatap = (reinterpret_cast<WDataOutP>(datap));
+        WDataInP wdatap = (reinterpret_cast<WDataInP>(datap));
         for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) {
             d[i].aval = wdatap[i];
             d[i].bval = 0;

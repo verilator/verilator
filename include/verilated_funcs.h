@@ -652,7 +652,7 @@ static inline IData VL_REDAND_IW(int lbits, WDataInP const lwp) VL_PURE {
     EData combine = lwp[0];
     for (int i = 1; i < words - 1; ++i) combine &= lwp[i];
     combine &= ~VL_MASK_E(lbits) | lwp[words - 1];
-    // cppcheck-has-bug-suppress knownConditionTrueFalse
+    // cppcheck-suppress knownConditionTrueFalse
     return ((~combine) == 0);
 }
 
@@ -1094,14 +1094,12 @@ static inline WDataOutP VL_MULS_WWW(int lbits, WDataOutP owp, WDataInP const lwp
     if (lneg) {  // Negate lhs
         lwusp = lwstore;
         VL_NEGATE_W(words, lwstore, lwp);
-        // cppcheck-has-bug-suppress unreadVariable
         lwstore[words - 1] &= VL_MASK_E(lbits);  // Clean it
     }
     const EData rneg = VL_SIGN_E(lbits, rwp[words - 1]);
     if (rneg) {  // Negate rhs
         rwusp = rwstore;
         VL_NEGATE_W(words, rwstore, rwp);
-        // cppcheck-has-bug-suppress unreadVariable
         rwstore[words - 1] &= VL_MASK_E(lbits);  // Clean it
     }
     VL_MUL_W(words, owp, lwusp, rwusp);
@@ -2760,6 +2758,7 @@ static inline void VL_SELASSIGN_WW(int rbits, int obits, WDataOutP iowp, WDataIn
         const int w = obits < upperbits ? obits : upperbits;
         const int insmask = VL_MASK_E(w);
         iowp[0] = (iowp[0] & ~insmask) | ((rwp[wordoff] >> lsb) & insmask);
+        // cppcheck-suppress knownConditionTrueFalse
         if (w == obits) return;
         obits -= w;
     }

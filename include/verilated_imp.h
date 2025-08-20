@@ -363,7 +363,7 @@ private:
     VerilatedFpList fdToFpList(IData fdi) VL_REQUIRES(m_fdMutex) {
         VerilatedFpList fp;
         // cppverilator-suppress integerOverflow shiftTooManyBitsSigned
-        if ((fdi & (1 << 31)) != 0) {
+        if (VL_BITISSET_I(fdi, 31)) {
             // Non-MCD case
             const IData idx = fdi & VL_MASK_I(31);
             switch (idx) {

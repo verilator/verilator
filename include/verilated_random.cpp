@@ -455,8 +455,8 @@ bool VlRandomizer::parseSolution(std::iostream& f) {
         const auto it = m_vars.find(name);
         if (it == m_vars.end()) continue;
         const VlRandomVar& varr = *it->second;
-        if (m_randmode && !varr.randModeIdxNone()) {
-            if (!(m_randmode->at(varr.randModeIdx()))) continue;
+        if (m_randmodep && !varr.randModeIdxNone()) {
+            if (!m_randmodep->at(varr.randModeIdx())) continue;
         }
         if (!indices.empty()) {
             std::ostringstream oss;

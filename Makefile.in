@@ -392,7 +392,6 @@ install-msg:
 ######################################################################
 # Format/Lint
 
-# Use --xml flag to see the cppcheck code to use for suppression
 CPPCHECK1_CPP = $(wildcard $(srcdir)/include/*.cpp)
 CPPCHECK2_CPP = $(wildcard $(srcdir)/examples/*/*.cpp)
 CPPCHECK3_CPP = $(wildcard $(srcdir)/src/Vlc*.cpp)
@@ -422,8 +421,9 @@ CPPCHECK_INC += -I$(srcdir)/include/vltstd
 CPPCHECK_INC += -I$(srcdir)/src/obj_dbg
 CPPCHECK_INC += -I$(srcdir)/src
 
-$(CPPCHECK_CACHE):
-	mkdir -p $@
+$(CPPCHECK_CACHE): $(CHECK_CPP) $(CHECK_H) $(CHECK_YL)
+	/bin/rm -rf $@
+	/bin/mkdir -p $@
 
 cppcheck: cppcheck-1 cppcheck-2 cppcheck-3 cppcheck-4 cppcheck-5 cppcheck-6 cppcheck-7 cppcheck-8
 cppcheck-1: | $(CPPCHECK_CACHE)
