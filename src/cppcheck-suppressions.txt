@@ -46,7 +46,7 @@ constParameterPointer:src/V3EmitCFunc.cpp
 constVariablePointer:src/V3EmitCFunc.cpp
 constParameterPointer:src/V3EmitCFunc.h
 constVariablePointer:src/V3EmitCFunc.h
-constParameterPointer:src/V3EmitCImpl.cpp
+constParameterPointer:src/V3EmitCImp.cpp
 constParameterPointer:src/V3EmitCModel.cpp
 constVariablePointer:src/V3EmitCModel.cpp
 constVariablePointer:src/V3EmitCSyms.cpp
