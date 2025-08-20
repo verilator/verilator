@@ -56,7 +56,7 @@ class LinkResolveVisitor final : public VNVisitor {
     bool m_underGenerate = false;  // Under GenFor/GenIf
     AstVar* m_randomizedVarp = nullptr;  // Variable on which randomize is called
     std::vector<string> m_randomizedVarLocalPath;
-    bool m_directlyUnderRandomizeWith = false;  // If directly under randomize() with
+    bool m_inRandomizeWith = false;  // If in randomize() with (and no other with afterwards)
 
     void setRandomizedVar(AstNodeExpr* const nodep) {
         m_randomizedVarLocalPath.push_back(nodep->name());
@@ -219,14 +219,14 @@ class LinkResolveVisitor final : public VNVisitor {
     void visit(AstNodeFTaskRef* nodep) override {
         VL_RESTORER(m_randomizedVarp);
         VL_RESTORER(m_randomizedVarLocalPath);
-        VL_RESTORER(m_directlyUnderRandomizeWith);
 
         if (nodep->name() == "randomize") {
             if (const AstMethodCall* const methodcallp = VN_CAST(nodep, MethodCall)) {
-                // In order to avoid carrying invalid data
-                // - having new m_randomizedVarLocalPath
-                // but old m_directlyUnderRandomizeWith
-                m_directlyUnderRandomizeWith = false;
+                if (m_inRandomizeWith) {
+                    nodep->v3warn(
+                        E_UNSUPPORTED,
+                        "Unsupported: randomize() nested in inline randomize() constrains");
+                }
                 m_randomizedVarLocalPath.clear();
                 setRandomizedVar(methodcallp->fromp());
             }
@@ -572,7 +572,7 @@ class LinkResolveVisitor final : public VNVisitor {
 
     void visit(AstMemberSel* nodep) override {
         iterateChildren(nodep);
-        if (m_directlyUnderRandomizeWith && m_randomizedVarp) {
+        if (m_inRandomizeWith && m_randomizedVarp) {
             if (isRandomizedVarSelect(nodep->fromp())) {
                 AstNodeExpr* const prevFromp = nodep->fromp();
                 prevFromp->replaceWith(
@@ -583,11 +583,11 @@ class LinkResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstWith* nodep) override {
-        VL_RESTORER(m_directlyUnderRandomizeWith);
+        VL_RESTORER(m_inRandomizeWith);
         if (const AstMethodCall* const methodCallp = VN_CAST(nodep->backp(), MethodCall)) {
-            m_directlyUnderRandomizeWith = methodCallp->name() == "randomize";
+            m_inRandomizeWith = methodCallp->name() == "randomize";
         } else {
-            m_directlyUnderRandomizeWith = false;
+            m_inRandomizeWith = false;
         }
         iterateChildren(nodep);
     }
