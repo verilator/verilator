@@ -127,6 +127,8 @@ private:
         }
     }
     void varLifetimeCheck(AstNode* nodep, AstVar* varp) {
+        // Skip if we are under a member select (lhs of a dot)
+        // We don't care about lifetime of anything else than rhs of a dot
         if (!m_underSel && !m_contNba.empty()) {
             std::string varType;
             const AstNodeDType* const varDtp = varp->dtypep()->skipRefp();
