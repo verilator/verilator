@@ -27,6 +27,9 @@ endclass
 module t;
   A a;
   int i;
+  int delay;
+  logic[31:0] rdata;
+  int b;
   initial begin
     a = new;
     i = 7;
@@ -38,6 +41,8 @@ module t;
       if (a.b.randomize() with {a.b.insideB < 3;} == 0) $stop;
       if (a.delay == 1 && a.rdata != 97) $stop;
       if (a.b.insideB >= 3) $stop;
+      if (a.randomize() with {if (a.delay == 1) a.rdata == local::i;} == 0) $stop;
+      if (a.delay == 1 && a.rdata != 7) $stop;
     end
     $write("*-* All Finished *-*\n");
     $finish;
