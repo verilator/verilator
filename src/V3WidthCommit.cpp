@@ -44,6 +44,7 @@ class WidthCommitVisitor final : public VNVisitor {
     AstNodeModule* m_modp = nullptr;
     std::string m_contNba;  // In continuous- or non-blocking assignment
     VMemberMap m_memberMap;  // Member names cached for fast lookup
+    bool m_underSel = false;  // Whether is currently under AstMemberSel or AstSel
 
 public:
     // METHODS
@@ -126,7 +127,9 @@ private:
         }
     }
     void varLifetimeCheck(AstNode* nodep, AstVar* varp) {
-        if (!m_contNba.empty()) {
+        // Skip if we are under a member select (lhs of a dot)
+        // We don't care about lifetime of anything else than rhs of a dot
+        if (!m_underSel && !m_contNba.empty()) {
             std::string varType;
             const AstNodeDType* const varDtp = varp->dtypep()->skipRefp();
             if (varp->lifetime().isAutomatic() && !VN_IS(varDtp, IfaceRefDType)
@@ -368,7 +371,11 @@ private:
         classEncapCheck(nodep, nodep->taskp(), VN_CAST(nodep->classOrPackagep(), Class));
     }
     void visit(AstMemberSel* nodep) override {
-        iterateChildren(nodep);
+        {
+            VL_RESTORER(m_underSel);
+            m_underSel = true;
+            iterateChildren(nodep);
+        }
         editDType(nodep);
         if (auto* const classrefp = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
             classEncapCheck(nodep, nodep->varp(), classrefp->classp());
@@ -387,6 +394,14 @@ private:
     void visit(AstNodePreSel* nodep) override {  // LCOV_EXCL_LINE
         // This check could go anywhere after V3Param
         nodep->v3fatalSrc("Presels should have been removed before this point");
+    }
+    void visit(AstSel* nodep) override {
+        {
+            VL_RESTORER(m_underSel);
+            m_underSel = true;
+            iterateChildren(nodep);
+        }
+        editDType(nodep);
     }
     void visit(AstNode* nodep) override {
         iterateChildren(nodep);
