@@ -54,37 +54,36 @@ class LinkResolveVisitor final : public VNVisitor {
     int m_senitemCvtNum = 0;  // Temporary signal counter
     std::deque<AstGenFor*> m_underGenFors;  // Stack of GenFor underneath
     bool m_underGenerate = false;  // Under GenFor/GenIf
-    AstVar* m_randomizedVar = nullptr;  // Randomized variable (set if under randomize())
+    AstVar* m_randomizedVarp = nullptr;  // Variable on which randomize is called
     std::vector<string> m_randomizedVarLocalPath;
     bool m_underWith = false;  // If under With
 
     void setRandomizedVar(AstNodeExpr* const nodep) {
         m_randomizedVarLocalPath.push_back(nodep->name());
         if (const AstVarRef* const varRefp = VN_CAST(nodep, VarRef)) {
-            m_randomizedVar = varRefp->varp();
+            m_randomizedVarp = varRefp->varp();
             return;
         }
         if (const AstMemberSel* const memberSelp = VN_CAST(nodep, MemberSel)) {
             return setRandomizedVar(memberSelp->fromp());
         }
-        m_randomizedVar = nullptr;
+        m_randomizedVarp = nullptr;
         m_randomizedVarLocalPath.clear();
     }
 
     bool isRandomizedVarSelect(const AstNodeExpr* const nodep) {
-        const AstNodeExpr* nodepIter = nodep;
-        bool isNext = true;
-        for (const string& name : m_randomizedVarLocalPath) {
-            if (!isNext || !nodepIter || nodepIter->name() != name) return false;
-            if (const AstMemberSel* const memberSelp = VN_CAST(nodepIter, MemberSel)) {
-                nodepIter = memberSelp->fromp();
-            } else {
-                isNext = false;
+        const AstNodeExpr* nodepIterp = nodep;
+        for (size_t i = 0; i < m_randomizedVarLocalPath.size(); ++i) {
+            if (nodepIterp->name() != m_randomizedVarLocalPath[i]) return false;
+            if (const AstMemberSel* const memberSelp = VN_CAST(nodepIterp, MemberSel)) {
+                nodepIterp = memberSelp->fromp();
+            } else if (i + 1 != m_randomizedVarLocalPath.size()) {
+                return false;
             }
         }
-        UASSERT_OBJ(nodepIter, nodep, "Member select chain should not end with a nullptr");
-        if (const AstVarRef* const varRefp = VN_CAST(nodepIter, VarRef)) {
-            return varRefp->varp() == m_randomizedVar;
+        UASSERT_OBJ(nodepIterp, nodep, "Member select chain should not end with a nullptr");
+        if (const AstVarRef* const varRefp = VN_CAST(nodepIterp, VarRef)) {
+            return varRefp->varp() == m_randomizedVarp;
         }
         return false;
     }
@@ -218,7 +217,7 @@ class LinkResolveVisitor final : public VNVisitor {
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        VL_RESTORER(m_randomizedVar);
+        VL_RESTORER(m_randomizedVarp);
         VL_RESTORER(m_randomizedVarLocalPath);
         if (nodep->name() == "randomize") {
             if (const AstMethodCall* const methodcallp = VN_CAST(nodep, MethodCall)) {
@@ -567,7 +566,7 @@ class LinkResolveVisitor final : public VNVisitor {
 
     void visit(AstMemberSel* nodep) override {
         iterateChildren(nodep);
-        if (m_underWith && m_randomizedVar) {
+        if (m_underWith && m_randomizedVarp) {
             if (isRandomizedVarSelect(nodep->fromp())) {
                 AstNodeExpr* const prevFromp = nodep->fromp();
                 prevFromp->replaceWith(

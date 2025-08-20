@@ -31,8 +31,11 @@ module t;
     a = new;
     i = 7;
     repeat (120) begin
-      assert (a.randomize() with {if (a.delay == 1) a.rdata == i;} != 0);
-      assert (a.b.randomize() with {a.b.insideB < 3;} != 0);
+      a.b.insideB = 3;
+      a.delay = 1;
+      a.rdata = 3;
+      if (a.randomize() with {if (a.delay == 1) a.rdata == i;} == 0) $stop;
+      if (a.b.randomize() with {a.b.insideB < 3;} == 0) $stop;
       if (a.delay == 1 && a.rdata != 97) $stop;
       if (a.b.insideB >= 3) $stop;
     end
