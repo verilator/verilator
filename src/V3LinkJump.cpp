@@ -222,7 +222,11 @@ class LinkJumpVisitor final : public VNVisitor {
         AstStmtExpr* const killStmtp = new AstStmtExpr{fl, killQueueCall};
         nodep->addNextHere(killStmtp);
         if (existsBlockAbove(targetName)) {
-            // jump at the end of fork
+            // process::kill doesn't kill the current process (because it is in the running state).
+            // Since the current process has to be terminated too, we jump at the end of the fork
+            // that is being disabled
+            AstJumpBlock* const jumpBlockp = getJumpBlock(nodep->targetp(), false);
+            killStmtp->addNextHere(new AstJumpGo{fl, jumpBlockp});
         }
     }
     static bool directlyUnderFork(const AstNode* const nodep) {
