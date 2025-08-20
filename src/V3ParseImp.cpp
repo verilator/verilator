@@ -259,7 +259,7 @@ size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
         size_t len = front.length();
         if (len > (max_size - got)) {  // Front string too big
             const string remainder = front.substr(max_size - got);
-            front = front.substr(0, max_size - got);
+            front.resize(max_size - got);
             m_ppBuffers.push_front(remainder);  // Put back remainder for next time
             len = (max_size - got);
         }
@@ -383,7 +383,7 @@ void V3ParseImp::dumpInputsFile() {
 void V3ParseImp::dumpTokensAhead(int line) {  // LCOV_EXCL_START
     int i = 0;
     UINFO(1, "dumpTokensAhead @ " << line << " [ ] " << yylval);
-    for (auto t : m_tokensAhead) {
+    for (const V3ParseBisonYYSType& t : m_tokensAhead) {
         UINFO(1, "dumpTokensAhead @ " << line << " [" << i << "] " << t);
         ++i;
     }

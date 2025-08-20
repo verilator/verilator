@@ -637,14 +637,14 @@ class LinkCellsVisitor final : public VNVisitor {
                 }
                 nodep->unlinkFrBack();
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            } else if (!libFoundp && globalFoundp && globalFoundp != nodep) {
+            } else if (globalFoundp && globalFoundp != nodep) {
                 // ...__LIB__ stripped by prettyName
                 const string newName = nodep->libname() + "__LIB__" + nodep->origName();
                 UINFO(9, "Module rename as in multiple libraries " << newName << " <- " << nodep);
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);  // Original name
                 nodep->name(newName);
                 insertModInLib(nodep->name(), "__GLOBAL", nodep);
-            } else if (!libFoundp) {
+            } else {
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);
                 insertModInLib(nodep->name(), "__GLOBAL", nodep);
             }

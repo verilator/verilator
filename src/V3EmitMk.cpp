@@ -273,7 +273,7 @@ private:
             m_concatenableListsByDescSize.resize(totalBucketsNum);
             // Recalculate stats
             concatenableFilesTotalScore = 0;
-            for (WorkList* listp : m_concatenableListsByDescSize) {
+            for (const WorkList* const listp : m_concatenableListsByDescSize) {
                 concatenableFilesTotalScore += listp->m_totalScore;
             }
         }

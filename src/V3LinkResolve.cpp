@@ -141,10 +141,11 @@ class LinkResolveVisitor final : public VNVisitor {
             nodep->varp()->usedParam(true);
             // Look for where genvar is valid
             bool ok = false;
-            for (AstGenFor* forp : m_underGenFors) {
+            // cppcheck-suppress constVariablePointer
+            for (AstGenFor* const forp : m_underGenFors) {
                 if (ok) break;
                 if (forp->initsp())
-                    forp->initsp()->foreach([&](AstVarRef* refp) {  //
+                    forp->initsp()->foreach([&](const AstVarRef* refp) {  //
                         if (refp->varp() == nodep->varp()) ok = true;
                     });
             }
@@ -199,6 +200,7 @@ class LinkResolveVisitor final : public VNVisitor {
             }
             // UINFOTREE(1, letp, "", "let-let");
             // UINFOTREE(1, nodep, "", "let-ref");
+            // cppcheck-suppress constVariablePointer
             AstStmtExpr* const letStmtp = VN_AS(letp->stmtsp(), StmtExpr);
             AstNodeExpr* const newp = letStmtp->exprp()->cloneTree(false);
             const V3TaskConnects tconnects = V3Task::taskConnects(nodep, letp->stmtsp());
@@ -398,7 +400,7 @@ class LinkResolveVisitor final : public VNVisitor {
         return newFormat;
     }
 
-    static void expectDescriptor(AstNode* /*nodep*/, AstNodeVarRef* filep) {
+    static void expectDescriptor(AstNode* /*nodep*/, const AstNodeVarRef* filep) {
         // This might fail on complex expressions like arrays
         // We use attrFileDescr() only for lint suppression, so that's ok
         if (filep && filep->varp()) filep->varp()->attrFileDescr(true);

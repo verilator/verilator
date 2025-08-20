@@ -129,7 +129,7 @@ static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of
 V3HierBlock::StrGParams V3HierBlock::stringifyParams(const V3HierBlockParams::GParams& gparams,
                                                      bool forGOption) {
     StrGParams strParams;
-    for (const auto& gparam : gparams) {
+    for (const AstVar* const gparam : gparams) {
         if (const AstConst* const constp = VN_CAST(gparam->valuep(), Const)) {
             string s;
             // Only constant parameter needs to be set to -G because already checked in
@@ -262,7 +262,7 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     *of << "--cc\n";
 
     if (!forCMake) {
-        for (const auto& hierblockp : m_children) {
+        for (const V3HierBlock* const hierblockp : m_children) {
             *of << v3Global.opt.makeDir() << "/" << hierblockp->hierWrapperFilename(true) << "\n";
         }
         *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
@@ -271,7 +271,9 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     const V3StringList& commandOpts = commandArgs(false);
     for (const string& opt : commandOpts) *of << opt << "\n";
     *of << hierBlockArgs().front() << "\n";
-    for (const auto& hierblockp : m_children) *of << hierblockp->hierBlockArgs().front() << "\n";
+    for (const V3HierBlock* const hierblockp : m_children) {
+        *of << hierblockp->hierBlockArgs().front() << "\n";
+    }
     *of << v3Global.opt.allArgsStringForHierBlock(false) << "\n";
 }
 

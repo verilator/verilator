@@ -336,7 +336,8 @@ class ForceConvertVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTOR
-    explicit ForceConvertVisitor(AstNetlist* nodep, ForceState& state)
+    // cppcheck-suppress constParameterCallback
+    ForceConvertVisitor(AstNetlist* nodep, ForceState& state)
         : m_state{state} {
         // Transform all force and release statements
         iterateAndNextNull(nodep->modulesp());

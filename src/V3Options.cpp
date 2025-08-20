@@ -419,6 +419,7 @@ string V3Options::allArgsString() const VL_MT_SAFE {
 
 // Delete some options for Verilation of the hierarchical blocks.
 string V3Options::allArgsStringForHierBlock(bool forTop) const {
+    // cppcheck-suppress shadowFunction
     std::set<string> vFiles;
     for (const auto& vFile : m_vFiles) vFiles.insert(vFile.filename());
     string out;
@@ -813,6 +814,7 @@ string V3Options::getSupported(const string& var) {
     // If update below, also update V3Options::showVersion()
     if (var == "COROUTINES" && coroutineSupport()) {
         return "1";
+        // cppcheck-suppress knownConditionTrueFalse
     } else if (var == "SYSTEMC" && systemCFound()) {
         return "1";
     } else {
@@ -1762,6 +1764,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
     });
     for (int i = V3ErrorCode::EC_FIRST_WARN; i < V3ErrorCode::_ENUM_MAX; ++i) {
+        // cppcheck-suppress shadowFunction
         for (const string prefix : {"-Wno-", "-Wwarn-"})
             parser.addSuggestionCandidate(prefix + V3ErrorCode{i}.ascii());
     }

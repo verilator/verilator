@@ -132,8 +132,8 @@ void V3ErrorGuarded::v3errorPrep(V3ErrorCode code) VL_REQUIRES(m_mutex) {
     m_errorSuppressed = false;
 }
 
-void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra, FileLine* fileline)
-    VL_REQUIRES(m_mutex) {
+void V3ErrorGuarded::v3errorEnd(const std::ostringstream& sstr, const string& extra,
+                                FileLine* fileline) VL_REQUIRES(m_mutex) {
     static bool s_firedTooMany = false;
     v3errorEndGuts(sstr, extra, fileline);
     m_message.clear();
@@ -151,7 +151,7 @@ void V3ErrorGuarded::v3errorEnd(std::ostringstream& sstr, const string& extra, F
 }
 
 // cppcheck-has-bug-suppress constParameter
-void V3ErrorGuarded::v3errorEndGuts(std::ostringstream& sstr, const string& extra,
+void V3ErrorGuarded::v3errorEndGuts(const std::ostringstream& sstr, const string& extra,
                                     FileLine* fileline) VL_REQUIRES(m_mutex) {
     // 'extra' is appended to the message, and is is excluded in check for
     // duplicate messages. Currently used for reporting instance name.
@@ -380,7 +380,7 @@ std::ostringstream& V3Error::v3errorPrepFileLine(V3ErrorCode code, const char* f
     v3errorPrep(code) << file << ":" << std::dec << line << ": ";
     return v3errorStr();
 }
-void V3Error::v3errorEnd(std::ostringstream& sstr, const string& extra, FileLine* fileline)
+void V3Error::v3errorEnd(const std::ostringstream& sstr, const string& extra, FileLine* fileline)
     VL_RELEASE(s().m_mutex) {
     s().v3errorEnd(sstr, extra, fileline);
     V3Error::s().m_mutex.unlock();

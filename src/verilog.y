@@ -250,7 +250,7 @@ public:
             return createArray(dtypep, rangearraysp, isPacked);
         }
     }
-    string unquoteString(FileLine* fileline, string text) VL_MT_DISABLED;
+    string unquoteString(FileLine* fileline, const std::string& text) VL_MT_DISABLED;
     void checkDpiVer(FileLine* fileline, const string& str) {
         if (str != "DPI-C" && !v3Global.opt.bboxSys()) {
             fileline->v3error("Unsupported DPI type '" << str << "': Use 'DPI-C'");

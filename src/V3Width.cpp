@@ -4143,7 +4143,6 @@ class WidthVisitor final : public VNVisitor {
                 // All variables in the dot hierarchy must be randomizable
                 if (randVarp && !randVarp->isRand()) randVarp->rand(VRandAttr::RAND_INLINE);
             }
-            if (!argp) continue;  // Errored out, bail
             // randVarp is now the leftmost element from the dot hierarchy in argp->exprp()
             if (randVarp == fromVarp) {
                 // The passed in variable is MemberSel'ected from the MethodCall target
@@ -4509,9 +4508,9 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->isScoped()) {  // = ClassOrPackage::new
                 UASSERT_OBJ(nodep->classOrPackagep(), nodep, "Unlinked classOrPackage");
                 warnp = nodep->classOrPackagep();
-                if (AstClass* const classp = VN_CAST(warnp, Class)) {
+                if (AstClass* const clsp = VN_CAST(warnp, Class)) {
                     AstClassRefDType* const adtypep
-                        = new AstClassRefDType{nodep->fileline(), classp, nullptr};
+                        = new AstClassRefDType{nodep->fileline(), clsp, nullptr};
                     v3Global.rootp()->typeTablep()->addTypesp(adtypep);
                     refp = adtypep;
                 }
@@ -5894,16 +5893,15 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
             // Widthing handled as special init() case
             bool didWidth = false;
-            if (auto* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
-                if (const AstVar* const modVarp = nodep->modVarp()) {
-                    // Convert BracketArrayDType
-                    userIterate(modVarp->childDTypep(),
-                                WidthVP{SELF, BOTH}.p());  // May relink pointed to node
-                    AstNodeDType* const setDtp = modVarp->childDTypep()->cloneTree(false);
-                    if (!patternp->childDTypep()) patternp->childDTypep(setDtp);
-                    userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
-                    didWidth = true;
-                }
+            if (AstPattern* const patternp = VN_CAST(nodep->exprp(), Pattern)) {
+                const AstVar* const modVarp = nodep->modVarp();
+                // Convert BracketArrayDType
+                userIterate(modVarp->childDTypep(),
+                            WidthVP{SELF, BOTH}.p());  // May relink pointed to node
+                AstNodeDType* const setDtp = modVarp->childDTypep()->cloneTree(false);
+                if (!patternp->childDTypep()) patternp->childDTypep(setDtp);
+                userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
+                didWidth = true;
             }
             if (!didWidth) userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         } else if (!m_paramsOnly) {
@@ -6137,14 +6135,14 @@ class WidthVisitor final : public VNVisitor {
                     break;
                 } else {
                     AstVar* const portp = ports[i];
-                    AstAttrOf* const protop = protos[i];
+                    AstAttrOf* const rprotop = protos[i];
                     AstNodeDType* const declDtp = portp->dtypep();
-                    AstNodeDType* const protoDtp = protop->fromp()->dtypep();
-                    if (portp->name() != protop->name()) {
+                    AstNodeDType* const protoDtp = rprotop->fromp()->dtypep();
+                    if (portp->name() != rprotop->name()) {
                         protoDtp->v3warn(PROTOTYPEMIS,
                                          "In prototype for "
                                              << nodep->prettyNameQ() << ", argument " << (i + 1)
-                                             << " named " << protop->prettyNameQ()
+                                             << " named " << rprotop->prettyNameQ()
                                              << " mismatches out-of-block argument name "
                                              << portp->prettyNameQ() << "  (IEEE 1800-2023 8.24)\n"
                                              << protoDtp->warnContextPrimary() << '\n'
@@ -6452,9 +6450,8 @@ class WidthVisitor final : public VNVisitor {
             } else {
                 argp->v3error("Non-variable arguments for 'std::randomize()'.");
             }
-            if (!argp) continue;
         }
-        if (nullp) { nullp->v3error("'std::randomize()' does not accept 'null' as arguments."); }
+        if (nullp) nullp->v3error("'std::randomize()' does not accept 'null' as arguments.");
     }
     void visit(AstNodeFTaskRef* nodep) override {
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign

@@ -316,6 +316,7 @@ class TraceDeclVisitor final : public VNVisitor {
 
     void removeRedundantPrefixPushPop() {
         for (const auto& pair : m_scopeInitFuncps) {
+            // cppcheck-suppress constVariablePointer
             for (AstCFunc* const funcp : pair.second) {
                 AstNode* prevp = nullptr;
                 AstNode* currp = funcp->stmtsp();

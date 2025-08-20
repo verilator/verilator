@@ -42,7 +42,7 @@ public:
         static uint32_t s_serial = 0;
         m_key.m_id = ++s_serial;
     }
-    ScoreboardTestElem() = default;
+    ScoreboardTestElem() = delete;
 
     uint64_t id() const { return m_key.m_id; }
     void rescore() { m_key.m_score = m_newScore; }

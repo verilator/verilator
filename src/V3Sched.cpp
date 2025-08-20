@@ -89,7 +89,7 @@ std::vector<const AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicBy
 }
 
 void remapSensitivities(const LogicByScope& lbs,
-                        std::unordered_map<const AstSenTree*, AstSenTree*> senTreeMap) {
+                        const std::unordered_map<const AstSenTree*, AstSenTree*>& senTreeMap) {
     for (const auto& pair : lbs) {
         AstActive* const activep = pair.second;
         AstSenTree* const senTreep = activep->sentreep();

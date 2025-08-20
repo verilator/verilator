@@ -112,6 +112,7 @@ public:
         // the edge user field. We also want easy access to the 'id'
         // which uniquely identifies a single bidir edge. Luckily we
         // can do both efficiently.
+        // cppcheck-suppress badBitmaskCheck
         const uint64_t userValue = (static_cast<uint64_t>(cost) << 32) | edgeId;
         (new V3GraphEdge{this, fp, tp, cost})->user(userValue);
         (new V3GraphEdge{this, tp, fp, cost})->user(userValue);
@@ -121,6 +122,7 @@ public:
         return static_cast<uint32_t>(edgep->user());
     }
 
+    // cppcheck-suppress duplInheritedMember
     bool empty() const { return m_vertices.empty(); }
 
     const std::list<Vertex*> keysToVertexList(const std::vector<T_Key>& odds) {

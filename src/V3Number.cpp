@@ -556,7 +556,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
     if (prefixed) {
         if (sized()) {
             out << width() << "'";
-        } else if (autoExtend() && !sized() && width() == 1) {
+        } else if (autoExtend() && width() == 1) {
             out << "'";
             if (bitIs0(0)) {
                 out << '0';
@@ -636,7 +636,7 @@ string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& i
     return left ? (in + padding) : (padding + in);
 }
 
-string V3Number::displayed(AstNode* nodep, const string& vformat) const VL_MT_STABLE {
+string V3Number::displayed(const AstNode* nodep, const string& vformat) const VL_MT_STABLE {
     return displayed(nodep->fileline(), vformat);
 }
 
@@ -2040,7 +2040,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     setZero();
     // Find MSB and check for zero.
-    const int words = lhs.words();
+    const int lWords = lhs.words();
     const int umsbp1 = lhs.mostSetBitP1();  // dividend
     const int vmsbp1 = rhs.mostSetBitP1();  // divisor
     if (VL_UNLIKELY(vmsbp1 == 0)  // rwp==0 so division by zero.  Return 0.
@@ -2077,8 +2077,8 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     uint32_t vn[VL_MULS_MAX_WORDS + 1];  // v normalized
 
     // Zero for ease of debugging and to save having to zero for shifts
-    for (int i = 0; i < words; ++i) m_data.num()[i].m_value = 0;
-    for (int i = 0; i < words + 1; ++i) { un[i] = vn[i] = 0; }  // +1 as vn may get extra word
+    for (int i = 0; i < lWords; ++i) m_data.num()[i].m_value = 0;
+    for (int i = 0; i < lWords + 1; ++i) { un[i] = vn[i] = 0; }  // +1 as vn may get extra word
 
     // Algorithm requires divisor MSB to be set
     // Copy and shift to normalize divisor so MSB of vn[vw-1] is set
@@ -2155,7 +2155,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
         for (int i = 0; i < vw; ++i) {
             m_data.num()[i].m_value = (un[i] >> s) | (shift_mask & (un[i + 1] << (32 - s)));
         }
-        for (int i = vw; i < words; ++i) m_data.num()[i].m_value = 0;
+        for (int i = vw; i < lWords; ++i) m_data.num()[i].m_value = 0;
         opCleanThis();
         UINFO(9, "  opmoddiv-mod " << lhs << " " << rhs << " now=" << *this);
         return *this;

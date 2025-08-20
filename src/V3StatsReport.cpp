@@ -164,7 +164,7 @@ public:
 
     static double getStatSum(const string& name) {
         // O(n^2) if called a lot; present assumption is only a small call count
-        for (auto& itr : s_allStats) {
+        for (const V3Statistic& itr : s_allStats) {
             const V3Statistic* const repp = &itr;
             if (repp->name() == name) return repp->value();
         }

@@ -383,7 +383,7 @@ class InlineRelinkVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeAssign* nodep) override {
-        if (AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
+        if (const AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
             if (m_initialStatic && varrefp->varp()->user2() && varrefp->varp()->user4()) {
                 // Initial assignment to i/o we are overriding, can remove
                 UINFO(9, "Remove InitialStatic " << nodep);
@@ -400,7 +400,7 @@ class InlineRelinkVisitor final : public VNVisitor {
             && !VN_IS(nodep->backp(), AssignAlias)
             // Forced signals do not use aliases
             && !nodep->varp()->isForced()) {
-            AstVar* const varp = nodep->varp();
+            const AstVar* const varp = nodep->varp();
             if (AstConst* const constp = VN_CAST(varp->user2p(), Const)) {
                 nodep->replaceWith(constp->cloneTree(false));
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -426,7 +426,7 @@ class InlineRelinkVisitor final : public VNVisitor {
             if (pos == string::npos || pos == 0) {
                 break;
             } else {
-                tryname = tryname.substr(0, pos);
+                tryname.resize(pos);
             }
         }
         iterateChildren(nodep);

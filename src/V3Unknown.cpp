@@ -469,7 +469,7 @@ class UnknownVisitor final : public VNVisitor {
                              nodep->bitp()->cloneTreePure(false)};
             // Note below has null backp(); the Edit function knows how to deal with that.
             condp = V3Const::constifyEdit(condp);
-            AstNodeDType* nodeDtp = nodep->dtypep()->skipRefp();
+            const AstNodeDType* const nodeDtp = nodep->dtypep()->skipRefp();
             if (condp->isOne()) {
                 // We don't need to add a conditional; we know the existing expression is ok
                 VL_DO_DANGLING(condp->deleteTree(), condp);

@@ -389,6 +389,7 @@ private:
         close(fd);
         return true;
     }
+    // cppcheck-suppress constParameterReference
     bool readContentsFilter(const string& filename, StrList& outl) {
         (void)filename;  // Prevent unused variable warning
         (void)outl;  // Prevent unused variable warning
@@ -405,6 +406,8 @@ private:
             return false;
         }
 #else
+        (void)&writeFilter;
+        (void)&readFilterLine;
         v3fatalSrc("--pipe-filter not implemented on this platform");
         return false;
 #endif

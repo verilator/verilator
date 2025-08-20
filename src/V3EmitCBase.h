@@ -98,6 +98,7 @@ public:
     // Sets ofp() and outFileNodep() to the given pointers, without closing a file these pointers
     // currently point to.
     void setOutputFile(V3OutCFile* ofp, AstCFile* nodep) {
+        // cppcheck-suppress danglingLifetime // ofp is often on stack in caller, it's fine.
         m_ofp = ofp;
         m_outFileNodep = nodep;
     }

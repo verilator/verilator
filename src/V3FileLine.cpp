@@ -499,9 +499,9 @@ string FileLine::prettySource() const VL_MT_SAFE {
 
 string FileLine::warnContext() const {
     if (!v3Global.opt.context()) return "";
-    string out;
     if (firstLineno() == lastLineno() && firstColumn()) {
         const string sourceLine = prettySource();
+        string out;
         // Don't show super-long lines as can fill screen and unlikely to help user
         if (!sourceLine.empty() && sourceLine.length() < SHOW_SOURCE_MAX_LENGTH
             && sourceLine.length() >= static_cast<size_t>(lastColumn() - 1)) {

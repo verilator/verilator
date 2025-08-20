@@ -374,10 +374,10 @@ class ParamProcessor final {
         //       equivalence predicate function.
         if (AstRefDType* const refp = VN_CAST(nodep, RefDType)) nodep = refp->skipRefToNonRefp();
         const string paramStr = paramValueString(nodep);
-        // cppcheck-has-bug-suppress unreadVariable
+        // cppcheck-suppress unreadVariable
         V3Hash hash = V3Hasher::uncachedHash(nodep) + paramStr;
         // Force hash collisions -- for testing only
-        // cppcheck-has-bug-suppress unreadVariable
+        // cppcheck-suppress unreadVariable
         if (VL_UNLIKELY(v3Global.opt.debugCollision())) hash = V3Hash{paramStr};
         int num;
         const auto pair = m_valueMap.emplace(hash, 0);

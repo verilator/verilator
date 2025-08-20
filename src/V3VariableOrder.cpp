@@ -210,6 +210,7 @@ class VariableOrder final {
         sortAndAppend(m2v[emptyVec]);
     }
 
+    // cppcheck-suppress constParameterPointer
     void orderModuleVars(AstNodeModule* modp) {
         // Unlink all module variables from the module, compute attributes
         for (AstNode *nodep = modp->stmtsp(), *nextp; nodep; nodep = nextp) {

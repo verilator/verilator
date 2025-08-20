@@ -548,7 +548,7 @@ class ForkVisitor final : public VNVisitor {
         return varp;
     }
 
-    AstTask* makeTask(FileLine* fl, AstNode* stmtsp, string name) {
+    AstTask* makeTask(FileLine* fl, AstNode* stmtsp, const std::string& name) {
         stmtsp = AstNode::addNext(static_cast<AstNode*>(m_capturedVarsp), stmtsp);
         AstTask* const taskp = new AstTask{fl, name, stmtsp};
         return taskp;

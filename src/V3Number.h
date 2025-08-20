@@ -590,7 +590,7 @@ public:
 
     // ACCESSORS
     string ascii(bool prefixed = true, bool cleanVerilog = false) const VL_MT_STABLE;
-    string displayed(AstNode* nodep, const string& vformat) const VL_MT_STABLE;
+    string displayed(const AstNode* nodep, const string& vformat) const VL_MT_STABLE;
     string displayed(FileLine* fl, const string& vformat) const VL_MT_STABLE;
     static bool displayedFmtLegal(char format, bool isScan);  // Is this a valid format letter?
     int width() const VL_MT_SAFE { return m_data.width(); }

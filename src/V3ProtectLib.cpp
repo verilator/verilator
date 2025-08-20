@@ -89,7 +89,7 @@ class ProtectVisitor final : public VNVisitor {
 
         iterateChildren(nodep);
 
-        // cppcheck-has-bug-suppress unreadVariable
+        // cppcheck-suppress unreadVariable
         const V3Hash hash = V3Hasher::uncachedHash(m_cfilep);
         m_hashValuep->addText(fl, cvtToStr(hash.value()) + ";\n");
         m_cHashValuep->addText(fl, cvtToStr(hash.value()) + "U;\n");
@@ -481,7 +481,7 @@ class ProtectVisitor final : public VNVisitor {
 
     void handleInput(AstVar* varp) { m_modPortsp->addNodesp(varp->cloneTree(false)); }
 
-    static void addLocalVariable(AstTextBlock* textp, AstVar* varp, const char* suffix) {
+    static void addLocalVariable(AstTextBlock* textp, const AstVar* varp, const char* suffix) {
         AstVar* const newVarp
             = new AstVar{varp->fileline(), VVarType::VAR, varp->name() + suffix, varp->dtypep()};
         textp->addNodesp(newVarp);
@@ -520,8 +520,8 @@ class ProtectVisitor final : public VNVisitor {
         }
     }
 
-    static bool checkIfClockExists(AstNodeModule* modp) {
-        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+    static bool checkIfClockExists(const AstNodeModule* modp) {
+        for (const AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (varp->direction() == VDirection::INPUT
                     && (varp->isUsedClock()
