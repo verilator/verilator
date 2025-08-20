@@ -12,7 +12,7 @@
            clk, check_real, check_array_real, check_string
            );
         
- 000019    input clk;
+~000010    input clk;
            input real check_real; // Check issue #2741
            input real check_array_real [1:0];
            input string check_string; // Check issue #2766
@@ -25,11 +25,11 @@
               logic b;
            } str_t;
         
-%000002    reg   toggle; initial toggle='0;
+%000001    reg   toggle; initial toggle='0;
         
-%000002    str_t stoggle; initial stoggle='0;
+%000001    str_t stoggle; initial stoggle='0;
         
- 000019    str_logic strl; initial strl='0;
+~000010    str_logic strl; initial strl='0;
         
            union {
               real val1;  // TODO use bit [7:0] here
@@ -38,11 +38,11 @@
         
            const reg aconst = '0;
         
-%000002    reg [1:0][1:0] ptoggle; initial ptoggle=0;
+%000001    reg [1:0][1:0] ptoggle; initial ptoggle=0;
         
            integer cyc; initial cyc=1;
-~000011    wire [7:0] cyc_copy = cyc[7:0];
-%000002    wire       toggle_up;
+%000006    wire [7:0] cyc_copy = cyc[7:0];
+%000001    wire       toggle_up;
         
            typedef struct {
               int q[$];
@@ -55,8 +55,8 @@
               // verilator lint_on ASCRANGE
               bit [0:0] y;
            } str_bit_t;
-%000002    str_bit_t str_bit;
-%000002    str_bit_t [5:2] str_bit_arr;
+%000001    str_bit_t str_bit;
+%000001    str_bit_t [5:2] str_bit_arr;
         
            assign strl.a = clk;
         
@@ -146,29 +146,40 @@
         
            // t.a1 and t.a2 collapse to a count of 2
         
- 000038    input clk;
+ 000020    input clk;
         
-%000004    input toggle;
-           // CHECK_COVER(-1,"top.t.a*",4)
-           // 2 edges * (t.a1 and t.a2)
+%000002    input toggle;
+           // CHECK_COVER(-1,"top.t.a*","toggle:0->1",2)
+           // CHECK_COVER(-2,"top.t.a*","toggle:1->0",2)
+           // (t.a1 and t.a2)
         
-~000022    input [7:0] cyc_copy;
-           // CHECK_COVER(-1,"top.t.a*","cyc_copy[0]",22)
-           // CHECK_COVER(-2,"top.t.a*","cyc_copy[1]",10)
-           // CHECK_COVER(-3,"top.t.a*","cyc_copy[2]",4)
-           // CHECK_COVER(-4,"top.t.a*","cyc_copy[3]",2)
-           // CHECK_COVER(-5,"top.t.a*","cyc_copy[4]",0)
-           // CHECK_COVER(-6,"top.t.a*","cyc_copy[5]",0)
-           // CHECK_COVER(-7,"top.t.a*","cyc_copy[6]",0)
-           // CHECK_COVER(-8,"top.t.a*","cyc_copy[7]",0)
+~000012    input [7:0] cyc_copy;
+           // CHECK_COVER(-1,"top.t.a*","cyc_copy[0]:0->1",12)
+           // CHECK_COVER(-2,"top.t.a*","cyc_copy[0]:1->0",10)
+           // CHECK_COVER(-3,"top.t.a*","cyc_copy[1]:0->1",6)
+           // CHECK_COVER(-4,"top.t.a*","cyc_copy[1]:1->0",4)
+           // CHECK_COVER(-5,"top.t.a*","cyc_copy[2]:0->1",2)
+           // CHECK_COVER(-6,"top.t.a*","cyc_copy[2]:1->0",2)
+           // CHECK_COVER(-7,"top.t.a*","cyc_copy[3]:0->1",2)
+           // CHECK_COVER(-8,"top.t.a*","cyc_copy[3]:1->0",0)
+           // CHECK_COVER(-9,"top.t.a*","cyc_copy[4]:0->1",0)
+           // CHECK_COVER(-10,"top.t.a*","cyc_copy[4]:1->0",0)
+           // CHECK_COVER(-11,"top.t.a*","cyc_copy[5]:0->1",0)
+           // CHECK_COVER(-12,"top.t.a*","cyc_copy[5]:1->0",0)
+           // CHECK_COVER(-13,"top.t.a*","cyc_copy[6]:0->1",0)
+           // CHECK_COVER(-14,"top.t.a*","cyc_copy[6]:1->0",0)
+           // CHECK_COVER(-15,"top.t.a*","cyc_copy[7]:0->1",0)
+           // CHECK_COVER(-16,"top.t.a*","cyc_copy[7]:1->0",0)
         
-%000004    reg         toggle_internal;
-           // CHECK_COVER(-1,"top.t.a*",4)
-           // 2 edges * (t.a1 and t.a2)
+%000002    reg         toggle_internal;
+           // CHECK_COVER(-1,"top.t.a*","toggle_internal:0->1",2)
+           // CHECK_COVER(-2,"top.t.a*","toggle_internal:1->0",2)
+           // (t.a1 and t.a2)
         
-%000004    output reg  toggle_up;
-           // CHECK_COVER(-1,"top.t.a*",4)
-           // 2 edges * (t.a1 and t.a2)
+%000002    output reg  toggle_up;
+           // CHECK_COVER(-1,"top.t.a*","toggle_up:0->1",2)
+           // CHECK_COVER(-2,"top.t.a*","toggle_up:1->0",2)
+           // (t.a1 and t.a2)
         
            always @ (posedge clk) begin
               toggle_internal <= toggle;
@@ -181,10 +192,11 @@
            clk, toggle_up
            );
         
- 000019    input clk;
+~000010    input clk;
         
-%000002    input toggle_up;
-           // CHECK_COVER(-1,"top.t.b1","toggle_up",2)
+%000001    input toggle_up;
+           // CHECK_COVER(-1,"top.t.b1","toggle_up:0->1",1)
+           // CHECK_COVER(-2,"top.t.b1","toggle_up:1->0",1)
         
            /* verilator public_module */
         
@@ -203,8 +215,9 @@
            // CHECK_COVER_MISSING(-1)
         
            // verilator coverage_on
-%000002    input toggle;
-           // CHECK_COVER(-1,"top.t.o1","toggle",2)
+%000001    input toggle;
+           // CHECK_COVER(-1,"top.t.o1","toggle:0->1",1)
+           // CHECK_COVER(-2,"top.t.o1","toggle:1->0",1)
         
         endmodule
         
@@ -213,18 +226,18 @@
            clk, toggle
            );
         
- 000019    input clk;
-%000002    input toggle;
+~000010    input clk;
+%000001    input toggle;
         
 %000001    logic z;
         
            for (genvar i = 0; i < P; i++) begin
-%000002       logic x;
+%000001       logic x;
               always @ (posedge clk) begin
                  x <= toggle;
               end
               for (genvar j = 0; j < 3; j++) begin
-%000003          logic [2:0] y;
+%000002          logic [2:0] y;
                  always @ (negedge clk) begin
                     y <= {toggle, ~toggle, 1'b1};
                  end
@@ -240,6 +253,6 @@
            input_struct
            );
         
- 000019    input str_logic input_struct;
+~000010    input str_logic input_struct;
         endmodule
         

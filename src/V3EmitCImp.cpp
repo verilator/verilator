@@ -355,6 +355,7 @@ class EmitCImp final : EmitCFunc {
             puts("int step = (end >= begin) ? 1 : -1;\n");
             // range is inclusive
             puts("for (int i = begin; i != end + step; i += step) {\n");
+            puts("for (int j = 0; j < 2; j++) {\n");
             if (v3Global.opt.threads() > 1) {
                 puts("uint32_t* count32p = reinterpret_cast<uint32_t*>(countp);\n");
             } else {
@@ -366,6 +367,7 @@ class EmitCImp final : EmitCFunc {
             puts("if (!fullhier.empty() && fullhier[0] == '.') fullhier = fullhier.substr(1);\n");
             puts("std::string commentWithIndex = commentp;\n");
             puts("if (ranged) commentWithIndex += '[' + std::to_string(i) + ']';\n");
+            puts("commentWithIndex += j ? \":0->1\" : \":1->0\";\n");
             // Used for second++ instantiation of identical bin
             puts("if (!enable) count32p = &fake_zero_count;\n");
             puts("*count32p = 0;\n");
@@ -380,6 +382,7 @@ class EmitCImp final : EmitCFunc {
             puts("  \"\", \"\");\n");  //  linescov argument, but in toggle coverage it is always
                                        //  empty
             puts("++countp;\n");
+            puts("}\n");
             puts("}\n");
             puts("}\n");
             splitSizeInc(10);
