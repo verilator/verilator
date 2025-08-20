@@ -180,16 +180,12 @@ class LinkJumpVisitor final : public VNVisitor {
             fl, new AstMethodCall{fl, queueRefp, "push_back", new AstArg{fl, "", processSelfp}}};
     }
     void handleDisableOnFork(AstDisable* const nodep, const std::vector<AstBegin*>& forks) {
-        // The support is limited only to disabling a fork from outside that fork.
-        // It utilizes the process::kill()` method. For each `disable` a queue of processes is
-        // declared. At the beginning of each fork that can be disabled, its process handle is
-        // pushed to the queue. `disable` statement is replaced with calling `kill()` method on
-        // each element of the queue.
+        // The support utilizes the process::kill()` method. For each `disable` a queue of
+        // processes is declared. At the beginning of each fork that can be disabled, its process
+        // handle is pushed to the queue. `disable` statement is replaced with calling `kill()`
+        // method on each element of the queue.
         FileLine* const fl = nodep->fileline();
         const std::string targetName = nodep->targetp()->name();
-        if (existsBlockAbove(targetName)) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from within same fork");
-        }
         if (m_ftaskp) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from task / function");
         }
@@ -222,7 +218,15 @@ class LinkJumpVisitor final : public VNVisitor {
             = new AstTaskRef{fl, VN_AS(getMemberp(processClassp, "killQueue"), Task),
                              new AstArg{fl, "", queueRefp}};
         killQueueCall->classOrPackagep(processClassp);
-        nodep->addNextHere(new AstStmtExpr{fl, killQueueCall});
+        AstStmtExpr* const killStmtp = new AstStmtExpr{fl, killQueueCall};
+        nodep->addNextHere(killStmtp);
+        if (existsBlockAbove(targetName)) {
+            // process::kill doesn't kill the current process immediately, because it is in the
+            // running state. Since the current process has to be terminated immediately, we jump
+            // at the end of the fork that is being disabled
+            AstJumpBlock* const jumpBlockp = getJumpBlock(nodep->targetp(), false);
+            killStmtp->addNextHere(new AstJumpGo{fl, jumpBlockp});
+        }
     }
     static bool directlyUnderFork(const AstNode* const nodep) {
         if (nodep->backp()->nextp() == nodep) return directlyUnderFork(nodep->backp());
