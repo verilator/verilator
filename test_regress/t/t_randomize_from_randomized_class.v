@@ -25,6 +25,7 @@ module t;
     B b = new;
     b.r();
     if (b.a.j != 7) $stop;
+    $write("*-* All Finished *-*\n");
     $finish;
   end
 endmodule
