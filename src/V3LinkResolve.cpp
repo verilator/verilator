@@ -67,11 +67,14 @@ class LinkResolveVisitor final : public VNVisitor {
         if (const AstMemberSel* const memberSelp = VN_CAST(nodep, MemberSel)) {
             return setRandomizedVar(memberSelp->fromp());
         }
+
+        // MemberSel contains a queue, array etc. and we do not support getting
+        // a variable to constrain in inline constrain from queue, array etc. from local:: scope
         m_randomizedVarp = nullptr;
         m_randomizedVarLocalPath.clear();
     }
 
-    bool isRandomizedVarSelect(const AstNodeExpr* const nodep) {
+    bool isRandomizedVarSelect(const AstNodeExpr* const nodep) const {
         const AstNodeExpr* nodepIterp = nodep;
         for (size_t i = 0; i < m_randomizedVarLocalPath.size(); ++i) {
             if (nodepIterp->name() != m_randomizedVarLocalPath[i]) return false;
@@ -227,7 +230,6 @@ class LinkResolveVisitor final : public VNVisitor {
                         E_UNSUPPORTED,
                         "Unsupported: randomize() nested in inline randomize() constrains");
                 }
-                m_randomizedVarLocalPath.clear();
                 setRandomizedVar(methodcallp->fromp());
             }
         }
@@ -571,15 +573,17 @@ class LinkResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstMemberSel* nodep) override {
-        iterateChildren(nodep);
         if (m_inRandomizeWith && m_randomizedVarp) {
             if (isRandomizedVarSelect(nodep->fromp())) {
                 AstNodeExpr* const prevFromp = nodep->fromp();
                 prevFromp->replaceWith(
                     new AstLambdaArgRef{prevFromp->fileline(), prevFromp->name(), false});
                 pushDeletep(prevFromp);
+                // There is no need to visit AstLambdaArgRef since we do nothing with it
+                return;
             }
         }
+        iterateChildren(nodep);
     }
 
     void visit(AstWith* nodep) override {

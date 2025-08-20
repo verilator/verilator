@@ -1,4 +1,4 @@
-%Error-UNSUPPORTED: t/t_randomize_neasted_bad.v:17:41: Unsupported: randomize() nested in inline randomize() constrains
+%Error-UNSUPPORTED: t/t_randomize_neasted_unsup.v:17:41: Unsupported: randomize() nested in inline randomize() constrains
    17 |     if (a.randomize() with {rdata == aa.randomize();} == 0) $stop;
       |                                         ^~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
