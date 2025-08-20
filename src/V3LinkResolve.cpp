@@ -54,7 +54,7 @@ class LinkResolveVisitor final : public VNVisitor {
     int m_senitemCvtNum = 0;  // Temporary signal counter
     std::deque<AstGenFor*> m_underGenFors;  // Stack of GenFor underneath
     bool m_underGenerate = false;  // Under GenFor/GenIf
-    AstVar* m_randomizedVarp = nullptr;  // Variable on which randomize is called
+    AstVar* m_randomizedVarp = nullptr;  // Variable on which the current randomize is called
     std::vector<string> m_randomizedVarLocalPath;
     bool m_inRandomizeWith = false;  // If in randomize() with (and no other with afterwards)
 
@@ -579,8 +579,6 @@ class LinkResolveVisitor final : public VNVisitor {
                 prevFromp->replaceWith(
                     new AstLambdaArgRef{prevFromp->fileline(), prevFromp->name(), false});
                 pushDeletep(prevFromp);
-                // There is no need to visit AstLambdaArgRef since we do nothing with it
-                return;
             }
         }
         iterateChildren(nodep);
