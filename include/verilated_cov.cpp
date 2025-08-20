@@ -255,21 +255,21 @@ private:
 
 public:
     // PUBLIC METHODS
-    // cppcheck-suppress dupInheritedMember
+    // cppcheck-suppress duplInheritedMember
     std::string defaultFilename() VL_MT_SAFE { return m_contextp->coverageFilename(); }
-    // cppcheck-suppress dupInheritedMember
+    // cppcheck-suppress duplInheritedMember
     void forcePerInstance(const bool flag) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock{m_mutex};
         m_forcePerInstance = flag;
     }
-    // cppcheck-suppress dupInheritedMember
+    // cppcheck-suppress duplInheritedMember
     void clear() VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock{m_mutex};
         clearGuts();
     }
-    // cppcheck-suppress dupInheritedMember
+    // cppcheck-suppress duplInheritedMember
     void clearNonMatch(const char* const matchp) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock{m_mutex};
@@ -285,7 +285,7 @@ public:
             m_items = newlist;
         }
     }
-    // cppcheck-suppress dupInheritedMember
+    // cppcheck-suppress duplInheritedMember
     void zero() VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock{m_mutex};
@@ -364,7 +364,7 @@ public:
         m_insertp = nullptr;
     }
 
-    // cppcheck-suppress dupInheritedMember
+    // cppcheck-suppress duplInheritedMember
     void write(const std::string& filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
         const VerilatedLockGuard lock{m_mutex};
