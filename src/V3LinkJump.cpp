@@ -187,9 +187,6 @@ class LinkJumpVisitor final : public VNVisitor {
         // each element of the queue.
         FileLine* const fl = nodep->fileline();
         const std::string targetName = nodep->targetp()->name();
-        if (existsBlockAbove(targetName)) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from within same fork");
-        }
         if (m_ftaskp) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from task / function");
         }
@@ -222,7 +219,11 @@ class LinkJumpVisitor final : public VNVisitor {
             = new AstTaskRef{fl, VN_AS(getMemberp(processClassp, "killQueue"), Task),
                              new AstArg{fl, "", queueRefp}};
         killQueueCall->classOrPackagep(processClassp);
-        nodep->addNextHere(new AstStmtExpr{fl, killQueueCall});
+        AstStmtExpr* const killStmtp = new AstStmtExpr{fl, killQueueCall};
+        nodep->addNextHere(killStmtp);
+        if (existsBlockAbove(targetName)) {
+            // jump at the end of fork
+        }
     }
     static bool directlyUnderFork(const AstNode* const nodep) {
         if (nodep->backp()->nextp() == nodep) return directlyUnderFork(nodep->backp());
