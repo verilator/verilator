@@ -87,6 +87,7 @@ bool AstNodeFTaskRef::isPure() {
 }
 
 bool AstNodeFTaskRef::getPurityRecurse() const {
+    // cppcheck-suppress shadowFunction
     AstNodeFTask* const taskp = this->taskp();
     // Unlinked yet, so treat as impure
     if (!taskp) return false;
@@ -1098,6 +1099,7 @@ std::pair<uint32_t, uint32_t> AstNodeDType::dimensions(bool includeBasic) const 
 
 int AstNodeDType::widthPow2() const {
     // I.e.  width 30 returns 32, width 32 returns 32.
+    // cppcheck-suppress shadowFunction
     const uint32_t width = this->width();
     for (int p2 = 30; p2 >= 0; p2--) {
         if (width > (1UL << p2)) return (1UL << (p2 + 1));
@@ -1374,6 +1376,7 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd,
     return newp;
 }
 
+// cppcheck-suppress duplInheritedMember
 AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
     const VBasicTypeKey key{nodep->width(), nodep->widthMin(), nodep->numeric(), nodep->keyword(),
                             nodep->nrange()};
@@ -1462,7 +1465,7 @@ AstVarScope* AstConstPool::findTable(AstInitArray* initp) {
         UASSERT_OBJ(VN_IS(valuep, Const), valuep, "Const pool table entry must be Const");
     }
     // Try to find an existing table with the same content
-    // cppcheck-has-bug-suppress unreadVariable
+    // cppcheck-suppress unreadVariable
     const V3Hash hash = V3Hasher::uncachedHash(initp);
     const auto& er = m_tables.equal_range(hash.value());
     for (auto it = er.first; it != er.second; ++it) {
@@ -1492,7 +1495,7 @@ static bool sameInit(const AstConst* ap, const AstConst* bp) {
 
 AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
     // Try to find an existing constant with the same value
-    // cppcheck-has-bug-suppress unreadVariable
+    // cppcheck-suppress unreadVariable
     const V3Hash hash = initp->num().toHash();
     const auto& er = m_consts.equal_range(hash.value());
     for (auto it = er.first; it != er.second; ++it) {

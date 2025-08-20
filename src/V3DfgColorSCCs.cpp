@@ -126,7 +126,7 @@ class ColorStronglyConnectedComponents final {
         }
     }
 
-    ColorStronglyConnectedComponents(DfgGraph& dfg)
+    explicit ColorStronglyConnectedComponents(DfgGraph& dfg)
         : m_dfg{dfg} {
         UASSERT(dfg.size() < UNASSIGNED, "Graph too big " << dfg.name());
         // Yet another implementation of Pearce's algorithm.

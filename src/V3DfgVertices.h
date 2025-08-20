@@ -185,6 +185,7 @@ public:
     // the actual driver this DfgVertexSplice can be replaced with.
     inline DfgVertex* wholep() const;
 
+    // cppcheck-suppress duplInheritedMember
     void resetSources() {
         m_driverData.clear();
         // Unlink default driver
@@ -375,7 +376,7 @@ class DfgUnresolved final : public DfgVertexVariadic {
     // Represents a collection of unresolved variable drivers before synthesis
 
 public:
-    DfgUnresolved(DfgGraph& dfg, DfgVertexVar* vtxp)
+    DfgUnresolved(DfgGraph& dfg, const DfgVertexVar* vtxp)
         : DfgVertexVariadic{dfg, dfgType(), vtxp->fileline(), vtxp->dtypep(), 1u} {}
     ASTGEN_MEMBERS_DfgUnresolved;
 
@@ -383,6 +384,7 @@ public:
     void addDriver(DfgLogic* vtxp) { addSource()->relinkSource(vtxp); }
     void addDriver(DfgVertexSplice* vtxp) { addSource()->relinkSource(vtxp); }
 
+    // cppcheck-suppress duplInheritedMember
     void clearSources() { DfgVertexVariadic::clearSources(); }
 
     DfgVertex* singleSource() const { return arity() == 1 ? source(0) : nullptr; }

@@ -352,8 +352,8 @@ public:
         , m_prefix{VString::removeWhitespace(label) + "-"} {}
 
     ~V3DfgContext() {
-        const string prefix = "Optimizations, DFG " + label() + " General, ";
-        V3Stats::addStat(prefix + "modules", m_modules);
+        const string front = "Optimizations, DFG " + label() + " General, ";
+        V3Stats::addStat(front + "modules", m_modules);
 
         // Print the collected patterns
         if (v3Global.opt.stats()) {

@@ -113,7 +113,7 @@ public:
     }
 };
 
-std::vector<std::unique_ptr<DfgGraph>> DfgGraph::splitIntoComponents(std::string label) {
+std::vector<std::unique_ptr<DfgGraph>> DfgGraph::splitIntoComponents(const std::string& label) {
     return SplitIntoComponents::apply(*this, label);
 }
 
@@ -125,7 +125,7 @@ class ExtractCyclicComponents final {
         uint64_t& m_userr;
 
     public:
-        VertexState(DfgVertex& vtx)
+        explicit VertexState(DfgVertex& vtx)
             : m_userr{vtx.getUser<uint64_t>()} {}
         bool merged() const { return m_userr >> 63; }
         void setMerged() { m_userr |= 1ULL << 63; }
@@ -266,11 +266,11 @@ class ExtractCyclicComponents final {
         dfg.forEachVertex([&](const DfgVertex& vtx) { vertices.insert(&vtx); });
 
         // Check that each edge connects to a vertex that is within the same graph
-        dfg.forEachVertex([&](DfgVertex& vtx) {
-            vtx.forEachSource([&](DfgVertex& src) {
+        dfg.forEachVertex([&](const DfgVertex& vtx) {
+            vtx.forEachSource([&](const DfgVertex& src) {
                 UASSERT_OBJ(vertices.count(&src), &vtx, "Source vertex not in graph");
             });
-            vtx.forEachSink([&](DfgVertex& snk) {
+            vtx.forEachSink([&](const DfgVertex& snk) {
                 UASSERT_OBJ(vertices.count(&snk), &snk, "Sink vertex not in graph");
             });
         });
@@ -287,7 +287,7 @@ class ExtractCyclicComponents final {
         // earlier merging of components ensured crossing in fact only happen at variable
         // boundaries). Note that fixing up the edges can create clones of variables. Clones do
         // not need fixing up, so we do not need to iterate them.
-        DfgVertex* const lastp = m_dfg.varVertices().backp();
+        const DfgVertex* const lastp = m_dfg.varVertices().backp();
         for (DfgVertexVar& vtx : m_dfg.varVertices()) {
             // Fix up the edges crossing components
             fixEdges(vtx);
@@ -337,6 +337,7 @@ public:
     }
 };
 
-std::vector<std::unique_ptr<DfgGraph>> DfgGraph::extractCyclicComponents(std::string label) {
+std::vector<std::unique_ptr<DfgGraph>>
+DfgGraph::extractCyclicComponents(const std::string& label) {
     return ExtractCyclicComponents::apply(*this, label);
 }

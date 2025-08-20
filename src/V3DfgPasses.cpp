@@ -312,7 +312,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         v3Global.rootp()->typeTablep()->addTypesp(tabDTypep);
 
         // The index variable
-        DfgVarPacked* const idxVtxp = [&]() {
+        AstVar* const idxVarp = [&]() {
             // If there is an existing result variable, use that, otherwise create a new variable
             DfgVarPacked* varp = nullptr;
             if (DfgVertexVar* const vp = srcp->getResultVar()) {
@@ -324,7 +324,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
                 varp->srcp(srcp);
             }
             varp->setHasModRdRefs();
-            return varp;
+            return varp->varp();
         }();
         // The previous index variable - we don't need a vertex for this
         AstVar* const preVarp = [&]() {
@@ -381,13 +381,13 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             logicp->addStmtsp(new AstAssign{
                 flp,  //
                 new AstArraySel{flp, new AstVarRef{flp, tabVtxp->varp(), VAccess::WRITE},
-                                new AstVarRef{flp, idxVtxp->varp(), VAccess::READ}},  //
+                                new AstVarRef{flp, idxVarp, VAccess::READ}},  //
                 new AstConst{flp, AstConst::BitTrue{}}});
         }
         {  // pre = idx
             logicp->addStmtsp(new AstAssign{flp,  //
                                             new AstVarRef{flp, preVarp, VAccess::WRITE},  //
-                                            new AstVarRef{flp, idxVtxp->varp(), VAccess::READ}});
+                                            new AstVarRef{flp, idxVarp, VAccess::READ}});
         }
 
         // Replace terms with ArraySels
@@ -500,7 +500,7 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
             ++ctx.m_varsRemoved;
             varp->replaceWith(varp->srcp());
             ctx.m_deleteps.push_back(varp->nodep());  // Delete variable at the end
-        } else if (DfgVarPacked* const driverp = varp->srcp()->cast<DfgVarPacked>()) {
+        } else if (const DfgVarPacked* const driverp = varp->srcp()->cast<DfgVarPacked>()) {
             // If it's driven from another variable, it can be replaced by that.
             // Mark it for replacement
             ++ctx.m_varsReplaced;

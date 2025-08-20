@@ -164,7 +164,9 @@ class DataflowExtractVisitor final : public VNVisitor {
 
     void visit(AstAssignW* nodep) override {
         // Mark LHS variable as combinationally driven
-        if (AstVarRef* const vrefp = VN_CAST(nodep->lhsp(), VarRef)) vrefp->varp()->user4(true);
+        if (const AstVarRef* const vrefp = VN_CAST(nodep->lhsp(), VarRef)) {
+            vrefp->varp()->user4(true);
+        }
         //
         iterateChildrenConst(nodep);
     }

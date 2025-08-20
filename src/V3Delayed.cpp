@@ -220,6 +220,7 @@ class DelayedVisitor final : public VNVisitor {
             // Remove duplicates
             V3Const::constifyExpensiveEdit(m_senTreep);
         }
+        // cppcheck-suppress constParameterPointer
         void addSensitivity(AstSenTree* nodep) { addSensitivity(nodep->sensesp()); }
     };
 
@@ -1126,7 +1127,7 @@ class DelayedVisitor final : public VNVisitor {
 
         // First gather all senItems
         AstSenItem* senItemp = nullptr;
-        for (AstSenTree* const domainp : m_timingDomains) {
+        for (const AstSenTree* const domainp : m_timingDomains) {
             if (domainp->sensesp())
                 senItemp = AstNode::addNext(senItemp, domainp->sensesp()->cloneTree(true));
         }
@@ -1216,6 +1217,7 @@ class DelayedVisitor final : public VNVisitor {
         VL_RESTORER(m_currNbaLhsRefp);
         UASSERT_OBJ(!m_currNbaLhsRefp, nodep, "NBAs should not nest");
         nodep->lhsp()->foreach([&](AstNode* currp) {
+            // cppcheck-suppress constVariablePointer
             if (AstExprStmt* const exprp = VN_CAST(currp, ExprStmt)) {
                 // Move statements before the NBA
                 nodep->addHereThisAsNext(exprp->stmtsp()->unlinkFrBackWithNext());

@@ -153,7 +153,7 @@ class AstToDfgConverter final : public VNVisitor {
             }
 
             // Get (or create a new) temporary for this variable
-            DfgVertexVar* const vtxp = [&]() -> DfgVertexVar* {
+            const DfgVertexVar* const vtxp = [&]() -> DfgVertexVar* {
                 // The variable being assigned
                 Variable* const tgtp = getTarget(vrefp);
 
@@ -240,7 +240,9 @@ class AstToDfgConverter final : public VNVisitor {
 
             // Return the splice driver
             DfgVertex* driverp = splicep->driverAt(index);
-            if (DfgUnitArray* const uap = driverp->cast<DfgUnitArray>()) driverp = uap->srcp();
+            if (const DfgUnitArray* const uap = driverp->cast<DfgUnitArray>()) {
+                driverp = uap->srcp();
+            }
             return {driverp->as<DfgVertexSplice>(), 0};
         }
 
@@ -1319,6 +1321,7 @@ class AstToDfgSynthesize final {
         const bool missing = m_logicp->findSink<DfgVertex>([&](const DfgVertex& sink) -> bool {
             const DfgUnresolved* const unresolvedp = sink.as<DfgUnresolved>();
             AstNode* const tgtp = unresolvedp->singleSink()->as<DfgVertexVar>()->nodep();
+            // cppcheck-suppress constVariablePointer
             Variable* const varp = reinterpret_cast<Variable*>(tgtp);
             return !oSymTab.count(varp);
         });
@@ -1331,6 +1334,7 @@ class AstToDfgSynthesize final {
         m_logicp->forEachSink([&](DfgVertex& sink) {
             DfgUnresolved* const unresolvedp = sink.as<DfgUnresolved>();
             AstNode* const tgtp = unresolvedp->singleSink()->as<DfgVertexVar>()->nodep();
+            // cppcheck-suppress constVariablePointer
             Variable* const varp = reinterpret_cast<Variable*>(tgtp);
             DfgVertexVar* const resp = oSymTab.at(varp);
             UASSERT_OBJ(resp->srcp(), resp, "Undriven result");
@@ -1489,7 +1493,7 @@ class AstToDfgSynthesize final {
         //-------------------------------------------------------------------
         UINFO(5, "Step 2: Revert drivers of variables with unsynthesizeable drivers");
         // We do this as the variables might be multi-driven, we just can't know at this point
-        for (DfgVertexVar& var : m_dfg.varVertices()) {
+        for (const DfgVertexVar& var : m_dfg.varVertices()) {
             if (!var.srcp()) continue;
             DfgUnresolved* const unresolvedp = var.srcp()->cast<DfgUnresolved>();
             if (!unresolvedp) break;  // Stop when reached the synthesized temporaries
@@ -1509,7 +1513,7 @@ class AstToDfgSynthesize final {
         // List of multi-driven variables
         std::vector<DfgVertexVar*> multidrivenps;
         // Map from variable to its resolved driver
-        std::unordered_map<DfgVertexVar*, DfgVertexSplice*> resolvedDrivers;
+        std::unordered_map<const DfgVertexVar*, DfgVertexSplice*> resolvedDrivers;
         // Compute resolved drivers of all variablees
         for (DfgVertexVar& var : m_dfg.varVertices()) {
             if (!var.srcp()) continue;
@@ -1536,7 +1540,7 @@ class AstToDfgSynthesize final {
             UASSERT_OBJ(newEntry, &var, "Dupliacte driver");
         }
         // Revert and remove drivers of multi-driven variables
-        for (DfgVertexVar* const vtxp : multidrivenps) {
+        for (const DfgVertexVar* const vtxp : multidrivenps) {
             // Mark as multidriven for future DFG runs - here, so we get all warning before
             vtxp->varp()->setDfgMultidriven();
             // Might not have a driver if transitively removed on an earlier iteration
@@ -1546,7 +1550,7 @@ class AstToDfgSynthesize final {
             revertTransivelyAndRemove(unresolvedp, m_ctx.m_synt.revertMultidrive);
         }
         // Replace all DfgUnresolved with the resolved drivers
-        for (DfgVertexVar& var : m_dfg.varVertices()) {
+        for (const DfgVertexVar& var : m_dfg.varVertices()) {
             if (!var.srcp()) continue;
             DfgUnresolved* const srcp = var.srcp()->cast<DfgUnresolved>();
             if (!srcp) break;  // Stop when reached the synthesized temporaries

@@ -85,6 +85,7 @@ class DeadVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
+    // cppcheck-suppress constParameterPointer
     void checkAll(AstNode* nodep) {
         if (AstNode* const subnodep = nodep->dtypep()) {
             if (nodep != subnodep  // Not NodeDTypes reference themselves
@@ -473,7 +474,9 @@ class DeadVisitor final : public VNVisitor {
         }
     }
 
+    // cppcheck-suppress constParameterPointer
     void preserveTopIfaces(AstNetlist* rootp) {
+        // cppcheck-suppress constVariablePointer
         for (AstNodeModule* modp = rootp->modulesp(); modp && modp->level() <= 2;
              modp = VN_AS(modp->nextp(), NodeModule)) {
             for (AstNode* subnodep = modp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {

@@ -705,7 +705,8 @@ public:
     // Split this graph into individual components (unique sub-graphs with no edges between them).
     // Also removes any vertices that are not weakly connected to any variable.
     // Leaves 'this' graph empty.
-    std::vector<std::unique_ptr<DfgGraph>> splitIntoComponents(std::string label) VL_MT_DISABLED;
+    std::vector<std::unique_ptr<DfgGraph>>
+    splitIntoComponents(const std::string& label) VL_MT_DISABLED;
 
     // Extract cyclic sub-graphs from 'this' graph. Cyclic sub-graphs are those that contain at
     // least one strongly connected component (SCC) plus any other vertices that feed or sink from
@@ -716,7 +717,7 @@ public:
     // to be a DAG (acyclic). 'this' will not necessarily be a connected graph at the end, even if
     // it was originally connected.
     std::vector<std::unique_ptr<DfgGraph>>
-    extractCyclicComponents(std::string label) VL_MT_DISABLED;
+    extractCyclicComponents(const std::string& label) VL_MT_DISABLED;
 
     //-----------------------------------------------------------------------
     // Debug dumping
@@ -742,10 +743,10 @@ public:
 
     // Returns the set of vertices in the upstream cones of the given vertices
     std::unique_ptr<std::unordered_set<const DfgVertex*>>
-    sourceCone(const std::vector<const DfgVertex*>) const VL_MT_DISABLED;
+    sourceCone(const std::vector<const DfgVertex*>&) const VL_MT_DISABLED;
     // Returns the set of vertices in the downstream cones of the given vertices
     std::unique_ptr<std::unordered_set<const DfgVertex*>>
-    sinkCone(const std::vector<const DfgVertex*>) const VL_MT_DISABLED;
+    sinkCone(const std::vector<const DfgVertex*>&) const VL_MT_DISABLED;
 
     //-----------------------------------------------------------------------
     // Static methods for data types
@@ -824,9 +825,7 @@ T& DfgVertex::user() {
     UDEBUGONLY(UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving"););
     if (m_userCnt != userCurrent) {
         m_userCnt = userCurrent;
-        // cppcheck-has-bug-suppress uninitvar
-        VL_ATTR_UNUSED T* const resultp = new (storagep) T{};
-        UDEBUGONLY(UASSERT_OBJ(resultp == storagep, this, "Something is odd"););
+        new (storagep) T{};
     }
     return *storagep;
 }
@@ -864,8 +863,8 @@ void DfgVertex::setUser(T value) {
 void DfgVertex::forEachSource(std::function<void(DfgVertex&)> f) {
     const auto pair = sourceEdges();
     const DfgEdge* const edgesp = pair.first;
-    const size_t arity = pair.second;
-    for (size_t i = 0; i < arity; ++i) {
+    const size_t nEdges = pair.second;
+    for (size_t i = 0; i < nEdges; ++i) {
         if (DfgVertex* const sourcep = edgesp[i].m_sourcep) f(*sourcep);
     }
 }
@@ -873,8 +872,8 @@ void DfgVertex::forEachSource(std::function<void(DfgVertex&)> f) {
 void DfgVertex::forEachSource(std::function<void(const DfgVertex&)> f) const {
     const auto pair = sourceEdges();
     const DfgEdge* const edgesp = pair.first;
-    const size_t arity = pair.second;
-    for (size_t i = 0; i < arity; ++i) {
+    const size_t nEdges = pair.second;
+    for (size_t i = 0; i < nEdges; ++i) {
         if (DfgVertex* const sourcep = edgesp[i].m_sourcep) f(*sourcep);
     }
 }
@@ -893,15 +892,15 @@ void DfgVertex::forEachSink(std::function<void(const DfgVertex&)> f) const {
 void DfgVertex::forEachSourceEdge(std::function<void(DfgEdge&, size_t)> f) {
     const auto pair = sourceEdges();
     DfgEdge* const edgesp = pair.first;
-    const size_t arity = pair.second;
-    for (size_t i = 0; i < arity; ++i) f(edgesp[i], i);
+    const size_t nEdges = pair.second;
+    for (size_t i = 0; i < nEdges; ++i) f(edgesp[i], i);
 }
 
 void DfgVertex::forEachSourceEdge(std::function<void(const DfgEdge&, size_t)> f) const {
     const auto pair = sourceEdges();
     const DfgEdge* const edgesp = pair.first;
-    const size_t arity = pair.second;
-    for (size_t i = 0; i < arity; ++i) f(edgesp[i], i);
+    const size_t nEdges = pair.second;
+    for (size_t i = 0; i < nEdges; ++i) f(edgesp[i], i);
 }
 
 void DfgVertex::forEachSinkEdge(std::function<void(DfgEdge&)> f) {
@@ -921,8 +920,8 @@ void DfgVertex::forEachSinkEdge(std::function<void(const DfgEdge&)> f) const {
 const DfgEdge* DfgVertex::findSourceEdge(std::function<bool(const DfgEdge&, size_t)> p) const {
     const auto pair = sourceEdges();
     const DfgEdge* const edgesp = pair.first;
-    const size_t arity = pair.second;
-    for (size_t i = 0; i < arity; ++i) {
+    const size_t nEdges = pair.second;
+    for (size_t i = 0; i < nEdges; ++i) {
         const DfgEdge& edge = edgesp[i];
         if (p(edge, i)) return &edge;
     }
@@ -979,8 +978,8 @@ DfgVertex* DfgVertexSplice::wholep() const {
     if (driverLo(0) != 0) return nullptr;
     DfgVertex* const srcp = DfgVertexVariadic::source(1);
     if (srcp->size() != size()) return nullptr;
-    if (DfgUnitArray* const uap = srcp->cast<DfgUnitArray>()) {
-        if (DfgVertexSplice* sp = uap->srcp()->cast<DfgVertexSplice>()) {
+    if (const DfgUnitArray* const uap = srcp->cast<DfgUnitArray>()) {
+        if (const DfgVertexSplice* sp = uap->srcp()->cast<DfgVertexSplice>()) {
             if (!sp->wholep()) return nullptr;
         }
     }
@@ -1014,6 +1013,7 @@ DfgVertexVar::DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVarScope* vscp)
 
 DfgVertexVar::~DfgVertexVar() {
     // Decrement reference count
+    // cppcheck-suppress shadowFunction
     AstNode* const nodep = this->nodep();
     nodep->user1(nodep->user1() - 0x10);
     UASSERT_OBJ((nodep->user1() >> 4) >= 0, nodep, "Reference count underflow");

@@ -46,7 +46,8 @@ class TraceDriver final : public DfgVisitor {
 
         struct Hash final {
             size_t operator()(const Visited& item) const {
-                V3Hash hash{reinterpret_cast<uintptr_t>(item.m_vtxp)};
+                // cppcheck-suppress unreadVariable
+                V3Hash hash{item.m_vtxp};
                 hash += item.m_lsb;
                 hash += item.m_msb;
                 return hash.value();
@@ -244,7 +245,7 @@ class TraceDriver final : public DfgVisitor {
     // Somewhat rudimentary but sufficient for current purposes.
     static bool knownToBeZeroAtAndAbove(const DfgVertex* vtxp, uint32_t idx) {
         if (const DfgConcat* const catp = vtxp->cast<DfgConcat>()) {
-            DfgConst* const lConstp = catp->lhsp()->cast<DfgConst>();
+            const DfgConst* const lConstp = catp->lhsp()->cast<DfgConst>();
             return lConstp && idx >= catp->rhsp()->width() && lConstp->isZero();
         }
         if (const DfgExtend* const extp = vtxp->cast<DfgExtend>()) {
@@ -256,7 +257,7 @@ class TraceDriver final : public DfgVisitor {
     // Like knownToBeZeroAtAndAbove, but checks vtxp[idx:0]
     static bool knownToBeZeroAtAndBelow(const DfgVertex* vtxp, uint32_t idx) {
         if (const DfgConcat* const catp = vtxp->cast<DfgConcat>()) {
-            DfgConst* const rConstp = catp->rhsp()->cast<DfgConst>();
+            const DfgConst* const rConstp = catp->rhsp()->cast<DfgConst>();
             return rConstp && idx < rConstp->width() && rConstp->isZero();
         }
         return false;
@@ -381,10 +382,10 @@ class TraceDriver final : public DfgVisitor {
 
     void visit(DfgArraySel* vtxp) override {
         // Only constant select
-        DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>();
+        const DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>();
         if (!idxp) return;
         // From a variable
-        DfgVarArray* varp = vtxp->fromp()->cast<DfgVarArray>();
+        const DfgVarArray* varp = vtxp->fromp()->cast<DfgVarArray>();
         if (!varp) return;
         // Skip through intermediate variables
         while (varp->srcp() && varp->srcp()->is<DfgVarArray>()) {
@@ -394,10 +395,10 @@ class TraceDriver final : public DfgVisitor {
         if (!varp->srcp()) return;
 
         // Driver might be a splice
-        if (DfgSpliceArray* const splicep = varp->srcp()->cast<DfgSpliceArray>()) {
-            DfgVertex* const driverp = splicep->driverAt(idxp->toSizeT());
+        if (const DfgSpliceArray* const splicep = varp->srcp()->cast<DfgSpliceArray>()) {
+            const DfgVertex* const driverp = splicep->driverAt(idxp->toSizeT());
             if (!driverp) return;
-            DfgUnitArray* const uap = driverp->cast<DfgUnitArray>();
+            const DfgUnitArray* const uap = driverp->cast<DfgUnitArray>();
             if (!uap) return;
             // Trace the driver
             SET_RESULT(trace(uap->srcp(), m_msb, m_lsb));
@@ -405,7 +406,7 @@ class TraceDriver final : public DfgVisitor {
         }
 
         // Or a unit array
-        DfgUnitArray* const uap = varp->srcp()->cast<DfgUnitArray>();
+        const DfgUnitArray* const uap = varp->srcp()->cast<DfgUnitArray>();
         if (!uap) return;
         // Trace the driver
         UASSERT_OBJ(idxp->toSizeT() == 0, vtxp, "Array Index out of range");
@@ -523,7 +524,7 @@ class TraceDriver final : public DfgVisitor {
 
     void visit(DfgShiftR* vtxp) override {
         DfgVertex* const lhsp = vtxp->lhsp();
-        if (DfgConst* const rConstp = vtxp->rhsp()->cast<DfgConst>()) {
+        if (const DfgConst* const rConstp = vtxp->rhsp()->cast<DfgConst>()) {
             const uint32_t shiftAmnt = rConstp->toU32();
             // Width of lower half of result
             const uint32_t lowerWidth = shiftAmnt > vtxp->width() ? 0 : vtxp->width() - shiftAmnt;
@@ -558,7 +559,7 @@ class TraceDriver final : public DfgVisitor {
 
     void visit(DfgShiftL* vtxp) override {
         DfgVertex* const lhsp = vtxp->lhsp();
-        if (DfgConst* const rConstp = vtxp->rhsp()->cast<DfgConst>()) {
+        if (const DfgConst* const rConstp = vtxp->rhsp()->cast<DfgConst>()) {
             const uint32_t shiftAmnt = rConstp->toU32();
             // Width of lower half of result
             const uint32_t lowerWidth = shiftAmnt > vtxp->width() ? vtxp->width() : shiftAmnt;
@@ -642,13 +643,13 @@ public:
         // partial trace succeded, but an eventual one falied). Because new
         // vertices should be created depth first, it is enough to do a single
         // reverse pass over the collectoin
-        for (DfgVertex* const vtxp : vlstd::reverse_view(traceDriver.m_newVtxps)) {
+        for (DfgVertex* const newp : vlstd::reverse_view(traceDriver.m_newVtxps)) {
             // Keep the actual result!
-            if (vtxp == resultp) continue;
+            if (newp == resultp) continue;
             // Keep used ones!
-            if (vtxp->hasSinks()) continue;
+            if (newp->hasSinks()) continue;
             // Delete it
-            VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
+            VL_DO_DANGLING(newp->unlinkDelete(dfg), newp);
         }
         // Return the result
         return resultp;
@@ -733,10 +734,10 @@ class IndependentBits final : public DfgVisitor {
 
     void visit(DfgArraySel* vtxp) override {
         // Only constant select
-        DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>();
+        const DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>();
         if (!idxp) return;
         // From a variable
-        DfgVarArray* varp = vtxp->fromp()->cast<DfgVarArray>();
+        const DfgVarArray* varp = vtxp->fromp()->cast<DfgVarArray>();
         if (!varp) return;
         // Skip through intermediate variables
         while (varp->srcp() && varp->srcp()->is<DfgVarArray>()) {
@@ -744,11 +745,11 @@ class IndependentBits final : public DfgVisitor {
         }
         // Find driver
         if (!varp->srcp()) return;
-        DfgSpliceArray* const splicep = varp->srcp()->cast<DfgSpliceArray>();
+        const DfgSpliceArray* const splicep = varp->srcp()->cast<DfgSpliceArray>();
         if (!splicep) return;
-        DfgVertex* const driverp = splicep->driverAt(idxp->toSizeT());
+        const DfgVertex* const driverp = splicep->driverAt(idxp->toSizeT());
         if (!driverp) return;
-        DfgUnitArray* const uap = driverp->cast<DfgUnitArray>();
+        const DfgUnitArray* const uap = driverp->cast<DfgUnitArray>();
         if (!uap) return;
         // Update mask
         MASK(vtxp) = MASK(uap->srcp());
@@ -1046,7 +1047,7 @@ class FixUpIndependentRanges final {
         V3Number result{vtxp->fileline(), static_cast<int>(vtxp->width()), 0};
         vtxp->forEachSink([&result](DfgVertex& sink) {
             // If used via a Sel, mark the selected bits used
-            if (DfgSel* const selp = sink.cast<DfgSel>()) {
+            if (const DfgSel* const selp = sink.cast<DfgSel>()) {
                 uint32_t lsb = selp->lsb();
                 uint32_t msb = lsb + selp->width() - 1;
                 for (uint32_t i = lsb; i <= msb; ++i) result.setBit(i, '1');
@@ -1058,12 +1059,12 @@ class FixUpIndependentRanges final {
         return result;
     }
 
-    static std::string debugStr(DfgVertex* vtxp) {
-        if (DfgArraySel* const aselp = vtxp->cast<DfgArraySel>()) {
+    static std::string debugStr(const DfgVertex* vtxp) {
+        if (const DfgArraySel* const aselp = vtxp->cast<DfgArraySel>()) {
             const size_t i = aselp->bitp()->as<DfgConst>()->toSizeT();
             return debugStr(aselp->fromp()) + "[" + std::to_string(i) + "]";
         }
-        if (DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>()) {
+        if (const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>()) {
             return varp->nodep()->name();
         }
         vtxp->v3fatalSrc("Unhandled node type");  // LCOV_EXCL_LINE
@@ -1165,7 +1166,7 @@ class FixUpIndependentRanges final {
 
         // If no imporovement was possible, delete the terms we just created
         if (!nImprovements) {
-            for (DfgVertex* const vtxp : termps) VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
+            for (DfgVertex* const termp : termps) VL_DO_DANGLING(termp->unlinkDelete(dfg), termp);
             termps.clear();
             return 0;
         }

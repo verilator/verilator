@@ -97,6 +97,7 @@ protected:
             result = vertexp->user();
             break;
         case LatchDetectGraphVertex::VT_BLOCK:  // (OR of potentially many siblings)
+            // cppcheck-suppress constVariableReference
             for (V3GraphEdge& edge : vertexp->outEdges()) {
                 if (latchCheckInternal(castVertexp(edge.top()))) {
                     result = true;
@@ -128,6 +129,7 @@ public:
     }
     // Clear out userp field of referenced outputs on destruction
     // (occurs at the end of each combinational always block)
+    // cppcheck-suppress duplInheritedMember
     void clear() {
         m_outputs.clear();
         // Calling base class clear will unlink & delete all edges & vertices
