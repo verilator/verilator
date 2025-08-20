@@ -856,8 +856,8 @@ public:
     }
     AstIfaceGenericDType(FileLine* fl, FileLine* modportFl, const string& modport)
         : ASTGEN_SUPER_IfaceGenericDType(fl)
-        , m_modportFileline(modportFl)
-        , m_modportName(modport) {
+        , m_modportFileline{modportFl}
+        , m_modportName{modport} {
         dtypep(this);
     }
     ASTGEN_MEMBERS_AstIfaceGenericDType;
