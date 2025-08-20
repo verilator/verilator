@@ -114,6 +114,7 @@ private:
                 const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propp->stmtsp());
                 for (const auto& tconnect : tconnects) {
                     const AstVar* const portp = tconnect.first;
+                    // cppcheck-suppress constVariablePointer // 'exprp' unlinked below
                     AstArg* const argp = tconnect.second;
                     AstNode* const pinp = argp->exprp()->unlinkFrBack();
                     replaceVarRefsWithExprRecurse(propExprp, portp, pinp);

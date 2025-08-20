@@ -134,7 +134,7 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
     // Hook up inputs of cloned variables
     for (const DfgVertexVar& vtx : m_varVertices) {
         // All variable vertices are unary
-        if (DfgVertex* const srcp = vtx.srcp()) {
+        if (const DfgVertex* const srcp = vtx.srcp()) {
             vtxp2clonep.at(&vtx)->as<DfgVertexVar>()->srcp(vtxp2clonep.at(srcp));
         }
     }
@@ -146,7 +146,7 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
                 const DfgSpliceArray* const vp = vtx.as<DfgSpliceArray>();
                 DfgSpliceArray* const cp = vtxp2clonep.at(vp)->as<DfgSpliceArray>();
                 vp->forEachSourceEdge([&](const DfgEdge& edge, size_t i) {
-                    if (DfgVertex* const srcp = edge.sourcep()) {
+                    if (const DfgVertex* const srcp = edge.sourcep()) {
                         cp->addDriver(vp->driverFileLine(i),  //
                                       vp->driverLo(i),  //
                                       vtxp2clonep.at(srcp));
@@ -158,7 +158,7 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
                 const DfgSplicePacked* const vp = vtx.as<DfgSplicePacked>();
                 DfgSplicePacked* const cp = vtxp2clonep.at(vp)->as<DfgSplicePacked>();
                 vp->forEachSourceEdge([&](const DfgEdge& edge, size_t i) {
-                    if (DfgVertex* const srcVp = edge.sourcep()) {
+                    if (const DfgVertex* const srcVp = edge.sourcep()) {
                         DfgVertex* const srcCp = vtxp2clonep.at(srcVp);
                         UASSERT_OBJ(!srcCp->is<DfgLogic>(), srcCp, "Cannot clone DfgLogic");
                         if (srcVp == vp->defaultp()) {
@@ -183,7 +183,7 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
             UASSERT_OBJ(oSourceEdges.second == cSourceEdges.second, &vtx,
                         "Mismatched source count");
             for (size_t i = 0; i < oSourceEdges.second; ++i) {
-                if (DfgVertex* const srcp = oSourceEdges.first[i].sourcep()) {
+                if (const DfgVertex* const srcp = oSourceEdges.first[i].sourcep()) {
                     cSourceEdges.first[i].relinkSource(vtxp2clonep.at(srcp));
                 }
             }
@@ -244,11 +244,11 @@ std::string DfgGraph::makeUniqueName(const std::string& prefix, size_t n) {
     // Construct the tmpNameStub if we have not done so yet
     if (m_tmpNameStub.empty()) {
         // Use the hash of the graph name (avoid long names and non-identifiers)
-        const std::string name = V3Hash{m_name}.toString();
+        const std::string hash = V3Hash{m_name}.toString();
         // We need to keep every variable globally unique, and graph hashed
         // names might not be, so keep a static table to track multiplicity
         static std::unordered_map<std::string, uint32_t> s_multiplicity;
-        m_tmpNameStub += '_' + name + '_' + std::to_string(s_multiplicity[name]++) + '_';
+        m_tmpNameStub += '_' + hash + '_' + std::to_string(s_multiplicity[hash]++) + '_';
     }
     // Assemble the globally unique name
     return "__Vdfg" + prefix + m_tmpNameStub + std::to_string(n);
@@ -287,12 +287,12 @@ static const std::string toDotId(const DfgVertex& vtx) { return '"' + cvtToHex(&
 static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
 
     if (const DfgVarPacked* const varVtxp = vtx.cast<DfgVarPacked>()) {
-        AstNode* const nodep = varVtxp->nodep();
-        AstVar* const varp = varVtxp->varp();
+        const AstNode* const nodep = varVtxp->nodep();
+        const AstVar* const varp = varVtxp->varp();
         os << toDotId(vtx);
         os << " [label=\"" << nodep->prettyName() << '\n';
         os << cvtToHex(varVtxp) << '\n';
-        if (AstNode* const tmpForp = varVtxp->tmpForp()) {
+        if (const AstNode* const tmpForp = varVtxp->tmpForp()) {
             os << "temporary for: " << tmpForp->prettyName() << "\n";
         }
         varVtxp->dtypep()->dumpSmall(os);
@@ -320,12 +320,12 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     }
 
     if (const DfgVarArray* const arrVtxp = vtx.cast<DfgVarArray>()) {
-        AstNode* const nodep = arrVtxp->nodep();
-        AstVar* const varp = arrVtxp->varp();
+        const AstNode* const nodep = arrVtxp->nodep();
+        const AstVar* const varp = arrVtxp->varp();
         os << toDotId(vtx);
         os << " [label=\"" << nodep->prettyName() << '\n';
         os << cvtToHex(arrVtxp) << '\n';
-        if (AstNode* const tmpForp = arrVtxp->tmpForp()) {
+        if (const AstNode* const tmpForp = arrVtxp->tmpForp()) {
             os << "temporary for: " << tmpForp->prettyName() << "\n";
         }
         arrVtxp->dtypep()->dumpSmall(os);
@@ -512,11 +512,12 @@ void DfgGraph::dumpDotFilePrefixed(const std::string& label,
 
 template <bool T_SinksNotSources>
 static std::unique_ptr<std::unordered_set<const DfgVertex*>>
-dfgGraphCollectCone(const std::vector<const DfgVertex*> vtxps) {
+dfgGraphCollectCone(const std::vector<const DfgVertex*>& vtxps) {
     // Work queue for traversal starting from all the seed vertices
     std::vector<const DfgVertex*> queue = vtxps;
     // Set of already visited vertices
-    std::unordered_set<const DfgVertex*>* const resp = new std::unordered_set<const DfgVertex*>{};
+    std::unique_ptr<std::unordered_set<const DfgVertex*>> resp{
+        new std::unordered_set<const DfgVertex*>{}};
     // Depth first traversal
     while (!queue.empty()) {
         // Pop next work item
@@ -532,16 +533,16 @@ dfgGraphCollectCone(const std::vector<const DfgVertex*> vtxps) {
         }
     }
     // Done
-    return std::unique_ptr<std::unordered_set<const DfgVertex*>>{resp};
+    return resp;
 }
 
 std::unique_ptr<std::unordered_set<const DfgVertex*>>
-DfgGraph::sourceCone(const std::vector<const DfgVertex*> vtxps) const {
+DfgGraph::sourceCone(const std::vector<const DfgVertex*>& vtxps) const {
     return dfgGraphCollectCone<false>(vtxps);
 }
 
 std::unique_ptr<std::unordered_set<const DfgVertex*>>
-DfgGraph::sinkCone(const std::vector<const DfgVertex*> vtxps) const {
+DfgGraph::sinkCone(const std::vector<const DfgVertex*>& vtxps) const {
     return dfgGraphCollectCone<true>(vtxps);
 }
 
@@ -578,12 +579,12 @@ void DfgEdge::unlinkSource() {
     if (!m_sourcep) return;
 #ifdef VL_DEBUG
     {
-        DfgEdge* sinkp = m_sourcep->m_sinksp;
-        while (sinkp) {
-            if (sinkp == this) break;
-            sinkp = sinkp->m_nextp;
+        DfgEdge* currp = m_sourcep->m_sinksp;
+        while (currp) {
+            if (currp == this) break;
+            currp = currp->m_nextp;
         }
-        UASSERT(sinkp, "'m_sourcep' does not have this edge as sink");
+        UASSERT(currp, "'m_sourcep' does not have this edge as sink");
     }
 #endif
     // Relink pointers of predecessor and successor
@@ -677,7 +678,7 @@ V3Hash DfgVertex::hash() {
         // variables, which we rely on.
         if (!is<DfgVertexVar>()) {
             hash += m_type;
-            if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep(), UnpackArrayDType)) {
+            if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep(), UnpackArrayDType)) {
                 hash += adtypep->elementsConst();
                 // TODO: maybe include sub-dtype, but not hugely important at the moment
             } else {
@@ -685,9 +686,9 @@ V3Hash DfgVertex::hash() {
             }
             const auto pair = sourceEdges();
             const DfgEdge* const edgesp = pair.first;
-            const size_t arity = pair.second;
+            const size_t nEdges = pair.second;
             // Sources must always be connected in well-formed graphs
-            for (size_t i = 0; i < arity; ++i) hash += edgesp[i].m_sourcep->hash();
+            for (size_t i = 0; i < nEdges; ++i) hash += edgesp[i].m_sourcep->hash();
         }
         result = hash;
     }
@@ -758,11 +759,15 @@ DfgVertexVar* DfgVertex::getResultVar() {
 
 AstScope* DfgVertex::scopep(ScopeCache& cache, bool tryResultVar) VL_MT_DISABLED {
     // If this is a variable, we are done
-    if (DfgVertexVar* const varp = this->cast<DfgVertexVar>()) return varp->varScopep()->scopep();
+    if (const DfgVertexVar* const varp = this->cast<DfgVertexVar>()) {
+        return varp->varScopep()->scopep();
+    }
 
     // Try the result var first if instructed (usully only in the recursive case)
     if (tryResultVar) {
-        if (DfgVertexVar* const varp = this->getResultVar()) return varp->varScopep()->scopep();
+        if (const DfgVertexVar* const varp = this->getResultVar()) {
+            return varp->varScopep()->scopep();
+        }
     }
 
     // Note: the recursive invocation can cause a re-hash but that will not invalidate references
@@ -775,7 +780,7 @@ AstScope* DfgVertex::scopep(ScopeCache& cache, bool tryResultVar) VL_MT_DISABLED
         AstScope* foundp = rootp;
         const auto edges = sourceEdges();
         for (size_t i = 0; i < edges.second; ++i) {
-            DfgEdge& edge = edges.first[i];
+            const DfgEdge& edge = edges.first[i];
             foundp = edge.sourcep()->scopep(cache, true);
             if (foundp != rootp) break;
         }

@@ -168,7 +168,7 @@ private:
                     V3Number fieldNum{nump, width};
                     fieldNum.opSel(*nump, msb, lsb);
                     out << itemp->name() << ": ";
-                    if (AstNodeDType* const childTypep = itemp->subDTypep()) {
+                    if (const AstNodeDType* const childTypep = itemp->subDTypep()) {
                         out << prettyNumber(&fieldNum, childTypep);
                     } else {
                         out << fieldNum;
@@ -179,7 +179,7 @@ private:
                 return out.str();
             }
         } else if (const AstPackArrayDType* const arrayp = VN_CAST(dtypep, PackArrayDType)) {
-            if (AstNodeDType* const childTypep = arrayp->subDTypep()) {
+            if (const AstNodeDType* const childTypep = arrayp->subDTypep()) {
                 std::ostringstream out;
                 out << "[";
                 const int arrayElements = arrayp->elementsConst();
@@ -226,7 +226,7 @@ public:
                      conIt != tconnects->end(); ++conIt) {
                     const AstVar* const portp = conIt->first;
                     AstNodeExpr* const pinp = conIt->second->exprp();
-                    AstNodeDType* const dtypep = pinp->dtypep();
+                    const AstNodeDType* const dtypep = pinp->dtypep();
                     if (AstConst* const valp = fetchConstNull(pinp)) {
                         stack << "\n           " << portp->prettyName() << " = "
                               << prettyNumber(&valp->num(), dtypep);
@@ -876,7 +876,7 @@ private:
     void visit(AstArraySel* nodep) override {
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
-        if (AstInitArray* const initp = VN_CAST(fetchValueNull(nodep->fromp()), InitArray)) {
+        if (const AstInitArray* const initp = VN_CAST(fetchValueNull(nodep->fromp()), InitArray)) {
             const AstConst* const indexp = fetchConst(nodep->bitp());
             const uint32_t offset = indexp->num().toUInt();
             AstNodeExpr* const itemp = initp->getIndexDefaultedValuep(offset);

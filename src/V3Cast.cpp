@@ -85,6 +85,7 @@ class CastVisitor final : public VNVisitor {
             if (!nodep->isNull()) insertCast(nodep, castSize(nodep->backp()));
         }
     }
+    // cppcheck-suppress constParameterPointer // lhsp might be changed
     void ensureLower32Cast(AstCCast* nodep) {
         // If we have uint64 = CAST(uint64(x)) then the upcasting
         // really needs to be CAST(uint64(CAST(uint32(x))).

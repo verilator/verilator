@@ -27,7 +27,8 @@ duplInheritedMember:src/V3AstNode*.h
 duplInheritedMember:src/obj_*/V3Ast__gen_impl.h
 // We intentionally redefine DfgVertex methods to match Ast
 duplInheritedMember:src/obj_*/V3Dfg__gen_auto_classes.h
-// TODO: fix - maybe?
-duplInheritedMember:src/V3File*.h
 // They are used after astgen expansion
 unusedPrivateFunction:src/V3Const.cpp
+// These are all inappropriate
+constVariablePointer:src/V3DfgPeephole.cpp
+constParameterPointer:src/V3DfgPeephole.cpp

@@ -232,7 +232,7 @@ class V3DfgPeephole final : public DfgVisitor {
 
     // Same as above, but 'flp' and 'dtypep' are taken from the given example vertex
     template <typename Vertex, typename... Operands>
-    Vertex* make(DfgVertex* examplep, Operands... operands) {
+    Vertex* make(const DfgVertex* examplep, Operands... operands) {
         return make<Vertex>(examplep->fileline(), examplep->dtypep(), operands...);
     }
 
@@ -408,8 +408,8 @@ class V3DfgPeephole final : public DfgVisitor {
         // If both sides are variable references, order the side in some defined way. This
         // allows CSE to later merge 'a op b' with 'b op a'.
         if (lhsp->is<DfgVertexVar>() && rhsp->is<DfgVertexVar>()) {
-            AstNode* const lVarp = lhsp->as<DfgVertexVar>()->nodep();
-            AstNode* const rVarp = rhsp->as<DfgVertexVar>()->nodep();
+            const AstNode* const lVarp = lhsp->as<DfgVertexVar>()->nodep();
+            const AstNode* const rVarp = rhsp->as<DfgVertexVar>()->nodep();
             if (lVarp->name() > rVarp->name()) {
                 APPLYING(SWAP_VAR_IN_COMMUTATIVE_BINARY) {
                     Vertex* const replacementp = make<Vertex>(vtxp, rhsp, lhsp);

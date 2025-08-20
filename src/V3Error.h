@@ -649,18 +649,19 @@ void v3errorEndFatal(std::ostringstream& sstr)
 
 /// Based on debug level, call UINFO then dumpTree on nodep, using given message prefix
 /// If uinfo_msg = "", suppress the first UINFO
-/// If dt_msg = "", use the uinfo_msg; note any uinfo_msg side effects will happen twice.
-#define UINFOTREE(level, nodep, uinfo_msg, dt_msg) \
+/// If dumptree_msg = "", use the uinfo_msg; note any uinfo_msg side effects will happen twice.
+#define UINFOTREE(level, nodep, uinfo_msg, dumptree_msg) \
     do { \
         if (VL_UNCOVERABLE(debug() >= (level))) { \
             std::ostringstream us; \
             us << uinfo_msg; \
             if (!us.str().empty()) UINFO(level, us.str()); \
-            std::ostringstream ss; \
-            ss << dt_msg; \
-            if (ss.str().empty()) ss << uinfo_msg; \
-            if (nodep) \
-                nodep->dumpTree("- "s + V3Error::lineStr(__FILE__, __LINE__) + ss.str() + " - "); \
+            if (nodep) { \
+                std::ostringstream ss; \
+                ss << dumptree_msg; \
+                if (ss.str().empty()) ss << uinfo_msg; \
+                nodep->dumpTree("- " + V3Error::lineStr(__FILE__, __LINE__) + ss.str() + " - "); \
+            } \
         } \
     } while (false)
 
@@ -722,6 +723,8 @@ void v3errorEndFatal(std::ostringstream& sstr)
 // Takes an optional "name" (as __VA_ARGS__)
 #define VL_DEFINE_DEBUG(...) \
     VL_ATTR_UNUSED static int debug##__VA_ARGS__() VL_MT_SAFE { \
+        /* Don't complain this function is unused */ \
+        (void)&debug##__VA_ARGS__; \
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) { \
             std::string tag{VL_STRINGIFY(__VA_ARGS__)}; \
@@ -739,6 +742,8 @@ void v3errorEndFatal(std::ostringstream& sstr)
 // Takes an optional "name" (as __VA_ARGS__)
 #define VL_DEFINE_DUMP(func, tag) \
     VL_ATTR_UNUSED static int dump##func() VL_MT_SAFE { \
+        /* Don't complain this function is unused */ \
+        (void)&dump##func; \
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) { \
             const unsigned dumpTag = v3Global.opt.dumpLevel(tag); \
@@ -762,6 +767,7 @@ void v3errorEndFatal(std::ostringstream& sstr)
     VL_DEFINE_DUMP(TreeJsonLevel, \
                    "tree-json"); /* Define 'int dumpTreeJsonLevel()' for dumpi-tree-json */ \
     VL_ATTR_UNUSED static int dumpTreeEitherLevel() { \
+        /* Don't complain this function is unused */ (void)&dumpTreeEitherLevel; \
         return dumpTreeJsonLevel() >= dumpTreeLevel() ? dumpTreeJsonLevel() : dumpTreeLevel(); \
     } \
     static_assert(true, "")

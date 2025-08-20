@@ -302,7 +302,9 @@ public:
         puts("\n");
     }
     virtual void putsHeader() {}
+    // cppcheck-suppress duplInheritedMember
     void puts(const char* strg) { putsNoTracking(strg); }
+    // cppcheck-suppress duplInheritedMember
     void puts(const string& strg) { putsNoTracking(strg); }
 
     // METHODS
@@ -388,7 +390,9 @@ public:
     ~V3OutMkFile() override = default;
     virtual void putsHeader() { puts("# Verilated -*- Makefile -*-\n"); }
     // No automatic indentation yet.
+    // cppcheck-suppress duplInheritedMember
     void puts(const char* strg) { putsNoTracking(strg); }
+    // cppcheck-suppress duplInheritedMember
     void puts(const string& strg) { putsNoTracking(strg); }
     // Put VARIABLE = VALUE
     void putSet(const string& var, const string& value) {

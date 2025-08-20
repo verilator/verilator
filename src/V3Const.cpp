@@ -1058,7 +1058,7 @@ class ConstVisitor final : public VNVisitor {
         // Someday we'll sort the biops completely and this can be simplified
         // This often results from our simplified clock generation:
         // if (rst) ... else if (enable)... -> OR(rst,AND(!rst,enable))
-        AstNodeExpr* ap;
+        const AstNodeExpr* ap;
         AstNodeBiop* andp;
         if (VN_IS(nodep->lhsp(), And)) {
             andp = VN_AS(nodep->lhsp(), And);
@@ -1080,7 +1080,7 @@ class ConstVisitor final : public VNVisitor {
         } else {
             return false;
         }
-        AstNodeExpr* const bp = notp->lhsp();
+        const AstNodeExpr* const bp = notp->lhsp();
         if (!operandsSame(ap, bp)) return false;
         // Do it
         cp->unlinkFrBack();
@@ -1099,6 +1099,7 @@ class ConstVisitor final : public VNVisitor {
         // (otherwise we'd be trading one operation for two operations)
         // V3Clean often makes this pattern, as it postpones the AND until
         // as high as possible, which is usually the right choice, except for this.
+        // cppcheck-suppress constVariablePointer // children unlinked below
         AstCond* const condp = VN_CAST(nodep->rhsp(), Cond);
         if (!condp) return false;
         if (!VN_IS(condp->thenp(), Const) && !VN_IS(condp->elsep(), Const)) return false;
@@ -1322,6 +1323,7 @@ class ConstVisitor final : public VNVisitor {
         // A pattern created by []'s after offsets have been removed
         // SEL(EXTEND(any,width,...),(width-1),0) -> ...
         // Since select's return unsigned, this is always an extend
+        // cppcheck-suppress constVariablePointer // children unlinked below
         AstExtend* const extendp = VN_CAST(nodep->fromp(), Extend);
         if (!(m_doV && extendp && VN_IS(nodep->lsbp(), Const) && nodep->lsbConst() == 0
               && static_cast<int>(nodep->widthConst()) == extendp->lhsp()->width()))
@@ -1347,7 +1349,7 @@ class ConstVisitor final : public VNVisitor {
         // AND({a}, SHIFTR({b}, {c})) is often shorthand in C for Verilog {b}[{c} :+ {a}]
         // becomes thought other optimizations
         // SEL(SHIFTR({a},{b}),{lsb},{width}) -> SEL({a},{lsb+b},{width})
-        AstShiftR* const shiftp = VN_CAST(nodep->fromp(), ShiftR);
+        const AstShiftR* const shiftp = VN_CAST(nodep->fromp(), ShiftR);
         if (!(m_doV && shiftp && VN_IS(shiftp->rhsp(), Const) && VN_IS(nodep->lsbp(), Const))) {
             return false;
         }
@@ -2005,21 +2007,22 @@ class ConstVisitor final : public VNVisitor {
 
         // Skip if we're not const'ing an entire module (IE doing only one assign, etc)
         if (!m_modp) return false;
+        // cppcheck-suppress constVariablePointer // children unlinked below
         AstSel* const sel1p = VN_CAST(nodep->lhsp(), Sel);
         if (!sel1p) return false;
         AstNodeAssign* const nextp = VN_CAST(nodep->nextp(), NodeAssign);
         if (!nextp) return false;
         if (nodep->type() != nextp->type()) return false;
-        AstSel* const sel2p = VN_CAST(nextp->lhsp(), Sel);
+        const AstSel* const sel2p = VN_CAST(nextp->lhsp(), Sel);
         if (!sel2p) return false;
         AstVarRef* const varref1p = VN_CAST(sel1p->fromp(), VarRef);
         if (!varref1p) return false;
-        AstVarRef* const varref2p = VN_CAST(sel2p->fromp(), VarRef);
+        const AstVarRef* const varref2p = VN_CAST(sel2p->fromp(), VarRef);
         if (!varref2p) return false;
         if (!varref1p->sameGateTree(varref2p)) return false;
-        AstConst* const con1p = VN_CAST(sel1p->lsbp(), Const);
+        const AstConst* const con1p = VN_CAST(sel1p->lsbp(), Const);
         if (!con1p) return false;
-        AstConst* const con2p = VN_CAST(sel2p->lsbp(), Const);
+        const AstConst* const con2p = VN_CAST(sel2p->lsbp(), Const);
         if (!con2p) return false;
         // We need to make sure there's no self-references involved in either
         // assignment.  For speed, we only look 3 deep, then give up.
@@ -2600,6 +2603,7 @@ class ConstVisitor final : public VNVisitor {
 
     void replaceSelSel(AstSel* nodep) {
         // SEL(SEL({x},a,b),c,d) => SEL({x},a+c,d)
+        // cppcheck-suppress constVariablePointer // children unlinked below
         AstSel* const belowp = VN_AS(nodep->fromp(), Sel);
         AstNodeExpr* const fromp = belowp->fromp()->unlinkFrBack();
         AstNodeExpr* const lsb1p = nodep->lsbp()->unlinkFrBack();
@@ -2667,9 +2671,10 @@ class ConstVisitor final : public VNVisitor {
     bool operandSelReplicate(AstSel* nodep) {
         // SEL(REPLICATE(from,rep),lsb,width) => SEL(from,0,width) as long
         // as SEL's width <= b's width
+        // cppcheck-suppress constVariablePointer // children unlinked below
         AstReplicate* const repp = VN_AS(nodep->fromp(), Replicate);
         AstNodeExpr* const fromp = repp->srcp();
-        AstConst* const lsbp = VN_CAST(nodep->lsbp(), Const);
+        const AstConst* const lsbp = VN_CAST(nodep->lsbp(), Const);
         if (!lsbp) return false;
         UASSERT_OBJ(fromp->width(), nodep, "Not widthed");
         if ((lsbp->toUInt() / fromp->width())
@@ -2687,6 +2692,7 @@ class ConstVisitor final : public VNVisitor {
     }
     bool operandRepRep(AstReplicate* nodep) {
         // REPLICATE(REPLICATE2(from2,cnt2),cnt1) => REPLICATE(from2,(cnt1+cnt2))
+        // cppcheck-suppress constVariablePointer // children unlinked below
         AstReplicate* const rep2p = VN_AS(nodep->srcp(), Replicate);
         AstNodeExpr* const from2p = rep2p->srcp();
         AstConst* const cnt1p = VN_CAST(nodep->countp(), Const);
@@ -2713,13 +2719,13 @@ class ConstVisitor final : public VNVisitor {
         AstNodeExpr* from2p = nodep->rhsp();
         uint32_t cnt2 = 1;
         if (VN_IS(from1p, Replicate)) {
-            AstConst* const cnt1p = VN_CAST(VN_CAST(from1p, Replicate)->countp(), Const);
+            const AstConst* const cnt1p = VN_CAST(VN_CAST(from1p, Replicate)->countp(), Const);
             if (!cnt1p) return false;
             from1p = VN_AS(from1p, Replicate)->srcp();
             cnt1 = cnt1p->toUInt();
         }
         if (VN_IS(from2p, Replicate)) {
-            AstConst* const cnt2p = VN_CAST(VN_CAST(from2p, Replicate)->countp(), Const);
+            const AstConst* const cnt2p = VN_CAST(VN_CAST(from2p, Replicate)->countp(), Const);
             if (!cnt2p) return false;
             from2p = VN_AS(from2p, Replicate)->srcp();
             cnt2 = cnt2p->toUInt();
@@ -2826,9 +2832,9 @@ class ConstVisitor final : public VNVisitor {
                     VL_DO_DANGLING(replaceNum(nodep, num), nodep);
                     did = true;
                 } else if (m_selp && VN_IS(valuep, InitArray)) {
-                    AstInitArray* const initarp = VN_AS(valuep, InitArray);
+                    const AstInitArray* const initarp = VN_AS(valuep, InitArray);
                     const uint32_t bit = m_selp->bitConst();
-                    AstNode* const itemp = initarp->getIndexDefaultedValuep(bit);
+                    const AstNode* const itemp = initarp->getIndexDefaultedValuep(bit);
                     if (VN_IS(itemp, Const)) {
                         const V3Number& num = VN_AS(itemp, Const)->num();
                         // UINFO(2, "constVisit " << cvtToHex(valuep) << " " << num);
@@ -3060,8 +3066,8 @@ class ConstVisitor final : public VNVisitor {
                 if (!nextp) break;
                 AstSenItem* const lItemp = senp;
                 AstSenItem* const rItemp = nextp;
-                AstNodeExpr* const lSenp = lItemp->sensp();
-                AstNodeExpr* const rSenp = rItemp->sensp();
+                const AstNodeExpr* const lSenp = lItemp->sensp();
+                const AstNodeExpr* const rSenp = rItemp->sensp();
                 if (!lSenp || !rSenp) continue;
 
                 if (lSenp->sameGateTree(rSenp)) {
@@ -3085,8 +3091,8 @@ class ConstVisitor final : public VNVisitor {
 
                 // Not identical terms, check if they can be combined
                 if (lSenp->width() != rSenp->width()) continue;
-                if (AstAnd* const lAndp = VN_CAST(lSenp, And)) {
-                    if (AstAnd* const rAndp = VN_CAST(rSenp, And)) {
+                if (const AstAnd* const lAndp = VN_CAST(lSenp, And)) {
+                    if (const AstAnd* const rAndp = VN_CAST(rSenp, And)) {
                         if (AstConst* const lConstp = VN_CAST(lAndp->lhsp(), Const)) {
                             if (AstConst* const rConstp = VN_CAST(rAndp->lhsp(), Const)) {
                                 if (lAndp->rhsp()->sameTree(rAndp->rhsp())) {
@@ -3204,6 +3210,7 @@ class ConstVisitor final : public VNVisitor {
         }
     }
     void visit(AstRelease* nodep) override {
+        // cppcheck-suppress constVariablePointer // children unlinked below
         if (AstConcat* const concatp = VN_CAST(nodep->lhsp(), Concat)) {
             FileLine* const flp = nodep->fileline();
             AstRelease* const newLp = new AstRelease{flp, concatp->lhsp()->unlinkFrBack()};
@@ -3282,6 +3289,7 @@ class ConstVisitor final : public VNVisitor {
                 UINFO(4,
                       "IF({a}) ASSIGN({b},{c}) else ASSIGN({b},{d}) => ASSIGN({b}, {a}?{c}:{d})");
                 AstNodeAssign* const thensp = VN_AS(nodep->thensp(), NodeAssign);
+                // cppcheck-suppress constVariablePointer // children unlinked below
                 AstNodeAssign* const elsesp = VN_AS(nodep->elsesp(), NodeAssign);
                 thensp->unlinkFrBack();
                 AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
@@ -3330,6 +3338,7 @@ class ConstVisitor final : public VNVisitor {
         if (!prevp->fmtp() || prevp->fmtp()->nextp() || !nodep->fmtp() || nodep->fmtp()->nextp())
             return false;
         AstSFormatF* const pformatp = prevp->fmtp();
+        // cppcheck-suppress constVariablePointer // children unlinked below
         AstSFormatF* const nformatp = nodep->fmtp();
         // We don't merge scopeNames as can have only one and might be different scopes (late in
         // process) Also rare for real code to print %m multiple times in same message
@@ -3979,6 +3988,7 @@ void V3Const::constifyParamsEdit(AstNode* nodep) {
     // Make sure we've sized everything first
     nodep = V3Width::widthParamsEdit(nodep);
     ConstVisitor visitor{ConstVisitor::PROC_PARAMS, /* globalPass: */ false};
+    // cppcheck-suppress constVariablePointer // edited below
     if (AstVar* const varp = VN_CAST(nodep, Var)) {
         // If a var wants to be constified, it's really a param, and
         // we want the value to be constant.  We aren't passed just the
@@ -4000,6 +4010,7 @@ void V3Const::constifyParamsNoWarnEdit(AstNode* nodep) {
     // Make sure we've sized everything first
     nodep = V3Width::widthParamsEdit(nodep);
     ConstVisitor visitor{ConstVisitor::PROC_PARAMS_NOWARN, /* globalPass: */ false};
+    // cppcheck-suppress constVariablePointer // edited below
     if (AstVar* const varp = VN_CAST(nodep, Var)) {
         // If a var wants to be constified, it's really a param, and
         // we want the value to be constant.  We aren't passed just the
@@ -4029,6 +4040,7 @@ AstNode* V3Const::constifyGenerateParamsEdit(AstNode* nodep) {
     // Make sure we've sized everything first
     nodep = V3Width::widthGenerateParamsEdit(nodep);
     ConstVisitor visitor{ConstVisitor::PROC_GENERATE, /* globalPass: */ false};
+    // cppcheck-suppress constVariablePointer // edited below
     if (AstVar* const varp = VN_CAST(nodep, Var)) {
         // If a var wants to be constified, it's really a param, and
         // we want the value to be constant.  We aren't passed just the

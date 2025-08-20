@@ -194,7 +194,7 @@ class DfgToAstVisitor final : DfgVisitor {
                 AstConst* const idxp = new AstConst{dflp, sArrayp->driverLo(i)};
                 AstArraySel* const nLhsp = new AstArraySel{dflp, lhsp->cloneTreePure(false), idxp};
                 // Convert source
-                if (DfgUnitArray* const uap = driverp->cast<DfgUnitArray>()) {
+                if (const DfgUnitArray* const uap = driverp->cast<DfgUnitArray>()) {
                     convertDriver(assignments, dflp, nLhsp, uap->srcp());
                 } else {
                     convertDriver(assignments, dflp, nLhsp, driverp);
@@ -205,7 +205,7 @@ class DfgToAstVisitor final : DfgVisitor {
             return;
         }
 
-        if (DfgUnitArray* const uap = driverp->cast<DfgUnitArray>()) {
+        if (const DfgUnitArray* const uap = driverp->cast<DfgUnitArray>()) {
             // Single element array being assigned a unit array. Needs an ArraySel.
             AstConst* const idxp = new AstConst{flp, 0};
             AstArraySel* const nLhsp = new AstArraySel{flp, lhsp->cloneTreePure(false), idxp};

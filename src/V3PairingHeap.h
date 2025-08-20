@@ -93,7 +93,7 @@ public:
         Link m_next;  // Next in list of sibling heaps
         Link m_kids;  // Head of list of child heaps
         Node** m_ownerpp = nullptr;  // Pointer to the Link pointer pointing to this heap
-        T_Key m_key;  // The key in the heap
+        T_Key m_key{};  // The key in the heap
 
         // CONSTRUCTOR
         explicit Node() = default;
