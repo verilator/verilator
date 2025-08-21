@@ -8,9 +8,15 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import platform
 
 test.scenarios('vlt')
 test.top_filename = "t_prof.v"
+
+if re.search(r'clang', test.cxx_version) and 'aarch64' in platform.processor():
+    test.skip("Known compiler profile issues on clang aarch64")
+if platform.libc_ver()[0] != "glibc":
+    test.skip("The test depends on GMON_OUT_PREFIX which is glibc-specific")
 
 test.compile(verilator_flags2=["--stats --prof-c +define+T_PROF"])
 
