@@ -510,7 +510,7 @@ void VHashSha256::insertFile(const string& filename) {
     if (fd < 0) return;
 
     std::array<char, BUFFER_SIZE + 1> buf;
-    while (const size_t got = ::read(fd, &buf, BUFFER_SIZE)) {
+    while (const ssize_t got = ::read(fd, &buf, BUFFER_SIZE)) {
         if (got <= 0) break;
         insert(&buf, got);
     }
@@ -761,7 +761,7 @@ VSpellCheck::EditDistance VSpellCheck::cutoffDistance(size_t goal_len, size_t ca
 }
 
 string VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distancer) const {
-    string bestCandidate;
+    string best;
     const size_t gLen = goal.length();
     distancer = LENGTH_LIMIT * 10;
     for (const string& candidate : m_candidates) {
@@ -779,13 +779,13 @@ string VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distance
                                       << " candidate=" << candidate);
         if (dist < distancer && dist <= cutoff) {
             distancer = dist;
-            bestCandidate = candidate;
+            best = candidate;
         }
     }
 
     // If goal matches candidate avoid suggesting replacing with self
     if (distancer == 0) return "";
-    return bestCandidate;
+    return best;
 }
 
 void VSpellCheck::selfTestDistanceOne(const string& a, const string& b, EditDistance expected) {

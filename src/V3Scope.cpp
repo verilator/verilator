@@ -269,9 +269,9 @@ class ScopeVisitor final : public VNVisitor {
         // Make new scope variable
         if (!nodep->user1p()) {
             AstScope* scopep = m_scopep;
-            if (AstIfaceRefDType* const ifacerefp = VN_CAST(nodep->dtypep(), IfaceRefDType)) {
+            if (const AstIfaceRefDType* const ifrefp = VN_CAST(nodep->dtypep(), IfaceRefDType)) {
                 // Attach every non-virtual interface variable its inner scope
-                if (ifacerefp->cellp()) scopep = VN_AS(ifacerefp->cellp()->user2p(), Scope);
+                if (ifrefp->cellp()) scopep = VN_AS(ifrefp->cellp()->user2p(), Scope);
             }
             AstVarScope* const varscp = new AstVarScope{nodep->fileline(), scopep, nodep};
             UINFO(6, "   New scope " << varscp);

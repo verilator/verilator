@@ -93,7 +93,6 @@ for s in [
         'Unsupported: Public functions with >64 bit outputs; ',
         'Unsupported: Replication to form ',
         'Unsupported: Shifting of by over 32-bit number isn\'t supported.',
-        'Unsupported: Signal strengths are unsupported ',
         'Unsupported: Size-changing cast on non-basic data type',
         'Unsupported: Slice of non-constant bounds',
         'Unsupported: Unclocked assertion',

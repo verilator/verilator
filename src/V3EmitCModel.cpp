@@ -693,7 +693,7 @@ class EmitCModel final : public EmitCFunc {
     // VISITORS
 
 public:
-    explicit EmitCModel(AstNetlist* netlistp) { main(netlistp->topModulep()); }
+    explicit EmitCModel(AstNodeModule* topModulep) { main(topModulep); }
 };
 
 //######################################################################
@@ -701,5 +701,5 @@ public:
 
 void V3EmitC::emitcModel() {
     UINFO(2, __FUNCTION__ << ":");
-    { EmitCModel{v3Global.rootp()}; }
+    { EmitCModel{v3Global.rootp()->topModulep()}; }
 }

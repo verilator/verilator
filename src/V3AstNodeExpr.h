@@ -657,6 +657,7 @@ public:
         dtypeFrom(dtp);
     }
     // cppcheck-suppress constParameterPointer
+    // cppcheck-suppress constParameterCallback
     AstCast(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
         : ASTGEN_SUPER_Cast(fl) {
         this->fromp(fromp);

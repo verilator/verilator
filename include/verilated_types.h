@@ -495,7 +495,7 @@ public:
 private:
     // MEMBERS
     Deque m_deque;  // State of the assoc array
-    T_Value m_defaultValue;  // Default value
+    T_Value m_defaultValue{};  // Default value
 
 public:
     // CONSTRUCTORS

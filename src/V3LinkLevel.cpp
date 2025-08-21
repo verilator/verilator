@@ -95,6 +95,7 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
     for (AstNodeModule* modp : mods) {
         for (AstNode *nextp, *childp = modp->stmtsp(); childp; childp = nextp) {
             nextp = childp->nextp();
+            // cppcheck-suppress constVariablePointer
             if (AstPragma* pragp = VN_CAST(childp, Pragma)) {
                 if (pragp->pragType() == VPragmaType::TIMEUNIT_SET) {
                     modp->timeunit(pragp->timescale());
@@ -205,6 +206,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
     NameSet ioNames;
     NameSet dupNames;
     // For all modules, skipping over new top
+    // cppcheck-suppress constVariablePointer
     for (AstNodeModule* oldmodp = VN_AS(rootp->modulesp()->nextp(), NodeModule);
          oldmodp && oldmodp->level() <= 2; oldmodp = VN_AS(oldmodp->nextp(), NodeModule)) {
         for (AstNode* subnodep = oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {

@@ -57,7 +57,7 @@ private:
     AstAssign* m_trigAssignp = nullptr;  // Previous/current trigger assignment
     AstIface* m_trigAssignIfacep = nullptr;  // Interface type whose trigger is assigned
                                              // by m_trigAssignp
-    AstVar* m_trigAssignMemberVarp;  // Member pointer whose trigger is assigned
+    AstVar* m_trigAssignMemberVarp = nullptr;  // Member pointer whose trigger is assigned
     V3UniqueNames m_vifTriggerNames{"__VvifTrigger"};  // Unique names for virt iface
                                                        // triggers
     VirtIfaceTriggers m_triggers;  // Interfaces and corresponding trigger vars

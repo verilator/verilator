@@ -428,13 +428,13 @@ struct GraphSortEdgeCmp final {
 
 void V3Graph::sortVertices() {
     // Sort list of vertices by rank, then fanout
-    std::vector<V3GraphVertex*> vertices;
-    for (V3GraphVertex& vertex : m_vertices) vertices.push_back(&vertex);
-    std::stable_sort(vertices.begin(), vertices.end(), GraphSortVertexCmp());
+    std::vector<V3GraphVertex*> vertexps;
+    for (V3GraphVertex& vertex : m_vertices) vertexps.push_back(&vertex);
+    std::stable_sort(vertexps.begin(), vertexps.end(), GraphSortVertexCmp());
     // Re-insert in sorted order
-    for (V3GraphVertex* const ip : vertices) {
-        m_vertices.unlink(ip);
-        m_vertices.linkBack(ip);
+    for (V3GraphVertex* const vertexp : vertexps) {
+        m_vertices.unlink(vertexp);
+        m_vertices.linkBack(vertexp);
     }
 }
 

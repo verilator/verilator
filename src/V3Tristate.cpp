@@ -862,11 +862,6 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (varRefp->varp()->isNet()) {
                 m_assigns[varRefp->varp()].push_back(nodep);
             } else if (nodep->strengthSpecp()) {
-                if (!varRefp->varp()->isNet())
-                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Signal strengths are unsupported "
-                                                 "on the following variable type: "
-                                                     << varRefp->varp()->varType());
-
                 nodep->strengthSpecp()->unlinkFrBack()->deleteTree();
             }
         } else if (nodep->strengthSpecp()) {

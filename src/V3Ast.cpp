@@ -1477,7 +1477,7 @@ string AstNode::instanceStr() const {
     }
     return "";
 }
-void AstNode::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
+void AstNode::v3errorEnd(const std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
     // Don't look for instance name when warning is disabled.
     // In case of large number of warnings, this can
     // take significant amount of time
@@ -1497,7 +1497,8 @@ void AstNode::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().
         m_fileline->v3errorEnd(nsstr, instanceStrExtra);
     }
 }
-void AstNode::v3errorEndFatal(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
+void AstNode::v3errorEndFatal(const std::ostringstream& str) const
+    VL_RELEASE(V3Error::s().m_mutex) {
     v3errorEnd(str);
     assert(0);  // LCOV_EXCL_LINE
     VL_UNREACHABLE;

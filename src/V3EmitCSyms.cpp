@@ -91,8 +91,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     struct CmpDpi final {
         bool operator()(const AstCFunc* lhsp, const AstCFunc* rhsp) const {
             if (lhsp->dpiImportPrototype() != rhsp->dpiImportPrototype()) {
-                // cppcheck-suppress comparisonOfFuncReturningBoolError
-                return lhsp->dpiImportPrototype() < rhsp->dpiImportPrototype();
+                return rhsp->dpiImportPrototype();
             }
             return lhsp->name() < rhsp->name();
         }
@@ -285,11 +284,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
         if (v3Global.dpi()) {
             // add dpi scopes to m_scopeNames if not already there
-            for (const auto& scp : m_dpiScopeNames) {
-                if (m_scopeNames.find(scp.first) == m_scopeNames.end()) {
-                    m_scopeNames.emplace(scp.first, scp.second);
-                }
-            }
+            for (const auto& scp : m_dpiScopeNames) m_scopeNames.emplace(scp.first, scp.second);
         }
 
         // Sort by names, so line/process order matters less
@@ -358,8 +353,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                  ScopeFuncData(nodep, m_cfuncp, m_modp));
         } else {
             if (m_dpiScopeNames.find(nodep->scopeDpiName()) == m_dpiScopeNames.end()) {
-                // cppcheck-suppress stlFindInsert
                 m_dpiScopeNames.emplace(nodep->scopeDpiName(),
+                                        // cppcheck-suppress stlFindInsert
                                         ScopeData{nodep, nodep->scopeDpiName(),
                                                   nodep->scopePrettyDpiName(), "<null>", timeunit,
                                                   "SCOPE_OTHER"});

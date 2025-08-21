@@ -186,6 +186,7 @@ private:
 
     // VISITORS
     void visit(AstVar* nodep) override {
+        // cppcheck-suppress constVariablePointer
         AstNode* const dtp = nodep->dtypep()->skipRefp();
         if (VN_IS(dtp, UnpackArrayDType)
             && VN_IS(VN_AS(dtp, UnpackArrayDType)->subDTypep()->skipRefp(), IfaceRefDType)) {
@@ -236,6 +237,7 @@ private:
             m_cellRangep = nodep->rangep();
 
             AstVar* const ifaceVarp = VN_CAST(nodep->nextp(), Var);
+            // cppcheck-suppress constVariablePointer
             AstNodeDType* const ifaceVarDtp
                 = ifaceVarp ? ifaceVarp->dtypep()->skipRefp() : nullptr;
             const bool isIface
@@ -579,7 +581,7 @@ public:
 class InstStatic final {
     InstStatic() = default;  // Static class
 
-    static AstNodeExpr* extendOrSel(FileLine* fl, AstNodeExpr* rhsp, AstNode* cmpWidthp) {
+    static AstNodeExpr* extendOrSel(FileLine* fl, AstNodeExpr* rhsp, const AstNode* cmpWidthp) {
         if (cmpWidthp->width() > rhsp->width()) {
             rhsp = (rhsp->isSigned() ? static_cast<AstNodeExpr*>(new AstExtendS{fl, rhsp})
                                      : static_cast<AstNodeExpr*>(new AstExtend{fl, rhsp}));

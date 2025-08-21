@@ -261,11 +261,11 @@ public:
             }
         }
     }
-    string cellErrorScopes(AstNode* lookp, string prettyName = "") {
+    string cellErrorScopes(const AstNode* lookp, string prettyName = "") {
         if (prettyName == "") prettyName = lookp->prettyName();
         string scopes;
         for (IdNameMap::iterator it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
-            AstNode* const itemp = it->second->nodep();
+            const AstNode* const itemp = it->second->nodep();
             if (VN_IS(itemp, Cell) || (VN_IS(itemp, Module) && VN_AS(itemp, Module)->isTop())) {
                 if (scopes != "") scopes += ", ";
                 scopes += AstNode::prettyName(it->first);

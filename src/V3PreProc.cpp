@@ -124,7 +124,6 @@ public:
     // STATE
     const V3PreProc* m_preprocp = nullptr;  ///< Object we're holding data for
     V3PreLex* m_lexp = nullptr;  ///< Current lexer state (nullptr = closed)
-    std::stack<V3PreLex*> m_includeStack;  ///< Stack of includers above current m_lexp
     int m_lastLineno = 0;  // Last line number (stall detection)
     int m_tokensOnLine = 0;  // Number of tokens on line (stall detection)
 
@@ -275,6 +274,7 @@ public:
 
     // CONSTRUCTORS
     V3PreProcImp() { m_states.push(ps_TOP); }
+    // cppcheck-suppress duplInheritedMember
     void configure(FileLine* filelinep) {
         // configure() separate from constructor to avoid calling abstract functions
         m_preprocp = this;  // Silly, but to make code more similar to Verilog-Perl
@@ -721,9 +721,10 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
                 backslashesc = false;
             }
             if (!quote && !triquote) {
-                if (std::isalpha(*cp) || *cp == '_'
+                if (std::isalpha(*cp)  //
+                    || *cp == '_'  //
                     || *cp == '$'  // Won't replace system functions, since no $ in argValueByName
-                    || (argName != "" && (std::isdigit(*cp) || *cp == '$'))) {
+                    || (argName != "" && std::isdigit(*cp))) {
                     argName += *cp;
                     continue;
                 }
@@ -737,7 +738,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
                             // Normally `` is removed later, but with no token after, we're
                             // otherwise stuck, so remove proceeding ``
                             if (out.size() >= 2 && out.substr(out.size() - 2) == "``") {
-                                out = out.substr(0, out.size() - 2);
+                                out.resize(out.size() - 2);
                             }
                         } else {
                             out += subst;

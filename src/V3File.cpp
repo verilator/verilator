@@ -32,7 +32,7 @@
 #include <sys/types.h>
 
 // clang-format off
-#if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
+#if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)) || defined(VL_CPPCHECK)
 # define INFILTER_PIPE  // Allow pipe filtering.  Needs fork()
 #endif
 
@@ -389,6 +389,7 @@ private:
         close(fd);
         return true;
     }
+    // cppcheck-suppress constParameterReference
     bool readContentsFilter(const string& filename, StrList& outl) {
         (void)filename;  // Prevent unused variable warning
         (void)outl;  // Prevent unused variable warning

@@ -89,7 +89,7 @@ std::vector<const AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicBy
 }
 
 void remapSensitivities(const LogicByScope& lbs,
-                        std::unordered_map<const AstSenTree*, AstSenTree*> senTreeMap) {
+                        const std::unordered_map<const AstSenTree*, AstSenTree*>& senTreeMap) {
     for (const auto& pair : lbs) {
         AstActive* const activep = pair.second;
         AstSenTree* const senTreep = activep->sentreep();
@@ -111,9 +111,10 @@ AstSenTree* findTriggeredIface(const AstVarScope* vscp,
     const auto ifaceIt = vifTrigged.find(vscp->varp()->sensIfacep());
     if (ifaceIt != vifTrigged.end()) return ifaceIt->second;
     for (const auto& memberIt : vifMemberTriggered) {
-        if (memberIt.first.m_ifacep == vscp->varp()->sensIfacep()) { return memberIt.second; }
+        if (memberIt.first.m_ifacep == vscp->varp()->sensIfacep()) return memberIt.second;
     }
     vscp->v3fatalSrc("Did not find virtual interface trigger");
+    return nullptr;  // unreachable, appease MSVC
 }
 
 //============================================================================

@@ -197,8 +197,6 @@ public:
 
 class V3GraphVertex VL_NOT_FINAL {
     VL_RTTI_IMPL_BASE(V3GraphVertex)
-    // Vertices may be a 'gate'/wire statement OR a variable
-protected:
     friend class V3Graph;
     friend class V3GraphEdge;
     friend class GraphAcyc;
@@ -307,8 +305,9 @@ public:
     bool outSize1() const { return m_outs.hasSingleElement(); }
     // METHODS
     /// Error reporting
-    void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) VL_MT_DISABLED;
-    void v3errorEndFatal(std::ostringstream& str) const
+    void v3errorEnd(const std::ostringstream& str) const
+        VL_RELEASE(V3Error::s().m_mutex) VL_MT_DISABLED;
+    void v3errorEndFatal(const std::ostringstream& str) const
         VL_RELEASE(V3Error::s().m_mutex) VL_MT_DISABLED;
     /// Edges are routed around this vertex to point from "from" directly to "to"
     void rerouteEdges(V3Graph* graphp) VL_MT_DISABLED;

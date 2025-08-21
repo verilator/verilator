@@ -58,8 +58,11 @@ public:
     V3GraphVertex* origVertexp() const { return m_origVertexp; }
     void setDelete() { m_deleted = true; }
     bool isDelete() const { return m_deleted; }
+    // cppcheck-suppress uselessOverride // cppcheck is wrong ...
     string name() const override { return m_origVertexp->name(); }
+    // cppcheck-suppress uselessOverride // cppcheck is wrong ...
     string dotColor() const override { return m_origVertexp->dotColor(); }
+    // cppcheck-suppress uselessOverride // cppcheck is wrong ...
     FileLine* fileline() const override { return m_origVertexp->fileline(); }
 };
 

@@ -393,9 +393,9 @@ private:
     // METHODS
     void v3errorPrep(V3ErrorCode code) VL_REQUIRES(m_mutex);
     std::ostringstream& v3errorStr() VL_REQUIRES(m_mutex) { return m_errorStr; }
-    void v3errorEnd(std::ostringstream& sstr, const string& extra, FileLine* fileline)
+    void v3errorEnd(const std::ostringstream& sstr, const string& extra, FileLine* fileline)
         VL_REQUIRES(m_mutex);
-    void v3errorEndGuts(std::ostringstream& sstr, const string& extra, FileLine* fileline)
+    void v3errorEndGuts(const std::ostringstream& sstr, const string& extra, FileLine* fileline)
         VL_REQUIRES(m_mutex);
 
 public:
@@ -586,7 +586,7 @@ public:
         VL_ACQUIRE(s().m_mutex);
     static std::ostringstream& v3errorStr() VL_REQUIRES(s().m_mutex) { return s().v3errorStr(); }
     // static, but often overridden in classes.
-    static void v3errorEnd(std::ostringstream& sstr, const string& extra, FileLine* fileline)
+    static void v3errorEnd(const std::ostringstream& sstr, const string& extra, FileLine* fileline)
         VL_RELEASE(s().m_mutex);
     static void vlAbort();
 };
@@ -728,7 +728,7 @@ void v3errorEndFatal(std::ostringstream& sstr)
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) { \
             std::string tag{VL_STRINGIFY(__VA_ARGS__)}; \
-            tag[0] = std::tolower(tag[0]); \
+            if (!tag.empty()) tag[0] = std::tolower(tag[0]); \
             const unsigned debugTag = v3Global.opt.debugLevel(tag); \
             const unsigned debugSrc = v3Global.opt.debugSrcLevel(__FILE__); \
             const unsigned debugLevel = debugTag >= debugSrc ? debugTag : debugSrc; \

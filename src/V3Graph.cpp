@@ -105,7 +105,8 @@ template V3GraphEdge* V3GraphVertex::findConnectingEdgep<GraphWay::FORWARD>(V3Gr
 template V3GraphEdge* V3GraphVertex::findConnectingEdgep<GraphWay::REVERSE>(V3GraphVertex*);
 
 // cppcheck-has-bug-suppress constParameter
-void V3GraphVertex::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
+void V3GraphVertex::v3errorEnd(const std::ostringstream& str) const
+    VL_RELEASE(V3Error::s().m_mutex) {
     std::ostringstream nsstr;
     nsstr << str.str();
     if (debug()) nsstr << "\n-vertex: " << this << '\n';
@@ -115,7 +116,7 @@ void V3GraphVertex::v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error
         V3Error::v3errorEnd(nsstr, "", nullptr);
     }
 }
-void V3GraphVertex::v3errorEndFatal(std::ostringstream& str) const
+void V3GraphVertex::v3errorEndFatal(const std::ostringstream& str) const
     VL_RELEASE(V3Error::s().m_mutex) {
     v3errorEnd(str);
     assert(0);  // LCOV_EXCL_LINE

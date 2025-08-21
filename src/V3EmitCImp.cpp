@@ -907,7 +907,7 @@ class EmitCTrace final : EmitCFunc {
         puts(");\n");
     }
 
-    void emitTraceValue(AstTraceInc* nodep, int arrayindex) {
+    void emitTraceValue(const AstTraceInc* nodep, int arrayindex) {
         if (AstVarRef* const varrefp = VN_CAST(nodep->valuep(), VarRef)) {
             const AstVar* const varp = varrefp->varp();
             if (varp->isEvent()) puts("&");

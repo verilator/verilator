@@ -435,8 +435,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                     && entryp->getNodep()) {
                     if (m_alwaysCombp
                         && (!entryp->isDrivenAlwaysCombWhole()
-                            || (entryp->isDrivenAlwaysCombWhole()
-                                && m_alwaysCombp != entryp->getAlwCombp()
+                            || (m_alwaysCombp != entryp->getAlwCombp()
                                 && m_alwaysCombp->fileline() != entryp->getAlwCombFileLinep()))) {
                         nodep->v3warn(
                             MULTIDRIVEN,

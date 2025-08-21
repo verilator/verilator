@@ -146,7 +146,7 @@ class PremitVisitor final : public VNVisitor {
         checkNode(nodep);
     }
 
-    static bool rhsReadsLhs(AstNodeAssign* nodep) {
+    static bool rhsReadsLhs(const AstNodeAssign* nodep) {
         const VNUser3InUse user3InUse;
         nodep->lhsp()->foreach([](const AstVarRef* refp) {
             if (refp->access().isWriteOrRW()) refp->varp()->user3(true);

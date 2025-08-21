@@ -57,7 +57,7 @@ void yyourtext(const char* textp, size_t size) {
 
 static void linenoInc() { LEXP->linenoInc(); }
 static bool pedantic() { return LEXP->m_pedantic; }
-static void yyerror(char* msg) { LEXP->curFilelinep()->v3error(msg); }
+static void yyerror(const char* msg) { LEXP->curFilelinep()->v3error(msg); }
 static void yyerrorf(const char* msg) { LEXP->curFilelinep()->v3error(msg); }
 static void appendDefValue(const char* t, size_t l) { LEXP->appendDefValue(t, l); }
 
@@ -548,7 +548,7 @@ again:
         if (len > (max_size - got)) {  // Front string too big
             len = (max_size - got);
             string remainder = front.substr(len);
-            front = front.substr(0, len);
+            front.resize(len);
             streamp->m_buffers.push_front(remainder);  // Put back remainder for next time
         }
         strncpy(buf + got, front.c_str(), len);
