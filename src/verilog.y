@@ -4500,6 +4500,7 @@ system_f_call_or_t<nodeExprp>:      // IEEE: part of system_tf_call (can be task
         |       yD_FREAD '(' expr ',' expr ')'          { $$ = new AstFRead{$1, $3, $5, nullptr, nullptr}; }
         |       yD_FREAD '(' expr ',' expr ',' expr ')'  { $$ = new AstFRead{$1, $3, $5, $7, nullptr}; }
         |       yD_FREAD '(' expr ',' expr ',' expr ',' expr ')'  { $$ = new AstFRead{$1, $3, $5, $7, $9}; }
+        |       yD_FREAD '(' expr ',' expr ',' ',' expr ')'  { $$ = new AstFRead{$1, $3, $5, nullptr, $8}; }
         |       yD_FREWIND '(' expr ')'                 { $$ = new AstFRewind{$1, $3}; }
         |       yD_FLOOR '(' expr ')'                   { $$ = new AstFloorD{$1, $3}; }
         |       yD_FSCANF '(' expr ',' str commaVRDListE ')'    { $$ = new AstFScanF{$1, *$5, $3, $6}; }

@@ -29,6 +29,7 @@ Verilator 5.039 devel
 * Support randomization of scope variables with 'std::randomize()' (#5438) (#6185). [Yilou Wang]
 * Support disabling a fork in additional contexts (#5432 partial) (#6174) (#6183). [Ryszard Rozak, Antmicro Ltd.]
 * Support bit queue streaming (#5830) (#6103). [Paul Swirhun]
+* Support `$fread` with missing start (#6125). [Iztok Jeras]
 * Support unpacked array `with` methods (#6134).
 * Support Verilog real ports as SystemC double ports (#6136) (#6158). [George Polack]
 * Support `$countones` in constraints (#6144 partial) (#6235). [Ryszard Rozak, Antmicro Ltd.]

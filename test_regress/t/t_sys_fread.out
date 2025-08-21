@@ -1,7 +1,7 @@
 Dump:
   r_i: 00010203
   r_upb: 0e 0d 0c 0b 0a 09 08 07 06 05 04
-  r_dnb: 19 18 17 16 15 14 13 12 11 10 0f
+  r_dnb: 0f 10 11 12 13 14 15 16 17 18 19
   r_ups: 2e2f 2c2d 2a2b 2829 2627 2425 2223 2021 1e1f 1c1d 1a1b
   r_dns: 3031 3233 3435 3637 3839 3a3b 3c3d 3e3f 0041 0243 0445
   r_upi: 6e6f7071 6a6b6c6d 66676869 62636465 5e5f6061 5a5b5c5d 56575859 52535455 4e4f5051 4a4b4c4d 46474849
@@ -13,9 +13,9 @@ Dump:
 
 Dump:
   r_i: ffffffff
-  r_upb: 05 04 03 02 01 00 ff ff ff ff ff
-  r_dnb: ff ff ff ff ff ff ff ff ff ff ff
-  r_ups: 3fff 3fff 3fff 3fff 0809 0607 3fff 3fff 3fff 3fff 3fff
+  r_upb: 05 04 03 02 01 00 ff 0e ff ff 0c
+  r_dnb: 0d ff ff 0f ff 06 07 08 09 0a 0b
+  r_ups: 3fff 3fff 3fff 3fff 1213 1011 3fff 3fff 3fff 3fff 3fff
   r_dns: 3fff 3fff 3fff 3fff 3fff 3fff 3fff 3fff 3fff 3fff 3fff
   r_upi: 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff
   r_dni: 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff
