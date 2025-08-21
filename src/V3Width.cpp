@@ -2398,7 +2398,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->attrsp()->foreach([this, nodep](AstAttrOf* attrp) {
                 if (attrp->attrType() == VAttrType::VAR_PORT_DTYPE) {
                     V3Const::constifyParamsEdit(attrp->fromp());  // fromp may change
-                    if (!similarDTypeRecurse(nodep->dtypep(), attrp->dtypep())) {
+                    if (!similarDTypeRecurse(nodep->dtypep(), VN_AS(attrp->fromp(), NodeDType))) {
                         nodep->dtypep()->v3error("Non-ANSI I/O declaration of signal "
                                                  "conflicts with type declaration: "
                                                  << nodep->prettyNameQ() << '\n'
