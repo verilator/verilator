@@ -260,6 +260,7 @@ void V3ErrorGuarded::v3errorEndGuts(const std::ostringstream& sstr, const string
         }
         if (m_message.code().severityFatal()) {
             static bool inFatal = false;
+            // cppcheck-suppress duplicateConditionalAssign // Used by VlcMain.cpp
             if (!inFatal) {
                 inFatal = true;
 #ifndef V3ERROR_NO_GLOBAL_

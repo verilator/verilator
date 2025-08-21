@@ -28,6 +28,8 @@ unmatchedSuppression
 *:verilog.c
 *:V3Lexer_pregen.yy.cpp
 *:V3PreLex_pregen.yy.cpp
+// Just check the hand written code
+missingInclude:examples/*
 // We intentionally redefine AstNode methods to improve type safety
 duplInheritedMember:src/V3AstNode*.h
 duplInheritedMember:src/obj_*/V3Ast__gen_impl.h
