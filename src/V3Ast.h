@@ -1941,8 +1941,6 @@ public:
     inline void iterateChildrenBackwardsConst(AstNode* nodep);
     /// Call visit()s on const nodep (maybe nullptr) and nodep's nextp() list
     inline void iterateAndNextConstNull(AstNode* nodep);
-    /// Call visit()s on const nodep (maybe nullptr) and nodep's nextp() list, in reverse order
-    inline void iterateAndNextConstNullBackwards(AstNode* nodep);
 
     virtual void visit(AstNode* nodep) = 0;
     virtual ~VNVisitorConst() {}
@@ -3127,9 +3125,6 @@ void VNVisitorConst::iterateConstNull(AstNode* nodep) {
 void VNVisitorConst::iterateChildrenConst(AstNode* nodep) { nodep->iterateChildrenConst(*this); }
 void VNVisitorConst::iterateChildrenBackwardsConst(AstNode* nodep) {
     nodep->iterateChildrenBackwardsConst(*this);
-}
-void VNVisitorConst::iterateAndNextConstNullBackwards(AstNode* nodep) {
-    if (VL_LIKELY(nodep)) nodep->iterateListBackwardsConst(*this);
 }
 void VNVisitorConst::iterateAndNextConstNull(AstNode* nodep) {
     if (VL_LIKELY(nodep)) nodep->iterateAndNextConst(*this);

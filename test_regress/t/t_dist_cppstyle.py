@@ -93,7 +93,7 @@ for filename in sorted(files.keys()):
         "Use brace instead of parenthesis-style constructors e.g. ': m_...{...}'")
 
     if re.search(r'\.(c|cpp)', filename):
-        check_pattern(filename, contents, r'(\w+\s+)*(inline)[^\n]*', None,
+        check_pattern(filename, contents, r'(\w+\s+)*(\binline\b)[^\n]*', None,
                       "'inline' keyword is on functions defined in .cpp files")
 
 test.passes()

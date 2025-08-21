@@ -1216,6 +1216,7 @@ class V3DfgPeephole final : public DfgVisitor {
         DfgVarArray* const varp = vtxp->fromp()->cast<DfgVarArray>();
         if (!varp) return;
         if (varp->varp()->isForced()) return;
+        if (varp->varp()->isSigUserRWPublic()) return;
         DfgVertex* const srcp = varp->srcp();
         if (!srcp) return;
 

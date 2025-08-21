@@ -250,9 +250,9 @@ class InlineRelinkVisitor final : public VNVisitor {
 
     // STATE
     std::unordered_set<std::string> m_renamedInterfaces;  // Name of renamed interface variables
-    AstNodeModule* const m_modp;  // Current module
-    const AstCell* const m_cellp;  // Cell being cloned
-    bool m_initialStatic = false;  // Inside InitialStatic
+    AstNodeModule* const m_modp;  // The module we are inlining into
+    const AstCell* const m_cellp;  // The cell being inlined
+    size_t m_nPlaceholders = 0;  // Unique identifier sequence number for placeholder variables
 
     // VISITORS
     void visit(AstCellInline* nodep) override {
@@ -279,66 +279,6 @@ class InlineRelinkVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstVar* nodep) override {
-        if (nodep->user2p()) {
-            // Make an assignment, so we'll trace it properly
-            // user2p is either a const or a var.
-            FileLine* const flp = nodep->fileline();
-            AstConst* const exprconstp = VN_CAST(nodep->user2p(), Const);
-            AstVarRef* exprvarrefp = VN_CAST(nodep->user2p(), VarRef);
-            UINFO(8, "connectto: " << nodep->user2p());
-            UASSERT_OBJ(exprconstp || exprvarrefp, nodep,
-                        "Unknown interconnect type; pinReconnectSimple should have cleared up");
-            if (exprconstp) {
-                m_modp->addStmtsp(new AstAssignW{flp, new AstVarRef{flp, nodep, VAccess::WRITE},
-                                                 exprconstp->cloneTree(false)});
-                nodep->user4(true);  // Making assignment to it
-            } else if (nodep->user3()) {
-                // Public variable at the lower module end - we need to make sure we propagate
-                // the logic changes up and down; if we aliased, we might
-                // remove the change detection on the output variable.
-                UINFO(9, "public pin assign: " << exprvarrefp);
-                UASSERT_OBJ(!nodep->isNonOutput(), nodep, "Outputs only - inputs use AssignAlias");
-                m_modp->addStmtsp(new AstAssignW{flp, exprvarrefp->cloneTree(false),
-                                                 new AstVarRef{flp, nodep, VAccess::READ}});
-            } else if (nodep->isSigPublic() && VN_IS(nodep->dtypep(), UnpackArrayDType)) {
-                // Public variable at this end and it is an unpacked array. We need to assign
-                // instead of aliased, because otherwise it will pass V3Slice and invalid
-                // code will be emitted.
-                UINFO(9, "assign to public and unpacked: " << nodep);
-                exprvarrefp = exprvarrefp->cloneTree(false);
-                exprvarrefp->access(VAccess::READ);
-                nodep->user4(true);  // Making assignment to it
-                m_modp->addStmtsp(
-                    new AstAssignW{flp, new AstVarRef{flp, nodep, VAccess::WRITE}, exprvarrefp});
-            } else if (nodep->isIfaceRef()) {
-                exprvarrefp = exprvarrefp->cloneTree(false);
-                exprvarrefp->access(VAccess::READ);
-                m_modp->addStmtsp(new AstAssignVarScope{
-                    flp, new AstVarRef{flp, nodep, VAccess::WRITE}, exprvarrefp});
-                FileLine* const flbp = exprvarrefp->varp()->fileline();
-                flp->modifyStateInherit(flbp);
-                flbp->modifyStateInherit(flp);
-            } else {
-                // Do to inlining child's variable now within the same
-                // module, so a AstVarRef not AstVarXRef below
-                exprvarrefp = exprvarrefp->cloneTree(false);
-                exprvarrefp->access(VAccess::READ);
-                AstVarRef* const nodeVarRefp = new AstVarRef{flp, nodep, VAccess::WRITE};
-                if (nodep->isForced() && nodep->direction() == VDirection::INPUT) {
-                    nodep->user4(true);  // Making assignment to it
-                    m_modp->addStmtsp(new AstAssignW{flp, nodeVarRefp, exprvarrefp});
-                } else if (nodep->isForced() && nodep->direction() == VDirection::OUTPUT) {
-                    exprvarrefp->access(VAccess::WRITE);
-                    nodeVarRefp->access(VAccess::READ);
-                    m_modp->addStmtsp(new AstAssignW{flp, exprvarrefp, nodeVarRefp});
-                } else {
-                    m_modp->addStmtsp(new AstAssignAlias{flp, nodeVarRefp, exprvarrefp});
-                }
-                FileLine* const flbp = exprvarrefp->varp()->fileline();
-                flp->modifyStateInherit(flbp);
-                flbp->modifyStateInherit(flp);
-            }
-        }
         // Iterate won't hit AstIfaceRefDType directly as it is no longer underneath the module
         if (AstIfaceRefDType* const ifacerefp = VN_CAST(nodep->dtypep(), IfaceRefDType)) {
             m_renamedInterfaces.insert(nodep->name());
@@ -350,7 +290,7 @@ class InlineRelinkVisitor final : public VNVisitor {
             ifacerefp->addNextHere(newdp);
             // Relink to point to newly cloned cell
             if (newdp->cellp()) {
-                if (AstCell* const newcellp = VN_CAST(newdp->cellp()->user4p(), Cell)) {
+                if (AstCell* const newcellp = VN_CAST(newdp->cellp()->user3p(), Cell)) {
                     newdp->cellp(newcellp);
                     newdp->cellName(newcellp->name());
                     // Tag the old ifacerefp to ensure it leaves no stale
@@ -377,41 +317,47 @@ class InlineRelinkVisitor final : public VNVisitor {
         nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
         iterateChildren(nodep);
     }
-    void visit(AstInitialStatic* nodep) override {
-        VL_RESTORER(m_initialStatic);
-        m_initialStatic = true;
-        iterateChildren(nodep);
-    }
-    void visit(AstNodeAssign* nodep) override {
-        if (const AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
-            if (m_initialStatic && varrefp->varp()->user2() && varrefp->varp()->user4()) {
-                // Initial assignment to i/o we are overriding, can remove
-                UINFO(9, "Remove InitialStatic " << nodep);
-                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-                return;
-            }
-        }
-        iterateChildren(nodep);
+    void visit(AstAssignAlias* nodep) override {
+        // Don't replace port variable in the alias
     }
     void visit(AstVarRef* nodep) override {
-        if (nodep->varp()->user2p()  // It's being converted to an alias.
-            && !nodep->varp()->user3()
-            // Don't constant propagate aliases (we just made)
-            && !VN_IS(nodep->backp(), AssignAlias)
-            // Forced signals do not use aliases
-            && !nodep->varp()->isForced()) {
-            const AstVar* const varp = nodep->varp();
-            if (AstConst* const constp = VN_CAST(varp->user2p(), Const)) {
-                nodep->replaceWith(constp->cloneTree(false));
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
-                return;
-            } else if (const AstVarRef* const vrefp = VN_CAST(varp->user2p(), VarRef)) {
-                nodep->varp(vrefp->varp());
-                nodep->classOrPackagep(vrefp->classOrPackagep());
+        // If the target port is being inlined, replace reference with the
+        // connected expression (always a Const of a VarRef).
+        AstNode* const pinExpr = nodep->varp()->user2p();
+        if (!pinExpr) return;
+
+        // If it's a constant, inline it
+        if (AstConst* const constp = VN_CAST(pinExpr, Const)) {
+            // You might think we would not try to substitute a constant for
+            // a written variable, but we might need to do this if for example
+            // there is an assignment to an input port, and that input port
+            // is tied to a constant on the cell we are inlining. This does
+            // generate an ASSIGNIN warning, but that can be downgraded to
+            // a warning. (Also assigning to an input can has valid uses if
+            // e.g. done via a hierarchical reference from outside to an input
+            // unconnected on the instance, so we don't want ASSIGNIN fatal.)
+            // Same applies when there is a static initialzier for an input.
+            // To avoid having to special case malformed assignment, or worse
+            // yet emiting code like 0 = 0, we instead substitute a placeholder
+            // variable that will later be pruned (it will otherwise be unreferenced).
+            if (!nodep->access().isReadOnly()) {
+                AstVar* const varp = nodep->varp();
+                const std::string name = "__vInlPlaceholder_" + std::to_string(++m_nPlaceholders);
+                AstVar* const holdep = new AstVar{varp->fileline(), VVarType::VAR, name, varp};
+                m_modp->addStmtsp(holdep);
+                AstVarRef* const newp = new AstVarRef{nodep->fileline(), holdep, nodep->access()};
+                nodep->replaceWith(newp);
             } else {
-                nodep->v3fatalSrc("Null connection?");
+                nodep->replaceWith(constp->cloneTree(false));
             }
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            return;
         }
+
+        // Otherwise it must be a variable reference, retarget this ref
+        const AstVarRef* const vrefp = VN_AS(pinExpr, VarRef);
+        nodep->varp(vrefp->varp());
+        nodep->classOrPackagep(vrefp->classOrPackagep());
     }
     void visit(AstVarXRef* nodep) override {
         // Track what scope it was originally under so V3LinkDot can resolve it
@@ -476,175 +422,226 @@ public:
 };
 
 //######################################################################
-// Inline state, as a visitor of each AstNode
+// Module inliner
 
-class InlineVisitor final : public VNVisitor {
-    // NODE STATE
-    // Cleared entire netlist
-    //  AstIfaceRefDType::user1()  // Whether the cell pointed to by this
-    //                             // AstIfaceRefDType has been inlined
-    //  Input:
-    //   AstNodeModule::user1p()    // ModuleState instance (via m_moduleState)
-    // Cleared each cell
-    //   AstVar::user2p()       // AstVarRef*/AstConst*  Points to signal this
-    //                          // is a direct connect to
-    //   AstVar::user3()        // bool    Don't alias the user2, keep it as signal
-    //   AstVar::user4()        // bool    Was input, remove InitialStatic Assign
-    //   AstCell::user4         // AstCell* of the created clone
-    const VNUser4InUse m_inuser4;
+namespace ModuleInliner {
 
-    ModuleStateUser1Allocator& m_moduleState;
+// A port variable in an inlined module can be connected 2 ways.
+// Either add a continuous assignment between the pin expression from
+// the instance and the port variable, or simply inline the pin expression
+// in place of the port variable. We will prefer to do the later whenever
+// possible (and sometimes required). When inlining, we need to create an
+// alias for the inined variable, in order to resovle hierarchical refrences
+// against it later in V3Scope (and also for tracing, which is inserted
+//later). Returns ture iff the given port variable should be inlined,
+// and false if a continuous assignment should be used.
+bool inlinePort(AstVar* nodep) {
+    // Interface references are always inlined
+    if (nodep->isIfaceRef()) return true;
+    // Ref ports must be always inlined
+    if (nodep->direction() == VDirection::REF) return true;
+    // Forced signals must not be inlined. The port signal can be
+    // forced separately from the connected signals.
+    if (nodep->isForced()) return false;
 
-    // STATE
-    AstNodeModule* m_modp = nullptr;  // Current module
-    VDouble0 m_statCells;  // Statistic tracking
+    // Note: For singls marked 'public' (and not 'public_flat') inlining
+    // of their contaning modules is disabled so they wont reach here.
 
-    // METHODS
-    void inlineCell(AstCell* nodep) {
-        UINFO(5, " Inline CELL   " << nodep);
+    // TODO: For now, writable public signals inside the cell cannot be
+    // eliminated as they are entered into the VerilatedScope, and
+    // changes would not propagate to it when assigned. (The alias created
+    // for them ensures they would be read correctly, but would not
+    // propagate any changes.) This can be removed when the VerialtedScope
+    // construction in V3EmitCSyms understands aliases.
+    if (nodep->isSigUserRWPublic()) return false;
 
-        const VNUser2InUse user2InUse;
-        const VNUser3InUse user3InUse;
+    // Otherwise we can repalce the variable
+    return true;
+}
 
-        ++m_statCells;
+// Connect the given port 'nodep' (being inlined into 'modp') to the given
+// expression (from the Cell Pin)
+void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
+    UINFO(6, "Connecting " << pinExprp);
+    UINFO(6, "        to " << nodep);
 
-        // Before cloning simplify pin assignments. Better off before, as if the module has
-        // multiple instantiations we will save work, and we can't call pinReconnectSimple in this
-        // loop as it clone()s itself.
-        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            V3Inst::pinReconnectSimple(pinp, nodep, false);
-        }
+    // Decide whether to inline the port variable or use continuous assignments
+    const bool inlineIt = inlinePort(nodep);
 
-        // Is this the last cell referencing this module?
-        const bool lastCell = --m_moduleState(nodep->modp()).m_cellRefs == 0;
+    // If we deccided to inline it, record the expression to substitute this variable with
+    if (inlineIt) nodep->user2p(pinExprp);
 
-        // Important: If this is the last cell, then don't clone the instantiated module but
-        // inline the original directly. While this requires some special casing, doing so
-        // saves us having to temporarily clone the module for the last cell, which
-        // significantly reduces Verilator memory usage. This is especially true as often the
-        // top few levels of the hierarchy are singleton wrapper modules, which we always
-        // inline. In this case this special casing saves us from having to clone essentially
-        // the entire netlist, which would in effect double Verilator memory consumption, or
-        // worse if we put off deleting the inlined modules until the end. Not having to clone
-        // large trees also improves speed.
-        AstNodeModule* newmodp = nullptr;
-        if (!lastCell) {
-            // Clone original module
-            newmodp = nodep->modp()->cloneTree(false);
+    FileLine* const flp = nodep->fileline();
+
+    // Helper to creates an AstVarRef reference to the port variable
+    const auto portRef = [&](VAccess access) { return new AstVarRef{flp, nodep, access}; };
+
+    // If the connected expression is a constant, add an assignment to set
+    // the port variable. The constant can still be inlined, in which case
+    // this is needed for tracing the inlined port variable.
+    if (AstConst* const pinp = VN_CAST(pinExprp, Const)) {
+        modp->addStmtsp(new AstAssignW{flp, portRef(VAccess::WRITE), pinp->cloneTree(false)});
+        return;
+    }
+
+    // Otherwise it must be a variable reference due to having called pinReconnectSimple
+    const AstVarRef* const pinRefp = VN_AS(pinExprp, VarRef);
+
+    // Helper to create an AstVarRef reference to the pin variable
+    const auto pinRef = [&](VAccess access) {
+        AstVarRef* const p = new AstVarRef{pinRefp->fileline(), pinRefp->varp(), access};
+        p->classOrPackagep(pinRefp->classOrPackagep());
+        return p;
+    };
+
+    // If it is being inlined, create the alias for it
+    if (inlineIt) {
+        UINFO(6, "Inlning port variable: " << nodep);
+        if (nodep->isIfaceRef()) {
+            modp->addStmtsp(
+                new AstAssignVarScope{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
         } else {
-            // For the last cell, reuse the original module
-            nodep->modp()->unlinkFrBack();
-            newmodp = nodep->modp();
+            modp->addStmtsp(
+                new AstAssignAlias{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
         }
-        // Find cell cross-references
-        nodep->modp()->foreach([](AstCell* cellp) {
-            // clonep is nullptr when inlining the last instance, if so the use original node
-            cellp->user4p(cellp->clonep() ? cellp->clonep() : cellp);
-        });
-        // Create data for dotted variable resolution
-        AstCellInline* const inlinep
-            = new AstCellInline{nodep->fileline(), nodep->name(), nodep->modp()->origName(),
-                                nodep->modp()->timeunit()};
-        m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
-        // Create assignments to the pins
-        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            if (!pinp->exprp()) continue;
-            UINFO(6, "     Pin change from " << pinp->modVarp());
+        // They will become the same variable, so propagate file-line and variable attributes
+        pinRefp->varp()->fileline()->modifyStateInherit(flp);
+        flp->modifyStateInherit(pinRefp->varp()->fileline());
+        pinRefp->varp()->propagateAttrFrom(nodep);
+        nodep->propagateAttrFrom(pinRefp->varp());
+        return;
+    }
 
-            AstNode* const connectRefp = pinp->exprp();
-            UASSERT_OBJ(VN_IS(connectRefp, Const) || VN_IS(connectRefp, VarRef), pinp,
-                        "Unknown interconnect type; pinReconnectSimple should have cleared up");
-            V3Inst::checkOutputShort(pinp);
+    // Otherwise create the continuous assignment between the port var and the pin expression
+    UINFO(6, "Not inlning port variable: " << nodep);
+    if (nodep->direction() == VDirection::INPUT) {
+        modp->addStmtsp(new AstAssignW{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
+    } else if (nodep->direction() == VDirection::OUTPUT) {
+        modp->addStmtsp(new AstAssignW{flp, pinRef(VAccess::WRITE), portRef(VAccess::READ)});
+    } else {
+        pinExprp->v3fatalSrc("V3Tristate left INOUT port");  // LCOV_EXCL_LINE
+    }
+}
 
-            // Make new signal; even though we'll optimize the interconnect, we
-            // need an alias to trace correctly.  If tracing is disabled, we'll
-            // delete it in later optimizations.
-            AstVar* const pinOldVarp = pinp->modVarp();
-            AstVar* const pinNewVarp = lastCell ? pinOldVarp : pinOldVarp->clonep();
-            UASSERT_OBJ(pinNewVarp, pinOldVarp, "Cloning failed");
-            // Propagate any attributes across the interconnect
-            pinNewVarp->propagateAttrFrom(pinOldVarp);
-            if (const AstVarRef* const vrefp = VN_CAST(connectRefp, VarRef)) {
-                vrefp->varp()->propagateAttrFrom(pinOldVarp);
-            }
+// Inline 'cellp' into 'modp'. 'last' indicatest this is tha last instance of the inlined module
+void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last) {
+    UINFO(5, " Inline Cell  " << cellp);
+    UINFO(5, " into Module  " << modp);
 
-            // One to one interconnect won't make a temporary variable.
-            // This prevents creating a lot of extra wires for clock signals.
-            // It will become a tracing alias.
-            UINFO(6, "One-to-one " << connectRefp);
-            UINFO(6, "       -to " << pinNewVarp);
-            pinNewVarp->user2p(connectRefp);
-            // Public output inside the cell must go via an assign rather
-            // than alias.  Else the public logic will set the alias, losing
-            // the value to be propagated up (InOnly isn't a problem as the
-            // AssignAlias will create the assignment for us)
-            pinNewVarp->user3(pinNewVarp->isSigUserRWPublic()
-                              && pinNewVarp->direction() == VDirection::OUTPUT);
+    const VNUser2InUse user2InUse;
+
+    // Important: If this is the last cell, then don't clone the instantiated module but
+    // inline the original directly. While this requires some special casing, doing so
+    // saves us having to temporarily clone the module for the last cell, which
+    // significantly reduces Verilator memory usage. This is especially true as often the
+    // top few levels of the hierarchy are singleton wrapper modules, which we always
+    // inline. In this case this special casing saves us from having to clone essentially
+    // the entire netlist, which would in effect double Verilator memory consumption, or
+    // worse if we put off deleting the inlined modules until the end. Not having to clone
+    // large trees also improves speed.
+
+    // The module we will yank the contents out of and put into 'modp'
+    AstNodeModule* const inlinedp = last ? cellp->modp()->unlinkFrBack()  //
+                                         : cellp->modp()->cloneTree(false);
+
+    // Compute map from original port variables and cells to their clones
+    std::unordered_map<const AstVar*, AstVar*> modVar2Clone;
+    for (AstNode *ap = cellp->modp()->stmtsp(), *bp = inlinedp->stmtsp(); ap || bp;
+         ap = ap->nextp(), bp = bp->nextp()) {
+        UASSERT_OBJ(ap && bp, ap ? ap : bp, "Clone has different number of children");
+        // We only care about AstVar and AstCell, but faster to just set them all
+        ap->user3p(bp);
+    }
+
+    // Create data for resolving hierarchical references later.
+    modp->addInlinesp(new AstCellInline{cellp->fileline(), cellp->name(),
+                                        cellp->modp()->origName(), cellp->modp()->timeunit()});
+
+    // Connect the pins on the instance
+    for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+        if (!pinp->exprp()) continue;
+        UINFO(6, "Conecting port " << pinp->modVarp());
+        UINFO(6, "   of instance " << cellp);
+
+        // Make sure the conneccted pin expression is always a VarRef or a Const
+        V3Inst::pinReconnectSimple(pinp, cellp, false);
+
+        // Warn
+        V3Inst::checkOutputShort(pinp);
+
+        // Pick up the old and new port variables signal (new is the same on last instance)
+        const AstVar* const oldModVarp = pinp->modVarp();
+        AstVar* const newModVarp = VN_AS(oldModVarp->user3p(), Var);
+        // Pick up the connected expression (a VarRef or Const due to pinReconnectSimple)
+        AstNodeExpr* const pinExprp = VN_AS(pinp->exprp(), NodeExpr);
+
+        // Connect up the port
+        connectPort(modp, newModVarp, pinExprp);
+    }
+
+    // Cleanup var names, etc, to not conflict, relink replaced variables
+    { InlineRelinkVisitor{inlinedp, modp, cellp}; }
+    // Move statements from the inlined module into the module we are inlining into
+    if (AstNode* const stmtsp = inlinedp->stmtsp()) {
+        modp->addStmtsp(stmtsp->unlinkFrBackWithNext());
+    }
+    // Delete the empty shell of the inlined module
+    VL_DO_DANGLING(inlinedp->deleteTree(), inlinedp);
+    // Remove the cell we just inlined
+    VL_DO_DANGLING(cellp->unlinkFrBack(), cellp);
+}
+
+// Apply all inlining decisions
+void process(AstNetlist* netlistp, ModuleStateUser1Allocator& moduleStates) {
+    // NODE STATE
+    // Input:
+    //   AstNodeModule::user1p()    // ModuleState instance (via moduleState)
+    //
+    // Cleared entire netlist
+    //   AstIfaceRefDType::user1()  // Whether the cell pointed to by this
+    //                              // AstIfaceRefDType has been inlined
+    //   AstCell::user3p()      // AstCell*, the clone
+    //   AstVar::user3p()       // AstVar*, the clone clone
+    // Cleared each cell
+    //   AstVar::user2p()       // AstVarRef*/AstConst* This port is connected to (AstPin::expr())
+    const VNUser3InUse m_user3InUse;
+
+    // Number of inlined instances, for statistics
+    VDouble0 m_nInlined;
+
+    // We want to inline bottom up. The modules under the netlist are in
+    // dependency order (top first, leaves last), so find the end of the list.
+    AstNode* nodep = netlistp->modulesp();
+    while (nodep->nextp()) nodep = nodep->nextp();
+
+    // Iterate module list backwards (stop when we get back to the Netlist)
+    while (AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) {
+        nodep = nodep->backp();
+
+        // Consider each cell inside the current module for inling
+        for (AstCell* const cellp : moduleStates(modp).m_childCells) {
+            ModuleState& childState = moduleStates(cellp->modp());
+            if (!childState.m_inlined) continue;
+            ++m_nInlined;
+            inlineCell(modp, cellp, --childState.m_cellRefs == 0);
         }
-        // Cleanup var names, etc, to not conflict
-        { InlineRelinkVisitor{newmodp, m_modp, nodep}; }
-        // Move statements under the module we are inlining into
-        if (AstNode* const stmtsp = newmodp->stmtsp()) {
-            stmtsp->unlinkFrBackWithNext();
-            m_modp->addStmtsp(stmtsp);
-        }
-        // Clear any leftover ports, etc
-        VL_DO_DANGLING(newmodp->deleteTree(), newmodp);
-        // Remove the cell we just inlined
-        nodep->unlinkFrBack();
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
-    // VISITORS
-    void visit(AstNetlist* nodep) override {
-        // Iterate modules backwards, in bottom-up order.  Required!
-        iterateAndNextConstNullBackwards(nodep->modulesp());
-        // Clean up AstIfaceRefDType references
-        iterateChildren(nodep->typeTablep());
-    }
-    void visit(AstNodeModule* nodep) override {
-        UASSERT_OBJ(!m_modp, nodep, "Unsupported: Nested modules");
-        VL_RESTORER(m_modp);
-        m_modp = nodep;
-        // Iterate the stored cells directly to reduce traversal
-        for (AstCell* const cellp : m_moduleState(nodep).m_childCells) {
-            if (m_moduleState(cellp->modp()).m_inlined) inlineCell(cellp);
-        }
-        m_moduleState(nodep).m_childCells.clear();
-    }
-    void visit(AstIfaceRefDType* nodep) override {
-        if (nodep->user1()) {
-            // The cell has been removed so let's make sure we don't leave a reference to it
-            // This dtype may still be in use by the AstAssignVarScope created earlier
-            // but that'll get cleared up later
-            nodep->cellp(nullptr);
-        }
-    }
+    V3Stats::addStat("Optimizations, Inlined instances", m_nInlined);
 
-    //--------------------
-    void visit(AstCell* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatalSrc("Traversal should have been short circuited");
-    }
-    void visit(AstNodeStmt* nodep) override {
-        nodep->v3fatalSrc("Traversal should have been short circuited");
-    }  // LCOV_EXCL_STOP
-    void visit(AstNodeFile*) override {}  // Accelerate
-    void visit(AstNodeDType*) override {}  // Accelerate
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    // Clean up AstIfaceRefDType references
+    // If the cell has been removed let's make sure we don't leave a
+    // reference to it. This dtype may still be in use by the
+    // AstAssignVarScope created earlier but that'll get cleared up later
+    netlistp->typeTablep()->foreach([](AstIfaceRefDType* nodep) {
+        if (nodep->user1()) nodep->cellp(nullptr);
+    });
+}
 
-public:
-    // CONSTRUCTORS
-    explicit InlineVisitor(AstNode* nodep, ModuleStateUser1Allocator& moduleState)
-        : m_moduleState{moduleState} {
-        iterate(nodep);
-    }
-    ~InlineVisitor() override {
-        V3Stats::addStat("Optimizations, Inlined instances", m_statCells);
-    }
-};
+}  //namespace ModuleInliner
 
 //######################################################################
-// Inline class functions
+// V3Inline class functions
 
 void V3Inline::inlineAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
@@ -656,7 +653,8 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
         // Scoped to clean up temp userN's
         { InlineMarkVisitor{nodep, moduleState}; }
 
-        { InlineVisitor{nodep, moduleState}; }
+        // Inline the modles we decided to inline
+        ModuleInliner::process(nodep, moduleState);
 
         // Check inlined modules have been removed during traversal. Otherwise we might have blown
         // up Verilator memory consumption.

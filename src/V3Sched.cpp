@@ -743,7 +743,7 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
         ss << "@(";
         V3EmitV::verilogForTree(senItemp, ss);
         ss << ")";
-        addDebug(triggerNumber, ss.str());
+        addDebug(triggerNumber, VString::quoteBackslash(ss.str()));
 
         //
         ++triggerNumber;
