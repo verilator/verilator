@@ -32,7 +32,7 @@
 #include <sys/types.h>
 
 // clang-format off
-#if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
+#if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__)) || defined(VL_CPPCHECK)
 # define INFILTER_PIPE  // Allow pipe filtering.  Needs fork()
 #endif
 
@@ -406,8 +406,6 @@ private:
             return false;
         }
 #else
-        (void)&writeFilter;
-        (void)&readFilterLine;
         v3fatalSrc("--pipe-filter not implemented on this platform");
         return false;
 #endif

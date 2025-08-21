@@ -728,7 +728,7 @@ void v3errorEndFatal(std::ostringstream& sstr)
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) { \
             std::string tag{VL_STRINGIFY(__VA_ARGS__)}; \
-            tag[0] = std::tolower(tag[0]); \
+            if (!tag.empty()) tag[0] = std::tolower(tag[0]); \
             const unsigned debugTag = v3Global.opt.debugLevel(tag); \
             const unsigned debugSrc = v3Global.opt.debugSrcLevel(__FILE__); \
             const unsigned debugLevel = debugTag >= debugSrc ? debugTag : debugSrc; \

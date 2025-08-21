@@ -26,7 +26,6 @@ unmatchedSuppression
 *:include/vltstd/*
 // flex/bison output
 *:verilog.c
-*:*V3PreLex.l
 *:V3Lexer_pregen.yy.cpp
 *:V3PreLex_pregen.yy.cpp
 // We intentionally redefine AstNode methods to improve type safety
@@ -89,7 +88,6 @@ constParameterPointer:src/V3OrderProcessDomains.cpp
 constVariablePointer:src/V3OrderProcessDomains.cpp
 constVariablePointer:src/V3OrderSerial.cpp
 constParameterPointer:src/V3Param.cpp
-constVariablePointer:src/V3Param.cpp
 constVariablePointer:src/V3Param.cpp
 constParameterPointer:src/V3ParseImp.cpp
 constVariableReference:src/V3ParseImp.cpp
