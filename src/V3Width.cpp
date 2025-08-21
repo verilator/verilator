@@ -3452,16 +3452,11 @@ class WidthVisitor final : public VNVisitor {
         }
         return nullptr;
     }
-    void methodOkArguments(AstNodeFTaskRef* nodep, int minArg, int maxArg,
-                           bool withUnsup = false) {
+    void methodOkArguments(AstNodeFTaskRef* nodep, int minArg, int maxArg) {
         int narg = 0;
         for (AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp()) {
             if (VN_IS(argp, With)) {
-                if (withUnsup) {
-                    argp->v3warn(E_UNSUPPORTED, "Unsupported: 'with' on this method");
-                } else {
-                    argp->v3error("'with' not legal on this method");
-                }
+                argp->v3error("'with' not legal on this method");
                 // Delete all arguments as nextp() otherwise dangling
                 VL_DO_DANGLING(pushDeletep(argp->unlinkFrBackWithNext()), argp);
                 break;
@@ -4325,27 +4320,46 @@ class WidthVisitor final : public VNVisitor {
         }
 
         if (methodId) {
-            methodOkArguments(nodep, 0, 0, true /*withUnsup*/);
-            FileLine* const fl = nodep->fileline();
-            AstNodeExpr* newp = nullptr;
-            for (int i = 0; i < adtypep->elementsConst(); ++i) {
-                AstNodeExpr* const arrayRef = nodep->fromp()->cloneTreePure(false);
-                AstNodeExpr* const selector = new AstArraySel{fl, arrayRef, i};
-                if (!newp) {
-                    newp = selector;
-                } else {
-                    switch (methodId) {
-                    case ARRAY_OR: newp = new AstOr{fl, newp, selector}; break;
-                    case ARRAY_AND: newp = new AstAnd{fl, newp, selector}; break;
-                    case ARRAY_XOR: newp = new AstXor{fl, newp, selector}; break;
-                    case ARRAY_SUM: newp = new AstAdd{fl, newp, selector}; break;
-                    case ARRAY_PRODUCT: newp = new AstMul{fl, newp, selector}; break;
-                    default: nodep->v3fatalSrc("bad case");
+            AstWith* const withp
+                = methodWithArgument(nodep, false, false, adtypep->subDTypep(),
+                                     nodep->findUInt32DType(), adtypep->subDTypep());
+            methodOkArguments(nodep, 0, 0);
+            if (withp) {
+                methodCallLValueRecurse(nodep, nodep->fromp(), VAccess::READ);
+                AstCMethodHard* const newp
+                    = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                         "r_" + nodep->name(), withp};
+                newp->dtypeFrom(withp ? withp->dtypep() : adtypep->subDTypep());
+                if (!nodep->firstAbovep()) newp->dtypeSetVoid();
+                newp->protect(false);
+                newp->didWidth(true);
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                return;
+            } else {
+                // TODO use this code for small vectors, otherwise use runtime reduction.
+                // Historically we expand all vectors.
+                FileLine* const fl = nodep->fileline();
+                AstNodeExpr* newp = nullptr;
+                for (int i = 0; i < adtypep->elementsConst(); ++i) {
+                    AstNodeExpr* const arrayRef = nodep->fromp()->cloneTreePure(false);
+                    AstNodeExpr* const selector = new AstArraySel{fl, arrayRef, i};
+                    if (!newp) {
+                        newp = selector;
+                    } else {
+                        switch (methodId) {
+                        case ARRAY_OR: newp = new AstOr{fl, newp, selector}; break;
+                        case ARRAY_AND: newp = new AstAnd{fl, newp, selector}; break;
+                        case ARRAY_XOR: newp = new AstXor{fl, newp, selector}; break;
+                        case ARRAY_SUM: newp = new AstAdd{fl, newp, selector}; break;
+                        case ARRAY_PRODUCT: newp = new AstMul{fl, newp, selector}; break;
+                        default: nodep->v3fatalSrc("bad case");
+                        }
                     }
                 }
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
             }
-            nodep->replaceWith(newp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else if (AstCMethodHard* newp = methodCallArray(nodep, adtypep)) {
             newp->protect(false);
             newp->didWidth(true);

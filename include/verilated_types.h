@@ -1313,6 +1313,9 @@ class VlUnpacked final {
     using Unpacked = T_Value[N_Depth];
 
 public:
+    template <typename T_Func>
+    using WithFuncReturnType = decltype(std::declval<T_Func>()(0, std::declval<T_Value>()));
+
     // MEMBERS
     // This should be the only data member, otherwise generated static initializers need updating
     Unpacked m_storage;  // Contents of the unpacked array
@@ -1559,6 +1562,63 @@ public:
                                              return with_func(0, a) < with_func(0, b);
                                          });
         return VlQueue<T_Value>::consV(*it);
+    }
+
+    T_Value r_sum() const {
+        T_Value out(0);  // Type must have assignment operator
+        for (const auto& i : m_storage) out += i;
+        return out;
+    }
+    template <typename T_Func>
+    T_Value r_sum(T_Func with_func) const {
+        T_Value out(0);  // Type must have assignment operator
+        for (const auto& i : m_storage) out += with_func(0, i);
+        return out;
+    }
+    T_Value r_product() const {
+        T_Value out = T_Value(1);
+        for (const auto& i : m_storage) out *= i;
+        return out;
+    }
+    template <typename T_Func>
+    T_Value r_product(T_Func with_func) const {
+        T_Value out = T_Value(1);
+        for (const auto& i : m_storage) out *= with_func(0, i);
+        return out;
+    }
+    T_Value r_and() const {
+        if (m_storage.empty()) return T_Value(0);  // The big three do it this way
+        T_Value out = ~T_Value(0);
+        for (const auto& i : m_storage) out &= i;
+        return out;
+    }
+    template <typename T_Func>
+    T_Value r_and(T_Func with_func) const {
+        T_Value out = ~T_Value(0);
+        for (const auto& i : m_storage) out &= with_func(0, i);
+        return out;
+    }
+    T_Value r_or() const {
+        T_Value out = T_Value(0);
+        for (const auto& i : m_storage) out |= i;
+        return out;
+    }
+    template <typename T_Func>
+    T_Value r_or(T_Func with_func) const {
+        T_Value out = T_Value(0);
+        for (const auto& i : m_storage) out |= with_func(0, i);
+        return out;
+    }
+    T_Value r_xor() const {
+        T_Value out = T_Value(0);
+        for (const auto& i : m_storage) out ^= i;
+        return out;
+    }
+    template <typename T_Func>
+    T_Value r_xor(T_Func with_func) const {
+        T_Value out = T_Value(0);
+        for (const auto& i : m_storage) out ^= with_func(0, i);
+        return out;
     }
 
     // Dumping. Verilog: str = $sformatf("%p", assoc)
