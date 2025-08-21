@@ -587,10 +587,6 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
-    AstNodeDType* fromDTypep() const {
-        if (AstNodeDType* dtypep = VN_CAST(fromp(), NodeDType)) return dtypep;
-        return VN_AS(fromp(), NodeExpr)->dtypep();
-    }
 };
 class AstCExpr final : public AstNodeExpr {
     // @astgen op1 := exprsp : List[AstNode] // Expressions to print
