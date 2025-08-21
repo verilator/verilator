@@ -114,7 +114,7 @@ AstSenTree* findTriggeredIface(const AstVarScope* vscp,
         if (memberIt.first.m_ifacep == vscp->varp()->sensIfacep()) return memberIt.second;
     }
     vscp->v3fatalSrc("Did not find virtual interface trigger");
-    return nullptr; // unreachable, appease MSVC
+    return nullptr;  // unreachable, appease MSVC
 }
 
 //============================================================================
