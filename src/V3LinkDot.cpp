@@ -3912,7 +3912,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     while (!foundp) {
                         foundp = dotSymp->findIdFlat(prefix + nodep->name());
                         if (foundp) break;
-                        UASSERT(dotSymp->fallbackp(), "Modports shall have fallback");
+                        UASSERT_OBJ(dotSymp->fallbackp(), nodep, "Modports shall have fallback");
                         foundp = dotSymp->fallbackp()->findIdFlat(prefix + nodep->name());
                         if (const AstVar* const varp
                             = foundToVarp(foundp, nodep, nodep->access())) {

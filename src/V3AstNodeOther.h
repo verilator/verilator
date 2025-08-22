@@ -2542,7 +2542,7 @@ class AstModule final : public AstNodeModule {
     // A module declaration
     const bool m_isChecker;  // Module represents a checker
     const bool m_isProgram;  // Module represents a program
-    bool m_hasGenericIface;  // Module contains a generic interface
+    bool m_hasGenericIface = false;  // Module contains a generic interface
 
 public:
     class Checker {};  // for constructor type-overload selection
@@ -2550,18 +2550,15 @@ public:
     AstModule(FileLine* fl, const string& name, const string& libname)
         : ASTGEN_SUPER_Module(fl, name, libname)
         , m_isChecker{false}
-        , m_isProgram{false}
-        , m_hasGenericIface{false} {}
+        , m_isProgram{false} {}
     AstModule(FileLine* fl, const string& name, const string& libname, Checker)
         : ASTGEN_SUPER_Module(fl, name, libname)
         , m_isChecker{true}
-        , m_isProgram{false}
-        , m_hasGenericIface{false} {}
+        , m_isProgram{false} {}
     AstModule(FileLine* fl, const string& name, const string& libname, Program)
         : ASTGEN_SUPER_Module(fl, name, libname)
         , m_isChecker{false}
-        , m_isProgram{true}
-        , m_hasGenericIface{false} {}
+        , m_isProgram{true} {}
     ASTGEN_MEMBERS_AstModule;
     string verilogKwd() const override {
         return m_isChecker ? "checker" : m_isProgram ? "program" : "module";

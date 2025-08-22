@@ -64,7 +64,7 @@ class LinkParseVisitor final : public VNVisitor {
     bool m_insideLoop = false;  // True if the node is inside a loop
     bool m_lifetimeAllowed = false;  // True to allow lifetime settings
     VDouble0 m_statModules;  // Number of modules seen
-    bool m_moduleWithGenericIface;  // If current module contains generic interface
+    bool m_moduleWithGenericIface = false;  // If current module contains generic interface
 
     // METHODS
     void cleanFileline(AstNode* nodep) {

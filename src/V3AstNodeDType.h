@@ -876,6 +876,7 @@ public:
     bool isModport() { return !m_modportName.empty(); }
     bool isCompound() const override { return true; }
     FileLine* modportFileline() const { return m_modportFileline; }
+    string name() const override { return m_modportName; }
 };
 
 class AstIfaceRefDType final : public AstNodeDType {

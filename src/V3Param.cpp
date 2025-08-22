@@ -894,7 +894,7 @@ class ParamProcessor final {
     void genericInterfaceVarSetup(const AstPin* const paramsp, const AstPin* const pinsp) {
         std::unordered_map<string, const AstPin*> paramspMap;
         for (const AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-            if (pinp->name().find("__VGIfaceParam") == 0) {
+            if (VString::startsWith(pinp->name(), "__VGIfaceParam")) {
                 paramspMap.insert({pinp->name().substr(std::strlen("__VGIfaceParam")), pinp});
             }
         }

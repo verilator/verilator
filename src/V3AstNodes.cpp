@@ -2102,10 +2102,12 @@ void AstModule::dump(std::ostream& str) const {
     this->AstNodeModule::dump(str);
     if (isChecker()) str << " [CHECKER]";
     if (isProgram()) str << " [PROGRAM]";
+    if (hasGenericIface()) str << " [HASGENERICIFACE]";
 }
 void AstModule::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isChecker);
     dumpJsonBoolFunc(str, isProgram);
+    dumpJsonBoolFunc(str, hasGenericIface);
     dumpJsonGen(str);
 }
 void AstPin::dump(std::ostream& str) const {
