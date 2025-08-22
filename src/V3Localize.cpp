@@ -38,6 +38,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class LocalizeVisitor final : public VNVisitor {
     // NODE STATE
+    //  AstVar::user1()         ->  Bool indicating Var is used in a super constructor call.
     //  AstVarScope::user1()    ->  Bool indicating VarScope is not optimizable.
     //  AstCFunc::user1()       ->  Bool indicating CFunc is not a leaf function.
     //  AstVarScope::user2()    ->  Bool indicating VarScope was fully assigned in the current
@@ -60,11 +61,14 @@ class LocalizeVisitor final : public VNVisitor {
     // STATE - for current visit position (use VL_RESTORER)
     AstCFunc* m_cfuncp = nullptr;  // Current active function
     uint32_t m_nodeDepth = 0;  // Node depth under m_cfuncp
+    bool m_inSuperConstructorCallStmt = false;  // If under super constructor call statement
 
     // METHODS
     bool isOptimizable(AstVarScope* nodep) {
         // Don't want to malloc/free the backing store all the time
         if (VN_IS(nodep->dtypep(), NBACommitQueueDType)) return false;
+        // Don't want to optimize variables used in super constructor call
+        if (nodep->varp()->user1()) return false;
         return ((!nodep->user1()  // Not marked as not optimizable, or ...
                                   // .. a block temp used in a single CFunc
                  || (nodep->varp()->varType() == VVarType::BLOCKTEMP
@@ -148,8 +152,10 @@ class LocalizeVisitor final : public VNVisitor {
     }
 
     void visit(AstCNew* nodep) override {
-        // Do not optimize variables that are used in super constructor call
-        if (!VN_IS(nodep->backp(), StmtExpr)) iterateChildren(nodep);
+        VL_RESTORER(m_inSuperConstructorCallStmt);
+        m_inSuperConstructorCallStmt = VN_IS(nodep->backp(), StmtExpr);
+        m_cfuncp->user1(true);  // Mark caller as not a leaf function
+        iterateChildren(nodep);
     }
 
     void visit(AstCCall* nodep) override {
@@ -200,8 +206,12 @@ class LocalizeVisitor final : public VNVisitor {
         // Remember the reference so we can fix it up later (we always need this as well)
         m_references(m_cfuncp).emplace(varScopep, nodep);
 
-        // Check if already marked as not optimizable
-        if (!varScopep->user1()) {
+        if (m_inSuperConstructorCallStmt) {
+            // Variable is used in super constructor call statement
+            // We don't want to optimize such variables
+            nodep->varp()->user1(true);
+            varScopep->user1(true);
+        } else if (!varScopep->user1()) {  // Check if already marked as not optimizable
             // Note: we only check read variables, as it's ok to localize (and in fact discard)
             // any variables that are only written but never read.
             if (nodep->access().isReadOrRW() && !varScopep->user2()) {
