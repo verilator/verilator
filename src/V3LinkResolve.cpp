@@ -576,6 +576,10 @@ class LinkResolveVisitor final : public VNVisitor {
         if (m_inRandomizeWith && m_randomizedVarp && isRandomizedVarSelect(nodep->fromp())) {
             // Replace member selects to the element
             // in which scope we currenly are with LambdaArgRef
+            // This allows V3Randomize to work properly when
+            // constrained variables are refered starting
+            // from the scope containing `randomize() with`
+            // instead of a randomized class scope
             AstNodeExpr* const prevFromp = nodep->fromp();
             prevFromp->replaceWith(
                 new AstLambdaArgRef{prevFromp->fileline(), prevFromp->name(), false});
