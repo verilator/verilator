@@ -37,26 +37,26 @@ module t(/*AUTOARG*/);
 
    initial begin
       `checkp(da, "'{}");
-      `checkp(da2, "'{'{'h1, 'h2} } ");
+      `checkp(da2, "'{'{'h1, 'h2}}");
 
       `checkp(dd, "'{}");
-      `checkp(dd1, "'{'{'h1} } ");
-      `checkp(dd2, "'{'{'h1, 'h2} } ");
+      `checkp(dd1, "'{'{'h1}}");
+      `checkp(dd2, "'{'{'h1, 'h2}}");
 
       `checkp(dq, "'{}");
-      `checkp(dq1, "'{'{'h1} } ");
-      `checkp(dq2, "'{'{'h1, 'h2} } ");
+      `checkp(dq1, "'{'{'h1}}");
+      `checkp(dq2, "'{'{'h1, 'h2}}");
 
       `checkp(qa, "'{}");
-      `checkp(qa2, "'{'{'h1, 'h2} } ");
+      `checkp(qa2, "'{'{'h1, 'h2}}");
 
       `checkp(qd, "'{}");
-      `checkp(qd1, "'{'{'h1} } ");
-      `checkp(qd2, "'{'{'h1, 'h2} } ");
+      `checkp(qd1, "'{'{'h1}}");
+      `checkp(qd2, "'{'{'h1, 'h2}}");
 
       `checkp(qq, "'{}");
-      `checkp(qq1, "'{'{'h1} } ");
-      `checkp(qq2, "'{'{'h1, 'h2} } ");
+      `checkp(qq1, "'{'{'h1}}");
+      `checkp(qq2, "'{'{'h1, 'h2}}");
 
       $write("*-* All Finished *-*\n");
       $finish;

@@ -26,7 +26,7 @@ module t (/*AUTOARG*/);
       string v;
 
       q = '{"a":1, "b":2, "c":2, "d":4, "e":3};
-      `checkp(q, "'{\"a\":'h1, \"b\":'h2, \"c\":'h2, \"d\":'h4, \"e\":'h3} ");
+      `checkp(q, "'{\"a\":'h1, \"b\":'h2, \"c\":'h2, \"d\":'h4, \"e\":'h3}");
 
       // NOT tested: with ... selectors
 
@@ -37,7 +37,7 @@ module t (/*AUTOARG*/);
 
       `checkp(qe, "'{}");
       qv = q.unique;
-      `checkp(qv, "'{'h1, 'h2, 'h4, 'h3} ");
+      `checkp(qv, "'{'h1, 'h2, 'h4, 'h3}");
       qv = qe.unique;
       `checkp(qv, "'{}");
 
@@ -45,11 +45,11 @@ module t (/*AUTOARG*/);
 
       // These require an with clause or are illegal
       qv = q.find with (item == 2);
-      `checkp(qv, "'{'h2, 'h2} ");
+      `checkp(qv, "'{'h2, 'h2}");
       qv = q.find_first with (item == 2);
-      `checkp(qv, "'{'h2} ");
+      `checkp(qv, "'{'h2}");
       qv = q.find_last with (item == 2);
-      `checkp(qv, "'{'h2} ");
+      `checkp(qv, "'{'h2}");
 
       qv = q.find with (item == 20);
       `checkp(qv, "'{}");
@@ -63,9 +63,9 @@ module t (/*AUTOARG*/);
       //q.find_last_index;  // Not legal on wildcard assoc - see t_assoc_wildcard_bad
 
       qv = q.min;
-      `checkp(qv, "'{'h1} ");
+      `checkp(qv, "'{'h1}");
       qv = q.max;
-      `checkp(qv, "'{'h4} ");
+      `checkp(qv, "'{'h4}");
 
       qv = qe.min;
       `checkp(qv, "'{}");

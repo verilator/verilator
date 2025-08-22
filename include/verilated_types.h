@@ -917,7 +917,7 @@ public:
             out += comma + VL_TO_STRING(i);
             comma = ", ";
         }
-        return out + "} ";
+        return out + "}";
     }
 };
 
@@ -1256,7 +1256,7 @@ public:
             comma = ", ";
         }
         // Default not printed - maybe random init data
-        return out + "} ";
+        return out + "}";
     }
 };
 
@@ -1629,7 +1629,7 @@ public:
             out += comma + VL_TO_STRING(m_storage[i]);
             comma = ", ";
         }
-        return out + "} ";
+        return out + "}";
     }
 
 private:

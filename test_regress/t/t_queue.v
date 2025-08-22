@@ -149,7 +149,7 @@ module t (/*AUTOARG*/
          v = q[4]; `checks(v, "");
          //Unsup: `checkh(q[$], "b2");
 
-         `checkp(q, "'{\"f2\", \"f1\", \"b1\", \"b2\"} ");
+         `checkp(q, "'{\"f2\", \"f1\", \"b1\", \"b2\"}");
          `checkp(p, "'{}");
 
          //Unsup: q.delete(1);

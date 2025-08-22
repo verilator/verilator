@@ -19,41 +19,41 @@ module t;
     string v;
 
     q = '{1, 2, 2, 4, 3};
-    `checkp(q, "'{'h1, 'h2, 'h2, 'h4, 'h3} ");
+    `checkp(q, "'{'h1, 'h2, 'h2, 'h4, 'h3}");
 
     // NOT tested: with ... selectors
 
     q.sort;
-    `checkp(q, "'{'h1, 'h2, 'h2, 'h3, 'h4} ");
+    `checkp(q, "'{'h1, 'h2, 'h2, 'h3, 'h4}");
     q.sort with (item == 2);
-    `checkp(q, "'{'h1, 'h3, 'h4, 'h2, 'h2} ");
+    `checkp(q, "'{'h1, 'h3, 'h4, 'h2, 'h2}");
     q.sort(x) with (x == 3);
-    `checkp(q, "'{'h1, 'h4, 'h2, 'h2, 'h3} ");
+    `checkp(q, "'{'h1, 'h4, 'h2, 'h2, 'h3}");
 
     q.rsort;
-    `checkp(q, "'{'h4, 'h3, 'h2, 'h2, 'h1} ");
+    `checkp(q, "'{'h4, 'h3, 'h2, 'h2, 'h1}");
     q.rsort with (item == 2);
-    `checkp(q, "'{'h2, 'h2, 'h4, 'h3, 'h1} ");
+    `checkp(q, "'{'h2, 'h2, 'h4, 'h3, 'h1}");
 
     qv = q.unique;
-    `checkp(qv, "'{'h2, 'h4, 'h3, 'h1} ");
+    `checkp(qv, "'{'h2, 'h4, 'h3, 'h1}");
     qi = q.unique_index;
     qi.sort;
-    `checkp(qi, "'{'h0, 'h2, 'h3, 'h4} ");
+    `checkp(qi, "'{'h0, 'h2, 'h3, 'h4}");
     q.reverse;
-    `checkp(q, "'{'h1, 'h3, 'h4, 'h2, 'h2} ");
+    `checkp(q, "'{'h1, 'h3, 'h4, 'h2, 'h2}");
     q.shuffle();
     q.sort;
-    `checkp(q, "'{'h1, 'h2, 'h2, 'h3, 'h4} ");
+    `checkp(q, "'{'h1, 'h2, 'h2, 'h3, 'h4}");
 
     // These require an with clause or are illegal
     // TODO add a lint check that with clause is provided
     qv = q.find with (item == 2);
-    `checkp(qv, "'{'h2, 'h2} ");
+    `checkp(qv, "'{'h2, 'h2}");
     qv = q.find_first with (item == 2);
-    `checkp(qv, "'{'h2} ");
+    `checkp(qv, "'{'h2}");
     qv = q.find_last with (item == 2);
-    `checkp(qv, "'{'h2} ");
+    `checkp(qv, "'{'h2}");
 
     qv = q.find with (item == 20);
     `checkp(qv, "'{}");
@@ -64,11 +64,11 @@ module t;
 
     qi = q.find_index with (item == 2);
     qi.sort;
-    `checkp(qi, "'{'h1, 'h2} ");
+    `checkp(qi, "'{'h1, 'h2}");
     qi = q.find_first_index with (item == 2);
-    `checkp(qi, "'{'h1} ");
+    `checkp(qi, "'{'h1}");
     qi = q.find_last_index with (item == 2);
-    `checkp(qi, "'{'h2} ");
+    `checkp(qi, "'{'h2}");
 
     qi = q.find_index with (item == 20);
     qi.sort;
@@ -79,9 +79,9 @@ module t;
     `checkp(qi, "'{}");
 
     qv = q.min;
-    `checkp(qv, "'{'h1} ");
+    `checkp(qv, "'{'h1}");
     qv = q.max;
-    `checkp(qv, "'{'h4} ");
+    `checkp(qv, "'{'h4}");
 
     // Reduction methods
 
@@ -99,7 +99,7 @@ module t;
     `checkh(i, 32'ha);
 
     q = '{1, 2, 2, 4, 3};
-    // `checkp(q, "'{1, 2, 2, 4, 3} ");
+    // `checkp(q, "'{1, 2, 2, 4, 3}");
 
     i = q.sum with (item + 1);
     `checkh(i, 32'h11);

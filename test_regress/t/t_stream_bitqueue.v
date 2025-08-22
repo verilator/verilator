@@ -263,16 +263,16 @@ module t (  /*AUTOARG*/
       `checkh(bytq_init[0], 8'h84);
       `checkh(bytq_init[1], 8'haa);
       s = $sformatf("bytq_init=%p", bytq_init);
-      `checks(s, "bytq_init='{'h84, 'haa} ");
+      `checks(s, "bytq_init='{'h84, 'haa}");
 
       bytq = bytq_init;
       bitq = {<<8{bit_q_t'({<<{bytq}})}};
       bytq = {<<8{bit_q_t'({<<{bitq}})}};
       s = $sformatf("bitq=%p", bitq);
       `checks(s,
-              "bitq='{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1} ");
+              "bitq='{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1}");
       s = $sformatf("bytq=%p", bytq);
-      `checks(s, "bytq='{'h84, 'haa} ");
+      `checks(s, "bytq='{'h84, 'haa}");
 
       /*
         Generalized block-reversal semantics for the outer left-stream when blockSize > 1.
@@ -298,12 +298,12 @@ module t (  /*AUTOARG*/
       bytq = {<<8{bit_q_t'({<<{bitq}})}};
       s = $sformatf("bitq=%p", bitq);
       `checks(s,
-              "bitq='{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h1} ");
+              "bitq='{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h1}");
       `checkh(bytq[0], 8'h84);
       `checkh(bytq[1], 8'haa);
       `checkh(bytq[2], 8'h80);
       s = $sformatf("bytq=%p", bytq);
-      `checks(s, "bytq='{'h84, 'haa, 'h80} ");
+      `checks(s, "bytq='{'h84, 'haa, 'h80}");
 
       bytq = bytq_init;
       bitq = {<<8{bit_q_t'({<<{bytq}})}};
@@ -312,9 +312,9 @@ module t (  /*AUTOARG*/
       bytq = {<<8{bit_q_t'({<<{bitq}})}};
       s = $sformatf("bitq=%p", bitq);
       `checks(s,
-              "bitq='{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h1, 'h1} ");
+              "bitq='{'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h1, 'h1}");
       s = $sformatf("bytq=%p", bytq);
-      `checks(s, "bytq='{'h84, 'haa, 'hc0} ");
+      `checks(s, "bytq='{'h84, 'haa, 'hc0}");
 
       bytq = bytq_init;
       bitq = {<<8{bit_q_t'({<<{bytq}})}};
@@ -323,7 +323,7 @@ module t (  /*AUTOARG*/
       bitq.push_back(1'b1);
       bytq = {<<8{bit_q_t'({<<{bitq}})}};
       s = $sformatf("bytq=%p", bytq);
-      `checks(s, "bytq='{'h84, 'haa, 'he0} ");
+      `checks(s, "bytq='{'h84, 'haa, 'he0}");
 
       bytq = bytq_init;
       bitq = {<<8{bit_q_t'({<<{bytq}})}};
@@ -333,7 +333,7 @@ module t (  /*AUTOARG*/
       bitq.push_back(1'b0);
       bytq = {<<8{bit_q_t'({<<{bitq}})}};
       s = $sformatf("bytq=%p", bytq);
-      `checks(s, "bytq='{'h84, 'haa, 'h70} ");
+      `checks(s, "bytq='{'h84, 'haa, 'h70}");
 
       bytq = bytq_init;
       bitq = {<<8{bit_q_t'({<<{bytq}})}};
@@ -344,19 +344,7 @@ module t (  /*AUTOARG*/
       bitq.push_back(1'b1);
       bytq = {<<8{bit_q_t'({<<{bitq}})}};
       s = $sformatf("bytq=%p", bytq);
-      `checks(s, "bytq='{'h84, 'haa, 'hb8} ");
-
-      bytq = bytq_init;
-      bitq = {<<8{bit_q_t'({<<{bytq}})}};
-      bitq.push_back(1'b1);
-      bitq.push_back(1'b1);
-      bitq.push_back(1'b1);
-      bitq.push_back(1'b0);
-      bitq.push_back(1'b1);
-      bitq.push_back(1'b0);
-      bytq = {<<8{bit_q_t'({<<{bitq}})}};
-      s = $sformatf("bytq=%p", bytq);
-      `checks(s, "bytq='{'h84, 'haa, 'h5c} ");
+      `checks(s, "bytq='{'h84, 'haa, 'hb8}");
 
       bytq = bytq_init;
       bitq = {<<8{bit_q_t'({<<{bytq}})}};
@@ -366,10 +354,9 @@ module t (  /*AUTOARG*/
       bitq.push_back(1'b0);
       bitq.push_back(1'b1);
       bitq.push_back(1'b0);
-      bitq.push_back(1'b0);
       bytq = {<<8{bit_q_t'({<<{bitq}})}};
       s = $sformatf("bytq=%p", bytq);
-      `checks(s, "bytq='{'h84, 'haa, 'h2e} ");
+      `checks(s, "bytq='{'h84, 'haa, 'h5c}");
 
       bytq = bytq_init;
       bitq = {<<8{bit_q_t'({<<{bytq}})}};
@@ -380,10 +367,9 @@ module t (  /*AUTOARG*/
       bitq.push_back(1'b1);
       bitq.push_back(1'b0);
       bitq.push_back(1'b0);
-      bitq.push_back(1'b1);
       bytq = {<<8{bit_q_t'({<<{bitq}})}};
       s = $sformatf("bytq=%p", bytq);
-      `checks(s, "bytq='{'h84, 'haa, 'h97} ");
+      `checks(s, "bytq='{'h84, 'haa, 'h2e}");
 
       bytq = bytq_init;
       bitq = {<<8{bit_q_t'({<<{bytq}})}};
@@ -395,10 +381,24 @@ module t (  /*AUTOARG*/
       bitq.push_back(1'b0);
       bitq.push_back(1'b0);
       bitq.push_back(1'b1);
+      bytq = {<<8{bit_q_t'({<<{bitq}})}};
+      s = $sformatf("bytq=%p", bytq);
+      `checks(s, "bytq='{'h84, 'haa, 'h97}");
+
+      bytq = bytq_init;
+      bitq = {<<8{bit_q_t'({<<{bytq}})}};
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b0);
+      bitq.push_back(1'b1);
+      bitq.push_back(1'b0);
+      bitq.push_back(1'b0);
+      bitq.push_back(1'b1);
       bitq.push_back(1'b1);
       bytq = {<<8{bit_q_t'({<<{bitq}})}};
       s = $sformatf("bytq=%p", bytq);
-      `checks(s, "bytq='{'h84, 'haa, 'h97, 'h80} ");
+      `checks(s, "bytq='{'h84, 'haa, 'h97, 'h80}");
     end
 
     // Test StreamR (>>) operations - fairly simple since this should maintain left-to-right order.
@@ -409,13 +409,13 @@ module t (  /*AUTOARG*/
       bitq = {1'b1, 1'b0, 1'b1, 1'b0, 1'b1, 1'b0, 1'b1, 1'b0};
       bitq = {>>4{bit_q_t'({<<{bitq}})}};
       s = $sformatf("bitq=%p", bitq);
-      `checks(s, "bitq='{'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1} ");
+      `checks(s, "bitq='{'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1}");
 
       bytq = {8'h84, 8'haa};
       bitq = {>>{bit_q_t'({<<{bytq}})}};
       s = $sformatf("bitq=%p", bitq);
       `checks(s,
-              "bitq='{'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1} ");
+              "bitq='{'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h0, 'h1, 'h0, 'h0, 'h0, 'h0, 'h1}");
 
       bitq = {
         1'b1,
@@ -437,23 +437,23 @@ module t (  /*AUTOARG*/
       };
       bytq = {>>2{byte_q_t'({<<{bitq}})}};
       s = $sformatf("bytq=%p", bytq);
-      `checks(s, "bytq='{'h43, 'h55} ");
+      `checks(s, "bytq='{'h43, 'h55}");
 
       bytq = {8'h12, 8'h34, 8'h56};
       bytq = {>>{byte_q_t'({<<{bytq}})}};
       s = $sformatf("bytq=%p", bytq);
-      `checks(s, "bytq='{'h6a, 'h2c, 'h48} ");
+      `checks(s, "bytq='{'h6a, 'h2c, 'h48}");
 
       bitq = {1'b1, 1'b0, 1'b1, 1'b0, 1'b1, 1'b0, 1'b1, 1'b0};
       bitq = {>>6{bit_q_t'({>>{bitq}})}};
       s = $sformatf("bitq=%p", bitq);
-      `checks(s, "bitq='{'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0} ");
+      `checks(s, "bitq='{'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0}");
 
       bytq = {8'h84, 8'haa};
       bitq = {>>{bit_q_t'({>>{bytq}})}};
       s = $sformatf("bitq=%p", bitq);
       `checks(s,
-              "bitq='{'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0} ");
+              "bitq='{'h1, 'h0, 'h0, 'h0, 'h0, 'h1, 'h0, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0, 'h1, 'h0}");
 
       bitq = {
         1'b1,
@@ -475,12 +475,12 @@ module t (  /*AUTOARG*/
       };
       bytq = {>>8{byte_q_t'({>>{bitq}})}};
       s = $sformatf("bytq=%p", bytq);
-      `checks(s, "bytq='{'haa, 'hc2} ");
+      `checks(s, "bytq='{'haa, 'hc2}");
 
       bytq = {8'h12, 8'h34, 8'h56};
       bytq = {>>{byte_q_t'({>>{bytq}})}};
       s = $sformatf("bytq=%p", bytq);
-      `checks(s, "bytq='{'h12, 'h34, 'h56} ");
+      `checks(s, "bytq='{'h12, 'h34, 'h56}");
     end
 
     $write("*-* All Finished *-*\n");
