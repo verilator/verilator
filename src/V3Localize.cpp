@@ -147,6 +147,11 @@ class LocalizeVisitor final : public VNVisitor {
         iterateChildrenConst(nodep);
     }
 
+    void visit(AstCNew* nodep) override {
+        // Do not optimize variables that are used in super constructor call
+        if (!VN_IS(nodep->backp(), StmtExpr)) iterateChildren(nodep);
+    }
+
     void visit(AstCCall* nodep) override {
         m_cfuncp->user1(true);  // Mark caller as not a leaf function
         iterateChildrenConst(nodep);
