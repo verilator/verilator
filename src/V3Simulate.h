@@ -1260,6 +1260,13 @@ private:
             }
         }
     }
+    void visit(AstToStringN* nodep) override {
+        if (jumpingOver()) return;
+        if (!optimizable()) return;  // Accelerate
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
+        clearOptimizable(nodep, "Cannot convert to string");  // LCOV_EXCL_LINE
+    }
 
     void visit(AstCoverInc* nodep) override { m_isCoverage = true; }
 

@@ -5534,6 +5534,20 @@ public:
     bool cleanLhs() const override { return true; }
     bool sizeMattersLhs() const override { return false; }
 };
+class AstToStringN final : public AstNodeUniop {
+public:
+    AstToStringN(FileLine* fl, AstNodeExpr* lhsp)
+        : ASTGEN_SUPER_ToStringN(fl, lhsp) {
+        dtypeSetString();
+    }
+    ASTGEN_MEMBERS_AstToStringN;
+    void numberOperate(V3Number& out, const V3Number& lhs) override { V3ERROR_NA; }
+    string emitVerilog() override { return "$sformatf(\"%p\", %l)"; }
+    string emitC() override { return isWide() ? "VL_TO_STRING_W(%nw, %li)" : "VL_TO_STRING(%li)"; }
+    bool cleanOut() const override { return true; }
+    bool cleanLhs() const override { return true; }
+    bool sizeMattersLhs() const override { return false; }
+};
 class AstToUpperN final : public AstNodeUniop {
     // string.toupper()
 public:

@@ -5525,6 +5525,11 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->fmtp(), WidthVP{SELF, BOTH}.p());
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
     }
+    void visit(AstToStringN* nodep) override {
+        // Inserted by V3Width only so we know has been resolved
+        nodep->dtypeSetString();
+        userIterateAndNext(nodep->lhsp(), WidthVP{nodep->lhsp()->dtypep(), BOTH}.p());
+    }
     void visit(AstSFormatF* nodep) override {
         // Excludes NodeDisplay, see below
         if (m_vup && !m_vup->prelim()) return;  // Can be called as statement or function
@@ -5611,13 +5616,7 @@ class WidthVisitor final : public VNVisitor {
                         VNRelinker handle;
                         argp->unlinkFrBack(&handle);
                         FileLine* const flp = nodep->fileline();
-                        AstCExpr* const newp = new AstCExpr{flp, nullptr};
-                        newp->addExprsp(new AstText{flp, "VL_TO_STRING(", true});
-                        newp->addExprsp(argp);
-                        newp->addExprsp(new AstText{flp, ")", true});
-                        newp->dtypeSetString();
-                        newp->pure(true);
-                        newp->protect(false);
+                        AstNodeExpr* const newp = new AstToStringN{flp, argp};
                         handle.relink(newp);
                         // Set argp to what we replaced it with, as we will keep processing the
                         // next argument.
