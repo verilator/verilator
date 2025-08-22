@@ -54,6 +54,8 @@ class LinkResolveVisitor final : public VNVisitor {
     int m_senitemCvtNum = 0;  // Temporary signal counter
     std::deque<AstGenFor*> m_underGenFors;  // Stack of GenFor underneath
     bool m_underGenerate = false;  // Under GenFor/GenIf
+    AstNodeExpr* m_currentRandomizeSelectp = nullptr;  // fromp() of current `randomize()` call
+    bool m_inRandomizeWith = false;  // If in randomize() with (and no other with afterwards)
 
     // VISITORS
     // TODO: Most of these visitors are here for historical reasons.
@@ -185,6 +187,18 @@ class LinkResolveVisitor final : public VNVisitor {
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
     void visit(AstNodeFTaskRef* nodep) override {
+        VL_RESTORER(m_currentRandomizeSelectp);
+
+        if (nodep->name() == "randomize") {
+            if (const AstMethodCall* const methodcallp = VN_CAST(nodep, MethodCall)) {
+                if (m_inRandomizeWith) {
+                    nodep->v3warn(
+                        E_UNSUPPORTED,
+                        "Unsupported: randomize() nested in inline randomize() constraints");
+                }
+                m_currentRandomizeSelectp = methodcallp->fromp();
+            }
+        }
         iterateChildren(nodep);
         if (AstLet* letp = VN_CAST(nodep->taskp(), Let)) {
             UINFO(7, "letSubstitute() " << nodep << " <- " << letp);
@@ -522,6 +536,30 @@ class LinkResolveVisitor final : public VNVisitor {
     void visit(AstGenIf* nodep) override {
         VL_RESTORER(m_underGenerate);
         m_underGenerate = true;
+        iterateChildren(nodep);
+    }
+
+    void visit(AstMemberSel* nodep) override {
+        if (m_inRandomizeWith && nodep->fromp()->isSame(m_currentRandomizeSelectp)) {
+            // Replace member selects to the element
+            // on which the randomize() is called with LambdaArgRef
+            // This allows V3Randomize to work properly when
+            // constrained variables are referred using that object
+            AstNodeExpr* const prevFromp = nodep->fromp();
+            prevFromp->replaceWith(
+                new AstLambdaArgRef{prevFromp->fileline(), prevFromp->name(), false});
+            pushDeletep(prevFromp);
+        }
+        iterateChildren(nodep);
+    }
+
+    void visit(AstWith* nodep) override {
+        VL_RESTORER(m_inRandomizeWith);
+        if (const AstMethodCall* const methodCallp = VN_CAST(nodep->backp(), MethodCall)) {
+            m_inRandomizeWith = methodCallp->name() == "randomize";
+        } else {
+            m_inRandomizeWith = false;
+        }
         iterateChildren(nodep);
     }
 
