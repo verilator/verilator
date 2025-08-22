@@ -1092,7 +1092,8 @@ class AstAssignAlias final : public AstNodeAssign {
     // If both sides are wires, there's no LHS vs RHS,
 public:
     AstAssignAlias(FileLine* fl, AstVarRef* lhsp, AstVarRef* rhsp)
-        : ASTGEN_SUPER_AssignAlias(fl, (AstNodeExpr*)lhsp, (AstNodeExpr*)rhsp) {}
+        : ASTGEN_SUPER_AssignAlias(fl, reinterpret_cast<AstNodeExpr*>(lhsp),
+                                   reinterpret_cast<AstNodeExpr*>(rhsp)) {}
     ASTGEN_MEMBERS_AstAssignAlias;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         V3ERROR_NA_RETURN(nullptr);

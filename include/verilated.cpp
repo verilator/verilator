@@ -1755,7 +1755,7 @@ uint64_t VL_MURMUR64_HASH(const char* key) VL_PURE {
 
     uint64_t h = seed ^ (len * m);
 
-    const uint64_t* data = (const uint64_t*)key;
+    const uint64_t* data = reinterpret_cast<const uint64_t*>(key);
     const uint64_t* end = data + (len / 8);
 
     while (data != end) {
@@ -1769,7 +1769,7 @@ uint64_t VL_MURMUR64_HASH(const char* key) VL_PURE {
         h *= m;
     }
 
-    const unsigned char* data2 = (const unsigned char*)data;
+    const unsigned char* data2 = reinterpret_cast<const unsigned char*>(data);
 
     switch (len & 7) {
     case 7: h ^= uint64_t(data2[6]) << 48; /* fallthrough */
@@ -3379,7 +3379,7 @@ VerilatedModule::VerilatedModule(const char* namep)
 
 VerilatedModule::~VerilatedModule() {
     // Memory cleanup - not called during normal operation
-    // NOLINTNEXTLINE(google-readability-casting)
+    // cppcheck-suppress cstyleCast  // NOLINTNEXTLINE(google-readability-casting)
     if (m_namep) VL_DO_CLEAR(free((void*)(m_namep)), m_namep = nullptr);
 }
 

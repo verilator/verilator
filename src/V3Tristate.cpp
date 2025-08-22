@@ -308,11 +308,11 @@ public:
         if (AstNode* const refp = nodep->op4p()) deleteVerticesFromSubtreeRecurse(refp);
     }
     void setTristate(AstNode* nodep) { makeVertex(nodep)->isTristate(true); }
-    bool isTristate(AstNode* nodep) {
+    bool isTristate(const AstNode* nodep) {
         const TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user4p());
         return vertexp && vertexp->isTristate();
     }
-    bool feedsTri(AstNode* nodep) {
+    bool feedsTri(const AstNode* nodep) {
         const TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user4p());
         return vertexp && vertexp->feedsTri();
     }

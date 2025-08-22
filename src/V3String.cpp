@@ -364,7 +364,7 @@ uint64_t VString::hashMurmur(const string& str) VL_PURE {
 
     uint64_t h = seed ^ (len * m);
 
-    const uint64_t* data = (const uint64_t*)key;
+    const uint64_t* data = reinterpret_cast<const uint64_t*>(key);
     const uint64_t* end = data + (len / 8);
 
     while (data != end) {
@@ -378,7 +378,7 @@ uint64_t VString::hashMurmur(const string& str) VL_PURE {
         h *= m;
     }
 
-    const unsigned char* data2 = (const unsigned char*)data;
+    const unsigned char* data2 = reinterpret_cast<const unsigned char*>(data);
 
     switch (len & 7) {
     case 7: h ^= uint64_t(data2[6]) << 48; /* fallthrough */

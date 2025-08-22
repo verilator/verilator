@@ -499,7 +499,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    // cppcheck-suppress uninitMember // m_defaultValue isn't defaulted, caller's constructor must
+    // cppcheck-suppress uninitMemberVar // m_defaultValue isn't defaulted, caller must
     VlQueue() = default;
     ~VlQueue() = default;
     VlQueue(const VlQueue&) = default;

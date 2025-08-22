@@ -1258,7 +1258,7 @@ char* AstNode::dumpTreeJsonGdb(const char* str) { return strdup(str); }
 // allow for passing pointer literals like 0x42.. without manual cast
 char* AstNode::dumpTreeJsonGdb(intptr_t nodep) {
     if (!nodep) return strdup("{\"addr\":\"NULL\"}\n");
-    return dumpTreeJsonGdb((const AstNode*)nodep);
+    return dumpTreeJsonGdb(reinterpret_cast<const AstNode*>(nodep));
 }
 // cppcheck-suppress unusedFunction  // Debug only
 void AstNode::dumpGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_LINE

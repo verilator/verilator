@@ -503,7 +503,7 @@ public:
     AstVar* varp() const VL_MT_STABLE { return m_varp; }  // [After Link] Pointer to variable
     void varp(AstVar* varp) {
         m_varp = varp;
-        dtypeFrom((AstNode*)varp);
+        dtypeFrom(reinterpret_cast<AstNode*>(varp));
     }
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
@@ -767,7 +767,9 @@ public:
     AstNode* classOrPackageNodep() const { return m_classOrPackageNodep; }
     void classOrPackageNodep(AstNode* nodep) { m_classOrPackageNodep = nodep; }
     AstPackage* packagep() const { return VN_CAST(classOrPackageNodep(), Package); }
-    void classOrPackagep(AstNodeModule* nodep) { m_classOrPackageNodep = (AstNode*)nodep; }
+    void classOrPackagep(AstNodeModule* nodep) {
+        m_classOrPackageNodep = reinterpret_cast<AstNode*>(nodep);
+    }
 
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -4474,7 +4476,7 @@ class AstFuncRef final : public AstNodeFTaskRef {
 public:
     inline AstFuncRef(FileLine* fl, AstFunc* taskp, AstNodeExpr* pinsp);
     AstFuncRef(FileLine* fl, AstParseRef* namep, AstNodeExpr* pinsp)
-        : ASTGEN_SUPER_FuncRef(fl, (AstNode*)namep, pinsp) {}
+        : ASTGEN_SUPER_FuncRef(fl, reinterpret_cast<AstNode*>(namep), pinsp) {}
     AstFuncRef(FileLine* fl, const string& name, AstNodeExpr* pinsp)
         : ASTGEN_SUPER_FuncRef(fl, name, pinsp) {}
     ASTGEN_MEMBERS_AstFuncRef;
@@ -4525,7 +4527,7 @@ class AstTaskRef final : public AstNodeFTaskRef {
 public:
     inline AstTaskRef(FileLine* fl, AstTask* taskp, AstNodeExpr* pinsp);
     AstTaskRef(FileLine* fl, AstParseRef* namep, AstNodeExpr* pinsp)
-        : ASTGEN_SUPER_TaskRef(fl, (AstNode*)namep, pinsp) {
+        : ASTGEN_SUPER_TaskRef(fl, reinterpret_cast<AstNode*>(namep), pinsp) {
         dtypeSetVoid();
     }
     AstTaskRef(FileLine* fl, const string& name, AstNodeExpr* pinsp)

@@ -410,7 +410,7 @@ CPPCHECK_FLAGS = --enable=all
 CPPCHECK_FLAGS += --inline-suppr
 CPPCHECK_FLAGS += --suppressions-list=$(srcdir)/src/cppcheck-suppressions.txt
 CPPCHECK_FLAGS += --cppcheck-build-dir=$(CPPCHECK_CACHE)
-CPPCHECK_FLAGS += -DVL_DEBUG=1 -DVL_CPPCHECK=1 -D__GNUC__=1
+CPPCHECK_FLAGS += -DVL_DEBUG=1 -DVL_CPPCHECK=1 -DINFILTER_PIPE=1 -D__GNUC__=1
 CPPCHECK_FLAGS += -j$(CPPCHECK_JOBS)
 CPPCHECK_INC = -I$(srcdir)/include
 CPPCHECK_INC += -I$(srcdir)/include/gtkwave

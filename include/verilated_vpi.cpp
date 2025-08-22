@@ -3147,7 +3147,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
                         "increase and recompile");
         }
 
-        PLI_INT16* shortintsp = (PLI_INT16*)out_data;
+        PLI_INT16* shortintsp = reinterpret_cast<PLI_INT16*>(out_data);
         arrayvalue_p->value.shortints = shortintsp;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3166,7 +3166,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
                         "increase and recompile");
         }
 
-        PLI_INT32* integersp = (PLI_INT32*)out_data;
+        PLI_INT32* integersp = reinterpret_cast<PLI_INT32*>(out_data);
         arrayvalue_p->value.integers = integersp;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3188,7 +3188,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
                         "increase and recompile");
         }
 
-        PLI_INT64* longintsp = (PLI_INT64*)out_data;
+        PLI_INT64* longintsp = reinterpret_cast<PLI_INT64*>(out_data);
         arrayvalue_p->value.longints = longintsp;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3213,7 +3213,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
                         "increase and recompile");
         }
 
-        p_vpi_vecval vectorsp = (p_vpi_vecval)out_data;
+        p_vpi_vecval vectorsp = reinterpret_cast<p_vpi_vecval>(out_data);
         arrayvalue_p->value.vectors = vectorsp;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3241,7 +3241,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
                         "increase and recompile");
         }
 
-        PLI_BYTE8* valuep = (PLI_BYTE8*)out_data;
+        PLI_BYTE8* valuep = reinterpret_cast<PLI_BYTE8*>(out_data);
         arrayvalue_p->value.rawvals = valuep;
 
         if (varp->vltype() == VLVT_UINT8) {
@@ -3269,7 +3269,7 @@ void vl_get_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, const P
                         "increase and recompile");
         }
 
-        PLI_BYTE8* valuep = (PLI_BYTE8*)out_data;
+        PLI_BYTE8* valuep = reinterpret_cast<PLI_BYTE8*>(out_data);
         arrayvalue_p->value.rawvals = valuep;
 
         if (varp->vltype() == VLVT_UINT8) {
