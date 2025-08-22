@@ -410,6 +410,40 @@ private:
         }
     }
 
+    string toStringRecurse(AstNodeExpr* nodep) {
+        // Return string representation, or clearOptimizable
+        const AstNodeExpr* const valuep = fetchValue(nodep);
+        if (const AstConst* const avaluep = VN_CAST(valuep, Const)) {
+            return "'h"s + avaluep->num().displayed(nodep, "%0x");
+        }
+        if (const AstInitArray* const avaluep = VN_CAST(valuep, InitArray)) {
+            string result = "'{";
+            string comma;
+            if (VN_IS(nodep->dtypep(), AssocArrayDType)) {
+                if (avaluep->defaultp()) {
+                    result += comma + "default:" + toStringRecurse(avaluep->defaultp());
+                    comma = ", ";
+                }
+                const auto& mapr = avaluep->map();
+                for (const auto& itr : mapr) {
+                    result += comma + cvtToStr(itr.first) + ":"
+                              + toStringRecurse(itr.second->valuep());
+                    comma = ", ";
+                }
+            } else if (const AstUnpackArrayDType* const dtypep
+                       = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
+                for (int n = 0; n < dtypep->elementsConst(); ++n) {
+                    result += comma + toStringRecurse(avaluep->getIndexDefaultedValuep(n));
+                    comma = ", ";
+                }
+            }
+            result += "}";
+            return result;
+        }
+        clearOptimizable(nodep, "Cannot convert to string");  // LCOV_EXCL_LINE
+        return "";
+    }
+
     // VISITORS
     void visit(AstAlways* nodep) override {
         if (jumpingOver()) return;
@@ -1265,7 +1299,12 @@ private:
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
-        clearOptimizable(nodep, "Cannot convert to string");  // LCOV_EXCL_LINE
+        if (!optimizable()) return;
+        std::string result = toStringRecurse(nodep->lhsp());
+        if (!optimizable()) return;
+        AstConst* const resultConstp = new AstConst{nodep->fileline(), AstConst::String{}, result};
+        setValue(nodep, resultConstp);
+        m_reclaimValuesp.push_back(resultConstp);
     }
 
     void visit(AstCoverInc* nodep) override { m_isCoverage = true; }

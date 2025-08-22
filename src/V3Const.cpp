@@ -2521,6 +2521,22 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return true;
     }
+    bool matchToStringNConst(AstToStringN* nodep) {
+        iterateChildren(nodep);
+        if (AstInitArray* const initp = VN_CAST(nodep->lhsp(), InitArray)) {
+            if (!(m_doExpensive || m_params)) return false;
+            // At present only support 1D unpacked arrays
+            const auto initOfConst = [](const AstNode* const nodep) -> bool {  //
+                return VN_IS(nodep, Const) || VN_IS(nodep, InitItem);
+            };
+            if (initp->initsp() && !initp->initsp()->forall(initOfConst)) return false;
+            if (initp->defaultp() && !initp->defaultp()->forall(initOfConst)) return false;
+        } else if (!VN_IS(nodep->lhsp(), Const)) {
+            return false;
+        }
+        replaceWithSimulation(nodep);
+        return true;
+    }
     int operandConcatMove(const AstConcat* nodep) {
         //    CONCAT under concat  (See moveConcat)
         // Return value: true indicates to do it; 2 means move to LHS
@@ -3892,6 +3908,7 @@ class ConstVisitor final : public VNVisitor {
     TREEOPA("AstPutcN{$lhsp.castConst, $rhsp.castConst, $thsp.castConst}",  "replaceConst(nodep)");
     TREEOPA("AstSubstrN{$lhsp.castConst, $rhsp.castConst, $thsp.castConst}",  "replaceConst(nodep)");
     TREEOPA("AstCvtPackString{$lhsp.castConst}", "replaceConstString(nodep, VN_AS(nodep->lhsp(), Const)->num().toString())");
+    TREEOP ("AstToStringN{matchToStringNConst(nodep)}", "DONE");
     // Custom
     // Implied by AstIsUnbounded::numberOperate: V("AstIsUnbounded{$lhsp.castConst}", "replaceNum(nodep, 0)");
     TREEOPV("AstIsUnbounded{$lhsp.castUnbounded}", "replaceNum(nodep, 1)");

@@ -100,6 +100,7 @@ Verilator 5.038 2025-07-08
 
 * Support redeclaring type as non-type; major parsing change (#2412) (#6020) (#6042) (#6044).
 * Support scoped `new` (#4199).
+* Support elaboration-time printing of unpacked array with `%p` (#4732).
 * Support constrained random for associative arrays (#5985) (#5986). [Yilou Wang]
 * Support assignments to concatenations with impure RHS (#6002). [Ryszard Rozak, Antmicro Ltd.]
 * Support SARIF JSON diagnostic output with `--diagnostics-sarif`. (#6017)
