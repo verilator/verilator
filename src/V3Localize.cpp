@@ -208,8 +208,7 @@ class LocalizeVisitor final : public VNVisitor {
         m_references(m_cfuncp).emplace(varScopep, nodep);
 
         if (m_inSuperConstructorCallStmt) {
-            // Variable is used in super constructor call statement
-            // We don't want to optimize such variables
+            // Variable used in super constructor call can't be localized
             nodep->varp()->user1(true);
             varScopep->user1(true);
         } else if (!varScopep->user1()) {  // Check if already marked as not optimizable
