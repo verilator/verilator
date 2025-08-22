@@ -228,7 +228,7 @@ class LinkResolveVisitor final : public VNVisitor {
                 if (m_inRandomizeWith) {
                     nodep->v3warn(
                         E_UNSUPPORTED,
-                        "Unsupported: randomize() nested in inline randomize() constrains");
+                        "Unsupported: randomize() nested in inline randomize() constraints");
                 }
                 setRandomizedVar(methodcallp->fromp());
             }
@@ -573,13 +573,13 @@ class LinkResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstMemberSel* nodep) override {
-        if (m_inRandomizeWith && m_randomizedVarp) {
-            if (isRandomizedVarSelect(nodep->fromp())) {
-                AstNodeExpr* const prevFromp = nodep->fromp();
-                prevFromp->replaceWith(
-                    new AstLambdaArgRef{prevFromp->fileline(), prevFromp->name(), false});
-                pushDeletep(prevFromp);
-            }
+        if (m_inRandomizeWith && m_randomizedVarp && isRandomizedVarSelect(nodep->fromp())) {
+            // Replace member selects to the element
+            // in which scope we currenly are with LambdaArgRef
+            AstNodeExpr* const prevFromp = nodep->fromp();
+            prevFromp->replaceWith(
+                new AstLambdaArgRef{prevFromp->fileline(), prevFromp->name(), false});
+            pushDeletep(prevFromp);
         }
         iterateChildren(nodep);
     }
