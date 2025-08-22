@@ -70,7 +70,8 @@ public:
     void tmpForp(AstNode* nodep) { m_tmpForp = nodep; }
 
     bool isDrivenFullyByDfg() const {
-        return srcp() && !srcp()->is<DfgVertexSplice>() && !varp()->isForced();
+        return srcp() && !srcp()->is<DfgVertexSplice>() && !varp()->isForced()
+               && !varp()->isSigUserRWPublic();
     }
 
     // Variable referenced via an AstVarXRef (hierarchical reference)

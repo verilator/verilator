@@ -694,7 +694,7 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, bool forTri
     return InstStatic::pinReconnectSimple(pinp, cellp, forTristate, alwaysCvt);
 }
 
-void V3Inst::checkOutputShort(AstPin* nodep) {
+void V3Inst::checkOutputShort(const AstPin* nodep) {
     if (nodep->modVarp()->direction() == VDirection::OUTPUT) {
         if (VN_IS(nodep->exprp(), Const) || VN_IS(nodep->exprp(), Extend)
             || (VN_IS(nodep->exprp(), Concat)
