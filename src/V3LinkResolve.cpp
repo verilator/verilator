@@ -54,42 +54,8 @@ class LinkResolveVisitor final : public VNVisitor {
     int m_senitemCvtNum = 0;  // Temporary signal counter
     std::deque<AstGenFor*> m_underGenFors;  // Stack of GenFor underneath
     bool m_underGenerate = false;  // Under GenFor/GenIf
-    AstVar* m_randomizedVarp = nullptr;  // Variable on which the current randomize is called
-    std::vector<string> m_randomizedVarLocalPath;
+    AstNodeExpr* m_currentRandomizeSelect = nullptr;  // fromp() of current `randomize()` call
     bool m_inRandomizeWith = false;  // If in randomize() with (and no other with afterwards)
-
-    void setRandomizedVar(AstNodeExpr* const nodep) {
-        m_randomizedVarLocalPath.push_back(nodep->name());
-        if (const AstVarRef* const varRefp = VN_CAST(nodep, VarRef)) {
-            m_randomizedVarp = varRefp->varp();
-            return;
-        }
-        if (const AstMemberSel* const memberSelp = VN_CAST(nodep, MemberSel)) {
-            return setRandomizedVar(memberSelp->fromp());
-        }
-
-        // MemberSel contains a queue, array etc. and we do not support getting
-        // a variable to constrain in inline constrain from queue, array etc. from local:: scope
-        m_randomizedVarp = nullptr;
-        m_randomizedVarLocalPath.clear();
-    }
-
-    bool isRandomizedVarSelect(const AstNodeExpr* const nodep) const {
-        const AstNodeExpr* nodepIterp = nodep;
-        for (size_t i = 0; i < m_randomizedVarLocalPath.size(); ++i) {
-            if (nodepIterp->name() != m_randomizedVarLocalPath[i]) return false;
-            if (const AstMemberSel* const memberSelp = VN_CAST(nodepIterp, MemberSel)) {
-                nodepIterp = memberSelp->fromp();
-            } else if (i + 1 != m_randomizedVarLocalPath.size()) {
-                return false;
-            }
-        }
-        UASSERT_OBJ(nodepIterp, nodep, "Member select chain should not end with a nullptr");
-        if (const AstVarRef* const varRefp = VN_CAST(nodepIterp, VarRef)) {
-            return varRefp->varp() == m_randomizedVarp;
-        }
-        return false;
-    }
 
     // VISITORS
     // TODO: Most of these visitors are here for historical reasons.
@@ -220,8 +186,7 @@ class LinkResolveVisitor final : public VNVisitor {
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        VL_RESTORER(m_randomizedVarp);
-        VL_RESTORER(m_randomizedVarLocalPath);
+        VL_RESTORER(m_currentRandomizeSelect);
 
         if (nodep->name() == "randomize") {
             if (const AstMethodCall* const methodcallp = VN_CAST(nodep, MethodCall)) {
@@ -230,7 +195,7 @@ class LinkResolveVisitor final : public VNVisitor {
                         E_UNSUPPORTED,
                         "Unsupported: randomize() nested in inline randomize() constraints");
                 }
-                setRandomizedVar(methodcallp->fromp());
+                m_currentRandomizeSelect = methodcallp->fromp();
             }
         }
         iterateChildren(nodep);
@@ -573,7 +538,7 @@ class LinkResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstMemberSel* nodep) override {
-        if (m_inRandomizeWith && m_randomizedVarp && isRandomizedVarSelect(nodep->fromp())) {
+        if (m_inRandomizeWith && nodep->fromp()->isSame(m_currentRandomizeSelect)) {
             // Replace member selects to the element
             // in which scope we currenly are with LambdaArgRef
             // This allows V3Randomize to work properly when
