@@ -54,7 +54,7 @@ class LinkResolveVisitor final : public VNVisitor {
     int m_senitemCvtNum = 0;  // Temporary signal counter
     std::deque<AstGenFor*> m_underGenFors;  // Stack of GenFor underneath
     bool m_underGenerate = false;  // Under GenFor/GenIf
-    AstNodeExpr* m_currentRandomizeSelect = nullptr;  // fromp() of current `randomize()` call
+    AstNodeExpr* m_currentRandomizeSelectp = nullptr;  // fromp() of current `randomize()` call
     bool m_inRandomizeWith = false;  // If in randomize() with (and no other with afterwards)
 
     // VISITORS
@@ -186,7 +186,7 @@ class LinkResolveVisitor final : public VNVisitor {
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        VL_RESTORER(m_currentRandomizeSelect);
+        VL_RESTORER(m_currentRandomizeSelectp);
 
         if (nodep->name() == "randomize") {
             if (const AstMethodCall* const methodcallp = VN_CAST(nodep, MethodCall)) {
@@ -195,7 +195,7 @@ class LinkResolveVisitor final : public VNVisitor {
                         E_UNSUPPORTED,
                         "Unsupported: randomize() nested in inline randomize() constraints");
                 }
-                m_currentRandomizeSelect = methodcallp->fromp();
+                m_currentRandomizeSelectp = methodcallp->fromp();
             }
         }
         iterateChildren(nodep);
@@ -538,13 +538,11 @@ class LinkResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstMemberSel* nodep) override {
-        if (m_inRandomizeWith && nodep->fromp()->isSame(m_currentRandomizeSelect)) {
+        if (m_inRandomizeWith && nodep->fromp()->isSame(m_currentRandomizeSelectp)) {
             // Replace member selects to the element
-            // in which scope we currenly are with LambdaArgRef
+            // on which the randomize() is called with LambdaArgRef
             // This allows V3Randomize to work properly when
-            // constrained variables are refered starting
-            // from the scope containing `randomize() with`
-            // instead of a randomized class scope
+            // constrained variables are referred using that object
             AstNodeExpr* const prevFromp = nodep->fromp();
             prevFromp->replaceWith(
                 new AstLambdaArgRef{prevFromp->fileline(), prevFromp->name(), false});
