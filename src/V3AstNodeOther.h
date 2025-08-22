@@ -2545,6 +2545,8 @@ class AstModule final : public AstNodeModule {
     // A module declaration
     const bool m_isChecker;  // Module represents a checker
     const bool m_isProgram;  // Module represents a program
+    bool m_hasGenericIface = false;  // Module contains a generic interface
+
 public:
     class Checker {};  // for constructor type-overload selection
     class Program {};  // for constructor type-overload selection
@@ -2567,6 +2569,8 @@ public:
     bool timescaleMatters() const override { return true; }
     bool isChecker() const { return m_isChecker; }
     bool isProgram() const { return m_isProgram; }
+    bool hasGenericIface() const { return m_hasGenericIface; }
+    void hasGenericIface(bool hasGenericIface) { m_hasGenericIface = hasGenericIface; }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
 };

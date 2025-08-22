@@ -64,6 +64,7 @@ class LinkParseVisitor final : public VNVisitor {
     bool m_insideLoop = false;  // True if the node is inside a loop
     bool m_lifetimeAllowed = false;  // True to allow lifetime settings
     VDouble0 m_statModules;  // Number of modules seen
+    bool m_moduleWithGenericIface = false;  // If current module contains generic interface
 
     // METHODS
     void cleanFileline(AstNode* nodep) {
@@ -345,6 +346,7 @@ class LinkParseVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
+        m_moduleWithGenericIface |= VN_IS(nodep->childDTypep(), IfaceGenericDType);
 
         // Maybe this variable has a signal attribute
         V3Control::applyVarAttr(m_modp, m_ftaskp, nodep);
@@ -634,6 +636,7 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_implTypedef);
         VL_RESTORER(m_lifetime);
         VL_RESTORER(m_lifetimeAllowed);
+        VL_RESTORER(m_moduleWithGenericIface);
         {
             // Module: Create sim table for entire module and iterate
             cleanFileline(nodep);
@@ -648,6 +651,7 @@ class LinkParseVisitor final : public VNVisitor {
             m_valueModp = nodep;
             m_lifetime = nodep->lifetime();
             m_lifetimeAllowed = VN_IS(nodep, Class);
+            m_moduleWithGenericIface = false;
             if (m_lifetime.isNone()) {
                 m_lifetime = VN_IS(nodep, Class) ? VLifetime::AUTOMATIC : VLifetime::STATIC;
             }
@@ -657,6 +661,9 @@ class LinkParseVisitor final : public VNVisitor {
                                              "Verilator top-level internals");
             }
             iterateChildren(nodep);
+            if (AstModule* const modp = VN_CAST(nodep, Module)) {
+                modp->hasGenericIface(m_moduleWithGenericIface);
+            }
         }
         m_valueModp = nodep;
     }

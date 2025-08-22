@@ -2415,6 +2415,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     int m_indent = 0;  // Indentation (tree depth) for debug
     bool m_inSens = false;  // True if in senitem
     bool m_inWith = false;  // True if in with
+    bool m_genericIfaceModule = false;  // True if in module containing generic interface
     std::map<std::string, AstNode*> m_ifClassImpNames;  // Names imported from interface class
     std::set<AstClass*> m_extendsParam;  // Classes that have a parameterized super class
                                          // (except the default instances)
@@ -2434,6 +2435,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         bool m_super;  // Starts with super reference
         bool m_unresolvedCell;  // Unresolved cell, needs help from V3Param
         bool m_unresolvedClass;  // Unresolved class reference, needs help from V3Param
+        bool m_unresolvedGenericIface;  // Unresolved generic interface, needs help from V3Param
         bool m_genBlk;  // Contains gen block reference
         AstNode* m_unlinkedScopep;  // Unresolved scope, needs corresponding VarXRef
         AstDisable* m_disablep;  // Disable statement under which the reference is
@@ -2450,6 +2452,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_dotText = "";
             m_unresolvedCell = false;
             m_unresolvedClass = false;
+            m_unresolvedGenericIface = false;
             m_genBlk = false;
             m_unlinkedScopep = nullptr;
             m_disablep = nullptr;
@@ -2467,6 +2470,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             if (m_super) sstr << "  [super]";
             if (m_unresolvedCell) sstr << "  [unrCell]";
             if (m_unresolvedClass) sstr << "  [unrClass]";
+            if (m_unresolvedGenericIface) sstr << "  [unrGIface]";
             if (m_genBlk) sstr << "  [genBlk]";
             sstr << "  txt=" << m_dotText;
             return sstr.str();
@@ -2745,6 +2749,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 dtypep = adtypep->childDTypep()->skipRefp();
             } else if (const AstQueueDType* const adtypep = VN_CAST(dtypep, QueueDType)) {
                 dtypep = adtypep->childDTypep()->skipRefp();
+            } else if (const AstUnpackArrayDType* const adtypep
+                       = VN_CAST(dtypep, UnpackArrayDType)) {
+                dtypep = adtypep->childDTypep()->skipRefp();
             } else {
                 break;
             }
@@ -2776,6 +2783,81 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         return nullptr;
     }
+    static const AstVar* getNextVarp(const AstNode* stmtsp) {
+        while (stmtsp) {
+            if (const AstVar* const varp = VN_CAST(stmtsp, Var)) return varp;
+            stmtsp = stmtsp->nextp();
+        }
+        return nullptr;
+    }
+    // Introduce implicit parameters for modules with generic interafeces
+    void addImplicitParametersOfGenericIface(AstCell* const nodep, const AstModule* const modp) {
+        // Get Param number
+        int paramNum = 1;
+        for (AstPin* paramp = nodep->paramsp(); paramp; paramp = VN_CAST(paramp->nextp(), Pin)) {
+            ++paramNum;
+        }
+
+        // Add each implicit parameter type
+        const AstVar* modIfaceVarp = getNextVarp(modp->stmtsp());
+        for (const AstPin* pinp = nodep->pinsp(); pinp && modIfaceVarp;
+             pinp = VN_CAST(pinp->nextp(), Pin),
+                           modIfaceVarp = getNextVarp(modIfaceVarp->nextp())) {
+            if (modIfaceVarp->varType() != VVarType::IFACEREF
+                || !VN_IS(modIfaceVarp->childDTypep(), IfaceGenericDType)) {
+                continue;
+            }
+            AstNode* exprp = pinp->exprp();
+            if (!exprp) {
+                modIfaceVarp->v3error("Interface port "
+                                      << modIfaceVarp->prettyNameQ()
+                                      << " is not connected to interface/modport pin expression");
+                continue;
+            }
+            while (const AstNodePreSel* const preSelp = VN_CAST(exprp, NodePreSel)) {
+                exprp = preSelp->fromp();
+            }
+            if (const AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
+                const AstVar* const varp = varRefp->varp();
+                if (const AstIfaceRefDType* const refp
+                    = VN_CAST(getElemDTypep(varp->childDTypep()), IfaceRefDType)) {
+                    AstIface* const ifacep = VN_AS(refp->cellp()->modp(), Iface);
+                    AstIfaceRefDType* newIfaceRefp;
+                    if (refp->modportp()) {
+                        newIfaceRefp = new AstIfaceRefDType{
+                            refp->fileline(), refp->modportFileline(), m_modp->name(),
+                            ifacep->name(), refp->modportName()};
+                    } else {
+                        newIfaceRefp = new AstIfaceRefDType{refp->fileline(), m_modp->name(),
+                                                            ifacep->name()};
+                    }
+                    newIfaceRefp->ifacep(ifacep);
+                    if (refp->cellp()->paramsp()) {
+                        newIfaceRefp->addParamsp(refp->cellp()->paramsp()->cloneTree(true));
+                    }
+                    UASSERT_OBJ(pinp->name().find("__pinNumber") == 0
+                                    || pinp->name() == modIfaceVarp->name(),
+                                pinp, "Not found interface with such name");
+                    AstPin* const newPinp
+                        = new AstPin{pinp->fileline(), paramNum,
+                                     "__VGIfaceParam" + modIfaceVarp->name(), newIfaceRefp};
+                    newPinp->param(true);
+                    visit(newPinp);
+                    nodep->addParamsp(newPinp);
+                } else {
+                    varRefp->v3error("Generic interfaces can only connect to an interface and "
+                                     << varp->prettyNameQ() << " is "
+                                     << (varp->childDTypep()
+                                             ? "of type " + varp->childDTypep()->prettyDTypeNameQ()
+                                             : "not an interface"));
+                }
+            } else {
+                exprp->v3error("Expected an interface but " << exprp->prettyNameQ()
+                                                            << " is not an interface");
+            }
+            ++paramNum;
+        }
+    }
 
 #define LINKDOT_VISIT_START() \
     VL_RESTORER(m_indent); \
@@ -2798,6 +2880,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (nodep->dead() || !m_statep->existsNodeSym(nodep)) return;
         LINKDOT_VISIT_START();
         UINFO(8, indent() << "visit " << nodep);
+        VL_RESTORER(m_genericIfaceModule);
+        if (const AstModule* const modp = VN_CAST(nodep, Module)) {
+            m_genericIfaceModule = modp->hasGenericIface();
+        }
         checkNoDot(nodep);
         m_ds.init(m_curSymp);
         m_ds.m_dotSymp = m_curSymp = m_modSymp
@@ -2854,6 +2940,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // UINFOTREE(1, nodep, "", "linkcell");
                 // UINFOTREE(1, nodep->modp(), "", "linkcemd");
                 iterateChildren(nodep);
+
+                if (m_statep->forPrimary())
+                    if (const AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
+                        if (modp->hasGenericIface())
+                            addImplicitParametersOfGenericIface(nodep, modp);
+                    }
             }
         }
         // Parent module inherits child's publicity
@@ -2954,6 +3046,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         UINFO(8, indent() << m_ds.ascii());
         const DotStates lastStates = m_ds;
         const bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
+        const DotPosition initialDotPos = m_ds.m_dotPos;
         VL_RESTORER(m_randSymp);
         {
             if (start) {  // Starting dot sequence
@@ -3053,9 +3146,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 UINFO(8, indent() << "iter.ldone " << m_ds.ascii() << " " << nodep);
             } else {
                 m_ds.m_dotPos = DP_FIRST;
+                m_ds.m_unresolvedGenericIface = false;
                 UINFO(8, indent() << "iter.lhs   " << m_ds.ascii() << " " << nodep);
                 iterateAndNextNull(nodep->lhsp());
                 UINFO(8, indent() << "iter.ldone " << m_ds.ascii() << " " << nodep);
+                if (m_ds.m_unresolvedGenericIface) {
+                    m_ds.m_dotPos = initialDotPos;
+                    return;
+                }
                 // UINFOTREE(9, nodep, "", "dot-lho");
             }
             if (m_statep->forPrimary() && isParamedClassRef(nodep->lhsp())) {
@@ -3383,7 +3481,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else if (AstVar* const varp = foundToVarp(foundp, nodep, VAccess::READ)) {
                 AstIfaceRefDType* const ifacerefp
                     = LinkDotState::ifaceRefFromArray(varp->subDTypep());
-                if (ifacerefp && varp->isIfaceRef()) {
+                if (varp->isIfaceRef() && m_genericIfaceModule
+                    && VN_IS(varp->childDTypep(), IfaceGenericDType)) {
+                    ok = true;
+                    m_ds.m_unresolvedGenericIface = true;
+                } else if (ifacerefp && varp->isIfaceRef()) {
                     UASSERT_OBJ(ifacerefp->ifaceViaCellp(), ifacerefp, "Unlinked interface");
                     // Really this is a scope reference into an interface
                     UINFO(9, indent() << "varref-ifaceref " << m_ds.m_dotText << "  " << nodep);
@@ -3787,8 +3889,44 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                            okSymp, true);  // Maybe nullptr
+            bool modport = false;
+            if (const AstVar* varp = VN_CAST(dotSymp->nodep(), Var)) {
+                if (const AstIfaceRefDType* const ifaceRefp
+                    = VN_CAST(varp->childDTypep(), IfaceRefDType)) {
+                    if (ifaceRefp->modportp()) {
+                        dotSymp = m_statep->getNodeSym(ifaceRefp->modportp());
+                        modport = true;
+                    } else {
+                        dotSymp = m_statep->getNodeSym(ifaceRefp->ifacep());
+                    }
+                }
+            }
             if (!m_statep->forScopeCreation()) {
-                VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
+                VSymEnt* foundp = nullptr;
+                if (modport) {
+                    // This is a copy of findSymPrefixed with few modifications.
+                    // This searches without a fallback like findSymPrefixed but if lookup fails it
+                    // will check one fallback (fallback of modport shall be interface) and take
+                    // only L and G PARAMs since they should be visible from a modport always.
+                    string prefix = dotSymp->symPrefix();
+                    while (!foundp) {
+                        foundp = dotSymp->findIdFlat(prefix + nodep->name());
+                        if (foundp) break;
+                        UASSERT_OBJ(dotSymp->fallbackp(), nodep, "Modports shall have fallback");
+                        foundp = dotSymp->fallbackp()->findIdFlat(prefix + nodep->name());
+                        if (const AstVar* const varp
+                            = foundToVarp(foundp, nodep, nodep->access())) {
+                            if (!varp->isParam()) foundp = nullptr;
+                        }
+                        if (prefix.empty()) break;
+                        string nextPrefix = LinkDotState::removeLastInlineScope(prefix);
+                        if (prefix == nextPrefix) break;
+                        prefix = std::move(nextPrefix);
+                    }
+                    baddot = nodep->name();
+                } else {
+                    foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
+                }
                 if (m_inSens && foundp) {
                     if (AstClocking* const clockingp = VN_CAST(foundp->nodep(), Clocking)) {
                         foundp = getCreateClockingEventSymEnt(clockingp);

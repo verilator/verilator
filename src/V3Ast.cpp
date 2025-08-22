@@ -73,6 +73,7 @@ bool VFwdType::isNodeCompatible(const AstNode* nodep) const {
     case VFwdType::UNION: return VN_IS(defp, UnionDType); break;
     case VFwdType::INTERFACE_CLASS:  // FALLTHRU  // TODO: Over permissive for now
     case VFwdType::CLASS: return VN_IS(defp, ClassRefDType) || VN_IS(defp, Class); break;
+    case VFwdType::GENERIC_INTERFACE: return VN_IS(defp, IfaceRefDType); break;
     default: v3fatalSrc("Bad case");
     }
     VL_UNREACHABLE;

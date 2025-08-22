@@ -2105,10 +2105,12 @@ void AstModule::dump(std::ostream& str) const {
     this->AstNodeModule::dump(str);
     if (isChecker()) str << " [CHECKER]";
     if (isProgram()) str << " [PROGRAM]";
+    if (hasGenericIface()) str << " [HASGENERICIFACE]";
 }
 void AstModule::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isChecker);
     dumpJsonBoolFunc(str, isProgram);
+    dumpJsonBoolFunc(str, hasGenericIface);
     dumpJsonGen(str);
 }
 void AstPin::dump(std::ostream& str) const {
@@ -2556,6 +2558,10 @@ void AstEmptyQueueDType::dumpSmall(std::ostream& str) const {
 void AstVoidDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str << "void";
+}
+void AstIfaceGenericDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str << "generic_interface";
 }
 void AstStreamDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);

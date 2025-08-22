@@ -818,6 +818,7 @@ class ParamProcessor final {
                               bool& any_overridesr, IfaceRefRefs& ifaceRefRefs) {
         for (AstPin* pinp = pinsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             const AstVar* const modvarp = pinp->modVarp();
+            if (modvarp && VN_IS(modvarp->subDTypep(), IfaceGenericDType)) continue;
             if (modvarp->isIfaceRef()) {
                 AstIfaceRefDType* portIrefp = VN_CAST(modvarp->subDTypep(), IfaceRefDType);
                 if (!portIrefp && arraySubDTypep(modvarp->subDTypep())) {
@@ -888,6 +889,46 @@ class ParamProcessor final {
         }
     }
 
+    // Set interfaces types inside generic modules
+    // to the corresponding values of implicit parameters
+    void genericInterfaceVarSetup(const AstPin* const paramsp, const AstPin* const pinsp) {
+        std::unordered_map<string, const AstPin*> paramspMap;
+        for (const AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            if (VString::startsWith(pinp->name(), "__VGIfaceParam")) {
+                paramspMap.insert({pinp->name().substr(std::strlen("__VGIfaceParam")), pinp});
+            }
+        }
+
+        if (paramspMap.empty()) return;
+
+        for (const AstNode* nodep = pinsp; nodep; nodep = nodep->nextp()) {
+            if (const AstPin* const pinp = VN_CAST(nodep, Pin)) {
+                if (AstVar* const varp = pinp->modVarp()) {
+                    if (AstIfaceGenericDType* const ifaceGDTypep
+                        = VN_CAST(varp->childDTypep(), IfaceGenericDType)) {
+                        const auto iter = paramspMap.find(varp->name());
+                        if (iter == paramspMap.end()) continue;
+                        ifaceGDTypep->unlinkFrBack();
+                        const AstPin* const paramp = iter->second;
+                        paramspMap.erase(iter);
+                        const AstIfaceRefDType* const ifacerefp
+                            = VN_AS(paramp->exprp(), IfaceRefDType);
+                        AstIfaceRefDType* const newIfacerefp = new AstIfaceRefDType{
+                            ifaceGDTypep->fileline(), ifaceGDTypep->modportFileline(),
+                            ifaceGDTypep->name(), ifacerefp->ifaceName(),
+                            ifaceGDTypep->modportName()};
+                        newIfacerefp->ifacep(ifacerefp->ifacep());
+                        varp->childDTypep(newIfacerefp);
+                        VL_DO_DANGLING(m_deleter.pushDeletep(ifaceGDTypep), ifaceGDTypep);
+                        if (paramspMap.empty()) return;
+                    }
+                }
+            }
+        }
+
+        UASSERT(paramspMap.empty(), "Not every generic interface implicit param is used");
+    }
+
     bool nodeDeparamCommon(AstNode* nodep, AstNodeModule*& srcModpr, AstPin* paramsp,
                            AstPin* pinsp, bool any_overrides) {
         // Make sure constification worked
@@ -946,7 +987,7 @@ class ParamProcessor final {
                     nodep->v3error(
                         "Class parameter type without default value is never given value"
                         << " (IEEE 1800-2023 6.20.1): " << dtypep->prettyNameQ());
-                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                    VL_DO_DANGLING(m_deleter.pushDeletep(nodep->unlinkFrBack()), nodep);
                 }
             }
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
@@ -956,6 +997,8 @@ class ParamProcessor final {
                 }
             }
         }
+
+        genericInterfaceVarSetup(paramsp, pinsp);
 
         // Delete the parameters from the cell; they're not relevant any longer.
         if (paramsp) paramsp->unlinkFrBackWithNext()->deleteTree();
