@@ -49,9 +49,9 @@ class CfgLiveVariables final : VNVisitorConst {
     };
 
     // STATE
-    const ControlFlowGraph& m_cfg;  // The CFG beign analysed
+    const CfgGraph& m_cfg;  // The CFG beign analysed
     // State for each block
-    BasicBlockMap<BlockState> m_blockState = m_cfg.makeBasicBlockMap<BlockState>();
+    CfgBlockMap<BlockState> m_blockState{m_cfg.makeBlockMap<BlockState>()};
     BlockState* m_currp = nullptr;  // State of current block being analysed
     bool m_abort = false;  // Abort analysis - unhandled construct
 
@@ -140,7 +140,7 @@ class CfgLiveVariables final : VNVisitorConst {
     }
 
     // Apply transfer function of block, return true if changed
-    bool transfer(const BasicBlock& bb) {
+    bool transfer(const CfgBlock& bb) {
         BlockState& state = m_blockState[bb];
 
         // liveIn = gen union (liveOut - kill)
@@ -172,20 +172,21 @@ class CfgLiveVariables final : VNVisitorConst {
     void visit(AstWhile* nodep) override { single(nodep->condp()); }
 
     // CONSTRUCTOR
-    explicit CfgLiveVariables(const ControlFlowGraph& cfg)
+    explicit CfgLiveVariables(const CfgGraph& cfg)
         : m_cfg{cfg} {
         // For each basic block, compute the gen and kill set via visit
-        cfg.foreach([&](const BasicBlock& bb) {
+        for (const V3GraphVertex& vtx : cfg.vertices()) {
+            const CfgBlock& bb = static_cast<const CfgBlock&>(vtx);
             if (m_abort) return;
             VL_RESTORER(m_currp);
             m_currp = &m_blockState[bb];
             for (AstNode* const stmtp : bb.stmtps()) iterateConst(stmtp);
-        });
+        }
         if (m_abort) return;
 
         // Perform the flow analysis
-        std::deque<const BasicBlock*> workList;
-        const auto enqueue = [&](const BasicBlock& bb) {
+        std::deque<const CfgBlock*> workList;
+        const auto enqueue = [&](const CfgBlock& bb) {
             BlockState& state = m_blockState[bb];
             if (state.m_isOnWorkList) return;
             state.m_isOnWorkList = true;
@@ -195,13 +196,13 @@ class CfgLiveVariables final : VNVisitorConst {
         enqueue(cfg.exit());
 
         while (!workList.empty()) {
-            const BasicBlock* const currp = workList.front();
+            const CfgBlock* const currp = workList.front();
             workList.pop_front();
             BlockState& state = m_blockState[*currp];
             state.m_isOnWorkList = false;
 
             // Compute meet (liveOut = union liveIn of successors)
-            currp->forEachSuccessor([&](const BasicBlock& bb) {
+            currp->forEachSuccessor([&](const CfgBlock& bb) {
                 auto& liveIn = m_blockState[bb].m_liveIn;
                 state.m_liveOut.insert(liveIn.begin(), liveIn.end());
             });
@@ -216,7 +217,7 @@ class CfgLiveVariables final : VNVisitorConst {
     }
 
 public:
-    static std::unique_ptr<std::vector<Variable*>> apply(const ControlFlowGraph& cfg) {
+    static std::unique_ptr<std::vector<Variable*>> apply(const CfgGraph& cfg) {
         CfgLiveVariables analysis{cfg};
         // If failed, return nullptr
         if (analysis.m_abort) return nullptr;
@@ -231,10 +232,10 @@ public:
     }
 };
 
-std::unique_ptr<std::vector<AstVar*>> V3Cfg::liveVars(const ControlFlowGraph& cfg) {
+std::unique_ptr<std::vector<AstVar*>> V3Cfg::liveVars(const CfgGraph& cfg) {
     return CfgLiveVariables</* T_Scoped: */ false>::apply(cfg);
 }
 
-std::unique_ptr<std::vector<AstVarScope*>> V3Cfg::liveVarScopes(const ControlFlowGraph& cfg) {
+std::unique_ptr<std::vector<AstVarScope*>> V3Cfg::liveVarScopes(const CfgGraph& cfg) {
     return CfgLiveVariables</* T_Scoped: */ true>::apply(cfg);
 }

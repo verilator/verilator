@@ -31,35 +31,18 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-class CfgBuilder final : VNVisitorConst {
+class CfgBuilder final : public VNVisitorConst {
     // STATE
     // The graph being built, or nullptr if failed to build one
-    std::unique_ptr<ControlFlowGraph> m_cfgp{new ControlFlowGraph};
+    std::unique_ptr<CfgGraph> m_cfgp{new CfgGraph};
     // Current basic block to add statements to
-    BasicBlock* m_currBBp = nullptr;
+    CfgBlock* m_currBBp = nullptr;
     // Continuation block for given JumpBlock
-    std::unordered_map<AstJumpBlock*, BasicBlock*> m_jumpBlockContp;
+    std::unordered_map<AstJumpBlock*, CfgBlock*> m_jumpBlockContp;
 
     // METHODS
 
-    // Create new Basicblock block in the CFG
-    BasicBlock& addBasicBlock() { return *new BasicBlock{m_cfgp.get()}; }
-
-    // Create new taken (or unconditional) ControlFlowEdge in the CFG
-    void addTakenEdge(BasicBlock& src, BasicBlock& dst) {
-        UASSERT_OBJ(src.outEmpty(), &src, "Taken edge should be added first");
-        new ControlFlowEdge{m_cfgp.get(), &src, &dst};
-    }
-
-    // Create new untaken ControlFlowEdge in the CFG
-    void addUntknEdge(BasicBlock& src, BasicBlock& dst) {
-        UASSERT_OBJ(src.outSize1(), &src, "Untaken edge shold be added second");
-        UASSERT_OBJ(src.outEdges().frontp()->top() != &dst, &src,
-                    "Untaken branch targets the same block as the taken branch");
-        new ControlFlowEdge{m_cfgp.get(), &src, &dst};
-    }
-
-    // Add the given statement to the current BasicBlock
+    // Add the given statement to the current CfgBlock
     void addStmt(AstNodeStmt* nodep) { m_currBBp->m_stmtps.emplace_back(nodep); }
 
     // Used to handle statements not representable in the CFG
@@ -115,71 +98,71 @@ class CfgBuilder final : VNVisitorConst {
         addStmt(nodep);
 
         // Create then/else/continuation blocks
-        BasicBlock& thenBB = addBasicBlock();
-        BasicBlock& elseBB = addBasicBlock();
-        BasicBlock& contBB = addBasicBlock();
-        addTakenEdge(*m_currBBp, thenBB);
-        addUntknEdge(*m_currBBp, elseBB);
+        CfgBlock* const thenBBp = m_cfgp->addBlock();
+        CfgBlock* const elseBBp = m_cfgp->addBlock();
+        CfgBlock* const contBBp = m_cfgp->addBlock();
+        m_cfgp->addTakenEdge(m_currBBp, thenBBp);
+        m_cfgp->addUntknEdge(m_currBBp, elseBBp);
 
         // Build then branch
-        m_currBBp = &thenBB;
+        m_currBBp = thenBBp;
         iterateAndNextConstNull(nodep->thensp());
         if (!m_cfgp) return;
-        if (m_currBBp) addTakenEdge(*m_currBBp, contBB);
+        if (m_currBBp) m_cfgp->addTakenEdge(m_currBBp, contBBp);
 
         // Build else branch
-        m_currBBp = &elseBB;
+        m_currBBp = elseBBp;
         iterateAndNextConstNull(nodep->elsesp());
         if (!m_cfgp) return;
-        if (m_currBBp) addTakenEdge(*m_currBBp, contBB);
+        if (m_currBBp) m_cfgp->addTakenEdge(m_currBBp, contBBp);
 
         // Set continuation
-        m_currBBp = &contBB;
+        m_currBBp = contBBp;
     }
     void visit(AstWhile* nodep) override {
         if (!m_cfgp) return;
 
         // Create the header block
-        BasicBlock& headBB = addBasicBlock();
-        addTakenEdge(*m_currBBp, headBB);
+        CfgBlock* const headBBp = m_cfgp->addBlock();
+        m_cfgp->addTakenEdge(m_currBBp, headBBp);
 
         // The While goes in the header block - semantically the condition check only ...
-        m_currBBp = &headBB;
+        m_currBBp = headBBp;
         addStmt(nodep);
 
         // Create the body/continuation blocks
-        BasicBlock& bodyBB = addBasicBlock();
-        BasicBlock& contBB = addBasicBlock();
-        addTakenEdge(headBB, bodyBB);
-        addUntknEdge(headBB, contBB);
+        CfgBlock* const bodyBBp = m_cfgp->addBlock();
+        CfgBlock* const contBBp = m_cfgp->addBlock();
+        m_cfgp->addTakenEdge(headBBp, bodyBBp);
+        m_cfgp->addUntknEdge(headBBp, contBBp);
 
         // Build the body
-        m_currBBp = &bodyBB;
+        m_currBBp = bodyBBp;
         iterateAndNextConstNull(nodep->stmtsp());
         iterateAndNextConstNull(nodep->incsp());
         if (!m_cfgp) return;
-        if (m_currBBp) addTakenEdge(*m_currBBp, headBB);
+        if (m_currBBp) m_cfgp->addTakenEdge(m_currBBp, headBBp);
 
         // Set continuation
-        m_currBBp = &contBB;
+        m_currBBp = contBBp;
     }
     void visit(AstJumpBlock* nodep) override {
         if (!m_cfgp) return;
 
-        // Don't acutally need to add this 'nodep' to any block - but we could later if needed
+        // Don't acutally need to add this 'nodep' to any block
 
         // Create continuation block
-        BasicBlock& contBB = addBasicBlock();
-        const bool newEntry = m_jumpBlockContp.emplace(nodep, &contBB).second;
+        CfgBlock* const contBBp = m_cfgp->addBlock();
+        const bool newEntry = m_jumpBlockContp.emplace(nodep, contBBp).second;
         UASSERT_OBJ(newEntry, nodep, "AstJumpBlock visited twice");
 
         // Build the body
         iterateAndNextConstNull(nodep->stmtsp());
         if (!m_cfgp) return;
-        if (m_currBBp) addTakenEdge(*m_currBBp, contBB);
+        if (m_currBBp) m_cfgp->addTakenEdge(m_currBBp, contBBp);
 
         // Set continuation
-        m_currBBp = &contBB;
+        m_currBBp = contBBp;
     }
     void visit(AstJumpGo* nodep) override {
         if (!m_cfgp) return;
@@ -190,102 +173,61 @@ class CfgBuilder final : VNVisitorConst {
             return;
         }
 
-        // Don't acutally need to add this 'nodep' to any block - but we could later if needed
+        // Don't acutally need to add this 'nodep' to any block
 
         // Make current block go to the continuation of the JumpBlock
-        addTakenEdge(*m_currBBp, *m_jumpBlockContp.at(nodep->blockp()));
+        m_cfgp->addTakenEdge(m_currBBp, m_jumpBlockContp.at(nodep->blockp()));
 
         // There should be no statements after a JumpGo!
         m_currBBp = nullptr;
     }
 
     // CONSTRUCTOR
-    explicit CfgBuilder(const AstNodeProcedure* nodep) {
+    explicit CfgBuilder(AstNode* stmtsp) {
         // Build the graph, starting from the entry block
-        m_currBBp = &addBasicBlock();
+        m_currBBp = m_cfgp->addBlock();
         m_cfgp->m_enterp = m_currBBp;
         // Visit each statement to build the control flow graph
-        iterateAndNextConstNull(nodep->stmtsp());
+        iterateAndNextConstNull(stmtsp);
+        // If failed, stop now
         if (!m_cfgp) return;
         // The final block is the exit block
         m_cfgp->m_exitp = m_currBBp;
-
-        // Remove empty blocks - except enter/exit
-        for (V3GraphVertex* const vtxp : m_cfgp->vertices().unlinkable()) {
-            if (vtxp == &m_cfgp->enter()) continue;
-            if (vtxp == &m_cfgp->exit()) continue;
-            BasicBlock* const bbp = vtxp->as<BasicBlock>();
-            if (!bbp->stmtps().empty()) continue;
-            UASSERT(bbp->outSize1(), "Empty block should have a single successor");
-            BasicBlock* const succp = const_cast<BasicBlock*>(bbp->takenSuccessorp());
-            for (V3GraphEdge* const edgep : bbp->inEdges().unlinkable()) edgep->relinkTop(succp);
-            vtxp->unlinkDelete(m_cfgp.get());
-        }
-        // Remove redundant entry block
-        while (m_cfgp->enter().stmtps().empty() && m_cfgp->enter().outSize1()) {
-            BasicBlock* const succp = m_cfgp->enter().outEdges().frontp()->top()->as<BasicBlock>();
-            if (!succp->inSize1()) break;
-            m_cfgp->m_enterp->unlinkDelete(m_cfgp.get());
-            m_cfgp->m_enterp = succp;
-        }
-        // Remove redundant exit block
-        while (m_cfgp->exit().stmtps().empty() && m_cfgp->exit().inSize1()) {
-            BasicBlock* const prep = m_cfgp->exit().inEdges().frontp()->fromp()->as<BasicBlock>();
-            if (!prep->outSize1()) break;
-            m_cfgp->m_exitp->unlinkDelete(m_cfgp.get());
-            m_cfgp->m_exitp = prep;
-        }
-
-        // Compute reverse post-order enumeration and sort blocks, assign IDs
+        // Some blocks might not have predecessors if they are unreachable, remove them
         {
-            // Simple recursive algorith will do ...
-            std::vector<BasicBlock*> postOrderEnumeration;
-            std::unordered_set<BasicBlock*> visited;
-            const std::function<void(BasicBlock*)> visitBasicBlock = [&](BasicBlock* bbp) {
-                // Mark and skip if already visited
-                if (!visited.emplace(bbp).second) return;
-                // Visit successors
-                for (const V3GraphEdge& e : bbp->outEdges()) {
-                    visitBasicBlock(static_cast<BasicBlock*>(e.top()));
+            std::vector<V3GraphVertex*> unreachableps;
+            for (V3GraphVertex* const vtxp : m_cfgp->vertices().unlinkable()) {
+                if (vtxp == m_cfgp->m_enterp) continue;
+                if (vtxp == m_cfgp->m_exitp) continue;
+                UASSERT_OBJ(!vtxp->outEmpty(), vtxp, "Block with no successor other than exit");
+                if (vtxp->inEmpty()) unreachableps.emplace_back(vtxp);
+            }
+            while (!unreachableps.empty()) {
+                V3GraphVertex* const vtxp = unreachableps.back();
+                unreachableps.pop_back();
+                for (V3GraphEdge& edge : vtxp->outEdges()) {
+                    --m_cfgp->m_nEdges;
+                    if (edge.top()->inSize1()) unreachableps.emplace_back(edge.top());
                 }
-                // Add to post order enumeration
-                postOrderEnumeration.emplace_back(bbp);
-            };
-            visitBasicBlock(m_cfgp->m_enterp);
-            const uint32_t n = postOrderEnumeration.size();
-            UASSERT_OBJ(n == m_cfgp->vertices().size(), nodep, "Inconsistent enumeration size");
-
-            // Set size in graph
-            m_cfgp->m_nBasicBlocks = n;
-
-            // Assign ids equal to the reverse post order number and sort vertices
-            for (uint32_t i = 0; i < postOrderEnumeration.size(); ++i) {
-                BasicBlock* const bbp = postOrderEnumeration[n - 1 - i];
-                bbp->user(i);
-                m_cfgp->vertices().unlink(bbp);
-                m_cfgp->vertices().linkBack(bbp);
+                --m_cfgp->m_nBlocks;
+                VL_DO_DANGLING(vtxp->unlinkDelete(m_cfgp.get()), vtxp);
             }
         }
-
-        // Assign IDs to edges
-        {
-            size_t nEdges = 0;
-            for (V3GraphVertex& v : m_cfgp->vertices()) {
-                for (V3GraphEdge& e : v.outEdges()) e.user(nEdges++);
-            }
-            // Set size in graph
-            m_cfgp->m_nEdges = nEdges;
+        // Dump the initial graph
+        if (dumpGraphLevel() >= 9) {
+            m_cfgp->rpoBlocks();
+            m_cfgp->dumpDotFilePrefixed("cfg-builder-initial");
         }
-
-        if (dumpGraphLevel() >= 9) m_cfgp->dumpDotFilePrefixed("cfgbuilder");
+        // Minimize it
+        m_cfgp->minimize();
+        // Dump the final graph
+        if (dumpGraphLevel() >= 8) m_cfgp->dumpDotFilePrefixed("cfg-builder");
     }
 
 public:
-    static std::unique_ptr<ControlFlowGraph> apply(const AstNodeProcedure* nodep) {
-        return std::move(CfgBuilder{nodep}.m_cfgp);
+    static std::unique_ptr<CfgGraph> apply(AstNode* stmtsp) {
+        return std::move(CfgBuilder{stmtsp}.m_cfgp);
     }
 };
 
-std::unique_ptr<const ControlFlowGraph> V3Cfg::build(const AstNodeProcedure* nodep) {
-    return CfgBuilder::apply(nodep);
-}
+std::unique_ptr<CfgGraph> CfgGraph::build(AstNode* stmtsp) { return CfgBuilder::apply(stmtsp); }

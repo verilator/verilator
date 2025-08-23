@@ -57,7 +57,7 @@ class AstToDfgVisitor final : public VNVisitor {
         }
     }
 
-    std::unique_ptr<std::vector<Variable*>> getLiveVariables(const ControlFlowGraph& cfg) {
+    std::unique_ptr<std::vector<Variable*>> getLiveVariables(const CfgGraph& cfg) {
         // TODO: remove the useless reinterpret_casts when C++17 'if constexpr' actually works
         if VL_CONSTEXPR_CXX17 (T_Scoped) {
             std::unique_ptr<std::vector<AstVarScope*>> result = V3Cfg::liveVarScopes(cfg);
@@ -139,7 +139,7 @@ class AstToDfgVisitor final : public VNVisitor {
 
     // Gather variables live in to the given CFG.
     // Return nullptr if any are not supported.
-    std::unique_ptr<std::vector<DfgVertexVar*>> gatherLive(const ControlFlowGraph& cfg) {
+    std::unique_ptr<std::vector<DfgVertexVar*>> gatherLive(const CfgGraph& cfg) {
         // Run analysis
         std::unique_ptr<std::vector<Variable*>> varps = getLiveVariables(cfg);
         if (!varps) {
@@ -206,7 +206,7 @@ class AstToDfgVisitor final : public VNVisitor {
         // Potentially convertible block
         ++m_ctx.m_inputs;
         // Attempt to build CFG of AstAlways, give up if failed
-        std::unique_ptr<const ControlFlowGraph> cfgp = V3Cfg::build(nodep);
+        std::unique_ptr<CfgGraph> cfgp = CfgGraph::build(nodep->stmtsp());
         if (!cfgp) {
             ++m_ctx.m_nonRepCfg;
             return false;
