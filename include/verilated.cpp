@@ -72,7 +72,7 @@
 # include <execinfo.h>
 # define _VL_HAVE_STACKTRACE
 #endif
-#if defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 # include <sys/time.h>
 # include <sys/resource.h>
 # define _VL_HAVE_GETRLIMIT

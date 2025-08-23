@@ -18,6 +18,6 @@ if 'VERILATOR_TEST_NO_LINT_PY' in os.environ:
 if not os.path.exists(root + "/.git"):
     test.skip("Not in a git repository")
 
-test.run(cmd=["cd " + root + " && make lint-py"])
+test.run(cmd=["cd " + root + " && " + os.environ["MAKE"] + " lint-py"])
 
 test.passes()

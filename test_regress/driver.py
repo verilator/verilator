@@ -2809,6 +2809,7 @@ if __name__ == '__main__':
     if 'TEST_REGRESS' in os.environ:
         sys.exit("%Error: TEST_REGRESS environment variable is already set")
     os.environ['TEST_REGRESS'] = os.getcwd()
+    os.environ['TERM'] = "dumb"
 
     Start = time.time()
     _Parameter_Next_Level = None
