@@ -15,6 +15,10 @@
 #include <cstdio>
 #include <iostream>
 
+extern "C" {
+#include <libgen.h>
+}
+
 // These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 #include "TestVpi.h"
