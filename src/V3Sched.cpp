@@ -104,17 +104,20 @@ void invertAndMergeSenTreeMap(
     for (const auto& pair : senTreeMap) result.emplace(pair.second, pair.first);
 }
 
-AstSenTree* findTriggeredIface(const AstVarScope* vscp,
-                               const VirtIfaceTriggers::IfaceSensMap& vifTrigged,
-                               const VirtIfaceTriggers::IfaceMemberSensMap& vifMemberTriggered) {
+std::vector<AstSenTree*>
+findTriggeredIface(const AstVarScope* vscp, const VirtIfaceTriggers::IfaceSensMap& vifTrigged,
+                   const VirtIfaceTriggers::IfaceMemberSensMap& vifMemberTriggered) {
     UASSERT_OBJ(vscp->varp()->sensIfacep(), vscp, "Not an virtual interface trigger");
+    std::vector<AstSenTree*> result;
     const auto ifaceIt = vifTrigged.find(vscp->varp()->sensIfacep());
-    if (ifaceIt != vifTrigged.end()) return ifaceIt->second;
+    if (ifaceIt != vifTrigged.end()) result.push_back(ifaceIt->second);
     for (const auto& memberIt : vifMemberTriggered) {
-        if (memberIt.first.m_ifacep == vscp->varp()->sensIfacep()) return memberIt.second;
+        if (vscp->varp()->sensIfacep() == memberIt.first.m_ifacep) {
+            result.push_back(memberIt.second);
+        }
     }
-    vscp->v3fatalSrc("Did not find virtual interface trigger");
-    return nullptr;  // unreachable, appease MSVC
+    if (result.empty()) vscp->v3fatalSrc("Did not find virtual interface trigger");
+    return result;
 }
 
 //============================================================================
@@ -974,20 +977,20 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
         = virtIfaceTriggers.makeMemberToSensMap(netlistp, firstVifTriggerIndex, trig.m_vscp);
 
     // Create and Order the body function
-    AstCFunc* const icoFuncp
-        = V3Order::order(netlistp, {&logic}, trigToSen, "ico", false, false,
-                         [=](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
-                             AstVar* const varp = vscp->varp();
-                             if (varp->isPrimaryInish() || varp->isSigUserRWPublic()) {
-                                 out.push_back(inputChanged);
-                             }
-                             if (varp->isWrittenByDpi()) out.push_back(dpiExportTriggered);
-                             if (vscp->varp()->sensIfacep()) {
-                                 AstSenTree* ifaceTriggered = findTriggeredIface(
-                                     vscp, vifTriggeredIco, vifMemberTriggeredIco);
-                                 out.push_back(ifaceTriggered);
-                             }
-                         });
+    AstCFunc* const icoFuncp = V3Order::order(
+        netlistp, {&logic}, trigToSen, "ico", false, false,
+        [=](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
+            AstVar* const varp = vscp->varp();
+            if (varp->isPrimaryInish() || varp->isSigUserRWPublic()) {
+                out.push_back(inputChanged);
+            }
+            if (varp->isWrittenByDpi()) out.push_back(dpiExportTriggered);
+            if (vscp->varp()->sensIfacep()) {
+                std::vector<AstSenTree*> ifaceTriggered
+                    = findTriggeredIface(vscp, vifTriggeredIco, vifMemberTriggeredIco);
+                out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
+            }
+        });
     splitCheck(icoFuncp);
 
     // Create the eval loop
@@ -1397,9 +1400,9 @@ void schedule(AstNetlist* netlistp) {
             if (it != actTimingDomains.end()) out = it->second;
             if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggeredAct);
             if (vscp->varp()->sensIfacep()) {
-                AstSenTree* ifaceTriggered
+                std::vector<AstSenTree*> ifaceTriggered
                     = findTriggeredIface(vscp, vifTriggeredAct, vifMemberTriggeredAct);
-                out.push_back(ifaceTriggered);
+                out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
             }
         });
     splitCheck(actFuncp);
@@ -1438,9 +1441,9 @@ void schedule(AstNetlist* netlistp) {
                 if (it != timingDomains.end()) out = it->second;
                 if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
                 if (vscp->varp()->sensIfacep()) {
-                    AstSenTree* ifaceTriggered
+                    std::vector<AstSenTree*> ifaceTriggered
                         = findTriggeredIface(vscp, vifTriggered, vifMemberTriggered);
-                    out.push_back(ifaceTriggered);
+                    out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
                 }
             });
 
