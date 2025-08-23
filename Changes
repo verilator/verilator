@@ -96,6 +96,7 @@ Verilator 5.039 devel
 * Fix queue extend to check bounds (#6324). [Aleksander Kiryk]
 * Fix gathering sensitivities from virtual interface members (#6325). [Aleksander Kiryk]
 * Fix FreeBSD missing headers (#6326). [Aleksander Kiryk]
+* Fix to select UDPs when they are the only candidate for a top module.
 
 
 Verilator 5.038 2025-07-08

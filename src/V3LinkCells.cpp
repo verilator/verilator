@@ -176,6 +176,20 @@ class LinkCellsVisitor final : public VNVisitor {
         return modp;
     }
 
+    static void removeLibFlag() {
+        // If the only NodeModules are in libraries, then presumably user
+        // wants to check the library, so clear library flag
+        if (!v3Global.opt.topModule().empty()) return;
+        for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
+             nodep = VN_AS(nodep->nextp(), NodeModule)) {
+            if (!nodep->inLibrary()) return;
+        }
+        for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
+             nodep = VN_AS(nodep->nextp(), NodeModule)) {
+            nodep->inLibrary(false);
+        }
+    }
+
     // VISITORS
     void visit(AstNetlist* nodep) override {
         readModNames();
@@ -669,6 +683,7 @@ public:
         } else {
             m_origTopModuleName = v3Global.opt.topModule();
         }
+        removeLibFlag();
         iterate(nodep);
     }
     ~LinkCellsVisitor() override {

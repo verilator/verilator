@@ -47,7 +47,10 @@ void V3LinkLevel::modSortByLevel() {
     ModVec tops;  // Top level modules
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_AS(nodep->nextp(), NodeModule)) {
-        if (nodep->level() <= 2 && !VN_IS(nodep, NotFoundModule)) tops.push_back(nodep);
+        if (nodep->level() <= 2 && !VN_IS(nodep, NotFoundModule)) {
+            UINFO(9, "top candidate " << nodep);
+            tops.push_back(nodep);
+        }
         mods.push_back(nodep);
     }
     if (tops.size() >= 2) {
