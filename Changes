@@ -38,11 +38,13 @@ Verilator 5.039 devel
 * Support multiple variables on RHS of a `force` assignment (#6163). [Artur Bieniek, Antmicro Ltd.]
 * Support covergroup extends, etc., as unsupported (#6160). [Artur Bieniek, Antmicro Ltd.]
 * Support parameter resolution of 1D unpacked array slices (#6257) (#6268). [Michael Bedford Taylor]
+* Support generic interfaces (#6272). [Igor Zaworski, Antmicro Ltd.]
 * Support disabling a fork from within that fork (#6314). [Ryszard Rozak, Antmicro Ltd.]
 * Change control file `public_flat_*` and other signal attributes to support __ in names (#6140).
 * Change runtime to exit() instead of abort(), unless under +verilated+debug.
 * Change `$display("%p")` to remove space after `}`.
 * Improve `--skip-identical` to skip on identical input file contents (#6109).
+* Improve testing on FreeBSD (#6328). [Aleksander Kiryk]
 * Optimize to return memory when using -build (#6192) (#6226). [Michael B. Taylor]
 * Optimize 2 ** X to 1 << X if base is signed (#6203). [Max Wipfli]
 * Optimize more complex combinational logic in DFG (#6205) (#6209) (#6298). [Geza Lore]
@@ -83,10 +85,17 @@ Verilator 5.039 devel
 * Fix hierarchical NBAs (#6286) (#6300). [Geza Lore]
 * Fix variables hiding package imports (#6289). [Johan Wouters]
 * Fix DFG circular driver tracing. [Geza Lore]
-* Fix no matching function calls for randomized `VlWide` in unpacked and dynamic arrays (#6290). [Mateusz Gancarz]
+* Fix no matching function calls for randomized `VlWide` in unpacked and dynamic arrays (#6290). [Mateusz Gancarz, Antmicro Ltd.]
 * Fix PowerPC support (#6292). [Sergey Fedorov]
 * Fix referencing module variables above classes (#6304). [Artur Bieniek, Antmicro Ltd.]
+* Fix direct NBA to dynamically-sized variable (#6310). [Artur Bieniek, Antmicro Ltd.]
 * Fix static vars under member select (#6313). [Igor Zaworski, Antmicro Ltd.]
+* Fix expression type comparison (#6316). [Igor Zaworski, Antmicro Ltd.]
+* Fix of inline constraints with member selects  (#6321). [Igor Zaworski, Antmicro Ltd.]
+* Fix corner case bugs in module and variable inlining (#6322). [Geza Lore]
+* Fix queue extend to check bounds (#6324). [Aleksander Kiryk]
+* Fix gathering sensitivities from virtual interface members (#6325). [Aleksander Kiryk]
+* Fix FreeBSD missing headers (#6326). [Aleksander Kiryk]
 
 
 Verilator 5.038 2025-07-08
@@ -191,7 +200,7 @@ Verilator 5.036 2025-04-27
 * Change `--output-groups` to default to value of `--build-jobs` (#5751).
   Those using build farms may need to now use `--output-groups 0` or otherwise.
 * Support user-defined primitives (UDPs) (#468) (#5807) (#5936). [Zhou Shen, Krzysztof Sychla, et al]
-* Add `--trace-saif` for SAIF power traces (#5812) (#5914). [Mateusz Gancarz]
+* Add `--trace-saif` for SAIF power traces (#5812) (#5914). [Mateusz Gancarz, Antmicro Ltd.]
 
 **Other:**
 
