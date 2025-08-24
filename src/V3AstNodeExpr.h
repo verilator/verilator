@@ -1489,6 +1489,22 @@ public:
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
+class AstFalling final : public AstNodeExpr {
+    // Verilog $falling_gclk
+    // @astgen op1 := exprp : AstNodeExpr
+public:
+    AstFalling(FileLine* fl, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_Falling(fl) {
+        this->exprp(exprp);
+    }
+    ASTGEN_MEMBERS_AstFalling;
+    string emitVerilog() override { return "$falling_gclk(%l)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    int instrCount() const override { return widthInstrs(); }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
 class AstFell final : public AstNodeExpr {
     // Verilog $fell
     // @astgen op1 := exprp : AstNodeExpr
@@ -1501,6 +1517,24 @@ public:
     }
     ASTGEN_MEMBERS_AstFell;
     string emitVerilog() override { return "$fell(%l)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    int instrCount() const override { return widthInstrs(); }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
+class AstFuture final : public AstNodeExpr {
+    // Verilog $future_gclk
+    // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := sentreep : Optional[AstSenTree]
+public:
+    AstFuture(FileLine* fl, AstNodeExpr* exprp, AstSenTree* sentreep)
+        : ASTGEN_SUPER_Future(fl) {
+        this->exprp(exprp);
+        this->sentreep(sentreep);
+    }
+    ASTGEN_MEMBERS_AstFuture;
+    string emitVerilog() override { return "$future_gclk(%l)"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
@@ -1888,6 +1922,22 @@ public:
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
+class AstRising final : public AstNodeExpr {
+    // Verilog $rising_gclk
+    // @astgen op1 := exprp : AstNodeExpr
+public:
+    AstRising(FileLine* fl, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_Rising(fl) {
+        this->exprp(exprp);
+    }
+    ASTGEN_MEMBERS_AstRising;
+    string emitVerilog() override { return "$rising_gclk(%l)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    int instrCount() const override { return widthInstrs(); }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
 class AstRose final : public AstNodeExpr {
     // Verilog $rose
     // @astgen op1 := exprp : AstNodeExpr
@@ -2145,6 +2195,22 @@ public:
     bool isOutputter() override { return true; }
     bool isUnlikely() const override { return true; }
     bool cleanOut() const override { return true; }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
+class AstSteady final : public AstNodeExpr {
+    // Verilog $steady_gclk
+    // @astgen op1 := exprp : AstNodeExpr
+public:
+    AstSteady(FileLine* fl, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_Steady(fl) {
+        this->exprp(exprp);
+    }
+    ASTGEN_MEMBERS_AstSteady;
+    string emitVerilog() override { return "$steady_gclk(%l)"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstStructSel final : public AstNodeExpr {

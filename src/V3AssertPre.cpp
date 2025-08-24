@@ -453,6 +453,19 @@ private:
         if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep));
         clearAssertInfo();
     }
+    void visit(AstFalling* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        iterateChildren(nodep);
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
+        if (exprp->width() > 1) exprp = new AstSel{fl, exprp, 0, 1};
+        AstNodeExpr* const futurep = new AstFuture{fl, exprp, newSenTree(nodep)};
+        futurep->dtypeFrom(exprp);
+        exprp = new AstAnd{fl, exprp->cloneTreePure(false), new AstNot{fl, futurep}};
+        exprp->dtypeSetBit();
+        nodep->replaceWith(exprp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstFell* nodep) override {
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
@@ -469,10 +482,30 @@ private:
         nodep->sentreep(newSenTree(nodep, sentreep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
+    void visit(AstFuture* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        iterateChildren(nodep);
+        AstSenTree* const sentreep = nodep->sentreep();
+        if (sentreep) sentreep->unlinkFrBack();
+        nodep->sentreep(newSenTree(nodep));
+    }
     void visit(AstPast* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
         nodep->sentreep(newSenTree(nodep));
+    }
+    void visit(AstRising* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        iterateChildren(nodep);
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
+        if (exprp->width() > 1) exprp = new AstSel{fl, exprp, 0, 1};
+        AstNodeExpr* const futurep = new AstFuture{fl, exprp, newSenTree(nodep)};
+        futurep->dtypeFrom(exprp);
+        exprp = new AstAnd{fl, new AstNot{fl, exprp->cloneTreePure(false)}, futurep};
+        exprp->dtypeSetBit();
+        nodep->replaceWith(exprp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstRose* nodep) override {
         if (nodep->user1SetOnce()) return;
@@ -503,6 +536,19 @@ private:
         exprp->dtypeSetBit();
         nodep->replaceWith(exprp);
         nodep->sentreep(newSenTree(nodep, sentreep));
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void visit(AstSteady* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        iterateChildren(nodep);
+        FileLine* const fl = nodep->fileline();
+        AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
+        if (exprp->width() > 1) exprp = new AstSel{fl, exprp, 0, 1};
+        AstNodeExpr* const futurep = new AstFuture{fl, exprp, newSenTree(nodep)};
+        futurep->dtypeFrom(exprp);
+        exprp = new AstEq{fl, exprp->cloneTreePure(false), futurep};
+        exprp->dtypeSetBit();
+        nodep->replaceWith(exprp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 

@@ -40,6 +40,7 @@ Verilator 5.039 devel
 * Support parameter resolution of 1D unpacked array slices (#6257) (#6268). [Michael Bedford Taylor]
 * Support generic interfaces (#6272). [Igor Zaworski, Antmicro Ltd.]
 * Support disabling a fork from within that fork (#6314). [Ryszard Rozak, Antmicro Ltd.]
+* Support future sampled value functions.
 * Change control file `public_flat_*` and other signal attributes to support __ in names (#6140).
 * Change runtime to exit() instead of abort(), unless under +verilated+debug.
 * Change `$display("%p")` to remove space after `}`.

@@ -471,13 +471,16 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$bits"               { FL; return yD_BITS; }
   "$changed"            { FL; return yD_CHANGED; }
   "$changed_gclk"       { FL; return yD_CHANGED_GCLK; }
+  "$changing_gclk"      { FL; return yD_CHANGING_GCLK; }
   "$countbits"          { FL; return yD_COUNTBITS; }
   "$countones"          { FL; return yD_COUNTONES; }
   "$dimensions"         { FL; return yD_DIMENSIONS; }
   "$error"              { FL; return yD_ERROR; }
+  "$falling_gclk"       { FL; return yD_FALLING_GCLK; }
   "$fatal"              { FL; return yD_FATAL; }
   "$fell"               { FL; return yD_FELL; }
   "$fell_gclk"          { FL; return yD_FELL_GCLK; }
+  "$future_gclk"        { FL; return yD_FUTURE_GCLK; }
   "$high"               { FL; return yD_HIGH; }
   "$increment"          { FL; return yD_INCREMENT; }
   "$inferred_disable"   { FL; return yD_INFERRED_DISABLE; }
@@ -491,12 +494,14 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$past"               { FL; return yD_PAST; }
   "$past_gclk"          { FL; return yD_PAST_GCLK; }
   "$right"              { FL; return yD_RIGHT; }
+  "$rising_gclk"        { FL; return yD_RISING_GCLK; }
   "$root"               { FL; return yD_ROOT; }
   "$rose"               { FL; return yD_ROSE; }
   "$rose_gclk"          { FL; return yD_ROSE_GCLK; }
   "$size"               { FL; return yD_SIZE; }
   "$stable"             { FL; return yD_STABLE; }
   "$stable_gclk"        { FL; return yD_STABLE_GCLK; }
+  "$steady_gclk"        { FL; return yD_STEADY_GCLK; }
   "$unpacked_dimensions" { FL; return yD_UNPACKED_DIMENSIONS; }
   "$warning"            { FL; return yD_WARNING; }
   /*     SV2005 Keywords */

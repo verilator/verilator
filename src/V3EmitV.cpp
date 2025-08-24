@@ -426,6 +426,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateAndNextConstNull(nodep->exprp());
         puts(")");
     }
+    void visit(AstRising* nodep) override {
+        putfs(nodep, "$rising(");
+        iterateAndNextConstNull(nodep->exprp());
+        puts(")");
+    }
     void visit(AstRose* nodep) override {
         putfs(nodep, "$rose(");
         iterateAndNextConstNull(nodep->exprp());
@@ -444,6 +449,16 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         puts(")");
     }
+    void visit(AstFalling* nodep) override {
+        putfs(nodep, "$falling(");
+        iterateAndNextConstNull(nodep->exprp());
+        puts(")");
+    }
+    void visit(AstFuture* nodep) override {
+        putfs(nodep, "$future(");
+        iterateAndNextConstNull(nodep->exprp());
+        puts(")");
+    }
     void visit(AstStable* nodep) override {
         putfs(nodep, "$stable(");
         iterateAndNextConstNull(nodep->exprp());
@@ -451,6 +466,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             puts(", ");
             iterateAndNextConstNull(nodep->sentreep());
         }
+        puts(")");
+    }
+    void visit(AstSteady* nodep) override {
+        putfs(nodep, "$steady(");
+        iterateAndNextConstNull(nodep->exprp());
         puts(")");
     }
     void visit(AstReturn* nodep) override {

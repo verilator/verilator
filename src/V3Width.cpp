@@ -1344,6 +1344,19 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetBit();
         }
     }
+    void visit(AstFalling* nodep) override {
+        if (m_vup->prelim()) {
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            nodep->dtypeSetBit();
+        }
+    }
+    void visit(AstFuture* nodep) override {
+        if (m_vup->prelim()) {
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            userIterate(nodep->sentreep(), nullptr);
+            nodep->dtypeFrom(nodep->exprp());
+        }
+    }
     void visit(AstPast* nodep) override {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
@@ -1367,6 +1380,12 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
             userIterate(nodep->sentreep(), nullptr);
+        }
+    }
+    void visit(AstRising* nodep) override {
+        if (m_vup->prelim()) {
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            nodep->dtypeSetBit();
         }
     }
     void visit(AstRose* nodep) override {
@@ -1428,6 +1447,12 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
             userIterate(nodep->sentreep(), nullptr);
+            nodep->dtypeSetBit();
+        }
+    }
+    void visit(AstSteady* nodep) override {
+        if (m_vup->prelim()) {
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
             nodep->dtypeSetBit();
         }
     }
