@@ -23,7 +23,7 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
-// Assert class functions
+// AssertVisitor
 
 class AssertVisitor final : public VNVisitor {
     // CONSTANTS
@@ -48,6 +48,7 @@ class AssertVisitor final : public VNVisitor {
     VDouble0 m_statAsNotImm;  // Statistic tracking
     VDouble0 m_statAsImm;  // Statistic tracking
     VDouble0 m_statAsFull;  // Statistic tracking
+    VDouble0 m_statPastVars;  // Statistic tracking
     bool m_inSampled = false;  // True inside a sampled expression
 
     // METHODS
@@ -466,9 +467,13 @@ class AssertVisitor final : public VNVisitor {
             = new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, nullptr};
         m_modp->addStmtsp(alwaysp);
         for (uint32_t i = 0; i < ticks; ++i) {
+            // TODO recognize AstVarRef is getting delayed and share variables between
+            // $pasts with same reference (or same expression).  Saves downstream
+            // optimizations from identifying and removing duplication.
             AstVar* const outvarp = new AstVar{
                 nodep->fileline(), VVarType::MODULETEMP,
                 "_Vpast_" + cvtToStr(m_modPastNum++) + "_" + cvtToStr(i), inp->dtypep()};
+            ++m_statPastVars;
             m_modp->addStmtsp(outvarp);
             AstNode* const assp = new AstAssignDly{
                 nodep->fileline(), new AstVarRef{nodep->fileline(), outvarp, VAccess::WRITE}, inp};
@@ -719,6 +724,7 @@ public:
         V3Stats::addStat("Assertions, assert immediate statements", m_statAsImm);
         V3Stats::addStat("Assertions, cover statements", m_statCover);
         V3Stats::addStat("Assertions, full/parallel case", m_statAsFull);
+        V3Stats::addStat("Assertions, $past variables", m_statPastVars);
     }
 };
 
