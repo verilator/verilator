@@ -806,7 +806,7 @@ public:
             // them, otherwise they cannot be resovled statically.
             if (ifacep->hasVirtualRef()) return false;
         } else {
-            return false; // Anything else (package, class, etc) not supported
+            return false;  // Anything else (package, class, etc) not supported
         }
         // Check the AstVar
         return isSupported(vscp->varp());

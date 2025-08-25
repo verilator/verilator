@@ -2532,7 +2532,8 @@ public:
 };
 class AstIface final : public AstNodeModule {
     // An interface declaration
-    bool m_hasVirtualRef = false; // There is at least one virtual interface var for this interface
+    bool m_hasVirtualRef
+        = false;  // There is at least one virtual interface var for this interface
 public:
     AstIface(FileLine* fl, const string& name, const string& libname)
         : ASTGEN_SUPER_Iface(fl, name, libname) {}
