@@ -154,7 +154,8 @@ class LocalizeVisitor final : public VNVisitor {
 
     void visit(AstCNew* nodep) override {
         VL_RESTORER(m_inSuperConstructorCallStmt);
-        m_inSuperConstructorCallStmt = VN_IS(nodep->backp(), StmtExpr);
+        m_inSuperConstructorCallStmt
+            = m_cfuncp->isConstructor() && VN_IS(nodep->backp(), StmtExpr);
         m_cfuncp->user1(true);  // Mark caller as not a leaf function
         iterateChildren(nodep);
     }
