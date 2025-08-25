@@ -321,6 +321,15 @@ class DataflowOptimize final {
 
     DataflowOptimize(AstNetlist* netlistp, const string& label)
         : m_ctx{label} {
+
+        // Mark interfaces that might be referenced by a virtual interface
+        if (v3Global.hasVirtIfaces()) {
+            netlistp->typeTablep()->foreach([](AstIfaceRefDType* nodep) {
+                if (!nodep->isVirtual()) return;
+                nodep->ifaceViaCellp()->setHasVirtualRef();
+            });
+        }
+
         if (!netlistp->topScopep()) {
             // Pre V3Scope application. Run on each module separately.
 
