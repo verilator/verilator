@@ -95,7 +95,7 @@ enum ForkType : uint8_t {
 
 enum PropagationType : uint8_t {
     P_CALL = 1,  // Propagation through call to a function/task/method
-    P_FORK = 2,  // Propagation due to fork's behaviour
+    P_FORK = 2,  // Propagation due to fork's behavior
     P_SIGNATURE = 3,  // Propagation required to maintain C++ function's signature requirements
 };
 

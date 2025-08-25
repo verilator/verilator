@@ -462,14 +462,14 @@ analyzer-include:
 format:
 	$(MAKE) -j 5 format-c format-cmake format-exec format-py
 
-CLANGFORMAT = clang-format-14
+CLANGFORMAT = clang-format-18
 CLANGFORMAT_FLAGS = -i
 CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) test_regress/t/*.c* test_regress/t/*.h
 
 format-c clang-format:
 	$(CLANGFORMAT) --version
-	@$(CLANGFORMAT) --version | egrep 14.0 > /dev/null \
-	|| echo "*** You are not using clang-format-14, indents may differ from master's ***"
+	@$(CLANGFORMAT) --version | fgrep 'version 18' > /dev/null \
+	|| echo "*** You are not using clang-format-18, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
 YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=130 YAMLFIX_preserve_quotes=true yamlfix

@@ -129,9 +129,9 @@ class UnknownVisitor final : public VNVisitor {
                 fl, condp,
                 (needDly
                      ? static_cast<AstNode*>(new AstAssignDly{
-                         fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp})
+                           fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp})
                      : static_cast<AstNode*>(new AstAssign{
-                         fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp}))};
+                           fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp}))};
             newp->branchPred(VBranchPred::BP_LIKELY);
             newp->isBoundsCheck(true);
             UINFOTREE(9, newp, "", "_new");

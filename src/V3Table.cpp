@@ -234,8 +234,7 @@ private:
                                 << chkvis.instrCount() << " Data=" << chkvis.dataCount()
                                 << " in width (bits)=" << m_inWidthBits << " out width (bytes)="
                                 << m_outWidthBytes << " Spacetime=" << (space / time) << "("
-                                << space << "/" << time << ")"
-                                << ": " << nodep);
+                                << space << "/" << time << ")" << ": " << nodep);
         if (chkvis.optimizable()) {
             UINFO(3, " Table Optimize spacetime=" << (space / time) << " " << nodep);
             m_totalBytes += space;

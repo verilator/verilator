@@ -685,7 +685,7 @@ public:
         // Now that we have everything ready, remove redundant pushPrefix/popPrefix
         // pairs. While functionally this is not really necessary (the trace files
         // might have some empty scope declarations), we do it to preserve previous
-        // behaviour. Note: unfortunately generating these without the redundant
+        // behavior. Note: unfortunately generating these without the redundant
         // push/pop pairs is a bit hard. It is cleaner to remove them.
         removeRedundantPrefixPushPop();
 

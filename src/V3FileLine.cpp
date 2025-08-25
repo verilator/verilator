@@ -432,8 +432,8 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
     wsstr << '\n';
     std::ostringstream extrass;  // extra spaced out for prefix
     if (!extra.empty()) {
-        extrass << V3Error::warnContextBegin() << std::setw(ascii().length()) << " "
-                << ": " << V3Error::warnContextEnd() << extra;
+        extrass << V3Error::warnContextBegin() << std::setw(ascii().length()) << " " << ": "
+                << V3Error::warnContextEnd() << extra;
     }
     if (warnIsOff(V3Error::s().errorCode())) {
         V3Error::s().suppressThisWarning();

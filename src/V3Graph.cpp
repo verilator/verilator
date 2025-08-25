@@ -330,8 +330,8 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
             }
         }
         if (subgr != "") *logp << "\t";
-        *logp << "\tn" << vertexp->dotName() << (n++) << "\t[fontsize=8 "
-              << "label=\"" << (vertexp->name() != "" ? vertexp->name() : "\\N");
+        *logp << "\tn" << vertexp->dotName() << (n++) << "\t[fontsize=8 " << "label=\""
+              << (vertexp->name() != "" ? vertexp->name() : "\\N");
         if (vertexp->rank()) *logp << " r" << vertexp->rank();
         if (vertexp->fanout() != 0.0) *logp << " f" << vertexp->fanout();
         if (vertexp->color()) *logp << "\\n c" << vertexp->color();
@@ -354,8 +354,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
                       << " ["
                       // <<"fontsize=8 label=\""<<(edge.name()!="" ? edge.name() : "\\E")<<"\""
                       << "fontsize=8 label=\"" << (edge.dotLabel() != "" ? edge.dotLabel() : "")
-                      << "\""
-                      << " weight=" << edge.weight() << " color=" << edge.dotColor();
+                      << "\"" << " weight=" << edge.weight() << " color=" << edge.dotColor();
                 if (edge.dotStyle() != "") *logp << " style=" << edge.dotStyle();
                 // if (edge.cutable()) *logp << ",constraint=false";  // to rank without
                 // following edges
