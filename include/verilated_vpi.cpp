@@ -3069,7 +3069,7 @@ void vl_get_value_array_rawvals(unsigned index, unsigned num, const unsigned siz
                                 const unsigned packedSize, const bool leftIsLow,
                                 const bool fourState, const T* src, PLI_BYTE8* dst) {
     static_assert(std::is_unsigned<T>::value,
-                  "type T is not unsigned");  //ensure loigcal right shift
+                  "type T is not unsigned");  //ensure logical right shift
     const unsigned element_size_bytes VL_BYTES_I(packedSize);
     const unsigned element_size_repr = (element_size_bytes + sizeof(T) - 1) / sizeof(T);
     size_t dst_index = 0;

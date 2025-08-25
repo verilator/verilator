@@ -832,7 +832,7 @@ public:
     bool rhsIsValue() const { return m_rhsIsValue; }
 };
 class AstConsPackMember final : public AstNodeExpr {
-    // Construct a packed array single emement [member1: value1]
+    // Construct a packed array single element [member1: value1]
     // Don't need the member we are constructing, as the dtypep can get us to it
     // @astgen op2 := rhsp : AstNodeExpr
 public:

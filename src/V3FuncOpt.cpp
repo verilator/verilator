@@ -280,7 +280,7 @@ class FuncOptVisitor final : public VNVisitor {
     // VISIT
     void visit(AstNodeAssign* nodep) override {
         // TODO: Only thing remaining inside functions should be AstAssign (that is, an actual
-        //       assignment statemant), but we stil use AstAssignW, AstAssignDly, and all, fix.
+        //       assignment statement), but we stil use AstAssignW, AstAssignDly, and all, fix.
         iterateChildren(nodep);
 
         if (v3Global.opt.fFuncSplitCat()) {

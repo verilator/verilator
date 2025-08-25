@@ -1835,7 +1835,7 @@ V3Number& V3Number::opShiftR(const V3Number& lhs, const V3Number& rhs) {
 }
 
 V3Number& V3Number::opShiftRS(const V3Number& lhs, const V3Number& rhs, uint32_t lbits) {
-    // Correct number of zero bits/width matters (hance lbits passed)
+    // Correct number of zero bits/width matters (hence lbits passed)
     // L(lhs) bit return
     // The spec says a unsigned >>> still acts as a normal >>.
     // We presume it is signed; as that's V3Width's job to convert to opShiftR

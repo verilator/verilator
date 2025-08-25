@@ -431,7 +431,7 @@ namespace ModuleInliner {
 // the instance and the port variable, or simply inline the pin expression
 // in place of the port variable. We will prefer to do the later whenever
 // possible (and sometimes required). When inlining, we need to create an
-// alias for the inined variable, in order to resovle hierarchical refrences
+// alias for the inlined variable, in order to resovle hierarchical references
 // against it later in V3Scope (and also for tracing, which is inserted
 //later). Returns ture iff the given port variable should be inlined,
 // and false if a continuous assignment should be used.
@@ -445,7 +445,7 @@ bool inlinePort(AstVar* nodep) {
     if (nodep->isForced()) return false;
 
     // Note: For singls marked 'public' (and not 'public_flat') inlining
-    // of their contaning modules is disabled so they wont reach here.
+    // of their containing modules is disabled so they wont reach here.
 
     // TODO: For now, writable public signals inside the cell cannot be
     // eliminated as they are entered into the VerilatedScope, and
@@ -618,7 +618,7 @@ void process(AstNetlist* netlistp, ModuleStateUser1Allocator& moduleStates) {
     while (AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) {
         nodep = nodep->backp();
 
-        // Consider each cell inside the current module for inling
+        // Consider each cell inside the current module for inlining
         for (AstCell* const cellp : moduleStates(modp).m_childCells) {
             ModuleState& childState = moduleStates(cellp->modp());
             if (!childState.m_inlined) continue;

@@ -290,7 +290,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     bool m_hasGParam : 1;  // Has global parameter (for link)
     bool m_hasParameterList : 1;  // Has #() for parameter declaration
     bool m_hierBlock : 1;  // Hierarchical Block marked by HIER_BLOCK pragma
-    bool m_hierParams : 1;  // Block containing params for parametrized hier blocks
+    bool m_hierParams : 1;  // Block containing params for parameterized hier blocks
     bool m_internal : 1;  // Internally created
     bool m_recursive : 1;  // Recursive module
     bool m_recursiveClone : 1;  // If recursive, what module it clones, otherwise nullptr

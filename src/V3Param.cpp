@@ -548,7 +548,7 @@ class ParamProcessor final {
             // constp can be nullptr
 
             if (const AstConst* const p = VN_CAST(nodep, Const)) {
-                // Treat modules parametrized with the same values but with different type as the
+                // Treat modules parameterized with the same values but with different type as the
                 // same.
                 longname += p->num().ascii(false);
             } else if (nodep) {

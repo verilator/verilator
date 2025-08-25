@@ -862,7 +862,7 @@ class AstToDfgSynthesize final {
     }
 
     // If any written variables are forced or otherwise udpated from outside,
-    // we generally cannot synthesie the construct, as we will likely need to
+    // we generally cannot synthesize the construct, as we will likely need to
     // introduce intermediate values that would not be updated.
     static bool hasExternallyWrittenVariable(DfgLogic& vtx) {
         return vtx.findSink<DfgVertex>([](const DfgVertex& sink) -> bool {
@@ -896,7 +896,7 @@ class AstToDfgSynthesize final {
         UASSERT_OBJ(thenVarp == elseVarp, varp, "Attempting to join unrelated variables");
 
         // If both bindings are the the same (variable not updated through either path),
-        // then there is nothing to do, canuse the same binding
+        // then there is nothing to do, can use the same binding
         if (thenp == elsep) return thenp;
 
         // We can't join the input variable just yet, so bail
@@ -1344,7 +1344,7 @@ class AstToDfgSynthesize final {
         return true;
     }
 
-    // Assign path perdicates to the outgoing control flow edges of the given block
+    // Assign path predicates to the outgoing control flow edges of the given block
     void assignPathPredicates(const CfgBlock& bb) {
         // Nothing to do for the exit block
         if (bb.isExit()) return;
@@ -1398,7 +1398,7 @@ class AstToDfgSynthesize final {
         // It's possible we think a variable is written by the DfgLogic when
         // it actauly isn't, e.g.: '{a[0], b[0]}[1] = ...' does not write 'b'.
         // These LHS forms can happen after some earlier tranforms. We
-        // should just run V3Const on them earleir, but we will do belt and
+        // should just run V3Const on them earlier, but we will do belt and
         // braces and check here too. We can't touch any output variables if so.
         const bool missing = m_logicp->findSink<DfgVertex>([&](const DfgVertex& sink) -> bool {
             const DfgUnresolved* const unresolvedp = sink.as<DfgUnresolved>();

@@ -905,7 +905,7 @@ VerilatedTraceOffloadBuffer<VL_BUF_T>::VerilatedTraceOffloadBuffer(VL_SUB_T& own
         using This = VerilatedTraceBuffer<VL_BUF_T>*;
         // Tack on the buffer address
         static_assert(2 * sizeof(uint32_t) >= sizeof(This),
-                      "This should be enough on all plafrorms");
+                      "This should be enough on all platforms");
         *m_offloadBufferWritep++ = VerilatedTraceOffloadCommand::TRACE_BUFFER;
         *reinterpret_cast<This*>(m_offloadBufferWritep) = static_cast<This>(this);
         m_offloadBufferWritep += 2;

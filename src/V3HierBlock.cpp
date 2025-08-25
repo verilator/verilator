@@ -40,7 +40,7 @@
 //    that are marked with /*verilator hier_block*/ metacomment in Verilator run a).
 // 2) If module type parameters are present, V3Control marks hier param modules
 // (marked with hier_params verilator config pragma) as modp->hierParams(true).
-// This is done in run b), de-parametrized modules are mapped with their params one-to-one.
+// This is done in run b), de-parameterized modules are mapped with their params one-to-one.
 // 3) AstModule with HIER_BLOCK pragma is marked modp->hierBlock(true)
 //    in V3LinkResolve.cpp during run a).
 // 4) In V3LinkCells.cpp, the following things are done during run b) and c).
@@ -56,8 +56,8 @@
 // 5) In V3LinkDot.cpp,
 //    5-1) Dotted access across hierarchical block boundary is checked. Currently hierarchical
 //    block references are not supported.
-//    5-2) If present, parameters in hier params module replace parameter values of de-parametrized
-//    module in run b).
+//    5-2) If present, parameters in hier params module replace parameter values of
+//    de-parameterized module in run b).
 // 6) In V3Dead.cpp, some parameters of parameterized modules are protected not to be deleted even
 //    if the parameter is not referred. This protection is necessary to match step 6) below.
 // 7) In V3Param.cpp, use --lib-create wrapper of the parameterized module made in b) and c).
@@ -82,7 +82,7 @@
 //      filename    :Name of a hierarchical parameters file
 //
 //      Added in a), used for b).
-//      Each de-parametrized module version has exactly one hier params file specified.
+//      Each de-parameterized module version has exactly one hier params file specified.
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 

@@ -874,8 +874,8 @@ class GateInline final {
                     // (driver is same as sink), however, okVisitor rejects a circular driver
                     // and we would not reach here if the driver logic was actually circular.
                     // The reason we end up here is because during graph building, the driver
-                    // was ciruclar, however, after committing some substituions to it, it
-                    // has become non-circualr due to V3Const being applied inside
+                    // was circular, however, after committing some substitutions to it, it
+                    // has become non-circular due to V3Const being applied inside
                     // 'commitSubstitutions'. We will trust GateOkVisitor telling the truth
                     // that the logic is not actually circular, meaning this edge is not
                     // actually needed, can just delete it and move on.

@@ -494,7 +494,7 @@ public:
     }
 
     bool getScopeTraceOn(const string& scope) {
-        // Apply in the order the user provided them, so they can choose on/off preferencing
+        // Apply in the order the user provided them, so they can choose on/off preferences
         int maxLevel = 1;
         for (const auto& ch : scope) {
             if (ch == '.') ++maxLevel;

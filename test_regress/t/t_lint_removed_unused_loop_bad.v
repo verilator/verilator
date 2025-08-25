@@ -62,7 +62,7 @@ module unused(input clk);
    end
 endmodule
 
-// no warning for loops under parametrized module
+// no warning for loops under parameterized module
 module parametrized_initial #(parameter REPETITIONS = 0);
    int prints_while = 0;
    int prints_do_while = 0;
@@ -228,21 +228,21 @@ module if_with_param;
 
    initial begin
       if (ZERO_PARAM) begin
-         // loop under false parametrized if - no warning
+         // loop under false parameterized if - no warning
          int prints = 0;
          while(prints < 5) begin
             prints++;
          end
          $write("Prints %d\n", prints);
       end else if (!ONE_PARAM) begin
-         // loop under false parametrized if - no warning
+         // loop under false parameterized if - no warning
          int prints = 0;
          while(prints < 5) begin
             prints++;
          end
          $write("Prints %d\n", prints);
       end else begin
-         // loop under true parametrized if - no warning
+         // loop under true parameterized if - no warning
          int prints = 0;
          while(prints < 5) begin
             prints++;

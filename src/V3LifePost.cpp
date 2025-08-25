@@ -199,7 +199,7 @@ class LifePostDlyVisitor final : public VNVisitorConst {
 
         // We need to be able to pick up the first write of each variable.
         // V3Order serializes all writes, and we trace AstExecGraph in
-        // dependency order, so the first one we encouner during tracing should
+        // dependency order, so the first one we encounter during tracing should
         // always be the one. It's somewhat expensive to assert so only with debugCheck().
         if (v3Global.opt.debugCheck()) {
             for (auto& pair : m_writes) {

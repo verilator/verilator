@@ -19,7 +19,7 @@
 // For the Pre/Post scheduling semantics, see V3OrderGraph.
 //
 // There are several "Schemes" we can choose from for implementing a
-// non-blocking assignment (NBA), repserented by an AstAssignDly.
+// non-blocking assignment (NBA), represented by an AstAssignDly.
 //
 // It is assumed and required in this pass that each NBA updates at
 // most one variable. Earlier passes should have ensured this.
@@ -442,7 +442,7 @@ class DelayedVisitor final : public VNVisitor {
         // Check for mixed usage (this also warns if not OK)
         if (checkMixedUsage(vscp, isIntegralOrPacked)) {
             // If it's a variable updated by both blocking and non-blocking
-            // asignments, use the ShadowVarMasked schem if masked update is
+            // assignments, use the ShadowVarMasked schem if masked update is
             // possible. This can handle blocking and non-blocking updates to
             // inpdendent parts correctly at run-time, and always works, even
             // in loops or other dynamic context.
@@ -1122,7 +1122,7 @@ class DelayedVisitor final : public VNVisitor {
 
         // There were some timing domains involved in the process. Add all of them as sensitivities
         // of all NBA targets in this process. Note this is a bit of a sledgehammer, we should only
-        // need those that directly preceed the NBA in control flow, but that is hard to compute,
+        // need those that directly precede the NBA in control flow, but that is hard to compute,
         // so we will hammer away.
 
         // First gather all senItems

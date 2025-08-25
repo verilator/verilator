@@ -2678,7 +2678,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
     void classExtendImport(AstClass* nodep) {
         // A class reference might be to a class that is later in Ast due to
-        // e.g. parmaeterization or referring to a "class (type T) extends T"
+        // e.g. parameterization or referring to a "class (type T) extends T"
         // Resolve it so later Class:: references into its base classes work
         symIterateNull(nodep, m_statep->getNodeSym(nodep));
     }

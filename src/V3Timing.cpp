@@ -685,7 +685,7 @@ class TimingControlVisitor final : public VNVisitor {
     }
     // Move `insertBeforep` into `AstCLocalScope` if necessary to avoid jumping over
     // a variable initialization that whould be inserted before `insertBeforep`. All
-    // access to this variable shoule be contained within returned `AstCLocalScope`.
+    // access to this variable should be contained within returned `AstCLocalScope`.
     AstCLocalScope* addCLocalScope(FileLine* const flp, AstNode* const insertBeforep) const {
         if (!insertBeforep || !m_underJumpBlock) return nullptr;
         VNRelinker handle;

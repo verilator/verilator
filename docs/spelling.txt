@@ -589,7 +589,9 @@ combinational
 combinatorial
 commandArgsPlusMatch
 compilable
+computable
 concat
+concatenatable
 concats
 conf
 config
@@ -629,6 +631,7 @@ defparam
 demangling
 dep
 deparametrized
+deque
 der
 dereference
 dereferenced
@@ -642,6 +645,7 @@ dev
 devcontainer
 devel
 dir
+disambiguates
 displayb
 distcc
 doxygen
@@ -670,6 +674,7 @@ elab
 eliasphanna
 elike
 elsif
+enablement
 endcase
 endcelldefine
 endclass
@@ -975,6 +980,8 @@ realtime
 realtobits
 recoding
 recrem
+recurse
+recurses
 redeclaring
 regs
 reloop
