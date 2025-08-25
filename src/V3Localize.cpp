@@ -38,7 +38,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class LocalizeVisitor final : public VNVisitor {
     // NODE STATE
-    //  AstVar::user1()         ->  Bool indicating Var is used in a super constructor call.
     //  AstVarScope::user1()    ->  Bool indicating VarScope is not optimizable.
     //  AstCFunc::user1()       ->  Bool indicating CFunc is not a leaf function.
     //  AstVarScope::user2()    ->  Bool indicating VarScope was fully assigned in the current
@@ -46,6 +45,9 @@ class LocalizeVisitor final : public VNVisitor {
     //  AstVarScope::user3p()   ->  Set of CFuncs referencing this VarScope. (via m_accessors)
     //  AstCFunc::user4p()      ->  Multimap of 'VarScope -> VarRefs that reference that VarScope'
     //                              in this function. (via m_references)
+    //  AstVarScope::user4()    ->  Bool indicating VarScope cannot be optimized
+    //                              - compared to AstVarScope::user1 this guarantees that this
+    //                              scope won't be optimized.
     const VNUser1InUse m_user1InUse;
     const VNUser3InUse m_user3InUse;
     const VNUser4InUse m_user4InUse;
@@ -69,7 +71,7 @@ class LocalizeVisitor final : public VNVisitor {
         if (VN_IS(nodep->dtypep(), NBACommitQueueDType)) return false;
         // Variables used in super constructor call can't be localized, because
         // in C++ there is no way to declare them before base class constructor call
-        if (nodep->varp()->user1()) return false;
+        if (nodep->user4()) return false;
         return ((!nodep->user1()  // Not marked as not optimizable, or ...
                                   // .. a block temp used in a single CFunc
                  || (nodep->varp()->varType() == VVarType::BLOCKTEMP
@@ -210,8 +212,8 @@ class LocalizeVisitor final : public VNVisitor {
 
         if (m_inSuperConstructorCallStmt) {
             // Variable used in super constructor call can't be localized
-            nodep->varp()->user1(true);
             varScopep->user1(true);
+            varScopep->user4(true);
         } else if (!varScopep->user1()) {  // Check if already marked as not optimizable
             // Note: we only check read variables, as it's ok to localize (and in fact discard)
             // any variables that are only written but never read.
