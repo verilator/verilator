@@ -575,7 +575,12 @@ public:
                         ProfileDataMode mode = MTASK) {
         if (!m_profileFileLine) m_profileFileLine = fl;
         if (cost == 0) cost = 1;  // Cost 0 means delete (or no data)
-        m_profileData[model][key] += cost;
+        if (mode == MTASK) {
+            m_profileData[model][key] += cost;
+        } else if (mode == HIER_DPI) {
+            // All hier_block instances have the same cost, take the first one.
+            m_profileData[model][key] = cost;
+        }
         m_mode |= mode;
     }
     bool containsMTaskProfileData() const { return m_mode & MTASK; }
