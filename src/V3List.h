@@ -241,6 +241,7 @@ public:
     bool empty() const { return !m_headp; }
     bool hasSingleElement() const { return m_headp && m_headp == m_lastp; }
     bool hasMultipleElements() const { return m_headp && m_headp != m_lastp; }
+    bool hasTwoElements() const { return m_headp && toLinks(m_headp).m_nextp == m_lastp; }
 
     // These return pointers, as we often want to unlink/delete them, and can also signal empty
     T_Element* frontp() { return static_cast<T_Element*>(m_headp); }

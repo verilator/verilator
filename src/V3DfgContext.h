@@ -251,7 +251,13 @@ public:
         // Reverted
         VDouble0 revertNonSyn;  // Reverted due to being driven from non-synthesizable vertex
         VDouble0 revertMultidrive;  // Reverted due to multiple drivers
-
+        // Additional stats
+        VDouble0 cfgTrivial;  // Trivial input CFGs
+        VDouble0 cfgSp;  // Series-paralel input CFGs
+        VDouble0 cfgDag;  // Generic loop free input CFGs
+        VDouble0 cfgCyclic;  // Cyclic input CFGs
+        VDouble0 joinUsingPathPredicate;  // Num control flow joins using full path predicate
+        VDouble0 joinUsingBranchCondition;  // Num Control flow joins using dominating branch cond
     } m_synt;
 
 private:
@@ -314,6 +320,14 @@ private:
         nSyntExpect -= m_synt.synthAlways;
         nSyntExpect -= m_synt.synthAssign;
         UASSERT(nSyntNonSyn == nSyntExpect, "Inconsistent statistics / synt");
+
+        addStat("synt / input CFG trivial", m_synt.cfgTrivial);
+        addStat("synt / input CFG sp", m_synt.cfgSp);
+        addStat("synt / input CFG dag", m_synt.cfgDag);
+        addStat("synt / input CFG cyclic", m_synt.cfgCyclic);
+
+        addStat("synt / joins using path predicate", m_synt.joinUsingPathPredicate);
+        addStat("synt / joins using branch condition", m_synt.joinUsingBranchCondition);
     }
 };
 

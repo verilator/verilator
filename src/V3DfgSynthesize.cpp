@@ -508,15 +508,23 @@ class AstToDfgSynthesize final {
         bool operator<=(const Driver& other) const { return !(other < *this); }
     };
 
-    // STATE
+    // STATE - Persistent
     DfgGraph& m_dfg;  // The graph being built
     V3DfgSynthesisContext& m_ctx;  // The context for stats
     AstToDfgConverter<T_Scoped> m_converter;  // The convert instance to use for each construct
-    DfgLogic* m_logicp = nullptr;  // Current logic vertex we are synthesizing
 
-    // Some debug aid: We stop after synthesizing s_dfgSynthDebugLimit vertices (if non-zero).
-    // This is the problematic logic (last one we synthesize), assuming a bisection search
-    // over s_dfgSynthDebugLimit.
+    // STATE - for current DfgLogic being synthesized
+    DfgLogic* m_logicp = nullptr;  // Current logic vertex we are synthesizing
+    CfgBlockMap<SymTab> m_bbToISymTab;  // Map from CfgBlock -> input symbol table
+    CfgBlockMap<SymTab> m_bbToOSymTab;  // Map from CfgBlock -> output symbol table
+    CfgBlockMap<DfgVertex*> m_bbToCondp;  // Map from CfgBlock ->  terminating branch condition
+    CfgEdgeMap<DfgVertex*> m_edgeToPredicatep;  // Map CfgGraphEdge -> path predicate to get there
+    CfgDominatorTree m_domTree;  // The dominator tree of the current CFG
+
+    // STATE - Some debug aid
+    // We stop after synthesizing s_dfgSynthDebugLimit vertices (if non-zero).
+    // This is the problematic logic (last one we synthesize), assuming a
+    // bisection search over s_dfgSynthDebugLimit.
     DfgLogic* m_debugLogicp = nullptr;
     // Source (upstream) cone of outputs of m_debugLogicp
     std::unique_ptr<std::unordered_set<const DfgVertex*>> m_debugOSrcConep{nullptr};
@@ -869,7 +877,7 @@ class AstToDfgSynthesize final {
         });
     }
 
-    // Initialzie input symbol table of entry BasicBlock
+    // Initialzie input symbol table of entry CfgBlock
     void initializeEntrySymbolTable(SymTab& iSymTab) {
         m_logicp->forEachSource([&](DfgVertex& src) {
             DfgVertexVar* const vvp = src.as<DfgVertexVar>();
@@ -991,75 +999,152 @@ class AstToDfgSynthesize final {
         return joinp;
     }
 
+    // Merge 'thenSymTab' into 'elseSymTab' using the given predicate to join values
+    bool joinSymbolTables(SymTab& elseSymTab, DfgVertex* predicatep, const SymTab& thenSymTab) {
+        // Give up if something is not assigned on all paths ... Latch?
+        if (thenSymTab.size() != elseSymTab.size()) {
+            ++m_ctx.m_synt.nonSynLatch;
+            return false;
+        }
+        // Join each symbol
+        for (std::pair<Variable* const, DfgVertexVar*>& pair : elseSymTab) {
+            Variable* const varp = pair.first;
+            // Find same variable on the else path
+            auto it = thenSymTab.find(varp);
+            // Give up if something is not assigned on all paths ... Latch?
+            if (it == thenSymTab.end()) {
+                ++m_ctx.m_synt.nonSynLatch;
+                return false;
+            }
+            // Join paths with the predicate
+            DfgVertexVar* const thenp = it->second;
+            DfgVertexVar* const elsep = pair.second;
+            DfgVertexVar* const newp = joinDrivers(varp, predicatep, thenp, elsep);
+            if (!newp) return false;
+            pair.second = newp;
+        }
+        // Done
+        return true;
+    }
+
+    // Given two joining control flow edges, compute how to join their symbols.
+    // Returns the predicaete to join over, and the 'then' and 'else' blocks.
+    std::tuple<DfgVertex*, const CfgBlock*, const CfgBlock*>  //
+    howToJoin(const CfgEdge* const ap, const CfgEdge* const bp) {
+        // Find the closest common dominator of the two paths
+        const CfgBlock* const domp = m_domTree.closestCommonDominator(ap->srcp(), bp->srcp());
+        // These paths join here, so 'domp' must be a branch, otherwise it's not the closest
+        UASSERT_OBJ(domp->isBranch(), domp, "closestCommonDominator is not a branch");
+
+        // The branches of the common dominator
+        const CfgEdge* const takenEdgep = domp->takenEdgep();
+        const CfgEdge* const untknEdgep = domp->untknEdgep();
+
+        // We check if the taken branch dominates the path to either blocks,
+        // and if the untaken branch dominates the path to the other block.
+        // If so, we can use the branch condition as predicate, otherwise
+        // we must use the path predicate as there are ways to get from one
+        // branch of the dominator to the other. We need to be careful if
+        // either branches are directly to the join block. This is fine,
+        // it's as if there was an empty block on that critical edge which
+        // is dominated by that path.
+
+        if (takenEdgep == ap || m_domTree.dominates(takenEdgep->dstp(), ap->srcp())) {
+            if (untknEdgep == bp || m_domTree.dominates(untknEdgep->dstp(), bp->srcp())) {
+                // Taken path dominates 'ap' and untaken dominates 'bp', use the branch condition
+                ++m_ctx.m_synt.joinUsingBranchCondition;
+                return std::make_tuple(m_bbToCondp[domp], ap->srcp(), bp->srcp());
+            }
+        } else if (takenEdgep == bp || m_domTree.dominates(takenEdgep->dstp(), bp->srcp())) {
+            if (untknEdgep == ap || m_domTree.dominates(untknEdgep->dstp(), ap->srcp())) {
+                // Taken path dominates 'bp' and untaken dominates 'ap', use the branch condition
+                ++m_ctx.m_synt.joinUsingBranchCondition;
+                return std::make_tuple(m_bbToCondp[domp], bp->srcp(), ap->srcp());
+            }
+        }
+
+        // The branches don't dominate the joined blocks, must use the path predicate
+        ++m_ctx.m_synt.joinUsingPathPredicate;
+
+        // TODO: We could do better here: use the path predicate of the closest
+        // cominating blocks, pick the one from the lower rank, etc, but this
+        // generic case is very rare, most synthesizable logic has
+        // series-parallel CFGs which are covered by the earlier cases.
+        return std::make_tuple(m_edgeToPredicatep[ap], ap->srcp(), bp->srcp());
+    }
+
     // Combine the output symbol tables of the predecessors of the given
-    // BasicBlock to compute the input symtol table for the given block.
-    bool createInputSymbolTable(SymTab& joined, const BasicBlock& bb,
-                                const BasicBlockMap<SymTab>& bbToOSymTab,
-                                const ControlFlowEdgeMap<DfgVertex*>& edgeToPredicatep) {
-        // Input symbol table of entry block was previously initialzied
-        if (bb.inEmpty()) return true;
+    // block to compute the input symtol table for the given block.
+    bool createInputSymbolTable(const CfgBlock& bb) {
+        // The input symbol table of the given block, we are computing it now
+        SymTab& joined = m_bbToISymTab[bb];
 
-        // We will fill it in here
-        UASSERT(joined.empty(), "Unresolved input symbol table should be empty");
-
-        // Fast path if there is only one predecessor
-        if (bb.inSize1()) {
-            joined = bbToOSymTab[*(bb.inEdges().frontp()->fromp()->as<BasicBlock>())];
+        // Input symbol table of entry block is special
+        if (bb.isEnter()) {
+            initializeEntrySymbolTable(joined);
             return true;
         }
 
-        // Gather predecessors and the path predicates
+        // Current input symbol table should be empty, we will fill it in here
+        UASSERT(joined.empty(), "Unprocessed input symbol table should be empty");
+
+        // Fast path if there is only one predecessor - TODO: use less copying
+        if (!bb.isJoin()) {
+            joined = m_bbToOSymTab[bb.firstPredecessorp()];
+            return true;
+        }
+
+        // We also have a simpler job if there are 2 predecessors
+        if (bb.isTwoWayJoin()) {
+            DfgVertex* predicatep = nullptr;
+            const CfgBlock* thenp = nullptr;
+            const CfgBlock* elsep = nullptr;
+            std::tie(predicatep, thenp, elsep)
+                = howToJoin(bb.firstPredecessorEdgep(), bb.lastPredecessorEdgep());
+            // Copy from else
+            joined = m_bbToOSymTab[elsep];
+            // Join with then
+            return joinSymbolTables(joined, predicatep, m_bbToOSymTab[*thenp]);
+        }
+
+        // General hard way
+
+        // Gather predecessors
         struct Predecessor final {
-            const BasicBlock* m_bbp;
-            DfgVertex* m_predicatep;
+            const CfgBlock* m_bbp;  // Predeccessor block
+            DfgVertex* m_predicatep;  // Predicate predecessor reached this block with
+            const SymTab* m_oSymTabp;  // Output symbol table or predecessor
             Predecessor() = delete;
-            Predecessor(const BasicBlock* bbp, DfgVertex* predicatep)
+            Predecessor(const CfgBlock* bbp, DfgVertex* predicatep, const SymTab* oSymTabp)
                 : m_bbp{bbp}
-                , m_predicatep{predicatep} {}
+                , m_predicatep{predicatep}
+                , m_oSymTabp{oSymTabp} {}
         };
 
         const std::vector<Predecessor> predecessors = [&]() {
             std::vector<Predecessor> res;
             for (const V3GraphEdge& edge : bb.inEdges()) {
-                const ControlFlowEdge& cfgEdge = static_cast<const ControlFlowEdge&>(edge);
-                res.emplace_back(&cfgEdge.src(), edgeToPredicatep[cfgEdge]);
+                const CfgEdge& cfgEdge = static_cast<const CfgEdge&>(edge);
+                const CfgBlock* const predecessorp = cfgEdge.srcp();
+                DfgVertex* const predicatep = m_edgeToPredicatep[cfgEdge];
+                const SymTab* const oSymTabp = &m_bbToOSymTab[predecessorp];
+                res.emplace_back(predecessorp, predicatep, oSymTabp);
             }
-            // Sort predecessors topologically. This way later blocks will come
-            // after earlier blocks, and the entry block will be first if present.
+            // Sort predecessors reverse topologically. This way earlier blocks
+            // will come after later blocks, and the entry block is last if present.
             std::sort(res.begin(), res.end(), [](const Predecessor& a, const Predecessor& b) {  //
-                return a.m_bbp->id() < b.m_bbp->id();
+                return *a.m_bbp > *b.m_bbp;
             });
             return res;
         }();
 
-        // Start by copying the bindings from the oldest predecessor
-        joined = bbToOSymTab[*predecessors[0].m_bbp];
+        // Start by copying the bindings from the frist predecessor
+        joined = *predecessors[0].m_oSymTabp;
         // Join over all other predecessors
         for (size_t i = 1; i < predecessors.size(); ++i) {
             DfgVertex* const predicatep = predecessors[i].m_predicatep;
-            const SymTab& oSymTab = bbToOSymTab[*predecessors[i].m_bbp];
-            // Give up if something is not assigned on all paths ... Latch?
-            if (joined.size() != oSymTab.size()) {
-                ++m_ctx.m_synt.nonSynLatch;
-                return false;
-            }
-            // Join each symbol
-            for (auto& pair : joined) {
-                Variable* const varp = pair.first;
-                // Find same variable on other path
-                auto it = oSymTab.find(varp);
-                // Give up if something is not assigned on all paths ... Latch?
-                if (it == oSymTab.end()) {
-                    ++m_ctx.m_synt.nonSynLatch;
-                    return false;
-                }
-                // Join paths with the block predicate
-                DfgVertexVar* const thenp = it->second;
-                DfgVertexVar* const elsep = pair.second;
-                DfgVertexVar* const newp = joinDrivers(varp, predicatep, thenp, elsep);
-                if (!newp) return false;
-                pair.second = newp;
-            }
+            const SymTab& oSymTab = *predecessors[i].m_oSymTabp;
+            if (!joinSymbolTables(joined, predicatep, oSymTab)) return false;
         }
 
         return true;
@@ -1169,7 +1254,7 @@ class AstToDfgSynthesize final {
     }
 
     // Synthesize the given statements with the given input symbol table.
-    // Returnt true if successfolly synthesized.
+    // Returns true if successfolly synthesized.
     // Populates the given output symbol table.
     // Populates the given reference with the condition of the terminator branch, if any.
     bool synthesizeBasicBlock(SymTab& oSymTab, DfgVertex*& condpr,
@@ -1259,56 +1344,53 @@ class AstToDfgSynthesize final {
         return true;
     }
 
-    // Given a basic block, and the condition of the terminating branch (if any),
-    // assign perdicates to the block's outgoing control flow edges.
-    void assignSuccessorPredicates(ControlFlowEdgeMap<DfgVertex*>& edgeToPredicatep,
-                                   const BasicBlock& bb, DfgVertex* condp) {
+    // Assign path perdicates to the outgoing control flow edges of the given block
+    void assignPathPredicates(const CfgBlock& bb) {
         // Nothing to do for the exit block
-        if (bb.outEmpty()) return;
+        if (bb.isExit()) return;
 
         // Get the predicate of this block
         DfgVertex* const predp = [&]() -> DfgVertex* {
             // Entry block has no predecessors, use constant true
-            if (bb.inEmpty()) return make<DfgConst>(m_logicp->fileline(), 1U, 1U);
+            if (bb.isEnter()) return make<DfgConst>(m_logicp->fileline(), 1U, 1U);
 
             // For any other block, 'or' together all the incoming predicates
             const auto& inEdges = bb.inEdges();
             auto it = inEdges.begin();
-            DfgVertex* resp = edgeToPredicatep[static_cast<const ControlFlowEdge&>(*it)];
+            DfgVertex* resp = m_edgeToPredicatep[static_cast<const CfgEdge&>(*it)];
             while (++it != inEdges.end()) {
                 DfgOr* const orp = make<DfgOr>(resp->fileline(), resp->dtypep());
                 orp->rhsp(resp);
-                orp->lhsp(edgeToPredicatep[static_cast<const ControlFlowEdge&>(*it)]);
+                orp->lhsp(m_edgeToPredicatep[static_cast<const CfgEdge&>(*it)]);
                 resp = orp;
             }
             return resp;
         }();
 
-        if (!condp) {
-            // There should be 1 successors for a block with an unconditional terminator
-            UASSERT_OBJ(!bb.untknEdgep(), predp, "Expecting 1 successor for BasicBlock");
-            // Successor predicate edge is the same
-            edgeToPredicatep[*bb.takenEdgep()] = predp;
-        } else {
-            // There should be 2 successors for a block with an conditional terminator
-            UASSERT_OBJ(bb.untknEdgep(), predp, "Expecting 2 successors for BasicBlock");
-            FileLine* const flp = condp->fileline();
-            AstNodeDType* const dtypep = condp->dtypep();  // Single bit
-
-            // Predicate for taken branch: 'predp & condp'
-            DfgAnd* const takenPredp = make<DfgAnd>(flp, dtypep);
-            takenPredp->lhsp(predp);
-            takenPredp->rhsp(condp);
-            edgeToPredicatep[*bb.takenEdgep()] = takenPredp;
-
-            // Predicate for untaken branch: 'predp & ~condp'
-            DfgAnd* const untknPredp = make<DfgAnd>(flp, dtypep);
-            untknPredp->lhsp(predp);
-            DfgNot* const notp = make<DfgNot>(flp, dtypep);
-            notp->srcp(condp);
-            untknPredp->rhsp(notp);
-            edgeToPredicatep[*bb.untknEdgep()] = untknPredp;
+        // For uncondional branches, the successor predicate edge is the same
+        if (!bb.isBranch()) {
+            m_edgeToPredicatep[bb.takenEdgep()] = predp;
+            return;
         }
+
+        // For branches, we need to factor in the branch condition
+        DfgVertex* const condp = m_bbToCondp[bb];
+        FileLine* const flp = condp->fileline();
+        AstNodeDType* const dtypep = condp->dtypep();  // Single bit
+
+        // Predicate for taken branch: 'predp & condp'
+        DfgAnd* const takenPredp = make<DfgAnd>(flp, dtypep);
+        takenPredp->lhsp(predp);
+        takenPredp->rhsp(condp);
+        m_edgeToPredicatep[bb.takenEdgep()] = takenPredp;
+
+        // Predicate for untaken branch: 'predp & ~condp'
+        DfgAnd* const untknPredp = make<DfgAnd>(flp, dtypep);
+        untknPredp->lhsp(predp);
+        DfgNot* const notp = make<DfgNot>(flp, dtypep);
+        notp->srcp(condp);
+        untknPredp->rhsp(notp);
+        m_edgeToPredicatep[bb.untknEdgep()] = untknPredp;
     }
 
     // Add the synthesized values as drivers to the output variables of the current DfgLogic
@@ -1359,7 +1441,7 @@ class AstToDfgSynthesize final {
         // Initialzie input symbol table
         initializeEntrySymbolTable(iSymTab);
 
-        // Synthesize as if it was in a single BasicBlock CFG
+        // Synthesize as if it was in a single CfgBlock CFG
         DfgVertex* condp = nullptr;
         const bool success = synthesizeBasicBlock(oSymTab, condp, {assignp}, iSymTab);
         UASSERT_OBJ(!condp, nodep, "Conditional AstAssignW ???");
@@ -1372,7 +1454,7 @@ class AstToDfgSynthesize final {
     }
 
     // Synthesize the given AstAlways. Returns true on success.
-    bool synthesizeCfg(const ControlFlowGraph& cfg) {
+    bool synthesizeCfg(CfgGraph& cfg) {
         ++m_ctx.m_synt.inputAlways;
 
         if (hasExternallyWrittenVariable(*m_logicp)) {
@@ -1383,37 +1465,48 @@ class AstToDfgSynthesize final {
         // If there is a backward edge (loop), we can't synthesize it
         if (cfg.containsLoop()) {
             ++m_ctx.m_synt.nonSynLoop;
+            ++m_ctx.m_synt.cfgCyclic;
             return false;
         }
 
-        // Maps from BasicBlock to its input and output symbol tables
-        BasicBlockMap<SymTab> bbToISymTab = cfg.makeBasicBlockMap<SymTab>();
-        BasicBlockMap<SymTab> bbToOSymTab = cfg.makeBasicBlockMap<SymTab>();
+        // If it's a trivial CFG we can save on some work
+        if (cfg.nBlocks() == 1) {
+            ++m_ctx.m_synt.cfgTrivial;
+        } else {
+            // Insert two-way join blocks to aid multiplexer ordering
+            if (cfg.insertTwoWayJoins()) {
+                ++m_ctx.m_synt.cfgSp;
+            } else {
+                ++m_ctx.m_synt.cfgDag;
+            }
+            // Initialize maps needed for non-trivial CFGs
+            m_domTree = CfgDominatorTree{cfg};
+            m_edgeToPredicatep = cfg.makeEdgeMap<DfgVertex*>();
+        }
 
-        // Map from ControlFlowGraphEdge to its predicate
-        ControlFlowEdgeMap<DfgVertex*> edgeToPredicatep = cfg.makeEdgeMap<DfgVertex*>();
-
-        // Initialzie input symbol table of entry block
-        initializeEntrySymbolTable(bbToISymTab[cfg.enter()]);
+        // Initialize CfgMaps
+        m_bbToISymTab = cfg.makeBlockMap<SymTab>();
+        m_bbToOSymTab = cfg.makeBlockMap<SymTab>();
+        m_bbToCondp = cfg.makeBlockMap<DfgVertex*>();
 
         // Synthesize all blocks
-        for (const V3GraphVertex& cfgVtx : cfg.vertices()) {
-            const BasicBlock& bb = *cfgVtx.as<BasicBlock>();
-            // Symbol tables of the block
-            SymTab& iSymTab = bbToISymTab[bb];
-            SymTab& oSymTab = bbToOSymTab[bb];
-            // Join symbol tables from predecessor blocks
-            if (!createInputSymbolTable(iSymTab, bb, bbToOSymTab, edgeToPredicatep)) return false;
-            // Condition of the terminating branch, if any
-            DfgVertex* condp = nullptr;
-            // Synthesize the block
-            if (!synthesizeBasicBlock(oSymTab, condp, bb.stmtps(), iSymTab)) return false;
-            // Set the predicates on the successor edges
-            assignSuccessorPredicates(edgeToPredicatep, bb, condp);
+        for (const V3GraphVertex& vtx : cfg.vertices()) {
+            const CfgBlock& bb = static_cast<const CfgBlock&>(vtx);
+            // Prepare the input symbol table of this block (enter, or join predecessor blocks)
+            if (!createInputSymbolTable(bb)) return false;
+            // Synthesize this block
+            if (!synthesizeBasicBlock(m_bbToOSymTab[bb],  //
+                                      m_bbToCondp[bb],  //
+                                      bb.stmtps(),  //
+                                      m_bbToISymTab[bb])) {
+                return false;
+            }
+            // Set the path predicates on the successor edges
+            assignPathPredicates(bb);
         }
 
         // Add resolved output variable drivers
-        return addSynthesizedOutput(bbToOSymTab[cfg.exit()]);
+        return addSynthesizedOutput(m_bbToOSymTab[cfg.exit()]);
     }
 
     // Synthesize a DfgLogic into regular vertices. Returns ture on success.
@@ -1676,7 +1769,7 @@ void V3DfgPasses::synthesize(DfgGraph& dfg, V3DfgContext& ctx) {
                 if (VN_IS(logicp->nodep(), AssignW)) return true;
                 // Synthesize always blocks with no more than 4 basic blocks and 4 edges
                 // These are usually simple branches (if (rst) ... else ...), or close to it
-                return logicp->cfg().nBasicBlocks() <= 4 && logicp->cfg().nEdges() <= 4;
+                return logicp->cfg().nBlocks() <= 4 && logicp->cfg().nEdges() <= 4;
             });
             if (doIt) varps.emplace_back(&var);
         }

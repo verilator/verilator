@@ -346,7 +346,7 @@ public:
 class DfgLogic final : public DfgVertexVariadic {
     // Generic vertex representing a whole combinational process
     AstNode* const m_nodep;  // The Ast logic represented by this vertex
-    const std::unique_ptr<const ControlFlowGraph> m_cfgp;
+    const std::unique_ptr<CfgGraph> m_cfgp;
     // Vertices this logic was synthesized into. Excluding variables
     std::vector<DfgVertex*> m_synth;
 
@@ -356,7 +356,7 @@ public:
         , m_nodep{nodep}
         , m_cfgp{nullptr} {}
 
-    DfgLogic(DfgGraph& dfg, AstAlways* nodep, std::unique_ptr<const ControlFlowGraph> cfgp)
+    DfgLogic(DfgGraph& dfg, AstAlways* nodep, std::unique_ptr<CfgGraph> cfgp)
         : DfgVertexVariadic{dfg, dfgType(), nodep->fileline(), nullptr, 1u}
         , m_nodep{nodep}
         , m_cfgp{std::move(cfgp)} {}
@@ -366,7 +366,8 @@ public:
     void addInput(DfgVertexVar* varp) { addSource()->relinkSource(varp); }
 
     AstNode* nodep() const { return m_nodep; }
-    const ControlFlowGraph& cfg() const { return *m_cfgp; }
+    CfgGraph& cfg() { return *m_cfgp; }
+    const CfgGraph& cfg() const { return *m_cfgp; }
     std::vector<DfgVertex*>& synth() { return m_synth; }
     const std::vector<DfgVertex*>& synth() const { return m_synth; }
 

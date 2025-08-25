@@ -154,6 +154,176 @@ module t (
   end
   `signal(CONDITONAL_F, condigional_f);
 
+  logic [2:0] conditional_g;
+  always_comb begin
+    if (rand_a[0]) begin
+      if (rand_a[1]) begin
+        if (rand_a[2]) begin
+          conditional_g = 3'b111;
+        end else begin
+          conditional_g = 3'b011;
+        end
+      end else begin
+        if (rand_a[2]) begin
+          conditional_g = 3'b101;
+        end else begin
+          conditional_g = 3'b001;
+        end
+      end
+    end else begin
+      if (rand_a[1]) begin
+        if (rand_a[2]) begin
+          conditional_g = 3'b110;
+        end else begin
+          conditional_g = 3'b010;
+        end
+      end else begin
+        if (rand_a[2]) begin
+          conditional_g = 3'b100;
+        end else begin
+          conditional_g = 3'b000;
+        end
+      end
+    end
+  end
+  `signal(CONDITONAL_G, conditional_g);
+
+  logic [2:0] conditional_h;
+  always_comb begin
+    if (rand_a[0]) begin
+      if (rand_a[1]) begin
+        conditional_h = 3'b011;
+        if (rand_a[2]) begin
+          conditional_h = 3'b111;
+        end
+      end else begin
+        conditional_h = 3'b001;
+        if (rand_a[2]) begin
+          conditional_h = 3'b101;
+        end
+      end
+    end else begin
+      if (rand_a[1]) begin
+        conditional_h = 3'b010;
+        if (rand_a[2]) begin
+          conditional_h = 3'b110;
+        end
+      end else begin
+        conditional_h = 3'b000;
+        if (rand_a[2]) begin
+          conditional_h = 3'b100;
+        end
+      end
+    end
+  end
+  `signal(CONDITONAL_H, conditional_h);
+
+  logic [2:0] conditional_i;
+  always_comb begin // Dumbass trailing zeroes count
+    do begin
+      conditional_i = 3'd0;
+      if (rand_a[0]) break;
+      conditional_i = 3'd1;
+      if (rand_a[1]) break;
+      conditional_i = 3'd2;
+      if (rand_a[2]) break;
+      conditional_i = 3'd3;
+      if (rand_a[3]) break;
+      conditional_i = 3'd4;
+    end while (0);
+  end
+  `signal(CONDITONAL_I, conditional_i);
+
+  logic [2:0] conditional_j;
+  always_comb begin // Even more dumbass trailing ones count
+    do begin
+      conditional_j = 3'd0;
+      if (rand_a[0]) begin
+        conditional_j = 3'd1;
+      end else begin
+        break;
+      end
+      if (rand_a[1]) begin
+        conditional_j = 3'd2;
+      end else begin
+        break;
+      end
+      if (rand_a[2]) begin
+        conditional_j = 3'd3;
+      end else begin
+        break;
+      end
+      if (rand_a[3]) begin
+        conditional_j = 3'd4;
+      end
+    end while (0);
+  end
+  `signal(CONDITONAL_J, conditional_j);
+
+  logic [2:0] conditional_k;
+  always_comb begin
+    if (rand_b[0]) begin
+      do begin
+        conditional_k = 3'd0;
+        if (rand_a[0]) break;
+        conditional_k = 3'd1;
+        if (rand_a[1]) break;
+        conditional_k = 3'd2;
+        if (rand_a[2]) break;
+        conditional_k = 3'd3;
+        if (rand_a[3]) break;
+        conditional_k = 3'd4;
+      end while (0);
+    end else begin
+      do begin
+        conditional_k = 3'd0;
+        if (rand_a[0]) begin
+          conditional_k = 3'd1;
+        end else begin
+          break;
+        end
+        if (rand_a[1]) begin
+          conditional_k = 3'd2;
+        end else begin
+          break;
+        end
+        if (rand_a[2]) begin
+          conditional_k = 3'd3;
+        end else begin
+          break;
+        end
+        if (rand_a[3]) begin
+          conditional_k = 3'd4;
+        end
+      end while (0);
+    end
+  end
+  `signal(CONDITONAL_K, conditional_k);
+
+  logic [1:0] conditional_l_a;
+  logic [1:0] conditional_l_b;
+  always_comb begin
+    do begin
+      conditional_l_a = 2'd0;
+      if (rand_a[1:0] == 2'd0) break;
+      conditional_l_a = 2'd1;
+      if (rand_a[1:0] == 2'd1) break;
+      conditional_l_a = 2'd2;
+      if (rand_a[1:0] == 2'd2) break;
+      conditional_l_a = 2'd3;
+    end while (0);
+    do begin
+      conditional_l_b = 2'd0;
+      if (rand_b[1:0] == 2'd0) break;
+      conditional_l_b = 2'd1;
+      if (rand_b[1:0] == 2'd1) break;
+      conditional_l_b = 2'd2;
+      if (rand_b[1:0] == 2'd2) break;
+      conditional_l_b = 2'd3;
+    end while (0);
+  end
+  `signal(CONDITONAL_L, {conditional_l_b, conditional_l_a});
+
   logic [7:0] partial_conditional_a;
   always_comb begin
     partial_conditional_a[1:0] = 2'd0;
@@ -225,4 +395,111 @@ module t (
     partial_temporary_a = partial_temporary_tmp;
   end
   `signal(PARTIAL_TEMPORARY, partial_temporary_a);
+
+  logic circular_0_x;
+  logic circular_0_y;
+  logic circular_0_z;
+  always_comb begin
+    circular_0_x = 1'b0;
+    circular_0_y = 1'd0;
+    if (rand_b[0]) begin
+      circular_0_x = 1'b1;
+      if (circular_0_z) begin
+        circular_0_y = 1'd1;
+      end
+    end
+  end
+  assign circular_0_z = circular_0_x & rand_a[0];
+  `signal(CIRCULAR_0, {circular_0_x, circular_0_y, circular_0_z});
+
+  logic [2:0] nsp_a; // Non series-parallel CFG
+  always_comb begin
+    do begin
+      nsp_a = 3'd0; // BB 0 -> BB 1 / BB 2
+      if (rand_a[1:0] == 2'd0) begin
+        nsp_a = 3'd1; // BB 1 -> BB 4
+      end else begin
+        nsp_a = 3'd2; // BB 2 -> BB 3 / BB 4
+        if (rand_a[1:0] == 2'd1) begin
+          nsp_a = 3'd3; // BB3 -> BB 5
+          break;
+        end
+      end
+      nsp_a = 3'd4; // BB 4 -> BB 5
+    end while (0);
+    //nsp_a = 3'd5; // BB 5
+  end
+  `signal(NSP_A, nsp_a);
+
+  logic [2:0] nsp_b; // Non series-parallel CFG
+  always_comb begin
+    do begin
+      nsp_b = 3'd0;
+      if (rand_a[1:0] == 2'd0) begin
+        nsp_b = 3'd1;
+      end else begin
+        nsp_b = 3'd2;
+        if (rand_a[1:0] == 2'd1) begin
+          nsp_b = 3'd3;
+          break;
+        end else begin
+          nsp_b = 3'd4;
+          if (rand_a[1:0] == 2'd2) begin
+            nsp_b = 3'd5;
+          end else begin
+            nsp_b = 3'd6;
+            break;
+          end
+        end
+      end
+      nsp_b = 3'd7;
+    end while (0);
+  end
+  `signal(NSP_B, nsp_b);
+
+  logic [2:0] part_sp_a; // Contains series-parallel sub-graph CFG
+  always_comb begin
+    do begin
+      part_sp_a = 3'd0;
+      if (rand_a[0]) begin
+        part_sp_a = 3'd1;
+        if (rand_a[1]) begin
+          part_sp_a = 3'd2;
+        end
+      end else begin
+        part_sp_a = 3'd3;
+        if (rand_a[2]) begin
+          part_sp_a = 3'd4;
+          if (rand_a[3]) begin
+            part_sp_a = 3'd5;
+          end
+          break;
+        end
+      end
+      part_sp_a = 3'd6;
+      if (rand_a[4]) begin
+        part_sp_a = 3'd7;
+      end
+    end while (0);
+  end
+  `signal(PART_SP_A, part_sp_a);
+
+  logic [1:0] both_break;
+  always_comb begin
+    do begin
+      if (rand_a[0]) begin
+        both_break = 2'd0;
+        break;
+      end else begin
+        both_break = 2'd1;
+        break;
+      end
+      // Unreachable
+      if (rand_a[1]) begin
+        both_break = 2'd2;
+      end
+    end while(0);
+  end
+  `signal(BOTH_BREAK, both_break);
+
 endmodule
