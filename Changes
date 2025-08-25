@@ -52,6 +52,7 @@ Verilator 5.039 devel
 * Optimize combinational cycles through arrays in DFG (#6210). [Geza Lore]
 * Optimize variable removal in scoped DFG (#6260). [Geza Lore]
 * Optimize acyclic DFG components into the original acyclic sub-graph. (#6261). [Geza Lore]
+* Optimize multiplexers in DFG synthesis (#6331). [Geza Lore]
 * Fix loop initialization visibility outside loop (#4237).
 * Fix constructor parameters in inheritance hierarchies (#6036) (#6070). [Petr Nohavica]
 * Fix replicate of negative giving 'REPLICATE has no expected width' internal error (#6048) (#6229).
@@ -98,6 +99,7 @@ Verilator 5.039 devel
 * Fix gathering sensitivities from virtual interface members (#6325). [Aleksander Kiryk]
 * Fix FreeBSD missing headers (#6326). [Aleksander Kiryk]
 * Fix to select UDPs when they are the only candidate for a top module.
+* Fix to localize for super constructors with function calls as arguments (#6330). [Igor Zaworski, Antmicro Ltd.]
 
 
 Verilator 5.038 2025-07-08
