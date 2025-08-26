@@ -740,8 +740,8 @@ void V3PreLex::dumpStack() {  // LCOV_EXCL_START
     std::stack<VPreStream*> tmpstack = LEXP->m_streampStack;
     while (!tmpstack.empty()) {
         const VPreStream* const streamp = tmpstack.top();
-        cout << "-    bufferStack[" << cvtToHex(streamp) << "]: "
-             << " at=" << streamp->m_curFilelinep << " nBuf=" << streamp->m_buffers.size()
+        cout << "-    bufferStack[" << cvtToHex(streamp)
+             << "]: " << " at=" << streamp->m_curFilelinep << " nBuf=" << streamp->m_buffers.size()
              << " size0=" << (streamp->m_buffers.empty() ? 0 : streamp->m_buffers.front().length())
              << (streamp->m_eof ? " [EOF]" : "") << (streamp->m_file ? " [FILE]" : "") << endl;
         tmpstack.pop();

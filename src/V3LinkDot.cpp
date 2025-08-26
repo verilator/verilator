@@ -3697,9 +3697,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         if (foundp) {
                             nodep->v3error("Found definition of '"
                                            << m_ds.m_dotText << (m_ds.m_dotText == "" ? "" : ".")
-                                           << nodep->prettyName() << "'"
-                                           << " as a " << foundp->nodep()->typeName()
-                                           << " but expected a " << expectWhat);
+                                           << nodep->prettyName() << "'" << " as a "
+                                           << foundp->nodep()->typeName() << " but expected a "
+                                           << expectWhat);
                         } else if (m_ds.m_dotText == "") {
                             UINFO(1, "   ErrParseRef curSymp=se" << cvtToHex(m_curSymp)
                                                                  << " ds=" << m_ds.ascii());
@@ -3710,15 +3710,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                 << expectWhat << ": " << nodep->prettyNameQ() << '\n'
                                 << (suggest.empty() ? "" : nodep->warnMore() + suggest));
                         } else {
-                            nodep->v3error("Can't find definition of "
-                                           << (!baddot.empty() ? AstNode::prettyNameQ(baddot)
-                                                               : nodep->prettyNameQ())
-                                           << " in dotted " << expectWhat << ": '"
-                                           << m_ds.m_dotText + "." + nodep->prettyName() << "'\n"
-                                           << nodep->warnContextPrimary()
-                                           << (okSymp ? okSymp->cellErrorScopes(
-                                                   nodep, AstNode::prettyName(m_ds.m_dotText))
-                                                      : ""));
+                            nodep->v3error(
+                                "Can't find definition of "
+                                << (!baddot.empty() ? AstNode::prettyNameQ(baddot)
+                                                    : nodep->prettyNameQ())
+                                << " in dotted " << expectWhat << ": '"
+                                << m_ds.m_dotText + "." + nodep->prettyName() << "'\n"
+                                << nodep->warnContextPrimary()
+                                << (okSymp ? okSymp->cellErrorScopes(
+                                                 nodep, AstNode::prettyName(m_ds.m_dotText))
+                                           : ""));
                         }
                         m_ds.m_dotErr = true;
                     }
@@ -4233,8 +4234,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     } else {
                         nodep->v3error("Found definition of '"
                                        << m_ds.m_dotText << (m_ds.m_dotText == "" ? "" : ".")
-                                       << nodep->prettyName() << "'"
-                                       << " as a " << foundp->nodep()->typeName()
+                                       << nodep->prettyName() << "'" << " as a "
+                                       << foundp->nodep()->typeName()
                                        << " but expected a task/function");
                     }
                 } else if (VN_IS(nodep, New) && m_statep->forPrearray()) {

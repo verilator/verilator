@@ -479,8 +479,7 @@ class V3ControlScopeTraceResolver final {
 
 public:
     void addScopeTraceOn(bool on, const string& scope, int levels) {
-        UINFO(9, "addScopeTraceOn " << on << " '" << scope << "' "
-                                    << " levels=" << levels);
+        UINFO(9, "addScopeTraceOn " << on << " '" << scope << "' " << " levels=" << levels);
         m_entries.emplace_back(V3ControlScopeTraceEntry{scope, on, levels});
         m_matchCache.clear();
     }

@@ -157,7 +157,7 @@ Those developing Verilator itself also need these (see internals.rst):
 
 .. code-block:: shell
 
-   sudo apt-get install clang clang-format-14 cmake gdb gprof graphviz lcov
+   sudo apt-get install clang clang-format-18 cmake gdb gprof graphviz lcov
    sudo apt-get install python3-clang python3-distro yapf3 bear jq
    sudo pip3 install sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe gersemi mbake ruff sarif-tools
    sudo pip3 install git+https://github.com/antmicro/astsee.git

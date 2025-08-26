@@ -387,18 +387,18 @@ class DelayedVisitor final : public VNVisitor {
         if (bIt != blkRefs.end() && nIt != nbaRefs.end()) {
             const Ref& blkRef = *bIt;
             const Ref& nbaRef = *nIt;
-            vscp->v3warn(BLKANDNBLK,
-                         "Unsupported: Blocking and non-blocking assignments to "
-                         "potentially overlapping bits of same packed variable: "
-                             << vscp->varp()->prettyNameQ() << '\n'
-                             << vscp->warnContextPrimary() << '\n'
-                             << blkRef.m_refp->warnOther() << "... Location of blocking assignment"
-                             << " (bits [" << blkRef.m_msb << ":" << blkRef.m_lsb << "])\n"
-                             << blkRef.m_refp->warnContextSecondary() << '\n'
-                             << nbaRef.m_refp->warnOther()
-                             << "... Location of nonblocking assignment"
-                             << " (bits [" << nbaRef.m_msb << ":" << nbaRef.m_lsb << "])\n"
-                             << nbaRef.m_refp->warnContextSecondary());
+            vscp->v3warn(BLKANDNBLK, "Unsupported: Blocking and non-blocking assignments to "
+                                     "potentially overlapping bits of same packed variable: "
+                                         << vscp->varp()->prettyNameQ() << '\n'
+                                         << vscp->warnContextPrimary() << '\n'
+                                         << blkRef.m_refp->warnOther()
+                                         << "... Location of blocking assignment" << " (bits ["
+                                         << blkRef.m_msb << ":" << blkRef.m_lsb << "])\n"
+                                         << blkRef.m_refp->warnContextSecondary() << '\n'
+                                         << nbaRef.m_refp->warnOther()
+                                         << "... Location of nonblocking assignment" << " (bits ["
+                                         << nbaRef.m_msb << ":" << nbaRef.m_lsb << "])\n"
+                                         << nbaRef.m_refp->warnContextSecondary());
         }
 
         return true;

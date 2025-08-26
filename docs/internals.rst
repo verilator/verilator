@@ -1131,7 +1131,7 @@ Indentation and Naming Style
 ----------------------------
 
 We will work with contributors to fix up indentation style issues, but it
-is appreciated if you could match our style:
+is appreciated if you could match our style for C/C++:
 
 - Use "mixedCapsSymbols" instead of "underlined_symbols".
 
@@ -1143,9 +1143,8 @@ is appreciated if you could match our style:
   calls. (This convention has not been applied retroactively.)
 
 C and Python indentation is automatically maintained with "make format"
-using clang-format version 14.0.0, and yapf for Python, and is
-automatically corrected in the CI actions. For those manually formatting C
-code:
+using clang-format version 18, and yapf for Python, and is automatically
+corrected in the CI actions. For those manually formatting C code:
 
 - Use four spaces per level, and no tabs.
 
@@ -1157,12 +1156,20 @@ code:
 - No spaces before semicolons, nor between a function's name and open
   parenthesis (only applies to functions; if/else has a following space).
 
+Verilog indentation is not yet automatically maintained, but:
+
+- Use two spaces per level, and no tabs.
+
+- Place `begin` on the same line as the earlier starting statement
+  e.g. `if`, and place the `end` on a separate line indented the same as
+  the starting statement.
+
 
 Commit messages
 ---------------
 
 Pull requests do not typically edit ``Changes`` in order to reduce
-potential merge conflicts.  Instead, contibutors should use an appropriate
+potential merge conflicts.  Instead, contributors should use an appropriate
 first line of the git commit message.  Maintainers periodically run
 ``nodist/log_changes`` which analyzes the commit messages to suggest edits
 to the ``Changes`` file.
@@ -1199,7 +1206,7 @@ The line's grammar should match the phrasing used in the Changes file.
 If the change does not affect user-visible function, also add "No
 functional change." if it's 99% certain not to change behavior, or "No
 functional change expected." if no change was expected but there may be
-uncertanty.
+uncertainty.
 
 
 The ``astgen`` Script
@@ -1208,7 +1215,7 @@ The ``astgen`` Script
 The ``astgen`` script is used to generate some of the repetitive C++ code
 related to the ``AstNode`` type hierarchy. An example is the abstract ``visit``
 methods in ``VNVisitor``. There are other uses; please see the ``*__gen*``
-files in the bulid directories and the ``astgen`` script for details.  A
+files in the build directories and the ``astgen`` script for details.  A
 description of the more advanced features of ``astgen`` are provided here.
 
 
@@ -1617,7 +1624,7 @@ Benchmarking
 ------------
 
 For benchmarking the effects of changes (simulation speed, memory consumption,
-verilation time, etc.), you can use `RTLMeter
+Verilation time, etc.), you can use `RTLMeter
 <https://github.com/verilator/rtlmeter>`__, a benchmark suite designed for this
 purpose. The scripts provided with RTLMeter have many capabilities. For full
 details, see the `documentation of RTLMeter
@@ -2039,10 +2046,8 @@ Generally, what would you do to add a new feature?
 
 2. Make a testcase in the test_regress/t/t_EXAMPLE format, see `Testing`.
 
-3. If grammar changes are needed, look at the git version of VerilogPerl's
-   src/VParseGrammar.y, as this grammar supports the full SystemVerilog
-   language and has a lot of back-and-forth with Verilator's grammar. Copy
-   the appropriate rules to src/verilog.y and modify the productions.
+3. If grammar changes are needed, look at the IEEE 1800-2023 Appendix A, as
+   src/verilog.y generally follows the same rule layout.
 
 4. If a new Ast type is needed, add it to the appropriate V3AstNode*.h.
    Follow the convention described above about the AstNode type hierarchy.

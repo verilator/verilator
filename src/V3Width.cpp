@@ -4561,11 +4561,12 @@ class WidthVisitor final : public VNVisitor {
                 refp = m_vup ? VN_CAST(m_vup->dtypeNullSkipRefp(), ClassRefDType) : nullptr;
             }
             if (!refp) {  // e.g. int a = new;
-                nodep->v3error("new() assignment not legal to non-class "
-                               + (VN_IS(warnp, NodeDType) ? (
-                                      "data type "s + VN_AS(warnp, NodeDType)->prettyDTypeNameQ())
-                                  : warnp ? warnp->prettyNameQ()
-                                          : ""));
+                nodep->v3error(
+                    "new() assignment not legal to non-class "
+                    + (VN_IS(warnp, NodeDType)
+                           ? ("data type "s + VN_AS(warnp, NodeDType)->prettyDTypeNameQ())
+                       : warnp ? warnp->prettyNameQ()
+                               : ""));
                 nodep->dtypep(m_vup->dtypep());
                 return;
             }
@@ -5981,8 +5982,8 @@ class WidthVisitor final : public VNVisitor {
                     // Must be a error according to spec
                     // (Because we need to know if to connect to one or all instants)
                     nodep->v3error(ucfirst(nodep->prettyOperatorName())
-                                   << " as part of a module instance array"
-                                   << " requires " << modwidth << " or " << modwidth * numInsts
+                                   << " as part of a module instance array" << " requires "
+                                   << modwidth << " or " << modwidth * numInsts
                                    << " bits, but connection's "
                                    << nodep->exprp()->prettyTypeName() << " generates " << conwidth
                                    << " bits. (IEEE 1800-2023 23.3.3)");
@@ -5993,8 +5994,8 @@ class WidthVisitor final : public VNVisitor {
                 if (nodep->modVarp()->direction() == VDirection::REF) {
                     nodep->v3error("Ref connection "
                                    << nodep->modVarp()->prettyNameQ()
-                                   << " requires matching types;"
-                                   << " ref requires " << modDTypep->prettyDTypeNameQ()
+                                   << " requires matching types;" << " ref requires "
+                                   << modDTypep->prettyDTypeNameQ()
                                    << " data type but connection is "
                                    << conDTypep->prettyDTypeNameQ() << " data type.");
                 } else if (nodep->modVarp()->isTristate()) {
@@ -6023,8 +6024,7 @@ class WidthVisitor final : public VNVisitor {
                     nodep->v3error("Illegal " << nodep->prettyOperatorName() << ","
                                               << " mismatch between port which is"
                                               << (VN_CAST(modDTypep, IfaceRefDType) ? "" : " not")
-                                              << " an interface,"
-                                              << " and expression which is"
+                                              << " an interface," << " and expression which is"
                                               << (VN_CAST(conDTypep, IfaceRefDType) ? "" : " not")
                                               << " an interface.");
                 }
@@ -6045,12 +6045,11 @@ class WidthVisitor final : public VNVisitor {
                     UINFO(1, "    Related lo: " << modDTypep);
                     UINFO(1, "    Related hi: " << conDTypep);
                 } else if ((exprArrayp && !modArrayp) || (!exprArrayp && modArrayp)) {
-                    nodep->v3error("Illegal " << nodep->prettyOperatorName() << ","
-                                              << " mismatch between port which is"
-                                              << (modArrayp ? "" : " not") << " an array,"
-                                              << " and expression which is"
-                                              << (exprArrayp ? "" : " not")
-                                              << " an array. (IEEE 1800-2023 7.6)");
+                    nodep->v3error(
+                        "Illegal "
+                        << nodep->prettyOperatorName() << "," << " mismatch between port which is"
+                        << (modArrayp ? "" : " not") << " an array," << " and expression which is"
+                        << (exprArrayp ? "" : " not") << " an array. (IEEE 1800-2023 7.6)");
                     UINFO(1, "    Related lo: " << modDTypep);
                     UINFO(1, "    Related hi: " << conDTypep);
                 }
