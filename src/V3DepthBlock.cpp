@@ -57,7 +57,7 @@ class DepthBlockVisitor final : public VNVisitor {
         AstCCall* const callp = new AstCCall{nodep->fileline(), funcp};
         callp->dtypeSetVoid();
         if (VN_IS(m_modp, Class)) {
-            funcp->argTypes(EmitCBase::symClassVar());
+            funcp->argTypes(EmitCUtil::symClassVar());
             callp->argTypes("vlSymsp");
         }
         UINFO(6, "      New " << callp);

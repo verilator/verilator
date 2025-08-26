@@ -47,8 +47,8 @@ class EmitCHeader final : public EmitCConstInit {
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
                 decorateFirst(first, "// CELLS\n");
-                putns(cellp,
-                      prefixNameProtect(cellp->modp()) + "* " + cellp->nameProtect() + ";\n");
+                putns(cellp, EmitCUtil::prefixNameProtect(cellp->modp()) + "* "
+                                 + cellp->nameProtect() + ";\n");
             }
         }
     }
@@ -111,7 +111,7 @@ class EmitCHeader final : public EmitCConstInit {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isIO() || varp->isSignal() || varp->isClassMember() || varp->isTemp()
                     || varp->isGenVar()) {
-                    const bool anon = isAnonOk(varp);
+                    const bool anon = EmitCUtil::isAnonOk(varp);
                     if (anon != lastAnon) emitCurrentList();
                     lastAnon = anon;
                     varList.emplace_back(varp);
@@ -130,7 +130,7 @@ class EmitCHeader final : public EmitCConstInit {
             }
         } else {  // not class
             putsDecoration(nullptr, "\n// INTERNAL VARIABLES\n");
-            puts(symClassName() + "* const vlSymsp;\n");
+            puts(EmitCUtil::symClassName() + "* const vlSymsp;\n");
         }
     }
     void emitParamDecls(const AstNodeModule* modp) {
@@ -156,9 +156,10 @@ class EmitCHeader final : public EmitCConstInit {
     }
     void emitCtorDtorDecls(const AstNodeModule* modp) {
         if (!VN_IS(modp, Class)) {  // Classes use CFuncs with isConstructor/isDestructor
-            const string& name = prefixNameProtect(modp);
+            const string& name = EmitCUtil::prefixNameProtect(modp);
             putsDecoration(nullptr, "\n// CONSTRUCTORS\n");
-            putns(modp, name + "(" + symClassName() + "* symsp, const char* v__name);\n");
+            putns(modp,
+                  name + "(" + EmitCUtil::symClassName() + "* symsp, const char* v__name);\n");
             putns(modp, "~" + name + "();\n");
             putns(modp, "VL_UNCOPYABLE(" + name + ");\n");
         }
@@ -290,7 +291,7 @@ class EmitCHeader final : public EmitCConstInit {
     }
     void emitUnpackedUOrSBody(AstNodeUOrStructDType* sdtypep) {
         putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
-        puts(" " + EmitCBase::prefixNameProtect(sdtypep) + " {\n");
+        puts(" " + EmitCUtil::prefixNameProtect(sdtypep) + " {\n");
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false));
@@ -347,7 +348,7 @@ class EmitCHeader final : public EmitCConstInit {
             }
             puts(");\n}\n");
         }
-        putns(sdtypep, "\nbool operator==(const " + EmitCBase::prefixNameProtect(sdtypep)
+        putns(sdtypep, "\nbool operator==(const " + EmitCUtil::prefixNameProtect(sdtypep)
                            + "& rhs) const {\n");
         puts("return ");
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
@@ -357,10 +358,10 @@ class EmitCHeader final : public EmitCConstInit {
         }
         puts(";\n");
         puts("}\n");
-        putns(sdtypep, "bool operator!=(const " + EmitCBase::prefixNameProtect(sdtypep)
+        putns(sdtypep, "bool operator!=(const " + EmitCUtil::prefixNameProtect(sdtypep)
                            + "& rhs) const {\n");
         puts("return !(*this == rhs);\n}\n");
-        putns(sdtypep, "\nbool operator<(const " + EmitCBase::prefixNameProtect(sdtypep)
+        putns(sdtypep, "\nbool operator<(const " + EmitCUtil::prefixNameProtect(sdtypep)
                            + "& rhs) const {\n");
         puts("return ");
         puts("std::tie(");
@@ -379,7 +380,7 @@ class EmitCHeader final : public EmitCConstInit {
         puts("}\n");
         puts("};\n");
         puts("template <>\n");
-        putns(sdtypep, "struct VlIsCustomStruct<" + EmitCBase::prefixNameProtect(sdtypep)
+        putns(sdtypep, "struct VlIsCustomStruct<" + EmitCUtil::prefixNameProtect(sdtypep)
                            + "> : public std::true_type {};\n");
     }
 
@@ -457,7 +458,7 @@ class EmitCHeader final : public EmitCConstInit {
     }
     void emitPackedUOrSBody(AstNodeUOrStructDType* sdtypep) {
         putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
-        puts(" " + EmitCBase::prefixNameProtect(sdtypep) + " {\n");
+        puts(" " + EmitCUtil::prefixNameProtect(sdtypep) + " {\n");
 
         AstMemberDType* itemp;
         AstMemberDType* lastItemp;
@@ -553,13 +554,14 @@ class EmitCHeader final : public EmitCConstInit {
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
             for (const AstClassExtends* extp = classp->extendsp(); extp;
                  extp = VN_AS(extp->nextp(), ClassExtends)) {
-                putns(extp, "#include \"" + prefixNameProtect(extp->classp()->classOrPackagep())
+                putns(extp, "#include \""
+                                + EmitCUtil::prefixNameProtect(extp->classp()->classOrPackagep())
                                 + ".h\"\n");
             }
         }
 
         // Forward declarations required by this AstNodeModule
-        puts("\nclass " + symClassName() + ";\n");
+        puts("\nclass " + EmitCUtil::symClassName() + ";\n");
 
         // From `systemc_header
         emitTextSection(modp, VNType::atScHdr);
@@ -570,7 +572,7 @@ class EmitCHeader final : public EmitCConstInit {
         puts("\n");
         putns(modp, "class ");
         if (!VN_IS(modp, Class)) puts("alignas(VL_CACHE_LINE_BYTES) ");
-        puts(prefixNameProtect(modp));
+        puts(EmitCUtil::prefixNameProtect(modp));
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
             puts(" : ");
             if (classp->extendsp()) {
@@ -581,7 +583,7 @@ class EmitCHeader final : public EmitCConstInit {
                     // Use virtual only for interfaces for class inheritance
                     // (extends)
                     puts(extp->classp()->useVirtualPublic() ? "virtual public " : "public ");
-                    putns(extp, prefixNameProtect(extp->classp()));
+                    putns(extp, EmitCUtil::prefixNameProtect(extp->classp()));
                     needComma = true;
                 }
             } else {
@@ -618,10 +620,11 @@ class EmitCHeader final : public EmitCConstInit {
     }
 
     explicit EmitCHeader(const AstNodeModule* modp) {
-        UINFO(5, "  Emitting header for " << prefixNameProtect(modp));
+        UINFO(5, "  Emitting header for " << EmitCUtil::prefixNameProtect(modp));
 
         // Open output file
-        const string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(modp) + ".h";
+        const string filename
+            = v3Global.opt.makeDir() + "/" + EmitCUtil::prefixNameProtect(modp) + ".h";
         AstCFile* const cfilep = newCFile(filename, /* slow: */ false, /* source: */ false);
         V3OutCFile* const ofilep
             = v3Global.opt.systemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
@@ -630,7 +633,7 @@ class EmitCHeader final : public EmitCConstInit {
 
         ofp()->putsHeader();
         puts("// DESCRIPTION: Verilator output: Design internal header\n");
-        puts("// See " + topClassName() + ".h for the primary calling header\n");
+        puts("// See " + EmitCUtil::topClassName() + ".h for the primary calling header\n");
 
         ofp()->putsGuard();
 

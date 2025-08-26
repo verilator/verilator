@@ -461,6 +461,8 @@ class VIdProtectImp;
 class VIdProtect final {
 public:
     // METHODS
+    // Return 'in' only if not protecting (e.g. for emitting a comment)
+    static string ifNoProtect(const string& in) VL_MT_SAFE;
     // Rename to a new encoded string (unless earlier passthru'ed)
     static string protect(const string& old) VL_MT_SAFE { return protectIf(old, true); }
     static string protectIf(const string& old, bool doIt = true) VL_MT_SAFE;

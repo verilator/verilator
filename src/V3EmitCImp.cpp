@@ -35,23 +35,23 @@ class EmitCGatherDependencies final : VNVisitorConst {
     std::set<string> m_dependencies;  // Header names to be included in output C++ file
 
     // METHODS
-    void addSymsDependency() { m_dependencies.insert(EmitCBase::symClassName()); }
+    void addSymsDependency() { m_dependencies.insert(EmitCUtil::symClassName()); }
     void addModDependency(const AstNodeModule* modp) {
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            m_dependencies.insert(EmitCBase::prefixNameProtect(classp->classOrPackagep()));
+            m_dependencies.insert(EmitCUtil::prefixNameProtect(classp->classOrPackagep()));
         } else {
-            m_dependencies.insert(EmitCBase::prefixNameProtect(modp));
+            m_dependencies.insert(EmitCUtil::prefixNameProtect(modp));
         }
     }
     void addDTypeDependency(const AstNodeDType* nodep) {
         if (const AstClassRefDType* const dtypep = VN_CAST(nodep, ClassRefDType)) {
             m_dependencies.insert(
-                EmitCBase::prefixNameProtect(dtypep->classp()->classOrPackagep()));
+                EmitCUtil::prefixNameProtect(dtypep->classp()->classOrPackagep()));
         } else if (const AstNodeUOrStructDType* const dtypep
                    = VN_CAST(nodep, NodeUOrStructDType)) {
             if (!dtypep->packed()) {
                 UASSERT_OBJ(dtypep->classOrPackagep(), nodep, "Unlinked struct package");
-                m_dependencies.insert(EmitCBase::prefixNameProtect(dtypep->classOrPackagep()));
+                m_dependencies.insert(EmitCUtil::prefixNameProtect(dtypep->classOrPackagep()));
             }
         }
     }
@@ -177,7 +177,8 @@ class EmitCImp final : EmitCFunc {
             V3OutCFile* const ofilep = new V3OutCFile{filename};
             setOutputFile(ofilep, filep);
         } else {
-            string filename = v3Global.opt.makeDir() + "/" + prefixNameProtect(m_fileModp);
+            string filename
+                = v3Global.opt.makeDir() + "/" + EmitCUtil::prefixNameProtect(m_fileModp);
             if (!subFileName.empty()) {
                 filename += "__" + subFileName;
                 filename = m_uniqueNames.get(filename);
@@ -193,10 +194,10 @@ class EmitCImp final : EmitCFunc {
 
         putsHeader();
         puts("// DESCRIPTION: Verilator output: Design implementation internals\n");
-        puts("// See " + topClassName() + ".h for the primary calling header\n");
+        puts("// See " + EmitCUtil::topClassName() + ".h for the primary calling header\n");
 
         puts("\n");
-        puts("#include \"" + pchClassName() + ".h\"\n");
+        puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
         for (const string& name : headers) puts("#include \"" + name + ".h\"\n");
 
         emitTextSection(m_modp, VNType::atScImpHdr);
@@ -204,7 +205,7 @@ class EmitCImp final : EmitCFunc {
 
     void emitStaticVarDefns(const AstNodeModule* modp) {
         // Emit static variable definitions
-        const string modName = prefixNameProtect(modp);
+        const string modName = EmitCUtil::prefixNameProtect(modp);
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isStatic()) {
@@ -215,7 +216,7 @@ class EmitCImp final : EmitCFunc {
         }
     }
     void emitParamDefns(const AstNodeModule* modp) {
-        const string modName = prefixNameProtect(modp);
+        const string modName = EmitCUtil::prefixNameProtect(modp);
         bool first = true;
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
@@ -242,15 +243,15 @@ class EmitCImp final : EmitCFunc {
         if (!first) puts("\n");
     }
     void emitCtorImp(const AstNodeModule* modp) {
-        const string modName = prefixNameProtect(modp);
+        const string modName = EmitCUtil::prefixNameProtect(modp);
 
         puts("\n");
         m_lazyDecls.emit("void " + modName + "__", protect("_ctor_var_reset"),
                          "(" + modName + "* vlSelf);");
         puts("\n");
 
-        putns(modp,
-              modName + "::" + modName + "(" + symClassName() + "* symsp, const char* v__name)\n");
+        putns(modp, modName + "::" + modName + "(" + EmitCUtil::symClassName()
+                        + "* symsp, const char* v__name)\n");
         puts("    : VerilatedModule{v__name}\n");
 
         ofp()->indentInc();
@@ -290,7 +291,7 @@ class EmitCImp final : EmitCFunc {
         puts("}\n");
     }
     void emitConfigureImp(const AstNodeModule* modp) {
-        const string modName = prefixNameProtect(modp);
+        const string modName = EmitCUtil::prefixNameProtect(modp);
 
         if (v3Global.opt.coverage()) {
             puts("\n");
@@ -312,7 +313,7 @@ class EmitCImp final : EmitCFunc {
         // arguments.
         if (v3Global.opt.coverage()) {
             puts("\n// Coverage\n");
-            puts("void " + prefixNameProtect(m_modp) + "::__vlCoverInsert(");
+            puts("void " + EmitCUtil::prefixNameProtect(m_modp) + "::__vlCoverInsert(");
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
             puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
             puts("const char* hierp, const char* pagep, const char* commentp, const char* "
@@ -344,7 +345,7 @@ class EmitCImp final : EmitCFunc {
         }
         if (v3Global.opt.coverageToggle()) {
             puts("\n// Toggle Coverage\n");
-            puts("void " + prefixNameProtect(m_modp) + "::__vlCoverToggleInsert(");
+            puts("void " + EmitCUtil::prefixNameProtect(m_modp) + "::__vlCoverToggleInsert(");
             puts("int begin, int end, bool ranged, ");
             puts(v3Global.opt.threads() > 1 ? "std::atomic<uint32_t>" : "uint32_t");
             puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
@@ -390,7 +391,8 @@ class EmitCImp final : EmitCFunc {
     }
     void emitDestructorImp(const AstNodeModule* modp) {
         puts("\n");
-        putns(modp, prefixNameProtect(modp) + "::~" + prefixNameProtect(modp) + "() {\n");
+        putns(modp, EmitCUtil::prefixNameProtect(modp) + "::~" + EmitCUtil::prefixNameProtect(modp)
+                        + "() {\n");
         emitTextSection(modp, VNType::atScDtor);
         puts("}\n");
         splitSizeInc(10);
@@ -403,8 +405,8 @@ class EmitCImp final : EmitCFunc {
                 const string funcname = de ? "__Vdeserialize" : "__Vserialize";
                 const string op = de ? ">>" : "<<";
                 // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-                putns(modp, "void " + prefixNameProtect(modp) + "::" + protect(funcname) + "("
-                                + classname + "& os) {\n");
+                putns(modp, "void " + EmitCUtil::prefixNameProtect(modp) + "::" + protect(funcname)
+                                + "(" + classname + "& os) {\n");
                 // Place a computed checksum to ensure proper structure save/restore formatting
                 // OK if this hash includes some things we won't dump, since
                 // just looking for loading the wrong model
@@ -514,8 +516,8 @@ class EmitCImp final : EmitCFunc {
 
         if (hasCommonImp(modp) || hasCommonImp(classp)) {
             std::set<string> headers;
-            headers.insert(prefixNameProtect(m_fileModp));
-            headers.insert(symClassName());
+            headers.insert(EmitCUtil::prefixNameProtect(m_fileModp));
+            headers.insert(EmitCUtil::symClassName());
 
             openNextOutputFile(headers, "");
 
@@ -595,7 +597,7 @@ class EmitCImp final : EmitCFunc {
         : m_fileModp{modp}
         , m_slow{slow}
         , m_cfilesr{cfilesr} {
-        UINFO(5, "  Emitting implementation of " << prefixNameProtect(modp));
+        UINFO(5, "  Emitting implementation of " << EmitCUtil::prefixNameProtect(modp));
 
         m_modp = modp;
 
@@ -644,7 +646,7 @@ class EmitCTrace final : EmitCFunc {
         m_lazyDecls.reset();  // Need to emit new lazy declarations
 
         string filename
-            = (v3Global.opt.makeDir() + "/" + topClassName() + "_" + protect("_Trace"));
+            = (v3Global.opt.makeDir() + "/" + EmitCUtil::topClassName() + "_" + protect("_Trace"));
         filename = m_uniqueNames.get(filename);
         if (m_slow) filename += "__Slow";
         filename += ".cpp";
@@ -663,7 +665,7 @@ class EmitCTrace final : EmitCFunc {
 
         // Includes
         puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
-        puts("#include \"" + symClassName() + ".h\"\n");
+        puts("#include \"" + EmitCUtil::symClassName() + ".h\"\n");
         puts("\n");
     }
 
@@ -672,8 +674,8 @@ class EmitCTrace final : EmitCFunc {
     void openNextTypesFile() {
         UASSERT(!m_typesFp, "Declarations output file already open");
 
-        string filename
-            = (v3Global.opt.makeDir() + "/" + topClassName() + "_" + protect("_TraceDecls"));
+        string filename = (v3Global.opt.makeDir() + "/" + EmitCUtil::topClassName() + "_"
+                           + protect("_TraceDecls"));
         filename = m_uniqueNames.get(filename);
         filename += "__Slow.cpp";
 
@@ -694,7 +696,7 @@ class EmitCTrace final : EmitCFunc {
         typesFp()->puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
         typesFp()->puts("\n");
 
-        typesFp()->puts("\nvoid " + prefixNameProtect(m_modp) + "__"
+        typesFp()->puts("\nvoid " + EmitCUtil::prefixNameProtect(m_modp) + "__"
                         + protect("traceDeclTypesSub" + cvtToStr(m_traceTypeSubs++)) + "("
                         + v3Global.opt.traceClassBase() + "* tracep) {\n");
     }
@@ -709,15 +711,16 @@ class EmitCTrace final : EmitCFunc {
 
         // Forward declarations for subs in other files
         for (int i = 0; i < m_traceTypeSubs - 1; ++i) {
-            typesFp()->puts("void " + prefixNameProtect(m_modp) + "__"
+            typesFp()->puts("void " + EmitCUtil::prefixNameProtect(m_modp) + "__"
                             + protect("traceDeclTypesSub" + cvtToStr(i)) + "("
                             + v3Global.opt.traceClassBase() + "* tracep);\n");
         }
 
-        typesFp()->puts("\nvoid " + prefixNameProtect(m_modp) + "__" + protect("trace_decl_types")
-                        + "(" + v3Global.opt.traceClassBase() + "* tracep) {\n");
+        typesFp()->puts("\nvoid " + EmitCUtil::prefixNameProtect(m_modp) + "__"
+                        + protect("trace_decl_types") + "(" + v3Global.opt.traceClassBase()
+                        + "* tracep) {\n");
         for (int i = 0; i < m_traceTypeSubs; ++i) {
-            typesFp()->puts(prefixNameProtect(m_modp) + "__"
+            typesFp()->puts(EmitCUtil::prefixNameProtect(m_modp) + "__"
                             + protect("traceDeclTypesSub" + cvtToStr(i)) + "(tracep);\n");
         }
     }

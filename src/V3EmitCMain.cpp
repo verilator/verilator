@@ -41,7 +41,8 @@ public:
 private:
     // MAIN METHOD
     void emitInt() {
-        const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__main.cpp";
+        const string filename
+            = v3Global.opt.makeDir() + "/" + EmitCUtil::topClassName() + "__main.cpp";
         AstCFile* const cfilep = newCFile(filename, false /*slow*/, true /*source*/);
         V3OutCFile cf{filename};
         setOutputFile(&cf, cfilep);
@@ -59,7 +60,7 @@ private:
         puts("\n");
 
         puts("#include \"verilated.h\"\n");
-        puts("#include \"" + topClassName() + ".h\"\n");
+        puts("#include \"" + EmitCUtil::topClassName() + ".h\"\n");
 
         puts("\n//======================\n\n");
 
@@ -72,8 +73,8 @@ private:
         puts("\n");
 
         puts("// Construct the Verilated model, from Vtop.h generated from Verilating\n");
-        puts("const std::unique_ptr<" + topClassName() + "> topp{new " + topClassName()
-             + "{contextp.get(), \"" + topName + "\"}};\n");
+        puts("const std::unique_ptr<" + EmitCUtil::topClassName() + "> topp{new "
+             + EmitCUtil::topClassName() + "{contextp.get(), \"" + topName + "\"}};\n");
         puts("\n");
 
         puts("// Simulate until $finish\n");

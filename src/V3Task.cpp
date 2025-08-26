@@ -897,7 +897,7 @@ class TaskVisitor final : public VNVisitor {
 
         // Convert input/inout DPI arguments to Internal types
         string args;
-        args += ("(" + EmitCBase::symClassName()
+        args += ("(" + EmitCUtil::symClassName()
                  + "*)(__Vscopep->symsp())");  // Upcast w/o overhead
         AstNode* argnodesp = nullptr;
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -1284,7 +1284,7 @@ class TaskVisitor final : public VNVisitor {
 
         if (!nodep->dpiImport() && !nodep->taskPublic()) {
             // Need symbol table
-            cfuncp->argTypes(EmitCBase::symClassVar());
+            cfuncp->argTypes(EmitCUtil::symClassVar());
             if (cfuncp->name() == "new") {
                 const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);\n";
                 cfuncp->addInitsp(new AstCStmt{nodep->fileline(), stmt});

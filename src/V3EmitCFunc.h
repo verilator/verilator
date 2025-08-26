@@ -64,7 +64,7 @@ class EmitCLazyDecls final : public VNVisitorConst {
     void lazyDeclareConstPoolVar(AstVar* varp) {
         if (!declaredOnce(varp)) return;  // Already declared
         const string nameProtect
-            = m_emitter.topClassName() + "__ConstPool__" + varp->nameProtect();
+            = EmitCUtil::topClassName() + "__ConstPool__" + varp->nameProtect();
         m_emitter.putns(varp, "extern const ");
         m_emitter.puts(varp->dtypep()->cType(nameProtect, false, false));
         m_emitter.puts(";\n");
@@ -85,7 +85,7 @@ class EmitCLazyDecls final : public VNVisitorConst {
     void visit(AstVarRef* nodep) override {
         AstVar* const varp = nodep->varp();
         // Only constant pool symbols are lazy declared for now ...
-        if (EmitCBase::isConstPoolMod(EmitCParentModule::get(varp))) {
+        if (EmitCUtil::isConstPoolMod(EmitCParentModule::get(varp))) {
             lazyDeclareConstPoolVar(varp);
         }
     }
@@ -272,7 +272,7 @@ public:
             if (doneClasses.count(vbase)) continue;
             puts(doneClasses.empty() ? "" : "\n    , ");
             doneClasses.emplace(vbase);
-            puts(prefixNameProtect(vbase));
+            puts(EmitCUtil::EmitCUtil::prefixNameProtect(vbase));
             if (constructorNeedsProcess(vbase)) {
                 puts("(vlProcess, vlSymsp)");
             } else {
@@ -287,7 +287,7 @@ public:
             if (doneClasses.count(extp->classp())) continue;
             puts(doneClasses.empty() ? "" : "\n    , ");
             doneClasses.emplace(extp->classp());
-            puts(prefixNameProtect(extp->classp()));
+            puts(EmitCUtil::EmitCUtil::prefixNameProtect(extp->classp()));
             if (constructorNeedsProcess(extp->classp())) {
                 puts("(vlProcess, vlSymsp");
             } else {
@@ -349,7 +349,7 @@ public:
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
         for (int i = 0; i < m_modp->level(); ++i) puts("  ");
-        puts(prefixNameProtect(m_modp));
+        puts(EmitCUtil::prefixNameProtect(m_modp));
         puts(nodep->isLoose() ? "__" : "::");
         puts(nodep->nameProtect() + "\\n\"); );\n");
 
@@ -358,7 +358,7 @@ public:
             if (!nodep->isStatic()) {  // Standard prologue
                 m_useSelfForThis = true;
                 if (!VN_IS(m_modp, Class)) {
-                    puts(symClassAssign());  // Uses vlSelf
+                    puts(EmitCUtil::symClassAssign());  // Uses vlSelf
                 } else {
                     puts("(void)vlSelf;  // Prevent unused variable warning\n");
                 }
@@ -606,11 +606,11 @@ public:
             putns(nodep, funcp->name());
         } else if (funcp->isProperMethod() && funcp->isStatic()) {
             // Call static method via the containing class
-            putns(funcModp, prefixNameProtect(funcModp) + "::");
+            putns(funcModp, EmitCUtil::prefixNameProtect(funcModp) + "::");
             putns(nodep, funcp->nameProtect());
         } else if (nodep->superReference()) {
             // Calling superclass method
-            putns(funcModp, prefixNameProtect(funcModp) + "::");
+            putns(funcModp, EmitCUtil::prefixNameProtect(funcModp) + "::");
             putns(nodep, funcp->nameProtect());
         } else if (funcp->isLoose()) {
             // Calling loose method
@@ -642,7 +642,7 @@ public:
             return;
         }
         // assignment case;
-        putns(nodep, "VL_NEW(" + prefixNameProtect(nodep->dtypep()) + ", "
+        putns(nodep, "VL_NEW(" + EmitCUtil::prefixNameProtect(nodep->dtypep()) + ", "
                          + optionalProcArg(nodep->dtypep()) + "vlSymsp");
         putCommaIterateNext(nodep->argsp(), true);
         puts(")");
@@ -716,11 +716,11 @@ public:
         puts(cvtToStr(nodep->offset() + nodep->fileline()->firstColumn()));
         puts(", ");
         putsQuoted((!nodep->hier().empty() ? "." : "")
-                   + protectWordsIf(nodep->hier(), nodep->protect()));
+                   + VIdProtect::protectWordsIf(nodep->hier(), nodep->protect()));
         puts(", ");
-        putsQuoted(protectWordsIf(nodep->page(), nodep->protect()));
+        putsQuoted(VIdProtect::protectWordsIf(nodep->page(), nodep->protect()));
         puts(", ");
-        putsQuoted(protectWordsIf(nodep->comment(), nodep->protect()));
+        putsQuoted(VIdProtect::protectWordsIf(nodep->comment(), nodep->protect()));
         puts(", ");
         putsQuoted(nodep->linescov());
         puts(");\n");
@@ -750,11 +750,11 @@ public:
         puts(cvtToStr(nodep->fileline()->firstColumn()));
         puts(", ");
         putsQuoted((!nodep->hier().empty() ? "." : "")
-                   + protectWordsIf(nodep->hier(), nodep->protect()));
+                   + VIdProtect::protectWordsIf(nodep->hier(), nodep->protect()));
         puts(", ");
-        putsQuoted(protectWordsIf(nodep->page(), nodep->protect()));
+        putsQuoted(VIdProtect::protectWordsIf(nodep->page(), nodep->protect()));
         puts(", ");
-        putsQuoted(protectWordsIf(nodep->comment(), nodep->protect()));
+        putsQuoted(VIdProtect::protectWordsIf(nodep->comment(), nodep->protect()));
         puts(");\n");
     }
     void visit(AstCoverInc* nodep) override {
@@ -1254,8 +1254,8 @@ public:
         VL_RESTORER(m_inUC);
         m_inUC = true;
         putnbs(nodep, "");
-        putsDecoration(nodep,
-                       ifNoProtect("// $c statement at " + nodep->fileline()->ascii() + "\n"));
+        putsDecoration(nodep, VIdProtect::ifNoProtect("// $c statement at "
+                                                      + nodep->fileline()->ascii() + "\n"));
         iterateAndNextConstNull(nodep->exprsp());
         puts("\n");
     }
@@ -1264,8 +1264,8 @@ public:
         m_inUC = true;
         puts("\n");
         putnbs(nodep, "");
-        putsDecoration(nodep,
-                       ifNoProtect("// $c function at " + nodep->fileline()->ascii() + "\n"));
+        putsDecoration(nodep, VIdProtect::ifNoProtect("// $c function at "
+                                                      + nodep->fileline()->ascii() + "\n"));
         iterateAndNextConstNull(nodep->exprsp());
         puts("\n");
     }
@@ -1385,7 +1385,7 @@ public:
         puts(")");
     }
     void visit(AstNewCopy* nodep) override {
-        putns(nodep, "VL_NEW(" + prefixNameProtect(nodep->dtypep()));
+        putns(nodep, "VL_NEW(" + EmitCUtil::prefixNameProtect(nodep->dtypep()));
         puts(", *");  // i.e. make into a reference
         iterateAndNextConstNull(nodep->rhsp());
         puts(")");
@@ -1467,15 +1467,15 @@ public:
     void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();
         const AstNodeModule* const varModp = EmitCParentModule::get(varp);
-        if (isConstPoolMod(varModp)) {
+        if (EmitCUtil::isConstPoolMod(varModp)) {
             // Reference to constant pool variable
-            putns(nodep, topClassName() + "__ConstPool__");
+            putns(nodep, EmitCUtil::topClassName() + "__ConstPool__");
         } else if (varp->isStatic()) {
             // Access static variable via the containing class
-            putns(nodep, prefixNameProtect(varModp) + "::");
+            putns(nodep, EmitCUtil::prefixNameProtect(varModp) + "::");
         } else if (VN_IS(varModp, Class) && varModp != m_modp) {
             // Superclass member reference
-            putns(nodep, prefixNameProtect(varModp) + "::");
+            putns(nodep, EmitCUtil::prefixNameProtect(varModp) + "::");
         } else if (varp->isIfaceRef()) {
             putns(nodep, nodep->selfPointerProtect(m_useSelfForThis));
             return;

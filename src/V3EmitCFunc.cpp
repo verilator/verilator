@@ -488,6 +488,7 @@ void EmitCFunc::emitCvtWideArray(AstNode* nodep, AstNode* fromp) {
 
 void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string& assignString) {
     // Put out constant set to the specified variable, or given variable in a string
+    // TODO merge with V3EmitCConstInit::visit(AstConst)
     putns(nodep, "");
     if (nodep->num().isNull()) {
         putns(nodep, "VlNull{}");

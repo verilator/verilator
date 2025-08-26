@@ -73,7 +73,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     // VISITORS
     void visit(AstNetlist* nodep) override { iterateAndNextConstNull(nodep->modulesp()); }
     void visit(AstNodeModule* nodep) override {
-        putfs(nodep, nodep->verilogKwd() + " " + EmitCBase::prefixNameProtect(nodep) + ";\n");
+        putfs(nodep, nodep->verilogKwd() + " " + EmitCUtil::prefixNameProtect(nodep) + ";\n");
         iterateChildrenConst(nodep);
         putqs(nodep, "end" + nodep->verilogKwd() + "\n");
     }

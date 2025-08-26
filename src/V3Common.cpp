@@ -52,7 +52,7 @@ string V3Common::makeToStringCall(AstNodeDType* nodep, const std::string& lhs) {
 static void makeVlToString(AstClass* nodep) {
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
-    funcp->argTypes("const VlClassRef<" + EmitCBase::prefixNameProtect(nodep) + ">& obj");
+    funcp->argTypes("const VlClassRef<" + EmitCUtil::prefixNameProtect(nodep) + ">& obj");
     funcp->isMethod(false);
     funcp->isConst(false);
     funcp->isStatic(false);
@@ -66,7 +66,7 @@ static void makeVlToString(AstClass* nodep) {
 static void makeVlToString(AstIface* nodep) {
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
-    funcp->argTypes("const " + EmitCBase::prefixNameProtect(nodep) + "* obj");
+    funcp->argTypes("const " + EmitCUtil::prefixNameProtect(nodep) + "* obj");
     funcp->isMethod(false);
     funcp->isConst(false);
     funcp->isStatic(false);
@@ -81,7 +81,7 @@ static void makeVlToString(AstNodeUOrStructDType* nodep) {
     UASSERT_OBJ(modp, nodep, "Unlinked struct package");
     AstCFunc* const funcp
         = new AstCFunc{nodep->fileline(), "VL_TO_STRING", nullptr, "std::string"};
-    funcp->argTypes("const " + EmitCBase::prefixNameProtect(nodep) + "& obj");
+    funcp->argTypes("const " + EmitCUtil::prefixNameProtect(nodep) + "& obj");
     funcp->isMethod(false);
     funcp->isConst(false);
     funcp->isStatic(false);
@@ -145,7 +145,7 @@ static void makeToStringMiddle(AstClass* nodep) {
         string stmt = "out += ";
         if (!comma.empty()) stmt += "\", \"+ ";
         // comma = ", ";  // Nothing further so not needed
-        stmt += EmitCBase::prefixNameProtect(nodep->extendsp()->dtypep());
+        stmt += EmitCUtil::prefixNameProtect(nodep->extendsp()->dtypep());
         stmt += "::to_string_middle();\n";
         nodep->user1(true);  // So what we extend dumps this
         funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});

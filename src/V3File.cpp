@@ -1118,6 +1118,9 @@ private:
     }
 };
 
+string VIdProtect::ifNoProtect(const string& in) VL_MT_SAFE {
+    return v3Global.opt.protectIds() ? "" : in;
+}
 string VIdProtect::protectIf(const string& old, bool doIt) VL_MT_SAFE {
     return VIdProtectImp::singleton().protectIf(old, doIt);
 }

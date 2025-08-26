@@ -231,7 +231,7 @@ class VariableOrder final {
                                         : (sigbytes == 2)                                 ? 3
                                         : (sigbytes == 1)                                 ? 2
                                                                                           : 10;
-                m_attributes.emplace(varp, VarAttributes{stratum, EmitCBase::isAnonOk(varp)});
+                m_attributes.emplace(varp, VarAttributes{stratum, EmitCUtil::isAnonOk(varp)});
             }
         }
 

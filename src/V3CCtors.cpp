@@ -67,7 +67,7 @@ class V3CCtorsBuilder final {
         funcp->slow(!m_type.isClass());  // Only classes construct on fast path
         string preventUnusedStmt;
         if (m_type.isClass()) {
-            funcp->argTypes(EmitCBase::symClassVar());
+            funcp->argTypes(EmitCUtil::symClassVar());
             preventUnusedStmt = "(void)vlSymsp;  // Prevent unused variable warning\n";
         } else if (m_type.isCoverage()) {
             funcp->argTypes("bool first");
