@@ -339,6 +339,14 @@ public:
         for (auto it = begin(); it != end(); ++it) ++result;
         return result;
     }
+
+    // This is O(n)!
+    bool contains(const T_Element* elementp) const {
+        for (const T_Element& element : *this) {
+            if (&element == elementp) return true;
+        }
+        return false;
+    }
 };
 
 #endif  // Guard

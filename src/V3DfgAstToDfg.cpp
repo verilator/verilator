@@ -46,6 +46,7 @@ class AstToDfgVisitor final : public VNVisitor {
     // STATE
     DfgGraph& m_dfg;  // The graph being built
     V3DfgAstToDfgContext& m_ctx;  // The context for stats
+    AstScope* m_scopep = nullptr;  // The current scope, iff T_Scoped
 
     // METHODS
     static Variable* getTarget(const AstVarRef* refp) {
@@ -104,7 +105,7 @@ class AstToDfgVisitor final : public VNVisitor {
             if (VN_IS(vrefp, VarXRef)) return true;
             if (vrefp->access().isReadOnly()) return false;
             Variable* const varp = getTarget(VN_AS(vrefp, VarRef));
-            if (!DfgGraph::isSupported(varp)) return true;
+            if (!V3Dfg::isSupported(varp)) return true;
             if (!varp->user3SetOnce()) resp->emplace_back(getVarVertex(varp));
             return false;
         });
@@ -126,7 +127,7 @@ class AstToDfgVisitor final : public VNVisitor {
             if (VN_IS(vrefp, VarXRef)) return true;
             if (vrefp->access().isWriteOnly()) return false;
             Variable* const varp = getTarget(VN_AS(vrefp, VarRef));
-            if (!DfgGraph::isSupported(varp)) return true;
+            if (!V3Dfg::isSupported(varp)) return true;
             if (!varp->user3SetOnce()) resp->emplace_back(getVarVertex(varp));
             return false;
         });
@@ -152,7 +153,7 @@ class AstToDfgVisitor final : public VNVisitor {
         std::unique_ptr<std::vector<DfgVertexVar*>> resp{new std::vector<DfgVertexVar*>{}};
         resp->reserve(varps->size());
         for (Variable* const varp : *varps) {
-            if (!DfgGraph::isSupported(varp)) {
+            if (!V3Dfg::isSupported(varp)) {
                 ++m_ctx.m_nonRepVar;
                 return nullptr;
             }
@@ -188,7 +189,7 @@ class AstToDfgVisitor final : public VNVisitor {
         const std::unique_ptr<std::vector<DfgVertexVar*>> iVarpsp = gatherRead(nodep);
         if (!iVarpsp) return false;
         // Create the DfgLogic
-        DfgLogic* const logicp = new DfgLogic{m_dfg, nodep};
+        DfgLogic* const logicp = new DfgLogic{m_dfg, nodep, m_scopep};
         // Connect it up
         connect(*logicp, *iVarpsp, *oVarpsp);
         // Done
@@ -218,7 +219,7 @@ class AstToDfgVisitor final : public VNVisitor {
         const std::unique_ptr<std::vector<DfgVertexVar*>> iVarpsp = gatherLive(*cfgp);
         if (!iVarpsp) return false;
         // Create the DfgLogic
-        DfgLogic* const logicp = new DfgLogic{m_dfg, nodep, std::move(cfgp)};
+        DfgLogic* const logicp = new DfgLogic{m_dfg, nodep, m_scopep, std::move(cfgp)};
         // Connect it up
         connect(*logicp, *iVarpsp, *oVarpsp);
         // Done
@@ -241,7 +242,11 @@ class AstToDfgVisitor final : public VNVisitor {
         }
     }
     void visit(AstTopScope* nodep) override { iterate(nodep->scopep()); }
-    void visit(AstScope* nodep) override { iterateChildren(nodep); }
+    void visit(AstScope* nodep) override {
+        VL_RESTORER(m_scopep);
+        m_scopep = nodep;
+        iterateChildren(nodep);
+    }
     void visit(AstActive* nodep) override {
         if (nodep->hasCombo()) {
             iterateChildren(nodep);
@@ -268,6 +273,8 @@ class AstToDfgVisitor final : public VNVisitor {
         , m_ctx{ctx} {
         iterate(&root);
     }
+    VL_UNCOPYABLE(AstToDfgVisitor);
+    VL_UNMOVABLE(AstToDfgVisitor);
 
 public:
     static void apply(DfgGraph& dfg, RootType& root, V3DfgAstToDfgContext& ctx) {

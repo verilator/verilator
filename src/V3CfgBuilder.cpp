@@ -205,7 +205,7 @@ class CfgBuilder final : public VNVisitorConst {
             while (!unreachableps.empty()) {
                 V3GraphVertex* const vtxp = unreachableps.back();
                 unreachableps.pop_back();
-                for (V3GraphEdge& edge : vtxp->outEdges()) {
+                for (const V3GraphEdge& edge : vtxp->outEdges()) {
                     --m_cfgp->m_nEdges;
                     if (edge.top()->inSize1()) unreachableps.emplace_back(edge.top());
                 }

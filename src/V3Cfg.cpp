@@ -115,6 +115,7 @@ void CfgGraph::rpoBlocks() {
     // Assign edge IDs
     size_t edgeCount = 0;
     for (V3GraphVertex& v : vertices()) {
+        // cppcheck-suppress constVariableReference // cppcheck is wrong
         for (V3GraphEdge& e : v.outEdges()) static_cast<CfgEdge&>(e).m_id = edgeCount++;
     }
     UASSERT_OBJ(edgeCount == m_nEdges, m_enterp, "Inconsistent edge count");

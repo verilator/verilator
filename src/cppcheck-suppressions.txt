@@ -39,7 +39,9 @@ unusedPrivateFunction:src/V3Const.cpp
 // These are all inappropriate
 constVariablePointer:src/V3DfgPeephole.cpp
 constParameterPointer:src/V3DfgPeephole.cpp
-
+// Class in non-copyable
+noCopyConstructor:src/V3DfgDfgToAst.cpp
+noOperatorEq:src/V3DfgDfgToAst.cpp
 
 // TODO: these need fixing/signing off in source
 constParameterPointer:src/V3EmitCFunc.cpp
