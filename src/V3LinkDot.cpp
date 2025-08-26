@@ -533,22 +533,9 @@ public:
                 continue;
             } else if (ifacerefp->ifaceViaCellp()->dead()
                        || !existsNodeSym(ifacerefp->ifaceViaCellp())) {
-                // virtual interface never assigned any actual interface
-                ifacerefp->ifacep()->dead(false);
-                varp->dtypep(ifacerefp->dtypep());
-                // Create dummy cell to keep the virtual interface alive
-                // (later stages assume that non-dead interface has associated cell)
-                AstCell* const ifacecellp
-                    = new AstCell{ifacerefp->ifacep()->fileline(),
-                                  ifacerefp->ifacep()->fileline(),
-                                  ifacerefp->ifacep()->name() + "__02E" + varp->name(),
-                                  ifacerefp->ifaceName(),
-                                  nullptr,
-                                  nullptr,
-                                  nullptr};
-                ifacecellp->modp(ifacerefp->ifacep());
-                VSymEnt* const symp = new VSymEnt{&m_syms, ifacecellp};
-                ifacerefp->ifacep()->user1p(symp);
+                UASSERT_OBJ(false, ifacerefp->ifaceViaCellp(),
+                            "iface referenced by virtual iface is dead."
+                            "This is bad as dead interfaces have required linking steps skipped");
             }
             VSymEnt* const ifaceSymp = getNodeSym(ifacerefp->ifaceViaCellp());
             VSymEnt* ifOrPortSymp = ifaceSymp;
@@ -874,6 +861,14 @@ LinkDotState* LinkDotState::s_errorThisp = nullptr;
 //======================================================================
 
 class LinkDotFindVisitor final : public VNVisitor {
+    // NODE STATE
+    // Cleared on global
+    //  *::user1p()             -> See LinkDotState
+    //  *::user2p()             -> See LinkDotState
+    //  *::user3()              // bool. Node stored in m_virtualIfaces
+    //  *::user4()              -> See LinkDotState
+    const VNUser3InUse m_inuser3;
+
     // STATE
     LinkDotState* const m_statep;  // State to pass between visitors, including symbol table
     AstNodeModule* m_classOrPackagep = nullptr;  // Current package
@@ -891,6 +886,8 @@ class LinkDotFindVisitor final : public VNVisitor {
     int m_modBlockNum = 0;  // Begin block number in module, 0=none seen
     int m_modWithNum = 0;  // With block number, 0=none seen
     int m_modArgNum = 0;  // Arg block number for randomize(), 0=none seen
+    std::vector<AstIface*> m_virtIfaces;  // interfaces used as virtual,
+                                          // needed for handleUnvisitedVirtIfaces()
 
     // METHODS
     void makeImplicitNew(AstClass* nodep) {
@@ -986,6 +983,13 @@ class LinkDotFindVisitor final : public VNVisitor {
     }
     void visit(AstTypeTable*) override {}  // FindVisitor::
     void visit(AstConstPool*) override {}  // FindVisitor::
+    void visit(AstIfaceRefDType* nodep) override {
+        if (m_statep->forPrimary() && nodep->isVirtual() && nodep->ifacep()
+            && !nodep->ifacep()->user3()) {
+            m_virtIfaces.push_back(nodep->ifacep());
+            nodep->ifacep()->user3(true);
+        }
+    }
     void visit(AstNodeModule* nodep) override {  // FindVisitor::
         // Called on top module from Netlist, other modules from the cell creating them,
         // and packages
@@ -1821,12 +1825,38 @@ class LinkDotFindVisitor final : public VNVisitor {
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }  // FindVisitor::
 
+    void handleUnvisitedVirtIfaces() {
+        AstNodeModule* const top = v3Global.rootp()->modulesp();
+        m_curSymp = m_statep->getNodeSym(top);
+
+        for (AstIface* ifacep : m_virtIfaces) {
+            if (!ifacep->user4()) {  // virtual interface never assigned any actual interface
+
+                // Create dummy cell to keep the virtual interface alive
+                // (later stages assume that non-dead interface has associated cell)
+                AstCell* const ifacecellp = new AstCell{ifacep->fileline(),
+                                                        ifacep->fileline(),
+                                                        "__VdummyInstOf" + ifacep->name(),
+                                                        ifacep->name(),
+                                                        nullptr,
+                                                        nullptr,
+                                                        nullptr};
+                ifacecellp->modp(ifacep);
+                top->addStmtsp(ifacecellp);
+
+                iterate(ifacecellp);
+            }
+        }
+    }
+
 public:
     // CONSTRUCTORS
     LinkDotFindVisitor(AstNetlist* rootp, LinkDotState* statep)
         : m_statep{statep} {
         UINFO(4, __FUNCTION__ << ": ");
         iterate(rootp);
+
+        if (!m_virtIfaces.empty()) { handleUnvisitedVirtIfaces(); }
     }
     ~LinkDotFindVisitor() override = default;
 };
@@ -2877,7 +2907,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstTypeTable*) override {}
     void visit(AstConstPool*) override {}
     void visit(AstNodeModule* nodep) override {
-        if (nodep->dead() || !m_statep->existsNodeSym(nodep)) return;
+        if (nodep->dead()) return;
         LINKDOT_VISIT_START();
         UINFO(8, indent() << "visit " << nodep);
         VL_RESTORER(m_genericIfaceModule);
