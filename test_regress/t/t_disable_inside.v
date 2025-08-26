@@ -10,13 +10,11 @@ module t (  /*AUTOARG*/);
     fork : fork_blk
       begin
         x = 1;
-        #2;
+        disable fork_blk;
         x = 2;
       end
     join_none
     #1;
-    disable fork_blk;
-    #2;
     if (x != 1) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
