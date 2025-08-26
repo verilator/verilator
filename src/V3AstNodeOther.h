@@ -2531,7 +2531,8 @@ public:
     void classp(AstClass* classp) { m_classp = classp; }
 };
 class AstIface final : public AstNodeModule {
-    // A module declaration
+    // An interface declaration
+    bool m_hasVirtualRef = false;  // There exists a virtual interface reference for this interface
 public:
     AstIface(FileLine* fl, const string& name, const string& libname)
         : ASTGEN_SUPER_Iface(fl, name, libname) {}
@@ -2540,6 +2541,8 @@ public:
     // get false warnings if we enable this
     string verilogKwd() const override { return "interface"; }
     bool timescaleMatters() const override { return false; }
+    bool hasVirtualRef() const { return m_hasVirtualRef; }
+    void setHasVirtualRef() { m_hasVirtualRef = true; }
 };
 class AstModule final : public AstNodeModule {
     // A module declaration

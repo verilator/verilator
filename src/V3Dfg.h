@@ -798,10 +798,16 @@ public:
 
     // Returns true if variable can be represented in the graph
     static bool isSupported(const AstVarScope* vscp) {
-        // If the variable is not in a regular module, then we do not support it.
-        // This is especially needed for variabels in interfaces which might be
-        // referenced via virtual intefaces, which cannot be resovled statically.
-        if (!VN_IS(vscp->scopep()->modp(), Module)) return false;
+        AstNodeModule* const modp = vscp->scopep()->modp();
+        if (VN_IS(modp, Module)) {
+            // Regular module supported
+        } else if (AstIface* const ifacep = VN_CAST(modp, Iface)) {
+            // Interfaces supported if there are no virtual interfaces for
+            // them, otherwise they cannot be resovled statically.
+            if (ifacep->hasVirtualRef()) return false;
+        } else {
+            return false;  // Anything else (package, class, etc) not supported
+        }
         // Check the AstVar
         return isSupported(vscp->varp());
     }
