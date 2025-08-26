@@ -187,7 +187,11 @@ class LinkJumpVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         const std::string targetName = nodep->targetp()->name();
         if (m_ftaskp) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from task / function");
+            if (!m_ftaskp->exists([targetp = nodep->targetp()](const AstNodeBlock* blockp)
+                                      -> bool { return blockp == targetp; })) {
+                // Disabling a fork, which is within the same task, is not a problem
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from task / function");
+            }
         }
         AstPackage* const topPkgp = v3Global.rootp()->dollarUnitPkgAddp();
         AstClass* const processClassp
