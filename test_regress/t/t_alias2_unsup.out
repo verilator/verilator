@@ -1,6 +1,6 @@
-%Error-UNSUPPORTED: t/t_alias2_unsup.v:39:21: Unsupported: Aliased expression is not a simple variable reference
+%Error-UNSUPPORTED: t/t_alias2_unsup.v:39:10: Unsupported: Aliased expression referencing port
                                             : ... note: In instance 't.testi_i'
    39 |    alias b = {a[3:0],a[7:4]};
-      |                     ^
+      |          ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to
