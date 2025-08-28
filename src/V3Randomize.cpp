@@ -1373,6 +1373,7 @@ class RandomizeVisitor final : public VNVisitor {
             AstVar* const stdgenp
                 = new AstVar{modp->fileline(), VVarType::MEMBER, "stdrand",
                              modp->findBasicDType(VBasicDTypeKwd::RANDOM_STDGENERATOR)};
+            stdgenp->fileline()->warnOff(V3ErrorCode::IMPURE, true);
             modp->addStmtsp(stdgenp);
             m_stdMap.emplace(modp, stdgenp);
             return stdgenp;
@@ -2283,6 +2284,8 @@ class RandomizeVisitor final : public VNVisitor {
         if (nodep->name() != "randomize") return;
 
         if (nodep->classOrPackagep() && nodep->classOrPackagep()->name() == "std") {
+            // Handle std::randomize; create wrapper function that calls basicStdRandomization on
+            // each varref argument, then transform nodep to call that wrapper
             AstVar* const stdrand = createStdRandomGenerator(m_modp);
             AstFunc* const randomizeFuncp = V3Randomize::newRandomizeStdFunc(
                 m_memberMap, m_modp, m_inlineUniqueStdName.get(nodep));
@@ -2291,19 +2294,32 @@ class RandomizeVisitor final : public VNVisitor {
                               new AstVarRef{nodep->fileline(), VN_AS(randomizeFuncp->fvarp(), Var),
                                             VAccess::WRITE},
                               new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 32, 1}});
+            int argn = 0;
             for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 if (!argp) continue;
                 AstNodeExpr* exprp = argp->exprp();
+
                 AstCMethodHard* const basicMethodp = new AstCMethodHard{
                     nodep->fileline(),
                     new AstVarRef{nodep->fileline(), stdrand, VAccess::READWRITE},
                     "basicStdRandomization"};
+                AstVar* const refvarp
+                    = new AstVar{exprp->fileline(), VVarType::MEMBER,
+                                 "__Varg"s + std::to_string(++argn), exprp->dtypep()};
+                refvarp->direction(VDirection::REF);
+                refvarp->funcLocal(true);
+                refvarp->lifetime(VLifetime::AUTOMATIC);
+                randomizeFuncp->addStmtsp(refvarp);
+
                 const size_t width = exprp->width();
-                basicMethodp->addPinsp(exprp->unlinkFrBack());
+                basicMethodp->addPinsp(
+                    new AstVarRef{exprp->fileline(), refvarp, VAccess::READWRITE});
+
                 basicMethodp->addPinsp(
                     new AstConst{nodep->fileline(), AstConst::Unsized64{}, width});
                 basicMethodp->dtypeSetBit();
+
                 randomizeFuncp->addStmtsp(new AstAssign{
                     nodep->fileline(),
                     new AstVarRef{nodep->fileline(), VN_AS(randomizeFuncp->fvarp(), Var),
@@ -2318,7 +2334,8 @@ class RandomizeVisitor final : public VNVisitor {
             nodep->taskp(randomizeFuncp);
             nodep->dtypeFrom(randomizeFuncp->dtypep());
             if (VN_IS(m_modp, Class)) nodep->classOrPackagep(m_modp);
-            if (nodep->pinsp()) pushDeletep(nodep->pinsp()->unlinkFrBackWithNext());
+            UINFOTREE(9, nodep, "", "std::rnd-call");
+            UINFOTREE(9, randomizeFuncp, "", "std::rnd-func");
             return;
         }
         handleRandomizeArgs(nodep);
