@@ -11,16 +11,24 @@ module t (  /*AUTOARG*/
   input clk;
 
   wire [15:0] a, b, c;
+  wire [1:0] x, y;
 
   integer cyc = 0;
 
   alias a = b = c;
-
   assign a = 16'habcd;
+
+  alias x = y;
+  assign x[0] = 0;
+  assign y[1] = 1;
+
   initial begin
     if (a != 16'habcd) $stop;
     if (b != 16'habcd) $stop;
     if (c != 16'habcd) $stop;
+
+    if (x != 2) $stop;
+    if (y != 2) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
 
