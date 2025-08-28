@@ -28,9 +28,23 @@ class AliasFindVisitor final : public VNVisitor {
     // NODE STATE
     //  AstVar::user1p()        -> AstVar*.  Variable with which the node to be replaced
 
+public:
+    static AstVar* getAliasVarp(AstVar* varp) {
+        if (varp->user1p() && varp != varp->user1p()) {
+            AstVar* const aliasp = getAliasVarp(VN_AS(varp->user1p(), Var));
+            varp->user1p(aliasp);
+            return aliasp;
+        } else {
+            return varp;
+        }
+    }
+
+private:
+    static void setAliasVar(AstVar* varp, AstVar* aliasp) { getAliasVarp(varp)->user1p(aliasp); }
+
     // VISITORS
     void visit(AstAlias* nodep) override {
-        AstVar* targetVarp = nullptr;
+        AstVar* aliasVarp = nullptr;
         for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
             if (AstVarRef* const refp = VN_CAST(itemp, VarRef)) {
                 AstVar* const varp = refp->varp();
@@ -39,10 +53,10 @@ class AliasFindVisitor final : public VNVisitor {
                                   "Unsupported: Aliased expression referencing port");
                     break;
                 }
-                if (!targetVarp) {
-                    targetVarp = varp;
+                if (!aliasVarp) {
+                    aliasVarp = getAliasVarp(varp);
                 } else {
-                    varp->user1p(targetVarp);
+                    setAliasVar(varp, aliasVarp);
                 }
             } else {
                 itemp->v3warn(
@@ -81,7 +95,8 @@ class AliasResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstVar* nodep) override {
-        if (AstVar* const aliasp = VN_CAST(nodep->user1p(), Var)) {
+        AstVar* const aliasp = AliasFindVisitor::getAliasVarp(nodep);
+        if (nodep != aliasp) {
             AstAssignW* const assignp = new AstAssignW{
                 nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
                 new AstVarRef{nodep->fileline(), aliasp, VAccess::READ}};
