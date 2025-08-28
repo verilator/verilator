@@ -990,7 +990,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             m_virtIfaces.push_back(nodep->ifacep());
             nodep->ifacep()->user3(true);
         }
-    iterateChildren(nodep);
+        iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {  // FindVisitor::
         // Called on top module from Netlist, other modules from the cell creating them,
