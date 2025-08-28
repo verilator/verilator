@@ -11,10 +11,13 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(
-    verilator_flags2=["--stats", "--build", "--gate-stmts", "10000", "--expand-limit", "128"])
+test.top_filename = "t/t_balance_cats.v"
+
+test.compile(verilator_flags2=[
+    "--stats", "--build", "--gate-stmts", "10000", "--expand-limit", "128", "--sc"
+])
 
 test.file_grep(test.stats, r'Optimizations, FuncOpt concat trees balanced\s+(\d+)', 1)
-test.file_grep(test.stats, r'Optimizations, FuncOpt concat splits\s+(\d+)', 62)
+test.file_grep(test.stats, r'Optimizations, FuncOpt concat splits\s+(\d+)', 0)
 
 test.passes()
