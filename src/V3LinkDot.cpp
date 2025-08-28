@@ -534,8 +534,8 @@ public:
             } else if (ifacerefp->ifaceViaCellp()->dead()
                        || !existsNodeSym(ifacerefp->ifaceViaCellp())) {
                 UASSERT_OBJ(false, ifacerefp->ifaceViaCellp(),
-                            "iface referenced by virtual iface is dead."
-                            "This is bad as dead interfaces have required linking steps skipped");
+                            "Interface referenced by virtual iface is dead. "
+                            "Dead interfaces have required linking steps skipped");
             }
             VSymEnt* const ifaceSymp = getNodeSym(ifacerefp->ifaceViaCellp());
             VSymEnt* ifOrPortSymp = ifaceSymp;
@@ -984,11 +984,13 @@ class LinkDotFindVisitor final : public VNVisitor {
     void visit(AstTypeTable*) override {}  // FindVisitor::
     void visit(AstConstPool*) override {}  // FindVisitor::
     void visit(AstIfaceRefDType* nodep) override {
+        iterateChildren(nodep);
         if (m_statep->forPrimary() && nodep->isVirtual() && nodep->ifacep()
             && !nodep->ifacep()->user3()) {
             m_virtIfaces.push_back(nodep->ifacep());
             nodep->ifacep()->user3(true);
         }
+    iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {  // FindVisitor::
         // Called on top module from Netlist, other modules from the cell creating them,
@@ -1828,10 +1830,8 @@ class LinkDotFindVisitor final : public VNVisitor {
     void handleUnvisitedVirtIfaces() {
         AstNodeModule* const top = v3Global.rootp()->modulesp();
         m_curSymp = m_statep->getNodeSym(top);
-
         for (AstIface* ifacep : m_virtIfaces) {
             if (!ifacep->user4()) {  // virtual interface never assigned any actual interface
-
                 // Create dummy cell to keep the virtual interface alive
                 // (later stages assume that non-dead interface has associated cell)
                 AstCell* const ifacecellp = new AstCell{ifacep->fileline(),
@@ -1856,7 +1856,7 @@ public:
         UINFO(4, __FUNCTION__ << ": ");
         iterate(rootp);
 
-        if (!m_virtIfaces.empty()) { handleUnvisitedVirtIfaces(); }
+        if (!m_virtIfaces.empty()) handleUnvisitedVirtIfaces();
     }
     ~LinkDotFindVisitor() override = default;
 };
