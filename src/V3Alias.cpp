@@ -30,6 +30,9 @@ class AliasFindVisitor final : public VNVisitor {
 
     // METHODS
 public:
+    // getAliasVarp and setAliasVar implement disjoint-set data structure.
+    // This algorithm is needed for the case when multiple alias statements
+    // reference partially the same variables.
     static AstVar* getAliasVarp(AstVar* const varp) {
         if (varp->user1p() && varp != varp->user1p()) {
             AstVar* const aliasp = getAliasVarp(VN_AS(varp->user1p(), Var));
