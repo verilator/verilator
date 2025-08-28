@@ -28,8 +28,9 @@ class AliasFindVisitor final : public VNVisitor {
     // NODE STATE
     //  AstVar::user1p()        -> AstVar*.  Variable with which the node to be replaced
 
+    // METHODS
 public:
-    static AstVar* getAliasVarp(AstVar* varp) {
+    static AstVar* getAliasVarp(AstVar* const varp) {
         if (varp->user1p() && varp != varp->user1p()) {
             AstVar* const aliasp = getAliasVarp(VN_AS(varp->user1p(), Var));
             varp->user1p(aliasp);
@@ -40,7 +41,9 @@ public:
     }
 
 private:
-    static void setAliasVar(AstVar* varp, AstVar* aliasp) { getAliasVarp(varp)->user1p(aliasp); }
+    static void setAliasVar(AstVar* const varp, AstVar* const aliasp) {
+        getAliasVarp(varp)->user1p(aliasp);
+    }
 
     // VISITORS
     void visit(AstAlias* nodep) override {
