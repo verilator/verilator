@@ -6085,18 +6085,25 @@ class WidthVisitor final : public VNVisitor {
             userIterateAndNext(nodep->exprp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             nodep->dtypeFrom(nodep->rangep());
             // Very much like like an pin
-            const AstNodeDType* const conDTypep = nodep->exprp()->dtypep();
+            const AstNodeDType* const pinDTypep = nodep->exprp()->dtypep();
             const int numInsts = nodep->rangep()->elementsConst();
             const int modwidth = numInsts;
-            const int conwidth = conDTypep->width();
-            if (conwidth == 1 && modwidth > 1) {  // Multiple connections
-                AstNodeDType* const subDTypep = nodep->findLogicDType(1, 1, conDTypep->numeric());
+            const int pinwidth = pinDTypep->width();
+            if (pinwidth == 1 && modwidth > 1) {  // Multiple connections
+                AstNodeDType* const subDTypep = nodep->findLogicDType(1, 1, pinDTypep->numeric());
                 userIterateAndNext(nodep->exprp(), WidthVP{subDTypep, FINAL}.p());
                 AstNode* const newp
                     = new AstReplicate{nodep->fileline(), nodep->exprp()->unlinkFrBack(),
                                        static_cast<uint32_t>(numInsts)};
                 nodep->replaceWith(newp);
             } else {
+                if (pinwidth != modwidth) {  // && is not generic interconnect (when supported)
+                    nodep->exprp()->v3error("Gate primitive connection expects "
+                                            << modwidth << " bits "
+                                            << ((modwidth != 1) ? "or 1 bit "s : ""s)
+                                            << "on the gate port, but the connection generates "
+                                            << pinwidth << " bits (IEEE 1800-2023 28.3.6)");
+                }
                 // Eliminating so pass down all of vup
                 userIterateAndNext(nodep->exprp(), m_vup);
                 nodep->replaceWith(nodep->exprp()->unlinkFrBack());
