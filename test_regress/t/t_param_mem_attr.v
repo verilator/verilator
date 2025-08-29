@@ -24,7 +24,7 @@ module t (/*AUTOARG*/
    wire [71:0] ctrl;
    wire [7:0] cl;                       // this line is added
 
-   memory #(.words(72)) i_memory (.clk (clk));
+   memory #(.WORDS(72)) i_memory (.clk (clk));
 
    assign ctrl = i_memory.mem[0];
    assign cl   = i_memory.mem[0][7:0];  // and this line
@@ -35,8 +35,8 @@ endmodule
 module memory (clk);
    input clk;
 
-   parameter words = 16384, bits = 72;
+   parameter WORDS = 16384, BITS = 72;
 
-   reg [bits-1 :0] mem[words-1 : 0];
+   reg [BITS-1 :0] mem[WORDS-1 : 0];
 
 endmodule

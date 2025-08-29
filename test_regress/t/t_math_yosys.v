@@ -59,16 +59,16 @@ module demo_001(y1, y2, y3, y4);
    output [7:0] y1, y2, y3, y4;
 
    // verilator lint_off REALCVT
-   localparam [7:0] p1 = 123.45;
-   localparam real p2 = 123.45;
-   localparam real p3 = 123;
-   localparam p4 = 123.45;
+   localparam [7:0] P1 = 123.45;
+   localparam real P2 = 123.45;
+   localparam real P3 = 123;
+   localparam P4 = 123.45;
 
    // verilator lint_off WIDTH
-   assign y1 = p1 + 0.2;
-   assign y2 = p2 + 0.2;
-   assign y3 = p3 + 0.2;
-   assign y4 = p4 + 0.2;
+   assign y1 = P1 + 0.2;
+   assign y2 = P2 + 0.2;
+   assign y3 = P3 + 0.2;
+   assign y4 = P4 + 0.2;
    // verilator lint_on WIDTH
 endmodule
 

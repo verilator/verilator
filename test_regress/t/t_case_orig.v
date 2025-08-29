@@ -24,7 +24,7 @@ module t (/*AUTOARG*/
    wire   sigone2 = 1'b1;
    reg    ok;
 
-   parameter [1:0] twounkn = 2'b?;  // This gets extended to 2'b??
+   parameter [1:0] TWOUNKN = 2'b?;  // This gets extended to 2'b??
 
    // Large case statements should be well optimizable.
    reg [2:0]       anot;
@@ -64,13 +64,13 @@ module t (/*AUTOARG*/
          endcase
          casez (a)
            default: $stop;
-           {1'b0, twounkn}: $stop;
-           {1'b1, twounkn}: ;
+           {1'b0, TWOUNKN}: $stop;
+           {1'b1, TWOUNKN}: ;
          endcase
          casez (b)
            default: $stop;
-           {1'b0, twounkn}: $stop;
-           {1'b1, twounkn}: ;
+           {1'b0, TWOUNKN}: $stop;
+           {1'b1, TWOUNKN}: ;
 //         {1'b0, 2'b??}: $stop;
 //         {1'b1, 2'b??}: ;
          endcase

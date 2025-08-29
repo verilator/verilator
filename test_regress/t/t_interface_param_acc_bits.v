@@ -10,7 +10,7 @@ interface simple_bus #(PARAMETER = 0);
       logic [3:0]  mask;
    } payload_t;
 
-   parameter [6:0] dummy = 22;
+   parameter [6:0] DUMMY = 22;
    payload_t payload;
    logic [1:0] x;
 endinterface
@@ -18,7 +18,7 @@ endinterface
 module t ();
    simple_bus sb_intf();
    localparam LP = $bits(sb_intf.payload.data);
-   simple_bus #(.PARAMETER($bits(sb_intf.dummy))) simple();
+   simple_bus #(.PARAMETER($bits(sb_intf.DUMMY))) simple();
    simple_bus #(.PARAMETER($bits(sb_intf.x))) simple2();
    initial begin
       if (LP != 32) $stop;

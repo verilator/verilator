@@ -51,9 +51,9 @@ module t (/*autoarg*/
    first_level first_level(.in(cyc[0]), .out(wreal_implicit_net));
    // verilator lint_on IMPLICIT
 
-   parameter real lsb = 1;
+   parameter real LSB = 1;
    // verilator lint_off WIDTH
-   assign  aout = $itor(in) * lsb;
+   assign  aout = $itor(in) * LSB;
    // verilator lint_on WIDTH
 
    always @ (posedge clk) begin

@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface inf;
-  localparam lparam = 12;
+  localparam LPARAM = 12;
 
   int v;
   modport mp (
@@ -16,7 +16,7 @@ endinterface
 module GenericModule (interface.mp a);
   initial begin
     #1;
-    if (a.lparam != 12) $stop;
+    if (a.LPARAM != 12) $stop;
     if (a.v != 7) $stop;
   end
 endmodule

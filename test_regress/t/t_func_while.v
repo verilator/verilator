@@ -4,10 +4,10 @@
 // without warranty, 2018 by Julien Margetts.
 // SPDX-License-Identifier: CC0-1.0
 
-module t #(parameter sz = 4096)
+module t #(parameter SZ = 4096)
    (
     input wire                     clk,
-    output reg [tdw(sz)-1:0] data
+    output reg [tdw(SZ)-1:0] data
     );
 
    // bug1330
@@ -19,14 +19,14 @@ module t #(parameter sz = 4096)
         tmp = tmp>>1;
    endfunction
 
-   function integer tdw(input integer sz);
-      tdw = clog2(sz);
+   function integer tdw(input integer SZ);
+      tdw = clog2(SZ);
    endfunction
 
    integer b;
 
    always @(posedge clk)
-     for (b=0; b<tdw(sz); b=b+1)
+     for (b=0; b<tdw(SZ); b=b+1)
        if ((data[b] === 1'bx))
          $display("WARNING: %1t Writing X's to tag RAM [%m]", $time);
 

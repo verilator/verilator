@@ -1,17 +1,17 @@
 t (vpiModule) t  vpiDefName=t
     vpiReg:
+    DO_GENERATE (vpiParameter) t.DO_GENERATE  vpiConstType=vpiDecConst
     LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND (vpiReg) t.LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND 
+    LONG_INT (vpiParameter) t.LONG_INT  vpiConstType=vpiDecConst
     a (vpiReg) TOP.a 
     bus1 (vpiReg) t.bus1 
     clk (vpiReg) TOP.clk 
     count (vpiReg) t.count 
-    do_generate (vpiParameter) t.do_generate  vpiConstType=vpiDecConst
     fourthreetwoone (vpiRegArray) t.fourthreetwoone 
         vpiReg:
         fourthreetwoone (vpiReg) t.fourthreetwoone[3] 
         fourthreetwoone (vpiReg) t.fourthreetwoone[4] 
     half_count (vpiReg) t.half_count 
-    long_int (vpiParameter) t.long_int  vpiConstType=vpiDecConst
     onebit (vpiReg) t.onebit 
     quads (vpiRegArray) t.quads 
         vpiReg:
@@ -28,8 +28,8 @@ t (vpiModule) t  vpiDefName=t
     twoone (vpiReg) t.twoone 
     x (vpiReg) TOP.x 
     vpiParameter:
-    do_generate (vpiParameter) t.do_generate  vpiConstType=vpiDecConst
-    long_int (vpiParameter) t.long_int  vpiConstType=vpiDecConst
+    DO_GENERATE (vpiParameter) t.DO_GENERATE  vpiConstType=vpiDecConst
+    LONG_INT (vpiParameter) t.LONG_INT  vpiConstType=vpiDecConst
     vpiInternalScope:
     arr[1] (vpiGenScope) t.arr[1] 
         vpiReg:

@@ -20,21 +20,21 @@ module t (/*AUTOARG*/
    wire         Unsigned = crc[48];
    reg          rst;
 
-   parameter wl = 16;
+   parameter WL = 16;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [wl-1:0]        Quotient;               // From test of Test.v
-   wire [wl-1:0]        Remainder;              // From test of Test.v
+   wire [WL-1:0]        Quotient;               // From test of Test.v
+   wire [WL-1:0]        Remainder;              // From test of Test.v
    // End of automatics
 
    Test test (/*AUTOINST*/
               // Outputs
-              .Quotient                 (Quotient[wl-1:0]),
-              .Remainder                (Remainder[wl-1:0]),
+              .Quotient                 (Quotient[WL-1:0]),
+              .Remainder                (Remainder[WL-1:0]),
               // Inputs
-              .Operand1                 (Operand1[wl*2-1:0]),
-              .Operand2                 (Operand2[wl-1:0]),
+              .Operand1                 (Operand1[WL*2-1:0]),
+              .Operand2                 (Operand2[WL-1:0]),
               .clk                      (clk),
               .rst                      (rst),
               .Unsigned                 (Unsigned));
@@ -79,17 +79,17 @@ endmodule
 
 module Test(clk, rst, Operand1, Operand2, Unsigned, Quotient, Remainder);
 
-   parameter wl = 16;
+   parameter WL = 16;
 
-   input [wl*2-1:0] Operand1;
-   input [wl-1:0] Operand2;
+   input [WL*2-1:0] Operand1;
+   input [WL-1:0] Operand2;
    input clk, rst, Unsigned;
-   output [wl-1:0] Quotient, Remainder;
+   output [WL-1:0] Quotient, Remainder;
 
    reg Cy, Overflow, Sign1, Sign2, Zero, Negative;
-   reg [wl-1:0] ah,al,Quotient, Remainder;
+   reg [WL-1:0] ah,al,Quotient, Remainder;
    reg [3:0]    Iteration;
-   reg [wl-1:0] sub_quot,op;
+   reg [WL-1:0] sub_quot,op;
    reg          ah_ext;
 
    reg [1:0]    a,b,c,d,e;
@@ -118,8 +118,8 @@ module Test(clk, rst, Operand1, Operand2, Unsigned, Quotient, Remainder);
             op = Operand2;
             Cy = 0;
             Overflow = 0;
-            Sign1 = (~Unsigned)&ah[wl-1];
-            Sign2 = (~Unsigned)&(ah[wl-1]^op[wl-1]);
+            Sign1 = (~Unsigned)&ah[WL-1];
+            Sign2 = (~Unsigned)&(ah[WL-1]^op[WL-1]);
             if (Sign1) {ah,al} = -{ah,al};
          end
 `define BUG1
@@ -136,7 +136,7 @@ module Test(clk, rst, Operand1, Operand2, Unsigned, Quotient, Remainder);
          $display("%x %x %x %x %x %x %x %x %x",
                   Iteration, ah, al, Quotient, Remainder, Overflow, ah_ext, sub_quot, Cy);
 `endif
-         {Cy,sub_quot} = (~Unsigned)&op[wl-1]? {ah_ext,ah}+op : {ah_ext,ah} - {1'b1,op};
+         {Cy,sub_quot} = (~Unsigned)&op[WL-1]? {ah_ext,ah}+op : {ah_ext,ah} - {1'b1,op};
          if (Cy)
            begin
               {ah_ext,ah} = {1'b0,sub_quot};

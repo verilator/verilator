@@ -77,11 +77,11 @@ module Test (/*AUTOARG*/
    input [6:0] in;      // Note much wider than any index
    output reg [3:0] out;
    output reg [3:0] mask;
-   localparam [15:5] p = 11'h1ac;
+   localparam [15:5] P = 11'h1ac;
 
    always @(posedge clk) begin
       // verilator lint_off WIDTH
-      out <= p[15 + in -: 5];
+      out <= P[15 + in -: 5];
       // verilator lint_on WIDTH
       mask[3] <= ((15 + in - 5) < 12);
       mask[2] <= ((15 + in - 5) < 13);

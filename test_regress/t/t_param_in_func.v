@@ -70,27 +70,27 @@ function automatic logic [7:0] getUnpacked(logic[3:0] d);
 `ifdef NO_INLINE
    /* verilator no_inline_task */
 `endif
-   localparam logic [7:0] digits [10] =
+   localparam logic [7:0] DIGITS [10] =
                           '{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
-   return digits[d];
+   return DIGITS[d];
 endfunction
 
 function automatic logic [7:0] getPacked(logic[3:0] d);
 `ifdef NO_INLINE
    /* verilator no_inline_task */
 `endif
-   localparam logic [9:0][7:0] digits =
+   localparam logic [9:0][7:0] DIGITS =
                          {"9", "8", "7", "6", "5", "4", "3", "2", "1", "0"};
-   return digits[d];
+   return DIGITS[d];
 endfunction
 
 function automatic string getString(logic[3:0] d);
 `ifdef NO_INLINE
    /* verilator no_inline_task */
 `endif
-   localparam string           digits [10] =
+   localparam string           DIGITS [10] =
                                '{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
-   return digits[d];
+   return DIGITS[d];
 endfunction
 
 function automatic logic [7:0] getStruct(logic[3:0] d);
@@ -102,7 +102,7 @@ function automatic logic [7:0] getStruct(logic[3:0] d);
       logic [7:0]              result;
       longint                  index;
    } lut_t;
-   localparam lut_t digits [10] =
+   localparam lut_t DIGITS [10] =
                                  '{
                                    '{result: "1", index: 9},
                                    '{result: "2", index: 0},
@@ -115,7 +115,7 @@ function automatic logic [7:0] getStruct(logic[3:0] d);
                                    '{result: "9", index: 7},
                                    '{result: "0", index: 8}
                                    };
-   return digits[4'(digits[d].index)].result;
+   return DIGITS[4'(DIGITS[d].index)].result;
 endfunction
 
 function automatic logic [7:0] getType(logic[3:0] d);
@@ -123,7 +123,7 @@ function automatic logic [7:0] getType(logic[3:0] d);
    /* verilator no_inline_task */
 `endif
    localparam type octet_t = logic [7:0];
-   localparam octet_t [9:0] digits =
+   localparam octet_t [9:0] DIGITS =
                          {"9", "8", "7", "6", "5", "4", "3", "2", "1", "0"};
-   return digits[d];
+   return DIGITS[d];
 endfunction
