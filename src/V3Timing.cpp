@@ -1030,7 +1030,10 @@ class TimingControlVisitor final : public VNVisitor {
                 if (!controlp) controlp = nbaEventControlp;
             }
             controlp->replaceWith(forkp);
-            forkp->addStmtsp(controlp);
+            AstBegin* beginp = VN_CAST(controlp, Begin);
+            if (!beginp) beginp = new AstBegin{nodep->fileline(), "", controlp};
+            forkp->addStmtsp(beginp);
+            controlp = forkp;
         }
         UASSERT_OBJ(nodep, controlp, "Assignment should have timing control");
         addCLocalScope(flp, insertBeforep);
@@ -1225,14 +1228,9 @@ class TimingControlVisitor final : public VNVisitor {
         AstNode* stmtp = nodep->stmtsp();
         // Put each statement in a begin
         while (stmtp) {
-            if (!VN_IS(stmtp, Begin)) {
-                auto* const beginp = new AstBegin{stmtp->fileline(), "", nullptr};
-                if (hasFlags(stmtp, T_HAS_PROC)) addFlags(beginp, T_HAS_PROC);
-                stmtp->replaceWith(beginp);
-                beginp->addStmtsp(stmtp);
-                stmtp = beginp;
-            }
-            auto* const beginp = VN_AS(stmtp, Begin);
+            UASSERT_OBJ(VN_IS(stmtp, Begin), nodep,
+                        "All statements under forks must be begins at this point");
+            AstBegin* const beginp = VN_AS(stmtp, Begin);
             stmtp = beginp->nextp();
             iterate(beginp);
             // Even if we do not find any awaits, we cannot simply inline the process here, as new
