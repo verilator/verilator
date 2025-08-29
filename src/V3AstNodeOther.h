@@ -1863,6 +1863,7 @@ class AstVar final : public AstNode {
     bool m_isHideProtected : 1;  // Verilog protected
     bool m_noReset : 1;  // Do not do automated reset/randomization
     bool m_noSubst : 1;  // Do not substitute out references
+    bool m_substConstOnly : 1;  // Only substitute if constant
     bool m_overridenParam : 1;  // Overridden parameter by #(...) or defparam
     bool m_trace : 1;  // Trace this variable
     bool m_isLatched : 1;  // Not assigned in all control paths of combo always
@@ -1912,6 +1913,7 @@ class AstVar final : public AstNode {
         m_isHideProtected = false;
         m_noReset = false;
         m_noSubst = false;
+        m_substConstOnly = false;
         m_overridenParam = false;
         m_trace = false;
         m_isLatched = false;
@@ -2068,6 +2070,8 @@ public:
     bool noReset() const { return m_noReset; }
     void noSubst(bool flag) { m_noSubst = flag; }
     bool noSubst() const { return m_noSubst; }
+    void substConstOnly(bool flag) { m_substConstOnly = flag; }
+    bool substConstOnly() const { return m_substConstOnly; }
     void overriddenParam(bool flag) { m_overridenParam = flag; }
     bool overriddenParam() const { return m_overridenParam; }
     void trace(bool flag) { m_trace = flag; }
