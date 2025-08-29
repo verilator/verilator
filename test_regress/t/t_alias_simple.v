@@ -22,6 +22,8 @@ module t (  /*AUTOARG*/
   assign x[0] = 0;
   assign y[1] = 1;
 
+  sub s ();
+
   initial begin
     if (a != 16'habcd) $stop;
     if (b != 16'habcd) $stop;
@@ -29,8 +31,18 @@ module t (  /*AUTOARG*/
 
     if (x != 2) $stop;
     if (y != 2) $stop;
+
+    if (s.a != 1) $stop;
+    if (s.b != 1) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
 
   end
 endmodule
+
+module sub;
+  wire a, b;
+  assign a = 1;
+  alias a = b;
+endmodule
+;
