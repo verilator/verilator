@@ -239,7 +239,7 @@ class AstToDfgVisitor final : public VNVisitor {
         } else {
             markReferenced(nodep);
         }
-     }
+    }
     void visit(AstTopScope* nodep) override { iterate(nodep->scopep()); }
     void visit(AstScope* nodep) override { iterateChildren(nodep); }
     void visit(AstActive* nodep) override {
