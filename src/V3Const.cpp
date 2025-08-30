@@ -4047,8 +4047,7 @@ void V3Const::constifyParamsNoWarnEdit(AstNode* nodep) {
 //! generated. Since such occurrences, must be constant, in order to be
 //! something a generate block can depend on, we can wait until later to do the
 //! width check.
-//! @return  Pointer to the edited node.
-AstNode* V3Const::constifyGenerateParamsEdit(AstNode* nodep) {
+void V3Const::constifyGenerateParamsEdit(AstNode* nodep) {
     // UINFOTREE(1, nodep, "", "forceConPRE:");
     // Resize even if the node already has a width, because buried in the tree
     // we may have a node we just created with signing, etc, that isn't sized
@@ -4064,11 +4063,10 @@ AstNode* V3Const::constifyGenerateParamsEdit(AstNode* nodep) {
         // init value because we need widthing above to handle the var's type.
         if (varp->valuep()) visitor.mainAcceptEdit(varp->valuep());
     } else {
-        nodep = visitor.mainAcceptEdit(nodep);
+        VL_DO_DANGLING(visitor.mainAcceptEdit(nodep), nodep);
     }
     // Because we do edits, nodep links may get trashed and core dump this.
     // UINFOTREE(1, nodep, "", "forceConDONE");
-    return nodep;
 }
 
 void V3Const::constifyAllLint(AstNetlist* nodep) {
