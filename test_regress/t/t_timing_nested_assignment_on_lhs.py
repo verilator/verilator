@@ -14,6 +14,6 @@ test.top_filename = "t/t_net_delay.v"
 
 test.compile(timing_loop=True, verilator_flags2=["--timing"])
 
-test.execute()
+test.execute(all_run_flags=["+verilator+rand+reset+0"])
 
 test.passes()

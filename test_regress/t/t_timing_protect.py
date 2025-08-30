@@ -15,7 +15,7 @@ test.top_filename = "t/t_timing_fork_join.v"  # Contains all relevant constructs
 if not test.have_coroutines:
     test.skip("No coroutine support")
 
-test.compile(verilator_flags2=["--exe --main --timing --protect-ids", "--protect-key SECRET_KEY"])
+test.compile(verilator_flags2=["--binary --protect-ids", "--protect-key SECRET_KEY"])
 
 test.execute()
 

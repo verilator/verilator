@@ -228,6 +228,8 @@ class FuncOptVisitor final : public VNVisitor {
         UASSERT_OBJ(lhsp->width() == rhsp->width(), nodep, "Inconsistent assignment");
         // Only consider pure assignments. Nodes inserted below are safe.
         if (!nodep->user1() && (!lhsp->isPure() || !rhsp->isPure())) return false;
+        // Do not split assignments to SC variables, they cannot be assigned in parts
+        if (lhsp->exists([](AstVarRef* refp) { return refp->varp()->isSc(); })) return false;
         // Check for a Sel on the LHS if present, and skip over it
         uint32_t lsb = 0;
         if (AstSel* const selp = VN_CAST(lhsp, Sel)) {
@@ -280,7 +282,7 @@ class FuncOptVisitor final : public VNVisitor {
     // VISIT
     void visit(AstNodeAssign* nodep) override {
         // TODO: Only thing remaining inside functions should be AstAssign (that is, an actual
-        //       assignment statemant), but we stil use AstAssignW, AstAssignDly, and all, fix.
+        //       assignment statement), but we stil use AstAssignW, AstAssignDly, and all, fix.
         iterateChildren(nodep);
 
         if (v3Global.opt.fFuncSplitCat()) {

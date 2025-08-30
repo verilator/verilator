@@ -126,7 +126,7 @@ class V3OptionParser::Impl::ActionCbVal<int> final : public ActionBase<en::VALUE
 public:
     using CbType = std::function<void(int)>;
     explicit ActionCbVal(CbType cb)
-        : m_cb(std::move(cb)) {}
+        : m_cb{std::move(cb)} {}
     void exec(const char* optp, const char* argp) override { m_cb(std::atoi(argp)); }
 };
 
@@ -137,7 +137,7 @@ class V3OptionParser::Impl::ActionCbVal<const char*> final : public ActionBase<e
 public:
     using CbType = std::function<void(const char*)>;
     explicit ActionCbVal(CbType cb)
-        : m_cb(std::move(cb)) {}
+        : m_cb{std::move(cb)} {}
     void exec(const char* optp, const char* argp) override { m_cb(argp); }
 };
 

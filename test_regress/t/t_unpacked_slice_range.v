@@ -35,10 +35,10 @@ module t2 #(parameter ORIGIN = 0) (input wire clk, input int c);
    localparam FULL_HI = ORIGIN + WIDTH - 1;
    localparam PART_LO = FULL_LO + OFFSET;
    localparam PART_HI = FULL_HI;
-   logic unpack_sig0 [FULL_LO:FULL_HI];
-   logic unpack_sig1 [PART_LO:PART_HI];
-   logic unpack_sig2 [FULL_HI:FULL_LO];
-   logic unpack_sig3 [PART_HI:PART_LO];
+   bit unpack_sig0 [FULL_LO:FULL_HI];
+   bit unpack_sig1 [PART_LO:PART_HI];
+   bit unpack_sig2 [FULL_HI:FULL_LO];
+   bit unpack_sig3 [PART_HI:PART_LO];
    initial $display("%m ORIGIN:%d [%d:%d] [%d:%d]", ORIGIN, FULL_LO, FULL_HI, PART_LO, PART_HI);
 
    always @(posedge clk) begin

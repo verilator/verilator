@@ -45,6 +45,7 @@ EXEMPT_FILES_LIST = """
     test_regress/t/t_incr_void.v
     test_regress/t/tsub/t_flag_f_tsub.v
     test_regress/t/tsub/t_flag_f_tsub_inc.v
+    test_regress/t/uvm/dpi
     test_regress/t/uvm/uvm_pkg_all.svh
     test_regress/t/uvm/uvm_pkg_todo.svh
     verilator.pc.in

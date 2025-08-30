@@ -175,6 +175,14 @@ package std;
 `endif
       endtask
 
+      static task killQueue(ref process processQueue[$]);
+`ifdef VERILATOR_TIMING
+         while (processQueue.size() > 0) begin
+            processQueue.pop_back().kill();
+         end
+`endif
+      endtask
+
       // Two process references are equal if the different classes' containing
       // m_process are equal. Can't yet use <=> as the base class template
       // comparisons doesn't define <=> as they don't yet require --timing and C++20.

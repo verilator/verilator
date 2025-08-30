@@ -210,6 +210,7 @@ class VariableOrder final {
         sortAndAppend(m2v[emptyVec]);
     }
 
+    // cppcheck-suppress constParameterPointer
     void orderModuleVars(AstNodeModule* modp) {
         // Unlink all module variables from the module, compute attributes
         for (AstNode *nodep = modp->stmtsp(), *nextp; nodep; nodep = nextp) {
@@ -230,7 +231,7 @@ class VariableOrder final {
                                         : (sigbytes == 2)                                 ? 3
                                         : (sigbytes == 1)                                 ? 2
                                                                                           : 10;
-                m_attributes.emplace(varp, VarAttributes{stratum, EmitCBase::isAnonOk(varp)});
+                m_attributes.emplace(varp, VarAttributes{stratum, EmitCUtil::isAnonOk(varp)});
             }
         }
 

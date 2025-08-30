@@ -44,6 +44,10 @@
 #include <cstring>
 #include <iostream>
 
+extern "C" {
+#include <libgen.h>
+}
+
 // These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
 #include "TestSimulator.h"
@@ -156,6 +160,12 @@ int _value_callback_quad(p_cb_data cb_data) {
     return 0;
 }
 
+int _value_callback_never(p_cb_data cb_data) {
+    printf("%%Error: callback should never be called\n");
+    exit(-1);
+    return 0;
+}
+
 int _mon_check_value_callbacks() {
     s_vpi_value v;
     v.format = vpiIntVal;
@@ -206,6 +216,18 @@ int _mon_check_value_callbacks() {
 
         cb_data.obj = vh2;
         cb_data.cb_rtn = _value_callback_quad;
+
+        TestVpiHandle callback_h = vpi_register_cb(&cb_data);
+        CHECK_RESULT_NZ(callback_h);
+    }
+    {
+        TestVpiHandle vh1 = VPI_HANDLE("some_mem");
+        CHECK_RESULT_NZ(vh1);
+        TestVpiHandle vh2 = vpi_handle_by_index(vh1, 3);
+        CHECK_RESULT_NZ(vh2);
+
+        cb_data.obj = vh2;
+        cb_data.cb_rtn = _value_callback_never;
 
         TestVpiHandle callback_h = vpi_register_cb(&cb_data);
         CHECK_RESULT_NZ(callback_h);
@@ -357,6 +379,24 @@ int _mon_check_var() {
         CHECK_RESULT_NZ(vh10);
         vpi_get_value(vh10, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer, 3);
+        p = vpi_get_str(vpiType, vh10);
+        CHECK_RESULT_CSTR(p, "vpiConstant");
+    }
+    TestVpiHandle vh6 = vpi_handle_by_index(vh5, 2);
+    CHECK_RESULT_NZ(vh6);
+    {
+        TestVpiHandle vh10 = vpi_handle(vpiLeftRange, vh6);
+        CHECK_RESULT_NZ(vh10);
+        vpi_get_value(vh10, &tmpValue);
+        CHECK_RESULT(tmpValue.value.integer, 0);
+        p = vpi_get_str(vpiType, vh10);
+        CHECK_RESULT_CSTR(p, "vpiConstant");
+    }
+    {
+        TestVpiHandle vh10 = vpi_handle(vpiRightRange, vh6);
+        CHECK_RESULT_NZ(vh10);
+        vpi_get_value(vh10, &tmpValue);
+        CHECK_RESULT(tmpValue.value.integer, 61);
         p = vpi_get_str(vpiType, vh10);
         CHECK_RESULT_CSTR(p, "vpiConstant");
     }
@@ -995,8 +1035,10 @@ int main(int argc, char** argv) {
     tfp->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 #endif
 
-    topp->eval();
     topp->clk = 0;
+    topp->a = 0;
+
+    topp->eval();
     main_time += 10;
 
     while (vl_time_stamp64() < sim_time && !contextp->gotFinish()) {

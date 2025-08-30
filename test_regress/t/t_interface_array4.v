@@ -29,7 +29,7 @@ endmodule
 module devB (Ifc s);
 endmodule
 
-module top;
+module t;
   Ifc s14[1:4] ();
   devA a1 (s14[1]);
   devB b1 (s14[2]);

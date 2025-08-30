@@ -64,12 +64,12 @@ class CastVisitor final : public VNVisitor {
             = new AstCCast{nodep->fileline(), nodep, needsize, nodep->widthMin()};
         UINFO(4, "  MadeCast " << static_cast<void*>(castp) << " for " << nodep);
         relinkHandle.relink(castp);
-        // if (debug() > 8) castp->dumpTree("-  castins: ");
+        // UINFOTREE(9, castp, "", "castins");
         //
         ensureLower32Cast(castp);
         nodep->user1(1);  // Now must be of known size
     }
-    static int castSize(AstNode* nodep) {
+    static int castSize(const AstNode* nodep) {
         if (nodep->isQuad()) {
             return VL_QUADSIZE;
         } else if (nodep->width() <= 8) {
@@ -85,6 +85,7 @@ class CastVisitor final : public VNVisitor {
             if (!nodep->isNull()) insertCast(nodep, castSize(nodep->backp()));
         }
     }
+    // cppcheck-suppress constParameterPointer // lhsp might be changed
     void ensureLower32Cast(AstCCast* nodep) {
         // If we have uint64 = CAST(uint64(x)) then the upcasting
         // really needs to be CAST(uint64(CAST(uint32(x))).
@@ -115,7 +116,7 @@ class CastVisitor final : public VNVisitor {
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         if (nodep->sizeMattersRhs()) ensureCast(nodep->rhsp());
     }
-    void visit(AstNodeCond* nodep) override {
+    void visit(AstCond* nodep) override {
         // All class types are castable to each other. If they are of different types,
         // a compilation error will be thrown, so an explicit cast is required. Types were
         // already checked by V3Width and dtypep of a condition operator is a type of their
@@ -173,13 +174,13 @@ class CastVisitor final : public VNVisitor {
     void visit(AstNegate* nodep) override {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1());
-        if (nodep->lhsp()->widthMin() == 1) {
+        if (nodep->lhsp()->widthMin() == 1 && !nodep->lhsp()->isWide()) {
             // We want to avoid a GCC "converting of negative value" warning
             // from our expansion of
             //    out = {32{a<b}}  =>   out = - (a<b)
             insertCast(nodep->lhsp(), castSize(nodep));
         } else {
-            ensureCast(nodep->lhsp());
+            if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         }
     }
     void visit(AstVarRef* nodep) override {
@@ -221,6 +222,11 @@ class CastVisitor final : public VNVisitor {
     void visit(AstMemberSel* nodep) override {
         iterateChildren(nodep);
         ensureNullChecked(nodep->fromp());
+        nodep->user1(true);
+    }
+    void visit(AstStructSel* nodep) override {
+        iterateChildren(nodep);
+        nodep->user1(true);
     }
 
     // NOPs

@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_semaphore.v"
 
-test.compile(verilator_flags2=["--exe --main --timing -Wall -DSEMAPHORE_T=std::semaphore"])
+test.compile(verilator_flags2=["--binary -Wall -DSEMAPHORE_T=std::semaphore"])
 
 test.execute()
 

@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface foo_intf;
-   logic a;
+   bit a;
 
    modport source (
       output a
@@ -29,9 +29,9 @@ module t (/*AUTOARG*/
 
    localparam N = 5;
 
-   logic [N-1:0] a_in;
-   logic [N-1:0] a_out;
-   logic [N-1:0] ack_out;
+   bit [N-1:0] a_in;
+   bit [N-1:0] a_out;
+   bit [N-1:0] ack_out;
 
    foo_intf foos [N-1:0] ();
 

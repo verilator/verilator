@@ -30,7 +30,7 @@ module t (/*AUTOARG*/);
    //assign baz_inst.7 = 1'b1;
    //assign baz_inst.qux_t = 1'b1;
    //assign baz_inst.the_func = 1'b1;
-   //assign baz_inst.the_lp = 1'b1;
+   //assign baz_inst.THE_LP = 1'b1;
 
    //assign bar.x = 1'b1;
    //assign fake_inst.x = 1'b1;
@@ -50,5 +50,5 @@ module baz;
       return val;
    endfunction
 
-   localparam the_lp = 5;
+   localparam THE_LP = 5;
 endmodule

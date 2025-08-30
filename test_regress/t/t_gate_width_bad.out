@@ -1,0 +1,14 @@
+%Error: t/t_gate_width_bad.v:14:26: Gate primitive connection expects 1 bits on the gate port, but the connection generates 2 bits (IEEE 1800-2023 28.3.6)
+                                  : ... note: In instance 't'
+   14 |   buf buf2[0:0] (out[1], 2'b01);   
+      |                          ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_gate_width_bad.v:15:28: Gate primitive connection expects 1 bits on the gate port, but the connection generates 2 bits (IEEE 1800-2023 28.3.6)
+                                  : ... note: In instance 't'
+   15 |   buf buf3[0:0] (out[2], in[1:0]);   
+      |                            ^
+%Error: t/t_gate_width_bad.v:16:28: Gate primitive connection expects 4 bits or 1 bit on the gate port, but the connection generates 2 bits (IEEE 1800-2023 28.3.6)
+                                  : ... note: In instance 't'
+   16 |   buf buf4[3:0] (out[2], in[1:0]);   
+      |                            ^
+%Error: Exiting due to

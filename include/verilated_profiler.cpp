@@ -145,7 +145,7 @@ void VlExecutionProfiler::dump(const char* filenamep, uint64_t tickEnd)
     fprintf(fp, "VLPROF arg +verilator+prof+exec+window+%u\n",
             Verilated::threadContextp()->profExecWindow());
     std::string numa = "no threads";
-    if (VlThreadPool* const threadPoolp
+    if (const VlThreadPool* const threadPoolp
         = static_cast<VlThreadPool*>(Verilated::threadContextp()->threadPoolp())) {
         numa = threadPoolp->numaStatus();
     }

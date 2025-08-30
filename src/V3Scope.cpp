@@ -68,9 +68,18 @@ class ScopeVisitor final : public VNVisitor {
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
             }
-            const auto it3 = m_varScopes.find(std::make_pair(nodep->varp(), scopep));
-            UASSERT_OBJ(it3 != m_varScopes.end(), nodep, "Can't locate varref scope");
-            AstVarScope* const varscp = it3->second;
+            // Search up the scope hierarchy for the variable
+            AstVarScope* varscp = nullptr;
+            AstScope* searchScopep = scopep;
+            while (searchScopep) {
+                const auto it3 = m_varScopes.find(std::make_pair(nodep->varp(), searchScopep));
+                if (it3 != m_varScopes.end()) {
+                    varscp = it3->second;
+                    break;
+                }
+                searchScopep = searchScopep->aboveScopep();
+            }
+            UASSERT_OBJ(varscp, nodep, "Can't locate varref scope");
             nodep->varScopep(varscp);
         }
     }
@@ -260,9 +269,9 @@ class ScopeVisitor final : public VNVisitor {
         // Make new scope variable
         if (!nodep->user1p()) {
             AstScope* scopep = m_scopep;
-            if (AstIfaceRefDType* const ifacerefp = VN_CAST(nodep->dtypep(), IfaceRefDType)) {
+            if (const AstIfaceRefDType* const ifrefp = VN_CAST(nodep->dtypep(), IfaceRefDType)) {
                 // Attach every non-virtual interface variable its inner scope
-                if (ifacerefp->cellp()) scopep = VN_AS(ifacerefp->cellp()->user2p(), Scope);
+                if (ifrefp->cellp()) scopep = VN_AS(ifrefp->cellp()->user2p(), Scope);
             }
             AstVarScope* const varscp = new AstVarScope{nodep->fileline(), scopep, nodep};
             UINFO(6, "   New scope " << varscp);

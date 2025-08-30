@@ -94,11 +94,11 @@ AstRange::AstRange(FileLine* fl, const VNumRange& range)
     rightp(new AstConst{fl, static_cast<uint32_t>(range.right())});
 }
 int AstRange::leftConst() const VL_MT_STABLE {
-    AstConst* const constp = VN_CAST(leftp(), Const);
+    const AstConst* const constp = VN_CAST(leftp(), Const);
     return (constp ? constp->toSInt() : 0);
 }
 int AstRange::rightConst() const VL_MT_STABLE {
-    AstConst* const constp = VN_CAST(rightp(), Const);
+    const AstConst* const constp = VN_CAST(rightp(), Const);
     return (constp ? constp->toSInt() : 0);
 }
 
@@ -129,7 +129,7 @@ AstPackArrayDType::AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* 
 }
 
 int AstQueueDType::boundConst() const VL_MT_STABLE {
-    AstConst* const constp = VN_CAST(boundp(), Const);
+    const AstConst* const constp = VN_CAST(boundp(), Const);
     return (constp ? constp->toSInt() : 0);
 }
 
@@ -148,8 +148,8 @@ bool AstBasicDType::ascending() const {
     return (rangep() ? rangep()->ascending() : m.m_nrange.ascending());
 }
 
-bool AstActive::hasClocked() const { return m_sensesp->hasClocked(); }
-bool AstActive::hasCombo() const { return m_sensesp->hasCombo(); }
+bool AstActive::hasClocked() const { return m_sentreep->hasClocked(); }
+bool AstActive::hasCombo() const { return m_sentreep->hasCombo(); }
 
 AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr* exprsp)
     : ASTGEN_SUPER_ElabDisplay(fl) {
@@ -193,7 +193,7 @@ bool AstVarRef::sameNode(const AstVarRef* samep) const {
                 && (varp() && samep->varp() && varp()->name() == samep->varp()->name()));
     }
 }
-bool AstVarRef::sameNoLvalue(AstVarRef* samep) const {
+bool AstVarRef::sameNoLvalue(const AstVarRef* samep) const {
     if (varScopep()) {
         return (varScopep() == samep->varScopep());
     } else {

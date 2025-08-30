@@ -51,7 +51,7 @@ class CleanVisitor final : public VNVisitor {
     // METHODS
 
     // Width resetting
-    int cppWidth(AstNode* nodep) {
+    int cppWidth(const AstNode* nodep) {
         if (nodep->width() <= VL_IDATASIZE) {
             return VL_IDATASIZE;
         } else if (nodep->width() <= VL_QUADSIZE) {
@@ -101,7 +101,9 @@ class CleanVisitor final : public VNVisitor {
 
     // Store the clean state in the userp on each node
     void setCleanState(AstNode* nodep, CleanState clean) { nodep->user1(clean); }
-    CleanState getCleanState(AstNode* nodep) { return static_cast<CleanState>(nodep->user1()); }
+    CleanState getCleanState(const AstNode* nodep) {
+        return static_cast<CleanState>(nodep->user1());
+    }
     bool isClean(AstNode* nodep) {
         const CleanState clstate = getCleanState(nodep);
         if (clstate == CS_CLEAN) return true;
@@ -261,7 +263,7 @@ class CleanVisitor final : public VNVisitor {
     }
 
     // Control flow operators
-    void visit(AstNodeCond* nodep) override {
+    void visit(AstCond* nodep) override {
         iterateChildren(nodep);
         ensureClean(nodep->condp());
         setClean(nodep, isClean(nodep->thenp()) && isClean(nodep->elsep()));

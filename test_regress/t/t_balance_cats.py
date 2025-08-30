@@ -11,7 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=["--stats"])
+test.compile(
+    verilator_flags2=["--stats", "--build", "--gate-stmts", "10000", "--expand-limit", "128"])
 
 test.file_grep(test.stats, r'Optimizations, FuncOpt concat trees balanced\s+(\d+)', 1)
 test.file_grep(test.stats, r'Optimizations, FuncOpt concat splits\s+(\d+)', 62)

@@ -43,7 +43,7 @@ class CUseVisitor final : public VNVisitorConst {
     std::map<std::string, std::pair<FileLine*, VUseType>> m_didUse;  // What we already used
 
     // METHODS
-    void addNewUse(AstNode* nodep, VUseType useType, const string& name) {
+    void addNewUse(const AstNode* nodep, VUseType useType, const string& name) {
         auto e = m_didUse.emplace(name, std::make_pair(nodep->fileline(), useType));
         if (e.second || ((e.first->second.second & useType) != useType)) {
             e.first->second.second = e.first->second.second | useType;
@@ -73,7 +73,8 @@ class CUseVisitor final : public VNVisitorConst {
         if (stypep && stypep->classOrPackagep()) {
             addNewUse(nodep, VUseType::INT_INCLUDE, stypep->classOrPackagep()->name());
             iterateChildrenConst(stypep);
-        } else if (AstClassRefDType* const classp = VN_CAST(nodep->skipRefp(), ClassRefDType)) {
+        } else if (const AstClassRefDType* const classp
+                   = VN_CAST(nodep->skipRefp(), ClassRefDType)) {
             addNewUse(nodep, VUseType::INT_FWD_CLASS, classp->name());
         }
     }
@@ -95,7 +96,7 @@ public:
         : m_modp{modp} {
         iterateConst(modp);
 
-        for (auto& used : m_didUse) {
+        for (const auto& used : m_didUse) {
             AstCUse* const newp = new AstCUse{used.second.first, used.second.second, used.first};
             m_modp->addStmtsp(newp);
             UINFO(8, "Insert " << newp);

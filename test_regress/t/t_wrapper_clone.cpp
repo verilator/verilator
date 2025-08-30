@@ -72,8 +72,7 @@ int main(int argc, char** argv) {
             } else if (pid == 0) {
                 printf("child: here we go\n");
             } else {
-                while (wait(nullptr) > 0)
-                    ;
+                while (wait(nullptr) > 0);
                 printf("parent: here we go\n");
                 topp->is_parent = 1;
             }

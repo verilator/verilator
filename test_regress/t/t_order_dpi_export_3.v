@@ -8,13 +8,13 @@
 
 module testbench(
                  /*AUTOARG*/
-   // Inputs
-   clk
-   );
+  // Inputs
+  clk
+  );
 
    input clk; // Top level input clock
-   logic other_clk; // Dependent clock set via DPI
-   logic third_clk; // Additional dependent clock set via DPI
+   bit other_clk; // Dependent clock set via DPI
+   bit third_clk; // Additional dependent clock set via DPI
 
    export "DPI-C" function set_other_clk;
    function void set_other_clk(bit val);
@@ -43,7 +43,7 @@ module testbench(
    int   n = 0;
 
    always @(posedge third_clk) begin
-      $display("t=%d n=%d", $time, n);
+      $display("[%0t] n=%0d", $time, n);
       if ($time != (8*n+1) * 500) $stop;
       if (n == 20) begin
          $write("*-* All Finished *-*\n");

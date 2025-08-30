@@ -309,7 +309,7 @@ class TraceVisitor final : public VNVisitor {
             if (TraceTraceVertex* const vtxp = vtx.cast<TraceTraceVertex>()) {
                 ActCodeSet actSet;
                 UINFO(9, "  Add to sort: " << vtxp);
-                if (debug() >= 9) vtxp->nodep()->dumpTree("-   trnode: ");
+                UINFOTREE(9, vtxp->nodep(), "", "trnode");
                 for (const V3GraphEdge& edge : vtxp->inEdges()) {
                     const TraceActivityVertex* const cfvertexp
                         = edge.fromp()->cast<const TraceActivityVertex>();
@@ -519,8 +519,8 @@ class TraceVisitor final : public VNVisitor {
         if (isTopFunc) {
             // Top functions
             funcp->argTypes("void* voidSelf, " + bufArg);
-            addInitStr(EmitCBase::voidSelfAssign(m_topModp));
-            addInitStr(EmitCBase::symClassAssign());
+            addInitStr(EmitCUtil::voidSelfAssign(m_topModp));
+            addInitStr(EmitCUtil::symClassAssign());
             // Add global activity check to change dump functions
             if (traceType == VTraceType::CHANGE) {  //
                 addInitStr("if (VL_UNLIKELY(!vlSymsp->__Vm_activity)) return;\n");
@@ -732,8 +732,8 @@ class TraceVisitor final : public VNVisitor {
         cleanupFuncp->isStatic(true);
         cleanupFuncp->isLoose(true);
         m_topScopep->addBlocksp(cleanupFuncp);
-        cleanupFuncp->addInitsp(new AstCStmt{fl, EmitCBase::voidSelfAssign(m_topModp)});
-        cleanupFuncp->addInitsp(new AstCStmt{fl, EmitCBase::symClassAssign()});
+        cleanupFuncp->addInitsp(new AstCStmt{fl, EmitCUtil::voidSelfAssign(m_topModp)});
+        cleanupFuncp->addInitsp(new AstCStmt{fl, EmitCUtil::symClassAssign()});
 
         // Register it
         m_regFuncp->addStmtsp(new AstText{fl, "tracep->addCleanupCb(", true});

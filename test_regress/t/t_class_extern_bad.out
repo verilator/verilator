@@ -1,16 +1,17 @@
-%Error: t/t_class_extern_bad.v:9:16: Duplicate declaration of task: 'extern nodef'
-    9 |    extern task nodef();   
-      |                ^~~~~
-        t/t_class_extern_bad.v:8:16: ... Location of original declaration
-    8 |    extern task nodef();
-      |                ^~~~~
+%Error: t/t_class_extern_bad.v:9:15: Duplicate declaration of task: 'extern nodef'
+    9 |   extern task nodef();   
+      |               ^~~~~
+        t/t_class_extern_bad.v:8:15: ... Location of original declaration
+    8 |   extern task nodef();
+      |               ^~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_class_extern_bad.v:8:16: Definition not found for extern 'nodef'
-    8 |    extern task nodef();
-      |                ^~~~~
-%Error: t/t_class_extern_bad.v:9:16: Definition not found for extern 'nodef'
-    9 |    extern task nodef();   
-      |                ^~~~~
+%Error-PROTOTYPEMIS: t/t_class_extern_bad.v:8:15: Definition not found for extern prototype 'nodef'
+    8 |   extern task nodef();
+      |               ^~~~~
+                     ... For error description see https://verilator.org/warn/PROTOTYPEMIS?v=latest
+%Error-PROTOTYPEMIS: t/t_class_extern_bad.v:9:15: Definition not found for extern prototype 'nodef'
+    9 |   extern task nodef();   
+      |               ^~~~~
 %Error: t/t_class_extern_bad.v:12:6: extern not found that declares 'noproto'
    12 | task Base1::noproto();   
       |      ^~~~~

@@ -247,14 +247,14 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
     AstNode* argp = nullptr;
     if (!ignore) {
         argp = *elistp;
-        // Prep for next parameter
-        *elistp = (*elistp)->nextp();
         if (VL_UNCOVERABLE(!argp)) {
             // expectDisplay() checks this first, so internal error if found here
             dispp->v3error(
                 "Internal: Missing arguments for $display-like format");  // LCOV_EXCL_LINE
             return;  // LCOV_EXCL_LINE
         }
+        // Prep for next parameter
+        *elistp = (*elistp)->nextp();
         if (argp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
             dispp->v3warn(E_UNSUPPORTED, "Unsupported: Exceeded limit of "
                                              + cvtToStr(VL_VALUE_STRING_MAX_WIDTH)
@@ -488,6 +488,7 @@ void EmitCFunc::emitCvtWideArray(AstNode* nodep, AstNode* fromp) {
 
 void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string& assignString) {
     // Put out constant set to the specified variable, or given variable in a string
+    // TODO merge with V3EmitCConstInit::visit(AstConst)
     putns(nodep, "");
     if (nodep->num().isNull()) {
         putns(nodep, "VlNull{}");
@@ -745,7 +746,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
         return "";
     } else if (basicp && basicp->isDynamicTriggerScheduler()) {
         return "";
-    } else if (basicp && basicp->isRandomGenerator()) {
+    } else if (basicp && (basicp->isRandomGenerator() || basicp->isStdRandomGenerator())) {
         return "";
     } else if (basicp) {
         const bool zeroit

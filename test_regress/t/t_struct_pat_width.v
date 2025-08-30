@@ -13,14 +13,14 @@ module t (clk);
 
    logic [2:0] meh;
    struct_t param;
-   localparam integer twentyone = 21;
+   localparam integer TWENTYONE = 21;
 
    // verilator lint_off WIDTH
    assign param = '{
-      _foo: twentyone % 8 + 1,
-      _bar: (twentyone / 8) + 1
+      _foo: TWENTYONE % 8 + 1,
+      _bar: (TWENTYONE / 8) + 1
    };
-   assign meh = twentyone % 8 + 1;
+   assign meh = TWENTYONE % 8 + 1;
    // verilator lint_on WIDTH
 
    always @ (posedge clk) begin

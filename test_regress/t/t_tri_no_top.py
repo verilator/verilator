@@ -11,11 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(make_top_shell=False,
-             make_main=False,
-             verilator_flags2=[
-                 "--exe --pins-inout-enables --timing --main", test.t_dir + "/t_tri_top_en_out.v"
-             ])
+test.compile(
+    make_top_shell=False,
+    make_main=False,
+    verilator_flags2=["--binary --pins-inout-enables", test.t_dir + "/t_tri_top_en_out.v"])
 
 test.execute()
 

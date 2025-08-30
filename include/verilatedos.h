@@ -52,15 +52,13 @@
 // clang and gcc-8.0+ support no_sanitize("string") style attribute
 # if defined(__clang__) || (__GNUC__ >= 8)
 #  define VL_ATTR_NO_SANITIZE_ALIGN __attribute__((no_sanitize("alignment")))
-#else  // The entire undefined sanitizer has to be disabled for older gcc
+# else  // The entire undefined sanitizer has to be disabled for older gcc
 #  define VL_ATTR_NO_SANITIZE_ALIGN __attribute__((no_sanitize_undefined))
-#endif
+# endif
 # define VL_ATTR_PRINTF(fmtArgNum) __attribute__((format(printf, (fmtArgNum), (fmtArgNum) + 1)))
 # define VL_ATTR_PURE __attribute__((pure))
 # define VL_ATTR_UNUSED __attribute__((unused))
-#ifndef VL_ATTR_WARN_UNUSED_RESULT
 # define VL_ATTR_WARN_UNUSED_RESULT __attribute__((warn_unused_result))
-#endif
 # if !defined(_WIN32) && !defined(__MINGW32__)
 // All VL_ATTR_WEAK symbols must be marked with the macOS -U linker flag in verilated.mk.in
 #  define VL_ATTR_WEAK __attribute__((weak))
@@ -575,7 +573,9 @@ static inline double VL_ROUND(double n) {
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
 #elif defined(__mips64el__) || defined(__mips__) || defined(__mips64__) || defined(__mips64)
 # define VL_CPU_RELAX() asm volatile("pause" ::: "memory")
-#elif defined(__powerpc64__)
+#elif defined(__POWERPC__) && defined(__APPLE__) // First check for a special case of macOS
+# define VL_CPU_RELAX() asm volatile("or r1, r1, r1; or r2, r2, r2;" ::: "memory")
+#elif defined(__powerpc64__) || defined(__powerpc__) // Generic powerpc
 # define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
 #elif defined(__riscv)  // RiscV does not currently have yield/pause, but one is proposed
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
@@ -637,7 +637,7 @@ extern std::string getenvStr(const std::string& envvar,
 extern uint16_t getcpu() VL_MT_SAFE;
 
 /// Return memory usage in bytes, or 0 if unknown
-extern uint64_t memUsageBytes() VL_MT_SAFE;
+extern void memUsageBytes(uint64_t& peakr, uint64_t& currentr) VL_MT_SAFE;
 
 // Internal: Record CPU time, starting point on construction, and current delta from that
 class DeltaCpuTime final {
@@ -691,7 +691,7 @@ struct reverse_wrapper final {
     const T& m_v;
 
     explicit reverse_wrapper(const T& a_v)
-        : m_v(a_v) {}
+        : m_v(a_v) {}  // Need () constructor
     auto begin() -> decltype(m_v.rbegin()) { return m_v.rbegin(); }
     auto end() -> decltype(m_v.rend()) { return m_v.rend(); }
 };

@@ -3,8 +3,9 @@
     8 |    tri g=g.and.g;
       |            ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Internal Error: t/t_fuzz_triand_bad.v:8:12: ../V3Width.cpp:#: Unlinked data type
-                                                  : ... note: In instance 't'
+%Error: t/t_fuzz_triand_bad.v:8:16: Member selection of non-struct/union object 'METHODCALL 'and'' which is a 'VOIDDTYPE'
+                                  : ... note: In instance 't'
     8 |    tri g=g.and.g;
-      |            ^~~
-                        ... This fatal error may be caused by the earlier error(s); resolve those first.
+      |                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

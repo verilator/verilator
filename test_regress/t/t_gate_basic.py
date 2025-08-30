@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--no-timing"])
+test.compile(verilator_flags2=["--no-timing", "-Wno-SPECIFYIGN"])
 
 test.execute()
 

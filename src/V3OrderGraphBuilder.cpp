@@ -102,8 +102,8 @@ class OrderGraphBuilder final : public VNVisitor {
     AstSenTree* m_hybridp = nullptr;
 
     bool m_inClocked = false;  // Underneath clocked AstActive
-    bool m_inPre = false;  // Underneath AstAssignPre
-    bool m_inPost = false;  // Underneath AstAssignPost/AstAlwaysPost
+    bool m_inPre = false;  // Underneath AlwaysPre
+    bool m_inPost = false;  // Underneath AstAlwaysPost
     std::function<bool(const AstVarScope*)> m_readTriggersCombLogic;
 
     // METHODS
@@ -126,7 +126,7 @@ class OrderGraphBuilder final : public VNVisitor {
 
     // VISITORS
     void visit(AstActive* nodep) override {
-        UASSERT_OBJ(!nodep->sensesStorep(), nodep,
+        UASSERT_OBJ(!nodep->senTreeStorep(), nodep,
                     "AstSenTrees should have been made global in V3ActiveTop");
         UASSERT_OBJ(m_scopep, nodep, "AstActive not under AstScope");
         UASSERT_OBJ(!m_logicVxp, nodep, "AstActive under logic");
@@ -138,8 +138,9 @@ class OrderGraphBuilder final : public VNVisitor {
 
         // This is the original sensitivity of the block (i.e.: not the ref into the TRIGGERVEC)
 
-        const AstSenTree* const senTreep
-            = nodep->sensesp()->hasCombo() ? nodep->sensesp() : m_trigToSen.at(nodep->sensesp());
+        const AstSenTree* const senTreep = nodep->sentreep()->hasCombo()
+                                               ? nodep->sentreep()
+                                               : m_trigToSen.at(nodep->sentreep());
 
         m_inClocked = senTreep->hasClocked();
 
@@ -149,11 +150,11 @@ class OrderGraphBuilder final : public VNVisitor {
 
         // Combinational and hybrid logic will have it's domain assigned based on the driver
         // domains. For clocked logic, we already know its domain.
-        if (!senTreep->hasCombo() && !senTreep->hasHybrid()) m_domainp = nodep->sensesp();
+        if (!senTreep->hasCombo() && !senTreep->hasHybrid()) m_domainp = nodep->sentreep();
 
         // Hybrid logic also includes additional sensitivities
         if (senTreep->hasHybrid()) {
-            m_hybridp = nodep->sensesp();
+            m_hybridp = nodep->sentreep();
             // Mark AstVarScopes that are explicit sensitivities
             AstNode::user3ClearTree();
             senTreep->foreach([](const AstVarRef* refp) {  //
@@ -231,7 +232,7 @@ class OrderGraphBuilder final : public VNVisitor {
                 // Add edge from produced VarPostVertex -> to producing LogicVertex
                 OrderVarVertex* const postVxp = getVarVertex(varscp, VarVertexType::POST);
                 m_graphp->addHardEdge(postVxp, m_logicVxp, WEIGHT_POST);
-            } else if (m_inPre) {  // AstAssignPre
+            } else if (m_inPre) {  // AstAlwaysPre
                 // Add edge from producing LogicVertex -> produced VarPordVertex
                 OrderVarVertex* const ordVxp = getVarVertex(varscp, VarVertexType::PORD);
                 m_graphp->addHardEdge(m_logicVxp, ordVxp, WEIGHT_NORMAL);
@@ -270,7 +271,7 @@ class OrderGraphBuilder final : public VNVisitor {
                     m_graphp->addHardEdge(varVxp, m_logicVxp, WEIGHT_MEDIUM);
                 }
             } else if (m_inPre) {
-                // AstAssignPre logic
+                // AstAlwaysPre logic
                 // Add edge from consumed VarPreVertex -> to consuming LogicVertex
                 // This one is cutable (vs the producer) as there's only one such consumer,
                 // but may be many producers
@@ -280,7 +281,7 @@ class OrderGraphBuilder final : public VNVisitor {
                 // Sequential (clocked) logic
                 // Add edge from consuming LogicVertex -> to consumed VarPreVertex
                 // Generation of 'pre' because we want to indicate it should be before
-                // AstAssignPre
+                // AstAlwaysPre
                 OrderVarVertex* const preVxp = getVarVertex(varscp, VarVertexType::PRE);
                 m_graphp->addHardEdge(m_logicVxp, preVxp, WEIGHT_NORMAL);
                 // Add edge from consuming LogicVertex -> to consumed VarPostVertex
@@ -304,6 +305,12 @@ class OrderGraphBuilder final : public VNVisitor {
     void visit(AstAlways* nodep) override {  //
         iterateLogic(nodep);
     }
+    void visit(AstAlwaysPre* nodep) override {
+        UASSERT_OBJ(!m_inPre, nodep, "Should not nest");
+        VL_RESTORER(m_inPre);
+        m_inPre = true;
+        iterateLogic(nodep);
+    }
     void visit(AstAlwaysPost* nodep) override {
         UASSERT_OBJ(!m_inPost, nodep, "Should not nest");
         VL_RESTORER(m_inPost);
@@ -325,18 +332,6 @@ class OrderGraphBuilder final : public VNVisitor {
         iterateLogic(nodep);
     }
     void visit(AstAssignW* nodep) override { iterateLogic(nodep); }
-    void visit(AstAssignPre* nodep) override {
-        UASSERT_OBJ(!m_inPre, nodep, "Should not nest");
-        VL_RESTORER(m_inPre);
-        m_inPre = true;
-        iterateLogic(nodep);
-    }
-    void visit(AstAssignPost* nodep) override {
-        UASSERT_OBJ(!m_inPost, nodep, "Should not nest");
-        VL_RESTORER(m_inPost);
-        m_inPost = true;
-        iterateLogic(nodep);
-    }
 
     //--- Verilator concoctions
     void visit(AstAlwaysPublic* nodep) override {  //

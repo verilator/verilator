@@ -47,6 +47,10 @@ module t (/*AUTOARG*/);
    var enum logic [3:0]  { QINVALID='1, QSEND={2'b0,2'h0}, QOP={2'b0,2'h1}, QCL={2'b0,2'h2},
                            QPR={2'b0,2'h3 }, QACK, QRSP } inv;
 
+   enum logic [7:0] {
+     ENARRAY = 6
+   } [3:2] enarray;
+
    initial begin
       if (e0 !== 0) $stop;
       if (e1 !== 1) $stop;
@@ -85,6 +89,11 @@ module t (/*AUTOARG*/);
 
       if ($size(array5) != 5) $stop;
       if ($size(array5i) != 5) $stop;
+
+      enarray[2] = ENARRAY;
+      enarray[3] = ENARRAY;
+      if (enarray[2] !== ENARRAY) $stop;
+      if (enarray[3] !== ENARRAY) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

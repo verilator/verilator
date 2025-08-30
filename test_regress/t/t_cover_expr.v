@@ -41,10 +41,10 @@ module t (/*AUTOARG*/
         return a & b;
     endfunction
 
-    localparam int num_intfs = 4;
-    intf the_intfs [num_intfs-1:0] ();
+    localparam int NUM_INTFS = 4;
+    intf the_intfs [NUM_INTFS-1:0] ();
     genvar intf_i;
-    for (intf_i = 0; intf_i < num_intfs; intf_i++) begin
+    for (intf_i = 0; intf_i < NUM_INTFS; intf_i++) begin
         always_comb the_intfs[intf_i].t = cyc[intf_i];
     end
 

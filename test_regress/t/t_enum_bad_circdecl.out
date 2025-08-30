@@ -1,9 +1,9 @@
-%Error: t/t_enum_bad_circdecl.v:11:6: Typedef has self-reference: 'bad_redecl'
-                                    : ... note: In instance 't'
-   11 |    } bad_redecl;
-      |      ^~~~~~~~~~
-        t/t_enum_bad_circdecl.v:9:17: ... Location of reference
-    9 |    typedef enum bad_redecl [2:0] {
-      |                 ^~~~~~~~~~
+%Error: t/t_enum_bad_circdecl.v:10:41: Typedef has self-reference: 'bad_redecl'
+                                     : ... note: In instance 't'
+   10 |   typedef enum bad_redecl [2:0] {VALUE} bad_redecl;
+      |                                         ^~~~~~~~~~
+        t/t_enum_bad_circdecl.v:10:16: ... Location of reference
+   10 |   typedef enum bad_redecl [2:0] {VALUE} bad_redecl;
+      |                ^~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

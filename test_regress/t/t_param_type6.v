@@ -23,7 +23,7 @@ module t (/*AUTOARG*/
 
     intf #(.the_type (logic [7:0])) intf_eight();
     no_param_intf the_no_param_intf();
-    sub #(.type_bits (8)) sub_eight (
+    sub #(.TYPE_BITS (8)) sub_eight (
         .intf_pin (intf_eight),
         .no_param_intf_pin (the_no_param_intf)
     );
@@ -36,7 +36,7 @@ module t (/*AUTOARG*/
 endmodule
 
 module sub #(
-    parameter int type_bits
+    parameter int TYPE_BITS
 )(
     intf intf_pin,
     no_param_intf no_param_intf_pin
@@ -45,7 +45,7 @@ module sub #(
     localparam type intf_type = type(intf_pin.foo);
     localparam type no_param_intf_type = type(no_param_intf_pin.bar);
     initial begin
-        if ($bits(intf_type) != type_bits) $stop();
+        if ($bits(intf_type) != TYPE_BITS) $stop();
         if ($bits(no_param_intf_type) != 14) $stop();
     end
 

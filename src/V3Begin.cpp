@@ -289,7 +289,7 @@ class BeginVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
-    void visit(AstCoverDecl* nodep) override {
+    void visit(AstNodeCoverDecl* nodep) override {
         // Don't need to fix path in coverage statements, they're not under
         // any BEGINs, but V3Coverage adds them all under the module itself.
         iterateChildren(nodep);
@@ -423,7 +423,7 @@ static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp, 
                                                                    : VNType::atGteS);
 }
 AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
-    // if (debug()) dumpTree("-  foreach-old: ");
+    // UINFOTREE(1, nodep, "", "foreach-old");
     const AstSelLoopVars* const loopsp = VN_CAST(nodep->arrayp(), SelLoopVars);
     UASSERT_OBJ(loopsp, nodep, "No loop variables under foreach");
     AstNodeExpr* const fromp = loopsp->fromp();
@@ -455,7 +455,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
             lastp->unlinkFrBack(&handle);
             if (const AstNodeArrayDType* const adtypep = VN_CAST(fromDtp, NodeArrayDType)) {
                 loopp = createForeachLoopRanged(nodep, bodyPointp, varp, adtypep->declRange());
-            } else if (AstBasicDType* const adtypep = VN_CAST(fromDtp, BasicDType)) {
+            } else if (const AstBasicDType* const adtypep = VN_CAST(fromDtp, BasicDType)) {
                 if (adtypep->isString()) {
                     AstConst* const leftp = new AstConst{fl, 0};
                     AstNodeExpr* const rightp = new AstLenN{fl, fromp->cloneTreePure(false)};
@@ -530,7 +530,11 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     }
     // The parser validates we don't have "foreach (array[,,,])"
     AstNode* const bodyp = nodep->stmtsp();
-    UASSERT_OBJ(newp, nodep, "foreach has no non-empty loop variable");
+    if (!newp) {
+        nodep->v3warn(NOEFFECT, "foreach with no loop variable has no effect");
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        return nullptr;
+    }
     if (bodyp) {
         bodyPointp->replaceWith(bodyp->unlinkFrBackWithNext());
     } else {
@@ -538,6 +542,6 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     }
     VL_DO_DANGLING(bodyPointp->deleteTree(), bodyPointp);
     VL_DO_DANGLING(nodep->deleteTree(), nodep);
-    // if (debug()) newp->dumpTreeAndNext(cout, "-  foreach-new: ");
+    // UINFOTREE(1, newp, "", "foreach-new");
     return newp;
 }

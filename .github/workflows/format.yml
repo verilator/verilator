@@ -11,11 +11,11 @@ permissions:
   contents: write
 jobs:
   format:
-    runs-on: ubuntu-22.04
-    name: Ubuntu 22.04 | format
+    runs-on: ubuntu-24.04
+    name: Ubuntu 24.04 | format
     env:
       CI_OS_NAME: linux
-      CI_RUNS_ON: ubuntu-22.04
+      CI_RUNS_ON: ubuntu-24.04
       CI_COMMIT: ${{ github.sha }}
     steps:
       - name: Checkout
@@ -27,7 +27,7 @@ jobs:
           CI_BUILD_STAGE_NAME: build
         run: |
           bash ci/ci-install.bash &&
-          sudo apt-get install clang-format-14 yapf3 &&
+          sudo apt-get install clang-format-18 yapf3 &&
           sudo pip3 install gersemi mbake &&
           git config --global user.email "action@example.com" &&
           git config --global user.name "github action"
@@ -35,7 +35,7 @@ jobs:
         run: |
           autoconf &&
           ./configure &&
-          make -j 2 format CLANGFORMAT=clang-format-14 &&
+          make -j 2 format CLANGFORMAT=clang-format-18 &&
           git status
       - name: Push
         run: |

@@ -23,7 +23,6 @@ module t (/*AUTOARG*/
       h = {g[15:0], g[31:16]};
    end
 
-   // verilator lint_off UNOPTFLAT
    reg [31:0] e2,f2,g2,h2;
    always @ (/*AS*/f2, g2) begin
       h2 = {g2[15:0], g2[31:16]};
@@ -33,7 +32,6 @@ module t (/*AUTOARG*/
       f2 = {e2[15:0], e2[31:16]};
       e2 = in_a;
    end
-   // verilator lint_on UNOPTFLAT
 
    integer cyc; initial cyc=1;
    always @ (posedge clk) begin

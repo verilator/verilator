@@ -74,6 +74,10 @@ class SimulateVisitor VL_NOT_FINAL : public VNVisitorConst {
     // is missing, we will not apply the optimization, rather then bomb.
 
 private:
+    // CONSTANTS
+    static constexpr int CONST_FUNC_RECURSION_MAX = 1000;
+    static constexpr int CALL_STACK_MAX = 100;
+
     // NODE STATE
     // Cleared on each always/assignw
     const VNUser1InUse m_inuser1;
@@ -136,12 +140,13 @@ private:
     bool m_isCoverage;  // Has coverage
     int m_instrCount;  ///< Number of nodes
     int m_dataCount;  ///< Bytes of data
+    int m_recurseCount = 0;  // Now deep in current recursion
     AstJumpGo* m_jumpp = nullptr;  ///< Jump label we're branching from
     // Simulating:
     // Allocators for constants of various data types
     std::unordered_map<const AstNodeDType*, ConstAllocator> m_constps;
     size_t m_constGeneration = 0;
-    std::vector<SimStackNode*> m_callStack;  ///< Call stack for verbose error messages
+    std::vector<SimStackNode*> m_callStack;  // Call stack for verbose error messages
 
     // Cleanup
     // V3Numbers that represents strings are a bit special and the API for
@@ -152,11 +157,11 @@ private:
     VL_DEFINE_DEBUG_FUNCTIONS;
 
     // Potentially very slow, intended for debugging
-    string prettyNumber(const V3Number* nump, AstNodeDType* dtypep) {
-        if (AstRefDType* const refdtypep = VN_CAST(dtypep, RefDType)) {  //
+    string prettyNumber(const V3Number* nump, const AstNodeDType* dtypep) {
+        if (const AstRefDType* const refdtypep = VN_CAST(dtypep, RefDType)) {  //
             dtypep = refdtypep->skipRefp();
         }
-        if (AstNodeUOrStructDType* const stp = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (const AstNodeUOrStructDType* const stp = VN_CAST(dtypep, NodeUOrStructDType)) {
             if (stp->packed()) {
                 std::ostringstream out;
                 out << "'{";
@@ -168,7 +173,7 @@ private:
                     V3Number fieldNum{nump, width};
                     fieldNum.opSel(*nump, msb, lsb);
                     out << itemp->name() << ": ";
-                    if (AstNodeDType* const childTypep = itemp->subDTypep()) {
+                    if (const AstNodeDType* const childTypep = itemp->subDTypep()) {
                         out << prettyNumber(&fieldNum, childTypep);
                     } else {
                         out << fieldNum;
@@ -179,7 +184,7 @@ private:
                 return out.str();
             }
         } else if (const AstPackArrayDType* const arrayp = VN_CAST(dtypep, PackArrayDType)) {
-            if (AstNodeDType* const childTypep = arrayp->subDTypep()) {
+            if (const AstNodeDType* const childTypep = arrayp->subDTypep()) {
                 std::ostringstream out;
                 out << "[";
                 const int arrayElements = arrayp->elementsConst();
@@ -217,20 +222,25 @@ public:
             }  // LCOV_EXCL_STOP
             m_whyNotOptimizable = why;
             std::ostringstream stack;
+            int n = 0;
             for (const auto& callstack : vlstd::reverse_view(m_callStack)) {
-                AstFuncRef* const funcp = callstack->m_funcp;
+                const AstFuncRef* const funcp = callstack->m_funcp;
                 stack << "\n        " << funcp->fileline() << "... Called from '"
                       << funcp->prettyName() << "()' with parameters:";
                 V3TaskConnects* tconnects = callstack->m_tconnects;
                 for (V3TaskConnects::iterator conIt = tconnects->begin();
                      conIt != tconnects->end(); ++conIt) {
-                    AstVar* const portp = conIt->first;
+                    const AstVar* const portp = conIt->first;
                     AstNodeExpr* const pinp = conIt->second->exprp();
-                    AstNodeDType* const dtypep = pinp->dtypep();
+                    const AstNodeDType* const dtypep = pinp->dtypep();
                     if (AstConst* const valp = fetchConstNull(pinp)) {
                         stack << "\n           " << portp->prettyName() << " = "
                               << prettyNumber(&valp->num(), dtypep);
                     }
+                }
+                if (++n > CALL_STACK_MAX) {
+                    stack << "\n           ... stack truncated";
+                    break;
                 }
             }
             m_whyNotOptimizable += stack.str();
@@ -397,11 +407,10 @@ private:
         UASSERT_OBJ(vscp, nodep, "Not linked");
         return vscp;
     }
-    bool jumpingOver(const AstNode* nodep) const {
-        // True to jump over this node - all visitors must call this up front
-        return (m_jumpp && m_jumpp->labelp() != nodep);
-    }
-    void assignOutValue(AstNodeAssign* nodep, AstNode* vscp, const AstNodeExpr* valuep) {
+
+    // True if current node might be jumped over - all visitors must call this up front
+    bool jumpingOver() const { return m_jumpp; }
+    void assignOutValue(const AstNodeAssign* nodep, AstNode* vscp, const AstNodeExpr* valuep) {
         if (VN_IS(nodep, AssignDly)) {
             // Don't do setValue, as value isn't yet visible to following statements
             newOutValue(vscp, valuep);
@@ -411,9 +420,55 @@ private:
         }
     }
 
+    string toStringRecurse(AstNodeExpr* nodep) {
+        // Return string representation, or clearOptimizable
+        const AstNodeExpr* const valuep = fetchValue(nodep);
+        if (const AstConst* const avaluep = VN_CAST(valuep, Const)) {
+            return "'h"s + avaluep->num().displayed(nodep, "%0x");
+        }
+        if (const AstInitArray* const avaluep = VN_CAST(valuep, InitArray)) {
+            string result = "'{";
+            string comma;
+            if (VN_IS(nodep->dtypep(), AssocArrayDType)) {
+                if (avaluep->defaultp()) {
+                    result += comma + "default:" + toStringRecurse(avaluep->defaultp());
+                    comma = ", ";
+                }
+                const auto& mapr = avaluep->map();
+                for (const auto& itr : mapr) {
+                    result += comma + cvtToStr(itr.first) + ":"
+                              + toStringRecurse(itr.second->valuep());
+                    comma = ", ";
+                }
+            } else if (const AstUnpackArrayDType* const dtypep
+                       = VN_CAST(nodep->dtypep(), UnpackArrayDType)) {
+                for (int n = 0; n < dtypep->elementsConst(); ++n) {
+                    result += comma + toStringRecurse(avaluep->getIndexDefaultedValuep(n));
+                    comma = ", ";
+                }
+            }
+            result += "}";
+            return result;
+        }
+        clearOptimizable(nodep, "Cannot convert to string");  // LCOV_EXCL_LINE
+        return "";
+    }
+
+    void initVar(AstVar* nodep) {
+        if (const AstBasicDType* const basicp = nodep->dtypeSkipRefp()->basicp()) {
+            AstConst cnst{nodep->fileline(), AstConst::WidthedValue{}, basicp->widthMin(), 0};
+            if (basicp->isZeroInit()) {
+                cnst.num().setAllBits0();
+            } else {
+                cnst.num().setAllBitsX();
+            }
+            newValue(nodep, &cnst);
+        }
+    }
+
     // VISITORS
     void visit(AstAlways* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
     }
@@ -421,7 +476,7 @@ private:
         // Sensitivities aren't inputs per se; we'll keep our tree under the same sens.
     }
     void visit(AstVarRef* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!optimizable()) return;  // Accelerate
         UASSERT_OBJ(nodep->varp(), nodep, "Unlinked");
         iterateChildrenConst(nodep->varp());
@@ -459,7 +514,7 @@ private:
                 m_varAux(vscp).usage |= VU_RV;
                 const bool varIsConst = (nodep->varp()->isConst() || nodep->varp()->isParam())
                                         && nodep->varp()->valuep();
-                AstNodeExpr* const valuep
+                const AstNodeExpr* const valuep
                     = varIsConst ? fetchValueNull(nodep->varp()->valuep()) : nullptr;
                 // Propagate PARAM constants for constant function analysis
                 if (varIsConst && valuep) {
@@ -490,7 +545,7 @@ private:
         }
     }
     void visit(AstVarXRef* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (m_scoped) {
             badNodeType(nodep);
             return;
@@ -500,7 +555,7 @@ private:
         }
     }
     void visit(AstNodeFTask* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!m_params) {
             badNodeType(nodep);
             return;
@@ -520,7 +575,7 @@ private:
         iterateChildrenConst(nodep);
     }
     void visit(AstInitialStatic* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!m_params) {
             badNodeType(nodep);
             return;
@@ -529,7 +584,7 @@ private:
         iterateChildrenConst(nodep);
     }
     void visit(AstNodeIf* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         UINFO(5, "   IF " << nodep);
         checkNodeInfo(nodep);
         if (m_checkOnly) {
@@ -673,7 +728,7 @@ private:
             }
         }
     }
-    void visit(AstNodeCond* nodep) override {
+    void visit(AstCond* nodep) override {
         // We could use above visit(AstNodeTriop), but need to do short circuiting.
         // It's also slower even O(n^2) to evaluate both sides when we
         // really only need to evaluate one side.
@@ -740,7 +795,7 @@ private:
             // Values are in the "real" tree under the InitArray so can eventually extract it,
             // Not in the usual setValue (via m_varAux)
             initp->addIndexValuep(index, valuep);
-            if (debug() >= 9) initp->dumpTree("-  array: ");
+            UINFOTREE(9, initp, "", "array");
             assignOutValue(nodep, vscp, initp);
         }
     }
@@ -801,9 +856,7 @@ private:
             handleAssignArray(nodep, selp, valueFromp);
         } else if (AstConcat* const selp = VN_CAST(lhsp, Concat)) {
             checkNodeInfo(selp);
-            AstBasicDType* const rhsBasicp
-                = VN_CAST(selp->rhsp()->dtypep()->skipRefp(), BasicDType);
-            if (!rhsBasicp) {
+            if (!VN_IS(selp->rhsp()->dtypep()->skipRefp(), BasicDType)) {
                 clearOptimizable(lhsp, "Assign LHS concat of non-basic type");
                 return;
             }
@@ -856,7 +909,7 @@ private:
         }
     }
     void visit(AstNodeAssign* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
 
@@ -875,12 +928,14 @@ private:
 
         iterateAndNextConstNull(nodep->rhsp());  // Value to assign
         handleAssignRecurse(nodep, nodep->lhsp(), nodep->rhsp());
+        // UINFO(9, "set " << fetchConst(nodep->rhsp())->num().ascii() << " for assign "
+        //  << nodep->lhsp()->name());
     }
     void visit(AstArraySel* nodep) override {
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
-        if (AstInitArray* const initp = VN_CAST(fetchValueNull(nodep->fromp()), InitArray)) {
-            AstConst* const indexp = fetchConst(nodep->bitp());
+        if (const AstInitArray* const initp = VN_CAST(fetchValueNull(nodep->fromp()), InitArray)) {
+            const AstConst* const indexp = fetchConst(nodep->bitp());
             const uint32_t offset = indexp->num().toUInt();
             AstNodeExpr* const itemp = initp->getIndexDefaultedValuep(offset);
             if (!itemp) {
@@ -895,12 +950,46 @@ private:
             clearOptimizable(nodep, "Array select of non-array");
         }
     }
+
+    // Evaluate a slice of an unpacked array.  If the base value is a constant
+    // AstInitArray, build a new AstInitArray representing the slice and assign
+    // it as this node's value.  New index 0 corresponds to the lowest index of
+    // the slice.  Otherwise, mark this node as unoptimizable.
+    void visit(AstSliceSel* nodep) override {
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
+        if (m_checkOnly || !optimizable()) return;
+        // Fetch the base constant array
+        if (const AstInitArray* const initp = VN_CAST(fetchValueNull(nodep->fromp()), InitArray)) {
+            const VNumRange& sliceRange = nodep->declRange();
+            const uint32_t sliceElements = sliceRange.elements();
+            const int sliceLo = sliceRange.lo();
+            // Use this node's dtype for the slice array
+            AstNodeDType* const dtypep = nodep->dtypep()->skipRefp();
+            // Clone the default value from the base array, if present
+            AstNodeExpr* defaultp = nullptr;
+            if (initp->defaultp()) defaultp = initp->defaultp()->cloneTree(false);
+            AstInitArray* const newInitp = new AstInitArray{nodep->fileline(), dtypep, defaultp};
+            // Copy slice elements in ascending order
+            for (uint32_t idx = 0; idx < sliceElements; ++idx) {
+                const uint32_t baseIdx = sliceLo + idx;
+                AstNodeExpr* const itemp = initp->getIndexDefaultedValuep(baseIdx);
+                if (itemp) newInitp->addIndexValuep(idx, itemp->cloneTree(false));
+            }
+            // Assign the new constant array and track it for later deletion
+            setValue(nodep, newInitp);
+            m_reclaimValuesp.push_back(newInitp);
+        } else {
+            clearOptimizable(nodep, "Slice select of non-array");
+        }
+    }
+
     void visit(AstBegin* nodep) override {
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
     }
     void visit(AstNodeCase* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         UINFO(5, "   CASE " << nodep);
         checkNodeInfo(nodep);
         if (m_checkOnly) {
@@ -929,7 +1018,7 @@ private:
             for (AstCaseItem* itemp = nodep->itemsp(); itemp;
                  itemp = VN_AS(itemp->nextp(), CaseItem)) {
                 if (hit) break;
-                if (!hit && itemp->isDefault()) {
+                if (itemp->isDefault()) {
                     iterateAndNextConstNull(itemp->stmtsp());
                     hit = true;
                 }
@@ -939,7 +1028,7 @@ private:
 
     void visit(AstCaseItem* nodep) override {
         // Real handling is in AstNodeCase
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
     }
@@ -947,12 +1036,12 @@ private:
     void visit(AstComment*) override {}
 
     void visit(AstStmtExpr* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
     }
     void visit(AstExprStmt* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         checkNodeInfo(nodep);
         iterateAndNextConstNull(nodep->stmtsp());
         if (!optimizable()) return;
@@ -962,30 +1051,26 @@ private:
     }
 
     void visit(AstJumpBlock* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         iterateChildrenConst(nodep);
-    }
-    void visit(AstJumpGo* nodep) override {
-        if (jumpingOver(nodep)) return;
-        checkNodeInfo(nodep);
-        if (!m_checkOnly) {
-            UINFO(5, "   JUMP GO " << nodep);
-            m_jumpp = nodep;
-        }
-    }
-    void visit(AstJumpLabel* nodep) override {
-        // This only supports forward jumps. That's all we make at present,
-        // AstJumpGo::broken uses brokeExistsBelow() to check this.
-        if (jumpingOver(nodep)) return;
-        checkNodeInfo(nodep);
-        iterateChildrenConst(nodep);
-        if (m_jumpp && m_jumpp->labelp() == nodep) {
+        if (m_jumpp && m_jumpp->blockp() == nodep) {
             UINFO(5, "   JUMP DONE " << nodep);
             m_jumpp = nullptr;
         }
     }
+    void visit(AstJumpGo* nodep) override {
+        if (jumpingOver()) return;
+        checkNodeInfo(nodep);
+        if (!m_checkOnly) {
+            UINFO(5, "   JUMP GO " << nodep);
+            // Should be back at the JumpBlock and clear m_jumpp before another JumpGo
+            UASSERT_OBJ(!m_jumpp, nodep, "Jump inside jump");
+            m_jumpp = nodep;
+        }
+    }
+
     void visit(AstStop* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (m_params) {  // This message seems better than an obscure $stop
             // The spec says $stop is just ignored, it seems evil to ignore assertions
             clearOptimizable(
@@ -1030,7 +1115,7 @@ private:
 
     void visit(AstWhile* nodep) override {
         // Doing lots of Whiles is slow, so only for parameters
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         UINFO(5, "   WHILE " << nodep);
         if (!m_params) {
             badNodeType(nodep);
@@ -1043,18 +1128,16 @@ private:
             int loops = 0;
             while (true) {
                 UINFO(5, "    WHILE-ITER " << nodep);
-                iterateAndNextConstNull(nodep->precondsp());
-                if (jumpingOver(nodep)) break;
                 iterateAndNextConstNull(nodep->condp());
-                if (jumpingOver(nodep)) break;
+                if (jumpingOver()) break;
                 if (!optimizable()) break;
                 if (!fetchConst(nodep->condp())->num().isNeqZero()) {  //
                     break;
                 }
                 iterateAndNextConstNull(nodep->stmtsp());
-                if (jumpingOver(nodep)) break;
+                if (jumpingOver()) break;
                 iterateAndNextConstNull(nodep->incsp());
-                if (jumpingOver(nodep)) break;
+                if (jumpingOver()) break;
 
                 // Prep for next loop
                 if (loops++
@@ -1070,7 +1153,7 @@ private:
     }
 
     void visit(AstFuncRef* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!optimizable()) return;  // Accelerate
         UINFO(5, "   FUNCREF " << nodep);
         checkNodeInfo(nodep);
@@ -1084,17 +1167,49 @@ private:
         VL_DANGLING(funcp);  // Make sure we've sized the function
         funcp = nodep->taskp();
         UASSERT_OBJ(funcp, nodep, "Not linked");
+
         if (funcp->recursive()) {
-            // Because we attach values to nodes rather then making a stack, this is a mess
-            // When we do support this, we need a stack depth limit of 1K or something,
-            // and the t_func_recurse_param_bad.v test should check that limit's error message
-            clearOptimizable(funcp, "Unsupported: Recursive constant functions");
-            return;
+            if (m_recurseCount >= CONST_FUNC_RECURSION_MAX) {
+                clearOptimizable(funcp, "Constant function recursed more than "s
+                                            + std::to_string(CONST_FUNC_RECURSION_MAX) + " times");
+                return;
+            }
+            ++m_recurseCount;
+        }
+
+        // Values from previous call, so can save to stack
+        // The "stack" is this visit function's local stack, as this visit is itself recursing
+        std::map<AstNode*, AstNodeExpr*> oldValues;
+
+        if (funcp->recursive() && !m_checkOnly) {
+            // Save local automatics
+            funcp->foreach([this, &oldValues](AstVar* varp) {
+                if (varp->lifetime().isAutomatic()) {  // This also does function's I/O
+                    if (AstNodeExpr* const valuep = fetchValueNull(varp)) {
+                        AstNodeExpr* const nvaluep = newTrackedClone(valuep);
+                        oldValues.emplace(varp, nvaluep);
+                    }
+                }
+            });
+            // Save every expression value, as might be in middle of expression
+            // that calls recursively back to this same function.
+            // This is much heavier-weight then likely is needed, in theory
+            // we could look at the visit stack to determine what nodes
+            // need save-restore, but that is difficult to get right, and
+            // recursion is rare.
+            funcp->foreach([this, &oldValues](AstNodeExpr* exprp) {
+                if (VN_IS(exprp, Const)) return;  // Speed up as won't change
+                if (AstNodeExpr* const valuep = fetchValueNull(exprp)) {
+                    AstNodeExpr* const nvaluep = newTrackedClone(valuep);
+                    oldValues.emplace(exprp, nvaluep);
+                }
+            });
         }
         // Apply function call values to function
         V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
         // Must do this in two steps, eval all params, then apply them
         // Otherwise chained functions may have the wrong results
+        std::vector<std::pair<AstVar*, AstNodeExpr*>> portValues;
         for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
             AstVar* const portp = it->first;
             AstNode* const pinp = it->second->exprp();
@@ -1107,42 +1222,50 @@ private:
                 }
                 // Evaluate pin value
                 iterateConst(pinp);
+                // Clone in case are recursing
+                portValues.push_back(std::make_pair(portp, newTrackedClone(fetchValue(pinp))));
             }
         }
-        for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
-            AstVar* const portp = it->first;
-            AstNode* const pinp = it->second->exprp();
-            if (pinp) {  // Else too few arguments in function call - ignore it
-                // Apply value to the function
-                if (!m_checkOnly && optimizable()) newValue(portp, fetchValue(pinp));
+        // Apply value to the function
+        if (!m_checkOnly && optimizable())
+            for (auto& it : portValues) {
+                if (!m_checkOnly && optimizable()) newValue(it.first, it.second);
             }
-        }
         SimStackNode stackNode{nodep, &tconnects};
         // cppcheck-suppress danglingLifetime
         m_callStack.push_back(&stackNode);
-        // Clear output variable
-        if (const auto* const basicp = VN_CAST(funcp->fvarp(), Var)->basicp()) {
-            AstConst cnst{funcp->fvarp()->fileline(), AstConst::WidthedValue{}, basicp->widthMin(),
-                          0};
-            if (basicp->isZeroInit()) {
-                cnst.num().setAllBits0();
-            } else {
-                cnst.num().setAllBitsX();
-            }
-            newValue(funcp->fvarp(), &cnst);
+        if (!m_checkOnly) {
+            // Clear output variable
+            initVar(VN_CAST(funcp->fvarp(), Var));
+            // Clear other automatic variables
+            funcp->foreach([this](AstVar* varp) {
+                if (varp->lifetime().isAutomatic() && !varp->isIO()) initVar(varp);
+            });
         }
+
         // Evaluate the function
         iterateConst(funcp);
         m_callStack.pop_back();
+        AstNodeExpr* returnp = nullptr;
         if (!m_checkOnly && optimizable()) {
-            // Grab return value from output variable (if it's a function)
+            // Grab return value from output variable
             UASSERT_OBJ(funcp->fvarp(), nodep, "Function reference points at non-function");
-            newValue(nodep, fetchValue(funcp->fvarp()));
+            returnp = newTrackedClone(fetchValue(funcp->fvarp()));
+            UINFO(5, "func " << nodep->name() << " return = " << returnp);
+        }
+        // Restore local automatics (none unless recursed)
+        for (const auto& it : oldValues) {
+            if (it.second) newValue(it.first, it.second);
+        }
+        if (returnp) newValue(nodep, returnp);
+        if (funcp->recursive()) {
+            UASSERT_OBJ(m_recurseCount > 0, nodep, "recurse underflow");
+            --m_recurseCount;
         }
     }
 
     void visit(AstVar* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!m_params) {
             badNodeType(nodep);
             return;
@@ -1150,12 +1273,12 @@ private:
     }
 
     void visit(AstScopeName* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         // Ignore
     }
 
     void visit(AstSFormatF* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
@@ -1216,14 +1339,14 @@ private:
     }
 
     void visit(AstDisplay* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         if (!optimizable()) return;  // Accelerate
         // We ignore isPredictOptimizable as $display is often in constant
         // functions and we want them to work if used with parameters
         checkNodeInfo(nodep, /*display:*/ true);
         iterateChildrenConst(nodep);
         if (m_params) {
-            AstConst* const textp = fetchConst(nodep->fmtp());
+            const AstConst* const textp = fetchConst(nodep->fmtp());
             switch (nodep->displayType()) {
             case VDisplayType::DT_DISPLAY:  // FALLTHRU
             case VDisplayType::DT_INFO: v3warn(USERINFO, textp->name()); break;
@@ -1235,6 +1358,18 @@ private:
             }
         }
     }
+    void visit(AstToStringN* nodep) override {
+        if (jumpingOver()) return;
+        if (!optimizable()) return;  // Accelerate
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
+        if (!optimizable()) return;
+        std::string result = toStringRecurse(nodep->lhsp());
+        if (!optimizable()) return;
+        AstConst* const resultConstp = new AstConst{nodep->fileline(), AstConst::String{}, result};
+        setValue(nodep, resultConstp);
+        m_reclaimValuesp.push_back(resultConstp);
+    }
 
     void visit(AstCoverInc* nodep) override { m_isCoverage = true; }
 
@@ -1244,11 +1379,11 @@ private:
         // Some CMethods such as size() on queues could be supported, but
         // instead we should change those methods to new Ast types so we can
         // properly dispatch them
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         knownBadNodeType(nodep);
     }
     void visit(AstMemberSel* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         knownBadNodeType(nodep);
     }
     // ====
@@ -1257,7 +1392,7 @@ private:
     //   AstCoverInc, AstFinish,
     //   AstRand, AstTime, AstUCFunc, AstCCall, AstCStmt, AstUCStmt
     void visit(AstNode* nodep) override {
-        if (jumpingOver(nodep)) return;
+        if (jumpingOver()) return;
         badNodeType(nodep);
     }
 

@@ -10,6 +10,8 @@ module t;
    integer fd, cnt;
    initial begin
       fd = $fopen({`STRINGIFY(`TEST_OBJ_DIR),"/zeros.log"}, "w");
+      for (cnt = 0; cnt < 4; cnt = cnt + 1)
+        $fwrite(fd, "%c", 8'd0);
       for (cnt = 0; cnt < 16; cnt = cnt + 4)
         $fwrite(fd, "%u", 32'd0);
       $fclose(fd);

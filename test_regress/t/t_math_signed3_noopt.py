@@ -13,7 +13,7 @@ test.scenarios('simulator')
 
 test.top_filename = "t/t_math_signed3.v"
 
-test.compile(make_main=False, verilator_flags2=["-O0", "--main", "--exe", "--timing"])
+test.compile(make_main=False, verilator_flags2=["-O0", "--binary"])
 
 test.execute()
 

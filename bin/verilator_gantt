@@ -238,6 +238,7 @@ def report_mtasks():
     thread_mtask_time = collections.defaultdict(lambda: 0)
     long_mtask_time = 0
     long_mtask = None
+    long_mtask_hier_block = None
     predict_mtask_time = 0
     predict_elapsed = 0
     for (hier_block, mtask_id) in Mtasks:
@@ -278,6 +279,9 @@ def report_mtasks():
     min_mtask = None
     max_p2e = -1000000
     max_mtask = None
+
+    min_hier_block = None
+    max_hier_block = None
 
     for (hier_block, mtask_id) in sorted(Mtasks.keys()):
         mtask = Mtasks[(hier_block, mtask_id)]

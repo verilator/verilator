@@ -7,9 +7,9 @@
 `define STRINGIFY(x) `"x`"
 
 module t(/*AUTOARG*/
-   // Inputs
-   clk
-   );
+  // Inputs
+  clk
+  );
 
    input clk;
    int   cyc;
@@ -20,7 +20,7 @@ module t(/*AUTOARG*/
    always_ff @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc == 1) begin
-         assoc_c[300] <= 10;  // See if clearing must happen first
+         assoc_c[300] = 10;  // See if clearing must happen first
          // Also checks no BLKANDNBLK due to readmem/writemem
       end
       else if (cyc == 2) begin

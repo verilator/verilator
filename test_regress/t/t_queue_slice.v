@@ -11,7 +11,8 @@
 
 module t (/*AUTOARG*/);
    initial begin
-      string q[$];
+      typedef string q_t[$];
+      q_t q;
       string v;
       int    i;
       int    qi[$:5];
@@ -19,46 +20,46 @@ module t (/*AUTOARG*/);
 
       q.push_front("non-empty");
       i = q.size(); `checkh(i, 1);
-      `checkp(q, "'{\"non-empty\"} ");
+      `checkp(q, "'{\"non-empty\"}");
 
       q = '{};
       i = q.size(); `checkh(i, 0);
 
       q = '{"q"};
-      `checkp(q, "'{\"q\"} ");
+      `checkp(q, "'{\"q\"}");
 
       q = {};
       i = q.size(); `checkh(i, 0);
 
       q = '{"q", "b", "c", "d", "e", "f"};
       if (q[0] !== "q") $stop;
-      `checkp(q, "'{\"q\", \"b\", \"c\", \"d\", \"e\", \"f\"} ");
+      `checkp(q, "'{\"q\", \"b\", \"c\", \"d\", \"e\", \"f\"}");
 
       q = {"q", "b", "c", "d", "e", "f"};
-      `checkp(q, "'{\"q\", \"b\", \"c\", \"d\", \"e\", \"f\"} ");
+      `checkp(q, "'{\"q\", \"b\", \"c\", \"d\", \"e\", \"f\"}");
 
       q.delete(1);
       v = q[1]; `checks(v, "c");
-      `checkp(q, "'{\"q\", \"c\", \"d\", \"e\", \"f\"} ");
+      `checkp(q, "'{\"q\", \"c\", \"d\", \"e\", \"f\"}");
 
       q.insert(0, "ins0");
       q.insert(2, "ins2");
       v = q[0]; `checks(v, "ins0");
       v = q[2]; `checks(v, "ins2");
-      `checkp(q, "'{\"ins0\", \"q\", \"ins2\", \"c\", \"d\", \"e\", \"f\"} ");
+      `checkp(q, "'{\"ins0\", \"q\", \"ins2\", \"c\", \"d\", \"e\", \"f\"}");
 
       // Slicing
       q = '{"q", "b", "c", "d", "e", "f"};
       q = q[-1:0];
-      `checkp(q, "'{\"q\"} ");
+      `checkp(q, "'{\"q\"}");
       q = '{"q", "b", "c", "d", "e", "f"};
       q = q[2:3];
-      `checkp(q, "'{\"c\", \"d\"} ");
+      `checkp(q, "'{\"c\", \"d\"}");
       q = '{"q", "b", "c", "d", "e", "f"};
       q = q[3:$];
-      `checkp(q, "'{\"d\", \"e\", \"f\"} ");
+      `checkp(q, "'{\"d\", \"e\", \"f\"}");
       q = q[$:$];
-      `checkp(q, "'{\"f\"} ");
+      `checkp(q, "'{\"f\"}");
 
       // Similar using implied notation
       q = '{"f"};
@@ -66,14 +67,14 @@ module t (/*AUTOARG*/);
       q = {q, "f2"};  // push_front
       q = {"b1", q};  // push_back
       q = {"b2", q};  // push_back
-      `checkp(q, "'{\"b2\", \"b1\", \"f\", \"f1\", \"f2\"} ");
+      `checkp(q, "'{\"b2\", \"b1\", \"f\", \"f1\", \"f2\"}");
 
       q = {q[0], q[2:$]};  // delete element 1
-      `checkp(q, "'{\"b2\", \"f\", \"f1\", \"f2\"} ");
+      `checkp(q, "'{\"b2\", \"f\", \"f1\", \"f2\"}");
 
       q = {"a", "b"};
       q = {q, q};
-      `checkp(q, "'{\"a\", \"b\", \"a\", \"b\"} ");
+      `checkp(q, "'{\"a\", \"b\", \"a\", \"b\"}");
 
       begin
          string ai[$] = '{ "Foo", "Bar" };

@@ -392,53 +392,50 @@ install-msg:
 ######################################################################
 # Format/Lint
 
-# Use --xml flag to see the cppcheck code to use for suppression
-CPPCHECK1_CPP = $(wildcard $(srcdir)/include/*.cpp)
-CPPCHECK2_CPP = $(wildcard $(srcdir)/examples/*/*.cpp)
-CPPCHECK3_CPP = $(wildcard $(srcdir)/src/Vlc*.cpp)
-CPPCHECK4_CPP = $(wildcard $(srcdir)/src/V3[A-D]*.cpp $(srcdir)/src/Verilator*.cpp)
-CPPCHECK5_CPP = $(wildcard $(srcdir)/src/V3[E-I]*.cpp)
-CPPCHECK6_CPP = $(wildcard $(srcdir)/src/V3[P-Z]*.cpp)
-CPPCHECK7_CPP = $(wildcard $(srcdir)/src/V3[L-R]*.cpp)
-CPPCHECK8_CPP = $(wildcard $(srcdir)/src/V3[S-Z]*.cpp)
-CHECK_CPP = $(CPPCHECK1_CPP) $(CPPCHECK2_CPP) $(CPPCHECK3_CPP) $(CPPCHECK4_CPP) \
-  $(CPPCHECK5_CPP) $(CPPCHECK6_CPP) $(CPPCHECK7_CPP) $(CPPCHECK8_CPP)
+CPPCHECK_VERILATOR_CPP = $(wildcard $(srcdir)/src/V3*.cpp $(srcdir)/src/Verilator*.cpp)
+CPPCHECK_RUNTIME_CPP = $(wildcard $(srcdir)/include/*.cpp)
+CPPCHECK_VLC_CPP = $(wildcard $(srcdir)/src/Vlc*.cpp)
+CPPCHECK_EXAMPLES_CPP = $(wildcard $(srcdir)/examples/*/*.cpp)
+CHECK_CPP = $(CPPCHECK_VERILATOR_CPP) $(CPPCHECK_RUNTIME_CPP) $(CPPCHECK_VLC_CPP) $(CPPCHECK_EXAMPLES_CPP)
 CHECK_H = $(wildcard \
   $(srcdir)/include/*.h \
   $(srcdir)/src/*.h )
 CHECK_YL = $(wildcard \
   $(srcdir)/src/*.y \
   $(srcdir)/src/*.l )
-CPPCHECK = src/cppcheck_filtered cppcheck
-CPPCHECK_FLAGS = --enable=all --inline-suppr \
-  --suppress=cstyleCast --suppress=ctunullpointer \
-  --suppress=derefInvalidIteratorRedundantCheck \
-  --suppress=nullPointer --suppress=nullPointerRedundantCheck \
-  --suppress=templateRecursion \
-  --suppress=unusedFunction --suppress=unusedScopedObject \
-  --suppress=useInitializationList --suppress=useStlAlgorithm \
+CPPCHECK = cppcheck
+CPPCHECK_JOBS = $(shell nproc)
+CPPCHECK_CACHE = $(srcdir)/src/obj_dbg/cppcheck-cache
+CPPCHECK_FLAGS = --enable=all
+CPPCHECK_FLAGS += --inline-suppr
+CPPCHECK_FLAGS += --suppressions-list=$(srcdir)/src/cppcheck-suppressions.txt
+CPPCHECK_FLAGS += --cppcheck-build-dir=$(CPPCHECK_CACHE)
+CPPCHECK_FLAGS += -DVL_DEBUG=1 -DVL_CPPCHECK=1 -DINFILTER_PIPE=1 -D__GNUC__=1
+CPPCHECK_FLAGS += -j$(CPPCHECK_JOBS)
+CPPCHECK_INC = -I$(srcdir)/include
+CPPCHECK_INC += -I$(srcdir)/include/gtkwave
+CPPCHECK_INC += -I$(srcdir)/include/vltstd
+CPPCHECK_INC += -I$(srcdir)/src/obj_dbg
+CPPCHECK_INC += -I$(srcdir)/src
 
-CPPCHECK_FLAGS += --xml
-CPPCHECK_DEP = $(subst .cpp,.cppcheck,$(CHECK_CPP))
-CPPCHECK_INC = -I$(srcdir)/include -I$(srcdir)/include/gtkwave -I$(srcdir)/include/vltstd -I$(srcdir)/src/obj_dbg -I$(srcdir)/src
+$(CPPCHECK_CACHE): $(CHECK_CPP) $(CHECK_H) $(CHECK_YL)
+	/bin/rm -rf $@
+	/bin/mkdir -p $@
 
-cppcheck: cppcheck-1 cppcheck-2 cppcheck-3 cppcheck-4 cppcheck-5 cppcheck-6 cppcheck-7 cppcheck-8
-cppcheck-1:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK1_CPP)
-cppcheck-2:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK2_CPP)
-cppcheck-3:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK3_CPP)
-cppcheck-4:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK4_CPP)
-cppcheck-5:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK5_CPP)
-cppcheck-6:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK6_CPP)
-cppcheck-7:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK7_CPP)
-cppcheck-8:
-	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $(CPPCHECK8_CPP)
+cppcheck-verilator: | $(CPPCHECK_CACHE)
+	$(CPPCHECK) $(CPPCHECK_FLAGS) $(CPPCHECK_INC) $(CPPCHECK_VERILATOR_CPP)
+cppcheck-runtime: | $(CPPCHECK_CACHE)
+	$(CPPCHECK) $(CPPCHECK_FLAGS) $(CPPCHECK_INC) $(CPPCHECK_RUNTIME_CPP)
+cppcheck-vlc: | $(CPPCHECK_CACHE)
+	$(CPPCHECK) $(CPPCHECK_FLAGS) $(CPPCHECK_INC) $(CPPCHECK_VLC_CPP)
+cppcheck-examples: | $(CPPCHECK_CACHE)
+	$(CPPCHECK) $(CPPCHECK_FLAGS) $(CPPCHECK_INC) $(CPPCHECK_EXAMPLES_CPP)
+
+cppcheck:
+	$(MAKE) cppcheck-vlc
+	$(MAKE) cppcheck-examples
+	$(MAKE) cppcheck-runtime
+	$(MAKE) cppcheck-verilator
 
 CLANGTIDY = clang-tidy
 CLANGTIDY_FLAGS = -config='' \
@@ -465,13 +462,14 @@ analyzer-include:
 format:
 	$(MAKE) -j 5 format-c format-cmake format-exec format-py
 
-CLANGFORMAT = clang-format-14
+CLANGFORMAT = clang-format-18
 CLANGFORMAT_FLAGS = -i
 CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) test_regress/t/*.c* test_regress/t/*.h
 
 format-c clang-format:
-	@$(CLANGFORMAT) --version | egrep 14.0 > /dev/null \
-	|| echo "*** You are not using clang-format-14, indents may differ from master's ***"
+	$(CLANGFORMAT) --version
+	@$(CLANGFORMAT) --version | fgrep 'version 18' > /dev/null \
+	|| echo "*** You are not using clang-format-18, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
 YAMLFIX = YAMLFIX_WHITELINES=1 YAMLFIX_LINE_LENGTH=130 YAMLFIX_preserve_quotes=true yamlfix
@@ -511,7 +509,6 @@ PY_PROGRAMS = \
   src/astgen \
   src/bisonpre \
   src/config_rev \
-  src/cppcheck_filtered \
   src/flexfix \
   src/vlcovgen \
   src/.gdbinit.py \
@@ -538,6 +535,7 @@ YAPF = yapf3
 YAPF_FLAGS = -i --parallel
 
 format-py yapf:
+	$(YAPF) --version
 	$(YAPF) $(YAPF_FLAGS) $(PY_FILES)
 
 GERSEMI = gersemi

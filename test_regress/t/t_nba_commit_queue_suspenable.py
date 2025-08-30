@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=["--exe", "--main", "--timing", "-unroll-count 1", "--stats"])
+test.compile(verilator_flags2=["--binary", "-unroll-count 1", "--stats"])
 
 test.execute()
 

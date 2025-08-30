@@ -4,8 +4,9 @@
 // without warranty, 2021 by Ryszard Rozak.
 // SPDX-License-Identifier: CC0-1.0
 
-module dut(output int x);
-   parameter int P [5];
+module dut
+  #(parameter int P [5])
+  (output int x);
    assign x = P[2];
 endmodule
 

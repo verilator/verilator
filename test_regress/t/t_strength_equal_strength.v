@@ -4,8 +4,9 @@
 // any use, without warranty, 2022 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
-interface inter (input logic cond, output wire a);
-   parameter W;
+interface inter
+   #(parameter W)
+   (input logic cond, output wire a);
    // Example:
    wire (weak0, weak1) [W-1:0] b = '1;
    assign (strong0, strong1) b = cond ? 'b0 : 'bz;

@@ -48,7 +48,7 @@ class DepthVisitor final : public VNVisitor {
 
     void createDeepTemp(AstNodeExpr* nodep) {
         UINFO(6, "  Deep  " << nodep);
-        // if (debug() >= 9) nodep->dumpTree("-  deep: ");
+        // UINFOTREE(9, nodep, "", "deep");
         AstVar* const varp = new AstVar{nodep->fileline(), VVarType::STMTTEMP,
                                         m_tempNames.get(nodep), nodep->dtypep()};
         if (m_cfuncp) {

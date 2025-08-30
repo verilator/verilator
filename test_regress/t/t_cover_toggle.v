@@ -4,6 +4,8 @@
 // any use, without warranty, 2008 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+typedef struct packed {logic a;} str_logic;
+
 module t (/*AUTOARG*/
    // Inputs
    clk, check_real, check_array_real, check_string
@@ -26,6 +28,8 @@ module t (/*AUTOARG*/
 
    str_t stoggle; initial stoggle='0;
 
+   str_logic strl; initial strl='0;
+
    union {
       real val1;  // TODO use bit [7:0] here
       real val2;  // TODO use bit [3:0] here
@@ -43,6 +47,17 @@ module t (/*AUTOARG*/
       int q[$];
    } str_queue_t;
    str_queue_t str_queue;
+
+   typedef struct packed {
+      // verilator lint_off ASCRANGE
+      bit [3:5] x;
+      // verilator lint_on ASCRANGE
+      bit [0:0] y;
+   } str_bit_t;
+   str_bit_t str_bit;
+   str_bit_t [5:2] str_bit_arr;
+
+   assign strl.a = clk;
 
    alpha a1 (/*AUTOINST*/
              // Outputs
@@ -79,6 +94,11 @@ module t (/*AUTOARG*/
                 .clk                    (clk),
                 .toggle                 (toggle));
 
+   mod_struct i_mod_struct (/*AUTOINST*/
+                            // Inputs
+                            .input_struct   (strl));
+
+
    reg [1:0]  memory[121:110];
 
    wire [1023:0] largeish = {992'h0, cyc};
@@ -96,10 +116,16 @@ module t (/*AUTOARG*/
          if (cyc == 3) begin
             str_queue.q.push_back(1);
             toggle <= '1;
+            str_bit.x <= '1;
+            str_bit.y <= '1;
+            str_bit_arr[4].x <= '1;
          end
          if (cyc == 4) begin
             if (str_queue.q.size() != 1) $stop;
             toggle <= '0;
+            str_bit.x[3] <= 0;
+            str_bit.y[0] <= 0;
+            str_bit_arr[4].x[3] <= 0;
          end
          else if (cyc == 10) begin
             $write("*-* All Finished *-*\n");
@@ -122,26 +148,37 @@ module alpha (/*AUTOARG*/
    input clk;
 
    input toggle;
-   // CHECK_COVER(-1,"top.t.a*",4)
-   // 2 edges * (t.a1 and t.a2)
+   // CHECK_COVER(-1,"top.t.a*","toggle:0->1",2)
+   // CHECK_COVER(-2,"top.t.a*","toggle:1->0",2)
+   // (t.a1 and t.a2)
 
    input [7:0] cyc_copy;
-   // CHECK_COVER(-1,"top.t.a*","cyc_copy[0]",22)
-   // CHECK_COVER(-2,"top.t.a*","cyc_copy[1]",10)
-   // CHECK_COVER(-3,"top.t.a*","cyc_copy[2]",4)
-   // CHECK_COVER(-4,"top.t.a*","cyc_copy[3]",2)
-   // CHECK_COVER(-5,"top.t.a*","cyc_copy[4]",0)
-   // CHECK_COVER(-6,"top.t.a*","cyc_copy[5]",0)
-   // CHECK_COVER(-7,"top.t.a*","cyc_copy[6]",0)
-   // CHECK_COVER(-8,"top.t.a*","cyc_copy[7]",0)
+   // CHECK_COVER(-1,"top.t.a*","cyc_copy[0]:0->1",12)
+   // CHECK_COVER(-2,"top.t.a*","cyc_copy[0]:1->0",10)
+   // CHECK_COVER(-3,"top.t.a*","cyc_copy[1]:0->1",6)
+   // CHECK_COVER(-4,"top.t.a*","cyc_copy[1]:1->0",4)
+   // CHECK_COVER(-5,"top.t.a*","cyc_copy[2]:0->1",2)
+   // CHECK_COVER(-6,"top.t.a*","cyc_copy[2]:1->0",2)
+   // CHECK_COVER(-7,"top.t.a*","cyc_copy[3]:0->1",2)
+   // CHECK_COVER(-8,"top.t.a*","cyc_copy[3]:1->0",0)
+   // CHECK_COVER(-9,"top.t.a*","cyc_copy[4]:0->1",0)
+   // CHECK_COVER(-10,"top.t.a*","cyc_copy[4]:1->0",0)
+   // CHECK_COVER(-11,"top.t.a*","cyc_copy[5]:0->1",0)
+   // CHECK_COVER(-12,"top.t.a*","cyc_copy[5]:1->0",0)
+   // CHECK_COVER(-13,"top.t.a*","cyc_copy[6]:0->1",0)
+   // CHECK_COVER(-14,"top.t.a*","cyc_copy[6]:1->0",0)
+   // CHECK_COVER(-15,"top.t.a*","cyc_copy[7]:0->1",0)
+   // CHECK_COVER(-16,"top.t.a*","cyc_copy[7]:1->0",0)
 
    reg         toggle_internal;
-   // CHECK_COVER(-1,"top.t.a*",4)
-   // 2 edges * (t.a1 and t.a2)
+   // CHECK_COVER(-1,"top.t.a*","toggle_internal:0->1",2)
+   // CHECK_COVER(-2,"top.t.a*","toggle_internal:1->0",2)
+   // (t.a1 and t.a2)
 
    output reg  toggle_up;
-   // CHECK_COVER(-1,"top.t.a*",4)
-   // 2 edges * (t.a1 and t.a2)
+   // CHECK_COVER(-1,"top.t.a*","toggle_up:0->1",2)
+   // CHECK_COVER(-2,"top.t.a*","toggle_up:1->0",2)
+   // (t.a1 and t.a2)
 
    always @ (posedge clk) begin
       toggle_internal <= toggle;
@@ -157,7 +194,8 @@ module beta (/*AUTOARG*/
    input clk;
 
    input toggle_up;
-   // CHECK_COVER(-1,"top.t.b1","toggle_up",2)
+   // CHECK_COVER(-1,"top.t.b1","toggle_up:0->1",1)
+   // CHECK_COVER(-2,"top.t.b1","toggle_up:1->0",1)
 
    /* verilator public_module */
 
@@ -177,7 +215,8 @@ module off (/*AUTOARG*/
 
    // verilator coverage_on
    input toggle;
-   // CHECK_COVER(-1,"top.t.o1","toggle",2)
+   // CHECK_COVER(-1,"top.t.o1","toggle:0->1",1)
+   // CHECK_COVER(-2,"top.t.o1","toggle:1->0",1)
 
 endmodule
 
@@ -206,4 +245,12 @@ module param #(parameter P = 2) (/*AUTOARG*/
    if (P > 1) begin : gen_1
       assign z = 1;
    end
+endmodule
+
+module mod_struct(/*AUTOARG*/
+   // Inputs
+   input_struct
+   );
+
+   input str_logic input_struct;
 endmodule

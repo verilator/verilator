@@ -147,8 +147,6 @@ Hierarchy blocks have some limitations, including:
 * The hierarchy block cannot be accessed using dot (.) from the upper
   module(s) or other hierarchy blocks.
 
-* Signals in the block cannot be traced.
-
 * Modport cannot be used at the hierarchical block boundary.
 
 * The simulation speed is likely not as fast as flat Verilation, in which

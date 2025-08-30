@@ -36,9 +36,9 @@ EmitCParentModule::EmitCParentModule() {
 }
 
 //######################################################################
-// EmitCBase implementation
+// EmitCUtil implementation
 
-string EmitCBase::prefixNameProtect(const AstNode* nodep) VL_MT_STABLE {
+string EmitCUtil::prefixNameProtect(const AstNode* nodep) VL_MT_STABLE {
     const string prefix = v3Global.opt.modPrefix() + "_" + VIdProtect::protect(nodep->name());
     // If all-uppercase prefix conflicts with a previous usage of the
     // prefix with different capitalization, rename to avoid conflict.
@@ -78,13 +78,13 @@ string EmitCBaseVisitorConst::funcNameProtect(const AstCFunc* nodep, const AstNo
     modp = modp ? modp : EmitCParentModule::get(nodep);
     string name;
     if (nodep->isConstructor()) {
-        name += prefixNameProtect(modp);
+        name += EmitCUtil::prefixNameProtect(modp);
     } else if (nodep->isDestructor()) {
         name += "~";
-        name += prefixNameProtect(modp);
+        name += EmitCUtil::prefixNameProtect(modp);
     } else {
         if (nodep->isLoose()) {
-            name += prefixNameProtect(modp);
+            name += EmitCUtil::prefixNameProtect(modp);
             name += "__";
         }
         name += nodep->nameProtect();
@@ -112,7 +112,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
     string args;
     if (nodep->isLoose() && !nodep->isStatic()) {
         if (nodep->isConst().trueKnown()) args += "const ";
-        args += prefixNameProtect(EmitCParentModule::get(nodep));
+        args += EmitCUtil::prefixNameProtect(EmitCParentModule::get(nodep));
         args += "* vlSelf";
     }
     if (nodep->needProcess()) {
@@ -150,9 +150,9 @@ void EmitCBaseVisitorConst::emitCFuncHeader(const AstCFunc* funcp, const AstNode
     }
     if (withScope) {
         if (funcp->dpiExportDispatcher()) {
-            putns(funcp, topClassName() + "::");
+            putns(funcp, EmitCUtil::topClassName() + "::");
         } else if (funcp->isProperMethod()) {
-            putns(funcp, prefixNameProtect(modp) + "::");
+            putns(funcp, EmitCUtil::prefixNameProtect(modp) + "::");
         }
     }
     putns(funcp, funcNameProtect(funcp, modp));
@@ -181,7 +181,7 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
 
 void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
     const AstBasicDType* const basicp = nodep->basicp();
-    bool refNeedParens = VN_IS(nodep->dtypeSkipRefp(), UnpackArrayDType);
+    const bool refNeedParens = VN_IS(nodep->dtypeSkipRefp(), UnpackArrayDType);
 
     const auto emitDeclArrayBrackets = [this](const AstVar* nodep) -> void {
         // This isn't very robust and may need cleanup for other data types
@@ -313,7 +313,7 @@ std::pair<string, FileLine*> EmitCBaseVisitorConst::textSection(const AstNodeMod
         string::size_type pos;
         while ((pos = text.find("`systemc_class_name")) != string::npos) {
             text.replace(pos, std::strlen("`systemc_class_name"),
-                         EmitCBase::prefixNameProtect(modp));
+                         EmitCUtil::prefixNameProtect(modp));
         }
     }
     return std::make_pair(text, fl);

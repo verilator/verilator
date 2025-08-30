@@ -32,8 +32,7 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
     bool m_inUnpacked = false;
 
     // METHODS
-
-    uint32_t tabModulus(AstNodeDType* dtypep) {
+    uint32_t tabModulus(const AstNodeDType* dtypep) {
         const uint32_t elemBytes = dtypep->widthTotalBytes();
         return dtypep->isString() ? 1  // String
                : elemBytes <= 2   ? 8  // CData, SData
@@ -99,6 +98,7 @@ protected:
     }  // LCOV_EXCL_STOP
 
     void visit(AstConst* nodep) override {
+        // TODO merge with EmitCFunc::emitConstant
         const V3Number& num = nodep->num();
         UASSERT_OBJ(!num.isFourState(), nodep, "4-state value in constant pool");
         const AstNodeDType* const dtypep = nodep->dtypep();

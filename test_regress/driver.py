@@ -4,6 +4,7 @@
 
 import argparse
 import collections
+import ctypes
 import glob
 import hashlib
 import json
@@ -14,6 +15,7 @@ import pickle
 import platform
 import pty
 import re
+import resource
 import runpy
 import shutil
 import signal
@@ -1366,6 +1368,19 @@ class VlTest:
             ]
             self.run(logfile=self.obj_dir + "/pli_compile.log", fails=param['fails'], cmd=cmd)
 
+    def timeout(self, seconds):
+        """Limit the CPU time of the test - this limit is inherited
+        by all of the spawned child processess"""
+        #  An  unprivileged  process may set only its soft limit
+        #  to a value in the range from 0 up to the hard limit
+        _, hardlimit = resource.getrlimit(resource.RLIMIT_CPU)
+        softlimit = ctypes.c_long(min(seconds, ctypes.c_ulong(hardlimit).value)).value
+        # Casting is required due to a quirk in Python,
+        # rlimit values are interpreted as LONG, instead of ULONG
+        # https://github.com/python/cpython/issues/137044
+        rlimit = (softlimit, hardlimit)
+        resource.setrlimit(resource.RLIMIT_CPU, rlimit)
+
     def execute(self, **kwargs) -> None:
         """Run simulation executable.
         Arguments similar to run(); default arguments are from self"""
@@ -1528,6 +1543,7 @@ class VlTest:
                 *param['all_run_flags'],
                 ("'" if Args.gdbsim else ""),
             ]
+            cmd += self.driver_verilated_flags
             self.run(
                 cmd=cmd,
                 aslr_off=param['aslr_off'],  # Disable address space layour randomization
@@ -1562,6 +1578,10 @@ class VlTest:
     @property
     def driver_verilator_flags(self) -> list:
         return Args.passdown_verilator_flags
+
+    @property
+    def driver_verilated_flags(self) -> list:
+        return Args.passdown_verilated_flags
 
     @property
     def get_default_vltmt_threads(self) -> int:
@@ -2719,6 +2739,8 @@ def _parameter(param: str) -> None:
             sys.exit("%Error: Expected number following " + _Parameter_Next_Level + ": " + param)
         Args.passdown_verilator_flags.append(param)
         _Parameter_Next_Level = None
+    elif re.match(r'^(\+verilator\+.*)', param):
+        Args.passdown_verilated_flags.append(param)
     elif re.search(r'\.py', param):
         Arg_Tests.append(param)
     elif re.match(r'^-?(-debugi|-dumpi)', param):
@@ -2787,6 +2809,7 @@ if __name__ == '__main__':
     if 'TEST_REGRESS' in os.environ:
         sys.exit("%Error: TEST_REGRESS environment variable is already set")
     os.environ['TEST_REGRESS'] = os.getcwd()
+    os.environ['TERM'] = "dumb"
 
     Start = time.time()
     _Parameter_Next_Level = None
@@ -2876,6 +2899,7 @@ if __name__ == '__main__':
 
     (Args, rest) = parser.parse_known_intermixed_args()
     Args.passdown_verilator_flags = []
+    Args.passdown_verilated_flags = []
 
     for arg in rest:
         _parameter(arg)

@@ -42,7 +42,11 @@ class WidthCommitVisitor final : public VNVisitor {
 
     // STATE
     AstNodeModule* m_modp = nullptr;
+    std::string m_contNba;  // In continuous- or non-blocking assignment
+    bool m_dynsizedelem
+        = false;  // Writing a dynamically-sized array element, not the array itself
     VMemberMap m_memberMap;  // Member names cached for fast lookup
+    bool m_underSel = false;  // Whether is currently under AstMemberSel or AstSel
 
 public:
     // METHODS
@@ -124,6 +128,28 @@ private:
             }
         }
     }
+    void varLifetimeCheck(AstNode* nodep, AstVar* varp) {
+        // Skip if we are under a member select (lhs of a dot)
+        // We don't care about lifetime of anything else than rhs of a dot
+        if (!m_underSel && !m_contNba.empty()) {
+            std::string varType;
+            const AstNodeDType* const varDtp = varp->dtypep()->skipRefp();
+            if (varp->lifetime().isAutomatic() && !VN_IS(varDtp, IfaceRefDType)
+                && !(varp->isFuncLocal() && varp->isIO()))
+                varType = "Automatic lifetime";
+            else if (varp->isClassMember() && !varp->lifetime().isStatic()
+                     && !VN_IS(varDtp, IfaceRefDType))
+                varType = "Class non-static";
+            else if (varDtp->isDynamicallySized() && m_dynsizedelem)
+                varType = "Dynamically-sized";
+            if (!varType.empty()) {
+                UINFO(1, "    Related var dtype: " << varDtp);
+                nodep->v3error(varType
+                               << " variable not allowed in " << m_contNba
+                               << " assignment (IEEE 1800-2023 6.21): " << varp->prettyNameQ());
+            }
+        }
+    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -147,6 +173,47 @@ private:
             }
         }
     }
+    void visit(AstAlways* nodep) override {
+        // As have not optimized SenTrees yet, an 'always .*' will be on first and only SenItem
+        if (nodep->sentreep() && nodep->sentreep()->sensesp()
+            && nodep->sentreep()->sensesp()->isComboStar()) {
+            const bool noReads = nodep->forall(
+                [&](const AstNodeVarRef* refp) { return !refp->access().isReadOrRW(); });
+            if (noReads) {
+                nodep->v3warn(ALWNEVER, "'always @*' will never execute as expression list is "
+                                        "empty (no variables read)\n"
+                                            << nodep->warnMore()
+                                            << "... Suggest use 'always_comb'");
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+        }
+        // Iterate will delete ComboStar sentrees, so after above
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstSenTree* nodep) override {
+        if (nodep->sensesp() && nodep->sensesp()->isComboStar()) {
+            UASSERT_OBJ(!nodep->sensesp()->nextp(), nodep, "Shouldn't be senitems after .*");
+            // Make look like standalone always
+            // (Rest of code assumed this before .* existed)
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstAttrOf* nodep) override {
+        switch (nodep->attrType()) {
+        case VAttrType::FUNC_ARG_PROTO:  // FALLTHRU
+        case VAttrType::FUNC_RETURN_PROTO:
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        default:;
+        }
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
     void visit(AstClassExtends* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         // Extend arguments were converted to super.new arguments in V3LinkDot
@@ -161,8 +228,8 @@ private:
             nodep->replaceWith(newp);
             AstNode* const oldp = nodep;
             nodep = newp;
-            // if (debug() > 4) oldp->dumpTree("-  fixConstSize_old: ");
-            // if (debug() > 4) newp->dumpTree("-              _new: ");
+            // UINFOTREE(5, oldp, "", "fixConstSize_old");
+            // UINFOTREE(5, newp, "", "_new");
             VL_DO_DANGLING(pushDeletep(oldp), oldp);
         }
         editDType(nodep);
@@ -278,6 +345,27 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
         classEncapCheck(nodep, nodep->varp(), VN_CAST(nodep->classOrPackagep(), Class));
+        if (nodep->access().isWriteOrRW()) varLifetimeCheck(nodep, nodep->varp());
+    }
+    void visit(AstAssignDly* nodep) override {
+        iterateAndNextNull(nodep->timingControlp());
+        iterateAndNextNull(nodep->rhsp());
+        {
+            VL_RESTORER(m_contNba);
+            m_contNba = "nonblocking";
+            iterateAndNextNull(nodep->lhsp());
+        }
+        editDType(nodep);
+    }
+    void visit(AstAssignW* nodep) override {
+        iterateAndNextNull(nodep->timingControlp());
+        iterateAndNextNull(nodep->rhsp());
+        {
+            VL_RESTORER(m_contNba);
+            m_contNba = "continuous";
+            iterateAndNextNull(nodep->lhsp());
+        }
+        editDType(nodep);
     }
     void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
@@ -285,11 +373,16 @@ private:
         classEncapCheck(nodep, nodep->taskp(), VN_CAST(nodep->classOrPackagep(), Class));
     }
     void visit(AstMemberSel* nodep) override {
-        iterateChildren(nodep);
+        {
+            VL_RESTORER(m_underSel);
+            m_underSel = true;
+            iterateChildren(nodep);
+        }
         editDType(nodep);
         if (auto* const classrefp = VN_CAST(nodep->fromp()->dtypep(), ClassRefDType)) {
             classEncapCheck(nodep, nodep->varp(), classrefp->classp());
         }  // else might be struct, etc
+        varLifetimeCheck(nodep, nodep->varp());
     }
     void visit(AstVar* nodep) override {
         iterateChildren(nodep);
@@ -303,6 +396,28 @@ private:
     void visit(AstNodePreSel* nodep) override {  // LCOV_EXCL_LINE
         // This check could go anywhere after V3Param
         nodep->v3fatalSrc("Presels should have been removed before this point");
+    }
+    void visit(AstCMethodHard* nodep) override {
+        VL_RESTORER(m_dynsizedelem);
+        if (nodep->name() == "atWrite" || nodep->name() == "atWriteAppend"
+            || nodep->name() == "at")
+            m_dynsizedelem = true;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstAssocSel* nodep) override {
+        VL_RESTORER(m_dynsizedelem);
+        m_dynsizedelem = true;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstSel* nodep) override {
+        {
+            VL_RESTORER(m_underSel);
+            m_underSel = true;
+            iterateChildren(nodep);
+        }
+        editDType(nodep);
     }
     void visit(AstNode* nodep) override {
         iterateChildren(nodep);

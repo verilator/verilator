@@ -200,7 +200,7 @@ class VlRandomizer final {
     std::map<std::string, std::shared_ptr<const VlRandomVar>> m_vars;  // Solver-dependent
                                                                        // variables
     ArrayInfoMap m_arr_vars;  // Tracks each element in array structures for iteration
-    const VlQueue<CData>* m_randmode;  // rand_mode state;
+    const VlQueue<CData>* m_randmodep = nullptr;  // rand_mode state;
     int m_index = 0;  // Internal counter for key generation
 
     // PRIVATE METHODS
@@ -408,7 +408,7 @@ public:
 
     // Record a flat (non-class) element into the array variable table
     template <typename T>
-    typename std::enable_if<!std::is_class<T>::value, void>::type
+    typename std::enable_if<!std::is_class<T>::value || VlIsVlWide<T>::value, void>::type
     record_arr_table(T& var, const std::string& name, int dimension, std::vector<IData> indices,
                      std::vector<size_t> idxWidths) {
         const std::string key = generateKey(name, m_index);
@@ -574,10 +574,28 @@ public:
 
     void hard(std::string&& constraint);
     void clear();
-    void set_randmode(const VlQueue<CData>& randmode) { m_randmode = &randmode; }
+    void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
 #ifdef VL_DEBUG
     void dump() const;
 #endif
 };
 
+//=============================================================================
+// VlStdRandomizer provides a light wrapper for RNG used by std::randomize()
+// to support scope-level randomization.
+class VlStdRandomizer final {
+    // MEMBERS
+    VlRNG m_rng;  // Random number generator
+
+public:
+    // CONSTRUCTORS
+    VlStdRandomizer() = default;
+    ~VlStdRandomizer() = default;
+
+    template <typename T>
+    bool basicStdRandomization(T& value, size_t width) {
+        value = VL_MASK_I(width) & VL_RANDOM_RNG_I(m_rng);
+        return true;
+    }
+};
 #endif  // Guard

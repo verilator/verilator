@@ -72,7 +72,7 @@
 # include <execinfo.h>
 # define _VL_HAVE_STACKTRACE
 #endif
-#if defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 # include <sys/time.h>
 # include <sys/resource.h>
 # define _VL_HAVE_GETRLIMIT
@@ -168,7 +168,12 @@ void vl_fatal(const char* filename, int linenum, const char* hier, const char* m
 
     // Callbacks prior to termination
     Verilated::runExitCallbacks();
-    std::abort();
+
+    if (Verilated::debug()) {
+        std::abort();
+    } else {
+        std::exit(1);
+    }
 }
 #endif
 
@@ -622,11 +627,9 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, const WDataInP lw
     VL_DEBUG_IFDEF(assert(owords <= VL_MULS_MAX_WORDS););
     owp[0] = 1;
     for (int i = 1; i < VL_WORDS_I(obits); ++i) owp[i] = 0;
-    // cppcheck-has-bug-suppress variableScope
     VlWide<VL_MULS_MAX_WORDS> powstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     VlWide<VL_MULS_MAX_WORDS> lastpowstore;  // Fixed size, as MSVC++ doesn't allow [words] here
     VlWide<VL_MULS_MAX_WORDS> lastoutstore;  // Fixed size, as MSVC++ doesn't allow [words] here
-    // cppcheck-has-bug-suppress variableScope
     VL_ASSIGN_W(obits, powstore, lwp);
     for (int bit = 0; bit < rbits; ++bit) {
         if (bit > 0) {  // power = power*power
@@ -1379,7 +1382,6 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, "+-.0123456789eE");
                     if (!t_tmp[0]) goto done;
-                    // cppcheck-has-bug-suppress unusedStructMember, unreadVariable
                     union {
                         double r;
                         int64_t ld;
@@ -1753,7 +1755,7 @@ uint64_t VL_MURMUR64_HASH(const char* key) VL_PURE {
 
     uint64_t h = seed ^ (len * m);
 
-    const uint64_t* data = (const uint64_t*)key;
+    const uint64_t* data = reinterpret_cast<const uint64_t*>(key);
     const uint64_t* end = data + (len / 8);
 
     while (data != end) {
@@ -1767,7 +1769,7 @@ uint64_t VL_MURMUR64_HASH(const char* key) VL_PURE {
         h *= m;
     }
 
-    const unsigned char* data2 = (const unsigned char*)data;
+    const unsigned char* data2 = reinterpret_cast<const unsigned char*>(data);
 
     switch (len & 7) {
     case 7: h ^= uint64_t(data2[6]) << 48; /* fallthrough */
@@ -2146,7 +2148,6 @@ VlReadMem::VlReadMem(bool hex, int bits, const std::string& filename, QData star
     if (VL_UNLIKELY(!m_fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
         VL_WARN_MT(filename.c_str(), 0, "", "$readmem file not found");
-        // cppcheck-has-bug-suppress resourceLeak  // m_fp is nullptr
         return;
     }
 }
@@ -2286,7 +2287,6 @@ VlWriteMem::VlWriteMem(bool hex, int bits, const std::string& filename, QData st
     m_fp = std::fopen(filename.c_str(), "w");
     if (VL_UNLIKELY(!m_fp)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "$writemem file not found");
-        // cppcheck-has-bug-suppress resourceLeak  // m_fp is nullptr
         return;
     }
 }
@@ -2470,7 +2470,6 @@ static const char* vl_time_str(int scale) VL_PURE {
 double vl_time_multiplier(int scale) VL_PURE {
     // Return timescale multiplier -18 to +18
     // For speed, this does not check for illegal values
-    // cppcheck-has-bug-suppress arrayIndexOutOfBoundsCond
     if (scale < 0) {
         static const double neg10[] = {1.0,
                                        0.1,
@@ -2491,7 +2490,6 @@ double vl_time_multiplier(int scale) VL_PURE {
                                        0.0000000000000001,
                                        0.00000000000000001,
                                        0.000000000000000001};
-        // cppcheck-has-bug-suppress arrayIndexOutOfBoundsCond
         return neg10[-scale];
     } else {
         static const double pow10[] = {1.0,
@@ -2513,7 +2511,6 @@ double vl_time_multiplier(int scale) VL_PURE {
                                        10000000000000000.0,
                                        100000000000000000.0,
                                        1000000000000000000.0};
-        // cppcheck-has-bug-suppress arrayIndexOutOfBoundsCond
         return pow10[scale];
     }
 }
@@ -2809,7 +2806,7 @@ void VerilatedContext::internalsDump() const VL_MT_SAFE {
     VerilatedImp::userDump();
 }
 
-void VerilatedContext::addModel(VerilatedModel* modelp) {
+void VerilatedContext::addModel(const VerilatedModel* modelp) {
     if (!quiet()) {
         // CPU time isn't read as starting point until model creation, so that quiet() is set
         // Thus if quiet(), avoids slow OS read affecting some usages that make many models
@@ -2847,7 +2844,7 @@ VerilatedVirtualBase* VerilatedContext::threadPoolp() {
 void VerilatedContext::prepareClone() { delete m_threadPool.release(); }
 
 VerilatedVirtualBase* VerilatedContext::threadPoolpOnClone() {
-    if (VL_UNLIKELY(m_threadPool)) m_threadPool.release();
+    if (VL_UNLIKELY(m_threadPool)) (void)m_threadPool.release();
     m_threadPool = std::unique_ptr<VlThreadPool>(new VlThreadPool{this, m_threads - 1});
     return m_threadPool.get();
 }
@@ -3061,7 +3058,9 @@ void VerilatedContext::statsPrintSummary() VL_MT_UNSAFE {
         = vl_timescaled_double((cputime != 0.0) ? (simtimeInUnits / cputime) : 0, "%0.3f %s");
     VL_PRINTF("- Verilator: %s at %s; walltime %0.3f s; speed %s/s\n", endwhy.c_str(),
               simtime.c_str(), walltime, simtimePerf.c_str());
-    const double modelMB = VlOs::memUsageBytes() / 1024.0 / 1024.0;
+    uint64_t memPeak, memCurrent;
+    VlOs::memUsageBytes(memPeak /*ref*/, memCurrent /*ref*/);
+    const double modelMB = memPeak / 1024.0 / 1024.0;
     VL_PRINTF("- Verilator: cpu %0.3f s on %u threads; alloced %0.0f MB\n", cputime,
               threadsInModels(), modelMB);
 }
@@ -3126,7 +3125,7 @@ void VerilatedContext::trace(VerilatedTraceBaseC* tfp, int levels, int options) 
         VL_FATAL_MT("", 0, "",
                     "Testbench C call to 'VerilatedContext::trace()' requires model(s) Verilated"
                     " with --trace-fst or --trace-vcd option");
-    for (auto& cbr : m_ns.m_traceBaseModelCbs) cbr(tfp, levels, options);
+    for (const auto& cbr : m_ns.m_traceBaseModelCbs) cbr(tfp, levels, options);
 }
 void VerilatedContext::traceBaseModelCbAdd(traceBaseModelCb_t cb) VL_MT_SAFE {
     // Model creation registering a callback for when Verilated::trace() called
@@ -3141,7 +3140,6 @@ VerilatedSyms::VerilatedSyms(VerilatedContext* contextp)
     : _vm_contextp__(contextp ? contextp : Verilated::threadContextp()) {
     VerilatedContext::checkMagic(_vm_contextp__);
     Verilated::threadContextp(_vm_contextp__);
-    // cppcheck-has-bug-suppress noCopyConstructor
     __Vm_evalMsgQp = new VerilatedEvalMsgQueue;
 }
 
@@ -3381,7 +3379,7 @@ VerilatedModule::VerilatedModule(const char* namep)
 
 VerilatedModule::~VerilatedModule() {
     // Memory cleanup - not called during normal operation
-    // NOLINTNEXTLINE(google-readability-casting)
+    // cppcheck-suppress cstyleCast  // NOLINTNEXTLINE(google-readability-casting)
     if (m_namep) VL_DO_CLEAR(free((void*)(m_namep)), m_namep = nullptr);
 }
 
@@ -3543,16 +3541,16 @@ void VerilatedScope::scopeDump() const {
                          VerilatedImp::exportName(i));
         }
     }
-    if (const VerilatedVarNameMap* const varsp = this->varsp()) {
-        for (const auto& i : *varsp) VL_PRINTF_MT("       VAR %p: %s\n", &(i.second), i.first);
+    if (const VerilatedVarNameMap* const ivarsp = this->varsp()) {
+        for (const auto& i : *ivarsp) VL_PRINTF_MT("       VAR %p: %s\n", &(i.second), i.first);
     }
 }
 
-void VerilatedHierarchy::add(VerilatedScope* fromp, VerilatedScope* top) {
+void VerilatedHierarchy::add(const VerilatedScope* fromp, const VerilatedScope* top) {
     VerilatedImp::hierarchyAdd(fromp, top);
 }
 
-void VerilatedHierarchy::remove(VerilatedScope* fromp, VerilatedScope* top) {
+void VerilatedHierarchy::remove(const VerilatedScope* fromp, const VerilatedScope* top) {
     VerilatedImp::hierarchyRemove(fromp, top);
 }
 

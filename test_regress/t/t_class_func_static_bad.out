@@ -1,0 +1,10 @@
+%Error: t/t_class_func_static_bad.v:10:17: Class function/task cannot be static lifetime ('task static') (IEEE 1800-2023 6.21)
+                                         : ... May have intended 'static task'
+   10 |     task static task_st(int x);   
+      |                 ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_func_static_bad.v:14:25: Class function/task cannot be static lifetime ('function static') (IEEE 1800-2023 6.21)
+                                         : ... May have intended 'static function'
+   14 |     function static int func_st(int x);   
+      |                         ^~~~~~~
+%Error: Exiting due to

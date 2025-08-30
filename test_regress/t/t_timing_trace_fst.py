@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_timing_trace.v"
 
-test.compile(verilator_flags2=["--exe --main --timing --trace-fst -Wno-MINTYPMAXDLY"])
+test.compile(verilator_flags2=["--binary --trace-fst -Wno-MINTYPMAXDLY"])
 
 test.execute()
 

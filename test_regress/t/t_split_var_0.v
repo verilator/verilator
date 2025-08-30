@@ -151,13 +151,13 @@ module barshift_1d_unpacked_struct1 #(parameter DEPTH = 2, localparam WIDTH = 2*
    typedef struct packed { int data; } data_type;
    data_type tmp[DEPTH+OFFSET:OFFSET] /*verilator split_var*/;
 
-   localparam [32-WIDTH-1:0] pad = 0;
+   localparam [32-WIDTH-1:0] PAD = 0;
    generate
       for(genvar i = 0; i < DEPTH; ++i) begin
          always_comb
            if (shift[i]) begin
               /*verilator lint_off ALWCOMBORDER*/
-              tmp[i+1+OFFSET] = {pad, tmp[i+OFFSET][(1 << i)-1:0], tmp[i+OFFSET][WIDTH-1:(2**i)]};
+              tmp[i+1+OFFSET] = {PAD, tmp[i+OFFSET][(1 << i)-1:0], tmp[i+OFFSET][WIDTH-1:(2**i)]};
               /*verilator lint_on ALWCOMBORDER*/
            end
            else begin
@@ -165,7 +165,7 @@ module barshift_1d_unpacked_struct1 #(parameter DEPTH = 2, localparam WIDTH = 2*
            end
       end
    endgenerate
-   assign tmp[0+OFFSET] = {pad, in};
+   assign tmp[0+OFFSET] = {PAD, in};
    logic _dummy;
    always_comb {_dummy, out[WIDTH-1:1], out[0]} = tmp[DEPTH+OFFSET][WIDTH:0];
 endmodule
@@ -351,13 +351,10 @@ module unpack2pack #(parameter WIDTH = 8)
       return tmp;
    endfunction
 
-   /* verilator lint_off UNOPTFLAT*/
    task automatic to_packed1(input logic in[1:0] /*verilator split_var*/, output logic [1:0] out /*verilator split_var*/);
       out[1] = in[1];
       out[0] = in[0];
    endtask
-   /* verilator lint_on UNOPTFLAT*/
-
 
    generate
       for (genvar i = 4; i < WIDTH; i += 4) begin

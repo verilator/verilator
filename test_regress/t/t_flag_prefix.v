@@ -13,7 +13,7 @@ module sub;
    /* verilator no_inline_module */
 
    // Goes into const pool which is separate file
-   wire bit   [255:0] C = {32'h1111_1111,
+   wire logic [255:0] C = {32'h1111_1111,
                            32'h2222_2222,
                            32'h3333_3333,
                            32'h4444_4444,

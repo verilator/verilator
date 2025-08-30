@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_split_var_4.v"
 
-test.compile(verilator_flags2=['--stats'])
+test.compile(verilator_flags2=['--stats', "-fno-dfg"])
 
 test.execute()
 

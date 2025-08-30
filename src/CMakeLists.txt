@@ -48,6 +48,7 @@ set(HEADERS
     V3AstNodeDType.h
     V3AstNodeExpr.h
     V3AstNodeOther.h
+    V3AstNodeStmt.h
     V3AstUserAllocator.h
     V3Begin.h
     V3Branch.h
@@ -56,6 +57,7 @@ set(HEADERS
     V3CUse.h
     V3Case.h
     V3Cast.h
+    V3Cfg.h
     V3Class.h
     V3Clean.h
     V3Clock.h
@@ -72,10 +74,11 @@ set(HEADERS
     V3Descope.h
     V3Dfg.h
     V3DfgCache.h
+    V3DfgContext.h
     V3DfgOptimizer.h
     V3DfgPasses.h
     V3DfgPatternStats.h
-    V3DfgPeephole.h
+    V3DfgPeepholePatterns.h
     V3DfgVertices.h
     V3DiagSarif.h
     V3DupFinder.h
@@ -211,6 +214,9 @@ set(COMMON_SOURCES
     V3CUse.cpp
     V3Case.cpp
     V3Cast.cpp
+    V3Cfg.cpp
+    V3CfgBuilder.cpp
+    V3CfgLiveVariables.cpp
     V3Class.cpp
     V3Clean.cpp
     V3Clock.cpp
@@ -227,13 +233,16 @@ set(COMMON_SOURCES
     V3Descope.cpp
     V3Dfg.cpp
     V3DfgAstToDfg.cpp
+    V3DfgBreakCycles.cpp
     V3DfgCache.cpp
+    V3DfgColorSCCs.cpp
     V3DfgDecomposition.cpp
     V3DfgDfgToAst.cpp
     V3DfgOptimizer.cpp
     V3DfgPasses.cpp
     V3DfgPeephole.cpp
     V3DfgRegularize.cpp
+    V3DfgSynthesize.cpp
     V3DiagSarif.cpp
     V3DupFinder.cpp
     V3EmitCBase.cpp
@@ -369,8 +378,8 @@ add_custom_command(
     COMMAND ${PYTHON3}
     ARGS
         ${ASTGEN} -I "${srcdir}" --astdef V3AstNodeDType.h --astdef
-        V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h
-        --classes
+        V3AstNodeExpr.h --astdef V3AstNodeOther.h --astdef V3AstNodeStmt.h
+        --dfgdef V3DfgVertices.h --classes
 )
 list(
     APPEND
@@ -482,8 +491,8 @@ foreach(astgen_name ${ASTGENERATED_NAMES})
         COMMAND ${PYTHON3}
         ARGS
             ${ASTGEN} -I "${srcdir}" --astdef V3AstNodeDType.h --astdef
-            V3AstNodeExpr.h --astdef V3AstNodeOther.h --dfgdef V3DfgVertices.h
-            ${astgen_name}.cpp
+            V3AstNodeExpr.h --astdef V3AstNodeOther.h --astdef V3AstNodeStmt.h
+            --dfgdef V3DfgVertices.h ${astgen_name}.cpp
     )
     list(APPEND GENERATED_FILES ${astgen_name}__gen.cpp)
 endforeach()

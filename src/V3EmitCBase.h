@@ -45,9 +45,9 @@ public:
 };
 
 //######################################################################
-// Base Visitor class -- holds output file pointer
+// EmitC-related utility functions
 
-class EmitCBase VL_NOT_FINAL {
+class EmitCUtil final {
 public:
     static string voidSelfAssign(const AstNodeModule* modp) {
         const string className = prefixNameProtect(modp);
@@ -81,7 +81,10 @@ public:
     }
 };
 
-class EmitCBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst, public EmitCBase {
+//######################################################################
+// Base Visitor class -- holds output file pointer
+
+class EmitCBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
 public:
     // STATE
     V3OutCFile* m_ofp = nullptr;
@@ -98,6 +101,7 @@ public:
     // Sets ofp() and outFileNodep() to the given pointers, without closing a file these pointers
     // currently point to.
     void setOutputFile(V3OutCFile* ofp, AstCFile* nodep) {
+        // cppcheck-suppress danglingLifetime // ofp is often on stack in caller, it's fine.
         m_ofp = ofp;
         m_outFileNodep = nodep;
     }
@@ -129,15 +133,6 @@ public:
     void ensureNewLine() { ofp()->ensureNewLine(); }
     bool optSystemC() { return v3Global.opt.systemC(); }
     static string protect(const string& name) VL_MT_SAFE { return VIdProtect::protect(name); }
-    static string protectIf(const string& name, bool doIt) {
-        return VIdProtect::protectIf(name, doIt);
-    }
-    static string protectWordsIf(const string& name, bool doIt) {
-        return VIdProtect::protectWordsIf(name, doIt);
-    }
-    static string ifNoProtect(const string& in) VL_MT_SAFE {
-        return v3Global.opt.protectIds() ? "" : in;
-    }
     static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp = nullptr);
     static AstCFile* newCFile(const string& filename, bool slow, bool source);
     static AstCFile* createCFile(const string& filename, bool slow, bool source) VL_MT_SAFE;
@@ -148,15 +143,15 @@ public:
     void emitVarAccessors(const AstVar* nodep);
     template <typename T_Callable>
     static void forModCUse(const AstNodeModule* modp, VUseType useType, T_Callable action) {
-        for (AstNode* itemp = modp->stmtsp(); itemp; itemp = itemp->nextp()) {
-            if (AstCUse* const usep = VN_CAST(itemp, CUse)) {
+        for (const AstNode* itemp = modp->stmtsp(); itemp; itemp = itemp->nextp()) {
+            if (const AstCUse* const usep = VN_CAST(itemp, CUse)) {
                 if (usep->useType().containsAny(useType)) {
                     if (usep->useType().containsAny(VUseType::INT_INCLUDE)) {
-                        action("#include \"" + prefixNameProtect(usep) + ".h\"\n");
+                        action("#include \"" + EmitCUtil::prefixNameProtect(usep) + ".h\"\n");
                         continue;  // Forward declaration is not necessary
                     }
                     if (usep->useType().containsAny(VUseType::INT_FWD_CLASS)) {
-                        action("class " + prefixNameProtect(usep) + ";\n");
+                        action("class " + EmitCUtil::prefixNameProtect(usep) + ";\n");
                     }
                 }
             }

@@ -49,6 +49,7 @@ module t
    intf_sink   sink(a_out, tl_intf);
 
    initial a_in = '0;
+   initial ack_out = '0;
    always @(posedge clk) begin
       a_in <= a_in + { {N-1 {1'b0}}, 1'b1 };
       ack_out <= ack_out + { {N-1 {1'b0}}, 1'b1 };

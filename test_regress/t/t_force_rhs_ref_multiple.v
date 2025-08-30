@@ -4,7 +4,8 @@
 // any use, without warranty, 2025 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
-`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); end while(0)
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 
 module t;
   logic [7:0] a = 1;
@@ -19,7 +20,6 @@ module t;
     #1;
     a = 0;
     #1;
-    // TODO support multiple VarRefs on RHS
     `checkh(e, 9);
 
     b = 0;

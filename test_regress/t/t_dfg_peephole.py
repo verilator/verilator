@@ -20,7 +20,7 @@ if not os.path.exists(root + "/.git"):
 # Read optimizations
 optimizations = []
 
-hdrFile = "../src/V3DfgPeephole.h"
+hdrFile = "../src/V3DfgPeepholePatterns.h"
 with open(hdrFile, 'r', encoding="utf8") as hdrFh:
     prevOpt = ""
     lineno = 0
@@ -82,14 +82,12 @@ test.compile(verilator_flags2=[
     "-Mdir", test.obj_dir + "/obj_opt",
     "--prefix", "Vopt",
     "-fno-const-before-dfg",  # Otherwise V3Const makes testing painful
+    "-fdfg-synthesize-all",
     "--dump-dfg",  # To fill code coverage
     "-CFLAGS \"-I .. -I ../obj_ref\"",
     "../obj_ref/Vref__ALL.a",
     "../../t/" + test.name + ".cpp"
 ])  # yapf:disable
-
-# Execute test to check equivalence
-test.execute(executable=test.obj_dir + "/obj_opt/Vopt")
 
 
 def check(name):
@@ -102,5 +100,11 @@ def check(name):
 # Check all optimizations defined in
 for opt in optimizations:
     check(opt)
+
+test.file_grep_not(test.obj_dir + "/obj_opt/Vopt__stats.txt",
+                   r'DFG.*non-representable.*\s[1-9]\d*$')
+
+# Execute test to check equivalence
+test.execute(executable=test.obj_dir + "/obj_opt/Vopt")
 
 test.passes()

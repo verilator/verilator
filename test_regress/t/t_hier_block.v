@@ -35,12 +35,10 @@ module t (/*AUTOARG*/
 `ifdef PROTLIB_TOP
    secret i_secred(.clk(clk));
 `else
-   /* verilator lint_off UNOPTFLAT */
    wire [7:0] out0;
    wire [7:0] out1;
    wire [7:0] out2;
    wire [7:0] out3;
-   /* verilator lint_on UNOPTFLAT */
    wire [7:0] out3_2;
    wire [7:0] out5;
    wire [7:0] out6;

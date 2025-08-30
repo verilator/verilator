@@ -40,7 +40,7 @@ extern "C" int mon_check();
    // verilator lint_on ASCRANGE
 
    reg [31:0]      count        /*verilator public_flat */;
-   reg [31:0]      half_count   /*verilator public_flat_rd */;
+   reg [31:0]      half_count   /*verilator public_flat_rd */ = 0;
    reg [31:0]      delayed      /*verilator public_flat_rw */;
    reg [31:0]      delayed_mem [16] /*verilator public_flat_rw */;
 
@@ -58,6 +58,8 @@ extern "C" int mon_check();
    // specifically public and not public_flat_rw here so as to induce the C++
    // keyword collision
    localparam int nullptr        /*verilator public */ = 123;
+
+   logic [31:0] some_mem [4] /* verilator public_flat_rd */ = {0, 0, 0, 432};
 
    sub sub();
 

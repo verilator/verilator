@@ -15,11 +15,8 @@
                                  : ... note: In instance 't'
    46 |       d_real[0] = 1'b1;          
       |             ^
-%Error: t/t_var_types_bad.v:46:7: Expected integral (non-'real') input to SEL
-                                : ... note: In instance 't'
-   46 |       d_real[0] = 1'b1;          
-      |       ^~~~~~
-%Warning-REALCVT: t/t_var_types_bad.v:46:7: Implicit conversion of real to integer
+%Warning-REALCVT: t/t_var_types_bad.v:46:7: Implicit conversion of real to integer; expected integral input to SEL
+                                          : ... note: In instance 't'
    46 |       d_real[0] = 1'b1;          
       |       ^~~~~~
                   ... For warning description see https://verilator.org/warn/REALCVT?v=latest
@@ -28,11 +25,8 @@
                                  : ... note: In instance 't'
    47 |       d_realtime[0] = 1'b1;      
       |                 ^
-%Error: t/t_var_types_bad.v:47:7: Expected integral (non-'real') input to SEL
-                                : ... note: In instance 't'
-   47 |       d_realtime[0] = 1'b1;      
-      |       ^~~~~~~~~~
-%Warning-REALCVT: t/t_var_types_bad.v:47:7: Implicit conversion of real to integer
+%Warning-REALCVT: t/t_var_types_bad.v:47:7: Implicit conversion of real to integer; expected integral input to SEL
+                                          : ... note: In instance 't'
    47 |       d_realtime[0] = 1'b1;      
       |       ^~~~~~~~~~
 %Error: Exiting due to

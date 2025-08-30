@@ -91,8 +91,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     struct CmpDpi final {
         bool operator()(const AstCFunc* lhsp, const AstCFunc* rhsp) const {
             if (lhsp->dpiImportPrototype() != rhsp->dpiImportPrototype()) {
-                // cppcheck-suppress comparisonOfFuncReturningBoolError
-                return lhsp->dpiImportPrototype() < rhsp->dpiImportPrototype();
+                return rhsp->dpiImportPrototype();
             }
             return lhsp->name() < rhsp->name();
         }
@@ -285,11 +284,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
         if (v3Global.dpi()) {
             // add dpi scopes to m_scopeNames if not already there
-            for (const auto& scp : m_dpiScopeNames) {
-                if (m_scopeNames.find(scp.first) == m_scopeNames.end()) {
-                    m_scopeNames.emplace(scp.first, scp.second);
-                }
-            }
+            for (const auto& scp : m_dpiScopeNames) m_scopeNames.emplace(scp.first, scp.second);
         }
 
         // Sort by names, so line/process order matters less
@@ -358,8 +353,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                  ScopeFuncData(nodep, m_cfuncp, m_modp));
         } else {
             if (m_dpiScopeNames.find(nodep->scopeDpiName()) == m_dpiScopeNames.end()) {
-                // cppcheck-suppress stlFindInsert
                 m_dpiScopeNames.emplace(nodep->scopeDpiName(),
+                                        // cppcheck-suppress stlFindInsert
                                         ScopeData{nodep, nodep->scopeDpiName(),
                                                   nodep->scopePrettyDpiName(), "<null>", timeunit,
                                                   "SCOPE_OTHER"});
@@ -376,10 +371,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         iterateChildrenConst(nodep);
         m_statVarScopeBytes += nodep->varp()->dtypep()->widthTotalBytes();
     }
-    void visit(AstCoverDecl* nodep) override {
+    void visit(AstNodeCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use
         if (!nodep->dataDeclNullp()) {  // else duplicate we don't need code for
-            nodep->binNum(m_coverBins++);
+            nodep->binNum(m_coverBins);
+            m_coverBins += nodep->size();
         }
     }
     void visit(AstCFunc* nodep) override {
@@ -403,7 +399,7 @@ public:
 
 void EmitCSyms::emitSymHdr() {
     UINFO(6, __FUNCTION__ << ": ");
-    const string filename = v3Global.opt.makeDir() + "/" + symClassName() + ".h";
+    const string filename = v3Global.opt.makeDir() + "/" + EmitCUtil::symClassName() + ".h";
     AstCFile* const cfilep = newCFile(filename, true /*slow*/, false /*source*/);
     V3OutCFile* const ofilep = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
     setOutputFile(ofilep, cfilep);
@@ -425,13 +421,13 @@ void EmitCSyms::emitSymHdr() {
     if (v3Global.opt.usesProfiler()) puts("#include \"verilated_profiler.h\"\n");
 
     puts("\n// INCLUDE MODEL CLASS\n");
-    puts("\n#include \"" + topClassName() + ".h\"\n");
+    puts("\n#include \"" + EmitCUtil::topClassName() + ".h\"\n");
 
     puts("\n// INCLUDE MODULE CLASSES\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_AS(nodep->nextp(), NodeModule)) {
         if (VN_IS(nodep, Class)) continue;  // Class included earlier
-        putns(nodep, "#include \"" + prefixNameProtect(nodep) + ".h\"\n");
+        putns(nodep, "#include \"" + EmitCUtil::prefixNameProtect(nodep) + ".h\"\n");
     }
 
     if (v3Global.dpi()) {
@@ -450,12 +446,12 @@ void EmitCSyms::emitSymHdr() {
     }
 
     puts("\n// SYMS CLASS (contains all model state)\n");
-    puts("class alignas(VL_CACHE_LINE_BYTES)" + symClassName()
+    puts("class alignas(VL_CACHE_LINE_BYTES)" + EmitCUtil::symClassName()
          + " final : public VerilatedSyms {\n");
     ofp()->putsPrivate(false);  // public:
 
     puts("// INTERNAL STATE\n");
-    puts(topClassName() + "* const __Vm_modelp;\n");
+    puts(EmitCUtil::topClassName() + "* const __Vm_modelp;\n");
 
     if (v3Global.needTraceDumper()) {
         // __Vm_dumperp is local, otherwise we wouldn't know what design's eval()
@@ -500,9 +496,9 @@ void EmitCSyms::emitSymHdr() {
         const AstScope* const scopep = i.first;
         const AstNodeModule* const modp = i.second;
         if (VN_IS(modp, Class)) continue;
-        const string name = prefixNameProtect(modp);
+        const string name = EmitCUtil::prefixNameProtect(modp);
         ofp()->printf("%-30s ", name.c_str());
-        putns(scopep, protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
+        putns(scopep, VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
     }
 
     if (m_coverBins) {
@@ -532,12 +528,12 @@ void EmitCSyms::emitSymHdr() {
     }
 
     puts("\n// CONSTRUCTORS\n");
-    puts(symClassName() + "(VerilatedContext* contextp, const char* namep, " + topClassName()
-         + "* modelp);\n");
-    puts("~"s + symClassName() + "();\n");
+    puts(EmitCUtil::symClassName() + "(VerilatedContext* contextp, const char* namep, "
+         + EmitCUtil::topClassName() + "* modelp);\n");
+    puts("~"s + EmitCUtil::symClassName() + "();\n");
 
     for (const auto& i : m_usesVfinal) {
-        puts("void " + symClassName() + "_" + cvtToStr(i.first) + "(");
+        puts("void " + EmitCUtil::symClassName() + "_" + cvtToStr(i.first) + "(");
         if (i.second) puts("int __Vfinal");
         puts(");\n");
     }
@@ -603,8 +599,8 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
     v3Global.useParallelBuild(true);
 
     m_numStmts = 0;
-    const string filename
-        = v3Global.opt.makeDir() + "/" + symClassName() + "__" + cvtToStr(++m_funcNum) + ".cpp";
+    const string filename = v3Global.opt.makeDir() + "/" + EmitCUtil::symClassName() + "__"
+                            + cvtToStr(++m_funcNum) + ".cpp";
     AstCFile* const cfilep = newCFile(filename, true /*slow*/, true /*source*/);
     cfilep->support(true);
     m_usesVfinal[m_funcNum] = usesVfinal;
@@ -613,12 +609,13 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
     V3OutCFile* const ofilep = optSystemC() ? new V3OutScFile{filename} : new V3OutCFile{filename};
     setOutputFile(ofilep, cfilep);
 
-    m_ofpBase->puts(symClassName() + "_" + cvtToStr(m_funcNum) + "(");
+    m_ofpBase->puts(EmitCUtil::symClassName() + "_" + cvtToStr(m_funcNum) + "(");
     if (usesVfinal) m_ofpBase->puts("__Vfinal");
     m_ofpBase->puts(");\n");
 
     emitSymImpPreamble();
-    puts("void " + symClassName() + "::" + symClassName() + "_" + cvtToStr(m_funcNum) + "(");
+    puts("void " + EmitCUtil::symClassName() + "::" + EmitCUtil::symClassName() + "_"
+         + cvtToStr(m_funcNum) + "(");
     if (usesVfinal) puts("int __Vfinal");
     puts(") {\n");
 }
@@ -630,12 +627,12 @@ void EmitCSyms::emitSymImpPreamble() {
     puts("\n");
 
     // Includes
-    puts("#include \"" + pchClassName() + ".h\"\n");
-    puts("#include \"" + topClassName() + ".h\"\n");
+    puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
+    puts("#include \"" + EmitCUtil::topClassName() + ".h\"\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_AS(nodep->nextp(), NodeModule)) {
         if (VN_IS(nodep, Class)) continue;  // Class included earlier
-        putns(nodep, "#include \"" + prefixNameProtect(nodep) + ".h\"\n");
+        putns(nodep, "#include \"" + EmitCUtil::prefixNameProtect(nodep) + ".h\"\n");
     }
     puts("\n");
     // Declarations for DPI Export implementation functions
@@ -687,7 +684,7 @@ void EmitCSyms::emitScopeHier(bool destroy) {
 
 void EmitCSyms::emitSymImp() {
     UINFO(6, __FUNCTION__ << ": ");
-    const string filename = v3Global.opt.makeDir() + "/" + symClassName() + ".cpp";
+    const string filename = v3Global.opt.makeDir() + "/" + EmitCUtil::symClassName() + ".cpp";
     AstCFile* const cfilep = newCFile(filename, true /*slow*/, true /*source*/);
     cfilep->support(true);
 
@@ -703,7 +700,7 @@ void EmitCSyms::emitSymImp() {
             const string funcname = de ? "__Vdeserialize" : "__Vserialize";
             const string op = de ? ">>" : "<<";
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-            puts("void " + symClassName() + "::" + protect(funcname) + "(" + classname
+            puts("void " + EmitCUtil::symClassName() + "::" + protect(funcname) + "(" + classname
                  + "& os) {\n");
             puts("// Internal state\n");
             if (v3Global.opt.trace()) puts("os" + op + "__Vm_activity;\n");
@@ -711,8 +708,8 @@ void EmitCSyms::emitSymImp() {
             puts("// Module instance state\n");
             for (const auto& pair : m_scopes) {
                 const AstScope* const scopep = pair.first;
-                puts(protectIf(scopep->nameDotless(), scopep->protect()) + "." + protect(funcname)
-                     + "(os);\n");
+                puts(VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "."
+                     + protect(funcname) + "(os);\n");
             }
             puts("}\n");
         }
@@ -722,7 +719,7 @@ void EmitCSyms::emitSymImp() {
     puts("// FUNCTIONS\n");
 
     // Destructor
-    puts(symClassName() + "::~" + symClassName() + "()\n");
+    puts(EmitCUtil::symClassName() + "::~" + EmitCUtil::symClassName() + "()\n");
     puts("{\n");
     emitScopeHier(true);
     if (v3Global.needTraceDumper()) {
@@ -734,22 +731,22 @@ void EmitCSyms::emitSymImp() {
         // Do not overwrite data during the last hierarchical stage.
         const string firstHierCall
             = (v3Global.opt.hierBlocks().empty() || v3Global.opt.hierChild()) ? "true" : "false";
-        puts("_vm_pgoProfiler.write(\"" + topClassName()
+        puts("_vm_pgoProfiler.write(\"" + EmitCUtil::topClassName()
              + "\", _vm_contextp__->profVltFilename(), " + firstHierCall + ");\n");
     }
     puts("}\n");
 
     if (v3Global.needTraceDumper()) {
         if (!optSystemC()) {
-            puts("\nvoid " + symClassName() + "::_traceDump() {\n");
+            puts("\nvoid " + EmitCUtil::symClassName() + "::_traceDump() {\n");
             // Caller checked for __Vm_dumperp non-nullptr
-            puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+            puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
             puts("__Vm_dumperp->dump(VL_TIME_Q());\n");
             puts("}\n");
         }
 
-        puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
-        puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+        puts("\nvoid " + EmitCUtil::symClassName() + "::_traceDumpOpen() {\n");
+        puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
         puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
         puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
         puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
@@ -759,8 +756,8 @@ void EmitCSyms::emitSymImp() {
         puts("}\n");
         puts("}\n");
 
-        puts("\nvoid " + symClassName() + "::_traceDumpClose() {\n");
-        puts("const VerilatedLockGuard lock(__Vm_dumperMutex);\n");
+        puts("\nvoid " + EmitCUtil::symClassName() + "::_traceDumpClose() {\n");
+        puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
         puts("__Vm_dumping = false;\n");
         puts("VL_DO_CLEAR(delete __Vm_dumperp, __Vm_dumperp = nullptr);\n");
         puts("}\n");
@@ -768,8 +765,9 @@ void EmitCSyms::emitSymImp() {
     puts("\n");
 
     // Constructor
-    puts(symClassName() + "::" + symClassName()
-         + "(VerilatedContext* contextp, const char* namep, " + topClassName() + "* modelp)\n");
+    puts(EmitCUtil::symClassName() + "::" + EmitCUtil::symClassName()
+         + "(VerilatedContext* contextp, const char* namep, " + EmitCUtil::topClassName()
+         + "* modelp)\n");
     puts("    : VerilatedSyms{contextp}\n");
     puts("    // Setup internal state of the Syms class\n");
     puts("    , __Vm_modelp{modelp}\n");
@@ -817,7 +815,7 @@ void EmitCSyms::emitSymImp() {
         } else {
             // The "." is added by catName
             puts(", Verilated::catName(namep, ");
-            putsQuoted(protectWordsIf(scopep->prettyName(), scopep->protect()));
+            putsQuoted(VIdProtect::protectWordsIf(scopep->prettyName(), scopep->protect()));
             puts(")");
         }
         puts("}\n");
@@ -866,17 +864,18 @@ void EmitCSyms::emitSymImp() {
         const AstNodeModule* const modp = i.second;
         if (const AstScope* const aboveScopep = scopep->aboveScopep()) {
             checkSplit(false);
-            const string protName = protectWordsIf(scopep->name(), scopep->protect());
+            const string protName = VIdProtect::protectWordsIf(scopep->name(), scopep->protect());
             if (VN_IS(modp, ClassPackage)) {
                 // ClassPackage modules seem to be a bit out of place, so hard code...
                 putns(scopep, "TOP");
             } else {
-                putns(scopep, protectIf(aboveScopep->nameDotless(), aboveScopep->protect()));
+                putns(scopep,
+                      VIdProtect::protectIf(aboveScopep->nameDotless(), aboveScopep->protect()));
             }
             puts(".");
             puts(protName.substr(protName.rfind('.') + 1));
             puts(" = &");
-            puts(protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
+            puts(VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
             ++m_numStmts;
         }
     }
@@ -889,7 +888,7 @@ void EmitCSyms::emitSymImp() {
         // first is used by AstCoverDecl's call to __vlCoverInsert
         const bool first = !modp->user1();
         modp->user1(true);
-        putns(scopep, protectIf(scopep->nameDotless(), scopep->protect()) + "."
+        putns(scopep, VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "."
                           + protect("__Vconfigure") + "(" + (first ? "true" : "false") + ");\n");
         ++m_numStmts;
     }
@@ -900,7 +899,7 @@ void EmitCSyms::emitSymImp() {
             checkSplit(false);
             putns(it->second.m_nodep,
                   protect("__Vscope_" + it->second.m_symName) + ".configure(this, name(), ");
-            putsQuoted(protectWordsIf(it->second.m_prettyName, true));
+            putsQuoted(VIdProtect::protectWordsIf(it->second.m_prettyName, true));
             puts(", ");
             putsQuoted(protect(scopeDecodeIdentifier(it->second.m_prettyName)));
             puts(", ");
@@ -930,7 +929,7 @@ void EmitCSyms::emitSymImp() {
                       protect("__Vscope_" + scopep->scopeSymName()) + ".exportInsert(__Vfinal, ");
                 putsQuoted(funcp->cname());  // Not protected - user asked for import/export
                 puts(", (void*)(&");
-                puts(prefixNameProtect(modp));
+                puts(EmitCUtil::prefixNameProtect(modp));
                 puts("__");
                 puts(funcp->nameProtect());
                 puts("));\n");
@@ -964,9 +963,9 @@ void EmitCSyms::emitSymImp() {
                     } else {
                         if (basicp->isRanged()) {
                             bounds += " ,";
-                            bounds += cvtToStr(basicp->hi());
+                            bounds += cvtToStr(basicp->left());
                             bounds += ",";
-                            bounds += cvtToStr(basicp->lo());
+                            bounds += cvtToStr(basicp->right());
                             pdim++;
                         }
                         break;  // AstBasicDType - nothing below, 1
@@ -979,7 +978,7 @@ void EmitCSyms::emitSymImp() {
             putsQuoted(protect(it->second.m_varBasePretty));
 
             std::string varName;
-            varName += protectIf(scopep->nameDotless(), scopep->protect()) + ".";
+            varName += VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + ".";
             varName += protect(varp->name());
 
             if (varp->isParam()) {
@@ -1026,7 +1025,7 @@ void EmitCSyms::emitSymImp() {
 
 void EmitCSyms::emitDpiHdr() {
     UINFO(6, __FUNCTION__ << ": ");
-    const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi.h";
+    const string filename = v3Global.opt.makeDir() + "/" + EmitCUtil::topClassName() + "__Dpi.h";
     AstCFile* const cfilep = newCFile(filename, false /*slow*/, false /*source*/);
     cfilep->support(true);
     V3OutCFile hf{filename};
@@ -1055,14 +1054,16 @@ void EmitCSyms::emitDpiHdr() {
     for (AstCFunc* nodep : m_dpis) {
         if (nodep->dpiExportDispatcher()) {
             if (!firstExp++) puts("\n// DPI EXPORTS\n");
-            putsDecoration(nodep, "// DPI export"
-                                      + ifNoProtect(" at " + nodep->fileline()->ascii()) + "\n");
+            putsDecoration(
+                nodep, "// DPI export"
+                           + VIdProtect::ifNoProtect(" at " + nodep->fileline()->ascii()) + "\n");
             putns(nodep, "extern " + nodep->rtnTypeVoid() + " " + nodep->nameProtect() + "("
                              + cFuncArgs(nodep) + ");\n");
         } else if (nodep->dpiImportPrototype()) {
             if (!firstImp++) puts("\n// DPI IMPORTS\n");
-            putsDecoration(nodep, "// DPI import"
-                                      + ifNoProtect(" at " + nodep->fileline()->ascii()) + "\n");
+            putsDecoration(
+                nodep, "// DPI import"
+                           + VIdProtect::ifNoProtect(" at " + nodep->fileline()->ascii()) + "\n");
             putns(nodep, "extern " + nodep->rtnTypeVoid() + " " + nodep->nameProtect() + "("
                              + cFuncArgs(nodep) + ");\n");
         }
@@ -1081,7 +1082,7 @@ void EmitCSyms::emitDpiHdr() {
 
 void EmitCSyms::emitDpiImp() {
     UINFO(6, __FUNCTION__ << ": ");
-    const string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Dpi.cpp";
+    const string filename = v3Global.opt.makeDir() + "/" + EmitCUtil::topClassName() + "__Dpi.cpp";
     AstCFile* const cfilep = newCFile(filename, false /*slow*/, true /*source*/);
     cfilep->support(true);
     V3OutCFile hf(filename);
@@ -1096,14 +1097,14 @@ void EmitCSyms::emitDpiImp() {
     puts("// function names, you will get multiple definition link errors from here.\n");
     puts("// This is an unfortunate result of the DPI specification.\n");
     puts("// To solve this, either\n");
-    puts("//    1. Call " + topClassName() + "::{export_function} instead,\n");
+    puts("//    1. Call " + EmitCUtil::topClassName() + "::{export_function} instead,\n");
     puts("//       and do not even bother to compile this file\n");
     puts("// or 2. Compile all __Dpi.cpp files in the same compiler run,\n");
     puts("//       and #ifdefs already inserted here will sort everything out.\n");
     puts("\n");
 
-    puts("#include \"" + topClassName() + "__Dpi.h\"\n");
-    puts("#include \"" + topClassName() + ".h\"\n");
+    puts("#include \"" + EmitCUtil::topClassName() + "__Dpi.h\"\n");
+    puts("#include \"" + EmitCUtil::topClassName() + ".h\"\n");
     puts("\n");
 
     for (AstCFunc* nodep : m_dpis) {
@@ -1113,8 +1114,9 @@ void EmitCSyms::emitDpiImp() {
             puts("#define VL_DPIDECL_" + nodep->name() + "_\n");
             putns(nodep,
                   nodep->rtnTypeVoid() + " " + nodep->name() + "(" + cFuncArgs(nodep) + ") {\n");
-            puts("// DPI export" + ifNoProtect(" at " + nodep->fileline()->ascii()) + "\n");
-            putns(nodep, "return " + topClassName() + "::" + nodep->name() + "(");
+            puts("// DPI export" + VIdProtect::ifNoProtect(" at " + nodep->fileline()->ascii())
+                 + "\n");
+            putns(nodep, "return " + EmitCUtil::topClassName() + "::" + nodep->name() + "(");
             string comma;
             for (AstNode* stmtp = nodep->argsp(); stmtp; stmtp = stmtp->nextp()) {
                 if (const AstVar* const portp = VN_CAST(stmtp, Var)) {

@@ -218,7 +218,7 @@ class VlPgoProfiler final {
     };
 
     // Counters are stored packed, all together to reduce cache effects
-    std::array<uint64_t, N_Entries> m_counters;  // Time spent on this record
+    std::array<uint64_t, N_Entries> m_counters{};  // Time spent on this record
     std::vector<Record> m_records;  // Record information
 
 public:

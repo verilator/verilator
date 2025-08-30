@@ -190,11 +190,11 @@ class SliceVisitor final : public VNVisitor {
                 }
             }
             if (!newp) newp = new AstConst{nodep->fileline(), 0};
-        } else if (AstNodeCond* const snodep = VN_CAST(nodep, NodeCond)) {
+        } else if (AstCond* const snodep = VN_CAST(nodep, Cond)) {
             UINFO(9, "  cloneCond(" << elements << "," << elemIdx << ") " << nodep);
-            return snodep->cloneType(snodep->condp()->cloneTree(false, needPure),
-                                     cloneAndSel(snodep->thenp(), elements, elemIdx, needPure),
-                                     cloneAndSel(snodep->elsep(), elements, elemIdx, needPure));
+            return new AstCond{snodep->fileline(), snodep->condp()->cloneTree(false, needPure),
+                               cloneAndSel(snodep->thenp(), elements, elemIdx, needPure),
+                               cloneAndSel(snodep->elsep(), elements, elemIdx, needPure)};
         } else if (const AstSliceSel* const snodep = VN_CAST(nodep, SliceSel)) {
             UINFO(9, "  cloneSliceSel(" << elements << "," << elemIdx << ") " << nodep);
             const int leOffset = (snodep->declRange().lo()
@@ -272,10 +272,10 @@ class SliceVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(exprp), exprp);
                 });
             }
-            if (debug() >= 9) newp->dumpTree("-  new: ");
+            UINFOTREE(9, newp, "", "new");
             newlistp = AstNode::addNext(newlistp, newp);
         }
-        if (debug() >= 9) nodep->dumpTree("-  Deslice-Dn: ");
+        UINFOTREE(9, nodep, "", "Deslice-Dn");
         nodep->replaceWith(newlistp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         // Normal edit iterator will now iterate on all of the expansion assignments
@@ -287,7 +287,7 @@ class SliceVisitor final : public VNVisitor {
         // Called recursively on newly created assignments
         if (nodep->user1SetOnce()) return;  // Process once
         if (VN_IS(nodep, AssignAlias)) return;
-        if (debug() >= 9) nodep->dumpTree("-  Deslice-In: ");
+        UINFOTREE(9, nodep, "", "Deslice-In");
         VL_RESTORER(m_assignError);
         VL_RESTORER(m_assignp);
         VL_RESTORER(m_okInitArray);  // Set in assignOptimize

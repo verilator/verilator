@@ -1,0 +1,9 @@
+%Warning-UNOPTFLAT: t/t_dfg_true_cycle_bad.v:10:23: Signal unoptimizable: Circular combinational logic: 'o'
+   10 |     output wire [9:0] o
+      |                       ^
+                    ... For warning description see https://verilator.org/warn/UNOPTFLAT?v=latest
+                    ... Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
+                    t/t_dfg_true_cycle_bad.v:10:23:      Example path: o
+                    t/t_dfg_true_cycle_bad.v:12:22:      Example path: ASSIGNW
+                    t/t_dfg_true_cycle_bad.v:10:23:      Example path: o
+%Error: Exiting due to

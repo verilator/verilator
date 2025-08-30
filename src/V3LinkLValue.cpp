@@ -99,7 +99,7 @@ class LinkLValueVisitor final : public VNVisitor {
         {
             m_setRefLvalue = VAccess::WRITE;
             m_setContinuously = VN_IS(nodep, AssignW) || VN_IS(nodep, AssignAlias);
-            if (AstAssignW* assignwp = VN_CAST(nodep, AssignW)) {
+            if (const AstAssignW* const assignwp = VN_CAST(nodep, AssignW)) {
                 if (assignwp->strengthSpecp()) m_setStrengthSpecified = true;
             }
             {
@@ -250,6 +250,7 @@ class LinkLValueVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->rhsp());
         iterateAndNextNull(nodep->thsp());
     }
+    // cppcheck-suppress constParameterPointer
     void prepost_visit(AstNodeTriop* nodep) {
         VL_RESTORER(m_setRefLvalue);
         m_setRefLvalue = VAccess::NOCHANGE;

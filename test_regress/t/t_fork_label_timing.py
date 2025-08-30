@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_fork_label.v"
 
-test.compile(verilator_flags2=["--exe --main --timing"], make_main=False)
+test.compile(verilator_flags2=["--binary"], make_main=False)
 
 test.execute()
 

@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_clocking_timing.v"
 
-test.compile(verilator_flags2=["--exe --main --timing"])
+test.compile(verilator_flags2=["--binary"])
 
 test.execute()
 

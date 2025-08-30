@@ -28,7 +28,8 @@ endmodule
 module sub1 #(parameter int ADD)
    (input int cyc);
 
-   wire int value = cyc + ADD;
+   int value;
+   always_comb value = cyc + ADD;
 
    sub2 #(ADD + 1) sub2a(.*);
    sub2 #(ADD + 2) sub2b(.*);
@@ -38,5 +39,6 @@ endmodule
 module sub2 #(parameter int ADD)
    (input int cyc);
 
-   wire int value = cyc + ADD;
+   int value;
+   always_comb value = cyc + ADD;
 endmodule

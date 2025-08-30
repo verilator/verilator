@@ -30,5 +30,6 @@ module sub (/*AUTOARG*/
    inout AVDD;
    inout AVSS;
    tri NON_IO;
+   // +verilator+rand+reset+0 so z will read as zero
    initial if (NON_IO !== 'z) $stop;
 endmodule

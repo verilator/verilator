@@ -3,6 +3,6 @@
    :linenos:
    :emphasize-lines: 3
 
-      int array[5];
-      bit [1:0] rd_addr;
-      wire int rd_value = array[rd_addr];  //<--- Warning
+     logic [31:0] array[5];
+     bit [1:0] rd_addr;
+     wire [31:0] rd_value = array[rd_addr];  //<--- Warning

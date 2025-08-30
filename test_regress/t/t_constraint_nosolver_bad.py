@@ -14,8 +14,9 @@ test.top_filename = "t/t_constraint.v"
 
 test.compile()
 
-test.execute(run_env='VERILATOR_SOLVER=someimaginarysolver',
-             fails=True,
-             expect_filename=test.golden_filename)
+test.execute(run_env='VERILATOR_SOLVER=someimaginarysolver', fails=True)
+
+# Not using golden file, as may get spurious pipe messages, see issue #6273
+test.file_grep(test.run_log_filename, r'Unable to communicate with SAT solver')
 
 test.passes()

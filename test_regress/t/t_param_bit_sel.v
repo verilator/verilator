@@ -16,8 +16,8 @@ module t (/*AUTOARG*/
    input clk;
 
    // At this point it is ambiguous whether a is scalar or vector
-   parameter a = 1'b0;
-   wire  b = a[0];
+   parameter A = 1'b0;
+   wire  b = A[0];
    // Note however b[0] is illegal.
 
    always @(posedge clk) begin

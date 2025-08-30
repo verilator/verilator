@@ -116,9 +116,8 @@ public:
     // Above include has:
     //   enum en {...};
     //   const char* ascii() const {...};
-    enum en m_e;
-    // cppcheck-suppress uninitVar  // responsibility of each subclass
-    VNType() = default;
+    const enum en m_e;
+    VNType() = delete;
     // cppcheck-suppress noExplicitConstructor
     constexpr VNType(en _e) VL_MT_SAFE : m_e{_e} {}
     explicit VNType(int _e)
@@ -289,11 +288,11 @@ public:
 
 class VFwdType final {
 public:
-    enum en : uint8_t { NONE, ENUM, STRUCT, UNION, CLASS, INTERFACE_CLASS };
+    enum en : uint8_t { NONE, ENUM, STRUCT, UNION, CLASS, INTERFACE_CLASS, GENERIC_INTERFACE };
     enum en m_e;
     const char* ascii() const {
         static const char* const names[]
-            = {"none", "enum", "struct", "union", "class", "interface class"};
+            = {"none", "enum", "struct", "union", "class", "interface class", "generic interface"};
         return names[m_e];
     }
     VFwdType()
@@ -304,6 +303,8 @@ public:
     explicit VFwdType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
+    // Is a node type compatible with the declaration
+    bool isNodeCompatible(const AstNode* nodep) const;
 };
 constexpr bool operator==(const VFwdType& lhs, const VFwdType& rhs) { return lhs.m_e == rhs.m_e; }
 constexpr bool operator==(const VFwdType& lhs, VFwdType::en rhs) { return lhs.m_e == rhs; }
@@ -404,6 +405,7 @@ public:
         ET_TRUE,
         //
         ET_COMBO,  // Sensitive to all combo inputs to this block
+        ET_COMBO_STAR,  // Sensitive to all combo inputs to this block (from .*)
         ET_HYBRID,  // This is like ET_COMB, but with explicit sensitivity to an expression
         ET_STATIC,  // static variable initializers (runs before 'initial')
         ET_INITIAL,  // 'initial' statements
@@ -421,6 +423,7 @@ public:
             true,  // ET_TRUE
 
             false,  // ET_COMBO
+            false,  // ET_COMBO_STAR
             false,  // ET_HYBRID
             false,  // ET_STATIC
             false,  // ET_INITIAL
@@ -441,13 +444,13 @@ public:
     }
     const char* ascii() const {
         static const char* const names[]
-            = {"CHANGED", "BOTH",   "POS",    "NEG",     "EVENT", "TRUE",
-               "COMBO",   "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
+            = {"CHANGED",    "BOTH",   "POS",    "NEG",     "EVENT", "TRUE", "COMBO",
+               "COMBO_STAR", "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
         return names[m_e];
     }
     const char* verilogKwd() const {
         static const char* const names[]
-            = {"[changed]", "edge",     "posedge",  "negedge",   "[event]", "[true]",
+            = {"[changed]", "edge",     "posedge",  "negedge",   "[event]", "[true]", "*",
                "*",         "[hybrid]", "[static]", "[initial]", "[final]", "[never]"};
         return names[m_e];
     }
@@ -506,12 +509,16 @@ public:
         ENUM_NAME,                      // V3Width processes
         ENUM_VALID,                     // V3Width processes
         //
+        FUNC_ARG_PROTO,                 // V3WidthCommit processes
+        FUNC_RETURN_PROTO,              // V3WidthCommit processes
+        //
         TYPEID,                         // V3Width processes
         TYPENAME,                       // V3Width processes
         //
         VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         VAR_CLOCK_ENABLE,               // Ignored, accepted for compatibility
         VAR_FORCEABLE,                  // V3LinkParse moves to AstVar::isForceable
+        VAR_PORT_DTYPE,                 // V3LinkDot for V3Width to check port dtype
         VAR_PUBLIC,                     // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT,                // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT_RD,             // V3LinkParse moves to AstVar::sigPublic
@@ -535,8 +542,9 @@ public:
             "DT_PUBLIC",
             "ENUM_FIRST", "ENUM_LAST", "ENUM_NUM",
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
+            "FUNC_ARG_PROTO", "FUNC_RETURN_PROTO",
             "TYPEID", "TYPENAME",
-            "VAR_BASE", "VAR_CLOCK_ENABLE", "VAR_FORCEABLE", "VAR_PUBLIC",
+            "VAR_BASE", "VAR_CLOCK_ENABLE", "VAR_FORCEABLE", "VAR_PORT_DTYPE", "VAR_PUBLIC",
             "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
             "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT", "VAR_CLOCKER",
             "VAR_NO_CLOCKER", "VAR_SPLIT_VAR"
@@ -591,6 +599,7 @@ public:
         FORK_SYNC,
         PROCESS_REFERENCE,
         RANDOM_GENERATOR,
+        RANDOM_STDGENERATOR,
         // Unsigned and two state; fundamental types
         UINT32,
         UINT64,
@@ -625,6 +634,7 @@ public:
                                             "VlFork",
                                             "VlProcessRef",
                                             "VlRandomizer",
+                                            "VlStdRandomizer",
                                             "IData",
                                             "QData",
                                             "LOGIC_IMPLICIT",
@@ -632,13 +642,16 @@ public:
         return names[m_e];
     }
     const char* dpiType() const {
-        static const char* const names[]
-            = {"%E-unk",       "svBit",           "char",          "void*",        "char",
-               "int",          "%E-integer",      "svLogic",       "long long",    "double",
-               "short",        "%E-time",         "const char*",   "%E-untyped",   "dpiScope",
-               "const char*",  "%E-mtaskstate",   "%E-triggervec", "%E-dly-sched", "%E-trig-sched",
-               "%E-dyn-sched", "%E-fork",         "%E-proc-ref",   "%E-rand-gen",  "IData",
-               "QData",        "%E-logic-implct", " MAX"};
+        static const char* const names[] = {"%E-unk",          "svBit",         "char",
+                                            "void*",           "char",          "int",
+                                            "%E-integer",      "svLogic",       "long long",
+                                            "double",          "short",         "%E-time",
+                                            "const char*",     "%E-untyped",    "dpiScope",
+                                            "const char*",     "%E-mtaskstate", "%E-triggervec",
+                                            "%E-dly-sched",    "%E-trig-sched", "%E-dyn-sched",
+                                            "%E-fork",         "%E-proc-ref",   "%E-rand-gen",
+                                            "%E-stdrand-gen",  "IData",         "QData",
+                                            "%E-logic-implct", " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -679,6 +692,7 @@ public:
         case FORK_SYNC: return 0;  // opaque
         case PROCESS_REFERENCE: return 0;  // opaque
         case RANDOM_GENERATOR: return 0;  // opaque
+        case RANDOM_STDGENERATOR: return 0;  // opaque
         case UINT32: return 32;
         case UINT64: return 64;
         default: return 0;
@@ -718,8 +732,8 @@ public:
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
                 || m_e == MTASKSTATE || m_e == TRIGGERVEC || m_e == DELAY_SCHEDULER
                 || m_e == TRIGGER_SCHEDULER || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC
-                || m_e == PROCESS_REFERENCE || m_e == RANDOM_GENERATOR || m_e == DOUBLE
-                || m_e == UNTYPED);
+                || m_e == PROCESS_REFERENCE || m_e == RANDOM_GENERATOR
+                || m_e == RANDOM_STDGENERATOR || m_e == DOUBLE || m_e == UNTYPED);
     }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
     bool isEvent() const { return m_e == EVENT; }
@@ -771,6 +785,8 @@ public:
             /* DYNAMIC_TRIGGER_SCHEDULER: */ "",  // Should not be traced
             /* FORK_SYNC:                 */ "",  // Should not be traced
             /* PROCESS_REFERENCE:         */ "",  // Should not be traced
+            /* RANDOM_GENERATOR:          */ "",  // Should not be traced
+            /* RANDOM_STD_GENERATOR:      */ "",  // Should not be traced
             /* UINT32:                    */ "BIT",
             /* UINT64:                    */ "BIT",
             /* LOGIC_IMPLICIT:            */ "",  // Should not be traced
@@ -1925,8 +1941,6 @@ public:
     inline void iterateChildrenBackwardsConst(AstNode* nodep);
     /// Call visit()s on const nodep (maybe nullptr) and nodep's nextp() list
     inline void iterateAndNextConstNull(AstNode* nodep);
-    /// Call visit()s on const nodep (maybe nullptr) and nodep's nextp() list, in reverse order
-    inline void iterateAndNextConstNullBackwards(AstNode* nodep);
 
     virtual void visit(AstNode* nodep) = 0;
     virtual ~VNVisitorConst() {}
@@ -2121,7 +2135,7 @@ protected:
     AstNode(VNType t, FileLine* fl);
     virtual AstNode* clone() = 0;  // Generally, cloneTree is what you want instead
     virtual void cloneRelink() { cloneRelinkGen(); }
-    virtual void cloneRelinkGen() = 0;  // Generated by 'astgen'
+    virtual void cloneRelinkGen() {};  // Overrides generated by 'astgen'
     void cloneRelinkTree();
 
     // METHODS
@@ -2160,7 +2174,8 @@ protected:
     virtual bool sameNode(const AstNode*) const { return true; }
     // Generated by 'astgen'. If do an oldp->replaceNode(newp), would cause a broken()
     virtual bool wouldBreakGen(const AstNode* const oldp,
-                               const AstNode* const newp) const = 0;  // Generated by 'astgen'
+                               const AstNode* const newp) const
+        = 0;  // Generated by 'astgen'
 
 public:
     // ACCESSORS
@@ -2194,8 +2209,6 @@ public:
     // Used by AstNode::broken()
     bool brokeExists() const { return V3Broken::isLinkable(this); }
     bool brokeExistsAbove() const { return brokeExists() && (m_brokenState >> 7); }
-    bool brokeExistsBelow() const { return brokeExists() && !(m_brokenState >> 7); }
-    // Note: brokeExistsBelow is not quite precise, as it is true for sibling nodes as well
 
     // CONSTRUCTORS
     virtual ~AstNode() = default;
@@ -2222,11 +2235,16 @@ public:
     // ACCESSORS
     virtual string name() const VL_MT_STABLE { return ""; }
     virtual string origName() const { return ""; }
+    string prettyOrigOrName() const {
+        return prettyName(origName().empty() ? name() : origName());
+    }
     virtual void name(const string& name) {
         this->v3fatalSrc("name() called on object without name() method");
     }
     virtual void tag(const string& text) {}
     virtual string tag() const { return ""; }
+    virtual uint32_t declTokenNum() const { return 0; }
+    virtual void declTokenNumSetMin(uint32_t tokenNum) {}
     virtual string verilogKwd() const { return ""; }
     string nameProtect() const VL_MT_STABLE;  // Name with --protect-id applied
     string origNameProtect() const;  // origName with --protect-id applied
@@ -2420,8 +2438,8 @@ public:
     static AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2);
 
     // METHODS - dump and error
-    void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
-    void v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN
+    void v3errorEnd(const std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
+    void v3errorEndFatal(const std::ostringstream& str) const VL_ATTR_NORETURN
         VL_RELEASE(V3Error::s().m_mutex);
     string warnContextPrimary() const VL_REQUIRES(V3Error::s().m_mutex) {
         return fileline()->warnContextPrimary();
@@ -2642,20 +2660,24 @@ public:
     // For use via privateAs or the VN_DBG_AS macro only
     template <typename T, typename E>
     static T* unsafePrivateAs(AstNode* nodep) VL_PURE {
-        static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
-        static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
+        static_assert(!uselessCast<T, E>(),
+                      "Unnecessary VN_DBG_AS, node known to have target type.");
+        static_assert(!impossibleCast<T, E>(), "Unnecessary VN_DBG_AS, node cannot be this type.");
         return reinterpret_cast<T*>(nodep);
     }
     template <typename T, typename E>
     static const T* unsafePrivateAs(const AstNode* nodep) VL_PURE {
-        static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
-        static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
+        static_assert(!uselessCast<T, E>(),
+                      "Unnecessary VN_DBG_AS, node known to have target type.");
+        static_assert(!impossibleCast<T, E>(), "Unnecessary VN_DBG_AS, node cannot be this type.");
         return reinterpret_cast<const T*>(nodep);
     }
 
     // For use via the VN_AS macro only
     template <typename T, typename E>
     static T* privateAs(AstNode* nodep) VL_PURE {
+        static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
+        static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
         UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,
                     "AstNode is not of expected type, but instead has type '" << nodep->typeName()
                                                                               << "'");
@@ -2663,6 +2685,8 @@ public:
     }
     template <typename T, typename E>
     static const T* privateAs(const AstNode* nodep) VL_PURE {
+        static_assert(!uselessCast<T, E>(), "Unnecessary VN_AS, node known to have target type.");
+        static_assert(!impossibleCast<T, E>(), "Unnecessary VN_AS, node cannot be this type.");
         UASSERT_OBJ(!nodep || privateTypeTest<T>(nodep), nodep,
                     "AstNode is not of expected type, but instead has type '" << nodep->typeName()
                                                                               << "'");
@@ -3103,9 +3127,6 @@ void VNVisitorConst::iterateChildrenConst(AstNode* nodep) { nodep->iterateChildr
 void VNVisitorConst::iterateChildrenBackwardsConst(AstNode* nodep) {
     nodep->iterateChildrenBackwardsConst(*this);
 }
-void VNVisitorConst::iterateAndNextConstNullBackwards(AstNode* nodep) {
-    if (VL_LIKELY(nodep)) nodep->iterateListBackwardsConst(*this);
-}
 void VNVisitorConst::iterateAndNextConstNull(AstNode* nodep) {
     if (VL_LIKELY(nodep)) nodep->iterateAndNextConst(*this);
 }
@@ -3135,6 +3156,7 @@ AstNode* VNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
 #include "V3AstNodeDType.h"
 #include "V3AstNodeExpr.h"
 #include "V3AstNodeOther.h"
+#include "V3AstNodeStmt.h"
 
 // Inline function definitions need to go last
 #include "V3AstInlines.h"

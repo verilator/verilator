@@ -420,10 +420,12 @@ private:
     bool m_fConstBitOpTree;  // main switch: -fno-const-bit-op-tree constant bit op tree
     bool m_fConstEager = true;  // main switch: -fno-const-eagerly run V3Const during passes
     bool m_fDedupe;      // main switch: -fno-dedupe: logic deduplication
+    bool m_fDfgBreakCycles = true; // main switch: -fno-dfg-break-cycles
     bool m_fDfgPeephole = true; // main switch: -fno-dfg-peephole
     bool m_fDfgPreInline;    // main switch: -fno-dfg-pre-inline and -fno-dfg
     bool m_fDfgPostInline;   // main switch: -fno-dfg-post-inline and -fno-dfg
     bool m_fDfgScoped;       // main switch: -fno-dfg-scoped and -fno-dfg
+    bool m_fDfgSynthesizeAll = false;  // main switch: -fdfg-synthesize-all
     bool m_fDeadAssigns;     // main switch: -fno-dead-assigns: remove dead assigns
     bool m_fDeadCells;   // main switch: -fno-dead-cells: remove dead cells
     bool m_fExpand;      // main switch: -fno-expand: expansion of C macros
@@ -735,10 +737,12 @@ public:
     bool fConstBitOpTree() const { return m_fConstBitOpTree; }
     bool fConstEager() const { return m_fConstEager; }
     bool fDedupe() const { return m_fDedupe; }
+    bool fDfgBreakCycles() const { return m_fDfgBreakCycles; }
     bool fDfgPeephole() const { return m_fDfgPeephole; }
     bool fDfgPreInline() const { return m_fDfgPreInline; }
     bool fDfgPostInline() const { return m_fDfgPostInline; }
     bool fDfgScoped() const { return m_fDfgScoped; }
+    bool fDfgSynthesizeAll() const { return m_fDfgSynthesizeAll; }
     bool fDfgPeepholeEnabled(const std::string& name) const {
         return !m_fDfgPeepholeDisabled.count(name);
     }

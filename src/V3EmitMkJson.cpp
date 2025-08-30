@@ -125,9 +125,9 @@ class V3EmitMkJsonEmitter final {
                 std::vector<std::string> childDeps;
                 std::vector<std::string> sources;
 
-                for (const auto& childr : children) {
-                    childDeps.emplace_back((childr)->hierPrefix());
-                    sources.emplace_back(makeDir + "/" + childr->hierWrapperFilename(true));
+                for (const V3HierBlock* const childp : children) {
+                    childDeps.emplace_back(childp->hierPrefix());
+                    sources.emplace_back(makeDir + "/" + childp->hierWrapperFilename(true));
                 }
 
                 const string vFile = hblockp->vFileIfNecessary();

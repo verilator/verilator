@@ -13,11 +13,12 @@ import "DPI-C" context function int mon_check();
 `endif
 
 module \t.has.dots (/*AUTOARG*/
-   // Outputs
-   \escaped_normal , double__underscore, \9num , \bra[ket]slash/dash-colon:9backslash\done , \x.y ,
-   // Inputs
-   clk, \b.c , a
-   );
+  // Outputs
+  \escaped_normal , double__underscore, double__underscore__vlt, \9num ,
+  \bra[ket]slash/dash-colon:9backslash\done , \x.y ,
+  // Inputs
+  clk, a, \b.c
+  );
 
 `ifdef VERILATOR
 `systemc_header
@@ -26,16 +27,18 @@ extern "C" int mon_check();
 `endif
 
    input clk;
-   input [7:0] a;
-   input \b.c ;
+   input [7:0] a /*verilator public_flat_rw*/;
+   input \b.c  /*verilator public_flat_rw*/;
 
-   integer cyc; initial cyc=1;
+   int cyc /*verilator public_flat_rd*/;
 
-   output  \escaped_normal ;
+   output  \escaped_normal /*verilator public_flat_rd*/;
    wire    \escaped_normal = cyc[0];
 
-   output  double__underscore ;
+   output  double__underscore /*verilator public_flat_rd*/;
    wire  double__underscore = cyc[0];
+   output  double__underscore__vlt;   // public in .vlt
+   wire  double__underscore__vlt = cyc[0];
 
    // C doesn't allow leading non-alpha, so must escape
    output \9num ;
@@ -44,14 +47,14 @@ extern "C" int mon_check();
    output  \bra[ket]slash/dash-colon:9backslash\done ;
    wire \bra[ket]slash/dash-colon:9backslash\done = cyc[0];
 
-   output \x.y ;
+   output \x.y /*verilator public_flat_rd*/;
    wire \x.y = cyc[0];
 
    wire \wire = cyc[0];
 
-   wire \check_alias = cyc[0];
-   wire \check:alias = cyc[0];
-   wire \check;alias = !cyc[0];
+   wire \check_alias /*verilator public_flat_rd*/ = cyc[0];
+   wire \check:alias /*verilator public_flat_rd*/ = cyc[0];
+   wire \check;alias /*verilator public_flat_rd*/ = !cyc[0];
 
    // These are *different entities*, bug83
    wire [31:0] \a0.cyc = ~a0.cyc;
@@ -110,11 +113,11 @@ extern "C" int mon_check();
 endmodule
 
 module sub (
-            input [31:0] cyc
+            input [31:0] cyc /*verilator public_flat_rd*/
             );
-   reg \b.c ;
-   reg subsig1;
-   reg subsig2;
+   reg \b.c /*verilator public_flat_rw*/;
+   reg subsig1 /*verilator public_flat_rd*/;
+   reg subsig2 /*verilator public_flat_rd*/;
 `ifdef IVERILOG
    // stop icarus optimizing signals away
    wire redundant = subsig1 | subsig2 | \b.c ;

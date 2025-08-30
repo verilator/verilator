@@ -556,7 +556,7 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const VL_MT_STABLE {
     if (prefixed) {
         if (sized()) {
             out << width() << "'";
-        } else if (autoExtend() && !sized() && width() == 1) {
+        } else if (autoExtend() && width() == 1) {
             out << "'";
             if (bitIs0(0)) {
                 out << '0';
@@ -636,7 +636,7 @@ string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& i
     return left ? (in + padding) : (padding + in);
 }
 
-string V3Number::displayed(AstNode* nodep, const string& vformat) const VL_MT_STABLE {
+string V3Number::displayed(const AstNode* nodep, const string& vformat) const VL_MT_STABLE {
     return displayed(nodep->fileline(), vformat);
 }
 
@@ -746,10 +746,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
         if (width() > 8)
             fl->v3warn(WIDTHTRUNC, "$display-like format of %c format of > 8 bit value");
         const unsigned int v = bitsValue(0, 8);
-        char strc[2];
-        strc[0] = v & 0xff;
-        strc[1] = '\0';
-        str = strc;
+        str.push_back(static_cast<char>(v));
         return str;
     }
     case 's': {
@@ -1188,7 +1185,7 @@ uint32_t V3Number::countOnes() const {
 
 uint32_t V3Number::mostSetBitP1() const {
     for (int bit = width() - 1; bit >= 0; bit--) {
-        if (bitIs1(bit)) return bit + 1;
+        if (!bitIs0(bit)) return bit + 1;
     }
     return 0;
 }
@@ -1471,11 +1468,7 @@ V3Number& V3Number::opRepl(const V3Number& lhs,
     // i op repl, L(i)*value(rhs) bit return
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
-    if (rhsval > (1UL << 24)) {
-        v3error("More than a 16 Mbit replication, perhaps the replication factor"
-                " was two's-complement negative: "
-                << rhsval << " (" << static_cast<int32_t>(rhsval) << ")");
-    } else if (rhsval > 8192) {
+    if (rhsval > 8192) {
         v3warn(WIDTHCONCAT, "More than a 8k bit replication is probably wrong: " << rhsval);
     }
     setZero();
@@ -1842,7 +1835,7 @@ V3Number& V3Number::opShiftR(const V3Number& lhs, const V3Number& rhs) {
 }
 
 V3Number& V3Number::opShiftRS(const V3Number& lhs, const V3Number& rhs, uint32_t lbits) {
-    // Correct number of zero bits/width matters (hance lbits passed)
+    // Correct number of zero bits/width matters (hence lbits passed)
     // L(lhs) bit return
     // The spec says a unsigned >>> still acts as a normal >>.
     // We presume it is signed; as that's V3Width's job to convert to opShiftR
@@ -2047,7 +2040,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     NUM_ASSERT_LOGIC_ARGS2(lhs, rhs);
     setZero();
     // Find MSB and check for zero.
-    const int words = lhs.words();
+    const int lWords = lhs.words();
     const int umsbp1 = lhs.mostSetBitP1();  // dividend
     const int vmsbp1 = rhs.mostSetBitP1();  // divisor
     if (VL_UNLIKELY(vmsbp1 == 0)  // rwp==0 so division by zero.  Return 0.
@@ -2084,8 +2077,8 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     uint32_t vn[VL_MULS_MAX_WORDS + 1];  // v normalized
 
     // Zero for ease of debugging and to save having to zero for shifts
-    for (int i = 0; i < words; ++i) m_data.num()[i].m_value = 0;
-    for (int i = 0; i < words + 1; ++i) { un[i] = vn[i] = 0; }  // +1 as vn may get extra word
+    for (int i = 0; i < lWords; ++i) m_data.num()[i].m_value = 0;
+    for (int i = 0; i < lWords + 1; ++i) { un[i] = vn[i] = 0; }  // +1 as vn may get extra word
 
     // Algorithm requires divisor MSB to be set
     // Copy and shift to normalize divisor so MSB of vn[vw-1] is set
@@ -2162,7 +2155,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
         for (int i = 0; i < vw; ++i) {
             m_data.num()[i].m_value = (un[i] >> s) | (shift_mask & (un[i + 1] << (32 - s)));
         }
-        for (int i = vw; i < words; ++i) m_data.num()[i].m_value = 0;
+        for (int i = vw; i < lWords; ++i) m_data.num()[i].m_value = 0;
         opCleanThis();
         UINFO(9, "  opmoddiv-mod " << lhs << " " << rhs << " now=" << *this);
         return *this;
@@ -2239,6 +2232,13 @@ V3Number& V3Number::opBufIf1(const V3Number& ens, const V3Number& if1s) {
             setBit(bit, 'z');
         }
     }
+    return *this;
+}
+
+// Sets all bits in range to the given value
+V3Number& V3Number::opSetRange(uint32_t lsb, uint32_t width, char bitValue) {
+    const uint32_t msb = lsb + width - 1;
+    for (uint32_t i = lsb; i <= msb; ++i) setBit(i, bitValue);
     return *this;
 }
 

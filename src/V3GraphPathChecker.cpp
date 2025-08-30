@@ -35,7 +35,7 @@ struct GraphPCNode final {
     //
     // Unlike the LogicMTasks's, we have no cost info for the generic graph
     // accepted by GraphPathChecker, so assume each node has unit cost.
-    std::array<uint32_t, GraphWay::NUM_WAYS> m_cp;
+    std::array<uint32_t, GraphWay::NUM_WAYS> m_cp = {};
 
     // Detect if we've seen this node before in a given recursive
     // operation. We'll use this in pathExistsInternal() to avoid checking
@@ -44,9 +44,7 @@ struct GraphPCNode final {
     uint64_t m_seenAtGeneration = 0;
 
     // CONSTRUCTORS
-    GraphPCNode() {
-        for (unsigned int& w : m_cp) w = 0;
-    }
+    GraphPCNode() {}
     ~GraphPCNode() = default;
 };
 

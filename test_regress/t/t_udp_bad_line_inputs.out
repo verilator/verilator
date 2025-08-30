@@ -1,0 +1,5 @@
+%Error: t/t_udp_bad_line_inputs.v:9:5: Incorrect number of input values, expected 1, got 5
+    9 |     ? 1 ? 0 0 : 0;   
+      |     ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

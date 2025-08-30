@@ -282,22 +282,22 @@ inline void cache(CacheTernary& cache, DfgVertexTernary* vtxp) {
 }
 
 // These remove an existing vertex from the cache, if it is the cached vertex
-inline void invalidateByValue(CacheSel& cache, DfgSel* vtxp) {
+inline void invalidateByValue(CacheSel& cache, const DfgSel* vtxp) {
     const auto it = find(cache, vtxp->dtypep(), vtxp->fromp(), vtxp->lsb());
     if (it != cache.end() && it->second == vtxp) cache.erase(it);
 }
 
-inline void invalidateByValue(CacheUnary& cache, DfgVertexUnary* vtxp) {
+inline void invalidateByValue(CacheUnary& cache, const DfgVertexUnary* vtxp) {
     const auto it = find(cache, vtxp->dtypep(), vtxp->source<0>());
     if (it != cache.end() && it->second == vtxp) cache.erase(it);
 }
 
-inline void invalidateByValue(CacheBinary& cache, DfgVertexBinary* vtxp) {
+inline void invalidateByValue(CacheBinary& cache, const DfgVertexBinary* vtxp) {
     const auto it = find(cache, vtxp->dtypep(), vtxp->source<0>(), vtxp->source<1>());
     if (it != cache.end() && it->second == vtxp) cache.erase(it);
 }
 
-inline void invalidateByValue(CacheTernary& cache, DfgVertexTernary* vtxp) {
+inline void invalidateByValue(CacheTernary& cache, const DfgVertexTernary* vtxp) {
     const auto it
         = find(cache, vtxp->dtypep(), vtxp->source<0>(), vtxp->source<1>(), vtxp->source<2>());
     if (it != cache.end() && it->second == vtxp) cache.erase(it);

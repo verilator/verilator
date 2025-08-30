@@ -1,4 +1,4 @@
-%Error: t/t_foreach_bad.v:14:7: Syntax error; foreach missing bracketed loop variable (IEEE 1800-2023 12.7.3)
+%Error: t/t_foreach_bad.v:14:7: Foreach missing bracketed loop variable is no-operation (IEEE 1800-2023 12.7.3)
    14 |       foreach (array);   
       |       ^~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

@@ -598,10 +598,10 @@ protected:
 
     void visit(AstAlways* nodep) override {
         UINFO(4, "   ALW   " << nodep);
-        if (debug() >= 9) nodep->dumpTree("-  alwIn:: ");
+        UINFOTREE(9, nodep, "", "alwIn:");
         scoreboardClear();
         processBlock(nodep->stmtsp());
-        if (debug() >= 9) nodep->dumpTree("-  alwOut: ");
+        UINFOTREE(9, nodep, "", "alwOut");
     }
 
     void visit(AstNodeIf* nodep) override {

@@ -111,6 +111,27 @@ List Of Warnings
    simulate correctly.
 
 
+.. option:: ALWNEVER
+
+   Warning that an `always @*` statement has no variables being read,
+   therefore the event list is empty, and as there are no events to wake
+   the process up, the always will never execute.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_ALWNEVER_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_ALWNEVER_msg.rst
+
+   To repair, assuming the intent was to execute the statements at e.g.
+   time zero, instead use an `always_comb` statement.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+
 .. option:: ASCRANGE
 
    .. TODO better example
@@ -458,7 +479,7 @@ List Of Warnings
 
    Warns that Verilator does not support certain forms of
    :code:`constraint`, :code:`constraint_mode`, or :code:`rand_mode`, and
-   the construct was are ignored.
+   the construct was ignored.
 
    Ignoring this warning may make Verilator randomize() simulations differ
    from other simulators.
@@ -486,7 +507,7 @@ List Of Warnings
 
    Warns that Verilator does not support certain forms of
    :code:`covergroup`, :code:`coverpoint`, and coverage options, and the
-   construct was are ignored.
+   construct was ignored.
 
    Disabling the :option:`UNSUPPORTED` error also disables this warning.
 
@@ -707,6 +728,28 @@ List Of Warnings
    Other tools with similar warnings: Verible's mismatched-labels,
    "Begin/end block labels must match." or "Matching begin label is
    missing."
+
+
+.. option:: ENUMITEMWIDTH
+
+   An error that an enum item value is being assigned from a value which
+   would be truncated (similar to :option:`WIDTHTRUNC`), or from a sized
+   literal constant with a different bit width (similar to
+   :option:`WIDTHTRUNC` or :option:`WIDTHEXPAND`).  IEEE requires this
+   error, but it may be disabled.
+
+   Faulty example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2
+
+         typedef enum [3:0] {
+            WRONG_WIDTH = 33'h3  //<--- Warning
+         } enum_t;
+
+   To repair, correct the size of the item's value directly, or use a cast,
+   so the resulting width matches the enum's width.
 
 
 .. option:: ENUMVALUE
@@ -1286,6 +1329,21 @@ List Of Warnings
    simulate correctly.
 
 
+.. option:: NOEFFECT
+
+   Warns that the statement will have no effect and is roughly equivalent
+   to not being present.  This is only issued when it is "non-obvious",
+   e.g. a :code:`if (0)` will not result in this warning.
+
+   Faulty example:
+
+   .. code-block:: sv
+
+         foreach (array[]) begin ... end  //<--- Warning
+
+   For a fix, remove the statement.
+
+
 .. option:: NOLATCH
 
    .. TODO better example
@@ -1339,6 +1397,27 @@ List Of Warnings
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.
+
+
+.. option:: PARAMNODEFAULT
+
+   An error that a parameter is being declared that has no default value,
+   and this is being done in a non-ANSI block while this is only legal in
+   ANSI-style `#(...)` declarations.  IEEE 1800-2023 6.20.1 requires this
+   error, but some simulators accept this syntax.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_PARAMNODEFAULT_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_PARAMNODEFAULT_msg.rst
+
+   To fix the issue, move to an ANSI-style declaration.
+
+   Suppressing this error will only suppress the IEEE-required check; it
+   will simulate correctly.
 
 
 .. option:: PINCONNECTEMPTY
@@ -1554,6 +1633,19 @@ List Of Warnings
    accepts the protected code.
 
 
+.. option:: PROTOTYPEMIS
+
+   Error that a function prototype does not match in some respects the
+   out-of-block declaration of that function. IEEE requires this error.
+
+   The typical solution is to fix the prototype to match the declaration
+   exactly, including in number of arguments, name of arguments, argument
+   data types, and return data type (for functions).
+
+   Disabling this error will cause Verilator to ignore the prototype and
+   may make the code illegal in other tools.
+
+
 .. option:: RANDC
 
    Historical, never issued since version 5.018, when :code:`randc` became
@@ -1740,6 +1832,18 @@ List Of Warnings
 
    Ignoring this warning may make Verilator simulations differ from other
    simulators.
+
+
+.. option:: SPECIFYIGN
+
+   Warns that Verilator does not support certain constructs in
+   :code:`specify` blocks, nor :code:`$sdf_annotate`, and the construct was
+   ignored.
+
+   Disabling the :option:`UNSUPPORTED` error also disables this warning.
+
+   Ignoring this warning may make Verilator ignore lint checking on the
+   construct, and get different results from other simulators.
 
 
 .. option:: SPLITVAR

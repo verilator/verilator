@@ -52,8 +52,10 @@ class LinkResolveVisitor final : public VNVisitor {
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
     AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
     int m_senitemCvtNum = 0;  // Temporary signal counter
-    bool m_underGenFor = false;  // Under GenFor
+    std::deque<AstGenFor*> m_underGenFors;  // Stack of GenFor underneath
     bool m_underGenerate = false;  // Under GenFor/GenIf
+    AstNodeExpr* m_currentRandomizeSelectp = nullptr;  // fromp() of current `randomize()` call
+    bool m_inRandomizeWith = false;  // If in randomize() with (and no other with afterwards)
 
     // VISITORS
     // TODO: Most of these visitors are here for historical reasons.
@@ -139,9 +141,17 @@ class LinkResolveVisitor final : public VNVisitor {
         if (nodep->varp()) {  // Else due to dead code, might not have var pointer
             // VarRef: Resolve its reference
             nodep->varp()->usedParam(true);
-            // TODO should look for where genvar is valid, but for now catch
-            // just gross errors of using genvar outside any generate
-            if (nodep->varp()->isGenVar() && !m_underGenFor) {
+            // Look for where genvar is valid
+            bool ok = false;
+            // cppcheck-suppress constVariablePointer
+            for (AstGenFor* const forp : m_underGenFors) {
+                if (ok) break;
+                if (forp->initsp())
+                    forp->initsp()->foreach([&](const AstVarRef* refp) {  //
+                        if (refp->varp() == nodep->varp()) ok = true;
+                    });
+            }
+            if (nodep->varp()->isGenVar() && !ok) {
                 nodep->v3error("Genvar "
                                << nodep->prettyNameQ()
                                << " used outside generate for loop (IEEE 1800-2023 27.4)");
@@ -177,6 +187,18 @@ class LinkResolveVisitor final : public VNVisitor {
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
     }
     void visit(AstNodeFTaskRef* nodep) override {
+        VL_RESTORER(m_currentRandomizeSelectp);
+
+        if (nodep->name() == "randomize") {
+            if (const AstMethodCall* const methodcallp = VN_CAST(nodep, MethodCall)) {
+                if (m_inRandomizeWith) {
+                    nodep->v3warn(
+                        E_UNSUPPORTED,
+                        "Unsupported: randomize() nested in inline randomize() constraints");
+                }
+                m_currentRandomizeSelectp = methodcallp->fromp();
+            }
+        }
         iterateChildren(nodep);
         if (AstLet* letp = VN_CAST(nodep->taskp(), Let)) {
             UINFO(7, "letSubstitute() " << nodep << " <- " << letp);
@@ -190,8 +212,9 @@ class LinkResolveVisitor final : public VNVisitor {
             if (VN_IS(nodep->backp(), StmtExpr)) {
                 nodep->v3error("Expected statement, not let substitution " << letp->prettyNameQ());
             }
-            // if (debug()) letp->dumpTree("-let-let ");
-            // if (debug()) nodep->dumpTree("-let-ref ");
+            // UINFOTREE(1, letp, "", "let-let");
+            // UINFOTREE(1, nodep, "", "let-ref");
+            // cppcheck-suppress constVariablePointer
             AstStmtExpr* const letStmtp = VN_AS(letp->stmtsp(), StmtExpr);
             AstNodeExpr* const newp = letStmtp->exprp()->cloneTree(false);
             const V3TaskConnects tconnects = V3Task::taskConnects(nodep, letp->stmtsp());
@@ -214,7 +237,7 @@ class LinkResolveVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(refp), refp);
                 }
             });
-            // if (debug()) newp->dumpTree("-let-new ");
+            // UINFOTREE(1, newp, "", "let-new");
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             // Iterate to expand further now, so we can look for recursions
@@ -391,7 +414,7 @@ class LinkResolveVisitor final : public VNVisitor {
         return newFormat;
     }
 
-    static void expectDescriptor(AstNode* /*nodep*/, AstNodeVarRef* filep) {
+    static void expectDescriptor(AstNode* /*nodep*/, const AstNodeVarRef* filep) {
         // This might fail on complex expressions like arrays
         // We use attrFileDescr() only for lint suppression, so that's ok
         if (filep && filep->varp()) filep->varp()->attrFileDescr(true);
@@ -503,15 +526,40 @@ class LinkResolveVisitor final : public VNVisitor {
     // We keep Modport's themselves around for XML dump purposes
 
     void visit(AstGenFor* nodep) override {
-        VL_RESTORER(m_underGenFor);
         VL_RESTORER(m_underGenerate);
-        m_underGenFor = true;
         m_underGenerate = true;
+        m_underGenFors.emplace_back(nodep);
         iterateChildren(nodep);
+        UASSERT_OBJ(!m_underGenFors.empty(), nodep, "Underflow");
+        m_underGenFors.pop_back();
     }
     void visit(AstGenIf* nodep) override {
         VL_RESTORER(m_underGenerate);
         m_underGenerate = true;
+        iterateChildren(nodep);
+    }
+
+    void visit(AstMemberSel* nodep) override {
+        if (m_inRandomizeWith && nodep->fromp()->isSame(m_currentRandomizeSelectp)) {
+            // Replace member selects to the element
+            // on which the randomize() is called with LambdaArgRef
+            // This allows V3Randomize to work properly when
+            // constrained variables are referred using that object
+            AstNodeExpr* const prevFromp = nodep->fromp();
+            prevFromp->replaceWith(
+                new AstLambdaArgRef{prevFromp->fileline(), prevFromp->name(), false});
+            pushDeletep(prevFromp);
+        }
+        iterateChildren(nodep);
+    }
+
+    void visit(AstWith* nodep) override {
+        VL_RESTORER(m_inRandomizeWith);
+        if (const AstMethodCall* const methodCallp = VN_CAST(nodep->backp(), MethodCall)) {
+            m_inRandomizeWith = methodCallp->name() == "randomize";
+        } else {
+            m_inRandomizeWith = false;
+        }
         iterateChildren(nodep);
     }
 

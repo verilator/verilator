@@ -644,7 +644,7 @@ public:
     }
 
     // Internal: Model and thread setup
-    void addModel(VerilatedModel*);
+    void addModel(const VerilatedModel* modelp);
     VerilatedVirtualBase* threadPoolp();
     void prepareClone();
     VerilatedVirtualBase* threadPoolpOnClone();
@@ -763,8 +763,8 @@ public:  // But internals only - called from VerilatedModule's
 
 class VerilatedHierarchy final {
 public:
-    static void add(VerilatedScope* fromp, VerilatedScope* top);
-    static void remove(VerilatedScope* fromp, VerilatedScope* top);
+    static void add(const VerilatedScope* fromp, const VerilatedScope* top);
+    static void remove(const VerilatedScope* fromp, const VerilatedScope* top);
 };
 
 //===========================================================================

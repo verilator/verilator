@@ -17,7 +17,7 @@
 class nba_waiter;
     // Task taken from UVM
     task wait_for_nba_region;
-        int nba;
+        static int nba;
         int next_nba;
         next_nba++;
         nba <= `DELAY next_nba;
@@ -27,18 +27,13 @@ endclass
 
 class Foo;
     task bar(logic a, logic b);
-        int x;
-        int y;
+        static int x;
+        static int y;
         // bar's local vars and intravals could be overwritten by other locals
         if (a) x <= `DELAY 'hDEAD;
         if (b) y <= `DELAY 'hBEEF;
         #2
         if (x != 'hDEAD) $stop;
-    endtask
-
-   task qux();
-        int x[] = new[1];
-        x[0] <= `DELAY 'hBEEF;  // Segfault check
     endtask
 endclass
 
@@ -61,7 +56,6 @@ module t;
         if (cnt != 4) $stop;
         if ($time != `TIME_AFTER_SECOND_WAIT) $stop;
         foo.bar(1, 1);
-        foo.qux();
         #2
         $write("*-* All Finished *-*\n");
         $finish;

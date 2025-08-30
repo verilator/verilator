@@ -45,12 +45,11 @@ class DfgRegularize final {
         // Ensure intermediate values used multiple times are written to variables
         for (DfgVertex& vtx : m_dfg.opVertices()) {
             const bool needsIntermediateVariable = [&]() {
-                // Anything that drives an SC variable needs an intermediate,
-                // as we can only assign simple variables to SC variables at runtime.
-                const bool hasScSink = vtx.findSink<DfgVertexVar>([](const DfgVertexVar& var) {  //
-                    return var.varp()->isSc();
-                });
-                if (hasScSink) return true;
+                // Splice vertices represent partial assignments. The must flow
+                // into variables, so they should never need a temporary.
+                if (vtx.is<DfgVertexSplice>()) return false;
+                // Smilarly to splice, UnitArray should never need one eitehr
+                if (vtx.is<DfgUnitArray>()) return false;
                 // Operations without multiple sinks need no variables
                 if (!vtx.hasMultipleSinks()) return false;
                 // Array selects need no variables, they are just memory references
@@ -63,26 +62,21 @@ class DfgRegularize final {
 
             // This is an op that requires a result variable. Ensure it is
             // assigned to one, and redirect other sinks read that variable.
-            if (DfgVarPacked* const varp = vtx.getResultVar()) {
-                // A variable already exists
-                UASSERT_OBJ(varp->arity() == 1, varp, "Result variable with multiple drivers");
-                FileLine* const flp = varp->driverFileLine(0);
-                varp->sourceEdge(0)->unlinkSource();
-                varp->resetSources();
+            if (DfgVertexVar* const varp = vtx.getResultVar()) {
+                varp->sourceEdge<0>()->unlinkSource();
                 vtx.replaceWith(varp);
-                varp->addDriver(flp, 0, &vtx);
+                varp->srcp(&vtx);
             } else {
                 // Need to create an intermediate variable
                 const std::string name = m_dfg.makeUniqueName("Regularize", m_nTmps);
                 FileLine* const flp = vtx.fileline();
                 AstScope* const scopep = scoped ? vtx.scopep(scopeCache) : nullptr;
-                DfgVarPacked* const newp
-                    = m_dfg.makeNewVar(flp, name, vtx.dtypep(), scopep)->as<DfgVarPacked>();
+                DfgVertexVar* const newp = m_dfg.makeNewVar(flp, name, vtx.dtypep(), scopep);
                 ++m_nTmps;
                 ++m_ctx.m_temporariesIntroduced;
                 // Replace vertex with the variable and add back driver
                 vtx.replaceWith(newp);
-                newp->addDriver(vtx.fileline(), 0, &vtx);
+                newp->srcp(&vtx);
             }
         }
     }

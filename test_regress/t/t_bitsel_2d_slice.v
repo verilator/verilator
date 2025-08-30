@@ -10,9 +10,9 @@ module t (/*AUTOARG*/
     );
     input clk;
 
-    localparam int width = 8;
-    typedef logic [width-1:0] [15:0] two_dee_t;
-    typedef logic[$clog2(width)-1:0] index_t;
+    localparam int WIDTH = 8;
+    typedef logic [WIDTH-1:0] [15:0] two_dee_t;
+    typedef logic[$clog2(WIDTH)-1:0] index_t;
 
     two_dee_t the_two_dee;
 

@@ -13,7 +13,7 @@ module t (/*AUTOARG*/
    input  wire       clk;
 
    wire [31:0]       result;
-   test_if  #(.id(3)) s();
+   test_if  #(.ID(3)) s();
    sub_test U_SUB_TEST(s.a.b, result);  // the line causing error
 endmodule : t
 
@@ -30,7 +30,7 @@ endmodule
 // ---------------------------------------------------------------------------
 
 interface test_if
-  #(parameter id = 0)
+  #(parameter ID = 0)
    ();
 
    typedef struct     packed {

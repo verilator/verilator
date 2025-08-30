@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--exe --main --timing -Wno-MINTYPMAXDLY"])
+test.compile(verilator_flags2=["--binary -Wno-MINTYPMAXDLY"])
 
 test.execute()
 

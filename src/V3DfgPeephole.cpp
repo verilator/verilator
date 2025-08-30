@@ -23,21 +23,20 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3DfgPeephole.h"
-
 #include "V3Dfg.h"
 #include "V3DfgCache.h"
 #include "V3DfgPasses.h"
+#include "V3DfgPeepholePatterns.h"
 #include "V3Stats.h"
 
 #include <cctype>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-V3DfgPeepholeContext::V3DfgPeepholeContext(const std::string& label)
-    : m_label{label} {
+V3DfgPeepholeContext::V3DfgPeepholeContext(V3DfgContext& ctx, const std::string& label)
+    : V3DfgSubContext{ctx, label, "Peephole"} {
     const auto checkEnabled = [this](VDfgPeepholePattern id) {
-        string str{id.ascii()};
+        std::string str{id.ascii()};
         std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {  //
             return c == '_' ? '-' : std::tolower(c);
         });
@@ -50,11 +49,11 @@ V3DfgPeepholeContext::V3DfgPeepholeContext(const std::string& label)
 
 V3DfgPeepholeContext::~V3DfgPeepholeContext() {
     const auto emitStat = [this](VDfgPeepholePattern id) {
-        string str{id.ascii()};
+        std::string str{id.ascii()};
         std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {  //
             return c == '_' ? ' ' : std::tolower(c);
         });
-        V3Stats::addStat("Optimizations, DFG " + m_label + " Peephole, " + str, m_count[id]);
+        addStat(str, m_count[id]);
     };
 #define OPTIMIZATION_EMIT_STATS(id, name) emitStat(VDfgPeepholePattern::id);
     FOR_EACH_DFG_PEEPHOLE_OPTIMIZATION(OPTIMIZATION_EMIT_STATS)
@@ -80,15 +79,11 @@ using BitwiseToReduction = typename BitwiseToReductionImpl<T_Reduction>::type;
 
 namespace {
 template<typename Vertex> void foldOp(V3Number& out, const V3Number& src);
-template <> void foldOp<DfgCLog2>      (V3Number& out, const V3Number& src) { out.opCLog2(src); }
-template <> void foldOp<DfgCountOnes>  (V3Number& out, const V3Number& src) { out.opCountOnes(src); }
 template <> void foldOp<DfgExtend>     (V3Number& out, const V3Number& src) { out.opAssign(src); }
 template <> void foldOp<DfgExtendS>    (V3Number& out, const V3Number& src) { out.opExtendS(src, src.width()); }
 template <> void foldOp<DfgLogNot>     (V3Number& out, const V3Number& src) { out.opLogNot(src); }
 template <> void foldOp<DfgNegate>     (V3Number& out, const V3Number& src) { out.opNegate(src); }
 template <> void foldOp<DfgNot>        (V3Number& out, const V3Number& src) { out.opNot(src); }
-template <> void foldOp<DfgOneHot>     (V3Number& out, const V3Number& src) { out.opOneHot(src); }
-template <> void foldOp<DfgOneHot0>    (V3Number& out, const V3Number& src) { out.opOneHot0(src); }
 template <> void foldOp<DfgRedAnd>     (V3Number& out, const V3Number& src) { out.opRedAnd(src); }
 template <> void foldOp<DfgRedOr>      (V3Number& out, const V3Number& src) { out.opRedOr(src); }
 template <> void foldOp<DfgRedXor>     (V3Number& out, const V3Number& src) { out.opRedXor(src); }
@@ -136,7 +131,7 @@ class V3DfgPeephole final : public DfgVisitor {
     // STATE
     DfgGraph& m_dfg;  // The DfgGraph being visited
     V3DfgPeepholeContext& m_ctx;  // The config structure
-    AstNodeDType* const m_bitDType = DfgVertex::dtypeForWidth(1);  // Common, so grab it up front
+    AstNodeDType* const m_bitDType = DfgGraph::dtypePacked(1);  // Common, so grab it up front
     // Head of work list. Note that we want all next pointers in the list to be non-zero (including
     // that of the last element). This allows as to do two important things: detect if an element
     // is in the list by checking for a non-zero next pointer, and easy prefetching without
@@ -210,7 +205,7 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     // Shorthand
-    static AstNodeDType* dtypeForWidth(uint32_t width) { return DfgVertex::dtypeForWidth(width); }
+    static AstNodeDType* dtypePacked(uint32_t width) { return DfgGraph::dtypePacked(width); }
 
     // Create a 32-bit DfgConst vertex
     DfgConst* makeI32(FileLine* flp, uint32_t val) { return new DfgConst{m_dfg, flp, 32, val}; }
@@ -237,7 +232,7 @@ class V3DfgPeephole final : public DfgVisitor {
 
     // Same as above, but 'flp' and 'dtypep' are taken from the given example vertex
     template <typename Vertex, typename... Operands>
-    Vertex* make(DfgVertex* examplep, Operands... operands) {
+    Vertex* make(const DfgVertex* examplep, Operands... operands) {
         return make<Vertex>(examplep->fileline(), examplep->dtypep(), operands...);
     }
 
@@ -370,7 +365,7 @@ class V3DfgPeephole final : public DfgVisitor {
                 // Concatenation dtypes need to be fixed up, other associative nodes preserve
                 // types
                 if VL_CONSTEXPR_CXX17 (std::is_same<DfgConcat, Vertex>::value) {
-                    childDtyptp = dtypeForWidth(bp->width() + cp->width());
+                    childDtyptp = dtypePacked(bp->width() + cp->width());
                 }
 
                 Vertex* const childp = make<Vertex>(vtxp->fileline(), childDtyptp, bp, cp);
@@ -413,8 +408,8 @@ class V3DfgPeephole final : public DfgVisitor {
         // If both sides are variable references, order the side in some defined way. This
         // allows CSE to later merge 'a op b' with 'b op a'.
         if (lhsp->is<DfgVertexVar>() && rhsp->is<DfgVertexVar>()) {
-            AstNode* const lVarp = lhsp->as<DfgVertexVar>()->nodep();
-            AstNode* const rVarp = rhsp->as<DfgVertexVar>()->nodep();
+            const AstNode* const lVarp = lhsp->as<DfgVertexVar>()->nodep();
+            const AstNode* const rVarp = rhsp->as<DfgVertexVar>()->nodep();
             if (lVarp->name() > rVarp->name()) {
                 APPLYING(SWAP_VAR_IN_COMMUTATIVE_BINARY) {
                     Vertex* const replacementp = make<Vertex>(vtxp, rhsp, lhsp);
@@ -666,14 +661,6 @@ class V3DfgPeephole final : public DfgVisitor {
     //  DfgVertexUnary
     //=========================================================================
 
-    void visit(DfgCLog2* vtxp) override {
-        if (foldUnary(vtxp)) return;
-    }
-
-    void visit(DfgCountOnes* vtxp) override {
-        if (foldUnary(vtxp)) return;
-    }
-
     void visit(DfgExtend* vtxp) override {
         UASSERT_OBJ(vtxp->width() > vtxp->srcp()->width(), vtxp, "Invalid zero extend");
 
@@ -769,14 +756,6 @@ class V3DfgPeephole final : public DfgVisitor {
         }
     }
 
-    void visit(DfgOneHot* vtxp) override {
-        if (foldUnary(vtxp)) return;
-    }
-
-    void visit(DfgOneHot0* vtxp) override {
-        if (foldUnary(vtxp)) return;
-    }
-
     void visit(DfgRedOr* vtxp) override {
         if (optimizeReduction(vtxp)) return;
     }
@@ -841,10 +820,10 @@ class V3DfgPeephole final : public DfgVisitor {
                     const uint32_t lSelWidth = width - rSelWidth;
 
                     // The new Lhs vertex
-                    DfgSel* const newLhsp = make<DfgSel>(flp, dtypeForWidth(lSelWidth), lhsp, 0U);
+                    DfgSel* const newLhsp = make<DfgSel>(flp, dtypePacked(lSelWidth), lhsp, 0U);
 
                     // The new Rhs vertex
-                    DfgSel* const newRhsp = make<DfgSel>(flp, dtypeForWidth(rSelWidth), rhsp, lsb);
+                    DfgSel* const newRhsp = make<DfgSel>(flp, dtypePacked(rSelWidth), rhsp, lsb);
 
                     // The replacement Concat vertex
                     DfgConcat* const newConcat
@@ -930,6 +909,38 @@ class V3DfgPeephole final : public DfgVisitor {
                     DfgShiftL* const replacementp = make<DfgShiftL>(
                         shiftLp->fileline(), vtxp->dtypep(), newSelp, shiftLp->rhsp());
                     replace(vtxp, replacementp);
+                }
+            }
+        }
+
+        // Sel from a partial temporary
+        if (DfgVarPacked* const varp = fromp->cast<DfgVarPacked>()) {
+            if (varp->tmpForp() && varp->srcp()) {
+                // Must be a splice, otherwise it would have been inlined
+                DfgSplicePacked* const splicep = varp->srcp()->as<DfgSplicePacked>();
+
+                const auto pair = splicep->sourceEdges();
+                for (size_t i = 0; i < pair.second; ++i) {
+                    DfgVertex* const driverp = pair.first[i].sourcep();
+                    // Ignore default, we won't select into that for now ...
+                    if (driverp == splicep->defaultp()) continue;
+
+                    const uint32_t dLsb = splicep->driverLo(i);
+                    const uint32_t dMsb = dLsb + driverp->width() - 1;
+                    // If it does not cover the whole searched bit range, move on
+                    if (lsb < dLsb || dMsb < msb) continue;
+
+                    // Replace with sel from driver
+                    APPLYING(PUSH_SEL_THROUGH_SPLICE) {
+                        DfgSel* const replacementp = make<DfgSel>(vtxp, driverp, lsb - dLsb);
+                        replace(vtxp, replacementp);
+                        // Special case just for this pattern: delete temporary if became unsued
+                        if (!varp->hasSinks() && !varp->hasDfgRefs()) {
+                            addToWorkList(splicep);  // So it can be delete itself if unused
+                            VL_DO_DANGLING(varp->unlinkDelete(m_dfg), varp);  // Delete it
+                        }
+                        return;
+                    }
                 }
             }
         }
@@ -1200,15 +1211,41 @@ class V3DfgPeephole final : public DfgVisitor {
     }
 
     void visit(DfgArraySel* vtxp) override {
-        if (DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>()) {
-            if (DfgVarArray* const varp = vtxp->fromp()->cast<DfgVarArray>()) {
-                const size_t idx = idxp->toSizeT();
-                if (DfgVertex* const driverp = varp->driverAt(idx)) {
-                    APPLYING(INLINE_ARRAYSEL) {
-                        replace(vtxp, driverp);
-                        return;
-                    }
-                }
+        DfgConst* const idxp = vtxp->bitp()->cast<DfgConst>();
+        if (!idxp) return;
+        DfgVarArray* const varp = vtxp->fromp()->cast<DfgVarArray>();
+        if (!varp) return;
+        if (varp->varp()->isForced()) return;
+        if (varp->varp()->isSigUserRWPublic()) return;
+        DfgVertex* const srcp = varp->srcp();
+        if (!srcp) return;
+
+        if (DfgSpliceArray* const splicep = srcp->cast<DfgSpliceArray>()) {
+            DfgVertex* const driverp = splicep->driverAt(idxp->toSizeT());
+            if (!driverp) return;
+            DfgUnitArray* const uap = driverp->cast<DfgUnitArray>();
+            if (!uap) return;
+            if (uap->srcp()->is<DfgVertexSplice>()) return;
+            // If driven by a variable that had a Driver in DFG, it is partial
+            if (DfgVertexVar* const dvarp = uap->srcp()->cast<DfgVertexVar>()) {
+                if (dvarp->srcp()) return;
+            }
+            APPLYING(INLINE_ARRAYSEL_SPLICE) {
+                replace(vtxp, uap->srcp());
+                return;
+            }
+        }
+
+        if (DfgUnitArray* const uap = srcp->cast<DfgUnitArray>()) {
+            UASSERT_OBJ(idxp->toSizeT() == 0, vtxp, "Array index out of range");
+            if (uap->srcp()->is<DfgSplicePacked>()) return;
+            // If driven by a variable that had a Driver in DFG, it is partial
+            if (DfgVertexVar* const dvarp = uap->srcp()->cast<DfgVertexVar>()) {
+                if (dvarp->srcp()) return;
+            }
+            APPLYING(INLINE_ARRAYSEL_UNIT) {
+                replace(vtxp, uap->srcp());
+                return;
             }
         }
     }
@@ -1273,8 +1310,7 @@ class V3DfgPeephole final : public DfgVisitor {
                     if (lSelp->lsb() == rSelp->lsb() + rSelp->width()) {
                         // Two consecutive Sels, make a single Sel.
                         const uint32_t width = lSelp->width() + rSelp->width();
-                        return make<DfgSel>(flp, dtypeForWidth(width), rSelp->fromp(),
-                                            rSelp->lsb());
+                        return make<DfgSel>(flp, dtypePacked(width), rSelp->fromp(), rSelp->lsb());
                     }
                 }
                 return nullptr;

@@ -110,7 +110,6 @@ class UdpVisitor final : public VNVisitor {
         }
         AstNode* iNodep = nodep->iFieldsp();
         AstNode* oNodep = nodep->oFieldsp();
-        uint32_t inputvars = 0;
         AstSenTree* edgetrigp = nullptr;
 
         AstLogAnd* logandp = new AstLogAnd{fl, new AstConst{fl, AstConst::BitTrue{}},
@@ -118,7 +117,6 @@ class UdpVisitor final : public VNVisitor {
 
         for (AstVar* itr : m_inputVars) {
             if (!iNodep) break;
-            inputvars++;
             if (AstUdpTableLineVal* linevalp = VN_CAST(iNodep, UdpTableLineVal)) {
                 string valName = linevalp->name();
                 AstVarRef* const referencep = new AstVarRef{fl, itr, VAccess::READ};
@@ -141,6 +139,10 @@ class UdpVisitor final : public VNVisitor {
             }
             iNodep = iNodep->nextp();
         }
+
+        uint32_t inputvars = 0;
+        for (const AstNode* icountp = nodep->iFieldsp(); icountp; icountp = icountp->nextp())
+            ++inputvars;
         if (inputvars != m_inputVars.size()) {
             nodep->v3error("Incorrect number of input values, expected " << m_inputVars.size()
                                                                          << ", got " << inputvars);

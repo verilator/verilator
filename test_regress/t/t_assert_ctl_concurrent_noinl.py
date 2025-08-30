@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t_assert_ctl_concurrent.v"
 
-test.compile(verilator_flags2=["--exe --main --timing --assert --fno-inline"])
+test.compile(verilator_flags2=["--binary --assert --fno-inline"])
 
 test.execute()
 

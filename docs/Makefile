@@ -68,10 +68,15 @@ pdf:
 
 ######################################################################
 
-html latex linkcheck spelling::
+html latex linkcheck::
 	$(MAKE) vl-extract
 	$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
 	$(PYTHON3) bin/vl_sphinx_fix _build
+
+spelling::
+	$(MAKE) vl-extract
+	$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
+	sort -o guide/spelling.txt guide/spelling.txt
 
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)

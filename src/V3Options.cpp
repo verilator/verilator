@@ -419,6 +419,7 @@ string V3Options::allArgsString() const VL_MT_SAFE {
 
 // Delete some options for Verilation of the hierarchical blocks.
 string V3Options::allArgsStringForHierBlock(bool forTop) const {
+    // cppcheck-suppress shadowFunction
     std::set<string> vFiles;
     for (const auto& vFile : m_vFiles) vFiles.insert(vFile.filename());
     string out;
@@ -813,6 +814,7 @@ string V3Options::getSupported(const string& var) {
     // If update below, also update V3Options::showVersion()
     if (var == "COROUTINES" && coroutineSupport()) {
         return "1";
+        // cppcheck-suppress knownConditionTrueFalse
     } else if (var == "SYSTEMC" && systemCFound()) {
         return "1";
     } else {
@@ -1336,6 +1338,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_fDfgPostInline = flag;
         m_fDfgScoped = flag;
     });
+    DECL_OPTION("-fdfg-break-cycles", FOnOff, &m_fDfgBreakCycles);
     DECL_OPTION("-fdfg-peephole", FOnOff, &m_fDfgPeephole);
     DECL_OPTION("-fdfg-peephole-", CbPartialMatch, [this](const char* optp) {  //
         m_fDfgPeepholeDisabled.erase(optp);
@@ -1346,6 +1349,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fdfg-pre-inline", FOnOff, &m_fDfgPreInline);
     DECL_OPTION("-fdfg-post-inline", FOnOff, &m_fDfgPostInline);
     DECL_OPTION("-fdfg-scoped", FOnOff, &m_fDfgScoped);
+    DECL_OPTION("-fdfg-synthesize-all", FOnOff, &m_fDfgSynthesizeAll);
     DECL_OPTION("-fexpand", FOnOff, &m_fExpand);
     DECL_OPTION("-ffunc-opt", CbFOnOff, [this](bool flag) {  //
         m_fFuncSplitCat = flag;
@@ -1395,9 +1399,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_hierBlocks.emplace(opt.mangledName(), opt);
     });
     DECL_OPTION("-hierarchical-child", Set, &m_hierChild);
-    DECL_OPTION("-hierarchical-params-file", CbVal, [this](const char* optp) {
-        m_hierParamsFile.push_back({optp, work()});
-    });
+    DECL_OPTION("-hierarchical-params-file", CbVal,
+                [this](const char* optp) { m_hierParamsFile.push_back({optp, work()}); });
 
     DECL_OPTION("-I", CbPartialMatch,
                 [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
@@ -1760,6 +1763,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         }
     });
     for (int i = V3ErrorCode::EC_FIRST_WARN; i < V3ErrorCode::_ENUM_MAX; ++i) {
+        // cppcheck-suppress shadowFunction
         for (const string prefix : {"-Wno-", "-Wwarn-"})
             parser.addSuggestionCandidate(prefix + V3ErrorCode{i}.ascii());
     }
@@ -1802,8 +1806,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-Wwarn-UNSUPPORTED", CbCall, []() {
         FileLine::globalWarnOff(V3ErrorCode::E_UNSUPPORTED, false);
         FileLine::globalWarnOff(V3ErrorCode::COVERIGN, false);
+        FileLine::globalWarnOff(V3ErrorCode::SPECIFYIGN, false);
         V3Error::pretendError(V3ErrorCode::E_UNSUPPORTED, false);
         V3Error::pretendError(V3ErrorCode::COVERIGN, false);
+        V3Error::pretendError(V3ErrorCode::SPECIFYIGN, false);
     });
     DECL_OPTION("-Wwarn-WIDTH", CbCall, []() {
         FileLine::globalWarnOff(V3ErrorCode::WIDTH, false);
@@ -2140,7 +2146,7 @@ void V3Options::setDebugMode(int level) {
     if (!m_dumpLevel.count("tree")) m_dumpLevel["tree"] = 3;  // Don't override if already set.
     m_stats = true;
     m_debugCheck = true;
-    cout << "Starting " << version() << "\n";
+    if (level) cout << "Starting " << version() << "\n";
 }
 
 unsigned V3Options::debugLevel(const string& tag) const VL_MT_SAFE {

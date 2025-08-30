@@ -6,9 +6,9 @@
 
 
 module t (/*AUTOARG*/
-   // Inputs
-   clk
-   );
+  // Inputs
+  clk
+  );
    input clk;
 
    integer      cyc = 0;
@@ -44,26 +44,23 @@ module t (/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE
-      $write("[%0t] cyc==%0d crc=%x result=%x\n", $time, cyc, crc, result);
+      $write("[%0t] cyc==%0d crc=%x result=%x rstn=%x\n", $time, cyc, crc, result, rstn);
 `endif
       cyc <= cyc + 1;
       crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
       sum <= result ^ {sum[62:0], sum[63] ^ sum[2] ^ sum[0]};
-      if (cyc==0) begin
+      if (cyc == 0) begin
          // Setup
          crc <= 64'h5aef0c8d_d70a4497;
-         sum <= '0;
       end
-      else if (cyc<10) begin
+      else if (cyc < 10) begin
          sum <= '0;
-      end
-      else if (cyc<90) begin
       end
       else if (cyc==99) begin
          $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'h77979747fd1b3a5a
+`define EXPECTED_SUM 64'h77979747fd86e9fd
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
          $finish;
@@ -75,11 +72,11 @@ endmodule
 
 module Test
   (/*AUTOARG*/
-   // Outputs
-   ff_out, fg_out, fh_out,
-   // Inputs
-   clk, clken, rstn, in
-   );
+  // Outputs
+  ff_out, fg_out, fh_out,
+  // Inputs
+  clk, clken, rstn, in
+  );
 
    input clk;
    input clken;
@@ -98,6 +95,7 @@ module Test
          ff_11 <= 0;
          ff_12 <= 0;
          ff_13 <= 0;
+         ff_out <= 0;
       end
       else begin
          ff_10 <= in;
@@ -120,6 +118,7 @@ module Test
             fg_11 <= 0;
             fg_12 <= 0;
             fg_13 <= 0;
+            fg_out <= 0;
          end
          else begin
             fg_10 <= in;
@@ -142,6 +141,7 @@ module Test
          fh_11 <= 0;
          fh_12 <= 0;
          fh_13 <= 0;
+         fh_out <= 0;
       end
       else begin
          if (clken) begin

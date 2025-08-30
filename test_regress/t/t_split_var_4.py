@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--stats', '-DENABLE_SPLIT_VAR=1'])
+test.compile(verilator_flags2=['--stats', '-DENABLE_SPLIT_VAR=1', "-fno-dfg"])
 
 test.execute()
 

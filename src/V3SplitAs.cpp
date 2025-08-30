@@ -131,7 +131,7 @@ class SplitAsVisitor final : public VNVisitor {
 
     // METHODS
     void splitAlways(AstAlways* nodep, AstVarScope* splitVscp) {
-        if (debug() >= 9) nodep->dumpTree("-  in: ");
+        UINFOTREE(9, nodep, "", "in");
         // Duplicate it and link in
         // Below cloneTree should perhaps be cloneTreePure, but given
         // isolate_assignments is required to hit this code, we presume the user
@@ -141,11 +141,11 @@ class SplitAsVisitor final : public VNVisitor {
         nodep->addNextHere(newp);
         {  // Delete stuff we don't want in old
             const SplitAsCleanVisitor visitor{nodep, splitVscp, false};
-            if (debug() >= 9) nodep->dumpTree("-  out0: ");
+            UINFOTREE(9, nodep, "", "out0");
         }
         {  // Delete stuff we don't want in new
             const SplitAsCleanVisitor visitor{newp, splitVscp, true};
-            if (debug() >= 9) newp->dumpTree("-  out1: ");
+            UINFOTREE(9, newp, "", "out1");
         }
     }
 

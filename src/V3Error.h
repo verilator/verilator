@@ -71,6 +71,7 @@ public:
         EC_FIRST_WARN,  // Just a code so the program knows where to start warnings
         //
         ALWCOMBORDER,   // Always_comb with unordered statements
+        ALWNEVER,       // always will never execute
         ASCRANGE,       // Ascending bit range vector
         ASSIGNDLY,      // Assignment delays
         ASSIGNIN,       // Assigning to input
@@ -99,6 +100,7 @@ public:
         DEPRECATED,     // Feature will be deprecated
         ENCAPSULATED,   // Error: local/protected violation
         ENDLABEL,       // End lable name mismatch
+        ENUMITEMWIDTH,  // Error: enum item width mismatch
         ENUMVALUE,      // Error: enum type needs explicit cast
         EOFNEWLINE,     // End-of-file missing newline
         GENCLK,         // Generated Clock. Historical, never issued.
@@ -124,9 +126,11 @@ public:
         MULTIDRIVEN,    // Driven from multiple blocks
         MULTITOP,       // Multiple top level modules
         NEWERSTD,       // Newer language standard required
+        NOEFFECT,       // Statement has no effect
         NOLATCH,        // No latch detected in always_latch block
         NONSTD,         // Non-standard feature present in other sims
         NULLPORT,       // Null port detected in module definition
+        PARAMNODEFAULT, // Parameter without default
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
         PINMISSING,     // Cell pin not specified
         PINNOCONNECT,   // Cell pin not connected
@@ -136,7 +140,8 @@ public:
         PROCASSINIT,    // Procedural assignment versus initialization
         PROCASSWIRE,    // Procedural assignment on wire
         PROFOUTOFDATE,  // Profile data out of date
-        PROTECTED,      // detected `pragma protected
+        PROTECTED,      // Detected `pragma protected
+        PROTOTYPEMIS,   // Prototype mismatch or related
         RANDC,          // Unsupported: 'randc' converted to 'rand'
         REALCVT,        // Real conversion
         REDEFMACRO,     // Redefining existing define macro
@@ -144,6 +149,7 @@ public:
         SELRANGE,       // Selection index out of range
         SHORTREAL,      // Shortreal not supported
         SIDEEFFECT,     // Sideeffect ignored
+        SPECIFYIGN,     // Specify construct ignored
         SPLITVAR,       // Cannot split the variable
         STATICVAR,      // Static variable declared in a loop with a declaration assignment
         STMTDLY,        // Delayed statement
@@ -189,40 +195,34 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const VL_MT_SAFE { return m_e; }
     const char* ascii() const VL_MT_SAFE {
-        // clang-format off
         static const char* const names[] = {
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALMANY", " FATALSRC", " ERROR", " FIRST_NAMED",
             // Boolean
-            " I_CELLDEFINE", " I_COVERAGE",  " I_DEF_NETTYPE_WIRE", " I_LINT", " I_TIMING", " I_TRACING", " I_UNUSED",
+            " I_CELLDEFINE", " I_COVERAGE", " I_DEF_NETTYPE_WIRE", " I_LINT", " I_TIMING",
+            " I_TRACING", " I_UNUSED",
             // Errors
             "LIFETIME", "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT", "TASKNSVAR", "UNSUPPORTED",
             // Warnings
-            " EC_FIRST_WARN",
-            "ALWCOMBORDER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN", "BADSTDPRAGMA", "BADVLTPRAGMA",
-            "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
-            "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC", "CLKDATA",
-            "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG", "COVERIGN",
-            "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED",
-            "ENCAPSULATED", "ENDLABEL", "ENUMVALUE", "EOFNEWLINE", "GENCLK",
-            "GENUNNAMED", "HIERBLOCK",
-            "IFDEPTH", "IGNOREDRETURN",
-            "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE",
-            "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
+            " EC_FIRST_WARN", "ALWCOMBORDER", "ALWNEVER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN",
+            "BADSTDPRAGMA", "BADVLTPRAGMA", "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
+            "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC",
+            "CLKDATA", "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG",
+            "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED", "ENCAPSULATED",
+            "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "GENCLK", "GENUNNAMED",
+            "HIERBLOCK", "IFDEPTH", "IGNOREDRETURN", "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC",
+            "IMPORTSTAR", "IMPURE", "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING",
-            "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOLATCH", "NONSTD", "NULLPORT", "PINCONNECTEMPTY",
-            "PINMISSING", "PINNOCONNECT",  "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE",
-            "PROFOUTOFDATE", "PROTECTED", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY",
-            "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPLITVAR",
-            "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
-            "TICKCOUNT", "TIMESCALEMOD",
-            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
-            "UNPACKED", "UNSIGNED", "UNUSEDGENVAR",  "UNUSEDLOOP" ,"UNUSEDPARAM", "UNUSEDSIGNAL",
-            "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
-            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",  "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL",
-            " MAX"
-        };
-        // clang-format on
+            "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NULLPORT",
+            "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT", "PINNOTFOUND",
+            "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED",
+            "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY", "SELRANGE",
+            "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN", "SPLITVAR", "STATICVAR", "STMTDLY",
+            "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN", "UNOPT",
+            "UNOPTFLAT", "UNOPTTHREADS", "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDLOOP",
+            "UNUSEDPARAM", "UNUSEDSIGNAL", "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
+            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT", "WIDTHEXPAND", "WIDTHTRUNC",
+            "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
@@ -249,8 +249,9 @@ public:
     bool pretendError() const VL_MT_SAFE {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BADVLTPRAGMA || m_e == BLKANDNBLK
                 || m_e == BLKLOOPINIT || m_e == CONTASSREG || m_e == ENCAPSULATED
-                || m_e == ENDLABEL || m_e == ENUMVALUE || m_e == IMPURE || m_e == MODMISSING
-                || m_e == PINNOTFOUND || m_e == PKGNODECL || m_e == PROCASSWIRE
+                || m_e == ENDLABEL || m_e == ENUMITEMWIDTH || m_e == ENUMVALUE || m_e == IMPURE
+                || m_e == MODMISSING || m_e == PARAMNODEFAULT || m_e == PINNOTFOUND
+                || m_e == PKGNODECL || m_e == PROCASSWIRE || m_e == PROTOTYPEMIS
                 || m_e == ZEROREPL  // Says IEEE
         );
     }
@@ -392,9 +393,9 @@ private:
     // METHODS
     void v3errorPrep(V3ErrorCode code) VL_REQUIRES(m_mutex);
     std::ostringstream& v3errorStr() VL_REQUIRES(m_mutex) { return m_errorStr; }
-    void v3errorEnd(std::ostringstream& sstr, const string& extra, FileLine* fileline)
+    void v3errorEnd(const std::ostringstream& sstr, const string& extra, FileLine* fileline)
         VL_REQUIRES(m_mutex);
-    void v3errorEndGuts(std::ostringstream& sstr, const string& extra, FileLine* fileline)
+    void v3errorEndGuts(const std::ostringstream& sstr, const string& extra, FileLine* fileline)
         VL_REQUIRES(m_mutex);
 
 public:
@@ -585,7 +586,7 @@ public:
         VL_ACQUIRE(s().m_mutex);
     static std::ostringstream& v3errorStr() VL_REQUIRES(s().m_mutex) { return s().v3errorStr(); }
     // static, but often overridden in classes.
-    static void v3errorEnd(std::ostringstream& sstr, const string& extra, FileLine* fileline)
+    static void v3errorEnd(const std::ostringstream& sstr, const string& extra, FileLine* fileline)
         VL_RELEASE(s().m_mutex);
     static void vlAbort();
 };
@@ -647,16 +648,20 @@ void v3errorEndFatal(std::ostringstream& sstr)
     do { std::cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; } while (false)
 
 /// Based on debug level, call UINFO then dumpTree on nodep, using given message prefix
-/// If dt_msg = "", use the uinfo_msg; note any uinfo_msg side effects will happen twice.
-#define UINFOTREE(level, nodep, uinfo_msg, dt_msg) \
+/// If uinfo_msg = "", suppress the first UINFO
+/// If dumptree_msg = "", use the uinfo_msg; note any uinfo_msg side effects will happen twice.
+#define UINFOTREE(level, nodep, uinfo_msg, dumptree_msg) \
     do { \
         if (VL_UNCOVERABLE(debug() >= (level))) { \
-            UINFO(level, uinfo_msg); \
-            std::ostringstream ss; \
-            ss << dt_msg; \
-            if (ss.str().empty()) ss << uinfo_msg; \
-            if (nodep) \
-                nodep->dumpTree("- "s + V3Error::lineStr(__FILE__, __LINE__) + ss.str() + " - "); \
+            std::ostringstream us; \
+            us << uinfo_msg; \
+            if (!us.str().empty()) UINFO(level, us.str()); \
+            if (nodep) { \
+                std::ostringstream ss; \
+                ss << dumptree_msg; \
+                if (ss.str().empty()) ss << uinfo_msg; \
+                nodep->dumpTree("- " + V3Error::lineStr(__FILE__, __LINE__) + ss.str() + " - "); \
+            } \
         } \
     } while (false)
 
@@ -718,10 +723,12 @@ void v3errorEndFatal(std::ostringstream& sstr)
 // Takes an optional "name" (as __VA_ARGS__)
 #define VL_DEFINE_DEBUG(...) \
     VL_ATTR_UNUSED static int debug##__VA_ARGS__() VL_MT_SAFE { \
+        /* Don't complain this function is unused */ \
+        (void)&debug##__VA_ARGS__; \
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) { \
             std::string tag{VL_STRINGIFY(__VA_ARGS__)}; \
-            tag[0] = std::tolower(tag[0]); \
+            if (!tag.empty()) tag[0] = std::tolower(tag[0]); \
             const unsigned debugTag = v3Global.opt.debugLevel(tag); \
             const unsigned debugSrc = v3Global.opt.debugSrcLevel(__FILE__); \
             const unsigned debugLevel = debugTag >= debugSrc ? debugTag : debugSrc; \
@@ -735,6 +742,8 @@ void v3errorEndFatal(std::ostringstream& sstr)
 // Takes an optional "name" (as __VA_ARGS__)
 #define VL_DEFINE_DUMP(func, tag) \
     VL_ATTR_UNUSED static int dump##func() VL_MT_SAFE { \
+        /* Don't complain this function is unused */ \
+        (void)&dump##func; \
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) { \
             const unsigned dumpTag = v3Global.opt.dumpLevel(tag); \
@@ -758,6 +767,7 @@ void v3errorEndFatal(std::ostringstream& sstr)
     VL_DEFINE_DUMP(TreeJsonLevel, \
                    "tree-json"); /* Define 'int dumpTreeJsonLevel()' for dumpi-tree-json */ \
     VL_ATTR_UNUSED static int dumpTreeEitherLevel() { \
+        /* Don't complain this function is unused */ (void)&dumpTreeEitherLevel; \
         return dumpTreeJsonLevel() >= dumpTreeLevel() ? dumpTreeJsonLevel() : dumpTreeLevel(); \
     } \
     static_assert(true, "")

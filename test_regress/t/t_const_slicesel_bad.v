@@ -4,11 +4,11 @@
 // any use, without warranty, 2021 by Michael Lefebvre.
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/);
+module t;
 
-localparam int unsigned A3 [2:0] = '{4,5,6};
+  localparam int unsigned A3[2:0] = '{4, 5, 6};
 
-// slicesel out of range should fail
-localparam int unsigned B32_T [1:0] = A3[3:1];
+  // slicesel out of range should fail
+  localparam int unsigned B32_T[1:0] = A3[3:1];
 
 endmodule

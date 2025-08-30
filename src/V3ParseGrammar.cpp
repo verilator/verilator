@@ -260,7 +260,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     }
     if (VN_IS(dtypep, ParseTypeDType)) {
         // Parser needs to know what is a type
-        AstNode* const newp = new AstTypedefFwd{fileline, name};
+        AstNode* const newp = new AstTypedefFwd{fileline, name, VFwdType::NONE};
         AstNode::addNext<AstNode, AstNode>(nodep, newp);
     }
     // Don't set dtypep in the ranging;
@@ -282,7 +282,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     return nodep;
 }
 
-string V3ParseGrammar::unquoteString(FileLine* fileline, string text) {
+string V3ParseGrammar::unquoteString(FileLine* fileline, const std::string& text) {
     string errMsg;
     string res = VString::unquoteSVString(text, errMsg);
     if (!errMsg.empty()) fileline->v3error(errMsg.c_str());

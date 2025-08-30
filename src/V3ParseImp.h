@@ -107,9 +107,9 @@ struct VMemberQualifiers final {
 // We can't use bison's %union as we want to pass the fileline with all tokens
 
 struct V3ParseBisonYYSType final {
-    FileLine* fl;
-    int token;  // Read token, aka tok
-    VBaseOverride baseOverride;
+    FileLine* fl = nullptr;
+    int token = 0;  // Read token, aka tok
+    VBaseOverride baseOverride{};
     bool flag = false;  // Passed up some rules
     union {
         V3Number* nump;
@@ -157,7 +157,7 @@ class V3ParseImp final {
 
     int m_lexPrevToken = 0;  // previous parsed token (for lexer)
     bool m_afterColonColon = false;  // The previous token was '::'
-    V3ParseBisonYYSType m_tokenLastBison;  // Token we last sent to Bison
+    V3ParseBisonYYSType m_tokenLastBison{};  // Token we last sent to Bison
     std::deque<V3ParseBisonYYSType> m_tokensAhead;  // Tokens we parsed ahead of parser
 
     std::deque<string*> m_stringps;  // Created strings for later cleanup
@@ -238,7 +238,7 @@ public:
         return strp;
     }
     string* newString(const char* text, size_t length) {
-        string* const strp = new string(text, length);
+        string* const strp = new string(text, length);  // Need () constructor
         m_stringps.push_back(strp);
         return strp;
     }
@@ -293,12 +293,12 @@ public:
     void dumpInputsFile() VL_MT_DISABLED;
     void dumpTokensAhead(int line) VL_MT_DISABLED;
     static void candidatePli(VSpellCheck* spellerp) VL_MT_DISABLED;
+    void importIfInStd(FileLine* fileline, const string& id);
 
 private:
     void preprocDumps(std::ostream& os);
     void lexFile(const string& modname) VL_MT_DISABLED;
     void yylexReadTok() VL_MT_DISABLED;
-    void importIfInStd(FileLine* fileline, const string& id);
     void tokenPull() VL_MT_DISABLED;
     void tokenPipeline() VL_MT_DISABLED;  // Internal; called from tokenToBison
     int tokenPipelineId(int token) VL_MT_DISABLED;

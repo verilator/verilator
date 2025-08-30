@@ -150,6 +150,7 @@ class CombineVisitor final : VNVisitor {
         return replaced;
     }
 
+    // cppcheck-suppress constParameterPointer
     void process(AstNetlist* netlistp) {
         // First, remove empty functions. We need to do this separately, because removing
         // calls can change the hashes of the callers.

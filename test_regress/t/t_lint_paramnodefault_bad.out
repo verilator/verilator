@@ -1,0 +1,5 @@
+%Error-PARAMNODEFAULT: t/t_lint_paramnodefault.v:8:13: Parameter without default requires ANSI-style parameter list (IEEE 1800-2023 6.20.1): 'NODEF'
+    8 |   parameter NODEF;   
+      |             ^~~~~
+                       ... For error description see https://verilator.org/warn/PARAMNODEFAULT?v=latest
+%Error: Exiting due to

@@ -7,7 +7,7 @@
 class Cls;
    int x = 1;
    function new();
-      int p = process::self();
+      process p = process::self();
    endfunction
 endclass
 

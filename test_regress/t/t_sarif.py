@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=['-Wno-fatal --diagnostics-sarif'],
+test.lint(verilator_flags2=['-Wno-fatal --diagnostics-sarif --no-skip-identical'],
           expect_filename=test.golden_filename)
 
 sarif_filename = test.obj_dir + "/" + test.vm_prefix + ".sarif"

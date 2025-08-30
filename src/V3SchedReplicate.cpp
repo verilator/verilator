@@ -188,7 +188,7 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
     };
 
     const auto addLogic = [&](RegionFlags region, AstScope* scopep, AstActive* activep) {
-        AstSenTree* const senTreep = activep->sensesp();
+        AstSenTree* const senTreep = activep->sentreep();
 
         // Predicate for whether a read of the given variable triggers this block
         std::function<bool(AstVarScope*)> readTriggersThisLogic;

@@ -28,11 +28,16 @@
 #endif
 
 #include <cassert>
+#include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <random>
+
+extern "C" {
+#include <libgen.h>
+}
 
 // These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"

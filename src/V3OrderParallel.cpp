@@ -332,7 +332,7 @@ private:
     // Cost of critical paths going FORWARD from graph-start to the start
     // of this vertex, and also going REVERSE from the end of the graph to
     // the end of the vertex. Same units as m_cost.
-    std::array<uint64_t, GraphWay::NUM_WAYS> m_critPathCost;
+    std::array<uint64_t, GraphWay::NUM_WAYS> m_critPathCost = {};
 
     const uint32_t m_id;  // Unique LogicMTask ID number
     static uint32_t s_nextId;  // Next ID number to use
@@ -357,11 +357,11 @@ private:
 
 public:
     // CONSTRUCTORS
+    // cppcheck-suppress constParameterCallback
     LogicMTask(V3Graph* graphp, OrderMoveVertex* mVtxp)
         : V3GraphVertex{graphp}
         , m_id{s_nextId++} {
         UASSERT(s_nextId < 0xFFFFFFFFUL, "Too many mTaskGraphp");
-        for (uint64_t& item : m_critPathCost) item = 0;
         if (mVtxp) {
             m_mVertices.linkBack(mVtxp);
             if (const OrderLogicVertex* const olvp = mVtxp->logicp()) {
@@ -677,6 +677,7 @@ void SiblingMC::unlinkA() {
 
 void SiblingMC::unlinkB() { m_bp->bSiblingMCs().unlink(this); }
 
+// cppcheck-suppress duplInheritedMember
 bool SiblingMC::mergeWouldCreateCycle() const {
     return (LogicMTask::pathExistsFrom(m_ap, m_bp, nullptr)
             || LogicMTask::pathExistsFrom(m_bp, m_ap, nullptr));
@@ -697,6 +698,7 @@ LogicMTask* MTaskEdge::furtherMTaskp() const {
 LogicMTask* MTaskEdge::fromMTaskp() const { return static_cast<LogicMTask*>(fromp()); }
 LogicMTask* MTaskEdge::toMTaskp() const { return static_cast<LogicMTask*>(top()); }
 
+// cppcheck-suppress duplInheritedMember
 bool MTaskEdge::mergeWouldCreateCycle() const {
     return LogicMTask::pathExistsFrom(fromMTaskp(), toMTaskp(), this);
 }
@@ -1205,6 +1207,7 @@ public:
             mergeCanp->rescore();
             const uint64_t actualScore = mergeCanp->score();
 
+            // cppcheck-suppress knownConditionTrueFalse // they are in fact different
             if (actualScore > cachedScore) {
                 // Cached score is out-of-date.
                 // Mark this elem as in need of a rescore and continue.
@@ -1323,7 +1326,7 @@ public:
 
 private:
     template <GraphWay::en N_Way>
-    NewCp newCp(LogicMTask* mtaskp, LogicMTask* otherp, MTaskEdge* mergeEdgep) {
+    NewCp newCp(const LogicMTask* mtaskp, const LogicMTask* otherp, const MTaskEdge* mergeEdgep) {
         constexpr GraphWay way{N_Way};
         // Return new wayward-CP for mtaskp reflecting its upcoming merge
         // with otherp. Set 'result.propagate' if mtaskp's wayward

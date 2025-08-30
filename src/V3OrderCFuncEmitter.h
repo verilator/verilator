@@ -109,7 +109,7 @@ public:
         // When profCFuncs, create a new function for each logic vertex
         if (v3Global.opt.profCFuncs()) forceNewFunction();
         // If the new domain is different, force a new function as it needs to be called separately
-        if (!m_activeps.empty() && m_activeps.back()->sensesp() != domainp) forceNewFunction();
+        if (!m_activeps.empty() && m_activeps.back()->sentreep() != domainp) forceNewFunction();
 
         // Process procedures per statement, so we can split CFuncs within procedures.
         // Everything else is handled as a unit.
@@ -146,7 +146,7 @@ public:
                 AstCCall* const callp = new AstCCall{flp, m_funcp};
                 callp->dtypeSetVoid();
                 // Call it under an AstActive with the same sensitivity
-                if (m_activeps.empty() || m_activeps.back()->sensesp() != domainp) {
+                if (m_activeps.empty() || m_activeps.back()->sentreep() != domainp) {
                     m_activeps.emplace_back(new AstActive{flp, name, domainp});
                 }
                 m_activeps.back()->addStmtsp(callp->makeStmt());

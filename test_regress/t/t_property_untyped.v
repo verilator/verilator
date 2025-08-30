@@ -25,7 +25,7 @@ module t (/*AUTOARG*/
    assert property(check(0, 5'b11111))
      else begin
         // Assertion should pass
-        $display("Assert failed, but shouldn't");
+        $display("[%0t] Assert failed, but shouldn't", $time);
         $stop;
      end
 

@@ -24,7 +24,6 @@ test.compile(
     benchmarksim=1,
     v_flags2=[
         config_file, "+define+SIM_CYCLES=" + str(test.cycles), "--hierarchical", "--stats",
-        "-Wno-UNOPTFLAT",
         (f"-DWORKERS={HIER_BLOCK_THREADS}" if test.vltmt and HIER_BLOCK_THREADS > 1 else ""),
         (f"--hierarchical-threads {HIER_THREADS}" if test.vltmt and HIER_THREADS > 1 else "")
     ],
@@ -33,9 +32,9 @@ test.compile(
 
 if test.vltmt:
     test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
-                   r'Optimizations, Thread schedule count\s+(\d+)', 2)
+                   r'Optimizations, Thread schedule count\s+(\d+)', 3)
     test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
-                   r'Optimizations, Thread schedule total tasks\s+(\d+)', 3)
+                   r'Optimizations, Thread schedule total tasks\s+(\d+)', 4)
 
 test.execute()
 

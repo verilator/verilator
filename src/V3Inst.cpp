@@ -59,7 +59,7 @@ class InstVisitor final : public VNVisitor {
             V3Inst::pinReconnectSimple(nodep, m_cellp, false);
         }
         if (!nodep->exprp()) return;  // No-connect
-        if (debug() >= 9) nodep->dumpTree("-  Pin_oldb: ");
+        UINFOTREE(9, nodep, "", "Pin_oldb");
         V3Inst::checkOutputShort(nodep);
         // Use user1p on the PIN to indicate we created an assign for this pin
         if (!nodep->user1SetOnce()) {
@@ -83,7 +83,7 @@ class InstVisitor final : public VNVisitor {
                                                     m_cellp->name(), VAccess::WRITE},
                                      exprp};
                 m_cellp->addNextHere(assp);
-                if (debug() >= 9) assp->dumpTree("-     _new: ");
+                UINFOTREE(9, assp, "", "_new");
             } else if (nodep->modVarp()->isIfaceRef()
                        || (VN_IS(nodep->modVarp()->dtypep()->skipRefp(), UnpackArrayDType)
                            && VN_IS(VN_AS(nodep->modVarp()->dtypep()->skipRefp(), UnpackArrayDType)
@@ -186,6 +186,7 @@ private:
 
     // VISITORS
     void visit(AstVar* nodep) override {
+        // cppcheck-suppress constVariablePointer
         AstNode* const dtp = nodep->dtypep()->skipRefp();
         if (VN_IS(dtp, UnpackArrayDType)
             && VN_IS(VN_AS(dtp, UnpackArrayDType)->subDTypep()->skipRefp(), IfaceRefDType)) {
@@ -236,6 +237,7 @@ private:
             m_cellRangep = nodep->rangep();
 
             AstVar* const ifaceVarp = VN_CAST(nodep->nextp(), Var);
+            // cppcheck-suppress constVariablePointer
             AstNodeDType* const ifaceVarDtp
                 = ifaceVarp ? ifaceVarp->dtypep()->skipRefp() : nullptr;
             const bool isIface
@@ -550,7 +552,7 @@ private:
                             VAccess::READ};
                         rhsp->dtypep(rhsarrp->subDTypep()->skipRefp());
                         rhsp->classOrPackagep(rhsrefp->classOrPackagep());
-                        AstAssign* const assignp = new AstAssign(nodep->fileline(), lhsp, rhsp);
+                        AstAssign* const assignp = new AstAssign{nodep->fileline(), lhsp, rhsp};
                         nodep->addNextHere(assignp);
                     }
                     VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -579,7 +581,7 @@ public:
 class InstStatic final {
     InstStatic() = default;  // Static class
 
-    static AstNodeExpr* extendOrSel(FileLine* fl, AstNodeExpr* rhsp, AstNode* cmpWidthp) {
+    static AstNodeExpr* extendOrSel(FileLine* fl, AstNodeExpr* rhsp, const AstNode* cmpWidthp) {
         if (cmpWidthp->width() > rhsp->width()) {
             rhsp = (rhsp->isSigned() ? static_cast<AstNodeExpr*>(new AstExtendS{fl, rhsp})
                                      : static_cast<AstNodeExpr*>(new AstExtend{fl, rhsp}));
@@ -642,9 +644,12 @@ public:
             // Done. Constant.
         } else {
             // Make a new temp wire
-            // if (1 || debug() >= 9) pinp->dumpTree("-  in_pin: ");
+            // UINFOTREE(9, pinp, "", "in_pin");
             V3Inst::checkOutputShort(pinp);
-            AstNodeExpr* const pinexprp = VN_AS(pinp->exprp(), NodeExpr)->unlinkFrBack();
+            // Simplify, so stuff like '{a[0], b[0]}[1]' produced during
+            // instance array expansion are brought to normal 'a[0]'
+            AstNodeExpr* const pinexprp
+                = V3Const::constifyEdit(VN_AS(pinp->exprp(), NodeExpr)->unlinkFrBack());
             const string newvarname
                 = (string{pinVarp->isWritable() ? "__Vcellout" : "__Vcellinp"}
                    // Prevent name conflict if both tri & non-tri add signals
@@ -674,8 +679,8 @@ public:
                 pinp->exprp(new AstVarRef{pinexprp->fileline(), newvarp, VAccess::READ});
             }
             if (assignp) cellp->addNextHere(assignp);
-            // if (debug()) pinp->dumpTree("-  out: ");
-            // if (debug()) assignp->dumpTree("-  aout: ");
+            // UINFOTREE(1, pinp, "", "out");
+            // UINFOTREE(1, assignp, "", "aout");
         }
         return assignp;
     }
@@ -689,7 +694,7 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, bool forTri
     return InstStatic::pinReconnectSimple(pinp, cellp, forTristate, alwaysCvt);
 }
 
-void V3Inst::checkOutputShort(AstPin* nodep) {
+void V3Inst::checkOutputShort(const AstPin* nodep) {
     if (nodep->modVarp()->direction() == VDirection::OUTPUT) {
         if (VN_IS(nodep->exprp(), Const) || VN_IS(nodep->exprp(), Extend)
             || (VN_IS(nodep->exprp(), Concat)

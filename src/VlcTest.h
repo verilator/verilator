@@ -111,7 +111,7 @@ public:
     void dump(bool bucketsToo) {
         UINFO(2, "dumpTests...");
         VlcTest::dumpHeader();
-        for (const auto& testp : m_tests) testp->dump(bucketsToo);
+        for (const VlcTest* const testp : m_tests) testp->dump(bucketsToo);
     }
     VlcTest* newTest(const string& name, uint64_t testrun, double comp) {
         VlcTest* const testp = new VlcTest{name, testrun, comp};

@@ -437,6 +437,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             iterate(nodep);
         }
     }
+    // cppcheck-suppress duplInheritedMember
     void pushDeletep(AstNode* nodep) {  // overriding VNVisitor::pusDeletep()
         UASSERT_OBJ(m_modp, nodep, "Must not nullptr");
         m_forPackedSplit.m_refs[m_modp].remove(nodep);
@@ -473,16 +474,16 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     void visit(AstNodeStmt* nodep) override { setContextAndIterateChildren(nodep); }
     void visit(AstCell* nodep) override { setContextAndIterateChildren(nodep); }
     void visit(AstAlways* nodep) override {
-        if (nodep->sensesp()) {  // When visiting sensitivity list, always is the context
-            setContextAndIterate(nodep, nodep->sensesp());
+        if (nodep->sentreep()) {  // When visiting sensitivity list, always is the context
+            setContextAndIterate(nodep, nodep->sentreep());
         }
         for (AstNode* bodysp = nodep->stmtsp(); bodysp; bodysp = bodysp->nextp()) {
             iterate(bodysp);
         }
     };
     void visit(AstAlwaysPublic* nodep) override {
-        if (nodep->sensesp()) {  // When visiting sensitivity list, always is the context
-            setContextAndIterate(nodep, nodep->sensesp());
+        if (nodep->sentreep()) {  // When visiting sensitivity list, always is the context
+            setContextAndIterate(nodep, nodep->sentreep());
         }
         for (AstNode* bodysp = nodep->stmtsp(); bodysp; bodysp = bodysp->nextp()) {
             iterate(bodysp);
@@ -889,7 +890,7 @@ public:
         UASSERT(m_dedupDone, "cannot read before dedup()");
         return m_rhs;
     }
-    explicit PackedVarRef(AstVar* varp)
+    explicit PackedVarRef(const AstVar* varp)
         : m_basicp{varp->dtypep()->basicp()} {}
     void append(const PackedVarRefEntry& e, const VAccess& access) {
         UASSERT(!m_dedupDone, "cannot add after dedup()");

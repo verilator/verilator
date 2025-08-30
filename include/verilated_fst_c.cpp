@@ -297,7 +297,7 @@ VerilatedFst::Buffer* VerilatedFst::getTraceBuffer(uint32_t fidx) {
 
 void VerilatedFst::commitTraceBuffer(VerilatedFst::Buffer* bufp) {
     if (offload()) {
-        OffloadBuffer* const offloadBufferp = static_cast<OffloadBuffer*>(bufp);
+        const OffloadBuffer* const offloadBufferp = static_cast<const OffloadBuffer*>(bufp);
         if (offloadBufferp->m_offloadBufferWritep) {
             m_offloadBufferWritep = offloadBufferp->m_offloadBufferWritep;
             return;  // Buffer will be deleted by the offload thread

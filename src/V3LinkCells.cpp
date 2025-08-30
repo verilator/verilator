@@ -112,7 +112,6 @@ class LinkCellsVisitor final : public VNVisitor {
     VSymGraph m_mods;  // Symbol table of all module names
     LinkCellsGraph m_graph;  // Linked graph of all cell interconnects
     LibraryVertex* m_libVertexp = nullptr;  // Vertex at root of all libraries
-    int m_dedupNum = 0;  // Package dedup number
     const V3GraphVertex* m_topVertexp = nullptr;  // Vertex of top module
     std::unordered_set<string> m_declfnWarned;  // Files we issued DECLFILENAME on
     string m_origTopModuleName;  // original name of the top module
@@ -175,6 +174,20 @@ class LinkCellsVisitor final : public VNVisitor {
             }
         }
         return modp;
+    }
+
+    static void removeLibFlag() {
+        // If the only NodeModules are in libraries, then presumably user
+        // wants to check the library, so clear library flag
+        if (!v3Global.opt.topModule().empty()) return;
+        for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
+             nodep = VN_AS(nodep->nextp(), NodeModule)) {
+            if (!nodep->inLibrary()) return;
+        }
+        for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
+             nodep = VN_AS(nodep->nextp(), NodeModule)) {
+            nodep->inLibrary(false);
+        }
     }
 
     // VISITORS
@@ -628,28 +641,24 @@ class LinkCellsVisitor final : public VNVisitor {
                 if (!(libFoundp->fileline()->warnIsOff(V3ErrorCode::MODDUP)
                       || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP)
                       || hierBlocks.find(nodep->name()) != hierBlocks.end())) {
-                    nodep->v3warn(MODDUP, "Duplicate declaration of module: "
+                    nodep->v3warn(MODDUP, "Duplicate declaration of "
+                                              << nodep->verilogKwd() << ": "
                                               << nodep->prettyNameQ() << '\n'
                                               << nodep->warnContextPrimary() << '\n'
                                               << libFoundp->warnOther()
                                               << "... Location of original declaration\n"
                                               << libFoundp->warnContextSecondary());
                 }
-                if (VN_IS(nodep, Package)) {
-                    // Packages may be imported, we instead rename to be unique
-                    nodep->name(nodep->name() + "__Vdedup" + cvtToStr(m_dedupNum++));
-                } else {
-                    nodep->unlinkFrBack();
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                }
-            } else if (!libFoundp && globalFoundp && globalFoundp != nodep) {
+                nodep->unlinkFrBack();
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            } else if (globalFoundp && globalFoundp != nodep) {
                 // ...__LIB__ stripped by prettyName
                 const string newName = nodep->libname() + "__LIB__" + nodep->origName();
                 UINFO(9, "Module rename as in multiple libraries " << newName << " <- " << nodep);
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);  // Original name
                 nodep->name(newName);
                 insertModInLib(nodep->name(), "__GLOBAL", nodep);
-            } else if (!libFoundp) {
+            } else {
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);
                 insertModInLib(nodep->name(), "__GLOBAL", nodep);
             }
@@ -674,6 +683,7 @@ public:
         } else {
             m_origTopModuleName = v3Global.opt.topModule();
         }
+        removeLibFlag();
         iterate(nodep);
     }
     ~LinkCellsVisitor() override {

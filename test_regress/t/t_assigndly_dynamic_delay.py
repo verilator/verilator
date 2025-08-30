@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_assigndly_dynamic"
 
-test.compile(verilator_flags2=["--exe --main --timing +define+WITH_DELAY"])
+test.compile(verilator_flags2=["--binary +define+WITH_DELAY"])
 
 test.execute()
 

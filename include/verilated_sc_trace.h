@@ -60,7 +60,7 @@ class VerilatedScTraceBase VL_NOT_FINAL : private sc_core::sc_object,
                                           private sc_core::sc_trace_file {
     bool m_enableDeltaCycles = false;
     bool m_traceFileAdded = false;
-    static void stubReportHandler(const sc_core::sc_report&, const sc_core::sc_actions&){};
+    static void stubReportHandler(const sc_core::sc_report&, const sc_core::sc_actions&) {};
 
 public:
     void enableDeltaCycles(bool flag = true) {

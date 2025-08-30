@@ -48,7 +48,7 @@ class CoverageJoinVisitor final : public VNVisitor {
         // Note uses user4
         V3DupFinder dupFinder;  // Duplicate code detection
         // Hash all of the original signals we toggle cover
-        for (AstCoverToggle* nodep : m_toggleps) dupFinder.insert(nodep->origp());
+        for (const AstCoverToggle* const nodep : m_toggleps) dupFinder.insert(nodep->origp());
         if (dumpLevel() || debug() >= 9)
             dupFinder.dumpFile(v3Global.debugFilename("coveragejoin") + ".hash", false);
         // Find if there are any duplicates
@@ -75,7 +75,7 @@ class CoverageJoinVisitor final : public VNVisitor {
                 // The CoverDecl the duplicate pointed to now needs to point to the
                 // original's data. I.e. the duplicate will get the coverage number
                 // from the non-duplicate
-                AstCoverDecl* const datadeclp = nodep->incp()->declp()->dataDeclThisp();
+                AstNodeCoverDecl* const datadeclp = nodep->incp()->declp()->dataDeclThisp();
                 removep->incp()->declp()->dataDeclp(datadeclp);
                 UINFO(8, "   new " << removep->incp()->declp());
                 // Mark the found node as a duplicate of the first node

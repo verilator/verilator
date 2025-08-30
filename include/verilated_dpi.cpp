@@ -80,6 +80,7 @@ void svPutBitselLogic(svLogicVecVal* dp, int bit, svLogic s) {
 }
 
 void svGetPartselBit(svBitVecVal* dp, const svBitVecVal* sp, int lsb, int width) {
+    // Verilator supports > 32 bit widths, which is an extension to IEEE DPI
     // See also VL_SEL_WWI
     const int msb = lsb + width - 1;
     const int word_shift = VL_BITWORD_I(lsb);
@@ -103,6 +104,7 @@ void svGetPartselBit(svBitVecVal* dp, const svBitVecVal* sp, int lsb, int width)
     dp[VL_WORDS_I(width) - 1] &= VL_MASK_I(width);
 }
 void svGetPartselLogic(svLogicVecVal* dp, const svLogicVecVal* sp, int lsb, int width) {
+    // Verilator supports > 32 bit widths, which is an extension to IEEE DPI
     const int msb = lsb + width - 1;
     const int word_shift = VL_BITWORD_I(lsb);
     if (VL_BITBIT_I(lsb) == 0) {
@@ -288,7 +290,7 @@ static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
         break;
     }
     case VLVT_WDATA: {
-        WDataOutP wdatap = (reinterpret_cast<WDataOutP>(datap));
+        WDataInP wdatap = (reinterpret_cast<WDataInP>(datap));
         for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) d[i] = wdatap[i];
         return;
     }
@@ -327,7 +329,7 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
         break;
     }
     case VLVT_WDATA: {
-        WDataOutP wdatap = (reinterpret_cast<WDataOutP>(datap));
+        WDataInP wdatap = (reinterpret_cast<WDataInP>(datap));
         for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) {
             d[i].aval = wdatap[i];
             d[i].bval = 0;

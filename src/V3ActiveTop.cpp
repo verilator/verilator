@@ -68,11 +68,11 @@ class ActiveTopVisitor final : public VNVisitor {
         UINFO(4, "   ACTIVE " << nodep);
         // Remove duplicate clocks and such; sensesp() may change!
         V3Const::constifyExpensiveEdit(nodep);
-        AstSenTree* sensesp = nodep->sensesp();
-        UASSERT_OBJ(sensesp, nodep, "nullptr");
-        if (sensesp->sensesp() && sensesp->sensesp()->isNever()) {
+        AstSenTree* sentreep = nodep->sentreep();
+        UASSERT_OBJ(sentreep, nodep, "nullptr");
+        if (sentreep->sensesp() && sentreep->sensesp()->isNever()) {
             // Never executing.  Kill it.
-            UASSERT_OBJ(!sensesp->sensesp()->nextp(), nodep,
+            UASSERT_OBJ(!sentreep->sensesp()->nextp(), nodep,
                         "Never senitem should be alone, else the never should be eliminated.");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
@@ -94,21 +94,21 @@ class ActiveTopVisitor final : public VNVisitor {
 
         // Move the SENTREE for each active up to the global level.
         // This way we'll easily see what clock domains are identical
-        AstSenTree* const wantp = m_finder.getSenTree(sensesp);
+        AstSenTree* const wantp = m_finder.getSenTree(sentreep);
         UINFO(4, "   lookdone");
-        if (wantp != sensesp) {
+        if (wantp != sentreep) {
             // Move the active's contents to the other active
-            UINFO(4, "   merge active " << sensesp << " into " << wantp);
-            if (nodep->sensesStorep()) {
-                UASSERT_OBJ(sensesp == nodep->sensesStorep(), nodep,
+            UINFO(4, "   merge active " << sentreep << " into " << wantp);
+            if (nodep->senTreeStorep()) {
+                UASSERT_OBJ(sentreep == nodep->senTreeStorep(), nodep,
                             "sensesStore should have been deleted earlier if different");
-                sensesp->unlinkFrBack();
+                sentreep->unlinkFrBack();
                 // There may be other references to same sense tree,
                 // we'll be removing all references when we get to them,
                 // but don't dangle our pointer yet!
-                VL_DO_DANGLING(pushDeletep(sensesp), sensesp);
+                VL_DO_DANGLING(pushDeletep(sentreep), sentreep);
             }
-            nodep->sensesp(wantp);
+            nodep->sentreep(wantp);
         }
 
         // If this is combinational logic that does not read any variables, then it really is an
@@ -116,7 +116,7 @@ class ActiveTopVisitor final : public VNVisitor {
         // prune these otherwise.
         // TODO: we should warn for these if they were 'always @*' as some (including strictly
         //       compliant) simulators will never execute these.
-        if (nodep->sensesp()->hasCombo()) {
+        if (nodep->sentreep()->hasCombo()) {
             FileLine* const flp = nodep->fileline();
             AstActive* initialp = nullptr;
             for (AstNode *logicp = nodep->stmtsp(), *nextp; logicp; logicp = nextp) {

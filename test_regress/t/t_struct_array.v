@@ -26,10 +26,10 @@ module t(clk);
 endmodule
 
 module sub(a_out);
-   parameter n = 4;
-   output TEST_TYPES::a_struct_t [n-1:0] a_out;
+   parameter N = 4;
+   output TEST_TYPES::a_struct_t [N-1:0] a_out;
    always_comb begin
-      for (int i=0;i<n;i++)
+      for (int i=0;i<N;i++)
         a_out[i].stuff = i[0];
    end
 endmodule

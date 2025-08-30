@@ -31,6 +31,10 @@
 #include <cstring>
 #include <iostream>
 
+extern "C" {
+#include <libgen.h>
+}
+
 // These require the above. Comment prevents clang-format moving them
 #include "TestSimulator.h"
 #include "TestVpi.h"
@@ -120,6 +124,7 @@ int mon_check() {
 
     CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("someOtherInt"), tHandle))
     CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("t.someOtherInt"), NULL))
+    CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("$root.t.someOtherInt"), NULL))
     CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("someString"), tHandle))
     CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("t.someString"), NULL))
     CHECK_RESULT_Z(check_handle(const_cast<PLI_BYTE8*>("someInt"), pkgHandle))

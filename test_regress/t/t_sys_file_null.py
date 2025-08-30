@@ -16,7 +16,7 @@ test.compile()
 test.execute()
 
 filename = test.obj_dir + "/zeros.log"
-if os.path.getsize(filename) != 16:
+if os.path.getsize(filename) != 20:
     test.error(filename + ": Wrong file size")
 
 test.passes()

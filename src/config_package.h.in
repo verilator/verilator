@@ -41,6 +41,9 @@ PACKAGE_VERSION_STRING_CHAR
 // Define if coroutines are supported on this platform
 #undef HAVE_COROUTINES
 
+// Define if compiled with tcmalloc
+#undef HAVE_TCMALLOC
+
 //**********************************************************************
 //**** This file sometimes gets truncated, so check in consumers
 #define HAVE_CONFIG_PACKAGE

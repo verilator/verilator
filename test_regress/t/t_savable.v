@@ -35,7 +35,7 @@ module sub (/*AUTOARG*/
    reg [127:0]  save128;
    reg [47:0]   save48;
    reg [1:0]    save2;
-   reg [255:0]  cycdone;  // Make sure each cycle executes exactly once
+   bit [255:0]  cycdone;  // Make sure each cycle executes exactly once
    reg [31:0]   vec[2:1][2:1];
    reg [2:1][2:1][31:0] pvec;
    real         r;
@@ -69,12 +69,13 @@ module sub (/*AUTOARG*/
          pvec[2][2] <= 32'h10202;
          r <= 1.234;
          s <= "hello";
-         sarr[1] <= "sarr[1]";
-         sarr[2] <= "sarr[2]";
-         assoc["mapped"] <= "Is mapped";
+         // Blocking to avoid delayed to dynamic var
+         sarr[1] = "sarr[1]";
+         sarr[2] = "sarr[2]";
+         assoc["mapped"] = "Is mapped";
       end
       if (cyc==1) begin
-         if ($test$plusargs("save_restore")!=0) begin
+         if ($test$plusargs("save_restore") != 0) begin
             // Don't allow the restored model to run from time 0, it must run from a restore
             $write("%%Error: didn't really restore\n");
             $stop;

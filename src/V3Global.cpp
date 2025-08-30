@@ -63,7 +63,7 @@ void V3Global::readFiles() {
             "work", "Cannot find verilated_std_waiver.vlt containing built-in lint waivers: ");
     }
     // Read .vlt files
-    for (auto& filelib : v3Global.opt.vltFiles()) {
+    for (const VFileLibName& filelib : v3Global.opt.vltFiles()) {
         parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(), false,
                          filelib.libname(), "Cannot find file containing .vlt file: ");
     }

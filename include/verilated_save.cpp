@@ -220,7 +220,7 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
     if (VL_UNLIKELY(!isOpen())) return;
     // Move remaining characters down to start of buffer.  (No memcpy, overlaps allowed)
     uint8_t* rp = m_bufp;
-    for (uint8_t* sp = m_cp; sp < m_endp; *rp++ = *sp++) {}  // Overlaps
+    for (const uint8_t* sp = m_cp; sp < m_endp; *rp++ = *sp++) {}  // Overlaps
     m_endp = m_bufp + (m_endp - m_cp);
     m_cp = m_bufp;  // Reset buffer
     // Read into buffer starting at m_endp

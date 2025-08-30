@@ -11,7 +11,7 @@ module t (/*AUTOARG*/
 
    input clk;
 
-   integer cyc;
+   int cyc;
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;

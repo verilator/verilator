@@ -450,7 +450,7 @@ as defined in the standard:
 - All other logic is assigned to the 'nba' region.
 
 For completeness, note that a subset of the 'act' region logic, specifically,
-the logic related to the pre-assignments of NBA updates (i.e., AstAssignPre
+the logic related to the pre-assignments of NBA updates (i.e., AstAlwaysPre
 nodes), is handled separately, but is executed as part of the 'act' region.
 
 Also note that all logic representing the committing of an NBA (i.e., Ast*Post)
@@ -1131,7 +1131,7 @@ Indentation and Naming Style
 ----------------------------
 
 We will work with contributors to fix up indentation style issues, but it
-is appreciated if you could match our style:
+is appreciated if you could match our style for C/C++:
 
 - Use "mixedCapsSymbols" instead of "underlined_symbols".
 
@@ -1143,9 +1143,8 @@ is appreciated if you could match our style:
   calls. (This convention has not been applied retroactively.)
 
 C and Python indentation is automatically maintained with "make format"
-using clang-format version 10.0.0, and yapf for python, and is
-automatically corrected in the CI actions. For those manually formatting C
-code:
+using clang-format version 18, and yapf for Python, and is automatically
+corrected in the CI actions. For those manually formatting C code:
 
 - Use four spaces per level, and no tabs.
 
@@ -1157,6 +1156,58 @@ code:
 - No spaces before semicolons, nor between a function's name and open
   parenthesis (only applies to functions; if/else has a following space).
 
+Verilog indentation is not yet automatically maintained, but:
+
+- Use two spaces per level, and no tabs.
+
+- Place `begin` on the same line as the earlier starting statement
+  e.g. `if`, and place the `end` on a separate line indented the same as
+  the starting statement.
+
+
+Commit messages
+---------------
+
+Pull requests do not typically edit ``Changes`` in order to reduce
+potential merge conflicts.  Instead, contributors should use an appropriate
+first line of the git commit message.  Maintainers periodically run
+``nodist/log_changes`` which analyzes the commit messages to suggest edits
+to the ``Changes`` file.
+
+The format of a commit message should be typically of the forms below.  The
+github issue number, and github pull number if different should be
+included.
+
+"Add <some feature> (#1234)"
+   For adding a new feature.
+"Fix <some item> (#1234)"
+   For a bug fix.
+"Improve <some item> (#1234)"
+   For improving something that previously existed.
+"Optimize <some item> (#1234)"
+   For improving performance.
+"Support <some feature> (#1234)"
+   For features that are described by IEEE were previously not supported.
+"Commentary"
+   For a super-trivial change to e.g. documentation.
+   These will typically not get described in the Changes file.
+"CI: <Add/Improve/etc as above> (#1234)"
+   For changes that only concern github actions.
+   These will typically not get described in the Changes file.
+"Tests: <Add/Improve/etc as above> (#1234)"
+   For changes that only concern tests.
+   These will typically not get described in the Changes file.
+"Internals: <Add/Improve/etc as above> (#1234)"
+   For changes that only concern developers, e.g. code cleanups.
+   These will typically not get described in the Changes file.
+
+The line's grammar should match the phrasing used in the Changes file.
+
+If the change does not affect user-visible function, also add "No
+functional change." if it's 99% certain not to change behavior, or "No
+functional change expected." if no change was expected but there may be
+uncertainty.
+
 
 The ``astgen`` Script
 ---------------------
@@ -1164,7 +1215,7 @@ The ``astgen`` Script
 The ``astgen`` script is used to generate some of the repetitive C++ code
 related to the ``AstNode`` type hierarchy. An example is the abstract ``visit``
 methods in ``VNVisitor``. There are other uses; please see the ``*__gen*``
-files in the bulid directories and the ``astgen`` script for details.  A
+files in the build directories and the ``astgen`` script for details.  A
 description of the more advanced features of ``astgen`` are provided here.
 
 
@@ -1573,7 +1624,7 @@ Benchmarking
 ------------
 
 For benchmarking the effects of changes (simulation speed, memory consumption,
-verilation time, etc.), you can use `RTLMeter
+Verilation time, etc.), you can use `RTLMeter
 <https://github.com/verilator/rtlmeter>`__, a benchmark suite designed for this
 purpose. The scripts provided with RTLMeter have many capabilities. For full
 details, see the `documentation of RTLMeter
@@ -1995,10 +2046,8 @@ Generally, what would you do to add a new feature?
 
 2. Make a testcase in the test_regress/t/t_EXAMPLE format, see `Testing`.
 
-3. If grammar changes are needed, look at the git version of VerilogPerl's
-   src/VParseGrammar.y, as this grammar supports the full SystemVerilog
-   language and has a lot of back-and-forth with Verilator's grammar. Copy
-   the appropriate rules to src/verilog.y and modify the productions.
+3. If grammar changes are needed, look at the IEEE 1800-2023 Appendix A, as
+   src/verilog.y generally follows the same rule layout.
 
 4. If a new Ast type is needed, add it to the appropriate V3AstNode*.h.
    Follow the convention described above about the AstNode type hierarchy.
@@ -2063,6 +2112,14 @@ resource required by the test is not available, such as SystemC).
 There are thousands of tests, and for faster completion you may want to run
 the regression tests with OBJCACHE enabled and in parallel on a machine
 with many cores.  See the -j option and OBJCACHE environment variable.
+
+
+driver.py Pass-Thru Arguments
+-----------------------------
+
+Arguments not understood by `driver.py` which begin with `+verilator+` are
+passed through as Verilated executable arguments. Other not-understood
+arguments are passed as Verilator arguments.
 
 
 driver.py Non-Scenario Arguments

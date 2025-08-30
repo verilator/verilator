@@ -32,7 +32,9 @@ Summary:
    makefile's VPATH the appropriate directory to find the file.
 
    See also :vlopt:`-CFLAGS` and :vlopt:`-LDFLAGS` options, which are
-   useful when the C++ files need special compiler flags.
+   useful when the C++ files need special compiler flags.  The compiler
+   flags add by default `-DVERILATOR=1`, so an `#ifdef VERILATOR` may be
+   used to conditionally preprocess .cpp code for different simulators.
 
 .. option:: <file.v>
 
@@ -562,6 +564,10 @@ Summary:
    Any :code:`$VAR`, :code:`$(VAR)`, or :code:`${VAR}` will be replaced
    with the specified environment variable.
 
+.. option:: -fdfg-synthesize-all
+
+   Rarely needed. Attempt to synthesize all combinational logic in DFG.
+
 .. option:: -FI <file>
 
    Force include of the specified C++ header file.  All generated C++ files
@@ -605,6 +611,10 @@ Summary:
    Rarely needed. Disable all use of the DFG-based combinational logic
    optimizer.  Alias for :vlopt:`-fno-dfg-pre-inline`,
    :vlopt:`-fno-dfg-post-inline` and :vlopt:`-fno-dfg-scoped`.
+
+.. option:: -fno-dfg-break-cycles
+
+   Rarely needed. Disable breaking combinational cycles during DFG.
 
 .. option:: -fno-dfg-peephole
 
@@ -1963,14 +1973,13 @@ Summary:
      different seeds on different executions. This method is the slowest,
      but safest for finding reset bugs.
 
-     If using `--x-assign unique`, you may want to seed your random number
-     generator such that each regression run gets a different randomization
-     sequence. The simplest is to use the
-     :vlopt:`+verilator+seed+\<value\>` runtime option.  Alternatively, use
-     the system's :code:`srand48()` or for Windows :code:`srand()` function
-     to do this.  You'll probably also want to print any seeds selected,
-     and code to enable rerunning with that same seed so you can reproduce
-     bugs.
+     If using `--x-assign unique`, use the
+     :vlopt:`+verilator+rand+reset+2 <+verilator+rand+reset+\<value\>>`
+     runtime option, and seed the runtime random number generator such that
+     each regression run gets a different randomization sequence with
+     :vlopt:`+verilator+seed+\<value\>`.  You'll probably also want to
+     print any seeds selected, and code to enable rerunning with that same
+     seed, so you can reproduce bugs.
 
    .. note::
 
@@ -1992,6 +2001,14 @@ Summary:
      initializes variables using a function, which determines the value to
      use for each initialization. This gives the greatest flexibility and
      allows for finding reset bugs.  See :ref:`Unknown states`.
+
+     If using `--x-initial unique`, use the
+     :vlopt:`+verilator+rand+reset+2 <+verilator+rand+reset+\<value\>>`
+     runtime option, and seed the runtime random number generator such that
+     each regression run gets a different randomization sequence with
+     :vlopt:`+verilator+seed+\<value\>`.  You'll probably also want to
+     print any seeds selected, and code to enable rerunning with that same
+     seed, so you can reproduce bugs.
 
    With "--x-initial fast",
      is best for performance, and initializes all variables to a state

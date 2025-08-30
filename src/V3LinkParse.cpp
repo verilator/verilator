@@ -64,6 +64,7 @@ class LinkParseVisitor final : public VNVisitor {
     bool m_insideLoop = false;  // True if the node is inside a loop
     bool m_lifetimeAllowed = false;  // True to allow lifetime settings
     VDouble0 m_statModules;  // Number of modules seen
+    bool m_moduleWithGenericIface = false;  // If current module contains generic interface
 
     // METHODS
     void cleanFileline(AstNode* nodep) {
@@ -198,10 +199,11 @@ class LinkParseVisitor final : public VNVisitor {
                     // DPI-imported functions and properties don't have lifetime specifiers
                     m_lifetime = VLifetime::NONE;
                 }
+                nodep->lifetime(m_lifetime);
                 for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
                     AstVar* const varp = VN_CAST(itemp, Var);
                     if (varp && varp->valuep() && varp->lifetime().isNone()
-                        && m_lifetime.isStatic() && !varp->isIO()) {
+                        && nodep->lifetime().isStatic() && !varp->isIO()) {
                         if (VN_IS(m_modp, Module)) {
                             nodep->v3warn(IMPLICITSTATIC,
                                           "Function/task's lifetime implicitly set to static\n"
@@ -223,7 +225,12 @@ class LinkParseVisitor final : public VNVisitor {
                         }
                     }
                 }
-                nodep->lifetime(m_lifetime);
+            }
+            if (nodep->classMethod() && nodep->lifetime().isStatic()) {
+                nodep->v3error("Class function/task cannot be static lifetime ('"
+                               << nodep->verilogKwd() << " static') (IEEE 1800-2023 6.21)\n"
+                               << nodep->warnMore() << "... May have intended 'static "
+                               << nodep->verilogKwd() << "'");
             }
             iterateChildren(nodep);
         }
@@ -267,16 +274,17 @@ class LinkParseVisitor final : public VNVisitor {
             const int left = nodep->rangep()->leftConst();
             const int right = nodep->rangep()->rightConst();
             const int increment = (left > right) ? -1 : 1;
-            int offset_from_init = 0;
+            uint32_t offset_from_init = 0;
             AstEnumItem* addp = nullptr;
             FileLine* const flp = nodep->fileline();
-            for (int i = left; i != (right + increment); i += increment, offset_from_init++) {
+            for (int i = left; i != (right + increment); i += increment, ++offset_from_init) {
                 const string name = nodep->name() + cvtToStr(i);
                 AstNodeExpr* valuep = nullptr;
                 if (nodep->valuep()) {
+                    // V3Width looks for Adds with same fileline as the EnumItem
                     valuep
                         = new AstAdd{flp, nodep->valuep()->cloneTree(true),
-                                     new AstConst(flp, AstConst::Unsized32{}, offset_from_init)};
+                                     new AstConst{flp, AstConst::Unsized32{}, offset_from_init}};
                 }
                 addp = AstNode::addNext(addp, new AstEnumItem{flp, name, nullptr, valuep});
             }
@@ -338,6 +346,7 @@ class LinkParseVisitor final : public VNVisitor {
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
+        m_moduleWithGenericIface |= VN_IS(nodep->childDTypep(), IfaceGenericDType);
 
         // Maybe this variable has a signal attribute
         V3Control::applyVarAttr(m_modp, m_ftaskp, nodep);
@@ -577,7 +586,7 @@ class LinkParseVisitor final : public VNVisitor {
         } else if (VN_IS(bracketp, SelLoopVars)) {
             // Ok
         } else {
-            nodep->v3error("Syntax error; foreach missing bracketed loop variable"
+            nodep->v3error("Foreach missing bracketed loop variable is no-operation"
                            " (IEEE 1800-2023 12.7.3)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
@@ -627,6 +636,7 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_implTypedef);
         VL_RESTORER(m_lifetime);
         VL_RESTORER(m_lifetimeAllowed);
+        VL_RESTORER(m_moduleWithGenericIface);
         {
             // Module: Create sim table for entire module and iterate
             cleanFileline(nodep);
@@ -641,6 +651,7 @@ class LinkParseVisitor final : public VNVisitor {
             m_valueModp = nodep;
             m_lifetime = nodep->lifetime();
             m_lifetimeAllowed = VN_IS(nodep, Class);
+            m_moduleWithGenericIface = false;
             if (m_lifetime.isNone()) {
                 m_lifetime = VN_IS(nodep, Class) ? VLifetime::AUTOMATIC : VLifetime::STATIC;
             }
@@ -650,6 +661,9 @@ class LinkParseVisitor final : public VNVisitor {
                                              "Verilator top-level internals");
             }
             iterateChildren(nodep);
+            if (AstModule* const modp = VN_CAST(nodep, Module)) {
+                modp->hasGenericIface(m_moduleWithGenericIface);
+            }
         }
         m_valueModp = nodep;
     }
@@ -828,13 +842,13 @@ class LinkParseVisitor final : public VNVisitor {
         if (alwaysp && alwaysp->keyword() == VAlwaysKwd::ALWAYS_COMB) {
             alwaysp->v3error("Event control statements not legal under always_comb "
                              "(IEEE 1800-2023 9.2.2.2.2)\n"
-                             << nodep->warnMore() << "... Suggest use a normal 'always'");
+                             << alwaysp->warnMore() << "... Suggest use a normal 'always'");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (alwaysp && !alwaysp->sensesp()) {
+        } else if (alwaysp && !alwaysp->sentreep()) {
             // If the event control is at the top, move the sentree to the always
-            if (AstSenTree* const sensesp = nodep->sensesp()) {
-                sensesp->unlinkFrBackWithNext();
-                alwaysp->sensesp(sensesp);
+            if (AstSenTree* const sentreep = nodep->sentreep()) {
+                sentreep->unlinkFrBackWithNext();
+                alwaysp->sentreep(sentreep);
             }
             if (nodep->stmtsp()) alwaysp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);

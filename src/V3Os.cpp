@@ -54,6 +54,10 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#ifdef HAVE_TCMALLOC
+#include <gperftools/malloc_extension.h>
+#endif
+
 // clang-format off
 #if defined(_WIN32) || defined(__MINGW32__)
 # include <windows.h>   // LONG for bcrypt.h on MINGW
@@ -399,6 +403,15 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
         }
         closedir(dirp);
     }
+#endif
+}
+
+//######################################################################
+// METHODS (memory)
+
+void V3Os::releaseMemory() {
+#ifdef HAVE_TCMALLOC
+    MallocExtension::instance()->ReleaseFreeMemory();
 #endif
 }
 

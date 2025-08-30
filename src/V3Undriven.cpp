@@ -293,7 +293,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     const VNUser2InUse m_inuser2;
 
     // STATE
-    std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps;  // Nodes to delete when finished
+    std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps = {};  // Nodes to delete when finished
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In continuous assignment
     bool m_inInitialStatic = false;  // In InitialStatic
@@ -435,8 +435,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                     && entryp->getNodep()) {
                     if (m_alwaysCombp
                         && (!entryp->isDrivenAlwaysCombWhole()
-                            || (entryp->isDrivenAlwaysCombWhole()
-                                && m_alwaysCombp != entryp->getAlwCombp()
+                            || (m_alwaysCombp != entryp->getAlwCombp()
                                 && m_alwaysCombp->fileline() != entryp->getAlwCombFileLinep()))) {
                         nodep->v3warn(
                             MULTIDRIVEN,
@@ -545,7 +544,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     void visit(AstPrimitive*) override {}
 
     // Coverage artifacts etc shouldn't count as a sink
-    void visit(AstCoverDecl*) override {}
+    void visit(AstNodeCoverDecl*) override {}
     void visit(AstCoverInc*) override {}
     void visit(AstCoverToggle*) override {}
     void visit(AstTraceDecl*) override {}

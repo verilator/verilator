@@ -1,15 +1,46 @@
-%Warning-REALCVT: t/t_lint_realcvt_bad.v:12:18: Implicit conversion of real to integer
-   12 |    time t_bad1 = 9.001ns;   
-      |                  ^~~~~~~
+%Warning-REALCVT: t/t_lint_realcvt_bad.v:12:17: Implicit conversion of real to integer
+   12 |   time t_bad1 = 9.001ns;   
+      |                 ^~~~~~~
                   ... For warning description see https://verilator.org/warn/REALCVT?v=latest
                   ... Use "/* verilator lint_off REALCVT */" and lint_on around source to disable this message.
-%Warning-REALCVT: t/t_lint_realcvt_bad.v:13:18: Implicit conversion of real to integer
-   13 |    time t_bad2 = 9.999ns;   
-      |                  ^~~~~~~
-%Warning-REALCVT: t/t_lint_realcvt_bad.v:17:18: Implicit conversion of real to integer
-   17 |    time t_bad3 = 9ps;   
-      |                  ^~~
-%Warning-REALCVT: t/t_lint_realcvt_bad.v:23:22: Implicit conversion of real to integer
-   23 |    integer i_bad21 = 23.1;
-      |                      ^~~~
+%Warning-REALCVT: t/t_lint_realcvt_bad.v:13:17: Implicit conversion of real to integer
+   13 |   time t_bad2 = 9.999ns;   
+      |                 ^~~~~~~
+%Warning-REALCVT: t/t_lint_realcvt_bad.v:17:17: Implicit conversion of real to integer
+   17 |   time t_bad3 = 9ps;   
+      |                 ^~~
+%Warning-REALCVT: t/t_lint_realcvt_bad.v:23:21: Implicit conversion of real to integer
+   23 |   integer i_bad21 = 23.1;
+      |                     ^~~~
+%Error: t/t_lint_realcvt_bad.v:27:17: Expected integral input to SIGNED
+                                    : ... note: In instance 'sub'
+   27 |     i = $signed(1.0);   
+      |                 ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_lint_realcvt_bad.v:28:19: Expected integral input to UNSIGNED
+                                    : ... note: In instance 'sub'
+   28 |     i = $unsigned(1.0);   
+      |                   ^~~
+%Error: t/t_lint_realcvt_bad.v:29:10: Expected integral input to CONCAT
+                                    : ... note: In instance 'sub'
+   29 |     i = {1.2, 1.3};   
+      |          ^~~
+%Error: t/t_lint_realcvt_bad.v:29:15: Expected integral input to CONCAT
+                                    : ... note: In instance 'sub'
+   29 |     i = {1.2, 1.3};   
+      |               ^~~
+%Warning-WIDTHTRUNC: t/t_lint_realcvt_bad.v:29:7: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's REPLICATE generates 64 bits.
+                                                : ... note: In instance 'sub'
+   29 |     i = {1.2, 1.3};   
+      |       ^
+                     ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
+                     ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
+%Error: t/t_lint_realcvt_bad.v:30:12: Expected integral input to REPLICATE
+                                    : ... note: In instance 'sub'
+   30 |     i = {6{1.2}};   
+      |            ^~~
+%Warning-WIDTHTRUNC: t/t_lint_realcvt_bad.v:30:7: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's REPLICATE generates 192 bits.
+                                                : ... note: In instance 'sub'
+   30 |     i = {6{1.2}};   
+      |       ^
 %Error: Exiting due to

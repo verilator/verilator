@@ -55,11 +55,11 @@ class DescopeVisitor final : public VNVisitor {
 
     // METHODS
 
-    static bool modIsSingleton(AstNodeModule* modp) {
+    static bool modIsSingleton(const AstNodeModule* modp) {
         // True iff there's exactly one instance of this module in the design (including top).
         if (modp->isTop()) return true;
         int instances = 0;
-        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (const AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (VN_IS(stmtp, Scope)) {
                 if (++instances > 1) return false;
             }
@@ -190,12 +190,12 @@ class DescopeVisitor final : public VNVisitor {
                 }
                 // Not really any way the user could do this, and we'd need
                 // to come up with some return value
-                // newfuncp->addStmtsp(new AstDisplay(newfuncp->fileline(),
+                // newfuncp->addStmtsp(new AstDisplay{newfuncp->fileline(),
                 //                                   VDisplayType::DT_WARNING,
                 //                                   "%%Error: "s+name+"() called with bad
-                //                                   scope", nullptr));
-                // newfuncp->addStmtsp(new AstStop(newfuncp->fileline()));
-                if (debug() >= 9) newfuncp->dumpTree("-  newfunc: ");
+                //                                   scope", nullptr});
+                // newfuncp->addStmtsp(new AstStop{newfuncp->fileline()});
+                UINFOTREE(9, newfuncp, "", "newfunc");
             } else {
                 // Only a single function under this name, we can rename it
                 UINFO(6, "  Wrapping " << name << " just one " << topFuncp);

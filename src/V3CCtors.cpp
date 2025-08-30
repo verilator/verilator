@@ -67,7 +67,7 @@ class V3CCtorsBuilder final {
         funcp->slow(!m_type.isClass());  // Only classes construct on fast path
         string preventUnusedStmt;
         if (m_type.isClass()) {
-            funcp->argTypes(EmitCBase::symClassVar());
+            funcp->argTypes(EmitCUtil::symClassVar());
             preventUnusedStmt = "(void)vlSymsp;  // Prevent unused variable warning\n";
         } else if (m_type.isCoverage()) {
             funcp->argTypes("bool first");
@@ -161,10 +161,10 @@ class CCtorsVisitor final : public VNVisitor {
         if (v3Global.opt.coverage()) {
             V3CCtorsBuilder configure_coverage{nodep, "_configure_coverage", VCtorType::COVERAGE};
             for (AstNode* np = nodep->stmtsp(); np; np = np->nextp()) {
-                if (AstCoverDecl* const coverp = VN_CAST(np, CoverDecl)) {
+                if (AstNodeCoverDecl* const coverp = VN_CAST(np, NodeCoverDecl)) {
                     // ... else we don't have a static VlSym to be able to coverage insert
                     UASSERT_OBJ(!VN_IS(nodep, Class), coverp,
-                                "CoverDecl should be in class's package, not class itself");
+                                "NodeCoverDecl should be in class's package, not class itself");
                     np = coverp->backp();
                     configure_coverage.add(coverp->unlinkFrBack());
                 }

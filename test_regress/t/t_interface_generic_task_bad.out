@@ -1,0 +1,7 @@
+%Error: t/t_interface_generic_task_bad.v:17:7: Can't find definition of 'setup' in dotted task/function: 'a.setup'
+                                             : ... note: In instance 't.genericModule'
+   17 |     a.setup();
+      |       ^~~~~
+        ... Known scopes under 'setup': <no instances found>
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

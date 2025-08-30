@@ -16,7 +16,7 @@ class Bar;
 endclass
 
 class Baz;
-   function static Bar get_bar;
+   static function Bar get_bar;
       Bar b = new;
       return b;
    endfunction
@@ -37,7 +37,7 @@ class ExtendCls extends Cls;
 endclass
 
 class Getter1;
-   function static int get_1;
+   static function int get_1;
       return 1;
    endfunction
 endclass
@@ -54,8 +54,7 @@ class uvm_root;
    endfunction
 endclass
 
-module t (/*AUTOARG*/
-   );
+module t (/*AUTOARG*/);
 
    initial begin
       Foo foo = new;

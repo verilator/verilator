@@ -28,6 +28,7 @@ class AstSenTree;
 class V3EmitV final {
 public:
     static void verilogForTree(const AstNode* nodep, std::ostream& os = std::cout);
+    static void debugVerilogForTree(const AstNode* nodep, std::ostream& os);
     static void emitvFiles();
     static void debugEmitV(const string& filename);
 };

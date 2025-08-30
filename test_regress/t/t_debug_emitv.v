@@ -86,6 +86,7 @@ module t (/*AUTOARG*/
       if (|downto_32[55+:3]) $write("");
       if (|downto_32[60-:7]) $write("");
       if (the_ifaces[2].ifsig) $write("");
+      #1 $write("After #1 delay");
    end
 
    bit [6:5][4:3][2:1] arraymanyd[10:11][12:13][14:15];

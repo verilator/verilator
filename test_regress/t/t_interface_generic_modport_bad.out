@@ -1,0 +1,5 @@
+%Error: t/t_interface_generic_modport_bad.v:11:33: Modport not found under interface 'inf': 'mp'
+   11 | module GenericModule (interface.mp a);
+      |                                 ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

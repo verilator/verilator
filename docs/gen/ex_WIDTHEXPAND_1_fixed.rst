@@ -2,4 +2,4 @@
 .. code-block:: sv
    :emphasize-lines: 1
 
-      wire int rd_value = array[{1'b0, rd_addr}];  //<--- Fixed
+     wire [31:0] rd_value = array[{1'b0, rd_addr}];  //<--- Fixed

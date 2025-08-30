@@ -1,6 +1,5 @@
 ---
 # DESCRIPTION: Github actions config
-# This name is key to badges in README.rst, so we use the name build
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 name: reusable-rtlmeter-run
@@ -8,6 +7,10 @@ name: reusable-rtlmeter-run
 on:
   workflow_call:
     inputs:
+      tag:
+        description: "Unique identifier for storing results"
+        type: string
+        required: true
       runs-on:
         description: "Runner to use, e.g.: ubuntu-24.04"
         type: string
@@ -114,7 +117,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: results-${{ steps.results.outputs.hash }}.json
-          name: rtlmeter-results-${{ steps.results.outputs.hash }}
+          name: rtlmeter-results-${{ inputs.tag }}-${{ steps.results.outputs.hash }}
           overwrite: true
           retention-days: 2
 

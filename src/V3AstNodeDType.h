@@ -162,11 +162,12 @@ public:
     uint32_t arrayUnpackedElements() const;  // 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const {
-        return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I");
+        return (isString() ? "N" : isWide() ? "W" : isDouble() ? "D" : isQuad() ? "Q" : "I");
     }
     string cType(const string& name, bool forFunc, bool isRef, bool packed = false) const;
     // Represents a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_STABLE;
+    virtual bool isDynamicallySized() const { return false; }
 
 private:
     class CTypeRecursed;
@@ -383,6 +384,7 @@ public:
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
     bool isCompound() const override { return true; }
+    bool isDynamicallySized() const override { return true; }
 };
 class AstBasicDType final : public AstNodeDType {
     // Builtin atomic/vectored data type
@@ -472,6 +474,9 @@ public:
     }
     bool isRandomGenerator() const VL_MT_SAFE {
         return keyword() == VBasicDTypeKwd::RANDOM_GENERATOR;
+    }
+    bool isStdRandomGenerator() const VL_MT_SAFE {
+        return keyword() == VBasicDTypeKwd::RANDOM_STDGENERATOR;
     }
     bool isOpaque() const VL_MT_SAFE { return keyword().isOpaque(); }
     bool isString() const VL_MT_STABLE { return keyword().isString(); }
@@ -753,6 +758,7 @@ public:
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
     bool isCompound() const override { return true; }
+    bool isDynamicallySized() const override { return true; }
 };
 class AstEmptyQueueDType final : public AstNodeDType {
     // For EmptyQueue
@@ -786,7 +792,7 @@ public:
 
 private:
     string m_name;  // Name from upper typedef, if any
-    const int m_uniqueNum = 0;
+    const int m_uniqueNum;
     TableMap m_tableMap;  // Created table for V3Width only to remove duplicates
 
 public:
@@ -837,6 +843,40 @@ public:
     bool isCompound() const override { return false; }
     TableMap& tableMap() { return m_tableMap; }
     const TableMap& tableMap() const { return m_tableMap; }
+};
+
+class AstIfaceGenericDType final : public AstNodeDType {
+    // Generic interface that will be replaced with AstIfaceRefDType
+    FileLine* m_modportFileline;  // Where modport token was
+    string m_modportName;  // "" = no modport
+public:
+    explicit AstIfaceGenericDType(FileLine* fl)
+        : ASTGEN_SUPER_IfaceGenericDType(fl) {
+        dtypep(this);
+    }
+    AstIfaceGenericDType(FileLine* fl, FileLine* modportFl, const string& modport)
+        : ASTGEN_SUPER_IfaceGenericDType(fl)
+        , m_modportFileline{modportFl}
+        , m_modportName{modport} {
+        dtypep(this);
+    }
+    ASTGEN_MEMBERS_AstIfaceGenericDType;
+    void dumpSmall(std::ostream& str) const override;
+    bool hasDType() const override VL_MT_SAFE { return true; }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
+    bool undead() const override { return true; }
+    AstNodeDType* subDTypep() const override VL_MT_STABLE { return nullptr; }
+    AstNodeDType* virtRefDTypep() const override { return nullptr; }
+    void virtRefDTypep(AstNodeDType* nodep) override {}
+    bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
+    AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
+    int widthAlignBytes() const override { return 1; }
+    int widthTotalBytes() const override { return 1; }
+    string modportName() const { return m_modportName; }
+    bool isModport() { return !m_modportName.empty(); }
+    bool isCompound() const override { return true; }
+    FileLine* modportFileline() const { return m_modportFileline; }
+    string name() const override { return m_modportName; }
 };
 
 class AstIfaceRefDType final : public AstNodeDType {
@@ -892,11 +932,13 @@ public:
         if (flag) v3Global.setHasVirtIfaces();
     }
     FileLine* modportFileline() const { return m_modportFileline; }
+    void modportFileline(FileLine* const modportFileline) { m_modportFileline = modportFileline; }
     string cellName() const { return m_cellName; }
     void cellName(const string& name) { m_cellName = name; }
     string ifaceName() const { return m_ifaceName; }
     string ifaceNameQ() const { return "'" + prettyName(ifaceName()) + "'"; }
     void ifaceName(const string& name) { m_ifaceName = name; }
+    void modportName(const string& modportName) { m_modportName = modportName; }
     string modportName() const { return m_modportName; }
     AstIface* ifaceViaCellp() const;  // Use cellp or ifacep
     AstIface* ifacep() const { return m_ifacep; }
@@ -1121,6 +1163,7 @@ public:
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
     bool isCompound() const override { return true; }
+    bool isDynamicallySized() const override { return true; }
 };
 class AstRefDType final : public AstNodeDType {
     // @astgen op1 := typeofp : Optional[AstNode<AstNodeExpr|AstNodeDType>]
@@ -1329,7 +1372,7 @@ public:
     AstNodeDType* subDTypep() const override VL_MT_STABLE { return nullptr; }
     AstNodeDType* virtRefDTypep() const override { return nullptr; }
     void virtRefDTypep(AstNodeDType* nodep) override {}
-    bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
+    bool similarDTypeNode(const AstNodeDType* samep) const override { return true; }
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
     int widthAlignBytes() const override { return 1; }
     int widthTotalBytes() const override { return 1; }

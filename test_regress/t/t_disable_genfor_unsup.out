@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_disable_genfor_unsup.v:13:23: Unsupported: Generate block referenced by disable
+   13 |           if (i == 5) disable t.genblk[0].init.named;
+      |                       ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_disable_genfor_unsup.v:13:23: Node of type CELLREF referenced by disable
+   13 |           if (i == 5) disable t.genblk[0].init.named;
+      |                       ^~~~~~~
+%Error: Exiting due to

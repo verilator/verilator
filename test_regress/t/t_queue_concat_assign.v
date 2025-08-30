@@ -4,20 +4,36 @@
 // any use, without warranty, 2024 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
-   initial begin
-      bit q1[$] = {1'b1};
-      bit q2[$];
-      bit [1:0] d1[] = {2'b10};
-      bit [1:0] d2[];
-      q2 = {q1};
-      if (q2[0] != 1) $stop;
+module t (  /*AUTOARG*/);
 
-      d2 = {2'b11};
-      if (d2[0] != 2'b11) $stop;
+  initial begin
+    bit q1[$] = {1'b1};
+    bit q2[$];
+    bit q3[$];
 
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+    bit [1:0] d1[$] = {2'b10};
+    bit [1:0] d2[$];
+    bit [1:0] d3[$];
+
+    q2 = {q1};  // consCC
+    if (q2.size != 1) $stop;
+    if (q2[0] != 1) $stop;
+
+    q3 = q1;
+    if (q3.size != 1) $stop;
+    if (q3[0] != 1) $stop;
+
+    if (d1[0] != 2'b10) $stop;
+
+    d2 = {2'b11};
+    if (d2[0] != 2'b11) $stop;
+
+    d3 = {d1, d2};
+    if (d3[0] != 2'b10) $stop;
+    if (d3[1] != 2'b11) $stop;
+
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 
 endmodule

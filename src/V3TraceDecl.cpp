@@ -316,6 +316,7 @@ class TraceDeclVisitor final : public VNVisitor {
 
     void removeRedundantPrefixPushPop() {
         for (const auto& pair : m_scopeInitFuncps) {
+            // cppcheck-suppress constVariablePointer
             for (AstCFunc* const funcp : pair.second) {
                 AstNode* prevp = nullptr;
                 AstNode* currp = funcp->stmtsp();
@@ -684,7 +685,7 @@ public:
         // Now that we have everything ready, remove redundant pushPrefix/popPrefix
         // pairs. While functionally this is not really necessary (the trace files
         // might have some empty scope declarations), we do it to preserve previous
-        // behaviour. Note: unfortunately generating these without the redundant
+        // behavior. Note: unfortunately generating these without the redundant
         // push/pop pairs is a bit hard. It is cleaner to remove them.
         removeRedundantPrefixPushPop();
 

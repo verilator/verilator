@@ -314,6 +314,7 @@ Noack
 Nodine
 Ober
 Oleg
+Oler
 Olof
 Olofsson
 Oron
@@ -470,6 +471,7 @@ Verilog
 Vighnesh
 Viktor
 Vilp
+VlWide
 Vlip
 Vm
 Vukobratovic
@@ -481,6 +483,7 @@ Wfuture
 Whatson
 Wildman
 Wim
+Wipfli
 Wmisleading
 Wno
 Wojciech
@@ -511,6 +514,7 @@ Zhang
 abirkmanis
 accessor
 accessors
+acyclic
 adrienlemasle
 agrobman
 ahouska
@@ -585,7 +589,9 @@ combinational
 combinatorial
 commandArgsPlusMatch
 compilable
+computable
 concat
+concatenatable
 concats
 conf
 config
@@ -600,6 +606,7 @@ coroutines
 countbits
 countones
 cout
+covergroup
 cpp
 cppstyle
 cpu
@@ -624,9 +631,11 @@ defparam
 demangling
 dep
 deparametrized
+deque
 der
 dereference
 dereferenced
+dereferencing
 desassign
 deserialize
 destructor
@@ -636,6 +645,7 @@ dev
 devcontainer
 devel
 dir
+disambiguates
 displayb
 distcc
 doxygen
@@ -664,6 +674,7 @@ elab
 eliasphanna
 elike
 elsif
+enablement
 endcase
 endcelldefine
 endclass
@@ -969,6 +980,8 @@ realtime
 realtobits
 recoding
 recrem
+recurse
+recurses
 redeclaring
 regs
 reloop
@@ -1100,6 +1113,7 @@ unroller
 unsized
 unsup
 untyped
+upcasting
 urandom
 uselib
 utimes

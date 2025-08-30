@@ -16,19 +16,21 @@
 // any use, without warranty, 2025 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
 
-module t(/*AUTOARG*/
+module t (  /*AUTOARG*/
   // Inputs
   clk
   );
   input clk;
 
-  int cyc;
-  reg [63:0] crc;
-  reg [63:0] sum;
+  int         cyc;
+  reg  [63:0] crc;
+  reg  [63:0] sum;
 
   // Take CRC data and apply to testblock inputs
   wire [31:0] in = crc[31:0];
@@ -38,12 +40,12 @@ module t(/*AUTOARG*/
   wire [31:0]           out;                    // From test of Test.v
   // End of automatics
 
-  Test test(/*AUTOINST*/
-            // Outputs
-            .out                        (out[31:0]),
-            // Inputs
-            .clk                        (clk),
-            .in                         (in[31:0]));
+  Test test (  /*AUTOINST*/
+             // Outputs
+             .out                       (out[31:0]),
+             // Inputs
+             .clk                       (clk),
+             .in                        (in[31:0]));
 
   // Aggregate outputs into a single result vector
   wire [63:0] result = {32'h0, out};
@@ -78,7 +80,7 @@ module t(/*AUTOARG*/
 
 endmodule
 
-module Test(/*AUTOARG*/
+module Test (  /*AUTOARG*/
   // Outputs
   out,
   // Inputs

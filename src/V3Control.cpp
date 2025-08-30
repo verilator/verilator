@@ -276,7 +276,7 @@ public:
         const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
         if (!nodep->unnamed()) {
             for (const string& i : m_coverageOffBlocks) {
-                if (VString::wildmatch(nodep->name(), i)) {
+                if (VString::wildmatch(nodep->prettyOrigOrName(), i)) {
                     nodep->addStmtsp(new AstPragma{nodep->fileline(), pragma});
                 }
             }
@@ -441,7 +441,7 @@ using V3ControlFileResolver = V3ControlWildcardResolver<V3ControlFile>;
 class V3ControlScopeTraceEntry final {
 public:
     const string m_scope;  // Scope or regexp to match
-    const bool m_on = false;  // True to enable message
+    const bool m_on;  // True to enable message
     int m_levels = 0;  // # levels, 0 = all, 1 = only this, ...
     // CONSTRUCTORS
     V3ControlScopeTraceEntry(const string& scope, bool on, int levels)
@@ -479,8 +479,7 @@ class V3ControlScopeTraceResolver final {
 
 public:
     void addScopeTraceOn(bool on, const string& scope, int levels) {
-        UINFO(9, "addScopeTraceOn " << on << " '" << scope << "' "
-                                    << " levels=" << levels);
+        UINFO(9, "addScopeTraceOn " << on << " '" << scope << "' " << " levels=" << levels);
         m_entries.emplace_back(V3ControlScopeTraceEntry{scope, on, levels});
         m_matchCache.clear();
     }
@@ -494,7 +493,7 @@ public:
     }
 
     bool getScopeTraceOn(const string& scope) {
-        // Apply in the order the user provided them, so they can choose on/off preferencing
+        // Apply in the order the user provided them, so they can choose on/off preferences
         int maxLevel = 1;
         for (const auto& ch : scope) {
             if (ch == '.') ++maxLevel;
@@ -724,49 +723,51 @@ void V3Control::addVarAttr(FileLine* fl, const string& module, const string& fta
 
 void V3Control::applyCase(AstCase* nodep) {
     const string& filename = nodep->fileline()->filename();
-    V3ControlFile* filep = V3ControlResolver::s().files().resolve(filename);
+    V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
     if (filep) filep->applyCase(nodep);
 }
 
 void V3Control::applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep) {
     const string& filename = nodep->fileline()->filename();
-    V3ControlFile* filep = V3ControlResolver::s().files().resolve(filename);
+    V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
     if (filep) filep->applyBlock(nodep);
-    const string& modname = modulep->name();
-    V3ControlModule* modp = V3ControlResolver::s().modules().resolve(modname);
+    const string& modname = modulep->prettyOrigOrName();
+    V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (modp) modp->applyBlock(nodep);
 }
 
 void V3Control::applyIgnores(FileLine* filelinep) {
     const string& filename = filelinep->filename();
-    V3ControlFile* filep = V3ControlResolver::s().files().resolve(filename);
+    V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
     if (filep) filep->applyIgnores(filelinep);
 }
 
 void V3Control::applyModule(AstNodeModule* modulep) {
-    const string& modname = modulep->origName();
-    V3ControlModule* modp = V3ControlResolver::s().modules().resolve(modname);
+    const string& modname = modulep->prettyOrigOrName();
+    V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (modp) modp->apply(modulep);
 }
 
 void V3Control::applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp) {
-    const string& modname = modulep->name();
-    V3ControlModule* modp = V3ControlResolver::s().modules().resolve(modname);
+    const string& modname = modulep->prettyOrigOrName();
+    V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (!modp) return;
-    const V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->name());
+    const V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->prettyOrigOrName());
     if (ftp) ftp->apply(ftaskp);
 }
 
-void V3Control::applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp) {
+void V3Control::applyVarAttr(const AstNodeModule* modulep, const AstNodeFTask* ftaskp,
+                             AstVar* varp) {
     V3ControlVar* vp;
-    V3ControlModule* modp = V3ControlResolver::s().modules().resolve(modulep->name());
+    V3ControlModule* const modp
+        = V3ControlResolver::s().modules().resolve(modulep->prettyOrigOrName());
     if (!modp) return;
     if (ftaskp) {
-        V3ControlFTask* ftp = modp->ftasks().resolve(ftaskp->name());
+        V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->prettyOrigOrName());
         if (!ftp) return;
-        vp = ftp->vars().resolve(varp->name());
+        vp = ftp->vars().resolve(varp->prettyOrigOrName());
     } else {
-        vp = modp->vars().resolve(varp->name());
+        vp = modp->vars().resolve(varp->prettyOrigOrName());
     }
     if (vp) vp->apply(varp);
 }
@@ -796,8 +797,8 @@ bool V3Control::containsMTaskProfileData() {
     return V3ControlResolver::s().containsMTaskProfileData();
 }
 
-bool V3Control::waive(FileLine* filelinep, V3ErrorCode code, const string& message) {
-    V3ControlFile* filep = V3ControlResolver::s().files().resolve(filelinep->filename());
+bool V3Control::waive(const FileLine* filelinep, V3ErrorCode code, const string& message) {
+    V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filelinep->filename());
     if (!filep) return false;
     return filep->waive(code, message);
 }

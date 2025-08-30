@@ -10,10 +10,10 @@ module t;
    //typedef struct pack2;      // Forward declaration
 
    typedef struct packed { // [3:0]
-      bit       b3;
-      bit       b2;
-      bit       b1;
-      bit       b0;
+      logic     b3;
+      logic     b2;
+      logic     b1;
+      logic     b0;
    } b4_t;
 
    typedef struct packed { // [3:0]
@@ -28,17 +28,17 @@ module t;
    } q4_t;
 
    typedef struct packed { // [5:0]
-      bit       msb;
+      logic     msb;
       q4_t      four;
-      bit       lsb;
+      logic     lsb;
    } pack2_t;
 
    typedef union packed { // [5:0]
       pack2_t   pack2;
       bit [6:1] pvec;
       // Vector not allowed in packed structure, per spec:
-      //      bit       vec[6];
-      //      bit       vec2d[2][3];
+      //      logic     vec[6];
+      //      logic     vec2d[2][3];
    } pack3_t;
 
    const b4_t b4_const_a = '{1'b1, 1'b0, 1'b0, 1'b1};

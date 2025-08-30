@@ -26,6 +26,7 @@
 # include "V3Global.h"
 # include "V3Control.h"
 # include "V3File.h"
+# include "V3Stats.h"
 #endif
 #include "V3Waiver.h"
 // clang-format on
@@ -292,6 +293,8 @@ void FileLine::lineDirectiveParse(const char* textp, string& filenameRef, int& l
 }
 
 void FileLine::forwardToken(const char* textp, size_t size, bool trackLines) {
+    static int s_tokenNum = 1;
+    m_tokenNum = s_tokenNum++;
     for (const char* sp = textp; size && *sp; ++sp, --size) {
         if (*sp == '\n') {
             if (trackLines) linenoInc();
@@ -429,8 +432,8 @@ void FileLine::v3errorEnd(std::ostringstream& sstr, const string& extra)
     wsstr << '\n';
     std::ostringstream extrass;  // extra spaced out for prefix
     if (!extra.empty()) {
-        extrass << V3Error::warnContextBegin() << std::setw(ascii().length()) << " "
-                << ": " << V3Error::warnContextEnd() << extra;
+        extrass << V3Error::warnContextBegin() << std::setw(ascii().length()) << " " << ": "
+                << V3Error::warnContextEnd() << extra;
     }
     if (warnIsOff(V3Error::s().errorCode())) {
         V3Error::s().suppressThisWarning();
@@ -496,9 +499,9 @@ string FileLine::prettySource() const VL_MT_SAFE {
 
 string FileLine::warnContext() const {
     if (!v3Global.opt.context()) return "";
-    string out;
     if (firstLineno() == lastLineno() && firstColumn()) {
         const string sourceLine = prettySource();
+        string out;
         // Don't show super-long lines as can fill screen and unlikely to help user
         if (!sourceLine.empty() && sourceLine.length() < SHOW_SOURCE_MAX_LENGTH
             && sourceLine.length() >= static_cast<size_t>(lastColumn() - 1)) {
@@ -550,6 +553,18 @@ void FileLine::operator delete(void* objp, size_t size) {
     ::operator delete(objp);
 }
 #endif
+
+void FileLine::stats() {
+#ifndef V3ERROR_NO_GLOBAL_
+    V3Stats::addStatSum("FileLines, Number of filenames",
+                        singleton().m_names.size());  // Max m_filenameno
+    V3Stats::addStatSum("FileLines, Message enable sets",
+                        singleton().m_internedMsgEns.size());  // Max m_msgEnIdx
+    // Don't currently have a good path to recording max line/column,
+    // Infrequently useful, alternatively we could keep globals we update as make each FileLine
+    // or could use fileLineLeakChecks.
+#endif
+}
 
 void FileLine::deleteAllRemaining() {
 #ifdef VL_LEAK_CHECKS

@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_clocking_timing.v"
 
-test.compile(verilator_flags2=["--exe --main --timing -DTEST_INPUT_SKEW=12 -DTEST_OUTPUT_SKEW=16"])
+test.compile(verilator_flags2=["--binary -DTEST_INPUT_SKEW=12 -DTEST_OUTPUT_SKEW=16"])
 
 test.execute()
 
