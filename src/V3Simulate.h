@@ -1238,7 +1238,7 @@ private:
             // Clear output variable
             initVar(VN_CAST(funcp->fvarp(), Var));
             // Clear other automatic variables
-            funcp->foreach([this, &oldValues](AstVar* varp) {
+            funcp->foreach([this](AstVar* varp) {
                 if (varp->lifetime().isAutomatic() && !varp->isIO()) initVar(varp);
             });
         }
