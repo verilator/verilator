@@ -5469,6 +5469,7 @@ class WidthVisitor final : public VNVisitor {
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
             // UINFOTREE(1, nodep, "", "AssignOut");
         }
+        if (VN_IS(nodep, AssignForce)) checkForceReleaseLhs(nodep, nodep->lhsp());
         if (AstNode* const controlp = nodep->timingControlp()) {
             if (VN_IS(m_ftaskp, Func)) {
                 controlp->v3error("Timing controls are not legal in functions. Suggest use a task "
@@ -5537,6 +5538,7 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
         UASSERT_OBJ(nodep->lhsp()->dtypep(), nodep, "How can LValue be untyped?");
         UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep, "How can LValue be unsized?");
+        checkForceReleaseLhs(nodep, nodep->lhsp());
     }
 
     void formatNoStringArg(AstNode* argp, char ch) {
@@ -8544,7 +8546,7 @@ class WidthVisitor final : public VNVisitor {
             const AstArg* const argp = tconnect.second;
             const AstNode* const pinp = argp->exprp();
             if (!pinp) continue;  // Argument error we'll find later
-            if (hasOpenArrayIterateDType(portp->dtypep())) portp->dtypep(pinp->dtypep());
+            if (hasOpenArrayDTypeRecurse(portp->dtypep())) portp->dtypep(pinp->dtypep());
         }
     }
 
@@ -8552,7 +8554,7 @@ class WidthVisitor final : public VNVisitor {
         bool hasOpen = false;
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
-                if (portp->isDpiOpenArray() || hasOpenArrayIterateDType(portp->dtypep())) {
+                if (portp->isDpiOpenArray() || hasOpenArrayDTypeRecurse(portp->dtypep())) {
                     portp->isDpiOpenArray(true);
                     hasOpen = true;
                 }
@@ -8560,10 +8562,10 @@ class WidthVisitor final : public VNVisitor {
         }
         return hasOpen;
     }
-    bool hasOpenArrayIterateDType(AstNodeDType* nodep) {
+    bool hasOpenArrayDTypeRecurse(AstNodeDType* nodep) {
         // Return true iff this datatype or child has an openarray
         if (VN_IS(nodep, UnsizedArrayDType)) return true;
-        if (nodep->subDTypep()) return hasOpenArrayIterateDType(nodep->subDTypep()->skipRefp());
+        if (nodep->subDTypep()) return hasOpenArrayDTypeRecurse(nodep->subDTypep()->skipRefp());
         return false;
     }
     AstNodeDType* dtypeNotIntAtomOrVecRecurse(AstNodeDType* nodep, bool ranged = false) {
@@ -8598,6 +8600,44 @@ class WidthVisitor final : public VNVisitor {
             return nullptr;
         }
         return nodep;
+    }
+    void checkForceReleaseLhs(AstNode* nodep, AstNode* lhsp) {
+        // V3Force can't check as vector may have expanded, or propagated constant into index
+        if (AstNode* const selNodep = selectNonConstantRecurse(lhsp))
+            nodep->v3error((VN_IS(nodep, Release) ? "Release"s : "Force"s)
+                               + " left-hand-side must not have variable bit/part select "
+                                 "(IEEE 1800-2023 10.6.2)\n"
+                           << nodep->warnContextPrimary() << '\n'
+                           << selNodep->warnOther() << "... Location of non-constant index\n"
+                           << selNodep->warnContextSecondary());
+    }
+    AstNode* selectNonConstantRecurse(AstNode* nodep, bool inSel = false) {
+        // If node has a non-constant select, return that select
+        AstNode* resultp = nullptr;
+        if (AstNodeSel* const anodep = VN_CAST(nodep, NodeSel)) {
+            resultp = selectNonConstantRecurse(anodep->fromp(), inSel);
+            if (resultp) return resultp;
+            resultp = selectNonConstantRecurse(anodep->bitp(), true);
+        } else if (AstSel* const anodep = VN_CAST(nodep, Sel)) {
+            resultp = selectNonConstantRecurse(anodep->fromp(), inSel);
+            if (resultp) return resultp;
+            resultp = selectNonConstantRecurse(anodep->lsbp(), true);
+        } else if (AstNodeVarRef* const anodep = VN_CAST(nodep, NodeVarRef)) {
+            if (inSel && !anodep->varp()->isParam() && !anodep->varp()->isGenVar()) return anodep;
+        } else {
+            if (AstNode* const refp = nodep->op1p())
+                resultp = selectNonConstantRecurse(refp, inSel);
+            if (resultp) return resultp;
+            if (AstNode* const refp = nodep->op2p())
+                resultp = selectNonConstantRecurse(refp, inSel);
+            if (resultp) return resultp;
+            if (AstNode* const refp = nodep->op3p())
+                resultp = selectNonConstantRecurse(refp, inSel);
+            if (resultp) return resultp;
+            if (AstNode* const refp = nodep->op4p())
+                resultp = selectNonConstantRecurse(refp, inSel);
+        }
+        return resultp;
     }
 
     //----------------------------------------------------------------------

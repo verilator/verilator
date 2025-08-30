@@ -23,6 +23,7 @@ Verilator 5.039 devel
 * Add ALWNEVER warning, for `always @*` that never execute (#6291).
 * Add separate coverage counters for toggles 0->1 and 1->0 (#6086). [Ryszard Rozak, Antmicro Ltd.]
 * Add error on class 'function static'.
+* Add error on force/release non-constant selects.
 * Add `-DVERILATOR=1` definition to compiler flags when using verilated.mk.
 * Support member-level triggers for virtual interfaces (#5166) (#6148). [Yilou Wang]
 * Support unassigned virtual interfaces (#5265) (#6245). [Szymon Gizler, Antmicro Ltd.]
