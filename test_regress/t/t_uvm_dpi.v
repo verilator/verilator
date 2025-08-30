@@ -44,7 +44,8 @@ module t;
     `checks(s, "Verilator");
 
     s = uvm_dpi_get_tool_version_c();
-    $display("uvm_dpi_get_tool_version_c() = %s", s);
+    // - is so doesn't compare in .out file, in case version changes
+    $display("- uvm_dpi_get_tool_version_c() = %s", s);
     if (s == "") $stop;
 
     //===== Regexp

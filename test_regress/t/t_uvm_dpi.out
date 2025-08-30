@@ -1,5 +1,4 @@
 uvm_dpi_get_tool_name_c() = Verilator
-uvm_dpi_get_tool_version_c() = 5.039 devel
 = uvm_re
 = uvm_hdl_check_path
 = uvm_hdl_read simple variable
