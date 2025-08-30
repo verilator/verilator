@@ -41,6 +41,7 @@ Verilator 5.039 devel
 * Support generic interfaces (#6272). [Igor Zaworski, Antmicro Ltd.]
 * Support disabling a fork from within that fork (#6314). [Ryszard Rozak, Antmicro Ltd.]
 * Support future sampled value functions.
+* Support simple disable within task (#6334). [Ryszard Rozak, Antmicro Ltd.]
 * Change control file `public_flat_*` and other signal attributes to support __ in names (#6140).
 * Change runtime to exit() instead of abort(), unless under +verilated+debug.
 * Change `$display("%p")` to remove space after `}`.
@@ -53,6 +54,7 @@ Verilator 5.039 devel
 * Optimize variable removal in scoped DFG (#6260). [Geza Lore]
 * Optimize acyclic DFG components into the original acyclic sub-graph. (#6261). [Geza Lore]
 * Optimize multiplexers in DFG synthesis (#6331). [Geza Lore]
+* Optimize interfaces in DFG (#6332). [Geza Lore]
 * Fix loop initialization visibility outside loop (#4237).
 * Fix constructor parameters in inheritance hierarchies (#6036) (#6070). [Petr Nohavica]
 * Fix replicate of negative giving 'REPLICATE has no expected width' internal error (#6048) (#6229).
@@ -80,6 +82,7 @@ Verilator 5.039 devel
 * Fix error when force assignment is used with ref function args (#6244). [Ryszard Rozak, Antmicro Ltd.]
 * Fix write of 0 in '%c' (#6248) (#6249). [Rodrigo Batista de Moraes]
 * Fix coverage of variables of complex types (#6250). [Ryszard Rozak, Antmicro Ltd.]
+* Fix broken support of unassigned virtual interfaces (#6253) (#6338). [Szymon Gizler, Antmicro Ltd.]
 * Fix partial DFG conversion of concat assignments (#6255). [Geza Lore]
 * Fix dynamic cast purity (#6267). [Igor Zaworski, Antmicro Ltd.]
 * Fix same variable on the RHS forced to two different LHSs. (#6269). [Artur Bieniek, Antmicro Ltd.]
@@ -100,6 +103,7 @@ Verilator 5.039 devel
 * Fix gathering sensitivities from virtual interface members (#6325). [Aleksander Kiryk]
 * Fix FreeBSD missing headers (#6326). [Aleksander Kiryk]
 * Fix to select UDPs when they are the only candidate for a top module.
+* Fix splitting of assignments to SC variables (#6329) (#6336). [Geza Lore]
 * Fix to localize for super constructors with function calls as arguments (#6330). [Igor Zaworski, Antmicro Ltd.]
 
 
