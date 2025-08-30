@@ -233,7 +233,7 @@ class SubstVisitor final : public VNVisitor {
     int m_ops = 0;  // Number of operators on assign rhs
     int m_assignStep = 0;  // Assignment number to determine var lifetime
     const AstCFunc* m_funcp = nullptr;  // Current function we are under
-    size_t m_nSubst;  // Number of substitutions performed
+    size_t m_nSubst = 0;  // Number of substitutions performed
 
     enum {
         SUBST_MAX_OPS_SUBST = 30,  // Maximum number of ops to substitute in

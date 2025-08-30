@@ -152,11 +152,7 @@ class ExpandVisitor final : public VNVisitor {
     }
 
     AstVar* addLocalTmp(AstNode* placep, const char* namep, AstNodeExpr* valuep) {
-        std::string name;
-        name += "__V";
-        name += namep;
-        name += "_";
-        name += std::to_string(m_nTmps);
+        const std::string name = "__V"s + namep + "_"s + std::to_string(m_nTmps);
         FileLine* const flp = placep->fileline();
         AstVar* const tmpp = new AstVar{flp, VVarType::STMTTEMP, name, valuep->dtypep()};
         tmpp->funcLocal(true);
@@ -272,7 +268,7 @@ class ExpandVisitor final : public VNVisitor {
         // If indexp was constant, just use it
         if (!indexp) return new AstWordSel{flp, fromp, new AstConst{flp, wordOffset}};
 
-        // Otherwie compute at runtime
+        // Otherwise compute at runtime
         if (indexp->backp()) indexp = indexp->cloneTreePure(false);
         if (wordOffset) indexp = new AstAdd{flp, new AstConst{flp, wordOffset}, indexp};
         return new AstWordSel{flp, fromp, indexp};
@@ -541,7 +537,7 @@ class ExpandVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->widthMin() == rhsp->widthConst(), nodep, "Width mismatch");
         if (!doExpandWide(nodep)) return false;
 
-        // Simplify the index, incase it becomes a constant
+        // Simplify the index, in case it becomes a constant
         V3Const::constifyEditCpp(rhsp->lsbp());
 
         // If it's a constant select and aligned, we can just copy the words
