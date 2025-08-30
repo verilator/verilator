@@ -1178,6 +1178,31 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstAlias* nodep) override {
+        if (!nodep->didWidthAndSet()) {
+            userIterateAndNext(nodep->itemsp(), WidthVP{SELF, BOTH}.p());
+        }
+
+        const auto checkIfExprLegal = [](const AstNodeExpr* const exprp) {
+            if (VN_IS(exprp, VarXRef)) exprp->v3error("Hierarchical reference used for net alias");
+
+            if (const AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
+                if (!varRefp->varp()->isNet()) {
+                    exprp->v3error("Only nets are allowed in alias");
+                }
+            }
+        };
+
+        nodep->itemsp()->foreach(checkIfExprLegal);
+        const AstNodeDType* const firstDtypep = nodep->itemsp()->dtypep();
+        for (const AstNode* itemp = nodep->itemsp()->nextp(); itemp; itemp = itemp->nextp()) {
+            if (!firstDtypep->similarDType(itemp->dtypep())) {
+                nodep->v3error("Incompatible types of nets used for net alias");
+            }
+            itemp->foreach(checkIfExprLegal);
+        }
+    }
+
     void visit(AstWildcardSel* nodep) override {
         // Signed/Real: Output type based on array-declared type; binary operator
         if (m_vup->prelim()) {

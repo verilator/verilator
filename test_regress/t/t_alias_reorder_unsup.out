@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_alias_reorder_unsup.v:40:34: Unsupported: Aliased expression is not a simple variable reference
+                                                   : ... note: In instance 't.reorder_d_i'
+   40 |    alias {a[7:0],a[15:8],a[23:16],a[31:24]} = b;
+      |                                  ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

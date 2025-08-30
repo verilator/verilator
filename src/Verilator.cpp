@@ -18,6 +18,7 @@
 
 #include "V3Active.h"
 #include "V3ActiveTop.h"
+#include "V3Alias.h"
 #include "V3Assert.h"
 #include "V3AssertPre.h"
 #include "V3Ast.h"
@@ -228,6 +229,7 @@ static void process() {
         // Add randomize() class methods if they are used by the design
         if (v3Global.useRandomizeMethods()) V3Randomize::randomizeNetlist(v3Global.rootp());
 
+        V3Alias::alias(v3Global.rootp());
         // Push constants, but only true constants preserving liveness
         // so V3Undriven sees variables to be eliminated, ie "if (0 && foo) ..."
         if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAllLive(v3Global.rootp());

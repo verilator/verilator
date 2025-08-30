@@ -2831,9 +2831,7 @@ module_common_item<nodep>:      // ==IEEE: module_common_item
         |       assertion_item                          { $$ = $1; }
         |       bind_directive                          { $$ = $1; }
         |       continuous_assign                       { $$ = $1; }
-        //                      // IEEE: net_alias
-        |       yALIAS variable_lvalue aliasEqList ';'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: alias statements"); }
+        |       net_alias                               { $$ = $1; }
         |       initial_construct                       { $$ = $1; }
         |       final_construct                         { $$ = $1; }
         |       always_construct                        { $$ = $1; }
@@ -2857,6 +2855,10 @@ continuous_assign<nodep>:       // IEEE: continuous_assign
                         { $$ = $4;
                           STRENGTH_LIST($4, $2, AssignW);
                           DELAY_LIST($3, $4); }
+        ;
+
+net_alias<nodep>:               // IEEE: net_alias
+                yALIAS variable_lvalue aliasEqList ';' { $2->addNext(VN_AS($3, NodeExpr)); $$ = new AstAlias{$1, $2}; }
         ;
 
 initial_construct<nodep>:       // IEEE: initial_construct
@@ -2885,9 +2887,9 @@ defaultDisable<nodep>:  // IEEE: part of module_/checker_or_generate_item_declar
                         { $$ = new AstDefaultDisable{$1, $4}; }
         ;
 
-aliasEqList:                    // IEEE: part of net_alias
-                '=' variable_lvalue                     { }
-        |       aliasEqList '=' variable_lvalue         { }
+aliasEqList<nodep>:                    // IEEE: part of net_alias
+                '=' variable_lvalue                     { $$ = $2; }
+        |       aliasEqList '=' variable_lvalue         { $$ = $1->addNext($3); }
         ;
 
 bind_directive<nodep>:          // ==IEEE: bind_directive + bind_target_scope
