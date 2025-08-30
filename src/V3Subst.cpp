@@ -118,15 +118,21 @@ public:
     }
     // ACCESSORS
     AstNodeExpr* substWhole(AstNode* errp) {
-        if (!m_varp->isWide() && !m_whole.m_complex && m_whole.m_assignp && !m_wordAssign) {
-            const AstNodeAssign* const assp = m_whole.m_assignp;
-            UASSERT_OBJ(assp, errp, "Reading whole that was never assigned");
-            // AstCvtPackedToArray can't be anywhere else than on the RHS of assignment
-            if (VN_IS(assp->rhsp(), CvtPackedToArray)) return nullptr;
-            return assp->rhsp();
-        } else {
-            return nullptr;
-        }
+        if (m_varp->isWide()) return nullptr;
+        if (m_whole.m_complex) return nullptr;
+        if (!m_whole.m_assignp) return nullptr;
+        if (m_wordAssign) return nullptr;
+
+        const AstNodeAssign* const assp = m_whole.m_assignp;
+        UASSERT_OBJ(assp, errp, "Reading whole that was never assigned");
+        AstNodeExpr* const rhsp = assp->rhsp();
+
+        // AstCvtPackedToArray can't be anywhere else than on the RHS of assignment
+        if (VN_IS(rhsp, CvtPackedToArray)) return nullptr;
+        // Check if only substitute if constant
+        if (m_varp->substConstOnly() && !VN_IS(rhsp, Const)) return nullptr;
+        // Substitute it
+        return rhsp;
     }
     // Return what to substitute given word number for
     AstNodeExpr* substWord(AstNode* errp, int word) {
@@ -227,7 +233,7 @@ class SubstVisitor final : public VNVisitor {
     int m_ops = 0;  // Number of operators on assign rhs
     int m_assignStep = 0;  // Assignment number to determine var lifetime
     const AstCFunc* m_funcp = nullptr;  // Current function we are under
-    VDouble0 m_statSubsts;  // Statistic tracking
+    size_t m_nSubst = 0;  // Number of substitutions performed
 
     enum {
         SUBST_MAX_OPS_SUBST = 30,  // Maximum number of ops to substitute in
@@ -251,7 +257,10 @@ class SubstVisitor final : public VNVisitor {
         VL_RESTORER(m_ops);
         m_ops = 0;
         m_assignStep++;
+        const size_t nSubstBefore = m_nSubst;
         iterateAndNextNull(nodep->rhsp());
+        if (nSubstBefore != m_nSubst) V3Const::constifyEditCpp(nodep->rhsp());
+        if (VN_IS(nodep->rhsp(), Const)) m_ops = 0;
         bool hit = false;
         if (AstVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
             if (isSubstVar(varrefp->varp())) {
@@ -292,11 +301,14 @@ class SubstVisitor final : public VNVisitor {
         UINFOTREE(6, newp, "", "w_new");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        ++m_statSubsts;
+        ++m_nSubst;
     }
     void visit(AstWordSel* nodep) override {
         if (!m_funcp) return;
+        const size_t nSubstBefore = m_nSubst;
         iterate(nodep->bitp());
+        // Simplify in case it was substituted and became constant
+        if (nSubstBefore != m_nSubst) V3Const::constifyEditCpp(nodep->bitp());
         AstVarRef* const varrefp = VN_CAST(nodep->fromp(), VarRef);
         const AstConst* const constp = VN_CAST(nodep->bitp(), Const);
         if (varrefp && isSubstVar(varrefp->varp()) && varrefp->access().isReadOnly() && constp) {
@@ -380,7 +392,7 @@ public:
     // CONSTRUCTORS
     explicit SubstVisitor(AstNode* nodep) { iterate(nodep); }
     ~SubstVisitor() override {
-        V3Stats::addStat("Optimizations, Substituted temps", m_statSubsts);
+        V3Stats::addStat("Optimizations, Substituted temps", m_nSubst);
         UASSERT(m_entries.empty(), "References outside functions");
     }
 };
