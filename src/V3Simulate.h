@@ -74,6 +74,10 @@ class SimulateVisitor VL_NOT_FINAL : public VNVisitorConst {
     // is missing, we will not apply the optimization, rather then bomb.
 
 private:
+    // CONSTANTS
+    static constexpr int CONST_FUNC_RECURSION_MAX = 1000;
+    static constexpr int CALL_STACK_MAX = 100;
+
     // NODE STATE
     // Cleared on each always/assignw
     const VNUser1InUse m_inuser1;
@@ -136,12 +140,13 @@ private:
     bool m_isCoverage;  // Has coverage
     int m_instrCount;  ///< Number of nodes
     int m_dataCount;  ///< Bytes of data
+    int m_recurseCount = 0;  // Now deep in current recursion
     AstJumpGo* m_jumpp = nullptr;  ///< Jump label we're branching from
     // Simulating:
     // Allocators for constants of various data types
     std::unordered_map<const AstNodeDType*, ConstAllocator> m_constps;
     size_t m_constGeneration = 0;
-    std::vector<SimStackNode*> m_callStack;  ///< Call stack for verbose error messages
+    std::vector<SimStackNode*> m_callStack;  // Call stack for verbose error messages
 
     // Cleanup
     // V3Numbers that represents strings are a bit special and the API for
@@ -217,6 +222,7 @@ public:
             }  // LCOV_EXCL_STOP
             m_whyNotOptimizable = why;
             std::ostringstream stack;
+            int n = 0;
             for (const auto& callstack : vlstd::reverse_view(m_callStack)) {
                 const AstFuncRef* const funcp = callstack->m_funcp;
                 stack << "\n        " << funcp->fileline() << "... Called from '"
@@ -231,6 +237,10 @@ public:
                         stack << "\n           " << portp->prettyName() << " = "
                               << prettyNumber(&valp->num(), dtypep);
                     }
+                }
+                if (++n > CALL_STACK_MAX) {
+                    stack << "\n           ... stack truncated";
+                    break;
                 }
             }
             m_whyNotOptimizable += stack.str();
@@ -442,6 +452,18 @@ private:
         }
         clearOptimizable(nodep, "Cannot convert to string");  // LCOV_EXCL_LINE
         return "";
+    }
+
+    void initVar(AstVar* nodep) {
+        if (const AstBasicDType* const basicp = nodep->dtypeSkipRefp()->basicp()) {
+            AstConst cnst{nodep->fileline(), AstConst::WidthedValue{}, basicp->widthMin(), 0};
+            if (basicp->isZeroInit()) {
+                cnst.num().setAllBits0();
+            } else {
+                cnst.num().setAllBitsX();
+            }
+            newValue(nodep, &cnst);
+        }
     }
 
     // VISITORS
@@ -906,6 +928,8 @@ private:
 
         iterateAndNextConstNull(nodep->rhsp());  // Value to assign
         handleAssignRecurse(nodep, nodep->lhsp(), nodep->rhsp());
+        // UINFO(9, "set " << fetchConst(nodep->rhsp())->num().ascii() << " for assign "
+        //  << nodep->lhsp()->name());
     }
     void visit(AstArraySel* nodep) override {
         checkNodeInfo(nodep);
@@ -1143,17 +1167,49 @@ private:
         VL_DANGLING(funcp);  // Make sure we've sized the function
         funcp = nodep->taskp();
         UASSERT_OBJ(funcp, nodep, "Not linked");
+
         if (funcp->recursive()) {
-            // Because we attach values to nodes rather then making a stack, this is a mess
-            // When we do support this, we need a stack depth limit of 1K or something,
-            // and the t_func_recurse_param_bad.v test should check that limit's error message
-            clearOptimizable(funcp, "Unsupported: Recursive constant functions");
-            return;
+            if (m_recurseCount >= CONST_FUNC_RECURSION_MAX) {
+                clearOptimizable(funcp, "Constant function recursed more than "s
+                                            + std::to_string(CONST_FUNC_RECURSION_MAX) + " times");
+                return;
+            }
+            ++m_recurseCount;
+        }
+
+        // Values from previous call, so can save to stack
+        // The "stack" is this visit function's local stack, as this visit is itself recursing
+        std::map<AstNode*, AstNodeExpr*> oldValues;
+
+        if (funcp->recursive() && !m_checkOnly) {
+            // Save local automatics
+            funcp->foreach([this, &oldValues](AstVar* varp) {
+                if (varp->lifetime().isAutomatic()) {  // This also does function's I/O
+                    if (AstNodeExpr* const valuep = fetchValueNull(varp)) {
+                        AstNodeExpr* const nvaluep = newTrackedClone(valuep);
+                        oldValues.emplace(varp, nvaluep);
+                    }
+                }
+            });
+            // Save every expression value, as might be in middle of expression
+            // that calls recursively back to this same function.
+            // This is much heavier-weight then likely is needed, in theory
+            // we could look at the visit stack to determine what nodes
+            // need save-restore, but that is difficult to get right, and
+            // recursion is rare.
+            funcp->foreach([this, &oldValues](AstNodeExpr* exprp) {
+                if (VN_IS(exprp, Const)) return;  // Speed up as won't change
+                if (AstNodeExpr* const valuep = fetchValueNull(exprp)) {
+                    AstNodeExpr* const nvaluep = newTrackedClone(valuep);
+                    oldValues.emplace(exprp, nvaluep);
+                }
+            });
         }
         // Apply function call values to function
         V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
         // Must do this in two steps, eval all params, then apply them
         // Otherwise chained functions may have the wrong results
+        std::vector<std::pair<AstVar*, AstNodeExpr*>> portValues;
         for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
             AstVar* const portp = it->first;
             AstNode* const pinp = it->second->exprp();
@@ -1166,37 +1222,45 @@ private:
                 }
                 // Evaluate pin value
                 iterateConst(pinp);
+                // Clone in case are recursing
+                portValues.push_back(std::make_pair(portp, newTrackedClone(fetchValue(pinp))));
             }
         }
-        for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
-            AstVar* const portp = it->first;
-            AstNode* const pinp = it->second->exprp();
-            if (pinp) {  // Else too few arguments in function call - ignore it
-                // Apply value to the function
-                if (!m_checkOnly && optimizable()) newValue(portp, fetchValue(pinp));
+        // Apply value to the function
+        if (!m_checkOnly && optimizable())
+            for (auto& it : portValues) {
+                if (!m_checkOnly && optimizable()) newValue(it.first, it.second);
             }
-        }
         SimStackNode stackNode{nodep, &tconnects};
         // cppcheck-suppress danglingLifetime
         m_callStack.push_back(&stackNode);
-        // Clear output variable
-        if (const auto* const basicp = VN_CAST(funcp->fvarp(), Var)->basicp()) {
-            AstConst cnst{funcp->fvarp()->fileline(), AstConst::WidthedValue{}, basicp->widthMin(),
-                          0};
-            if (basicp->isZeroInit()) {
-                cnst.num().setAllBits0();
-            } else {
-                cnst.num().setAllBitsX();
-            }
-            newValue(funcp->fvarp(), &cnst);
+        if (!m_checkOnly) {
+            // Clear output variable
+            initVar(VN_CAST(funcp->fvarp(), Var));
+            // Clear other automatic variables
+            funcp->foreach([this, &oldValues](AstVar* varp) {
+                if (varp->lifetime().isAutomatic() && !varp->isIO()) initVar(varp);
+            });
         }
+
         // Evaluate the function
         iterateConst(funcp);
         m_callStack.pop_back();
+        AstNodeExpr* returnp = nullptr;
         if (!m_checkOnly && optimizable()) {
-            // Grab return value from output variable (if it's a function)
+            // Grab return value from output variable
             UASSERT_OBJ(funcp->fvarp(), nodep, "Function reference points at non-function");
-            newValue(nodep, fetchValue(funcp->fvarp()));
+            returnp = newTrackedClone(fetchValue(funcp->fvarp()));
+            UINFO(5, "func " << nodep->name() << " return = " << returnp);
+        }
+        // Restore local automatics (none unless recursed)
+        for (const auto& it : oldValues) {
+            if (it.second) newValue(it.first, it.second);
+        }
+        if (returnp) newValue(nodep, returnp);
+        if (funcp->recursive()) {
+            UASSERT_OBJ(m_recurseCount > 0, nodep, "recurse underflow");
+            --m_recurseCount;
         }
     }
 
