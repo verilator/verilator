@@ -46,8 +46,8 @@ public:
         : V3Hash{static_cast<uint32_t>(val)} {}
     explicit V3Hash(int64_t val)
         : V3Hash{static_cast<uint64_t>(val)} {}
-    explicit V3Hash(void* val)
-        : V3Hash{reinterpret_cast<uintptr_t>(val)} {}
+    explicit V3Hash(const void* val)
+        : V3Hash{static_cast<uint64_t>(reinterpret_cast<uintptr_t>(val))} {}
 
     // METHODS
     uint32_t value() const VL_MT_SAFE { return m_value; }
