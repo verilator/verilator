@@ -242,55 +242,101 @@ jobs:
           git commit -m "Verilator CI: Results of 'RTLMeter' workflow run #${{ github.run_number }}"
           git push origin
 
-  #publish-pr-results:
-  #  name: Publish results to Pull Request
-  #  needs: combine-results
-  #  if: ${{ github.event_name == 'pull_request' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && contains(needs.*.result, 'success') && !cancelled() }}
-  #  runs-on: ubuntu-24.04
-  #  steps:
-  #    - name: Checkout RTLMeter
-  #      uses: actions/checkout@v4
-  #      with:
-  #        repository: "verilator/rtlmeter"
-  #        path: rtlmeter
-  #    - name: Setup RTLMeter venv
-  #      working-directory: rtlmeter
-  #      run: make venv
-  #    - name: Download combined results
-  #      uses: actions/download-artifact@v4
-  #      with:
-  #        pattern: all-results-*
-  #        path: all-results
-  #        merge-multiple: true
-  #    - name: Get scheduled run info
-  #      id: scheduled-info
-  #      run:
-  #        IDLATEST=$(gh run list --workflow RTLMeter --event schedule --status success --limit 1 --json databaseId --jq ".[0].databaseId")
-  #        echo "id=$IDLATEST" >> $GITHUB_OUTPUT
-  #        URL=$(gh run view $IDLATEST --json url --jq ".url")
-  #        echo "url=$URL" >> $GITHUB_OUTPUT
-  #        NUM=$(gh run view $IDLATEST --json number --jq ".number")
-  #        echo "num=$NUM" >> $GITHUB_OUTPUT
-  #    # Fetching artifacts from different workflow requires elevated privilege
-  #    - name: Generate access token
-  #      id: generate-token
-  #      uses: actions/create-github-app-token@v2.0.6
-  #      with:
-  #        app-id: ${{ vars.VERILATOR_CI_ID }}
-  #        private-key: ${{ secrets.VERILATOR_CI_KEY }}
-  #        owner: verilator
-  #        repositories: verilator
-  #        permission-actions: read
-  #    - name: Download scheduled run results
-  #      uses: actions/download-artifact@v4
-  #      with:
-  #        name: published-results
-  #        path: nightly-results
-  #        run-id: ${{ steps.schedueld-info.outputs.id }}
-  #        github-token: ${{ steps.generate-token.outputs.token }}
-  #    # TODO: diff and present
+  prepare-pr-results:
+    name: Prepare Pull Request results
+    needs: combine-results
+    if: ${{ github.event_name == 'pull_request' && github.repository == 'verilator/verilator' && contains(needs.*.result, 'success') && !cancelled() }}
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+    steps:
+      - name: Checkout RTLMeter
+        uses: actions/checkout@v4
+        with:
+          repository: "verilator/rtlmeter"
+          path: rtlmeter
+      - name: Setup RTLMeter venv
+        working-directory: rtlmeter
+        run: make venv
+      - name: Download combined results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: all-results-*
+          path: all-results
+          merge-multiple: true
+      - name: Get scheduled run info
+        id: scheduled-info
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ID=$(gh run --repo ${{ github.repository }} list --workflow RTLMeter --event schedule --status success --limit 1 --json databaseId --jq ".[0].databaseId")
+          echo "id=$ID" >> $GITHUB_OUTPUT
+          URL=$(gh run --repo ${{ github.repository }} view $ID --json url --jq ".url")
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          NUM=$(gh run --repo ${{ github.repository }} view $ID --json number --jq ".number")
+          echo "num=$NUM" >> $GITHUB_OUTPUT
+          DATE=$(gh run --repo ${{ github.repository }} view $ID --json createdAt --jq ".createdAt")
+          echo "date=$DATE" >> $GITHUB_OUTPUT
+      - name: Download scheduled run results
+        uses: actions/download-artifact@v4
+        with:
+          name: published-results
+          path: nightly-results
+          run-id: ${{ steps.scheduled-info.outputs.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compare results
+        working-directory: rtlmeter
+        run: |
+          ADATA=../nightly-results/all-results-gcc.json
+          BDATA=../all-results/all-results-gcc.json
+          ./rtlmeter compare --steps "verilate" --metrics "elapsed memory"              $ADATA $BDATA > ../verilate.txt
+          cat ../verilate.txt
+          ./rtlmeter compare --steps "execute"  --metrics "speed memory elapsed"        $ADATA $BDATA > ../execute.txt
+          cat ../execute.txt
+          ./rtlmeter compare --steps "cppbuild" --metrics "elapsed memory cpu codeSize" $ADATA $BDATA > ../cppbuild.txt
+          cat ../cppbuild.txt
+      - name: Create report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -x
+          awk -v RS= '{print > sprintf("verilate-%02d.txt",NR)}' verilate.txt
+          awk -v RS= '{print > sprintf( "execute-%02d.txt",NR)}' execute.txt
+          awk -v RS= '{print > sprintf("cppbuild-%02d.txt",NR)}' cppbuild.txt
+          NUM=$(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json number --jq ".number")
+          URL=$(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json url    --jq ".url")
+          echo -n "Performance metrics for PR workflow [#$NUM]($URL) (B) compared to scheduled run" > report.txt
+          echo -n " [#${{ steps.scheduled-info.outputs.num }}](${{ steps.scheduled-info.outputs.url }}) (A)" >> report.txt
+          echo    " from ${{ steps.scheduled-info.outputs.date }}:" >> report.txt
+          for f in $(ls -1 verilate-*.txt | sort) $(ls -1 execute-*.txt | sort) $(ls -1 cppbuild-*.txt | sort); do
+            if [[ $f == verilate-01.txt || $f == execute-01.txt ]]; then
+              echo "<details open>" >> report.txt
+            else
+              echo "<details>" >> report.txt
+            fi
+            echo -n "<summary>" >> report.txt
+            head -n 1 $f | tr -d '\n' >> report.txt
+            echo "</summary>" >> report.txt
+            echo '<pre>' >> report.txt
+            tail -n +2 $f >> report.txt
+            echo '</pre>' >> report.txt
+            echo "</details>" >> report.txt
+          done
+          cat report.txt
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          path: report.txt
+          name: rtlmeter-pr-results
+      - name: Save PR number
+        run: echo ${{ github.event.number }} > pr-number.txt
+      - name: Upload PR number
+        uses: actions/upload-artifact@v4
+        with:
+          path: pr-number.txt
+          name: pr-number
 
-  # Create GitHub issue for failed schedueld jobs
+  # Create GitHub issue for failed scheduled jobs
   # This should always be the last job (we want an issue if anything breaks)
   create-issue:
     name: Create issue on failure
