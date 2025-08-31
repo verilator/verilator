@@ -20,8 +20,8 @@ package uvm_pkg;
   export "DPI-C" function m__uvm_report_dpi;
   function void m__uvm_report_dpi(int severity, string id, string message, int verbosity,
                                   string filename, int line);
-    $display("UVM Report %s:%d: %s %s", filename, line, id, message);
-  endfunction : m__uvm_report_dpi
+    $display("UVM Report %s:%0d: %s %s", filename, line, id, message);
+  endfunction
 endpackage
 
 module t;
@@ -37,6 +37,9 @@ module t;
   initial begin
     // TODO TEST:
     // extern const char* uvm_dpi_get_next_arg_c(int init);
+
+    //===== Exports
+    uvm_pkg::m__uvm_report_dpi(1, "id", "message", 1, `__FILE__, `__LINE__);
 
     //===== Tool
     s = uvm_dpi_get_tool_name_c();
