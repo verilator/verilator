@@ -1,0 +1,53 @@
+---
+# DESCRIPTION: Github actions config
+# This name is key to badges in README.rst, so we use the name build
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+#
+name: osx-build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 0 * * 0  # weekly
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+    working-directory: repo
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.actor }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+
+  build-osx-gcc:
+    name: Build
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      os: ${{ matrix.os }}
+      os-name: osx
+      cc: ${{ matrix.cc }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: macos-15, cc: gcc}
+
+  build-osx-clang:
+    name: Build
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      os: ${{ matrix.os }}
+      os-name: osx
+      cc: ${{ matrix.cc }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: macos-15, cc: clang}
