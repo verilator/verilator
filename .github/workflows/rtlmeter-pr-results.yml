@@ -33,9 +33,17 @@ jobs:
           name: pr-number
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      # Use the Verilator CI app to post the comment
+      - name: Generate access token
+        id: generate-token
+        uses: actions/create-github-app-token@v2.0.6
+        with:
+          app-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
+          permission-pull-requests: write
       - name: Comment on PR
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           ls -la
           cat report.txt
