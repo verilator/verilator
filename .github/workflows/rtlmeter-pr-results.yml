@@ -27,10 +27,16 @@ jobs:
           name: rtlmeter-pr-results
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download PR number
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-number
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Comment on PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ls -la
           cat report.txt
-          gh pr --repo ${{ github.repository }} comment ${{ github.event.workflow_run.pull_requests[0].number }} --body-file report.txt
+          gh pr --repo ${{ github.repository }} comment $(cat pr-number.txt) --body-file report.txt
