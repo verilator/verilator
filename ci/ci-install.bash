@@ -70,7 +70,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
     fi
   elif [ "$CI_OS_NAME" = "osx" ]; then
     brew update
-    brew install ccache perl gperftools autoconf bison flex
+    brew install ccache perl gperftools autoconf bison flex help2man
   elif [ "$CI_OS_NAME" = "freebsd" ]; then
     sudo pkg install -y autoconf bison ccache gmake perl5
   else
