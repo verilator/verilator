@@ -13,9 +13,13 @@ on:
       cc:  # gcc or clang
         required: true
         type: string
+      os-name:
+        required: false
+        type: string
+        default: linux
 
 env:
-  CI_OS_NAME: linux
+  CI_OS_NAME: ${{ inputs.os-name }}
   CI_COMMIT: ${{ github.sha }}
   CCACHE_COMPRESS: 1
   CCACHE_DIR: ${{ github.workspace }}/.ccache

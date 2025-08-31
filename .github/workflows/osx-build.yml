@@ -12,9 +12,6 @@ on:
   schedule:
     - cron: 0 0 * * 0  # weekly
 
-env:
-  CI_OS_NAME: osx
-
 permissions:
   contents: read
 
@@ -34,6 +31,7 @@ jobs:
     uses: ./.github/workflows/reusable-build.yml
     with:
       os: ${{ matrix.os }}
+      os-name: osx
       cc: ${{ matrix.cc }}
     strategy:
       fail-fast: false
@@ -46,6 +44,7 @@ jobs:
     uses: ./.github/workflows/reusable-build.yml
     with:
       os: ${{ matrix.os }}
+      os-name: osx
       cc: ${{ matrix.cc }}
     strategy:
       fail-fast: false
