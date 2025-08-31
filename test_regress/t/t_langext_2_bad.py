@@ -13,6 +13,6 @@ test.scenarios('linter')
 test.top_filename = "t/t_langext_2.v"
 
 # This is a lint only test.
-test.lint(v_flags2=["+1364-1995ext+v"], fails=True)
+test.lint(v_flags2=["+1364-1995ext+v"], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

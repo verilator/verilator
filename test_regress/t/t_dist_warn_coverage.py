@@ -28,12 +28,9 @@ for s in [
         'EOF in unterminated string',  # Instead get normal unterminated
         'Enum ranges must be integral, per spec',  # Hard to hit
         'Expecting define formal arguments. Found: ',  # Instead define syntax error
-        'Import package not found: ',  # Errors earlier, until future parser released
-        'Member selection of non-struct/union object \'',  # Instead dotted expression error or V3Link other
         'Return with return value isn\'t underneath a function',  # Hard to hit, get other bad return messages
         'Syntax error parsing real: \'',  # Instead can't lex the number
         'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance ',  # Instead get syntax error
-        'Unsupported: Ranges ignored in port-lists',  # Hard to hit
         'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
         # Not yet analyzed
         '--pipe-filter protocol error, unexpected: ',
@@ -53,7 +50,6 @@ for s in [
         'Illegal +: or -: select; type already selected, or bad dimension: ',
         'Illegal bit or array select; type already selected, or bad dimension: ',
         'Illegal range select; type already selected, or bad dimension: ',
-        'Interface port ',
         'Interface port declaration ',
         'Modport item is not a function/task: ',
         'Modport item is not a variable: ',
@@ -64,7 +60,6 @@ for s in [
         'Parameter type pin value isn\'t a type: Param ',
         'Parameter type variable isn\'t a type: Param ',
         'Pattern replication value of 0 is not legal.',
-        'Reference to \'',
         'Signals inside functions/tasks cannot be marked forceable',
         'Slice size cannot be zero.',
         'Slices of arrays in assignments have different unpacked dimensions, ',

@@ -14,10 +14,6 @@ module t (/*AUTOARG*/
 
    wire [1:0] x = { x[0], clk };
 
-   initial begin
-      x = 0;
-   end
-
    always @(posedge clk or negedge clk) begin
 
 `ifdef TEST_VERBOSE
