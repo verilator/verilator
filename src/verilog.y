@@ -5342,7 +5342,14 @@ exprScope<nodeExprp>:               // scope and variable for use to inside an e
         |       packageClassScope idArrayed             { $$ = AstDot::newIfPkg($2->fileline(), $1, $2); }
         |       ~l~expr '.' idArrayed                   { $$ = new AstDot{$<fl>2, false, $1, $3}; }
         //                      // expr below must be a "yTHIS"
-        |       ~l~expr '.' ySUPER                      { $$ = $1; BBUNSUP($3, "Unsupported: super"); }
+        |       ~l~expr '.' ySUPER
+                        { AstParseRef* const anodep = VN_CAST($1, ParseRef);
+                          if (anodep && anodep->name() == "this") {
+                              $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "super"};
+                          } else {
+                              $$ = $1;  $$->v3error("Syntax error: 'super' must be first name component, or after 'this.'");
+                          }
+                        }
         //                      // Part of implicit_class_handle
         |       ySUPER                                  { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "super"}; }
         ;
@@ -6093,7 +6100,8 @@ idClass<nodeExprp>:             // Misc Ref to dotted, and/or arrayed, and/or bi
                         { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "this"}, $3}; }
         |       ySUPER '.' idDotted
                         { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "super"}, $3}; }
-        |       yTHIS '.' ySUPER '.' idDotted           { $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
+        |       yTHIS '.' ySUPER '.' idDotted
+                        { $$ = new AstDot{$4, false, new AstParseRef{$<fl>3, VParseRefExp::PX_ROOT, "super"}, $5}; }
         //                      // Expanded: package_scope idDottedSel
         |       packageClassScope idDotted              { $$ = new AstDot{$<fl>2, true, $1, $2}; }
         ;
@@ -6105,7 +6113,8 @@ idClassSel<nodeExprp>:          // Misc Ref to dotted, and/or arrayed, and/or bi
                         { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "this"}, $3}; }
         |       ySUPER '.' idDottedSel
                         { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "super"}, $3}; }
-        |       yTHIS '.' ySUPER '.' idDottedSel        { $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
+        |       yTHIS '.' ySUPER '.' idDottedSel
+                        { $$ = new AstDot{$4, false, new AstParseRef{$<fl>3, VParseRefExp::PX_ROOT, "super"}, $5}; }
         //                      // Expanded: package_scope idDottedSel
         |       packageClassScope idDottedSel           { $$ = new AstDot{$<fl>2, true, $1, $2}; }
         ;
@@ -6117,7 +6126,8 @@ idClassSelForeach<nodeExprp>:
                         { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "this"}, $3}; }
         |       ySUPER '.' idDottedForeach
                         { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "super"}, $3}; }
-        |       yTHIS '.' ySUPER '.' idDottedForeach    { $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
+        |       yTHIS '.' ySUPER '.' idDottedForeach
+                        { $$ = new AstDot{$4, false, new AstParseRef{$<fl>3, VParseRefExp::PX_ROOT, "super"}, $5}; }
         //                      // Expanded: package_scope idForeach
         |       packageClassScope idDottedForeach       { $$ = new AstDot{$<fl>2, true, $1, $2}; }
         ;
