@@ -2091,6 +2091,7 @@ void V3Options::showVersion(bool verbose) {
     cout << "    SYSTEMC_INCLUDE    = " << DEFENV_SYSTEMC_INCLUDE << "\n";
     cout << "    SYSTEMC_LIBDIR     = " << DEFENV_SYSTEMC_LIBDIR << "\n";
     cout << "    VERILATOR_ROOT     = " << DEFENV_VERILATOR_ROOT << "\n";
+    cout << "    VERILATOR_SOLVER   = " << DEFENV_VERILATOR_SOLVER << "\n";
     cout << "    SystemC system-wide = " << cvtToStr(systemCSystemWide()) << "\n";
 
     // If update below, also update V3Options::getenvBuiltins()
@@ -2106,6 +2107,7 @@ void V3Options::showVersion(bool verbose) {
     // wrapper uses VERILATOR_BIN
     cout << "    VERILATOR_BIN      = " << V3Os::getenvStr("VERILATOR_BIN", "") << "\n";
     cout << "    VERILATOR_ROOT     = " << V3Os::getenvStr("VERILATOR_ROOT", "") << "\n";
+    cout << "    VERILATOR_SOLVER   = " << V3Os::getenvStr("VERILATOR_SOLVER", "") << "\n";
 
     // If update below, also update V3Options::getSupported()
     cout << "\n";
