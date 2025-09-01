@@ -290,18 +290,20 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
         }
         m_emitDispState.pushArg(fmtLetter, argp, "");
         if (fmtLetter == 't' || fmtLetter == '^') {
-            const AstSFormatF* fmtp = nullptr;
+            VTimescale timeunit = VTimescale::NONE;
             if (const AstDisplay* const nodep = VN_CAST(dispp, Display)) {
-                fmtp = nodep->fmtp();
+                timeunit = nodep->fmtp()->timeunit();
             } else if (const AstSFormat* const nodep = VN_CAST(dispp, SFormat)) {
-                fmtp = nodep->fmtp();
-            } else {
-                fmtp = VN_CAST(dispp, SFormatF);
+                timeunit = nodep->fmtp()->timeunit();
+            } else if (const AstSScanF* const nodep = VN_CAST(dispp, SScanF)) {
+                timeunit = nodep->timeunit();
+            } else if (const AstSFormatF* const nodep = VN_CAST(dispp, SFormatF)) {
+                timeunit = nodep->timeunit();
             }
-            UASSERT_OBJ(fmtp, dispp,
-                        "Use of %t must be under AstDisplay, AstSFormat, or AstSFormatF");
-            UASSERT_OBJ(!fmtp->timeunit().isNone(), fmtp, "timenunit must be set");
-            m_emitDispState.pushArg(' ', nullptr, cvtToStr((int)fmtp->timeunit().powerOfTen()));
+            UASSERT_OBJ(!timeunit.isNone(), dispp,
+                        "Use of %t must be under AstDisplay, AstSFormat, or AstSFormatF, or "
+                        "SScanF, and timeunit set");
+            m_emitDispState.pushArg(' ', nullptr, cvtToStr((int)timeunit.powerOfTen()));
         }
     } else {
         m_emitDispState.pushArg(fmtLetter, nullptr, "");

@@ -1329,7 +1329,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
             default: {
                 // Deal with all read-and-scan somethings
                 // Note LSBs are preserved if there's an overflow
-                const int obits = inIgnore ? 0 : va_arg(ap, int);
+                int obits = inIgnore ? 0 : va_arg(ap, int);
                 VlWide<VL_WQ_WORDS_E> qowp;
                 VL_SET_WQ(qowp, 0ULL);
                 WDataOutP owp = qowp;
@@ -1390,7 +1390,26 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     VL_SET_WQ(owp, u.ld);
                     break;
                 }
-                case 't':  // FALLTHRU  // Time
+                case 't': {  // Time
+                    _vl_vsss_skipspace(fp, floc, fromp, fstr);
+                    _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, "+-.0123456789eE");
+                    if (!t_tmp[0]) goto done;
+                    union {
+                        double r;
+                        int64_t ld;
+                    } u;
+                    // Get pointer argument first, as proceeds the timeunit value
+                    if (obits != 64) goto done;
+                    QData* const realp = va_arg(ap, QData*);
+                    const int timeunit = va_arg(ap, int);
+                    const int userUnits
+                        = Verilated::threadContextp()->impp()->timeFormatUnits();  // 0..-15
+                    const int shift = -userUnits + timeunit;  // 0..-15
+                    u.r = std::strtod(t_tmp, nullptr) * vl_time_multiplier(-shift);
+                    *realp = VL_CLEAN_QQ(obits, obits, u.ld);
+                    obits = 0;  // Already loaded the value, don't read arg
+                    break;
+                }
                 case '#': {  // Unsigned decimal
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr, t_tmp, "0123456789+-xXzZ?_");

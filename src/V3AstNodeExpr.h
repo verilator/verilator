@@ -2016,6 +2016,7 @@ class AstSScanF final : public AstNodeExpr {
     // @astgen op1 := exprsp : List[AstNode] // VarRefs for results
     // @astgen op2 := fromp : AstNode
     string m_text;
+    VTimescale m_timeunit;  // Parent module time unit
 
 public:
     AstSScanF(FileLine* fl, const string& text, AstNode* fromp, AstNode* exprsp)
@@ -2035,10 +2036,13 @@ public:
     bool isOutputter() override { return true; }  // SPECIAL: makes output
     bool cleanOut() const override { return false; }
     bool sameNode(const AstNode* samep) const override {
-        return text() == VN_DBG_AS(samep, SScanF)->text();
+        const AstSScanF* const asamep = VN_DBG_AS(samep, SScanF);
+        return text() == asamep->text() && timeunit() == asamep->timeunit();
     }
     string text() const { return m_text; }  // * = Text to display
     void text(const string& text) { m_text = text; }
+    VTimescale timeunit() const { return m_timeunit; }
+    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
 };
 class AstSampled final : public AstNodeExpr {
     // Verilog $sampled
