@@ -3947,6 +3947,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                << nodep->prettyNameQ());
             }
         }
+        AstVarScope* vscp = nodep->varScopep();
+        if (vscp && vscp->user2p()) {
+            while (vscp->user2p()) {
+                UINFO(7, indent() << "Resolved pre-alias " << vscp);  // Also prints taskp
+                vscp = VN_AS(vscp->user2p(), VarScope);
+            }
+            nodep->varp(vscp->varp());
+            nodep->varScopep(vscp);
+            updateVarUse(nodep->varp());
+            UINFO(7, indent() << "Resolved " << nodep);  // Also prints taskp
+        }
     }
     void visit(AstVarXRef* nodep) override {
         // VarRef: Resolve its reference
