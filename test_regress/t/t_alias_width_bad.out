@@ -1,0 +1,6 @@
+%Error: t/t_alias_width_bad.v:18:3: Incompatible types of nets used for net alias
+                                  : ... note: In instance 't'
+   18 |   alias a = b;
+      |   ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
