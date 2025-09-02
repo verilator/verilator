@@ -84,8 +84,7 @@ void V3DfgPasses::inlineVars(DfgGraph& dfg) {
     for (DfgVertexVar& vtx : dfg.varVertices()) {
         if (DfgVarPacked* const varp = vtx.cast<DfgVarPacked>()) {
             if (varp->hasSinks() && varp->isDrivenFullyByDfg()) {
-                DfgVertex* const driverp = varp->srcp();
-                varp->forEachSinkEdge([=](DfgEdge& edge) { edge.relinkSource(driverp); });
+                varp->replaceWith(varp->srcp());
             }
         }
     }
@@ -148,16 +147,17 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
             if (varp->hasDfgRefs()) continue;
         }
         // Add sources of unused vertex to work list
-        vtxp->forEachSource([&](DfgVertex& src) {
+        vtxp->foreachSource([&](DfgVertex& src) {
             // We only remove actual operation vertices and synthesis temporaries in this loop
-            if (src.is<DfgConst>()) return;
+            if (src.is<DfgConst>()) return false;
             const DfgVertexVar* const varp = src.cast<DfgVertexVar>();
-            if (varp && !varp->tmpForp()) return;
+            if (varp && !varp->tmpForp()) return false;
             // If already in work list then nothing to do
-            if (src.getUser<DfgVertex*>()) return;
+            if (src.getUser<DfgVertex*>()) return false;
             // Actually add to work list.
             src.setUser<DfgVertex*>(workListp);
             workListp = &src;
+            return false;
         });
         // Remove the unused vertex
         vtxp->unlinkDelete(dfg);
@@ -214,10 +214,13 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         if (DfgVertex* const sinkp = vtxp->singleSink()) {
             if (sinkp->is<DfgNot>()) return useOk(sinkp, !inv);
         }
-        return !vtxp->findSink<DfgCond>([vtxp, inv](const DfgCond& sink) {
-            if (sink.condp() != vtxp) return false;
-            return inv ? sink.thenp()->is<DfgCond>() : sink.elsep()->is<DfgCond>();
+        const bool condTree = vtxp->foreachSink([&](const DfgVertex& sink) {
+            const DfgCond* const condp = sink.cast<DfgCond>();
+            if (!condp) return false;
+            if (condp->condp() != vtxp) return false;
+            return inv ? condp->thenp()->is<DfgCond>() : condp->elsep()->is<DfgCond>();
         });
+        return !condTree;
     };
 
     // Look at all comparison nodes and build the 'Val2Terms' map for each source vertex
@@ -306,7 +309,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
 
         // Required data types
         AstNodeDType* const idxDTypep = srcp->dtypep();
-        AstNodeDType* const bitDTypep = DfgGraph::dtypePacked(1);
+        AstNodeDType* const bitDTypep = V3Dfg::dtypePacked(1);
         AstUnpackArrayDType* const tabDTypep = new AstUnpackArrayDType{
             flp, bitDTypep, new AstRange{flp, static_cast<int>(nBits - 1), 0}};
         v3Global.rootp()->typeTablep()->addTypesp(tabDTypep);
@@ -438,10 +441,11 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
     const auto addToWorkList = [&](DfgVertex& vtx) {
         // If already in work list then nothing to do
         DfgVertex*& nextInWorklistp = vtx.user<DfgVertex*>();
-        if (nextInWorklistp) return;
+        if (nextInWorklistp) return false;
         // Actually add to work list.
         nextInWorklistp = workListp;
         workListp = &vtx;
+        return false;
     };
 
     // List of variables (AstVar or AstVarScope) we are replacing
@@ -467,7 +471,7 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
         // Remove unused non-variable vertices
         if (!vtxp->is<DfgVertexVar>() && !vtxp->hasSinks()) {
             // Add sources of removed vertex to work list
-            vtxp->forEachSource(addToWorkList);
+            vtxp->foreachSource(addToWorkList);
             // Remove the unused vertex
             vtxp->unlinkDelete(dfg);
             continue;
@@ -517,7 +521,7 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
         }
 
         // Add sources of redundant variable to the work list
-        vtxp->forEachSource(addToWorkList);
+        vtxp->foreachSource(addToWorkList);
         // Remove the redundant variable
         vtxp->unlinkDelete(dfg);
     }

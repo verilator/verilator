@@ -118,9 +118,10 @@ class V3DfgPatternStats final {
             }
 
             // Operands
-            vtx.forEachSource([&](const DfgVertex& src) {
+            vtx.foreachSource([&](const DfgVertex& src) {
                 ss << ' ';
                 if (render(ss, src, depth - 1)) deep = true;
+                return false;
             });
             // S-expression end
             ss << ')';

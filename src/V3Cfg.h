@@ -92,15 +92,12 @@ class CfgBlock final : public V3GraphVertex {
 
     // STATE
     CfgGraph* const m_cfgp;  // The control flow graph this CfgBlock is under
-    size_t m_rpoNumber;  // Reverse post-order number and unique ID of this CfgBlock
+    size_t m_rpoNumber = 0;  // Reverse post-order number and unique ID of this CfgBlock
 
     // V3GraphEdge::user() is set to the unique id by CfgBuilder
     std::vector<AstNodeStmt*> m_stmtps;  // statements in this CfgBlock
 
     // PRIVATE METHODS
-    // ID (reverse post-order numpber) of this block
-    inline size_t id();
-    inline size_t id() const;
 
     // CONSTRUCTOR/DESTRUCTOR - via CfgGraph only
     inline explicit CfgBlock(CfgGraph* cfgp);
@@ -108,6 +105,10 @@ class CfgBlock final : public V3GraphVertex {
 
 public:
     // PUBLIC METHODS
+
+    // ID (reverse post-order number) of this block
+    inline size_t id();
+    inline size_t id() const;
 
     // Is this the entry block of the CFG?
     bool isEnter() const { return inEmpty(); }
@@ -185,19 +186,20 @@ class CfgEdge final : public V3GraphEdge {
 
     // STATE - Immutable after construction, set by CfgBuilder
     CfgGraph* const m_cfgp;  // The control flow graph this CfgEdge is under
-    size_t m_id;  // Unique ID of this vertex
+    size_t m_id = 0;  // Unique ID of this vertex
 
     // PRIVATE METHODS
-    // Unique ID of this CfgEdge - no particular meaning
-    inline size_t id();
-    inline size_t id() const;
 
     // CONSTRUCTOR/DESTRUCTOR - via CfgGraph only
     inline CfgEdge(CfgGraph* graphp, CfgBlock* srcp, CfgBlock* dstp);
     ~CfgEdge() override = default;
 
 public:
-    // METHODS - all const
+    // METHODS
+
+    // Unique ID of this CfgEdge - no particular meaning
+    inline size_t id();
+    inline size_t id() const;
 
     // Source/destination CfgBlock
     const CfgBlock* srcp() const { return static_cast<const CfgBlock*>(fromp()); }

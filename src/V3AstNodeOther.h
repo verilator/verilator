@@ -2617,7 +2617,7 @@ class AstAlways final : public AstNodeProcedure {
     const VAlwaysKwd m_keyword;
 
 public:
-    AstAlways(FileLine* fl, VAlwaysKwd keyword, AstSenTree* sentreep, AstNode* stmtsp)
+    AstAlways(FileLine* fl, VAlwaysKwd keyword, AstSenTree* sentreep, AstNode* stmtsp = nullptr)
         : ASTGEN_SUPER_Always(fl, stmtsp)
         , m_keyword{keyword} {
         this->sentreep(sentreep);
