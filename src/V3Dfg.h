@@ -648,22 +648,28 @@ class DfgUserMapBase VL_NOT_FINAL {
 
 protected:
     // STATE
-    const DfgGraph* const m_dfgp;  // The graph this map is for
+    const DfgGraph* m_dfgp;  // The graph this map is for
     // The current generation number
-    const uint32_t m_currentGeneration = ++m_dfgp->m_vertexUserGeneration;
+    const uint32_t m_currentGeneration;
 
     // CONSTRUCTOR
     explicit DfgUserMapBase(const DfgGraph* dfgp)
-        : m_dfgp{dfgp} {
+        : m_dfgp{dfgp}
+        , m_currentGeneration{++m_dfgp->m_vertexUserGeneration} {
         UASSERT(m_currentGeneration, "DfgGraph user data genartion number overflow");
         UASSERT(!m_dfgp->m_vertexUserInUse, "DfgUserMap already in use for this DfgGraph");
         m_dfgp->m_vertexUserInUse = true;
     }
     VL_UNCOPYABLE(DfgUserMapBase);
-    VL_UNMOVABLE(DfgUserMapBase);
+    DfgUserMapBase(DfgUserMapBase&& that)
+    : m_dfgp{that.m_dfgp}
+    , m_currentGeneration{that.m_currentGeneration} {
+        that.m_dfgp = nullptr;
+    }
+    DfgUserMapBase& operator=(DfgUserMapBase&&) = delete;
 
 public:
-    ~DfgUserMapBase() { m_dfgp->m_vertexUserInUse = false; }
+    ~DfgUserMapBase() { if (m_dfgp) m_dfgp->m_vertexUserInUse = false; }
 };
 
 // Specialization where T_Value fits in DfgVertex::m_userStorage directly
@@ -677,9 +683,10 @@ class DfgUserMap<T_Value, true> final : public DfgUserMapBase {
     explicit DfgUserMap(const DfgGraph* dfgp)
         : DfgUserMapBase{dfgp} {}
     VL_UNCOPYABLE(DfgUserMap);
-    VL_UNMOVABLE(DfgUserMap);
+    DfgUserMap& operator=(DfgUserMap&&) = delete;
 
 public:
+    DfgUserMap(DfgUserMap&&) = default;
     ~DfgUserMap() = default;
 
     // METHODS
@@ -688,12 +695,12 @@ public:
 #ifdef VL_DEBUG
         UASSERT_OBJ(vtx.m_dfgp == m_dfgp, &vtx, "Vertex not in this graph");
 #endif
-        T_Value& storage = reinterpret_cast<T_Value&>(vtx.m_userStorage);
+        T_Value* const storagep = reinterpret_cast<T_Value*>(&vtx.m_userStorage);
         if (vtx.m_userGeneration != m_currentGeneration) {
-            new (&storage) T_Value{};
+            new (storagep) T_Value{};
             vtx.m_userGeneration = m_currentGeneration;
         }
-        return storage;
+        return *storagep;
     }
     // Same as above with pointer as key
     T_Value& operator[](const DfgVertex* vtxp) { return (*this)[*vtxp]; }
@@ -704,7 +711,8 @@ public:
         UASSERT_OBJ(vtx.m_dfgp == m_dfgp, &vtx, "Vertex not in this graph");
 #endif
         UASSERT_OBJ(vtx.m_userGeneration == m_currentGeneration, &vtx, "Vertex not in map");
-        return reinterpret_cast<T_Value&>(vtx.m_userStorage);
+        T_Value* const storagep = reinterpret_cast<T_Value*>(&vtx.m_userStorage);
+        return *storagep;
     }
     // Same as above with pointer as key
     T_Value& at(const DfgVertex* vtxp) const { return (*this).at(*vtxp); }
@@ -724,9 +732,10 @@ class DfgUserMap<T_Value, false> final : public DfgUserMapBase {
     explicit DfgUserMap(const DfgGraph* dfgp)
         : DfgUserMapBase{dfgp} {}
     VL_UNCOPYABLE(DfgUserMap);
-    VL_UNMOVABLE(DfgUserMap);
+    DfgUserMap& operator=(DfgUserMap&&) = delete;
 
 public:
+    DfgUserMap(DfgUserMap&&) = default;
     ~DfgUserMap() = default;
 
     // METHODS
