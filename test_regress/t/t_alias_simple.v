@@ -1,4 +1,6 @@
-// DESCRIPTION: Verilator: Verilog Test module
+// DESCRIPTION: Verilator: Verilog Test module for SystemVerilog 'alias'
+//
+// Simple bi-directional alias test.
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2025 by Antmicro.
@@ -10,39 +12,36 @@ module t (  /*AUTOARG*/
 );
   input clk;
 
-  wire [15:0] a, b, c;
-  wire [1:0] x, y;
+  wire [15:0] x_fwd = 16'h1234;
+  wire [15:0] y_fwd;
+  wire [15:0] x_bwd;
+  wire [15:0] y_bwd = 16'habcd;
 
-  integer cyc = 0;
+  sub sub_fwd_i (
+      .a(x_fwd),
+      .b(y_fwd)
+  );
+  sub sub_bwd_i (
+      .a(x_bwd),
+      .b(y_bwd)
+  );
 
-  alias a = b = c;
-  assign a = 16'habcd;
-
-  alias x = y;
-  assign x[0] = 0;
-  assign y[1] = 1;
-
-  sub s ();
-
-  initial begin
-    if (a != 16'habcd) $stop;
-    if (b != 16'habcd) $stop;
-    if (c != 16'habcd) $stop;
-
-    if (x != 2) $stop;
-    if (y != 2) $stop;
-
-    if (s.a != 1) $stop;
-    if (s.b != 1) $stop;
+  always @(posedge clk) begin
+`ifdef TEST_VERBOSE
+    $write("x_fwd = %x, y_fwd = %x\n", x_fwd, y_fwd);
+    $write("x_bwd = %x, y_bwd = %x\n", x_bwd, y_bwd);
+`endif
+    if (y_fwd != 16'h1234) $stop;
+    if (x_bwd != 16'habcd) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
-
   end
+
 endmodule
 
-module sub;
-  wire a, b;
-  assign a = 1;
+module sub (
+    inout wire [15:0] a,
+    inout wire [15:0] b
+);
   alias a = b;
 endmodule
-;
