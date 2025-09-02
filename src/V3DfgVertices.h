@@ -71,8 +71,8 @@ class DfgVertexVar VL_NOT_FINAL : public DfgVertex {
 #endif
         // Increment reference count
         AstNode* const variablep = nodep();
-        variablep->user1(variablep->user1() + 0x10);
-        UASSERT_OBJ((variablep->user1() >> 4) > 0, variablep, "Reference count overflow");
+        variablep->user1(variablep->user1() + 0x20);
+        UASSERT_OBJ((variablep->user1() >> 5) > 0, variablep, "Reference count overflow");
         // Allocate sources
         newInput();
         newInput();
@@ -88,8 +88,8 @@ public:
     ~DfgVertexVar() {
         // Decrement reference count
         AstNode* const variablep = nodep();
-        variablep->user1(variablep->user1() - 0x10);
-        UASSERT_OBJ((variablep->user1() >> 4) >= 0, variablep, "Reference count underflow");
+        variablep->user1(variablep->user1() - 0x20);
+        UASSERT_OBJ((variablep->user1() >> 5) >= 0, variablep, "Reference count underflow");
     }
     ASTGEN_MEMBERS_DfgVertexVar;
 
@@ -134,11 +134,13 @@ public:
     bool hasModRefs() const { return nodep()->user1() & 0x0c; }
     static void setHasModRdRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x04); }
     static void setHasModWrRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x08); }
+    static void markDontEliminate(AstNode* nodep) { nodep->user1(nodep->user1() | 0x10); }
+    bool dontEliminate() const { return nodep()->user1() & 0x10; }
     void setHasModRdRefs() const { setHasModRdRefs(nodep()); }
     void setHasModWrRefs() const { setHasModWrRefs(nodep()); }
 
     // Variable referenced from other DFG in the same module/netlist
-    bool hasDfgRefs() const { return nodep()->user1() >> 5; }  // I.e.: (nodep()->user1() >> 4) > 1
+    bool hasDfgRefs() const { return nodep()->user1() >> 6; }  // I.e.: (nodep()->user1() >> 5) > 1
 
     // Variable referenced outside the containing module/netlist.
     bool hasExtRefs() const {

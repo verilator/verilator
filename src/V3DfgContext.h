@@ -228,6 +228,8 @@ public:
         VDouble0 nonRepVarRef;  // Non representable: unsupported var reference
         VDouble0 nonRepNode;  // Non representable: unsupported AstNode type
         VDouble0 nonRepUnknown;  // Non representable: unhandled AstNode type
+        // Additional stats
+        VDouble0 dontEliminate;  // Num of vars excluded from elimination
     } m_conv;
 
     // Stats for synthesis
@@ -274,6 +276,7 @@ private:
         addStat("conv / non-representable (varref)", m_conv.nonRepVarRef);
         addStat("conv / non-representable (node)", m_conv.nonRepNode);
         addStat("conv / non-representable (unknown)", m_conv.nonRepUnknown);
+        addStat("conv / excluded from elimination", m_conv.dontEliminate);
         VDouble0 nConvNonRep;
         nConvNonRep += m_conv.nonRepImpure;
         nConvNonRep += m_conv.nonRepDType;

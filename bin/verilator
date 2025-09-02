@@ -345,6 +345,7 @@ detailed descriptions of these arguments.
     --decorations <level>       Set output comment and spacing level
     --default-language <lang>   Default language to parse
      +define+<var>=<value>      Set preprocessor define
+    --dfg-eliminate-limit=<value>   Set V3Dfg optimization eliminate limit
     --diagnostics-sarif         Enable SARIF diagnostics output
     --diagnostics-sarif-output <filename>  Set SARIF diagnostics output file
     --dpi-hdr-only              Only produce the DPI header file

@@ -401,6 +401,12 @@ Summary:
    standard across Verilog tools while :vlopt:`-D <-D<var>>` is similar to
    :command:`gcc -D`.
 
+.. option:: --dfg-eliminate-limit=<value>
+
+   Rarely needed.  Fine-tune optimizations to set maximum number of
+   references in the assignment to be considered for elimination in the
+   V3Dfg.
+
 .. option:: --diagnostics-sarif
 
    Enables diagnostics output into a Static Analysis Results Interchange
