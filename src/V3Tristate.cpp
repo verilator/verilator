@@ -1360,7 +1360,19 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
     void visit(AstAssignW* nodep) override { visitAssign(nodep); }
     void visit(AstAssign* nodep) override { visitAssign(nodep); }
-    void visit(AstAssignAlias* nodep) override { visitAssign(nodep); }
+    void visit(AstAssignAlias* nodep) override {
+        VL_RESTORER(m_alhs);
+        VL_RESTORER(m_currentStrength);
+        if (m_graphing) {
+            if (nodep->user2() & U2_GRAPHING) return;
+            m_alhs = true; // In AstAssignAlias both sides should be considered as lhs
+            iterateChildren(nodep);
+            associateLogic(nodep->rhsp(), nodep);
+            associateLogic(nodep, nodep->rhsp());
+            associateLogic(nodep, nodep->lhsp());
+            associateLogic(nodep->lhsp(), nodep);
+        }
+    }
 
     void visitCaseEq(AstNodeBiop* nodep, bool neq) {
         if (m_graphing) {
