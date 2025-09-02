@@ -1,5 +1,6 @@
-%Error-UNSUPPORTED: t/t_alias2_unsup.v:39:4: Unsupported: alias statements
-   39 |    alias b = {a[3:0],a[7:4]};
-      |    ^~~~~
+%Error-UNSUPPORTED: t/t_alias2_unsup.v:42:20: Unsupported: Operand of alias statement is not a variable reference
+                                            : ... note: In instance 't.testi_i'
+   42 |   alias b = {a[3:0], a[7:4]};
+      |                    ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to
