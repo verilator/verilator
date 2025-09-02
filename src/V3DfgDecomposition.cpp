@@ -34,6 +34,8 @@ class SplitIntoComponents final {
 
     // STATE
     DfgGraph& m_dfg;  // The input graph
+    // Map from vertices to the weekly connected component they belong to
+    DfgUserMap<size_t> m_component = m_dfg.makeUserMap<size_t>();
     const std::string m_prefix;  // Component name prefix
     std::vector<std::unique_ptr<DfgGraph>> m_components;  // The extracted components
     // Component counter - starting from 1 as 0 is the default value used as a marker
@@ -44,10 +46,10 @@ class SplitIntoComponents final {
         std::vector<DfgVertex*> queue;
         queue.reserve(m_dfg.size());
 
-        // any sort of interesting logic must involve a variable, so we only need to iterate them
+        // Any sort of interesting logic must involve a variable, so we only need to iterate them
         for (DfgVertexVar& vtx : m_dfg.varVertices()) {
             // If already assigned this vertex to a component, then continue
-            if (vtx.user<size_t>()) continue;
+            if (m_component[vtx]) continue;
 
             // Start depth first traversal at this vertex
             queue.push_back(&vtx);
@@ -59,10 +61,10 @@ class SplitIntoComponents final {
                 queue.pop_back();
 
                 // Move on if already visited
-                if (item.user<size_t>()) continue;
+                if (m_component[item]) continue;
 
                 // Assign to current component
-                item.user<size_t>() = m_componentCounter;
+                m_component[item] = m_componentCounter;
 
                 // Enqueue all sources and sinks of this vertex.
                 item.foreachSource([&](DfgVertex& src) {
@@ -83,7 +85,7 @@ class SplitIntoComponents final {
     template <typename Vertex>
     void moveVertices(DfgVertex::List<Vertex>& list) {
         for (DfgVertex* const vtxp : list.unlinkable()) {
-            if (const size_t component = vtxp->user<size_t>()) {
+            if (const size_t component = m_component[vtxp]) {
                 m_dfg.removeVertex(*vtxp);
                 m_components[component - 1]->addVertex(*vtxp);
             } else {
@@ -96,8 +98,6 @@ class SplitIntoComponents final {
     SplitIntoComponents(DfgGraph& dfg, const std::string& label)
         : m_dfg{dfg}
         , m_prefix{dfg.name() + (label.empty() ? "" : "-") + label + "-component-"} {
-        // Component number is stored as DfgVertex::user<size_t>()
-        const auto userDataInUse = m_dfg.userDataInUse();
         // Color each component of the graph
         colorComponents();
         // Allocate the component graphs
@@ -126,6 +126,8 @@ std::vector<std::unique_ptr<DfgGraph>> DfgGraph::splitIntoComponents(const std::
 class ExtractCyclicComponents final {
     // STATE
     DfgGraph& m_dfg;  // The input graph
+    // Map from vertices to the component they belong to
+    DfgUserMap<uint64_t> m_component = m_dfg.makeUserMap<uint64_t>();
     const std::string m_prefix;  // Component name prefix
     const bool m_doExpensiveChecks = v3Global.opt.debugCheck();
     // The extracted cyclic components
@@ -137,19 +139,21 @@ class ExtractCyclicComponents final {
     void addVertexAndExpandSiblings(DfgVertex& vtx, uint64_t component) {
         // Do not go past a variable, we will partition the graph there
         if (vtx.is<DfgVertexVar>()) return;
+        // Pick up component value reference
+        uint64_t& vtxComponentr = m_component.at(vtx);
         // Don't need to recurse if the vertex is already in the same component,
         // it was either marked through an earlier traversal, in which case it
         // was processed recursively, or it will be processed later.
-        if (vtx.getUser<uint64_t>() == component) return;
+        if (vtxComponentr == component) return;
         // Because all cycles are through a variable, we can't reach another SCC.
-        UASSERT_OBJ(!vtx.getUser<uint64_t>(), &vtx, "Cycle without variable involvement");
+        UASSERT_OBJ(!vtxComponentr, &vtx, "Cycle without variable involvement");
         // Put this vertex in the component, and continue recursively
-        vtx.setUser<uint64_t>(component);
+        vtxComponentr = component;
         expandSiblings(vtx, component);
     }
 
     void expandSiblings(DfgVertex& vtx, uint64_t component) {
-        UASSERT_OBJ(vtx.getUser<uint64_t>() == component, &vtx, "Traversal didn't stop");
+        UASSERT_OBJ(m_component.at(vtx) == component, &vtx, "Traversal didn't stop");
         vtx.foreachSink([&](DfgVertex& v) {
             addVertexAndExpandSiblings(v, component);
             return false;
@@ -179,22 +183,22 @@ class ExtractCyclicComponents final {
         // component if they are not variables themselves. The assertions below
         // must hold because of the assumption above.
         for (DfgVertexVar& vtx : m_dfg.varVertices()) {
-            const uint64_t varComponent = vtx.getUser<uint64_t>();
+            const uint64_t varComponent = m_component.at(vtx);
             if (!varComponent) continue;
             if (DfgVertex* const srcp = vtx.srcp()) {
                 if (!srcp->is<DfgVertexVar>()) {
-                    const uint64_t srcComponent = srcp->getUser<uint64_t>();
+                    uint64_t& srcComponent = m_component.at(srcp);
                     UASSERT_OBJ(!srcComponent || srcComponent == varComponent, srcp,
                                 "Cycle through 'srcp' that does not go through variable.");
-                    srcp->setUser<uint64_t>(varComponent);
+                    srcComponent = varComponent;
                 }
             }
             if (DfgVertex* const defp = vtx.defaultp()) {
                 if (!defp->is<DfgVertexVar>()) {
-                    const uint64_t defComponent = defp->getUser<uint64_t>();
+                    uint64_t& defComponent = m_component.at(defp);
                     UASSERT_OBJ(!defComponent || defComponent == varComponent, defp,
                                 "Cycle through 'defaultp' that does not go through variable");
-                    defp->setUser<uint64_t>(varComponent);
+                    defComponent = varComponent;
                 }
             }
         }
@@ -205,7 +209,7 @@ class ExtractCyclicComponents final {
         // We do this by staring a DFS from each vertex that is part of an
         // component and add all reachable non-variable vertices to the same.
         for (DfgVertex& vtx : m_dfg.opVertices()) {
-            if (const uint64_t targetComponent = vtx.getUser<uint64_t>()) {
+            if (const uint64_t targetComponent = m_component.at(vtx)) {
                 expandSiblings(vtx, targetComponent);
             }
         }
@@ -213,7 +217,7 @@ class ExtractCyclicComponents final {
 
     // Retrieve clone of vertex in the given component
     DfgVertexVar* getClone(DfgVertexVar& vtx, uint64_t component) {
-        UASSERT_OBJ(vtx.getUser<uint64_t>() != component, &vtx, "Vertex is in that component");
+        UASSERT_OBJ(m_component.at(vtx) != component, &vtx, "Vertex is in that component");
         DfgVertexVar*& clonep = m_clones[&vtx][component];
         if (!clonep) {
             if (DfgVarPacked* const pVtxp = vtx.cast<DfgVarPacked>()) {
@@ -230,7 +234,7 @@ class ExtractCyclicComponents final {
                 }
             }
             UASSERT_OBJ(clonep, &vtx, "Unhandled 'DfgVertexVar' sub-type");
-            clonep->setUser<uint64_t>(component);
+            m_component[clonep] = component;
             clonep->tmpForp(vtx.tmpForp());
         }
         return clonep;
@@ -238,11 +242,11 @@ class ExtractCyclicComponents final {
 
     // Fix edges that cross components
     void fixEdges(DfgVertexVar& vtx) {
-        const uint64_t component = vtx.getUser<uint64_t>();
+        const uint64_t component = m_component.at(vtx);
 
         // Fix up srcp and dstp (they must be the same component, or variable)
         if (DfgVertex* const sp = vtx.srcp()) {
-            const uint64_t srcComponent = sp->getUser<uint64_t>();
+            const uint64_t srcComponent = m_component.at(sp);
             if (srcComponent != component) {
                 UASSERT_OBJ(sp->is<DfgVertexVar>(), &vtx, "'srcp' in different component");
                 getClone(vtx, srcComponent)->srcp(sp);
@@ -250,7 +254,7 @@ class ExtractCyclicComponents final {
             }
         }
         if (DfgVertex* const dp = vtx.defaultp()) {
-            const uint64_t defaultComponent = dp->getUser<uint64_t>();
+            const uint64_t defaultComponent = m_component.at(dp);
             if (defaultComponent != component) {
                 UASSERT_OBJ(dp->is<DfgVertexVar>(), &vtx, "'defaultp' in different component");
                 getClone(vtx, defaultComponent)->defaultp(dp);
@@ -264,7 +268,7 @@ class ExtractCyclicComponents final {
             return false;
         });
         for (DfgVertex* const sinkp : sinkps) {
-            const uint64_t sinkComponent = sinkp->getUser<uint64_t>();
+            const uint64_t sinkComponent = m_component.at(sinkp);
             // Same component is OK
             if (sinkComponent == component) continue;
             DfgVertex* const clonep = getClone(vtx, sinkComponent);
@@ -278,7 +282,7 @@ class ExtractCyclicComponents final {
     void moveVertices(DfgVertex::List<Vertex>& list) {
         for (DfgVertex* const vtxp : list.unlinkable()) {
             DfgVertex& vtx = *vtxp;
-            if (const uint64_t component = vtx.getUser<uint64_t>()) {
+            if (const uint64_t component = m_component.at(vtx)) {
                 m_dfg.removeVertex(vtx);
                 m_components[component - 1]->addVertex(vtx);
             }
@@ -289,10 +293,10 @@ class ExtractCyclicComponents final {
         // Check that edges only cross components at variable boundaries
         dfg.forEachVertex([&](DfgVertex& vtx) {
             if (vtx.is<DfgVarPacked>()) return;
-            const uint64_t component = vtx.getUser<uint64_t>();
+            const uint64_t component = m_component.at(vtx);
             vtx.foreachSink([&](DfgVertex& snk) {
                 if (snk.is<DfgVertexVar>()) return false;  // OK to cross at variables
-                UASSERT_OBJ(component == snk.getUser<uint64_t>(), &vtx,
+                UASSERT_OBJ(component == m_component.at(snk), &vtx,
                             "Edge crossing components without variable involvement");
                 return false;
             });
@@ -317,10 +321,10 @@ class ExtractCyclicComponents final {
         });
     }
 
-    void extractComponents(uint32_t numNonTrivialSCCs) {
+    void extractComponents(uint32_t nComponents) {
         // Allocate result graphs
-        m_components.resize(numNonTrivialSCCs);
-        for (uint32_t i = 0; i < numNonTrivialSCCs; ++i) {
+        m_components.resize(nComponents);
+        for (uint32_t i = 0; i < nComponents; ++i) {
             m_components[i].reset(new DfgGraph{m_dfg.modulep(), m_prefix + cvtToStr(i)});
         }
 
@@ -359,16 +363,14 @@ class ExtractCyclicComponents final {
     explicit ExtractCyclicComponents(DfgGraph& dfg, const std::string& label)
         : m_dfg{dfg}
         , m_prefix{dfg.name() + (label.empty() ? "" : "-") + label + "-component-"} {
-        // DfgVertex::user<uint64_t> is set to the SCC number by colorStronglyConnectedComponents,
-        const auto userDataInUse = dfg.userDataInUse();
         // Find all the non-trivial SCCs (and trivial cycles) in the graph
-        const uint32_t numNonTrivialSCCs = V3DfgPasses::colorStronglyConnectedComponents(dfg);
+        const uint32_t nSCCs = V3DfgPasses::colorStronglyConnectedComponents(dfg, m_component);
         // If the graph was acyclic (which should be the common case), then we are done.
-        if (!numNonTrivialSCCs) return;
+        if (!nSCCs) return;
         // Ensure that component boundaries are always at variables, by expanding SCCs
         expandComponents();
         // Extract the components
-        extractComponents(numNonTrivialSCCs);
+        extractComponents(nSCCs);
     }
 
 public:

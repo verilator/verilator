@@ -130,6 +130,8 @@ class V3DfgPeephole final : public DfgVisitor {
 
     // STATE
     DfgGraph& m_dfg;  // The DfgGraph being visited
+    // Map from vertex to next vertex on work list
+    DfgUserMap<DfgVertex*> m_nextp = m_dfg.makeUserMap<DfgVertex*>();
     V3DfgPeepholeContext& m_ctx;  // The config structure
     AstNodeDType* const m_bitDType = V3Dfg::dtypePacked(1);  // Common, so grab it up front
     // Head of work list. Note that we want all next pointers in the list to be non-zero (including
@@ -156,9 +158,9 @@ class V3DfgPeephole final : public DfgVisitor {
         // We only process actual operation vertices
         if (vtxp->is<DfgConst>() || vtxp->is<DfgVertexVar>()) return;
         // If already in work list then nothing to do
-        if (vtxp->getUser<DfgVertex*>()) return;
+        if (m_nextp[vtxp]) return;
         // Actually add to work list.
-        vtxp->setUser<DfgVertex*>(m_workListp);
+        m_nextp[vtxp] = m_workListp;
         m_workListp = vtxp;
     }
 
@@ -181,7 +183,7 @@ class V3DfgPeephole final : public DfgVisitor {
         addSourcesToWorkList(vtxp);
         // If in work list then we can't delete it just yet (as we can't remove from the middle of
         // the work list), but it will be deleted when the work list is processed.
-        if (vtxp->getUser<DfgVertex*>()) return;
+        if (m_nextp[vtxp]) return;
         // Otherwise we can delete it now.
         // Remove from cache
         m_cache.invalidateByValue(vtxp);
@@ -230,14 +232,8 @@ class V3DfgPeephole final : public DfgVisitor {
     Vertex* make(FileLine* flp, AstNodeDType* dtypep, Operands... operands) {
         // Find or create an equivalent vertex
         Vertex* const vtxp = m_cache.getOrCreate<Vertex, Operands...>(flp, dtypep, operands...);
-
-        // Add to work list.
-        DfgVertex*& workListNextp = vtxp->template user<DfgVertex*>();
-        if (!workListNextp) {
-            workListNextp = m_workListp;
-            m_workListp = vtxp;
-        }
-
+        // Add to work list
+        addToWorkList(vtxp);
         // Return new node
         return vtxp;
     }
@@ -1755,13 +1751,9 @@ class V3DfgPeephole final : public DfgVisitor {
         : m_dfg{dfg}
         , m_ctx{ctx} {
 
-        // DfgVertex::user is the next pointer of the work list elements
-        const auto userDataInUse = m_dfg.userDataInUse();
-
-        // Add all vertices to the work list, and to the vertex cache.
-        // This also allocates all DfgVertex::user.
+        // Add all operation vertices to the work list and cache
         for (DfgVertex& vtx : m_dfg.opVertices()) {
-            vtx.setUser<DfgVertex*>(m_workListp);
+            m_nextp[vtx] = m_workListp;
             m_workListp = &vtx;
             m_cache.cache(&vtx);
         }
@@ -1771,9 +1763,9 @@ class V3DfgPeephole final : public DfgVisitor {
             // Pick up the head
             DfgVertex* const vtxp = m_workListp;
             // Detach the head and prefetch next
-            m_workListp = vtxp->getUser<DfgVertex*>();
+            m_workListp = m_nextp[vtxp];
             VL_PREFETCH_RW(m_workListp);
-            vtxp->setUser<DfgVertex*>(nullptr);
+            m_nextp[vtxp] = nullptr;
             // Remove unused vertices as we gp
             if (!vtxp->hasSinks()) {
                 deleteVertex(vtxp);

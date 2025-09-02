@@ -64,14 +64,14 @@ void dfgToAst(DfgGraph&, V3DfgContext&) VL_MT_DISABLED;
 
 // Construct binary to oneHot decoders
 void binToOneHot(DfgGraph&, V3DfgBinToOneHotContext&) VL_MT_DISABLED;
-// Sets DfgVertex::user<uint64_t>() for all vertext to:
+// Populates the given DfgUserMap for all vertext to:
 // - 0, if the vertex is not part of a non-trivial strongly connected component
 //   and is not part of a self-loop. That is: the Vertex is not part of any cycle.
 // - N, if the vertex is part of a non-trivial strongly conneced component or self-loop N.
 //   That is: each set of vertices that are reachable from each other will have the same
 //   non-zero value assigned.
 // Returns the number of non-trivial SCCs (distinct cycles)
-uint32_t colorStronglyConnectedComponents(DfgGraph&) VL_MT_DISABLED;
+uint32_t colorStronglyConnectedComponents(const DfgGraph&, DfgUserMap<uint64_t>&) VL_MT_DISABLED;
 // Common subexpression elimination
 void cse(DfgGraph&, V3DfgCseContext&) VL_MT_DISABLED;
 // Inline fully driven variables
