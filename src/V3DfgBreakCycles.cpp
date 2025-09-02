@@ -665,7 +665,6 @@ public:
 
 class IndependentBits final : public DfgVisitor {
     // STATE
-    DfgGraph& m_dfg;  // The graph being processed
     const Vtx2Scc& m_vtx2Scc;  // The Vertex to SCC map
     const uint64_t m_component;  // The component the start vertex is part of
     // Vertex to current bit mask map. The mask is set for the bits that **depend** on 'm_varp'.
@@ -916,8 +915,7 @@ class IndependentBits final : public DfgVisitor {
 
     // CONSTRUCTOR
     IndependentBits(DfgGraph& dfg, const Vtx2Scc& vtx2Scc, DfgVertex& vertex)
-        : m_dfg{dfg}
-        , m_vtx2Scc{vtx2Scc}
+        : m_vtx2Scc{vtx2Scc}
         , m_component{m_vtx2Scc.at(vertex)} {
 
 #ifdef VL_DEBUG

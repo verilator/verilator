@@ -662,14 +662,16 @@ protected:
     }
     VL_UNCOPYABLE(DfgUserMapBase);
     DfgUserMapBase(DfgUserMapBase&& that)
-    : m_dfgp{that.m_dfgp}
-    , m_currentGeneration{that.m_currentGeneration} {
+        : m_dfgp{that.m_dfgp}
+        , m_currentGeneration{that.m_currentGeneration} {
         that.m_dfgp = nullptr;
     }
     DfgUserMapBase& operator=(DfgUserMapBase&&) = delete;
 
 public:
-    ~DfgUserMapBase() { if (m_dfgp) m_dfgp->m_vertexUserInUse = false; }
+    ~DfgUserMapBase() {
+        if (m_dfgp) m_dfgp->m_vertexUserInUse = false;
+    }
 };
 
 // Specialization where T_Value fits in DfgVertex::m_userStorage directly
