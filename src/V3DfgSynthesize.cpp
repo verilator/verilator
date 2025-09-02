@@ -1822,8 +1822,8 @@ void V3DfgPasses::synthesize(DfgGraph& dfg, V3DfgContext& ctx) {
         // Otherwise figure out which vertices are worth synthesizing.
 
         // Find cycles
-        const auto userDataInUse = dfg.userDataInUse();
-        V3DfgPasses::colorStronglyConnectedComponents(dfg);
+        DfgUserMap<uint64_t> scc = dfg.makeUserMap<uint64_t>();
+        V3DfgPasses::colorStronglyConnectedComponents(dfg, scc);
 
         // First, gather variables, we will then attempt to synthesize all their drivers
         std::vector<DfgVertexVar*> varps;
@@ -1832,7 +1832,7 @@ void V3DfgPasses::synthesize(DfgGraph& dfg, V3DfgContext& ctx) {
             if (!var.srcp()) continue;
 
             // Circular variable - synthesize
-            if (var.getUser<uint64_t>()) {
+            if (scc.at(var)) {
                 varps.emplace_back(&var);
                 continue;
             }

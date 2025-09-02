@@ -54,10 +54,18 @@
 #define VL_NOT_FINAL  // This #define fixes broken code folding in the CLion IDE
 #endif
 
+// Can T be stored in the memory allocted for U?
+template <typename T, typename U>
+inline constexpr bool fitsSpaceAllocatedFor() {
+    return sizeof(T) <= sizeof(U) && alignof(T) <= alignof(U);
+}
+
 class DfgEdge;
 class DfgVertex;
 class DfgGraph;
 class DfgVisitor;
+template <typename T_User, bool = fitsSpaceAllocatedFor<T_User, void*>()>
+class DfgUserMap;
 
 // Specialization of std::hash for a std::pair<const DfgVertex*, const DfgVertex*> for use below
 template <>
@@ -191,8 +199,8 @@ class DfgVertex VL_NOT_FINAL {
     friend class DfgGraph;
     friend class DfgEdge;
     friend class DfgVisitor;
-
-    using UserDataStorage = void*;  // Storage allocated for user data
+    template <typename, bool>
+    friend class DfgUserMap;
 
     // STATE
     V3ListLinks<DfgVertex> m_links;  // V3List links in the DfgGraph
@@ -201,10 +209,16 @@ class DfgVertex VL_NOT_FINAL {
 
     FileLine* const m_filelinep;  // Source location
     AstNodeDType* m_dtypep;  // Data type of the result of this vertex - mutable for efficiency
-    DfgGraph* m_graphp;  // The containing DfgGraph
     const VDfgType m_type;  // Vertex type tag
-    uint32_t m_userCnt = 0;  // User data generation number
-    UserDataStorage m_userDataStorage = nullptr;  // User data storage
+
+    // The only way to access thes is via DfgUserMap, so mutable is appropriate,
+    // the map can change while the keys (DfgVertex) are const.
+    mutable uint32_t m_userGeneration = 0;  // User data generation number
+    mutable void* m_userStorage = nullptr;  // User data storage - one pointer worth
+
+#ifdef VL_DEBUG
+    DfgGraph* m_dfgp = nullptr;  // Graph this vertex belongs to
+#endif
 
     // METHODS
     // Visitor accept method
@@ -252,8 +266,10 @@ public:
     FileLine* fileline() const { return m_filelinep; }
     // The data type of the result of the vertex
     AstNodeDType* dtypep() const { return m_dtypep; }
-    // Is it a packed type (instead of an array)
+    // Is it a packed type
     bool isPacked() const { return VN_IS(dtypep(), BasicDType); }
+    // Is it an array type
+    bool isArray() const { return !isPacked(); }
     // Width of result
     uint32_t width() const {
         UASSERT_OBJ(isPacked(), this, "non-packed has no 'width()'");
@@ -264,19 +280,6 @@ public:
         if (isPacked()) return dtypep()->width();
         return VN_AS(dtypep(), UnpackArrayDType)->elementsConst();
     }
-
-    // Retrieve user data, constructing it fresh on first try.
-    template <typename T_User>
-    T_User& user();
-    // Retrieve user data, must be current.
-    template <typename T_User>
-    const T_User& getUser() const;
-    // Retrieve user data, must be current.
-    template <typename T_User>
-    T_User& getUser();
-    // Set user data, becomes current.
-    template <typename T_User>
-    void setUser(T_User value);
 
     // Cache type for 'equals' below
     using EqualsCache = std::unordered_map<std::pair<const DfgVertex*, const DfgVertex*>, uint8_t>;
@@ -295,8 +298,8 @@ public:
     }
 
     // Hash of vertex (depends on this vertex and all upstream vertices feeding into this vertex).
-    // Uses user data for caching hashes
-    V3Hash hash() VL_MT_DISABLED;
+    // Uses the given DfgUserMap for caching hashes
+    V3Hash hash(DfgUserMap<V3Hash>& cache) VL_MT_DISABLED;
 
     // Predicate: has 1 or more sinks
     bool hasSinks() const { return !m_sinks.empty(); }
@@ -465,34 +468,7 @@ public:
 //------------------------------------------------------------------------------
 // Dataflow graph
 class DfgGraph final {
-    friend class DfgVertex;
-
-    // TYPES
-
-    // RAII handle for DfgVertex user data
-    class UserDataInUse final {
-        DfgGraph* m_graphp;  // The referenced graph
-
-    public:
-        // cppcheck-suppress noExplicitConstructor
-        UserDataInUse(DfgGraph* graphp)
-            : m_graphp{graphp} {}
-        // cppcheck-suppress noExplicitConstructor
-        UserDataInUse(UserDataInUse&& that) {
-            UASSERT(that.m_graphp, "Moving from empty");
-            m_graphp = std::exchange(that.m_graphp, nullptr);
-        }
-        VL_UNCOPYABLE(UserDataInUse);
-        UserDataInUse& operator=(UserDataInUse&& that) {
-            UASSERT(that.m_graphp, "Moving from empty");
-            m_graphp = std::exchange(that.m_graphp, nullptr);
-            return *this;
-        }
-
-        ~UserDataInUse() {
-            if (m_graphp) m_graphp->m_userCurrent = 0;
-        }
-    };
+    friend class DfgUserMapBase;
 
     // MEMBERS
 
@@ -503,15 +479,17 @@ class DfgGraph final {
     DfgVertex::List<DfgVertexVar> m_varVertices;  // The variable vertices in the graph
     DfgVertex::List<DfgConst> m_constVertices;  // The constant vertices in the graph
     DfgVertex::List<DfgVertex> m_opVertices;  // The operation vertices in the graph
-
     size_t m_size = 0;  // Number of vertices in the graph
-    uint32_t m_userCurrent = 0;  // Vertex user data generation number currently in use
-    uint32_t m_userCnt = 0;  // Vertex user data generation counter
     // Parent of the graph (i.e.: the module containing the logic represented by this graph),
     // or nullptr when run after V3Scope
     AstModule* const m_modulep;
     const std::string m_name;  // Name of graph - need not be unique
     std::string m_tmpNameStub{""};  // Name stub for temporary variables - computed lazy
+
+    // The only way to access thes is via DfgUserMap, so mutable is appropriate,
+    // the map can change while the graph is const.
+    mutable bool m_vertexUserInUse = false;  // Vertex user data currently in use
+    mutable uint32_t m_vertexUserGeneration = 0;  // Vertex user data generation counter
 
 public:
     // CONSTRUCTOR
@@ -528,14 +506,9 @@ public:
     // Name of this graph
     const string& name() const { return m_name; }
 
-    // Reset Vertex user data
-    UserDataInUse userDataInUse() {
-        UASSERT(!m_userCurrent, "Conflicting use of DfgVertex user data");
-        ++m_userCnt;
-        UASSERT(m_userCnt, "'m_userCnt' overflow");
-        m_userCurrent = m_userCnt;
-        return UserDataInUse{this};
-    }
+    // Create a new DfgUserMap
+    template <typename T_User>
+    inline DfgUserMap<T_User> makeUserMap() const;
 
     // Access to vertex lists
     DfgVertex::List<DfgVertexVar>& varVertices() { return m_varVertices; }
@@ -547,6 +520,9 @@ public:
 
     // Add DfgVertex to this graph (assumes not yet contained).
     void addVertex(DfgVertex& vtx) {
+#ifdef VL_DEBUG
+        UASSERT_OBJ(!vtx.m_dfgp, &vtx, "Vertex already in a graph");
+#endif
         // Note: changes here need to be replicated in DfgGraph::mergeGraphs
         ++m_size;
         if (DfgConst* const cVtxp = vtx.cast<DfgConst>()) {
@@ -556,12 +532,17 @@ public:
         } else {
             m_opVertices.linkBack(&vtx);
         }
-        vtx.m_userCnt = 0;
-        vtx.m_graphp = this;
+        vtx.m_userGeneration = 0;
+#ifdef VL_DEBUG
+        vtx.m_dfgp = this;
+#endif
     }
 
     // Remove DfgVertex form this graph (assumes it is contained).
     void removeVertex(DfgVertex& vtx) {
+#ifdef VL_DEBUG
+        UASSERT_OBJ(vtx.m_dfgp == this, &vtx, "Vertex not in this graph");
+#endif
         // Note: changes here need to be replicated in DfgGraph::mergeGraphs
         --m_size;
         if (DfgConst* const cVtxp = vtx.cast<DfgConst>()) {
@@ -571,8 +552,10 @@ public:
         } else {
             m_opVertices.unlink(&vtx);
         }
-        vtx.m_userCnt = 0;
-        vtx.m_graphp = nullptr;
+        vtx.m_userGeneration = 0;
+#ifdef VL_DEBUG
+        vtx.m_dfgp = nullptr;
+#endif
     }
 
     // Calls given function 'f' for each vertex in the graph. It is safe to manipulate any vertices
@@ -656,6 +639,137 @@ public:
 };
 
 //------------------------------------------------------------------------------
+// Map from DfgVertices to T_Value implemeneted via DfgVertex::m_userStorage
+
+// Base class with common behavour
+class DfgUserMapBase VL_NOT_FINAL {
+    template <typename, bool>
+    friend class DfgUserMap;
+
+protected:
+    // STATE
+    const DfgGraph* m_dfgp;  // The graph this map is for
+    // The current generation number
+    const uint32_t m_currentGeneration;
+
+    // CONSTRUCTOR
+    explicit DfgUserMapBase(const DfgGraph* dfgp)
+        : m_dfgp{dfgp}
+        , m_currentGeneration{++m_dfgp->m_vertexUserGeneration} {
+        UASSERT(m_currentGeneration, "DfgGraph user data genartion number overflow");
+        UASSERT(!m_dfgp->m_vertexUserInUse, "DfgUserMap already in use for this DfgGraph");
+        m_dfgp->m_vertexUserInUse = true;
+    }
+    VL_UNCOPYABLE(DfgUserMapBase);
+    DfgUserMapBase(DfgUserMapBase&& that)
+        : m_dfgp{that.m_dfgp}
+        , m_currentGeneration{that.m_currentGeneration} {
+        that.m_dfgp = nullptr;
+    }
+    DfgUserMapBase& operator=(DfgUserMapBase&&) = delete;
+
+public:
+    ~DfgUserMapBase() {
+        if (m_dfgp) m_dfgp->m_vertexUserInUse = false;
+    }
+};
+
+// Specialization where T_Value fits in DfgVertex::m_userStorage directly
+template <typename T_Value>
+class DfgUserMap<T_Value, true> final : public DfgUserMapBase {
+    static_assert(fitsSpaceAllocatedFor<T_Value, decltype(DfgVertex::m_userStorage)>(),
+                  "'T_Value' does not fit 'DfgVertex::m_userStorage'");
+    friend class DfgGraph;
+
+    // CONSTRUCTOR
+    explicit DfgUserMap(const DfgGraph* dfgp)
+        : DfgUserMapBase{dfgp} {}
+    VL_UNCOPYABLE(DfgUserMap);
+    DfgUserMap& operator=(DfgUserMap&&) = delete;
+
+public:
+    DfgUserMap(DfgUserMap&&) = default;
+    ~DfgUserMap() = default;
+
+    // METHODS
+    // Retrieve mapped value for 'vtx', value initializing it on first access
+    T_Value& operator[](const DfgVertex& vtx) {
+#ifdef VL_DEBUG
+        UASSERT_OBJ(vtx.m_dfgp == m_dfgp, &vtx, "Vertex not in this graph");
+#endif
+        T_Value* const storagep = reinterpret_cast<T_Value*>(&vtx.m_userStorage);
+        if (vtx.m_userGeneration != m_currentGeneration) {
+            new (storagep) T_Value{};
+            vtx.m_userGeneration = m_currentGeneration;
+        }
+        return *storagep;
+    }
+    // Same as above with pointer as key
+    T_Value& operator[](const DfgVertex* vtxp) { return (*this)[*vtxp]; }
+
+    // Retrieve mapped value of 'vtx', must be alerady present
+    T_Value& at(const DfgVertex& vtx) const {
+#ifdef VL_DEBUG
+        UASSERT_OBJ(vtx.m_dfgp == m_dfgp, &vtx, "Vertex not in this graph");
+#endif
+        UASSERT_OBJ(vtx.m_userGeneration == m_currentGeneration, &vtx, "Vertex not in map");
+        T_Value* const storagep = reinterpret_cast<T_Value*>(&vtx.m_userStorage);
+        return *storagep;
+    }
+    // Same as above with pointer as key
+    T_Value& at(const DfgVertex* vtxp) const { return (*this).at(*vtxp); }
+};
+
+// Specialization where T_Value does not fit in DfgVertex::m_userStorage directly
+template <typename T_Value>
+class DfgUserMap<T_Value, false> final : public DfgUserMapBase {
+    static_assert(fitsSpaceAllocatedFor<T_Value*, decltype(DfgVertex::m_userStorage)>(),
+                  "'T_Value*' does not fit 'DfgVertex::m_userStorage'");
+    friend class DfgGraph;
+
+    // STATE
+    std::deque<T_Value> m_storage;  // Storage for T_Value instances
+
+    // CONSTRUCTOR
+    explicit DfgUserMap(const DfgGraph* dfgp)
+        : DfgUserMapBase{dfgp} {}
+    VL_UNCOPYABLE(DfgUserMap);
+    DfgUserMap& operator=(DfgUserMap&&) = delete;
+
+public:
+    DfgUserMap(DfgUserMap&&) = default;
+    ~DfgUserMap() = default;
+
+    // METHODS
+    // Retrieve mapped value for 'vtx', value initializing it on first access
+    T_Value& operator[](const DfgVertex& vtx) {
+#ifdef VL_DEBUG
+        UASSERT_OBJ(vtx.m_dfgp == m_dfgp, &vtx, "Vertex not in this graph");
+#endif
+        T_Value*& storagepr = reinterpret_cast<T_Value*&>(vtx.m_userStorage);
+        if (vtx.m_userGeneration != m_currentGeneration) {
+            m_storage.emplace_back();
+            storagepr = &m_storage.back();
+            vtx.m_userGeneration = m_currentGeneration;
+        }
+        return *storagepr;
+    }
+    // Same as above with pointer as key
+    T_Value& operator[](const DfgVertex* vtxp) { return (*this)[*vtxp]; }
+
+    // Retrieve mapped value of 'vtx', must be alerady present
+    T_Value& at(const DfgVertex& vtx) const {
+#ifdef VL_DEBUG
+        UASSERT_OBJ(vtx.m_dfgp == m_dfgp, &vtx, "Vertex not in this graph");
+#endif
+        UASSERT_OBJ(vtx.m_userGeneration == m_currentGeneration, &vtx, "Vertex not in map");
+        return *reinterpret_cast<T_Value*&>(vtx.m_userStorage);
+    }
+    // Same as above with pointer as key
+    T_Value& at(const DfgVertex* vtxp) const { return (*this).at(*vtxp); }
+};
+
+//------------------------------------------------------------------------------
 // Inline method definitions
 
 // DfgEdge {{{
@@ -684,57 +798,11 @@ void DfgEdge::relinkSrcp(DfgVertex* srcp) {
 
 // }}}
 
-// DfgVertex {{{
+// DfgGraph {{{
 
 template <typename T_User>
-T_User& DfgVertex::user() {
-    static_assert(sizeof(T_User) <= sizeof(UserDataStorage),
-                  "Size of user data type 'T_User' is too large for allocated storage");
-    static_assert(alignof(T_User) <= alignof(UserDataStorage),
-                  "Alignment of user data type 'T_User' is larger than allocated storage");
-    T_User* const storagep = reinterpret_cast<T_User*>(&m_userDataStorage);
-    const uint32_t userCurrent = m_graphp->m_userCurrent;
-    UDEBUGONLY(UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving"););
-    if (m_userCnt != userCurrent) {
-        m_userCnt = userCurrent;
-        new (storagep) T_User{};
-    }
-    return *storagep;
-}
-
-template <typename T_User>
-const T_User& DfgVertex::getUser() const {
-    static_assert(sizeof(T_User) <= sizeof(UserDataStorage),
-                  "Size of user data type 'T_User' is too large for allocated storage");
-    static_assert(alignof(T_User) <= alignof(UserDataStorage),
-                  "Alignment of user data type 'T_User' is larger than allocated storage");
-    const T_User* const storagep = reinterpret_cast<const T_User*>(&m_userDataStorage);
-#if VL_DEBUG
-    const uint32_t userCurrent = m_graphp->m_userCurrent;
-    UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving");
-    UASSERT_OBJ(m_userCnt == userCurrent, this, "DfgVertex user data is stale");
-#endif
-    return *storagep;
-}
-
-template <typename T_User>
-T_User& DfgVertex::getUser() {
-    return const_cast<T_User&>(const_cast<const DfgVertex*>(this)->getUser<T_User>());
-}
-
-template <typename T_User>
-void DfgVertex::setUser(T_User value) {
-    static_assert(sizeof(T_User) <= sizeof(UserDataStorage),
-                  "Size of user data type 'T_User' is too large for allocated storage");
-    static_assert(alignof(T_User) <= alignof(UserDataStorage),
-                  "Alignment of user data type 'T_User' is larger than allocated storage");
-    T_User* const storagep = reinterpret_cast<T_User*>(&m_userDataStorage);
-    const uint32_t userCurrent = m_graphp->m_userCurrent;
-#if VL_DEBUG
-    UASSERT_OBJ(userCurrent, this, "DfgVertex user data used without reserving");
-#endif
-    m_userCnt = userCurrent;
-    *storagep = value;
+DfgUserMap<T_User> DfgGraph::makeUserMap() const {
+    return DfgUserMap<T_User>{this};
 }
 
 // }}}

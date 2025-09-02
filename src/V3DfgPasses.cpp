@@ -30,7 +30,7 @@ void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
     // Remove common sub-expressions
     {
         // Used by DfgVertex::hash
-        const auto userDataInUse = dfg.userDataInUse();
+        DfgUserMap<V3Hash> hashCache = dfg.makeUserMap<V3Hash>();
 
         DfgVertex::EqualsCache equalsCache;
         std::unordered_map<V3Hash, std::vector<DfgVertex*>> verticesWithEqualHashes;
@@ -38,7 +38,7 @@ void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
 
         // Pre-hash variables, these are all unique, so just set their hash to a unique value
         uint32_t varHash = 0;
-        for (DfgVertexVar& vtx : dfg.varVertices()) vtx.user<V3Hash>() = V3Hash{++varHash};
+        for (const DfgVertexVar& vtx : dfg.varVertices()) hashCache[vtx] = V3Hash{++varHash};
 
         // Similarly pre-hash constants for speed. While we don't combine constants, we do want
         // expressions using the same constants to be combined, so we do need to hash equal
@@ -49,7 +49,7 @@ void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
                 VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
                 continue;
             }
-            vtxp->user<V3Hash>() = vtxp->num().toHash() + varHash;
+            hashCache[vtxp] = vtxp->num().toHash() + varHash;
         }
 
         // Combine operation vertices
@@ -59,7 +59,7 @@ void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
                 vtxp->unlinkDelete(dfg);
                 continue;
             }
-            const V3Hash hash = vtxp->hash();
+            const V3Hash hash = vtxp->hash(hashCache);
             std::vector<DfgVertex*>& vec = verticesWithEqualHashes[hash];
             bool replaced = false;
             for (DfgVertex* const candidatep : vec) {
@@ -91,8 +91,8 @@ void V3DfgPasses::inlineVars(DfgGraph& dfg) {
 }
 
 void V3DfgPasses::removeUnused(DfgGraph& dfg) {
-    // DfgVertex::user is the next pointer of the work list elements
-    const auto userDataInUse = dfg.userDataInUse();
+    // Map from vertex to next vertex in the work list
+    DfgUserMap<DfgVertex*> nextp = dfg.makeUserMap<DfgVertex*>();
 
     // Head of work list. Note that we want all next pointers in the list to be non-zero (including
     // that of the last element). This allows as to do two important things: detect if an element
@@ -102,29 +102,22 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
     DfgVertex* const sentinelp = reinterpret_cast<DfgVertex*>(&dfg);
     DfgVertex* workListp = sentinelp;
 
-    // Add all unused operation vertices to the work list. This also allocates all DfgVertex::user.
+    // Add all unused operation vertices to the work list
     for (DfgVertex& vtx : dfg.opVertices()) {
-        if (vtx.hasSinks()) {
-            // This vertex is used. Allocate user, but don't add to work list.
-            vtx.setUser<DfgVertex*>(nullptr);
-        } else {
-            // This vertex is unused. Add to work list.
-            vtx.setUser<DfgVertex*>(workListp);
-            workListp = &vtx;
-        }
+        if (vtx.hasSinks()) continue;
+        // This vertex is unused. Add to work list.
+        nextp[vtx] = workListp;
+        workListp = &vtx;
     }
 
     // Also add all unused temporaries created during synthesis
     for (DfgVertexVar& vtx : dfg.varVertices()) {
         if (!vtx.tmpForp()) continue;
-        if (vtx.hasSinks() || vtx.hasDfgRefs()) {
-            // This vertex is used. Allocate user, but don't add to work list.
-            vtx.setUser<DfgVertex*>(nullptr);
-        } else {
-            // This vertex is unused. Add to work list.
-            vtx.setUser<DfgVertex*>(workListp);
-            workListp = &vtx;
-        }
+        if (vtx.hasSinks()) continue;
+        if (vtx.hasDfgRefs()) continue;
+        // This vertex is unused. Add to work list.
+        nextp[vtx] = workListp;
+        workListp = &vtx;
     }
 
     // Process the work list
@@ -132,11 +125,11 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
         // Pick up the head
         DfgVertex* const vtxp = workListp;
         // Detach the head
-        workListp = vtxp->getUser<DfgVertex*>();
+        workListp = nextp.at(vtxp);
         // Prefetch next item
         VL_PREFETCH_RW(workListp);
         // This item is now off the work list
-        vtxp->setUser<DfgVertex*>(nullptr);
+        nextp.at(vtxp) = nullptr;
         // DfgLogic should have been synthesized or removed
         UASSERT_OBJ(!vtxp->is<DfgLogic>(), vtxp, "Should not be DfgLogic");
         // If used, then nothing to do, so move on
@@ -153,9 +146,9 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
             const DfgVertexVar* const varp = src.cast<DfgVertexVar>();
             if (varp && !varp->tmpForp()) return false;
             // If already in work list then nothing to do
-            if (src.getUser<DfgVertex*>()) return false;
+            if (nextp[src]) return false;
             // Actually add to work list.
-            src.setUser<DfgVertex*>(workListp);
+            nextp[src] = workListp;
             workListp = &src;
             return false;
         });
@@ -177,8 +170,6 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
 void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
     UASSERT(dfg.modulep(), "binToOneHot only works with unscoped DfgGraphs for now");
 
-    const auto userDataInUse = dfg.userDataInUse();
-
     // Structure to keep track of comparison details
     struct Term final {
         DfgVertex* m_vtxp = nullptr;  // Vertex to replace
@@ -189,12 +180,12 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             , m_inv{inv} {}
     };
 
-    // Map from 'value beign compared' -> 'terms', stored in DfgVertex::user()
-    using Val2Terms = std::map<uint32_t, std::vector<Term>>;
-    // Allocator for Val2Terms, so it's cleaned up on return
-    std::deque<Val2Terms> val2TermsAllocator;
     // List of vertices that are used as sources
     std::vector<DfgVertex*> srcps;
+
+    // Map from 'vertices' -> 'value beign compared' -> 'terms'
+    using Val2Terms = std::map<uint32_t, std::vector<Term>>;
+    DfgUserMap<Val2Terms> vtx2Val2Terms = dfg.makeUserMap<Val2Terms>();
 
     // Only consider input variables from a reasonable range:
     // - not too big to avoid huge tables, you are doomed anyway at that point..
@@ -255,16 +246,12 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             // Not a comparison-like vertex
             continue;
         }
-        // Grab the Val2Terms entry
-        Val2Terms*& val2Termspr = srcp->user<Val2Terms*>();
-        if (!val2Termspr) {
-            // Remeber and allocate on first encounter
-            srcps.emplace_back(srcp);
-            val2TermsAllocator.emplace_back();
-            val2Termspr = &val2TermsAllocator.back();
-        }
+        // Grab Val2Terms for this vertex
+        Val2Terms& val2Terms = vtx2Val2Terms[srcp];
+        // Remeber and on first encounter
+        if (val2Terms.empty()) srcps.emplace_back(srcp);
         // Record term
-        (*val2Termspr)[val].emplace_back(&vtx, inv);
+        val2Terms[val].emplace_back(&vtx, inv);
         ++nTerms;
     }
 
@@ -281,7 +268,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
 
     // Create decoders for each srcp
     for (DfgVertex* const srcp : srcps) {
-        const Val2Terms& val2Terms = *srcp->getUser<Val2Terms*>();
+        const Val2Terms& val2Terms = vtx2Val2Terms[srcp];
 
         // If not enough terms in this vertex, ignore
         if (val2Terms.size() < TERM_LIMIT) continue;
@@ -422,7 +409,8 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
 }
 
 void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
-    const auto userDataInUse = dfg.userDataInUse();
+    // Map from vertex to next vertex in the work list
+    DfgUserMap<DfgVertex*> nextp = dfg.makeUserMap<DfgVertex*>();
 
     // Head of work list. Note that we want all next pointers in the list to be non-zero
     // (including that of the last element). This allows us to do two important things: detect
@@ -434,16 +422,16 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
 
     // Add all variables to the initial work list
     for (DfgVertexVar& vtx : dfg.varVertices()) {
-        vtx.setUser<DfgVertex*>(workListp);
+        nextp[vtx] = workListp;
         workListp = &vtx;
     }
 
     const auto addToWorkList = [&](DfgVertex& vtx) {
         // If already in work list then nothing to do
-        DfgVertex*& nextInWorklistp = vtx.user<DfgVertex*>();
-        if (nextInWorklistp) return false;
+        DfgVertex*& nextpr = nextp[vtx];
+        if (nextpr) return false;
         // Actually add to work list.
-        nextInWorklistp = workListp;
+        nextpr = workListp;
         workListp = &vtx;
         return false;
     };
@@ -462,9 +450,9 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
         // Pick up the head of the work list
         DfgVertex* const vtxp = workListp;
         // Detach the head
-        workListp = vtxp->getUser<DfgVertex*>();
+        workListp = nextp.at(vtxp);
         // Reset user pointer so it can be added back to the work list later
-        vtxp->setUser<DfgVertex*>(nullptr);
+        nextp.at(vtxp) = nullptr;
         // Prefetch next item
         VL_PREFETCH_RW(workListp);
 

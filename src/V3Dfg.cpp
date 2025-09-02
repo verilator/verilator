@@ -223,20 +223,26 @@ void DfgGraph::mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) {
             }
             // Otherwise they will be moved
             vtxp->nodep()->user2p(vtxp);
-            vtxp->m_userCnt = 0;
-            vtxp->m_graphp = this;
+            vtxp->m_userGeneration = 0;
+#ifdef VL_DEBUG
+            vtxp->m_dfgp = this;
+#endif
         }
         m_varVertices.splice(m_varVertices.end(), otherp->m_varVertices);
         // Process constants
         for (DfgConst& vtx : otherp->m_constVertices) {
-            vtx.m_userCnt = 0;
-            vtx.m_graphp = this;
+            vtx.m_userGeneration = 0;
+#ifdef VL_DEBUG
+            vtx.m_dfgp = this;
+#endif
         }
         m_constVertices.splice(m_constVertices.end(), otherp->m_constVertices);
         // Process operations
         for (DfgVertex& vtx : otherp->m_opVertices) {
-            vtx.m_userCnt = 0;
-            vtx.m_graphp = this;
+            vtx.m_userGeneration = 0;
+#ifdef VL_DEBUG
+            vtx.m_dfgp = this;
+#endif
         }
         m_opVertices.splice(m_opVertices.end(), otherp->m_opVertices);
         // Update graph sizes
@@ -586,8 +592,8 @@ bool DfgVertex::equals(const DfgVertex& that, EqualsCache& cache) const {
     return result >> 1;
 }
 
-V3Hash DfgVertex::hash() {
-    V3Hash& result = user<V3Hash>();
+V3Hash DfgVertex::hash(DfgUserMap<V3Hash>& cache) {
+    V3Hash& result = cache[this];
     if (!result.value()) {
         V3Hash hash{selfHash()};
         // Variables are defined by themselves, so there is no need to hash them further
@@ -597,7 +603,7 @@ V3Hash DfgVertex::hash() {
             hash += m_type;
             hash += size();
             foreachSource([&](DfgVertex& vtx) {
-                hash += vtx.hash();
+                hash += vtx.hash(cache);
                 return false;
             });
         }
