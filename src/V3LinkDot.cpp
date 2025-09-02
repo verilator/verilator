@@ -2498,6 +2498,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
     AstNode* m_lastDeferredp = nullptr;  // Last node which requested a revisit of its module
     AstNodeDType* m_packedArrayDtp = nullptr;  // Datatype reference for packed array
     bool m_inPackedArray = false;  // Currently traversing a packed array tree
+    bool m_inAssignAlias = false;  // Currently traversing AstAssignAlias tree
 
     struct DotStates final {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -3948,7 +3949,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
         AstVarScope* vscp = nodep->varScopep();
-        if (vscp && vscp->user2p()) {
+        if (vscp && vscp->user2p() && !m_inAssignAlias) {
             while (vscp->user2p()) {
                 UINFO(7, indent() << "Resolved pre-alias " << vscp);  // Also prints taskp
                 vscp = VN_AS(vscp->user2p(), VarScope);
@@ -5011,12 +5012,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
     void visit(AstNode* nodep) override {
         VL_RESTORER(m_inPackedArray);
+        VL_RESTORER(m_inAssignAlias);
         if (VN_IS(nodep, PackArrayDType)) {
             m_inPackedArray = true;
         } else if (!m_inPackedArray) {
             LINKDOT_VISIT_START();
             checkNoDot(nodep);
         }
+        if (VN_IS(nodep, AssignAlias)) m_inAssignAlias = true;
         iterateChildren(nodep);
     }
 
