@@ -177,7 +177,7 @@ class CCtorsVisitor final : public VNVisitor {
             // If can be referred to by base pointer, need virtual delete
             funcp->isVirtual(classp->isExtended());
             funcp->slow(false);
-            insertSc(funcp, classp, VNType::atScDtor);
+            insertSc(funcp, classp, VNType::ScDtor);
             classp->addStmtsp(funcp);
         }
     }
@@ -188,7 +188,7 @@ class CCtorsVisitor final : public VNVisitor {
         m_varResetp = nullptr;
         m_cfuncp = nodep;
         iterateChildren(nodep);
-        if (nodep->name() == "new") insertSc(nodep, m_modp, VNType::atScCtor);
+        if (nodep->name() == "new") insertSc(nodep, m_modp, VNType::ScCtor);
     }
     void visit(AstVar* nodep) override {
         if (nodep->needsCReset()) {

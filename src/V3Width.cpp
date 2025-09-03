@@ -8015,15 +8015,15 @@ class WidthVisitor final : public VNVisitor {
         if (!nodep->dtypep()) nodep->dtypeFrom(nodep->lhsp());
         // To simplify callers, some node types don't need to change
         switch (nodep->type()) {
-        case VNType::atEq: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case VNType::atNeq: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case VNType::atEqCase: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case VNType::atNeqCase: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case VNType::atEqWild: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case VNType::atNeqWild: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case VNType::atAdd: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case VNType::atSub: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
-        case VNType::atShiftL: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::Eq: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::Neq: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::EqCase: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::NeqCase: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::EqWild: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::NeqWild: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::Add: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::Sub: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
+        case VNType::ShiftL: nodep->dtypeChgSigned(signedFlavorNeeded); return nullptr;
         default: break;
         }
         FileLine* const fl = nodep->fileline();
@@ -8031,22 +8031,22 @@ class WidthVisitor final : public VNVisitor {
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstNodeBiop* newp = nullptr;
         switch (nodep->type()) {
-        case VNType::atGt: newp = new AstGtS{fl, lhsp, rhsp}; break;
-        case VNType::atGtS: newp = new AstGt{fl, lhsp, rhsp}; break;
-        case VNType::atGte: newp = new AstGteS{fl, lhsp, rhsp}; break;
-        case VNType::atGteS: newp = new AstGte{fl, lhsp, rhsp}; break;
-        case VNType::atLt: newp = new AstLtS{fl, lhsp, rhsp}; break;
-        case VNType::atLtS: newp = new AstLt{fl, lhsp, rhsp}; break;
-        case VNType::atLte: newp = new AstLteS{fl, lhsp, rhsp}; break;
-        case VNType::atLteS: newp = new AstLte{fl, lhsp, rhsp}; break;
-        case VNType::atDiv: newp = new AstDivS{fl, lhsp, rhsp}; break;
-        case VNType::atDivS: newp = new AstDiv{fl, lhsp, rhsp}; break;
-        case VNType::atModDiv: newp = new AstModDivS{fl, lhsp, rhsp}; break;
-        case VNType::atModDivS: newp = new AstModDiv{fl, lhsp, rhsp}; break;
-        case VNType::atMul: newp = new AstMulS{fl, lhsp, rhsp}; break;
-        case VNType::atMulS: newp = new AstMul{fl, lhsp, rhsp}; break;
-        case VNType::atShiftR: newp = new AstShiftRS{fl, lhsp, rhsp}; break;
-        case VNType::atShiftRS: newp = new AstShiftR{fl, lhsp, rhsp}; break;
+        case VNType::Gt: newp = new AstGtS{fl, lhsp, rhsp}; break;
+        case VNType::GtS: newp = new AstGt{fl, lhsp, rhsp}; break;
+        case VNType::Gte: newp = new AstGteS{fl, lhsp, rhsp}; break;
+        case VNType::GteS: newp = new AstGte{fl, lhsp, rhsp}; break;
+        case VNType::Lt: newp = new AstLtS{fl, lhsp, rhsp}; break;
+        case VNType::LtS: newp = new AstLt{fl, lhsp, rhsp}; break;
+        case VNType::Lte: newp = new AstLteS{fl, lhsp, rhsp}; break;
+        case VNType::LteS: newp = new AstLte{fl, lhsp, rhsp}; break;
+        case VNType::Div: newp = new AstDivS{fl, lhsp, rhsp}; break;
+        case VNType::DivS: newp = new AstDiv{fl, lhsp, rhsp}; break;
+        case VNType::ModDiv: newp = new AstModDivS{fl, lhsp, rhsp}; break;
+        case VNType::ModDivS: newp = new AstModDiv{fl, lhsp, rhsp}; break;
+        case VNType::Mul: newp = new AstMulS{fl, lhsp, rhsp}; break;
+        case VNType::MulS: newp = new AstMul{fl, lhsp, rhsp}; break;
+        case VNType::ShiftR: newp = new AstShiftRS{fl, lhsp, rhsp}; break;
+        case VNType::ShiftRS: newp = new AstShiftR{fl, lhsp, rhsp}; break;
         default:  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Node needs sign change, but bad case: " << nodep);
             break;
@@ -8066,25 +8066,25 @@ class WidthVisitor final : public VNVisitor {
         AstNodeBiop* newp = nullptr;
         // No width change on output;...                // All below have bool or double outputs
         switch (nodep->type()) {
-        case VNType::atAdd: newp = new AstAddD{fl, lhsp, rhsp}; break;
-        case VNType::atSub: newp = new AstSubD{fl, lhsp, rhsp}; break;
-        case VNType::atPow: newp = new AstPowD{fl, lhsp, rhsp}; break;
-        case VNType::atEq:
-        case VNType::atEqCase: newp = new AstEqD{fl, lhsp, rhsp}; break;
-        case VNType::atNeq:
-        case VNType::atNeqCase: newp = new AstNeqD{fl, lhsp, rhsp}; break;
-        case VNType::atGt:
-        case VNType::atGtS: newp = new AstGtD{fl, lhsp, rhsp}; break;
-        case VNType::atGte:
-        case VNType::atGteS: newp = new AstGteD{fl, lhsp, rhsp}; break;
-        case VNType::atLt:
-        case VNType::atLtS: newp = new AstLtD{fl, lhsp, rhsp}; break;
-        case VNType::atLte:
-        case VNType::atLteS: newp = new AstLteD{fl, lhsp, rhsp}; break;
-        case VNType::atDiv:
-        case VNType::atDivS: newp = new AstDivD{fl, lhsp, rhsp}; break;
-        case VNType::atMul:
-        case VNType::atMulS: newp = new AstMulD{fl, lhsp, rhsp}; break;
+        case VNType::Add: newp = new AstAddD{fl, lhsp, rhsp}; break;
+        case VNType::Sub: newp = new AstSubD{fl, lhsp, rhsp}; break;
+        case VNType::Pow: newp = new AstPowD{fl, lhsp, rhsp}; break;
+        case VNType::Eq:
+        case VNType::EqCase: newp = new AstEqD{fl, lhsp, rhsp}; break;
+        case VNType::Neq:
+        case VNType::NeqCase: newp = new AstNeqD{fl, lhsp, rhsp}; break;
+        case VNType::Gt:
+        case VNType::GtS: newp = new AstGtD{fl, lhsp, rhsp}; break;
+        case VNType::Gte:
+        case VNType::GteS: newp = new AstGteD{fl, lhsp, rhsp}; break;
+        case VNType::Lt:
+        case VNType::LtS: newp = new AstLtD{fl, lhsp, rhsp}; break;
+        case VNType::Lte:
+        case VNType::LteS: newp = new AstLteD{fl, lhsp, rhsp}; break;
+        case VNType::Div:
+        case VNType::DivS: newp = new AstDivD{fl, lhsp, rhsp}; break;
+        case VNType::Mul:
+        case VNType::MulS: newp = new AstMulD{fl, lhsp, rhsp}; break;
         default:  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Node needs conversion to double, but bad case: " << nodep);
             break;
@@ -8105,18 +8105,18 @@ class WidthVisitor final : public VNVisitor {
         AstNodeBiop* newp = nullptr;
         // No width change on output;...                // All below have bool or double outputs
         switch (nodep->type()) {
-        case VNType::atEq:
-        case VNType::atEqCase: newp = new AstEqN{fl, lhsp, rhsp}; break;
-        case VNType::atNeq:
-        case VNType::atNeqCase: newp = new AstNeqN{fl, lhsp, rhsp}; break;
-        case VNType::atGt:
-        case VNType::atGtS: newp = new AstGtN{fl, lhsp, rhsp}; break;
-        case VNType::atGte:
-        case VNType::atGteS: newp = new AstGteN{fl, lhsp, rhsp}; break;
-        case VNType::atLt:
-        case VNType::atLtS: newp = new AstLtN{fl, lhsp, rhsp}; break;
-        case VNType::atLte:
-        case VNType::atLteS: newp = new AstLteN{fl, lhsp, rhsp}; break;
+        case VNType::Eq:
+        case VNType::EqCase: newp = new AstEqN{fl, lhsp, rhsp}; break;
+        case VNType::Neq:
+        case VNType::NeqCase: newp = new AstNeqN{fl, lhsp, rhsp}; break;
+        case VNType::Gt:
+        case VNType::GtS: newp = new AstGtN{fl, lhsp, rhsp}; break;
+        case VNType::Gte:
+        case VNType::GteS: newp = new AstGteN{fl, lhsp, rhsp}; break;
+        case VNType::Lt:
+        case VNType::LtS: newp = new AstLtN{fl, lhsp, rhsp}; break;
+        case VNType::Lte:
+        case VNType::LteS: newp = new AstLteN{fl, lhsp, rhsp}; break;
         default:  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Node needs conversion to string, but bad case: " << nodep);
             break;
@@ -8135,7 +8135,7 @@ class WidthVisitor final : public VNVisitor {
         AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
         AstNodeUniop* newp = nullptr;
         switch (nodep->type()) {
-        case VNType::atNegate: newp = new AstNegateD{fl, lhsp}; break;
+        case VNType::Negate: newp = new AstNegateD{fl, lhsp}; break;
         default:  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Node needs conversion to double, but bad case: " << nodep);
             break;

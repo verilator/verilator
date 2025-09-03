@@ -150,8 +150,10 @@ inline AstNodeDType* toDfgDType(const AstNodeDType* dtypep) {
 class VDfgType final {
 public:
 #include "V3Dfg__gen_type_enum.h"  // From ./astgen
-    const enum en m_e;
+    const en m_e;
     VDfgType() = delete;
+
+    // VDfgType is interconvetible with VDfgType::en
     // cppcheck-suppress noExplicitConstructor
     constexpr VDfgType(en _e)
         : m_e{_e} {}

@@ -81,7 +81,7 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
         DfgVertexVar* cp = nullptr;
 
         switch (vtx.type()) {
-        case VDfgType::atVarArray: {
+        case VDfgType::VarArray: {
             if (scoped) {
                 cp = new DfgVarArray{*clonep, vp->varScopep()};
             } else {
@@ -90,7 +90,7 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
-        case VDfgType::atVarPacked: {
+        case VDfgType::VarPacked: {
             if (scoped) {
                 cp = new DfgVarPacked{*clonep, vp->varScopep()};
             } else {
@@ -112,38 +112,38 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
     for (const DfgVertex& vtx : m_opVertices) {
         switch (vtx.type()) {
 #include "V3Dfg__gen_clone_cases.h"  // From ./astgen
-        case VDfgType::atSel: {
+        case VDfgType::Sel: {
             DfgSel* const cp = new DfgSel{*clonep, vtx.fileline(), vtx.dtypep()};
             cp->lsb(vtx.as<DfgSel>()->lsb());
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
-        case VDfgType::atUnitArray: {
+        case VDfgType::UnitArray: {
             DfgUnitArray* const cp = new DfgUnitArray{*clonep, vtx.fileline(), vtx.dtypep()};
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
-        case VDfgType::atMux: {
+        case VDfgType::Mux: {
             DfgMux* const cp = new DfgMux{*clonep, vtx.fileline(), vtx.dtypep()};
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
-        case VDfgType::atSpliceArray: {
+        case VDfgType::SpliceArray: {
             DfgSpliceArray* const cp = new DfgSpliceArray{*clonep, vtx.fileline(), vtx.dtypep()};
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
-        case VDfgType::atSplicePacked: {
+        case VDfgType::SplicePacked: {
             DfgSplicePacked* const cp = new DfgSplicePacked{*clonep, vtx.fileline(), vtx.dtypep()};
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
-        case VDfgType::atLogic: {
+        case VDfgType::Logic: {
             vtx.v3fatalSrc("DfgLogic cannot be cloned");
             VL_UNREACHABLE;
             break;
         }
-        case VDfgType::atUnresolved: {
+        case VDfgType::Unresolved: {
             vtx.v3fatalSrc("DfgUnresolved cannot be cloned");
             VL_UNREACHABLE;
             break;
@@ -168,8 +168,8 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
     for (const DfgVertex& vtx : m_opVertices) {
         if (vtx.is<DfgVertexVariadic>()) {
             switch (vtx.type()) {
-            case VDfgType::atSpliceArray:
-            case VDfgType::atSplicePacked: {
+            case VDfgType::SpliceArray:
+            case VDfgType::SplicePacked: {
                 const DfgVertexSplice* const vp = vtx.as<DfgVertexSplice>();
                 DfgVertexSplice* const cp = vtxp2clonep.at(vp)->as<DfgVertexSplice>();
                 vp->foreachDriver([&](const DfgVertex& src, uint32_t lo, FileLine* flp) {

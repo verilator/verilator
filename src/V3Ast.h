@@ -109,22 +109,21 @@ struct VNTypeInfo final {
 };
 
 class VNType final {
-    static const VNTypeInfo typeInfoTable[];
+    static const VNTypeInfo s_typeInfoTable[];
 
 public:
 #include "V3Ast__gen_type_enum.h"  // From ./astgen
-    // Above include has:
-    //   enum en {...};
-    //   const char* ascii() const {...};
-    const enum en m_e;
+    const en m_e;
     VNType() = delete;
+
+    // VNType is interconvetible with VNType::en
     // cppcheck-suppress noExplicitConstructor
-    constexpr VNType(en _e) VL_MT_SAFE : m_e{_e} {}
-    explicit VNType(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    // cppcheck-suppress danglingTempReference
-    const VNTypeInfo* typeInfo() const VL_MT_SAFE { return &typeInfoTable[m_e]; }
+    constexpr VNType(en _e) VL_MT_SAFE
+        : m_e{_e} {}
     constexpr operator en() const VL_MT_SAFE { return m_e; }
+
+    // Retrieve VNTypeInfo for the given type
+    static const VNTypeInfo& typeInfo(VNType t) VL_MT_SAFE { return s_typeInfoTable[t.m_e]; }
 };
 constexpr bool operator==(const VNType& lhs, const VNType& rhs) VL_PURE {
     return lhs.m_e == rhs.m_e;

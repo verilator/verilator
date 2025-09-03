@@ -387,9 +387,9 @@ static AstNode* createForeachLoop(AstNodeForeach* nodep, AstNode* bodysp, AstVar
     AstNodeExpr* condp;
     bool inc = true;
     switch (nodeType) {
-    case VNType::atLteS: condp = new AstLteS{fl, varRefp, rightp}; break;
-    case VNType::atLt: condp = new AstLt{fl, varRefp, rightp}; break;
-    case VNType::atGteS:
+    case VNType::LteS: condp = new AstLteS{fl, varRefp, rightp}; break;
+    case VNType::Lt: condp = new AstLt{fl, varRefp, rightp}; break;
+    case VNType::GteS:
         condp = new AstGteS{fl, varRefp, rightp};
         inc = false;
         break;
@@ -419,8 +419,8 @@ static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp, 
     AstNodeExpr* const leftp = new AstConst{fl, left};
     AstNodeExpr* const rightp = new AstConst{fl, right};
     return createForeachLoop(nodep, bodysp, varp, leftp, rightp,
-                             declRange.left() <= declRange.right() ? VNType::atLteS
-                                                                   : VNType::atGteS);
+                             declRange.left() <= declRange.right() ? VNType::LteS
+                                                                   : VNType::GteS);
 }
 AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     // UINFOTREE(1, nodep, "", "foreach-old");
@@ -460,7 +460,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                     AstConst* const leftp = new AstConst{fl, 0};
                     AstNodeExpr* const rightp = new AstLenN{fl, fromp->cloneTreePure(false)};
                     loopp
-                        = createForeachLoop(nodep, bodyPointp, varp, leftp, rightp, VNType::atLt);
+                        = createForeachLoop(nodep, bodyPointp, varp, leftp, rightp, VNType::Lt);
                 } else {
                     UASSERT_OBJ(adtypep->isRanged(), varp, "foreach on basic " << adtypep);
                     loopp = createForeachLoopRanged(nodep, bodyPointp, varp, adtypep->declRange());
@@ -479,7 +479,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 subfromp->dtypep(fromDtp);
                 rightp->dtypeSetSigned32();
                 rightp->protect(false);
-                loopp = createForeachLoop(nodep, bodyPointp, varp, leftp, rightp, VNType::atLt);
+                loopp = createForeachLoop(nodep, bodyPointp, varp, leftp, rightp, VNType::Lt);
             } else if (VN_IS(fromDtp, AssocArrayDType)) {
                 // Make this: var KEY_TYPE index;
                 //            bit index__Vfirst;
