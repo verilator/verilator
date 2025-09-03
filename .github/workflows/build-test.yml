@@ -7,6 +7,8 @@ name: build-test
 
 on:
   push:
+    branches-ignore:
+      - 'dependabot/**'  # Avoid duplicates: only run the PR, not the push
   pull_request:
   workflow_dispatch:
   schedule:
@@ -245,7 +247,7 @@ jobs:
       - test-2204-clang
       - lint-py
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Decide whether the needed jobs succeeded or failed
