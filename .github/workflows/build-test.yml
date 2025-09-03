@@ -3,7 +3,7 @@
 # This name is key to badges in README.rst, so we use the name build
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-name: build
+name: build-test
 
 on:
   push:
@@ -17,7 +17,6 @@ permissions:
 
 defaults:
   run:
-    shell: bash
     working-directory: repo
 
 concurrency:
@@ -27,7 +26,7 @@ concurrency:
 jobs:
 
   build-2404-gcc:
-    name: Build
+    name: Build-Ubuntu
     uses: ./.github/workflows/reusable-build.yml
     with:
       os: ${{ matrix.os }}
@@ -39,7 +38,7 @@ jobs:
           - {os: ubuntu-24.04, cc: gcc}
 
   build-2404-clang:
-    name: Build
+    name: Build-Ubuntu
     uses: ./.github/workflows/reusable-build.yml
     with:
       os: ${{ matrix.os }}
@@ -51,7 +50,7 @@ jobs:
           - {os: ubuntu-24.04, cc: clang}
 
   build-2204-gcc:
-    name: Build
+    name: Build-Ubuntu
     uses: ./.github/workflows/reusable-build.yml
     with:
       os: ${{ matrix.os }}
@@ -63,7 +62,7 @@ jobs:
           - {os: ubuntu-22.04, cc: gcc}
 
   build-2204-clang:
-    name: Build
+    name: Build-Ubuntu
     uses: ./.github/workflows/reusable-build.yml
     with:
       os: ${{ matrix.os }}
@@ -73,6 +72,69 @@ jobs:
       matrix:
         include:
           - {os: ubuntu-22.04, cc: clang}
+
+  build-osx-gcc:
+    name: Build-OSX
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      os: ${{ matrix.os }}
+      os-name: osx
+      cc: ${{ matrix.cc }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: macos-15, cc: gcc}
+
+  build-osx-clang:
+    name: Build-OSX
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      os: ${{ matrix.os }}
+      os-name: osx
+      cc: ${{ matrix.cc }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: macos-15, cc: clang}
+
+  windows:
+    name: Build-Windows
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: windows-2025, cc: msvc}
+    env:
+      CI_OS_NAME: win
+      CI_COMMIT: ${{ github.sha }}
+      CCACHE_COMPRESS: 1
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_LIMIT_MULTIPLE: 0.95
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: repo
+      - name: Cache $CCACHE_DIR
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: msbuild-msvc-cmake
+      - name: compile
+        env:
+          WIN_FLEX_BISON: ${{ github.workspace }}/.ccache
+        run: ./ci/ci-win-compile.ps1
+      - name: test build
+        run: ./ci/ci-win-test.ps1
+      - name: Zip up repository
+        run: Compress-Archive -LiteralPath install -DestinationPath verilator.zip
+      - name: Upload zip archive
+        uses: actions/upload-artifact@v4
+        with:
+          path: ${{ github.workspace }}/repo/verilator.zip
+          name: verilator-win.zip
 
   test-2404-gcc:
     name: Test | ${{ matrix.os }} | ${{ matrix.cc }}
@@ -163,34 +225,30 @@ jobs:
           - {os: ubuntu-22.04, cc: clang, reloc: 1, suite: vltmt-2}
 
   lint-py:
-    runs-on: ubuntu-22.04
     name: Lint Python
-    env:
-      CI_OS_NAME: linux
-      CI_COMMIT: ${{ github.sha }}
-      CI_BUILD_STAGE_NAME: build
-      CI_RUNS_ON: ubuntu-22.04
-      CCACHE_COMPRESS: 1
-      CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_LIMIT_MULTIPLE: 0.95
-    strategy:
-      fail-fast: false
+    uses: ./.github/workflows/reusable-lint-py.yml
+
+  passed:
+    name: Test suite passed
+    if: always()
+    needs:
+      - build-2404-gcc
+      - build-2404-clang
+      - build-2204-gcc
+      - build-2204-clang
+      - build-osx-gcc
+      - build-osx-clang
+      - windows
+      - test-2404-gcc
+      - test-2404-clang
+      - test-2204-gcc
+      - test-2204-clang
+      - lint-py
+
+    runs-on: ubuntu-22.04
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
         with:
-          path: repo
-
-      - name: Install packages for build
-        run: ./ci/ci-install.bash
-
-    # We use specific version numbers, otherwise a Python package
-    # update may add a warning and break our build
-      - name: Install packages for lint
-        run: sudo pip3 install pylint==3.0.2 ruff==0.1.3 clang sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe ruff
-
-      - name: Configure
-        run: autoconf && ./configure --enable-longtests --enable-ccwarn
-
-      - name: Lint
-        run: make -k lint-py
+          jobs: ${{ toJSON(needs) }}

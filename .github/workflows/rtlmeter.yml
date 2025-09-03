@@ -10,12 +10,7 @@ on:
   schedule:
     - cron: '0 2 * * *'  # Daily, starting at 02:00 UTC
   pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - labeled
-      - unlabeled
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   contents: read
@@ -155,9 +150,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tag:
-          - gcc
-          - clang
+        tag: [gcc, clang]
     steps:
       - name: Checkout RTLMeter
         uses: actions/checkout@v4
@@ -357,7 +350,7 @@ jobs:
       - name: Create issue
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: |
+        run: |-
           echo "This issue was created automatically by the GitHub Actions CI due to the failure of a scheduled RTLMeter run." >> body.txt
           echo "" >> body.txt
           echo "Workflow status: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> body.txt
