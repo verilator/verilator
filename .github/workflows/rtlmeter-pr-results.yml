@@ -7,10 +7,8 @@ name: RTLMeter PR results
 
 on:
   workflow_run:
-    workflows:
-      - RTLMeter
-    types:
-      - completed
+    workflows: [RTLMeter]
+    types: [completed]
 
 jobs:
   publish:
@@ -44,7 +42,7 @@ jobs:
       - name: Comment on PR
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: |
+        run: |-
           ls -la
           cat report.txt
           gh pr --repo ${{ github.repository }} comment $(cat pr-number.txt) --body-file report.txt

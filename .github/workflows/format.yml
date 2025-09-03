@@ -38,7 +38,7 @@ jobs:
           make -j 2 format CLANGFORMAT=clang-format-18 &&
           git status
       - name: Push
-        run: |
+        run: |-
           if [ -n "$(git status --porcelain)" ]; then
             git commit . -m "Apply 'make format'" &&
             git push origin
