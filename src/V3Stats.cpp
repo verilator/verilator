@@ -127,12 +127,10 @@ public:
         }
 
         // Node types (also total memory usage)
-        const auto typeName = [](size_t t) {
-            return std::string{VNType{static_cast<VNType::en>(t)}.ascii()};
-        };
-        const auto typeSize = [](size_t t) {
-            return VNType::typeInfo(static_cast<VNType::en>(t)).m_sizeof;
-        };
+        const auto typeName
+            = [](size_t t) { return std::string{VNType{static_cast<VNType::en>(t)}.ascii()}; };
+        const auto typeSize
+            = [](size_t t) { return VNType::typeInfo(static_cast<VNType::en>(t)).m_sizeof; };
         size_t totalNodeMemoryUsage = 0;
         for (size_t t = 0; t < VNType::NUM_TYPES(); ++t) {
             if (const uint64_t count = m_counters.m_statTypeCount[t]) {

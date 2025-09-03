@@ -419,8 +419,7 @@ static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp, 
     AstNodeExpr* const leftp = new AstConst{fl, left};
     AstNodeExpr* const rightp = new AstConst{fl, right};
     return createForeachLoop(nodep, bodysp, varp, leftp, rightp,
-                             declRange.left() <= declRange.right() ? VNType::LteS
-                                                                   : VNType::GteS);
+                             declRange.left() <= declRange.right() ? VNType::LteS : VNType::GteS);
 }
 AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     // UINFOTREE(1, nodep, "", "foreach-old");
@@ -459,8 +458,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 if (adtypep->isString()) {
                     AstConst* const leftp = new AstConst{fl, 0};
                     AstNodeExpr* const rightp = new AstLenN{fl, fromp->cloneTreePure(false)};
-                    loopp
-                        = createForeachLoop(nodep, bodyPointp, varp, leftp, rightp, VNType::Lt);
+                    loopp = createForeachLoop(nodep, bodyPointp, varp, leftp, rightp, VNType::Lt);
                 } else {
                     UASSERT_OBJ(adtypep->isRanged(), varp, "foreach on basic " << adtypep);
                     loopp = createForeachLoopRanged(nodep, bodyPointp, varp, adtypep->declRange());

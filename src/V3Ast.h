@@ -118,8 +118,7 @@ public:
 
     // VNType is interconvetible with VNType::en
     // cppcheck-suppress noExplicitConstructor
-    constexpr VNType(en _e) VL_MT_SAFE
-        : m_e{_e} {}
+    constexpr VNType(en _e) VL_MT_SAFE : m_e{_e} {}
     constexpr operator en() const VL_MT_SAFE { return m_e; }
 
     // Retrieve VNTypeInfo for the given type

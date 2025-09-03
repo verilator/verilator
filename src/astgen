@@ -834,7 +834,8 @@ def write_type_enum(prefix, nodeList):
         for node in sorted(filter(lambda _: _.isLeaf, nodeList), key=lambda _: _.typeId):
             fh.write("        {t} = {n},\n".format(t=node.name, n=node.typeId))
         fh.write("    };\n")
-        fh.write("    static constexpr size_t NUM_TYPES() {{ return {n}; }}\n".format(n=root.typeIdMax + 1))
+        fh.write("    static constexpr size_t NUM_TYPES() {{ return {n}; }}\n".format(
+            n=root.typeIdMax + 1))
 
         fh.write("    enum bounds : uint16_t {\n")
         for node in sorted(filter(lambda _: not _.isLeaf, nodeList), key=lambda _: _.typeIdMin):
@@ -877,9 +878,7 @@ def write_type_tests(prefix, nodeList):
                     "return static_cast<int>({v}->type()) >= static_cast<int>({e}::first{t}) && static_cast<int>({v}->type()) <= static_cast<int>({e}::last{t});"
                     .format(v=variable, e=enum, t=node.name))
             else:
-                fh.write("return {v}->type() == {e}::{t};".format(v=variable,
-                                                                    e=enum,
-                                                                    t=node.name))
+                fh.write("return {v}->type() == {e}::{t};".format(v=variable, e=enum, t=node.name))
             fh.write(" }\n")
 
 
@@ -1145,9 +1144,8 @@ def write_ast_macros(filename):
 
             # Only care about leaf classes for the rest
             if node.isLeaf:
-                fh.write(
-                    "#define ASTGEN_SUPER_{t}(...) Ast{b}(VNType::{t}, __VA_ARGS__)\n".format(
-                        t=node.name, b=node.superClass.name))
+                fh.write("#define ASTGEN_SUPER_{t}(...) Ast{b}(VNType::{t}, __VA_ARGS__)\n".format(
+                    t=node.name, b=node.superClass.name))
             fh.write("\n")
 
 
