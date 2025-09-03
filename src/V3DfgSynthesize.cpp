@@ -1640,7 +1640,7 @@ class AstToDfgSynthesize final {
             bool anySelected = false;
             bool anyUnselected = false;
             vtxp->foreachSource([&](DfgVertex& src) {
-                DfgLogic& logic = *src.as<DfgLogic>();
+                const DfgLogic& logic = *src.as<DfgLogic>();
                 if (logic.selectedForSynthesis()) {
                     anySelected = true;
                 } else {
@@ -1880,7 +1880,7 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
     DfgWorklist worklist{dfg};
 
     // Synthesize all drivers of circular variables
-    for (DfgVertexVar* const varp : circularVarps) {
+    for (const DfgVertexVar* const varp : circularVarps) {
         varp->srcp()->as<DfgUnresolved>()->foreachSource([&](DfgVertex& driver) {
             worklist.push_front(*driver.as<DfgLogic>());
             return false;
