@@ -52,7 +52,7 @@ int AstNodeDType::s_uniqueNum = 0;
 //######################################################################
 // VNType
 
-const VNTypeInfo VNType::typeInfoTable[] = {
+const VNTypeInfo VNType::s_typeInfoTable[VNType::NUM_TYPES()] = {
 #include "V3Ast__gen_type_info.h"  // From ./astgen
 };
 
@@ -1162,8 +1162,7 @@ bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ig
 void AstNode::checkTreeIter(const AstNode* prevBackp) const VL_MT_STABLE {
     // private: Check a tree and children
     UASSERT_OBJ(prevBackp == this->backp(), this, "Back node inconsistent");
-    // cppcheck-suppress danglingTempReference
-    const VNTypeInfo& typeInfo = *type().typeInfo();
+    const VNTypeInfo& typeInfo = VNType::typeInfo(this->type());
     for (int i = 1; i <= 4; i++) {
         AstNode* nodep = nullptr;
         switch (i) {

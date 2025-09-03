@@ -564,7 +564,7 @@ class EmitCHeader final : public EmitCConstInit {
         puts("\nclass " + EmitCUtil::symClassName() + ";\n");
 
         // From `systemc_header
-        emitTextSection(modp, VNType::atScHdr);
+        emitTextSection(modp, VNType::ScHdr);
 
         emitStructs(modp);
 
@@ -607,7 +607,7 @@ class EmitCHeader final : public EmitCConstInit {
         emitFuncDecls(modp, /* inClassBody: */ true);
 
         // From `systemc_interface
-        emitTextSection(modp, VNType::atScInt);
+        emitTextSection(modp, VNType::ScInt);
 
         // Close class body
         puts("};\n");
@@ -616,7 +616,7 @@ class EmitCHeader final : public EmitCConstInit {
         // Emit out of class function declarations
         puts("\n");
         emitFuncDecls(modp, /* inClassBody: */ false);
-        emitTextSection(modp, VNType::atScHdrPost);
+        emitTextSection(modp, VNType::ScHdrPost);
     }
 
     explicit EmitCHeader(const AstNodeModule* modp) {

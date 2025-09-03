@@ -200,7 +200,7 @@ class EmitCImp final : EmitCFunc {
         puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
         for (const string& name : headers) puts("#include \"" + name + ".h\"\n");
 
-        emitTextSection(m_modp, VNType::atScImpHdr);
+        emitTextSection(m_modp, VNType::ScImpHdr);
     }
 
     void emitStaticVarDefns(const AstNodeModule* modp) {
@@ -286,7 +286,7 @@ class EmitCImp final : EmitCFunc {
 
         putsDecoration(modp, "// Reset structure values\n");
         puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
-        emitTextSection(modp, VNType::atScCtor);
+        emitTextSection(modp, VNType::ScCtor);
 
         puts("}\n");
     }
@@ -393,7 +393,7 @@ class EmitCImp final : EmitCFunc {
         puts("\n");
         putns(modp, EmitCUtil::prefixNameProtect(modp) + "::~" + EmitCUtil::prefixNameProtect(modp)
                         + "() {\n");
-        emitTextSection(modp, VNType::atScDtor);
+        emitTextSection(modp, VNType::ScDtor);
         puts("}\n");
         splitSizeInc(10);
     }
@@ -507,7 +507,7 @@ class EmitCImp final : EmitCFunc {
             emitSavableImp(modp);
         } else {
             // From `systemc_implementation
-            emitTextSection(modp, VNType::atScImp);
+            emitTextSection(modp, VNType::ScImp);
         }
     }
     void emitCommonImp(const AstNodeModule* modp) {

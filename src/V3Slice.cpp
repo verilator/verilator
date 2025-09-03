@@ -350,12 +350,12 @@ class SliceVisitor final : public VNVisitor {
                     logp = clonep;
                 } else {
                     switch (nodep->type()) {
-                    case VNType::atEq:  // FALLTHRU
-                    case VNType::atEqCase:
+                    case VNType::Eq:  // FALLTHRU
+                    case VNType::EqCase:
                         logp = new AstLogAnd{nodep->fileline(), logp, clonep};
                         break;
-                    case VNType::atNeq:  // FALLTHRU
-                    case VNType::atNeqCase:
+                    case VNType::Neq:  // FALLTHRU
+                    case VNType::NeqCase:
                         logp = new AstLogOr{nodep->fileline(), logp, clonep};
                         break;
                     default: nodep->v3fatalSrc("Unknown node type processing array slice"); break;
