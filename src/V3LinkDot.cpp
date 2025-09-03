@@ -168,8 +168,8 @@ private:
 public:
     // METHODS
 
-    void dumpSelf(const string& nameComment = "linkdot", bool force = false) {
-        if (dumpLevel() >= 6 || force) {
+    void dumpSelf(const string& nameComment, bool force = false) {
+        if (debug() >= 6 || dumpLevel() >= 6 || force) {
             const string filename = v3Global.debugFilename(nameComment) + ".txt";
             const std::unique_ptr<std::ofstream> logp{V3File::new_ofstream(filename)};
             if (logp->fail()) v3fatal("Can't write file: " << filename);
@@ -4880,19 +4880,19 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // No longer needed
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
-        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        if (m_statep->forParamed()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstPackageExport* nodep) override {
         // No longer needed
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
-        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        if (m_statep->forParamed()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstPackageExportStarStar* nodep) override {
         // No longer needed
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
-        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        if (m_statep->forParamed()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstCellRef* nodep) override {
         LINKDOT_VISIT_START();
@@ -5009,13 +5009,13 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     } else {
         v3fatalSrc("Bad case");
     }
-    state.dumpSelf();
+    state.dumpSelf("prelinkdot");
     state.computeIfaceModSyms();
     state.computeIfaceVarSyms();
     state.computeScopeAliases();
-    state.dumpSelf();
+    state.dumpSelf("linkdot-preresolve");
     LinkDotResolveVisitor visitor{rootp, &state};
-    state.dumpSelf();
+    state.dumpSelf("linkdot-done");
 }
 
 void V3LinkDot::linkDotPrimary(AstNetlist* nodep) {

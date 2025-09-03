@@ -16,6 +16,7 @@ Verilator 5.041 devel
 * Fix while loop hang on timing-delayed assignment (#6343) (#6354). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix V3Hash MacOS ambiguity (#6350). [Lan Zongwei]
 * Fix cmake APPLE variable (#6351). [Lan Zongwei]
+* Fix package imports not found after parameters applied (#6373). [Alex Solomatnikov]
 
 
 Verilator 5.040 2025-08-30
