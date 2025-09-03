@@ -137,6 +137,13 @@ class LinkLValueVisitor final : public VNVisitor {
             }
         }
     }
+    void visit(AstAlias* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        VL_RESTORER(m_setContinuously);
+        m_setRefLvalue = VAccess::READWRITE;
+        m_setContinuously = true;
+        iterateChildren(nodep);
+    }
     void visit(AstInitialStatic* nodep) override {
         VL_RESTORER(m_inInitialStatic);
         m_inInitialStatic = true;
