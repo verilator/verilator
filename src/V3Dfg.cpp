@@ -555,63 +555,6 @@ DfgVertex::DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* 
     dfg.addVertex(*this);
 }
 
-bool DfgVertex::equals(const DfgVertex& that, EqualsCache& cache) const {
-    // If same vertex, then equal
-    if (this == &that) return true;
-
-    // If different type, then not equal
-    if (this->type() != that.type()) return false;
-
-    // If different data type, then not equal
-    if (this->dtypep() != that.dtypep()) return false;
-
-    // If different number of inputs, then not equal
-    if (this->nInputs() != that.nInputs()) return false;
-
-    // Check vertex specifics
-    if (!this->selfEquals(that)) return false;
-
-    // Check sources
-    const auto key = (this < &that) ? EqualsCache::key_type{this, &that}  //
-                                    : EqualsCache::key_type{&that, this};
-    // Note: the recursive invocation can cause a re-hash but that will not invalidate references
-    uint8_t& result = cache[key];
-    if (!result) {
-        const bool equal = [&]() {
-            for (size_t i = 0; i < nInputs(); ++i) {
-                const DfgVertex* const ap = this->inputp(i);
-                const DfgVertex* const bp = that.inputp(i);
-                if (!ap && !bp) continue;
-                if (!ap || !bp) return false;
-                if (!ap->equals(*bp, cache)) return false;
-            }
-            return true;
-        }();
-        result = (static_cast<uint8_t>(equal) << 1) | 1;
-    }
-    return result >> 1;
-}
-
-V3Hash DfgVertex::hash(DfgUserMap<V3Hash>& cache) {
-    V3Hash& result = cache[this];
-    if (!result.value()) {
-        V3Hash hash{selfHash()};
-        // Variables are defined by themselves, so there is no need to hash them further
-        // (especially the sources). This enables sound hashing of graphs circular only through
-        // variables, which we rely on.
-        if (!is<DfgVertexVar>()) {
-            hash += m_type;
-            hash += size();
-            foreachSource([&](DfgVertex& vtx) {
-                hash += vtx.hash(cache);
-                return false;
-            });
-        }
-        result = hash;
-    }
-    return result;
-}
-
 uint32_t DfgVertex::fanout() const {
     uint32_t result = 0;
     foreachSink([&](const DfgVertex&) {

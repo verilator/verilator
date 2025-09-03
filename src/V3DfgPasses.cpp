@@ -25,61 +25,6 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-// Common sub-expression elimination
-void V3DfgPasses::cse(DfgGraph& dfg, V3DfgCseContext& ctx) {
-    // Remove common sub-expressions
-    {
-        // Used by DfgVertex::hash
-        DfgUserMap<V3Hash> hashCache = dfg.makeUserMap<V3Hash>();
-
-        DfgVertex::EqualsCache equalsCache;
-        std::unordered_map<V3Hash, std::vector<DfgVertex*>> verticesWithEqualHashes;
-        verticesWithEqualHashes.reserve(dfg.size());
-
-        // Pre-hash variables, these are all unique, so just set their hash to a unique value
-        uint32_t varHash = 0;
-        for (const DfgVertexVar& vtx : dfg.varVertices()) hashCache[vtx] = V3Hash{++varHash};
-
-        // Similarly pre-hash constants for speed. While we don't combine constants, we do want
-        // expressions using the same constants to be combined, so we do need to hash equal
-        // constants to equal values.
-        for (DfgConst* const vtxp : dfg.constVertices().unlinkable()) {
-            // Delete unused constants while we are at it.
-            if (!vtxp->hasSinks()) {
-                VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
-                continue;
-            }
-            hashCache[vtxp] = vtxp->num().toHash() + varHash;
-        }
-
-        // Combine operation vertices
-        for (DfgVertex* const vtxp : dfg.opVertices().unlinkable()) {
-            // Delete unused nodes while we are at it.
-            if (!vtxp->hasSinks()) {
-                vtxp->unlinkDelete(dfg);
-                continue;
-            }
-            const V3Hash hash = vtxp->hash(hashCache);
-            std::vector<DfgVertex*>& vec = verticesWithEqualHashes[hash];
-            bool replaced = false;
-            for (DfgVertex* const candidatep : vec) {
-                if (candidatep->equals(*vtxp, equalsCache)) {
-                    ++ctx.m_eliminated;
-                    vtxp->replaceWith(candidatep);
-                    VL_DO_DANGLING(vtxp->unlinkDelete(dfg), vtxp);
-                    replaced = true;
-                    break;
-                }
-            }
-            if (replaced) continue;
-            vec.push_back(vtxp);
-        }
-    }
-
-    // Prune unused nodes
-    removeUnused(dfg);
-}
-
 void V3DfgPasses::inlineVars(DfgGraph& dfg) {
     for (DfgVertexVar& vtx : dfg.varVertices()) {
         if (DfgVarPacked* const varp = vtx.cast<DfgVarPacked>()) {

@@ -236,6 +236,7 @@ set(COMMON_SOURCES
     V3DfgBreakCycles.cpp
     V3DfgCache.cpp
     V3DfgColorSCCs.cpp
+    V3DfgCse.cpp
     V3DfgDecomposition.cpp
     V3DfgDfgToAst.cpp
     V3DfgOptimizer.cpp

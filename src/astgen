@@ -1220,8 +1220,6 @@ def write_dfg_auto_classes(filename):
 
             emitBlock('''\
                       class Dfg{t} final : public Dfg{s} {{
-                          bool selfEquals(const DfgVertex&) const final {{ return true; }}
-                          V3Hash selfHash() const final {{ return V3Hash{{}}; }}
                       public:
                           Dfg{t}(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
                               : Dfg{s}{{dfg, dfgType(), flp, dtypep}} {{}}
