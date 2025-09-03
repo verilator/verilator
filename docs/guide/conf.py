@@ -110,6 +110,9 @@ html_domain_indices = False
 html_logo = "../_static/verilator_192_150_min.png"
 
 html_theme = 'sphinx_rtd_theme'
+# Despite a 'WARNING: Calling get_html_theme_path is deprecated'
+# the HTML output is different without this line
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 html_theme_options = {
     'logo_only': True,
