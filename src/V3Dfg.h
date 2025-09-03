@@ -770,6 +770,77 @@ public:
 };
 
 //------------------------------------------------------------------------------
+// Worklist for processing DfgVertices, implemented via DfgUserMap
+
+class DfgWorklist final {
+    // STATE
+
+    // The Graph being processed
+    DfgGraph& m_dfg;
+    // Map from vertex to next vertex in the work list
+    DfgUserMap<DfgVertex*> m_nextp = m_dfg.makeUserMap<DfgVertex*>();
+    // We want all 'nextp' pointers for vertices that are in the worklist to be
+    // non-zero (including that of the last element). This allows us to do two
+    // important things: detect if an element is in the list by checking for a
+    // non-zero 'nextp'', and easy prefetching without conditionals. The
+    // address of the worklist itself is a good sentinel as it is a valid
+    // memory address, and we can easily check for the end of the list.
+    DfgVertex* const m_sentinelp = reinterpret_cast<DfgVertex*>(this);
+    // Head of work list
+    DfgVertex* m_headp = m_sentinelp;
+
+public:
+    // CONSTRUCTOR
+    DfgWorklist(DfgGraph& dfg)
+        : m_dfg{dfg} {}
+    VL_UNCOPYABLE(DfgWorklist);
+    VL_UNMOVABLE(DfgWorklist);
+    ~DfgWorklist() = default;
+
+    // METHODS
+
+    // If 'vtx' is not in the worklist already, add it at the head of the list
+    // and return ture. If 'vtx' is already in the work list, then do nothing
+    // and return false.
+    bool push_front(DfgVertex& vtx) {
+        // Pick up reference to the next pointer
+        DfgVertex*& nextpr = m_nextp[vtx];
+        // If already in work list then nothing to do
+        if (nextpr) return false;
+        // Prepend to work list
+        nextpr = m_headp;
+        m_headp = &vtx;
+        return true;
+    }
+
+    // Returns ture iff 'vtx' is in the worklist
+    bool contains(const DfgVertex& vtx) { return m_nextp[vtx]; }
+
+    // Process the worklist by removing the first element, calling on it the
+    // given callable 'f', and repeat until the worklist is empty. The callable
+    // 'f' can add furthere vertices to the worklist.
+    template <typename T_Callable>
+    void foreach(T_Callable&& f) {
+        static_assert(vlstd::is_invocable_r<void, T_Callable, DfgVertex&>::value,
+                      "T_Callable 'f' must have a signature compatible with 'void(DfgVertex&)'");
+
+        // Process the work list
+        while (m_headp != m_sentinelp) {
+            // Pick up the head
+            DfgVertex& vtx = *m_headp;
+            // Detach the head
+            m_headp = m_nextp.at(vtx);
+            // Prefetch next item
+            VL_PREFETCH_RW(m_headp);
+            // This item is now off the work list
+            m_nextp.at(vtx) = nullptr;
+            // Apply 'f'
+            f(vtx);
+        }
+    }
+};
+
+//------------------------------------------------------------------------------
 // Inline method definitions
 
 // DfgEdge {{{

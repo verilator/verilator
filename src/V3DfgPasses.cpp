@@ -91,23 +91,14 @@ void V3DfgPasses::inlineVars(DfgGraph& dfg) {
 }
 
 void V3DfgPasses::removeUnused(DfgGraph& dfg) {
-    // Map from vertex to next vertex in the work list
-    DfgUserMap<DfgVertex*> nextp = dfg.makeUserMap<DfgVertex*>();
-
-    // Head of work list. Note that we want all next pointers in the list to be non-zero (including
-    // that of the last element). This allows as to do two important things: detect if an element
-    // is in the list by checking for a non-zero next pointer, and easy prefetching without
-    // conditionals. The address of the graph is a good sentinel as it is a valid memory address,
-    // and we can easily check for the end of the list.
-    DfgVertex* const sentinelp = reinterpret_cast<DfgVertex*>(&dfg);
-    DfgVertex* workListp = sentinelp;
+    // Worklist based algoritm
+    DfgWorklist workList{dfg};
 
     // Add all unused operation vertices to the work list
     for (DfgVertex& vtx : dfg.opVertices()) {
         if (vtx.hasSinks()) continue;
         // This vertex is unused. Add to work list.
-        nextp[vtx] = workListp;
-        workListp = &vtx;
+        workList.push_front(vtx);
     }
 
     // Also add all unused temporaries created during synthesis
@@ -116,45 +107,33 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
         if (vtx.hasSinks()) continue;
         if (vtx.hasDfgRefs()) continue;
         // This vertex is unused. Add to work list.
-        nextp[vtx] = workListp;
-        workListp = &vtx;
+        workList.push_front(vtx);
     }
 
     // Process the work list
-    while (workListp != sentinelp) {
-        // Pick up the head
-        DfgVertex* const vtxp = workListp;
-        // Detach the head
-        workListp = nextp.at(vtxp);
-        // Prefetch next item
-        VL_PREFETCH_RW(workListp);
-        // This item is now off the work list
-        nextp.at(vtxp) = nullptr;
+    workList.foreach([&](DfgVertex& vtx) {
         // DfgLogic should have been synthesized or removed
-        UASSERT_OBJ(!vtxp->is<DfgLogic>(), vtxp, "Should not be DfgLogic");
+        UASSERT_OBJ(!vtx.is<DfgLogic>(), &vtx, "Should not be DfgLogic");
         // If used, then nothing to do, so move on
-        if (vtxp->hasSinks()) continue;
+        if (vtx.hasSinks()) return;
         // If temporary used in another graph, we need to keep it
-        if (const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>()) {
+        if (const DfgVertexVar* const varp = vtx.cast<DfgVertexVar>()) {
             UASSERT_OBJ(varp->tmpForp(), varp, "Non-temporary variable should not be visited");
-            if (varp->hasDfgRefs()) continue;
+            if (varp->hasDfgRefs()) return;
         }
         // Add sources of unused vertex to work list
-        vtxp->foreachSource([&](DfgVertex& src) {
+        vtx.foreachSource([&](DfgVertex& src) {
             // We only remove actual operation vertices and synthesis temporaries in this loop
             if (src.is<DfgConst>()) return false;
             const DfgVertexVar* const varp = src.cast<DfgVertexVar>();
             if (varp && !varp->tmpForp()) return false;
-            // If already in work list then nothing to do
-            if (nextp[src]) return false;
-            // Actually add to work list.
-            nextp[src] = workListp;
-            workListp = &src;
+            // Add source to workList
+            workList.push_front(src);
             return false;
         });
         // Remove the unused vertex
-        vtxp->unlinkDelete(dfg);
-    }
+        vtx.unlinkDelete(dfg);
+    });
 
     // Remove unused and undriven variable vertices
     for (DfgVertexVar* const vtxp : dfg.varVertices().unlinkable()) {
@@ -409,32 +388,11 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
 }
 
 void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
-    // Map from vertex to next vertex in the work list
-    DfgUserMap<DfgVertex*> nextp = dfg.makeUserMap<DfgVertex*>();
+    // Worklist based algoritm
+    DfgWorklist workList{dfg};
 
-    // Head of work list. Note that we want all next pointers in the list to be non-zero
-    // (including that of the last element). This allows us to do two important things: detect
-    // if an element is in the list by checking for a non-zero next pointer, and easy
-    // prefetching without conditionals. The address of the graph is a good sentinel as it is a
-    // valid memory address, and we can easily check for the end of the list.
-    DfgVertex* const sentinelp = reinterpret_cast<DfgVertex*>(&dfg);
-    DfgVertex* workListp = sentinelp;
-
-    // Add all variables to the initial work list
-    for (DfgVertexVar& vtx : dfg.varVertices()) {
-        nextp[vtx] = workListp;
-        workListp = &vtx;
-    }
-
-    const auto addToWorkList = [&](DfgVertex& vtx) {
-        // If already in work list then nothing to do
-        DfgVertex*& nextpr = nextp[vtx];
-        if (nextpr) return false;
-        // Actually add to work list.
-        nextpr = workListp;
-        workListp = &vtx;
-        return false;
-    };
+    // Add all variables to the work list
+    for (DfgVertexVar& vtx : dfg.varVertices()) workList.push_front(vtx);
 
     // List of variables (AstVar or AstVarScope) we are replacing
     std::vector<AstNode*> replacedVariables;
@@ -446,46 +404,40 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
     bool doReplace = false;
 
     // Process the work list
-    while (workListp != sentinelp) {
-        // Pick up the head of the work list
-        DfgVertex* const vtxp = workListp;
-        // Detach the head
-        workListp = nextp.at(vtxp);
-        // Reset user pointer so it can be added back to the work list later
-        nextp.at(vtxp) = nullptr;
-        // Prefetch next item
-        VL_PREFETCH_RW(workListp);
-
+    workList.foreach([&](DfgVertex& vtx) {
         // Remove unused non-variable vertices
-        if (!vtxp->is<DfgVertexVar>() && !vtxp->hasSinks()) {
+        if (!vtx.is<DfgVertexVar>() && !vtx.hasSinks()) {
             // Add sources of removed vertex to work list
-            vtxp->foreachSource(addToWorkList);
+            vtx.foreachSource([&](DfgVertex& src) {
+                workList.push_front(src);
+                return false;
+            });
             // Remove the unused vertex
-            vtxp->unlinkDelete(dfg);
-            continue;
+            vtx.unlinkDelete(dfg);
+            return;
         }
 
         // We can only eliminate DfgVarPacked vertices at the moment
-        DfgVarPacked* const varp = vtxp->cast<DfgVarPacked>();
-        if (!varp) continue;
+        DfgVarPacked* const varp = vtx.cast<DfgVarPacked>();
+        if (!varp) return;
 
         if (!varp->tmpForp()) {
             // Can't remove regular variable if it has external drivers
-            if (!varp->isDrivenFullyByDfg()) continue;
+            if (!varp->isDrivenFullyByDfg()) return;
         } else {
             // Can't remove partially driven used temporaries
-            if (!varp->isDrivenFullyByDfg() && varp->hasSinks()) continue;
+            if (!varp->isDrivenFullyByDfg() && varp->hasSinks()) return;
         }
 
         // Can't remove if referenced external to the module/netlist
-        if (varp->hasExtRefs()) continue;
+        if (varp->hasExtRefs()) return;
         // Can't remove if written in the module
-        if (varp->hasModWrRefs()) continue;
+        if (varp->hasModWrRefs()) return;
         // Can't remove if referenced in other DFGs of the same module
-        if (varp->hasDfgRefs()) continue;
+        if (varp->hasDfgRefs()) return;
 
         // If it has multiple sinks, it can't be eliminated
-        if (varp->hasMultipleSinks()) continue;
+        if (varp->hasMultipleSinks()) return;
 
         if (!varp->hasModRefs()) {
             // If it is only referenced in this DFG, it can be removed
@@ -504,15 +456,18 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
             ctx.m_deleteps.push_back(nodep);  // Delete variable at the end
             nodep->user2p(driverp->nodep());
         } else {
-            // Otherwise this *is* the canonical var
-            continue;
+            // Otherwise this *is* the canonical var, keep it
+            return;
         }
 
         // Add sources of redundant variable to the work list
-        vtxp->foreachSource(addToWorkList);
+        vtx.foreachSource([&](DfgVertex& src) {
+            workList.push_front(src);
+            return false;
+        });
         // Remove the redundant variable
-        vtxp->unlinkDelete(dfg);
-    }
+        vtx.unlinkDelete(dfg);
+    });
 
     // Job done if no replacements possible
     if (!doReplace) return;
