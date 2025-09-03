@@ -67,17 +67,6 @@ class DfgVisitor;
 template <typename T_User, bool = fitsSpaceAllocatedFor<T_User, void*>()>
 class DfgUserMap;
 
-// Specialization of std::hash for a std::pair<const DfgVertex*, const DfgVertex*> for use below
-template <>
-struct std::hash<std::pair<const DfgVertex*, const DfgVertex*>> final {
-    size_t operator()(const std::pair<const DfgVertex*, const DfgVertex*>& item) const {
-        const size_t a = reinterpret_cast<std::uintptr_t>(item.first);
-        const size_t b = reinterpret_cast<std::uintptr_t>(item.second);
-        constexpr size_t halfWidth = 8 * sizeof(b) / 2;
-        return a ^ ((b << halfWidth) | (b >> halfWidth));
-    }
-};
-
 namespace V3Dfg {
 //-----------------------------------------------------------------------
 // Functions for compatibility tests
@@ -226,12 +215,6 @@ class DfgVertex VL_NOT_FINAL {
     // Visitor accept method
     virtual void accept(DfgVisitor& v) = 0;
 
-    // Part of Vertex equality only dependent on this vertex
-    virtual bool selfEquals(const DfgVertex& that) const = 0;
-
-    // Part of Vertex hash only dependent on this vertex
-    virtual V3Hash selfHash() const = 0;
-
     // Acessor for type List
     V3ListLinks<DfgVertex>& links() { return m_links; }
 
@@ -282,26 +265,6 @@ public:
         if (isPacked()) return dtypep()->width();
         return VN_AS(dtypep(), UnpackArrayDType)->elementsConst();
     }
-
-    // Cache type for 'equals' below
-    using EqualsCache = std::unordered_map<std::pair<const DfgVertex*, const DfgVertex*>, uint8_t>;
-
-    // Vertex equality (based on this vertex and all upstream vertices feeding into this vertex).
-    // Returns true, if the vertices can be substituted for each other without changing the
-    // semantics of the logic. The 'cache' argument is used to store results to avoid repeat
-    // evaluations, but it requires that the upstream sources of the compared vertices do not
-    // change between invocations.
-    bool equals(const DfgVertex& that, EqualsCache& cache) const VL_MT_DISABLED;
-
-    // Uncached version of 'equals'
-    bool equals(const DfgVertex& that) const {
-        EqualsCache cache;  // Still cache recursive calls within this invocation
-        return equals(that, cache);
-    }
-
-    // Hash of vertex (depends on this vertex and all upstream vertices feeding into this vertex).
-    // Uses the given DfgUserMap for caching hashes
-    V3Hash hash(DfgUserMap<V3Hash>& cache) VL_MT_DISABLED;
 
     // Predicate: has 1 or more sinks
     bool hasSinks() const { return !m_sinks.empty(); }

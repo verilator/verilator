@@ -57,19 +57,6 @@ class DfgVertexVar VL_NOT_FINAL : public DfgVertex {
     // associated input Var/VarScope.
     AstNode* m_tmpForp = nullptr;
 
-    bool selfEquals(const DfgVertex& that) const final {
-        UASSERT_OBJ(nodep() != that.as<DfgVertexVar>()->nodep(), this,
-                    "There should only be one DfgVertexVar for a given AstVar/AstVarScope");
-        return false;
-    }
-
-    V3Hash selfHash() const final {
-        V3Hash hash;
-        hash += nodep()->name();
-        hash += varp()->varType();
-        return hash;
-    }
-
     DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp, AstVarScope* vscp)
         : DfgVertex{dfg, type, varp->fileline(), V3Dfg::toDfgDType(varp->dtypep())}
         , m_varp{varp}
@@ -219,11 +206,6 @@ class DfgConst final : public DfgVertexNullary {
 
     V3Number m_num;  // Constant value
 
-    bool selfEquals(const DfgVertex& that) const override {
-        return num().isCaseEq(that.as<DfgConst>()->num());
-    }
-    V3Hash selfHash() const override { return num().toHash(); }
-
 public:
     DfgConst(DfgGraph& dfg, FileLine* flp, const V3Number& num)
         : DfgVertexNullary{dfg, dfgType(), flp, V3Dfg::dtypePacked(num.width())}
@@ -272,11 +254,6 @@ class DfgSel final : public DfgVertexUnary {
     // 'DfgMux` for the non-constant 'lsbp'.
     uint32_t m_lsb = 0;  // The LSB index
 
-    bool selfEquals(const DfgVertex& that) const override {
-        return lsb() == that.as<DfgSel>()->lsb();
-    }
-    V3Hash selfHash() const override { return V3Hash{lsb()}; }
-
 public:
     DfgSel(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
         : DfgVertexUnary{dfg, dfgType(), flp, dtypep} {}
@@ -291,9 +268,6 @@ public:
 class DfgUnitArray final : public DfgVertexUnary {
     // This is a type adapter for modeling arrays. It's a single element array,
     // with the value of the single element being the source operand.
-    bool selfEquals(const DfgVertex&) const final { return true; }
-    V3Hash selfHash() const final { return V3Hash{}; }
-
 public:
     DfgUnitArray(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
         : DfgVertexUnary{dfg, dfgType(), flp, dtypep} {
@@ -322,9 +296,6 @@ class DfgMux final : public DfgVertexBinary {
     // AstSel is binary, but 'lsbp' is very often constant. As AstSel is fairly
     // common, we special case as a DfgSel for the constant 'lsbp', and as
     // 'DfgMux` for the non-constant 'lsbp'.
-    bool selfEquals(const DfgVertex&) const override { return true; }
-    V3Hash selfHash() const override { return V3Hash{}; }
-
 public:
     DfgMux(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
         : DfgVertexBinary{dfg, dfgType(), flp, dtypep} {}
@@ -378,20 +349,6 @@ class DfgVertexSplice VL_NOT_FINAL : public DfgVertexVariadic {
             , m_flp{flp} {}
     };
     std::vector<DriverData> m_driverData;  // Additional data associated with each driver
-
-    bool selfEquals(const DfgVertex& that) const override final {
-        const DfgVertexSplice* const thatp = that.as<DfgVertexSplice>();
-        for (size_t i = 0; i < nInputs(); ++i) {
-            if (m_driverData[i].m_lo != thatp->m_driverData[i].m_lo) return false;
-        }
-        return true;
-    }
-    V3Hash selfHash() const override final {
-        V3Hash hash;
-        const size_t n = nInputs();
-        for (size_t i = 0; i < n; ++i) hash += m_driverData[i].m_lo;
-        return hash;
-    }
 
 protected:
     DfgVertexSplice(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep)
@@ -512,10 +469,6 @@ class DfgLogic final : public DfgVertexVariadic {
     // Vertices this logic was synthesized into. Excluding variables
     std::vector<DfgVertex*> m_synth;
 
-    // Used very early, should never be needed
-    bool selfEquals(const DfgVertex&) const final { V3ERROR_NA_RETURN(false); }
-    V3Hash selfHash() const final { V3ERROR_NA_RETURN(V3Hash{}); }
-
 public:
     DfgLogic(DfgGraph& dfg, AstAssignW* nodep, AstScope* scopep)
         : DfgVertexVariadic{dfg, dfgType(), nodep->fileline(), nullptr}
@@ -547,10 +500,6 @@ public:
 
 class DfgUnresolved final : public DfgVertexVariadic {
     // Represents a collection of unresolved variable drivers before synthesis
-
-    bool selfEquals(const DfgVertex&) const final { return true; }
-    V3Hash selfHash() const final { return V3Hash{}; }
-
 public:
     DfgUnresolved(DfgGraph& dfg, const DfgVertexVar* vtxp)
         : DfgVertexVariadic{dfg, dfgType(), vtxp->fileline(), vtxp->dtypep()} {}
