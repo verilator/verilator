@@ -1365,12 +1365,21 @@ class TristateVisitor final : public TristateBaseVisitor {
         VL_RESTORER(m_currentStrength);
         if (m_graphing) {
             if (nodep->user2() & U2_GRAPHING) return;
-            m_alhs = true; // In AstAssignAlias both sides should be considered as lhs
+            m_alhs = true;  // In AstAssignAlias both sides should be considered as lhs
             iterateChildren(nodep);
             associateLogic(nodep->rhsp(), nodep);
             associateLogic(nodep, nodep->rhsp());
             associateLogic(nodep, nodep->lhsp());
             associateLogic(nodep->lhsp(), nodep);
+        } else {
+            if (nodep->lhsp()->user1p()) {
+                UASSERT_OBJ(nodep->rhsp()->user1p(), nodep, "LHS has user1 set, but RHS doesn't");
+                nodep->addNextHere(new AstAssignAlias{nodep->fileline(),
+                                                      VN_AS(nodep->lhsp()->user1p(), NodeExpr),
+                                                      VN_AS(nodep->rhsp()->user1p(), NodeExpr)});
+            } else {
+                UASSERT_OBJ(!nodep->rhsp()->user1p(), nodep, "RHS has user1 set, but LHS doesn't");
+            }
         }
     }
 
