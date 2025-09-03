@@ -76,7 +76,7 @@ designs, Verilator is the tool for you.
 Performance
 ===========
 
-Verilator does not directly translate Verilog HDL to C++ or SystemC. Rather,
+Verilator does not directly translate Verilog to C++ or SystemC. Rather,
 Verilator compiles your code into a much faster optimized and optionally
 thread-partitioned model, which is in turn wrapped inside a C++/SystemC
 module. The results are a compiled Verilog model that executes even on a
