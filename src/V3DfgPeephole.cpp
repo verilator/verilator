@@ -1322,7 +1322,7 @@ class V3DfgPeephole final : public DfgVisitor {
 
         {
             const auto joinSels = [this](DfgSel* lSelp, DfgSel* rSelp, FileLine* flp) -> DfgSel* {
-                if (lSelp->fromp()->equals(*rSelp->fromp())) {
+                if (isSame(lSelp->fromp(), rSelp->fromp())) {
                     if (lSelp->lsb() == rSelp->lsb() + rSelp->width()) {
                         // Two consecutive Sels, make a single Sel.
                         const uint32_t width = lSelp->width() + rSelp->width();
