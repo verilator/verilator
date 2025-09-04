@@ -1655,8 +1655,7 @@ modportPortsDecl<nodep>:
                 port_direction modportSimplePortOrTFPort { $$ = new AstModportVarRef{$<fl>2, *$2, GRAMMARP->m_varIO};
                                                            GRAMMARP->m_modportImpExpActive = false;}
         //                      // IEEE: modport_clocking_declaration
-        |       yCLOCKING idAny/*clocking_identifier*/
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: Modport clocking"); }
+        |       yCLOCKING idAny/*clocking_identifier*/ { $$ = new AstModportClockingRef{$1, *$2}; }
         //                      // IEEE: yIMPORT modport_tf_port
         //                      // IEEE: yEXPORT modport_tf_port
         //                      // modport_tf_port expanded here

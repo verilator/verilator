@@ -1198,6 +1198,23 @@ public:
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     ASTGEN_MEMBERS_AstModport;
 };
+class AstModportClockingRef final : public AstNode {
+    // A clocking block referenced under a modport
+    // The storage for the variable itself is inside the interface, thus this is a reference
+    // PARENT: AstModport
+    //
+    // @astgen ptr := m_clockingp : Optional[AstClocking]  // Link to the actual clocking block
+    string m_name;  // Name of the clocking block referenced
+public:
+    AstModportClockingRef(FileLine* fl, const string& name)
+        : ASTGEN_SUPER_ModportClockingRef(fl)
+        , m_name{name} {}
+    ASTGEN_MEMBERS_AstModportClockingRef;
+    void dump(std::ostream& str) const override;
+    string name() const override VL_MT_STABLE { return m_name; }
+    AstClocking* clockingp() const VL_MT_STABLE { return m_clockingp; }  // [After Link] Pointer to clocking block
+    void clockingp(AstClocking* clockingp) { m_clockingp = clockingp; }
+};
 class AstModportFTaskRef final : public AstNode {
     // An import/export referenced under a modport
     // The storage for the function itself is inside the
