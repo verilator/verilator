@@ -57,6 +57,8 @@ def check():
     for author in sorted(Authors.keys()):
         if test.verbose:
             print("Check: " + author)
+        if re.search(r'\[bot\]', author):
+            continue
         if author not in Contributors:
             test.error("Certify your contribution by sorted-inserting '" + author +
                        "' into docs/CONTRIBUTORS.\n"
