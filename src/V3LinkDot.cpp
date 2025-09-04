@@ -3785,10 +3785,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 m_statep->resolveClassOrPackage(m_ds.m_dotSymp, nodep, m_ds.m_dotPos != DP_PACKAGE,
                                                 false, ":: reference");
             }
-            UASSERT_OBJ(m_statep->forPrimary()
-                            || VN_IS(nodep->classOrPackageNodep(), ParamTypeDType)
-                            || nodep->classOrPackageSkipp(),
-                        nodep, "ClassRef has unlinked class");
 
             // ClassRef's have pins, so track
             if (nodep->classOrPackageSkipp()) {
@@ -3796,6 +3792,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else if (nodep->name() != "local::") {
                 return;
             }
+
             AstClass* const refClassp = VN_CAST(nodep->classOrPackageSkipp(), Class);
             // Make sure any extends() are properly imported within referenced class
             if (refClassp && !m_statep->forPrimary()) classExtendImport(refClassp);
