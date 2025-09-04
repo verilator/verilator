@@ -1447,6 +1447,8 @@ int V3PreProcImp::getStateToken() {
                 fileline()->v3error("Expecting include filename. Found: "s + tokenName(tok));
                 goto next_tok;
             }
+            // GCC 13.3.0 with -O0 throws a false 'this statement may fall through' without this:
+            VL_UNREACHABLE;
         }
         case ps_ERRORNAME: {
             if (tok == VP_STRING) {
