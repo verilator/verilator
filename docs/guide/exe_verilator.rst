@@ -2031,12 +2031,12 @@ Summary:
 
    .. code-block:: sv
 
-        reg  res_n = 1'b0;
+        logic res_n = 1'b0;
 
         always @(negedge rst_n) begin
-           if (rst_n == 1'b0) begin
-              res_n <= 1'b1;
-           end
+          if (rst_n == 1'b0) begin
+            res_n <= 1'b1;
+          end
         end
 
    In Verilator, by default, uninitialized clocks are given a value of
@@ -2053,6 +2053,26 @@ Summary:
       use :vlopt:`--converge-limit` to increase the number of convergence
       iterations. This may be another indication of problems with the
       modeled design that should be addressed.
+
+   Instead of using this option, one technique is to explicitly create the
+   appropriate edge by creating a value at construction, and a value in an
+   initial block at time zero:
+
+   .. code-block:: sv
+
+        logic rst_n = 1;  // value at construction
+
+        initial begin
+          rst_n = 0;  // value at time zero
+          // ... rest
+        end
+
+        always @(negedge rst_n) begin
+          if (rst_n == 1'b0) begin
+            res_n <= 1'b1;
+          end
+        end
+
 
 .. option:: --xml-only
 
