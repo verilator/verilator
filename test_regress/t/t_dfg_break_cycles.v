@@ -227,4 +227,26 @@ module t (
   `signal(ALWAYS_2, 4); // UNOPTFLAT
   assign ALWAYS_2 = always_2;
   // verilator lint_on ALWCOMBORDER
+
+  logic [31:0] array_4[3]; // UNOPTFLAT
+  // Input
+  assign array_4[0] = rand_a[31:0];
+  // Sums 1
+  assign array_4[1][ 0 +: 3] = array_4[0][ 2 +: 2] + array_4[0][ 0 +: 2];
+  assign array_4[1][ 3 +: 3] = array_4[0][ 6 +: 2] + array_4[0][ 4 +: 2];
+  assign array_4[1][ 6 +: 3] = array_4[0][10 +: 2] + array_4[0][ 8 +: 2];
+  assign array_4[1][ 9 +: 3] = array_4[0][14 +: 2] + array_4[0][12 +: 2];
+  assign array_4[1][12 +: 3] = array_4[0][18 +: 2] + array_4[0][16 +: 2];
+  assign array_4[1][15 +: 3] = array_4[0][22 +: 2] + array_4[0][20 +: 2];
+  assign array_4[1][18 +: 3] = array_4[0][26 +: 2] + array_4[0][24 +: 2];
+  assign array_4[1][21 +: 3] = array_4[0][30 +: 2] + array_4[0][28 +: 2];
+  // Sums 2
+  assign array_4[2][ 0 +: 4] = array_4[1][ 3 +: 3] + array_4[1][ 0 +: 3];
+  assign array_4[2][ 4 +: 4] = array_4[1][ 9 +: 3] + array_4[1][ 6 +: 3];
+  assign array_4[2][ 8 +: 4] = array_4[1][15 +: 3] + array_4[1][12 +: 3];
+  assign array_4[2][12 +: 4] = array_4[1][21 +: 3] + array_4[1][18 +: 3];
+  // Outupt
+  `signal(ARRAY_4, 32);
+  assign ARRAY_4  = array_4[2];
+
 endmodule

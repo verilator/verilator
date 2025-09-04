@@ -131,12 +131,27 @@ class TraceDriver final : public DfgVisitor {
         }
     }
 
+    // Create temporary capable of holding the result of 'vtxp'
+    DfgVertexVar* createTmp(const char* prefix, DfgVertex* vtxp) {
+        AstNode* nodep = m_dfg.modulep();
+        if (!nodep) nodep = v3Global.rootp();
+        const std::string name = m_dfg.makeUniqueName(prefix, nodep->user2Inc());
+        FileLine* const flp = vtxp->fileline();
+        AstNodeDType* const dtypep = vtxp->dtypep();
+        DfgVertex::ScopeCache scopeCache;
+        AstScope* const scopep = m_dfg.modulep() ? nullptr : vtxp->scopep(scopeCache);
+        DfgVertexVar* const varp = m_dfg.makeNewVar(flp, name, dtypep, scopep);
+        varp->varp()->isInternal(true);
+        varp->tmpForp(varp->nodep());
+        return varp;
+    }
+
     // Continue tracing drivers of the given vertex, at the given LSB. Every
     // visitor should call this to continue the traversal, then immediately
     // return after the call. 'visit' methods should not call 'iterate', call
     // this method instead, which checks for cycles.
     DfgVertex* trace(DfgVertex* const vtxp, const uint32_t msb, const uint32_t lsb) {
-        UASSERT_OBJ(!vtxp->is<DfgVarArray>(), vtxp, "Cannot trace array variables");
+        UASSERT_OBJ(!vtxp->isArray(), vtxp, "Cannot trace array type vertices");
         UASSERT_OBJ(vtxp->width() > msb, vtxp, "Traced Vertex too narrow");
 
         // Push to stack
@@ -163,22 +178,24 @@ class TraceDriver final : public DfgVisitor {
         // Trace the vertex
         onStackr = true;
 
-        // If the currently traced vertex is in a different component, then we
-        // found what we were looking for. However, keep going past a splice,
-        // or a unit as they cannot be use directly (they must always feed into
-        // a variable, so we can't make them drive arbitrary logic)
-        if (m_vtx2Scc[vtxp] != m_component  //
-            && !vtxp->is<DfgVertexSplice>()  //
-            && !vtxp->is<DfgUnitArray>()) {
-            if (msb != vtxp->width() - 1 || lsb != 0) {
-                // Apply a Sel to extract the relevant bits if only a part is needed
-                DfgSel* const selp = make<DfgSel>(vtxp, msb - lsb + 1);
-                selp->fromp(vtxp);
+        // If the currently traced vertex is in a different component,
+        // then we found what we were looking for.
+        if (m_vtx2Scc[vtxp] != m_component) {
+            m_resp = vtxp;
+            // If the result is a splice, we need to insert a temporary for it
+            // as a splice cannot be fed into arbitray logic
+            if (DfgVertexSplice* const splicep = m_resp->cast<DfgVertexSplice>()) {
+                DfgVertexVar* const tmpp = createTmp("TraceDriver", splicep);
+                splicep->replaceWith(tmpp);
+                tmpp->srcp(splicep);
+                m_resp = tmpp;
+            }
+            // Apply a Sel to extract the relevant bits if only a part is needed
+            if (msb != m_resp->width() - 1 || lsb != 0) {
+                DfgSel* const selp = make<DfgSel>(m_resp, msb - lsb + 1);
+                selp->fromp(m_resp);
                 selp->lsb(lsb);
                 m_resp = selp;
-            } else {
-                // Otherwise just return the vertex
-                m_resp = vtxp;
             }
         } else {
             // Otherwise visit the vertex
@@ -1289,6 +1306,9 @@ V3DfgPasses::breakCycles(const DfgGraph& dfg, V3DfgContext& ctx) {
         ++ctx.m_breakCyclesContext.m_nTrivial;
         return {nullptr, false};
     }
+
+    // AstNetlist/AstNodeModule user2 used as sequence numbers for temporaries
+    const VNUser2InUse user2InUse;
 
     // Show input for debugging
     dump(7, dfg, "input");
