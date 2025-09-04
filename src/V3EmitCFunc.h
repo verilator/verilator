@@ -272,7 +272,7 @@ public:
             if (doneClasses.count(vbase)) continue;
             puts(doneClasses.empty() ? "" : "\n    , ");
             doneClasses.emplace(vbase);
-            puts(EmitCUtil::EmitCUtil::prefixNameProtect(vbase));
+            puts(EmitCUtil::prefixNameProtect(vbase));
             if (constructorNeedsProcess(vbase)) {
                 puts("(vlProcess, vlSymsp)");
             } else {
@@ -287,7 +287,7 @@ public:
             if (doneClasses.count(extp->classp())) continue;
             puts(doneClasses.empty() ? "" : "\n    , ");
             doneClasses.emplace(extp->classp());
-            puts(EmitCUtil::EmitCUtil::prefixNameProtect(extp->classp()));
+            puts(EmitCUtil::prefixNameProtect(extp->classp()));
             if (constructorNeedsProcess(extp->classp())) {
                 puts("(vlProcess, vlSymsp");
             } else {

@@ -47,39 +47,40 @@ public:
 //######################################################################
 // EmitC-related utility functions
 
-class EmitCUtil final {
-public:
-    static string voidSelfAssign(const AstNodeModule* modp) {
-        const string className = prefixNameProtect(modp);
-        return className + "* const __restrict vlSelf VL_ATTR_UNUSED = static_cast<" + className
-               + "*>(voidSelf);\n";
-    }
-    static string pchClassName() VL_MT_STABLE { return v3Global.opt.prefix() + "__pch"; }
-    static string symClassName() VL_MT_STABLE {
-        return v3Global.opt.prefix() + "_" + VIdProtect::protect("_Syms");
-    }
-    static string symClassVar() { return symClassName() + "* __restrict vlSymsp"; }
-    static string symClassAssign() {
-        return symClassName() + "* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;\n";
-    }
-    static string topClassName() VL_MT_SAFE {  // Return name of top wrapper module
-        return v3Global.opt.prefix();
-    }
-    // Return C++ class name for a module/class object
-    static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE;
-    static bool isAnonOk(const AstVar* varp) VL_MT_STABLE {
-        AstNodeDType* const dtp = varp->dtypep()->skipRefp();
-        return v3Global.opt.compLimitMembers() != 0  // Enabled
-               && !varp->isStatic()  // Not a static variable
-               && !varp->isSc()  // Aggregates can't be anon
-               && !VN_IS(dtp, SampleQueueDType)  // Aggregates can't be anon
-               && !(VN_IS(dtp, NodeUOrStructDType) && !VN_CAST(dtp, NodeUOrStructDType)->packed())
-               && (varp->basicp() && !varp->basicp()->isOpaque());  // Aggregates can't be anon
-    }
-    static bool isConstPoolMod(const AstNode* modp) {
-        return modp == v3Global.rootp()->constPoolp()->modp();
-    }
-};
+namespace EmitCUtil {
+
+std::string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE;
+inline std::string voidSelfAssign(const AstNodeModule* modp) {
+    const std::string className = prefixNameProtect(modp);
+    return className + "* const __restrict vlSelf VL_ATTR_UNUSED = static_cast<" + className
+           + "*>(voidSelf);\n";
+}
+inline std::string pchClassName() VL_MT_STABLE { return v3Global.opt.prefix() + "__pch"; }
+inline std::string symClassName() VL_MT_STABLE {
+    return v3Global.opt.prefix() + "_" + VIdProtect::protect("_Syms");
+}
+inline std::string symClassVar() { return symClassName() + "* __restrict vlSymsp"; }
+inline std::string symClassAssign() {
+    return symClassName() + "* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;\n";
+}
+inline std::string topClassName() VL_MT_SAFE {  // Return name of top wrapper module
+    return v3Global.opt.prefix();
+}
+// Return C++ class name for a module/class object
+inline bool isAnonOk(const AstVar* varp) VL_MT_STABLE {
+    AstNodeDType* const dtp = varp->dtypep()->skipRefp();
+    return v3Global.opt.compLimitMembers() != 0  // Enabled
+           && !varp->isStatic()  // Not a static variable
+           && !varp->isSc()  // Aggregates can't be anon
+           && !VN_IS(dtp, SampleQueueDType)  // Aggregates can't be anon
+           && !(VN_IS(dtp, NodeUOrStructDType) && !VN_CAST(dtp, NodeUOrStructDType)->packed())
+           && (varp->basicp() && !varp->basicp()->isOpaque());  // Aggregates can't be anon
+}
+inline bool isConstPoolMod(const AstNode* modp) {
+    return modp == v3Global.rootp()->constPoolp()->modp();
+}
+
+};  //namespace EmitCUtil
 
 //######################################################################
 // Base Visitor class -- holds output file pointer
