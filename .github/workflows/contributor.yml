@@ -16,5 +16,5 @@ jobs:
     name: "'docs/CONTRIBUTORS' was signed"
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: test_regress/t/t_dist_contributors.py
