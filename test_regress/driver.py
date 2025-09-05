@@ -1752,16 +1752,20 @@ class VlTest:
             logfh = open(logfile, 'wb')  # pylint: disable=consider-using-with
 
         if not Args.interactive_debugger:
-            # Become TTY controlling termal so GDB will not capture main driver.py's terminal
+            # Some parallel job's run() may attempt to capture driver.py's
+            # terminal, e.g. gdb does this. So, unless known we want to run GDB
+            # (where we want it to control the terminal), become a controlling
+            # terminal for this job so such a capture won't break driver.py's
+            # signaling, which would e.g. break control-C.
             pid, fd = pty.fork()
             if pid == 0:
+                os.environ['TERM'] = "dumb"
                 subprocess.run(["stty", "nl"], check=True)  # No carriage returns
                 os.execlp("bash", "/bin/bash", "-c", command)
             else:
-                # Parent process: Interact with GDB
                 while True:
                     try:
-                        data = os.read(fd, 1)
+                        data = os.read(fd, 2048)
                         self._run_output(data, logfh, tee)
                         # Parent detects child termination by checking for b''
                         if not data:
@@ -1772,23 +1776,13 @@ class VlTest:
                 (pid, rc) = os.waitpid(pid, 0)
 
         else:
-            with subprocess.Popen(command,
-                                  shell=True,
-                                  bufsize=0,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT) as proc:
-                rawbuf = bytearray(2048)
-
-                while True:
-                    finished = proc.poll()
-                    # Need to check readinto once, even after poll "completes"
-                    got = proc.stdout.readinto(rawbuf)
-                    if got:
-                        data = rawbuf[0:got]
-                        self._run_output(data, logfh, tee)
-                    elif finished is not None:
-                        break
-
+            # Do not redirect output when using an interactive debugger, so it
+            # can have direct access to the user terminal (so terminal control
+            # characters and the like work). That means the log file will be
+            # empty but hopefully that's ok, just re-run the test without the
+            # interactive debugger to confirm a fix.
+            with subprocess.Popen(command, shell=True, bufsize=0) as proc:
+                proc.wait()
                 rc = proc.returncode  # Negative if killed by signal
 
         if logfh:
@@ -2809,7 +2803,6 @@ if __name__ == '__main__':
     if 'TEST_REGRESS' in os.environ:
         sys.exit("%Error: TEST_REGRESS environment variable is already set")
     os.environ['TEST_REGRESS'] = os.getcwd()
-    os.environ['TERM'] = "dumb"
 
     Start = time.time()
     _Parameter_Next_Level = None
