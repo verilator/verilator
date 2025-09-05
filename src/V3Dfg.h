@@ -35,6 +35,7 @@
 
 #include "V3Ast.h"
 #include "V3Cfg.h"
+#include "V3DfgDataType.h"
 #include "V3Error.h"
 #include "V3Global.h"
 #include "V3Hash.h"
@@ -71,16 +72,13 @@ namespace V3Dfg {
 //-----------------------------------------------------------------------
 // Functions for compatibility tests
 
-// Returns true if the given data type can be represented in the graph
-bool isSupported(const AstNodeDType* dtypep) VL_MT_DISABLED;
-
 // Returns true if variable can be represented in the graph
 inline bool isSupported(const AstVar* varp) {
     if (varp->isIfaceRef()) return false;  // Cannot handle interface references
     if (varp->delayp()) return false;  // Cannot handle delayed variables
     if (varp->isSc()) return false;  // SystemC variables are special and rare, we can ignore
     if (varp->dfgMultidriven()) return false;  // Discovered as multidriven on earlier DFG run
-    return isSupported(varp->dtypep());
+    return DfgDataType::fromAst(varp->dtypep());
 }
 
 // Returns true if variable can be represented in the graph
@@ -99,38 +97,6 @@ inline bool isSupported(const AstVarScope* vscp) {
     return isSupported(vscp->varp());
 }
 
-//-----------------------------------------------------------------------
-// Functions for data types
-
-// Some data types are interned, in order to facilitate type comparison
-// via pointer compariosn. These are functoins to construct the canonical
-// DFG data types
-
-// Returns data type used to represent any packed value of the given 'width'.
-inline AstNodeDType* dtypePacked(uint32_t width) {
-    return v3Global.rootp()->typeTablep()->findLogicDType(width, width, VSigning::UNSIGNED);
-}
-
-// Returns data type used to represent any array with the given type and number of elements.
-inline AstNodeDType* dtypeArray(AstNodeDType* subDtypep, uint32_t size) {
-    UASSERT_OBJ(isSupported(subDtypep), subDtypep, "Unsupported element type");
-    FileLine* const flp = subDtypep->fileline();
-    AstRange* const rangep = new AstRange{flp, static_cast<int>(size - 1), 0};
-    AstNodeDType* const dtypep = new AstUnpackArrayDType{flp, subDtypep, rangep};
-    v3Global.rootp()->typeTablep()->addTypesp(dtypep);
-    return dtypep;
-}
-
-// Return data type used to represent the type of 'nodep' when converted to a DfgVertex
-inline AstNodeDType* toDfgDType(const AstNodeDType* dtypep) {
-    dtypep = dtypep->skipRefp();
-    UASSERT_OBJ(isSupported(dtypep), dtypep, "Unsupported dtype");
-    // For simplicity, all packed types are represented with a fixed type
-    if (const AstUnpackArrayDType* const uatp = VN_CAST(dtypep, UnpackArrayDType)) {
-        return dtypeArray(toDfgDType(uatp->subDTypep()), uatp->elementsConst());
-    }
-    return dtypePacked(dtypep->width());
-}
 }  //namespace V3Dfg
 
 //------------------------------------------------------------------------------
@@ -199,7 +165,7 @@ class DfgVertex VL_NOT_FINAL {
     DfgEdge::List m_sinks;  // List of sink edges of this vertex
 
     FileLine* const m_filelinep;  // Source location
-    AstNodeDType* m_dtypep;  // Data type of the result of this vertex - mutable for efficiency
+    const DfgDataType& m_dtype;  // Data type of the result of this vertex
     const VDfgType m_type;  // Vertex type tag
 
     // The only way to access thes is via DfgUserMap, so mutable is appropriate,
@@ -225,7 +191,7 @@ public:
 
 protected:
     // CONSTRUCTOR
-    DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep) VL_MT_DISABLED;
+    DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, const DfgDataType& dt) VL_MT_DISABLED;
     // Use unlinkDelete instead
     virtual ~DfgVertex() VL_MT_DISABLED = default;
 
@@ -250,20 +216,15 @@ public:
     // Source location
     FileLine* fileline() const { return m_filelinep; }
     // The data type of the result of the vertex
-    AstNodeDType* dtypep() const { return m_dtypep; }
-    // Is it a packed type
-    bool isPacked() const { return VN_IS(dtypep(), BasicDType); }
-    // Is it an array type
-    bool isArray() const { return !isPacked(); }
-    // Width of result
+    const DfgDataType& dtype() const { return m_dtype; }
+    // Shorthands for accessors of 'dtype()'
+    bool isPacked() const { return m_dtype.isPacked(); }
+    bool isArray() const { return m_dtype.isArray(); }
+    uint32_t size() const { return m_dtype.size(); }
+    // Type check + size
     uint32_t width() const {
-        UASSERT_OBJ(isPacked(), this, "non-packed has no 'width()'");
-        return dtypep()->width();
-    }
-    // Number of sub-elements in result vertex
-    uint32_t size() const {
-        if (isPacked()) return dtypep()->width();
-        return VN_AS(dtypep(), UnpackArrayDType)->elementsConst();
+        UASSERT_OBJ(m_dtype.isPacked(), this, "Non packed vertex has no 'width'");
+        return m_dtype.size();
     }
 
     // Predicate: has 1 or more sinks
@@ -304,6 +265,8 @@ public:
 
     // Relink all sinks to be driven from the given new source
     void replaceWith(DfgVertex* vtxp) {
+        UASSERT_OBJ(vtxp != this, this, "Replacing DfgVertex with itself");
+        UASSERT_OBJ(vtxp->dtype() == dtype(), this, "Replacement DfgVertex has different type");
         while (!m_sinks.empty()) m_sinks.frontp()->relinkSrcp(vtxp);
     }
 
@@ -553,7 +516,7 @@ public:
     // Create a new variable with the given name and data type. For a Scoped
     // Dfg, the AstScope where the corresponding AstVarScope will be inserted
     // must be provided
-    DfgVertexVar* makeNewVar(FileLine*, const std::string& name, AstNodeDType*,
+    DfgVertexVar* makeNewVar(FileLine*, const std::string& name, const DfgDataType&,
                              AstScope*) VL_MT_DISABLED;
 
     // Split this graph into individual components (unique sub-graphs with no edges between them).
