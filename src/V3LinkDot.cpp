@@ -3916,6 +3916,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                            okSymp, true);  // Maybe nullptr
+            if (!dotSymp) {
+                nodep->v3error("Couldn't resolve symbol: " << AstNode::prettyNameQ(baddot));
+                return;
+            }
+
             bool modport = false;
             if (const AstVar* varp = VN_CAST(dotSymp->nodep(), Var)) {
                 if (const AstIfaceRefDType* const ifaceRefp
