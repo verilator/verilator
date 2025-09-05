@@ -380,6 +380,8 @@ void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
         if (varp->hasModWrRefs()) return;
         // Can't remove if referenced in other DFGs of the same module
         if (varp->hasDfgRefs()) return;
+        // Can't remove if var exceeding elimination threshold
+        if (varp->dontEliminate()) return;
 
         // If it has multiple sinks, it can't be eliminated
         if (varp->hasMultipleSinks()) return;

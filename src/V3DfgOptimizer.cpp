@@ -245,7 +245,8 @@ class DataflowOptimize final {
     // - bit1: Written via AstVarXRef (hierarchical reference)
     // - bit2: Read by logic in same module/netlist not represented in DFG
     // - bit3: Written by logic in same module/netlist not represented in DFG
-    // - bit31-4: Reference count, how many DfgVertexVar represent this variable
+    // - bit4: Set whether exceeded elimination threshold
+    // - bit31-5: Reference count, how many DfgVertexVar represent this variable
     //
     // AstNode::user2/user3/user4 can be used by various DFG algorithms
     const VNUser1InUse m_user1InUse;

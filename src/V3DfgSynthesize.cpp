@@ -76,6 +76,7 @@ class AstToDfgConverter final : public VNVisitor {
 
     bool m_foundUnhandled = false;  // Found node not implemented as DFG or not implemented 'visit'
     bool m_converting = false;  // We are trying to convert some logic at the moment
+    int m_refs = 0;  // References on the RHS of an assignment
 
     size_t m_nUnpack = 0;  // Sequence numbers for temporaries
 
@@ -180,6 +181,15 @@ class AstToDfgConverter final : public VNVisitor {
                 // Use new temporary
                 return newp;
             }();
+
+            if (m_refs > v3Global.opt.dfgEliminateLimit()) {
+                if VL_CONSTEXPR_CXX17 (T_Scoped) {
+                    DfgVertexVar::markDontEliminate(vrefp->varScopep());
+                } else {
+                    DfgVertexVar::markDontEliminate(vrefp->varp());
+                }
+                ++m_ctx.m_conv.dontEliminate;
+            }
 
             // Return the Splice driver
             return {vtxp->srcp()->as<DfgVertexSplice>(), 0};
@@ -369,6 +379,7 @@ class AstToDfgConverter final : public VNVisitor {
         DfgVertex* const vtxp = getTarget(nodep)->user2u().template to<DfgVertexVar*>();
         UASSERT_OBJ(vtxp, nodep, "Referenced variable has no associated DfgVertexVar");
         nodep->user2p(vtxp);
+        ++m_refs;
     }
     void visit(AstConst* nodep) override {
         UASSERT_OBJ(m_converting, nodep, "AstToDfg visit called without m_converting");
@@ -441,8 +452,10 @@ public:
         UASSERT_OBJ(updates.empty(), nodep, "'updates' should be empty");
         VL_RESTORER(m_updatesp);
         VL_RESTORER(m_logicp);
+        VL_RESTORER(m_refs);
         m_updatesp = &updates;
         m_logicp = &vtx;
+        m_refs = 0;
         // Assignment with timing control shouldn't make it this far
         UASSERT_OBJ(!nodep->timingControlp(), nodep, "Shouldn't make it this far");
         // Convert it
