@@ -147,19 +147,28 @@ public:
         nodep->trace(GRAMMARP->allTracingOn(fileline));
         return nodep;
     }
-    void createCoverGroupMethods(AstClass* nodep) {
+    void createCoverGroupMethods(AstClass* nodep, AstNode* sampleArgs) {
         // Hidden static to take unspecified reference argument results
         AstVar* const defaultVarp
             = new AstVar{nodep->fileline(), VVarType::MEMBER, "__Vint", nodep->findIntDType()};
         defaultVarp->lifetime(VLifetime::STATIC);
         nodep->addStmtsp(defaultVarp);
-        // IEEE: function void sample(), void start(), void stop()
-        for (const string& name : {"sample"s, "start"s, "stop"s}) {
+
+        // IEEE: function void sample()
+        AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
+        funcp->addStmtsp(sampleArgs);
+        funcp->classMethod(true);
+        funcp->dtypep(funcp->findVoidDType());
+        nodep->addMembersp(funcp);
+
+        // IEEE: function void start(), void stop()
+        for (const string& name : {"start"s, "stop"s}) {
             AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nullptr, nullptr};
             funcp->classMethod(true);
             funcp->dtypep(funcp->findVoidDType());
             nodep->addMembersp(funcp);
         }
+
         // IEEE: static function real get_coverage(optional ref int, optional ref int)
         // IEEE: function real get_inst_coverage(optional ref int, optional ref int)
         for (const string& name : {"get_coverage"s, "get_inst_coverage"s}) {
@@ -6944,36 +6953,43 @@ boolean_abbrev<nodeExprp>:  // ==IEEE: boolean_abbrev
 // Covergroup
 
 covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
-                covergroup_declarationFront coverage_eventE ';'
+                 yCOVERGROUP idAny cgPortListE coverage_eventE ';'
         /*cont*/    coverage_spec_or_optionListE
-        /*cont*/    yENDGROUP endLabelE
-                        { $$ = $1;
-                          GRAMMARP->endLabel($<fl>6, $1, $6); }
-        |       covergroup_declarationFront '(' tf_port_listE ')'
-        /*cont*/    coverage_eventE ';' coverage_spec_or_optionListE
-        /*cont*/    yENDGROUP endLabelE
-                        { AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
+        /*cont*/ yENDGROUP endLabelE
+                        { AstClass *cgClassp = new AstClass{$<fl>2, *$2, PARSEP->libname()};
+                          AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
                           newp->classMethod(true);
                           newp->isConstructor(true);
-                          newp->dtypep($1->dtypep());
+                          newp->dtypep(cgClassp->dtypep());
                           newp->addStmtsp($3);
-                          $1->addMembersp(newp);
-                          $$ = $1;
-                          GRAMMARP->endLabel($<fl>9, $1, $9); }
-        ;
+                          cgClassp->addMembersp(newp);
+                          GRAMMARP->createCoverGroupMethods(cgClassp, $4);
 
-covergroup_extendsE<fl>:  // IEEE: Part of covergroup_declaration
-                /* empty */                             { $$ = nullptr; }
-        |       yEXTENDS                                { $$ = $1; }
-        ;
-
-covergroup_declarationFront<classp>:  // IEEE: part of covergroup_declaration
-                yCOVERGROUP covergroup_extendsE idAny
-                        {
+                          $$ = cgClassp;
+                          GRAMMARP->endLabel($<fl>8, $$, $8);
                           BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup");
-                          $$ = new AstClass{$<fl>3, *$3, PARSEP->libname()};
-                          GRAMMARP->createCoverGroupMethods($$); }
-                ;
+                        }
+        |        yCOVERGROUP yEXTENDS idAny ';'
+        /*cont*/     coverage_spec_or_optionListE
+        /*cont*/ yENDGROUP endLabelE
+                        { AstClass *cgClassp = new AstClass{$<fl>3, *$3, PARSEP->libname()};
+                          AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
+                          newp->classMethod(true);
+                          newp->isConstructor(true);
+                          newp->dtypep(cgClassp->dtypep());
+                          cgClassp->addMembersp(newp);
+                          GRAMMARP->createCoverGroupMethods(cgClassp, nullptr);
+
+                          $$ = cgClassp;
+                          GRAMMARP->endLabel($<fl>7, $$, $7);
+                          BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup");
+                        }
+        ;
+
+cgPortListE<nodep>:
+                /*empty*/                               { $$ = nullptr; }
+        |       '(' tf_port_listE ')'                   { $$ = $2; }
+        ;
 
 cgexpr<nodeExprp>:  // IEEE-2012: covergroup_expression, before that just expression
                 expr                                    { $$ = $1; }
@@ -7224,7 +7240,13 @@ coverage_eventE<nodep>:  // IEEE: [ coverage_event ]
         |       clocking_event
                         { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage clocking event"); }
         |       yWITH__ETC yFUNCTION idAny/*"sample"*/ '(' tf_port_listE ')'
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage 'with' 'function'"); }
+                        { if (*$3 != "sample") {
+                            $<fl>3->v3error("Coverage sampling function must be named 'sample'");
+                            $$ = nullptr;
+                          } else {
+                            $$ = $5;
+                          }
+                        }
         |       yP_ATAT '(' block_event_expression ')'
                         { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage '@@' events"); }
         ;
