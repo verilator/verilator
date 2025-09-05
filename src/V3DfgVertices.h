@@ -58,7 +58,7 @@ class DfgVertexVar VL_NOT_FINAL : public DfgVertex {
     AstNode* m_tmpForp = nullptr;
 
     DfgVertexVar(DfgGraph& dfg, VDfgType type, AstVar* varp, AstVarScope* vscp)
-        : DfgVertex{dfg, type, varp->fileline(), V3Dfg::toDfgDType(varp->dtypep())}
+        : DfgVertex{dfg, type, varp->fileline(), *DfgDataType::fromAst(varp->dtypep())}
         , m_varp{varp}
         , m_varScopep{vscp} {
 #ifdef VL_DEBUG
@@ -67,7 +67,6 @@ class DfgVertexVar VL_NOT_FINAL : public DfgVertex {
         } else {
             UASSERT_OBJ(!vscp, varp, "Scoped DfgVertexVar created in un-scoped DfgGraph");
         }
-        UASSERT_OBJ(V3Dfg::isSupported(dtypep()), varp, "Not representable by DfgVertexVar");
 #endif
         // Increment reference count
         AstNode* const variablep = nodep();
@@ -162,11 +161,11 @@ class DfgVarArray final : public DfgVertexVar {
 public:
     DfgVarArray(DfgGraph& dfg, AstVar* varp)
         : DfgVertexVar{dfg, dfgType(), varp} {
-        UASSERT_OBJ(VN_IS(dtypep(), UnpackArrayDType), varp, "Non array DfgVarArray");
+        UASSERT_OBJ(isArray(), varp, "Non-array DfgVarArray");
     }
     DfgVarArray(DfgGraph& dfg, AstVarScope* vscp)
         : DfgVertexVar{dfg, dfgType(), vscp} {
-        UASSERT_OBJ(VN_IS(dtypep(), UnpackArrayDType), vscp, "Non array DfgVarArray");
+        UASSERT_OBJ(isArray(), vscp, "Non-array DfgVarArray");
     }
     ASTGEN_MEMBERS_DfgVarArray;
 };
@@ -178,11 +177,11 @@ class DfgVarPacked final : public DfgVertexVar {
 public:
     DfgVarPacked(DfgGraph& dfg, AstVar* varp)
         : DfgVertexVar{dfg, dfgType(), varp} {
-        UASSERT_OBJ(!VN_IS(dtypep(), UnpackArrayDType), varp, "Array DfgVarPacked");
+        UASSERT_OBJ(isPacked(), varp, "Non-packed DfgVarPacked");
     }
     DfgVarPacked(DfgGraph& dfg, AstVarScope* vscp)
         : DfgVertexVar{dfg, dfgType(), vscp} {
-        UASSERT_OBJ(!VN_IS(dtypep(), UnpackArrayDType), vscp, "Array DfgVarPacked");
+        UASSERT_OBJ(isPacked(), vscp, "Non-packed DfgVarPacked");
     }
     ASTGEN_MEMBERS_DfgVarPacked;
 };
@@ -192,8 +191,8 @@ public:
 
 class DfgVertexNullary VL_NOT_FINAL : public DfgVertex {
 protected:
-    DfgVertexNullary(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep)
-        : DfgVertex{dfg, type, flp, dtypep} {}
+    DfgVertexNullary(DfgGraph& dfg, VDfgType type, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertex{dfg, type, flp, dtype} {}
 
 public:
     ASTGEN_MEMBERS_DfgVertexNullary;
@@ -208,10 +207,10 @@ class DfgConst final : public DfgVertexNullary {
 
 public:
     DfgConst(DfgGraph& dfg, FileLine* flp, const V3Number& num)
-        : DfgVertexNullary{dfg, dfgType(), flp, V3Dfg::dtypePacked(num.width())}
+        : DfgVertexNullary{dfg, dfgType(), flp, DfgDataType::packed(num.width())}
         , m_num{num} {}
-    DfgConst(DfgGraph& dfg, FileLine* flp, uint32_t width, uint32_t value)
-        : DfgVertexNullary{dfg, dfgType(), flp, V3Dfg::dtypePacked(width)}
+    DfgConst(DfgGraph& dfg, FileLine* flp, size_t width, uint32_t value)
+        : DfgVertexNullary{dfg, dfgType(), flp, DfgDataType::packed(width)}
         , m_num{flp, static_cast<int>(width), value} {}
 
     ASTGEN_MEMBERS_DfgConst;
@@ -236,8 +235,8 @@ public:
 
 class DfgVertexUnary VL_NOT_FINAL : public DfgVertex {
 protected:
-    DfgVertexUnary(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep)
-        : DfgVertex{dfg, type, flp, dtypep} {
+    DfgVertexUnary(DfgGraph& dfg, VDfgType type, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertex{dfg, type, flp, dtype} {
         newInput();
     }
 
@@ -255,8 +254,8 @@ class DfgSel final : public DfgVertexUnary {
     uint32_t m_lsb = 0;  // The LSB index
 
 public:
-    DfgSel(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
-        : DfgVertexUnary{dfg, dfgType(), flp, dtypep} {}
+    DfgSel(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertexUnary{dfg, dfgType(), flp, dtype} {}
     ASTGEN_MEMBERS_DfgSel;
 
     DfgVertex* fromp() const { return srcp(); }
@@ -269,10 +268,10 @@ class DfgUnitArray final : public DfgVertexUnary {
     // This is a type adapter for modeling arrays. It's a single element array,
     // with the value of the single element being the source operand.
 public:
-    DfgUnitArray(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
-        : DfgVertexUnary{dfg, dfgType(), flp, dtypep} {
-        UASSERT_OBJ(this->dtypep(), flp, "Non array DfgUnitArray");
-        UASSERT_OBJ(this->size() == 1, flp, "DfgUnitArray must have a single element");
+    DfgUnitArray(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertexUnary{dfg, dfgType(), flp, dtype} {
+        UASSERT_OBJ(isArray(), flp, "Non-array DfgUnitArray");
+        UASSERT_OBJ(size() == 1, flp, "DfgUnitArray must have a single element");
     }
     ASTGEN_MEMBERS_DfgUnitArray;
 };
@@ -282,8 +281,8 @@ public:
 
 class DfgVertexBinary VL_NOT_FINAL : public DfgVertex {
 protected:
-    DfgVertexBinary(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep)
-        : DfgVertex{dfg, type, flp, dtypep} {
+    DfgVertexBinary(DfgGraph& dfg, VDfgType type, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertex{dfg, type, flp, dtype} {
         newInput();
         newInput();
     }
@@ -297,8 +296,8 @@ class DfgMux final : public DfgVertexBinary {
     // common, we special case as a DfgSel for the constant 'lsbp', and as
     // 'DfgMux` for the non-constant 'lsbp'.
 public:
-    DfgMux(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
-        : DfgVertexBinary{dfg, dfgType(), flp, dtypep} {}
+    DfgMux(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertexBinary{dfg, dfgType(), flp, dtype} {}
     ASTGEN_MEMBERS_DfgMux;
 
     DfgVertex* fromp() const { return inputp(0); }
@@ -314,8 +313,8 @@ public:
 
 class DfgVertexTernary VL_NOT_FINAL : public DfgVertex {
 protected:
-    DfgVertexTernary(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep)
-        : DfgVertex{dfg, type, flp, dtypep} {
+    DfgVertexTernary(DfgGraph& dfg, VDfgType type, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertex{dfg, type, flp, dtype} {
         newInput();
         newInput();
         newInput();
@@ -330,8 +329,8 @@ public:
 
 class DfgVertexVariadic VL_NOT_FINAL : public DfgVertex {
 protected:
-    DfgVertexVariadic(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep)
-        : DfgVertex{dfg, type, flp, dtypep} {}
+    DfgVertexVariadic(DfgGraph& dfg, VDfgType type, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertex{dfg, type, flp, dtype} {}
 
 public:
     ASTGEN_MEMBERS_DfgVertexVariadic;
@@ -351,8 +350,8 @@ class DfgVertexSplice VL_NOT_FINAL : public DfgVertexVariadic {
     std::vector<DriverData> m_driverData;  // Additional data associated with each driver
 
 protected:
-    DfgVertexSplice(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep)
-        : DfgVertexVariadic{dfg, type, flp, dtypep} {}
+    DfgVertexSplice(DfgGraph& dfg, VDfgType type, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertexVariadic{dfg, type, flp, dtype} {}
 
 public:
     ASTGEN_MEMBERS_DfgVertexSplice;
@@ -442,9 +441,9 @@ class DfgSpliceArray final : public DfgVertexSplice {
     friend class DfgVisitor;
 
 public:
-    DfgSpliceArray(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
-        : DfgVertexSplice{dfg, dfgType(), flp, dtypep} {
-        UASSERT_OBJ(VN_IS(dtypep, UnpackArrayDType), flp, "Non array DfgSpliceArray");
+    DfgSpliceArray(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertexSplice{dfg, dfgType(), flp, dtype} {
+        UASSERT_OBJ(isArray(), flp, "Non-array DfgSpliceArray");
     }
     ASTGEN_MEMBERS_DfgSpliceArray;
 };
@@ -454,9 +453,9 @@ class DfgSplicePacked final : public DfgVertexSplice {
     friend class DfgVisitor;
 
 public:
-    DfgSplicePacked(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
-        : DfgVertexSplice{dfg, dfgType(), flp, dtypep} {
-        UASSERT_OBJ(!VN_IS(dtypep, UnpackArrayDType), flp, "Array DfgSplicePacked");
+    DfgSplicePacked(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype)
+        : DfgVertexSplice{dfg, dfgType(), flp, dtype} {
+        UASSERT_OBJ(isPacked(), flp, "Non-packed DfgSplicePacked");
     }
     ASTGEN_MEMBERS_DfgSplicePacked;
 };
@@ -474,13 +473,13 @@ class DfgLogic final : public DfgVertexVariadic {
 
 public:
     DfgLogic(DfgGraph& dfg, AstAssignW* nodep, AstScope* scopep)
-        : DfgVertexVariadic{dfg, dfgType(), nodep->fileline(), nullptr}
+        : DfgVertexVariadic{dfg, dfgType(), nodep->fileline(), DfgDataType::null()}
         , m_nodep{nodep}
         , m_scopep{scopep}
         , m_cfgp{nullptr} {}
 
     DfgLogic(DfgGraph& dfg, AstAlways* nodep, AstScope* scopep, std::unique_ptr<CfgGraph> cfgp)
-        : DfgVertexVariadic{dfg, dfgType(), nodep->fileline(), nullptr}
+        : DfgVertexVariadic{dfg, dfgType(), nodep->fileline(), DfgDataType::null()}
         , m_nodep{nodep}
         , m_scopep{scopep}
         , m_cfgp{std::move(cfgp)} {}
@@ -511,7 +510,7 @@ class DfgUnresolved final : public DfgVertexVariadic {
     // Represents a collection of unresolved variable drivers before synthesis
 public:
     DfgUnresolved(DfgGraph& dfg, const DfgVertexVar* vtxp)
-        : DfgVertexVariadic{dfg, dfgType(), vtxp->fileline(), vtxp->dtypep()} {}
+        : DfgVertexVariadic{dfg, dfgType(), vtxp->fileline(), vtxp->dtype()} {}
     ASTGEN_MEMBERS_DfgUnresolved;
 
     std::string srcName(size_t) const override final { return ""; }
