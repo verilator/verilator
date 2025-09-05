@@ -7,10 +7,14 @@
 module t (/*AUTOARG*/);
 
    logic [3:0] array_simp [1:0] [3:0];  // descending range array
+   wire  [2:0] array_wire [1:0] = '{3'd1, 3'd2};
 
    int         irep[1:2][1:6];
 
    initial begin
+      if (array_wire[0] !== 3'd2) $stop;
+      if (array_wire[1] !== 3'd1) $stop;
+
       array_simp[0] = '{ 4'd3, 4'd2, 4'd1, 4'd0};
       if ({array_simp[0][3],array_simp[0][2],array_simp[0][1],array_simp[0][0]}
           !== 16'h3210) $stop;

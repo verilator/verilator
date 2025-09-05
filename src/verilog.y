@@ -3267,6 +3267,13 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
                           AstNode::addNext<AstNode, AstNode>($$, assignp); }
         |       netId variable_dimensionList sigAttrListE
                         { $$ = VARDONEA($<fl>1, *$1, $2, $3); }
+        |       netId variable_dimensionList sigAttrListE '=' expr
+                        { AstDelay* const delayp = GRAMMARP->getNetDelay();
+                          AstAssignW* const assignp = new AstAssignW{$4, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $5, delayp};
+                          $$ = VARDONEA($<fl>1, *$1, $2, $3);
+                          if (delayp) GRAMMARP->setNetDelay(delayp->cloneTree(false));
+                          if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
+                          AstNode::addNext<AstNode, AstNode>($$, assignp); }
         ;
 
 netId<strp>:

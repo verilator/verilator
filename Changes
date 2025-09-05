@@ -19,6 +19,7 @@ Verilator 5.041 devel
 * Fix randomize local after parameters applied (#6371). [Alex Solomatnikov]
 * Fix package imports not found after parameters applied (#6373). [Alex Solomatnikov]
 * Fix COVERAGEIGN-ignored `get_inst_coverage` and other covergroup methods (#6383). [Alex Solomatnikov]
+* Fix wire array with initial assignment (#6391). [Alex Solomatnikov]
 
 
 Verilator 5.040 2025-08-30
