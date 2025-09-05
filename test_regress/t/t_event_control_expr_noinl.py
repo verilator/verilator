@@ -9,8 +9,13 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')  # no vltmt, as AstMemberSel is unhandled in V3InstrCount
+test.scenarios('simulator')
+test.top_filename = 't_event_control_expr.v'
 
-test.lint(fails=True, expect_filename=test.golden_filename)
+test.compile(
+    # do not test classes for multithreaded, as V3InstrCount doesn't handle MemberSel
+    verilator_flags2=(['-fno-inline'] + ['-DNO_CLASS'] if test.vltmt else []))
+
+test.execute()
 
 test.passes()

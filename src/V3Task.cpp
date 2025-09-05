@@ -1458,8 +1458,9 @@ class TaskVisitor final : public VNVisitor {
         UASSERT_OBJ(!m_insStmtp, nodep, "Didn't finish out last statement");
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        if (m_inSensesp) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: function calls in sensitivity lists");
+        if (m_inSensesp && !nodep->isPure()) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Impure function calls in sensitivity lists");
             nodep->taskp(nullptr);  // So V3Broken doesn't complain
             return;
         }
