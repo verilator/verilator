@@ -1,0 +1,5 @@
+%Error: t/t_mod_interface_clocking_bad.v:25:10: Can't find definition of 'cb'
+   25 |     x.cb.reset <= 1;
+      |          ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
