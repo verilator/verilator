@@ -2404,6 +2404,19 @@ class LinkDotIfaceVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
+    void visit(AstModportClockingRef* nodep) override {  // IfaceVisitor::
+        UINFO(5, "   fic: " << nodep);
+        iterateChildren(nodep);
+        VSymEnt* const symp = m_curSymp->findIdFallback(nodep->name());
+        if (!symp) {
+            nodep->v3error("Modport item not found: " << nodep->prettyNameQ());
+        } else if (AstClocking* const clockingp = VN_CAST(symp->nodep(), Clocking)) {
+            nodep->clockingp(clockingp);
+        } else {
+            nodep->v3error(
+                "Modport item doesn't reference a clocking block: " << nodep->prettyNameQ());
+        }
+    }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }  // IfaceVisitor::
 
 public:

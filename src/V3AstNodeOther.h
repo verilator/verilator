@@ -1212,7 +1212,9 @@ public:
     ASTGEN_MEMBERS_AstModportClockingRef;
     void dump(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
-    AstClocking* clockingp() const VL_MT_STABLE { return m_clockingp; }  // [After Link] Pointer to clocking block
+    AstClocking* clockingp() const VL_MT_STABLE {
+        return m_clockingp;
+    }  // [After Link] Pointer to clocking block
     void clockingp(AstClocking* clockingp) { m_clockingp = clockingp; }
 };
 class AstModportFTaskRef final : public AstNode {
