@@ -4582,11 +4582,6 @@ class WidthVisitor final : public VNVisitor {
                 // Either made explicitly or V3LinkDot made implicitly
                 classp->v3fatalSrc("Can't find class's new");
             }
-            if (classp->isVirtual() || classp->isInterfaceClass()) {
-                nodep->v3error("Illegal to call 'new' using an abstract virtual class "
-                               + AstNode::prettyNameQ(classp->origName())
-                               + " (IEEE 1800-2023 8.21)");
-            }
         } else {  // super.new case
             // in this case class and taskp() should be properly linked in V3LinkDot.cpp during
             // "super" reference resolution

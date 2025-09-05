@@ -38,7 +38,11 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class WidthCommitVisitor final : public VNVisitor {
     // NODE STATE
     // AstVar::user1p           -> bool, processed
+    //  AstNodeFTask::user2()    -> int. Non-zero if ever referenced (called)
+    //  AstNew::user2()          -> int. Count of number of references, minus references in
+    //  functions never called
     const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
 
     // STATE
     AstNodeModule* m_modp = nullptr;
@@ -47,6 +51,8 @@ class WidthCommitVisitor final : public VNVisitor {
         = false;  // Writing a dynamically-sized array element, not the array itself
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     bool m_underSel = false;  // Whether is currently under AstMemberSel or AstSel
+    std::vector<AstNew*> m_virtualNewsp;  // Instantiations of virtual classes
+    std::vector<AstNodeFTask*> m_tasksp;  // All the tasks, we will check if they are ever called
 
 public:
     // METHODS
@@ -148,6 +154,20 @@ private:
                                << " variable not allowed in " << m_contNba
                                << " assignment (IEEE 1800-2023 6.21): " << varp->prettyNameQ());
             }
+        }
+    }
+
+    void deadCheckTasks() {
+        for (AstNodeFTask* taskp : m_tasksp) {
+            if (!taskp->user2()) {
+                taskp->foreach([](AstNew* newp) { newp->user2Inc(-1); });
+            }
+        }
+        for (AstNew* newp : m_virtualNewsp) {
+            if (newp->user2() > 0)
+                newp->v3error("Illegal to call 'new' using an abstract virtual class "
+                              + AstNode::prettyNameQ(newp->classOrPackagep()->origName())
+                              + " (IEEE 1800-2023 8.21)");
         }
     }
 
@@ -291,6 +311,8 @@ private:
         nodep->virtRefDType2p(editOneDType(nodep->virtRefDType2p()));
     }
     void visit(AstNodeFTask* nodep) override {
+        if (!nodep->taskPublic() && !nodep->dpiExport() && !nodep->dpiImport())
+            m_tasksp.push_back(nodep);
         iterateChildren(nodep);
         editDType(nodep);
         {
@@ -371,6 +393,16 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
         classEncapCheck(nodep, nodep->taskp(), VN_CAST(nodep->classOrPackagep(), Class));
+        if (nodep->taskp()) nodep->taskp()->user2(1);
+        if (AstNew* const newp = VN_CAST(nodep, New)) {
+            if (!VN_IS(newp->backp(), Assign)) return;
+            if (AstClass* const classp = VN_CAST(newp->classOrPackagep(), Class)) {
+                if (classp->isVirtual() || classp->isInterfaceClass()) {
+                    m_virtualNewsp.push_back(newp);
+                    newp->user2Inc();
+                }
+            }
+        }
     }
     void visit(AstMemberSel* nodep) override {
         {
@@ -430,6 +462,7 @@ public:
         // Were changing widthMin's, so the table is now somewhat trashed
         nodep->typeTablep()->clearCache();
         iterate(nodep);
+        deadCheckTasks();
         // Don't want to AstTypeTable::repairCache, as all needed nodes
         // have been added back in; a repair would prevent dead nodes from
         // being detected

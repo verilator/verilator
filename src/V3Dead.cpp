@@ -37,6 +37,8 @@
 
 #include "V3Dead.h"
 
+#include "V3Stats.h"
+
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -51,6 +53,7 @@ class DeadVisitor final : public VNVisitor {
     //  AstVar::user1()         -> int. Count of number of references
     //  AstVarScope::user1()    -> int. Count of number of references
     //  AstNodeDType::user1()   -> int. Count of number of references
+    //  AstNodeFTask::user1()   -> int. Non-zero if ever referenced (called)
     const VNUser1InUse m_inuser1;
 
     // TYPES
@@ -69,6 +72,7 @@ class DeadVisitor final : public VNVisitor {
     std::vector<AstCell*> m_cellsp;
     std::vector<AstClass*> m_classesp;
     std::vector<AstTypedef*> m_typedefsp;
+    std::vector<AstNodeFTask*> m_tasksp;  // All the tasks that could be removed if not called
     AssignMap m_assignMap;  // List of all simple assignments for each variable
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
 
@@ -77,6 +81,9 @@ class DeadVisitor final : public VNVisitor {
     AstNodeDType* m_curDTypep = nullptr;  // Current NodeDType
     AstNodeModule* m_modp = nullptr;  // Current module
     AstSelLoopVars* m_selloopvarsp = nullptr;  // Current loop vars
+
+    // STATE - Statistic tracking
+    VDouble0 m_statFTasksDeadified;
 
     // METHODS
 
@@ -166,6 +173,7 @@ class DeadVisitor final : public VNVisitor {
     void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
+        if (nodep->taskp()) nodep->taskp()->user1(1);
         if (nodep->classOrPackagep()) {
             if (m_elimCells) {
                 nodep->classOrPackagep(nullptr);
@@ -174,9 +182,10 @@ class DeadVisitor final : public VNVisitor {
             }
         }
     }
-    void visit(AstMethodCall* nodep) override {
+    void visit(AstModportFTaskRef* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
+        if (nodep->ftaskp()) nodep->ftaskp()->user1(1);
     }
     void visit(AstRefDType* nodep) override {
         iterateChildren(nodep);
@@ -312,6 +321,19 @@ class DeadVisitor final : public VNVisitor {
         }
         if (assignInAssign) m_sideEffect = true;  // Parent assign shouldn't optimize
     }
+    void visit(AstNodeFTask* nodep) override {
+        iterateChildren(nodep);
+        checkAll(nodep);
+        if (!nodep->taskPublic() && !nodep->dpiExport() && !nodep->dpiImport())
+            m_tasksp.push_back(nodep);
+        if (nodep->classOrPackagep()) {
+            if (m_elimCells) {
+                nodep->classOrPackagep(nullptr);
+            } else {
+                nodep->classOrPackagep()->user1Inc();
+            }
+        }
+    }
 
     //-----
     void visit(AstClockingItem* nodep) override {
@@ -340,6 +362,15 @@ class DeadVisitor final : public VNVisitor {
             if (structp->user1() && !structp->packed()) return false;
         }
         return m_elimCells && !typedefp->attrPublic();
+    }
+
+    void deadCheckTasks() {
+        for (AstNodeFTask* taskp : m_tasksp) {
+            if (!taskp->user1() && !taskp->classMethod()) {
+                deleting(taskp);
+                m_statFTasksDeadified++;
+            }
+        }
     }
 
     void deadCheckMod() {
@@ -515,7 +546,7 @@ class DeadVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     DeadVisitor(AstNetlist* nodep, bool elimUserVars, bool elimDTypes, bool elimScopes,
-                bool elimCells, bool elimTopIfaces)
+                bool elimCells, bool elimTopIfaces, bool elimTasks)
         : m_elimUserVars{elimUserVars}
         , m_elimDTypes{elimDTypes}
         , m_elimCells{elimCells} {
@@ -534,6 +565,7 @@ public:
             if (itr.first->user1()) itr.second->user1Inc();
         }
 
+        if (elimTasks) deadCheckTasks();
         deadCheckTypedefs();
         deadCheckVar();
         // We only eliminate scopes when in a flattened structure
@@ -549,7 +581,9 @@ public:
         nodep->typeTablep()->repairCache();
         VIsCached::clearCacheTree();  // Removing assignments may affect isPure
     }
-    ~DeadVisitor() override = default;
+    ~DeadVisitor() override {
+        V3Stats::addStatSum("Optimizations, deadified FTasks", m_statFTasksDeadified);
+    };
 };
 
 //######################################################################
@@ -558,31 +592,31 @@ public:
 void V3Dead::deadifyModules(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     {  // node, elimUserVars, elimDTypes, elimScopes, elimCells, elimTopIfaces
-        DeadVisitor{nodep, false, false, false, false, !v3Global.opt.topIfacesSupported()};
+        DeadVisitor{nodep, false, false, false, false, !v3Global.opt.topIfacesSupported(), false};
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadModules", 0, dumpTreeEitherLevel() >= 6);
 }
 
 void V3Dead::deadifyDTypes(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { DeadVisitor{nodep, false, true, false, false, false}; }  // Destruct before checking
+    { DeadVisitor{nodep, false, true, false, false, false, true}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadDtypes", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Dead::deadifyDTypesScoped(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { DeadVisitor{nodep, false, true, true, false, false}; }  // Destruct before checking
+    { DeadVisitor{nodep, false, true, true, false, false, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadDtypesScoped", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Dead::deadifyAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { DeadVisitor{nodep, true, true, false, true, false}; }  // Destruct before checking
+    { DeadVisitor{nodep, true, true, false, true, false, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAll", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Dead::deadifyAllScoped(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { DeadVisitor{nodep, true, true, true, true, false}; }  // Destruct before checking
+    { DeadVisitor{nodep, true, true, true, true, false, false}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAllScoped", 0, dumpTreeEitherLevel() >= 3);
 }
