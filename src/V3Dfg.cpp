@@ -405,11 +405,17 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         str = VString::quoteBackslash(str);
         str = VString::quoteAny(str, '"', '\\');
         str = VString::replaceSubstr(str, "\n", "\\l");
+        const char* const colorp = !logicp->selectedForSynthesis() ? "#d0d0ff"  // Pale Blue
+                                   : logicp->nonSynthesizable()    ? "#ffd0d0"  // Pale Red
+                                   : logicp->reverted()            ? "#faffd0"  // Pale Yellow
+                                                                   : "#d0ffd0";  // Pale Green
+
         os << " [label=\"";
         os << str;
         os << "\\n" << cvtToHex(&vtx);
         os << "\"\n";
-        os << ", shape=box, style=\"rounded,filled\", fillcolor=cornsilk, nojustify=true";
+        os << ", shape=box, style=\"rounded,filled\", nojustify=true";
+        os << ", fillcolor=\"" << colorp << "\"";
         os << "]\n";
         return;
     }

@@ -756,7 +756,7 @@ class DfgWorklist final {
 
 public:
     // CONSTRUCTOR
-    DfgWorklist(DfgGraph& dfg)
+    explicit DfgWorklist(DfgGraph& dfg)
         : m_dfg{dfg} {}
     VL_UNCOPYABLE(DfgWorklist);
     VL_UNMOVABLE(DfgWorklist);

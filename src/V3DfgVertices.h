@@ -468,6 +468,9 @@ class DfgLogic final : public DfgVertexVariadic {
     const std::unique_ptr<CfgGraph> m_cfgp;
     // Vertices this logic was synthesized into. Excluding variables
     std::vector<DfgVertex*> m_synth;
+    bool m_selectedForSynthesis = false;  // Logic selected for synthesis
+    bool m_nonSynthesizable = false;  // Logic is not synthesizeable (by DfgSynthesis)
+    bool m_reverted = false;  // Logic was synthesized (in part if non synthesizable) then reverted
 
 public:
     DfgLogic(DfgGraph& dfg, AstAssignW* nodep, AstScope* scopep)
@@ -496,6 +499,12 @@ public:
     const CfgGraph& cfg() const { return *m_cfgp; }
     std::vector<DfgVertex*>& synth() { return m_synth; }
     const std::vector<DfgVertex*>& synth() const { return m_synth; }
+    bool selectedForSynthesis() const { return m_selectedForSynthesis; }
+    void setSelectedForSynthesis() { m_selectedForSynthesis = true; }
+    bool nonSynthesizable() const { return m_nonSynthesizable; }
+    void setNonSynthesizable() { m_nonSynthesizable = true; }
+    bool reverted() const { return m_reverted; }
+    void setReverted() { m_reverted = true; }
 };
 
 class DfgUnresolved final : public DfgVertexVariadic {

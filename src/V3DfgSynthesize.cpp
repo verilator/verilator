@@ -535,6 +535,7 @@ class AstToDfgSynthesize final {
     AstToDfgConverter<T_Scoped> m_converter;  // The convert instance to use for each construct
     size_t m_nBranchCond = 0;  // Sequence numbers for temporaries
     size_t m_nPathPred = 0;  // Sequence numbers for temporaries
+    DfgWorklist m_toRevert{m_dfg};  // We need a worklist for reverting synthesis
 
     // STATE - for current DfgLogic being synthesized
     DfgLogic* m_logicp = nullptr;  // Current logic vertex we are synthesizing
@@ -1587,46 +1588,102 @@ class AstToDfgSynthesize final {
         return true;
     }
 
-    // Revert synthesis of the given DfgLogic
-    void revert(DfgLogic& vtx) {
-        for (DfgVertex* const p : vtx.synth()) VL_DO_DANGLING(p->unlinkDelete(m_dfg), p);
-        vtx.synth().clear();
-    }
-
-    // Revert all logic driving the given unresolved driver, delete it,
-    // and transitively the same for variables driven by the reverted logic.
-    void revertTransivelyAndRemove(DfgUnresolved* vtxp, VDouble0& statCountr) {
-        // The result variable will be driven from Ast code, mark as such
-        vtxp->singleSink()->as<DfgVertexVar>()->setHasModWrRefs();
-
-        // Gather all logic driving this unresolved driver
-        std::vector<DfgLogic*> logicps;
-        logicps.reserve(vtxp->nInputs());
-        vtxp->foreachSource([&](DfgVertex& src) {
-            if (DfgLogic* const p = src.cast<DfgLogic>()) logicps.emplace_back(p);
-            return false;
-        });
-
-        // Delete the unresolved driver
-        VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
-
-        // Transitively for the rest
-        for (DfgLogic* const logicp : logicps) {
-            if (!logicp->synth().empty()) {
+    // Revert all DfgLogic in m_toRevert, or DfgLogic driving the DfgUnresolved
+    // vertices in m_toRevert, and transitively the same for any DfgUnresolved
+    // driven by the reverted DfgLogic. Delete all DfgUnresolved involed.
+    void revert(VDouble0& statCountr) {
+        m_toRevert.foreach([&](DfgVertex& vtx) {
+            // Process DfgLogic
+            if (DfgLogic* const vtxp = vtx.cast<DfgLogic>()) {
+                UASSERT_OBJ(vtxp->selectedForSynthesis(), vtxp, "Shouldn't reach here unselected");
+                // Revert this logic
+                UASSERT_OBJ(!vtxp->reverted(), vtxp, "Should be reverting now");
                 ++statCountr;
-                revert(*logicp);
+                for (DfgVertex* const p : vtxp->synth()) VL_DO_DANGLING(p->unlinkDelete(m_dfg), p);
+                vtxp->synth().clear();
+                vtxp->setReverted();
+                // Add all DfgUnresolved it drives to the work list
+                vtxp->foreachSink([&](DfgVertex& snk) {
+                    m_toRevert.push_front(*snk.as<DfgUnresolved>());
+                    return false;
+                });
+                return;
             }
-            while (DfgVertex* const sinkp = logicp->firtsSinkp()) {
-                revertTransivelyAndRemove(sinkp->as<DfgUnresolved>(), statCountr);
+
+            // Process DfgUnresolved
+            if (DfgUnresolved* const vtxp = vtx.cast<DfgUnresolved>()) {
+                // The result variable will be driven from Ast code, mark as such
+                vtxp->singleSink()->as<DfgVertexVar>()->setHasModWrRefs();
+                // Add all driving DfgLogic to the work list
+                vtxp->foreachSource([&](DfgVertex& src) {
+                    DfgLogic* const lp = src.cast<DfgLogic>();
+                    if (lp && !lp->reverted()) m_toRevert.push_front(*lp);
+                    return false;
+                });
+                // Delete the DfgUnresolved driver
+                VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
+                return;
             }
-        }
+
+            // There should be nothing else on the worklist
+            vtx.v3fatalSrc("Unexpected vertex type");
+        });
     }
 
     // Synthesize all of the given vertices
-    void main(const std::vector<DfgLogic*>& logicps) {
+    void main() {
         //-------------------------------------------------------------------
-        UINFO(5, "Step 1: Attempting to synthesize each of the given DfgLogic");
-        for (DfgLogic* const logicp : logicps) {
+        UINFO(5, "Step 0: Remove all DfgLogic not selected for synthesis");
+        for (DfgVertex* const vtxp : m_dfg.opVertices().unlinkable()) {
+            // Only processing DfgUnresolved
+            if (!vtxp->is<DfgUnresolved>()) continue;
+            bool anySelected = false;
+            bool anyUnselected = false;
+            vtxp->foreachSource([&](DfgVertex& src) {
+                const DfgLogic& logic = *src.as<DfgLogic>();
+                if (logic.selectedForSynthesis()) {
+                    anySelected = true;
+                } else {
+                    anyUnselected = true;
+                }
+                return false;
+            });
+            // There should be a driver
+            UASSERT_OBJ(anySelected || anyUnselected, vtxp, "'DfgUnresolved' with no driver");
+            // All drivers should be selected or all should be unselected
+            UASSERT_OBJ(!(anySelected && anyUnselected), vtxp, "Invalid 'DfgLogic' selection");
+            // If all drivers are unselected, delete this DfgUnresolved here
+            if (anyUnselected) {
+                // The result variable will be driven from Ast code, mark as such
+                vtxp->singleSink()->as<DfgVertexVar>()->setHasModWrRefs();
+                VL_DO_DANGLING(vtxp->unlinkDelete(m_dfg), vtxp);
+            }
+        }
+        for (DfgVertex* const vtxp : m_dfg.opVertices().unlinkable()) {
+            // Only processing DfgLogic
+            DfgLogic* const logicp = vtxp->cast<DfgLogic>();
+            if (!logicp) continue;
+            if (logicp->selectedForSynthesis()) continue;
+            // There should be no sinks left for unselected DfgLogic, delete them here
+            UASSERT_OBJ(!logicp->hasSinks(), vtxp, "Unselected 'DfgLogic' with sinks remaining");
+            // Input variables will be read in Ast code, mark as such
+            logicp->foreachSource([](DfgVertex& src) {
+                src.as<DfgVertexVar>()->setHasModRdRefs();
+                return false;
+            });
+            VL_DO_DANGLING(logicp->unlinkDelete(m_dfg), logicp);
+        }
+        debugDump("synth-selected");
+
+        //-------------------------------------------------------------------
+        UINFO(5, "Step 1: Attempting to synthesize each of the selected DfgLogic");
+        for (DfgVertex& vtx : m_dfg.opVertices()) {
+            DfgLogic* const logicp = vtx.cast<DfgLogic>();
+            if (!logicp) continue;
+
+            // We should only have DfgLogic remaining that was selected for synthesis
+            UASSERT_OBJ(logicp->selectedForSynthesis(), logicp, "Unselected DfgLogic remains");
+
             // Debug aid
             if (VL_UNLIKELY(s_dfgSynthDebugLimit)) {
                 if (s_dfgSynthDebugCount == s_dfgSynthDebugLimit) break;
@@ -1641,27 +1698,18 @@ class AstToDfgSynthesize final {
                 }
             }
 
-            // Synthesize it, revert partial construction if failed
-            if (!synthesize(*logicp)) revert(*logicp);
+            // Synthesize it, if failed, enqueue for reversion
+            if (!synthesize(*logicp)) {
+                logicp->setNonSynthesizable();
+                m_toRevert.push_front(*logicp);
+            }
         }
         debugDump("synth-converted");
 
         //-------------------------------------------------------------------
         UINFO(5, "Step 2: Revert drivers of variables with unsynthesizeable drivers");
-        // We do this as the variables might be multi-driven, we just can't know at this point
-        for (const DfgVertexVar& var : m_dfg.varVertices()) {
-            if (!var.srcp()) continue;
-            DfgUnresolved* const unresolvedp = var.srcp()->cast<DfgUnresolved>();
-            if (!unresolvedp) break;  // Stop when reached the synthesized temporaries
-
-            // Check if any driver have failed to synthesize
-            const bool failed = unresolvedp->foreachSource([&](DfgVertex& src) {
-                DfgLogic* const driverp = src.cast<DfgLogic>();
-                return driverp && driverp->synth().empty();
-            });
-            // Revert all logic involved
-            if (failed) revertTransivelyAndRemove(unresolvedp, m_ctx.m_synt.revertNonSyn);
-        }
+        // We do this as the variables might be multi-driven, we can't know if synthesis failed
+        revert(m_ctx.m_synt.revertNonSyn);
         debugDump("synth-reverted");
 
         //-------------------------------------------------------------------
@@ -1689,6 +1737,7 @@ class AstToDfgSynthesize final {
                 if (normalizeDrivers(var, drivers)) return makeSplice(var, drivers);
                 // If mutlidriven, record and ignore
                 multidrivenps.emplace_back(&var);
+                m_toRevert.push_front(*unresolvedp);
                 return nullptr;
             }();
             // Bail if multidriven
@@ -1697,16 +1746,10 @@ class AstToDfgSynthesize final {
             const bool newEntry = resolvedDrivers.emplace(&var, resolvedp).second;
             UASSERT_OBJ(newEntry, &var, "Dupliacte driver");
         }
+        // Mark as multidriven for future DFG runs - here, so we get all warnings above
+        for (const DfgVertexVar* const vtxp : multidrivenps) vtxp->varp()->setDfgMultidriven();
         // Revert and remove drivers of multi-driven variables
-        for (const DfgVertexVar* const vtxp : multidrivenps) {
-            // Mark as multidriven for future DFG runs - here, so we get all warning before
-            vtxp->varp()->setDfgMultidriven();
-            // Might not have a driver if transitively removed on an earlier iteration
-            if (!vtxp->srcp()) continue;
-            // Revert all logic involved
-            DfgUnresolved* const unresolvedp = vtxp->srcp()->as<DfgUnresolved>();
-            revertTransivelyAndRemove(unresolvedp, m_ctx.m_synt.revertMultidrive);
-        }
+        revert(m_ctx.m_synt.revertMultidrive);
         // Replace all DfgUnresolved with the resolved drivers
         for (const DfgVertexVar& var : m_dfg.varVertices()) {
             if (!var.srcp()) continue;
@@ -1720,7 +1763,7 @@ class AstToDfgSynthesize final {
         debugDump("synth-resolved");
 
         //-------------------------------------------------------------------
-        UINFO(5, "Step 4: Remove all DfgLogic and DfgUnresolved");
+        UINFO(5, "Step 4: Remove all remaining DfgLogic and DfgUnresolved");
         for (DfgVertex* const vtxp : m_dfg.opVertices().unlinkable()) {
             // Previous step should have removed all DfgUnresolved
             UASSERT_OBJ(!vtxp->is<DfgUnresolved>(), vtxp, "DfgUnresolved remains");
@@ -1776,17 +1819,30 @@ class AstToDfgSynthesize final {
             }
         }
         debugDump("synth-rmsplice");
+    }
 
-        //-------------------------------------------------------------------
+    // CONSTRUCTOR
+    AstToDfgSynthesize(DfgGraph& dfg, V3DfgSynthesisContext& ctx)
+        : m_dfg{dfg}
+        , m_ctx{ctx}
+        , m_converter{dfg, ctx} {
+        main();
+    }
+
+public:
+    static void apply(DfgGraph& dfg, V3DfgSynthesisContext& ctx) {
+        AstToDfgSynthesize{dfg, ctx};
+
+        // Final step outside, as both AstToDfgSynthesize and removeUnused used DfgUserMap
         UINFO(5, "Step 6: Remove all unused vertices");
-        V3DfgPasses::removeUnused(m_dfg);
-        debugDump("synth-rmunused");
+        V3DfgPasses::removeUnused(dfg);
+        if (dumpDfgLevel() >= 9) dfg.dumpDotFilePrefixed(ctx.prefix() + "synth-rmunused");
 
         // No operation vertex should have multiple sinks. Cyclic decomoposition
         // depends on this and it can easily be ensured by using temporaries.
         // Also, all sources should be connected at this point
         if (v3Global.opt.debugCheck()) {
-            for (DfgVertex& vtx : m_dfg.opVertices()) {
+            for (DfgVertex& vtx : dfg.opVertices()) {
                 UASSERT_OBJ(!vtx.hasMultipleSinks(), &vtx, "Operation has multiple sinks");
                 for (size_t i = 0; i < vtx.nInputs(); ++i) {
                     UASSERT_OBJ(vtx.inputp(i), &vtx, "Unconnected source operand");
@@ -1794,79 +1850,83 @@ class AstToDfgSynthesize final {
             }
         }
     }
-
-    // CONSTRUCTOR
-    AstToDfgSynthesize(DfgGraph& dfg, const std::vector<DfgLogic*>& logicps,
-                       V3DfgSynthesisContext& ctx)
-        : m_dfg{dfg}
-        , m_ctx{ctx}
-        , m_converter{dfg, ctx} {}
-
-public:
-    static void apply(DfgGraph& dfg, const std::vector<DfgLogic*>& logicps,
-                      V3DfgSynthesisContext& ctx) {
-        AstToDfgSynthesize{dfg, logicps, ctx}.main(logicps);
-    }
 };
 
-void V3DfgPasses::synthesize(DfgGraph& dfg, V3DfgContext& ctx) {
-    // The vertices to synthesize
-    std::vector<DfgLogic*> logicps;
-
+// Decide which DfgLogic to attempt to synthesize
+static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
+    // If we are told to synthesize everything, we will do so ...
     if (v3Global.opt.fDfgSynthesizeAll()) {
-        // If we are told to synthesize everything, we will do so ...
         for (DfgVertex& vtx : dfg.opVertices()) {
-            if (DfgLogic* const logicp = vtx.cast<DfgLogic>()) logicps.emplace_back(logicp);
+            if (DfgLogic* const logicp = vtx.cast<DfgLogic>()) logicp->setSelectedForSynthesis();
         }
-    } else {
-        // Otherwise figure out which vertices are worth synthesizing.
+        return;
+    }
 
-        // Find cycles
+    // Otherwise figure out which vertices are likely worth synthesizing.
+
+    // Bather circular variables
+    std::vector<DfgVertexVar*> circularVarps;
+    {
         DfgUserMap<uint64_t> scc = dfg.makeUserMap<uint64_t>();
         V3DfgPasses::colorStronglyConnectedComponents(dfg, scc);
-
-        // First, gather variables, we will then attempt to synthesize all their drivers
-        std::vector<DfgVertexVar*> varps;
         for (DfgVertexVar& var : dfg.varVertices()) {
-            // Can ignore variables with no drivers
-            if (!var.srcp()) continue;
-
-            // Circular variable - synthesize
-            if (scc.at(var)) {
-                varps.emplace_back(&var);
-                continue;
-            }
-
-            // Must be driven from a DfgUnresolved at this point, pick it up
-            const DfgUnresolved* const unresolvedp = var.srcp()->as<DfgUnresolved>();
-
-            // Inspect drivers to figure out if we should synthesize them
-            const bool doIt = unresolvedp->foreachSource([&](const DfgVertex& src) {
-                const DfgLogic* const logicp = src.as<DfgLogic>();
-                // Synthesize continuous assignments (this is the earlier behaviour).
-                // Synthesize always blocks with no more than 4 basic blocks and 4 edges
-                // These are usually simple branches (if (rst) ... else ...), or close to it
-                return VN_IS(logicp->nodep(), AssignW)  //
-                       || (logicp->cfg().nBlocks() <= 4 && logicp->cfg().nEdges() <= 4);
-            });
-            if (doIt) varps.emplace_back(&var);
-        }
-
-        // Gather all drivers of the selected variables
-        const VNUser2InUse user2InUse;  // AstNode (logic) -> bool: already collected
-        for (const DfgVertexVar* const varp : varps) {
-            varp->srcp()->as<DfgUnresolved>()->foreachSource([&](DfgVertex& source) {
-                DfgLogic* const logicp = source.as<DfgLogic>();
-                if (!logicp->nodep()->user2Inc()) logicps.emplace_back(logicp);
-                return false;
-            });
+            if (!scc.at(var)) continue;
+            // This is a circular variable
+            circularVarps.emplace_back(&var);
         }
     }
 
-    // Synthesize them - also removes un-synthesized DfgLogic, so must run even if logicps.empty()
+    // We need to expand the selection to cover all drivers, use a work list
+    DfgWorklist worklist{dfg};
+
+    // Synthesize all drivers of circular variables
+    for (const DfgVertexVar* const varp : circularVarps) {
+        varp->srcp()->as<DfgUnresolved>()->foreachSource([&](DfgVertex& driver) {
+            worklist.push_front(*driver.as<DfgLogic>());
+            return false;
+        });
+    }
+
+    // Synthesize all AssignW and simple blocks driving exactly one variable
+    // This is approximately the old default behaviour of Dfg
+    for (DfgVertex& vtx : dfg.opVertices()) {
+        DfgLogic* const logicp = vtx.cast<DfgLogic>();
+        if (!logicp) continue;
+        if (VN_IS(logicp->nodep(), AssignW)) {
+            worklist.push_front(*logicp);
+            continue;
+        }
+        const CfgGraph& cfg = logicp->cfg();
+        if (!logicp->hasMultipleSinks() && cfg.nBlocks() <= 4 && cfg.nEdges() <= 4) {
+            worklist.push_front(*logicp);
+        }
+    }
+
+    // Now expand to cover all logic driving the same set of variables and mark
+    worklist.foreach([&](DfgVertex& vtx) {
+        DfgLogic& logic = *vtx.as<DfgLogic>();
+        UASSERT_OBJ(!logic.selectedForSynthesis(), &vtx, "Should not be visited twice");
+        // Mark as selected for synthesis
+        logic.setSelectedForSynthesis();
+        // Enqueue all other logic driving the same variables as this one
+        logic.foreachSink([&](DfgVertex& sink) {
+            sink.as<DfgUnresolved>()->foreachSource([&](DfgVertex& sibling) {
+                DfgLogic& siblingLogic = *sibling.as<DfgLogic>();
+                if (!siblingLogic.selectedForSynthesis()) worklist.push_front(siblingLogic);
+                return false;
+            });
+            return false;
+        });
+    });
+}
+
+void V3DfgPasses::synthesize(DfgGraph& dfg, V3DfgContext& ctx) {
+    // Select which DfgLogic to attempt to synthesize
+    dfgSelectLogicForSynthesis(dfg);
+    // Synthesize them - also removes un-synthesized DfgLogic, so must run even if nothing selected
     if (dfg.modulep()) {
-        AstToDfgSynthesize</* T_Scoped: */ false>::apply(dfg, logicps, ctx.m_synthContext);
+        AstToDfgSynthesize</* T_Scoped: */ false>::apply(dfg, ctx.m_synthContext);
     } else {
-        AstToDfgSynthesize</* T_Scoped: */ true>::apply(dfg, logicps, ctx.m_synthContext);
+        AstToDfgSynthesize</* T_Scoped: */ true>::apply(dfg, ctx.m_synthContext);
     }
 }
