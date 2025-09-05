@@ -1752,10 +1752,11 @@ class VlTest:
             logfh = open(logfile, 'wb')  # pylint: disable=consider-using-with
 
         if not Args.interactive_debugger:
-            # Some parallel job's run() may attempt to capture driver.py's terminal, e.g. gdb does this.
-            # So, unless known we want to run GDB (where we want it to control the terminal),
-            # become a controlling terminal for this job so such a capture won't break
-            # driver.py's signaling, which would e.g. break control-C.
+            # Some parallel job's run() may attempt to capture driver.py's
+            # terminal, e.g. gdb does this. So, unless known we want to run GDB
+            # (where we want it to control the terminal), become a controlling
+            # terminal for this job so such a capture won't break driver.py's
+            # signaling, which would e.g. break control-C.
             pid, fd = pty.fork()
             if pid == 0:
                 os.environ['TERM'] = "dumb"
