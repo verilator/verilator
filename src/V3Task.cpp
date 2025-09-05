@@ -1870,7 +1870,7 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
     AstNode* newCallInsertp = nullptr;
     if (VN_IS(taskp, Func)) {
         AstVar* const fvarp = VN_AS(taskp->fvarp(), Var);
-        UASSERT(fvarp, "FuncRef without fvar");
+        UASSERT_OBJ(fvarp, taskp, "FuncRef without fvar");
         AstVar* const newFVarp = fvarp->cloneTree(true);
         oldNewVars.emplace(fvarp, newFVarp);
         newFVarp->name(newTaskp->name());

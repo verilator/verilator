@@ -147,6 +147,61 @@ public:
         nodep->trace(GRAMMARP->allTracingOn(fileline));
         return nodep;
     }
+    void createCoverGroupMethods(AstClass* nodep) {
+        // Hidden static to take unspecified reference argument results
+        AstVar* const defaultVarp
+            = new AstVar{nodep->fileline(), VVarType::MEMBER, "__Vint", nodep->findIntDType()};
+        defaultVarp->lifetime(VLifetime::STATIC);
+        nodep->addStmtsp(defaultVarp);
+        // IEEE: function void sample(), void start(), void stop()
+        for (const string& name : {"sample"s, "start"s, "stop"s}) {
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nullptr, nullptr};
+            funcp->classMethod(true);
+            funcp->dtypep(funcp->findVoidDType());
+            nodep->addMembersp(funcp);
+        }
+        // IEEE: static function real get_coverage(optional ref int, optional ref int)
+        // IEEE: function real get_inst_coverage(optional ref int, optional ref int)
+        for (const string& name : {"get_coverage"s, "get_inst_coverage"s}) {
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nullptr, nullptr};
+            funcp->isStatic(name == "get_coverage");
+            funcp->classMethod(true);
+            funcp->dtypep(funcp->findVoidDType());
+            nodep->addMembersp(funcp);
+            {
+                AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, name,
+                                                nodep->findDoubleDType()};
+                varp->lifetime(VLifetime::AUTOMATIC);
+                varp->funcLocal(true);
+                varp->direction(VDirection::OUTPUT);
+                varp->funcReturn(true);
+                funcp->fvarp(varp);
+            }
+            for (const string& varname : {"covered_bins"s, "total_bins"s}) {
+                AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, varname,
+                                                nodep->findStringDType()};
+                varp->lifetime(VLifetime::AUTOMATIC);
+                varp->funcLocal(true);
+                varp->direction(VDirection::INPUT);
+                varp->valuep(new AstVarRef{nodep->fileline(), defaultVarp, VAccess::READ});
+                funcp->addStmtsp(varp);
+            }
+        }
+        // IEEE: function void set_inst_name(string)
+        {
+            AstFunc* const funcp
+                = new AstFunc{nodep->fileline(), "set_inst_name", nullptr, nullptr};
+            funcp->classMethod(true);
+            funcp->dtypep(funcp->findVoidDType());
+            nodep->addMembersp(funcp);
+            AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, "name",
+                                            nodep->findStringDType()};
+            varp->lifetime(VLifetime::AUTOMATIC);
+            varp->funcLocal(true);
+            varp->direction(VDirection::INPUT);
+            funcp->addStmtsp(varp);
+        }
+    }
     AstDisplay* createDisplayError(FileLine* fileline) {
         AstDisplay* nodep = new AstDisplay{fileline, VDisplayType::DT_ERROR, "", nullptr, nullptr};
         AstNode::addNext<AstNode, AstNode>(nodep, new AstStop{fileline, false});
@@ -6915,19 +6970,9 @@ covergroup_extendsE<fl>:  // IEEE: Part of covergroup_declaration
 covergroup_declarationFront<classp>:  // IEEE: part of covergroup_declaration
                 yCOVERGROUP covergroup_extendsE idAny
                         {
+                          BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup");
                           $$ = new AstClass{$<fl>3, *$3, PARSEP->libname()};
-
-                          AstFunc* const sample = new AstFunc{$<fl>1, "sample", nullptr, nullptr};
-                          sample->classMethod(true);
-                          sample->dtypep(sample->findVoidDType());
-                          $$->addMembersp(sample);
-
-                          AstFunc* const getCoverage = new AstFunc{$<fl>1, "get_coverage", nullptr, nullptr};
-                          getCoverage->classMethod(true);
-                          getCoverage->dtypep(getCoverage->findVoidDType());
-                          $$->addMembersp(getCoverage);
-
-                          BBCOVERIGN($<fl>1, "Ignoring unsupported: covergroup"); }
+                          GRAMMARP->createCoverGroupMethods($$); }
                 ;
 
 cgexpr<nodeExprp>:  // IEEE-2012: covergroup_expression, before that just expression

@@ -2865,6 +2865,7 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (pureVirtual()) str << " [PUREVIRTUAL]";
     if (recursive()) str << " [RECURSIVE]";
     if (taskPublic()) str << " [PUBLIC]";
+    if (isStatic()) str << " [STATIC]";
     if ((dpiImport() || dpiExport()) && cname() != name()) str << " [c=" << cname() << "]";
 }
 bool AstNodeFTask::isPure() {
