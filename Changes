@@ -13,12 +13,17 @@ Verilator 5.041 devel
 
 **Other:**
 
+* Improve automatic selection of logic for DFG synthesis (#6370). [Geza Lore]
+* Improve `covergroup with function sample` handling  (#6387). [Jakub Wasilewski]
+* Optimize dead functions without references (#6380). [Artur Bieniek, Antmicro Ltd.]
 * Fix while loop hang on timing-delayed assignment (#6343) (#6354). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix driver analysis of partially assigned variables (#6364) (#6378). [Geza Lore]
 * Fix V3Hash MacOS ambiguity (#6350). [Lan Zongwei]
 * Fix cmake APPLE variable (#6351). [Lan Zongwei]
 * Fix randomize local after parameters applied (#6371). [Alex Solomatnikov]
 * Fix package imports not found after parameters applied (#6373). [Alex Solomatnikov]
 * Fix COVERAGEIGN-ignored `get_inst_coverage` and other covergroup methods (#6383). [Alex Solomatnikov]
+* Fix error when modport variable is unresolved (#6386). [Ryszard Rozak, Antmicro Ltd.]
 * Fix wire array with initial assignment (#6391). [Alex Solomatnikov]
 
 
