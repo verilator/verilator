@@ -542,7 +542,7 @@
   ]},
   {"type":"PACKAGE","name":"$unit","addr":"(E)","loc":"a,0:0,0:0","origName":"__024unit","level":3,"modPublic":false,"inLibrary":true,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
-    {"type":"PACKAGEIMPORT","name":"*","addr":"(SI)","loc":"d,31:9,31:12","packagep":"(F)"}
+    {"type":"PACKAGEIMPORT","name":"*","addr":"(SI)","loc":"d,31:9,31:12","packagep":"(F)","resolvedClassp": []}
   ]},
   {"type":"PACKAGE","name":"std","addr":"(F)","loc":"d,31:9,31:12","origName":"std","level":4,"modPublic":false,"inLibrary":true,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"1ps","inlinesp": [],
    "stmtsp": [
