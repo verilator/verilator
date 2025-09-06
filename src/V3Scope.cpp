@@ -115,23 +115,27 @@ class ScopeVisitor final : public VNVisitor {
             nodep, scopename, m_aboveScopep, m_aboveCellp};
         if (VN_IS(nodep, Package)) m_packageScopes.emplace(nodep, m_scopep);
 
-        // Now for each child cell, iterate the module this cell points to
+        // Get list of cells before we edit, to avoid excess visits (issue #6059)
+        std::deque<AstCell*> cells;
         for (AstNode* cellnextp = nodep->stmtsp(); cellnextp; cellnextp = cellnextp->nextp()) {
-            if (AstCell* const cellp = VN_CAST(cellnextp, Cell)) {
-                VL_RESTORER(m_scopep);  // Protects m_scopep set in called module
-                // which is "above" in this code, but later in code execution order
-                VL_RESTORER(m_aboveCellp);
-                VL_RESTORER(m_aboveScopep);
-                {
-                    m_aboveCellp = cellp;
-                    m_aboveScopep = m_scopep;
-                    AstNodeModule* const modp = cellp->modp();
-                    UASSERT_OBJ(modp, cellp, "Unlinked mod");
-                    iterate(modp);  // Recursive call to visit(AstNodeModule)
-                    if (VN_IS(modp, Iface)) {
-                        // Remember newly created scope
-                        cellp->user2p(m_scopep);
-                    }
+            if (AstCell* const cellp = VN_CAST(cellnextp, Cell)) cells.push_back(cellp);
+        }
+
+        // Now for each child cell, iterate the module this cell points to
+        for (AstCell* const cellp : cells) {
+            VL_RESTORER(m_scopep);  // Protects m_scopep set in called module
+            // which is "above" in this code, but later in code execution order
+            VL_RESTORER(m_aboveCellp);
+            VL_RESTORER(m_aboveScopep);
+            {
+                m_aboveCellp = cellp;
+                m_aboveScopep = m_scopep;
+                AstNodeModule* const modp = cellp->modp();
+                UASSERT_OBJ(modp, cellp, "Unlinked mod");
+                iterate(modp);  // Recursive call to visit(AstNodeModule)
+                if (VN_IS(modp, Iface)) {
+                    // Remember newly created scope
+                    cellp->user2p(m_scopep);
                 }
             }
         }
