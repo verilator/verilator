@@ -900,22 +900,6 @@ class AstToDfgSynthesize final {
         return splicep;
     }
 
-    // If any written variables are forced or otherwise udpated from outside,
-    // we generally cannot synthesize the construct, as we will likely need to
-    // introduce intermediate values that would not be updated.
-    static bool hasExternallyWrittenVariable(DfgLogic& vtx) {
-        return vtx.foreachSink([&](const DfgVertex& sink) {
-            // 'sink' is a splice (for which 'vtxp' is an unresolved driver),
-            // which drives the target variable.
-            const DfgVertexVar* varp = sink.singleSink()->as<DfgVertexVar>();
-            if (varp->hasXRefs()) return true;  // Target of a hierarchical reference
-            const AstVar* const astVarp = varp->varp();
-            if (astVarp->isForced()) return true;  // Forced
-            if (astVarp->isSigPublic()) return true;  // Public
-            return false;
-        });
-    }
-
     // Initialzie input symbol table of entry CfgBlock
     void initializeEntrySymbolTable(SymTab& iSymTab) {
         m_logicp->foreachSource([&](DfgVertex& src) {
@@ -1447,6 +1431,22 @@ class AstToDfgSynthesize final {
         }
     }
 
+    // Returns true if all external updates to volatile variables are observed correctly
+    bool checkExtWrites() {
+        for (const DfgVertex* const vtxp : m_logicp->synth()) {
+            const DfgVertexVar* const varp = vtxp->cast<DfgVertexVar>();
+            if (!varp) continue;
+            // If the variable we synthesized this vertex for is volatile, and
+            // the value of the synthesized temporary is observed, we might be
+            // missing an external update, so we mut give up.
+            if (!varp->hasSinks()) continue;
+            if (!DfgVertexVar::isVolatile(varp->tmpForp())) continue;
+            ++m_ctx.m_synt.nonSynExtWrite;
+            return false;
+        }
+        return true;
+    }
+
     // Add the synthesized values as drivers to the output variables of the current DfgLogic
     bool addSynthesizedOutput(SymTab& oSymTab) {
         // It's possible we think a variable is written by the DfgLogic when
@@ -1467,13 +1467,10 @@ class AstToDfgSynthesize final {
         }
 
         // Add sinks to read the computed values for the target variables
-        bool hasUsedArrayOutput = false;
-        m_logicp->foreachSink([&](DfgVertex& sink) {
+        return !m_logicp->foreachSink([&](DfgVertex& sink) {
             DfgUnresolved* const unresolvedp = sink.as<DfgUnresolved>();
-            AstNode* const tgtp = unresolvedp->singleSink()->as<DfgVertexVar>()->nodep();
-            // cppcheck-suppress constVariablePointer
-            Variable* const varp = reinterpret_cast<Variable*>(tgtp);
-            DfgVertexVar* const resp = oSymTab.at(varp);
+            const DfgVertexVar* const varp = unresolvedp->singleSink()->as<DfgVertexVar>();
+            DfgVertexVar* const resp = oSymTab.at(reinterpret_cast<Variable*>(varp->nodep()));
             UASSERT_OBJ(resp->srcp(), resp, "Undriven result");
 
             // If the output is not used further in the synthesized logic itself,
@@ -1481,15 +1478,14 @@ class AstToDfgSynthesize final {
             // its splice directly without ending up with a multi-use operation.
             if (!resp->hasSinks()) {
                 unresolvedp->addDriver(resp->srcp()->as<DfgVertexSplice>());
-                return false;
+                return false;  // OK, continue.
             }
 
             // TODO: computePropagatedDrivers cannot handle arrays, should
             // never happen with AssignW
             if (!resp->isPacked()) {
-                if (!hasUsedArrayOutput) ++m_ctx.m_synt.nonSynArray;
-                hasUsedArrayOutput = true;
-                return false;
+                ++m_ctx.m_synt.nonSynArray;
+                return true;  // Not OK, give up
             }
 
             // We need to add a new splice to avoid multi-use of the original splice
@@ -1499,9 +1495,8 @@ class AstToDfgSynthesize final {
             const std::vector<Driver> drivers = computePropagatedDrivers({}, resp);
             for (const Driver& d : drivers) splicep->addDriver(d.m_vtxp, d.m_lo, d.m_flp);
             unresolvedp->addDriver(splicep);
-            return false;
+            return false;  // OK, continue
         });
-        return !hasUsedArrayOutput;
     }
 
     // Synthesize the given AstAssignW. Returns true on success.
@@ -1528,6 +1523,9 @@ class AstToDfgSynthesize final {
         VL_DO_DANGLING(assignp->deleteTree(), assignp);
         if (!success) return false;
 
+        // Check exernal writes are observed correctly
+        if (!checkExtWrites()) return false;
+
         // Add resolved output variable drivers
         return addSynthesizedOutput(oSymTab);
     }
@@ -1535,11 +1533,6 @@ class AstToDfgSynthesize final {
     // Synthesize the given AstAlways. Returns true on success.
     bool synthesizeCfg(CfgGraph& cfg) {
         ++m_ctx.m_synt.inputAlways;
-
-        if (hasExternallyWrittenVariable(*m_logicp)) {
-            ++m_ctx.m_synt.nonSynExtWrite;
-            return false;
-        }
 
         // If there is a backward edge (loop), we can't synthesize it
         if (cfg.containsLoop()) {
@@ -1591,6 +1584,9 @@ class AstToDfgSynthesize final {
             // Set the path predicates on the successor edges
             assignPathPredicates(bb);
         }
+
+        // Check exernal writes are observed correctly
+        if (!checkExtWrites()) return false;
 
         // Add resolved output variable drivers
         return addSynthesizedOutput(m_bbToOSymTab[cfg.exit()]);

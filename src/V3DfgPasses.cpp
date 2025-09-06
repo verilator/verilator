@@ -27,11 +27,18 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 void V3DfgPasses::inlineVars(DfgGraph& dfg) {
     for (DfgVertexVar& vtx : dfg.varVertices()) {
-        if (DfgVarPacked* const varp = vtx.cast<DfgVarPacked>()) {
-            if (varp->hasSinks() && varp->isDrivenFullyByDfg()) {
-                varp->replaceWith(varp->srcp());
-            }
-        }
+        // Nothing to inline it into
+        if (!vtx.hasSinks()) continue;
+        // Nohting to inline
+        DfgVertex* const srcp = vtx.srcp();
+        if (!srcp) continue;
+        // Value can differ from driver
+        if (vtx.isVolatile()) continue;
+        // Partial driver cannot be inlined
+        if (srcp->is<DfgVertexSplice>()) continue;
+        if (srcp->is<DfgUnitArray>()) continue;
+        // Okie dokie, here we go ...
+        vtx.replaceWith(srcp);
     }
 }
 
@@ -92,7 +99,7 @@ void V3DfgPasses::removeUnused(DfgGraph& dfg) {
 }
 
 void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
-    UASSERT(dfg.modulep(), "binToOneHot only works with unscoped DfgGraphs for now");
+    if (!dfg.modulep()) return;  // binToOneHot only works with unscoped DfgGraphs for now
 
     // Structure to keep track of comparison details
     struct Term final {
@@ -330,138 +337,31 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
     }
 }
 
-void V3DfgPasses::eliminateVars(DfgGraph& dfg, V3DfgEliminateVarsContext& ctx) {
-    // Worklist based algoritm
-    DfgWorklist workList{dfg};
-
-    // Add all variables to the work list
-    for (DfgVertexVar& vtx : dfg.varVertices()) workList.push_front(vtx);
-
-    // List of variables (AstVar or AstVarScope) we are replacing
-    std::vector<AstNode*> replacedVariables;
-    // AstVar::user2p() : AstVar* -> The replacement variables
-    // AstVarScope::user2p() : AstVarScope* -> The replacement variables
-    const VNUser2InUse user2InUse;
-
-    // Whether we need to apply variable replacements
-    bool doReplace = false;
-
-    // Process the work list
-    workList.foreach([&](DfgVertex& vtx) {
-        // Remove unused non-variable vertices
-        if (!vtx.is<DfgVertexVar>() && !vtx.hasSinks()) {
-            // Add sources of removed vertex to work list
-            vtx.foreachSource([&](DfgVertex& src) {
-                workList.push_front(src);
-                return false;
-            });
-            // Remove the unused vertex
-            vtx.unlinkDelete(dfg);
-            return;
-        }
-
-        // We can only eliminate DfgVarPacked vertices at the moment
-        DfgVarPacked* const varp = vtx.cast<DfgVarPacked>();
-        if (!varp) return;
-
-        if (!varp->tmpForp()) {
-            // Can't remove regular variable if it has external drivers
-            if (!varp->isDrivenFullyByDfg()) return;
-        } else {
-            // Can't remove partially driven used temporaries
-            if (!varp->isDrivenFullyByDfg() && varp->hasSinks()) return;
-        }
-
-        // Can't remove if referenced external to the module/netlist
-        if (varp->hasExtRefs()) return;
-        // Can't remove if written in the module
-        if (varp->hasModWrRefs()) return;
-        // Can't remove if referenced in other DFGs of the same module
-        if (varp->hasDfgRefs()) return;
-
-        // If it has multiple sinks, it can't be eliminated
-        if (varp->hasMultipleSinks()) return;
-
-        if (!varp->hasModRefs()) {
-            // If it is only referenced in this DFG, it can be removed
-            ++ctx.m_varsRemoved;
-            varp->replaceWith(varp->srcp());
-            ctx.m_deleteps.push_back(varp->nodep());  // Delete variable at the end
-        } else if (const DfgVarPacked* const driverp = varp->srcp()->cast<DfgVarPacked>()) {
-            // If it's driven from another variable, it can be replaced by that.
-            // Mark it for replacement
-            ++ctx.m_varsReplaced;
-            UASSERT_OBJ(!varp->hasSinks(), varp, "Variable inlining should make this impossible");
-            // Grab the AstVar/AstVarScope
-            AstNode* const nodep = varp->nodep();
-            UASSERT_OBJ(!nodep->user2p(), nodep, "Replacement already exists");
-            doReplace = true;
-            ctx.m_deleteps.push_back(nodep);  // Delete variable at the end
-            nodep->user2p(driverp->nodep());
-        } else {
-            // Otherwise this *is* the canonical var, keep it
-            return;
-        }
-
-        // Add sources of redundant variable to the work list
-        vtx.foreachSource([&](DfgVertex& src) {
-            workList.push_front(src);
-            return false;
-        });
-        // Remove the redundant variable
-        vtx.unlinkDelete(dfg);
-    });
-
-    // Job done if no replacements possible
-    if (!doReplace) return;
-
-    // Apply variable replacements
-    if (AstModule* const modp = dfg.modulep()) {
-        modp->foreach([&](AstVarRef* refp) {
-            AstVar* varp = refp->varp();
-            while (AstVar* const replacep = VN_AS(varp->user2p(), Var)) varp = replacep;
-            refp->varp(varp);
-        });
-    } else {
-        v3Global.rootp()->foreach([&](AstVarRef* refp) {
-            AstVarScope* vscp = refp->varScopep();
-            while (AstVarScope* const replacep = VN_AS(vscp->user2p(), VarScope)) vscp = replacep;
-            refp->varScopep(vscp);
-            refp->varp(vscp->varp());
-        });
-    }
-}
-
 void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgContext& ctx) {
     // There is absolutely nothing useful we can do with a graph of size 2 or less
     if (dfg.size() <= 2) return;
 
-    int passNumber = 0;
-
-    const auto apply = [&](int dumpLevel, const string& name, std::function<void()> pass) {
+    const auto run = [&](const std::string& name, bool dump, std::function<void()> pass) {
+        // Apply the pass
         pass();
-        if (dumpDfgLevel() >= dumpLevel) {
-            const string strippedName = VString::removeWhitespace(name);
-            const string label
-                = ctx.prefix() + "pass-" + cvtToStr(passNumber) + "-" + strippedName;
-            dfg.dumpDotFilePrefixed(label);
-        }
+        // Debug dump
+        if (dump) dfg.dumpDotFilePrefixed(ctx.prefix() + "opt-" + VString::removeWhitespace(name));
+        // Internal type check
         if (v3Global.opt.debugCheck()) V3DfgPasses::typeCheck(dfg);
-        ++passNumber;
     };
 
-    apply(3, "input           ", [&]() {});
-    apply(4, "inlineVars      ", [&]() { inlineVars(dfg); });
-    apply(4, "cse0            ", [&]() { cse(dfg, ctx.m_cseContext0); });
-    if (dfg.modulep()) {
-        apply(4, "binToOneHot     ", [&]() { binToOneHot(dfg, ctx.m_binToOneHotContext); });
-    }
-    if (v3Global.opt.fDfgPeephole()) {
-        apply(4, "peephole        ", [&]() { peephole(dfg, ctx.m_peepholeContext); });
-        // We just did CSE above, so without peephole there is no need to run it again these
-        apply(4, "cse1            ", [&]() { cse(dfg, ctx.m_cseContext1); });
-    }
+    // Currend debug dump level
+    const uint32_t dumpLvl = dumpDfgLevel();
+
+    // Run passes
+    run("input       ", dumpLvl >= 3, [&]() { /* debug dump only */ });
+    run("inlineVars  ", dumpLvl >= 4, [&]() { inlineVars(dfg); });
+    run("cse0        ", dumpLvl >= 4, [&]() { cse(dfg, ctx.m_cseContext0); });
+    run("binToOneHot ", dumpLvl >= 4, [&]() { binToOneHot(dfg, ctx.m_binToOneHotContext); });
+    run("peephole    ", dumpLvl >= 4, [&]() { peephole(dfg, ctx.m_peepholeContext); });
+    run("cse1        ", dumpLvl >= 4, [&]() { cse(dfg, ctx.m_cseContext1); });
+    run("output      ", dumpLvl >= 3, [&]() { /* debug dump only */ });
+
     // Accumulate patterns for reporting
     if (v3Global.opt.stats()) ctx.m_patternStats.accumulate(dfg);
-    apply(4, "regularize", [&]() { regularize(dfg, ctx.m_regularizeContext); });
 }
