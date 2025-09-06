@@ -1602,9 +1602,7 @@ class RandomizeVisitor final : public VNVisitor {
 
         if (AstEnumDType* const enumDtp = VN_CAST(varp->dtypep()->skipRefToEnump(), EnumDType)) {
             items = static_cast<uint64_t>(enumDtp->itemCount());
-        } else {
-            AstBasicDType* const basicp = varp->dtypep()->skipRefp()->basicp();
-            UASSERT_OBJ(basicp, varp, "Unexpected randc variable dtype");
+        } else if (AstBasicDType* const basicp = varp->dtypep()->skipRefp()->basicp()) {
             if (basicp->width() > 32) {
                 varp->v3error("Maximum implemented width for randc is 32 bits, "
                               << varp->prettyNameQ() << " is " << basicp->width() << " bits");
@@ -1612,6 +1610,13 @@ class RandomizeVisitor final : public VNVisitor {
                 return nullptr;
             }
             items = 1ULL << basicp->width();
+        } else if (AstStructDType* const dtp = VN_CAST(varp->dtypep()->skipRefp(), StructDType)) {
+            UASSERT_OBJ(!dtp->packed(), dtp, "skipRef should have hidden packed before got here");
+            dtp->v3error("Unpacked structs shall not be declared as randc"
+                         " (IEEE 1800-2023 18.4)");
+            return nullptr;
+        } else {
+            varp->v3fatalSrc("Unexpected randc variable dtype");
         }
         AstCDType* newdtp = findVlRandCDType(varp->fileline(), items);
         AstVar* newp

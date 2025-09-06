@@ -1,0 +1,5 @@
+%Error: t/t_randomize_unpacked_bad.v:8:9: Unpacked structs shall not be declared as randc (IEEE 1800-2023 18.4)
+    8 |   randc struct {logic m_x;} s;   
+      |         ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
