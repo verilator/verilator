@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0114,C0116,C0209,R0912,R0915
+# pylint: disable=C0114,C0116,C0209,R0911,R0912,R0915
 ######################################################################
 
 import argparse
