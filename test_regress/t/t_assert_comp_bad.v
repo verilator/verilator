@@ -4,22 +4,22 @@
 // any use, without warranty, 2007 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
-   localparam TEN = 10;
-   localparam string PCTPCT = "%%";
+  localparam TEN = 10;
+  localparam string PCTPCT = "%%";
 
-   if (1) begin
-      $info;
-      $info("User elaboration-time info");
-      $info("Percent=%% PctPct=%s Ten=%0d", PCTPCT, TEN);
-      $warning;
-      $warning("User elaboration-time warning");
-      $warning(1);  // Check can convert arguments to format
-      $error;
-      $error("User elaboration-time error");
-      $fatal(0, "User elaboration-time fatal");
-      $fatal;
-   end
+  if (1) begin
+    $info;
+    $info("User elaboration-time info");
+    $info("Percent=%% PctPct=%s Ten=%0d", PCTPCT, TEN);
+    $warning;
+    $warning("User elaboration-time warning");
+    $warning(1);  // Check can convert arguments to format
+    $error;
+    $error("User elaboration-time error");
+    $fatal(0, "User elaboration-time fatal");
+    $fatal;
+  end
 
 endmodule

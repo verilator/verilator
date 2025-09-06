@@ -103,8 +103,8 @@ List Of Warnings
    .. code-block:: sv
 
          always_comb begin
-            a = b;
-            b = 1;
+           a = b;
+           b = 1;
          end
 
    Ignoring this warning will only suppress the lint check; it will
@@ -275,11 +275,11 @@ List Of Warnings
    .. code-block:: sv
 
          always @(posedge clk)
-            if (~reset_l)
-                for (i=0; i<`ARRAY_SIZE; i++)
-                    array[i] <= 0;  // Non-blocking assignment inside loop
-            else
-                array[address] <= data;
+           if (~reset_l)
+             for (i=0; i<`ARRAY_SIZE; i++)
+               array[i] <= 0;  // Non-blocking assignment inside loop
+           else
+             array[address] <= data;
 
    While this is supported in typical synthesizeable code (including the
    example above), some complicated cases are not supported. Namely:
@@ -577,7 +577,7 @@ List Of Warnings
       :emphasize-lines: 5
 
          module parameterized
-            #(parameter int MY_PARAM = 0);
+           #(parameter int MY_PARAM = 0);
          endmodule
          module upper;
            defparam p0.MY_PARAM = 1;  //<--- Warning
@@ -598,12 +598,12 @@ List Of Warnings
       :emphasize-lines: 6
 
          module parameterized
-            #(parameter int MY_PARAM = 0);
+           #(parameter int MY_PARAM = 0);
          endmodule
          module upper
            parameterized
-              #(.MY_PARAM(1))  //<--- Repaired
-              p0();
+             #(.MY_PARAM(1))  //<--- Repaired
+             p0();
          endmodule
 
    Other tools with similar warnings: Verible's forbid_defparam_rule.
@@ -745,7 +745,7 @@ List Of Warnings
       :emphasize-lines: 2
 
          typedef enum [3:0] {
-            WRONG_WIDTH = 33'h3  //<--- Warning
+           WRONG_WIDTH = 33'h3  //<--- Warning
          } enum_t;
 
    To repair, correct the size of the item's value directly, or use a cast,
@@ -831,8 +831,8 @@ List Of Warnings
       :emphasize-lines: 2
 
          generate
-            if (PARAM == 1) begin  //<--- Warning
-            end
+           if (PARAM == 1) begin  //<--- Warning
+           end
 
    Results in:
 
@@ -848,8 +848,8 @@ List Of Warnings
       :emphasize-lines: 2
 
          generate
-            if (PARAM == 1) begin : gen_param_1  //<--- Repaired
-            end
+           if (PARAM == 1) begin : gen_param_1  //<--- Repaired
+           end
 
    Other tools with similar warnings: Verible's generate-label, "All
    generate block statements must have a label."
@@ -885,7 +885,7 @@ List Of Warnings
       :emphasize-lines: 5
 
          function int function_being_called_as_task;
-            return 1;
+           return 1;
          endfunction
 
          initial function_being_called_as_task();  //<--- Warning
@@ -904,7 +904,7 @@ List Of Warnings
       :emphasize-lines: 5
 
          function int function_being_called_as_task;
-            return 1;
+           return 1;
          endfunction
 
          initial void'(function_being_called_as_task());  //<--- Repaired
@@ -1074,10 +1074,10 @@ List Of Warnings
       :emphasize-lines: 3
 
          task foo(int local_var);
-            fork
-               #10 local_var++;
-               #20 $display("local_var = %d", local_var);
-            join_none
+           fork
+             #10 local_var++;
+             #20 $display("local_var = %d", local_var);
+           join_none
          endtask
 
    In the example above 'local_var' exists only within scope of 'foo', once foo
@@ -1099,19 +1099,19 @@ List Of Warnings
       :emphasize-lines: 4
 
          task foo(int local_var);
-            fork
-               #10 begin
-                  int forked_var = local_var;
-                  forked_var++;
-               end
-               #20 begin
-                  // Note that we are going to print the original value here,
-                  // as `forked_var`is a local copy that was initialized while
-                  // `foo` was still alive.
-                  int forked_var = local_var;
-                  $display("forked_var = %d", forked_var)
-               end
-            join_none
+           fork
+             #10 begin
+               int forked_var = local_var;
+               forked_var++;
+             end
+             #20 begin
+               // Note that we are going to print the original value here,
+               // as `forked_var`is a local copy that was initialized while
+               // `foo` was still alive.
+               int forked_var = local_var;
+               $display("forked_var = %d", forked_var)
+             end
+           join_none
          endtask
 
    If you need to share its state, another strategy is to ensure it's allocated
@@ -1124,10 +1124,10 @@ List Of Warnings
          int static_var;
 
          task foo();
-            fork
-               #10 static_var++;
-               #20 $display("static_var = %d", static_var);
-            join_none
+           fork
+             #10 static_var++;
+             #20 $display("static_var = %d", static_var);
+           join_none
          endtask
 
    However, if you need to be able to instantiate at runtime, the solution would be to
@@ -1139,23 +1139,23 @@ List Of Warnings
       :emphasize-lines: 2
 
          class Wrapper;
-            int m_var;
+           int m_var;
 
-            // Here we implicitly hold a reference to `this`
-            task foo();
-               fork
-                  #10 m_var++;
-                  #20 $display("this.m_var = %d", m_var);
-               join_none
-            endtask
+           // Here we implicitly hold a reference to `this`
+           task foo();
+             fork
+               #10 m_var++;
+               #20 $display("this.m_var = %d", m_var);
+             join_none
+           endtask
          endclass
 
          // Here we explicitly hold a handle to an object
          task bar(Wrapper wrapper);
-            fork
-               #10 wrapper.m_var++;
-               #20 $display("wrapper.m_var = %d", wrapper.m_var);
-            join_none
+           fork
+             #10 wrapper.m_var++;
+             #20 $display("wrapper.m_var = %d", wrapper.m_var);
+           join_none
          endtask
 
 .. option:: LITENDIAN
@@ -1197,8 +1197,8 @@ List Of Warnings
       :emphasize-lines: 3
 
          if (something)
-            statement_in_if;
-            statement_not_in_if;  //<--- Warning
+           statement_in_if;
+           statement_not_in_if;  //<--- Warning
 
    Results in:
 
@@ -1214,7 +1214,7 @@ List Of Warnings
       :emphasize-lines: 3
 
          if (something)
-            statement_in_if;
+           statement_in_if;
          statement_not_in_if;  //<--- Repaired
 
    Other tools with similar warnings: GCC -Wmisleading-indentation,
@@ -1489,11 +1489,11 @@ List Of Warnings
        module a;
          localparam A=1;
          generate
-            if (A==0) begin
-               b b_inst1 (.x(1'b0));  //<--- error nonexistent port
-               b #(.PX(1'b0)) b_inst2 ();  //<--- error nonexistent parameter
-            end
-          endgenerate
+           if (A==0) begin
+             b b_inst1 (.x(1'b0));  //<--- error nonexistent port
+             b #(.PX(1'b0)) b_inst2 ();  //<--- error nonexistent parameter
+           end
+         endgenerate
        endmodule
 
        module b;
@@ -1766,9 +1766,9 @@ List Of Warnings
 
          wire vec[6:0];
          initial begin
-            index = 7;
-            ...
-            if (index < 7) out = vec[index];  // Never will use vec[7]
+          index = 7;
+          ...
+          if (index < 7) out = vec[index];  // Never will use vec[7]
 
    Other tools with similar warnings: Icarus Verilog's select-range,
    "warning: ... [...] is selecting before vector" or "is selecting before
@@ -1952,7 +1952,7 @@ List Of Warnings
          task foo(inout sig); ... endtask
          // ...
          always @* begin
-              foo(bus_we_select_from[2]);  // Will get TASKNSVAR error
+           foo(bus_we_select_from[2]);  // Will get TASKNSVAR error
          end
 
    Change this to:
@@ -1963,8 +1963,8 @@ List Of Warnings
          // ...
          reg foo_temp_out;
          always @* begin
-            foo(foo_temp_out);
-            bus_we_select_from[2] = foo_temp_out;
+           foo(foo_temp_out);
+           bus_we_select_from[2] = foo_temp_out;
          end
 
    Verilator doesn't do this conversion for you, as some more complicated

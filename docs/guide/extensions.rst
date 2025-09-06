@@ -240,7 +240,7 @@ or "`ifdef`"'s may break other tools.
          reg enable_r /*verilator clock_enable*/;
          wire gated_clk = clk & enable_r;
          always_ff @(posedge clk)
-            enable_r <= enable_early;
+           enable_r <= enable_early;
 
    The clock_enable attribute will cause the clock gate to be ignored in
    the scheduling algorithm, sometimes required for correct clock behavior,
@@ -331,8 +331,8 @@ or "`ifdef`"'s may break other tools.
          // Note the placement of the semicolon above
          always_comb begin
            if (....) begin
-              splitme = ....;
-              other assignments
+             splitme = ....;
+             other assignments
            end
          end
 
@@ -346,13 +346,13 @@ or "`ifdef`"'s may break other tools.
          // All assignments excluding those to splitme
          always_comb begin
            if (....) begin
-              other assignments
+             other assignments
            end
          end
          // All assignments to splitme
          always_comb begin
            if (....) begin
-              splitme = ....;
+             splitme = ....;
            end
          end
 

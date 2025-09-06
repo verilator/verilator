@@ -184,7 +184,7 @@ Verilog, put in our.v:
     import "DPI-C" function int add (input int a, input int b);
 
     initial begin
-       $display("%x + %x = %x", 1, 2, add(1,2));
+      $display("%x + %x = %x", 1, 2, add(1,2));
     endtask
 
 Then after Verilating, Verilator will create a file Vour__Dpi.h with the
@@ -225,8 +225,8 @@ called from C++:
     export "DPI-C" task publicSetBool;
 
     task publicSetBool;
-       input bit in_bool;
-       var_bool = in_bool;
+      input bit in_bool;
+      var_bool = in_bool;
     endtask
 
 Then after Verilating, Verilator will create a file Vour__Dpi.h with the
@@ -294,11 +294,11 @@ wrapper:
      import "DPI-C" context function void dpi_that_accesses_din();
 
      always @(...)
-        dpi_din_args(din);
+       dpi_din_args(din);
 
      task dpi_din_args(input din);
-        /* verilator no_inline_task */
-        dpi_that_accesses_din();
+       // verilator no_inline_task
+       dpi_that_accesses_din();
      endtask
 
 
