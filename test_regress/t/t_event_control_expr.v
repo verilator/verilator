@@ -50,10 +50,8 @@ endmodule
 `EXPR_TEST(queue, 0, (input int q[$]), q[0])
 `EXPR_TEST(queue_mul, 0, (input int q[$], int i), q[0]*i)
 
-`ifdef UNSUP
 function int id(int x); return x; endfunction
 `EXPR_TEST(func, 0, (input int cyc), id(cyc))
-`endif
 
 //========================================================================
 // Class tests (special case as V3Width doesn't always properly handle
@@ -78,9 +76,7 @@ endmodule
 
 `CLASS_TEST(class, obj.k)
 
-`ifdef UNSUP
 `CLASS_TEST(method, obj.get_k())
-`endif
 `endif
 
 //========================================================================
@@ -129,17 +125,13 @@ module t(/*AUTOARG*/
    t_queue u_queue(.*);
    t_queue_mul u_queue_mul(.*);
 
-`ifdef UNSUP
    t_func u_func(.*);
-`endif
 
    int k;
    assign k = i + j;
    `ifndef NO_CLASS
    t_class u_class(.*);
-`ifdef UNSUP
    t_method u_method(.*);
-`endif
    `endif
 
    t_cstmt u_cstmt();
