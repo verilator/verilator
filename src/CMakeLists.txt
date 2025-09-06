@@ -41,6 +41,7 @@ endmacro()
 set(HEADERS
     V3Active.h
     V3ActiveTop.h
+    V3Alias.h
     V3Assert.h
     V3AssertPre.h
     V3Ast.h
@@ -203,6 +204,7 @@ set(COMMON_SOURCES
     Verilator.cpp
     V3Active.cpp
     V3ActiveTop.cpp
+    V3Alias.cpp
     V3Assert.cpp
     V3AssertPre.cpp
     V3Ast.cpp
