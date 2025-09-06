@@ -1348,6 +1348,7 @@ public:
 };
 class AstPackageImport final : public AstNode {
     // A package import declaration
+    // @astgen op1 := resolvedClassp : Optional[AstClassOrPackageRef]
     //
     // @astgen ptr := m_packagep : Optional[AstPackage]  // Package hierarchy
     string m_name;  // What imported e.g. "*"
