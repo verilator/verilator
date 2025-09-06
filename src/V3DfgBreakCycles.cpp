@@ -123,8 +123,7 @@ class TraceDriver final : public DfgVisitor {
             // Vertex is DfgConst, in which case this code is unreachable ...
             using Vtx = typename std::conditional<std::is_same<DfgConst, Vertex>::value, DfgSel,
                                                   Vertex>::type;
-            AstNodeDType* const dtypep = V3Dfg::dtypePacked(width);
-            Vtx* const vtxp = new Vtx{m_dfg, refp->fileline(), dtypep};
+            Vtx* const vtxp = new Vtx{m_dfg, refp->fileline(), DfgDataType::packed(width)};
             m_vtx2Scc[vtxp] = 0;
             m_newVtxps.emplace_back(vtxp);
             return reinterpret_cast<Vertex*>(vtxp);
@@ -137,10 +136,9 @@ class TraceDriver final : public DfgVisitor {
         if (!nodep) nodep = v3Global.rootp();
         const std::string name = m_dfg.makeUniqueName(prefix, nodep->user2Inc());
         FileLine* const flp = vtxp->fileline();
-        AstNodeDType* const dtypep = vtxp->dtypep();
         DfgVertex::ScopeCache scopeCache;
         AstScope* const scopep = m_dfg.modulep() ? nullptr : vtxp->scopep(scopeCache);
-        DfgVertexVar* const varp = m_dfg.makeNewVar(flp, name, dtypep, scopep);
+        DfgVertexVar* const varp = m_dfg.makeNewVar(flp, name, vtxp->dtype(), scopep);
         varp->varp()->isInternal(true);
         varp->tmpForp(varp->nodep());
         return varp;
@@ -151,8 +149,8 @@ class TraceDriver final : public DfgVisitor {
     // return after the call. 'visit' methods should not call 'iterate', call
     // this method instead, which checks for cycles.
     DfgVertex* trace(DfgVertex* const vtxp, const uint32_t msb, const uint32_t lsb) {
-        UASSERT_OBJ(!vtxp->isArray(), vtxp, "Cannot trace array type vertices");
-        UASSERT_OBJ(vtxp->width() > msb, vtxp, "Traced Vertex too narrow");
+        UASSERT_OBJ(vtxp->isPacked(), vtxp, "Can only trace packed type vertices");
+        UASSERT_OBJ(vtxp->size() > msb, vtxp, "Traced Vertex too narrow");
 
         // Push to stack
         m_stack.emplace_back(vtxp, msb, lsb);
@@ -958,7 +956,7 @@ class IndependentBits final : public DfgVisitor {
             DfgVertex* const currp = workList.front();
             workList.pop_front();
 
-            if (VN_IS(currp->dtypep(), UnpackArrayDType)) {
+            if (currp->isArray()) {
                 // For an unpacked array vertex, just enque it's sinks.
                 // (There can be no loops through arrays directly)
                 currp->foreachSink([&](DfgVertex& vtx) {
@@ -1146,8 +1144,7 @@ class FixUpIndependentRanges final {
             }
             // Fall back on using the part of the variable (if dependent, or trace failed)
             if (!termp) {
-                AstNodeDType* const dtypep = V3Dfg::dtypePacked(width);
-                DfgSel* const selp = new DfgSel{m_dfg, vtx.fileline(), dtypep};
+                DfgSel* const selp = new DfgSel{m_dfg, vtx.fileline(), DfgDataType::packed(width)};
                 // Same component as 'vtxp', as reads 'vtxp' and will replace 'vtxp'
                 m_vtx2Scc[selp] = m_vtx2Scc.at(vtx);
                 // Do not connect selp->fromp yet, need to do afer replacing 'vtxp'
@@ -1225,8 +1222,7 @@ class FixUpIndependentRanges final {
         for (size_t i = 1; i < termps.size(); ++i) {
             DfgVertex* const termp = termps[i];
             const uint32_t catWidth = replacementp->width() + termp->width();
-            AstNodeDType* const dtypep = V3Dfg::dtypePacked(catWidth);
-            DfgConcat* const catp = new DfgConcat{m_dfg, flp, dtypep};
+            DfgConcat* const catp = new DfgConcat{m_dfg, flp, DfgDataType::packed(catWidth)};
             catp->rhsp(replacementp);
             catp->lhsp(termp);
             // Need to figure out which component the replacement vertex

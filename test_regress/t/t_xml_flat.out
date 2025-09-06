@@ -109,6 +109,7 @@
       <basicdtype loc="d,34,24,34,27" id="2" name="logic"/>
       <basicdtype loc="d,15,16,15,17" id="1" name="logic" left="3" right="0"/>
       <basicdtype loc="d,19,18,19,19" id="3" name="logic" left="31" right="0" signed="true"/>
+      <voiddtype loc="a,0,0,0,0" id="4"/>
     </typetable>
   </netlist>
 </verilator_xml>

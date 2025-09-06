@@ -75,6 +75,7 @@ set(HEADERS
     V3Dfg.h
     V3DfgCache.h
     V3DfgContext.h
+    V3DfgDataType.h
     V3DfgOptimizer.h
     V3DfgPasses.h
     V3DfgPatternStats.h
@@ -237,6 +238,7 @@ set(COMMON_SOURCES
     V3DfgCache.cpp
     V3DfgColorSCCs.cpp
     V3DfgCse.cpp
+    V3DfgDataType.cpp
     V3DfgDecomposition.cpp
     V3DfgDfgToAst.cpp
     V3DfgOptimizer.cpp

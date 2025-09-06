@@ -257,8 +257,9 @@ class DfgToAstVisitor final : DfgVisitor {
     DfgToAstVisitor(DfgGraph& dfg, V3DfgDfgToAstContext& ctx)
         : m_modp{dfg.modulep()}
         , m_ctx{ctx} {
-        // Convert the graph back to combinational assignments
+        if (v3Global.opt.debugCheck()) V3DfgPasses::typeCheck(dfg);
 
+        // Convert the graph back to combinational assignments
         // The graph must have been regularized, so we only need to render assignments
         for (DfgVertexVar& vtx : dfg.varVertices()) {
             // If there is no driver (this vertex is an input to the graph), then nothing to do.

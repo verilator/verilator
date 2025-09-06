@@ -71,7 +71,7 @@ class DfgRegularize final {
                 const std::string name = m_dfg.makeUniqueName("Regularize", m_nTmps);
                 FileLine* const flp = vtx.fileline();
                 AstScope* const scopep = scoped ? vtx.scopep(scopeCache) : nullptr;
-                DfgVertexVar* const newp = m_dfg.makeNewVar(flp, name, vtx.dtypep(), scopep);
+                DfgVertexVar* const newp = m_dfg.makeNewVar(flp, name, vtx.dtype(), scopep);
                 ++m_nTmps;
                 ++m_ctx.m_temporariesIntroduced;
                 // Replace vertex with the variable and add back driver

@@ -366,6 +366,9 @@ class DataflowOptimize final {
             // Convert back to Ast
             V3DfgPasses::dfgToAst(*dfgp, m_ctx);
         }
+
+        // Reset interned types so the corresponding Ast types can be garbage collected
+        DfgDataType::reset();
     }
 
 public:

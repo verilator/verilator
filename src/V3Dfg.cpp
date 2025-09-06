@@ -24,34 +24,6 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //------------------------------------------------------------------------------
-// V3Dfg
-
-// predicate for supported data types
-static bool dfgGraphIsSupportedDTypePacked(const AstNodeDType* dtypep) {
-    dtypep = dtypep->skipRefp();
-    if (const AstBasicDType* const typep = VN_CAST(dtypep, BasicDType)) {
-        return typep->keyword().isIntNumeric();
-    }
-    if (const AstPackArrayDType* const typep = VN_CAST(dtypep, PackArrayDType)) {
-        return dfgGraphIsSupportedDTypePacked(typep->subDTypep());
-    }
-    if (const AstNodeUOrStructDType* const typep = VN_CAST(dtypep, NodeUOrStructDType)) {
-        return typep->packed();
-    }
-    return false;
-}
-
-bool V3Dfg::isSupported(const AstNodeDType* dtypep) {
-    dtypep = dtypep->skipRefp();
-    // Support 1 dimensional unpacked arrays of packed types
-    if (const AstUnpackArrayDType* const typep = VN_CAST(dtypep, UnpackArrayDType)) {
-        return dfgGraphIsSupportedDTypePacked(typep->subDTypep());
-    }
-    // Support packed types
-    return dfgGraphIsSupportedDTypePacked(dtypep);
-}
-
-//------------------------------------------------------------------------------
 // DfgGraph
 
 DfgGraph::DfgGraph(AstModule* modulep, const string& name)
@@ -113,28 +85,28 @@ std::unique_ptr<DfgGraph> DfgGraph::clone() const {
         switch (vtx.type()) {
 #include "V3Dfg__gen_clone_cases.h"  // From ./astgen
         case VDfgType::Sel: {
-            DfgSel* const cp = new DfgSel{*clonep, vtx.fileline(), vtx.dtypep()};
+            DfgSel* const cp = new DfgSel{*clonep, vtx.fileline(), vtx.dtype()};
             cp->lsb(vtx.as<DfgSel>()->lsb());
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
         case VDfgType::UnitArray: {
-            DfgUnitArray* const cp = new DfgUnitArray{*clonep, vtx.fileline(), vtx.dtypep()};
+            DfgUnitArray* const cp = new DfgUnitArray{*clonep, vtx.fileline(), vtx.dtype()};
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
         case VDfgType::Mux: {
-            DfgMux* const cp = new DfgMux{*clonep, vtx.fileline(), vtx.dtypep()};
+            DfgMux* const cp = new DfgMux{*clonep, vtx.fileline(), vtx.dtype()};
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
         case VDfgType::SpliceArray: {
-            DfgSpliceArray* const cp = new DfgSpliceArray{*clonep, vtx.fileline(), vtx.dtypep()};
+            DfgSpliceArray* const cp = new DfgSpliceArray{*clonep, vtx.fileline(), vtx.dtype()};
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
         case VDfgType::SplicePacked: {
-            DfgSplicePacked* const cp = new DfgSplicePacked{*clonep, vtx.fileline(), vtx.dtypep()};
+            DfgSplicePacked* const cp = new DfgSplicePacked{*clonep, vtx.fileline(), vtx.dtype()};
             vtxp2clonep.emplace(&vtx, cp);
             break;
         }
@@ -265,13 +237,13 @@ std::string DfgGraph::makeUniqueName(const std::string& prefix, size_t n) {
     return "__Vdfg" + prefix + m_tmpNameStub + std::to_string(n);
 }
 
-DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& name, AstNodeDType* dtypep,
-                                   AstScope* scopep) {
+DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& name,
+                                   const DfgDataType& dtype, AstScope* scopep) {
     UASSERT_OBJ(!!scopep != !!modulep(), flp,
                 "makeNewVar scopep should only be provided for a scoped DfgGraph");
 
     // Create AstVar
-    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
+    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtype.astDtypep()};
 
     if (scopep) {
         // Add AstVar to the scope's module
@@ -281,13 +253,13 @@ DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& name, AstNo
         // Add to scope
         scopep->addVarsp(vscp);
         // Create and return the corresponding variable vertex
-        if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) return new DfgVarArray{*this, vscp};
+        if (dtype.isArray()) return new DfgVarArray{*this, vscp};
         return new DfgVarPacked{*this, vscp};
     } else {
         // Add AstVar to containing module
         modulep()->addStmtsp(varp);
         // Create and return the corresponding variable vertex
-        if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) return new DfgVarArray{*this, varp};
+        if (dtype.isArray()) return new DfgVarArray{*this, varp};
         return new DfgVarPacked{*this, varp};
     }
 }
@@ -314,7 +286,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         }
         // Type and fanout
         os << '\n';
-        varVtxp->dtypep()->dumpSmall(os);
+        varVtxp->dtype().astDtypep()->dumpSmall(os);
         os << " / F" << varVtxp->fanout();
         // End 'label'
         os << '"';
@@ -371,7 +343,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         os << toDotId(vtx);
         os << " [label=\"SEL _[" << msb << ":" << lsb << "]\n";
         os << cvtToHex(selVtxp) << '\n';
-        vtx.dtypep()->dumpSmall(os);
+        vtx.dtype().astDtypep()->dumpSmall(os);
         os << " / F" << vtx.fanout() << '"';
         if (vtx.hasMultipleSinks()) {
             os << ", shape=doublecircle";
@@ -386,7 +358,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         os << toDotId(vtx);
         os << " [label=\"" << vtx.typeName() << '\n';
         os << cvtToHex(&vtx) << '\n';
-        vtx.dtypep()->dumpSmall(os);
+        vtx.dtype().astDtypep()->dumpSmall(os);
         os << " / F" << vtx.fanout() << '"';
         if (vtx.hasMultipleSinks()) {
             os << ", shape=doubleoctagon";
@@ -423,7 +395,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
     os << toDotId(vtx);
     os << " [label=\"" << vtx.typeName() << '\n';
     os << cvtToHex(&vtx) << '\n';
-    vtx.dtypep()->dumpSmall(os);
+    vtx.dtype().astDtypep()->dumpSmall(os);
     os << " / F" << vtx.fanout() << '"';
     if (vtx.hasMultipleSinks()) {
         os << ", shape=doublecircle";
@@ -554,9 +526,9 @@ DfgGraph::sinkCone(const std::vector<const DfgVertex*>& vtxps) const {
 //------------------------------------------------------------------------------
 // DfgVertex
 
-DfgVertex::DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, AstNodeDType* dtypep)
+DfgVertex::DfgVertex(DfgGraph& dfg, VDfgType type, FileLine* flp, const DfgDataType& dt)
     : m_filelinep{flp}
-    , m_dtypep{dtypep}
+    , m_dtype{dt}
     , m_type{type} {
     dfg.addVertex(*this);
 }

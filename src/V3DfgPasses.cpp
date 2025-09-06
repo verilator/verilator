@@ -219,11 +219,9 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         FileLine* const flp = srcp->fileline();
 
         // Required data types
-        AstNodeDType* const idxDTypep = srcp->dtypep();
-        AstNodeDType* const bitDTypep = V3Dfg::dtypePacked(1);
-        AstUnpackArrayDType* const tabDTypep = new AstUnpackArrayDType{
-            flp, bitDTypep, new AstRange{flp, static_cast<int>(nBits - 1), 0}};
-        v3Global.rootp()->typeTablep()->addTypesp(tabDTypep);
+        const DfgDataType& idxDType = srcp->dtype();
+        const DfgDataType& bitDType = DfgDataType::packed(1);
+        const DfgDataType& tabDType = DfgDataType::array(bitDType, nBits);
 
         // The index variable
         AstVar* const idxVarp = [&]() {
@@ -233,7 +231,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
                 varp = vp->as<DfgVarPacked>();
             } else {
                 const std::string name = dfg.makeUniqueName("BinToOneHot_Idx", nTables);
-                varp = dfg.makeNewVar(flp, name, idxDTypep, nullptr)->as<DfgVarPacked>();
+                varp = dfg.makeNewVar(flp, name, idxDType, nullptr)->as<DfgVarPacked>();
                 varp->varp()->isInternal(true);
                 varp->srcp(srcp);
             }
@@ -243,7 +241,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         // The previous index variable - we don't need a vertex for this
         AstVar* const preVarp = [&]() {
             const std::string name = dfg.makeUniqueName("BinToOneHot_Pre", nTables);
-            AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, idxDTypep};
+            AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, idxDType.astDtypep()};
             dfg.modulep()->addStmtsp(varp);
             varp->isInternal(true);
             varp->noReset(true);
@@ -254,7 +252,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         DfgVarArray* const tabVtxp = [&]() {
             const std::string name = dfg.makeUniqueName("BinToOneHot_Tab", nTables);
             DfgVarArray* const varp
-                = dfg.makeNewVar(flp, name, tabDTypep, nullptr)->as<DfgVarArray>();
+                = dfg.makeNewVar(flp, name, tabDType, nullptr)->as<DfgVarArray>();
             varp->varp()->isInternal(true);
             varp->varp()->noReset(true);
             varp->setHasModWrRefs();
@@ -310,7 +308,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             const std::vector<Term>& terms = pair.second;
             // Create the ArraySel
             FileLine* const aflp = terms.front().m_vtxp->fileline();
-            DfgArraySel* const aselp = new DfgArraySel{dfg, aflp, bitDTypep};
+            DfgArraySel* const aselp = new DfgArraySel{dfg, aflp, bitDType};
             aselp->fromp(tabVtxp);
             aselp->bitp(new DfgConst{dfg, aflp, width, val});
             // The inverted value, if needed
@@ -319,7 +317,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             for (const Term& term : terms) {
                 if (term.m_inv) {
                     if (!notp) {
-                        notp = new DfgNot{dfg, aflp, bitDTypep};
+                        notp = new DfgNot{dfg, aflp, bitDType};
                         notp->srcp(aselp);
                     }
                     term.m_vtxp->replaceWith(notp);
@@ -448,6 +446,7 @@ void V3DfgPasses::optimize(DfgGraph& dfg, V3DfgContext& ctx) {
                 = ctx.prefix() + "pass-" + cvtToStr(passNumber) + "-" + strippedName;
             dfg.dumpDotFilePrefixed(label);
         }
+        if (v3Global.opt.debugCheck()) V3DfgPasses::typeCheck(dfg);
         ++passNumber;
     };
 

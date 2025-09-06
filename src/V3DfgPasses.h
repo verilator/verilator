@@ -84,6 +84,8 @@ void regularize(DfgGraph&, V3DfgRegularizeContext&) VL_MT_DISABLED;
 void removeUnused(DfgGraph&) VL_MT_DISABLED;
 // Eliminate (remove or replace) redundant variables. Also removes resulting unused logic.
 void eliminateVars(DfgGraph&, V3DfgEliminateVarsContext&) VL_MT_DISABLED;
+// Check all types are consistent. This will not return if there is a type error.
+void typeCheck(const DfgGraph&) VL_MT_DISABLED;
 
 }  // namespace V3DfgPasses
 
