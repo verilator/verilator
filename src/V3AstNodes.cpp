@@ -1646,10 +1646,15 @@ void AstAlways::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "keyword", keyword().ascii());
     dumpJsonGen(str);
 }
-AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr*, AstNodeExpr*)
+AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, uint32_t assertType,
+                           uint32_t directiveType, AstNodeExpr*, AstNodeExpr*)
     : ASTGEN_SUPER_AssertCtl(fl)
-    , m_ctlType{ctlType} {
-    controlTypep(new AstConst{fl, ctlType});
+    , m_ctlType{VAssertCtlType::_TO_BE_EVALUATED}
+    , m_assertTypes{VAssertType::INTERNAL}
+    , m_directiveTypes{VAssertDirectiveType::INTERNAL} {
+    this->controlTypep(new AstConst{fl, ctlType});
+    this->assertTypesp(new AstConst{fl, assertType});
+    this->directiveTypesp(new AstConst{fl, directiveType});
 }
 AstAssertCtl::AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertTypesp,
                            AstNodeExpr* directiveTypep, AstNodeExpr*, AstNodeExpr*)

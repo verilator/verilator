@@ -50,11 +50,9 @@
 
 #define ERROR_RSVD_WORD(language) \
     do { \
-        FL; \
         yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: " << language \
                                                          << " reserved word not implemented: '" \
                                                          << yytext << "'"); \
-        FL_BRK; \
     } while (0)
 
 //======================================================================
@@ -259,6 +257,11 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$psprintf"           { FL; yylval.fl->v3warn(NONSTD, "Non-standard system function '" << yytext << "';"
                                                 " suggest use standard '$sformatf' (IEEE 1800-2023 21.3.3)");
                           return yD_SFORMATF; }
+  "$q_add"              { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
+  "$q_exam"             { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
+  "$q_full"             { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
+  "$q_initialize"       { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
+  "$q_remove"           { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
   "$random"             { FL; return yD_RANDOM; }
   "$readmemb"           { FL; return yD_READMEMB; }
   "$readmemh"           { FL; return yD_READMEMH; }
@@ -446,14 +449,15 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "config"              { FL; return yCONFIG; }
   "design"              { FL; return yDESIGN; }
   "endconfig"           { FL; return yENDCONFIG; }
-  "incdir"              { FL; ERROR_RSVD_WORD("Verilog 2001-config lib.map"); }
-  "include"             { FL; yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: Verilog 2001-config lib.map reserved word not implemented: 'include'\n"
+  "incdir"              { FL; ERROR_RSVD_WORD("IEEE 1800-2001-config lib.map"); FL_BRK; }
+  "include"             { FL; yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: IEEE 1800-2001-config lib.map"
+                                                " reserved word not implemented: 'include'\n"
                                                 << yylval.fl->warnMore() << "... Suggest unless in a lib.map file,"
                                                 " want `include instead");
                           FL_BRK; }
   "instance"            { FL; return yINSTANCE; }
   "liblist"             { FL; return yLIBLIST; }
-  "library"             { FL; ERROR_RSVD_WORD("Verilog 2001-config lib.map"); }
+  "library"             { FL; ERROR_RSVD_WORD("IEEE 1800-2001-config lib.map"); FL_BRK; }
   "use"                 { FL; return yUSE; }
 }
 
@@ -474,6 +478,11 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$changing_gclk"      { FL; return yD_CHANGING_GCLK; }
   "$countbits"          { FL; return yD_COUNTBITS; }
   "$countones"          { FL; return yD_COUNTONES; }
+  "$coverage_control"   { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$coverage_get"       { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$coverage_get_max"   { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$coverage_merge"     { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$coverage_save"      { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$dimensions"         { FL; return yD_DIMENSIONS; }
   "$error"              { FL; return yD_ERROR; }
   "$falling_gclk"       { FL; return yD_FALLING_GCLK; }
@@ -481,13 +490,16 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$fell"               { FL; return yD_FELL; }
   "$fell_gclk"          { FL; return yD_FELL_GCLK; }
   "$future_gclk"        { FL; return yD_FUTURE_GCLK; }
+  "$get_coverage"       { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$high"               { FL; return yD_HIGH; }
   "$increment"          { FL; return yD_INCREMENT; }
+  "$inferred_clock"     { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$inferred_disable"   { FL; return yD_INFERRED_DISABLE; }
   "$info"               { FL; return yD_INFO; }
   "$isunbounded"        { FL; return yD_ISUNBOUNDED; }
   "$isunknown"          { FL; return yD_ISUNKNOWN; }
   "$left"               { FL; return yD_LEFT; }
+  "$load_coverage_db"   { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$low"                { FL; return yD_LOW; }
   "$onehot"             { FL; return yD_ONEHOT; }
   "$onehot0"            { FL; return yD_ONEHOT0; }
@@ -498,6 +510,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$root"               { FL; return yD_ROOT; }
   "$rose"               { FL; return yD_ROSE; }
   "$rose_gclk"          { FL; return yD_ROSE_GCLK; }
+  "$set_coverage_db_name" { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$size"               { FL; return yD_SIZE; }
   "$stable"             { FL; return yD_STABLE; }
   "$stable_gclk"        { FL; return yD_STABLE_GCLK; }
@@ -609,6 +622,16 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /* SystemVerilog 2009 */
 <S09,S12,S17,S23,SAX>{
+  /*     System Tasks */
+  "$assertfailoff"      { FL; return yD_ASSERTFAILOFF; }
+  "$assertfailon"       { FL; return yD_ASSERTFAILON; }
+  "$assertkill"         { FL; return yD_ASSERTKILL; }
+  "$assertnonvacuouson" { FL; return yD_ASSERTNONVACUOUSON; }
+  "$assertoff"          { FL; return yD_ASSERTOFF; }
+  "$asserton"           { FL; return yD_ASSERTON; }
+  "$assertpassoff"      { FL; return yD_ASSERTPASSOFF; }
+  "$assertpasson"       { FL; return yD_ASSERTPASSON; }
+  "$assertvacuousoff"   { FL; return yD_ASSERTVACUOUSOFF; }
   /*     Keywords */
   "accept_on"           { FL; return yACCEPT_ON; }
   "checker"             { FL; return yCHECKER; }
@@ -638,9 +661,6 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <S12,S17,S23,SAX>{
   /*     System Tasks */
   "$assertcontrol"      { FL; return yD_ASSERTCTL; }
-  "$assertkill"         { FL; return yD_ASSERTKILL; }
-  "$assertoff"          { FL; return yD_ASSERTOFF; }
-  "$asserton"           { FL; return yD_ASSERTON; }
   /*     Keywords */
   "implements"          { FL; return yIMPLEMENTS; }
   "interconnect"        { FL; return yINTERCONNECT; }
@@ -665,92 +685,92 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <VA5,SAX>{
   /*     Generic unsupported warnings */
    "1step"              { FL; return y1STEP; }
-   "above"              { ERROR_RSVD_WORD("AMS"); }
-   "abs"                { ERROR_RSVD_WORD("AMS"); }
-   "absdelay"           { ERROR_RSVD_WORD("AMS"); }
-   "abstol"             { ERROR_RSVD_WORD("AMS"); }
-   "ac_stim"            { ERROR_RSVD_WORD("AMS"); }
-   "access"             { ERROR_RSVD_WORD("AMS"); }
-   "acos"               { ERROR_RSVD_WORD("AMS"); }
-   "acosh"              { ERROR_RSVD_WORD("AMS"); }
-   "aliasparam"         { ERROR_RSVD_WORD("AMS"); }
-   "analog"             { ERROR_RSVD_WORD("AMS"); }
-   "analysis"           { ERROR_RSVD_WORD("AMS"); }
+   "above"              { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "abs"                { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "absdelay"           { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "abstol"             { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "ac_stim"            { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "access"             { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "acos"               { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "acosh"              { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "aliasparam"         { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "analog"             { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "analysis"           { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "asin"               { FL; return yD_ASIN; }
    "asinh"              { FL; return yD_ASINH; }
-   "assert"             { ERROR_RSVD_WORD("AMS"); }
+   "assert"             { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "atan"               { FL; return yD_ATAN; }
    "atan2"              { FL; return yD_ATAN2; }
    "atanh"              { FL; return yD_ATANH; }
-   "branch"             { ERROR_RSVD_WORD("AMS"); }
+   "branch"             { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "ceil"               { FL; return yD_CEIL; }
-   "connect"            { ERROR_RSVD_WORD("AMS"); }
-   "connectmodule"      { ERROR_RSVD_WORD("AMS"); }
-   "connectrules"       { ERROR_RSVD_WORD("AMS"); }
-   "continuous"         { ERROR_RSVD_WORD("AMS"); }
+   "connect"            { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "connectmodule"      { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "connectrules"       { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "continuous"         { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "cos"                { FL; return yD_COS; }
    "cosh"               { FL; return yD_COSH; }
-   "cross"              { ERROR_RSVD_WORD("AMS"); }
-   "ddt"                { ERROR_RSVD_WORD("AMS"); }
-   "ddt_nature"         { ERROR_RSVD_WORD("AMS"); }
-   "ddx"                { ERROR_RSVD_WORD("AMS"); }
-   "discipline"         { ERROR_RSVD_WORD("AMS"); }
-   "discrete"           { ERROR_RSVD_WORD("AMS"); }
-   "domain"             { ERROR_RSVD_WORD("AMS"); }
-   "driver_update"      { ERROR_RSVD_WORD("AMS"); }
-   "endconnectrules"    { ERROR_RSVD_WORD("AMS"); }
-   "enddiscipline"      { ERROR_RSVD_WORD("AMS"); }
-   "endnature"          { ERROR_RSVD_WORD("AMS"); }
-   "endparamset"        { ERROR_RSVD_WORD("AMS"); }
-   "exclude"            { ERROR_RSVD_WORD("AMS"); }
+   "cross"              { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "ddt"                { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "ddt_nature"         { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "ddx"                { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "discipline"         { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "discrete"           { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "domain"             { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "driver_update"      { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "endconnectrules"    { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "enddiscipline"      { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "endnature"          { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "endparamset"        { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "exclude"            { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "exp"                { FL; return yD_EXP; }
-   "final_step"         { ERROR_RSVD_WORD("AMS"); }
-   "flicker_noise"      { ERROR_RSVD_WORD("AMS"); }
+   "final_step"         { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "flicker_noise"      { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "floor"              { FL; return yD_FLOOR; }
-   "flow"               { ERROR_RSVD_WORD("AMS"); }
-   "from"               { ERROR_RSVD_WORD("AMS"); }
-   "ground"             { ERROR_RSVD_WORD("AMS"); }
+   "flow"               { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "from"               { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "ground"             { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "hypot"              { FL; return yD_HYPOT; }
-   "idt"                { ERROR_RSVD_WORD("AMS"); }
-   "idt_nature"         { ERROR_RSVD_WORD("AMS"); }
-   "idtmod"             { ERROR_RSVD_WORD("AMS"); }
-   "inf"                { ERROR_RSVD_WORD("AMS"); }
-   "initial_step"       { ERROR_RSVD_WORD("AMS"); }
-   "laplace_nd"         { ERROR_RSVD_WORD("AMS"); }
-   "laplace_np"         { ERROR_RSVD_WORD("AMS"); }
-   "laplace_zd"         { ERROR_RSVD_WORD("AMS"); }
-   "laplace_zp"         { ERROR_RSVD_WORD("AMS"); }
-   "last_crossing"      { ERROR_RSVD_WORD("AMS"); }
-   "limexp"             { ERROR_RSVD_WORD("AMS"); }
+   "idt"                { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "idt_nature"         { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "idtmod"             { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "inf"                { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "initial_step"       { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "laplace_nd"         { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "laplace_np"         { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "laplace_zd"         { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "laplace_zp"         { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "last_crossing"      { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "limexp"             { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "ln"                 { FL; return yD_LN; }
    "log"                { FL; return yD_LOG10; }
-   "max"                { ERROR_RSVD_WORD("AMS"); }
-   "merged"             { ERROR_RSVD_WORD("AMS"); }
-   "min"                { ERROR_RSVD_WORD("AMS"); }
-   "nature"             { ERROR_RSVD_WORD("AMS"); }
-   "net_resolution"     { ERROR_RSVD_WORD("AMS"); }
-   "noise_table"        { ERROR_RSVD_WORD("AMS"); }
-   "paramset"           { ERROR_RSVD_WORD("AMS"); }
-   "potential"          { ERROR_RSVD_WORD("AMS"); }
+   "max"                { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "merged"             { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "min"                { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "nature"             { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "net_resolution"     { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "noise_table"        { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "paramset"           { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "potential"          { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "pow"                { FL; return yD_POW; }
-   "resolveto"          { ERROR_RSVD_WORD("AMS"); }
+   "resolveto"          { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "sin"                { FL; return yD_SIN; }
    "sinh"               { FL; return yD_SINH; }
-   "slew"               { ERROR_RSVD_WORD("AMS"); }
-   "split"              { ERROR_RSVD_WORD("AMS"); }
+   "slew"               { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "split"              { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "sqrt"               { FL; return yD_SQRT; }
    "string"             { FL; return ySTRING; }
    "tan"                { FL; return yD_TAN; }
    "tanh"               { FL; return yD_TANH; }
-   "timer"              { ERROR_RSVD_WORD("AMS"); }
-   "transition"         { ERROR_RSVD_WORD("AMS"); }
-   "units"              { ERROR_RSVD_WORD("AMS"); }
-   "white_noise"        { ERROR_RSVD_WORD("AMS"); }
+   "timer"              { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "transition"         { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "units"              { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "white_noise"        { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "wreal"              { FL; return yWREAL; }
-   "zi_nd"              { ERROR_RSVD_WORD("AMS"); }
-   "zi_np"              { ERROR_RSVD_WORD("AMS"); }
-   "zi_zd"              { ERROR_RSVD_WORD("AMS"); }
-   "zi_zp"              { ERROR_RSVD_WORD("AMS"); }
+   "zi_nd"              { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "zi_np"              { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "zi_zd"              { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
+   "zi_zp"              { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
 }
 
   /************************************************************************/

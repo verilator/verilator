@@ -530,13 +530,13 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<strp>            yaSTRING        "STRING"
 %token<strp>            yaSTRING__IGNORE "STRING-ignored"       // Used when expr:string not allowed
 // IEEE: edge_descriptor
-%token<nump>            yaEDGEDESC        "EDGE DESCRIPTOR"
+%token<nump>            yaEDGEDESC      "EDGE DESCRIPTOR"
 
 %token<fl>              yaTIMINGSPEC    "TIMING SPEC ELEMENT"
 
 %token<fl>              ygenSTRENGTH    "STRENGTH keyword (strong1/etc)"
 
-%token<strp>            yaTABLE_FIELD  "UDP table field"
+%token<strp>            yaTABLE_FIELD   "UDP table field"
 %token<fl>              yaTABLE_LRSEP   ":"
 %token<fl>              yaTABLE_LINEEND "UDP table line end"
 
@@ -903,9 +903,15 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_ASIN         "$asin"
 %token<fl>              yD_ASINH        "$asinh"
 %token<fl>              yD_ASSERTCTL    "$assertcontrol"
+%token<fl>              yD_ASSERTFAILOFF "$assertfailoff"
+%token<fl>              yD_ASSERTFAILON "$assertfailon"
 %token<fl>              yD_ASSERTKILL   "$assertkill"
+%token<fl>              yD_ASSERTNONVACUOUSON  "$assertnonvacuouson"
 %token<fl>              yD_ASSERTOFF    "$assertoff"
 %token<fl>              yD_ASSERTON     "$asserton"
+%token<fl>              yD_ASSERTPASSOFF "$assertpassoff"
+%token<fl>              yD_ASSERTPASSON  "$assertpasson"
+%token<fl>              yD_ASSERTVACUOUSOFF  "$assertvacuousoff"
 %token<fl>              yD_ATAN         "$atan"
 %token<fl>              yD_ATAN2        "$atan2"
 %token<fl>              yD_ATANH        "$atanh"
@@ -4483,15 +4489,33 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
         |       yD_ASSERTCTL '(' expr ',' exprE ',' exprE ')'                        { $$ = new AstAssertCtl{$1, $3, $5, $7}; }
         |       yD_ASSERTCTL '(' expr ',' exprE ',' exprE ',' exprE ')'              { $$ = new AstAssertCtl{$1, $3, $5, $7, $9}; }
         |       yD_ASSERTCTL '(' expr ',' exprE ',' exprE ',' exprE ',' exprList ')' { $$ = new AstAssertCtl{$1, $3, $5, $7, $9, $11}; }
-        |       yD_ASSERTKILL parenE                     { $$ = new AstAssertCtl{$1, VAssertCtlType::KILL}; }
-        |       yD_ASSERTKILL '(' expr ')'               { $$ = new AstAssertCtl{$1, VAssertCtlType::KILL, $3}; }
-        |       yD_ASSERTKILL '(' exprE ',' exprList ')' { $$ = new AstAssertCtl{$1, VAssertCtlType::KILL, $3, $5}; }
-        |       yD_ASSERTOFF parenE                      { $$ = new AstAssertCtl{$1, VAssertCtlType::OFF}; }
-        |       yD_ASSERTOFF '(' expr ')'                { $$ = new AstAssertCtl{$1, VAssertCtlType::OFF, $3}; }
-        |       yD_ASSERTOFF '(' exprE ',' exprList ')'  { $$ = new AstAssertCtl{$1, VAssertCtlType::OFF, $3, $5}; }
-        |       yD_ASSERTON parenE                       { $$ = new AstAssertCtl{$1, VAssertCtlType::ON}; }
-        |       yD_ASSERTON '(' expr ')'                 { $$ = new AstAssertCtl{$1, VAssertCtlType::ON, $3}; }
-        |       yD_ASSERTON '(' exprE ',' exprList ')'   { $$ = new AstAssertCtl{$1, VAssertCtlType::ON, $3, $5}; }
+        |       yD_ASSERTFAILOFF '(' expr ')'                   { $$ = new AstAssertCtl{$1, VAssertCtlType::FAIL_OFF, 31, 7, $3}; }
+        |       yD_ASSERTFAILOFF '(' exprE ',' exprList ')'     { $$ = new AstAssertCtl{$1, VAssertCtlType::FAIL_OFF, 31, 7, $3, $5}; }
+        |       yD_ASSERTFAILOFF parenE                         { $$ = new AstAssertCtl{$1, VAssertCtlType::FAIL_OFF, 31, 7}; }
+        |       yD_ASSERTFAILON '(' expr ')'                    { $$ = new AstAssertCtl{$1, VAssertCtlType::FAIL_ON, 31, 7, $3}; }
+        |       yD_ASSERTFAILON '(' exprE ',' exprList ')'      { $$ = new AstAssertCtl{$1, VAssertCtlType::FAIL_ON, 31, 7, $3, $5}; }
+        |       yD_ASSERTFAILON parenE                          { $$ = new AstAssertCtl{$1, VAssertCtlType::FAIL_ON, 31, 7}; }
+        |       yD_ASSERTKILL '(' expr ')'                      { $$ = new AstAssertCtl{$1, VAssertCtlType::KILL, 15, 7, $3}; }
+        |       yD_ASSERTKILL '(' exprE ',' exprList ')'        { $$ = new AstAssertCtl{$1, VAssertCtlType::KILL, 15, 7, $3, $5}; }
+        |       yD_ASSERTKILL parenE                            { $$ = new AstAssertCtl{$1, VAssertCtlType::KILL, 15, 7}; }
+        |       yD_ASSERTNONVACUOUSON '(' expr ')'                 { $$ = new AstAssertCtl{$1, VAssertCtlType::NONVACUOUS_ON, 31, 7, $3}; }
+        |       yD_ASSERTNONVACUOUSON '(' exprE ',' exprList ')'   { $$ = new AstAssertCtl{$1, VAssertCtlType::NONVACUOUS_ON, 31, 7, $3, $5}; }
+        |       yD_ASSERTNONVACUOUSON parenE                       { $$ = new AstAssertCtl{$1, VAssertCtlType::NONVACUOUS_ON, 31, 7}; }
+        |       yD_ASSERTOFF '(' expr ')'                       { $$ = new AstAssertCtl{$1, VAssertCtlType::OFF, 15, 7, $3}; }
+        |       yD_ASSERTOFF '(' exprE ',' exprList ')'         { $$ = new AstAssertCtl{$1, VAssertCtlType::OFF, 15, 7, $3, $5}; }
+        |       yD_ASSERTOFF parenE                             { $$ = new AstAssertCtl{$1, VAssertCtlType::OFF, 15, 7}; }
+        |       yD_ASSERTON '(' expr ')'                        { $$ = new AstAssertCtl{$1, VAssertCtlType::ON, 15, 7, $3}; }
+        |       yD_ASSERTON '(' exprE ',' exprList ')'          { $$ = new AstAssertCtl{$1, VAssertCtlType::ON, 15, 7, $3, $5}; }
+        |       yD_ASSERTON parenE                              { $$ = new AstAssertCtl{$1, VAssertCtlType::ON, 15, 7}; }
+        |       yD_ASSERTPASSOFF '(' expr ')'                   { $$ = new AstAssertCtl{$1, VAssertCtlType::PASS_OFF, 31, 7, $3}; }
+        |       yD_ASSERTPASSOFF '(' exprE ',' exprList ')'     { $$ = new AstAssertCtl{$1, VAssertCtlType::PASS_OFF, 31, 7, $3, $5}; }
+        |       yD_ASSERTPASSOFF parenE                         { $$ = new AstAssertCtl{$1, VAssertCtlType::PASS_OFF, 31, 7}; }
+        |       yD_ASSERTPASSON '(' expr ')'                    { $$ = new AstAssertCtl{$1, VAssertCtlType::PASS_ON, 31, 7, $3}; }
+        |       yD_ASSERTPASSON '(' exprE ',' exprList ')'      { $$ = new AstAssertCtl{$1, VAssertCtlType::PASS_ON, 31, 7, $3, $5}; }
+        |       yD_ASSERTPASSON parenE                          { $$ = new AstAssertCtl{$1, VAssertCtlType::PASS_ON, 31, 7}; }
+        |       yD_ASSERTVACUOUSOFF '(' expr ')'                { $$ = new AstAssertCtl{$1, VAssertCtlType::VACUOUS_OFF, 31, 7, $3}; }
+        |       yD_ASSERTVACUOUSOFF '(' exprE ',' exprList ')'  { $$ = new AstAssertCtl{$1, VAssertCtlType::VACUOUS_OFF, 31, 7, $3, $5}; }
+        |       yD_ASSERTVACUOUSOFF parenE                      { $$ = new AstAssertCtl{$1, VAssertCtlType::VACUOUS_OFF, 31, 7}; }
         //
         |       yD_MONITOROFF parenE                    { $$ = new AstMonitorOff{$1, true}; }
         |       yD_MONITORON parenE                     { $$ = new AstMonitorOff{$1, false}; }
@@ -6654,9 +6678,10 @@ sequence_declarationBody<nodep>:  // IEEE: part of sequence_declaration
 property_spec<propSpecp>:               // IEEE: property_spec
         //UNSUP: This rule has been super-specialized to what is supported now
         //UNSUP remove below
-                '@' '(' senitemEdge ')' yDISABLE yIFF '(' expr ')' pexpr
+                '@' '(' senitem ')' yDISABLE yIFF '(' expr ')' pexpr
                         { $$ = new AstPropSpec{$1, $3, $8, $10}; }
-        |       '@' '(' senitemEdge ')' pexpr           { $$ = new AstPropSpec{$1, $3, nullptr, $5}; }
+        |       '@' '(' senitem ')' pexpr
+                        { $$ = new AstPropSpec{$1, $3, nullptr, $5}; }
         //                      // Disable applied after the event occurs,
         //                      // so no existing AST can represent this
         |       yDISABLE yIFF '(' expr ')' '@' '(' senitemEdge ')' pexpr

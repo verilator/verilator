@@ -247,8 +247,8 @@ class AstAssertCtl final : public AstNodeStmt {
     VAssertDirectiveType m_directiveTypes;  // Types of directives affected
 
 public:
-    AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, AstNodeExpr* levelp = nullptr,
-                 AstNodeExpr* itemsp = nullptr);
+    AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, uint32_t assertType, uint32_t directiveType,
+                 AstNodeExpr* levelp = nullptr, AstNodeExpr* itemsp = nullptr);
     AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertTypesp = nullptr,
                  AstNodeExpr* directiveTypep = nullptr, AstNodeExpr* levelp = nullptr,
                  AstNodeExpr* itemsp = nullptr);
