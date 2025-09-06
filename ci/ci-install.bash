@@ -37,6 +37,13 @@ else
   fatal "Unknown os: '$CI_OS_NAME'"
 fi
 
+if [ "$CI_OS_NAME" = "linux" ]; then
+  # Avoid slow "processing triggers for man db"
+  echo "path-exclude /usr/share/doc/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+  echo "path-exclude /usr/share/man/*"  | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+  echo "path-exclude /usr/share/info/*" | sudo tee -a /etc/dpkg/dpkg.cfg.d/01_nodoc
+fi
+
 install-vcddiff() {
   TMP_DIR="$(mktemp -d)"
   git clone https://github.com/veripool/vcddiff "$TMP_DIR"
