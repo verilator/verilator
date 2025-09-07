@@ -1221,8 +1221,8 @@ def write_dfg_auto_classes(filename):
             emitBlock('''\
                       class Dfg{t} final : public Dfg{s} {{
                       public:
-                          Dfg{t}(DfgGraph& dfg, FileLine* flp, AstNodeDType* dtypep)
-                              : Dfg{s}{{dfg, dfgType(), flp, dtypep}} {{}}
+                          Dfg{t}(DfgGraph& dfg, FileLine* flp, const DfgDataType& dtype)
+                              : Dfg{s}{{dfg, dfgType(), flp, dtype}} {{}}
                           ASTGEN_MEMBERS_Dfg{t};
                       }};
                       ''',
@@ -1244,7 +1244,7 @@ def write_dfg_clone_cases(filename):
 
             emitBlock('''\
                       case VDfgType::{t}: {{
-                        Dfg{t}* const cp = new Dfg{t}{{*clonep, vtx.fileline(), vtx.dtypep()}};
+                        Dfg{t}* const cp = new Dfg{t}{{*clonep, vtx.fileline(), vtx.dtype()}};
                         vtxp2clonep.emplace(&vtx, cp);
                         break;
                       }}
@@ -1267,6 +1267,15 @@ def write_dfg_ast_to_dfg(filename):
             )
             fh.write('    UASSERT_OBJ(!nodep->user2p(), nodep, "Already has Dfg vertex");\n\n')
             fh.write("    if (unhandled(nodep)) return;\n\n")
+
+            fh.write(
+                "    const DfgDataType* const dtypep = DfgDataType::fromAst(nodep->dtypep());\n")
+            fh.write("    if (!dtypep) {\n")
+            fh.write("        m_foundUnhandled = true;\n")
+            fh.write("        ++m_ctx.m_conv.nonRepDType;\n")
+            fh.write("        return;\n")
+            fh.write("    }\n\n")
+
             for i in range(node.arity):
                 fh.write("    iterate(nodep->op{j}p());\n".format(j=i + 1))
                 fh.write("    if (m_foundUnhandled) return;\n")
@@ -1275,7 +1284,8 @@ def write_dfg_ast_to_dfg(filename):
                     .format(j=i + 1))
             fh.write("\n")
             fh.write(
-                "    Dfg{t}* const vtxp = makeVertex<Dfg{t}>(nodep, m_dfg);\n".format(t=node.name))
+                "    Dfg{t}* const vtxp = makeVertex<Dfg{t}>(nodep, m_dfg, *dtypep);\n".format(
+                    t=node.name))
             fh.write("    if (!vtxp) {\n")
             fh.write("        m_foundUnhandled = true;\n")
             fh.write("        ++m_ctx.m_conv.nonRepNode;\n")

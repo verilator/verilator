@@ -84,6 +84,7 @@ class AstToDfgVisitor final : public VNVisitor {
 
     DfgVertexVar* getVarVertex(Variable* varp) {
         if (!varp->user2p()) {
+            // TODO: fix this up when removing the different flavours of DfgVar
             const AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
             DfgVertexVar* const vtxp
                 = VN_IS(dtypep, UnpackArrayDType)

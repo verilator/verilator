@@ -293,7 +293,7 @@
   ]}
 ],"filesp": [],
  "miscsp": [
-  {"type":"TYPETABLE","name":"","addr":"(C)","loc":"a,0:0,0:0","constraintRefp":"UNLINKED","emptyQueuep":"UNLINKED","queueIndexp":"UNLINKED","streamp":"UNLINKED","voidp":"UNLINKED",
+  {"type":"TYPETABLE","name":"","addr":"(C)","loc":"a,0:0,0:0","constraintRefp":"UNLINKED","emptyQueuep":"UNLINKED","queueIndexp":"UNLINKED","streamp":"UNLINKED","voidp":"(OF)",
    "typesp": [
     {"type":"BASICDTYPE","name":"logic","addr":"(RC)","loc":"d,18:18,18:19","dtypep":"(RC)","keyword":"logic","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(XC)","loc":"d,19:34,19:39","dtypep":"(XC)","keyword":"logic","range":"1:0","generic":true,"rangep": []},
@@ -303,13 +303,14 @@
     {"type":"BASICDTYPE","name":"logic","addr":"(KD)","loc":"d,19:10,19:11","dtypep":"(KD)","keyword":"logic","range":"2:0","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(GD)","loc":"d,19:11,19:12","dtypep":"(GD)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(BD)","loc":"d,19:20,19:21","dtypep":"(BD)","keyword":"logic","range":"3:0","generic":true,"rangep": []},
-    {"type":"BASICDTYPE","name":"logic","addr":"(NC)","loc":"d,18:12,18:13","dtypep":"(NC)","keyword":"logic","range":"31:0","generic":true,"rangep": []}
+    {"type":"BASICDTYPE","name":"logic","addr":"(NC)","loc":"d,18:12,18:13","dtypep":"(NC)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
+    {"type":"VOIDDTYPE","name":"","addr":"(OF)","loc":"a,0:0,0:0","dtypep":"(OF)","generic":false}
   ]},
   {"type":"CONSTPOOL","name":"","addr":"(D)","loc":"a,0:0,0:0",
    "modulep": [
-    {"type":"MODULE","name":"@CONST-POOL@","addr":"(OF)","loc":"a,0:0,0:0","isChecker":false,"isProgram":false,"hasGenericIface":false,"origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
+    {"type":"MODULE","name":"@CONST-POOL@","addr":"(PF)","loc":"a,0:0,0:0","isChecker":false,"isProgram":false,"hasGenericIface":false,"origName":"@CONST-POOL@","level":0,"modPublic":false,"inLibrary":false,"dead":false,"recursiveClone":false,"recursive":false,"timeunit":"NONE","inlinesp": [],
      "stmtsp": [
-      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(PF)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(OF)","varsp": [],"blocksp": [],"inlinesp": []}
+      {"type":"SCOPE","name":"@CONST-POOL@","addr":"(QF)","loc":"a,0:0,0:0","aboveScopep":"UNLINKED","aboveCellp":"UNLINKED","modp":"(PF)","varsp": [],"blocksp": [],"inlinesp": []}
     ]}
   ]}
 ]}

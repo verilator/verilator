@@ -253,7 +253,7 @@ class V3DfgCse final {
         if (a.type() != b.type()) return false;
 
         // If different data type, then not equal
-        if (a.dtypep() != b.dtypep()) return false;
+        if (a.dtype() != b.dtype()) return false;
 
         // If different number of inputs, then not equal
         if (a.nInputs() != b.nInputs()) return false;
