@@ -342,7 +342,6 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
         }
     }
 
-    UINFO(0, "addStats " << m_ppBytes << " " << modfilename);
     V3Stats::addStatSum(V3Stats::STAT_SOURCE_CHARS, m_ppBytes);
     if (debug() && modfilename != V3Options::getStdPackagePath()
         && modfilename != V3Options::getStdWaiverPath())
