@@ -101,7 +101,7 @@ jobs:
         include:
           - {os: macos-15, cc: clang}
 
-  windows:
+  build-windows:
     name: Build-Windows
     runs-on: ${{ matrix.os }}
     strategy:
@@ -240,7 +240,7 @@ jobs:
       - build-2204-clang
       - build-osx-gcc
       - build-osx-clang
-      - windows
+      - build-windows
       - test-2404-gcc
       - test-2404-clang
       - test-2204-gcc
