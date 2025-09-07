@@ -4512,7 +4512,9 @@ class AstCCall final : public AstNodeCCall {
                                                         // pointer (e.g.: 'this')
 public:
     AstCCall(FileLine* fl, AstCFunc* funcp, AstNodeExpr* argsp = nullptr)
-        : ASTGEN_SUPER_CCall(fl, funcp, argsp) {}
+        : ASTGEN_SUPER_CCall(fl, funcp, argsp) {
+        UASSERT_OBJ(funcp, this, "CCall created calling null function");
+    }
     ASTGEN_MEMBERS_AstCCall;
 
     const VSelfPointerText& selfPointer() const { return m_selfPointer; }
@@ -4528,6 +4530,7 @@ public:
     AstCMethodCall(FileLine* fl, AstNodeExpr* fromp, AstCFunc* funcp, AstNodeExpr* argsp = nullptr)
         : ASTGEN_SUPER_CMethodCall(fl, funcp, argsp) {
         this->fromp(fromp);
+        UASSERT_OBJ(funcp, this, "CMethodCall created calling null function");
     }
     ASTGEN_MEMBERS_AstCMethodCall;
 };

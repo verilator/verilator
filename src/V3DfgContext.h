@@ -33,9 +33,8 @@
 
 class V3DfgContext;
 
-//////////////////////////////////////////////////////////////////////////////
+//######################################################################
 // Base class for all context objects
-//////////////////////////////////////////////////////////////////////////////
 
 class V3DfgSubContext VL_NOT_FINAL {
     V3DfgContext& m_ctx;  // The whole context
@@ -59,9 +58,8 @@ public:
     const std::string& label() const { return m_label; }
 };
 
-//////////////////////////////////////////////////////////////////////////////
+//######################################################################
 // Contexts for various algorithms - keep sorted
-//////////////////////////////////////////////////////////////////////////////
 
 class V3DfgAstToDfgContext final : public V3DfgSubContext {
     // Only V3DfgContext can create an instance
@@ -334,9 +332,8 @@ private:
     }
 };
 
-//////////////////////////////////////////////////////////////////////////////
+//######################################################################
 // Top level V3DfgContext
-//////////////////////////////////////////////////////////////////////////////
 
 class V3DfgContext final {
     const std::string m_label;  // Label to add to stats, etc.

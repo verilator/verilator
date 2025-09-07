@@ -127,7 +127,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
     for (const AstNode* stmtp = nodep->argsp(); stmtp; stmtp = stmtp->nextp()) {
         if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
             if (portp->isIO() && !portp->isFuncReturn()) {
-                if (args != "") args += ", ";
+                if (!args.empty()) args += ", ";
                 if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) {
                     args += portp->dpiArgType(true, false);
                 } else if (nodep->funcPublic()) {
