@@ -44,6 +44,9 @@ PACKAGE_VERSION_STRING_CHAR
 // Define if compiled with tcmalloc
 #undef HAVE_TCMALLOC
 
+// Define if compiled with AddressSanitizer
+#undef HAVE_ASAN
+
 //**********************************************************************
 //**** This file sometimes gets truncated, so check in consumers
 #define HAVE_CONFIG_PACKAGE
