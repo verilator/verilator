@@ -1517,26 +1517,19 @@ class LinkDotFindVisitor final : public VNVisitor {
                             && !findvarp->subDTypep()->numeric().isSigned()) {
                             findvarp->subDTypep()->numeric(VSigning{true});
                         }
-                        AstNodeDType* varDtp = findvarp->subDTypep();
-                        AstNodeDType* otherDtp = nodep->subDTypep();
-                        AstBasicDType* const bdtypep = VN_CAST(varDtp, BasicDType);
-                        if (bdtypep && bdtypep->implicit()) {
+                        AstNodeDType* const varDtp = findvarp->subDTypep();
+                        AstNodeDType* const otherDtp = nodep->subDTypep();
+                        if (varDtp
+                            && (VN_IS(varDtp, BasicDType)
+                                && VN_AS(varDtp, BasicDType)->implicit())) {
                             // Then have "input foo" and "real foo" so the
                             // dtype comes from the other side.
-                            AstNodeDType* const newdtypep = otherDtp;
-                            otherDtp = varDtp;
-                            varDtp = newdtypep;
-                            VL_DO_DANGLING(bdtypep->unlinkFrBack()->deleteTree(), bdtypep);
-                            newdtypep->unlinkFrBack();
-                            findvarp->childDTypep(newdtypep);
-                        }
-                        if (otherDtp && varDtp
-                            && !(VN_IS(otherDtp, BasicDType)
-                                 && VN_AS(otherDtp, BasicDType)->keyword()
-                                        == VBasicDTypeKwd::LOGIC_IMPLICIT)
-                            && !(VN_IS(varDtp, BasicDType)
-                                 && VN_AS(varDtp, BasicDType)->keyword()
-                                        == VBasicDTypeKwd::LOGIC_IMPLICIT)) {
+                            VL_DO_DANGLING(varDtp->unlinkFrBack()->deleteTree(), varDtp);
+                            findvarp->childDTypep(otherDtp->unlinkFrBack());
+                        } else if (otherDtp && varDtp
+                                   && !(VN_IS(otherDtp, BasicDType)
+                                        && VN_AS(otherDtp, BasicDType)->implicit())) {
+                            // otherDtp and varDtp both non-nullptr and neither are implicit
                             // Can't compare dtypes now as might contain parameters,
                             // defer to V3Width
                             AstAttrOf* const newp
