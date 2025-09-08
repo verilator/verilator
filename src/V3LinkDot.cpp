@@ -525,10 +525,14 @@ public:
                     varp->v3warn(E_UNSUPPORTED,
                                  "Unsupported: Interfaced port on top level module");
                 }
-                ifacerefp->v3error("Parent instance's interface is not found: "
-                                   << AstNode::prettyNameQ(ifacerefp->ifaceName()) << '\n'
+                ifacerefp->v3error("Interface "
+                                   << AstNode::prettyNameQ(ifacerefp->ifaceName())
+                                   << " not connected as parent's interface not connected\n"
                                    << ifacerefp->warnMore()
-                                   << "... Perhaps intended an interface instantiation but "
+                                   << "... Perhaps caused by another error on the parent "
+                                      "interface that needs resolving\n"
+                                   << ifacerefp->warnMore()
+                                   << "... Or, perhaps intended an interface instantiation but "
                                       "are missing parenthesis (IEEE 1800-2023 25.3)?");
                 continue;
             } else if (ifacerefp->ifaceViaCellp()->dead()

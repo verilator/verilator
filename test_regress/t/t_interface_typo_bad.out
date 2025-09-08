@@ -1,5 +1,6 @@
-%Error: t/t_interface_typo_bad.v:14:4: Parent instance's interface is not found: 'foo_intf'
-                                     : ... Perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
+%Error: t/t_interface_typo_bad.v:14:4: Interface 'foo_intf' not connected as parent's interface not connected
+                                     : ... Perhaps caused by another error on the parent interface that needs resolving
+                                     : ... Or, perhaps intended an interface instantiation but are missing parenthesis (IEEE 1800-2023 25.3)?
    14 |    foo_intf foo
       |    ^~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
