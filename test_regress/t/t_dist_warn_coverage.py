@@ -51,6 +51,7 @@ for s in [
         'Interface port declaration ',
         'Modport item is not a function/task: ',
         'Modport item is not a variable: ',
+        'Modport item is not a clocking block: ',
         'Modport item not found: ',
         'Modport not referenced as <interface>.',
         'Modport not referenced from underneath an interface: ',
