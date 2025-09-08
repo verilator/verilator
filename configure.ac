@@ -60,9 +60,10 @@ AC_MSG_RESULT($CFG_ENABLE_PARTIAL_STATIC)
 # Flag to enable compiling with AddressSanitizer
 AC_MSG_CHECKING(whether to use AddressSanitizer)
 AC_ARG_ENABLE([asan],
-              [AS_HELP_STRING([--enabel-asan],
-                              [Enable AddressSanitizer for run-time memory
-                               error detection. This disables tcmalloc.])],
+              [AS_HELP_STRING([--enable-asan],
+                              [Enable compiling Verilator with ASAN AddressSanitizer
+                               for memory error detection. This disables tcmalloc.
+                               Does not affect Verilated models using ASAN.])],
               [case "${enableval}" in
                 yes) CFG_WITH_ASAN=yes ;;
                 no)  CFG_WITH_ASAN=no ;;

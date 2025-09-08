@@ -35,7 +35,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 #ifdef VL_ASAN
 extern "C" const char* __asan_default_options() {
     // See https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
-    // or 'env ASAN_OPTIONS=help=1 ./verialtor_bin'
+    // or 'env ASAN_OPTIONS=help=1 ./verilator_bin'
     return ""
 #ifndef VL_LEAK_CHECKS
            ":detect_leaks=0"
