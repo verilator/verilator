@@ -683,7 +683,7 @@ List Of Warnings
    generated C++ code to add appropriate prints to see what is going on.
 
 
-.. option:: ENDCAPSULATED
+.. option:: ENCAPSULATED
 
    Warns that a class member is declared :code:`local` or
    :code:`protected`, but is being accessed from outside that class (if
@@ -1166,7 +1166,7 @@ List Of Warnings
    backwards compatibility, new projects should use :option:`ASCRANGE`.
 
 
-.. option:: MINTYPMAX
+.. option:: MINTYPMAXDLY
 
    .. code-block:: sv
 
@@ -2207,6 +2207,14 @@ List Of Warnings
 
    Warns that the specified genvar is never used/consumed. See similar
    :option:`UNUSEDSIGNAL`.
+
+
+.. option:: UNUSEDLOOP
+
+   .. TODO better example
+
+   Warns that a loop condition is always false, and so the body of the loop
+   will never be executed.
 
 
 .. option:: UNUSEDPARAM
