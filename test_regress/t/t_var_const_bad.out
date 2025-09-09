@@ -1,6 +1,6 @@
-%Error: t/t_var_const_bad.v:17:7: Assigning to const variable: 'five'
-                                : ... note: In instance 't'
+%Error-CONSTWRITTEN: t/t_var_const_bad.v:17:7: Writing to 'const' data-typed variable 'five' (IEEE 1800-2023 6.20.6)
+                                             : ... note: In instance 't'
    17 |       five = 3'd4;
       |       ^~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+                     ... For error description see https://verilator.org/warn/CONSTWRITTEN?v=latest
 %Error: Exiting due to

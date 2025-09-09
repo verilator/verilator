@@ -2608,7 +2608,9 @@ class WidthVisitor final : public VNVisitor {
                    && !VN_IS(m_procedurep, InitialStatic)) {
             // Too loose, but need to allow our generated first assignment
             // Move this to a property of the AstInitial block
-            nodep->v3error("Assigning to const variable: " << nodep->prettyNameQ());
+            nodep->v3warn(E_CONSTWRITTEN, "Writing to 'const' data-typed variable "
+                                              << nodep->prettyNameQ()
+                                              << " (IEEE 1800-2023 6.20.6)");
         }
         nodep->didWidth(true);
     }

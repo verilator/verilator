@@ -485,6 +485,17 @@ List Of Warnings
    from other simulators.
 
 
+.. option:: CONSTWRITTEN
+
+   Error that a :code:`const` data typed variable is being assigned a
+   value.
+
+   IEEE 1800-2023 6.20.6 requires this error.
+
+   Suppressing this error will suppress the error message check; it will
+   simulate as if the :code:`const` as not present.
+
+
 .. option:: CONTASSREG
 
    .. TODO better example

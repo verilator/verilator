@@ -19,6 +19,7 @@ Verilator 5.041 devel
 * Improve `covergroup with function sample` handling  (#6387). [Jakub Wasilewski]
 * Improve DFG type system (#6390). [Geza Lore]
 * Optimize dead functions without references (#6380). [Artur Bieniek, Antmicro Ltd.]
+* Fix false CONSTVAR error on initializers (#4992).
 * Fix cell scoping performance (#6059). [Jerry Tianchen]
 * Fix while loop hang on timing-delayed assignment (#6343) (#6354). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix driver analysis of partially assigned variables (#6364) (#6378). [Geza Lore]

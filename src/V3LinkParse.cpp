@@ -396,11 +396,13 @@ class LinkParseVisitor final : public VNVisitor {
                 // Making an AstAssign (vs AstAssignW) to a wire is an error, suppress it
                 FileLine* const newfl = new FileLine{fl};
                 newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
+                newfl->warnOff(V3ErrorCode::E_CONSTWRITTEN, true);
                 // Create a ParseRef to the wire. We cannot use the var as it may be deleted if
                 // it's a port (see t_var_set_link.v)
                 AstAssign* const assp = new AstAssign{
                     newfl, new AstParseRef{newfl, VParseRefExp::PX_TEXT, nodep->name()},
                     VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)};
+                UINFOTREE(1, assp, "", "new");
                 if (nodep->lifetime().isAutomatic()) {
                     nodep->addNextHere(new AstInitialAutomatic{newfl, assp});
                 } else {
@@ -408,9 +410,12 @@ class LinkParseVisitor final : public VNVisitor {
                 }
             }  // 4. Under blocks, it's an initial value to be under an assign
             else {
+                FileLine* const newfl = new FileLine{fl};
+                newfl->warnOff(V3ErrorCode::E_CONSTWRITTEN, true);
                 nodep->addNextHere(
-                    new AstAssign{fl, new AstVarRef{fl, nodep, VAccess::WRITE},
+                    new AstAssign{newfl, new AstVarRef{newfl, nodep, VAccess::WRITE},
                                   VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)});
+                UINFOTREE(1, nodep->nextp(), "", "new");
             }
         }
     }
