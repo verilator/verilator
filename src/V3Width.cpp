@@ -8466,7 +8466,8 @@ class WidthVisitor final : public VNVisitor {
         fl_novalue->warnOff(V3ErrorCode::CMPCONST, true);
         if (assoc) {
             AstVar* const varp = enumVarp(enumDtp, VAttrType::ENUM_VALID, true, 0);
-            testp = new AstAssocSel{fl_novalue, newVarRefDollarUnit(varp), valp->cloneTreePure(false)};
+            testp = new AstAssocSel{fl_novalue, newVarRefDollarUnit(varp),
+                                    valp->cloneTreePure(false)};
         } else {
             const int selwidth = V3Number::log2b(maxval) + 1;  // Width to address a bit
             AstVar* const varp

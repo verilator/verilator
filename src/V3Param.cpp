@@ -1100,7 +1100,7 @@ class ParamVisitor final : public VNVisitor {
     std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
     std::multimap<int, AstNodeModule*> m_workQueue;  // Modules left to process
     std::vector<AstClass*> m_paramClasses;  // Parameterized classes
-    std::deque<std::string> m_strings; // Allocator for temporary strings
+    std::deque<std::string> m_strings;  // Allocator for temporary strings
 
     // Map from AstNodeModule to set of all AstNodeModules that instantiates it.
     std::unordered_map<AstNodeModule*, std::unordered_set<AstNodeModule*>> m_parentps;

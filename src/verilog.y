@@ -35,8 +35,9 @@
 #define BBUNSUP(fl, msg) (fl)->v3warn(E_UNSUPPORTED, msg)
 #define DELETE_ALL(...) \
     { \
-        AstNode* nodeps[] = { __VA_ARGS__ }; \
-        for (AstNode* const nodep : nodeps) if (nodep) nodep->deleteTree(); \
+        AstNode* nodeps[] = {__VA_ARGS__}; \
+        for (AstNode* const nodep : nodeps) \
+            if (nodep) nodep->deleteTree(); \
     }
 #define GATEUNSUP(fl, tok) \
     { BBUNSUP((fl), "Unsupported: Verilog 1995 gate primitive: " << (tok)); }

@@ -370,10 +370,10 @@ public:
 //######################################################################
 
 void V3HierBlockPlan::add(const AstNodeModule* modp, const V3HierBlockParams& params) {
-    const bool newEntry = m_blocks.emplace(
-        std::piecewise_construct,
-        std::forward_as_tuple(modp),
-        std::forward_as_tuple(modp, params)).second;
+    const bool newEntry = m_blocks
+                              .emplace(std::piecewise_construct, std::forward_as_tuple(modp),
+                                       std::forward_as_tuple(modp, params))
+                              .second;
     if (newEntry) {
         UINFO(3, "Add " << modp->prettyNameQ() << " with " << params.gparams().size()
                         << " parameters and " << params.gTypeParams().size()

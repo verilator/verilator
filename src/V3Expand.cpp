@@ -565,6 +565,7 @@ class ExpandVisitor final : public VNVisitor {
         // Compute word index of LSB, store to temporary if not constant
         AstNodeExpr* const wordLsbp = rhsp->lsbp()->cloneTreePure(false);
         AstNodeExpr* wordIdxp = newWordIndex(wordLsbp);
+        if (!wordLsbp->backp()) VL_DO_DANGLING(wordLsbp->deleteTree(), wordLsbp);
         wordIdxp = V3Const::constifyEditCpp(wordIdxp);
         if (!VN_IS(wordIdxp, Const)) {
             AstVar* const tmpp = addLocalTmp(nodep, "ExpandSel_WordIdx", wordIdxp);
@@ -637,7 +638,6 @@ class ExpandVisitor final : public VNVisitor {
         }
 
         // Delete parts not captured during construction
-        if (!wordLsbp->backp()) VL_DO_DANGLING(wordLsbp->deleteTree(), wordLsbp);
         if (!wordIdxp->backp()) VL_DO_DANGLING(wordIdxp->deleteTree(), wordIdxp);
         if (!loShftp->backp()) VL_DO_DANGLING(loShftp->deleteTree(), loShftp);
         if (!hiShftp->backp()) VL_DO_DANGLING(hiShftp->deleteTree(), hiShftp);
