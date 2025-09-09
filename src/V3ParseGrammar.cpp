@@ -288,3 +288,5 @@ string V3ParseGrammar::unquoteString(FileLine* fileline, const std::string& text
     if (!errMsg.empty()) fileline->v3error(errMsg.c_str());
     return res;
 }
+
+int V3ParseGrammar::s_typeImpNum = 0;
