@@ -13,77 +13,38 @@ module t (  /*AUTOARG*/
   integer cyc = 1;
   bit val = 0;
 
-  Test test (  /*AUTOINST*/
-      // Inputs
-      .clk(clk),
-      .val(val),
-      .cyc(cyc)
-  );
-
   Ieee ieee();
 
   always @(posedge clk) begin
     if (cyc != 0) begin
       cyc <= cyc + 1;
       val = ~val;
-`ifdef TEST_VERBOSE
-      $display("cyc=%0d, val=%0d", cyc, val);
-`endif
       if (cyc == 10) begin
         $write("*-* All Finished *-*\n");
         $finish;
       end
     end
   end
-endmodule
+`ifdef PARSING_TIME
+  assert property (@(posedge clk) val ##1 val) $display("[%0t] var with single delay stmt, fileline:%d", $time, `__LINE__);
+  assert property (@(posedge clk) ##1 val ##2 val) $display("[%0t] sequence stmt, fileline:%d", $time, `__LINE__);
+`else
+  assert property (@(posedge clk) ##1 1 |-> 1) $display("[%0t] single delay with const implication stmt, fileline:%d", $time, `__LINE__);
 
-module Test (
-    input clk,
-    input bit val,
-    input integer cyc
-);
+  assert property (@(posedge clk) ##1 1 |-> not (val)) $display("[%0t] single delay implication with negated var stmt, fileline:%d", $time, `__LINE__);
 
-  assert property (@(posedge clk) ##2 val)
-  else $display("[%0t] assertion triggered, fileline:%d", $time, `__LINE__);
+  assert property (@(posedge clk) 1 |-> ##1 val) $display("[%0t] single delay implication with negated var stmt, fileline:%d", $time, `__LINE__);
 
-  assert property (@(posedge clk) ##1 1 |=> 0)
-  else $display("[%0t] assertion triggered, fileline:%d", $time, `__LINE__);
+  assert property (@(posedge clk) (##1 val) |-> (not val)) $display("[%0t] single delay with negated implication stmt, fileline:%d", $time, `__LINE__);
 
-  assert property (@(posedge clk) ##1 1 |=> not (val))
-  else $display("[%0t] assertion triggered, fileline:%d", $time, `__LINE__);
+  assert property (@(posedge clk) ##1 (val) |-> not (val)) $display("[%0t] single delay with negated implication brackets stmt, fileline:%d", $time, `__LINE__);
 
-  assert property (@(posedge clk) ##1 val)
-  else $display("[%0t] assertion triggered, fileline:%d", $time, `__LINE__);
+  assert property (@(posedge clk) ((val) |-> not (val))) $display("[%0t] disable iff with negated implication stmt, fileline:%d", $time, `__LINE__);
 
-  assert property (@(posedge clk) ##1 (val))
-  else $display("[%0t] assertion triggered, fileline:%d", $time, `__LINE__);
+  assert property (@(posedge clk) ##1 1 |-> 0) $display("[%0t] disable iff with cond implication stmt, fileline:%d", $time, `__LINE__);
 
-  assert property (@(posedge clk) (##1 (val)))
-  else $display("[%0t] assertion triggered, fileline:%d", $time, `__LINE__);
-
-  assert property (@(posedge clk) (##1 (val)))
-  else $display("[%0t] assertion triggered, fileline:%d", $time, `__LINE__);
-
-  assert property (@(posedge clk) not (##1 val))
-  else $display("[%0t] assertion triggered, fileline:%d", $time, `__LINE__);
-
-  assert property (@(posedge clk) ##1 1 |=> 1)
-  else $display("[%0t] assertion triggered, fileline:%d", $time, `__LINE__);
-
-  assert property (@(posedge clk) ##1 val |=> not val)
-  else $display("[%0t] assertion triggered, fileline:%d", $time, `__LINE__);
-
-  assert property (@(posedge clk) ##1 (val) |=> not (val))
-  else $display("[%0t] assertion triggered, fileline:%d", $time, `__LINE__);
-
-  assert property (@(posedge clk) ((val) |=> not (val)))
-  else $display("[%0t] assertion triggered, fileline:%d", $time, `__LINE__);
-
-  assert property (@(posedge clk) disable iff (cyc < 3) ##1 1 |=> cyc > 3)
-  else $display("[%0t] assertion triggered, fileline:%d", $time, `__LINE__);
-
-  assert property (@(posedge clk) (##1 val) |=> (##1 val))
-  else $display("[%0t] assertion triggered, fileline:%d", $time, `__LINE__);
+  assert property (@(posedge clk) (##1 val) |-> (##1 val)) $display("[%0t] two delays implication stmt, fileline:%d", $time, `__LINE__);
+`endif
 endmodule
 
 // Test parsing only
@@ -94,6 +55,7 @@ module Ieee;
   byte q[$];
   logic clk;
 
+`ifdef PARSING_TIME
   property p1;
     $rose(a) |-> q[0];
   endproperty
@@ -122,4 +84,5 @@ module Ieee;
 
   // IEEE 1800-2023 16.12.3
   assert property (@clk not a ##1 b);
+`endif
 endmodule
