@@ -31,6 +31,10 @@
 
 class AstNodeStmt VL_NOT_FINAL : public AstNode {
     // Procedural statement
+    VIsCached m_purity;
+
+    bool getPurityRecurse();
+
 protected:
     AstNodeStmt(VNType t, FileLine* fl)
         : AstNode{t, fl} {}
@@ -42,6 +46,7 @@ public:
                      AstNode* belowp) override;  // Stop statement searchback here
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
+    bool isPure() override;
 };
 class AstNodeAssign VL_NOT_FINAL : public AstNodeStmt {
     // Iteration is in order, and we want rhsp to be visited first (which is the execution order)
