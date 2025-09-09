@@ -286,6 +286,7 @@ class DynScopeVisitor final : public VNVisitor {
     const VNUser2InUse m_inuser2;
 
     // STATE
+    bool m_inFunc = false;  // True if in a function
     AstNodeModule* m_modp = nullptr;  // Module we are currently under
     AstNode* m_procp = nullptr;  // Function/task/block we are currently under
     std::deque<AstNode*> m_frameOrder;  // Ordered list of frames (for determinism)
@@ -367,6 +368,8 @@ class DynScopeVisitor final : public VNVisitor {
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_procp);
         m_procp = nodep;
+        VL_RESTORER(m_inFunc);
+        m_inFunc = VN_IS(nodep, Func);
         if (hasAsyncFork(nodep)) pushDynScopeFrame(m_procp);
         iterateChildren(nodep);
     }
@@ -433,12 +436,20 @@ class DynScopeVisitor final : public VNVisitor {
             if (!isEvent && m_afterTimingControl && nodep->varp()->isWritable()
                 && nodep->access().isWriteOrRW()) {
                 // The output variable may not exist after a delay, so we can't just write to it
-                nodep->v3warn(
-                    E_UNSUPPORTED,
-                    "Unsupported: Writing to a captured "
-                        << (nodep->varp()->isInout() ? "inout" : "output") << " variable in a "
-                        << (VN_IS(nodep->backp(), AssignDly) ? "non-blocking assignment" : "fork")
-                        << " after a timing control");
+                if (m_inFunc) {
+                    nodep->v3error(
+                        "Writing to an "
+                        << nodep->varp()->verilogKwd()
+                        << " variable of a function after a timing control is not allowed");
+                } else {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Writing to a captured "
+                                                     << nodep->varp()->verilogKwd()
+                                                     << " variable in a "
+                                                     << (VN_IS(nodep->backp(), AssignDly)
+                                                             ? "non-blocking assignment"
+                                                             : "fork")
+                                                     << " after a timing control");
+                }
             }
             if (!framep->instance().initialized()) framep->createInstancePrototype();
             framep->captureVarInsert(nodep->varp());

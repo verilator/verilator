@@ -211,6 +211,7 @@ class WidthVisitor final : public VNVisitor {
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     V3TaskConnectState m_taskConnectState;  // State to cache V3Task::taskConnects
     WidthVP* m_vup = nullptr;  // Current node state
+    bool m_underFork = false;  // Visiting under a fork
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -704,7 +705,7 @@ class WidthVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
-        if (VN_IS(m_ftaskp, Func)) {
+        if (!m_underFork && VN_IS(m_ftaskp, Func)) {
             nodep->v3error("Delays are not legal in functions. Suggest use a task "
                            "(IEEE 1800-2023 13.4.4)");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -727,7 +728,7 @@ class WidthVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstFork* nodep) override {
-        if (VN_IS(m_ftaskp, Func) && !nodep->joinType().joinNone()) {
+        if (!m_underFork && VN_IS(m_ftaskp, Func) && !nodep->joinType().joinNone()) {
             nodep->v3error("Only fork .. join_none is legal in functions. "
                            "(IEEE 1800-2023 13.4.4)");
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -747,6 +748,8 @@ class WidthVisitor final : public VNVisitor {
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else if (v3Global.opt.timing().isSetTrue()) {
+            VL_RESTORER(m_underFork);
+            m_underFork = true;
             iterateChildren(nodep);
         } else if (v3Global.opt.timing().isSetFalse()) {
             nodep->v3warn(E_NOTIMING, "Fork statements require --timing");
@@ -1663,7 +1666,7 @@ class WidthVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstEventControl* nodep) override {
-        if (VN_IS(m_ftaskp, Func)) {
+        if (!m_underFork && VN_IS(m_ftaskp, Func)) {
             nodep->v3error("Event controls are not legal in functions. Suggest use a task "
                            "(IEEE 1800-2023 13.4.4)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -5466,7 +5469,7 @@ class WidthVisitor final : public VNVisitor {
         }
         if (VN_IS(nodep, AssignForce)) checkForceReleaseLhs(nodep, nodep->lhsp());
         if (AstNode* const controlp = nodep->timingControlp()) {
-            if (VN_IS(m_ftaskp, Func)) {
+            if (!m_underFork && VN_IS(m_ftaskp, Func)) {
                 controlp->v3error("Timing controls are not legal in functions. Suggest use a task "
                                   "(IEEE 1800-2023 13.4.4)");
                 VL_DO_DANGLING(controlp->unlinkFrBackWithNext()->deleteTree(), controlp);
@@ -6631,7 +6634,7 @@ class WidthVisitor final : public VNVisitor {
         userIterateChildren(nodep, WidthVP{SELF, PRELIM}.p());
     }
     void visit(AstWait* nodep) override {
-        if (VN_IS(m_ftaskp, Func)) {
+        if (!m_underFork && VN_IS(m_ftaskp, Func)) {
             nodep->v3error("Wait statements are not legal in functions. Suggest use a task "
                            "(IEEE 1800-2023 13.4.4)");
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
