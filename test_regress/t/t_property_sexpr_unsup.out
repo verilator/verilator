@@ -1,122 +1,23 @@
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:46:35: Unsupported: ## () cycle delay range expression
-   46 |   assert property (@(posedge clk) ##2 val)
-      |                                   ^~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:32:41: Implication with sequence expression
+   32 |   assert property (@(posedge clk) ##1 1 |-> 1) $display("[%0t] single delay with const implication stmt, fileline:%d", $time, 32);
+      |                                         ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:46:39: Unsupported: ## (in sequence expression)
-   46 |   assert property (@(posedge clk) ##2 val)
-      |                                       ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:49:35: Unsupported: ## () cycle delay range expression
-   49 |   assert property (@(posedge clk) ##1 1 |=> 0)
-      |                                   ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:49:39: Unsupported: ## (in sequence expression)
-   49 |   assert property (@(posedge clk) ##1 1 |=> 0)
-      |                                       ^
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:52:35: Unsupported: ## () cycle delay range expression
-   52 |   assert property (@(posedge clk) ##1 1 |=> not (val))
-      |                                   ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:52:39: Unsupported: ## (in sequence expression)
-   52 |   assert property (@(posedge clk) ##1 1 |=> not (val))
-      |                                       ^
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:55:35: Unsupported: ## () cycle delay range expression
-   55 |   assert property (@(posedge clk) ##1 val)
-      |                                   ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:55:39: Unsupported: ## (in sequence expression)
-   55 |   assert property (@(posedge clk) ##1 val)
-      |                                       ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:58:35: Unsupported: ## () cycle delay range expression
-   58 |   assert property (@(posedge clk) ##1 (val))
-      |                                   ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:58:40: Unsupported: ## (in sequence expression)
-   58 |   assert property (@(posedge clk) ##1 (val))
-      |                                        ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:61:36: Unsupported: ## () cycle delay range expression
-   61 |   assert property (@(posedge clk) (##1 (val)))
-      |                                    ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:61:41: Unsupported: ## (in sequence expression)
-   61 |   assert property (@(posedge clk) (##1 (val)))
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:34:41: Implication with sequence expression
+   34 |   assert property (@(posedge clk) ##1 1 |-> not (val)) $display("[%0t] single delay implication with negated var stmt, fileline:%d", $time, 34);
       |                                         ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:64:36: Unsupported: ## () cycle delay range expression
-   64 |   assert property (@(posedge clk) (##1 (val)))
-      |                                    ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:64:41: Unsupported: ## (in sequence expression)
-   64 |   assert property (@(posedge clk) (##1 (val)))
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:36:37: Implication with sequence expression
+   36 |   assert property (@(posedge clk) 1 |-> ##1 val) $display("[%0t] single delay implication with negated var stmt, fileline:%d", $time, 36);
+      |                                     ^~~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:38:45: Implication with sequence expression
+   38 |   assert property (@(posedge clk) (##1 val) |-> (not val)) $display("[%0t] single delay with negated implication stmt, fileline:%d", $time, 38);
+      |                                             ^~~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:40:45: Implication with sequence expression
+   40 |   assert property (@(posedge clk) ##1 (val) |-> not (val)) $display("[%0t] single delay with negated implication brackets stmt, fileline:%d", $time, 40);
+      |                                             ^~~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:44:41: Implication with sequence expression
+   44 |   assert property (@(posedge clk) ##1 1 |-> 0) $display("[%0t] disable iff with cond implication stmt, fileline:%d", $time, 44);
       |                                         ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:67:40: Unsupported: ## () cycle delay range expression
-   67 |   assert property (@(posedge clk) not (##1 val))
-      |                                        ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:67:44: Unsupported: ## (in sequence expression)
-   67 |   assert property (@(posedge clk) not (##1 val))
-      |                                            ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:70:35: Unsupported: ## () cycle delay range expression
-   70 |   assert property (@(posedge clk) ##1 1 |=> 1)
-      |                                   ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:70:39: Unsupported: ## (in sequence expression)
-   70 |   assert property (@(posedge clk) ##1 1 |=> 1)
-      |                                       ^
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:73:35: Unsupported: ## () cycle delay range expression
-   73 |   assert property (@(posedge clk) ##1 val |=> not val)
-      |                                   ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:73:39: Unsupported: ## (in sequence expression)
-   73 |   assert property (@(posedge clk) ##1 val |=> not val)
-      |                                       ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:76:35: Unsupported: ## () cycle delay range expression
-   76 |   assert property (@(posedge clk) ##1 (val) |=> not (val))
-      |                                   ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:76:40: Unsupported: ## (in sequence expression)
-   76 |   assert property (@(posedge clk) ##1 (val) |=> not (val))
-      |                                        ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:82:57: Unsupported: ## () cycle delay range expression
-   82 |   assert property (@(posedge clk) disable iff (cyc < 3) ##1 1 |=> cyc > 3)
-      |                                                         ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:82:61: Unsupported: ## (in sequence expression)
-   82 |   assert property (@(posedge clk) disable iff (cyc < 3) ##1 1 |=> cyc > 3)
-      |                                                             ^
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:85:36: Unsupported: ## () cycle delay range expression
-   85 |   assert property (@(posedge clk) (##1 val) |=> (##1 val))
-      |                                    ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:85:40: Unsupported: ## (in sequence expression)
-   85 |   assert property (@(posedge clk) (##1 val) |=> (##1 val))
-      |                                        ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:85:50: Unsupported: ## () cycle delay range expression
-   85 |   assert property (@(posedge clk) (##1 val) |=> (##1 val))
-      |                                                  ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:85:54: Unsupported: ## (in sequence expression)
-   85 |   assert property (@(posedge clk) (##1 val) |=> (##1 val))
-      |                                                      ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:103:14: Unsupported sequence match items
-  103 |     ($rose(a), l_b = b) |-> ##[3:10] q[l_b];
-      |              ^
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:103:29: Unsupported: ## range cycle delay range expression
-  103 |     ($rose(a), l_b = b) |-> ##[3:10] q[l_b];
-      |                             ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:103:39: Unsupported: ## (in sequence expression)
-  103 |     ($rose(a), l_b = b) |-> ##[3:10] q[l_b];
-      |                                       ^
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:102:13: Unsupported: property variable declaration
-  102 |     integer l_b;
-      |             ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:120:16: Unsupported sequence match items
-  120 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
-      |                ^
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:120:35: Unsupported: ## () cycle delay range expression
-  120 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
-      |                                   ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:120:51: Unsupported: [-> boolean abbrev expression
-  120 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
-      |                                                   ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:120:54: Unsupported: boolean abbrev (in sequence expression)
-  120 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
-      |                                                      ^
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:120:37: Unsupported: ## (in sequence expression)
-  120 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
-      |                                     ^
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:118:14: Unsupported: property variable declaration
-  118 |     realtime l_t;
-      |              ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:124:31: Unsupported: ## () cycle delay range expression
-  124 |   assert property (@clk not a ##1 b);
-      |                               ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:124:33: Unsupported: ## (in sequence expression)
-  124 |   assert property (@clk not a ##1 b);
-      |                                 ^
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:46:45: Implication with sequence expression
+   46 |   assert property (@(posedge clk) (##1 val) |-> (##1 val)) $display("[%0t] two delays implication stmt, fileline:%d", $time, 46);
+      |                                             ^~~
 %Error: Exiting due to
