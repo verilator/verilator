@@ -22,7 +22,21 @@ module t (input clk);
 
    // These should be deadified
    function deadfunc();
+      deeptask2();
    endfunction
    task deadtask;
+      deeptask1();
+   endtask
+   // A chain of dead tasks calling each other to ensure V3Dead can remove chained dead tasks
+   task deeptask1;
+      deeptask2();
+   endtask
+   task deeptask2;
+      deeptask3();
+   endtask
+   task deeptask3;
+      deeptask4();
+   endtask
+   task deeptask4;
    endtask
 endmodule
