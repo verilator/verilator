@@ -41,14 +41,15 @@ std::map<string, string> VName::s_dehashMap;
 // Wildcard
 
 // Double procedures, inlined, unrolls loop much better
-bool VString::wildmatchi(const char* s, const char* p) VL_PURE {
+template <bool Even = true>
+static bool wildMatchImpl(const char* s, const char* p) VL_PURE {
     for (; *p; s++, p++) {
         if (*p != '*') {
             if (((*s) != (*p)) && *p != '?') return false;
         } else {
             // Trailing star matches everything.
             if (!*++p) return true;
-            while (!wildmatch(s, p)) {
+            while (!wildMatchImpl<!Even>(s, p)) {
                 if (*++s == '\0') return false;
             }
             return true;
@@ -58,19 +59,11 @@ bool VString::wildmatchi(const char* s, const char* p) VL_PURE {
 }
 
 bool VString::wildmatch(const char* s, const char* p) VL_PURE {
-    for (; *p; s++, p++) {
-        if (*p != '*') {
-            if (((*s) != (*p)) && *p != '?') return false;
-        } else {
-            // Trailing star matches everything.
-            if (!*++p) return true;
-            while (!wildmatchi(s, p)) {
-                if (*++s == '\0') return false;
-            }
-            return true;
-        }
+    if (*s == '\0') {
+        while (*p == '*') ++p;
+        return *p == '\0';
     }
-    return (*s == '\0');
+    return wildMatchImpl(s, p);
 }
 
 bool VString::wildmatch(const string& s, const string& p) VL_PURE {

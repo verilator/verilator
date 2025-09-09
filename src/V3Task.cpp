@@ -976,7 +976,7 @@ class TaskVisitor final : public VNVisitor {
             stmt += rtnvarp->basicp()->isDpiPrimitive() ? ";\n" : "[0];\n";
             funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
         }
-        makePortList(nodep, funcp);
+        if (!makePortList(nodep, funcp)) return nullptr;
         return funcp;
     }
 
@@ -1003,7 +1003,7 @@ class TaskVisitor final : public VNVisitor {
 
         // Add DPI Import to top, since it's a global function
         m_topScopep->scopep()->addBlocksp(funcp);
-        makePortList(nodep, funcp);
+        if (!makePortList(nodep, funcp)) return nullptr;
         return funcp;
     }
 
@@ -1047,7 +1047,8 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
-    static void makePortList(AstNodeFTask* nodep, AstCFunc* dpip) {
+    static bool makePortList(AstNodeFTask* nodep, AstCFunc* dpip) {
+        bool allOk = true;
         // Copy nodep's list of function I/O to the new dpip c function
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
@@ -1057,6 +1058,7 @@ class TaskVisitor final : public VNVisitor {
                     newPortp->funcLocal(true);
                     dpip->addArgsp(newPortp);
                     if (!portp->basicp()) {
+                        allOk = false;
                         portp->v3warn(
                             E_UNSUPPORTED,
                             "Unsupported: DPI argument of type "
@@ -1069,6 +1071,7 @@ class TaskVisitor final : public VNVisitor {
                 }
             }
         }
+        return allOk;
     }
 
     void bodyDpiImportFunc(AstNodeFTask* nodep, AstVarScope* rtnvscp, AstCFunc* cfuncp,

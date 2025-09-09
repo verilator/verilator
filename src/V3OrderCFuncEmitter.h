@@ -91,8 +91,8 @@ public:
     void emitLogic(const OrderLogicVertex* lVtxp) {
         // Sensitivity domain of logic we are emitting
         AstSenTree* const domainp = lVtxp->domainp();
-        // We are move the logic into a CFunc, so unlink it from the input AstActive
-        AstNode* const logicp = lVtxp->nodep()->unlinkFrBack();
+        // We are move the logic into a CFunc
+        AstNode* const logicp = lVtxp->nodep();
         // If the logic is a procedure, we need to do a few special things
         AstNodeProcedure* const procp = VN_CAST(logicp, NodeProcedure);
 
@@ -114,12 +114,13 @@ public:
         // Process procedures per statement, so we can split CFuncs within procedures.
         // Everything else is handled as a unit.
         AstNode* const headp = [&]() -> AstNode* {
-            if (!procp) return logicp;  // Not a procedure, handle as a unit
+            if (!procp) return logicp->unlinkFrBack();  // Not a procedure, handle as a unit
             AstNode* const stmtsp = procp->stmtsp();
             UASSERT_OBJ(stmtsp, procp, "Empty process should have been deleted earlier");
             stmtsp->unlinkFrBackWithNext();
-            // Procedure is no longer needed and can be deleted right now
-            VL_DO_DANGLING(procp->deleteTree(), procp);
+            // 'procp' is no longer needed but the OrderGraph still references
+            // it (for debug dump). It will get deleted when deleting the
+            // AstActives in V3Order.
             return stmtsp;
         }();
         // Process each statement in the list starting at headp

@@ -126,6 +126,7 @@ class Capabilities:
     # @lru_cache(maxsize=1024) broken with @staticmethod on older pythons we use
     _cached_cmake_version = None
     _cached_cxx_version = None
+    _cached_have_asan = None
     _cached_have_coroutines = None
     _cached_have_gdb = None
     _cached_have_sc = None
@@ -152,6 +153,12 @@ class Capabilities:
                 check=False)
 
         return Capabilities._cached_cxx_version
+
+    @staticproperty
+    def have_asan() -> bool:  # pylint: disable=no-method-argument
+        if Capabilities._cached_have_asan is None:
+            Capabilities._cached_have_asan = bool(Capabilities._verilator_get_supported('ASAN'))
+        return Capabilities._cached_have_asan
 
     @staticproperty
     def have_coroutines() -> bool:  # pylint: disable=no-method-argument
@@ -204,6 +211,7 @@ class Capabilities:
     # Fetch
     @staticmethod
     def warmup_cache() -> None:
+        _ignore = Capabilities.have_asan
         _ignore = Capabilities.have_coroutines
         _ignore = Capabilities.have_gdb
         _ignore = Capabilities.have_sc
@@ -1634,6 +1642,10 @@ class VlTest:
     @property
     def cxx_version(self) -> str:
         return Capabilities.cxx_version
+
+    @property
+    def have_asan(self) -> bool:
+        return Capabilities.have_asan
 
     @property
     def have_cmake(self) -> bool:

@@ -58,7 +58,12 @@ struct LogicByScope final : public std::vector<std::pair<AstScope*, AstActive*>>
     void deleteActives() {
         for (const auto& pair : *this) {
             AstActive* const activep = pair.second;
-            UASSERT_OBJ(!activep->stmtsp(), activep, "Leftover logic");
+            if (v3Global.opt.debugCheck()) {
+                for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
+                    AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure);
+                    UASSERT_OBJ(procp && !procp->stmtsp(), activep, "Leftover logic");
+                }
+            }
             if (activep->backp()) activep->unlinkFrBack();
             activep->deleteTree();
         }

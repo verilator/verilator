@@ -1302,6 +1302,11 @@ class ParamVisitor final : public VNVisitor {
         return false;
     }
     void visit(AstVarXRef* nodep) override {
+        if (nodep->containsGenBlock()) {
+            // Needs relink, as may remove pointed-to var
+            nodep->varp(nullptr);
+            return;
+        }
         // Check to see if the scope is just an interface because interfaces are special
         const string dotted = nodep->dotted();
         if (!dotted.empty() && nodep->varp() && nodep->varp()->isParam()) {
@@ -1348,10 +1353,6 @@ class ParamVisitor final : public VNVisitor {
                     }
                 }
             }
-        }
-        if (nodep->containsGenBlock()) {
-            // Needs relink, as may remove pointed-to var
-            nodep->varp(nullptr);
         }
     }
 
