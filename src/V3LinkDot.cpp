@@ -1693,6 +1693,9 @@ class LinkDotFindVisitor final : public VNVisitor {
             VSymEnt* const impp = srcp->findIdFlat(nodep->name());
             if (!impp) {
                 nodep->v3error("Import object not found: " << nodep->prettyPkgNameQ());
+            } else if (nodep->resolvedClassp()) {
+                UASSERT_OBJ(nodep->resolvedClassp()->classOrPackageSkipp() == impp->nodep(), nodep,
+                            "Import should resolve to the same node");
             } else if (AstClass* const classp = VN_CAST(impp->nodep(), Class)) {
                 nodep->resolvedClassp(
                     new AstClassOrPackageRef{nodep->fileline(), classp->name(), classp, nullptr});
