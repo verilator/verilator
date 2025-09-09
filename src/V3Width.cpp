@@ -1829,9 +1829,12 @@ class WidthVisitor final : public VNVisitor {
             // Created by V3LinkDot only to check that the prototype was correct when we got here
             UASSERT_OBJ(m_ftaskp, nodep, "FUNC attr not under function");
             AstNodeDType* const protoDtp = nodep->fromp()->dtypep();
-            AstNodeDType* const declDtp = m_ftaskp->fvarp()
-                                              ? m_ftaskp->fvarp()->dtypep()
-                                              : new AstVoidDType{m_ftaskp->fileline()};
+            AstNodeDType* const declDtp = [&]() {
+                if (m_ftaskp->fvarp()) return m_ftaskp->fvarp()->dtypep();
+                AstNodeDType* const voidp = new AstVoidDType{m_ftaskp->fileline()};
+                pushDeletep(voidp);
+                return voidp;
+            }();
             if (!similarDTypeRecurse(protoDtp, declDtp)) {
                 protoDtp->v3warn(
                     PROTOTYPEMIS,
@@ -2129,8 +2132,7 @@ class WidthVisitor final : public VNVisitor {
             //          ? ExprStmt(ExprAssign(out, Cast(v, type)), 1) : 0)"
             AstEnumDType* const enumDtp = VN_AS(toDtp, EnumDType);
             UASSERT_OBJ(enumDtp, nodep, "$cast determined as enum, but not enum type");
-            AstNodeExpr* const testp
-                = enumTestValid(nodep->fromp()->cloneTreePure(false), enumDtp);
+            AstNodeExpr* const testp = enumTestValid(nodep->fromp(), enumDtp);
             FileLine* const fl_novalue = new FileLine{fl};
             fl_novalue->warnOff(V3ErrorCode::ENUMVALUE, true);
             newp = new AstCond{
@@ -4691,7 +4693,10 @@ class WidthVisitor final : public VNVisitor {
             for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;) {
                 AstPatMember* const nextp = VN_AS(patp->nextp(), PatMember);
                 if (patp->isDefault()) {
-                    if (defaultp) nodep->v3error("Multiple '{ default: } clauses");
+                    if (defaultp) {
+                        VL_DO_DANGLING(pushDeletep(defaultp), defaultp);
+                        nodep->v3error("Multiple '{ default: } clauses");
+                    }
                     defaultp = patp;
                     patp->unlinkFrBack();
                 }
@@ -4837,7 +4842,7 @@ class WidthVisitor final : public VNVisitor {
         } else {
             nodep->v3error("Assignment pattern with no members");
         }
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     AstNodeExpr* nestedvalueConcat_patternUOrStruct(AstNodeUOrStructDType* memp_vdtypep,
@@ -4964,7 +4969,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3error("Assignment pattern with no members");
         }
         // UINFOTREE(9, newp, "", "apat-out");
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void patternAssoc(AstPattern* nodep, AstAssocArrayDType* arrayDtp, AstPatMember* defaultp) {
         AstNode* defaultValuep = nullptr;
@@ -4993,7 +4998,7 @@ class WidthVisitor final : public VNVisitor {
         }
         nodep->replaceWith(newp);
         // UINFOTREE(9, newp, "", "apat-out");
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void patternWildcard(AstPattern* nodep, AstWildcardArrayDType* arrayDtp,
                          AstPatMember* defaultp) {
@@ -5013,7 +5018,7 @@ class WidthVisitor final : public VNVisitor {
         }
         nodep->replaceWith(newp);
         // UINFOTREE(9, newp, "", "apat-out");
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void patternDynArray(AstPattern* nodep, AstDynArrayDType* arrayp, AstPatMember*) {
         AstNode* newp = new AstConsDynArray{nodep->fileline()};
@@ -5032,7 +5037,7 @@ class WidthVisitor final : public VNVisitor {
         }
         nodep->replaceWith(newp);
         // UINFOTREE(9, newp, "", "apat-out");
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void patternQueue(AstPattern* nodep, AstQueueDType* arrayp, AstPatMember*) {
         AstNode* newp = new AstConsQueue{nodep->fileline()};
@@ -5053,7 +5058,7 @@ class WidthVisitor final : public VNVisitor {
         }
         nodep->replaceWith(newp);
         // UINFOTREE(9, newp, "", "apat-out");
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void patternBasic(AstPattern* nodep, AstNodeDType* vdtypep, AstPatMember* defaultp) {
         const AstBasicDType* bdtypep = VN_AS(vdtypep, BasicDType);
@@ -5102,7 +5107,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3error("Assignment pattern with no members");
         }
         // UINFOTREE(9, newp, "", "apat-out");
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     AstNodeExpr* patternMemberValueIterate(AstPatMember* patp) {
         // Determine values - might be another InitArray
@@ -8461,7 +8466,8 @@ class WidthVisitor final : public VNVisitor {
         fl_novalue->warnOff(V3ErrorCode::CMPCONST, true);
         if (assoc) {
             AstVar* const varp = enumVarp(enumDtp, VAttrType::ENUM_VALID, true, 0);
-            testp = new AstAssocSel{fl_novalue, newVarRefDollarUnit(varp), valp};
+            testp = new AstAssocSel{fl_novalue, newVarRefDollarUnit(varp),
+                                    valp->cloneTreePure(false)};
         } else {
             const int selwidth = V3Number::log2b(maxval) + 1;  // Width to address a bit
             AstVar* const varp

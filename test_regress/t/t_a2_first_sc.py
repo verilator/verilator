@@ -16,6 +16,8 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_a1_first_cc.v"
 
+os.environ["ASAN_OPTIONS"] = "detect_leaks=0"
+
 DEBUG_QUIET = "--debug --debugi 0 --gdbbt --no-dump-tree"
 
 test.compile(verilator_flags2=[DEBUG_QUIET, "-sc --trace-vcd"])

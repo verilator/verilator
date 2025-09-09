@@ -69,46 +69,50 @@ void V3Global::readFiles() {
 
     VInFilter filter{v3Global.opt.pipeFilter()};
 
-    V3Parse parser{v3Global.rootp(), &filter};
+    {
+        V3Parse parser{v3Global.rootp(), &filter};
 
-    // Parse the std waivers
-    if (v3Global.opt.stdWaiver()) {
-        parser.parseFile(
-            new FileLine{V3Options::getStdWaiverPath()}, V3Options::getStdWaiverPath(), false,
-            "work", "Cannot find verilated_std_waiver.vlt containing built-in lint waivers: ");
-    }
-    // Read .vlt files
-    for (const VFileLibName& filelib : v3Global.opt.vltFiles()) {
-        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(), false,
-                         filelib.libname(), "Cannot find file containing .vlt file: ");
-    }
+        // Parse the std waivers
+        if (v3Global.opt.stdWaiver()) {
+            parser.parseFile(
+                new FileLine{V3Options::getStdWaiverPath()}, V3Options::getStdWaiverPath(), false,
+                "work", "Cannot find verilated_std_waiver.vlt containing built-in lint waivers: ");
+        }
+        // Read .vlt files
+        for (const VFileLibName& filelib : v3Global.opt.vltFiles()) {
+            parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(),
+                             false, filelib.libname(), "Cannot find file containing .vlt file: ");
+        }
 
-    // Parse the std package
-    if (v3Global.opt.stdPackage()) {
-        parser.parseFile(new FileLine{V3Options::getStdPackagePath()},
-                         V3Options::getStdPackagePath(), false, "work",
-                         "Cannot find verilated_std.sv containing built-in std:: definitions: ");
-    }
+        // Parse the std package
+        if (v3Global.opt.stdPackage()) {
+            parser.parseFile(
+                new FileLine{V3Options::getStdPackagePath()}, V3Options::getStdPackagePath(),
+                false, "work",
+                "Cannot find verilated_std.sv containing built-in std:: definitions: ");
+        }
 
-    // Read top module
-    for (const auto& filelib : v3Global.opt.vFiles()) {
-        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(), false,
-                         filelib.libname(), "Cannot find file containing module: ");
-    }
+        // Read top module
+        for (const auto& filelib : v3Global.opt.vFiles()) {
+            parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(),
+                             false, filelib.libname(), "Cannot find file containing module: ");
+        }
 
-    // Read libraries
-    // To be compatible with other simulators,
-    // this needs to be done after the top file is read
-    for (const auto& filelib : v3Global.opt.libraryFiles()) {
-        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(), true,
-                         filelib.libname(), "Cannot find file containing library module: ");
-    }
+        // Read libraries
+        // To be compatible with other simulators,
+        // this needs to be done after the top file is read
+        for (const auto& filelib : v3Global.opt.libraryFiles()) {
+            parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(),
+                             true, filelib.libname(),
+                             "Cannot find file containing library module: ");
+        }
 
-    // Read hierarchical type parameter file
-    for (const auto& filelib : v3Global.opt.hierParamFile()) {
-        parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(), false,
-                         filelib.libname(),
-                         "Cannot open file containing hierarchical parameter declarations: ");
+        // Read hierarchical type parameter file
+        for (const auto& filelib : v3Global.opt.hierParamFile()) {
+            parser.parseFile(new FileLine{FileLine::commandLineFilename()}, filelib.filename(),
+                             false, filelib.libname(),
+                             "Cannot open file containing hierarchical parameter declarations: ");
+        }
     }
 
     // v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("parse.tree"));

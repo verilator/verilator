@@ -216,8 +216,9 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
         } else {
             dtypep = new AstBasicDType{fileline, LOGIC_IMPLICIT};
         }
-    } else {  // May make new variables with same type, so clone
-        dtypep = dtypep->cloneTree(false);
+    } else {
+        // If already consumed by an earlier decl, clone it
+        if (dtypep->backp()) dtypep = dtypep->cloneTree(false);
     }
     // UINFO(0,"CREVAR "<<fileline->ascii()<<" decl="<<GRAMMARP->m_varDecl.ascii()<<"
     // io="<<GRAMMARP->m_varIO.ascii()<<endl);

@@ -436,6 +436,7 @@ class CaseVisitor final : public VNVisitor {
                         // Similar logic in V3Width::visit(AstInside)
                         condp = irangep->newAndFromInside(cexprp, irangep->lhsp()->unlinkFrBack(),
                                                           irangep->rhsp()->unlinkFrBack());
+                        VL_DO_DANGLING(icondp->deleteTree(), icondp);
                     } else if (iconstp && iconstp->num().isFourState()
                                && (nodep->casex() || nodep->casez() || nodep->caseInside())) {
                         V3Number nummask{itemp, iconstp->width()};

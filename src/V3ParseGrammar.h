@@ -212,7 +212,9 @@ public:
         }
     }
     void setDType(AstNodeDType* dtypep) {
-        if (m_varDTypep) VL_DO_CLEAR(m_varDTypep->deleteTree(), m_varDTypep = nullptr);
+        if (m_varDTypep && !m_varDTypep->backp()) {
+            VL_DO_CLEAR(m_varDTypep->deleteTree(), m_varDTypep = nullptr);
+        }
         m_varDTypep = dtypep;
     }
     void setNetDelay(AstDelay* netDelayp) { m_netDelayp.reset(netDelayp); }

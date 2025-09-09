@@ -588,7 +588,7 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last) {
     // Delete the empty shell of the inlined module
     VL_DO_DANGLING(inlinedp->deleteTree(), inlinedp);
     // Remove the cell we just inlined
-    VL_DO_DANGLING(cellp->unlinkFrBack(), cellp);
+    VL_DO_DANGLING(cellp->unlinkFrBack()->deleteTree(), cellp);
 }
 
 // Apply all inlining decisions

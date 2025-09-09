@@ -1100,6 +1100,7 @@ class ParamVisitor final : public VNVisitor {
     std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
     std::multimap<int, AstNodeModule*> m_workQueue;  // Modules left to process
     std::vector<AstClass*> m_paramClasses;  // Parameterized classes
+    std::deque<std::string> m_strings;  // Allocator for temporary strings
 
     // Map from AstNodeModule to set of all AstNodeModules that instantiates it.
     std::unordered_map<AstNodeModule*, std::unordered_set<AstNodeModule*>> m_parentps;
@@ -1162,7 +1163,6 @@ class ParamVisitor final : public VNVisitor {
                 if (const string* const genHierNamep = cellp->user2u().to<string*>()) {
                     someInstanceName += *genHierNamep;
                     cellp->user2p(nullptr);
-                    VL_DO_DANGLING(delete genHierNamep, genHierNamep);
                 }
 
                 // Apply parameter specialization
@@ -1195,8 +1195,8 @@ class ParamVisitor final : public VNVisitor {
     // A generic visitor for cells and class refs
     void visitCellOrClassRef(AstNode* nodep, bool isIface) {
         // Must do ifaces first, so push to list and do in proper order
-        string* const genHierNamep = new std::string{m_generateHierName};
-        nodep->user2p(genHierNamep);
+        m_strings.emplace_back(m_generateHierName);
+        nodep->user2p(&m_strings.back());
         // Visit parameters in the instantiation.
         iterateChildren(nodep);
         m_cellps.emplace(!isIface, nodep);

@@ -358,6 +358,9 @@ class AssertVisitor final : public VNVisitor {
             nodep->v3fatalSrc("Unknown node type");
         }
 
+        if (passsp && !passsp->backp()) VL_DO_DANGLING(pushDeletep(passsp), passsp);
+        if (failsp && !failsp->backp()) VL_DO_DANGLING(pushDeletep(failsp), failsp);
+
         AstNode* newp;
         if (sentreep) {
             newp = new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, bodysp};

@@ -158,14 +158,6 @@ V3HierBlock::StrGParams V3HierBlock::stringifyParams(const V3HierBlockParams::GP
     return strParams;
 }
 
-V3HierBlock::~V3HierBlock() {
-    UASSERT(m_children.empty(), "at least one module must be a leaf");
-    for (const auto& hierblockp : m_children) {
-        const bool deleted = hierblockp->m_children.erase(this);
-        UASSERT_OBJ(deleted, m_modp, " is not registered");
-    }
-}
-
 V3StringList V3HierBlock::commandArgs(bool forCMake) const {
     V3StringList opts;
     const string prefix = hierPrefix();
@@ -378,13 +370,14 @@ public:
 //######################################################################
 
 void V3HierBlockPlan::add(const AstNodeModule* modp, const V3HierBlockParams& params) {
-    const auto pair = m_blocks.emplace(modp, nullptr);
-    if (pair.second) {
-        V3HierBlock* hblockp = new V3HierBlock{modp, params};
+    const bool newEntry = m_blocks
+                              .emplace(std::piecewise_construct, std::forward_as_tuple(modp),
+                                       std::forward_as_tuple(modp, params))
+                              .second;
+    if (newEntry) {
         UINFO(3, "Add " << modp->prettyNameQ() << " with " << params.gparams().size()
                         << " parameters and " << params.gTypeParams().size()
                         << " type parameters");
-        pair.first->second = hblockp;
     }
 }
 
@@ -395,8 +388,8 @@ void V3HierBlockPlan::registerUsage(const AstNodeModule* parentp, const AstNodeM
     if (child != m_blocks.end()) {
         UINFO(3, "Found usage relation " << parentp->prettyNameQ() << " uses "
                                          << childp->prettyNameQ());
-        parent->second->addChild(child->second);
-        child->second->addParent(parent->second);
+        parent->second.addChild(&child->second);
+        child->second.addParent(&parent->second);
     }
 }
 
@@ -431,12 +424,12 @@ V3HierBlockPlan::HierVector V3HierBlockPlan::hierBlocksSorted() const {
 
     HierVector sorted;
     for (const_iterator it = begin(); it != end(); ++it) {
-        if (!it->second->hasChild()) {  // No children, already leaf
-            sorted.push_back(it->second);
+        if (!it->second.hasChild()) {  // No children, already leaf
+            sorted.push_back(&it->second);
         } else {
             ChildrenMap::value_type::second_type& childrenSet
-                = childrenOfHierBlock[it->second];  // insert
-            const V3HierBlock::HierBlockSet& c = it->second->children();
+                = childrenOfHierBlock[&it->second];  // insert
+            const V3HierBlock::HierBlockSet& c = it->second.children();
             childrenSet.insert(c.begin(), c.end());
         }
     }
@@ -465,7 +458,7 @@ V3HierBlockPlan::HierVector V3HierBlockPlan::hierBlocksSorted() const {
 
 void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
     for (const_iterator it = begin(); it != end(); ++it) {
-        it->second->writeCommandArgsFile(forCMake);
+        it->second.writeCommandArgsFile(forCMake);
     }
     // For the top module
     const std::unique_ptr<std::ofstream> of{
@@ -473,7 +466,7 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
     if (!forCMake) {
         // Load wrappers first not to be overwritten by the original HDL
         for (const_iterator it = begin(); it != end(); ++it) {
-            *of << it->second->hierWrapperFilename(true) << "\n";
+            *of << it->second.hierWrapperFilename(true) << "\n";
         }
     }
     V3HierWriteCommonInputs(nullptr, of.get(), forCMake);
@@ -486,7 +479,7 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
         *of << "--mod-prefix " << v3Global.opt.modPrefix() << "\n";
     }
     for (const_iterator it = begin(); it != end(); ++it) {
-        *of << it->second->hierBlockArgs().front() << "\n";
+        *of << it->second.hierBlockArgs().front() << "\n";
     }
 
     if (!v3Global.opt.libCreate().empty()) {
@@ -505,5 +498,5 @@ string V3HierBlockPlan::topCommandArgsFilename(bool forCMake) {
 }
 
 void V3HierBlockPlan::writeParametersFiles() const {
-    for (const auto& block : *this) block.second->writeParametersFile();
+    for (const auto& block : *this) block.second.writeParametersFile();
 }
