@@ -2489,6 +2489,9 @@ class WidthVisitor final : public VNVisitor {
                 if (nodep->valuep()->isDouble()) {
                     nodep->dtypeSetDouble();
                     VL_DANGLING(bdtypep);
+                } else if (nodep->valuep()->isString()) {
+                    nodep->dtypeSetString();
+                    VL_DANGLING(bdtypep);
                 } else {
                     int width = 0;
                     const AstBasicDType* const valueBdtypep = nodep->valuep()->dtypep()->basicp();

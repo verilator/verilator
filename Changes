@@ -35,6 +35,7 @@ Verilator 5.041 devel
 * Fix address sanitizer issues (#6406). [Geza Lore]
 * Fix timing control under fork under function (#6407). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix memory leaks (#6411). [Geza Lore]
+* Fix parameter implicit type from string (#6414). [Alex Solomatnikov]
 
 
 Verilator 5.040 2025-08-30
