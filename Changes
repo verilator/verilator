@@ -14,8 +14,10 @@ Verilator 5.041 devel
 **Other:**
 
 * Add error on non-packed struct randc (#5999). [Seth Pellegrino]
+* Add configure `--enable-asan` to compile verilator_bin with the address sanitizer (#6404). [Geza Lore]
 * Improve automatic selection of logic for DFG synthesis (#6370). [Geza Lore]
 * Improve `covergroup with function sample` handling  (#6387). [Jakub Wasilewski]
+* Improve DFG type system (#6390). [Geza Lore]
 * Optimize dead functions without references (#6380). [Artur Bieniek, Antmicro Ltd.]
 * Fix cell scoping performance (#6059). [Jerry Tianchen]
 * Fix while loop hang on timing-delayed assignment (#6343) (#6354). [Krzysztof Bieganski, Antmicro Ltd.]
@@ -27,6 +29,11 @@ Verilator 5.041 devel
 * Fix COVERAGEIGN-ignored `get_inst_coverage` and other covergroup methods (#6383). [Alex Solomatnikov]
 * Fix error when modport variable is unresolved (#6386). [Ryszard Rozak, Antmicro Ltd.]
 * Fix wire array with initial assignment (#6391). [Alex Solomatnikov]
+* Fix import of class with default params (#6396). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix use after free in elaboration (#6403). [Geza Lore]
+* Fix address sanitizer issues (#6406). [Geza Lore]
+* Fix timing control under fork under function (#6407). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix memory leaks (#6411). [Geza Lore]
 
 
 Verilator 5.040 2025-08-30
