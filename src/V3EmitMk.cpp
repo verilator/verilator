@@ -871,7 +871,7 @@ class EmitMkHierVerilation final {
             of.puts(v3Global.opt.prefix()
                     + ".mk: $(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
             of.puts(V3Os::filenameNonDir(argsFile) + " ");
-            for (const auto& itr : *m_planp) of.puts(itr.second->hierWrapperFilename(true) + " ");
+            for (const auto& itr : *m_planp) of.puts(itr.second.hierWrapperFilename(true) + " ");
             of.puts("\n");
             emitLaunchVerilator(of, argsFile);
         }

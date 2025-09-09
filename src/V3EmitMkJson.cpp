@@ -154,7 +154,7 @@ class V3EmitMkJsonEmitter final {
 
             std::vector<std::string> sources;
             for (const auto& itr : *planp)
-                sources.emplace_back(makeDir + "/" + itr.second->hierWrapperFilename(true));
+                sources.emplace_back(makeDir + "/" + itr.second.hierWrapperFilename(true));
 
             for (const auto& itr : v3Global.opt.vFiles())
                 sources.emplace_back(

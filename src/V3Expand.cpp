@@ -277,7 +277,10 @@ class ExpandVisitor final : public VNVisitor {
     // Return word of fromp that contains bit lsbp + the given word offset.
     static AstNodeExpr* newWordSelBit(FileLine* flp, AstNodeExpr* fromp, AstNodeExpr* lsbp,
                                       uint32_t wordOffset = 0) {
-        return newWordSelWord(flp, fromp, newWordIndex(lsbp, wordOffset));
+        AstNodeExpr* const indexp = newWordIndex(lsbp, wordOffset);
+        AstNodeExpr* const wordSelp = newWordSelWord(flp, fromp, indexp);
+        if (!indexp->backp()) VL_DO_DANGLING(indexp->deleteTree(), indexp);
+        return wordSelp;
     }
 
     static AstNodeExpr* newSelBitBit(AstNodeExpr* lsbp) {
@@ -560,7 +563,8 @@ class ExpandVisitor final : public VNVisitor {
         ++m_nTmps;
 
         // Compute word index of LSB, store to temporary if not constant
-        AstNodeExpr* wordIdxp = newWordIndex(rhsp->lsbp()->cloneTreePure(false));
+        AstNodeExpr* const wordLsbp = rhsp->lsbp()->cloneTreePure(false);
+        AstNodeExpr* wordIdxp = newWordIndex(wordLsbp);
         wordIdxp = V3Const::constifyEditCpp(wordIdxp);
         if (!VN_IS(wordIdxp, Const)) {
             AstVar* const tmpp = addLocalTmp(nodep, "ExpandSel_WordIdx", wordIdxp);
@@ -633,6 +637,7 @@ class ExpandVisitor final : public VNVisitor {
         }
 
         // Delete parts not captured during construction
+        if (!wordLsbp->backp()) VL_DO_DANGLING(wordLsbp->deleteTree(), wordLsbp);
         if (!wordIdxp->backp()) VL_DO_DANGLING(wordIdxp->deleteTree(), wordIdxp);
         if (!loShftp->backp()) VL_DO_DANGLING(loShftp->deleteTree(), loShftp);
         if (!hiShftp->backp()) VL_DO_DANGLING(hiShftp->deleteTree(), hiShftp);

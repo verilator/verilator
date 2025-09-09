@@ -89,17 +89,6 @@ private:
         while (VN_IS(propExprp, Var)) propExprp = propExprp->nextp();
         return VN_CAST(propExprp, PropSpec);
     }
-    void replaceVarRefsWithExprRecurse(AstNode* const nodep, const AstVar* varp,
-                                       AstNode* const exprp) {
-        if (!nodep) return;
-        if (const AstVarRef* varrefp = VN_CAST(nodep, VarRef)) {
-            if (varp == varrefp->varp()) nodep->replaceWith(exprp->cloneTree(false));
-        }
-        if (AstNode* const refp = nodep->op1p()) replaceVarRefsWithExprRecurse(refp, varp, exprp);
-        if (AstNode* const refp = nodep->op2p()) replaceVarRefsWithExprRecurse(refp, varp, exprp);
-        if (AstNode* const refp = nodep->op3p()) replaceVarRefsWithExprRecurse(refp, varp, exprp);
-        if (AstNode* const refp = nodep->op4p()) replaceVarRefsWithExprRecurse(refp, varp, exprp);
-    }
     AstPropSpec* substitutePropertyCall(AstPropSpec* nodep) {
         if (AstFuncRef* const funcrefp = VN_CAST(nodep->propp(), FuncRef)) {
             if (const AstProperty* const propp = VN_CAST(funcrefp->taskp(), Property)) {
@@ -116,9 +105,13 @@ private:
                     const AstVar* const portp = tconnect.first;
                     // cppcheck-suppress constVariablePointer // 'exprp' unlinked below
                     AstArg* const argp = tconnect.second;
-                    AstNode* const pinp = argp->exprp()->unlinkFrBack();
-                    replaceVarRefsWithExprRecurse(propExprp, portp, pinp);
-                    VL_DO_DANGLING(pushDeletep(pinp), pinp);
+                    propExprp->foreach([&](AstVarRef* refp) {
+                        if (refp->varp() == portp) {
+                            refp->replaceWith(argp->exprp()->cloneTree(false));
+                            VL_DO_DANGLING(pushDeletep(refp), refp);
+                        }
+                    });
+                    pushDeletep(argp->exprp()->unlinkFrBack());
                 }
                 // Handle case with 2 disable iff statement (IEEE 1800-2023 16.12.1)
                 if (nodep->disablep() && propExprp->disablep()) {
@@ -146,6 +139,7 @@ private:
 
                 // Now substitute property reference with property body
                 nodep->replaceWith(propExprp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return propExprp;
             }
         }
@@ -486,7 +480,7 @@ private:
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
         AstSenTree* const sentreep = nodep->sentreep();
-        if (sentreep) sentreep->unlinkFrBack();
+        if (sentreep) VL_DO_DANGLING(pushDeletep(sentreep->unlinkFrBack()), sentreep);
         nodep->sentreep(newSenTree(nodep));
     }
     void visit(AstPast* nodep) override {
@@ -559,7 +553,9 @@ private:
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
         AstNodeExpr* lhsp = nodep->lhsp()->unlinkFrBack();
 
-        if (m_disablep) lhsp = new AstAnd{fl, new AstNot{fl, m_disablep}, lhsp};
+        if (m_disablep) {
+            lhsp = new AstAnd{fl, new AstNot{fl, m_disablep->cloneTreePure(false)}, lhsp};
+        }
 
         AstNodeExpr* const pastp = new AstPast{fl, lhsp};
         pastp->dtypeFrom(lhsp);
@@ -597,7 +593,7 @@ private:
             nodep->disablep(m_defaultDisablep->condp()->cloneTreePure(true));
         }
         if (AstNodeExpr* const disablep = nodep->disablep()) {
-            m_disablep = disablep->cloneTreePure(false);
+            m_disablep = disablep;
             if (VN_IS(nodep->backp(), Cover)) {
                 blockp = new AstAnd{disablep->fileline(),
                                     new AstNot{disablep->fileline(), disablep->unlinkFrBack()},

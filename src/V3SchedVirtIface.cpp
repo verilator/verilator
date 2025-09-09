@@ -170,6 +170,7 @@ private:
         if (writesToVirtIface(nodep)) {
             // Convert to always, as we have to assign the trigger var
             nodep->convertToAlways();
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstNodeIf* nodep) override {
@@ -284,12 +285,13 @@ public:
 
 VirtIfaceTriggers makeVirtIfaceTriggers(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
+    VirtIfaceTriggers triggers{};
     if (v3Global.hasVirtIfaces()) {
-        VirtIfaceVisitor visitor{nodep};
+        triggers = VirtIfaceVisitor{nodep}.take_triggers();
+        // Dump afer destructor so VNDeleter runs
         V3Global::dumpCheckGlobalTree("sched_vif", 0, dumpTreeEitherLevel() >= 6);
-        return visitor.take_triggers();
     }
-    return {};
+    return triggers;
 }
 
 }  //namespace V3Sched

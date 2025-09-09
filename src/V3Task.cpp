@@ -1774,7 +1774,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                     }
                 }
             }
-            newvaluep = newvaluep->cloneTree(true);
+            newvaluep = newvaluep->backp() ? newvaluep->cloneTree(true) : newvaluep;
             // To avoid problems with callee needing to know to deleteTree
             // or not, we make this into a pin
             UINFO(9, "Default pin for " << portp);

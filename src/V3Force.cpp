@@ -116,8 +116,7 @@ public:
                                                new AstVarRef{flp, m_enVscp, VAccess::READ}});
                 AstVarRef* const origp = new AstVarRef{flp, vscp, VAccess::READ};
                 ForceState::markNonReplaceable(origp);
-                itemsp->addNext(
-                    new AstSenItem{flp, VEdgeType::ET_CHANGED, origp->cloneTree(false)});
+                itemsp->addNext(new AstSenItem{flp, VEdgeType::ET_CHANGED, origp});
                 AstActive* const activep
                     = new AstActive{flp, "force-update", new AstSenTree{flp, itemsp}};
                 activep->senTreeStorep(activep->sentreep());
@@ -252,7 +251,7 @@ class ForceConvertVisitor final : public VNVisitor {
             = new AstAssign{flp, lhsp->cloneTreePure(false), rhsp->cloneTreePure(false)};
         transformWritenVarScopes(setValp->lhsp(), [this, rhsp](AstVarScope* vscp) {
             AstVarScope* const valVscp = m_state.getForceComponents(vscp).m_valVscp;
-            m_state.setValVscpRhsExpr(valVscp, rhsp->cloneTreePure(false));
+            m_state.setValVscpRhsExpr(valVscp, rhsp);
             rhsp->foreach([valVscp, this](AstVarRef* refp) { m_state.addValVscp(refp, valVscp); });
             return valVscp;
         });

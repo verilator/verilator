@@ -1628,16 +1628,16 @@ class RandomizeVisitor final : public VNVisitor {
     }
     AstNodeStmt* createArrayForeachLoop(FileLine* const fl, AstNodeDType* const dtypep,
                                         AstNodeExpr* exprp, AstVar* const outputVarp) {
-        V3UniqueNames* uniqueNamep = new V3UniqueNames{"__Vrandarr"};
+        V3UniqueNames uniqueNames{"__Vrandarr"};
         AstNodeDType* tempDTypep = dtypep;
         AstVar* randLoopIndxp = nullptr;
         AstNodeStmt* stmtsp = nullptr;
         auto createLoopIndex = [&](AstNodeDType* tempDTypep) {
             if (VN_IS(tempDTypep, AssocArrayDType)) {
-                return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
+                return new AstVar{fl, VVarType::VAR, uniqueNames.get(""),
                                   VN_AS(tempDTypep, AssocArrayDType)->keyDTypep()};
             }
-            return new AstVar{fl, VVarType::VAR, uniqueNamep->get(""),
+            return new AstVar{fl, VVarType::VAR, uniqueNames.get(""),
                               dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};
         };
         auto createForeachLoop = [&](AstNodeExpr* tempElementp, AstVar* randLoopIndxp) {

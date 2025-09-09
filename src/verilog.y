@@ -30,8 +30,14 @@
 
 // Pick up new lexer
 #define yylex PARSEP->tokenToBison
+
 #define BBCOVERIGN(fl, msg) (fl)->v3warn(COVERIGN, msg)
 #define BBUNSUP(fl, msg) (fl)->v3warn(E_UNSUPPORTED, msg)
+#define DELETE_ALL(...) \
+    { \
+        AstNode* nodeps[] = { __VA_ARGS__ }; \
+        for (AstNode* const nodep : nodeps) if (nodep) nodep->deleteTree(); \
+    }
 #define GATEUNSUP(fl, tok) \
     { BBUNSUP((fl), "Unsupported: Verilog 1995 gate primitive: " << (tok)); }
 #define RISEFALLDLYUNSUP(nodep) \
@@ -3818,16 +3824,16 @@ value_range<nodeExprp>:         // ==IEEE: value_range/open_value_range
 covergroup_value_range<nodeExprp>:  // ==IEEE-2012: covergroup_value_range
                 cgexpr                                  { $$ = $1; }
         |       '[' cgexpr ':' cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: covergroup value range"); }
+                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: covergroup value range"); DELETE_ALL($2, $4); }
         //                      // IEEE-2023: added all four:
         //                      // Skipped as '$' is part of our expr
         //                      // IEEE-2023: '[' '$' ':' cgexpr ']'
         //                      // Skipped as '$' is part of our expr
         //                      // IEEE-2023: '[' cgexpr ':' '$' ']'
         |       '[' cgexpr yP_PLUSSLASHMINUS cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: covergroup value range"); }
+                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: covergroup value range"); DELETE_ALL($2, $4); }
         |       '[' cgexpr yP_PLUSPCTMINUS cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: covergroup value range"); }
+                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: covergroup value range"); DELETE_ALL($2, $4); }
         ;
 
 caseCondList<nodeExprp>:        // IEEE: part of case_item
@@ -5125,6 +5131,7 @@ exprScope<nodeExprp>:               // scope and variable for use to inside an e
                         { AstParseRef* const anodep = VN_CAST($1, ParseRef);
                           if (anodep && anodep->name() == "this") {
                               $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "super"};
+                              $1->deleteTree();
                           } else {
                               $$ = $1;  $$->v3error("Syntax error: 'super' must be first name component, or after 'this.'");
                           }
@@ -6209,13 +6216,13 @@ concurrent_assertion_statement<nodep>:  // ==IEEE: concurrent_assertion_statemen
                         { $$ = new AstCover{$1, $4, $6, VAssertType::CONCURRENT}; }
         //                      // IEEE: cover_sequence_statement
         |       yCOVER ySEQUENCE '(' sexpr ')' stmt
-                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: cover sequence"); }
+                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: cover sequence"); DELETE_ALL($4, $6); }
         //                      // IEEE: yCOVER ySEQUENCE '(' clocking_event sexpr ')' stmt
         //                      // sexpr already includes "clocking_event sexpr"
         |       yCOVER ySEQUENCE '(' clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' sexpr ')' stmt
-                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: cover sequence"); }
+                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: cover sequence"); DELETE_ALL($4, $8, $10, $12);}
         |       yCOVER ySEQUENCE '(' yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' sexpr ')' stmt
-                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: cover sequence"); }
+                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: cover sequence"); DELETE_ALL($7, $9, $11); }
         //                      // IEEE: restrict_property_statement
         |       yRESTRICT yPROPERTY '(' property_spec ')' ';'
                         { $$ = new AstRestrict{$1, $4}; }
@@ -6733,27 +6740,27 @@ coverage_option<nodep>:  // ==IEEE: coverage_option
         //                      // option/type_option aren't really keywords
                 id/*yOPTION | yTYPE_OPTION*/ '.' idAny/*member_identifier*/ '=' expr
                         { // TODO: check that 'id' is 'option' or 'type_option'
-                          $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage option"); }
+                          $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage option"); DELETE_ALL($5); }
         ;
 
 cover_point<nodep>:  // ==IEEE: cover_point
         //              // [ [ data_type_or_implicit ] cover_point_identifier ':' ] yCOVERPOINT
                 yCOVERPOINT expr iffE bins_or_empty
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverpoint"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverpoint"); DELETE_ALL($2, $3, $4); }
         //                      // IEEE-2012: class_scope before an ID
         |       id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { $$ = nullptr; BBCOVERIGN($<fl>3, "Ignoring unsupported: coverpoint"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>3, "Ignoring unsupported: coverpoint"); DELETE_ALL($4, $5, $6);}
         //                      // data_type_or_implicit expansion
         |       data_type id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { $$ = nullptr; BBCOVERIGN($<fl>4, "Ignoring unsupported: coverpoint"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>4, "Ignoring unsupported: coverpoint"); DELETE_ALL($1, $5, $6, $7);}
         |       yVAR data_type id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: coverpoint"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: coverpoint"); DELETE_ALL($2, $6, $7, $8); }
         |       yVAR implicit_typeE id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: coverpoint"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: coverpoint"); DELETE_ALL($2, $6, $7, $8); }
         |       signingE rangeList id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: coverpoint"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: coverpoint"); DELETE_ALL($2, $6, $7, $8); }
         |       signing id/*cover_point_id*/ ':' yCOVERPOINT expr iffE bins_or_empty
-                        { $$ = nullptr; BBCOVERIGN($<fl>4, "Ignoring unsupported: coverpoint"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>4, "Ignoring unsupported: coverpoint"); DELETE_ALL($5, $6, $7); }
         //                      // IEEE-2012:
         |       bins_or_empty                           { $$ = $1; }
         ;
@@ -6761,7 +6768,7 @@ cover_point<nodep>:  // ==IEEE: cover_point
 iffE<nodep>:  // IEEE: part of cover_point, others
                 /* empty */                             { $$ = nullptr; }
         |       yIFF '(' expr ')'
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: cover 'iff'"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: cover 'iff'"); DELETE_ALL($3); }
         ;
 
 bins_or_empty<nodep>:  // ==IEEE: bins_or_empty
@@ -6786,24 +6793,24 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
                 coverage_option                         { $$ = $1; }
         //                      // Can't use wildcardE as results in conflicts
         |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>4, "Ignoring unsupported: cover bin specification"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>4, "Ignoring unsupported: cover bin specification"); DELETE_ALL($3, $6, $8); }
         |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__CUR '{' cgexpr '}' iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>8, "Ignoring unsupported: cover bin 'with' specification"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>8, "Ignoring unsupported: cover bin 'with' specification"); DELETE_ALL($3, $6, $10, $12); }
         |       yWILDCARD bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: cover bin 'wildcard' specification"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: cover bin 'wildcard' specification"); DELETE_ALL($4, $7, $9); }
         |       yWILDCARD bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__CUR '{' cgexpr '}' iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>9, "Ignoring unsupported: cover bin 'wildcard' 'with' specification"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>9, "Ignoring unsupported: cover bin 'wildcard' 'with' specification"); DELETE_ALL($4, $7, $11, $13); }
         //
         //                      // cgexpr part of trans_list
         |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' trans_list iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>4, "Ignoring unsupported: cover bin trans list"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>4, "Ignoring unsupported: cover bin trans list"); DELETE_ALL($3, $5, $6); }
         |       yWILDCARD bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' trans_list iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: cover bin 'wildcard' trans list"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: cover bin 'wildcard' trans list"); DELETE_ALL($4, $6, $7);}
         //
         |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' yDEFAULT iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: cover bin 'default'"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: cover bin 'default'"); DELETE_ALL($3, $6); }
         |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' yDEFAULT ySEQUENCE iffE
-                        { $$ = nullptr; BBCOVERIGN($<fl>6, "Ignoring unsupported: cover bin 'default' 'sequence'"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>6, "Ignoring unsupported: cover bin 'default' 'sequence'"); DELETE_ALL($3, $7); }
         ;
 
 bins_orBraE<nodep>:  // IEEE: part of bins_or_options:
@@ -6827,23 +6834,23 @@ trans_set<nodep>:  // ==IEEE: trans_set
                 trans_range_list                        { $$ = $1; }
         //                      // Note the { => } in the grammar, this is really a list
         |       trans_set yP_EQGT trans_range_list
-                        { $$ = $1; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover trans set '=>'"); }
+                        { $$ = $1; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover trans set '=>'"); DELETE_ALL($3); }
         ;
 
 trans_range_list<nodep>:  // ==IEEE: trans_range_list
                 trans_item                              { $$ = $1; }
         |       trans_item yP_BRASTAR cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[*'"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[*'"); DELETE_ALL($1, $3); }
         |       trans_item yP_BRASTAR cgexpr ':' cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[*'"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[*'"); DELETE_ALL($1, $3, $5); }
         |       trans_item yP_BRAMINUSGT cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[->'"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[->'"); DELETE_ALL($1, $3); }
         |       trans_item yP_BRAMINUSGT cgexpr ':' cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[->'"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[->'"); DELETE_ALL($1, $3, $5); }
         |       trans_item yP_BRAEQ cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[='"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[='"); DELETE_ALL($1, $3); }
         |       trans_item yP_BRAEQ cgexpr ':' cgexpr ']'
-                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[='"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>2, "Ignoring unsupported: cover '[='"); DELETE_ALL($1, $3, $5); }
         ;
 
 trans_item<nodep>:  // ==IEEE: range_list
@@ -6858,9 +6865,9 @@ covergroup_range_list<nodep>:  // ==IEEE: covergroup_range_list
 
 cover_cross<nodep>:  // ==IEEE: cover_cross
                 id/*cover_point_identifier*/ ':' yCROSS list_of_cross_items iffE cross_body
-                        { $$ = nullptr; BBCOVERIGN($<fl>3, "Ignoring unsupported: cover cross"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>3, "Ignoring unsupported: cover cross"); DELETE_ALL($4, $5, $6); }
         |       yCROSS list_of_cross_items iffE cross_body
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: cover cross"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: cover cross"); DELETE_ALL($2, $3, $4); }
         ;
 
 list_of_cross_items<nodep>:  // ==IEEE: list_of_cross_items
@@ -6900,24 +6907,24 @@ cross_body_item<nodep>:  // ==IEEE: cross_body_item
         |       coverage_option ';'                     { $$ = $1; }
         //                      // IEEE: bins_selection
         |       bins_keyword idAny/*new-bin_identifier*/ '=' select_expression iffE ';'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage cross bin"); }
+                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage cross bin"); DELETE_ALL($4, $5); }
         |       error ';'                               { $$ = nullptr; }
         ;
 
 select_expression<nodep>:  // ==IEEE: select_expression
         //                      // IEEE: select_condition expanded here
                 yBINSOF '(' bins_expression ')'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression 'binsof'"); }
+                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression 'binsof'"); DELETE_ALL($3); }
         |       '!' yBINSOF '(' bins_expression ')'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression 'binsof'"); }
+                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression 'binsof'"); DELETE_ALL($4); }
         |       yBINSOF '(' bins_expression ')' yINTERSECT '{' covergroup_range_list '}'
-                        { $$ = nullptr; BBCOVERIGN($5, "Ignoring unsupported: coverage select expression 'intersect'"); }
+                        { $$ = nullptr; BBCOVERIGN($5, "Ignoring unsupported: coverage select expression 'intersect'"); DELETE_ALL($3, $7); }
         |       '!' yBINSOF '(' bins_expression ')' yINTERSECT '{' covergroup_range_list '}'    { }
-                        { $$ = nullptr; BBCOVERIGN($5, "Ignoring unsupported: coverage select expression 'intersect'"); }
+                        { $$ = nullptr; BBCOVERIGN($5, "Ignoring unsupported: coverage select expression 'intersect'"); DELETE_ALL($4, $8); }
         |       yWITH__PAREN '(' cgexpr ')'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression with"); }
+                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression with"); DELETE_ALL($3); }
         |       '!' yWITH__PAREN '(' cgexpr ')'
-                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression with"); }
+                        { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression with"); DELETE_ALL($4); }
         //                      // IEEE-2012: Need clarification as to precedence
         //UNSUP yWITH__PAREN '(' cgexpr ')' yMATCHES cgexpr    { }
         //                      // IEEE-2012: Need clarification as to precedence
@@ -6925,9 +6932,9 @@ select_expression<nodep>:  // ==IEEE: select_expression
         //
         |       '(' select_expression ')'                       { $$ = $2; }
         |       select_expression yP_ANDAND select_expression
-                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression '&&'"); }
+                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression '&&'"); DELETE_ALL($1, $3); }
         |       select_expression yP_OROR   select_expression
-                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression '||'"); }
+                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression '||'"); DELETE_ALL($1, $3); }
         //                      // IEEE-2012: cross_identifier
         //                      // Part of covergroup_expression - generic identifier
         //                      // IEEE-2012: Need clarification as to precedence
@@ -6939,7 +6946,7 @@ select_expression<nodep>:  // ==IEEE: select_expression
         //UNSUP  cgexpr yMATCHES cgexpr    {..}
         //UNSUP                 // Below are all removed
         |       idAny '(' list_of_argumentsE ')'
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage select function call"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage select function call"); DELETE_ALL($3); }
         //UNSUP                 // Above are all removed, replace with:
         ;
 
@@ -6954,7 +6961,7 @@ bins_expression<nodep>:  // ==IEEE: bins_expression
 coverage_eventE<nodep>:  // IEEE: [ coverage_event ]
                 /* empty */                             { $$ = nullptr; }
         |       clocking_event
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage clocking event"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage clocking event"); DELETE_ALL($1); }
         |       yWITH__ETC yFUNCTION idAny/*"sample"*/ '(' tf_port_listE ')'
                         { if (*$3 != "sample") {
                             $<fl>3->v3error("Coverage sampling function must be named 'sample'");
@@ -6964,7 +6971,7 @@ coverage_eventE<nodep>:  // IEEE: [ coverage_event ]
                           }
                         }
         |       yP_ATAT '(' block_event_expression ')'
-                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage '@@' events"); }
+                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Ignoring unsupported: coverage '@@' events"); DELETE_ALL($3); }
         ;
 
 block_event_expression<nodep>:  // ==IEEE: block_event_expression

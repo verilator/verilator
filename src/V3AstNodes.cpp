@@ -1647,7 +1647,7 @@ void AstAlways::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, uint32_t assertType,
-                           uint32_t directiveType, AstNodeExpr*, AstNodeExpr*)
+                           uint32_t directiveType, AstNodeExpr* levelp, AstNodeExpr* itemsp)
     : ASTGEN_SUPER_AssertCtl(fl)
     , m_ctlType{VAssertCtlType::_TO_BE_EVALUATED}
     , m_assertTypes{VAssertType::INTERNAL}
@@ -1655,9 +1655,12 @@ AstAssertCtl::AstAssertCtl(FileLine* fl, VAssertCtlType ctlType, uint32_t assert
     this->controlTypep(new AstConst{fl, ctlType});
     this->assertTypesp(new AstConst{fl, assertType});
     this->directiveTypesp(new AstConst{fl, directiveType});
+    // Parser creates these but are unused, nuke them
+    if (levelp) VL_DO_DANGLING(levelp->deleteTree(), levelp);
+    if (itemsp) VL_DO_DANGLING(itemsp->deleteTree(), itemsp);
 }
 AstAssertCtl::AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr* assertTypesp,
-                           AstNodeExpr* directiveTypep, AstNodeExpr*, AstNodeExpr*)
+                           AstNodeExpr* directiveTypep, AstNodeExpr* levelp, AstNodeExpr* itemsp)
     : ASTGEN_SUPER_AssertCtl(fl)
     , m_ctlType{VAssertCtlType::_TO_BE_EVALUATED}
     , m_assertTypes{VAssertType::INTERNAL}
@@ -1665,6 +1668,9 @@ AstAssertCtl::AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr*
     this->controlTypep(controlTypep);
     this->assertTypesp(assertTypesp);
     this->directiveTypesp(directiveTypep);
+    // Parser creates these but are unused, nuke them
+    if (levelp) VL_DO_DANGLING(levelp->deleteTree(), levelp);
+    if (itemsp) VL_DO_DANGLING(itemsp->deleteTree(), itemsp);
 }
 void AstAssertCtl::dump(std::ostream& str) const {
     this->AstNode::dump(str);

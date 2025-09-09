@@ -1383,14 +1383,11 @@ class TristateVisitor final : public TristateBaseVisitor {
                 } else {
                     enRhsp = getEnExprBasedOnOriginalp(rhsp);
                 }
-                const V3Number oneIfEn
-                    = VN_AS(constp->user1p(), Const)
-                          ->num();  // visit(AstConst) already split into en/ones
-                const V3Number& oneIfEnOne = constp->num();
                 AstNodeExpr* newp
-                    = new AstLogAnd{fl, new AstEq{fl, new AstConst{fl, oneIfEn}, enRhsp},
+                    = new AstLogAnd{fl, new AstEq{fl, VN_AS(constp->user1p(), Const), enRhsp},
                                     // Keep the caseeq if there are X's present
-                                    new AstEqCase{fl, new AstConst{fl, oneIfEnOne}, rhsp}};
+                                    new AstEqCase{fl, new AstConst{fl, constp->num()}, rhsp}};
+                constp->user1p(nullptr);
                 if (neq) newp = new AstLogNot{fl, newp};
                 UINFO(9, "       newceq " << newp);
                 UINFOTREE(9, nodep, "", "caseeq-old");
@@ -1619,30 +1616,26 @@ class TristateVisitor final : public TristateBaseVisitor {
             // Therefore, create the enable, output and separate input pin,
             // then pinReconnectSimple all
             // Create the output enable pin, connect to new signal
-            AstNodeExpr* enrefp;
-            {
-                AstVar* const enVarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
-                                                  nodep->name() + "__en" + cvtToStr(m_unique++),
-                                                  VFlagBitPacked{}, enModVarp->width()};
-                if (inDeclProcessing) {  // __en(from-resolver-const) or __en(from-resolver-wire)
-                    enModVarp->varType2In();
-                } else {
-                    enModVarp->varType2Out();
-                }
-                UINFO(9, "       newenv " << enVarp);
-                AstPin* const enpinp
-                    = new AstPin{nodep->fileline(), nodep->pinNum(),
-                                 enModVarp->name(),  // should be {var}"__en"
-                                 new AstVarRef{nodep->fileline(), enVarp, VAccess::WRITE}};
-                enpinp->modVarp(enModVarp);
-                UINFO(9, "       newpin " << enpinp);
-                enpinp->user2(U2_BOTH);  // don't iterate the pin later
-                nodep->addNextHere(enpinp);
-                m_modp->addStmtsp(enVarp);
-                enrefp = new AstVarRef{nodep->fileline(), enVarp, VAccess::READ};
-                UINFO(9, "       newvrf " << enrefp);
-                UINFOTREE(9, enpinp, "", "pin-ena");
+            AstVar* const enVarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
+                                              nodep->name() + "__en" + cvtToStr(m_unique++),
+                                              VFlagBitPacked{}, enModVarp->width()};
+            if (inDeclProcessing) {  // __en(from-resolver-const) or __en(from-resolver-wire)
+                enModVarp->varType2In();
+            } else {
+                enModVarp->varType2Out();
             }
+            UINFO(9, "       newenv " << enVarp);
+            AstPin* const enpinp
+                = new AstPin{nodep->fileline(), nodep->pinNum(),
+                             enModVarp->name(),  // should be {var}"__en"
+                             new AstVarRef{nodep->fileline(), enVarp, VAccess::WRITE}};
+            enpinp->modVarp(enModVarp);
+            UINFO(9, "       newpin " << enpinp);
+            enpinp->user2(U2_BOTH);  // don't iterate the pin later
+            nodep->addNextHere(enpinp);
+            m_modp->addStmtsp(enVarp);
+            UINFOTREE(9, enpinp, "", "pin-ena");
+
             // Create new output pin
             const AstAssignW* outAssignp = nullptr;  // If reconnected, the related assignment
             AstPin* outpinp = nullptr;
@@ -1712,7 +1705,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (exprrefp) {
                 UINFO(9, "outref " << exprrefp);
                 // Mark as now tristated; iteration will pick it up from there
-                exprrefp->user1p(enrefp);
+                exprrefp->user1p(new AstVarRef{nodep->fileline(), enVarp, VAccess::READ});
                 if (!outAssignp) {
                     mapInsertLhsVarRef(exprrefp);  // insertTristates will convert
                     //                     // to a varref to the __out# variable
@@ -1877,9 +1870,20 @@ class TristateVisitor final : public TristateBaseVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit TristateVisitor(AstNode* nodep) {
+    explicit TristateVisitor(AstNetlist* netlistp) {
         m_tgraph.clear();
-        iterate(nodep);
+        iterate(netlistp);
+#ifdef VL_LEAK_CHECKS
+        // It's a bit chaotic up there
+        std::vector<AstNode*> unusedRootps;
+        netlistp->foreach([&](AstNode* nodep) {
+            AstNode* const enp = nodep->user1p();
+            if (!enp) return;
+            if (enp->backp()) return;
+            unusedRootps.emplace_back(enp);
+        });
+        for (AstNode* const nodep : unusedRootps) VL_DO_DANGLING(nodep->deleteTree(), nodep);
+#endif
     }
     ~TristateVisitor() override {
         V3Stats::addStat("Tristate, Tristate resolved nets", m_statTriSigs);

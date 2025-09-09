@@ -218,7 +218,7 @@ class CMakeEmitter final {
                 << v3Global.rootp()->topModulep()->name() << " DIRECTORY "
                 << v3Global.opt.makeDir() << " SOURCES ";
             for (const auto& itr : *planp) {
-                *of << " " << v3Global.opt.makeDir() + "/" + itr.second->hierWrapperFilename(true);
+                *of << " " << v3Global.opt.makeDir() + "/" + itr.second.hierWrapperFilename(true);
             }
             *of << " " << cmake_list(v3Global.opt.vFiles());
             *of << " VERILATOR_ARGS ";

@@ -526,6 +526,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
         nestedIndexp = varp;
         fromDtp = fromDtp->subDTypep();
     }
+    VL_DO_DANGLING(subfromp->deleteTree(), subfromp);
     // The parser validates we don't have "foreach (array[,,,])"
     AstNode* const bodyp = nodep->stmtsp();
     if (!newp) {
