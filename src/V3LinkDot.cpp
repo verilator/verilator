@@ -1686,7 +1686,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             if (nodep->packagep() != v3Global.rootp()->stdPackagep()) {
                 if (m_curSymp == m_statep->dunitEntp()) {
                     nodep->v3warn(IMPORTSTAR,
-                                  "Import::* in $unit scope may pollute global namespace");
+                                  "'import::*' in $unit scope may pollute global namespace");
                 }
             }
         } else {
