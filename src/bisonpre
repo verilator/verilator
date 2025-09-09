@@ -106,11 +106,6 @@ def clean_output(filename, outname, is_output, is_c):
     with open(filename, "r", encoding="utf-8") as fh:
         lines = fh.readlines()
 
-    basename = re.sub(r'.*/', '', tmp_prefix() + ".")
-    basename = re.escape(basename)
-    newbase = re.sub(r'.*/', '', Args.input)
-    newbase = re.sub(r'\.y', '.', newbase)
-
     if is_output:
         state_line = {}
         lineno = 0
@@ -151,9 +146,15 @@ def clean_output(filename, outname, is_output, is_c):
         out = []
 
     with open(outname, "w", encoding="utf-8") as fh:
+        tmpy = re.escape(tmp_prefix() + ".y")
+        newy = Args.input
+        tmpc = re.escape(tmp_prefix() + ".c")
+        newc = output_prefix() + ".c"
+
         for line in lines:
             # Fix filename refs
-            line = re.sub(basename, newbase, line)
+            line = re.sub(tmpy, newy, line)
+            line = re.sub(tmpc, newc, line)
             # Fix bison 2.3 and GCC 4.2.1
             line = re.sub(r'\(YY_\("', '(YY_((char*)"', line)
             # Fix bison 2.3 glr-parser warning about yyerrorloc.YYTYPE::yydummy uninit
