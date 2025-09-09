@@ -439,16 +439,16 @@ class DynScopeVisitor final : public VNVisitor {
                 if (m_inFunc) {
                     nodep->v3error(
                         "Writing to an "
-                        << (nodep->varp()->isInout() ? "inout" : "output")
+                        << nodep->varp()->verilogKwd()
                         << " variable of a function after a timing control is not allowed");
                 } else {
-                    nodep->v3warn(
-                        E_UNSUPPORTED,
-                        "Unsupported: Writing to a captured "
-                            << (nodep->varp()->isInout() ? "inout" : "output") << " variable in a "
-                            << (VN_IS(nodep->backp(), AssignDly) ? "non-blocking assignment"
-                                                                 : "fork")
-                            << " after a timing control");
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Writing to a captured "
+                                                     << nodep->varp()->verilogKwd()
+                                                     << " variable in a "
+                                                     << (VN_IS(nodep->backp(), AssignDly)
+                                                             ? "non-blocking assignment"
+                                                             : "fork")
+                                                     << " after a timing control");
                 }
             }
             if (!framep->instance().initialized()) framep->createInstancePrototype();
