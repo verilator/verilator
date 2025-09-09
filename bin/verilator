@@ -203,10 +203,23 @@ sub aslr_off {
 
 sub ulimit_stack_unlimited {
     return "" if !$opt_unlimited_stack;
-    system("ulimit -s unlimited 2>/dev/null");
+    my $limit = "unlimited";
+    # AddressSanitizer doesn't work with 'ulimit -s unlimted'
+    if (`${\(verilator_bin())} --get-supported ASAN` eq "1\n") {
+        # Use host 'physical memory / #cores / 8' instead
+        open(my $fh, "<", "/proc/meminfo") || die "Can't read host memory for asan";
+        while (<$fh>) {
+            if (m/MemTotal:\s+(\d+)\s+kB/) {
+                $limit = int(int($1)/`nproc`/8);
+                last;
+            }
+        }
+        close($fh);
+    }
+    system("ulimit -s $limit 2>/dev/null");
     my $status = $?;
     if ($status == 0) {
-        return "ulimit -s unlimited 2>/dev/null; exec ";
+        return "ulimit -s $limit 2>/dev/null; exec ";
     } else {
         return "";
     }

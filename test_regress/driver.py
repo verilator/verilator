@@ -1807,6 +1807,8 @@ class VlTest:
 
         if not fails and status:
             firstline = self._error_log_summary(logfile)
+            # Strip ANSI escape sequences
+            firstline = re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', firstline)
             self.error("Exec of " + self._error_cmd_simplify(cmd) + " failed: " + firstline)
         if fails and status:
             print("(Exec expected to fail, and did.)")

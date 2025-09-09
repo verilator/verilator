@@ -817,6 +817,8 @@ string V3Options::getSupported(const string& var) {
         // cppcheck-suppress knownConditionTrueFalse
     } else if (var == "SYSTEMC" && systemCFound()) {
         return "1";
+    } else if (var == "ASAN" && builtWithAsan()) {
+        return "1";
     } else {
         return "";
     }
@@ -837,6 +839,14 @@ bool V3Options::systemCFound() {
 
 bool V3Options::coroutineSupport() {
 #ifdef HAVE_COROUTINES
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool V3Options::builtWithAsan() {
+#ifdef HAVE_ASAN
     return true;
 #else
     return false;

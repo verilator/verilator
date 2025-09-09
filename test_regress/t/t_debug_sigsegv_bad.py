@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
+os.environ["ASAN_OPTIONS"] = "handle_segv=0"
+
 test.lint(v_flags=["--debug-sigsegv"], fails=True, sanitize=0)
 
 test.file_grep(test.compile_log_filename,

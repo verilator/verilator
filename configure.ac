@@ -57,6 +57,22 @@ AC_ARG_ENABLE([partial-static],
                CFG_ENABLE_PARTIAL_STATIC=yes)
 AC_MSG_RESULT($CFG_ENABLE_PARTIAL_STATIC)
 
+# Flag to enable compiling with AddressSanitizer
+AC_MSG_CHECKING(whether to use AddressSanitizer)
+AC_ARG_ENABLE([asan],
+              [AS_HELP_STRING([--enable-asan],
+                              [Enable compiling Verilator with ASAN
+                               AddressSanitizer for memory error detection.
+                               This disables tcmalloc.  Does not affect
+                               Verilated models using ASAN.])],
+              [case "${enableval}" in
+                yes) CFG_WITH_ASAN=yes ;;
+                no)  CFG_WITH_ASAN=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-asan]) ;;
+               esac],
+               CFG_WITH_ASAN=no)
+AC_MSG_RESULT($CFG_WITH_ASAN)
+
 # Flag to enable linking Verilator with tcmalloc if available
 AC_MSG_CHECKING(whether to use tcmalloc)
 AC_ARG_ENABLE([tcmalloc],
@@ -69,8 +85,12 @@ AC_ARG_ENABLE([tcmalloc],
                 *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-tcmalloc]) ;;
                esac],
               [CFG_WITH_TCMALLOC=check;])
-AC_SUBST(CFG_WITH_TCMALLOC)
-AC_MSG_RESULT($CFG_WITH_TCMALLOC)
+if test "$CFG_WITH_ASAN" = "yes"; then
+  CFG_WITH_TCMALLOC=no
+  AC_MSG_RESULT("disabled by --enable-asan")
+else
+  AC_MSG_RESULT($CFG_WITH_TCMALLOC)
+fi
 
 # Flag to enable coverage build
 AC_MSG_CHECKING(whether to build for coverage collection)
@@ -433,6 +453,14 @@ AC_SUBST(CFG_CXXFLAGS_COROUTINES)
 AC_SUBST(HAVE_COROUTINES)
 
 # Flags for compiling Verilator internals including parser always
+if test "$CFG_WITH_ASAN" = "yes"; then
+  _MY_CXX_CHECK_IFELSE(-fsanitize=address -DVL_ASAN,
+    [CFG_CXXFLAGS_SRC="$CFG_CXXFLAGS_SRC -fsanitize=address -DVL_ASAN"
+     CFG_LDFLAGS_SRC="$CFG_LDFLAGS_SRC -fsanitize=address"
+     AC_DEFINE([HAVE_ASAN],[1],[Defined if built with AddresSanitizer])]
+  )
+fi
+AC_SUBST(HAVE_ASAN)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Qunused-arguments)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-shadow)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
