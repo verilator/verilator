@@ -41,7 +41,11 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
 
   if [ "$COVERAGE" != 1 ]; then
     autoconf
-    ./configure --enable-longtests --enable-ccwarn --prefix="$INSTALL_DIR"
+    CONFIGURE_ARGS="--enable-longtests --enable-ccwarn"
+    if [ "$CI_ASAN" = 1 ]; then
+      CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-asan"
+    fi
+    ./configure $CONFIGURE_ARGS --prefix="$INSTALL_DIR"
     ccache -z
     "$MAKE" -j "$NPROC" -k
     # 22.04: ccache -s -v

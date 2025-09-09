@@ -33,11 +33,12 @@ jobs:
     with:
       os: ${{ matrix.os }}
       cc: ${{ matrix.cc }}
+      asan: ${{ matrix.asan }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {os: ubuntu-24.04, cc: gcc}
+          - {os: ubuntu-24.04, cc: gcc, asan: 0}
 
   build-2404-clang:
     name: Build-Ubuntu
@@ -45,11 +46,12 @@ jobs:
     with:
       os: ${{ matrix.os }}
       cc: ${{ matrix.cc }}
+      asan: ${{ matrix.asan }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {os: ubuntu-24.04, cc: clang}
+          - {os: ubuntu-24.04, cc: clang, asan: 1}
 
   build-2204-gcc:
     name: Build-Ubuntu
@@ -57,11 +59,12 @@ jobs:
     with:
       os: ${{ matrix.os }}
       cc: ${{ matrix.cc }}
+      asan: ${{ matrix.asan }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {os: ubuntu-22.04, cc: gcc}
+          - {os: ubuntu-22.04, cc: gcc, asan: 0}
 
   build-2204-clang:
     name: Build-Ubuntu
@@ -69,11 +72,12 @@ jobs:
     with:
       os: ${{ matrix.os }}
       cc: ${{ matrix.cc }}
+      asan: ${{ matrix.asan }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {os: ubuntu-22.04, cc: clang}
+          - {os: ubuntu-22.04, cc: clang, asan: 0}
 
   build-osx-gcc:
     name: Build-OSX
@@ -82,11 +86,12 @@ jobs:
       os: ${{ matrix.os }}
       os-name: osx
       cc: ${{ matrix.cc }}
+      asan: ${{ matrix.asan }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {os: macos-15, cc: gcc}
+          - {os: macos-15, cc: gcc, asan: 0}
 
   build-osx-clang:
     name: Build-OSX
@@ -95,11 +100,12 @@ jobs:
       os: ${{ matrix.os }}
       os-name: osx
       cc: ${{ matrix.cc }}
+      asan: ${{ matrix.asan }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {os: macos-15, cc: clang}
+          - {os: macos-15, cc: clang, asan: 0}
 
   build-windows:
     name: Build-Windows

@@ -17,6 +17,9 @@ on:
         required: false
         type: string
         default: linux
+      asan:
+        required: true
+        type: number
 
 env:
   CI_OS_NAME: ${{ inputs.os-name }}
@@ -38,6 +41,7 @@ jobs:
     runs-on: ${{ inputs.os }}
     name: Sub-build | ${{ inputs.os }} | ${{ inputs.cc }}
     env:
+      CI_ASAN: ${{ inputs.asan }}
       CI_BUILD_STAGE_NAME: build
       CI_RUNS_ON: ${{ inputs.os }}
       CC: ${{ inputs.cc }}
