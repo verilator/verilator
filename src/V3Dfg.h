@@ -315,6 +315,9 @@ public:
         return false;
     }
 
+    // Is this vertex cheaper to re-compute than to load out of memoy
+    inline bool isCheaperThanLoad() const;
+
     // Methods that allow DfgVertex to participate in error reporting/messaging
     void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
         m_filelinep->v3errorEnd(str);
@@ -793,6 +796,33 @@ void DfgEdge::relinkSrcp(DfgVertex* srcp) {
     unlinkSrcp();
     m_srcp = srcp;
     if (m_srcp) m_srcp->m_sinks.linkFront(this);
+}
+
+// }}}
+
+// DfgVertex {{{
+
+bool DfgVertex::isCheaperThanLoad() const {
+    // Array sels are just address computation
+    if (is<DfgArraySel>()) return true;
+    // Small constant select from variable
+    if (const DfgSel* const selp = cast<DfgSel>()) {
+        if (!selp->fromp()->is<DfgVarPacked>()) return false;
+        if (selp->fromp()->width() <= VL_QUADSIZE) return true;
+        const uint32_t lsb = selp->lsb();
+        const uint32_t msb = lsb + selp->width() - 1;
+        return VL_BITWORD_E(msb) == VL_BITWORD_E(lsb);
+    }
+    // Zero extend of a cheap vertex - Extend(_) was converted to Concat(0, _)
+    if (const DfgConcat* const catp = cast<DfgConcat>()) {
+        if (catp->width() > VL_QUADSIZE) return false;
+        const DfgConst* const lCatp = catp->lhsp()->cast<DfgConst>();
+        if (!lCatp) return false;
+        if (!lCatp->isZero()) return false;
+        return catp->rhsp()->isCheaperThanLoad();
+    }
+    // Otherwise probably not
+    return false;
 }
 
 // }}}

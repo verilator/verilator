@@ -139,8 +139,8 @@ class DfgToAstVisitor final : DfgVisitor {
 
     AstNodeExpr* convertDfgVertexToAstNodeExpr(DfgVertex* vtxp) {
         UASSERT_OBJ(!m_resultp, vtxp, "Result already computed");
-        UASSERT_OBJ(!vtxp->hasMultipleSinks() || vtxp->is<DfgVertexVar>()
-                        || vtxp->is<DfgArraySel>() || vtxp->is<DfgConst>(),
+        UASSERT_OBJ(vtxp->is<DfgVertexVar>() || vtxp->is<DfgConst>()  //
+                        || !vtxp->hasMultipleSinks() || vtxp->isCheaperThanLoad(),  //
                     vtxp, "Intermediate DFG value with multiple uses");
         iterate(vtxp);
         UASSERT_OBJ(m_resultp, vtxp, "Missing result");

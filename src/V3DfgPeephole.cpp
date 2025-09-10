@@ -1714,5 +1714,6 @@ public:
 };
 
 void V3DfgPasses::peephole(DfgGraph& dfg, V3DfgPeepholeContext& ctx) {
+    if (!v3Global.opt.fDfgPeephole()) return;
     V3DfgPeephole::apply(dfg, ctx);
 }

@@ -117,41 +117,36 @@ public:
     FileLine* driverFileLine() const { return m_driverFileLine; }
     void driverFileLine(FileLine* flp) { m_driverFileLine = flp; }
 
-    bool isDrivenFullyByDfg() const {
-        return srcp() && !srcp()->is<DfgVertexSplice>() && !varp()->isForced()
-               && !varp()->isSigUserRWPublic();
-    }
-
-    // Variable referenced via an AstVarXRef (hierarchical reference)
-    bool hasXRefs() const { return nodep()->user1() & 0x03; }
-    static void setHasRdXRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x01); }
-    static void setHasWrXRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x02); }
-
-    // Variable referenced from Ast code in the same module/netlist
-    bool hasModRdRefs() const { return nodep()->user1() & 0x04; }
-    bool hasModWrRefs() const { return nodep()->user1() & 0x08; }
-    bool hasModRefs() const { return nodep()->user1() & 0x0c; }
-    static void setHasModRdRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x04); }
-    static void setHasModWrRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x08); }
-    void setHasModRdRefs() const { setHasModRdRefs(nodep()); }
-    void setHasModWrRefs() const { setHasModWrRefs(nodep()); }
-
     // Variable referenced from other DFG in the same module/netlist
     bool hasDfgRefs() const { return nodep()->user1() >> 5; }  // I.e.: (nodep()->user1() >> 4) > 1
 
+    // Variable referenced from Ast code in the same module/netlist
+    static bool hasModRdRefs(const AstNode* nodep) { return nodep->user1() & 0x04; }
+    static bool hasModWrRefs(const AstNode* nodep) { return nodep->user1() & 0x08; }
+    static void setHasModRdRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x04); }
+    static void setHasModWrRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x08); }
+    bool hasModRdRefs() const { return hasModRdRefs(nodep()); }
+    bool hasModWrRefs() const { return hasModWrRefs(nodep()); }
+    bool hasModRefs() const { return hasModRdRefs() || hasModWrRefs(); }
+    void setHasModRdRefs() const { setHasModRdRefs(nodep()); }
+    void setHasModWrRefs() const { setHasModWrRefs(nodep()); }
+
     // Variable referenced outside the containing module/netlist.
-    bool hasExtRefs() const {
-        // In scoped mode, we can ignrore some of these as they were made explicit by then
-        if (!m_varScopep) {
-            if (m_varp->isIO()) return true;  // Ports
-            if (m_varp->isTrace()) return true;  // Traced
-            if (m_varp->isForced()) return true;  // Forced
-            if (hasXRefs()) return true;  // Target of a hierarchical reference
-        }
-        if (m_varp->isPrimaryIO()) return true;  // Top level ports
-        if (m_varp->isSigPublic()) return true;  // Public
-        return false;
+    static bool hasExtRdRefs(const AstNode* nodep) { return nodep->user1() & 0x01; }
+    static bool hasExtWrRefs(const AstNode* nodep) { return nodep->user1() & 0x02; }
+    static void setHasExtRdRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x01); }
+    static void setHasExtWrRefs(AstNode* nodep) { nodep->user1(nodep->user1() | 0x02); }
+    bool hasExtRdRefs() const { return hasExtRdRefs(nodep()); }
+    bool hasExtWrRefs() const { return hasExtWrRefs(nodep()); }
+    bool hasExtRefs() const { return hasExtRdRefs() || hasExtWrRefs(); }
+
+    // The value of this vertex might differ from what is defined by its drivers
+    // 'srcp' and 'defaultp'. That is, it might be assigned, possibly partially,
+    // or abruptly outside the graph, hence it is not equivalent to its 'srcp'.
+    static bool isVolatile(const AstNode* nodep) {
+        return hasModWrRefs(nodep) || hasExtWrRefs(nodep);
     }
+    bool isVolatile() const { return isVolatile(nodep()); }
 };
 
 class DfgVarArray final : public DfgVertexVar {
@@ -465,8 +460,7 @@ class DfgLogic final : public DfgVertexVariadic {
     AstNode* const m_nodep;  // The Ast logic represented by this vertex
     AstScope* const m_scopep;  // The AstScope m_nodep is under, iff scoped
     const std::unique_ptr<CfgGraph> m_cfgp;
-    // Vertices this logic was synthesized into. Excluding variables
-    std::vector<DfgVertex*> m_synth;
+    std::vector<DfgVertex*> m_synth;  // Vertices this logic was synthesized into
     bool m_selectedForSynthesis = false;  // Logic selected for synthesis
     bool m_nonSynthesizable = false;  // Logic is not synthesizeable (by DfgSynthesis)
     bool m_reverted = false;  // Logic was synthesized (in part if non synthesizable) then reverted

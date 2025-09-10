@@ -156,27 +156,6 @@ private:
         addStat("result equations", m_resultEquations);
     }
 };
-class V3DfgEliminateVarsContext final : public V3DfgSubContext {
-    // Only V3DfgContext can create an instance
-    friend class V3DfgContext;
-
-public:
-    // STATE
-    std::vector<AstNode*> m_deleteps;  // AstVar/AstVarScope that can be deleted at the end
-    VDouble0 m_varsReplaced;  // Number of variables replaced
-    VDouble0 m_varsRemoved;  // Number of variables removed
-
-private:
-    V3DfgEliminateVarsContext(V3DfgContext& ctx, const std::string& label)
-        : V3DfgSubContext{ctx, label, "EliminateVars"} {}
-    ~V3DfgEliminateVarsContext() {
-        for (AstNode* const nodep : m_deleteps) {
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        }
-        addStat("variables replaced", m_varsReplaced);
-        addStat("variables removed", m_varsRemoved);
-    }
-};
 class V3DfgPeepholeContext final : public V3DfgSubContext {
     // Only V3DfgContext can create an instance
     friend class V3DfgContext;
@@ -198,12 +177,28 @@ class V3DfgRegularizeContext final : public V3DfgSubContext {
 
 public:
     // STATE
+    VDouble0 m_temporariesOmitted;  // Number of temporaries omitted as cheaper to re-compute
     VDouble0 m_temporariesIntroduced;  // Number of temporaries introduced
+
+    std::vector<AstNode*> m_deleteps;  // AstVar/AstVarScope that can be deleted at the end
+    VDouble0 m_usedVarsReplaced;  // Number of used variables replaced with equivalent ones
+    VDouble0 m_usedVarsInlined;  // Number of used variables inlined
+    VDouble0 m_unusedRemoved;  // Number of unused vertices remoevd
 
 private:
     V3DfgRegularizeContext(V3DfgContext& ctx, const std::string& label)
         : V3DfgSubContext{ctx, label, "Regularize"} {}
-    ~V3DfgRegularizeContext() { addStat("temporaries introduced", m_temporariesIntroduced); }
+    ~V3DfgRegularizeContext() {
+        for (AstNode* const nodep : m_deleteps) {
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        }
+        addStat("used variables replaced", m_usedVarsReplaced);
+        addStat("used variables inlined", m_usedVarsInlined);
+        addStat("unused vertices removed", m_unusedRemoved);
+
+        addStat("temporaries omitted", m_temporariesOmitted);
+        addStat("temporaries introduced", m_temporariesIntroduced);
+    }
 };
 class V3DfgSynthesisContext final : public V3DfgSubContext {
     // Only V3DfgContext can create an instance
@@ -352,7 +347,6 @@ public:
     V3DfgCseContext m_cseContext0{*this, m_label + " 1st"};
     V3DfgCseContext m_cseContext1{*this, m_label + " 2nd"};
     V3DfgDfgToAstContext m_dfg2AstContext{*this, m_label};
-    V3DfgEliminateVarsContext m_eliminateVarsContext{*this, m_label};
     V3DfgPeepholeContext m_peepholeContext{*this, m_label};
     V3DfgRegularizeContext m_regularizeContext{*this, m_label};
     V3DfgSynthesisContext m_synthContext{*this, m_label};

@@ -253,7 +253,58 @@ class DataflowOptimize final {
     // STATE
     V3DfgContext m_ctx;  // The context holding values that need to persist across multiple graphs
 
+    static void markExternallyReferencedVariables(AstNetlist* netlistp, bool scoped) {
+        netlistp->foreach([scoped](AstNode* nodep) {
+            // Check variabel flags
+            if (scoped) {
+                if (AstVarScope* const vscp = VN_CAST(nodep, VarScope)) {
+                    const AstVar* const varp = vscp->varp();
+                    // Force and trace have already been processed
+                    const bool hasExtRd = varp->isPrimaryIO() || varp->isSigUserRdPublic();
+                    const bool hasExtWr = varp->isPrimaryIO() || varp->isSigUserRWPublic();
+                    if (hasExtRd) DfgVertexVar::setHasExtRdRefs(vscp);
+                    if (hasExtWr) DfgVertexVar::setHasExtWrRefs(vscp);
+                    return;
+                }
+            } else {
+                if (AstVar* const varp = VN_CAST(nodep, Var)) {
+                    const bool hasExtRd = varp->isPrimaryIO() || varp->isSigUserRdPublic()  //
+                                          || varp->isForced() || varp->isTrace();
+                    const bool hasExtWr = varp->isPrimaryIO() || varp->isSigUserRWPublic()  //
+                                          || varp->isForced();
+                    if (hasExtRd) DfgVertexVar::setHasExtRdRefs(varp);
+                    if (hasExtWr) DfgVertexVar::setHasExtWrRefs(varp);
+                    return;
+                }
+            }
+            // Check hierarchical references
+            if (const AstVarXRef* const xrefp = VN_CAST(nodep, VarXRef)) {
+                AstVar* const tgtp = xrefp->varp();
+                if (!tgtp) return;
+                if (xrefp->access().isReadOrRW()) DfgVertexVar::setHasExtRdRefs(tgtp);
+                if (xrefp->access().isWriteOrRW()) DfgVertexVar::setHasExtWrRefs(tgtp);
+                return;
+            }
+            // Check cell ports
+            if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
+                for (const AstPin *pinp = cellp->pinsp(), *nextp; pinp; pinp = nextp) {
+                    nextp = VN_AS(pinp->nextp(), Pin);
+                    AstVar* const tgtp = pinp->modVarp();
+                    if (!tgtp) return;
+                    const VDirection dir = tgtp->direction();
+                    // hasExtRd/hasExtWr from perspective of Pin
+                    const bool hasExtRd = dir == VDirection::OUTPUT || dir.isInoutOrRef();
+                    const bool hasExtWr = dir == VDirection::INPUT || dir.isInoutOrRef();
+                    if (hasExtRd) DfgVertexVar::setHasExtRdRefs(tgtp);
+                    if (hasExtWr) DfgVertexVar::setHasExtWrRefs(tgtp);
+                }
+                return;
+            }
+        });
+    }
+
     void optimize(DfgGraph& dfg) {
+        // Dump the initial graph for debugging
         if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "dfg-in");
 
         // Synthesize DfgLogic vertices
@@ -295,27 +346,22 @@ class DataflowOptimize final {
         // Quick sanity check
         UASSERT(dfg.size() == 0, "DfgGraph should have become empty");
 
-        // For each acyclic component
+        // Optimize each acyclic component
         for (const std::unique_ptr<DfgGraph>& component : acyclicComponents) {
-            // Optimize the component
             V3DfgPasses::optimize(*component, m_ctx);
         }
-        // Merge back under the main DFG (we will convert everything back in one go)
+
+        // Merge everything back under the main DFG
         dfg.mergeGraphs(std::move(acyclicComponents));
-
-        // Eliminate redundant variables. Run this on the whole acyclic DFG. It needs to traverse
-        // the module/netlist to perform variable substitutions. Doing this by component would do
-        // redundant traversals and can be extremely slow when we have many components.
-        V3DfgPasses::eliminateVars(dfg, m_ctx.m_eliminateVarsContext);
-
-        // For each cyclic component
-        for (const std::unique_ptr<DfgGraph>& component : cyclicComponents) {
-            // Converting back to Ast assumes the 'regularize' pass was run, so we must run it
-            V3DfgPasses::regularize(*component, m_ctx.m_regularizeContext);
-        }
-        // Merge back under the main DFG (we will convert everything back in one go)
         dfg.mergeGraphs(std::move(cyclicComponents));
+        if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "optimized");
 
+        // Regularize the graph after merging it all back together so all
+        // references are known and we only need to iterate the Ast once
+        // to replace redundant variables.
+        V3DfgPasses::regularize(dfg, m_ctx.m_regularizeContext);
+
+        // Dump the final graph for debugging
         if (dumpDfgLevel() >= 8) dfg.dumpDotFilePrefixed(m_ctx.prefix() + "dfg-out");
     }
 
@@ -330,22 +376,18 @@ class DataflowOptimize final {
             });
         }
 
-        if (!netlistp->topScopep()) {
+        // Running after V3Scope
+        const bool scoped = netlistp->topScopep();
+
+        // Mark variables with external references
+        markExternallyReferencedVariables(netlistp, scoped);
+
+        if (!scoped) {
             // Pre V3Scope application. Run on each module separately.
-
-            // Mark cross-referenced variables
-            netlistp->foreach([](const AstVarXRef* xrefp) {
-                AstVar* const tgtp = xrefp->varp();
-                if (xrefp->access().isReadOrRW()) DfgVertexVar::setHasRdXRefs(tgtp);
-                if (xrefp->access().isWriteOrRW()) DfgVertexVar::setHasWrXRefs(tgtp);
-            });
-
-            // Run the optimization
             for (AstNode* nodep = netlistp->modulesp(); nodep; nodep = nodep->nextp()) {
                 // Only optimize proper modules
                 AstModule* const modp = VN_CAST(nodep, Module);
                 if (!modp) continue;
-
                 // Pre V3Scope application. Run on module.
                 UINFO(4, "Applying DFG optimization to module '" << modp->name() << "'");
                 ++m_ctx.m_modules;
