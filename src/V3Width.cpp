@@ -78,6 +78,7 @@
 #include "V3Randomize.h"
 #include "V3String.h"
 #include "V3Task.h"
+#include "V3UniqueNames.h"
 #include "V3WidthCommit.h"
 
 // More code; this file was getting too large; see actions there
@@ -208,15 +209,17 @@ class WidthVisitor final : public VNVisitor {
     using DTypeMap = std::map<const std::string, AstPatMember*>;
 
     // STATE
+    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     V3TaskConnectState m_taskConnectState;  // State to cache V3Task::taskConnects
     WidthVP* m_vup = nullptr;  // Current node state
     bool m_underFork = false;  // Visiting under a fork
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
-    const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstNodeModule* m_modep = nullptr;  // Current module
     const AstConstraint* m_constraintp = nullptr;  // Current constraint
-    const AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
+    AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
     const AstWith* m_withp = nullptr;  // Current 'with' statement
     const AstFunc* m_funcp = nullptr;  // Current function
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
@@ -3058,6 +3061,30 @@ class WidthVisitor final : public VNVisitor {
                              EXTEND_EXP);
         }
 
+        if (!m_constraintp && !m_withp && !nodep->exprp()->isPure()) {
+            AstVar* const varp
+                = new AstVar{nodep->fileline(), VVarType::VAR,
+                             "__VInsideTmp_" + m_tempNames.get(nodep), nodep->exprp()->dtypep()};
+            AstAssign* const assignp = new AstAssign{
+                nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE},
+                nodep->exprp()->unlinkFrBack()};
+            nodep->exprp(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
+            if (m_ftaskp) {
+                varp->funcLocal(true);
+                varp->lifetime(VLifetime::AUTOMATIC);
+                m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+            } else {
+                m_modep->stmtsp()->addHereThisAsNext(varp);
+            }
+            AstNode* nodep2 = nodep;
+            while (!VN_IS(nodep2, NodeStmt)) nodep2 = nodep2->backp();
+            UASSERT_OBJ(nodep2, nodep, "Not isnide a statement");
+            nodep2->addHereThisAsNext(assignp);
+            iterate(varp);
+            iterateChildren(varp);
+            iterate(assignp);
+            iterateChildren(assignp);
+        }
         UINFOTREE(9, nodep, "", "inside-in");
         // Now rip out the inside and replace with simple math
         AstNodeExpr* newp = nullptr;
@@ -3184,6 +3211,7 @@ class WidthVisitor final : public VNVisitor {
         // UINFOTREE(9, nodep, "", "class-out");
     }
     void visit(AstClass* nodep) override {
+        m_tempNames.reset();
         if (nodep->didWidthAndSet()) return;
 
         // If the class is std::process
@@ -6875,6 +6903,14 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3fatalSrc(
                 "Visit function missing? Widthed function missing for math node: " << nodep);
         }
+        userIterateChildren(nodep, nullptr);
+    }
+    void visit(AstNodeModule* nodep) override {
+        UASSERT_OBJ(!m_vup, nodep,
+                    "Visit function missing? Widthed expectation for this node: " << nodep);
+        m_tempNames.reset();
+        VL_RESTORER(m_modep);
+        m_modep = nodep;
         userIterateChildren(nodep, nullptr);
     }
     void visit(AstNode* nodep) override {
