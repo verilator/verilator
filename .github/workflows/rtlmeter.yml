@@ -302,15 +302,14 @@ jobs:
           echo    " from ${{ steps.scheduled-info.outputs.date }}" >> report.txt
           for tag in gcc clang; do
             echo "" >> report.txt
-            echo "---" >> report.txt
             if [[ $tag == "gcc" ]]; then
               echo "<details open>" >> report.txt
             else
               echo "<details>" >> report.txt
             fi
-            echo -n "<summary><h3>" >> report.txt
+            echo -n "<summary><strong><em>" >> report.txt
             jq -rj ".[0].runName" all-results/all-results-${tag}.json >> report.txt
-            echo "</h3></summary>" >> report.txt
+            echo "</em></strong></summary>" >> report.txt
             awk -v RS= -v tag=${tag} '{print > sprintf("verilate-%s-%02d.txt",tag,NR)}' verilate-${tag}.txt
             awk -v RS= -v tag=${tag} '{print > sprintf( "execute-%s-%02d.txt",tag,NR)}'  execute-${tag}.txt
             awk -v RS= -v tag=${tag} '{print > sprintf("cppbuild-%s-%02d.txt",tag,NR)}' cppbuild-${tag}.txt
