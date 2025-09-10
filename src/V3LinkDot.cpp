@@ -2412,6 +2412,7 @@ class LinkDotIfaceVisitor final : public VNVisitor {
             nodep->v3error("Modport item not found: " << nodep->prettyNameQ());
         } else if (AstClocking* const clockingp = VN_CAST(symp->nodep(), Clocking)) {
             nodep->clockingp(clockingp);
+            m_statep->insertSym(m_curSymp, nodep->name(), nodep, nullptr /*package*/);
         } else {
             nodep->v3error("Modport item is not a clocking block: " << nodep->prettyNameQ());
         }
