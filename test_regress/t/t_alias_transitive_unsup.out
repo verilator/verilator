@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_alias_transitive_unsup.v:40:10: Unsupported: Aliased expression referencing port
+                                                      : ... note: In instance 't.transfer_i'
+   40 |    alias a = b = c;
+      |          ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

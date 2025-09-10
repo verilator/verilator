@@ -1,0 +1,10 @@
+%Warning-MULTIDRIVEN: t/t_alias_sub_select.v:27:17: Bit [1] of signal 't.s.b' have multiple combinational drivers. This can cause performance degradation.
+                      t/t_alias_sub_select.v:27:17: ... Location of offending driver
+   27 |   wire [1:0] a, b;
+      |                 ^
+                      t/t_alias_sub_select.v:15:18: ... Location of offending driver
+   15 |    assign s.b[1] = 1;
+      |                  ^
+                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
+                      ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
+%Error: Exiting due to
