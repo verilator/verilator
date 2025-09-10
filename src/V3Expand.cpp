@@ -95,8 +95,8 @@ class ExpandVisitor final : public VNVisitor {
 
     bool doExpandWide(AstNode* nodep) {
         if (isImpure(nodep)) return false;
-        ++m_statWides;
         if (nodep->widthWords() <= v3Global.opt.expandLimit()) {
+            ++m_statWides;
             m_statWideWords += nodep->widthWords();
             return true;
         } else {
@@ -393,10 +393,11 @@ class ExpandVisitor final : public VNVisitor {
         VL_RESTORER(m_nTmps);
         m_funcp = nodep;
         m_nTmps = 0;
+        const VDouble0 statWidesBefore = m_statWides;
         iterateChildren(nodep);
 
-        // Constant fold here, as Ast size can likely be reduced
-        if (v3Global.opt.fConstEager()) {
+        // Constant fold here if anything was expanded, as Ast size can likely be reduced
+        if (v3Global.opt.fConstEager() && m_statWides != statWidesBefore) {
             AstNode* const editedp = V3Const::constifyEditCpp(nodep);
             UASSERT_OBJ(editedp == nodep, editedp, "Should not have replaced CFunc");
         }
