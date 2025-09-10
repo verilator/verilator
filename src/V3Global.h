@@ -147,6 +147,8 @@ public:
     void boot();
     void shutdown();  // Release allocated resources
 
+    void vlExit(int status);
+
     // ACCESSORS (general)
     AstNetlist* rootp() const VL_MT_SAFE { return m_rootp; }
     V3ThreadPool* threadPoolp() const VL_PURE { return m_threadPoolp; }

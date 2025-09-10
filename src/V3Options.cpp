@@ -1272,9 +1272,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-debugi-", CbPartialMatchVal, [this](const char* optp, const char* valp) {
         m_debugLevel[optp] = std::atoi(valp);
     });
-    DECL_OPTION("-debug-abort", CbCall,
-                V3Error::vlAbort)
-        .undocumented();  // See also --debug-sigsegv
+    DECL_OPTION("-debug-abort", CbCall, []() {
+        V3Error::vlAbort();
+    }).undocumented();  // See also --debug-sigseg
     DECL_OPTION("-debug-check", OnOff, &m_debugCheck);
     DECL_OPTION("-debug-collision", OnOff, &m_debugCollision).undocumented();
     DECL_OPTION("-debug-emitv", OnOff, &m_debugEmitV).undocumented();
@@ -1392,15 +1392,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-gdbbt", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-generate-key", CbCall, [this]() {
         cout << protectKeyDefaulted() << endl;
-        std::exit(0);
+        v3Global.vlExit(0);
     });
     DECL_OPTION("-getenv", CbVal, [](const char* valp) {
         cout << V3Options::getenvBuiltins(valp) << endl;
-        std::exit(0);
+        v3Global.vlExit(0);
     });
     DECL_OPTION("-get-supported", CbVal, [](const char* valp) {
         cout << V3Options::getSupported(valp) << endl;
-        std::exit(0);
+        v3Global.vlExit(0);
     });
 
     DECL_OPTION("-hierarchical", OnOff, &m_hierarchical);
@@ -1719,7 +1719,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     DECL_OPTION("-V", CbCall, [this]() {
         showVersion(true);
-        std::exit(0);
+        v3Global.vlExit(0);
     });
     DECL_OPTION("-v", CbVal, [this, &optdir](const char* valp) {
         V3Options::addLibraryFile(parseFileArg(optdir, valp), work());
@@ -1739,7 +1739,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-version", CbCall, [this]() {
         showVersion(false);
-        std::exit(0);
+        v3Global.vlExit(0);
     });
     DECL_OPTION("-vpi", OnOff, &m_vpi);
 

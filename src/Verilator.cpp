@@ -147,7 +147,7 @@ static void process() {
         V3Error::abortIfErrors();
         if (v3Global.opt.debugExitParse()) {
             cout << "--debug-exit-parse: Exiting after parse\n";
-            std::exit(0);
+            v3Global.vlExit(0);
         }
 
         // Convert parseref's to varrefs, and other directly post parsing fixups
@@ -173,7 +173,7 @@ static void process() {
             V3Error::abortIfErrors();
             if (v3Global.opt.serializeOnly()) emitXmlOrJson();
             cout << "--debug-exit-uvm23: Exiting after UVM-supported pass\n";
-            std::exit(0);
+            v3Global.vlExit(0);
         }
 
         // Remove parameters by cloning modules to de-parameterized versions
@@ -204,7 +204,7 @@ static void process() {
             V3Error::abortIfErrors();
             if (v3Global.opt.serializeOnly()) emitXmlOrJson();
             cout << "--debug-exit-uvm: Exiting after UVM-supported pass\n";
-            std::exit(0);
+            v3Global.vlExit(0);
         }
 
         // Calculate and check widths, edit tree to TRUNC/EXTRACT any width mismatches
@@ -819,7 +819,7 @@ static void execBuildJob() {
 
     if (exit_code != 0) {
         v3error(cmdStr << " exited with " << exit_code << std::endl);
-        std::exit(exit_code);
+        v3Global.vlExit(exit_code);
     }
 }
 
@@ -832,7 +832,7 @@ static void execHierVerilation() {
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
         v3error(cmdStr << " exited with " << exit_code << std::endl);
-        std::exit(exit_code);
+        v3Global.vlExit(exit_code);
     }
 }
 
@@ -884,9 +884,7 @@ int main(int argc, char** argv) {
     V3DiagSarif::output(true);
 
     // Explicitly release resources
-    V3PreShell::shutdown();
     v3Global.shutdown();
-    FileLine::deleteAllRemaining();
 
     if (!v3Global.opt.quietStats() && !v3Global.opt.preprocOnly()) {
         V3Stats::addStatPerf(V3Stats::STAT_CPUTIME, cpuTimeTotal.deltaTime());
