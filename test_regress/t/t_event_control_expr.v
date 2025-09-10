@@ -50,10 +50,8 @@ endmodule
 `EXPR_TEST(queue, 0, (input int q[$]), q[0])
 `EXPR_TEST(queue_mul, 0, (input int q[$], int i), q[0]*i)
 
-`ifdef UNSUP
 function int id(int x); return x; endfunction
 `EXPR_TEST(func, 0, (input int cyc), id(cyc))
-`endif
 
 //========================================================================
 // Class tests (special case as V3Width doesn't always properly handle
@@ -78,9 +76,7 @@ endmodule
 
 `CLASS_TEST(class, obj.k)
 
-`ifdef UNSUP
 `CLASS_TEST(method, obj.get_k())
-`endif
 `endif
 
 //========================================================================
@@ -88,17 +84,17 @@ endmodule
 //
 module t_cstmt;
    logic last = 0;
-   always @($c("vlSelf->clk")) begin
-       if ($time > 0 && logic'($c("vlSelf->clk")) == last) $stop;
-       last <= logic'($c("vlSelf->clk"));
+   always @($c("vlSymsp->TOP.clk")) begin
+       if ($time > 0 && logic'($c("vlSymsp->TOP.clk")) == last) $stop;
+       last <= logic'($c("vlSymsp->TOP.clk"));
    end
-   always @(posedge $c("vlSelf->clk")) begin
-       `WRITE_VERBOSE(("[%0t] cstmt [posedge] $c(\"vlSelf->clk\")=%0b, last=%b\n", $time, $c("vlSelf->clk"), last));
-       if ($time > 0 && (~logic'($c("vlSelf->clk")) || last)) $stop;
+   always @(posedge $c("vlSymsp->TOP.clk")) begin
+       `WRITE_VERBOSE(("[%0t] cstmt [posedge] $c(\"vlSymsp->TOP.clk\")=%0b, last=%b\n", $time, $c("vlSymsp->TOP.clk"), last));
+       if ($time > 0 && (~logic'($c("vlSymsp->TOP.clk")) || last)) $stop;
    end
-   always @(negedge $c("vlSelf->clk")) begin
-       `WRITE_VERBOSE(("[%0t] cstmt [negedge] $c(\"vlSelf->clk\")=%0b, last=%b\n", $time, $c("vlSelf->clk"), last));
-       if ($time > 0 && (logic'($c("vlSelf->clk")) || !last)) $stop;
+   always @(negedge $c("vlSymsp->TOP.clk")) begin
+       `WRITE_VERBOSE(("[%0t] cstmt [negedge] $c(\"vlSymsp->TOP.clk\")=%0b, last=%b\n", $time, $c("vlSymsp->TOP.clk"), last));
+       if ($time > 0 && (logic'($c("vlSymsp->TOP.clk")) || !last)) $stop;
    end
 endmodule
 
@@ -129,17 +125,13 @@ module t(/*AUTOARG*/
    t_queue u_queue(.*);
    t_queue_mul u_queue_mul(.*);
 
-`ifdef UNSUP
    t_func u_func(.*);
-`endif
 
    int k;
    assign k = i + j;
    `ifndef NO_CLASS
    t_class u_class(.*);
-`ifdef UNSUP
    t_method u_method(.*);
-`endif
    `endif
 
    t_cstmt u_cstmt();
