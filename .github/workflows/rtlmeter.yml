@@ -280,39 +280,53 @@ jobs:
       - name: Compare results
         working-directory: rtlmeter
         run: |
-          ADATA=../nightly-results/all-results-gcc.json
-          BDATA=../all-results/all-results-gcc.json
-          ./rtlmeter compare --steps "verilate" --metrics "elapsed memory"              $ADATA $BDATA > ../verilate.txt
-          cat ../verilate.txt
-          ./rtlmeter compare --steps "execute"  --metrics "speed memory elapsed"        $ADATA $BDATA > ../execute.txt
-          cat ../execute.txt
-          ./rtlmeter compare --steps "cppbuild" --metrics "elapsed memory cpu codeSize" $ADATA $BDATA > ../cppbuild.txt
-          cat ../cppbuild.txt
+          for tag in gcc clang; do
+            ADATA=../nightly-results/all-results-${tag}.json
+            BDATA=../all-results/all-results-${tag}.json
+            ./rtlmeter compare --steps "verilate" --metrics "elapsed memory"              $ADATA $BDATA > ../verilate-${tag}.txt
+            cat ../verilate-${tag}.txt
+            ./rtlmeter compare --steps "execute"  --metrics "speed memory elapsed"        $ADATA $BDATA > ../execute-${tag}.txt
+            cat ../execute-${tag}.txt
+            ./rtlmeter compare --steps "cppbuild" --metrics "elapsed memory cpu codeSize" $ADATA $BDATA > ../cppbuild-${tag}.txt
+            cat ../cppbuild-${tag}.txt
+          done
       - name: Create report
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -x
-          awk -v RS= '{print > sprintf("verilate-%02d.txt",NR)}' verilate.txt
-          awk -v RS= '{print > sprintf( "execute-%02d.txt",NR)}' execute.txt
-          awk -v RS= '{print > sprintf("cppbuild-%02d.txt",NR)}' cppbuild.txt
           NUM=$(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json number --jq ".number")
           URL=$(gh run --repo ${{ github.repository }} view ${{ github.run_id }} --json url    --jq ".url")
           echo -n "Performance metrics for PR workflow [#$NUM]($URL) (B) compared to scheduled run" > report.txt
           echo -n " [#${{ steps.scheduled-info.outputs.num }}](${{ steps.scheduled-info.outputs.url }}) (A)" >> report.txt
-          echo    " from ${{ steps.scheduled-info.outputs.date }}:" >> report.txt
-          for f in $(ls -1 verilate-*.txt | sort) $(ls -1 execute-*.txt | sort) $(ls -1 cppbuild-*.txt | sort); do
-            if [[ $f == verilate-01.txt || $f == execute-01.txt ]]; then
+          echo    " from ${{ steps.scheduled-info.outputs.date }}" >> report.txt
+          for tag in gcc clang; do
+            echo "" >> report.txt
+            if [[ $tag == "gcc" ]]; then
               echo "<details open>" >> report.txt
             else
               echo "<details>" >> report.txt
             fi
-            echo -n "<summary>" >> report.txt
-            head -n 1 $f | tr -d '\n' >> report.txt
-            echo "</summary>" >> report.txt
-            echo '<pre>' >> report.txt
-            tail -n +2 $f >> report.txt
-            echo '</pre>' >> report.txt
+            echo -n "<summary><strong><em>" >> report.txt
+            jq -rj ".[0].runName" all-results/all-results-${tag}.json >> report.txt
+            echo "</em></strong></summary>" >> report.txt
+            awk -v RS= -v tag=${tag} '{print > sprintf("verilate-%s-%02d.txt",tag,NR)}' verilate-${tag}.txt
+            awk -v RS= -v tag=${tag} '{print > sprintf( "execute-%s-%02d.txt",tag,NR)}'  execute-${tag}.txt
+            awk -v RS= -v tag=${tag} '{print > sprintf("cppbuild-%s-%02d.txt",tag,NR)}' cppbuild-${tag}.txt
+            for f in $(ls -1 verilate-${tag}-*.txt | sort) $(ls -1 execute-${tag}-*.txt | sort) $(ls -1 cppbuild-${tag}-*.txt | sort); do
+              if [[ $f == verilate-${tag}-01.txt || $f == execute-${tag}-01.txt ]]; then
+                echo "<details open>" >> report.txt
+              else
+                echo "<details>" >> report.txt
+              fi
+              echo -n "<summary>" >> report.txt
+              head -n 1 $f | tr -d '\n' >> report.txt
+              echo "</summary>" >> report.txt
+              echo '<pre>' >> report.txt
+              tail -n +2 $f >> report.txt
+              echo '</pre>' >> report.txt
+              echo "</details>" >> report.txt
+            done
             echo "</details>" >> report.txt
           done
           cat report.txt
