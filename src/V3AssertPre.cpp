@@ -156,6 +156,11 @@ private:
         if (nodep->eventp()) nodep->addNextHere(nodep->eventp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
+    void visit(AstModportClockingRef* const nodep) override {
+        // They have to be removed, because contain references to clocking blocks,
+        // which are removed too. They aren't needed anyway.
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
     void visit(AstClockingItem* const nodep) override {
         // Get a ref to the sampled/driven variable
         AstVar* const varp = nodep->varp();
