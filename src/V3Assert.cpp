@@ -516,7 +516,8 @@ class AssertVisitor final : public VNVisitor {
                             AstNodeExpr* onep;
                             if (AstInsideRange* const rcondp = VN_CAST(icondp, InsideRange)) {
                                 onep = rcondp->newAndFromInside(
-                                    nodep->exprp(), rcondp->lhsp()->cloneTreePure(true),
+                                    nodep->exprp()->cloneTreePure(true),
+                                    rcondp->lhsp()->cloneTreePure(true),
                                     rcondp->rhsp()->cloneTreePure(true));
                             } else if (nodep->casex() || nodep->casez() || nodep->caseInside()) {
                                 onep = AstEqWild::newTyped(itemp->fileline(),

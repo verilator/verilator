@@ -453,7 +453,8 @@ class CaseVisitor final : public VNVisitor {
                         condp = new AstConst{itemp->fileline(), AstConst::BitFalse{}};
                     } else if (AstInsideRange* const irangep = VN_CAST(icondp, InsideRange)) {
                         // Similar logic in V3Width::visit(AstInside)
-                        condp = irangep->newAndFromInside(cexprp, irangep->lhsp()->unlinkFrBack(),
+                        condp = irangep->newAndFromInside(cexprp->cloneTreePure(true),
+                                                          irangep->lhsp()->unlinkFrBack(),
                                                           irangep->rhsp()->unlinkFrBack());
                         VL_DO_DANGLING(icondp->deleteTree(), icondp);
                     } else if (iconstp && iconstp->num().isFourState()
