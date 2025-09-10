@@ -308,6 +308,26 @@ class BeginVisitor final : public VNVisitor {
         // any BEGINs, but V3Coverage adds them all under the module itself.
         iterateChildren(nodep);
     }
+    void visit(AstNodeCase* nodep) override {
+        if (!VN_IS(nodep->exprp(), VarRef)) {
+            AstVar* const varp
+                = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP,
+                             "__VCaseTmp_" + nodep->exprp()->name(), nodep->exprp()->dtypep()};
+            AstAssign* const assignp = new AstAssign{
+                nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE},
+                nodep->exprp()->unlinkFrBack()};
+            nodep->exprp(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
+            if (m_ftaskp) {
+                varp->funcLocal(true);
+                varp->lifetime(VLifetime::AUTOMATIC);
+                m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+            } else {
+                m_modp->addStmtsp(varp);
+            }
+            nodep->addHereThisAsNext(assignp);
+        }
+        iterateChildren(nodep);
+    }
     // VISITORS - LINT CHECK
     void visit(AstIf* nodep) override {  // not AstNodeIf; other types not covered
         VL_RESTORER(m_keepBegins);
