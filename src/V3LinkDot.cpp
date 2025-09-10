@@ -1689,7 +1689,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                                   "'import::*' in $unit scope may pollute global namespace");
                 }
             }
-        } else {
+        } else if (!nodep->resolvedClassp()) {
             VSymEnt* const impp = srcp->findIdFlat(nodep->name());
             if (!impp) {
                 nodep->v3error("Import object not found: " << nodep->prettyPkgNameQ());
