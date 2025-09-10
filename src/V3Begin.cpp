@@ -31,6 +31,7 @@
 #include "V3Begin.h"
 
 #include "V3String.h"
+#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -56,6 +57,7 @@ public:
 //######################################################################
 
 class BeginVisitor final : public VNVisitor {
+    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
     // STATE - across all visitors
     BeginState* const m_statep;  // Current global state
 
@@ -146,6 +148,7 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
+        m_tempNames.reset();
         m_modp = nodep;
         // Rename it (e.g. class under a generate)
         if (m_unnamedScope != "") {
@@ -179,6 +182,7 @@ class BeginVisitor final : public VNVisitor {
         VL_RESTORER(m_liftedp);
         VL_RESTORER(m_namedScope);
         VL_RESTORER(m_unnamedScope);
+        m_tempNames.reset();
         m_displayScope = dot(m_displayScope, nodep->name());
         m_namedScope = "";
         m_unnamedScope = "";
@@ -309,10 +313,10 @@ class BeginVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstNodeCase* nodep) override {
-        if (!VN_IS(nodep->exprp(), VarRef)) {
+        if (!nodep->exprp()->isPure()) {
             AstVar* const varp
                 = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP,
-                             "__VCaseTmp_" + nodep->exprp()->name(), nodep->exprp()->dtypep()};
+                             "__VCaseTmp_" + m_tempNames.get(nodep), nodep->exprp()->dtypep()};
             AstAssign* const assignp = new AstAssign{
                 nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE},
                 nodep->exprp()->unlinkFrBack()};
