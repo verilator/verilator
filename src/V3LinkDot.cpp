@@ -971,7 +971,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                                 ifacecellp->modp(ifacerefp->ifacep());
                                 m_curSymp = m_modSymp
                                     = m_statep->insertTopIface(ifacecellp, m_scope);
-                                { iterate(ifacecellp); }
+                                iterate(ifacecellp);
+                                VL_DO_DANGLING(pushDeletep(ifacecellp), ifacecellp);
                             }
                         }
                     }
@@ -3330,12 +3331,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
             return;
         } else if (m_ds.m_dotPos == DP_MEMBER) {
             // Found a Var, everything following is membership.  {scope}.{var}.HERE {member}
-            AstNodeExpr* const varEtcp = VN_AS(m_ds.m_dotp->lhsp()->unlinkFrBack(), NodeExpr);
-            AstNodeExpr* const newp
-                = new AstMemberSel{nodep->fileline(), varEtcp, VFlagChildDType{}, nodep->name()};
             if (m_ds.m_dotErr) {
                 nodep->unlinkFrBack();  // Avoid circular node loop on errors
             } else {
+                AstNodeExpr* const varEtcp = VN_AS(m_ds.m_dotp->lhsp()->unlinkFrBack(), NodeExpr);
+                AstNodeExpr* const newp = new AstMemberSel{nodep->fileline(), varEtcp,  //
+                                                           VFlagChildDType{}, nodep->name()};
                 nodep->replaceWith(newp);
             }
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -3627,7 +3628,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         newp = new AstSelBit{cellarrayrefp->fileline(), newp,
                                              cellarrayrefp->selp()->unlinkFrBack()};
                         newp->user3(true);  // Don't process again
-                        VL_DO_DANGLING(cellarrayrefp->unlinkFrBack(), cellarrayrefp);
+                        VL_DO_DANGLING(pushDeletep(cellarrayrefp->unlinkFrBack()), cellarrayrefp);
                         m_ds.m_unlinkedScopep = nullptr;
                     }
                     nodep->replaceWith(newp);
@@ -4131,6 +4132,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.m_unlinkedScopep = nullptr;
             m_ds.m_unresolvedCell = false;
             nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
             UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), ClassOrPackageRef), m_ds.m_dotp->lhsp(),

@@ -2717,8 +2717,6 @@ class ConstVisitor final : public VNVisitor {
         if (!cnt2p) return false;
         //
         from2p->unlinkFrBack();
-        cnt1p->unlinkFrBack();
-        cnt2p->unlinkFrBack();
         AstReplicate* const newp
             = new AstReplicate{nodep->fileline(), from2p, cnt1p->toUInt() * cnt2p->toUInt()};
         nodep->replaceWithKeepDType(newp);

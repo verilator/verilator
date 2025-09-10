@@ -820,6 +820,7 @@ private:
                 } else {
                     outconstp->num().setAllBitsX();
                 }
+                m_reclaimValuesp.emplace_back(outconstp);
             }
             outconstp->num().opSelInto(fetchConst(valueFromp)->num(), lsb, selp->widthConst());
             assignOutValue(nodep, vscp, outconstp);
@@ -870,6 +871,7 @@ private:
                                            selp->lhsp()->width() + selp->rhsp()->width() + 1,
                                            selp->rhsp()->width());
                     newValue(selp->lhsp(), outconstp);
+                    VL_DO_DANGLING(outconstp->deleteTree(), outconstp);
                 }
                 {
                     AstConst* const outconstp
@@ -878,6 +880,7 @@ private:
                     outconstp->num().opSel(fetchConst(valueFromp)->num(),
                                            selp->rhsp()->width() - 1, 0);
                     newValue(selp->rhsp(), outconstp);
+                    VL_DO_DANGLING(outconstp->deleteTree(), outconstp);
                 }
             }
             handleAssignRecurse(nodep, selp->lhsp(), selp->lhsp());
@@ -1449,8 +1452,13 @@ public:
     }
     ~SimulateVisitor() override {
         m_constps.clear();
-        for (AstNode* ip : m_reclaimValuesp) delete ip;
+        std::vector<AstNode*> unusedRootps;
+        unusedRootps.reserve(m_reclaimValuesp.size());
+        for (AstNode* const nodep : m_reclaimValuesp) {
+            if (!nodep->backp()) unusedRootps.emplace_back(nodep);
+        }
         m_reclaimValuesp.clear();
+        for (AstNode* const nodep : unusedRootps) VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 };
 

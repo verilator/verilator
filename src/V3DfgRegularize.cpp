@@ -125,6 +125,7 @@ class DfgRegularize final {
         // If it's an inlined expression, repalce the VarRef entirely
         if (AstNodeExpr* const newp = VN_CAST(replacementp, NodeExpr)) {
             refp->replaceWith(newp->cloneTreePure(false));
+            VL_DO_DANGLING(refp->deleteTree(), refp);
             return;
         }
         // Otherwise just re-point the VarRef to the new variable
