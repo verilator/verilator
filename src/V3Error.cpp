@@ -97,19 +97,19 @@ void V3ErrorGuarded::vlAbortOrExit() VL_REQUIRES(m_mutex) {
         std::cerr << msgPrefix() << "Aborting since under --debug" << endl;
         V3Error::vlAbort();
     }
-#ifndef V3ERROR_NO_GLOBAL_
-    else if (v3Global.opt.verilateJobs() > 1
-             && v3Global.mainThreadId() != std::this_thread::get_id()) {
-        VL_GCOV_DUMP();  // No static destructors are called, thus must be called manually.
 
-        // Exit without triggering any global destructors.
-        // Used to prevent detached V3ThreadPool jobs accessing destroyed static objects.
+#ifndef V3ERROR_NO_GLOBAL_
+    if (v3Global.opt.verilateJobs() > 1 && v3Global.mainThreadId() != std::this_thread::get_id()) {
+        // No static destructors are called, thus must be called manually.
+        VL_GCOV_DUMP();
+        // Exit without triggering any global destructors. Used to prevent
+        // detached V3ThreadPool jobs accessing destroyed static objects.
         ::_exit(1);
     }
+    v3Global.vlExit(1);
+#else
+    std::exit(1);
 #endif
-    else {
-        std::exit(1);
-    }
 }
 
 string V3ErrorGuarded::warnMoreSpaces() VL_REQUIRES(m_mutex) {
@@ -369,6 +369,9 @@ void V3Error::abortIfWarnings() {
 
 void V3Error::vlAbort() {
     VL_GCOV_DUMP();
+#ifndef V3ERROR_NO_GLOBAL_
+    v3Global.shutdown();
+#endif
     std::abort();
 }
 std::ostringstream& V3Error::v3errorPrep(V3ErrorCode code) VL_ACQUIRE(s().m_mutex) {

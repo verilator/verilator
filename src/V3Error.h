@@ -459,12 +459,8 @@ public:
 // ######################################################################
 
 class V3Error final {
-    // Base class for any object that wants debugging and error reporting
-    // CONSTRUCTORS
-    V3Error() {
-        std::cerr << ("Static class");
-        V3Error::vlAbort();
-    }
+    // Static members only
+    V3Error() = delete;
 
 public:
     static V3ErrorGuarded& s() VL_MT_SAFE {  // Singleton
