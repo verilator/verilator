@@ -1425,6 +1425,7 @@ class WidthVisitor final : public VNVisitor {
             return;
         }
         nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     AstAssignW* convertSetupholdToAssign(FileLine* const flp, AstNodeExpr* const evp,
@@ -1434,12 +1435,20 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(VN_IS(lhsp, NodeVarRef) || VN_IS(lhsp, NodePreSel), lhsp,
                     "Incorrect reference in a timing check");
         if (AstNodeVarRef* varRefp = VN_CAST(lhsp, NodeVarRef)) {
-            if (varRefp->varp()->direction() == VDirection::INPUT) { return nullptr; }
+            if (varRefp->varp()->direction() == VDirection::INPUT) {
+                VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
+                VL_DO_DANGLING(pushDeletep(rhsp), rhsp);
+                return nullptr;
+            }
             varRefp->access(VAccess::WRITE);
         }
         if (AstNodePreSel* selp = VN_CAST(lhsp, NodePreSel)) {
             if (AstNodeVarRef* varRefp = VN_CAST(selp->fromp(), NodeVarRef)) {
-                if (varRefp->varp()->direction() == VDirection::INPUT) { return nullptr; }
+                if (varRefp->varp()->direction() == VDirection::INPUT) {
+                    VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
+                    VL_DO_DANGLING(pushDeletep(rhsp), rhsp);
+                    return nullptr;
+                }
                 varRefp->access(VAccess::WRITE);
             }
         }
@@ -3593,6 +3602,7 @@ class WidthVisitor final : public VNVisitor {
                                   "Unsupported: enum next/prev with non-constant argument");
                     AstNodeExpr* const newp = new AstConst{stepp->fileline(), 1};
                     stepp->replaceWith(newp);
+                    VL_DO_DANGLING(pushDeletep(stepp), stepp);
                     stepp = newp;
                 }
                 const uint32_t stepWidth = VN_AS(stepp, Const)->toUInt();
@@ -3609,7 +3619,7 @@ class WidthVisitor final : public VNVisitor {
                     return;
                 } else if (stepWidth != 1) {
                     // Unroll of enumVar.next(k) to enumVar.next(1).next(k - 1)
-                    nodep->pinsp()->unlinkFrBack();
+                    pushDeletep(nodep->pinsp()->unlinkFrBack());
                     AstMethodCall* const clonep = nodep->cloneTree(false);
                     VN_AS(stepp, Const)->num().setLong(1);
                     AstConst* const constp = new AstConst(nodep->fileline(), stepWidth - 1);
@@ -5950,8 +5960,8 @@ class WidthVisitor final : public VNVisitor {
                 // Convert BracketArrayDType
                 userIterate(modVarp->childDTypep(),
                             WidthVP{SELF, BOTH}.p());  // May relink pointed to node
-                AstNodeDType* const setDtp = modVarp->childDTypep()->cloneTree(false);
-                if (!patternp->childDTypep()) patternp->childDTypep(setDtp);
+                AstNodeDType* const setDtp = modVarp->childDTypep();
+                if (!patternp->childDTypep()) patternp->childDTypep(setDtp->cloneTree(false));
                 userIterateChildren(nodep, WidthVP{setDtp, BOTH}.p());
                 didWidth = true;
             }
@@ -6538,6 +6548,7 @@ class WidthVisitor final : public VNVisitor {
                     nodep->v3warn(CONSTRAINTIGN, "Unsupported: std::randomize()'s 'with'");
                     nodep->replaceWith(new AstConst{nodep->fileline(), 0});
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    VL_DO_DANGLING(pushDeletep(withp), nodep);
                     return;
                 }
                 processFTaskRefArgs(nodep);

@@ -289,6 +289,7 @@ public:
 
     void setScopedSigAttr(AstNode* attrsp) {
         if (m_scopedSigAttr) {  // clearing set attribute
+            UASSERT_OBJ(!m_scopedSigAttr->backp(), m_scopedSigAttr, "Should not link directly");
             VL_DO_DANGLING(m_scopedSigAttr->deleteTree(), m_scopedSigAttr);
         }
         m_scopedSigAttr = attrsp;

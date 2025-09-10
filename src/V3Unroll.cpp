@@ -283,6 +283,7 @@ class UnrollVisitor final : public VNVisitor {
             initp->unlinkFrBack();  // Always a single statement; nextp() may be nodep
             // Don't add to list, we do it once, and setting loop index isn't
             // needed if we have > 1 loop, as we're constant propagating it
+            pushDeletep(initp);  // Always cloned below.
         }
         if (bodysp) {
             bodysp->unlinkFrBackWithNext();
@@ -309,6 +310,7 @@ class UnrollVisitor final : public VNVisitor {
             newbodysp = clonep;
         }
         if (stmtsp) {
+            pushDeletep(stmtsp);  // Always cloned below.
             int times = 0;
             while (true) {
                 UINFO(8, "      Looping " << loopValue);
@@ -368,11 +370,10 @@ class UnrollVisitor final : public VNVisitor {
         }
         if (!newbodysp) {  // initp might have effects after the loop
             if (m_generate && initp) {  // GENFOR(ASSIGN(...)) need to move under a new Initial
-                newbodysp = new AstInitial{initp->fileline(), initp};
+                newbodysp = new AstInitial{initp->fileline(), initp->cloneTree(true)};
             } else {
-                newbodysp = initp;  // Maybe nullptr
+                newbodysp = initp ? initp->cloneTree(true) : nullptr;
             }
-            initp = nullptr;
         }
         // Replace the FOR()
         if (newbodysp) {
@@ -380,9 +381,6 @@ class UnrollVisitor final : public VNVisitor {
         } else {
             nodep->unlinkFrBack();
         }
-        if (bodysp) VL_DO_DANGLING(pushDeletep(bodysp), bodysp);
-        if (initp) VL_DO_DANGLING(pushDeletep(initp), initp);
-        if (incp && !incp->backp()) VL_DO_DANGLING(pushDeletep(incp), incp);
         if (newbodysp) UINFOTREE(9, newbodysp, "", "_new");
         return true;
     }
@@ -442,6 +440,8 @@ class UnrollVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Did replacement
             } else {
                 nodep->v3error("For loop doesn't have genvar index, or is malformed");
+                // We will die, do it gracefully
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             }
         }
     }

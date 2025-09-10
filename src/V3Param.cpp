@@ -1407,7 +1407,8 @@ class ParamVisitor final : public VNVisitor {
                 } else if (const AstPin* const pinp = VN_CAST(candp, Pin)) {
                     UINFO(9, "Found interface parameter: " << pinp);
                     UASSERT_OBJ(pinp->exprp(), pinp, "Interface parameter pin missing expression");
-                    VL_DO_DANGLING(nodep->replaceWith(pinp->exprp()->cloneTree(false)), nodep);
+                    nodep->replaceWith(pinp->exprp()->cloneTree(false));
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return true;
                 }
             }

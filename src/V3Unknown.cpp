@@ -409,9 +409,14 @@ class UnknownVisitor final : public VNVisitor {
                 V3Number xnum{nodep, nodep->width()};
                 xnum.setAllBitsX();
                 AstNodeExpr* const xexprp = new AstConst{nodep->fileline(), xnum};
-                AstNodeExpr* const newp
-                    = condp->isZero() ? xexprp
-                                      : new AstCond{nodep->fileline(), condp, nodep, xexprp};
+                AstNodeExpr* const newp = [&]() -> AstNodeExpr* {
+                    if (condp->isZero()) {
+                        VL_DO_DANGLING(condp->deleteTree(), condp);
+                        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                        return xexprp;
+                    }
+                    return new AstCond{nodep->fileline(), condp, nodep, xexprp};
+                }();
                 UINFOTREE(9, newp, "", "_new");
                 // Link in conditional
                 replaceHandle.relink(newp);

@@ -532,6 +532,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     if (!newp) {
         nodep->v3warn(NOEFFECT, "foreach with no loop variable has no effect");
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        if (!bodyPointp->backp()) VL_DO_DANGLING(bodyPointp->deleteTree(), bodyPointp);
         return nullptr;
     }
     if (bodyp) {

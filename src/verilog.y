@@ -142,6 +142,7 @@ const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
                 auto* const assignp = VN_AS(nodep, typeToCast); \
                 assignp->strengthSpecp(nodep == beginp ? specp : specp->cloneTree(false)); \
             } \
+            if (!strengthSpecNodep->backp()) strengthSpecNodep->deleteTree(); \
         } \
     }
 
@@ -2300,7 +2301,7 @@ enumNameRangeE<rangep>:          // IEEE: second part of enum_name_declaration
                 /* empty */
                         { $$ = nullptr; }
         |       '[' intnumAsConst ']'
-                        { $$ = new AstRange{$1, new AstConst{$1, 0}, new AstConst($1, $2->toSInt() - 1)}; }
+                        { $$ = new AstRange{$1, new AstConst{$1, 0}, new AstConst($1, $2->toSInt() - 1)}; DEL($2); }
         |       '[' intnumAsConst ':' intnumAsConst ']'
                         { $$ = new AstRange{$1, $2, $4}; }
         ;
@@ -5731,7 +5732,8 @@ specparam_assignment<varp>:     // ==IEEE: specparam_assignment
                           if ($5) $$->valuep($5); }
         |       idPathpulse sigAttrListE '=' '(' minTypMax ',' minTypMax ')'
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
-                          if ($5) $$->valuep($5); }
+                          if ($5) $$->valuep($5);
+                          DEL($7); }
         ;
 
 system_timing_check<nodep>:         // ==IEEE: system_timing_check
@@ -5759,11 +5761,11 @@ timing_check_event<nodeExprp>:      // ==IEEE: $timing_check_event
         |       yNEGEDGE terminal_identifier                                                { $$ = $2; }
         |       yEDGE terminal_identifier                                                   { $$ = $2; }
         |       yEDGE '[' edge_descriptor_list ']' terminal_identifier                      { $$ = $5; }
-        |       terminal_identifier yP_ANDANDAND expr                                       { $$ = $1; }
-        |       yPOSEDGE terminal_identifier yP_ANDANDAND expr                              { $$ = $2; }
-        |       yNEGEDGE terminal_identifier yP_ANDANDAND expr                              { $$ = $2; }
-        |       yEDGE terminal_identifier yP_ANDANDAND expr                                 { $$ = $2; }
-        |       yEDGE '[' edge_descriptor_list ']' terminal_identifier yP_ANDANDAND expr    { $$ = $5; }
+        |       terminal_identifier yP_ANDANDAND expr                                       { $$ = $1; DEL($3); }
+        |       yPOSEDGE terminal_identifier yP_ANDANDAND expr                              { $$ = $2; DEL($4); }
+        |       yNEGEDGE terminal_identifier yP_ANDANDAND expr                              { $$ = $2; DEL($4); }
+        |       yEDGE terminal_identifier yP_ANDANDAND expr                                 { $$ = $2; DEL($4); }
+        |       yEDGE '[' edge_descriptor_list ']' terminal_identifier yP_ANDANDAND expr    { $$ = $5; DEL($7); }
         ;
 
 edge_descriptor_list:
@@ -5773,7 +5775,7 @@ edge_descriptor_list:
 
 timing_check_limit<nodeExprp>:
                 expr                      { $$ = $1; }
-        |       expr ':' expr ':' expr    { $$ = $3; }
+        |       expr ':' expr ':' expr    { $$ = $3; DEL($1, $5); }
         ;
 
 delayed_referenceE<nodeExprp>:

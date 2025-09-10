@@ -1939,6 +1939,7 @@ class RandomizeVisitor final : public VNVisitor {
                 AstVar* const randcVarp = newRandcVarsp(memberVarp);
                 AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
                 AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp, basicFvarp);
+                if (!refp->backp()) VL_DO_DANGLING(refp->deleteTree(), refp);
                 basicRandomizep->addStmtsp(new AstBegin{fl, "", stmtp});
             }
         });

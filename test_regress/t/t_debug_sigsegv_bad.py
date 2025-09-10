@@ -11,7 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-os.environ["ASAN_OPTIONS"] = "handle_segv=0:detect_leaks=0"
+test.setenv("ASAN_OPTIONS", "handle_segv=0")
+test.leak_check_disable()
 
 test.lint(v_flags=["--debug-sigsegv"], fails=True, sanitize=0)
 

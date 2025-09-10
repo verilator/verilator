@@ -78,6 +78,7 @@ void V3ParseImp::parserClear() {
     // Clear up any dynamic memory V3Parser required
     VARDTYPE(nullptr);
     GRAMMARP->setNetDelay(nullptr);
+    GRAMMARP->setScopedSigAttr(nullptr);
 }
 
 //======================================================================

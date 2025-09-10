@@ -12,6 +12,8 @@ import vltest_bootstrap
 test.scenarios('linter')
 test.top_filename = "t/t_langext_2.v"
 
+test.leak_check_disable()
+
 # This is a lint only test.
 test.lint(v_flags2=["+1800-2005ext+v"], fails=True, expect_filename=test.golden_filename)
 
