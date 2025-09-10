@@ -1231,10 +1231,10 @@ class TaskVisitor final : public VNVisitor {
             UASSERT_OBJ(!(nodep->dpiOpenParent() && nodep->dpiOpenChild()), nodep,
                         "DPI task should not be both parent and child");
             dpiFuncp = getDpiFunc(nodep, rtnvarp);
-            if (!dpiFuncp) return nullptr;  // There was an error, so bail
-            if (nodep->dpiImport() && nodep->dpiOpenParent()) {
+            if (!dpiFuncp || (nodep->dpiImport() && nodep->dpiOpenParent())) {
                 // No need to make more than just the DPI Import prototype, the children will
                 // create the wrapper implementations.
+                if (rtnvarp) VL_DO_DANGLING(pushDeletep(rtnvarp), rtnvarp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return nullptr;
             }
@@ -1355,7 +1355,7 @@ class TaskVisitor final : public VNVisitor {
             for (AstNode *nextp, *stmtp = tempp->stmtsp(); stmtp; stmtp = nextp) {
                 nextp = stmtp->nextp();
                 if (AstVar* const portp = VN_CAST(stmtp, Var)) {
-                    if (portp->isIO()) portp->unlinkFrBack();
+                    if (portp->isIO()) VL_DO_DANGLING(pushDeletep(portp->unlinkFrBack()), portp);
                 }
             }
             if (tempp->stmtsp()) cfuncp->addStmtsp(tempp->stmtsp()->unlinkFrBackWithNext());

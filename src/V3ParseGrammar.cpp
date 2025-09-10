@@ -77,6 +77,7 @@ void V3ParseImp::candidatePli(VSpellCheck* spellerp) {
 void V3ParseImp::parserClear() {
     // Clear up any dynamic memory V3Parser required
     VARDTYPE(nullptr);
+    GRAMMARP->setNetDelay(nullptr);
 }
 
 //======================================================================
@@ -164,6 +165,7 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
                            || VN_IS(rangep->rightp(), Unbounded))) {
                 arrayp = new AstQueueDType{nrangep->fileline(), VFlagChildDType{}, arrayp,
                                            rangep->rightp()->cloneTree(true)};
+                VL_DO_DANGLING(nrangep->deleteTree(), nrangep);
             } else if (rangep) {
                 arrayp = new AstUnpackArrayDType{rangep->fileline(), VFlagChildDType{}, arrayp,
                                                  rangep};
@@ -190,9 +192,8 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
 
 AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
                                        AstNodeRange* arrayp, AstNode* attrsp) {
-    AstNodeDType* dtypep = GRAMMARP->m_varDTypep;
-    UINFO(5, "  creVar " << name << "  decl=" << GRAMMARP->m_varDecl
-                         << "  io=" << GRAMMARP->m_varIO << "  dt=" << (dtypep ? "set" : ""));
+    UINFO(5, "  creVar " << name << "  decl=" << GRAMMARP->m_varDecl << "  io="
+                         << GRAMMARP->m_varIO << "  dt=" << (GRAMMARP->m_varDTypep ? "set" : ""));
     if (GRAMMARP->m_varIO == VDirection::NONE  // In non-ANSI port list
         && GRAMMARP->m_varDecl == VVarType::PORT) {
         // Just a port list with variable name (not v2k format); AstPort already created
@@ -203,23 +204,26 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
         }
         return nullptr;
     }
-    if (GRAMMARP->m_varDecl == VVarType::WREAL) {
-        // dtypep might not be null, might be implicit LOGIC before we knew better
-        dtypep = new AstBasicDType{fileline, VBasicDTypeKwd::DOUBLE};
-    }
-    if (!dtypep) {  // Created implicitly
+
+    AstNodeDType* const dtypep = [&]() -> AstNodeDType* {
+        if (GRAMMARP->m_varDecl == VVarType::WREAL) {
+            // dtypep might not be null, might be implicit LOGIC before we knew better
+            return new AstBasicDType{fileline, VBasicDTypeKwd::DOUBLE};
+        }
+        if (GRAMMARP->m_varDTypep) {
+            // May make new variables with same type, so clone
+            return GRAMMARP->m_varDTypep->cloneTree(false);
+        }
+        // Created implicitly
         if (m_insideProperty) {
             if (m_typedPropertyPort) {
                 fileline->v3warn(E_UNSUPPORTED, "Untyped property port following a typed port");
             }
-            dtypep = new AstBasicDType{fileline, VBasicDTypeKwd::UNTYPED};
-        } else {
-            dtypep = new AstBasicDType{fileline, LOGIC_IMPLICIT};
+            return new AstBasicDType{fileline, VBasicDTypeKwd::UNTYPED};
         }
-    } else {
-        // If already consumed by an earlier decl, clone it
-        if (dtypep->backp()) dtypep = dtypep->cloneTree(false);
-    }
+        return new AstBasicDType{fileline, LOGIC_IMPLICIT};
+    }();
+
     // UINFO(0,"CREVAR "<<fileline->ascii()<<" decl="<<GRAMMARP->m_varDecl.ascii()<<"
     // io="<<GRAMMARP->m_varIO.ascii()<<endl);
     VVarType type = GRAMMARP->m_varDecl;
@@ -244,7 +248,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     nodep->ansi(m_pinAnsi);
     nodep->declTyped(m_varDeclTyped);
     nodep->lifetime(m_varLifetime);
-    nodep->delayp(getNetDelay());
+    if (m_netDelayp) nodep->delayp(m_netDelayp->cloneTree(false));
     if (GRAMMARP->m_varDecl != VVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varDecl);
     if (GRAMMARP->m_varIO != VDirection::NONE) {
         nodep->declDirection(GRAMMARP->m_varIO);

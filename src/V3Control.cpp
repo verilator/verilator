@@ -679,6 +679,7 @@ void V3Control::addVarAttr(FileLine* fl, const string& module, const string& fta
     // Semantics: sensep only if public_flat_rw
     if ((attr != VAttrType::VAR_PUBLIC_FLAT_RW) && sensep) {
         sensep->v3error("sensitivity not expected for attribute");
+        VL_DO_DANGLING(sensep->deleteTree(), sensep);
         return;
     }
     // Semantics: Most of the attributes operate on signals

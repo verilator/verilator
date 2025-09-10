@@ -29,8 +29,7 @@ public:
     AstCase* m_caseAttrp = nullptr;  // Current case statement for attribute adding
     AstNodeDType* m_varDTypep = nullptr;  // Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
-    std::unique_ptr<AstDelay> m_netDelayp = nullptr;  // Pointer to delay for next signal
-                                                      // declaration
+    AstDelay* m_netDelayp = nullptr;  // Pointer to delay for next signal declaration
     AstStrengthSpec* m_netStrengthp = nullptr;  // Pointer to strength for next net declaration
     FileLine* m_instModuleFl = nullptr;  // Fileline of module referenced for instantiations
     AstPin* m_instParamp = nullptr;  // Parameters for instantiations
@@ -212,13 +211,19 @@ public:
         }
     }
     void setDType(AstNodeDType* dtypep) {
-        if (m_varDTypep && !m_varDTypep->backp()) {
+        if (m_varDTypep) {
+            UASSERT_OBJ(!m_varDTypep->backp(), m_varDTypep, "Should not link directly");
             VL_DO_CLEAR(m_varDTypep->deleteTree(), m_varDTypep = nullptr);
         }
         m_varDTypep = dtypep;
     }
-    void setNetDelay(AstDelay* netDelayp) { m_netDelayp.reset(netDelayp); }
-    AstDelay* getNetDelay() { return m_netDelayp.release(); }
+    void setNetDelay(AstDelay* netDelayp) {
+        if (m_netDelayp) {
+            UASSERT_OBJ(!m_netDelayp->backp(), m_netDelayp, "Should not link directly");
+            VL_DO_CLEAR(m_netDelayp->deleteTree(), m_netDelayp = nullptr);
+        }
+        m_netDelayp = netDelayp;
+    }
     void setNetStrength(AstStrengthSpec* netStrengthp) { m_netStrengthp = netStrengthp; }
     void pinPush() {
         m_pinStack.push(m_pinNum);

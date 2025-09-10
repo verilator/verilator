@@ -11,6 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
+# Fails early in lexer, ignore leaks
+os.environ["ASAN_OPTIONS"] = "detect_leaks=0"
+
 test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

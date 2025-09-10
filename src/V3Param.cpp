@@ -759,8 +759,10 @@ class ParamProcessor final {
                     UINFOTREE(1, pinp, "", "errnode");
                     pinp->v3error("Can't convert defparam value to constant: Param "
                                   << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
-                    pinp->exprp()->replaceWith(new AstConst{
-                        pinp->fileline(), AstConst::WidthedValue{}, modvarp->width(), 0});
+                    AstNode* const exprp = pinp->exprp();
+                    exprp->replaceWith(new AstConst{pinp->fileline(), AstConst::WidthedValue{},
+                                                    modvarp->width(), 0});
+                    VL_DO_DANGLING(exprp->deleteTree(), exprp);
                 } else if (origp && exprp->sameTree(origp)) {
                     // Setting parameter to its default value.  Just ignore it.
                     // This prevents making additional modules, and makes coverage more
