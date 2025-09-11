@@ -1198,6 +1198,24 @@ public:
 };
 
 //######################################################################
+// This visitor records classes that are referenced with parameter pins
+class ClassPinsMarkVisitor final : public VNVisitorConst {
+
+public:
+    explicit ClassPinsMarkVisitor(AstNetlist* netlistp) { iterateConst(netlistp); }
+
+    void visit(AstClassOrPackageRef* nodep) override {
+        if (nodep->paramsp()) {
+            if (AstClass* const classp = VN_CAST(nodep->classOrPackageSkipp(), Class)) {
+                classp->user3p(classp);
+            }
+        }
+    }
+    void visit(AstClass* nodep) override {}  // don't iterate inside classes
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+};
+
+//######################################################################
 // Process parameter visitor
 
 class ParamVisitor final : public VNVisitor {
@@ -1663,6 +1681,9 @@ public:
         : m_processor{netlistp} {
         // Relies on modules already being in top-down-order
         iterate(netlistp);
+
+        // Mark classes which cannot be removed because they are still referenced
+        ClassPinsMarkVisitor markVisitor{netlistp};
 
         relinkDots();
 
