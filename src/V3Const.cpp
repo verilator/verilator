@@ -1290,7 +1290,20 @@ class ConstVisitor final : public VNVisitor {
         if (nodep->width() != lhsp->width()) return false;
         if (nodep->width() != lhsp->lhsp()->width()) return false;
         if (nodep->width() != lhsp->rhsp()->width()) return false;
-        return true;
+
+        // Only do it if we can fruther reduce one of the sides if pulling the shift through:
+        // - Either operands are constants
+        if (VN_IS(lhsp->lhsp(), Const)) return true;
+        if (VN_IS(lhsp->rhsp(), Const)) return true;
+        // - Const shift on either side
+        if (AstNodeBiop* const llp = VN_CAST(lhsp->lhsp(), NodeBiop)) {
+            return (VN_IS(llp, ShiftL) || VN_IS(llp, ShiftR)) && VN_IS(llp->rhsp(), Const);
+        }
+        if (AstNodeBiop* const lrp = VN_CAST(lhsp->rhsp(), NodeBiop)) {
+            return (VN_IS(lrp, ShiftL) || VN_IS(lrp, ShiftR)) && VN_IS(lrp->rhsp(), Const);
+        }
+        // Otherwise we would increase logic size
+        return false;
     }
     bool operandShiftShift(const AstNodeBiop* nodep) {
         // We could add a AND though.
@@ -1917,7 +1930,8 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void replaceShiftOp(AstNodeBiop* nodep) {
-        UINFO(5, "SHIFT(AND(a,b),CONST)->AND(SHIFT(a,CONST),SHIFT(b,CONST)) " << nodep);
+        UINFO(5, "SHIFT(AND(a,b),CONST) with a/b special ->AND(SHIFT(a,CONST),SHIFT(b,CONST)) "
+                     << nodep);
         const int width = nodep->width();
         const int widthMin = nodep->widthMin();
         VNRelinker handle;
