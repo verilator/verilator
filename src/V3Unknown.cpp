@@ -146,7 +146,7 @@ class UnknownVisitor final : public VNVisitor {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_constXCvt);
         VL_RESTORER(m_allowXUnique);
-        auto xrandNames = std::unique_ptr<V3UniqueNames>(new V3UniqueNames(m_xrandPrefix));
+        auto xrandNames = std::unique_ptr<V3UniqueNames>(new V3UniqueNames{m_xrandPrefix});
         {
             m_modp = nodep;
             m_constXCvt = true;
@@ -520,7 +520,7 @@ public:
     // CONSTRUCTORS
     explicit UnknownVisitor(AstNetlist* nodep)
         : m_lvboundNames{"__Vlvbound"}
-        , m_xrandNames{std::unique_ptr<V3UniqueNames>(new V3UniqueNames(m_xrandPrefix))} {
+        , m_xrandNames{std::unique_ptr<V3UniqueNames>(new V3UniqueNames{m_xrandPrefix})} {
         iterate(nodep);
     }
     ~UnknownVisitor() override {  //

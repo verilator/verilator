@@ -279,7 +279,7 @@ void VerilatedSaifActivityAccumulator::declare(uint32_t code, const std::string&
 
 VerilatedSaif::VerilatedSaif(void* filep) {
     m_activityAccumulators.emplace_back(
-        std::unique_ptr<VerilatedSaifActivityAccumulator>(new VerilatedSaifActivityAccumulator()));
+        std::unique_ptr<VerilatedSaifActivityAccumulator>(new VerilatedSaifActivityAccumulator{}));
 }
 
 void VerilatedSaif::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
@@ -497,8 +497,8 @@ void VerilatedSaif::pushPrefix(const std::string& name, VerilatedTracePrefixType
         std::string scopePath = prevPrefix + name;
         std::string scopeName = lastWord(scopePath);
 
-        auto newScope = std::unique_ptr<VerilatedSaifActivityScope>(new VerilatedSaifActivityScope(
-            std::move(scopePath), std::move(scopeName), m_currentScope));
+        auto newScope = std::unique_ptr<VerilatedSaifActivityScope>(new VerilatedSaifActivityScope{
+            std::move(scopePath), std::move(scopeName), m_currentScope});
         VerilatedSaifActivityScope* newScopePtr = newScope.get();
 
         if (m_currentScope) {
