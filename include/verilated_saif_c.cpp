@@ -278,7 +278,8 @@ void VerilatedSaifActivityAccumulator::declare(uint32_t code, const std::string&
 // VerilatedSaif implementation
 
 VerilatedSaif::VerilatedSaif(void* filep) {
-    m_activityAccumulators.emplace_back(std::unique_ptr<VerilatedSaifActivityAccumulator>(new VerilatedSaifActivityAccumulator()));
+    m_activityAccumulators.emplace_back(
+        std::unique_ptr<VerilatedSaifActivityAccumulator>(new VerilatedSaifActivityAccumulator()));
 }
 
 void VerilatedSaif::open(const char* filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
