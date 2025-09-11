@@ -6311,7 +6311,9 @@ property_port_itemDirE:
         ;
 
 property_declarationBody<nodep>:  // IEEE: part of property_declaration
-                assertion_variable_declarationList
+                assertion_variable_declarationList property_spec
+                        { $$ = nullptr; BBUNSUP($1->fileline(), "Unsupported: property variable declaration"); DEL($1); }
+        |       assertion_variable_declarationList property_spec ';'
                         { $$ = nullptr; BBUNSUP($1->fileline(), "Unsupported: property variable declaration"); DEL($1); }
         //                      // IEEE-2012: Incorrectly has yCOVER ySEQUENCE then property_spec here.
         //                      // Fixed in IEEE 1800-2017
@@ -6384,6 +6386,8 @@ property_spec<propSpecp>:               // IEEE: property_spec
                         { $$ = new AstPropSpec{$1, $3, $8, $10}; }
         |       '@' '(' senitem ')' pexpr
                         { $$ = new AstPropSpec{$1, $3, nullptr, $5}; }
+        |       '@' senitemVar pexpr
+                        { $$ = new AstPropSpec{$1, $2, nullptr, $3}; }
         //                      // Disable applied after the event occurs,
         //                      // so no existing AST can represent this
         |       yDISABLE yIFF '(' expr ')' '@' '(' senitemEdge ')' pexpr
@@ -6567,7 +6571,7 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // IEEE: "cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }"
         //                      // IEEE: "sequence_expr cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }"
         //                      // Both rules basically mean we can repeat sequences, so make it simpler:
-                cycle_delay_range sexpr  %prec yP_POUNDPOUND
+                cycle_delay_range ~p~sexpr  %prec yP_POUNDPOUND
                         { $$ = $2; BBUNSUP($2->fileline(), "Unsupported: ## (in sequence expression)"); }
         |       ~p~sexpr cycle_delay_range sexpr %prec prPOUNDPOUND_MULTI
                         { $$ = $1; BBUNSUP($2->fileline(), "Unsupported: ## (in sequence expression)"); }
@@ -6589,7 +6593,8 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // '(' sequence_expr {',' sequence_match_item } ')' [ boolean_abbrev ]
         //                      // "'(' sexpr ')' boolean_abbrev" matches "[sexpr:'(' expr ')'] boolean_abbrev" so we can drop it
         |       '(' ~p~sexpr ')'                        { $$ = $2; }
-        //UNSUP '(' ~p~sexpr ',' sequence_match_itemList ')'    { }
+        |       '(' ~p~sexpr ',' sequence_match_itemList ')'
+                        { $$ = $2; BBUNSUP($3, "Unsupported sequence match items"); }
         //
         //                      // AND/OR are between pexprs OR sexprs
         |       ~p~sexpr yAND ~p~sexpr
