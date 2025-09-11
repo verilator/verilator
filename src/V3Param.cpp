@@ -958,6 +958,9 @@ class ParamProcessor final {
         m_paramIndex.clear();
         for (AstNode* stmtp = classp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* paramTypep = VN_CAST(stmtp, ParamTypeDType)) {
+                // Only consider formal class type parameters (generic parameters),
+                // not localparam type declarations inside the class body.
+                if (!paramTypep->isGParam()) continue;
                 m_paramIndex.emplace(paramTypep, m_classParams.size());
                 m_classParams.emplace_back(paramTypep, -1);
             }
