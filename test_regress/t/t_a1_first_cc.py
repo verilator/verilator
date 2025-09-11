@@ -15,7 +15,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-os.environ["ASAN_OPTIONS"] = "detect_leaks=0"
+test.leak_check_disable()
 
 DEBUG_QUIET = "--debug --debugi 0 --gdbbt --no-dump-tree"
 

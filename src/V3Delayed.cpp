@@ -185,7 +185,10 @@ class DelayedVisitor final : public VNVisitor {
 
     public:
         VarScopeInfo() = default;
-        ~VarScopeInfo() = default;
+        ~VarScopeInfo() {
+            // Might not be linked if there was an error
+            if (!m_senTreep->backp()) VL_DO_DANGLING(m_senTreep->deleteTree(), m_senTreep);
+        }
         // Accessors for the above union fields
         auto& shadowVariableKit() {
             UASSERT(m_scheme == Scheme::ShadowVar, "Inconsistent Scheme");
@@ -932,6 +935,7 @@ class DelayedVisitor final : public VNVisitor {
                             AstConst* const cp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
                             cp->num().setAllBits0();
                             cp->num().opSelInto(cValuep->num(), cLsbp->toSInt(), sWidth);
+                            VL_DO_DANGLING(valuep->deleteTree(), valuep);
                             return cp;
                         }
                     }

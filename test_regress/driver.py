@@ -1389,6 +1389,12 @@ class VlTest:
         rlimit = (softlimit, hardlimit)
         resource.setrlimit(resource.RLIMIT_CPU, rlimit)
 
+    def leak_check_disable(self):
+        """Disable memory leak detection when leaks are expected,
+        e.g.: on early abnormal termination"""
+        asan_options = os.environ.get("ASAN_OPTION", "")
+        self.setenv("ASAN_OPTION", asan_options + ":detect_leaks=0")
+
     def execute(self, **kwargs) -> None:
         """Run simulation executable.
         Arguments similar to run(); default arguments are from self"""

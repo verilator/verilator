@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
+test.leak_check_disable()
+
 test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

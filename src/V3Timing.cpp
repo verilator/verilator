@@ -179,8 +179,6 @@ class TimingSuspendableVisitor final : public VNVisitor {
     //                                                                  needs process metadata.
     //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_suspGraph
     //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_procGraph
-    const VNUser1InUse m_user1InUse;
-    const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
     const VNUser4InUse m_user4InUse;
 
@@ -1259,7 +1257,11 @@ public:
 
 void V3Timing::timingAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    TimingSuspendableVisitor susVisitor{nodep};
-    if (v3Global.usesTiming()) TimingControlVisitor{nodep};
+    {
+        const VNUser1InUse m_user1InUse;
+        const VNUser2InUse m_user2InUse;
+        TimingSuspendableVisitor{nodep};
+        if (v3Global.usesTiming()) TimingControlVisitor{nodep};
+    }
     V3Global::dumpCheckGlobalTree("timing", 0, dumpTreeEitherLevel() >= 3);
 }

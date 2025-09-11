@@ -1486,6 +1486,9 @@ class TristateVisitor final : public TristateBaseVisitor {
                         nodep->fhsp(nonXp->cloneTreePure(true));
                     }
                     newp = new AstAdd{nodep->fileline(), nodep, newp};
+                } else {
+                    // TODO: looks dubious that we still iterate this below...
+                    pushDeletep(nodep);
                 }
                 UINFOTREE(9, newp, "", "countout");
                 relinkHandle.relink(newp);
