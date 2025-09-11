@@ -31,7 +31,7 @@
 
 class AstNodeStmt VL_NOT_FINAL : public AstNode {
     // Procedural statement
-    VIsCached m_purity;
+    VIsCached m_purity;  // Pure state
 
     bool getPurityRecurse();
 
