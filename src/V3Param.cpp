@@ -1199,20 +1199,20 @@ public:
 
 //######################################################################
 // This visitor records classes that are referenced with parameter pins
-class ClassPinsMarkVisitor final : public VNVisitorConst {
+class ClassRefUnlinkerVisitor final : public VNVisitor {
 
 public:
-    explicit ClassPinsMarkVisitor(AstNetlist* netlistp) { iterateConst(netlistp); }
+    explicit ClassRefUnlinkerVisitor(AstNetlist* netlistp) { iterate(netlistp); }
 
     void visit(AstClassOrPackageRef* nodep) override {
         if (nodep->paramsp()) {
             if (AstClass* const classp = VN_CAST(nodep->classOrPackageSkipp(), Class)) {
-                classp->user3p(classp);
+                if (!classp->user3p()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             }
         }
     }
     void visit(AstClass* nodep) override {}  // don't iterate inside classes
-    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 };
 
 //######################################################################
@@ -1683,7 +1683,7 @@ public:
         iterate(netlistp);
 
         // Mark classes which cannot be removed because they are still referenced
-        ClassPinsMarkVisitor markVisitor{netlistp};
+        ClassRefUnlinkerVisitor markVisitor{netlistp};
 
         relinkDots();
 
