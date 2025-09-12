@@ -47,8 +47,6 @@
 
 #include "V3LinkInc.h"
 
-#include <algorithm>
-
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -59,6 +57,10 @@ class LinkIncVisitor final : public VNVisitor {
     AstNodeModule* m_modp = nullptr;  // Module we're inside
     int m_modIncrementsNum = 0;  // Var name counter
     AstWhile* m_inWhileCondp = nullptr;  // Inside condition of this while loop
+    AstNodeCoverOrAssert* m_inAssertPasssp = nullptr;  // Inside assert passs statements
+    AstAssert* m_inAssertFailsp = nullptr;  // Inside assert fails statements
+    AstAssertIntrinsic* m_inAssertIntrinsicFailsp
+        = nullptr;  // Inside intrinsic assert fails statements
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     bool m_unsupportedHere = false;  // Used to detect where it's not supported yet
 
@@ -86,6 +88,13 @@ class LinkIncVisitor final : public VNVisitor {
         // In a while condition, the statement also needs to go on the
         // back-edge to the loop header, 'incsp' is that place.
         if (m_inWhileCondp) m_inWhileCondp->addIncsp(newp->cloneTreePure(true));
+        if (m_inAssertPasssp) {
+            m_inAssertPasssp->addPasssp(newp->cloneTreePure(true));
+        } else if (m_inAssertIntrinsicFailsp) {
+            m_inAssertIntrinsicFailsp->addFailsp(newp->cloneTreePure(true));
+        } else if (m_inAssertFailsp) {
+            m_inAssertFailsp->addFailsp(newp->cloneTreePure(true));
+        }
         m_insStmtp->addHereThisAsNext(newp);
     }
 
@@ -101,6 +110,27 @@ class LinkIncVisitor final : public VNVisitor {
         VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;
         iterateChildren(nodep);
+    }
+    void visit(AstNodeCoverOrAssert* nodep) override {
+        VL_RESTORER(m_insStmtp);
+        m_insStmtp = nodep;
+        iterateAndNextNull(nodep->propp());
+        m_insStmtp = nullptr;
+        // Note: no iterating over sentreep here as they will be ignored anyway
+        if (AstAssert* const assertp = VN_CAST(nodep, Assert)) {
+            VL_RESTORER(m_inAssertFailsp);
+            m_inAssertFailsp = assertp;
+            iterateAndNextNull(assertp->failsp());
+        } else if (AstAssertIntrinsic* const intrinsicp = VN_CAST(nodep, AssertIntrinsic)) {
+            VL_RESTORER(m_inAssertIntrinsicFailsp);
+            m_inAssertIntrinsicFailsp = intrinsicp;
+            iterateAndNextNull(intrinsicp->failsp());
+        }
+        {
+            VL_RESTORER(m_inAssertPasssp);
+            m_inAssertPasssp = nodep;
+            iterateAndNextNull(nodep->passsp());
+        }
     }
     void visit(AstWhile* nodep) override {
         // Special, as statements need to be put in different places
