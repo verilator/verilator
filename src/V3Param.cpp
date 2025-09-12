@@ -958,6 +958,9 @@ class ParamProcessor final {
         m_paramIndex.clear();
         for (AstNode* stmtp = classp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* paramTypep = VN_CAST(stmtp, ParamTypeDType)) {
+                // Only consider formal class type parameters (generic parameters),
+                // not localparam type declarations inside the class body.
+                if (!paramTypep->isGParam()) continue;
                 m_paramIndex.emplace(paramTypep, m_classParams.size());
                 m_classParams.emplace_back(paramTypep, -1);
             }
@@ -1192,6 +1195,24 @@ public:
     }
     ~ParamProcessor() = default;
     VL_UNCOPYABLE(ParamProcessor);
+};
+
+//######################################################################
+// This visitor records classes that are referenced with parameter pins
+class ClassPinsMarkVisitor final : public VNVisitorConst {
+
+public:
+    explicit ClassPinsMarkVisitor(AstNetlist* netlistp) { iterateConst(netlistp); }
+
+    void visit(AstClassOrPackageRef* nodep) override {
+        if (nodep->paramsp()) {
+            if (AstClass* const classp = VN_CAST(nodep->classOrPackageSkipp(), Class)) {
+                classp->user3p(classp);
+            }
+        }
+    }
+    void visit(AstClass* nodep) override {}  // don't iterate inside classes
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 };
 
 //######################################################################
@@ -1660,6 +1681,9 @@ public:
         : m_processor{netlistp} {
         // Relies on modules already being in top-down-order
         iterate(netlistp);
+
+        // Mark classes which cannot be removed because they are still referenced
+        ClassPinsMarkVisitor markVisitor{netlistp};
 
         relinkDots();
 
