@@ -18,9 +18,8 @@ Verilator may be used in five major ways:
 * With the :vlopt:`--lint-only` option, Verilator will lint the design to
   check for warnings but will not typically create any output files.
 
-* With the :vlopt:`--xml-only` option, Verilator will create XML output
-  that may be used to feed into other user-designed tools.  See
-  :file:`docs/xml.rst` in the distribution.
+* With the :vlopt:`--json-only` option, Verilator will create JSON output
+  that may be used to feed into other user-designed tools.
 
 * With the :vlopt:`-E` option, Verilator will preprocess the code according
   to IEEE preprocessing rules and write the output to standard out. This
