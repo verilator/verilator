@@ -33,6 +33,7 @@ Verilator 5.041 devel
 * Fix deep shift pattern performance (#6379) (#6420). [Geza Lore]
 * Fix COVERAGEIGN-ignored `get_inst_coverage` and other covergroup methods (#6383). [Alex Solomatnikov]
 * Fix error when modport variable is unresolved (#6386). [Ryszard Rozak, Antmicro Ltd.]
+* Fix resolving parameters (#6388) (#6418) (#6421). [Artur Bieniek, Antmicro Ltd.]
 * Fix wire array with initial assignment (#6391). [Alex Solomatnikov]
 * Fix import of class with default params (#6396) (#6410) (#6413). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix use after free in elaboration (#6403). [Geza Lore]
@@ -40,6 +41,7 @@ Verilator 5.041 devel
 * Fix timing control under fork under function (#6407). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix memory leaks (#6411) (#6417) (#6419). [Geza Lore]
 * Fix parameter implicit type from string (#6414). [Alex Solomatnikov]
+* Fix parsing for sequence expressions (#6427). [Bartłomiej Chmiel, Antmicro Ltd.]
 
 
 Verilator 5.040 2025-08-30
