@@ -28,7 +28,7 @@ module t(/*AUTOARG*/
   // Test loop
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
-    $write("[%0t] cyc==%0d crc=%x result=%x\n", $time, cyc, crc);
+    $write("[%0t] cyc==%0d crc=%x\n", $time, cyc, crc);
 `endif
     cyc <= cyc + 1;
     crc <= {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
@@ -43,10 +43,15 @@ module t(/*AUTOARG*/
       `checkd(test.count_hits_iff, 48);
       `checkd(test.count_hits_implies, 24);
       `checkd(test.count_hits_not, 47);
+      `checkd(test.count_hits_event, 1);
 
       $write("*-* All Finished *-*\n");
       $finish;
     end
+  end
+
+  always @(negedge clk) begin
+    if (cyc == 10) -> test.e;
   end
 
 endmodule
@@ -59,6 +64,8 @@ module Test(input clk,
   int count_hits_iff;
   int count_hits_implies;
   int count_hits_not;
+  int count_hits_event;
+  event e;
 
   default disable iff cyc < 5;
 
@@ -73,4 +80,6 @@ module Test(input clk,
   assert property ( @(negedge clk) not a )
     else count_hits_not = count_hits_not + 1;
 
+  assert property ( @e not a )
+    else count_hits_event = count_hits_event + 1;
 endmodule
