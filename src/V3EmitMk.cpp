@@ -772,8 +772,8 @@ public:
                 of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -undefined "
                         "dynamic_lookup -shared $(LDFLAGS) -flat_namespace -o $@ $^ $(LIBS)\n");
                 of.puts("else\n");
-                of.puts(
-                    "\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared $(LDFLAGS) -o $@ $^ $(LIBS)\n");
+                of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared "
+                        "$(LDFLAGS) -o $@ $^ $(LIBS)\n");
                 of.puts("endif\n");
                 of.puts("\n");
                 of.puts("lib" + v3Global.opt.libCreate() + ": " + v3Global.opt.libCreateName(false)
