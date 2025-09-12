@@ -3974,7 +3974,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         dotSymp = m_statep->getNodeSym(ifaceRefp->ifacep());
                     }
                 }
+            } else if (const AstModportClockingRef* const clockingRefp
+                       = VN_CAST(dotSymp->nodep(), ModportClockingRef)) {
+                dotSymp = m_statep->getNodeSym(clockingRefp->clockingp());
             }
+
             if (!m_statep->forScopeCreation()) {
                 VSymEnt* foundp = nullptr;
                 if (modport) {
