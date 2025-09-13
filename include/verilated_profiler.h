@@ -220,15 +220,14 @@ class VlPgoProfiler final {
     // Counters are stored packed, all together to reduce cache effects
     std::array<uint64_t, N_Entries> m_counters{};  // Time spent on this record
     std::vector<Record> m_records;  // Record information
-    const uint64_t
-        m_currentHierBlockCost;  // An original cost of a profiled hier block. During verilation
-                                 // with collected profiling data, costs of hier blocks change
-                                 // thus hashes of original mtasks does not match those from the
-                                 // previous, instrumented, run. We shall not assume that a single
-                                 // top-level mtask will correspond to the hier block as multiple
-                                 // hier block DPIs can be contracted into a single mtask.
-                                 // Therefore, the old cost, from previous instrumented run, is
-                                 // used to stabilize profiled scheduling.
+    // An original cost of a profiled hier block. During Verilation with
+    // collected profiling data, costs of hier blocks change thus hashes of
+    // original mtasks does not match those from the previous,
+    // instrumented, run. We shall not assume that a single top-level mtask
+    // will correspond to the hier block as multiple hier block DPIs can be
+    // contracted into a single mtask.  Therefore, the old cost, from
+    // previous instrumented run, is used to stabilize profiled scheduling.
+    const uint64_t m_currentHierBlockCost;
 
 public:
     // METHODS
