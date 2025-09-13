@@ -2621,6 +2621,22 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (!eventp->user1p()) eventp->user1p(new VSymEnt{m_statep->symsp(), eventp});
         return reinterpret_cast<VSymEnt*>(eventp->user1p());
     }
+    VSymEnt* findInlinedDotsSym(AstNode* nodep, const string& inlinedDots) {
+        // Return scope that applies for searching, given renaming due to module inlining.
+        // Dotted lookup is always relative to module, as maybe variable
+        // name lower down with same scope name we want to ignore (t_math_divw)
+        VSymEnt* dotSymp = m_modSymp;
+        const string inl = AstNode::dedotName(inlinedDots);
+        string baddot;
+        VSymEnt* okSymp = nullptr;
+        dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, inl, baddot, okSymp, false);
+        UASSERT_OBJ(dotSymp, nodep,
+                    "Couldn't resolve inlined scope " << AstNode::prettyNameQ(baddot)
+                                                      << " in: " << inlinedDots);
+        UINFO(9, indent() << "findInlinedDotsSym " << dotSymp
+                          << " search start due to inlinedDots=" << inlinedDots);
+        return dotSymp;
+    }
 
     bool isParamedClassRefDType(const AstNode* classp) {
         while (const AstRefDType* const refp = VN_CAST(classp, RefDType))
@@ -3908,17 +3924,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             string baddot;
             VSymEnt* okSymp;
             VSymEnt* dotSymp = m_curSymp;  // Start search at current scope
-            if (nodep->inlinedDots() != "") {  // Correct for current scope
-                // Dotted lookup is always relative to module, as maybe
-                // variable name lower down with same scope name we want to
-                // ignore (t_math_divw)
-                dotSymp = m_modSymp;
-                const string inl = AstNode::dedotName(nodep->inlinedDots());
-                dotSymp
-                    = m_statep->findDotted(nodep->fileline(), dotSymp, inl, baddot, okSymp, false);
-                UASSERT_OBJ(dotSymp, nodep,
-                            "Couldn't resolve inlined scope " << AstNode::prettyNameQ(baddot)
-                                                              << " in: " << nodep->inlinedDots());
+            if (nodep->inlinedDots() != "") {  // Correct for current post-inlined scope
+                dotSymp = findInlinedDotsSym(nodep, nodep->inlinedDots());
             }
             dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                            okSymp, true);  // Maybe nullptr
@@ -4199,22 +4206,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 dotSymp = m_statep->getNodeSym(nodep->classOrPackagep());
                 UINFO(8, indent() << "Override classOrPackage " << dotSymp);
             } else {
-                if (nodep->inlinedDots() != "") {  // Correct for current scope
-                    // Dotted lookup is always relative to module, as maybe
-                    // variable name lower down with same scope name we want
-                    // to ignore (t_math_divw)
-                    dotSymp = m_modSymp;
-                    const string inl = AstNode::dedotName(nodep->inlinedDots());
-                    UINFO(8, indent() << "Inlined " << inl);
-                    dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, inl, baddot, okSymp,
-                                                   true);
-                    if (!dotSymp) {
-                        nodep->v3fatalSrc("Couldn't resolve inlined scope "
-                                          << AstNode::prettyNameQ(baddot)
-                                          << " in: " << nodep->inlinedDots() << '\n'
-                                          << nodep->warnContextPrimary()
-                                          << okSymp->cellErrorScopes(nodep));
-                    }
+                if (nodep->inlinedDots() != "") {  // Correct for current post-inlined scope
+                    dotSymp = findInlinedDotsSym(nodep, nodep->inlinedDots());
                 }
                 dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
                                                okSymp, true);  // Maybe nullptr
