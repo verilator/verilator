@@ -611,12 +611,12 @@ void V3Dead::deadifyDTypesScoped(AstNetlist* nodep) {
 
 void V3Dead::deadifyAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { DeadVisitor{nodep, true, true, false, true, false, false}; }  // Destruct before checking
+    { DeadVisitor{nodep, true, true, false, true, false, true}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAll", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Dead::deadifyAllScoped(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { DeadVisitor{nodep, true, true, true, true, false, false}; }  // Destruct before checking
+    { DeadVisitor{nodep, true, true, true, true, false, true}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAllScoped", 0, dumpTreeEitherLevel() >= 3);
 }
