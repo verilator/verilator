@@ -491,6 +491,11 @@ void EmitCSyms::emitSymHdr() {
         puts("VlExecutionProfiler* const __Vm_executionProfilerp;\n");
     }
 
+    if (v3Global.opt.profPgo()) {
+        puts("\n// PGO PROFILING\n");
+        puts("VlPgoProfiler<" + std::to_string(ExecMTask::numUsedIds()) + "> _vm_pgoProfiler;\n");
+    }
+
     puts("\n// MODULE INSTANCE STATE\n");
     for (const auto& i : m_scopes) {
         const AstScope* const scopep = i.first;
@@ -507,11 +512,6 @@ void EmitCSyms::emitSymHdr() {
         puts(" __Vcoverage[");
         puts(cvtToStr(m_coverBins));
         puts("];\n");
-    }
-
-    if (v3Global.opt.profPgo()) {
-        puts("\n// PGO PROFILING\n");
-        puts("VlPgoProfiler<" + std::to_string(ExecMTask::numUsedIds()) + "> _vm_pgoProfiler;\n");
     }
 
     if (!m_scopeNames.empty()) {  // Scope names
@@ -728,11 +728,8 @@ void EmitCSyms::emitSymImp() {
         puts("#endif  // VM_TRACE\n");
     }
     if (v3Global.opt.profPgo()) {
-        // Do not overwrite data during the last hierarchical stage.
-        const string firstHierCall
-            = (v3Global.opt.hierBlocks().empty() || v3Global.opt.hierChild()) ? "true" : "false";
         puts("_vm_pgoProfiler.write(\"" + EmitCUtil::topClassName()
-             + "\", _vm_contextp__->profVltFilename(), " + firstHierCall + ");\n");
+             + "\", _vm_contextp__->profVltFilename());\n");
     }
     puts("}\n");
 
@@ -802,6 +799,9 @@ void EmitCSyms::emitSymImp() {
              "__Vm_executionProfilerp{static_cast<VlExecutionProfiler*>(contextp->"
              "enableExecutionProfiler(&VlExecutionProfiler::construct))}\n");
     }
+    if (v3Global.opt.profPgo() && !v3Global.opt.libCreate().empty()) {
+        puts("    , _vm_pgoProfiler{" + std::to_string(v3Global.currentHierBlockCost()) + "}\n");
+    }
 
     puts("    // Setup module instances\n");
     for (const auto& i : m_scopes) {
@@ -835,6 +835,9 @@ void EmitCSyms::emitSymImp() {
 
     if (v3Global.opt.profPgo()) {
         puts("// Configure profiling for PGO\n");
+        if (!v3Global.opt.hierChild()) {
+            puts("_vm_pgoProfiler.writeHeader(_vm_contextp__->profVltFilename());\n");
+        }
         if (v3Global.opt.mtasks()) {
             v3Global.rootp()->topModulep()->foreach([&](const AstExecGraph* execGraphp) {
                 for (const V3GraphVertex& vtx : execGraphp->depGraphp()->vertices()) {

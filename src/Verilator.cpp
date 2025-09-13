@@ -34,6 +34,7 @@
 #include "V3Combine.h"
 #include "V3Common.h"
 #include "V3Const.h"
+#include "V3Control.h"
 #include "V3Coverage.h"
 #include "V3CoverageJoin.h"
 #include "V3Dead.h"
@@ -590,6 +591,11 @@ static void process() {
 
             // Create AstCUse to determine what class forward declarations/#includes needed in C
             V3CUse::cUseAll();
+
+            // Evaluate cost of a current hierarchical block
+            if (!v3Global.opt.libCreate().empty()) {
+                v3Global.currentHierBlockCost(V3Control::getCurrentHierBlockCost());
+            }
         }
 
         // Output the text
