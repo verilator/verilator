@@ -2252,9 +2252,10 @@ class VlTest:
             inputs = {}
             for line in fh:
                 if get_sigs:
-                    m = re.match(r'^\s*input\s*(\S+)\s*(\/[^\/]+\/|)\s*;', line)
+                    # Does not support escaped signals, we only need "clk" and a few others
+                    m = re.match(r'^\s*input\s*(logic|bit|reg|wire)?\s*([A-Za-z0-9_]+)', line)
                     if m:
-                        inputs[m.group(1)] = m.group(1)
+                        inputs[m.group(2)] = m.group(2)
                     if re.match(r'^\s*(function|task|endmodule)', line):
                         get_sigs = False
                 # Ignore any earlier inputs; Module 't' has precedence
