@@ -13,7 +13,7 @@ function integer the_other_func (input integer val);
    return val;
 endfunction
 
-module t (/*AUTOARG*/);
+module t;
    genvar the_genvar;
    generate
       for (the_genvar = 0; the_genvar < 4; the_genvar++) begin: foo_loop

@@ -14,7 +14,7 @@ class Cls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       int dict[Cls];
       Cls c1 = new(1);

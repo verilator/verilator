@@ -7,6 +7,6 @@
 class ClsI implements Inotfound;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    ClsI ci;
 endmodule

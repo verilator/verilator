@@ -6,7 +6,7 @@
 
 //bug591
 
-module t (/*AUTOARG*/);
+module t;
 
    function real ABS (real num);
       ABS = (num < 0) ? -num : num;

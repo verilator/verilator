@@ -9,7 +9,7 @@ package Pkg;
    let PP(a) = 30 + a;
 endpackage
 
-module t(/*AUTOARG*/);
+module t;
 
    let A = 10;
    let B() = 20;

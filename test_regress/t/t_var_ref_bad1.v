@@ -7,7 +7,7 @@
 // Make sure type errors aren't suppressable
 // verilator lint_off WIDTH
 
-module t(/*AUTOARG*/);
+module t;
 
    bit bad_parent;
    sub sub

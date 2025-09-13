@@ -50,7 +50,7 @@ class Packet;
 
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    Packet p;
 

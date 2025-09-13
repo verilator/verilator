@@ -38,7 +38,7 @@ class uvm__registry #(type T=int) extends uvm_object_wrapper;
   endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls c;
       c = new;

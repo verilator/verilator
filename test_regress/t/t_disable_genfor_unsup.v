@@ -4,7 +4,7 @@
 // any use, without warranty, 2025 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (  /*AUTOARG*/);
+module t;
   for (genvar j = 0; j < 3; j++) begin : genblk
     initial begin : init
       int i;

@@ -4,7 +4,7 @@
 // any use, without warranty, 2023 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/);
+module t;
 
    let RECURSE(a) = (a == 1) ? 1 : RECURSE(a - 1);  // BAD no recursion per IEEE 1800-2023 11.12
 

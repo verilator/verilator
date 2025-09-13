@@ -43,7 +43,7 @@ class ClsC;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    function void makec;
       ClsC c;
       $display("c = new;");

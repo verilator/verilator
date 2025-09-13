@@ -17,7 +17,7 @@ module Baz();
    Bar bar();
 endmodule
 
-module t (/*AUTOARG*/);
+module t;
 
    Baz baz();
 

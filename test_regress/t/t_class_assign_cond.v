@@ -29,7 +29,7 @@ class ExtendExtendCls extends ExtendCls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    typedef ExtendCls ExtendCls_t;
 
    initial begin

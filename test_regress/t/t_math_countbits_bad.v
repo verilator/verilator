@@ -4,7 +4,7 @@
 // any use, without warranty, 2020 Yossi Nivin.
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/);
+module t;
 
    integer count;
    assign count = $countbits(32'h123456, '0, '1, 'x, 'z);

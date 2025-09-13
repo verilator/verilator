@@ -13,7 +13,7 @@ typedef enum {
    UVM_TLM_IGNORE_COMMAND
 } uvm_tlm_command_e;
 
-module t(/*AUTOARG*/);
+module t;
 
    initial begin
       bit array[] = new [8];

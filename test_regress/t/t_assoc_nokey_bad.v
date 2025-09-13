@@ -6,7 +6,7 @@
 // any use, without warranty, 2024 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       int dict[string] = '{1, 2};

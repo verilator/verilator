@@ -8,7 +8,7 @@ class ClsRight;
    string m_s;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    string s;
    initial begin
       // verilator lint_off PKGNODECL

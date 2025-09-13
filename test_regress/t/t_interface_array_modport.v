@@ -17,7 +17,7 @@ module foo_mod
    );
 endmodule
 
-module t (/*AUTOARG*/);
+module t;
 
    localparam N = 4;
 

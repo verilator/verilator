@@ -4,7 +4,7 @@
 // any use, without warranty, 2011 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       if (task_as_func(1'b0)) $stop;

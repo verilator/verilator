@@ -30,7 +30,7 @@ function int mult2(int x = Foo::get_x());
    return 2 * x;
 endfunction
 
-module t (/*AUTOARG*/);
+module t;
    logic [1:0] foo_val;
 
    initial begin

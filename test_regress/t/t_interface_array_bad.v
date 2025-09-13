@@ -12,7 +12,7 @@ function integer the_other_func (input integer val);
    return val;
 endfunction
 
-module t (/*AUTOARG*/);
+module t;
 
    localparam N = 4;
 

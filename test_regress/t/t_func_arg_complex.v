@@ -29,7 +29,7 @@ class Cls;
 
 endclass
 
-module t(/*AUTOARG*/);
+module t;
 
    function int mod_trigger(int data=mod_data());
       return data;

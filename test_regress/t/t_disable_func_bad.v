@@ -11,7 +11,7 @@ function int increment_x;
    return x;
 endfunction
 
-module t(/*AUTOARG*/);
+module t;
 
    initial begin
       fork

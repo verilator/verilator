@@ -13,7 +13,7 @@ typedef enum bit [5:0] {
    B = 6,b111111
 } enum_t;
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       typedef bit [5:0] bit6_t;
       typedef bit bit6_unpacked_t[6];

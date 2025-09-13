@@ -99,7 +99,7 @@ class ClsEnum;
 
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    ClsNarrow #(1) c1;  // Degenerate case
    ClsNarrow #(2) c2;

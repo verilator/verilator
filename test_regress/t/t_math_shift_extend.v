@@ -4,7 +4,7 @@
 // any use, without warranty, 2020 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    logic in1 = 1;
    logic [1:0] in2 = 2'b11;

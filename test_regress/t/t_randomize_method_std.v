@@ -12,7 +12,7 @@ class C;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       C c = new;
 

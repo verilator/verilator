@@ -4,7 +4,7 @@
 // without warranty, 2015 by Todd Strader.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       assert (0 == 0) else $fatal(2, "%l %m : %d", 0);

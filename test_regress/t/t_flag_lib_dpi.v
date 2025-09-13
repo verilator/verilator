@@ -6,7 +6,7 @@
 
 import "DPI-C" function void write_all_finished();
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       write_all_finished;

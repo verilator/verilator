@@ -18,7 +18,7 @@ module sub
 endmodule
 
 
-module t (/*AUTOARG*/);
+module t;
 
    dummy_if dummy ();
 

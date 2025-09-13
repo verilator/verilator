@@ -21,7 +21,7 @@ class Foo #(type T=int);
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    Foo f_def1, f_def2;
    Foo#(bit) f_bit1, f_bit2;

@@ -13,7 +13,7 @@ endclass
 class ExtCls1;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    Cls1 c1;
    Cls2 c2;
    ExtCls1 ext_c1;

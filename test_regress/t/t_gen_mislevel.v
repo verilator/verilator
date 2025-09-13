@@ -33,7 +33,7 @@ module a;
    endgenerate
 endmodule
 
-module t (/*AUTOARG*/);
+module t;
 
    a a1 ();
 

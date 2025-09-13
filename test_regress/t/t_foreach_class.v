@@ -16,7 +16,7 @@ class Cls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    int two[5:6];
 

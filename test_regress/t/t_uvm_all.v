@@ -8,7 +8,7 @@
 
 `include "uvm_pkg_all.svh"
 
-module t(/*AUTOARG*/);
+module t;
 
    initial begin
       $write("*-* All Finished *-*\n");

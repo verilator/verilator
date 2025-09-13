@@ -16,7 +16,7 @@ class cls;
     endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    cls bar;
 

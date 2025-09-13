@@ -4,7 +4,7 @@
 // any use, without warranty, 2022 by Antmicro Ltd.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
    wire (weak0, highz1) a = 1;
    wire (strong1, highz0) b = 0;
    wire (highz0, pull1) c = 0;

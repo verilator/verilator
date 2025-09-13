@@ -80,7 +80,7 @@ task Cls::SubCls::ext_t_i(int in);
 endtask
 
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls c = new;
       Cls::SubCls subc = new;

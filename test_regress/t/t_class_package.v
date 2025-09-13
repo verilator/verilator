@@ -21,7 +21,7 @@ package pkgb;
   endclass
 endpackage
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       pkga::MyClass a;
       pkgb::MyClass b;

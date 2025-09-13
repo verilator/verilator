@@ -23,7 +23,7 @@ module N #(
     assign o = i;
 endmodule
 
-module t (/*AUTOARG*/);
+module t;
 
   wire i1, o1, i2, o2, i3, o3, i4, o4, i5, o5, i6, o6;
 

@@ -12,7 +12,7 @@ class Cls;
    function int inc_methoda; imembera += 1; return imembera; endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls c1;
       Other co;

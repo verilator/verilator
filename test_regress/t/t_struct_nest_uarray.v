@@ -15,7 +15,7 @@ typedef struct {
    } el[1];
 } pstr_t;
 
-module t (/*AUTOARG*/);
+module t;
 
    typedef struct {
       struct {

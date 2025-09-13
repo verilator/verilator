@@ -6,7 +6,7 @@
 
 `define STRINGIFY(x) `"x`"
 
-module t(/*AUTOARG*/);
+module t;
 
    localparam CLOCK_CYCLE = 10;
 

@@ -17,7 +17,7 @@ function automatic integer what_bit;
    end
 endfunction
 
-module t(/*AUTOARG*/);
+module t;
 
    parameter ZERO = zeroed();
 

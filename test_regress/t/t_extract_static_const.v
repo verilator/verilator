@@ -4,7 +4,7 @@
 // any use, without warranty, 2020 by Geza Lore.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    bit [255:0] C;
    initial C = {32'h1111_1111,

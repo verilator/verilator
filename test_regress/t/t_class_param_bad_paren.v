@@ -14,7 +14,7 @@ endclass
 class OtherMaybe extends Cls;  // Questionable but others do not warn
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    typedef Cls#(2) Cls2_t;  // Ok
    typedef Cls ClsNone_t;  // Ok

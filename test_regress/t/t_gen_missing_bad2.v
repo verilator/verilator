@@ -4,7 +4,7 @@
 // any use, without warranty, 2012 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
    if ($test$plusargs("BAD-non-constant")) begin
       initial $stop;
    end

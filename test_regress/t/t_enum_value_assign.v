@@ -4,7 +4,7 @@
 // any use, without warranty, 2022 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/);
+module t;
 
    localparam logic [9:0] V2 = (1 << 2);
    localparam logic [9:0] V1 = (1 << 1);

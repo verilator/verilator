@@ -98,7 +98,7 @@ endclass
 class :final CClsF extends CBase;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls c;
       CClsF cc;

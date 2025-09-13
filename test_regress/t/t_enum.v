@@ -11,7 +11,7 @@ typedef enum logic [4:0]
       BIT2 = 5'd2
       } three_t;
 
-module t (/*AUTOARG*/);
+module t;
 
    localparam FIVE = 5;
 

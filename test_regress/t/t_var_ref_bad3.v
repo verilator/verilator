@@ -7,6 +7,5 @@
 // Make sure type errors aren't suppressable
 // verilator lint_off WIDTH
 
-module t(ref int bad_primary_ref
-         /*AUTOARG*/);
+module t(ref int bad_primary_ref);
 endmodule

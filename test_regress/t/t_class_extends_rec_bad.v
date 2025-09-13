@@ -8,6 +8,6 @@ class RecursiveExtCls extends RecursiveExtCls;
    int i;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    RecursiveExtCls cls = new;
 endmodule

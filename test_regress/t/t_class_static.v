@@ -30,7 +30,7 @@ class Cls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    Cls a = new;
    Cls b = new;

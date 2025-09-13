@@ -23,7 +23,7 @@ endclass
 class Cls3 implements Icls1#(2), Icls2#(0);
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       automatic Cls1#(bit) cls1 = new;

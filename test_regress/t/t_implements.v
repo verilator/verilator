@@ -45,7 +45,7 @@ class Cls extends Base;
    endfunction
 endclass
 
-module t(/*AUTOARG*/);
+module t;
 
    Cls c;
    Iext1 i1;

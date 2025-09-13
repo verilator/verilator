@@ -9,7 +9,7 @@ package pack_a;
 endpackage : pack_a
 
 //module t;
-module t (/*AUTOARG*/);
+module t;
 
    parameter PARAM_A = 0;
 

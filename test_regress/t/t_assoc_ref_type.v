@@ -50,7 +50,7 @@ class Wrapper#(type VAL_T=int);
    VAL_T value;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    typedef WBase wrap_map_t[string];
    typedef WBase wrap_queue_t[$];

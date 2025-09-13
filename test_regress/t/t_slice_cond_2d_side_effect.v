@@ -16,7 +16,7 @@ class Cls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    Cls c = new;
    initial begin
       arr_t arr;

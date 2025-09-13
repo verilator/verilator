@@ -30,7 +30,7 @@ class OCls;
    endtask
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       int x;

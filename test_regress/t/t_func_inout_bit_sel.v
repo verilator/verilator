@@ -15,7 +15,7 @@ class Cls;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    int a;
    bit b;
    Cls cls;

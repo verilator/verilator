@@ -134,7 +134,7 @@ endclass
 typedef ClsParamString#("abcde") cls_param_string_def_t;
 typedef ClsParamString#("xyz") cls_param_string_not_def_t;
 
-module t (/*AUTOARG*/);
+module t;
 
    Cls c12;
    Cls #(.PBASE(4)) c4;

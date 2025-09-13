@@ -10,7 +10,7 @@ interface ifc;
    modport out_modport (output ok);
 endinterface
 
-module t (/*AUTOARG*/);
+module t;
 
    integer cyc=1;
 

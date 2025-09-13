@@ -5,5 +5,5 @@
 // without warranty, 2015 by Todd Strader.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 endmodule

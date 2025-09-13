@@ -16,7 +16,7 @@ class ClsB;
 endclass
 endpackage
 
-module t (/*AUTOARG*/);
+module t;
    P::ClsA ca;
    P::ClsB cb;
    initial begin

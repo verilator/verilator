@@ -8,7 +8,7 @@ task disable_fork_blk;
    disable t.init.fork_blk;
 endtask
 
-module t(/*AUTOARG*/);
+module t;
 
    initial begin : init
       int x = 0;

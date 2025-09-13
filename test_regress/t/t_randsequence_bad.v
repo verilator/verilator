@@ -6,7 +6,7 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t(/*AUTOARG*/);
+module t;
 
    initial begin;
       randsequence(no_such_production)  // Bad

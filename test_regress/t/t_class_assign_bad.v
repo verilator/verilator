@@ -15,7 +15,7 @@ endclass
 
 typedef Cls2 cls2_t;
 
-module t (/*AUTOARG*/);
+module t;
    Cls c;
    Cls2 c2;
    cls2_t ct2;

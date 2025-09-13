@@ -18,7 +18,7 @@
 //     function void set_randstate( string state );  // Operate on all proceses for now?
 //   endclass
 
-module t(/*AUTOARG*/);
+module t;
    process p;
 
    initial begin

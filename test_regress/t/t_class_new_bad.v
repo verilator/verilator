@@ -23,7 +23,7 @@ class ClsArg;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       ClsNoArg c1;
       ClsNoNew c2;

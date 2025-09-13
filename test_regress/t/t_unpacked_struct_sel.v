@@ -8,7 +8,7 @@ typedef struct {
    bit [3:0] byte_en;
 } my_struct;
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       my_struct ms;
       ms.byte_en[0] = 1;

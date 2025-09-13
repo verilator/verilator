@@ -22,7 +22,7 @@ class Cls;
    endtask
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    function int mod_fi();
       return 10;

@@ -9,7 +9,7 @@ endclass
 class Cls2 #(parameter PARAMB = 13, parameter PARAMC = 14);
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    Cls #(.PARAMBAD(1)) c;  // Bad param name
    Cls #(13, 1) cd;  // Bad param number

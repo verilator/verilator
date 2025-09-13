@@ -20,7 +20,7 @@ endclass
 function ClsDefFwd::new(default);
 endfunction
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       // TODO real test
       $stop;

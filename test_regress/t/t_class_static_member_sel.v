@@ -54,7 +54,7 @@ class uvm_root;
    endfunction
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       Foo foo = new;

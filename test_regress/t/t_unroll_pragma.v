@@ -12,7 +12,7 @@
  `define PRAGMA
 `endif
 
-module t (/*AUTOARG*/);
+module t;
 
    int i, j;
 

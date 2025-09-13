@@ -32,7 +32,7 @@ class Cls;
    endfunction
 endclass
 
-module t(/*AUTOARG*/);
+module t;
 
    automatic int rand_result, v1, v2;
    automatic string s;

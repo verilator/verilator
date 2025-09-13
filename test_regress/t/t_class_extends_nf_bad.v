@@ -18,5 +18,5 @@ endclass
 class Cls2 extends Pkg::NotFound2;  // BAD: not found
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 endmodule

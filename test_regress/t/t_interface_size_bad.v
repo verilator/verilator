@@ -8,7 +8,7 @@ interface foo_intf;
    logic a;
 endinterface
 
-module t (/*AUTOARG*/);
+module t;
    localparam N = 4;
    foo_intf foo4 [N-1:0] ();
    foo_intf foo6 [5:0] ();

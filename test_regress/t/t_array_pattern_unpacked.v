@@ -4,7 +4,7 @@
 // without warranty, 2009 by Iztok Jeras.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    logic [3:0] array_simp [1:0] [3:0];  // descending range array
    wire  [2:0] array_wire [1:0] = '{3'd1, 3'd2};

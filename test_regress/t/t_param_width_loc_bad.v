@@ -4,7 +4,7 @@
 // without warranty, 2019 by Driss Hafdi.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    // bug1624
    test #(.PARAM(32'd0)) test_i();

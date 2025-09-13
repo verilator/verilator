@@ -17,7 +17,7 @@
 `endif
 
 // verilator lint_off DECLFILENAME
-module t(/*AUTOARG*/);
+module t;
    // From UVM:
    `SEMAPHORE_T s;
    `SEMAPHORE_T s2;

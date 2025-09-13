@@ -22,7 +22,7 @@ endpackage
 package pkg;
 endpackage
 
-module t (/*AUTOARG*/);
+module t;
    sub sub ();
    initial begin
       $write("*-* All Finished *-*\n");

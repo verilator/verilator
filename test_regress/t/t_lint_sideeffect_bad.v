@@ -4,7 +4,7 @@
 // any use, without warranty, 2023 by Wilson Snyder.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    logic [63:0] array = 64'hfeedf00d12345678;
 

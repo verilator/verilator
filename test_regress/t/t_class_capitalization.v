@@ -27,7 +27,7 @@ module Modmixed;
    int M;
 endmodule
 
-module t(/*AUTOARG*/);
+module t;
    // verilator no_inline_module
 
    ModMixed modMixed();

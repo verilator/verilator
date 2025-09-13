@@ -44,7 +44,7 @@ class Outer;
 endclass
 
 
-module t(/*AUTOARG*/);
+module t;
     initial begin
         NodeList n = new;
         NodeList::Node n1 = new;

@@ -15,7 +15,7 @@ package Pkg;
    endfunction
 endpackage
 
-module t(/*AUTOARG*/);
+module t;
 
    function automatic real local_resolver(input real drivers[]);
       local_resolver = 0.0;

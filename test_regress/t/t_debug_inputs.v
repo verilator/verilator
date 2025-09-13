@@ -7,5 +7,5 @@
 
 `include "t/t_debug_inputs_a.v"
 
-module t_debug_inputs (/*AUTOARG*/);
+module t_debug_inputs;
 endmodule

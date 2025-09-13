@@ -9,7 +9,7 @@ module m1();
    logic v1;
 endmodule
 
-module t (/*AUTOARG*/);
+module t;
    for (genvar the_genvar = 0; the_genvar < 4; the_genvar++) begin : m1_b
       m1 m1_inst();
    end

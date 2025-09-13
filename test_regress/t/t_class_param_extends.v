@@ -60,7 +60,7 @@ endclass
 
 // See also t_class_param_mod.v
 
-module t (/*AUTOARG*/);
+module t;
 
    Cls #(.P(4)) c4;
    Cls8_t c8;

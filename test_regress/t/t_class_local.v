@@ -86,7 +86,7 @@ class Ext extends Cls;
    endclass
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    const Cls mod_c = new;
    const Cls::InnerCls imod_c = new;
 

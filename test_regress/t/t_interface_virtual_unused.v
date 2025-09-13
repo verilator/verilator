@@ -9,7 +9,7 @@
 interface QBus();
 endinterface
 
-module t (/*AUTOARG*/);
+module t;
 
    virtual QBus q8;
 

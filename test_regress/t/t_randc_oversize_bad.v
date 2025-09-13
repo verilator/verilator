@@ -8,7 +8,7 @@ class Cls;
    randc bit [37:0] i;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    Cls c;
    initial begin
       c = new;

@@ -79,7 +79,7 @@ class Packet extends Base;
 
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    Packet p;
 

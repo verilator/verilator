@@ -23,7 +23,7 @@ class Clsgen#(type T = logic);
    T x[0:3];
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    PBus ia(), ib();
    virtual PBus va, vb;

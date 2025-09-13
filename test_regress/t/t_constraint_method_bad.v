@@ -15,5 +15,5 @@ class Packet;
 
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 endmodule

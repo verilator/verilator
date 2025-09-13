@@ -41,7 +41,7 @@ class wrapped_int;
    endfunction
 endclass
 
-module t(/*AUTOARG*/);
+module t;
 
    Cls bar;
    Cls baz;

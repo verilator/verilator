@@ -6,7 +6,7 @@
 
 //bug485, but see t_gen_forif.v for an OK example.
 
-module t (/*AUTOARG*/);
+module t;
 
    always_comb begin
       integer i;

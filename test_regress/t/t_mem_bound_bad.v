@@ -4,7 +4,7 @@
 // without warranty, 2014 by Jie Xu
 // SPDX-License-Identifier: CC0-1.0
 
-module t(/*AUTOARG*/);
+module t;
    logic [1:0][31:0] tt;
    logic [31:0]      a;
    logic [31:0]      b;

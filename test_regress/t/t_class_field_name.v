@@ -8,7 +8,7 @@ class Cls;
    int queue;
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       Cls cls = new;

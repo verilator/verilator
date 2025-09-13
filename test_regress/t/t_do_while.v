@@ -13,7 +13,7 @@ function automatic int get_1;
    return a;
 endfunction
 
-module t (/*AUTOARG*/);
+module t;
    int a;
    initial begin
       if (get_1() != 1) $stop;

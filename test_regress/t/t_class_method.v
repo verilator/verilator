@@ -13,7 +13,7 @@ class Cls;
    function void setv_methoda(input int val); imembera = val; endfunction
 endclass : Cls
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
      int tmp_i;
       Cls c;

@@ -43,7 +43,7 @@ inline void `systemc_class_name::my_inline_function() {}
 
 endclass
 
-module t (/*AUTOARG*/);
+module t;
 
    int i;
 

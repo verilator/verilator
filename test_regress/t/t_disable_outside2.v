@@ -4,7 +4,7 @@
 // any use, without warranty, 2025 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       for (int i = 0; i < 3; i++) begin
          begin : blk

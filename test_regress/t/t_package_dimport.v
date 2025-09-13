@@ -38,7 +38,7 @@ module sub();
 
 endmodule
 
-module t(/*AUTOARG*/);
+module t;
 
    import defs::*;
 

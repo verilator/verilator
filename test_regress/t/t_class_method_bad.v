@@ -12,7 +12,7 @@ class Cls2 extends Base1;
    task meth2; endtask
 endclass
 
-module t (/*AUTOARG*/);
+module t;
    initial begin
       Cls2 c;
       c.meth3();  // Not found

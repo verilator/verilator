@@ -12,7 +12,7 @@ task increment_x;
    x++;
 endtask
 
-module t(/*AUTOARG*/);
+module t;
 
    initial begin
       fork

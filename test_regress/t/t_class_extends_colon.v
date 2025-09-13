@@ -20,7 +20,7 @@ endpackage
 class Cls12 extends Pkg::Icls1;
 endclass
 
-module t(/*AUTOARG*/);
+module t;
 
    Cls12 cp12;
 

@@ -8,7 +8,7 @@
 
 // verilator lint_off UNUSEDLOOP
 
-module t (/*AUTOARG*/);
+module t;
 
    initial begin
       if (0)

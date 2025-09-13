@@ -15,7 +15,7 @@
 // any use, without warranty, 2020 by Victor Besyakov.
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/);
+module t;
 
    logic [31:0] packed_data_32;
    logic [31:0] packed_data_32_ref;

@@ -15,7 +15,7 @@ class NodeList;
     endfunction
 endclass
 
-module t(/*AUTOARG*/);
+module t;
     initial begin
         NodeList n = new;
 

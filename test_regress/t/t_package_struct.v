@@ -13,7 +13,7 @@ package pkg;
    } strings;
 endpackage
 
-module t (/*AUTOARG*/);
+module t;
   initial begin
      pkg::strings stct;
      stct.a = "hello";

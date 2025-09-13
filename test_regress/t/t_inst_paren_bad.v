@@ -7,6 +7,6 @@
 module sub;
 endmodule
 
-module t(/*AUTOARG*/);
+module t;
    sub sub_inst;  // No ()
 endmodule

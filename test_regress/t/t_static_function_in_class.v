@@ -42,7 +42,7 @@ class filter;
    endfunction // new
 endclass // filter
 
-module t (/*AUTOARG*/);
+module t;
   const filter _filter = filter::get();
   initial begin
     $write("*-* All Finished *-*\n");
