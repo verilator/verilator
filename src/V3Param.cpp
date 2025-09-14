@@ -1034,24 +1034,25 @@ class ParamProcessor final {
         }
     }
 
-    bool nodeDeparamCommon(AstNode* nodep, AstNodeModule*& srcModpr, AstPin* paramsp,
-                           AstPin* pinsp, bool any_overrides) {
+    AstNodeModule* nodeDeparamCommon(AstNode* nodep, AstNodeModule* srcModp, AstPin* paramsp,
+                                     AstPin* pinsp, bool any_overrides) {
+        // Returns new or reused module
         // Make sure constification worked
         // Must be a separate loop, as constant conversion may have changed some pointers.
         // UINFOTREE(1, nodep, "", "cel2");
-        string longname = srcModpr->name() + "_";
+        string longname = srcModp->name() + "_";
         if (debug() >= 9 && paramsp) paramsp->dumpTreeAndNext(cout, "-  cellparams: ");
 
-        if (srcModpr->hierBlock()) {
-            longname = parameterizedHierBlockName(srcModpr, paramsp);
-            any_overrides = longname != srcModpr->name();
+        if (srcModp->hierBlock()) {
+            longname = parameterizedHierBlockName(srcModp, paramsp);
+            any_overrides = longname != srcModp->name();
         } else {
             for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-                cellPinCleanup(nodep, pinp, srcModpr, longname /*ref*/, any_overrides /*ref*/);
+                cellPinCleanup(nodep, pinp, srcModp, longname /*ref*/, any_overrides /*ref*/);
             }
         }
         IfaceRefRefs ifaceRefRefs;
-        cellInterfaceCleanup(pinsp, srcModpr, longname /*ref*/, any_overrides /*ref*/,
+        cellInterfaceCleanup(pinsp, srcModp, longname /*ref*/, any_overrides /*ref*/,
                              ifaceRefRefs /*ref*/);
 
         // Default params are resolved as overrides
@@ -1064,39 +1065,41 @@ class ParamProcessor final {
             }
         }
 
-        if (m_hierBlocks.hierSubRun() && m_hierBlocks.isHierBlock(srcModpr->origName())) {
+        AstNodeModule* newModp = nullptr;
+        if (m_hierBlocks.hierSubRun() && m_hierBlocks.isHierBlock(srcModp->origName())) {
             AstNodeModule* const paramedModp
-                = m_hierBlocks.findByParams(srcModpr->origName(), paramsp, m_modp);
+                = m_hierBlocks.findByParams(srcModp->origName(), paramsp, m_modp);
             UASSERT_OBJ(paramedModp, nodep, "Failed to find sub-module for hierarchical block");
             paramedModp->dead(false);
             // We need to relink the pins to the new module
             relinkPinsByName(pinsp, paramedModp);
-            srcModpr = paramedModp;
+            newModp = paramedModp;
             any_overrides = true;
         } else if (!any_overrides) {
             UINFO(8, "Cell parameters all match original values, skipping expansion.");
             // If it's the first use of the default instance, create a copy and store it in user3p.
             // user3p will also be used to check if the default instance is used.
-            if (!srcModpr->user3p() && (VN_IS(srcModpr, Class) || VN_IS(srcModpr, Iface))) {
-                AstNodeModule* nodeCopyp = srcModpr->cloneTree(false);
+            if (!srcModp->user3p() && (VN_IS(srcModp, Class) || VN_IS(srcModp, Iface))) {
+                AstNodeModule* nodeCopyp = srcModp->cloneTree(false);
                 // It is a temporary copy of the original class node, stored in order to create
                 // another instances. It is needed only during class instantiation.
                 m_deleter.pushDeletep(nodeCopyp);
-                srcModpr->user3p(nodeCopyp);
+                srcModp->user3p(nodeCopyp);
                 storeOriginalParams(nodeCopyp);
             }
+            newModp = srcModp;
         } else {
             const string newname
-                = srcModpr->hierBlock() ? longname : moduleCalcName(srcModpr, longname);
+                = srcModp->hierBlock() ? longname : moduleCalcName(srcModp, longname);
             const ModInfo* const modInfop
-                = moduleFindOrClone(srcModpr, nodep, paramsp, newname, ifaceRefRefs);
+                = moduleFindOrClone(srcModp, nodep, paramsp, newname, ifaceRefRefs);
             // We need to relink the pins to the new module
             relinkPinsByName(pinsp, modInfop->m_modp);
             UINFO(8, "     Done with " << modInfop->m_modp);
-            srcModpr = modInfop->m_modp;
+            newModp = modInfop->m_modp;
         }
 
-        for (auto* stmtp = srcModpr->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (auto* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
                 if (VN_IS(dtypep->skipRefOrNullp(), VoidDType)) {
                     nodep->v3error(
@@ -1106,7 +1109,7 @@ class ParamProcessor final {
                 }
             }
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
-                if (VN_IS(srcModpr, Class) && varp->isParam() && !varp->valuep()) {
+                if (VN_IS(newModp, Class) && varp->isParam() && !varp->valuep()) {
                     nodep->v3error("Class parameter without default value is never given value"
                                    << " (IEEE 1800-2023 6.20.1): " << varp->prettyNameQ());
                 }
@@ -1117,36 +1120,45 @@ class ParamProcessor final {
 
         // Delete the parameters from the cell; they're not relevant any longer.
         if (paramsp) paramsp->unlinkFrBackWithNext()->deleteTree();
-        return any_overrides;
+        return newModp;
     }
 
-    void cellDeparam(AstCell* nodep, AstNodeModule*& srcModpr) {
+    AstNodeModule* cellDeparam(AstCell* nodep, AstNodeModule* srcModp) {
         // Must always clone __Vrcm (recursive modules)
-        nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nodep->pinsp(), nodep->recursive());
-        nodep->modp(srcModpr);  // Might be unchanged if not cloned (newModp == srcModp)
-        nodep->modName(srcModpr->name());
+        AstNodeModule* newModp = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(),
+                                                   nodep->pinsp(), nodep->recursive());
+        nodep->modp(newModp);  // Might be unchanged if not cloned (newModp == srcModp)
+        nodep->modName(newModp->name());
         nodep->recursive(false);
+        return newModp;
     }
-    void ifaceRefDeparam(AstIfaceRefDType* const nodep, AstNodeModule*& srcModpr) {
-        nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false);
-        nodep->ifacep(VN_AS(srcModpr, Iface));
+    AstNodeModule* ifaceRefDeparam(AstIfaceRefDType* const nodep, AstNodeModule* srcModp) {
+        AstNodeModule* newModp
+            = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false);
+        nodep->ifacep(VN_AS(newModp, Iface));
+        return newModp;
     }
-    void classRefDeparam(AstClassOrPackageRef* nodep, AstNodeModule*& srcModpr) {
+    AstNodeModule* classRefDeparam(AstClassOrPackageRef* nodep, AstNodeModule* srcModp) {
         resolveDefaultParams(nodep);
-        nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false);
-        nodep->classOrPackagep(srcModpr);  // Might be unchanged if not cloned (newModp == srcModp)
+        AstNodeModule* newModp
+            = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false);
+        nodep->classOrPackagep(newModp);  // Might be unchanged if not cloned (newModp == srcModp)
+        return newModp;
     }
-    void classRefDeparam(AstClassRefDType* nodep, AstNodeModule*& srcModpr) {
+    AstNodeModule* classRefDeparam(AstClassRefDType* nodep, AstNodeModule* srcModp) {
         resolveDefaultParams(nodep);
-        nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false);
-        AstClass* const newClassp = VN_AS(srcModpr, Class);
+        AstNodeModule* newModp
+            = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false);
+        AstClass* const newClassp = VN_AS(newModp, Class);
         nodep->classp(newClassp);  // Might be unchanged if not cloned (newModp == srcModp)
         nodep->classOrPackagep(newClassp);
+        return newClassp;
     }
 
 public:
-    void nodeDeparam(AstNode* nodep, AstNodeModule*& srcModpr, AstNodeModule* modp,
-                     const string& someInstanceName) {
+    AstNodeModule* nodeDeparam(AstNode* nodep, AstNodeModule* srcModp, AstNodeModule* modp,
+                               const string& someInstanceName) {
+        // Return new or reused de-parameterized module
         m_modp = modp;
         // Cell: Check for parameters in the instantiation.
         // We always run this, even if no parameters, as need to look for interfaces,
@@ -1158,26 +1170,28 @@ public:
         V3Const::constifyParamsEdit(nodep);
         // Set name for warnings for when we param propagate the module
         const string instanceName = someInstanceName + "." + nodep->name();
-        srcModpr->someInstanceName(instanceName);
+        srcModp->someInstanceName(instanceName);
 
+        AstNodeModule* newModp = nullptr;
         if (AstCell* cellp = VN_CAST(nodep, Cell)) {
-            cellDeparam(cellp, srcModpr);
+            newModp = cellDeparam(cellp, srcModp);
         } else if (AstIfaceRefDType* ifaceRefDTypep = VN_CAST(nodep, IfaceRefDType)) {
-            ifaceRefDeparam(ifaceRefDTypep, srcModpr);
+            newModp = ifaceRefDeparam(ifaceRefDTypep, srcModp);
         } else if (AstClassRefDType* classRefp = VN_CAST(nodep, ClassRefDType)) {
-            classRefDeparam(classRefp, srcModpr);
+            newModp = classRefDeparam(classRefp, srcModp);
         } else if (AstClassOrPackageRef* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
-            classRefDeparam(classRefp, srcModpr);
+            newModp = classRefDeparam(classRefp, srcModp);
         } else {
             nodep->v3fatalSrc("Expected module parameterization");
         }
 
-        // Set name for later warnings (if srcModpr changed value due to cloning)
-        srcModpr->someInstanceName(instanceName);
+        // Set name for later warnings
+        newModp->someInstanceName(instanceName);
 
         UINFO(8, "     Done with orig " << nodep);
         // if (debug() >= 10)
         // v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("param-out.tree"));
+        return newModp;
     }
 
     // CONSTRUCTORS
@@ -1309,13 +1323,14 @@ class ParamVisitor final : public VNVisitor {
                 }
 
                 // Apply parameter specialization
-                m_processor.nodeDeparam(cellp, srcModp /* ref */, modp, someInstanceName);
+                AstNodeModule* const newModp
+                    = m_processor.nodeDeparam(cellp, srcModp, modp, someInstanceName);
 
                 // Add the (now potentially specialized) child module to the work queue
-                workQueue.emplace(srcModp->level(), srcModp);
+                workQueue.emplace(newModp->level(), newModp);
 
                 // Add to the hierarchy registry
-                m_state.m_parentps[srcModp].insert(modp);
+                m_state.m_parentps[newModp].insert(modp);
             }
         }
 
