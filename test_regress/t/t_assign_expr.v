@@ -13,6 +13,7 @@ module t;
    int b;
    int i;
 
+   // verilator lint_off ASSIGNEQEXPR
    initial begin
       a = 10;
       i = (a = 2);

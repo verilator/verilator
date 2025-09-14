@@ -157,6 +157,13 @@ static void ERRSVKWD(FileLine* fileline, const string& tokname) {
                        : ""));
 }
 
+static void ASSIGNEQEXPR(FileLine* fileline) {
+    fileline->v3warn(ASSIGNEQEXPR,
+                     "Assignment '=' inside expression\n"
+                         << fileline->warnMore()
+                         << "... Was a '==' intended, or suggest use a separate statement");
+}
+
 static void UNSUPREAL(FileLine* fileline) {
     fileline->v3warn(SHORTREAL,
                      "Unsupported: shortreal being promoted to real (suggest use real instead)");
@@ -4828,7 +4835,8 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //                      // Need exprScope of variable_lvalue to prevent conflict
         |       '(' ~p~exprScope '='          expr ')'
                         { $$ = new AstExprStmt{$1, new AstAssign{$3, $2, $4},
-                                               $2->cloneTreePure(true)}; }
+                                               $2->cloneTreePure(true)};
+                          ASSIGNEQEXPR($<fl>3); }
         |       '(' ~p~exprScope yP_PLUSEQ    expr ')'
                         { $$ = new AstExprStmt{$1, new AstAssign{$3, $2, new AstAdd{$3, $2->cloneTreePure(true), $4}},
                                                $2->cloneTreePure(true)}; }

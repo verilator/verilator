@@ -1878,7 +1878,7 @@ Summary:
 .. option:: -Wno-lint
 
    Disable all lint-related warning messages, and all style warnings.  This
-   is equivalent to ``-Wno-ALWCOMBORDER`` ``-Wno-ASCRANGE``
+   is equivalent to ``-Wno-ALWCOMBORDER`` ``-Wno-ASCRANGE`` ``-Wno-ASSIGNEQEXPR``
    ``-Wno-BSSPACE`` ``-Wno-CASEINCOMPLETE`` ``-Wno-CASEOVERLAP``
    ``-Wno-CASEX`` ``-Wno-CASTCONST`` ``-Wno-CASEWITHX`` ``-Wno-CMPCONST``
    ``-Wno-COLONPLUS`` ``-Wno-IMPLICIT`` ``-Wno-IMPLICITSTATIC``
@@ -1932,14 +1932,14 @@ Summary:
 
    Enable all lint-related warning messages (note that by default, they are
    already enabled), but do not affect style messages.  This is equivalent
-   to ``-Wwarn-ALWCOMBORDER`` ``-Wwarn-ASCRANGE`` ``-Wwarn-BSSPACE``
-   ``-Wwarn-CASEINCOMPLETE`` ``-Wwarn-CASEOVERLAP`` ``-Wwarn-CASEWITHX``
-   ``-Wwarn-CASEX`` ``-Wwarn-CASTCONST`` ``-Wwarn-CMPCONST``
-   ``-Wwarn-COLONPLUS`` ``-Wwarn-IMPLICIT`` ``-Wwarn-IMPLICITSTATIC``
-   ``-Wwarn-LATCH`` ``-Wwarn-MISINDENT`` ``-Wwarn-NEWERSTD``
-   ``-Wwarn-PREPROCZERO`` ``-Wwarn-PINMISSING`` ``-Wwarn-REALCVT``
-   ``-Wwarn-STATICVAR`` ``-Wwarn-UNSIGNED`` ``-Wwarn-WIDTHTRUNC``
-   ``-Wwarn-WIDTHEXPAND`` ``-Wwarn-WIDTHXZEXPAND``.
+   to ``-Wwarn-ALWCOMBORDER`` ``-Wwarn-ASCRANGE`` ``-Wno-ASSIGNEQEXPR``
+   ``-Wwarn-BSSPACE`` ``-Wwarn-CASEINCOMPLETE`` ``-Wwarn-CASEOVERLAP``
+   ``-Wwarn-CASEWITHX`` ``-Wwarn-CASEX`` ``-Wwarn-CASTCONST``
+   ``-Wwarn-CMPCONST`` ``-Wwarn-COLONPLUS`` ``-Wwarn-IMPLICIT``
+   ``-Wwarn-IMPLICITSTATIC`` ``-Wwarn-LATCH`` ``-Wwarn-MISINDENT``
+   ``-Wwarn-NEWERSTD`` ``-Wwarn-PREPROCZERO`` ``-Wwarn-PINMISSING``
+   ``-Wwarn-REALCVT`` ``-Wwarn-STATICVAR`` ``-Wwarn-UNSIGNED``
+   ``-Wwarn-WIDTHTRUNC`` ``-Wwarn-WIDTHEXPAND`` ``-Wwarn-WIDTHXZEXPAND``.
 
 .. option:: -Wwarn-style
 

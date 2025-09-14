@@ -75,6 +75,7 @@ public:
         ALWNEVER,       // always will never execute
         ASCRANGE,       // Ascending bit range vector
         ASSIGNDLY,      // Assignment delays
+        ASSIGNEQEXPR,   // Assignment equal (=) in expression
         ASSIGNIN,       // Assigning to input
         BADSTDPRAGMA,   // Any error related to pragmas
         BADVLTPRAGMA,   // Unknown Verilator pragma
@@ -206,15 +207,15 @@ public:
             "CONSTWRITTEN", "LIFETIME", "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT", "TASKNSVAR",
             "UNSUPPORTED",
             // Warnings
-            " EC_FIRST_WARN", "ALWCOMBORDER", "ALWNEVER", "ASCRANGE", "ASSIGNDLY", "ASSIGNIN",
-            "BADSTDPRAGMA", "BADVLTPRAGMA", "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
-            "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST", "CDCRSTLOGIC",
-            "CLKDATA", "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN", "CONTASSREG",
-            "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED", "ENCAPSULATED",
-            "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "GENCLK", "GENUNNAMED",
-            "HIERBLOCK", "IFDEPTH", "IGNOREDRETURN", "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC",
-            "IMPORTSTAR", "IMPURE", "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
-            "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING",
+            " EC_FIRST_WARN", "ALWCOMBORDER", "ALWNEVER", "ASCRANGE", "ASSIGNDLY", "ASSIGNEQEXPR",
+            "ASSIGNIN", "BADSTDPRAGMA", "BADVLTPRAGMA", "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ",
+            "BSSPACE", "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST",
+            "CDCRSTLOGIC", "CLKDATA", "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN",
+            "CONTASSREG", "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED",
+            "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "GENCLK",
+            "GENUNNAMED", "HIERBLOCK", "IFDEPTH", "IGNOREDRETURN", "IMPERFECTSCH", "IMPLICIT",
+            "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH", "INFINITELOOP", "INITIALDLY",
+            "INSECURE", "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING",
             "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NULLPORT",
             "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT", "PINNOTFOUND",
             "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED",
@@ -264,12 +265,12 @@ public:
     }
     // Warnings that are lint only
     bool lintError() const VL_MT_SAFE {
-        return (m_e == ALWCOMBORDER || m_e == ASCRANGE || m_e == BSSPACE || m_e == CASEINCOMPLETE
-                || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CASTCONST
-                || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC
-                || m_e == LATCH || m_e == MISINDENT || m_e == NEWERSTD || m_e == PREPROCZERO
-                || m_e == PINMISSING || m_e == REALCVT || m_e == STATICVAR || m_e == UNSIGNED
-                || m_e == WIDTH || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND
+        return (m_e == ALWCOMBORDER || m_e == ASCRANGE || m_e == ASSIGNEQEXPR || m_e == BSSPACE
+                || m_e == CASEINCOMPLETE || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX
+                || m_e == CASTCONST || m_e == CMPCONST || m_e == COLONPLUS || m_e == IMPLICIT
+                || m_e == IMPLICITSTATIC || m_e == LATCH || m_e == MISINDENT || m_e == NEWERSTD
+                || m_e == PREPROCZERO || m_e == PINMISSING || m_e == REALCVT || m_e == STATICVAR
+                || m_e == UNSIGNED || m_e == WIDTH || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND
                 || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only

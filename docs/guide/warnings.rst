@@ -169,6 +169,29 @@ List Of Warnings
    This warning is issued only if Verilator is run with :vlopt:`--no-timing`.
 
 
+.. option:: ASSIGNEQEXPR
+
+   Warning that an assignment with `=` appears in a complex expression.
+   The intent may have been to use `==`, or, if `=` is correct this may be
+   a readability issue.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_ASSIGNEQEXPR_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_ASSIGNEQEXPR_msg.rst
+
+   To repair, make the assignment into a separate statement.
+
+   Disabled by default as this is a code-style warning; it will simulate
+   correctly.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+
 .. option:: ASSIGNIN
 
    .. TODO better example
