@@ -947,7 +947,7 @@ public:
     explicit AstConstPool(FileLine* fl);
     ASTGEN_MEMBERS_AstConstPool;
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    void cloneRelink() override { V3ERROR_NA; }
+    void cloneRelink() override { UASSERT(!clonep(), "Not cloneable"); }
     AstModule* modp() const { return m_modp; }
 
     // Find a table (unpacked array) within the constant pool which is initialized with the
@@ -1112,7 +1112,7 @@ public:
     explicit AstExecGraph(FileLine* fl, const string& name) VL_MT_DISABLED;
     ~AstExecGraph() override;
     ASTGEN_MEMBERS_AstExecGraph;
-    void cloneRelink() override { V3ERROR_NA; }
+    void cloneRelink() override { UASSERT(!clonep(), "Not cloneable"); }
     const char* broken() const override {
         BROKEN_RTN(!m_depGraphp);
         return nullptr;
@@ -1166,7 +1166,7 @@ public:
     explicit AstMTaskBody(FileLine* fl)
         : ASTGEN_SUPER_MTaskBody(fl) {}
     ASTGEN_MEMBERS_AstMTaskBody;
-    void cloneRelink() override { V3ERROR_NA; }
+    void cloneRelink() override { UASSERT(!clonep(), "Not cloneable"); }
     const char* broken() const override {
         BROKEN_RTN(!m_execMTaskp);
         return nullptr;
@@ -1269,7 +1269,7 @@ public:
     AstNetlist();
     ASTGEN_MEMBERS_AstNetlist;
     void deleteContents();
-    void cloneRelink() override { V3ERROR_NA; }
+    void cloneRelink() override { UASSERT(!clonep(), "Not cloneable"); }
     string name() const override VL_MT_STABLE { return "$root"; }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1669,7 +1669,7 @@ public:
     explicit AstTypeTable(FileLine* fl);
     ASTGEN_MEMBERS_AstTypeTable;
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    void cloneRelink() override { V3ERROR_NA; }
+    void cloneRelink() override { UASSERT(!clonep(), "Not cloneable"); }
     AstBasicDType* findBasicDType(FileLine* fl, VBasicDTypeKwd kwd);
     AstBasicDType* findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, int width, int widthMin,
                                      VSigning numeric);

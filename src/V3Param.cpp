@@ -85,8 +85,8 @@ class ParameterizedHierBlocks final {
     HierBlockModMap m_hierBlockMod;
     // Overridden parameters of the hierarchical block
     std::map<const V3HierarchicalBlockOption*, ParamConstMap> m_hierParams;
-    std::map<const std::string, GParamsMap>
-        m_modParams;  // Parameter variables of hierarchical blocks
+    // Parameter variables of hierarchical blocks
+    std::map<const std::string, GParamsMap> m_modParams;
 
     // METHODS
 
@@ -655,6 +655,7 @@ class ParamProcessor final {
         collectPins(clonemapp, newModp, srcModp->user3p());
         // Relink parameter vars to the new module
         relinkPins(clonemapp, paramsp);
+
         // Fix any interface references
         for (auto it = ifaceRefRefs.cbegin(); it != ifaceRefRefs.cend(); ++it) {
             const AstIfaceRefDType* const portIrefp = it->first;
@@ -1165,13 +1166,13 @@ public:
         const string instanceName = someInstanceName + "." + nodep->name();
         srcModpr->someInstanceName(instanceName);
 
-        if (auto* cellp = VN_CAST(nodep, Cell)) {
+        if (AstCell* cellp = VN_CAST(nodep, Cell)) {
             cellDeparam(cellp, srcModpr);
-        } else if (auto* ifaceRefDTypep = VN_CAST(nodep, IfaceRefDType)) {
+        } else if (AstIfaceRefDType* ifaceRefDTypep = VN_CAST(nodep, IfaceRefDType)) {
             ifaceRefDeparam(ifaceRefDTypep, srcModpr);
-        } else if (auto* classRefp = VN_CAST(nodep, ClassRefDType)) {
+        } else if (AstClassRefDType* classRefp = VN_CAST(nodep, ClassRefDType)) {
             classRefDeparam(classRefp, srcModpr);
-        } else if (auto* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
+        } else if (AstClassOrPackageRef* classRefp = VN_CAST(nodep, ClassOrPackageRef)) {
             classRefDeparam(classRefp, srcModpr);
         } else {
             nodep->v3fatalSrc("Expected module parameterization");
@@ -1198,7 +1199,8 @@ public:
 };
 
 //######################################################################
-// This visitor records classes that are referenced with parameter pins
+// Record classes that are referenced with parameter pins
+
 class ClassRefUnlinkerVisitor final : public VNVisitor {
 
 public:
@@ -1216,40 +1218,52 @@ public:
 };
 
 //######################################################################
+// Process parameter top state
+
+class ParamState final {
+public:
+    // STATE - across all visitors
+    std::vector<AstClass*> m_paramClasses;  // Parameterized classes
+    std::vector<AstDot*> m_dots;  // Dot references to process
+    std::multimap<int, AstNodeModule*> m_workQueueNext;  // Modules left to process
+    // Map from AstNodeModule to set of all AstNodeModules that instantiates it.
+    std::unordered_map<AstNodeModule*, std::unordered_set<AstNodeModule*>> m_parentps;
+};
+
+//######################################################################
 // Process parameter visitor
 
 class ParamVisitor final : public VNVisitor {
     // NODE STATE
     // AstNodeModule::user1 -> bool: already fixed level (temporary)
 
-    // STATE
+    // STATE - across all visitors
+    ParamState& m_state;  // Common state
     ParamProcessor m_processor;  // De-parameterize a cell, build modules
     UnrollStateful m_unroller;  // Loop unroller
 
     bool m_iterateModule = false;  // Iterating module body
-    string m_generateHierName;  // Generate portion of hierarchy name
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
-    AstNodeModule* m_modp;  // Module iterating
-    std::vector<AstDot*> m_dots;  // Dot references to process
     std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
-    std::multimap<int, AstNodeModule*> m_workQueue;  // Modules left to process
-    std::vector<AstClass*> m_paramClasses;  // Parameterized classes
     std::deque<std::string> m_strings;  // Allocator for temporary strings
 
-    // Map from AstNodeModule to set of all AstNodeModules that instantiates it.
-    std::unordered_map<AstNodeModule*, std::unordered_set<AstNodeModule*>> m_parentps;
+    // STATE - for current visit position (use VL_RESTORER)
+    AstNodeModule* m_modp;  // Module iterating
+    string m_generateHierName;  // Generate portion of hierarchy name
 
     // METHODS
 
-    void visitCells(AstNodeModule* nodep) {
-        UASSERT_OBJ(!m_iterateModule, nodep, "Should not nest");
+    void processWorkQ() {
+        UASSERT(!m_iterateModule, "Should not nest");
         std::multimap<int, AstNodeModule*> workQueue;
-        workQueue.emplace(nodep->level(), nodep);
         m_generateHierName = "";
         m_iterateModule = true;
 
         // Visit all cells under module, recursively
-        do {
+        while (true) {
+            if (workQueue.empty()) std::swap(workQueue, m_state.m_workQueueNext);
+            if (workQueue.empty()) break;
+
             const auto itm = workQueue.cbegin();
             AstNodeModule* const modp = itm->second;
             workQueue.erase(itm);
@@ -1278,14 +1292,15 @@ class ParamVisitor final : public VNVisitor {
                 m_cellps.erase(itim);
 
                 AstNodeModule* srcModp = nullptr;
-                if (const auto* modCellp = VN_CAST(cellp, Cell)) {
+                if (const AstCell* modCellp = VN_CAST(cellp, Cell)) {
                     srcModp = modCellp->modp();
-                } else if (const auto* classRefp = VN_CAST(cellp, ClassOrPackageRef)) {
+                } else if (const AstClassOrPackageRef* classRefp
+                           = VN_CAST(cellp, ClassOrPackageRef)) {
                     srcModp = classRefp->classOrPackageSkipp();
                     if (VN_IS(classRefp->classOrPackageNodep(), ParamTypeDType)) continue;
-                } else if (const auto* classRefp = VN_CAST(cellp, ClassRefDType)) {
+                } else if (const AstClassRefDType* classRefp = VN_CAST(cellp, ClassRefDType)) {
                     srcModp = classRefp->classp();
-                } else if (const auto* ifaceRefp = VN_CAST(cellp, IfaceRefDType)) {
+                } else if (const AstIfaceRefDType* ifaceRefp = VN_CAST(cellp, IfaceRefDType)) {
                     srcModp = ifaceRefp->ifacep();
                 } else {
                     cellp->v3fatalSrc("Expected module parameterization");
@@ -1306,24 +1321,11 @@ class ParamVisitor final : public VNVisitor {
                 workQueue.emplace(srcModp->level(), srcModp);
 
                 // Add to the hierarchy registry
-                m_parentps[srcModp].insert(modp);
+                m_state.m_parentps[srcModp].insert(modp);
             }
-            if (workQueue.empty()) std::swap(workQueue, m_workQueue);
-        } while (!workQueue.empty());
+        }
 
         m_iterateModule = false;
-    }
-
-    // Fix up level of module, based on who instantiates it
-    void fixLevel(AstNodeModule* modp) {
-        if (modp->user1SetOnce()) return;  // Already fixed
-        if (m_parentps[modp].empty()) return;  // Leave top levels alone
-        int maxParentLevel = 0;
-        for (AstNodeModule* parentp : m_parentps[modp]) {
-            fixLevel(parentp);  // Ensure parent level is correct
-            maxParentLevel = std::max(maxParentLevel, parentp->level());
-        }
-        if (modp->level() <= maxParentLevel) modp->level(maxParentLevel + 1);
     }
 
     // A generic visitor for cells and class refs
@@ -1336,21 +1338,6 @@ class ParamVisitor final : public VNVisitor {
         m_cellps.emplace(!isIface, nodep);
     }
 
-    // RHSs of AstDots need a relink when LHS is a parameterized class reference
-    void relinkDots() {
-        for (AstDot* const dotp : m_dots) {
-            const AstClassOrPackageRef* const classRefp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
-            const AstClass* const lhsClassp = VN_AS(classRefp->classOrPackageSkipp(), Class);
-            AstClassOrPackageRef* const rhsp = VN_AS(dotp->rhsp(), ClassOrPackageRef);
-            for (auto* itemp = lhsClassp->membersp(); itemp; itemp = itemp->nextp()) {
-                if (itemp->name() == rhsp->name()) {
-                    rhsp->classOrPackageNodep(itemp);
-                    break;
-                }
-            }
-        }
-    }
-
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         if (nodep->recursiveClone()) nodep->dead(true);  // Fake, made for recursive elimination
@@ -1359,15 +1346,16 @@ class ParamVisitor final : public VNVisitor {
             if (classp->hasGParam()) {
                 // Don't enter into a definition.
                 // If a class is used, it will be visited through a reference and cloned
-                m_paramClasses.push_back(classp);
+                m_state.m_paramClasses.push_back(classp);
                 return;
             }
         }
 
-        if (m_iterateModule) {  // Iterating from visitCells
+        if (m_iterateModule) {  // Iterating from processWorkQ
             UINFO(4, " MOD-under-MOD.  " << nodep);
-            m_workQueue.emplace(nodep->level(), nodep);  // Delay until current module is done
-            // visitCells (which we are returning to) will process nodep from m_workQueue later
+            // Delay until current module is done.
+            // processWorkQ() (which we are returning to) will process nodep later
+            m_state.m_workQueueNext.emplace(nodep->level(), nodep);
             return;
         }
 
@@ -1375,7 +1363,8 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->level() <= 2  // Haven't added top yet, so level 2 is the top
             || VN_IS(nodep, Class)  // Nor moved classes
             || VN_IS(nodep, Package)) {  // Likewise haven't done wrapTopPackages yet
-            visitCells(nodep);
+            m_state.m_workQueueNext.emplace(nodep->level(), nodep);
+            processWorkQ();
         }
     }
 
@@ -1503,7 +1492,7 @@ class ParamVisitor final : public VNVisitor {
         AstClassOrPackageRef* const rhsp = VN_CAST(nodep->rhsp(), ClassOrPackageRef);
         if (rhsp) rhsDefp = rhsp->classOrPackageNodep();
         if (lhsClassp && rhsDefp) {
-            m_dots.push_back(nodep);
+            m_state.m_dots.push_back(nodep);
             // No need to iterate into rhsp, because there should be nothing to do
         } else {
             iterate(nodep->rhsp());
@@ -1677,57 +1666,108 @@ class ParamVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit ParamVisitor(AstNetlist* netlistp)
-        : m_processor{netlistp} {
+    explicit ParamVisitor(ParamState& state, AstNetlist* netlistp)
+        : m_state{state}
+        , m_processor{netlistp} {
         // Relies on modules already being in top-down-order
         iterate(netlistp);
+    }
+    ~ParamVisitor() override = default;
+    VL_UNCOPYABLE(ParamVisitor);
+};
 
-        // Mark classes which cannot be removed because they are still referenced
-        ClassRefUnlinkerVisitor markVisitor{netlistp};
+//######################################################################
+// Process top handler
 
-        relinkDots();
+class ParamTop final : VNDeleter {
+    // NODE STATE
+    // AstNodeModule::user1 -> bool: already fixed level (temporary)
 
-        // Re-sort module list to be in topological order and fix-up incorrect levels. We need to
-        // do this globally at the end due to the presence of recursive modules, which might be
-        // expanded in orders that reuse earlier specializations later at a lower level.
-        {
-            // Gather modules
-            std::vector<AstNodeModule*> modps;
-            for (AstNodeModule *modp = netlistp->modulesp(), *nextp; modp; modp = nextp) {
-                nextp = VN_AS(modp->nextp(), NodeModule);
-                modp->unlinkFrBack();
-                modps.push_back(modp);
-            }
+    // STATE
+    ParamState m_state;  // Common state
 
-            // Fix-up levels
-            {
-                const VNUser1InUse user1InUse;
-                for (AstNodeModule* const modp : modps) fixLevel(modp);
-            }
+    // METHODS
 
-            // Sort by level
-            std::stable_sort(modps.begin(), modps.end(),
-                             [](const AstNodeModule* ap, const AstNodeModule* bp) {
-                                 return ap->level() < bp->level();
-                             });
-
-            // Re-insert modules
-            for (AstNodeModule* const modp : modps) netlistp->addModulesp(modp);
-
-            for (AstClass* const classp : m_paramClasses) {
-                if (!classp->user3p()) {
-                    // The default value isn't referenced, so it can be removed
-                    VL_DO_DANGLING(pushDeletep(classp->unlinkFrBack()), classp);
-                } else {
-                    // Referenced. classp became a specialized class with the default
-                    // values of parameters and is not a parameterized class anymore
-                    classp->hasGParam(false);
+    void relinkDots() {
+        // RHSs of AstDots need a relink when LHS is a parameterized class reference
+        for (AstDot* const dotp : m_state.m_dots) {
+            const AstClassOrPackageRef* const classRefp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
+            const AstClass* const lhsClassp = VN_AS(classRefp->classOrPackageSkipp(), Class);
+            AstClassOrPackageRef* const rhsp = VN_AS(dotp->rhsp(), ClassOrPackageRef);
+            for (auto* itemp = lhsClassp->membersp(); itemp; itemp = itemp->nextp()) {
+                if (itemp->name() == rhsp->name()) {
+                    rhsp->classOrPackageNodep(itemp);
+                    break;
                 }
             }
         }
     }
-    ~ParamVisitor() override = default;
-    VL_UNCOPYABLE(ParamVisitor);
+
+    void fixLevel(AstNodeModule* modp) {
+        // Fix up level of module, based on who instantiates it
+        if (modp->user1SetOnce()) return;  // Already fixed
+        if (m_state.m_parentps[modp].empty()) return;  // Leave top levels alone
+        int maxParentLevel = 0;
+        for (AstNodeModule* parentp : m_state.m_parentps[modp]) {
+            fixLevel(parentp);  // Ensure parent level is correct
+            maxParentLevel = std::max(maxParentLevel, parentp->level());
+        }
+        if (modp->level() <= maxParentLevel) modp->level(maxParentLevel + 1);
+    }
+
+    void resortNetlistModules(AstNetlist* netlistp) {
+        // Re-sort module list to be in topological order and fix-up incorrect levels. We need to
+        // do this globally at the end due to the presence of recursive modules, which might be
+        // expanded in orders that reuse earlier specializations later at a lower level.
+        // Gather modules
+        std::vector<AstNodeModule*> modps;
+        for (AstNodeModule *modp = netlistp->modulesp(), *nextp; modp; modp = nextp) {
+            nextp = VN_AS(modp->nextp(), NodeModule);
+            modp->unlinkFrBack();
+            modps.push_back(modp);
+        }
+
+        // Fix-up levels
+        const VNUser1InUse user1InUse;
+        for (AstNodeModule* const modp : modps) fixLevel(modp);
+
+        // Sort by level
+        std::stable_sort(modps.begin(), modps.end(),
+                         [](const AstNodeModule* ap, const AstNodeModule* bp) {
+                             return ap->level() < bp->level();
+                         });
+
+        // Re-insert modules
+        for (AstNodeModule* const modp : modps) netlistp->addModulesp(modp);
+    }
+
+public:
+    // CONSTRUCTORS
+    explicit ParamTop(AstNetlist* netlistp) {
+        // Relies on modules already being in top-down-order
+        ParamVisitor paramVisitor{m_state /*ref*/, netlistp};
+
+        // Mark classes which cannot be removed because they are still referenced
+        ClassRefUnlinkerVisitor classUnlinkerVisitor{netlistp};
+
+        relinkDots();
+
+        resortNetlistModules(netlistp);
+
+        // Remove defaulted classes
+        for (AstClass* const classp : m_state.m_paramClasses) {
+            if (!classp->user3p()) {
+                // The default value isn't referenced, so it can be removed
+                VL_DO_DANGLING(pushDeletep(classp->unlinkFrBack()), classp);
+            } else {
+                // Referenced. classp became a specialized class with the default
+                // values of parameters and is not a parameterized class anymore
+                classp->hasGParam(false);
+            }
+        }
+    }
+    ~ParamTop() = default;
+    VL_UNCOPYABLE(ParamTop);
 };
 
 //######################################################################
@@ -1735,6 +1775,6 @@ public:
 
 void V3Param::param(AstNetlist* rootp) {
     UINFO(2, __FUNCTION__ << ":");
-    { ParamVisitor{rootp}; }  // Destruct before checking
+    { ParamTop{rootp}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("param", 0, dumpTreeEitherLevel() >= 3);
 }
