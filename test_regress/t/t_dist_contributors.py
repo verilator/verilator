@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
-
 Contributors = {'github action': True}
 Authors = {}
 
@@ -27,7 +25,7 @@ def read_contributors(filename):
 
 
 def read_user():
-    cmd = "cd " + root + " && git diff-index --quiet HEAD --"
+    cmd = "cd " + test.root + " && git diff-index --quiet HEAD --"
     changes = test.run_capture(cmd, check=False)
     changes = changes.rstrip()
     if changes == "":
@@ -51,7 +49,7 @@ def read_authors():
 
 
 def check():
-    read_contributors(root + "/docs/CONTRIBUTORS")
+    read_contributors(test.root + "/docs/CONTRIBUTORS")
     read_user()
     read_authors()
     for author in sorted(Authors.keys()):
@@ -80,7 +78,7 @@ def check():
 
 if 'VERILATOR_TEST_NO_CONTRIBUTORS' in os.environ:
     test.skip("Skipping due to VERILATOR_TEST_NO_CONTRIBUTORS")
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 check()

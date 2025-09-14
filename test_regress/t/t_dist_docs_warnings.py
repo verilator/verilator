@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
-
 Waivers = [
     'Internal',
     'Unsupported',
@@ -23,9 +21,9 @@ src_filename = "src/V3Error.h"
 doc_filename = "docs/guide/warnings.rst"
 
 
-def get_src_warns(root):
+def get_src_warns():
     args = {}
-    for filename in test.glob_some(root + "/" + src_filename):
+    for filename in test.glob_some(test.root + "/" + src_filename):
         with open(filename, "r", encoding="latin-1") as fh:
             state = 0
             lineno = 0
@@ -49,9 +47,9 @@ def get_src_warns(root):
     return args
 
 
-def get_docs_warns(root):
+def get_docs_warns():
     args = {}
-    for filename in test.glob_some(root + "/" + doc_filename):
+    for filename in test.glob_some(test.root + "/" + doc_filename):
         with open(filename, "r", encoding="latin-1") as fh:
             lineno = 0
             last_opt = None
@@ -77,11 +75,11 @@ def opt_clean(opt):
     return opt
 
 
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
-srcs = get_src_warns(root)
-docs = get_docs_warns(root)
+srcs = get_src_warns()
+docs = get_docs_warns()
 if len(srcs) < 10:
     test.error(src_filename + ": Too few warnings found; parse error?")
 if len(docs) < 10:

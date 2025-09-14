@@ -618,6 +618,7 @@ class VlTest:
         self.py_filename = py_filename  # Name of .py file to get setup from
         self.running_id = running_id
         self.scenario = scenario
+        self.root = '..'  # Relative path to git root (above test_regress)
 
         self._force_pass = False
         self._have_solver_called = False

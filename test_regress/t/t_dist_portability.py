@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
-
 
 def line_filename(line):
     m = re.search(r'^([^:]+)', line)
@@ -21,7 +19,7 @@ def line_filename(line):
 
 def printfll():
     files = "src/*.c* src/*.h include/*.c* include/*.h examples/*/*.c* test_regress/t/*.c* test_regress/t/*.h"
-    cmd = "cd " + root + " && fgrep -n ll " + files + " | sort"
+    cmd = "cd " + test.root + " && fgrep -n ll " + files + " | sort"
     grep = test.run_capture(cmd, check=False)
     names = {}
     for line in grep.splitlines():
@@ -37,7 +35,7 @@ def printfll():
 
 def cstr():
     files = "src/*.c* src/*.h include/*.c* include/*.h examples/*/*.c* test_regress/t/*.c* test_regress/t/*.h"
-    cmd = "cd " + root + " && grep -n -P 'c_str|begin|end' " + files + " | sort"
+    cmd = "cd " + test.root + " && grep -n -P 'c_str|begin|end' " + files + " | sort"
     grep = test.run_capture(cmd, check=False)
     names = {}
     for line in grep.splitlines():
@@ -54,7 +52,7 @@ def cstr():
 def vsnprintf():
     # Note do not do test_regress, as VPI files need to compile without verilatedos.h
     files = "src/*.c* src/*.h include/*.c* include/*.h examples/*/*.c*"
-    cmd = "cd " + root + " && grep -n -P '(snprintf|vsnprintf)' " + files + " | sort"
+    cmd = "cd " + test.root + " && grep -n -P '(snprintf|vsnprintf)' " + files + " | sort"
     grep = test.run_capture(cmd, check=False)
     names = {}
     for line in grep.splitlines():
@@ -70,7 +68,7 @@ def vsnprintf():
 def final():
     # Note do not do test_regress, as VPI files need to compile without verilatedos.h
     files = "src/*.c* src/*.h include/*.c* include/*.h"
-    cmd = "cd " + root + " && grep -n -P '(class|struct)' " + files + " | sort"
+    cmd = "cd " + test.root + " && grep -n -P '(class|struct)' " + files + " | sort"
     grep = test.run_capture(cmd, check=False)
     names = {}
     for line in grep.splitlines():
@@ -89,7 +87,7 @@ def final():
                    ' '.join(sorted(names.keys())))
 
 
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 printfll()

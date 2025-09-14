@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
-
 Messages = {}
 Outputs = {}
 Suppressed = {}
@@ -114,7 +112,7 @@ for s in [
 
 
 def read_messages():
-    for filename in test.glob_some(root + "/src/*"):
+    for filename in test.glob_some(test.root + "/src/*"):
         if not os.path.isfile(filename):
             continue
         with open(filename, 'r', encoding="utf8") as fh:
@@ -156,9 +154,9 @@ def read_messages():
 
 
 def read_outputs():
-    for filename in (test.glob_some(root + "/test_regress/t/*.py") +
-                     test.glob_some(root + "/test_regress/t/*.out") +
-                     test.glob_some(root + "/docs/gen/*.rst")):
+    for filename in (test.glob_some(test.root + "/test_regress/t/*.py") +
+                     test.glob_some(test.root + "/test_regress/t/*.out") +
+                     test.glob_some(test.root + "/docs/gen/*.rst")):
         if "t_dist_warn_coverage" in filename:  # Avoid our own suppressions
             continue
         with open(filename, 'r', encoding="latin-1") as fh:
@@ -224,7 +222,7 @@ def check():
     print()
 
 
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 check()

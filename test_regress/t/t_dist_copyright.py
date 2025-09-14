@@ -51,16 +51,14 @@ EXEMPT_FILES_LIST = """
     verilator.pc.in
     """
 
-root = ".."
-
 Exempt_Files_List_Re = list(map(re.escape, EXEMPT_FILES_LIST.split()))
 Exempt_Files_List_Re = '^(' + '|'.join(Exempt_Files_List_Re) + ")"
 # pprint(Exempt_Files_List_Re)
 
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
-cmd = "cd " + root + " && git ls-files --exclude-standard"
+cmd = "cd " + test.root + " && git ls-files --exclude-standard"
 out = test.run_capture(cmd)
 
 year = datetime.datetime.now().year
@@ -75,7 +73,7 @@ for filename in out.split():
     files[filename] = True
 
 for filename in files:
-    open_filename = os.path.join(root, filename)
+    open_filename = os.path.join(test.root, filename)
     if not os.path.exists(open_filename):
         continue
     with open(open_filename, 'r', encoding="utf8") as fh:

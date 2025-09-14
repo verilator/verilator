@@ -12,9 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.sim_time = 2000000
 
-root = ".."
-
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 # Generate the equivalence checks and declaration boilerplate

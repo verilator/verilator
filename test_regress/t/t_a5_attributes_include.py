@@ -12,8 +12,6 @@ import vltest_bootstrap
 test.scenarios('dist')
 test.rerunnable = False
 
-root = ".."
-
 
 def have_clang_check():
     cmd = 'python3 -c "from clang.cindex import Index; index = Index.create(); print(\\"Clang imported\\")";'
@@ -27,21 +25,21 @@ def have_clang_check():
 
 if 'VERILATOR_TEST_NO_ATTRIBUTES' in os.environ:
     test.skip("Skipping due to VERILATOR_TEST_NO_ATTRIBUTES")
-if not os.path.exists(root + "/src/obj_dbg/compile_commands.json"):
+if not os.path.exists(test.root + "/src/obj_dbg/compile_commands.json"):
     test.skip("compile_commands.json not found. Please install 'bear > 3.0' and rebuild Verilator")
 if not have_clang_check():
     test.skip("No libclang installed")
 
 # some of the files are only used in Verilation
 # and are only in "include" folder
-srcfiles = test.glob_some(root + "/include/*.cpp")
+srcfiles = test.glob_some(test.root + "/include/*.cpp")
 srcfiles_str = " ".join(srcfiles)
-clang_args = "-I" + root + "/include/ -I" + root + "/include/vltstd/ -fcoroutines-ts"
+clang_args = "-I" + test.root + "/include/ -I" + test.root + "/include/vltstd/ -fcoroutines-ts"
 
 test.run(logfile=test.run_log_filename,
          tee=True,
-         cmd=["python3", root + "/nodist/clang_check_attributes",
-              "--verilator-root=" + root,
+         cmd=["python3", test.root + "/nodist/clang_check_attributes",
+              "--verilator-root=" + test.root,
               "--cxxflags='" + clang_args + "'",
               srcfiles_str])  # yapf:disable
 

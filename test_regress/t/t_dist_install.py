@@ -11,9 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
-
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 cwd = os.getcwd()
@@ -24,8 +22,9 @@ test.run(cmd=["rm -rf " + destdir + " && mkdir -p " + destdir], check_finished=F
 
 # Install into temp area
 print("Install...")
-test.run(cmd=["cd " + root + " && " + os.environ["MAKE"] + " DESTDIR=" + destdir + " install-all"],
-         check_finished=False)
+test.run(
+    cmd=["cd " + test.root + " && " + os.environ["MAKE"] + " DESTDIR=" + destdir + " install-all"],
+    check_finished=False)
 
 # Check we can run a test
 # Unfortunately the prefix was hardcoded in the exec at a different place,
@@ -34,8 +33,9 @@ test.run(cmd=["cd " + root + " && " + os.environ["MAKE"] + " DESTDIR=" + destdir
 
 # Uninstall
 print("Uninstall...\n")
-test.run(cmd=["cd " + root + " && " + os.environ["MAKE"] + " DESTDIR=" + destdir + " uninstall"],
-         check_finished=False)
+test.run(
+    cmd=["cd " + test.root + " && " + os.environ["MAKE"] + " DESTDIR=" + destdir + " uninstall"],
+    check_finished=False)
 
 # Check empty
 files = []

@@ -11,13 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
-
 if 'VERILATOR_TEST_NO_LINT_PY' in os.environ:
     test.skip("Skipping due to VERILATOR_TEST_NO_LINT_PY")
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
-test.run(cmd=["cd " + root + " && " + os.environ["MAKE"] + " lint-py"])
+test.run(cmd=["cd " + test.root + " && " + os.environ["MAKE"] + " lint-py"])
 
 test.passes()

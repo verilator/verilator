@@ -11,9 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-root = ".."
-
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 test.lint(verilator_flags2=['-Wall -Wno-DECLFILENAME'],
@@ -21,15 +19,15 @@ test.lint(verilator_flags2=['-Wall -Wno-DECLFILENAME'],
           expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.top_filename,
-             out_filename=root + "/docs/gen/ex_PROCASSINIT_faulty.rst",
+             out_filename=test.root + "/docs/gen/ex_PROCASSINIT_faulty.rst",
              lines="26-32")
 
 test.extract(in_filename=test.top_filename,
-             out_filename=root + "/docs/gen/ex_PROCASSINIT_fixed.rst",
+             out_filename=test.root + "/docs/gen/ex_PROCASSINIT_fixed.rst",
              lines="36-45")
 
 test.extract(in_filename=test.golden_filename,
-             out_filename=root + "/docs/gen/ex_PROCASSINIT_msg.rst",
+             out_filename=test.root + "/docs/gen/ex_PROCASSINIT_msg.rst",
              lines="1-9")
 
 test.passes()

@@ -12,8 +12,6 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
-
 
 def have_clang_check():
     cmd = 'python3 -c "from clang.cindex import Index; index = Index.create(); print(\\"Clang imported\\")";'
@@ -27,15 +25,15 @@ def have_clang_check():
 
 if 'VERILATOR_TEST_NO_ATTRIBUTES' in os.environ:
     test.skip("Skipping due to VERILATOR_TEST_NO_ATTRIBUTES")
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 if not have_clang_check():
     test.skip("No libclang installed")
 
-aroot = os.path.abspath(root)
+aroot = os.path.abspath(test.root)
 ccjson_file = test.obj_dir + "/compile_commands.json"
 
-aroot_dir = os.path.abspath(root)
+aroot_dir = os.path.abspath(test.root)
 srcs_dir = os.path.abspath("./t/t_dist_attributes")
 common_args = [
     "clang++", "-std=c++14", "-I" + aroot_dir + "/include", "-I" + aroot_dir + "/src", "-c"

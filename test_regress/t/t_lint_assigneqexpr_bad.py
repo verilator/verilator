@@ -12,18 +12,16 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_lint_assigneqexpr.v"
 
-root = ".."
-
 test.lint(verilator_flags2=['-Wall -Wno-DECLFILENAME'],
           fails=True,
           expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.top_filename,
-             out_filename=root + "/docs/gen/ex_ASSIGNEQEXPR_faulty.rst",
+             out_filename=test.root + "/docs/gen/ex_ASSIGNEQEXPR_faulty.rst",
              lines="26-29")
 
 test.extract(in_filename=test.golden_filename,
-             out_filename=root + "/docs/gen/ex_ASSIGNEQEXPR_msg.rst",
+             out_filename=test.root + "/docs/gen/ex_ASSIGNEQEXPR_msg.rst",
              lines="7-8")
 
 test.passes()

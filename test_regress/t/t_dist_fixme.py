@@ -11,13 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-root = ".."
-
-if not os.path.exists(root + "/.git"):
+if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
 ### Must trim output before and after our file list
-files = test.run_capture("cd " + root + " && git ls-files --exclude-standard")
+files = test.run_capture("cd " + test.root + " && git ls-files --exclude-standard")
 if test.verbose:
     print("ST " + files)
 
@@ -28,7 +26,7 @@ regex = r'(FIX[M]E|BO[Z]O)'
 for filename in files.split():
     if re.search(regex, filename):
         names[filename] = True
-    filename = os.path.join(root, filename)
+    filename = os.path.join(test.root, filename)
     if not os.path.exists(filename):
         continue
     wholefile = test.file_contents(filename)
