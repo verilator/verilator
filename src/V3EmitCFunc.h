@@ -649,7 +649,7 @@ public:
     }
     void visit(AstCMethodHard* nodep) override {
         iterateConst(nodep->fromp());
-        putns(nodep, ".");
+        putns(nodep, nodep->usePtr() ? "->" : ".");
         putns(nodep, nodep->name());
         puts("(");
         bool comma = false;

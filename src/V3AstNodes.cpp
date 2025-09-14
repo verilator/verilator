@@ -3116,7 +3116,9 @@ int AstCMethodHard::instrCount() const {
     return 0;
 }
 void AstCMethodHard::setPurity() {
-    static const std::map<std::string, bool> isPureMethod{{"andNot", false},
+    static const std::map<std::string, bool> isPureMethod{{"__Vm_rng.get_randstate", true},
+                                                          {"__Vm_rng.set_randstate", false},
+                                                          {"andNot", false},
                                                           {"any", true},
                                                           {"anyTriggered", false},
                                                           {"assign", false},
@@ -3124,6 +3126,7 @@ void AstCMethodHard::setPurity() {
                                                           {"atBack", true},
                                                           {"atWrite", true},
                                                           {"awaitingCurrentTime", true},
+                                                          {"basicStdRandomization", false},
                                                           {"clear", false},
                                                           {"clearFired", false},
                                                           {"commit", false},
@@ -3187,8 +3190,7 @@ void AstCMethodHard::setPurity() {
                                                           {"unique", true},
                                                           {"unique_index", true},
                                                           {"word", true},
-                                                          {"write_var", false},
-                                                          {"basicStdRandomization", false}};
+                                                          {"write_var", false}};
 
     if (name() == "atWriteAppend" || name() == "atWriteAppendBack") {
         m_pure = false;

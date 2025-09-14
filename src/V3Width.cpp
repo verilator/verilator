@@ -4286,11 +4286,31 @@ class WidthVisitor final : public VNVisitor {
                     processFTaskRefArgs(nodep);
                 }
                 return;
-            } else if (nodep->name() == "get_randstate" || nodep->name() == "set_randstate") {
-                // See implementations under AstNodeFTaskRef
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'get_randstate'/'set_randstate' called "
-                                             "on object. Suggest call from inside class.");
-                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitTrue{}});
+            } else if (nodep->name() == "get_randstate") {
+                methodOkArguments(nodep, 0, 0);
+                first_classp->baseMostClassp()->needRNG(true);
+                v3Global.useRandomizeMethods(true);
+                AstCMethodHard* const newp
+                    = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                         "__Vm_rng.get_randstate", nullptr};
+                newp->usePtr(true);
+                newp->dtypeSetString();
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            } else if (nodep->name() == "set_randstate") {
+                methodOkArguments(nodep, 1, 1);
+                AstNodeExpr* const expr1p = VN_AS(nodep->pinsp(), Arg)->exprp();  // May edit
+                iterateCheckString(nodep, "LHS", expr1p, BOTH);
+                AstNodeExpr* const exprp = VN_AS(nodep->pinsp(), Arg)->exprp();
+                first_classp->baseMostClassp()->needRNG(true);
+                v3Global.useRandomizeMethods(true);
+                AstCMethodHard* const newp
+                    = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                         "__Vm_rng.set_randstate", exprp->unlinkFrBack()};
+                newp->usePtr(true);
+                newp->dtypeSetString();
+                nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             } else if (nodep->name() == "constraint_mode") {

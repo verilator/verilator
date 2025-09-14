@@ -620,6 +620,7 @@ class AstCMethodHard final : public AstNodeExpr {
     // @astgen op2 := pinsp : List[AstNodeExpr] // Arguments
     string m_name;  // Name of method
     bool m_pure = false;  // Pure optimizable
+    bool m_usePtr = false;  // Use '->' not '.'
 public:
     AstCMethodHard(FileLine* fl, AstNodeExpr* fromp, const string& name,
                    AstNodeExpr* pinsp = nullptr)
@@ -641,6 +642,8 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+    bool usePtr() const { return m_usePtr; }
+    void usePtr(bool flag) { m_usePtr = flag; }
 
 private:
     void setPurity();
