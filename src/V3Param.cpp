@@ -1122,32 +1122,26 @@ class ParamProcessor final {
 
     void cellDeparam(AstCell* nodep, AstNodeModule*& srcModpr) {
         // Must always clone __Vrcm (recursive modules)
-        if (nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nodep->pinsp(),
-                              nodep->recursive())) {
-            nodep->modp(srcModpr);
-            nodep->modName(srcModpr->name());
-        }
+        nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nodep->pinsp(), nodep->recursive());
+        nodep->modp(srcModpr);  // Might be unchanged if not cloned (newModp == srcModp)
+        nodep->modName(srcModpr->name());
         nodep->recursive(false);
     }
-
     void ifaceRefDeparam(AstIfaceRefDType* const nodep, AstNodeModule*& srcModpr) {
         nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false);
         nodep->ifacep(VN_AS(srcModpr, Iface));
     }
-
     void classRefDeparam(AstClassOrPackageRef* nodep, AstNodeModule*& srcModpr) {
         resolveDefaultParams(nodep);
-        if (nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false))
-            nodep->classOrPackagep(srcModpr);
+        nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false);
+        nodep->classOrPackagep(srcModpr);  // Might be unchanged if not cloned (newModp == srcModp)
     }
-
     void classRefDeparam(AstClassRefDType* nodep, AstNodeModule*& srcModpr) {
         resolveDefaultParams(nodep);
-        if (nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false)) {
-            AstClass* const classp = VN_AS(srcModpr, Class);
-            nodep->classp(classp);
-            nodep->classOrPackagep(classp);
-        }
+        nodeDeparamCommon(nodep, srcModpr, nodep->paramsp(), nullptr, false);
+        AstClass* const newClassp = VN_AS(srcModpr, Class);
+        nodep->classp(newClassp);  // Might be unchanged if not cloned (newModp == srcModp)
+        nodep->classOrPackagep(newClassp);
     }
 
 public:
