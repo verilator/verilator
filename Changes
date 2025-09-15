@@ -46,6 +46,7 @@ Verilator 5.041 devel
 * Fix parameter implicit type from string (#6414). [Alex Solomatnikov]
 * Fix parsing for sequence expressions (#6427). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix resolving parameters (#6388) (#6418) (#6421) (#6438) (#6429). [Artur Bieniek, Antmicro Ltd.]
+* Fix external function declarations with class typedef references (#6433).
 
 
 Verilator 5.040 2025-08-30

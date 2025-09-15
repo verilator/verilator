@@ -917,6 +917,14 @@ class LinkDotFindVisitor final : public VNVisitor {
             classp->addStmtsp(nodep);
             nodep->isExternDef(true);  // So we check there's a matching extern
             nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
+            // Any "Type::" reference in the function's IO are really "MovedToClass::" references
+            if (nodep->fvarp())
+                nodep->fvarp()->foreach([this, classp](AstClassOrPackageRef* refp) {  //
+                    if (refp->name() == classp->name() && !refp->paramsp()) {
+                        UINFO(9, "Cleaning up external function type for class " << refp);
+                        pushDeletep(refp->unlinkFrBack());
+                    }
+                });
         }
     }
 
