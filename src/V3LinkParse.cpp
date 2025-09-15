@@ -402,7 +402,6 @@ class LinkParseVisitor final : public VNVisitor {
                 AstAssign* const assp = new AstAssign{
                     newfl, new AstParseRef{newfl, VParseRefExp::PX_TEXT, nodep->name()},
                     VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)};
-                UINFOTREE(1, assp, "", "new");
                 if (nodep->lifetime().isAutomatic()) {
                     nodep->addNextHere(new AstInitialAutomatic{newfl, assp});
                 } else {
@@ -415,7 +414,6 @@ class LinkParseVisitor final : public VNVisitor {
                 nodep->addNextHere(
                     new AstAssign{newfl, new AstVarRef{newfl, nodep, VAccess::WRITE},
                                   VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)});
-                UINFOTREE(1, nodep->nextp(), "", "new");
             }
         }
     }
