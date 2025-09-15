@@ -159,6 +159,16 @@ private:
     void visit(AstModportClockingRef* const nodep) override {
         // They have to be removed, because contain references to clocking blocks,
         // which are removed too. They aren't needed anyway.
+        for (AstClockingItem* itemp = nodep->clockingp()->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), ClockingItem)) {
+            AstVar* const varp = itemp->varp() ? itemp->varp() : VN_AS(itemp->user1p(), Var);
+            if (varp) {
+                AstModportVarRef* const modVarp
+                    = new AstModportVarRef{nodep->fileline(), varp->name(), itemp->direction()};
+                modVarp->varp(varp);
+                AstNode::addNext(static_cast<AstNode*>(nodep), modVarp);
+            }
+        }
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstClockingItem* const nodep) override {
@@ -166,14 +176,12 @@ private:
         AstVar* const varp = nodep->varp();
         if (!varp) {
             // Unused item
-            pushDeletep(nodep->unlinkFrBack());
             return;
         }
         FileLine* const flp = nodep->fileline();
         V3Const::constifyEdit(nodep->skewp());
         if (!VN_IS(nodep->skewp(), Const)) {
             nodep->skewp()->v3error("Skew must be constant (IEEE 1800-2023 14.4)");
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
         AstConst* const skewp = VN_AS(nodep->skewp(), Const);
@@ -181,6 +189,7 @@ private:
         AstNodeExpr* const exprp = nodep->exprp();
         varp->name(m_clockingp->name() + "__DOT__" + varp->name());
         m_clockingp->addNextHere(varp->unlinkFrBack());
+        nodep->user1p(varp);
         varp->user1p(nodep);
         if (nodep->direction() == VDirection::OUTPUT) {
             exprp->foreach([](const AstNodeVarRef* varrefp) {
@@ -297,7 +306,6 @@ private:
         } else {
             nodep->v3fatalSrc("Invalid direction");
         }
-        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstDelay* nodep) override {
         // Only cycle delays are relevant in this stage; also only process once
