@@ -33,6 +33,14 @@ module t (  /*AUTOARG*/
   assert property (@(negedge clk) not toggle) ++passsInc;
   cover property (@(negedge clk) not toggle) ++passsInc;
 
+  int inc2 = 0;
+  assert property (@(e) not toggle) begin
+    `checkh(inc2, 0);
+    inc2++;
+    `checkh(inc2,1);
+  end
+  event e;
+
   int cyc = 0;
 
   always @(posedge clk) begin
@@ -48,6 +56,7 @@ module t (  /*AUTOARG*/
     cyc <= cyc + 1;
 
     if (cyc == 5) begin
+      ->e;
       `checkh(inc, 2);
       `checkh(dec, -2);
       `checkh(passsInc, 6);
