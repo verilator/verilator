@@ -7,6 +7,7 @@
 class uvm_process_guard#(type T=int);
   T m_context;
   extern function T get_context();
+  extern function new(T ctxt);
 endclass
 
 // When this moves into class, note it's not uvm_process_guard#()::T
@@ -14,6 +15,10 @@ endclass
 function uvm_process_guard::T uvm_process_guard::get_context();
   return this.m_context;
 endfunction
+
+function uvm_process_guard::new(uvm_process_guard::T ctxt);
+  this.m_context = ctxt;
+endfunction : new
 
 class uvm_sequence_base;
   typedef uvm_process_guard#(uvm_sequence_base) m_guard_t;
