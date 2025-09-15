@@ -27,11 +27,11 @@ module t (  /*AUTOARG*/
   int passsInc = 0;
   int passsDec = 0;
 
-  assert property (@(negedge clk) not toggle)++passsInc;
+  assert property (@(negedge clk) not toggle) ++passsInc;
   else --passsDec;
 
-  assert property (@(negedge clk) not toggle)++passsInc;
-  cover property (@(negedge clk) not toggle)++passsInc;
+  assert property (@(negedge clk) not toggle) ++passsInc;
+  cover property (@(negedge clk) not toggle) ++passsInc;
 
   int cyc = 0;
 
