@@ -47,8 +47,6 @@
 
 #include "V3LinkInc.h"
 
-#include <algorithm>
-
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
@@ -101,6 +99,19 @@ class LinkIncVisitor final : public VNVisitor {
         VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;
         iterateChildren(nodep);
+    }
+    void visit(AstNodeCoverOrAssert* nodep) override {
+        VL_RESTORER(m_insStmtp);
+        m_insStmtp = nodep;
+        iterateAndNextNull(nodep->propp());
+        m_insStmtp = nullptr;
+        // Note: no iterating over sentreep here as they will be ignored anyway
+        if (AstAssert* const assertp = VN_CAST(nodep, Assert)) {
+            iterateAndNextNull(assertp->failsp());
+        } else if (AstAssertIntrinsic* const intrinsicp = VN_CAST(nodep, AssertIntrinsic)) {
+            iterateAndNextNull(intrinsicp->failsp());
+        }
+        iterateAndNextNull(nodep->passsp());
     }
     void visit(AstWhile* nodep) override {
         // Special, as statements need to be put in different places
