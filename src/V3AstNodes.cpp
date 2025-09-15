@@ -2230,9 +2230,12 @@ void AstRefDType::dump(std::ostream& str) const {
         static bool s_recursing = false;
         if (!s_recursing) {  // Prevent infinite dump if circular typedefs
             s_recursing = true;
+            if (classOrPackagep()) str << " cpkg=" << nodeAddr(classOrPackagep());
+            if (refDTypep()) str << " refDTypep=" << nodeAddr(refDTypep());
+            if (typedefp()) str << " typedefp=" << nodeAddr(typedefp());
+
             str << " -> ";
             if (const AstNodeDType* const subp = subDTypep()) {
-                if (typedefp()) str << "typedef=" << static_cast<void*>(typedefp()) << " -> ";
                 subp->dump(str);
             } else if (const AstTypedef* const subp = typedefp()) {
                 subp->dump(str);

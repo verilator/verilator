@@ -909,6 +909,17 @@ class LinkDotFindVisitor final : public VNVisitor {
         return hierBlocks.find(name) != hierBlocks.end();
     }
 
+    void moveExternFuncDecl(AstNodeFTask* nodep, AstClass* classp) {
+        // Move an 'extern function|task' to inside a class or, from an outer to inner-class
+        if (!nodep->isExternDef()) {
+            // Move it to proper spot under the target class
+            nodep->unlinkFrBack();
+            classp->addStmtsp(nodep);
+            nodep->isExternDef(true);  // So we check there's a matching extern
+            nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
+        }
+    }
+
     // VISITORS
     void visit(AstNetlist* nodep) override {  // FindVisitor::
         // Process $unit or other packages
@@ -1238,114 +1249,100 @@ class LinkDotFindVisitor final : public VNVisitor {
         VL_RESTORER(m_classOrPackagep);
         VL_RESTORER(m_curSymp);
         VSymEnt* upSymp = m_curSymp;
-        {
-            if (VN_IS(m_curSymp->nodep(), Class)) {
-                if (VN_AS(m_curSymp->nodep(), Class)->isInterfaceClass() && !nodep->pureVirtual()
-                    && !nodep->isConstructor()) {
-                    nodep->v3error("Interface class functions must be pure virtual"
-                                   << " (IEEE 1800-2023 8.26): " << nodep->prettyNameQ());
-                }
-                if (m_statep->forPrimary()
-                    && (nodep->name() == "randomize" || nodep->name() == "srandom")) {
-                    nodep->v3error(nodep->prettyNameQ()
-                                   << " is a predefined class method; redefinition not allowed"
-                                      " (IEEE 1800-2023 18.6.3)");
-                }
+
+        if (VN_IS(m_curSymp->nodep(), Class)) {
+            if (VN_AS(m_curSymp->nodep(), Class)->isInterfaceClass() && !nodep->pureVirtual()
+                && !nodep->isConstructor()) {
+                nodep->v3error("Interface class functions must be pure virtual"
+                               << " (IEEE 1800-2023 8.26): " << nodep->prettyNameQ());
             }
-            // Change to appropriate package if extern declaration (vs definition)
-            if (nodep->classOrPackagep()) {
-                // class-in-class
-                AstDot* const dotp = VN_CAST(nodep->classOrPackagep(), Dot);
-                AstClassOrPackageRef* const cpackagerefp
-                    = VN_CAST(nodep->classOrPackagep(), ClassOrPackageRef);
-                if (dotp) {
-                    AstClassOrPackageRef* const lhsp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
-                    m_statep->resolveClassOrPackage(m_curSymp, lhsp, true, false,
-                                                    "External definition :: reference");
-                    AstClass* const lhsclassp = VN_CAST(lhsp->classOrPackageSkipp(), Class);
-                    if (!lhsclassp) {
-                        nodep->v3error("Extern declaration's scope is not a defined class");
-                    } else {
-                        m_curSymp = m_statep->getNodeSym(lhsclassp);
-                        upSymp = m_curSymp;
-                        AstClassOrPackageRef* const rhsp = VN_AS(dotp->rhsp(), ClassOrPackageRef);
-                        m_statep->resolveClassOrPackage(m_curSymp, rhsp, true, false,
-                                                        "External definition :: reference");
-                        AstClass* const rhsclassp = VN_CAST(rhsp->classOrPackageSkipp(), Class);
-                        if (!rhsclassp) {
-                            nodep->v3error("Extern declaration's scope is not a defined class");
-                        } else {
-                            m_curSymp = m_statep->getNodeSym(rhsclassp);
-                            upSymp = m_curSymp;
-                            if (!nodep->isExternDef()) {
-                                // Move it to proper spot under the target class
-                                nodep->unlinkFrBack();
-                                rhsclassp->addStmtsp(nodep);
-                                nodep->isExternDef(true);  // So we check there's a matching extern
-                                nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
-                            }
-                        }
-                    }
-                } else if (cpackagerefp) {
-                    if (!cpackagerefp->classOrPackageSkipp()) {
-                        m_statep->resolveClassOrPackage(m_curSymp, cpackagerefp, true, false,
-                                                        "External definition :: reference");
-                    }
-                    AstClass* const classp = VN_CAST(cpackagerefp->classOrPackageSkipp(), Class);
-                    if (!classp) {
-                        nodep->v3error("Extern declaration's scope is not a defined class");
-                    } else {
-                        m_curSymp = m_statep->getNodeSym(classp);
-                        upSymp = m_curSymp;
-                        if (!nodep->isExternDef()) {
-                            // Move it to proper spot under the target class
-                            nodep->unlinkFrBack();
-                            classp->addStmtsp(nodep);
-                            nodep->isExternDef(true);  // So we check there's a matching extern
-                            nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
-                        }
-                    }
-                } else {
-                    v3fatalSrc("Unhandled extern function definition package");
-                }
+            if (m_statep->forPrimary()
+                && (nodep->name() == "randomize" || nodep->name() == "srandom")) {
+                nodep->v3error(nodep->prettyNameQ()
+                               << " is a predefined class method; redefinition not allowed"
+                                  " (IEEE 1800-2023 18.6.3)");
             }
-            // Set the class as package for iteration
-            if (VN_IS(m_curSymp->nodep(), Class)) {
-                m_classOrPackagep = VN_AS(m_curSymp->nodep(), Class);
-            }
-            // Create symbol table for the task's vars
-            const string name = (nodep->isExternProto() ? "extern "s : ""s) + nodep->name();
-            m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_classOrPackagep);
-            m_curSymp->fallbackp(upSymp);
-            // Convert the func's range to the output variable
-            // This should probably be done in the Parser instead, as then we could
-            // just attach normal signal attributes to it.
-            if (!nodep->isExternProto() && nodep->fvarp() && !VN_IS(nodep->fvarp(), Var)) {
-                AstNodeDType* dtypep = VN_CAST(nodep->fvarp(), NodeDType);
-                // If unspecified, function returns one bit; however when we
-                // support NEW() it could also return the class reference.
-                if (dtypep) {
-                    dtypep->unlinkFrBack();
-                } else {
-                    dtypep = new AstBasicDType{nodep->fileline(), VBasicDTypeKwd::LOGIC};
-                }
-                AstVar* const newvarp
-                    = new AstVar{nodep->fileline(), VVarType::VAR, nodep->name(),
-                                 VFlagChildDType{}, dtypep};  // Not dtype resolved yet
-                newvarp->direction(VDirection::OUTPUT);
-                newvarp->lifetime(VLifetime::AUTOMATIC);
-                newvarp->funcReturn(true);
-                newvarp->trace(false);  // Not user visible
-                newvarp->attrIsolateAssign(nodep->attrIsolateAssign());
-                nodep->fvarp(newvarp);
-                // Explicit insert required, as the var name shadows the upper level's task name
-                m_statep->insertSym(m_curSymp, newvarp->name(), newvarp,
-                                    nullptr /*classOrPackagep*/);
-            }
-            VL_RESTORER(m_ftaskp);
-            m_ftaskp = nodep;
-            iterateChildren(nodep);
         }
+        // Change to appropriate package if extern declaration (vs definition)
+        if (nodep->classOrPackagep()) {
+            // class-in-class
+            AstDot* const dotp = VN_CAST(nodep->classOrPackagep(), Dot);
+            AstClassOrPackageRef* const cpackagerefp
+                = VN_CAST(nodep->classOrPackagep(), ClassOrPackageRef);
+            if (dotp) {
+                AstClassOrPackageRef* const lhsp = VN_AS(dotp->lhsp(), ClassOrPackageRef);
+                m_statep->resolveClassOrPackage(m_curSymp, lhsp, true, false,
+                                                "External definition :: reference");
+                AstClass* const lhsclassp = VN_CAST(lhsp->classOrPackageSkipp(), Class);
+                if (!lhsclassp) {
+                    nodep->v3error("Extern declaration's scope is not a defined class");
+                } else {
+                    m_curSymp = m_statep->getNodeSym(lhsclassp);
+                    upSymp = m_curSymp;
+                    AstClassOrPackageRef* const rhsp = VN_AS(dotp->rhsp(), ClassOrPackageRef);
+                    m_statep->resolveClassOrPackage(m_curSymp, rhsp, true, false,
+                                                    "External definition :: reference");
+                    AstClass* const rhsclassp = VN_CAST(rhsp->classOrPackageSkipp(), Class);
+                    if (!rhsclassp) {
+                        nodep->v3error("Extern declaration's scope is not a defined class");
+                    } else {
+                        m_curSymp = m_statep->getNodeSym(rhsclassp);
+                        upSymp = m_curSymp;
+                        moveExternFuncDecl(nodep, rhsclassp);
+                    }
+                }
+            } else if (cpackagerefp) {
+                if (!cpackagerefp->classOrPackageSkipp()) {
+                    m_statep->resolveClassOrPackage(m_curSymp, cpackagerefp, true, false,
+                                                    "External definition :: reference");
+                }
+                AstClass* const classp = VN_CAST(cpackagerefp->classOrPackageSkipp(), Class);
+                if (!classp) {
+                    nodep->v3error("Extern declaration's scope is not a defined class");
+                } else {
+                    m_curSymp = m_statep->getNodeSym(classp);
+                    upSymp = m_curSymp;
+                    moveExternFuncDecl(nodep, classp);
+                }
+            } else {
+                v3fatalSrc("Unhandled extern function definition package");
+            }
+        }
+        // Set the class as package for iteration
+        if (VN_IS(m_curSymp->nodep(), Class)) {
+            m_classOrPackagep = VN_AS(m_curSymp->nodep(), Class);
+        }
+        // Create symbol table for the task's vars
+        const string name = (nodep->isExternProto() ? "extern "s : ""s) + nodep->name();
+        m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_classOrPackagep);
+        m_curSymp->fallbackp(upSymp);
+        // Convert the func's range to the output variable
+        // This should probably be done in the Parser instead, as then we could
+        // just attach normal signal attributes to it.
+        if (!nodep->isExternProto() && nodep->fvarp() && !VN_IS(nodep->fvarp(), Var)) {
+            AstNodeDType* dtypep = VN_CAST(nodep->fvarp(), NodeDType);
+            // If unspecified, function returns one bit; however when we
+            // support NEW() it could also return the class reference.
+            if (dtypep) {
+                dtypep->unlinkFrBack();
+            } else {
+                dtypep = new AstBasicDType{nodep->fileline(), VBasicDTypeKwd::LOGIC};
+            }
+            AstVar* const newvarp
+                = new AstVar{nodep->fileline(), VVarType::VAR, nodep->name(), VFlagChildDType{},
+                             dtypep};  // Not dtype resolved yet
+            newvarp->direction(VDirection::OUTPUT);
+            newvarp->lifetime(VLifetime::AUTOMATIC);
+            newvarp->funcReturn(true);
+            newvarp->trace(false);  // Not user visible
+            newvarp->attrIsolateAssign(nodep->attrIsolateAssign());
+            nodep->fvarp(newvarp);
+            // Explicit insert required, as the var name shadows the upper level's task name
+            m_statep->insertSym(m_curSymp, newvarp->name(), newvarp, nullptr /*classOrPackagep*/);
+        }
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstClocking* nodep) override {  // FindVisitor::
         VL_RESTORER(m_clockingp);

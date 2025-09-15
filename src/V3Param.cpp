@@ -1004,32 +1004,32 @@ class ParamProcessor final {
         for (size_t paramIdx = pinsByIndex.size(); paramIdx < m_classParams.size(); paramIdx++) {
             const int sourceParamIdx = m_classParams[paramIdx].second;
 
-            AstPin* newPin = nullptr;
+            AstPin* newPinp = nullptr;
 
             // Case 1: Dependent default -> clone the source pin's type
-            if (sourceParamIdx >= 0) { newPin = pinsByIndex[sourceParamIdx]->cloneTree(false); }
+            if (sourceParamIdx >= 0) newPinp = pinsByIndex[sourceParamIdx]->cloneTree(false);
 
             // Case 2: Direct default type (e.g., int), create a new pin with that dtype
-            if (!newPin && defaultTypeNodes[paramIdx]) {
+            if (!newPinp && defaultTypeNodes[paramIdx]) {
                 AstNodeDType* const dtypep = defaultTypeNodes[paramIdx];
-                newPin = new AstPin{dtypep->fileline(), static_cast<int>(paramIdx) + 1,
-                                    "__paramNumber" + cvtToStr(paramIdx + 1),
-                                    dtypep->cloneTree(false)};
+                newPinp = new AstPin{dtypep->fileline(), static_cast<int>(paramIdx) + 1,
+                                     "__paramNumber" + cvtToStr(paramIdx + 1),
+                                     dtypep->cloneTree(false)};
             }
 
-            if (newPin) {
-                newPin->name("__paramNumber" + cvtToStr(paramIdx + 1));
-                newPin->param(true);
-                newPin->modPTypep(m_classParams[paramIdx].first);
+            if (newPinp) {
+                newPinp->name("__paramNumber" + cvtToStr(paramIdx + 1));
+                newPinp->param(true);
+                newPinp->modPTypep(m_classParams[paramIdx].first);
                 if (classOrPackageRef) {
-                    classOrPackageRef->addParamsp(newPin);
+                    classOrPackageRef->addParamsp(newPinp);
                 } else if (classRefDType) {
-                    classRefDType->addParamsp(newPin);
+                    classRefDType->addParamsp(newPinp);
                 }
                 // Update local tracking so future dependent defaults can find it
                 pinsByIndex.resize(paramIdx + 1, nullptr);
-                pinsByIndex[paramIdx] = newPin;
-                if (!paramsp) paramsp = newPin;
+                pinsByIndex[paramIdx] = newPinp;
+                if (!paramsp) paramsp = newPinp;
             }
         }
     }
@@ -1083,6 +1083,7 @@ class ParamProcessor final {
                 AstNodeModule* nodeCopyp = srcModp->cloneTree(false);
                 // It is a temporary copy of the original class node, stored in order to create
                 // another instances. It is needed only during class instantiation.
+                UINFO(8, "    Created clone " << nodeCopyp);
                 m_deleter.pushDeletep(nodeCopyp);
                 srcModp->user3p(nodeCopyp);
                 storeOriginalParams(nodeCopyp);
