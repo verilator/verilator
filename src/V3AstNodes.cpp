@@ -463,7 +463,7 @@ void AstNetlist::timeprecisionMerge(FileLine*, const VTimescale& value) {
 }
 
 void AstNew::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
+    this->AstNodeFTaskRef::dump(str);
     if (isImplicit()) str << " [IMPLICIT]";
     if (isScoped()) str << " [SCOPED]";
 }

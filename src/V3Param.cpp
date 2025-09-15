@@ -239,8 +239,10 @@ class ParamProcessor final {
     //   AstGenFor::user2()     // bool   True if processed
     //   AstVar::user2()        // bool   True if constant propagated
     //   AstCell::user2p()      // string* Generate portion of hierarchical name
+    //   AstNodeModule:user4p() // AstNodeModule* Parametrized copy with default parameters
     const VNUser2InUse m_inuser2;
     const VNUser3InUse m_inuser3;
+    const VNUser4InUse m_inuser4;
     // User1 used by constant function simulations
 
     // TYPES
@@ -1056,10 +1058,12 @@ class ParamProcessor final {
                              ifaceRefRefs /*ref*/);
 
         // Default params are resolved as overrides
+        bool defaultsResolved = false;
         if (!any_overrides) {
             for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
                 if (pinp->modPTypep()) {
                     any_overrides = true;
+                    defaultsResolved = true;
                     break;
                 }
             }
@@ -1099,6 +1103,7 @@ class ParamProcessor final {
             UINFO(8, "     Done with " << modInfop->m_modp);
             newModp = modInfop->m_modp;
         }
+        if (defaultsResolved) { srcModp->user4p(newModp); }
 
         for (auto* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
@@ -1759,6 +1764,43 @@ public:
 
         // Mark classes which cannot be removed because they are still referenced
         ClassRefUnlinkerVisitor classUnlinkerVisitor{netlistp};
+
+        netlistp->foreach([](AstNodeFTaskRef* ftaskrefp) {
+            AstNodeFTask* ftaskp = ftaskrefp->taskp();
+            if (!ftaskp || !ftaskp->classMethod()) return;
+            string funcName = ftaskp->name();
+            for (AstNode* backp = ftaskrefp->backp(); backp; backp = backp->backp()) {
+                if (VN_IS(backp, Class)) {
+                    if (backp == ftaskrefp->classOrPackagep())
+                        return;  // task is in the same class as reference
+                    break;
+                }
+            }
+            AstClass* classp = nullptr;
+            for (AstNode* backp = ftaskp->backp(); backp; backp = backp->backp()) {
+                if (VN_IS(backp, Class)) {
+                    classp = VN_AS(backp, Class);
+                    break;
+                }
+            }
+            UASSERT_OBJ(classp, ftaskrefp, "Class method has no class above it");
+            if (classp->user3p()) return;  // will not get removed, no need to relink
+            AstClass* parametrizedClassp = VN_CAST(classp->user4p(), Class);
+            if (!parametrizedClassp) return;
+            AstNodeFTask* newFuncp = nullptr;
+            parametrizedClassp->exists([&newFuncp, funcName](AstNodeFTask* ftaskp) {
+                if (ftaskp->name() == funcName) {
+                    newFuncp = ftaskp;
+                    return true;
+                }
+                return false;
+            });
+            if (newFuncp) {
+                // v3error(ftaskp <<"->" << newFuncp);
+                ftaskrefp->taskp(newFuncp);
+                ftaskrefp->classOrPackagep(parametrizedClassp);
+            }
+        });
 
         relinkDots();
 
