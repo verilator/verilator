@@ -324,13 +324,12 @@ void V3FuncOpt::funcOptAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     {
         const VNUser1InUse user1InUse;
-        V3ThreadScope threadScope;
         for (AstNodeModule *modp = nodep->modulesp(), *nextModp; modp; modp = nextModp) {
             nextModp = VN_AS(modp->nextp(), NodeModule);
             for (AstNode *stmtp = modp->stmtsp(), *nextStmtp; stmtp; stmtp = nextStmtp) {
                 nextStmtp = stmtp->nextp();
                 if (AstCFunc* const cfuncp = VN_CAST(stmtp, CFunc)) {
-                    threadScope.enqueue([cfuncp]() { FuncOptVisitor::apply(cfuncp); });
+                    FuncOptVisitor::apply(cfuncp);
                 }
             }
         }
