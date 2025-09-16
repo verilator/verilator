@@ -4744,25 +4744,30 @@ class WidthVisitor final : public VNVisitor {
             userIterate(dtypep, WidthVP{SELF, BOTH}.p());
 
             if (auto* const vdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
-                VL_DO_DANGLING(patternUOrStruct(nodep, vdtypep, defaultp), nodep);
+                patternUOrStruct(nodep, vdtypep, defaultp);
             } else if (auto* const vdtypep = VN_CAST(dtypep, NodeArrayDType)) {
-                VL_DO_DANGLING(patternArray(nodep, vdtypep, defaultp), nodep);
+                patternArray(nodep, vdtypep, defaultp);
             } else if (auto* const vdtypep = VN_CAST(dtypep, AssocArrayDType)) {
-                VL_DO_DANGLING(patternAssoc(nodep, vdtypep, defaultp), nodep);
+                patternAssoc(nodep, vdtypep, defaultp);
             } else if (auto* const vdtypep = VN_CAST(dtypep, WildcardArrayDType)) {
-                VL_DO_DANGLING(patternWildcard(nodep, vdtypep, defaultp), nodep);
+                patternWildcard(nodep, vdtypep, defaultp);
             } else if (auto* const vdtypep = VN_CAST(dtypep, DynArrayDType)) {
-                VL_DO_DANGLING(patternDynArray(nodep, vdtypep, defaultp), nodep);
+                patternDynArray(nodep, vdtypep, defaultp);
             } else if (auto* const vdtypep = VN_CAST(dtypep, QueueDType)) {
-                VL_DO_DANGLING(patternQueue(nodep, vdtypep, defaultp), nodep);
+                patternQueue(nodep, vdtypep, defaultp);
             } else if (VN_IS(dtypep, BasicDType) && VN_AS(dtypep, BasicDType)->isRanged()) {
-                VL_DO_DANGLING(patternBasic(nodep, dtypep, defaultp), nodep);
+                patternBasic(nodep, dtypep, defaultp);
             } else {
                 nodep->v3warn(
                     E_UNSUPPORTED,
                     "Unsupported: Assignment pattern applies against non struct/union data type: "
                         << dtypep->prettyDTypeNameQ());
+                nodep->unlinkFrBack();
             }
+
+            // Done with the Pattern
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            if (defaultp) VL_DO_DANGLING(pushDeletep(defaultp), defaultp);
         }
     }
     void patternUOrStruct(AstPattern* nodep, AstNodeUOrStructDType* vdtypep,
@@ -4802,11 +4807,8 @@ class WidthVisitor final : public VNVisitor {
                             // data_type: default_value
                             userIterate(nodedtypep, WidthVP{SELF, BOTH}.p());
                             const string dtype = nodedtypep->dtypep()->prettyDTypeName(true);
-                            const auto pair = dtypemap.emplace(dtype, patp);
-                            if (!pair.second) {
-                                // Override stored default_value
-                                pair.first->second = patp->cloneTree(false);
-                            }
+                            // Override stored default_value
+                            dtypemap[dtype] = patp;
                         } else {
                             // Undefined pattern
                             patp->keyp()->v3error(
@@ -4836,20 +4838,19 @@ class WidthVisitor final : public VNVisitor {
             for (AstMemberDType* memp = vdtypep->membersp(); memp;
                  memp = VN_AS(memp->nextp(), MemberDType)) {
                 const auto it = patmap.find(memp);
-                AstPatMember* patp = nullptr;
                 if (it == patmap.end()) {  // default or default_type assignment
                     if (AstNodeUOrStructDType* const memp_nested_vdtypep
                         = VN_CAST(memp->virtRefDTypep(), NodeUOrStructDType)) {
                         newp = nestedvalueConcat_patternUOrStruct(memp_nested_vdtypep, defaultp,
                                                                   newp, nodep, dtypemap);
                     } else {
-                        patp = defaultPatp_patternUOrStruct(nodep, memp, patp, vdtypep, defaultp,
-                                                            dtypemap);
+                        AstPatMember* const patp = defaultPatp_patternUOrStruct(
+                            nodep, memp, vdtypep, defaultp, dtypemap);
                         newp = valueConcat_patternUOrStruct(patp, newp, memp, nodep);
+                        if (patp) VL_DO_DANGLING(pushDeletep(patp), patp);
                     }
                 } else {  // member assignment
-                    patp = it->second;
-                    newp = valueConcat_patternUOrStruct(patp, newp, memp, nodep);
+                    newp = valueConcat_patternUOrStruct(it->second, newp, memp, nodep);
                 }
             }
         } else {  // Unpacked
@@ -4859,8 +4860,8 @@ class WidthVisitor final : public VNVisitor {
                 const auto it = patmap.find(memp);
                 AstPatMember* patp = nullptr;
                 if (it == patmap.end()) {  // Default or default_type assignment
-                    patp = defaultPatp_patternUOrStruct(nodep, memp, patp, vdtypep, defaultp,
-                                                        dtypemap);
+                    patp = defaultPatp_patternUOrStruct(nodep, memp, vdtypep, defaultp, dtypemap);
+                    pushDeletep(patp);
                 } else {
                     patp = it->second;  // Member assignment
                 }
@@ -4877,13 +4878,11 @@ class WidthVisitor final : public VNVisitor {
         } else {
             nodep->v3error("Assignment pattern with no members");
         }
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     AstNodeExpr* nestedvalueConcat_patternUOrStruct(AstNodeUOrStructDType* memp_vdtypep,
                                                     AstPatMember* defaultp, AstNodeExpr* newp,
                                                     AstPattern* nodep, const DTypeMap& dtypemap) {
-        AstPatMember* patp = nullptr;
         for (AstMemberDType* memp_nested = memp_vdtypep->membersp(); memp_nested;
              memp_nested = VN_AS(memp_nested->nextp(), MemberDType)) {
             if (AstNodeUOrStructDType* const memp_multinested_vdtypep
@@ -4893,34 +4892,34 @@ class WidthVisitor final : public VNVisitor {
                 newp = nestedvalueConcat_patternUOrStruct(memp_multinested_vdtypep, defaultp, newp,
                                                           nodep, dtypemap);
             } else {
-                patp = defaultPatp_patternUOrStruct(nodep, memp_nested, patp, memp_vdtypep,
-                                                    defaultp, dtypemap);
+                AstPatMember* const patp = defaultPatp_patternUOrStruct(
+                    nodep, memp_nested, memp_vdtypep, defaultp, dtypemap);
                 newp = valueConcat_patternUOrStruct(patp, newp, memp_nested, nodep);
+                if (patp) VL_DO_DANGLING(pushDeletep(patp), patp);
             }
         }
         return newp;
     }
 
     AstPatMember* defaultPatp_patternUOrStruct(AstPattern* nodep, AstMemberDType* memp,
-                                               AstPatMember* patp,
                                                AstNodeUOrStructDType* memp_vdtypep,
                                                AstPatMember* defaultp, const DTypeMap& dtypemap) {
         const string memp_DType = memp->virtRefDTypep()->prettyDTypeName(true);
         const auto it = dtypemap.find(memp_DType);
         if (it != dtypemap.end()) {
             // default_value for data_type
-            patp = it->second->cloneTree(false);
-        } else if (defaultp) {
-            // default_value for any unmatched member yet
-            patp = defaultp->cloneTree(false);
-        } else {
-            if (!VN_IS(memp_vdtypep, UnionDType)) {
-                nodep->v3error("Assignment pattern missed initializing elements: "
-                               << memp->virtRefDTypep()->prettyDTypeNameQ() << " "
-                               << memp->prettyNameQ());
-            }
+            return it->second->cloneTree(false);
         }
-        return patp;
+        if (defaultp) {
+            // default_value for any unmatched member yet
+            return defaultp->cloneTree(false);
+        }
+        if (!VN_IS(memp_vdtypep, UnionDType)) {
+            nodep->v3error("Assignment pattern missed initializing elements: "
+                           << memp->virtRefDTypep()->prettyDTypeNameQ() << " "
+                           << memp->prettyNameQ());
+        }
+        return nullptr;
     }
 
     AstNodeExpr* valueConcat_patternUOrStruct(AstPatMember* patp, AstNodeExpr* newp,
@@ -5004,7 +5003,6 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3error("Assignment pattern with no members");
         }
         // UINFOTREE(9, newp, "", "apat-out");
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void patternAssoc(AstPattern* nodep, AstAssocArrayDType* arrayDtp, AstPatMember* defaultp) {
         AstNode* defaultValuep = nullptr;
@@ -5033,7 +5031,6 @@ class WidthVisitor final : public VNVisitor {
         }
         nodep->replaceWith(newp);
         // UINFOTREE(9, newp, "", "apat-out");
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void patternWildcard(AstPattern* nodep, AstWildcardArrayDType* arrayDtp,
                          AstPatMember* defaultp) {
@@ -5053,9 +5050,8 @@ class WidthVisitor final : public VNVisitor {
         }
         nodep->replaceWith(newp);
         // UINFOTREE(9, newp, "", "apat-out");
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void patternDynArray(AstPattern* nodep, AstDynArrayDType* arrayp, AstPatMember*) {
+    void patternDynArray(AstPattern* nodep, AstDynArrayDType* arrayp, AstPatMember* defaultp) {
         AstNode* newp = new AstConsDynArray{nodep->fileline()};
         newp->dtypeFrom(arrayp);
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
@@ -5072,9 +5068,8 @@ class WidthVisitor final : public VNVisitor {
         }
         nodep->replaceWith(newp);
         // UINFOTREE(9, newp, "", "apat-out");
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void patternQueue(AstPattern* nodep, AstQueueDType* arrayp, AstPatMember*) {
+    void patternQueue(AstPattern* nodep, AstQueueDType* arrayp, AstPatMember* defaultp) {
         AstNode* newp = new AstConsQueue{nodep->fileline()};
         newp->dtypeFrom(arrayp);
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
@@ -5093,7 +5088,6 @@ class WidthVisitor final : public VNVisitor {
         }
         nodep->replaceWith(newp);
         // UINFOTREE(9, newp, "", "apat-out");
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void patternBasic(AstPattern* nodep, AstNodeDType* vdtypep, AstPatMember* defaultp) {
         const AstBasicDType* bdtypep = VN_AS(vdtypep, BasicDType);
@@ -5142,7 +5136,6 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3error("Assignment pattern with no members");
         }
         // UINFOTREE(9, newp, "", "apat-out");
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     AstNodeExpr* patternMemberValueIterate(AstPatMember* patp) {
         // Determine values - might be another InitArray
