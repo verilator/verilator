@@ -17,6 +17,8 @@ Verilator 5.041 devel
 * Add configure `--enable-asan` to compile verilator_bin with the address sanitizer (#6404). [Geza Lore]
 * Add $(LDFLAGS) and $(LIBS) to when building shared libraries (#6425) (#6426). [Ahmed El-Mahmoudy]
 * Add ASSIGNEQEXPR when use `=` inside expressions (#5567). [Ethan Sifferman]
+* Deprecate sensitivity list on public_flat_rw attributes (#6443). [Geza Lore]
+* Support modports referencing clocking blocks (#4555) (#6436). [Ryszard Rozak, Antmicro Ltd.]
 * Support pure functions in sensitivity lists (#6393). [Krzysztof Bieganski, Antmicro Ltd.]
 * Improve automatic selection of logic for DFG synthesis (#6370). [Geza Lore]
 * Improve `covergroup with function sample` handling  (#6387). [Jakub Wasilewski]
@@ -36,18 +38,18 @@ Verilator 5.041 devel
 * Fix deep shift pattern performance (#6379) (#6420). [Geza Lore]
 * Fix COVERAGEIGN-ignored `get_inst_coverage` and other covergroup methods (#6383). [Alex Solomatnikov]
 * Fix error when modport variable is unresolved (#6386). [Ryszard Rozak, Antmicro Ltd.]
-* Fix resolving parameters (#6388) (#6418) (#6421). [Artur Bieniek, Antmicro Ltd.]
+* Fix resolving parameters (#6388) (#6418) (#6421) (#6438) (#6429). [Artur Bieniek, Antmicro Ltd.]
 * Fix wire array with initial assignment (#6391). [Alex Solomatnikov]
 * Fix import of class with default params (#6396) (#6410) (#6413). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix use after free in elaboration (#6403). [Geza Lore]
 * Fix address sanitizer issues (#6406). [Geza Lore]
 * Fix timing control under fork under function (#6407). [Krzysztof Bieganski, Antmicro Ltd.]
-* Fix memory leaks (#6411) (#6417) (#6419). [Geza Lore]
+* Fix memory leaks (#6411) (#6417) (#6419) (#6437) (#6439). [Geza Lore]
 * Fix parameter implicit type from string (#6414). [Alex Solomatnikov]
 * Fix parsing for sequence expressions (#6427). [Bartłomiej Chmiel, Antmicro Ltd.]
-* Fix resolving parameters (#6388) (#6418) (#6421) (#6438) (#6429). [Artur Bieniek, Antmicro Ltd.]
 * Fix external function declarations with class typedef references (#6433).
 * Fix internal error on out-of-bounds real array access.
+* Fix pre/post increments in assertions (#6434).
 
 
 Verilator 5.040 2025-08-30
