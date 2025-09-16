@@ -435,6 +435,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     VarToAssignsMap m_assigns;  // Assigns in current module
     int m_unique = 0;
     bool m_alhs = false;  // On LHS of assignment
+    bool m_inAlias = false;  // Inside alias statement
     VStrength m_currentStrength = VStrength::STRONG;  // Current strength of assignment,
                                                       // Used only on LHS of assignment
     const AstNode* m_logicp = nullptr;  // Current logic being built
@@ -1363,6 +1364,8 @@ class TristateVisitor final : public TristateBaseVisitor {
     void visit(AstAssignAlias* nodep) override {
         VL_RESTORER(m_alhs);
         VL_RESTORER(m_currentStrength);
+        VL_RESTORER(m_inAlias);
+        m_inAlias = true;
         if (m_graphing) {
             if (nodep->user2() & U2_GRAPHING) return;
             m_alhs = true;  // In AstAssignAlias both sides should be considered as lhs
@@ -1774,6 +1777,10 @@ class TristateVisitor final : public TristateBaseVisitor {
             // any tristate logic on the driver.
             if (nodep->access().isWriteOrRW() && m_tgraph.isTristate(nodep->varp())) {
                 UINFO(9, "     Ref-to-lvalue " << nodep);
+                if (m_inAlias) {
+                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Tristate var ref in alias");
+                    return;
+                }
                 UASSERT_OBJ(!nodep->access().isRW(), nodep, "Tristate unexpected on R/W access");
                 m_tgraph.didProcess(nodep);
                 mapInsertLhsVarRef(nodep);
