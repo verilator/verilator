@@ -1393,8 +1393,8 @@ class VlTest:
     def leak_check_disable(self):
         """Disable memory leak detection when leaks are expected,
         e.g.: on early abnormal termination"""
-        asan_options = os.environ.get("ASAN_OPTION", "")
-        self.setenv("ASAN_OPTION", asan_options + ":detect_leaks=0")
+        asan_options = os.environ.get("ASAN_OPTIONS", "")
+        self.setenv("ASAN_OPTIONS", asan_options + ":detect_leaks=0")
 
     def execute(self, **kwargs) -> None:
         """Run simulation executable.

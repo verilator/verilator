@@ -3024,7 +3024,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_usedPins);
         m_usedPins.clear();
         UASSERT_OBJ(nodep->classp(), nodep, "ClassRef has unlinked class");
-        UASSERT_OBJ(m_statep->forPrimary() || !nodep->paramsp(), nodep,
+        UASSERT_OBJ(m_statep->forPrimary() || !nodep->paramsp() || V3Error::errorCount(), nodep,
                     "class reference parameter not removed by V3Param");
         VL_RESTORER(m_pinSymp);
         {

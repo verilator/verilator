@@ -6517,23 +6517,23 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       yS_NEXTTIME pexpr
                         { $$ = $2; BBUNSUP($1, "Unsupported: s_nexttime (in property expression)"); }
         |       yNEXTTIME '[' constExpr ']' pexpr %prec yNEXTTIME
-                        { $$ = $5; BBUNSUP($1, "Unsupported: nexttime[] (in property expression)"); }
+                        { $$ = $5; BBUNSUP($1, "Unsupported: nexttime[] (in property expression)"); DEL($3); }
         |       yS_NEXTTIME '[' constExpr ']' pexpr %prec yS_NEXTTIME
-                        { $$ = $5; BBUNSUP($1, "Unsupported: s_nexttime[] (in property expression)"); }
+                        { $$ = $5; BBUNSUP($1, "Unsupported: s_nexttime[] (in property expression)"); DEL($3); }
         |       yALWAYS pexpr
                         { $$ = $2; BBUNSUP($1, "Unsupported: always (in property expression)"); }
         |       yALWAYS anyrange pexpr  %prec yALWAYS
-                        { $$ = $3; BBUNSUP($1, "Unsupported: always[] (in property expression)"); }
+                        { $$ = $3; BBUNSUP($1, "Unsupported: always[] (in property expression)"); DEL($2); }
         |       yS_ALWAYS anyrange pexpr  %prec yS_ALWAYS
-                        { $$ = $3; BBUNSUP($1, "Unsupported: s_always (in property expression)"); }
+                        { $$ = $3; BBUNSUP($1, "Unsupported: s_always (in property expression)"); DEL($2); }
         |       yEVENTUALLY pexpr
                         { $$ = $2; BBUNSUP($1, "Unsupported: eventually (in property expression)"); }
         |       yS_EVENTUALLY pexpr
                         { $$ = $2; BBUNSUP($1, "Unsupported: s_eventually (in property expression)"); }
         |       yEVENTUALLY '[' constExpr ']' pexpr  %prec yEVENTUALLY
-                        { $$ = $5; BBUNSUP($1, "Unsupported: eventually[] (in property expression)"); }
+                        { $$ = $5; BBUNSUP($1, "Unsupported: eventually[] (in property expression)"); DEL($3); }
         |       yS_EVENTUALLY anyrange pexpr  %prec yS_EVENTUALLY
-                        { $$ = $3; BBUNSUP($1, "Unsupported: s_eventually[] (in property expression)"); }
+                        { $$ = $3; BBUNSUP($1, "Unsupported: s_eventually[] (in property expression)"); DEL($2); }
         |       ~o~pexpr yUNTIL pexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: until (in property expression)"); }
         |       ~o~pexpr yS_UNTIL pexpr
@@ -6548,13 +6548,13 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         |       ~o~pexpr yIFF pexpr
                         { $$ = new AstLogEq{$2, $1, $3}; }
         |       yACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yACCEPT_ON
-                        { $$ = $5; BBUNSUP($2, "Unsupported: accept_on (in property expression)"); }
+                        { $$ = $5; BBUNSUP($2, "Unsupported: accept_on (in property expression)"); DEL($3); }
         |       yREJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yREJECT_ON
-                        { $$ = $5; BBUNSUP($2, "Unsupported: reject_on (in property expression)"); }
+                        { $$ = $5; BBUNSUP($2, "Unsupported: reject_on (in property expression)"); DEL($3); }
         |       ySYNC_ACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr %prec ySYNC_ACCEPT_ON
-                        { $$ = $5; BBUNSUP($2, "Unsupported: sync_accept_on (in property expression)"); }
+                        { $$ = $5; BBUNSUP($2, "Unsupported: sync_accept_on (in property expression)"); DEL($3); }
         |       ySYNC_REJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr %prec ySYNC_REJECT_ON
-                        { $$ = $5; BBUNSUP($2, "Unsupported: sync_reject_on (in property expression)"); }
+                        { $$ = $5; BBUNSUP($2, "Unsupported: sync_reject_on (in property expression)"); DEL($3); }
         //
         //                      // IEEE: "property_instance"
         //                      // Looks just like a function/method call

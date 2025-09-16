@@ -605,7 +605,8 @@ class ParamProcessor final {
         if (nodep->op4p()) replaceRefsRecurse(nodep->op4p(), oldClassp, newClassp);
         if (nodep->nextp()) replaceRefsRecurse(nodep->nextp(), oldClassp, newClassp);
     }
-    void deepCloneModule(AstNodeModule* srcModp, AstNode* ifErrorp, AstPin* paramsp,
+    // Return true on success, false on error
+    bool deepCloneModule(AstNodeModule* srcModp, AstNode* ifErrorp, AstPin* paramsp,
                          const string& newname, const IfaceRefRefs& ifaceRefRefs) {
         // Deep clone of new module
         // Note all module internal variables will be re-linked to the new modules by clone
@@ -615,10 +616,6 @@ class ParamProcessor final {
             newModp = VN_CAST(srcModp->user3p()->cloneTree(false), NodeModule);
         } else {
             newModp = srcModp->cloneTree(false);
-        }
-
-        if (AstClass* const newClassp = VN_CAST(newModp, Class)) {
-            replaceRefsRecurse(newModp->stmtsp(), newClassp, VN_AS(srcModp, Class));
         }
 
         newModp->name(newname);
@@ -631,8 +628,14 @@ class ParamProcessor final {
         if ((newModp->level() - srcModp->level()) >= (v3Global.opt.moduleRecursionDepth() - 2)) {
             ifErrorp->v3error("Exceeded maximum --module-recursion-depth of "
                               << v3Global.opt.moduleRecursionDepth());
-            return;
+            VL_DO_DANGLING(newModp->deleteTree(), newModp);
+            return false;
         }
+
+        if (AstClass* const newClassp = VN_CAST(newModp, Class)) {
+            replaceRefsRecurse(newModp->stmtsp(), newClassp, VN_AS(srcModp, Class));
+        }
+
         // Keep tree sorted by level. Note: Different parameterizations of the same recursive
         // module end up with the same level, which we will need to fix up at the end, as we do not
         // know up front how recursive modules are expanded, and a later expansion might re-use an
@@ -695,6 +698,7 @@ class ParamProcessor final {
                 }
             }
         }
+        return true;
     }
     const ModInfo* moduleFindOrClone(AstNodeModule* srcModp, AstNode* ifErrorp, AstPin* paramsp,
                                      const string& newname, const IfaceRefRefs& ifaceRefRefs) {
@@ -703,7 +707,9 @@ class ParamProcessor final {
         if (it != m_modNameMap.end()) {
             UINFO(4, "     De-parameterize to prev: " << it->second.m_modp);
         } else {
-            deepCloneModule(srcModp, ifErrorp, paramsp, newname, ifaceRefRefs);
+            if (!deepCloneModule(srcModp, ifErrorp, paramsp, newname, ifaceRefRefs)) {
+                return nullptr;
+            }
             it = m_modNameMap.find(newname);
             UASSERT(it != m_modNameMap.end(), "should find just-made module");
         }
@@ -1094,6 +1100,7 @@ class ParamProcessor final {
                 = srcModp->hierBlock() ? longname : moduleCalcName(srcModp, longname);
             const ModInfo* const modInfop
                 = moduleFindOrClone(srcModp, nodep, paramsp, newname, ifaceRefRefs);
+            if (!modInfop) return nullptr;
             // We need to relink the pins to the new module
             relinkPinsByName(pinsp, modInfop->m_modp);
             UINFO(8, "     Done with " << modInfop->m_modp);
@@ -1126,30 +1133,34 @@ class ParamProcessor final {
 
     AstNodeModule* cellDeparam(AstCell* nodep, AstNodeModule* srcModp) {
         // Must always clone __Vrcm (recursive modules)
-        AstNodeModule* newModp = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(),
-                                                   nodep->pinsp(), nodep->recursive());
+        AstNodeModule* const newModp = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(),
+                                                         nodep->pinsp(), nodep->recursive());
+        if (!newModp) return nullptr;
         nodep->modp(newModp);  // Might be unchanged if not cloned (newModp == srcModp)
         nodep->modName(newModp->name());
         nodep->recursive(false);
         return newModp;
     }
     AstNodeModule* ifaceRefDeparam(AstIfaceRefDType* const nodep, AstNodeModule* srcModp) {
-        AstNodeModule* newModp
+        AstNodeModule* const newModp
             = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false);
+        if (!newModp) return nullptr;
         nodep->ifacep(VN_AS(newModp, Iface));
         return newModp;
     }
     AstNodeModule* classRefDeparam(AstClassOrPackageRef* nodep, AstNodeModule* srcModp) {
         resolveDefaultParams(nodep);
-        AstNodeModule* newModp
+        AstNodeModule* const newModp
             = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false);
+        if (!newModp) return nullptr;
         nodep->classOrPackagep(newModp);  // Might be unchanged if not cloned (newModp == srcModp)
         return newModp;
     }
     AstNodeModule* classRefDeparam(AstClassRefDType* nodep, AstNodeModule* srcModp) {
         resolveDefaultParams(nodep);
-        AstNodeModule* newModp
+        AstNodeModule* const newModp
             = nodeDeparamCommon(nodep, srcModp, nodep->paramsp(), nullptr, false);
+        if (!newModp) return nullptr;
         AstClass* const newClassp = VN_AS(newModp, Class);
         nodep->classp(newClassp);  // Might be unchanged if not cloned (newModp == srcModp)
         nodep->classOrPackagep(newClassp);
@@ -1185,6 +1196,8 @@ public:
         } else {
             nodep->v3fatalSrc("Expected module parameterization");
         }
+        // 'newModp' might be nullptr on error
+        if (!newModp) return nullptr;
 
         // Set name for later warnings
         newModp->someInstanceName(instanceName);
@@ -1324,14 +1337,15 @@ class ParamVisitor final : public VNVisitor {
                 }
 
                 // Apply parameter specialization
-                AstNodeModule* const newModp
-                    = m_processor.nodeDeparam(cellp, srcModp, modp, someInstanceName);
+                if (AstNodeModule* const newModp
+                    = m_processor.nodeDeparam(cellp, srcModp, modp, someInstanceName)) {
 
-                // Add the (now potentially specialized) child module to the work queue
-                workQueue.emplace(newModp->level(), newModp);
+                    // Add the (now potentially specialized) child module to the work queue
+                    workQueue.emplace(newModp->level(), newModp);
 
-                // Add to the hierarchy registry
-                m_state.m_parentps[newModp].insert(modp);
+                    // Add to the hierarchy registry
+                    m_state.m_parentps[newModp].insert(modp);
+                }
             }
         }
 
@@ -1767,7 +1781,10 @@ public:
         // Remove defaulted classes
         for (AstClass* const classp : m_state.m_paramClasses) {
             if (!classp->user3p()) {
-                // The default value isn't referenced, so it can be removed
+                // If there was an error, don't remove classes as they might
+                // have remained referenced, and  will crash in V3Broken or
+                // other locations. This is fine, we will abort imminently.
+                if (V3Error::errorCount()) continue;
                 VL_DO_DANGLING(pushDeletep(classp->unlinkFrBack()), classp);
             } else {
                 // Referenced. classp became a specialized class with the default

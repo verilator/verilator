@@ -1106,6 +1106,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                     = new AstCond{nodep->fileline(), condp->cloneTree(false), en1p, en2p};
                 UINFO(9, "       newcond " << enp);
                 nodep->user1p(enp);  // propagate up COND(lhsp->enable, rhsp->enable)
+                if (thenp->user1p() && !thenp->user1p()->backp()) pushDeletep(thenp->user1p());
+                if (elsep->user1p() && !elsep->user1p()->backp()) pushDeletep(elsep->user1p());
                 thenp->user1p(nullptr);
                 elsep->user1p(nullptr);
             }
