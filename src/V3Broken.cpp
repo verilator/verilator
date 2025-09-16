@@ -60,8 +60,9 @@ static bool s_brokenAllowMidvisitorCheck = false;
 // Table of allocated AstNode pointers
 
 static class AllocTable final {
+    friend class V3Broken;
     // MEMBERS
-    V3Mutex m_mutex; // Mutex for m_allocated
+    V3Mutex m_mutex;  // Mutex for m_allocated
     // Set of all nodes allocated but not freed
     std::unordered_set<const AstNode*> m_allocated VL_GUARDED_BY(m_mutex);
 
@@ -85,8 +86,12 @@ public:
         }
         // LCOV_EXCL_STOP
     }
-    bool isAllocated(const AstNode* nodep) const { return m_allocated.count(nodep) != 0; }
-    void checkForLeaks() {
+
+private:  // for V3Broken only
+    bool isAllocated(const AstNode* nodep) const VL_REQUIRES(m_mutex) {
+        return m_allocated.count(nodep) != 0;
+    }
+    void checkForLeaks() VL_REQUIRES(m_mutex) {
         if (!v3Global.opt.debugCheck()) return;
 
         const uint8_t brokenCntCurrent = s_brokenCntGlobal.get();
@@ -343,6 +348,8 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
         UINFO(1, "Broken called under broken, skipping recursion.");  // LCOV_EXCL_LINE
     } else {
         inBroken = true;
+
+        V3LockGuard lock{s_allocTable.m_mutex};
 
         // Mark every node in the tree
         const uint8_t brokenCntCurrent = s_brokenCntGlobal.get();
