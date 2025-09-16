@@ -3270,8 +3270,8 @@ class WidthVisitor final : public VNVisitor {
     }
     bool memberSelClass(AstMemberSel* nodep, AstClassRefDType* adtypep) {
         if (nodep->name() == "rand_mode" || nodep->name() == "randomize") {
-            AstMethodCall* const newp = new AstMethodCall{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                nodep->name(), nullptr};
+            AstMethodCall* const newp = new AstMethodCall{
+                nodep->fileline(), nodep->fromp()->unlinkFrBack(), nodep->name(), nullptr};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             visit(newp);
@@ -7715,7 +7715,7 @@ class WidthVisitor final : public VNVisitor {
 
     void iterateCheckBool(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
         UASSERT_OBJ(stage == BOTH, parentp,
-                     "Bad call");  // Booleans always self-determined so do BOTH at once
+                    "Bad call");  // Booleans always self-determined so do BOTH at once
         // Underp is used in a self-determined but boolean context, reduce a
         // multibit number to one bit
         // stage is always BOTH so not passed as argument
