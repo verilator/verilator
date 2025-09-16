@@ -2404,6 +2404,19 @@ class LinkDotIfaceVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
+    void visit(AstModportClockingRef* nodep) override {  // IfaceVisitor::
+        UINFO(5, "   fic: " << nodep);
+        iterateChildren(nodep);
+        VSymEnt* const symp = m_curSymp->findIdFallback(nodep->name());
+        if (!symp) {
+            nodep->v3error("Modport item not found: " << nodep->prettyNameQ());
+        } else if (AstClocking* const clockingp = VN_CAST(symp->nodep(), Clocking)) {
+            nodep->clockingp(clockingp);
+            m_statep->insertSym(m_curSymp, nodep->name(), nodep, nullptr /*package*/);
+        } else {
+            nodep->v3error("Modport item is not a clocking block: " << nodep->prettyNameQ());
+        }
+    }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }  // IfaceVisitor::
 
 public:
@@ -3963,7 +3976,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         dotSymp = m_statep->getNodeSym(ifaceRefp->ifacep());
                     }
                 }
+            } else if (const AstModportClockingRef* const clockingRefp
+                       = VN_CAST(dotSymp->nodep(), ModportClockingRef)) {
+                dotSymp = m_statep->getNodeSym(clockingRefp->clockingp());
             }
+
             if (!m_statep->forScopeCreation()) {
                 VSymEnt* foundp = nullptr;
                 if (modport) {

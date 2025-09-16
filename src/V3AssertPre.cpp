@@ -38,6 +38,7 @@ class AssertPreVisitor final : public VNVisitor {
     // We're not parsing the tree, or anything more complicated.
 private:
     // NODE STATE
+    // AstClockingItem::user1p()         // AstVar*.      varp() of ClockingItem after unlink
     const VNUser1InUse m_inuser1;
     // STATE
     // Current context:
@@ -156,19 +157,32 @@ private:
         if (nodep->eventp()) nodep->addNextHere(nodep->eventp()->unlinkFrBack());
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
+    void visit(AstModportClockingRef* const nodep) override {
+        // It has to be converted to a list of ModportClockingVarRefs,
+        // because clocking blocks are removed in this pass
+        for (AstClockingItem* itemp = nodep->clockingp()->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), ClockingItem)) {
+            AstVar* const varp = itemp->varp() ? itemp->varp() : VN_AS(itemp->user1p(), Var);
+            if (varp) {
+                AstModportVarRef* const modVarp
+                    = new AstModportVarRef{nodep->fileline(), varp->name(), itemp->direction()};
+                modVarp->varp(varp);
+                nodep->addNextHere(modVarp);
+            }
+        }
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
     void visit(AstClockingItem* const nodep) override {
         // Get a ref to the sampled/driven variable
         AstVar* const varp = nodep->varp();
         if (!varp) {
             // Unused item
-            pushDeletep(nodep->unlinkFrBack());
             return;
         }
         FileLine* const flp = nodep->fileline();
         V3Const::constifyEdit(nodep->skewp());
         if (!VN_IS(nodep->skewp(), Const)) {
             nodep->skewp()->v3error("Skew must be constant (IEEE 1800-2023 14.4)");
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
         AstConst* const skewp = VN_AS(nodep->skewp(), Const);
@@ -176,6 +190,7 @@ private:
         AstNodeExpr* const exprp = nodep->exprp();
         varp->name(m_clockingp->name() + "__DOT__" + varp->name());
         m_clockingp->addNextHere(varp->unlinkFrBack());
+        nodep->user1p(varp);
         varp->user1p(nodep);
         if (nodep->direction() == VDirection::OUTPUT) {
             exprp->foreach([](const AstNodeVarRef* varrefp) {
@@ -292,7 +307,6 @@ private:
         } else {
             nodep->v3fatalSrc("Invalid direction");
         }
-        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstDelay* nodep) override {
         // Only cycle delays are relevant in this stage; also only process once

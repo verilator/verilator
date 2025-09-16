@@ -13,7 +13,7 @@ interface mem_if (
     output reset;
   endclocking
 
-  modport mp(input clk);
+  modport mp(input clk, clocking reset, clocking cx);
 
 endinterface
 

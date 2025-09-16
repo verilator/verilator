@@ -51,7 +51,6 @@ for s in [
         'Interface port declaration ',
         'Modport item is not a function/task: ',
         'Modport item is not a variable: ',
-        'Modport item not found: ',
         'Modport not referenced as <interface>.',
         'Modport not referenced from underneath an interface: ',
         'Non-interface used as an interface: ',
@@ -77,7 +76,6 @@ for s in [
         'Unsupported: 4-state numbers in this context',
         'Unsupported: Bind with instance list',
         'Unsupported: Concatenation to form ',
-        'Unsupported: Modport clocking',
         'Unsupported: Modport dotted port name',
         'Unsupported: Modport export with prototype',
         'Unsupported: Modport import with prototype',
@@ -105,7 +103,6 @@ for s in [
         'Unsupported: repeat event control',
         'Unsupported: static cast to ',
         'Unsupported: super',
-        'Unsupported: this.super',
         'Unsupported: with[] stream expression',
 ]:
     Suppressed[s] = True

@@ -2082,6 +2082,15 @@ void AstMemberSel::dump(std::ostream& str) const {
     }
 }
 void AstMemberSel::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstModportClockingRef::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (clockingp()) {
+        str << " -> ";
+        clockingp()->dump(str);
+    } else {
+        str << " -> UNLINKED";
+    }
+}
 void AstModportFTaskRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isExport()) str << " EXPORT";
