@@ -1348,13 +1348,12 @@ Summary:
 .. option:: --public-flat-rw
 
    Declares all variables, ports, and wires public as if they had
-   :code:`/*verilator public_flat_rw @ (<variable's_source_process_edge>)*/`
-   metacomments.  This will make them VPI accessible by their flat name,
-   but not turn off module inlining.  This is particularly useful in
-   combination with :vlopt:`--vpi`. This may also in some rare cases result
-   in mis-simulation of generated clocks.  Instead of this global option,
-   marking only those signals that need public_flat_rw is typically
-   significantly better performing.
+   :code:`/*verilator public_flat_rw*/` metacomments.  This will make them VPI
+   accessible by their flat name, but not turn off module inlining.  This is
+   particularly useful in combination with :vlopt:`--vpi`. This may also in
+   some rare cases result in mis-simulation of generated clocks.  Instead of
+   this global option, marking only those signals that need public_flat_rw is
+   typically significantly better performing.
 
 .. option:: --public-ignore
 
@@ -2338,7 +2337,7 @@ The grammar of control commands is as follows:
 
 .. option:: public_flat_rd [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"]
 
-.. option:: public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>" "@(edge)"]
+.. option:: public_flat_rw [-module "<modulename>"] [-task/-function "<taskname>"] [-var "<signame>"] ["@(edge)"]
 
    Sets the variable to be public.  Same as
    :option:`/*verilator&32;public*/` or

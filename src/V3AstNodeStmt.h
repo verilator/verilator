@@ -219,23 +219,6 @@ public:
 // === Concrete node types =====================================================
 
 // === AstNodeStmt ===
-class AstAlwaysPublic final : public AstNodeStmt {
-    // "Fake" sensitivity created by /*verilator public_flat_rw @(edgelist)*/
-    // Body statements are just AstVarRefs to the public signals
-    // @astgen op1 := sentreep : Optional[AstSenTree]
-    // @astgen op2 := stmtsp : List[AstNode]
-public:
-    AstAlwaysPublic(FileLine* fl, AstSenTree* sentreep, AstNode* stmtsp)
-        : ASTGEN_SUPER_AlwaysPublic(fl) {
-        this->sentreep(sentreep);
-        addStmtsp(stmtsp);
-    }
-    ASTGEN_MEMBERS_AstAlwaysPublic;
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
-    // Special accessors
-    bool isJustOneBodyStmt() const { return stmtsp() && !stmtsp()->nextp(); }
-    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
-};
 class AstAssertCtl final : public AstNodeStmt {
     // @astgen op1 := controlTypep : AstNodeExpr
     // @astgen op2 := assertTypesp : Optional[AstNodeExpr]

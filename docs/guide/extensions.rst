@@ -505,13 +505,14 @@ or "`ifdef`"'s may break other tools.
 
    Same as :option:`public_flat_rd` control file option.
 
-.. option:: /*verilator&32;public_flat_rw @(<edge_list>)*/ (on variable)
+.. option:: /*verilator&32;public_flat_rw [@(<edge_list>)]*/ (on variable)
 
-   Used after an input, output, register, or wire declaration to indicate
-   the signal should be declared public_flat_rd (see above), and writable,
-   where writes should be considered to have the timing specified by the
-   given sensitivity edge list. Use of this is implied when using the
-   :vlopt:`--public-flat-rw` option.
+   Used after an input, output, register, or wire declaration to indicate the
+   signal should be declared public_flat_rd (see above), and writable. Use of
+   this is implied when using the :vlopt:`--public-flat-rw` option. The edge
+   list is optional and has no effect (ignored). Prior to Verilator v5.024 the
+   edge list speciefied the timing when writes took place. This is no longer
+   necessary and is accepted only for compatibility.
 
    Same as :option:`public_flat_rw` control file option.
 

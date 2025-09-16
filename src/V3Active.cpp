@@ -562,9 +562,6 @@ class ActiveVisitor final : public VNVisitor {
         AstActive* const activep = m_namer.makeActive(nodep->fileline(), sentreep);
         activep->addStmtsp(nodep->unlinkFrBack());
     }
-    void visit(AstAlwaysPublic* nodep) override {
-        visitAlways(nodep, nodep->sentreep(), VAlwaysKwd::ALWAYS);
-    }
     void visit(AstCFunc* nodep) override { visitSenItems(nodep); }
     void visit(AstSenItem* nodep) override {
         UASSERT_OBJ(!m_walkingBody, nodep,

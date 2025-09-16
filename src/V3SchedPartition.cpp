@@ -238,7 +238,6 @@ class SchedGraphBuilder final : public VNVisitor {
     void visit(AstNodeProcedure* nodep) override { visitLogic(nodep); }
     void visit(AstNodeAssign* nodep) override { visitLogic(nodep); }
     void visit(AstCoverToggle* nodep) override { visitLogic(nodep); }
-    void visit(AstAlwaysPublic* nodep) override { visitLogic(nodep); }
 
     // Pre and Post logic are handled separately
     void visit(AstAlwaysPre* nodep) override {}
