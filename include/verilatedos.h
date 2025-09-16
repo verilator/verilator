@@ -120,6 +120,11 @@
 // Allowed on: function, method. (-fthread-safety)
 #define VL_ASSERT_CAPABILITY(x) \
         VL_CLANG_ATTR(assert_capability(x))
+// Disable thread safety analysis for the annotted function
+// Use this only when absolutely sure code is correct, but too
+// complicated for the compiler to prove.
+#define VL_NO_THREAD_SAFETY_ANALYSIS \
+        VL_CLANG_ATTR(no_thread_safety_analysis)
 
 // Require mutex locks only in code units which work with enabled multi-threading.
 #if !defined(VL_MT_DISABLED_CODE_UNIT)
