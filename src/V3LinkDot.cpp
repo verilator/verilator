@@ -3459,17 +3459,19 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         UASSERT_OBJ(VN_IS(m_randMethodCallp->fromp(), VarRef), m_randMethodCallp,
                                     "Expected simple randomize target");
                         // A ParseRef is used here so that the dot RHS gets resolved
-                        nodep->replaceWith(new AstMemberSel{
+                        AstMemberSel* const newp = new AstMemberSel{
                             nodep->fileline(), m_randMethodCallp->fromp()->cloneTree(false),
-                            VFlagChildDType{}, nodep->name()});
+                            VFlagChildDType{}, nodep->name()};
+                        nodep->replaceWith(newp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
                         return;
                     }
                     UINFO(9, indent() << "randomize-with fromSym " << foundp->nodep());
                     AstLambdaArgRef* const lambdaRefp
                         = new AstLambdaArgRef{nodep->fileline(), "item", false};
-                    nodep->replaceWith(new AstMemberSel{nodep->fileline(), lambdaRefp,
-                                                        VFlagChildDType{}, nodep->name()});
+                    AstMemberSel* newp = new AstMemberSel{nodep->fileline(), lambdaRefp,
+                                                          VFlagChildDType{}, nodep->name()};
+                    nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
                 }

@@ -3269,10 +3269,12 @@ class WidthVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     bool memberSelClass(AstMemberSel* nodep, AstClassRefDType* adtypep) {
-        if (nodep->name() == "rand_mode") {
-            nodep->replaceWith(new AstMethodCall{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                                 "rand_mode", nullptr});
+        if (nodep->name() == "rand_mode" || nodep->name() == "randomize") {
+            AstMethodCall* const newp = new AstMethodCall{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                nodep->name(), nullptr};
+            nodep->replaceWith(newp);
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            visit(newp);
             return true;
         }
         // Returns true if ok
@@ -7548,36 +7550,36 @@ class WidthVisitor final : public VNVisitor {
                                     const AstNodeDType* const node2p) {
         return node1p->skipRefp()->similarDType(node2p->skipRefp());
     }
-    void iterateCheckFileDesc(AstNode* nodep, AstNode* underp, Stage stage) {
-        UASSERT_OBJ(stage == BOTH, nodep, "Bad call");
+    void iterateCheckFileDesc(AstNode* parentp, AstNode* underp, Stage stage) {
+        UASSERT_OBJ(stage == BOTH, parentp, "Bad call");
         // underp may change as a result of replacement
         underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, PRELIM}.p());
         AstNodeDType* const expDTypep = underp->findUInt32DType();
         underp
-            = iterateCheck(nodep, "file_descriptor", underp, SELF, FINAL, expDTypep, EXTEND_EXP);
+            = iterateCheck(parentp, "file_descriptor", underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         (void)underp;  // cppcheck
     }
-    void iterateCheckReal(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
+    void iterateCheckReal(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to real if not already. Child is self-determined
-        // e.g. nodep=ADDD, underp=ADD in ADDD(ADD(a,b), real-CONST)
+        // e.g. parentp=ADDD, underp=ADD in ADDD(ADD(a,b), real-CONST)
         // Don't need separate PRELIM and FINAL(double) calls;
         // as if resolves to double, the BOTH correctly resolved double,
         // otherwise self-determined was correct
-        iterateCheckTypedSelfPrelim(nodep, side, underp, nodep->findDoubleDType(), stage);
+        iterateCheckTypedSelfPrelim(parentp, side, underp, parentp->findDoubleDType(), stage);
     }
-    void iterateCheckSigned8(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
+    void iterateCheckSigned8(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to signed8 if not already. Child is self-determined
-        iterateCheckTypedSelfPrelim(nodep, side, underp, nodep->findSigned8DType(), stage);
+        iterateCheckTypedSelfPrelim(parentp, side, underp, parentp->findSigned8DType(), stage);
     }
-    void iterateCheckSigned32(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
+    void iterateCheckSigned32(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to signed32 if not already. Child is self-determined
-        iterateCheckTypedSelfPrelim(nodep, side, underp, nodep->findSigned32DType(), stage);
+        iterateCheckTypedSelfPrelim(parentp, side, underp, parentp->findSigned32DType(), stage);
     }
-    void iterateCheckUInt32(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
+    void iterateCheckUInt32(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to unsigned32 if not already. Child is self-determined
-        iterateCheckTypedSelfPrelim(nodep, side, underp, nodep->findUInt32DType(), stage);
+        iterateCheckTypedSelfPrelim(parentp, side, underp, parentp->findUInt32DType(), stage);
     }
-    void iterateCheckDelay(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
+    void iterateCheckDelay(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
         // Coerce child to 64-bit delay if not already. Child is self-determined
         // underp may change as a result of replacement
         if (stage & PRELIM) {
@@ -7586,52 +7588,53 @@ class WidthVisitor final : public VNVisitor {
         if (stage & FINAL) {
             AstNodeDType* expDTypep;
             if (underp->dtypep()->skipRefp()->isDouble()) {  // V3Timing will later convert double
-                expDTypep = nodep->findDoubleDType();
+                expDTypep = parentp->findDoubleDType();
             } else {
                 FileLine* const newFl = new FileLine{underp->fileline()};
                 newFl->warnOff(V3ErrorCode::WIDTHEXPAND, true);
                 underp->fileline(newFl);
-                expDTypep = nodep->findLogicDType(64, 64, VSigning::UNSIGNED);
+                expDTypep = parentp->findLogicDType(64, 64, VSigning::UNSIGNED);
             }
-            underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP, false);
+            underp
+                = iterateCheck(parentp, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP, false);
         }
         (void)underp;  // cppcheck
     }
-    void iterateCheckString(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
-        iterateCheckTyped(nodep, side, underp, nodep->findStringDType(), stage);
+    void iterateCheckString(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
+        iterateCheckTyped(parentp, side, underp, parentp->findStringDType(), stage);
     }
-    void iterateCheckTyped(AstNode* nodep, const char* side, AstNode* underp,
+    void iterateCheckTyped(AstNode* parentp, const char* side, AstNode* underp,
                            AstNodeDType* expDTypep, Stage stage) {
         if (stage & PRELIM) {
             underp = userIterateSubtreeReturnEdits(underp, WidthVP{expDTypep, PRELIM}.p());
         }
         if (stage & FINAL) {
-            underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
+            underp = iterateCheck(parentp, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         }
         (void)underp;  // cppcheck
     }
-    void iterateCheckTypedSelfPrelim(AstNode* nodep, const char* side, AstNode* underp,
+    void iterateCheckTypedSelfPrelim(AstNode* parentp, const char* side, AstNode* underp,
                                      AstNodeDType* expDTypep, Stage stage) {
         // underp may change as a result of replacement
         if (stage & PRELIM) {
             underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, PRELIM}.p());
         }
         if (stage & FINAL) {
-            underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
+            underp = iterateCheck(parentp, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         }
         (void)underp;  // cppcheck
     }
-    void iterateCheckIntegralSelf(AstNode* nodep, const char* side, AstNode* underp, Determ determ,
-                                  Stage stage) {
-        iterateCheckSelf(nodep, side, underp, determ, stage, true);
+    void iterateCheckIntegralSelf(AstNode* parentp, const char* side, AstNode* underp,
+                                  Determ determ, Stage stage) {
+        iterateCheckSelf(parentp, side, underp, determ, stage, true);
     }
-    void iterateCheckSelf(AstNode* nodep, const char* side, AstNode* underp, Determ determ,
+    void iterateCheckSelf(AstNode* parentp, const char* side, AstNode* underp, Determ determ,
                           Stage stage, bool integralOnly = false) {
         // Coerce child to any data type; child is self-determined
         // i.e. isolated from expected type.
-        // e.g. nodep=CONCAT, underp=lhs in CONCAT(lhs,rhs)
-        UASSERT_OBJ(determ == SELF, nodep, "Bad call");
-        UASSERT_OBJ(stage == FINAL || stage == BOTH, nodep, "Bad call");
+        // e.g. parentp=CONCAT, underp=lhs in CONCAT(lhs,rhs)
+        UASSERT_OBJ(determ == SELF, parentp, "Bad call");
+        UASSERT_OBJ(stage == FINAL || stage == BOTH, parentp, "Bad call");
         // underp may change as a result of replacement
         if (stage & PRELIM) {
             underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, PRELIM}.p());
@@ -7639,35 +7642,35 @@ class WidthVisitor final : public VNVisitor {
         underp
             = VN_IS(underp, NodeExpr) ? checkCvtUS(VN_AS(underp, NodeExpr), integralOnly) : underp;
         AstNodeDType* const expDTypep = underp->dtypep();
-        underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
+        underp = iterateCheck(parentp, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         (void)underp;  // cppcheck
     }
-    void iterateCheckSizedSelf(AstNode* nodep, const char* side, AstNode* underp, Determ determ,
+    void iterateCheckSizedSelf(AstNode* parentp, const char* side, AstNode* underp, Determ determ,
                                Stage stage) {
         // Coerce child to any sized-number data type; child is self-determined
         // i.e. isolated from expected type.
-        // e.g. nodep=CONCAT, underp=lhs in CONCAT(lhs,rhs)
-        UASSERT_OBJ(determ == SELF, nodep, "Bad call");
-        UASSERT_OBJ(stage == FINAL || stage == BOTH, nodep, "Bad call");
+        // e.g. parentp=CONCAT, underp=lhs in CONCAT(lhs,rhs)
+        UASSERT_OBJ(determ == SELF, parentp, "Bad call");
+        UASSERT_OBJ(stage == FINAL || stage == BOTH, parentp, "Bad call");
         // underp may change as a result of replacement
         if (stage & PRELIM) {
             underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, PRELIM}.p());
         }
         underp = VN_IS(underp, NodeExpr) ? checkCvtUS(VN_AS(underp, NodeExpr), false) : underp;
         AstNodeDType* const expDTypep = underp->dtypep();
-        underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
+        underp = iterateCheck(parentp, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         AstNodeDType* const checkDtp = expDTypep->skipRefToEnump();
         if (!checkDtp->isIntegralOrPacked()) {
-            nodep->v3error("Expected numeric type, but got a " << checkDtp->prettyDTypeNameQ()
-                                                               << " data type");
+            parentp->v3error("Expected numeric type, but got a " << checkDtp->prettyDTypeNameQ()
+                                                                 << " data type");
         }
         (void)underp;  // cppcheck
     }
-    void iterateCheckAssign(AstNode* nodep, const char* side, AstNode* rhsp, Stage stage,
+    void iterateCheckAssign(AstNode* parentp, const char* side, AstNode* rhsp, Stage stage,
                             AstNodeDType* lhsDTypep) {
         // Check using assignment-like context rules
-        // UINFOTREE(1, nodep, "", "checkass");
-        UASSERT_OBJ(stage == FINAL, nodep, "Bad width call");
+        // UINFOTREE(1, parentp, "", "checkass");
+        UASSERT_OBJ(stage == FINAL, parentp, "Bad width call");
         // Create unpacked byte from string see IEEE 1800-2023 5.9
         if (AstConst* constp = VN_CAST(rhsp, Const)) {
             if (const AstUnpackArrayDType* const arrayp
@@ -7692,7 +7695,7 @@ class WidthVisitor final : public VNVisitor {
                                 }
                             }
                         }
-                        UINFO(6, "   unpackFromString: " << nodep);
+                        UINFO(6, "   unpackFromString: " << parentp);
                         rhsp->replaceWith(newp);
                         VL_DO_DANGLING(pushDeletep(rhsp), rhsp);
                         rhsp = newp;
@@ -7701,25 +7704,25 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         // We iterate and size the RHS based on the result of RHS evaluation
-        checkClassAssign(nodep, side, rhsp, lhsDTypep);
-        const bool lhsStream
-            = (VN_IS(nodep, NodeAssign) && VN_IS(VN_AS(nodep, NodeAssign)->lhsp(), NodeStream));
-        rhsp = iterateCheck(nodep, side, rhsp, ASSIGN, FINAL, lhsDTypep,
+        checkClassAssign(parentp, side, rhsp, lhsDTypep);
+        const bool lhsStream = (VN_IS(parentp, NodeAssign)
+                                && VN_IS(VN_AS(parentp, NodeAssign)->lhsp(), NodeStream));
+        rhsp = iterateCheck(parentp, side, rhsp, ASSIGN, FINAL, lhsDTypep,
                             lhsStream ? EXTEND_OFF : EXTEND_LHS);
-        // UINFOTREE(1, nodep, "", "checkout");
+        // UINFOTREE(1, parentp, "", "checkout");
         (void)rhsp;  // cppcheck
     }
 
-    void iterateCheckBool(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
-        UASSERT_OBJ(stage == BOTH, nodep,
-                    "Bad call");  // Booleans always self-determined so do BOTH at once
+    void iterateCheckBool(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
+        UASSERT_OBJ(stage == BOTH, parentp,
+                     "Bad call");  // Booleans always self-determined so do BOTH at once
         // Underp is used in a self-determined but boolean context, reduce a
         // multibit number to one bit
         // stage is always BOTH so not passed as argument
         // underp may change as a result of replacement
-        UASSERT_OBJ(underp, nodep, "Node has no type");
+        UASSERT_OBJ(underp, parentp, "Node has no child");
         underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, BOTH}.p());
-        UASSERT_OBJ(underp && underp->dtypep(), nodep,
+        UASSERT_OBJ(underp && underp->dtypep(), parentp,
                     "Node has no type");  // Perhaps forgot to do a prelim visit on it?
         //
         // For DOUBLE under a logical op, add implied test against zero, never a warning
@@ -7729,8 +7732,8 @@ class WidthVisitor final : public VNVisitor {
             VNRelinker linker;
             underp->unlinkFrBack(&linker);
             AstNode* const newp
-                = new AstNeqD{nodep->fileline(), VN_AS(underp, NodeExpr),
-                              new AstConst{nodep->fileline(), AstConst::RealDouble{}, 0.0}};
+                = new AstNeqD{parentp->fileline(), VN_AS(underp, NodeExpr),
+                              new AstConst{parentp->fileline(), AstConst::RealDouble{}, 0.0}};
             linker.relink(newp);
         } else if (VN_IS(underVDTypep, ClassRefDType) || VN_IS(underVDTypep, IfaceRefDType)
                    || (VN_IS(underVDTypep, BasicDType)
@@ -7738,44 +7741,44 @@ class WidthVisitor final : public VNVisitor {
             // Allow warning-free "if (handle)"
             VL_DO_DANGLING(fixWidthReduce(VN_AS(underp, NodeExpr)), underp);  // Changed
         } else if (!underVDTypep->basicp()) {
-            nodep->v3error("Logical operator " << nodep->prettyTypeName()
-                                               << " expects a non-complex data type on the "
-                                               << side << ".");
-            underp->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            parentp->v3error("Logical operator " << parentp->prettyTypeName()
+                                                 << " expects a non-complex data type on the "
+                                                 << side << ".");
+            underp->replaceWith(new AstConst{parentp->fileline(), AstConst::BitFalse{}});
             VL_DO_DANGLING(pushDeletep(underp), underp);
         } else {
-            const bool bad = widthBad(underp, nodep->findBitDType());
+            const bool bad = widthBad(underp, parentp->findBitDType());
             if (bad) {
                 {  // if (warnOn), but not needed here
-                    UINFOTREE(5, nodep->backp(), "", "back");
-                    nodep->v3widthWarn(1, underp->width(),
-                                       "Logical operator "
-                                           << nodep->prettyTypeName() << " expects 1 bit on the "
-                                           << side << ", but " << side << "'s "
-                                           << underp->prettyTypeName() << " generates "
-                                           << underp->width()
-                                           << (underp->width() != underp->widthMin()
-                                                   ? " or " + cvtToStr(underp->widthMin())
-                                                   : "")
-                                           << " bits.");
+                    UINFOTREE(5, parentp->backp(), "", "back");
+                    parentp->v3widthWarn(1, underp->width(),
+                                         "Logical operator "
+                                             << parentp->prettyTypeName()
+                                             << " expects 1 bit on the " << side << ", but "
+                                             << side << "'s " << underp->prettyTypeName()
+                                             << " generates " << underp->width()
+                                             << (underp->width() != underp->widthMin()
+                                                     ? " or " + cvtToStr(underp->widthMin())
+                                                     : "")
+                                             << " bits.");
                 }
                 VL_DO_DANGLING(fixWidthReduce(VN_AS(underp, NodeExpr)), underp);  // Changed
             }
         }
     }
 
-    AstNode* iterateCheck(AstNode* nodep, const char* side, AstNode* underp, Determ determ,
+    AstNode* iterateCheck(AstNode* parentp, const char* side, AstNode* underp, Determ determ,
                           Stage stage, AstNodeDType* expDTypep, ExtendRule extendRule,
                           bool warnOn = true) {
-        // Perform data type check on underp, which is underneath nodep used for error reporting
+        // Perform data type check on underp, which is underneath parentp used for error reporting
         // Returns the new underp
         // Conversion to/from doubles and integers are before iterating.
-        UASSERT_OBJ(stage == FINAL, nodep, "Bad state to iterateCheck");
-        UASSERT_OBJ(underp && underp->dtypep(), nodep,
+        UASSERT_OBJ(stage == FINAL, parentp, "Bad state to iterateCheck");
+        UASSERT_OBJ(underp && underp->dtypep(), parentp,
                     "Node has no type");  // Perhaps forgot to do a prelim visit on it?
         if (VN_IS(underp, NodeDType)) {  // Note the node itself, not node's data type
             // Must be near top of these checks as underp->dtypep() will look normal
-            underp->v3error(ucfirst(nodep->prettyOperatorName())
+            underp->v3error(ucfirst(parentp->prettyOperatorName())
                             << " expected non-datatype " << side << " but "
                             << underp->prettyNameQ() << " is a datatype.");
         } else if (expDTypep == underp->dtypep()) {  // Perfect
@@ -7808,15 +7811,15 @@ class WidthVisitor final : public VNVisitor {
                     if (castable != VCastable::SAMEISH && castable != VCastable::COMPATIBLE
                         && castable != VCastable::ENUM_IMPLICIT && !VN_IS(underp, Cast)
                         && !VN_IS(underp, CastDynamic) && !m_enumItemp
-                        && !nodep->fileline()->warnIsOff(V3ErrorCode::ENUMVALUE) && warnOn) {
+                        && !parentp->fileline()->warnIsOff(V3ErrorCode::ENUMVALUE) && warnOn) {
                         underp->v3warn(ENUMVALUE,
                                        "Implicit conversion to enum "
                                            << expDTypep->prettyDTypeNameQ() << " from "
                                            << underp->dtypep()->prettyDTypeNameQ()
                                            << " (IEEE 1800-2023 6.19.3)\n"
-                                           << nodep->warnMore()
+                                           << parentp->warnMore()
                                            << "... Suggest use enum's mnemonic, or static cast");
-                        // UINFOTREE(1, nodep->backp(), "", "back");
+                        // UINFOTREE(1, parentp->backp(), "", "back");
                     }
                 }
                 AstNodeDType* subDTypep = expDTypep;
@@ -7830,11 +7833,11 @@ class WidthVisitor final : public VNVisitor {
                     // (underp), not by the LHS (expDTypep)
                     if (underp->isSigned() != subDTypep->isSigned()
                         || underp->width() != subDTypep->width()) {
-                        subDTypep = nodep->findLogicDType(
+                        subDTypep = parentp->findLogicDType(
                             std::max(subDTypep->width(), underp->width()),
                             std::max(subDTypep->widthMin(), underp->widthMin()),
                             VSigning::fromBool(underp->isSigned()));
-                        UINFO(9, "Assignment of opposite-signed RHS to LHS: " << nodep);
+                        UINFO(9, "Assignment of opposite-signed RHS to LHS: " << parentp);
                     }
                     underp = userIterateSubtreeReturnEdits(underp, WidthVP{subDTypep, FINAL}.p());
                 } else {
@@ -7842,12 +7845,12 @@ class WidthVisitor final : public VNVisitor {
                 }
                 // Note the check uses the expected size, not the child's subDTypep as we want the
                 // child node's width to end up correct for the assignment (etc)
-                widthCheckSized(nodep, side, VN_AS(underp, NodeExpr), expDTypep, extendRule,
+                widthCheckSized(parentp, side, VN_AS(underp, NodeExpr), expDTypep, extendRule,
                                 warnOn);
-            } else if (!VN_IS(nodep, Eq) && !VN_IS(nodep, Neq)
+            } else if (!VN_IS(parentp, Eq) && !VN_IS(parentp, Neq)
                        && !VN_IS(expDTypep->skipRefp(), IfaceRefDType)
                        && VN_IS(underp->dtypep()->skipRefp(), IfaceRefDType)) {
-                underp->v3error(ucfirst(nodep->prettyOperatorName())
+                underp->v3error(ucfirst(parentp->prettyOperatorName())
                                 << " expected non-interface on " << side << " but "
                                 << underp->prettyNameQ() << " is an interface.");
             } else if (const AstIfaceRefDType* expIfaceRefp
@@ -7855,19 +7858,19 @@ class WidthVisitor final : public VNVisitor {
                 const AstIfaceRefDType* underIfaceRefp
                     = VN_CAST(underp->dtypep()->skipRefp(), IfaceRefDType);
                 if (!underIfaceRefp) {
-                    underp->v3error(ucfirst(nodep->prettyOperatorName())
+                    underp->v3error(ucfirst(parentp->prettyOperatorName())
                                     << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
                                     << " interface on " << side << " but " << underp->prettyNameQ()
                                     << " is not an interface.");
                 } else if (expIfaceRefp->ifaceViaCellp() != underIfaceRefp->ifaceViaCellp()) {
-                    underp->v3error(ucfirst(nodep->prettyOperatorName())
+                    underp->v3error(ucfirst(parentp->prettyOperatorName())
                                     << " expected " << expIfaceRefp->ifaceViaCellp()->prettyNameQ()
                                     << " interface on " << side << " but " << underp->prettyNameQ()
                                     << " is a different interface ("
                                     << underIfaceRefp->ifaceViaCellp()->prettyNameQ() << ").");
                 } else if (underIfaceRefp->modportp()
                            && expIfaceRefp->modportp() != underIfaceRefp->modportp()) {
-                    underp->v3error(ucfirst(nodep->prettyOperatorName())
+                    underp->v3error(ucfirst(parentp->prettyOperatorName())
                                     << " expected "
                                     << (expIfaceRefp->modportp()
                                             ? expIfaceRefp->modportp()->prettyNameQ()
@@ -7886,13 +7889,13 @@ class WidthVisitor final : public VNVisitor {
     }
 
     void
-    widthCheckSized(AstNode* nodep, const char* side,
+    widthCheckSized(AstNode* parentp, const char* side,
                     AstNodeExpr* underp,  // Node to be checked or have typecast added in front of
                     AstNodeDType* expDTypep, ExtendRule extendRule, bool warnOn = true) {
         // Issue warnings on sized number width mismatches, then do appropriate size extension
         // Generally iterateCheck is what is wanted instead of this
-        // UINFO(9,"wchk "<<side<<endl<<"  "<<nodep<<endl<<"  "<<underp<<endl<<"  e="<<expDTypep<<"
-        // i"<<warnOn<<endl);
+        // UINFO(9,"wchk "<<side<<endl<<"  "<<parentp<<endl<<"  "<<underp<<endl<<"
+        // e="<<expDTypep<<" i"<<warnOn<<endl);
         const AstBasicDType* const expBasicp = expDTypep->basicp();
         const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
         if (expDTypep == underp->dtypep()) {
@@ -7903,10 +7906,10 @@ class WidthVisitor final : public VNVisitor {
             // before calling widthCheck, but we may have missed a non-sized
             // check in earlier code, so might as well assume it is the users'
             // fault.
-            nodep->v3error(ucfirst(nodep->prettyOperatorName())
-                           << " expected non-complex non-double " << side << " in width check");
+            parentp->v3error(ucfirst(parentp->prettyOperatorName())
+                             << " expected non-complex non-double " << side << " in width check");
 #if VL_DEBUG
-            nodep->v3fatalSrc("widthCheckSized should not be called on doubles/complex types");
+            parentp->v3fatalSrc("widthCheckSized should not be called on doubles/complex types");
 #endif
             return;
         } else {
@@ -7920,7 +7923,7 @@ class WidthVisitor final : public VNVisitor {
             }
             // If user has a sizing cast, assume they know what they are doing
             // (for better or worse)
-            if (VN_IS(nodep->backp(), CastSize)) warnOn = false;
+            if (VN_IS(parentp->backp(), CastSize)) warnOn = false;
             if (VN_IS(underp, Const) && VN_AS(underp, Const)->num().isFromString()
                 && expWidth > underp->width()
                 && (((expWidth - underp->width()) % 8) == 0)) {  // At least it's character sized
@@ -7928,19 +7931,19 @@ class WidthVisitor final : public VNVisitor {
                 // Maybe this should be a special warning?  Not for now.
                 warnOn = false;
             }
-            if ((VN_IS(nodep, Add) && underp->width() == 1 && underp->isOne())
-                || (VN_IS(nodep, Sub) && underp->width() == 1 && underp->isOne()
+            if ((VN_IS(parentp, Add) && underp->width() == 1 && underp->isOne())
+                || (VN_IS(parentp, Sub) && underp->width() == 1 && underp->isOne()
                     && 0 == std::strcmp(side, "RHS"))) {
                 // "foo + 1'b1", or "foo - 1'b1" are very common, people assume
                 // they extend correctly
                 warnOn = false;
             }
             if (bad && warnOn) {
-                UINFOTREE(5, nodep->backp(), "", "back");
+                UINFOTREE(5, parentp->backp(), "", "back");
 
-                nodep->v3widthWarn(
+                parentp->v3widthWarn(
                     expWidth, underp->width(),
-                    ucfirst(nodep->prettyOperatorName())
+                    ucfirst(parentp->prettyOperatorName())
                         << " expects " << expWidth
                         << (expWidth != expWidthMin ? " or " + cvtToStr(expWidthMin) : "")
                         << " bits on the " << side << ", but " << side << "'s "
@@ -7954,8 +7957,8 @@ class WidthVisitor final : public VNVisitor {
                 // If we're in an NodeAssign, don't truncate the RHS if the LHS is
                 // a NodeStream. The streaming operator changes the rules regarding
                 // which bits to truncate.
-                const AstNodeAssign* assignp = VN_CAST(nodep, NodeAssign);
-                const AstPin* pinp = VN_CAST(nodep, Pin);
+                const AstNodeAssign* assignp = VN_CAST(parentp, NodeAssign);
+                const AstPin* pinp = VN_CAST(parentp, Pin);
                 if (assignp && VN_IS(assignp->lhsp(), NodeStream)) {
                 } else if (pinp && pinp->modVarp()->direction() != VDirection::INPUT) {
                     // V3Inst::pinReconnectSimple must deal
