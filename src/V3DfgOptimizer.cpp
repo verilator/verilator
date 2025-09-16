@@ -255,12 +255,13 @@ class DataflowOptimize final {
 
     static void markExternallyReferencedVariables(AstNetlist* netlistp, bool scoped) {
         netlistp->foreach([scoped](AstNode* nodep) {
-            // Check variabel flags
+            // Check variable flags
             if (scoped) {
                 if (AstVarScope* const vscp = VN_CAST(nodep, VarScope)) {
                     const AstVar* const varp = vscp->varp();
                     // Force and trace have already been processed
-                    const bool hasExtRd = varp->isPrimaryIO() || varp->isSigUserRdPublic();
+                    const bool hasExtRd
+                        = varp->isPrimaryIO() || varp->isSigUserRdPublic() || varp->isTrace();
                     const bool hasExtWr = varp->isPrimaryIO() || varp->isSigUserRWPublic();
                     if (hasExtRd) DfgVertexVar::setHasExtRdRefs(vscp);
                     if (hasExtWr) DfgVertexVar::setHasExtWrRefs(vscp);
