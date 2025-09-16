@@ -1631,7 +1631,6 @@ class RandomizeVisitor final : public VNVisitor {
         V3UniqueNames uniqueNames{"__Vrandarr"};
         AstNodeDType* tempDTypep = dtypep;
         AstVar* randLoopIndxp = nullptr;
-        AstNodeStmt* stmtsp = nullptr;
         auto createLoopIndex = [&](AstNodeDType* tempDTypep) {
             if (VN_IS(tempDTypep, AssocArrayDType)) {
                 return new AstVar{fl, VVarType::VAR, uniqueNames.get(""),
@@ -1640,22 +1639,16 @@ class RandomizeVisitor final : public VNVisitor {
             return new AstVar{fl, VVarType::VAR, uniqueNames.get(""),
                               dtypep->findBasicDType(VBasicDTypeKwd::UINT32)};
         };
-        auto createForeachLoop = [&](AstNodeExpr* tempElementp, AstVar* randLoopIndxp) {
-            AstSelLoopVars* const randLoopVarp
-                = new AstSelLoopVars{fl, exprp->cloneTree(false), randLoopIndxp};
-            return new AstForeach{fl, randLoopVarp,
-                                  newRandStmtsp(fl, tempElementp, nullptr, outputVarp)};
-        };
         AstNodeExpr* tempElementp = nullptr;
         while (VN_IS(tempDTypep, DynArrayDType) || VN_IS(tempDTypep, UnpackArrayDType)
                || VN_IS(tempDTypep, AssocArrayDType) || VN_IS(tempDTypep, QueueDType)) {
             AstVar* const newRandLoopIndxp = createLoopIndex(tempDTypep);
             randLoopIndxp = AstNode::addNext(randLoopIndxp, newRandLoopIndxp);
-            AstNodeExpr* tempExprp = tempElementp ? tempElementp : exprp;
-            AstVarRef* tempRefp = new AstVarRef{fl, newRandLoopIndxp, VAccess::READ};
-            if (VN_IS(tempDTypep, DynArrayDType))
+            AstNodeExpr* const tempExprp = tempElementp ? tempElementp : exprp;
+            AstVarRef* const tempRefp = new AstVarRef{fl, newRandLoopIndxp, VAccess::READ};
+            if (VN_IS(tempDTypep, DynArrayDType)) {
                 tempElementp = new AstCMethodHard{fl, tempExprp, "atWrite", tempRefp};
-            else if (VN_IS(tempDTypep, UnpackArrayDType)) {
+            } else if (VN_IS(tempDTypep, UnpackArrayDType)) {
                 AstNodeArrayDType* const aryDTypep = VN_CAST(tempDTypep, NodeArrayDType);
                 // Adjust the bitp to ensure it covers all possible indices
                 tempElementp = new AstArraySel{
@@ -1665,15 +1658,21 @@ class RandomizeVisitor final : public VNVisitor {
                         new AstSub{fl, tempRefp,
                                    new AstConst{fl, static_cast<uint32_t>(aryDTypep->lo())}},
                         new AstConst{fl, 0}, V3Number::log2b(aryDTypep->hi()) + 1}};
-            } else if (VN_IS(tempDTypep, AssocArrayDType))
+            } else if (VN_IS(tempDTypep, AssocArrayDType)) {
                 tempElementp = new AstAssocSel{fl, tempExprp, tempRefp};
-            else if (VN_IS(tempDTypep, QueueDType))
+            } else if (VN_IS(tempDTypep, QueueDType)) {
                 tempElementp = new AstCMethodHard{fl, tempExprp, "atWriteAppend", tempRefp};
+            }
             tempElementp->dtypep(tempDTypep->subDTypep());
             tempDTypep = tempDTypep->virtRefDTypep();
         }
-        stmtsp = createForeachLoop(tempElementp, randLoopIndxp);
-        return stmtsp;
+
+        AstSelLoopVars* const randLoopVarp
+            = new AstSelLoopVars{fl, exprp->cloneTree(false), randLoopIndxp};
+        AstNodeStmt* const randStmtsp = newRandStmtsp(fl, tempElementp, nullptr, outputVarp);
+        // TODO: we should just not clone in 'newRandStmtsp' if not necessary
+        if (!tempElementp->backp()) VL_DO_DANGLING(pushDeletep(tempElementp), tempElementp);
+        return new AstForeach{fl, randLoopVarp, randStmtsp};
     }
     AstNodeStmt* newRandStmtsp(FileLine* fl, AstNodeExpr* exprp, AstVar* randcVarp,
                                AstVar* const outputVarp, int offset = 0,

@@ -7,9 +7,9 @@
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-test.top_filename = "t/t_tri_inout.v"
-
 import vltest_bootstrap
+
+test.top_filename = "t/t_tri_inout.v"
 
 test.scenarios('vlt_all')
 test.pli_filename = "t/t_tri_inout.cpp"
