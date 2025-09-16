@@ -1778,7 +1778,11 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (nodep->access().isWriteOrRW() && m_tgraph.isTristate(nodep->varp())) {
                 UINFO(9, "     Ref-to-lvalue " << nodep);
                 if (m_inAlias) {
-                    nodep->v3warn(E_UNSUPPORTED, "Unsupported: Tristate var ref in alias");
+                    if (nodep->varp()->direction().isAny()) {
+                        nodep->v3warn(E_UNSUPPORTED, "Unsupported: Port as alias argument");
+                    } else {
+                        nodep->v3warn(E_UNSUPPORTED, "Unsupported: Tristate var ref in alias");
+                    }
                     return;
                 }
                 UASSERT_OBJ(!nodep->access().isRW(), nodep, "Tristate unexpected on R/W access");
