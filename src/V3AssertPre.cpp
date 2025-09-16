@@ -167,7 +167,7 @@ private:
                 AstModportVarRef* const modVarp
                     = new AstModportVarRef{nodep->fileline(), varp->name(), itemp->direction()};
                 modVarp->varp(varp);
-                AstNode::addNext(static_cast<AstNode*>(nodep), modVarp);
+                nodep->addNextHere(modVarp);
             }
         }
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
