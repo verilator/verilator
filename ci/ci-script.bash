@@ -44,6 +44,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
     CONFIGURE_ARGS="--enable-longtests --enable-ccwarn"
     if [ "$CI_ASAN" = 1 ]; then
       CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-asan"
+      CXX="$CXX -DVL_LEAK_CHECKS"
     fi
     ./configure $CONFIGURE_ARGS --prefix="$INSTALL_DIR"
     ccache -z
