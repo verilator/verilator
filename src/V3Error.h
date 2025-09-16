@@ -387,6 +387,8 @@ private:
     std::array<bool, V3ErrorCode::_ENUM_MAX> m_pretendError VL_GUARDED_BY(m_mutex);
     // Told user specifics about this warning
     std::array<bool, V3ErrorCode::_ENUM_MAX> m_describedEachWarn VL_GUARDED_BY(m_mutex);
+    // Debug about suppressed this warning
+    std::array<bool, V3ErrorCode::_ENUM_MAX> m_showedSuppressed VL_GUARDED_BY(m_mutex);
     int m_debugDefault = 0;  // Option: --debugi Default debugging level
     int m_errorLimit VL_GUARDED_BY(m_mutex)
         = MAX_ERRORS;  // Option: --error-limit Number of errors before exit

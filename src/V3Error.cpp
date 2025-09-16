@@ -74,7 +74,7 @@ string V3ErrorGuarded::msgPrefix() VL_REQUIRES(m_mutex) {
     const V3ErrorCode code = m_message.code();
     const bool supp = m_errorSuppressed;
     if (supp) {
-        return "-arning-suppressed: ";
+        return "-arning-suppressed-" + std::string{code.ascii()} + ": ";
     } else if (code.severityInfo()) {
         return "-Info: ";
     } else if (code == V3ErrorCode::EC_FATAL) {
@@ -163,10 +163,13 @@ void V3ErrorGuarded::v3errorEndGuts(const std::ostringstream& sstr, const string
     m_message.fileline(fileline);
 
     // Skip suppressed messages
-    if (m_errorSuppressed
+    if (m_errorSuppressed) {
         // On debug, show only non default-off warning to prevent pages of warnings
-        && (!debug() || debug() < 3 || m_message.code().defaultsOff()))
-        return;
+        if (m_message.code().defaultsOff()) return;
+        if (!debug() || debug() < 3 || (debug() < 9 && m_showedSuppressed[m_message.code()]))
+            return;
+        m_showedSuppressed[m_message.code()] = true;
+    }
     string msg
         = V3Error::warnContextBegin() + msgPrefix() + V3Error::warnContextEnd() + sstr.str();
 
