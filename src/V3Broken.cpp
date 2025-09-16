@@ -61,21 +61,25 @@ static bool s_brokenAllowMidvisitorCheck = false;
 
 static class AllocTable final {
     // MEMBERS
-    std::unordered_set<const AstNode*> m_allocated;  // Set of all nodes allocated but not freed
+    V3Mutex m_mutex; // Mutex for m_allocated
+    // Set of all nodes allocated but not freed
+    std::unordered_set<const AstNode*> m_allocated VL_GUARDED_BY(m_mutex);
 
 public:
     // METHODS
-    void addNewed(const AstNode* nodep) {
+    void addNewed(const AstNode* nodep) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Called by operator new on any node - only if VL_LEAK_CHECKS
         // LCOV_EXCL_START
+        V3LockGuard lock{m_mutex};
         if (VL_UNCOVERABLE(!m_allocated.emplace(nodep).second)) {
             nodep->v3fatalSrc("Newing AstNode object that is already allocated");
         }
         // LCOV_EXCL_STOP
     }
-    void deleted(const AstNode* nodep) {
+    void deleted(const AstNode* nodep) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Called by operator delete on any node - only if VL_LEAK_CHECKS
         // LCOV_EXCL_START
+        V3LockGuard lock{m_mutex};
         if (VL_UNCOVERABLE(m_allocated.erase(nodep) == 0)) {
             nodep->v3fatalSrc("Deleting AstNode object that was not allocated or already freed");
         }
