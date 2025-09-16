@@ -38,6 +38,7 @@ class AssertPreVisitor final : public VNVisitor {
     // We're not parsing the tree, or anything more complicated.
 private:
     // NODE STATE
+    // AstClockingItem::user1p()         // AstVar*.      varp() of ClockingItem after unlink
     const VNUser1InUse m_inuser1;
     // STATE
     // Current context:
@@ -157,8 +158,8 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstModportClockingRef* const nodep) override {
-        // They have to be removed, because contain references to clocking blocks,
-        // which are removed too. They aren't needed anyway.
+        // It has to be converted to a list of ModportClockingVarRefs,
+        // because clocking blocks are removed in this pass
         for (AstClockingItem* itemp = nodep->clockingp()->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), ClockingItem)) {
             AstVar* const varp = itemp->varp() ? itemp->varp() : VN_AS(itemp->user1p(), Var);

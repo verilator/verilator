@@ -1201,7 +1201,7 @@ public:
 };
 class AstModportClockingRef final : public AstNode {
     // A clocking block referenced under a modport
-    // The storage for the variable itself is inside the interface, thus this is a reference
+    // The storage for the clocking block itself is inside the interface, thus this is a reference
     // PARENT: AstModport
     //
     // @astgen ptr := m_clockingp : Optional[AstClocking]  // Link to the actual clocking block
