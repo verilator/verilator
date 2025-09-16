@@ -423,9 +423,9 @@ be deferred for later.  These delayed values can be flushed to the model with
 VPI Example
 -----------
 
-In the below example, we have readme marked read-only, and writeme which if
-written from outside the model will have the same semantics as if it
-changed on the specified clock edge.
+In the below example, we have readme marked read-only, and writeme marked
+read-write which if written from outside the model will have the same semantics
+as if it was a top level input.
 
 .. code-block:: bash
 
@@ -434,7 +434,7 @@ changed on the specified clock edge.
           parameter WIDTH /*verilator public_flat_rd*/ = 32
        ) (input clk);
           reg [WIDTH-1:0] readme   /*verilator public_flat_rd*/;
-          reg [WIDTH-1:0] writeme  /*verilator public_flat_rw @(posedge clk) */;
+          reg [WIDTH-1:0] writeme  /*verilator public_flat_rw*/;
           initial $finish;
        endmodule
      EOF

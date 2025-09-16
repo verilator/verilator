@@ -258,7 +258,6 @@ class GateBuildVisitor final : public VNVisitorConst {
         iterateChildrenConst(nodep);
     }
 
-    void visit(AstAlwaysPublic* nodep) override { iterateLogic(nodep, true, "AlwaysPublic"); }
     void visit(AstCFunc* nodep) override {  //
         iterateLogic(nodep, nodep->slow(), "C Function", "C Function");
     }

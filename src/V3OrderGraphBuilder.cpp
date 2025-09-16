@@ -334,9 +334,6 @@ class OrderGraphBuilder final : public VNVisitor {
     void visit(AstAssignW* nodep) override { iterateLogic(nodep); }
 
     //--- Verilator concoctions
-    void visit(AstAlwaysPublic* nodep) override {  //
-        iterateLogic(nodep);
-    }
     void visit(AstCoverToggle* nodep) override {  //
         iterateLogic(nodep);
     }

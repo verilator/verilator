@@ -362,7 +362,6 @@ class ForceReplaceVisitor final : public VNVisitor {
         m_stmtp = nodep;
         iterateChildren(nodep);
     }
-    void visit(AstAlwaysPublic* nodep) override { iterateLogic(nodep); }
     void visit(AstCFunc* nodep) override { iterateLogic(nodep); }
     void visit(AstCoverToggle* nodep) override { iterateLogic(nodep); }
     void visit(AstNodeProcedure* nodep) override { iterateLogic(nodep); }

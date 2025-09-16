@@ -213,8 +213,6 @@ struct SplitVarImpl VL_NOT_FINAL {
         AstNode* const backp = stmtp->backp();
         if (AstAlways* const ap = VN_CAST(backp, Always)) {
             insertBeginCore(ap, stmtp, modp);
-        } else if (AstAlwaysPublic* const ap = VN_CAST(backp, AlwaysPublic)) {
-            insertBeginCore(ap, stmtp, modp);
         } else if (AstInitial* const ap = VN_CAST(backp, Initial)) {
             insertBeginCore(ap, stmtp, modp);
         } else if (auto* const ap = VN_CAST(backp, Initial)) {
@@ -474,14 +472,6 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
     void visit(AstNodeStmt* nodep) override { setContextAndIterateChildren(nodep); }
     void visit(AstCell* nodep) override { setContextAndIterateChildren(nodep); }
     void visit(AstAlways* nodep) override {
-        if (nodep->sentreep()) {  // When visiting sensitivity list, always is the context
-            setContextAndIterate(nodep, nodep->sentreep());
-        }
-        for (AstNode* bodysp = nodep->stmtsp(); bodysp; bodysp = bodysp->nextp()) {
-            iterate(bodysp);
-        }
-    };
-    void visit(AstAlwaysPublic* nodep) override {
         if (nodep->sentreep()) {  // When visiting sensitivity list, always is the context
             setContextAndIterate(nodep, nodep->sentreep());
         }

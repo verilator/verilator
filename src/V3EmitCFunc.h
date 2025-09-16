@@ -578,7 +578,6 @@ public:
         if (decind) ofp()->blockDec();
         puts(";\n");
     }
-    void visit(AstAlwaysPublic*) override {}
     void visit(AstAssocSel* nodep) override {
         iterateAndNextConstNull(nodep->fromp());
         putnbs(nodep, ".at(");

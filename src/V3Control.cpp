@@ -84,35 +84,21 @@ public:
     }
 };
 
-// Only public_flat_rw has the sensitity tree
-class V3ControlVarAttr final {
+// List of attributes for variables
+class V3ControlVar final {
+    std::vector<VAttrType> m_attrs;  // The list of attributes
 public:
-    VAttrType m_type;  // Type of attribute
-    AstSenTree* m_sentreep;  // Sensitivity tree for public_flat_rw
-    explicit V3ControlVarAttr(VAttrType type)
-        : m_type{type}
-        , m_sentreep{nullptr} {}
-    V3ControlVarAttr(VAttrType type, AstSenTree* sentreep)
-        : m_type{type}
-        , m_sentreep{sentreep} {}
-};
-
-// Overload vector with the required update function and to apply all entries
-class V3ControlVar final : public std::vector<V3ControlVarAttr> {
-public:
+    // Add new attribugte
+    void add(VAttrType attr) { m_attrs.emplace_back(attr); }
     // Update from other by copying all attributes
-    void update(const V3ControlVar& node) {
-        reserve(size() + node.size());
-        insert(end(), node.begin(), node.end());
+    void update(const V3ControlVar& other) {
+        m_attrs.reserve(m_attrs.size() + other.m_attrs.size());
+        m_attrs.insert(m_attrs.end(), other.m_attrs.begin(), other.m_attrs.end());
     }
     // Apply all attributes to the variable
-    void apply(AstVar* varp) {
-        for (const_iterator it = begin(); it != end(); ++it) {
-            AstNode* const newp = new AstAttrOf{varp->fileline(), it->m_type};
-            varp->addAttrsp(newp);
-            if (it->m_type == VAttrType::VAR_PUBLIC_FLAT_RW && it->m_sentreep) {
-                newp->addNext(new AstAlwaysPublic{varp->fileline(), it->m_sentreep, nullptr});
-            }
+    void apply(AstVar* varp) const {
+        for (const VAttrType attr : m_attrs) {
+            varp->addAttrsp(new AstAttrOf{varp->fileline(), attr});
         }
     }
 };
@@ -691,11 +677,15 @@ void V3Control::addScopeTraceOn(bool on, const string& scope, int levels) {
 
 void V3Control::addVarAttr(FileLine* fl, const string& module, const string& ftask,
                            const string& var, VAttrType attr, AstSenTree* sensep) {
-    // Semantics: sensep only if public_flat_rw
-    if ((attr != VAttrType::VAR_PUBLIC_FLAT_RW) && sensep) {
-        sensep->v3error("sensitivity not expected for attribute");
+    if (sensep) {
+        FileLine* const flp = sensep->fileline();
+        // Historical, not actually needed, only parsed for compatibility, delete it
         VL_DO_DANGLING(sensep->deleteTree(), sensep);
-        return;
+        // Used to be only accepted on public_flat_rw
+        if (attr != VAttrType::VAR_PUBLIC_FLAT_RW) {
+            flp->v3error("sensitivity not expected for attribute");
+            return;
+        }
     }
     // Semantics: Most of the attributes operate on signals
     if (var.empty()) {
@@ -723,15 +713,14 @@ void V3Control::addVarAttr(FileLine* fl, const string& module, const string& fta
             } else if (!ftask.empty()) {
                 fl->v3error("Signals inside functions/tasks cannot be marked forceable");
             } else {
-                V3ControlResolver::s().modules().at(module).vars().at(var).push_back(
-                    V3ControlVarAttr{attr});
+                V3ControlResolver::s().modules().at(module).vars().at(var).add(attr);
             }
         } else {
             V3ControlModule& mod = V3ControlResolver::s().modules().at(module);
             if (ftask.empty()) {
-                mod.vars().at(var).push_back(V3ControlVarAttr{attr, sensep});
+                mod.vars().at(var).add(attr);
             } else {
-                mod.ftasks().at(ftask).vars().at(var).push_back(V3ControlVarAttr{attr, sensep});
+                mod.ftasks().at(ftask).vars().at(var).add(attr);
             }
         }
     }

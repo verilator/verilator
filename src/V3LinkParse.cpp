@@ -492,22 +492,6 @@ class LinkParseVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstAlwaysPublic* nodep) override {
-        // AlwaysPublic was attached under a var, but it's a statement that should be
-        // at the same level as the var
-        cleanFileline(nodep);
-        iterateChildren(nodep);
-        if (m_varp) {
-            nodep->unlinkFrBack();
-            AstNode::addNext<AstNode, AstNode>(m_varp, nodep);
-            // lvalue is true, because we know we have a verilator public_flat_rw
-            // but someday we may be more general
-            const bool lvalue = m_varp->isSigUserRWPublic();
-            nodep->addStmtsp(
-                new AstVarRef{nodep->fileline(), m_varp, lvalue ? VAccess::WRITE : VAccess::READ});
-        }
-    }
-
     void visit(AstDefImplicitDType* nodep) override {
         cleanFileline(nodep);
         UINFO(8, "   DEFIMPLICIT " << nodep);

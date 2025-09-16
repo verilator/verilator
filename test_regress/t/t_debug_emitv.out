@@ -359,7 +359,6 @@ module Vt_debug_emitv_t;
             release sum;
         end
     end
-    /*verilator public_flat_rw @(posedge clk) pubflat*/
 endmodule
 package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;
