@@ -484,8 +484,11 @@ class UnknownVisitor final : public VNVisitor {
                 // ARRAYSEL(...) -> COND(LT(bit<maxbit), ARRAYSEL(...), {width{1'bx}})
                 VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
+                // TODO make a tieoff function that takes AstNode and returns typed value
                 V3Number xnum{nodep, nodep->width()};
-                if (nodeDtp->isString()) {
+                if (nodeDtp->isDouble()) {
+                    xnum = V3Number{V3Number::Double{}, nodep, 0.0};
+                } else if (nodeDtp->isString()) {
                     xnum = V3Number{V3Number::String{}, nodep, ""};
                 } else {
                     xnum.setAllBitsX();

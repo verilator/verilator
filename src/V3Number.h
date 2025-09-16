@@ -492,6 +492,11 @@ public:
     V3Number(FileLine* flp, const char* sourcep) { create(flp, sourcep); }
     class VerilogStringLiteral {};  // For creator type-overload selection
     V3Number(VerilogStringLiteral, AstNode* nodep, const string& str);
+    class Double {};
+    V3Number(Double, AstNode* nodep, double value) {
+        init(nodep, 64);
+        setDouble(value);
+    }
     class String {};
     V3Number(String, AstNode* nodep, const string& value) {
         init(nodep);
