@@ -16,7 +16,7 @@ import gdb  # pylint: disable=import-error
 def _vltgdb_get_dump(node):
     gdb.execute(f'set $_gdb_dump_json_str = AstNode::dumpTreeJsonGdb({node})')
     dump = gdb.execute('printf "%s", $_gdb_dump_json_str', to_string=True)
-    gdb.execute('call free($_gdb_dump_json_str)')
+    gdb.execute('call (void)free($_gdb_dump_json_str)')
     return dump
 
 
