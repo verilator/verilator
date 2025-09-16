@@ -2686,7 +2686,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     const AstNodeFTask* const baseFuncp = VN_CAST(baseSubp, NodeFTask);
                     if (!baseFuncp || !baseFuncp->pureVirtual()) continue;
                     bool existsInDerived = foundp && !foundp->imported();
-                    if (!existsInDerived && !derivedClassp->isInterfaceClass()) {
+                    if (m_statep->forPrimary() && !existsInDerived
+                        && !derivedClassp->isInterfaceClass()) {
                         derivedClassp->v3error(
                             "Class " << derivedClassp->prettyNameQ() << impOrExtends
                                      << baseClassp->prettyNameQ()
@@ -2698,7 +2699,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                      << baseSubp->warnContextSecondary());
                     }
                     const auto itn = m_ifClassImpNames.find(baseSubp->name());
-                    if (!existsInDerived && itn != m_ifClassImpNames.end()
+                    if (m_statep->forPrimary() && !existsInDerived
+                        && itn != m_ifClassImpNames.end()
                         && itn->second != baseSubp) {  // Not exact same function from diamond
                         derivedClassp->v3error(
                             "Class " << derivedClassp->prettyNameQ() << impOrExtends
@@ -2717,8 +2719,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     const AstConstraint* const baseFuncp = VN_CAST(baseSubp, Constraint);
                     if (!baseFuncp || !baseFuncp->isKwdPure()) continue;
                     bool existsInDerived = foundp && !foundp->imported();
-                    if (!existsInDerived && !derivedClassp->isInterfaceClass()
-                        && !derivedClassp->isVirtual()) {
+                    if (m_statep->forPrimary() && !existsInDerived
+                        && !derivedClassp->isInterfaceClass() && !derivedClassp->isVirtual()) {
                         derivedClassp->v3error(
                             "Class " << derivedClassp->prettyNameQ() << impOrExtends
                                      << baseClassp->prettyNameQ()
