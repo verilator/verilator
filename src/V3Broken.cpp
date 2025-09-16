@@ -60,29 +60,38 @@ static bool s_brokenAllowMidvisitorCheck = false;
 // Table of allocated AstNode pointers
 
 static class AllocTable final {
+    friend class V3Broken;
     // MEMBERS
-    std::unordered_set<const AstNode*> m_allocated;  // Set of all nodes allocated but not freed
+    V3Mutex m_mutex;  // Mutex for m_allocated
+    // Set of all nodes allocated but not freed
+    std::unordered_set<const AstNode*> m_allocated VL_GUARDED_BY(m_mutex);
 
 public:
     // METHODS
-    void addNewed(const AstNode* nodep) {
+    void addNewed(const AstNode* nodep) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Called by operator new on any node - only if VL_LEAK_CHECKS
         // LCOV_EXCL_START
+        V3LockGuard lock{m_mutex};
         if (VL_UNCOVERABLE(!m_allocated.emplace(nodep).second)) {
             nodep->v3fatalSrc("Newing AstNode object that is already allocated");
         }
         // LCOV_EXCL_STOP
     }
-    void deleted(const AstNode* nodep) {
+    void deleted(const AstNode* nodep) VL_MT_SAFE_EXCLUDES(m_mutex) {
         // Called by operator delete on any node - only if VL_LEAK_CHECKS
         // LCOV_EXCL_START
+        V3LockGuard lock{m_mutex};
         if (VL_UNCOVERABLE(m_allocated.erase(nodep) == 0)) {
             nodep->v3fatalSrc("Deleting AstNode object that was not allocated or already freed");
         }
         // LCOV_EXCL_STOP
     }
-    bool isAllocated(const AstNode* nodep) const { return m_allocated.count(nodep) != 0; }
-    void checkForLeaks() {
+
+private:  // for V3Broken only
+    bool isAllocated(const AstNode* nodep) const VL_REQUIRES(m_mutex) {
+        return m_allocated.count(nodep) != 0;
+    }
+    void checkForLeaks() VL_REQUIRES(m_mutex) {
         if (!v3Global.opt.debugCheck()) return;
 
         const uint8_t brokenCntCurrent = s_brokenCntGlobal.get();
@@ -339,6 +348,8 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
         UINFO(1, "Broken called under broken, skipping recursion.");  // LCOV_EXCL_LINE
     } else {
         inBroken = true;
+
+        V3LockGuard lock{s_allocTable.m_mutex};
 
         // Mark every node in the tree
         const uint8_t brokenCntCurrent = s_brokenCntGlobal.get();
