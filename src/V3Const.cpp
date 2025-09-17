@@ -1528,39 +1528,39 @@ class ConstVisitor final : public VNVisitor {
         const int rend = (rstart->toSInt() + rhsp->widthConst());
         return (rend == lstart->toSInt());
     }
-    bool ifMergeAdjacent(AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
+    bool ifMergeAdjacent(const AstNodeExpr* lhsp, const AstNodeExpr* rhsp) {
         // called by concatmergeable to determine if {lhsp, rhsp} make sense
         if (!v3Global.opt.fAssemble()) return false;  // opt disabled
         // two same varref
         if (operandsSame(lhsp, rhsp)) return true;
-        const AstSel* lselp = VN_CAST(lhsp, Sel);
-        const AstSel* rselp = VN_CAST(rhsp, Sel);
-        // a[i:0] a
-        if (lselp && !rselp && rhsp->sameGateTree(lselp->fromp()))
-            rselp = new AstSel{rhsp->fileline(), rhsp->cloneTreePure(false), 0, rhsp->width()};
+        const AstSel* const lselp = VN_CAST(lhsp, Sel);
+        const AstSel* const rselp = VN_CAST(rhsp, Sel);
+        if (!lselp && !rselp) return false;
+        if (lselp && !VN_IS(lselp->lsbp(), Const)) return false;
+        if (rselp && !VN_IS(rselp->lsbp(), Const)) return false;
         // a[i:j] {a[j-1:k], b}
         if (lselp && !rselp && VN_IS(rhsp, Concat))
-            return ifMergeAdjacent(lhsp, VN_CAST(rhsp, Concat)->lhsp());
-        // a a[msb:j]
-        if (rselp && !lselp && lhsp->sameGateTree(rselp->fromp()))
-            lselp = new AstSel{lhsp->fileline(), lhsp->cloneTreePure(false), 0, lhsp->width()};
+            return ifMergeAdjacent(lhsp, VN_AS(rhsp, Concat)->lhsp());
         // {b, a[j:k]} a[k-1:i]
         if (rselp && !lselp && VN_IS(lhsp, Concat))
-            return ifMergeAdjacent(VN_CAST(lhsp, Concat)->rhsp(), rhsp);
-        if (!lselp || !rselp) return false;
-
-        // a[a:b] a[b-1:c] are adjacent
-        const AstNode* const lfromp = lselp->fromp();
-        const AstNode* const rfromp = rselp->fromp();
+            return ifMergeAdjacent(VN_AS(lhsp, Concat)->rhsp(), rhsp);
+        // a a[msb:j]
+        const AstNodeExpr* const lfromp = lselp                                ? lselp->fromp()
+                                          : lhsp->sameGateTree(rselp->fromp()) ? lhsp
+                                                                               : nullptr;
+        // a[i:0] a
+        const AstNodeExpr* const rfromp = rselp                                ? rselp->fromp()
+                                          : rhsp->sameGateTree(lselp->fromp()) ? rhsp
+                                                                               : nullptr;
         if (!lfromp || !rfromp || !lfromp->sameGateTree(rfromp)) return false;
-        const AstConst* const lstart = VN_CAST(lselp->lsbp(), Const);
-        const AstConst* const rstart = VN_CAST(rselp->lsbp(), Const);
-        if (!lstart || !rstart) return false;  // too complicated
-        const int rend = (rstart->toSInt() + rselp->widthConst());
+
+        const int32_t lstart = lselp ? lselp->lsbConst() : 0;
+        const int32_t rstart = rselp ? rselp->lsbConst() : 0;
+        const int32_t rend = rstart + (rselp ? rselp->widthConst() : rhsp->width());
         // a[i:j] a[j-1:k]
-        if (rend == lstart->toSInt()) return true;
+        if (rend == lstart) return true;
         // a[i:0] a[msb:j]
-        if (rend == rfromp->width() && lstart->toSInt() == 0) return true;
+        if (rend == rfromp->width() && lstart == 0) return true;
         return false;
     }
     bool concatMergeable(const AstNodeExpr* lhsp, const AstNodeExpr* rhsp, unsigned depth) {
