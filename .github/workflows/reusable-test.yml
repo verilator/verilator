@@ -22,7 +22,6 @@ on:
 
 env:
   CI_OS_NAME: linux
-  CI_COMMIT: ${{ github.sha }}
   CCACHE_COMPRESS: 1
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_LIMIT_MULTIPLE: 0.95
@@ -38,7 +37,7 @@ jobs:
 
   test:
     runs-on: ${{ inputs.os }}
-    name: Sub-test | ${{ inputs.os }} | ${{ inputs.cc }} | ${{inputs.reloc && 'reloc | ' || '' }} ${{ inputs.suite }}
+    name: Test
     env:
       CI_BUILD_STAGE_NAME: test
       CI_RUNS_ON: ${{ inputs.os }}

@@ -10,20 +10,18 @@ on:
       os:  # e.g. ubuntu-24.04
         required: true
         type: string
-      cc:  # gcc or clang
+      cc: # 'clang' or 'gcc'
         required: true
         type: string
-      os-name:
-        required: false
+      os-name: # 'linux' or 'osx'
+        required: true
         type: string
-        default: linux
       asan:
         required: true
         type: number
 
 env:
   CI_OS_NAME: ${{ inputs.os-name }}
-  CI_COMMIT: ${{ github.sha }}
   CCACHE_COMPRESS: 1
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_LIMIT_MULTIPLE: 0.95
@@ -39,7 +37,7 @@ jobs:
 
   build:
     runs-on: ${{ inputs.os }}
-    name: Sub-build | ${{ inputs.os }} | ${{ inputs.cc }}
+    name: Build
     env:
       CI_ASAN: ${{ inputs.asan }}
       CI_BUILD_STAGE_NAME: build

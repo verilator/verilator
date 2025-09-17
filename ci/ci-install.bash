@@ -85,7 +85,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
   fi
 
   if [ -n "$CCACHE_DIR" ]; then
-    mkdir -p "$CCACHE_DIR" && ./ci/ci-ccache-maint.bash
+    mkdir -p "$CCACHE_DIR"
   fi
 elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   ##############################################################################

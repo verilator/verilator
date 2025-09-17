@@ -7,10 +7,7 @@ on:
   push:
     branches-ignore:
       - 'dependabot/**'  # Avoid duplicates: only run the PR, not the push
-  pull_request_target:
-  workflow_dispatch:
-permissions:
-  contents: write
+
 jobs:
   format:
     runs-on: ubuntu-24.04

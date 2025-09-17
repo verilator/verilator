@@ -20,7 +20,8 @@ defaults:
     shell: bash
 
 concurrency:
-  group: ${{ github.ref }}
+  # At most 1 job per branch. Auto cancel all but scheduled jobs
+  group: ${{ github.worfklow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:

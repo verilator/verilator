@@ -9,7 +9,6 @@ on:
 
 env:
   CI_OS_NAME: linux
-  CI_COMMIT: ${{ github.sha }}
   CI_BUILD_STAGE_NAME: build
   CI_RUNS_ON: ubuntu-22.04
   CCACHE_COMPRESS: 1
