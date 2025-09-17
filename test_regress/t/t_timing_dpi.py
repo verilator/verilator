@@ -10,8 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
-test.top_filename = "t/t_timing_dpi_unsup.v"
+test.top_filename = "t/t_timing_dpi.v"
 
-test.lint(fails=True, expect_filename=test.golden_filename)
+test.compile(v_flags2=["t/t_timing_dpi.c"], verilator_flags2=["--binary", "--trace-fst"])
+
+test.execute(expect_filename=test.golden_filename)
 
 test.passes()
