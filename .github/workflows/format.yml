@@ -9,7 +9,8 @@ on:
       - 'dependabot/**'  # Avoid duplicates: only run the PR, not the push
   pull_request_target:
   workflow_dispatch:
-
+permissions:
+  contents: write
 jobs:
   format:
     runs-on: ubuntu-24.04
@@ -17,21 +18,12 @@ jobs:
     env:
       CI_OS_NAME: linux
       CI_RUNS_ON: ubuntu-24.04
+      CI_COMMIT: ${{ github.sha }}
     steps:
-      # Use the Verilator CI app to push formatting - this will trigger
-      # workflows and consequently cancel in progress jobs if necessary
-      - name: Generate access token
-        if: ${{ github.repository == 'verilator/verilator' }}
-        id: generate-token
-        uses: actions/create-github-app-token@v2.1.4
-        with:
-          app-id: ${{ vars.VERILATOR_CI_ID }}
-          private-key: ${{ secrets.VERILATOR_CI_KEY }}
-          permission-contents: write
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          token: ${{ github.repository == 'verilator/verilator' && steps.generate-token.outputs.token || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install packages for build
         env:
           CI_BUILD_STAGE_NAME: build
