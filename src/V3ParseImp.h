@@ -248,6 +248,13 @@ public:
         return nump;
     }
 
+    // For 'unique if' cannot have empty else statements as then assertion
+    // would misfire
+    AstNode* newBlock(FileLine* fl, AstNode* nodep) {
+        if (nodep) return nodep;
+        return new AstBegin{fl, "", nullptr, false, true};
+    }
+
     // Bison sometimes needs error context without a token, so remember last token's line
     // Only use this if do not have and cannot get a token-relevant fileline
     FileLine* bisonLastFileline() const { return m_bisonLastFileline; }

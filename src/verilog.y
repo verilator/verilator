@@ -3522,13 +3522,16 @@ statement_item<nodep>:          // IEEE: statement_item
         //
         //                      // IEEE: conditional_statement
         |       unique_priorityE yIF '(' expr ')' stmtBlock     %prec prLOWER_THAN_ELSE
-                        { AstIf* const newp = new AstIf{$2, $4, $6};
+                        { AstIf* const newp = new AstIf{$2, $4,
+                              PARSEP->newBlock($2, $6)};
                           $$ = newp;
                           if ($1 == uniq_UNIQUE) newp->uniquePragma(true);
                           if ($1 == uniq_UNIQUE0) newp->unique0Pragma(true);
                           if ($1 == uniq_PRIORITY) newp->priorityPragma(true); }
         |       unique_priorityE yIF '(' expr ')' stmtBlock yELSE stmtBlock
-                        { AstIf* const newp = new AstIf{$2, $4, $6, $8};
+                        { AstIf* const newp = new AstIf{$2, $4,
+                              PARSEP->newBlock($2, $6),
+                              PARSEP->newBlock($2, $8)};
                           $$ = newp;
                           if ($1 == uniq_UNIQUE) newp->uniquePragma(true);
                           if ($1 == uniq_UNIQUE0) newp->unique0Pragma(true);
