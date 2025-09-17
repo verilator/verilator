@@ -7,7 +7,7 @@
 module t;
    localparam STR = "string";
    function logic checkParameter(input logic [8:0] N);
-      $display("x is %d.", N);
+      $info("For %m, x is %d.", N);
       if (N == 1)
         return 0;
       $fatal(1, "Parameter %d is invalid...%s and %s", N, STR, "constant both work");
@@ -18,6 +18,10 @@ module t;
 `else
    localparam X = checkParameter(1);
 `endif
+
+   generate
+      $info("%m: In generate");  // Issue 6445
+   endgenerate
 
    initial begin
       $write("*-* All Finished *-*\n");

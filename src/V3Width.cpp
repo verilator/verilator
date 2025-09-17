@@ -5756,6 +5756,11 @@ class WidthVisitor final : public VNVisitor {
         // Just let all arguments seek their natural sizes
         userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         if (!m_paramsOnly) {
+            nodep->foreach([this](AstScopeName* nodep) {  //
+                nodep->replaceWith(
+                    new AstConst{nodep->fileline(), AstConst::String{}, "<scope-unavailable>"});
+                pushDeletep(nodep);
+            });
             V3Const::constifyParamsEdit(nodep->fmtp());  // fmtp may change
             string text = VString::dequotePercent(nodep->fmtp()->text());
             if (text.empty()) text = "Elaboration system task message (IEEE 1800-2023 20.11)";

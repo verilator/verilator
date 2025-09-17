@@ -50,6 +50,7 @@ Verilator 5.041 devel
 * Fix external function declarations with class typedef references (#6433).
 * Fix internal error on out-of-bounds real array access.
 * Fix pre/post increments in assertions (#6434).
+* Fix elaboration displays with `%m` (#6445). [Alex Solomatnikov]
 
 
 Verilator 5.040 2025-08-30
