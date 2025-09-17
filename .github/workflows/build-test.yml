@@ -22,16 +22,18 @@ defaults:
     working-directory: repo
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.actor }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
-  cancel-in-progress: true
+  # At most 1 job per branch. Auto cancel on pull requests and on all forks
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.repository != 'verilator/verilator' }}
 
 jobs:
 
   build-2404-gcc:
-    name: Build-Ubuntu
+    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
     uses: ./.github/workflows/reusable-build.yml
     with:
       os: ${{ matrix.os }}
+      os-name: linux
       cc: ${{ matrix.cc }}
       asan: ${{ matrix.asan }}
     strategy:
@@ -41,10 +43,11 @@ jobs:
           - {os: ubuntu-24.04, cc: gcc, asan: 0}
 
   build-2404-clang:
-    name: Build-Ubuntu
+    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
     uses: ./.github/workflows/reusable-build.yml
     with:
       os: ${{ matrix.os }}
+      os-name: linux
       cc: ${{ matrix.cc }}
       asan: ${{ matrix.asan }}
     strategy:
@@ -54,10 +57,11 @@ jobs:
           - {os: ubuntu-24.04, cc: clang, asan: 1}
 
   build-2204-gcc:
-    name: Build-Ubuntu
+    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
     uses: ./.github/workflows/reusable-build.yml
     with:
       os: ${{ matrix.os }}
+      os-name: linux
       cc: ${{ matrix.cc }}
       asan: ${{ matrix.asan }}
     strategy:
@@ -67,10 +71,11 @@ jobs:
           - {os: ubuntu-22.04, cc: gcc, asan: 0}
 
   build-2204-clang:
-    name: Build-Ubuntu
+    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
     uses: ./.github/workflows/reusable-build.yml
     with:
       os: ${{ matrix.os }}
+      os-name: linux
       cc: ${{ matrix.cc }}
       asan: ${{ matrix.asan }}
     strategy:
@@ -80,7 +85,7 @@ jobs:
           - {os: ubuntu-22.04, cc: clang, asan: 0}
 
   build-osx-gcc:
-    name: Build-OSX
+    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
     uses: ./.github/workflows/reusable-build.yml
     with:
       os: ${{ matrix.os }}
@@ -94,7 +99,7 @@ jobs:
           - {os: macos-15, cc: gcc, asan: 0}
 
   build-osx-clang:
-    name: Build-OSX
+    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
     uses: ./.github/workflows/reusable-build.yml
     with:
       os: ${{ matrix.os }}
@@ -108,7 +113,7 @@ jobs:
           - {os: macos-15, cc: clang, asan: 0}
 
   build-windows:
-    name: Build-Windows
+    name: Build | ${{ matrix.os }} | ${{ matrix.cc }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -117,7 +122,6 @@ jobs:
           - {os: windows-2025, cc: msvc}
     env:
       CI_OS_NAME: win
-      CI_COMMIT: ${{ github.sha }}
       CCACHE_COMPRESS: 1
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_LIMIT_MULTIPLE: 0.95
@@ -145,7 +149,7 @@ jobs:
           name: verilator-win.zip
 
   test-2404-gcc:
-    name: Test | ${{ matrix.os }} | ${{ matrix.cc }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.reloc && 'reloc | ' || '' }} ${{ matrix.suite }}
     needs: build-2404-gcc
     uses: ./.github/workflows/reusable-test.yml
     with:
@@ -167,7 +171,7 @@ jobs:
           - {os: ubuntu-24.04, cc: gcc, reloc: 0, suite: vltmt-2}
 
   test-2404-clang:
-    name: Test | ${{ matrix.os }} | ${{ matrix.cc }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.reloc && 'reloc | ' || '' }} ${{ matrix.suite }}
     needs: build-2404-clang
     uses: ./.github/workflows/reusable-test.yml
     with:
@@ -189,7 +193,7 @@ jobs:
           - {os: ubuntu-24.04, cc: clang, reloc: 0, suite: vltmt-2}
 
   test-2204-gcc:
-    name: Test | ${{ matrix.os }} | ${{ matrix.cc }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.reloc && 'reloc | ' || '' }} ${{ matrix.suite }}
     needs: build-2204-gcc
     uses: ./.github/workflows/reusable-test.yml
     with:
@@ -211,7 +215,7 @@ jobs:
           - {os: ubuntu-22.04, cc: gcc, reloc: 0, suite: vltmt-2}
 
   test-2204-clang:
-    name: Test | ${{ matrix.os }} | ${{ matrix.cc }}
+    name: Test | ${{ matrix.os }} | ${{ matrix.cc }} | ${{ matrix.reloc && 'reloc | ' || '' }} ${{ matrix.suite }}
     needs: build-2204-clang
     uses: ./.github/workflows/reusable-test.yml
     with:

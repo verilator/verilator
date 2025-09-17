@@ -14,7 +14,6 @@ permissions:
 
 env:
   CI_OS_NAME: linux
-  CI_COMMIT: ${{ github.sha }}
   COVERAGE: 1
   VERILATOR_ARCHIVE: verilator-coverage-${{ github.sha }}.tar.gz
 
