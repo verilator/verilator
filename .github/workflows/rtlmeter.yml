@@ -284,11 +284,11 @@ jobs:
           for tag in gcc clang; do
             ADATA=../nightly-results/all-results-${tag}.json
             BDATA=../all-results/all-results-${tag}.json
-            ./rtlmeter compare --steps "verilate" --metrics "elapsed memory"              $ADATA $BDATA > ../verilate-${tag}.txt
+            ./rtlmeter compare --cases '* !Example:* !*:hello' --steps "verilate" --metrics "elapsed memory"              $ADATA $BDATA > ../verilate-${tag}.txt
             cat ../verilate-${tag}.txt
-            ./rtlmeter compare --steps "execute"  --metrics "speed memory elapsed"        $ADATA $BDATA > ../execute-${tag}.txt
+            ./rtlmeter compare --cases '* !Example:* !*:hello' --steps "execute"  --metrics "speed memory elapsed"        $ADATA $BDATA > ../execute-${tag}.txt
             cat ../execute-${tag}.txt
-            ./rtlmeter compare --steps "cppbuild" --metrics "elapsed memory cpu codeSize" $ADATA $BDATA > ../cppbuild-${tag}.txt
+            ./rtlmeter compare --cases '* !Example:* !*:hello' --steps "cppbuild" --metrics "elapsed memory cpu codeSize" $ADATA $BDATA > ../cppbuild-${tag}.txt
             cat ../cppbuild-${tag}.txt
           done
       - name: Create report
