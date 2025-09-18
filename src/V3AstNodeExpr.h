@@ -2355,16 +2355,18 @@ public:
 class AstUCFunc final : public AstNodeExpr {
     // User's $c function
     // @astgen op1 := exprsp : List[AstNode] // Expressions to print (some are AstText)
+    bool m_is_pure;  // Whether the expression is pure
 public:
-    AstUCFunc(FileLine* fl, AstNode* exprsp)
-        : ASTGEN_SUPER_UCFunc(fl) {
+    AstUCFunc(FileLine* fl, AstNode* exprsp, bool is_pure = false)
+        : ASTGEN_SUPER_UCFunc(fl)
+        , m_is_pure(is_pure) {
         addExprsp(exprsp);
     }
     ASTGEN_MEMBERS_AstUCFunc;
     bool cleanOut() const override { return false; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
+    bool isPure() override { return m_is_pure; }  // SPECIAL: User may order w/other sigs
     bool isOutputter() override { return true; }
     bool isGateOptimizable() const override { return false; }
     bool isSubstOptimizable() const override { return false; }

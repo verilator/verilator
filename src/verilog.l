@@ -175,6 +175,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   {crnl}                { FL_FWD; FL_BRK; }  /* Count line numbers */
   /*     Extensions to Verilog set, some specified by PSL */
   "$c"[0-9]*            { FL; return yD_C; }  /*Verilator only*/
+  "$pc"[0-9]*           { FL; return yD_PC; }  /*Verilator only*/
   /*     System Tasks */
   "$acos"               { FL; return yD_ACOS; }
   "$acosh"              { FL; return yD_ACOSH; }
