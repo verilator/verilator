@@ -63,6 +63,7 @@ class UnknownVisitor final : public VNVisitor {
     AstNode* m_timingControlp = nullptr;  // Current assignment's intra timing control
     bool m_constXCvt = false;  // Convert X's
     bool m_allowXUnique = true;  // Allow unique assignments
+    bool m_in_procedure = false;  // Whether in procedure
 
     // METHODS
 
@@ -158,6 +159,11 @@ class UnknownVisitor final : public VNVisitor {
             iterateChildren(nodep);
             xrandNames.swap(m_xrandNames);
         }
+    }
+    void visit(AstNodeProcedure* nodep) override {
+        VL_RESTORER(m_in_procedure);
+        m_in_procedure = true;
+        iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_ftaskp);
@@ -385,10 +391,10 @@ class UnknownVisitor final : public VNVisitor {
     void visit(AstSel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
-            if (!nodep->fromp()->isPure()) {
+            if ((m_in_procedure || m_ftaskp) && !nodep->fromp()->isPure()) {
                 AstVar* const varp
-                    = new AstVar{nodep->fileline(), VVarType::VAR,
-                                 "__VSelTmp" + m_xrandNames->get(nodep), nodep->fromp()->dtypep()};
+                    = new AstVar{nodep->fileline(), VVarType::XTEMP, m_xrandNames->get(nodep),
+                                 nodep->fromp()->dtypep()};
                 AstAssign* const assignp = new AstAssign{
                     nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE},
                     nodep->fromp()->unlinkFrBack()};
