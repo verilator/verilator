@@ -16,11 +16,7 @@ module t (  /*AUTOARG*/
   wire [31:0] b;
   wire [31:0] c;
 
-  transfer transfer_i (
-      .a(a),
-      .b(b),
-      .c(c)
-  );
+  alias a = b = c;
 
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
@@ -30,15 +26,5 @@ module t (  /*AUTOARG*/
     $write("*-* All Finished *-*\n");
     $finish;
   end
-
-endmodule
-
-module transfer (
-    inout wire [31:0] a,
-    inout wire [31:0] b,
-    inout wire [31:0] c
-);
-
-  alias a = b = c;
 
 endmodule
