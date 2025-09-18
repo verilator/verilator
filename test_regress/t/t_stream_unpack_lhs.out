@@ -15,8 +15,8 @@
                                                   : ... note: In instance 't'
   117 |             if (packed_siz_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
       |                                    ^~
-%Error: Internal Error: t/t_stream_unpack_lhs.v:117:33: ../V3Width.cpp:#: Node has no type
+%Error: Internal Error: t/t_stream_unpack_lhs.v:117:36: ../V3Width.cpp:#: Node has no type
                                                       : ... note: In instance 't'
   117 |             if (packed_siz_dout != '{8'h01, 8'h23, 8'h45, 8'h67}) $stop;
-      |                                 ^~
+      |                                    ^~
                         ... This fatal error may be caused by the earlier error(s); resolve those first.

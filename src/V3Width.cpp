@@ -7727,7 +7727,8 @@ class WidthVisitor final : public VNVisitor {
         // underp may change as a result of replacement
         UASSERT_OBJ(underp, parentp, "Node has no child");
         underp = userIterateSubtreeReturnEdits(underp, WidthVP{SELF, BOTH}.p());
-        UASSERT_OBJ(underp && underp->dtypep(), parentp,
+        UASSERT_OBJ(underp, parentp, "Node has no child");
+        UASSERT_OBJ(underp->dtypep(), underp,
                     "Node has no type");  // Perhaps forgot to do a prelim visit on it?
         //
         // For DOUBLE under a logical op, add implied test against zero, never a warning
@@ -7779,7 +7780,8 @@ class WidthVisitor final : public VNVisitor {
         // Returns the new underp
         // Conversion to/from doubles and integers are before iterating.
         UASSERT_OBJ(stage == FINAL, parentp, "Bad state to iterateCheck");
-        UASSERT_OBJ(underp && underp->dtypep(), parentp,
+        UASSERT_OBJ(underp, parentp, "Node has no child");
+        UASSERT_OBJ(underp->dtypep(), underp,
                     "Node has no type");  // Perhaps forgot to do a prelim visit on it?
         if (VN_IS(underp, NodeDType)) {  // Note the node itself, not node's data type
             // Must be near top of these checks as underp->dtypep() will look normal

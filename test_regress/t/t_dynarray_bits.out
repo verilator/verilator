@@ -3,8 +3,8 @@
    12 |       if ($bits(a) != 0) $stop;
       |           ^~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Internal Error: t/t_dynarray_bits.v:12:20: ../V3Width.cpp:#: Node has no type
+%Error: Internal Error: t/t_dynarray_bits.v:12:11: ../V3Width.cpp:#: Node has no type
                                                  : ... note: In instance 't'
    12 |       if ($bits(a) != 0) $stop;
-      |                    ^~
+      |           ^~~~~
                         ... This fatal error may be caused by the earlier error(s); resolve those first.
