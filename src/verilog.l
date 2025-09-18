@@ -48,6 +48,12 @@
         yylval.fl = CRELINE(); \
     } while (false)
 
+#define STR \
+    do { \
+        const string str (yytext, yyleng); \
+        yylval.strp = PARSEP->newString(AstNode::encodeName(str)); \
+    } while (false)
+
 #define ERROR_RSVD_WORD(language) \
     do { \
         yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: " << language \
@@ -257,11 +263,11 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$psprintf"           { FL; yylval.fl->v3warn(NONSTD, "Non-standard system function '" << yytext << "';"
                                                 " suggest use standard '$sformatf' (IEEE 1800-2023 21.3.3)");
                           return yD_SFORMATF; }
-  "$q_add"              { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
-  "$q_exam"             { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
-  "$q_full"             { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
-  "$q_initialize"       { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
-  "$q_remove"           { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
+  "$q_add"              { FL; STR; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
+  "$q_exam"             { FL; STR; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
+  "$q_full"             { FL; STR; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
+  "$q_initialize"       { FL; STR; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
+  "$q_remove"           { FL; STR; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
   "$random"             { FL; return yD_RANDOM; }
   "$readmemb"           { FL; return yD_READMEMB; }
   "$readmemh"           { FL; return yD_READMEMH; }
@@ -478,11 +484,11 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$changing_gclk"      { FL; return yD_CHANGING_GCLK; }
   "$countbits"          { FL; return yD_COUNTBITS; }
   "$countones"          { FL; return yD_COUNTONES; }
-  "$coverage_control"   { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
-  "$coverage_get"       { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
-  "$coverage_get_max"   { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
-  "$coverage_merge"     { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
-  "$coverage_save"      { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$coverage_control"   { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$coverage_get"       { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$coverage_get_max"   { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$coverage_merge"     { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$coverage_save"      { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$dimensions"         { FL; return yD_DIMENSIONS; }
   "$error"              { FL; return yD_ERROR; }
   "$falling_gclk"       { FL; return yD_FALLING_GCLK; }
@@ -490,16 +496,16 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$fell"               { FL; return yD_FELL; }
   "$fell_gclk"          { FL; return yD_FELL_GCLK; }
   "$future_gclk"        { FL; return yD_FUTURE_GCLK; }
-  "$get_coverage"       { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$get_coverage"       { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$high"               { FL; return yD_HIGH; }
   "$increment"          { FL; return yD_INCREMENT; }
-  "$inferred_clock"     { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$inferred_clock"     { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$inferred_disable"   { FL; return yD_INFERRED_DISABLE; }
   "$info"               { FL; return yD_INFO; }
   "$isunbounded"        { FL; return yD_ISUNBOUNDED; }
   "$isunknown"          { FL; return yD_ISUNKNOWN; }
   "$left"               { FL; return yD_LEFT; }
-  "$load_coverage_db"   { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$load_coverage_db"   { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$low"                { FL; return yD_LOW; }
   "$onehot"             { FL; return yD_ONEHOT; }
   "$onehot0"            { FL; return yD_ONEHOT0; }
@@ -510,7 +516,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$root"               { FL; return yD_ROOT; }
   "$rose"               { FL; return yD_ROSE; }
   "$rose_gclk"          { FL; return yD_ROSE_GCLK; }
-  "$set_coverage_db_name" { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$set_coverage_db_name" { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$size"               { FL; return yD_SIZE; }
   "$stable"             { FL; return yD_STABLE; }
   "$stable_gclk"        { FL; return yD_STABLE_GCLK; }
@@ -673,10 +679,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /* Default PLI rule */
 <V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,S23,SAX>{
-  "$"[a-zA-Z0-9_$]+     { const string str (yytext, yyleng);
-                          yylval.strp = PARSEP->newString(AstNode::encodeName(str));
-                          FL; return yaD_PLI;
-                        }
+  "$"[a-zA-Z0-9_$]+     { FL; STR; return yaD_PLI; }
 }
 
   /************************************************************************/
