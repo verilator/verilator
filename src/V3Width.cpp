@@ -4764,7 +4764,7 @@ class WidthVisitor final : public VNVisitor {
                     E_UNSUPPORTED,
                     "Unsupported: Assignment pattern applies against non struct/union data type: "
                         << dtypep->prettyDTypeNameQ());
-                nodep->unlinkFrBack();
+                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
             }
 
             // Done with the Pattern
