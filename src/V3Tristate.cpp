@@ -1378,7 +1378,6 @@ class TristateVisitor final : public TristateBaseVisitor {
             iterateChildren(nodep);
             if (nodep->lhsp()->user1p()) {
                 UASSERT_OBJ(nodep->rhsp()->user1p(), nodep, "LHS has user1 set, but RHS doesn't");
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Tristate variable in alias");
             } else {
                 UASSERT_OBJ(!nodep->rhsp()->user1p(), nodep, "RHS has user1 set, but LHS doesn't");
             }
