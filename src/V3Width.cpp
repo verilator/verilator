@@ -5008,7 +5008,10 @@ class WidthVisitor final : public VNVisitor {
     }
     void patternAssoc(AstPattern* nodep, AstAssocArrayDType* arrayDtp, AstPatMember* defaultp) {
         AstNode* defaultValuep = nullptr;
-        if (defaultp) defaultValuep = defaultp->lhssp()->unlinkFrBack();
+        if (defaultp) {
+            defaultp->dtypep(arrayDtp->subDTypep());
+            defaultValuep = patternMemberValueIterate(defaultp);
+        }
         AstNodeExpr* newp = new AstConsAssoc{nodep->fileline(), defaultValuep};
         newp->dtypeFrom(arrayDtp);
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
@@ -5037,7 +5040,10 @@ class WidthVisitor final : public VNVisitor {
     void patternWildcard(AstPattern* nodep, AstWildcardArrayDType* arrayDtp,
                          AstPatMember* defaultp) {
         AstNode* defaultValuep = nullptr;
-        if (defaultp) defaultValuep = defaultp->lhssp()->unlinkFrBack();
+        if (defaultp) {
+            defaultp->dtypep(arrayDtp->subDTypep());
+            defaultValuep = patternMemberValueIterate(defaultp);
+        }
         AstNode* newp = new AstConsWildcard{nodep->fileline(), defaultValuep};
         newp->dtypeFrom(arrayDtp);
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
