@@ -50,7 +50,7 @@
 
 #define STR \
     do { \
-        const string str (yytext, yyleng); \
+        const string str(yytext, yyleng); \
         yylval.strp = PARSEP->newString(AstNode::encodeName(str)); \
     } while (false)
 
