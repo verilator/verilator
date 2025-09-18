@@ -19,6 +19,6 @@ test.compile(
     ],
     # Recursive make breaks the golden compare
     #expect_filename = test.golden_filename
-    fails=True)
+    fails='any')  # make returns exit code 2
 
 test.passes()

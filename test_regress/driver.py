@@ -1724,7 +1724,7 @@ class VlTest:
             check_finished=False,  # Check for All Finished
             entering=None,  # Print entering directory information
             expect_filename=None,  # Filename that should match logfile
-            fails=False,  # Command should fail
+            fails=False,  # True: normal 1 exit code, 'any': any exit code
             logfile=None,  # Filename to write putput to
             tee=True,
             verilator_run=False) -> str:  # Move gcov data to parallel area
@@ -1812,9 +1812,12 @@ class VlTest:
                 -8,  # SIGFPA
                 -11)):  # SIGSEGV
             self.error("Exec failed with core dump")
-            status = 10
+            status = 128 + (-rc)  # So is "normal" shell 0-255 status
+        elif rc >= 256:
+            # waitpid returns status << 8; subprocess otherwise; handle both
+            status = int(rc / 256)  # So is shell $?-like
         elif rc:
-            status = 10
+            status = rc
         else:
             status = 0
 
@@ -1829,8 +1832,21 @@ class VlTest:
             # Strip ANSI escape sequences
             firstline = re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', firstline)
             self.error("Exec of " + self._error_cmd_simplify(cmd) + " failed: " + firstline)
+
         if fails and status:
-            print("(Exec expected to fail, and did.)")
+            if not verilator_run:
+                print("(Exec failed, matching expected fail)")
+            elif fails == 'any':
+                print("(Exec failed, matching expected 'any' exit code fail)")
+            elif fails is True:
+                if status == 1:
+                    print("(Exec failed, matching expected 'True' exit code 1 fail)")
+                else:
+                    self.error("Exec of " + self._error_cmd_simplify(cmd) +
+                               " failed with exit code " + str(status) +
+                               ", but expected 'True' exit code 1 fail")
+            else:  # Future: support numeric exit code?
+                self.error("fails=" + str(fails) + " is not legal value")
         if fails and not status:
             self.error("Exec of " + self._error_cmd_simplify(cmd) + " ok, but expected to fail")
         if self.errors or self._skips:

@@ -258,8 +258,8 @@ sub run {
             warn "%Error: Command Failed $command\n";
         }
         exit $! if $!;  # errno
-        exit $? >> 8 if $? >> 8;  # child exit status
-        exit 255;  # last resort
+        exit $? >> 8 if $? >> 8;  # pass along child exit code
+        exit 128 + ($status & 127);  # last resort
     }
 }
 
