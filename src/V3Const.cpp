@@ -3606,6 +3606,7 @@ class ConstVisitor final : public VNVisitor {
     //                $accessor_name, ...
     //                             # .castFoo is the test VN_IS(object,Foo)
     //                             # ,, gets replaced with a , rather than &&
+    //                DISABLE_BASE # Turnes off checking Ast's base class treeops
     //               }"            # bracket not paren
     //    ,"what to call"
     //
@@ -3920,6 +3921,7 @@ class ConstVisitor final : public VNVisitor {
     TREEOPA("AstPutcN{$lhsp.castConst, $rhsp.castConst, $thsp.castConst}",  "replaceConst(nodep)");
     TREEOPA("AstSubstrN{$lhsp.castConst, $rhsp.castConst, $thsp.castConst}",  "replaceConst(nodep)");
     TREEOPA("AstCvtPackString{$lhsp.castConst}", "replaceConstString(nodep, VN_AS(nodep->lhsp(), Const)->num().toString())");
+    TREEOP ("AstToStringN{DISABLE_BASE}", "DONE");  // Avoid uniop(const); use matchToStringNConst
     TREEOP ("AstToStringN{matchToStringNConst(nodep)}", "DONE");
     // Custom
     // Implied by AstIsUnbounded::numberOperate: V("AstIsUnbounded{$lhsp.castConst}", "replaceNum(nodep, 0)");

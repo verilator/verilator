@@ -4554,7 +4554,7 @@ class WidthVisitor final : public VNVisitor {
             } else if (nodep->name() == "atoreal") {
                 fmt = AstAtoN::ATOREAL;
             } else {
-                V3ERROR_NA;
+                nodep->v3fatalSrc("Bad case");
                 fmt = AstAtoN::ATOI;
             }  // dummy assignment to suppress compiler warning
             methodOkArguments(nodep, 0, 0);

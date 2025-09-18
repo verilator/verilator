@@ -21,6 +21,7 @@ class Node:
         self._subClasses = []  # Initially list, but tuple after completion
         self._allSuperClasses = None  # Computed on demand after completion
         self._allSubClasses = None  # Computed on demand after completion
+        self._disableBase = False  # Skip base class const checking
         self._typeId = None  # Concrete type identifier number for leaf classes
         self._typeIdMin = None  # Lowest type identifier number for class
         self._typeIdMax = None  # Highest type identifier number for class
@@ -46,6 +47,13 @@ class Node:
     @property
     def isCompleted(self):
         return isinstance(self._subClasses, tuple)
+
+    @property
+    def disableBase(self):
+        return self._disableBase
+
+    def disableBaseSet(self):
+        self._disableBase = True
 
     @property
     def file(self):
@@ -301,11 +309,15 @@ class Cpt:
                 mif = "m_doV"
             else:
                 self.error("Unknown flag: " + doflag)
+
             subnodes = re.sub(r',,', '__ESCAPEDCOMMA__', subnodes)
             for subnode in re.split(r'\s*,\s*', subnodes):
                 subnode = re.sub(r'__ESCAPEDCOMMA__', ',', subnode)
                 if re.match(r'^\$([a-zA-Z0-9]+)$', subnode):
                     continue  # "$lhs" is just a comment that this op has a lhs
+                if re.search(r'DISABLE_BASE', subnode):
+                    AstNodes[typen].disableBaseSet()
+                    return
                 subnodeif = subnode
                 subnodeif = re.sub(r'\$([a-zA-Z0-9]+)\.cast([A-Z][A-Za-z0-9]+)$',
                                    r'VN_IS(nodep->\1(),\2)', subnodeif)
@@ -464,7 +476,12 @@ class Cpt:
         for node in AstNodeList:
             out_for_type_sc = []
             out_for_type = []
-            classes = list(node.allSuperClasses)
+            if node.disableBase:
+                classes = []
+                out_for_type.extend("        // DISABLE_BASE\n")
+            else:
+                classes = list(node.allSuperClasses)
+
             classes.append(node)
             for base in classes:
                 base = base.name
