@@ -57,6 +57,7 @@ class UnknownVisitor final : public VNVisitor {
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstAssignW* m_assignwp = nullptr;  // Current assignment
     AstAssignDly* m_assigndlyp = nullptr;  // Current assignment
     AstNode* m_timingControlp = nullptr;  // Current assignment's intra timing control
@@ -129,9 +130,9 @@ class UnknownVisitor final : public VNVisitor {
                 fl, condp,
                 (needDly
                      ? static_cast<AstNode*>(new AstAssignDly{
-                           fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp})
+                         fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp})
                      : static_cast<AstNode*>(new AstAssign{
-                           fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp}))};
+                         fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp}))};
             newp->branchPred(VBranchPred::BP_LIKELY);
             newp->isBoundsCheck(true);
             UINFOTREE(9, newp, "", "_new");
@@ -157,6 +158,11 @@ class UnknownVisitor final : public VNVisitor {
             iterateChildren(nodep);
             xrandNames.swap(m_xrandNames);
         }
+    }
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
+        iterateChildren(nodep);
     }
     void visit(AstAssignDly* nodep) override {
         VL_RESTORER(m_assigndlyp);
@@ -379,6 +385,26 @@ class UnknownVisitor final : public VNVisitor {
     void visit(AstSel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
+            if (!nodep->fromp()->isPure()) {
+                AstVar* const varp
+                    = new AstVar{nodep->fileline(), VVarType::VAR,
+                                 "__VSelTmp" + m_xrandNames->get(nodep), nodep->fromp()->dtypep()};
+                AstAssign* const assignp = new AstAssign{
+                    nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE},
+                    nodep->fromp()->unlinkFrBack()};
+                nodep->fromp(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
+                if (m_ftaskp) {
+                    varp->funcLocal(true);
+                    varp->lifetime(VLifetime::AUTOMATIC);
+                    m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+                } else {
+                    m_modp->stmtsp()->addHereThisAsNext(varp);
+                }
+                AstNode* nodep2 = nodep;
+                while (!VN_IS(nodep2, NodeStmt)) nodep2 = nodep2->backp();
+                UASSERT_OBJ(nodep2, nodep, "Not isnide a statement");
+                nodep2->addHereThisAsNext(assignp);
+            }
             // Guard against reading/writing past end of bit vector array
             const AstNode* const basefromp = AstArraySel::baseFromp(nodep, true);
             bool lvalue = false;
