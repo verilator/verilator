@@ -517,7 +517,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
             // 5. Use basic randomization for non-constrained variables to avoid recursion
 
             if (!m_globalConsProcessed) {  // Only process once per object's global constraints
-                                         // TODO: Should be a vector to check if each class is processed
+                                           // TODO: Should be a vector to check if each class is
+                                           // processed
                 if (nodep->user1() && VN_IS(nodep->fromp()->dtypep()->skipRefp(), ClassRefDType)
                     && VN_AS(nodep->fromp(), VarRef)->varp()->isGlobalConstrained()) {
                     AstClass* gConsClass
@@ -721,8 +722,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                       ? VN_AS(nodep->backp(), MemberSel)->cloneTree(false)
                                       : nullptr;
         if (membersel) varp = membersel->varp();
-        withinclass = membersel ? VN_CAST(membersel->user2p(), Class)
-                                : nullptr;
+        withinclass = membersel ? VN_CAST(membersel->user2p(), Class) : nullptr;
         AstNodeModule* const classOrPackagep = nodep->classOrPackagep();
         const RandomizeMode randMode = {.asInt = varp->user1()};
         if (!randMode.usesMode && editFormat(nodep)) return;
@@ -2035,8 +2035,8 @@ class RandomizeVisitor final : public VNVisitor {
                                                             VAccess::WRITE},
                                               BASIC_RANDOMIZE_FUNC_NAME, nullptr}
                           : new AstMethodCall{
-                              fl, new AstVarRef{fl, classp, memberVarp, VAccess::WRITE},
-                              "randomize", nullptr};
+                                fl, new AstVarRef{fl, classp, memberVarp, VAccess::WRITE},
+                                "randomize", nullptr};
                 callp->taskp(memberFuncp);
                 callp->dtypeFrom(memberFuncp);
                 AstVarRef* const basicFvarRefReadp = basicFvarRefp->cloneTree(false);
