@@ -3313,10 +3313,13 @@ class WidthVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return true;
                 }
-                if (VN_IS(foundp, NodeFTask)) {
-                    nodep->replaceWith(new AstMethodCall{nodep->fileline(),
-                                                         nodep->fromp()->unlinkFrBack(),
-                                                         nodep->name(), nullptr});
+                if (AstNodeFTask* ftaskp = VN_CAST(foundp, NodeFTask)) {
+                    AstMethodCall* newp = new AstMethodCall{
+                        nodep->fileline(), nodep->fromp()->unlinkFrBack(), nodep->name(), nullptr};
+                    newp->taskp(ftaskp);
+                    newp->dtypep(ftaskp->dtypep());
+                    newp->classOrPackagep(classp);
+                    nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return true;
                 }
