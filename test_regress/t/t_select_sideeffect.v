@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class Foo;
-  int x = 0;
-  function int get();
+  bit [2:0] x = 0;
+  function bit [2:0] get();
     x += 1;
     return x;
   endfunction
