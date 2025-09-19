@@ -1062,6 +1062,8 @@ packageFront<nodeModulep>:
                           $$->lifetime($2);
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
+                          PARSEP->rootp()->timeprecisionMerge($$->fileline(),
+                                                              PARSEP->timeLastPrec());
                           PARSEP->rootp()->addModulesp($$); }
         ;
 
@@ -1199,6 +1201,8 @@ modFront<nodeModulep>:
                           $$->inLibrary(PARSEP->inLibrary() || $$->fileline()->celldefineOn());
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
+                          PARSEP->rootp()->timeprecisionMerge($$->fileline(),
+                                                              PARSEP->timeLastPrec());
                           $$->unconnectedDrive(PARSEP->unconnectedDrive());
                           PARSEP->rootp()->addModulesp($$); }
         |       modFront sigAttrScope                   { $$ = $1; }
@@ -1581,6 +1585,8 @@ pgmFront<nodeModulep>:
                           $$->inLibrary(PARSEP->inLibrary() || $$->fileline()->celldefineOn());
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
+                          PARSEP->rootp()->timeprecisionMerge($$->fileline(),
+                                                              PARSEP->timeLastPrec());
                           PARSEP->rootp()->addModulesp($$); }
         ;
 
@@ -7149,6 +7155,8 @@ checkerFront<nodeModulep>:  // IEEE: part of checker_declaration
                         { $$ = new AstModule{$<fl>2, *$2, PARSEP->libname(), AstModule::Checker{}};
                           $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
                           $$->timeunit(PARSEP->timeLastUnit());
+                          PARSEP->rootp()->timeprecisionMerge($$->fileline(),
+                                                              PARSEP->timeLastPrec());
                           $$->unconnectedDrive(PARSEP->unconnectedDrive()); }
         |       checkerFront sigAttrScope               { $$ = $1; }
         ;

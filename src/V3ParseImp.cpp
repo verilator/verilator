@@ -119,7 +119,7 @@ void V3ParseImp::lexTimescaleParse(FileLine* fl, const char* textp) {
     VTimescale prec;
     VTimescale::parseSlashed(fl, textp, unit /*ref*/, prec /*ref*/);
     m_timeLastUnit = v3Global.opt.timeComputeUnit(unit);
-    v3Global.rootp()->timeprecisionMerge(fl, prec);
+    m_timeLastPrec = v3Global.opt.timeComputePrec(prec);
 }
 AstPragma* V3ParseImp::createTimescale(FileLine* fl, bool unitSet, double unitVal, bool precSet,
                                        double precVal) {
