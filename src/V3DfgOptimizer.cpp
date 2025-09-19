@@ -255,7 +255,7 @@ class DataflowOptimize final {
 
     static void markExternallyReferencedVariables(AstNetlist* netlistp, bool scoped) {
         netlistp->foreach([scoped](AstNode* nodep) {
-            // Check variabel flags
+            // Check variable flags
             if (scoped) {
                 if (AstVarScope* const vscp = VN_CAST(nodep, VarScope)) {
                     const AstVar* const varp = vscp->varp();
