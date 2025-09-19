@@ -224,8 +224,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 UINFO(9, "Failed to clone variable reference in nameManipulation\n");
                 return;
             }
-            AstMemberSel* varMemberp = new AstMemberSel{cloneCons->fileline(),
-                                                        clonedFromp, varRefp->varp()};
+            AstMemberSel* varMemberp
+                = new AstMemberSel{cloneCons->fileline(), clonedFromp, varRefp->varp()};
             varMemberp->user2p(m_classp);
             varRefp->replaceWith(varMemberp);
             VL_DO_DANGLING(varRefp->deleteTree(), varRefp);
@@ -537,8 +537,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
             AstVarRef* const varRefp = VN_CAST(nodep->fromp(), VarRef);
             if (!varRefp || !varRefp->varp()) return;
 
-            const AstClassRefDType* const classRefp =
-                VN_CAST(varRefp->dtypep()->skipRefp(), ClassRefDType);
+            const AstClassRefDType* const classRefp
+                = VN_CAST(varRefp->dtypep()->skipRefp(), ClassRefDType);
             if (!classRefp || !classRefp->classp()) return;
 
             if (nodep->user1() && varRefp->varp()->isGlobalConstrained()) {
@@ -547,21 +547,21 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 // Use class-specific processing to allow multiple object processing
                 if (m_processedClasses.find(gConsClass) == m_processedClasses.end()) {
 
-                    gConsClass->foreachMember(
-                        [&](AstClass* const classp, AstConstraint* const constrp) {
-                            if (!constrp) {
-                                UINFO(9, "Null constraint found in class " << classp->name() << "\n");
-                                return;
-                            }
-                            AstConstraint* cloneConstrp = constrp->cloneTree(false);
-                            if (!cloneConstrp) {
-                                UINFO(9, "Failed to clone constraint " << constrp->name() << "\n");
-                                return;
-                            }
-                            // Name manipulation
-                            nameManipulation(varRefp, cloneConstrp);
-                            m_clonedConstraints.push_back(cloneConstrp);
-                        });
+                    gConsClass->foreachMember([&](AstClass* const classp,
+                                                  AstConstraint* const constrp) {
+                        if (!constrp) {
+                            UINFO(9, "Null constraint found in class " << classp->name() << "\n");
+                            return;
+                        }
+                        AstConstraint* cloneConstrp = constrp->cloneTree(false);
+                        if (!cloneConstrp) {
+                            UINFO(9, "Failed to clone constraint " << constrp->name() << "\n");
+                            return;
+                        }
+                        // Name manipulation
+                        nameManipulation(varRefp, cloneConstrp);
+                        m_clonedConstraints.push_back(cloneConstrp);
+                    });
 
                     // Mark this class as processed
                     m_processedClasses.insert(gConsClass);
