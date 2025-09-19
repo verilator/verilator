@@ -39,6 +39,7 @@
 
 #include "V3Stats.h"
 
+#include <queue>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -53,7 +54,7 @@ class DeadVisitor final : public VNVisitor {
     //  AstVar::user1()         -> int. Count of number of references
     //  AstVarScope::user1()    -> int. Count of number of references
     //  AstNodeDType::user1()   -> int. Count of number of references
-    //  AstNodeFTask::user1()   -> int. Non-zero if ever referenced (called)
+    //  AstNodeFTask::user1()   -> int. Count of number of references (via AstNodeFTaskRefs)
     const VNUser1InUse m_inuser1;
 
     // TYPES
@@ -72,7 +73,7 @@ class DeadVisitor final : public VNVisitor {
     std::vector<AstCell*> m_cellsp;
     std::vector<AstClass*> m_classesp;
     std::vector<AstTypedef*> m_typedefsp;
-    std::vector<AstNodeFTask*> m_tasksp;  // All the tasks that could be removed if not called
+    std::queue<AstNodeFTask*> m_tasksp;  // All the tasks that could be removed if not called
     AssignMap m_assignMap;  // List of all simple assignments for each variable
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
 
@@ -173,7 +174,7 @@ class DeadVisitor final : public VNVisitor {
     void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
         checkAll(nodep);
-        if (nodep->taskp()) nodep->taskp()->user1(1);
+        if (nodep->taskp()) nodep->taskp()->user1Inc();
         if (nodep->classOrPackagep()) {
             if (m_elimCells) {
                 nodep->classOrPackagep(nullptr);
@@ -325,7 +326,7 @@ class DeadVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkAll(nodep);
         if (!nodep->taskPublic() && !nodep->dpiExport() && !nodep->dpiImport())
-            m_tasksp.push_back(nodep);
+            m_tasksp.push(nodep);
         if (nodep->classOrPackagep()) {
             if (m_elimCells) {
                 nodep->classOrPackagep(nullptr);
@@ -365,8 +366,17 @@ class DeadVisitor final : public VNVisitor {
     }
 
     void deadCheckTasks() {
-        for (AstNodeFTask* taskp : m_tasksp) {
-            if (!taskp->user1() && !taskp->classMethod()) {
+        while (!m_tasksp.empty()) {
+            AstNodeFTask* taskp = m_tasksp.front();
+            m_tasksp.pop();
+            if (taskp->user1() == 0 && !taskp->classMethod()) {
+                taskp->foreach([this](AstNodeFTaskRef* ftaskrefp) {
+                    AstNodeFTask* task2p = ftaskrefp->taskp();
+                    if (!task2p) return;
+                    task2p->user1Inc(-1);
+                    if (task2p->user1() == 0) m_tasksp.push(task2p);
+                });
+                taskp->user1(-1);  // we don't want to try deleting twice
                 deleting(taskp);
                 m_statFTasksDeadified++;
             }
@@ -611,12 +621,12 @@ void V3Dead::deadifyDTypesScoped(AstNetlist* nodep) {
 
 void V3Dead::deadifyAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { DeadVisitor{nodep, true, true, false, true, false, false}; }  // Destruct before checking
+    { DeadVisitor{nodep, true, true, false, true, false, true}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAll", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3Dead::deadifyAllScoped(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    { DeadVisitor{nodep, true, true, true, true, false, false}; }  // Destruct before checking
+    { DeadVisitor{nodep, true, true, true, true, false, true}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAllScoped", 0, dumpTreeEitherLevel() >= 3);
 }
