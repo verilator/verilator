@@ -143,6 +143,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     bool m_globalConsProcessed = false;
     AstWith* m_astWithp = nullptr;
     std::vector<AstConstraint*> m_clonedConstraints;
+    std::unordered_set<const AstClass*> m_processedClasses;
 
     // Constants for global constraint processing
     static constexpr const char* GLOBAL_CONSTRAINT_SEPARATOR = "__DT__";
@@ -207,11 +208,24 @@ class RandomizeMarkVisitor final : public VNVisitor {
         }
     }
     void nameManipulation(AstVarRef* fromp, AstConstraint* cloneCons) {
+        if (!fromp || !cloneCons) {
+            UINFO(9, "Invalid parameters in nameManipulation\n");
+            return;
+        }
         // Iterate through all variable references and replace them with member selections.
         cloneCons->name(fromp->name() + GLOBAL_CONSTRAINT_SEPARATOR + cloneCons->name());
         cloneCons->foreach([&](AstVarRef* varRefp) {
+            if (!varRefp || !varRefp->varp()) {
+                UINFO(9, "Invalid variable reference in constraint\n");
+                return;
+            }
+            AstVarRef* clonedFromp = fromp->cloneTree(false);
+            if (!clonedFromp) {
+                UINFO(9, "Failed to clone variable reference in nameManipulation\n");
+                return;
+            }
             AstMemberSel* varMemberp = new AstMemberSel{cloneCons->fileline(),
-                                                        fromp->cloneTree(false), varRefp->varp()};
+                                                        clonedFromp, varRefp->varp()};
             varMemberp->user2p(m_classp);
             varRefp->replaceWith(varMemberp);
             VL_DO_DANGLING(varRefp->deleteTree(), varRefp);
@@ -223,6 +237,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
         VL_RESTORER(m_modp);
         m_modp = m_classp = nodep;
         m_globalConsProcessed = false;
+        // Clear processed classes for each new class context
+        m_processedClasses.clear();
         iterateChildrenConst(nodep);
         for (int i = 0; i < m_clonedConstraints.size(); i++) {
             m_classp->addStmtsp(m_clonedConstraints[i]);
@@ -507,7 +523,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 m_classp->user1(IS_RANDOMIZED_WITH_GLOBAL_CONSTRAINTS);
             else if (m_classp->user1() == IS_RANDOMIZED_INLINE)
                 m_classp->user1(IS_RANDOMIZED_INLINE_WITH_GLOBAL_CONSTRAINTS);
-            VN_AS(nodep->fromp(), VarRef)->varp()->isGlobalConstrained(true);  // not needed
+            // Mark the object variable as participating in global constraints
+            VN_AS(nodep->fromp(), VarRef)->varp()->setGlobalConstrained(true);
 
             // Global constraint processing algorithm:
             // 1. Detect globally constrained object variables in randomized classes
@@ -516,25 +533,40 @@ class RandomizeMarkVisitor final : public VNVisitor {
             // 4. Insert cloned constraints into current class for solver processing
             // 5. Use basic randomization for non-constrained variables to avoid recursion
 
-            if (!m_globalConsProcessed) {  // Only process once per object's global constraints
-                                           // TODO: Should be a vector to check if each class is
-                                           // processed
-                if (nodep->user1() && VN_IS(nodep->fromp()->dtypep()->skipRefp(), ClassRefDType)
-                    && VN_AS(nodep->fromp(), VarRef)->varp()->isGlobalConstrained()) {
-                    AstClass* gConsClass
-                        = VN_AS(nodep->fromp()->dtypep()->skipRefp(), ClassRefDType)->classp();
+            // Extract and validate components early to avoid repeated type checks
+            AstVarRef* const varRefp = VN_CAST(nodep->fromp(), VarRef);
+            if (!varRefp || !varRefp->varp()) return;
+
+            const AstClassRefDType* const classRefp =
+                VN_CAST(varRefp->dtypep()->skipRefp(), ClassRefDType);
+            if (!classRefp || !classRefp->classp()) return;
+
+            if (nodep->user1() && varRefp->varp()->isGlobalConstrained()) {
+                AstClass* gConsClass = classRefp->classp();
+
+                // Use class-specific processing to allow multiple object processing
+                if (m_processedClasses.find(gConsClass) == m_processedClasses.end()) {
 
                     gConsClass->foreachMember(
                         [&](AstClass* const classp, AstConstraint* const constrp) {
+                            if (!constrp) {
+                                UINFO(9, "Null constraint found in class " << classp->name() << "\n");
+                                return;
+                            }
                             AstConstraint* cloneConstrp = constrp->cloneTree(false);
+                            if (!cloneConstrp) {
+                                UINFO(9, "Failed to clone constraint " << constrp->name() << "\n");
+                                return;
+                            }
                             // Name manipulation
-                            nameManipulation(VN_AS(nodep->fromp(), VarRef), cloneConstrp);
+                            nameManipulation(varRefp, cloneConstrp);
                             m_clonedConstraints.push_back(cloneConstrp);
                         });
+
+                    // Mark this class as processed
+                    m_processedClasses.insert(gConsClass);
                 }
             }
-
-            m_globalConsProcessed = true;
         }
     }
     void visit(AstNodeModule* nodep) override {

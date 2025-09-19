@@ -2115,7 +2115,7 @@ public:
     void setIgnoreSchedWrite() { m_ignoreSchedWrite = true; }
     bool dfgMultidriven() const { return m_dfgMultidriven; }
     void setDfgMultidriven() { m_dfgMultidriven = true; }
-    void isGlobalConstrained(bool flag) { m_globalCons = true; }
+    void setGlobalConstrained(bool flag) { m_globalCons = flag; }
     // METHODS
     void name(const string& name) override { m_name = name; }
     void tag(const string& text) override { m_tag = text; }
