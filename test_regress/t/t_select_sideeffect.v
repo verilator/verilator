@@ -14,11 +14,17 @@ endclass
 
 module t;
   Foo foo;
-  int x[3] = {0, 2, 0};
+  int x[5] = {1, 2, 3, 4, 5};
   initial begin
     foo = new;
     if (x[foo.get()] != 2) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
+  end
+  always begin
+    if (x[foo.get()] != 3) $stop;
+  end
+  final begin
+    if (x[foo.get()] != 4) $stop;
   end
 endmodule

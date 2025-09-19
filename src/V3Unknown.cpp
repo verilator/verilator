@@ -63,7 +63,7 @@ class UnknownVisitor final : public VNVisitor {
     AstNode* m_timingControlp = nullptr;  // Current assignment's intra timing control
     bool m_constXCvt = false;  // Convert X's
     bool m_allowXUnique = true;  // Allow unique assignments
-    bool m_in_procedure = false;  // Whether in procedure
+    bool m_inProcedure = false;  // Whether in procedure
 
     // METHODS
 
@@ -131,9 +131,9 @@ class UnknownVisitor final : public VNVisitor {
                 fl, condp,
                 (needDly
                      ? static_cast<AstNode*>(new AstAssignDly{
-                         fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp})
+                           fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp})
                      : static_cast<AstNode*>(new AstAssign{
-                         fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp}))};
+                           fl, prep, new AstVarRef{fl, varp, VAccess::READ}, m_timingControlp}))};
             newp->branchPred(VBranchPred::BP_LIKELY);
             newp->isBoundsCheck(true);
             UINFOTREE(9, newp, "", "_new");
@@ -161,8 +161,8 @@ class UnknownVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeProcedure* nodep) override {
-        VL_RESTORER(m_in_procedure);
-        m_in_procedure = true;
+        VL_RESTORER(m_inProcedure);
+        m_inProcedure = true;
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
@@ -391,7 +391,7 @@ class UnknownVisitor final : public VNVisitor {
     void visit(AstSel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
-            if ((m_in_procedure || m_ftaskp) && !nodep->fromp()->isPure()) {
+            if ((m_inProcedure || m_ftaskp) && !nodep->fromp()->isPure()) {
                 AstVar* const varp
                     = new AstVar{nodep->fileline(), VVarType::XTEMP, m_xrandNames->get(nodep),
                                  nodep->fromp()->dtypep()};

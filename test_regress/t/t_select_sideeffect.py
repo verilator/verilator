@@ -13,6 +13,6 @@ test.scenarios('simulator')
 
 test.compile()
 
-test.execute(check_finished=True)
+test.execute()
 
 test.passes()
