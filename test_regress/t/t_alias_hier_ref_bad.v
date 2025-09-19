@@ -12,7 +12,7 @@ module t (  /*AUTOARG*/
 );
   input clk;
 
-  reg  [15:0] out = 16'h0;
+  reg  [15:0] out;
   wire [15:0] a;
 
   alias a = sub_i.btw;
