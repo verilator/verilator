@@ -47,4 +47,3 @@ module sub (
   assign a = cyc;
   alias a = b;
 endmodule
-;

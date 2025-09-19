@@ -15,7 +15,10 @@ module t (  /*AUTOARG*/
   integer cyc = 0;
   assign a = cyc;
 
-  sub s (.a(a), .b(b));
+  sub s (
+      .a(a),
+      .b(b)
+  );
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
@@ -29,9 +32,8 @@ module t (  /*AUTOARG*/
 endmodule
 
 module sub (
-            inout wire [31:0] a,
-            inout wire [31:0] b
+    inout wire [31:0] a,
+    inout wire [31:0] b
 );
   alias a = b;
 endmodule
-;
