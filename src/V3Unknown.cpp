@@ -144,7 +144,7 @@ class UnknownVisitor final : public VNVisitor {
 
     void createTemp(AstNodeExpr* const nodep) {
         AstNode* stmtp = nodep;
-        while (!VN_IS(stmtp, NodeStmt)) stmtp = stmtp->backp();
+        while (VL_LIKELY(stmtp) && !VN_IS(stmtp, NodeStmt)) stmtp = stmtp->backp();
         UASSERT_OBJ(stmtp, nodep, "Not isnide a statement");
         AstVar* const varp = new AstVar{nodep->fileline(), VVarType::XTEMP,
                                         m_xrandNames->get(nodep), nodep->dtypep()};
