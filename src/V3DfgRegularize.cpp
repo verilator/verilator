@@ -79,7 +79,7 @@ class DfgRegularize final {
     }
 
     // Given a variable and its driver, return true iff the variable can be
-    // repalced with its driver. Record replacement to be applied in the Ast
+    // replaced with its driver. Record replacement to be applied in the Ast
     // in user2p of the replaced variable.
     bool replaceable(DfgVertexVar* varp, DfgVertex* srcp) {
         // The given variable has no external references, and is read in the module
@@ -92,7 +92,7 @@ class DfgRegularize final {
         if (const DfgVarPacked* const drvp = srcp->cast<DfgVarPacked>()) {
             // Record replacement
             nodep->user2p(drvp->nodep());
-            // The repalcement will be read in the module, mark as such so it doesn't get removed.
+            // The replacement will be read in the module, mark as such so it doesn't get removed.
             drvp->setHasModRdRefs();
             drvp->varp()->propagateAttrFrom(varp->varp());
             if (varp->varp()->isUsedClock()) drvp->varp()->usedClock(true);
