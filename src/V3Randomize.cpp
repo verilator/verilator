@@ -597,7 +597,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         {
             AstBegin* const tempp
-                = new AstBegin{fl, "[EditWrapper]", itemsp->unlinkFrBackWithNext()};
+                = new AstBegin{fl, "[EditWrapper]", itemsp->unlinkFrBackWithNext(), false, false};
             VL_DO_DANGLING(iterateAndNextNull(tempp->stmtsp()), itemsp);
             itemsp = tempp->stmtsp();
             if (itemsp) itemsp->unlinkFrBackWithNext();
@@ -1939,7 +1939,7 @@ class RandomizeVisitor final : public VNVisitor {
                 AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
                 AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp, basicFvarp);
                 if (!refp->backp()) VL_DO_DANGLING(refp->deleteTree(), refp);
-                basicRandomizep->addStmtsp(new AstBegin{fl, "", stmtp});
+                basicRandomizep->addStmtsp(new AstBegin{fl, "", stmtp, false, false});
             }
         });
     }

@@ -345,7 +345,7 @@ void splitCheck(AstCFunc* ofuncp) {
 
     // Unlink all statements, then add item by item to new sub-functions
     AstBegin* const tempp = new AstBegin{ofuncp->fileline(), "[EditWrapper]",
-                                         ofuncp->stmtsp()->unlinkFrBackWithNext()};
+                                         ofuncp->stmtsp()->unlinkFrBackWithNext(), false, false};
     // Currently we do not use finalsp in V3Sched, if we do, it needs to be handled here
     UASSERT_OBJ(!ofuncp->finalsp(), ofuncp, "Should not have any finalps");
     while (tempp->stmtsp()) {

@@ -2274,13 +2274,12 @@ class AstBegin final : public AstNodeBlock {
     // Parents: statement
     // @astgen op1 := genforp : Optional[AstNode]
 
-    bool m_generate : 1;  // Underneath a generate
+    const bool m_generate : 1;  // Underneath a generate
     bool m_needProcess : 1;  // Uses VlProcess
     const bool m_implied : 1;  // Not inserted by user
 public:
     // Node that puts name into the output stream
-    AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool generate = false,
-             bool implied = false)
+    AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool generate, bool implied)
         : ASTGEN_SUPER_Begin(fl, name, stmtsp)
         , m_generate{generate}
         , m_needProcess{false}
@@ -2289,7 +2288,6 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     bool generate() const { return m_generate; }
-    void generate(bool flag) { m_generate = flag; }
     void setNeedProcess() { m_needProcess = true; }
     bool needProcess() const { return m_needProcess; }
     bool implied() const { return m_implied; }

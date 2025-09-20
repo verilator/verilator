@@ -470,7 +470,7 @@ class DynScopeVisitor final : public VNVisitor {
                 })) {
             nodep->user2(true);
             // Put it in a fork to prevent lifetime issues with the local
-            AstBegin* const beginp = new AstBegin{nodep->fileline(), "", nullptr};
+            AstBegin* const beginp = new AstBegin{nodep->fileline(), "", nullptr, false, false};
             AstFork* const forkp = new AstFork{nodep->fileline(), "", beginp};
             forkp->joinType(VJoinType::JOIN_NONE);
             nodep->replaceWith(forkp);

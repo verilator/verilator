@@ -1078,11 +1078,10 @@ AstNode* AstNode::iterateSubtreeReturnEdits(VNVisitor& v) {
     } else if (!nodep->backp()) {
         // Calling on standalone tree; insert a shim node so we can keep
         // track, then delete it on completion
-        AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nodep};
-        {
-            VL_DO_DANGLING(tempp->stmtsp()->accept(v),
-                           nodep);  // nodep to null as may be replaced
-        }
+        AstBegin* const tempp
+            = new AstBegin{nodep->fileline(), "[EditWrapper]", nodep, false, false};
+        // nodep to null as may be replaced
+        VL_DO_DANGLING(tempp->stmtsp()->accept(v), nodep);
         nodep = tempp->stmtsp()->unlinkFrBackWithNext();
         VL_DO_DANGLING(tempp->deleteTree(), tempp);
     } else {

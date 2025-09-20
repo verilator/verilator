@@ -3408,9 +3408,9 @@ par_blockPreId<nodep>:          // ==IEEE: par_block but called with leading ID
 
 seq_blockFront<beginp>:         // IEEE: part of seq_block
                 yBEGIN
-                        { $$ = new AstBegin{$1, "", nullptr}; }
+                        { $$ = new AstBegin{$1, "", nullptr, false, false}; }
         |       yBEGIN ':' idAny/*new-block_identifier*/
-                        { $$ = new AstBegin{$<fl>3, *$3, nullptr}; }
+                        { $$ = new AstBegin{$<fl>3, *$3, nullptr, false, false}; }
         ;
 
 par_blockFront<forkp>:          // IEEE: part of par_block
@@ -3422,7 +3422,7 @@ par_blockFront<forkp>:          // IEEE: part of par_block
 
 seq_blockFrontPreId<beginp>:    // IEEE: part of seq_block/stmt with leading id
                 id/*block_identifier*/ yP_COLON__BEGIN yBEGIN
-                        { $$ = new AstBegin{$3, *$1, nullptr}; }
+                        { $$ = new AstBegin{$3, *$1, nullptr, false, false}; }
         ;
 
 par_blockFrontPreId<forkp>:     // IEEE: part of par_block/stmt with leading id
@@ -3467,7 +3467,7 @@ stmtList<nodep>:
 stmt<nodep>:                    // IEEE: statement_or_null == function_statement_or_null
                 statement_item                          { $$ = $1; }
         //                      // S05 block creation rule
-        |       id/*block_identifier*/ ':' statement_item       { $$ = new AstBegin{$<fl>1, *$1, $3}; }
+        |       id/*block_identifier*/ ':' statement_item       { $$ = new AstBegin{$<fl>1, *$1, $3, false, false}; }
         //                      // from _or_null
         |       ';'                                     { $$ = nullptr; }
         //                      // labeled par_block/seq_block with leading ':'

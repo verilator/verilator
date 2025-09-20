@@ -3256,7 +3256,7 @@ AstAlways* AstAssignW::convertToAlways() {
     if (hasTimingControl) {
         // If there's a timing control, put the assignment in a fork..join_none. This process won't
         // get marked as suspendable and thus will be scheduled normally
-        AstBegin* const beginp = new AstBegin{flp, "", bodysp};
+        AstBegin* const beginp = new AstBegin{flp, "", bodysp, false, false};
         AstFork* const forkp = new AstFork{flp, "", beginp};
         forkp->joinType(VJoinType::JOIN_NONE);
         bodysp = forkp;

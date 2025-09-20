@@ -209,7 +209,8 @@ class UnrollVisitor final : public VNVisitor {
         if (loopValue) {
             AstConst* varValuep = new AstConst{nodep->fileline(), *loopValue};
             // Iteration requires a back, so put under temporary node
-            AstBegin* tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", clonep};
+            AstBegin* tempp
+                = new AstBegin{nodep->fileline(), "[EditWrapper]", clonep, false, false};
             replaceVarRef(tempp->stmtsp(), varValuep);
             clonep = tempp->stmtsp()->unlinkFrBackWithNext();
             VL_DO_CLEAR(tempp->deleteTree(), tempp = nullptr);
@@ -302,7 +303,8 @@ class UnrollVisitor final : public VNVisitor {
             AstNode* clonep = initp->cloneTree(true);
             AstConst* varValuep = new AstConst{nodep->fileline(), loopValue};
             // Iteration requires a back, so put under temporary node
-            AstBegin* tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", clonep};
+            AstBegin* tempp
+                = new AstBegin{nodep->fileline(), "[EditWrapper]", clonep, false, false};
             replaceVarRef(clonep, varValuep);
             clonep = tempp->stmtsp()->unlinkFrBackWithNext();
             VL_DO_CLEAR(tempp->deleteTree(), tempp = nullptr);
@@ -327,8 +329,8 @@ class UnrollVisitor final : public VNVisitor {
                     AstConst* varValuep = new AstConst{nodep->fileline(), loopValue};
                     if (oneloopp) {
                         // Iteration requires a back, so put under temporary node
-                        AstBegin* const tempp
-                            = new AstBegin{oneloopp->fileline(), "[EditWrapper]", oneloopp};
+                        AstBegin* const tempp = new AstBegin{oneloopp->fileline(), "[EditWrapper]",
+                                                             oneloopp, false, false};
                         replaceVarRef(tempp->stmtsp(), varValuep);
                         oneloopp = tempp->stmtsp()->unlinkFrBackWithNext();
                         VL_DO_DANGLING(tempp->deleteTree(), tempp);
@@ -336,7 +338,8 @@ class UnrollVisitor final : public VNVisitor {
                     if (m_generate) {
                         const string index = AstNode::encodeNumber(varValuep->toSInt());
                         const string nname = m_beginName + "__BRA__" + index + "__KET__";
-                        oneloopp = new AstBegin{oneloopp->fileline(), nname, oneloopp, true};
+                        oneloopp
+                            = new AstBegin{oneloopp->fileline(), nname, oneloopp, true, false};
                     }
                     VL_DO_DANGLING(pushDeletep(varValuep), varValuep);
                     if (newbodysp) {
