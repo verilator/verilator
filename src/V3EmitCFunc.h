@@ -680,7 +680,10 @@ public:
         iterateAndNextConstNull(nodep->exprp());
         puts("}\n");
     }
-    void visit(AstNodeCase* nodep) override {  // LCOV_EXCL_LINE
+    void visit(AstNodeGen* nodep) override {  // LCOV_EXCL_LINE
+        nodep->v3fatalSrc("Generate constructs should have been reduced out");
+    }
+    void visit(AstCase* nodep) override {  // LCOV_EXCL_LINE
         // In V3Case...
         nodep->v3fatalSrc("Case statements should have been reduced out");
     }

@@ -267,6 +267,13 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
+class AstNodeGen VL_NOT_FINAL : public AstNode {
+    // Generate construct
+public:
+    AstNodeGen(VNType t, FileLine* fl)
+        : AstNode{t, fl} {}
+    ASTGEN_MEMBERS_AstNodeGen;
+};
 class AstNodeModule VL_NOT_FINAL : public AstNode {
     // A module, package, program or interface declaration;
     // something that can live directly under the TOP,
@@ -2287,22 +2294,18 @@ public:
 class AstBegin final : public AstNodeBlock {
     // A Begin/end named block, only exists shortly after parsing until linking
     // Parents: statement
-    // @astgen op1 := genforp : Optional[AstNode]
 
-    const bool m_generate : 1;  // Underneath a generate
     bool m_needProcess : 1;  // Uses VlProcess
     const bool m_implied : 1;  // Not inserted by user
 public:
     // Node that puts name into the output stream
-    AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool generate, bool implied)
+    AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool implied)
         : ASTGEN_SUPER_Begin(fl, name, stmtsp)
-        , m_generate{generate}
         , m_needProcess{false}
         , m_implied{implied} {}
     ASTGEN_MEMBERS_AstBegin;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    bool generate() const { return m_generate; }
     void setNeedProcess() { m_needProcess = true; }
     bool needProcess() const { return m_needProcess; }
     bool implied() const { return m_implied; }
@@ -2461,6 +2464,74 @@ public:
     ASTGEN_MEMBERS_AstVFile;
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
+};
+
+// === AstNodeGen ===
+class AstGenBlock final : public AstNodeGen {
+    // Generate 'begin'
+    // @astgen op1 := genforp : Optional[AstNode]
+    // @astgen op2 := stmtsp : List[AstNode]
+    std::string m_name;  // Name of block
+    const bool m_unnamed;  // Originally unnamed (name change does not affect this)
+    const bool m_implied;  // Not inserted by user
+
+public:
+    AstGenBlock(FileLine* fl, const string& name, AstNode* stmtsp, bool implied)
+        : ASTGEN_SUPER_GenBlock(fl)
+        , m_name{name}
+        , m_unnamed{name.empty()}
+        , m_implied{implied} {
+        this->addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstGenBlock;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    std::string name() const override VL_MT_STABLE { return m_name; }
+    void name(const std::string& name) override { m_name = name; }
+    bool unnamed() const { return m_unnamed; }
+    bool implied() const { return m_implied; }
+};
+class AstGenCase final : public AstNodeGen {
+    // Generate 'case'
+    // @astgen op1 := exprp : AstNodeExpr // Condition (scurtinee) expression
+    // @astgen op2 := itemsp : List[AstCaseItem]
+public:
+    AstGenCase(FileLine* fl, AstNodeExpr* exprp, AstCaseItem* itemsp)
+        : ASTGEN_SUPER_GenCase(fl) {
+        this->exprp(exprp);
+        this->addItemsp(itemsp);
+    }
+    ASTGEN_MEMBERS_AstGenCase;
+};
+class AstGenFor final : public AstNodeGen {
+    // Generate 'for'
+    // @astgen op1 := initsp : List[AstNode]
+    // @astgen op2 := condp : AstNodeExpr
+    // @astgen op3 := incsp : List[AstNode]
+    // @astgen op4 := stmtsp : List[AstNode]
+public:
+    AstGenFor(FileLine* fl, AstNode* initsp, AstNodeExpr* condp, AstNode* incsp, AstNode* stmtsp)
+        : ASTGEN_SUPER_GenFor(fl) {
+        this->addInitsp(initsp);
+        this->condp(condp);
+        this->addIncsp(incsp);
+        this->addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstGenFor;
+};
+class AstGenIf final : public AstNodeGen {
+    // Generate 'if'
+    // @astgen op1 := condp : AstNodeExpr
+    // @astgen op2 := thensp : List[AstNode]
+    // @astgen op3 := elsesp : List[AstNode]
+public:
+    AstGenIf(FileLine* fl, AstNodeExpr* condp, AstNode* thensp, AstNode* elsesp)
+        : ASTGEN_SUPER_GenIf(fl) {
+        this->condp(condp);
+        this->addThensp(thensp);
+        this->addElsesp(elsesp);
+    }
+    ASTGEN_MEMBERS_AstGenIf;
 };
 
 // === AstNodeModule ===

@@ -1610,7 +1610,7 @@ class ParamVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstBegin* nodep) override {
+    void visit(AstGenBlock* nodep) override {
         // Parameter substitution for generated for loops.
         // TODO Unlike generated IF, we don't have to worry about short-circuiting the
         // conditional expression, since this is currently restricted to simple

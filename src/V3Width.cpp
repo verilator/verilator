@@ -744,8 +744,7 @@ class WidthVisitor final : public VNVisitor {
                     || (!nodep->stmtsp()->nextp() && !nodep->joinType().joinNone())))) {
             AstNode* stmtsp = nullptr;
             if (nodep->stmtsp()) stmtsp = nodep->stmtsp()->unlinkFrBack();
-            AstBegin* const newp
-                = new AstBegin{nodep->fileline(), nodep->name(), stmtsp, false, false};
+            AstBegin* const newp = new AstBegin{nodep->fileline(), nodep->name(), stmtsp, false};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else if (v3Global.opt.timing().isSetTrue()) {
@@ -5261,91 +5260,119 @@ class WidthVisitor final : public VNVisitor {
     //--------------------
     // Top levels
 
-    void visit(AstNodeCase* nodep) override {
+    void handleCaseType(AstNode* casep, AstNodeExpr* exprp, AstCaseItem* itemsp) {
+        AstAttrOf* const exprap = VN_CAST(exprp, AttrOf);
+        if (!exprap) return;
+        if (exprap->attrType() != VAttrType::TYPEID) return;
+
+        const AstNodeDType* const exprDtp = exprap->dtypep();
+        UINFO(9, "case type exprDtp " << exprDtp);
+        // V3Param may have a pointer to this case statement, and we need
+        // dotted references to remain properly named, so rather than
+        // removing we convert it to a "normal" expression "case (1) ..."
+        FileLine* const newfl = casep->fileline();
+        newfl->warnOff(V3ErrorCode::CASEINCOMPLETE, true);  // Side effect of transform
+        newfl->warnOff(V3ErrorCode::CASEOVERLAP, true);  // Side effect of transform
+        casep->fileline(newfl);
+        for (AstCaseItem* itemp = itemsp; itemp; itemp = VN_AS(itemp->nextp(), CaseItem)) {
+            if (itemp->isDefault()) continue;
+            bool hit = false;
+            for (AstNode* condp = itemp->condsp(); condp; condp = condp->nextp()) {
+                const AstAttrOf* const condAttrp = VN_CAST(condp, AttrOf);
+                if (!condAttrp) {
+                    condp->v3error("Case(type) statement requires items that have type() items");
+                } else {
+                    AstNodeDType* const condDtp = condAttrp->dtypep();
+                    if (AstNode::computeCastable(exprDtp, condDtp, casep) == VCastable::SAMEISH) {
+                        hit = true;
+                        break;
+                    }
+                }
+            }
+            pushDeletep(itemp->condsp()->unlinkFrBackWithNext());
+            // Item condition becomes constant 1 if hits else 0
+            itemp->addCondsp(new AstConst{newfl, AstConst::BitTrue{}, hit});
+        }
+        exprap->replaceWith(new AstConst{newfl, AstConst::BitTrue{}});
+        VL_DO_DANGLING(pushDeletep(exprap), exprap);
+    }
+
+    void handleCase(AstNode* casep, AstNodeExpr* exprp, AstCaseItem* itemsp) {
         // IEEE-2012 12.5:
         //    Width: MAX(expr, all items)
         //    Signed: Only if expr, and all items signed
+        // Take width as maximum across all items, if any is real whole thing is real
+        AstNodeDType* subDTypep = exprp->dtypep();
+        for (AstCaseItem* itemp = itemsp; itemp; itemp = VN_AS(itemp->nextp(), CaseItem)) {
+            for (AstNode* condp = itemp->condsp(); condp; condp = condp->nextp()) {
+                if (condp->dtypep() == subDTypep) continue;
+
+                if (condp->dtypep()->isDouble() || subDTypep->isDouble()) {
+                    subDTypep = casep->findDoubleDType();
+                } else if (condp->dtypep()->isString() || subDTypep->isString()) {
+                    subDTypep = casep->findStringDType();
+                } else {
+                    const int width = std::max(subDTypep->width(), condp->width());
+                    const int mwidth = std::max(subDTypep->widthMin(), condp->widthMin());
+                    const bool issigned = subDTypep->isSigned() && condp->isSigned();
+                    subDTypep = casep->findLogicDType(width, mwidth, VSigning::fromBool(issigned));
+                }
+            }
+        }
+
+        // Apply width
+        iterateCheck(casep, "Case expression", exprp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
+        for (AstCaseItem* itemp = itemsp; itemp; itemp = VN_AS(itemp->nextp(), CaseItem)) {
+            for (AstNode *nextcp, *condp = itemp->condsp(); condp; condp = nextcp) {
+                nextcp = condp->nextp();  // Final may cause the node to get replaced
+                iterateCheck(casep, "Case Item", condp, CONTEXT_DET, FINAL, subDTypep, EXTEND_LHS);
+            }
+        }
+    }
+
+    void visit(AstGenCase* nodep) override {
         assertAtStatement(nodep);
+        // Type check expression and case item conditions, but not bodies
         userIterateAndNext(nodep->exprp(), WidthVP{CONTEXT_DET, PRELIM}.p());
         for (AstCaseItem *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = VN_AS(itemp->nextp(), CaseItem);  // Prelim may cause the node to get replaced
-            if (!VN_IS(nodep, GenCase)) userIterateAndNext(itemp->stmtsp(), nullptr);
             for (AstNode *nextcp, *condp = itemp->condsp(); condp; condp = nextcp) {
                 nextcp = condp->nextp();  // Prelim may cause the node to get replaced
                 VL_DO_DANGLING(userIterate(condp, WidthVP{CONTEXT_DET, PRELIM}.p()), condp);
             }
         }
-
         // Deal with case(type(data_type))
-        if (AstAttrOf* const exprap = VN_CAST(nodep->exprp(), AttrOf)) {
-            if (exprap->attrType() == VAttrType::TYPEID) {
-                const AstNodeDType* const exprDtp = exprap->dtypep();
-                UINFO(9, "case type exprDtp " << exprDtp);
-                // V3Param may have a pointer to this case statement, and we need
-                // dotted references to remain properly named, so rather than
-                // removing we convert it to a "normal" expression "case (1) ..."
-                FileLine* const newfl = nodep->fileline();
-                newfl->warnOff(V3ErrorCode::CASEINCOMPLETE, true);  // Side effect of transform
-                newfl->warnOff(V3ErrorCode::CASEOVERLAP, true);  // Side effect of transform
-                nodep->fileline(newfl);
-                for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                     itemp = VN_AS(itemp->nextp(), CaseItem)) {
-                    if (!itemp->isDefault()) {
-                        bool hit = false;
-                        for (AstNode* condp = itemp->condsp(); condp; condp = condp->nextp()) {
-                            const AstAttrOf* const condAttrp = VN_CAST(condp, AttrOf);
-                            if (!condAttrp) {
-                                condp->v3error(
-                                    "Case(type) statement requires items that have type() items");
-                            } else {
-                                AstNodeDType* const condDtp = condAttrp->dtypep();
-                                if (AstNode::computeCastable(exprDtp, condDtp, nodep)
-                                    == VCastable::SAMEISH) {
-                                    hit = true;
-                                    break;
-                                }
-                            }
-                        }
-                        pushDeletep(itemp->condsp()->unlinkFrBackWithNext());
-                        // Item condition becomes constant 1 if hits else 0
-                        itemp->addCondsp(new AstConst{newfl, AstConst::BitTrue{}, hit});
-                    }
-                }
-                VL_DO_DANGLING(pushDeletep(exprap->unlinkFrBack()), exprap);
-                nodep->exprp(new AstConst{newfl, AstConst::BitTrue{}});
-            }
-        }
+        handleCaseType(nodep, nodep->exprp(), nodep->itemsp());
+        // Type check
+        handleCase(nodep, nodep->exprp(), nodep->itemsp());
+    }
+    void visit(AstGenFor* nodep) override {
+        assertAtStatement(nodep);
+        userIterateAndNext(nodep->initsp(), nullptr);
+        iterateCheckBool(nodep, "For Test Condition", nodep->condp(), BOTH);
+        userIterateAndNext(nodep->incsp(), nullptr);
+    }
+    void visit(AstGenIf* nodep) override {
+        assertAtStatement(nodep);
+        iterateCheckBool(nodep, "If", nodep->condp(), BOTH);
+    }
 
-        // Take width as maximum across all items, if any is real whole thing is real
-        AstNodeDType* subDTypep = nodep->exprp()->dtypep();
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
-            for (AstNode* condp = itemp->condsp(); condp; condp = condp->nextp()) {
-                if (condp->dtypep() != subDTypep) {
-                    if (condp->dtypep()->isDouble() || subDTypep->isDouble()) {
-                        subDTypep = nodep->findDoubleDType();
-                    } else if (condp->dtypep()->isString() || subDTypep->isString()) {
-                        subDTypep = nodep->findStringDType();
-                    } else {
-                        const int width = std::max(subDTypep->width(), condp->width());
-                        const int mwidth = std::max(subDTypep->widthMin(), condp->widthMin());
-                        const bool issigned = subDTypep->isSigned() && condp->isSigned();
-                        subDTypep
-                            = nodep->findLogicDType(width, mwidth, VSigning::fromBool(issigned));
-                    }
-                }
-            }
-        }
-        // Apply width
-        iterateCheck(nodep, "Case expression", nodep->exprp(), CONTEXT_DET, FINAL, subDTypep,
-                     EXTEND_EXP);
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+    void visit(AstCase* nodep) override {
+        assertAtStatement(nodep);
+        // Type check expression case item conditions and bodies
+        userIterateAndNext(nodep->exprp(), WidthVP{CONTEXT_DET, PRELIM}.p());
+        for (AstCaseItem *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
+            nextip = VN_AS(itemp->nextp(), CaseItem);  // Prelim may cause the node to get replaced
+            userIterateAndNext(itemp->stmtsp(), nullptr);
             for (AstNode *nextcp, *condp = itemp->condsp(); condp; condp = nextcp) {
-                nextcp = condp->nextp();  // Final may cause the node to get replaced
-                iterateCheck(nodep, "Case Item", condp, CONTEXT_DET, FINAL, subDTypep, EXTEND_LHS);
+                nextcp = condp->nextp();  // Prelim may cause the node to get replaced
+                VL_DO_DANGLING(userIterate(condp, WidthVP{CONTEXT_DET, PRELIM}.p()), condp);
             }
         }
+        // Deal with case(type(data_type))
+        handleCaseType(nodep, nodep->exprp(), nodep->itemsp());
+        // Type check
+        handleCase(nodep, nodep->exprp(), nodep->itemsp());
     }
     void visit(AstRandCase* nodep) override {
         // IEEE says each item is a int (32-bits), and sizes are based on natural sizing,
@@ -5365,14 +5392,6 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstNodeFor* nodep) override {
-        assertAtStatement(nodep);
-        userIterateAndNext(nodep->initsp(), nullptr);
-        iterateCheckBool(nodep, "For Test Condition", nodep->condp(),
-                         BOTH);  // it's like an if() condition.
-        if (!VN_IS(nodep, GenFor)) userIterateAndNext(nodep->stmtsp(), nullptr);
-        userIterateAndNext(nodep->incsp(), nullptr);
-    }
     void visit(AstRepeat* nodep) override {
         assertAtStatement(nodep);
         userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
@@ -5388,10 +5407,8 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstNodeIf* nodep) override {
         assertAtStatement(nodep);
         // UINFOTREE(1, nodep, "", "IfPre");
-        if (!VN_IS(nodep, GenIf)) {  // for m_paramsOnly
-            userIterateAndNext(nodep->thensp(), nullptr);
-            userIterateAndNext(nodep->elsesp(), nullptr);
-        }
+        userIterateAndNext(nodep->thensp(), nullptr);
+        userIterateAndNext(nodep->elsesp(), nullptr);
         iterateCheckBool(nodep, "If", nodep->condp(), BOTH);  // it's like an if() condition.
         // UINFOTREE(1, nodep, "", "IfOut");
     }

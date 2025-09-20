@@ -289,7 +289,7 @@ class LinkJumpVisitor final : public VNVisitor {
         // Note var can be signed or unsigned based on original number.
         AstNodeExpr* const countp = nodep->countp()->unlinkFrBackWithNext();
         const string name = "__Vrepeat"s + cvtToStr(m_modRepeatNum++);
-        AstBegin* const beginp = new AstBegin{nodep->fileline(), "", nullptr, false, true};
+        AstBegin* const beginp = new AstBegin{nodep->fileline(), "", nullptr, true};
         // Spec says value is integral, if negative is ignored
         AstVar* const varp
             = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP, name, nodep->findSigned32DType()};
@@ -425,7 +425,7 @@ class LinkJumpVisitor final : public VNVisitor {
                 // Further handling of disable stmt requires all forks to be begin blocks
                 AstBegin* beginp = VN_CAST(forkItemp, Begin);
                 if (!beginp) {
-                    beginp = new AstBegin{fl, "", nullptr, false, false};
+                    beginp = new AstBegin{fl, "", nullptr, false};
                     forkItemp->replaceWith(beginp);
                     beginp->addStmtsp(forkItemp);
                     // In order to continue the iteration

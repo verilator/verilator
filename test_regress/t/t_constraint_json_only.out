@@ -5,7 +5,7 @@
     {"type":"VAR","name":"p","addr":"(G)","loc":"d,69:11,69:12","dtypep":"(H)","origName":"p","isSc":false,"isPrimaryIO":false,"isPrimaryClock":false,"direction":"NONE","isConst":false,"isPullup":false,"isPulldown":false,"isSigPublic":false,"isLatched":false,"isUsedLoopIdx":false,"noReset":false,"attrIsolateAssign":false,"attrFileDescr":false,"isDpiOpenArray":false,"isFuncReturn":false,"isFuncLocal":false,"lifetime":"VSTATICI","varType":"VAR","dtypeName":"Packet","isSigUserRdPublic":false,"isSigUserRWPublic":false,"isGParam":false,"isParam":false,"attrScBv":false,"attrSFormat":false,"ignorePostWrite":false,"ignoreSchedWrite":false,"sensIfacep":"UNLINKED","childDTypep": [],"delayp": [],"valuep": [],"attrsp": []},
     {"type":"INITIAL","name":"","addr":"(I)","loc":"d,71:4,71:11","isSuspendable":false,"needProcess":false,
      "stmtsp": [
-      {"type":"BEGIN","name":"","addr":"(J)","loc":"d,71:12,71:17","generate":false,"genfor":false,"implied":false,"needProcess":false,"unnamed":true,"genforp": [],
+      {"type":"BEGIN","name":"","addr":"(J)","loc":"d,71:12,71:17","implied":false,"needProcess":false,"unnamed":true,
        "stmtsp": [
         {"type":"DISPLAY","name":"","addr":"(K)","loc":"d,73:7,73:13",
          "fmtp": [

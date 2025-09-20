@@ -260,6 +260,8 @@ public:
             return "block";
         } else if (VN_IS(nodep, Iface)) {
             return "interface";
+        } else if (VN_IS(nodep, GenBlock)) {
+            return "generate block";
         } else {
             return nodep->prettyTypeName();
         }
@@ -295,8 +297,8 @@ public:
         } else if (foundp->imported()) {  // From package
             // We don't throw VARHIDDEN as if the import is later the symbol
             // table's import wouldn't warn
-        } else if (forPrimary() && VN_IS(nodep, Begin) && VN_IS(fnodep, Begin)
-                   && VN_AS(nodep, Begin)->generate()) {
+        } else if (forPrimary() && VN_IS(nodep, GenBlock)
+                   && (VN_IS(fnodep, Begin) || VN_IS(fnodep, GenBlock))) {
             // Begin: ... blocks often replicate under genif/genfor, so
             // suppress duplicate checks.  See t_gen_forif.v for an example.
         } else {
@@ -882,7 +884,6 @@ class LinkDotFindVisitor final : public VNVisitor {
     string
         m_hierParamsName;  // Name of module with hierarchical type parameters, empty when not used
     string m_scope;  // Scope text
-    const AstNodeBlock* m_blockp = nullptr;  // Current Begin/end block
     const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     bool m_inRecursion = false;  // Inside a recursive module
     int m_paramNum = 0;  // Parameter number, for position based connection
@@ -1158,7 +1159,6 @@ class LinkDotFindVisitor final : public VNVisitor {
         iterateChildren(nodep);
         // Recurse in, preserving state
         VL_RESTORER(m_scope);
-        VL_RESTORER(m_blockp);
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_paramNum);
@@ -1181,7 +1181,6 @@ class LinkDotFindVisitor final : public VNVisitor {
         {
             m_scope = m_scope + "." + nodep->name();
             m_curSymp = m_modSymp = m_statep->insertCell(aboveSymp, m_modSymp, nodep, m_scope);
-            m_blockp = nullptr;
             m_inRecursion = nodep->recursive();
             // We don't report NotFoundModule, as may be a unused module in a generate
             if (nodep->modp()) iterate(nodep->modp());
@@ -1216,6 +1215,43 @@ class LinkDotFindVisitor final : public VNVisitor {
         nodep->user1p(m_curSymp);
         iterateChildren(nodep);
     }
+    void visit(AstGenBlock* nodep) override {  // FindVisitor::
+        UINFO(5, "   " << nodep);
+        if (nodep->name() == "" && nodep->unnamed()) {
+            // Unnamed blocks are only important when they contain var
+            // decls, so search for them. (Otherwise adding all the
+            // unnamed#'s would just confuse tracing variables in
+            // places such as tasks, where "task ...; begin ... end"
+            // are common.
+            for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                if (VN_IS(stmtp, Var) || VN_IS(stmtp, Foreach)) {
+                    std::string name;
+                    const std::string stepStr = m_statep->forPrimary()
+                                                    ? ""
+                                                    : std::to_string(m_statep->stepNumber()) + "_";
+                    do {
+                        ++m_modBlockNum;
+                        name = "unnamedblk" + stepStr + cvtToStr(m_modBlockNum);
+                        // Increment again if earlier pass of V3LinkDot claimed this name
+                    } while (m_curSymp->findIdFlat(name));
+                    nodep->name(name);
+                    break;
+                }
+            }
+        }
+        if (nodep->name() == "") {
+            iterateChildren(nodep);
+        } else {
+            VL_RESTORER(m_curSymp);
+            {
+                m_curSymp
+                    = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
+                m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
+                // Iterate
+                iterateChildren(nodep);
+            }
+        }
+    }
     void visit(AstNodeBlock* nodep) override {  // FindVisitor::
         UINFO(5, "   " << nodep);
         if (nodep->name() == "" && nodep->unnamed()) {
@@ -1243,10 +1279,8 @@ class LinkDotFindVisitor final : public VNVisitor {
         if (nodep->name() == "") {
             iterateChildren(nodep);
         } else {
-            VL_RESTORER(m_blockp);
             VL_RESTORER(m_curSymp);
             {
-                m_blockp = nodep;
                 m_curSymp
                     = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_classOrPackagep);
                 m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
@@ -3509,6 +3543,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             if (!foundp) {
             } else if (VN_IS(foundp->nodep(), Cell) || VN_IS(foundp->nodep(), NodeBlock)
+                       || VN_IS(foundp->nodep(), GenBlock)
                        || VN_IS(foundp->nodep(), Netlist)  // for $root
                        || VN_IS(foundp->nodep(), Module)) {  // if top
                 if (allowScope) {
@@ -3521,14 +3556,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         // last component, `targetp()` field will be overwritten by next components
                         m_ds.m_disablep->targetp(foundp->nodep());
                     }
-                    if (const AstBegin* const beginp = VN_CAST(foundp->nodep(), Begin)) {
-                        if (beginp->generate()) {
-                            m_ds.m_genBlk = true;
-                            if (m_ds.m_disablep) {
-                                m_ds.m_disablep->v3warn(
-                                    E_UNSUPPORTED,
-                                    "Unsupported: Generate block referenced by disable");
-                            }
+                    if (const AstGenBlock* const beginp = VN_CAST(foundp->nodep(), GenBlock)) {
+                        m_ds.m_genBlk = true;
+                        if (m_ds.m_disablep) {
+                            m_ds.m_disablep->v3warn(
+                                E_UNSUPPORTED,
+                                "Unsupported: Generate block referenced by disable");
                         }
                     }
                     // Upper AstDot visitor will handle it from here
@@ -4471,6 +4504,21 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // checkNoDot not appropriate, can be under a dot
         LINKDOT_VISIT_START();
         iterateChildren(nodep);
+    }
+    void visit(AstGenBlock* nodep) override {
+        LINKDOT_VISIT_START();
+        UINFO(5, indent() << "visit " << nodep);
+        checkNoDot(nodep);
+        {
+            VL_RESTORER(m_curSymp);
+            VL_RESTORER(m_ds);
+            if (nodep->name() != "") {
+                m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+                UINFO(5, indent() << "cur=se" << cvtToHex(m_curSymp));
+            }
+            iterateChildren(nodep);
+        }
+        UINFO(5, indent() << "cur=se" << cvtToHex(m_curSymp));
     }
     void visit(AstNodeBlock* nodep) override {
         LINKDOT_VISIT_START();

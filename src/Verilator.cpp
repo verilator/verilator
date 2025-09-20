@@ -179,6 +179,7 @@ static void process() {
 
         // Remove parameters by cloning modules to de-parameterized versions
         //   This requires some width calculations and constant propagation
+        // No more AstGenCase/AstGenFor/AstGenIf after this
         V3Param::param(v3Global.rootp());
         V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
         V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
@@ -271,6 +272,7 @@ static void process() {
 
             // Task inlining & pushing BEGINs names to variables/cells
             // Begin processing must be after Param, before module inlining
+            // No more AstGenBlocks after this
             V3Begin::debeginAll(v3Global.rootp());  // Flatten cell names, before inliner
 
             // Expand inouts, stage 2

@@ -209,8 +209,7 @@ class UnrollVisitor final : public VNVisitor {
         if (loopValue) {
             AstConst* varValuep = new AstConst{nodep->fileline(), *loopValue};
             // Iteration requires a back, so put under temporary node
-            AstBegin* tempp
-                = new AstBegin{nodep->fileline(), "[EditWrapper]", clonep, false, false};
+            AstBegin* tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", clonep, false};
             replaceVarRef(tempp->stmtsp(), varValuep);
             clonep = tempp->stmtsp()->unlinkFrBackWithNext();
             VL_DO_CLEAR(tempp->deleteTree(), tempp = nullptr);
@@ -303,8 +302,7 @@ class UnrollVisitor final : public VNVisitor {
             AstNode* clonep = initp->cloneTree(true);
             AstConst* varValuep = new AstConst{nodep->fileline(), loopValue};
             // Iteration requires a back, so put under temporary node
-            AstBegin* tempp
-                = new AstBegin{nodep->fileline(), "[EditWrapper]", clonep, false, false};
+            AstBegin* tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", clonep, false};
             replaceVarRef(clonep, varValuep);
             clonep = tempp->stmtsp()->unlinkFrBackWithNext();
             VL_DO_CLEAR(tempp->deleteTree(), tempp = nullptr);
@@ -329,8 +327,8 @@ class UnrollVisitor final : public VNVisitor {
                     AstConst* varValuep = new AstConst{nodep->fileline(), loopValue};
                     if (oneloopp) {
                         // Iteration requires a back, so put under temporary node
-                        AstBegin* const tempp = new AstBegin{oneloopp->fileline(), "[EditWrapper]",
-                                                             oneloopp, false, false};
+                        AstBegin* const tempp
+                            = new AstBegin{oneloopp->fileline(), "[EditWrapper]", oneloopp, false};
                         replaceVarRef(tempp->stmtsp(), varValuep);
                         oneloopp = tempp->stmtsp()->unlinkFrBackWithNext();
                         VL_DO_DANGLING(tempp->deleteTree(), tempp);
@@ -338,8 +336,7 @@ class UnrollVisitor final : public VNVisitor {
                     if (m_generate) {
                         const string index = AstNode::encodeNumber(varValuep->toSInt());
                         const string nname = m_beginName + "__BRA__" + index + "__KET__";
-                        oneloopp
-                            = new AstBegin{oneloopp->fileline(), nname, oneloopp, true, false};
+                        oneloopp = new AstGenBlock{oneloopp->fileline(), nname, oneloopp, false};
                     }
                     VL_DO_DANGLING(pushDeletep(varValuep), varValuep);
                     if (newbodysp) {
@@ -421,9 +418,7 @@ class UnrollVisitor final : public VNVisitor {
         }
     }
     void visit(AstGenFor* nodep) override {
-        if (!m_generate) {
-            iterateChildren(nodep);
-        }  // else V3Param will recursively call each for loop to be unrolled for us
+        UASSERT_OBJ(m_generate, nodep, "There should be no GenFor left when unrolling all");
         if (!m_varModeCheck) {
             // Constify before unroll call, as it may change what is underneath.
             if (nodep->initsp()) V3Const::constifyEdit(nodep->initsp());  // initsp may change
@@ -446,13 +441,6 @@ class UnrollVisitor final : public VNVisitor {
                 // We will die, do it gracefully
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             }
-        }
-    }
-    void visit(AstNodeFor* nodep) override {
-        if (m_generate) {  // Ignore for's when expanding genfor's
-            iterateChildren(nodep);
-        } else {
-            nodep->v3fatalSrc("V3Begin should have removed standard FORs");
         }
     }
 
@@ -514,18 +502,16 @@ UnrollStateful::UnrollStateful()
     : m_unrollerp{new UnrollVisitor} {}
 UnrollStateful::~UnrollStateful() { delete m_unrollerp; }
 
-void UnrollStateful::unrollGen(AstNodeFor* nodep, const string& beginName) {
+void UnrollStateful::unrollGen(AstGenFor* nodep, const string& beginName) {
     UINFO(5, __FUNCTION__ << ": ");
     m_unrollerp->process(nodep, true, beginName);
 }
 
-void UnrollStateful::unrollAll(AstNetlist* nodep) { m_unrollerp->process(nodep, false, ""); }
-
 void V3Unroll::unrollAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     {
-        UnrollStateful unroller;
-        unroller.unrollAll(nodep);
+        UnrollVisitor visitor;
+        visitor.process(nodep, false, "");
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("unroll", 0, dumpTreeEitherLevel() >= 3);
 }

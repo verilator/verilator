@@ -48,6 +48,7 @@ public:
 
     static void applyCase(AstCase* nodep);
     static void applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep);
+    static void applyCoverageBlock(AstNodeModule* modulep, AstGenBlock* nodep);
     static void applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp);
     static void applyIgnores(FileLine* filelinep);
     static void applyModule(AstNodeModule* modulep);
