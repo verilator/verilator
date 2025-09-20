@@ -1812,12 +1812,24 @@ class LinkDotFindVisitor final : public VNVisitor {
             VL_DO_DANGLING(argp->deleteTree(), argp);
         }
         // Type depends on the method used, let V3Width figure it out later
-        if (nodep->exprsp()) {  // Else empty expression and pretend no "with"
+        if (nodep->exprsp()
+            || nodep->constraintsp()) {  // Else empty expression and pretend no "with"
+            AstNode* exprOrConstraintsp = nullptr;
+            if (nodep->exprsp() && nodep->constraintsp()) {
+                // When support this probably should change AstWith to separate out
+                // the expr from the constraint equation using separate op2/op3 similar
+                // to AstWithParse
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: 'randomize with (...) {...}'");
+            } else if (nodep->exprsp())
+                exprOrConstraintsp = nodep->exprsp()->unlinkFrBackWithNext();
+            if (nodep->constraintsp())
+                exprOrConstraintsp = AstNode::addNext(
+                    exprOrConstraintsp, nodep->constraintsp()->unlinkFrBackWithNext());
             AstLambdaArgRef* const indexArgRefp
                 = new AstLambdaArgRef{argFl, name + "__DOT__index", true};
             AstLambdaArgRef* const valueArgRefp = new AstLambdaArgRef{argFl, name, false};
-            AstWith* const newp = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp,
-                                              nodep->exprsp()->unlinkFrBackWithNext()};
+            AstWith* const newp
+                = new AstWith{nodep->fileline(), indexArgRefp, valueArgRefp, exprOrConstraintsp};
             funcrefp->addPinsp(newp);
         }
         funcrefp->addPinsp(argp);

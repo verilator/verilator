@@ -6726,11 +6726,13 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstWith* nodep) override {
         // Should otherwise be underneath a method call
         AstNodeDType* const vdtypep = m_vup->dtypeNullSkipRefp();
-        {
-            VL_RESTORER(m_withp);
-            m_withp = nodep;
-            userIterateChildren(nodep->indexArgRefp(), nullptr);
-            userIterateChildren(nodep->valueArgRefp(), nullptr);
+        VL_RESTORER(m_withp);
+        m_withp = nodep;
+        userIterateChildren(nodep->indexArgRefp(), nullptr);
+        userIterateChildren(nodep->valueArgRefp(), nullptr);
+        if (!nodep->exprp()) {
+            nodep->dtypeSetVoid();
+        } else {
             if (!nodep->exprp()->hasDType()) {
                 userIterateAndNext(nodep->exprp(), nullptr);
             } else {
