@@ -26,7 +26,7 @@
             },
             "invocations": [
                 {
-                    "commandLine": "--prefix Vt_sarif -cc -Mdir obj_vlt/t_sarif --fdedup --debug-check --comp-limit-members 10 --x-assign unique -Wno-fatal --diagnostics-sarif --no-skip-identical --clk clk -f input.vc +define+TEST_OBJ_DIR=obj_vlt/t_sarif +define+TEST_DUMPFILE=obj_vlt/t_sarif/simx.vcd t/t_sarif.v +librescan +notimingchecks +libext+.v -y t +incdir+t",
+                    "commandLine": "--prefix Vt_sarif -cc -Mdir obj_vlt/t_sarif --fdedup --debug-check --comp-limit-members 10 --x-assign unique -Wno-fatal --diagnostics-sarif --no-skip-identical -f input.vc +define+TEST_OBJ_DIR=obj_vlt/t_sarif +define+TEST_DUMPFILE=obj_vlt/t_sarif/simx.vcd t/t_sarif.v +librescan +notimingchecks +libext+.v -y t +incdir+t",
                     "executionSuccessful": true
                 }
             ],
