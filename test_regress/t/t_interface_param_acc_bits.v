@@ -17,7 +17,7 @@ endinterface
 
 module t ();
    simple_bus sb_intf();
-   localparam LP = $bits(sb_intf.payload.data);
+   const int LP = $bits(sb_intf.payload.data);
    simple_bus #(.PARAMETER($bits(sb_intf.DUMMY))) simple();
    simple_bus #(.PARAMETER($bits(sb_intf.x))) simple2();
    initial begin

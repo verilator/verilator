@@ -1,0 +1,6 @@
+%Error: t/t_param_hier_bad.v:26:32: Parameter values cannot be hierarchical (IEEE 1800-2023 6.20.2): 'SUB_Y'
+                                  : ... note: In instance 't'
+   26 |   localparam int SUB_Y = u_sub.Y;   
+      |                                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

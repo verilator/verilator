@@ -45,9 +45,9 @@ module t (/*AUTOARG*/
                       .intf_array (array_interface)
                       );
 
-   localparam THE_TOP_FOO = the_interface.FOO;
-   localparam THE_TOP_FOO_BITS = $bits({the_interface.FOO, the_interface.FOO});
-   localparam THE_ARRAY_FOO = array_interface[0].FOO;
+   const int THE_TOP_FOO = the_interface.FOO;
+   const int THE_TOP_FOO_BITS = $bits({the_interface.FOO, the_interface.FOO});
+   const int THE_ARRAY_FOO = array_interface[0].FOO;
 
    initial begin
       if (THE_TOP_FOO != 5) begin
@@ -75,12 +75,12 @@ module testmod
    test_if.mp intf_array [1:0]
    );
 
-   localparam THE_FOO = intf.FOO;
-   localparam THE_OTHER_FOO = intf_no_mp.FOO;
-   localparam THE_ARRAY_FOO = intf_array[0].FOO;
-   localparam THE_BAR = intf.BAR;
-   localparam THE_OTHER_BAR = intf_no_mp.BAR;
-   localparam THE_ARRAY_BAR = intf_array[0].BAR;
+   const int THE_FOO = intf.FOO;
+   const int THE_OTHER_FOO = intf_no_mp.FOO;
+   const int THE_ARRAY_FOO = intf_array[0].FOO;
+   const int THE_BAR = intf.BAR;
+   const int THE_OTHER_BAR = intf_no_mp.BAR;
+   const int THE_ARRAY_BAR = intf_array[0].BAR;
 
    always @(posedge clk) begin
       if (THE_FOO != 5) begin

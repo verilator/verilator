@@ -12,7 +12,7 @@ interface intf
 endinterface
 
 module sub (intf.modp the_intf_port [4]);
-    localparam int intf_foo = the_intf_port[0].FOO;
+    const int intf_foo = the_intf_port[0].FOO;
 
     initial begin
         if (intf_foo != 4) $stop;

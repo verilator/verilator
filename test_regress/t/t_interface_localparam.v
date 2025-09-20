@@ -35,7 +35,7 @@ module Core(
 );
 
    // this will constify and valDiv2 will have the default value
-   localparam valDiv4Upper = intf.valDiv2;
+   const int valDiv4Upper = intf.valDiv2;
 
    SimpleIntf #(.VAL(68)) core_intf ();
 

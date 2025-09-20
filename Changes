@@ -17,6 +17,7 @@ Verilator 5.041 devel
 * Add configure `--enable-asan` to compile verilator_bin with the address sanitizer (#6404). [Geza Lore]
 * Add $(LDFLAGS) and $(LIBS) to when building shared libraries (#6425) (#6426). [Ahmed El-Mahmoudy]
 * Add ASSIGNEQEXPR when use `=` inside expressions (#5567). [Ethan Sifferman]
+* Add error on localparam value from hierarchical path (#6456). [Luca Rufer]
 * Deprecate sensitivity list on public_flat_rw attributes (#6443). [Geza Lore]
 * Support modports referencing clocking blocks (#4555) (#6436). [Ryszard Rozak, Antmicro Ltd.]
 * Support pure functions in sensitivity lists (#6393). [Krzysztof Bieganski, Antmicro Ltd.]

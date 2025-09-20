@@ -1416,6 +1416,13 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->user2SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isParam()) {
+            // See if any Future before we process
+            if (nodep->valuep())
+                nodep->valuep()->foreach([&](const AstVarXRef* refp) {
+                    refp->v3error("Parameter values cannot be hierarchical"
+                                  " (IEEE 1800-2023 6.20.2): "
+                                  << nodep->prettyNameQ());
+                });
             if (!nodep->valuep() && !VN_IS(m_modp, Class)) {
                 nodep->v3error("Parameter without default value is never given value"
                                << " (IEEE 1800-2023 6.20.1): " << nodep->prettyNameQ());
