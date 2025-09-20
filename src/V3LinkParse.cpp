@@ -477,18 +477,6 @@ class LinkParseVisitor final : public VNVisitor {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrScBv(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == VAttrType::VAR_CLOCK_ENABLE) {
-            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            // Accepted and silently ignored for backward compatibility, but has no effect
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == VAttrType::VAR_CLOCKER) {
-            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            // Accepted and silently ignored for backward compatibility, but has no effect
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == VAttrType::VAR_NO_CLOCKER) {
-            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            // Accepted and silently ignored for backward compatibility, but has no effect
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
 

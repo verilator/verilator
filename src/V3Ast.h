@@ -514,7 +514,6 @@ public:
         TYPENAME,                       // V3Width processes
         //
         VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
-        VAR_CLOCK_ENABLE,               // Ignored, accepted for compatibility
         VAR_FORCEABLE,                  // V3LinkParse moves to AstVar::isForceable
         VAR_PORT_DTYPE,                 // V3LinkDot for V3Width to check port dtype
         VAR_PUBLIC,                     // V3LinkParse moves to AstVar::sigPublic
@@ -524,8 +523,6 @@ public:
         VAR_ISOLATE_ASSIGNMENTS,        // V3LinkParse moves to AstVar::attrIsolateAssign
         VAR_SC_BV,                      // V3LinkParse moves to AstVar::attrScBv
         VAR_SFORMAT,                    // V3LinkParse moves to AstVar::attrSFormat
-        VAR_CLOCKER,                    // Ignored, accepted for compatibility
-        VAR_NO_CLOCKER,                 // Ignored, accepted for compatibility
         VAR_SPLIT_VAR                   // V3LinkParse moves to AstVar::attrSplitVar
     };
     // clang-format on
@@ -542,10 +539,10 @@ public:
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
             "FUNC_ARG_PROTO", "FUNC_RETURN_PROTO",
             "TYPEID", "TYPENAME",
-            "VAR_BASE", "VAR_CLOCK_ENABLE", "VAR_FORCEABLE", "VAR_PORT_DTYPE", "VAR_PUBLIC",
+            "VAR_BASE", "VAR_FORCEABLE", "VAR_PORT_DTYPE", "VAR_PUBLIC",
             "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
-            "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT", "VAR_CLOCKER",
-            "VAR_NO_CLOCKER", "VAR_SPLIT_VAR"
+            "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT",
+            "VAR_SPLIT_VAR"
         };
         // clang-format on
         return names[m_e];
