@@ -188,6 +188,10 @@ Summary:
 
 .. option:: --clk <signal-name>
 
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.042:
+
    With :vlopt:`--clk`, the specified signal is marked as a clock signal.
 
    The provided signal name is specified using a RTL hierarchy path. For
@@ -207,6 +211,10 @@ Summary:
    code. This may greatly improve performance.
 
 .. option:: --no-clk <signal-name>
+
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.042:
 
    Prevent the specified signal from being marked as a clock. See
    :vlopt:`--clk`.
@@ -2169,6 +2177,10 @@ The grammar of control commands is as follows:
 .. option:: no_clocker -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
 .. option:: no_clocker -module "<modulename>" [-task "<taskname>"] -var "<signame>"
+
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.042:
 
    Indicates whether the signal is used as clock or not. Verilator uses
    this information to mark the signal and any derived signals as clocker.

@@ -20,7 +20,7 @@
   </cells>
   <netlist>
     <module loc="d,11,8,11,9" name="$root" origName="$root" topModule="1" public="true">
-      <var loc="d,15,10,15,13" name="clk" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="clk" clocker="true" public="true"/>
+      <var loc="d,15,10,15,13" name="clk" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="clk" public="true"/>
       <var loc="d,24,9,24,10" name="t.e" dtype_id="2" vartype="my_t" origName="e"/>
       <var loc="d,11,8,11,9" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="1" vartype="logic" origName="__Vtrigprevexpr___TOP__clk__0"/>
       <var loc="d,11,8,11,9" name="__VactContinue" dtype_id="3" vartype="bit" origName="__VactContinue"/>

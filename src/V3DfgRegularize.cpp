@@ -95,7 +95,6 @@ class DfgRegularize final {
             // The replacement will be read in the module, mark as such so it doesn't get removed.
             drvp->setHasModRdRefs();
             drvp->varp()->propagateAttrFrom(varp->varp());
-            if (varp->varp()->isUsedClock()) drvp->varp()->usedClock(true);
             return true;
         }
 

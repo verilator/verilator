@@ -273,12 +273,6 @@ class ScopeVisitor final : public VNVisitor {
             UINFO(6, "   New scope " << varscp);
             if (m_aboveCellp && !m_aboveCellp->isTrace()) varscp->trace(false);
             nodep->user1p(varscp);
-            if (v3Global.opt.isClocker(varscp->prettyName())) {
-                nodep->attrClocker(VVarAttrClocker::CLOCKER_YES);
-            }
-            if (v3Global.opt.isNoClocker(varscp->prettyName())) {
-                nodep->attrClocker(VVarAttrClocker::CLOCKER_NO);
-            }
             UASSERT_OBJ(m_scopep, nodep, "No scope for var");
             m_varScopes.emplace(std::make_pair(nodep, m_scopep), varscp);
             m_scopep->addVarsp(varscp);

@@ -18,7 +18,10 @@ module t (/*AUTOARG*/
 
    /*AUTOWIRE*/
 
-   Test test (/*AUTOINST*/
+   Test test (// Outputs
+              .a(),
+              .b(),
+              /*AUTOINST*/
               // Inputs
               .clk                      (clk),
               .in                       (in[9:0]));
@@ -57,13 +60,16 @@ module t (/*AUTOARG*/
 endmodule
 
 module Test (/*AUTOARG*/
+   // Outputs
+   a, b,
    // Inputs
    clk, in
-   ); /*verilator hier_block*/
+   );
+   /*verilator hier_block*/
    input clk;
    input [9:0] in;
 
-   reg a [9:0];
+   output reg a [9:0];
    integer ai;
    always @* begin
       for (ai=0;ai<10;ai=ai+1) begin
@@ -71,7 +77,7 @@ module Test (/*AUTOARG*/
       end
    end
 
-   reg [1:0] b [9:0];
+   output reg [1:0] b [9:0];
    integer   j;
 
    generate

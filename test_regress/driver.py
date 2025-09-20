@@ -799,7 +799,7 @@ class VlTest:
             "10"
         ]
         self.verilator_flags2 = []
-        self.verilator_flags3 = ["--clk clk"]
+        self.verilator_flags3 = []
         self.verilator_make_gmake = True
         self.verilator_make_cmake = False
         self.verilated_debug = Args.verilated_debug

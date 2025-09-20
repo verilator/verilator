@@ -524,8 +524,8 @@ public:
         VAR_ISOLATE_ASSIGNMENTS,        // V3LinkParse moves to AstVar::attrIsolateAssign
         VAR_SC_BV,                      // V3LinkParse moves to AstVar::attrScBv
         VAR_SFORMAT,                    // V3LinkParse moves to AstVar::attrSFormat
-        VAR_CLOCKER,                    // V3LinkParse moves to AstVar::attrClocker
-        VAR_NO_CLOCKER,                 // V3LinkParse moves to AstVar::attrClocker
+        VAR_CLOCKER,                    // Ignored, accepted for compatibility
+        VAR_NO_CLOCKER,                 // Ignored, accepted for compatibility
         VAR_SPLIT_VAR                   // V3LinkParse moves to AstVar::attrSplitVar
     };
     // clang-format on
@@ -1083,49 +1083,6 @@ constexpr bool operator==(const VBranchPred& lhs, const VBranchPred& rhs) {
 constexpr bool operator==(const VBranchPred& lhs, VBranchPred::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VBranchPred::en lhs, const VBranchPred& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
-    return os << rhs.ascii();
-}
-
-// ######################################################################
-
-class VVarAttrClocker final {
-public:
-    enum en : uint8_t { CLOCKER_UNKNOWN = 0, CLOCKER_YES, CLOCKER_NO, _ENUM_END };
-    enum en m_e;
-    // CONSTRUCTOR - note defaults to *UNKNOWN*
-    VVarAttrClocker()
-        : m_e{CLOCKER_UNKNOWN} {}
-    // cppcheck-suppress noExplicitConstructor
-    constexpr VVarAttrClocker(en _e)
-        : m_e{_e} {}
-    explicit VVarAttrClocker(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    constexpr operator en() const { return m_e; }
-    bool unknown() const { return m_e == CLOCKER_UNKNOWN; }
-    VVarAttrClocker invert() const {
-        if (m_e == CLOCKER_YES) {
-            return CLOCKER_NO;
-        } else if (m_e == CLOCKER_NO) {
-            return CLOCKER_YES;
-        } else {
-            return m_e;
-        }
-    }
-    const char* ascii() const {
-        static const char* const names[] = {"", "clker", "non_clker"};
-        return names[m_e];
-    }
-};
-constexpr bool operator==(const VVarAttrClocker& lhs, const VVarAttrClocker& rhs) {
-    return lhs.m_e == rhs.m_e;
-}
-constexpr bool operator==(const VVarAttrClocker& lhs, VVarAttrClocker::en rhs) {
-    return lhs.m_e == rhs;
-}
-constexpr bool operator==(VVarAttrClocker::en lhs, const VVarAttrClocker& rhs) {
-    return lhs == rhs.m_e;
-}
-inline std::ostream& operator<<(std::ostream& os, const VVarAttrClocker& rhs) {
     return os << rhs.ascii();
 }
 

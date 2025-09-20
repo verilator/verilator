@@ -335,8 +335,6 @@ detailed descriptions of these arguments.
     --build-jobs <jobs>         Parallelism for --build
     --cc                        Create C++ output
      -CFLAGS <flags>            C++ compiler arguments for makefile
-    --clk <signal-name>         Mark specified signal as clock
-    --no-clk <signal-name>      Prevent marking specified signal as clock
     --compiler <compiler-name>  Tune for specified C++ compiler
     --compiler-include          Include additional header in the precompiled one
     --converge-limit <loops>    Tune convergence settle time

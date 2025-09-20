@@ -577,10 +577,7 @@ class ActiveVisitor final : public VNVisitor {
             }
         }
 
-        nodep->sensp()->foreach([](const AstVarRef* refp) {
-            refp->varp()->usedClock(true);
-            refp->varScopep()->user1(true);
-        });
+        nodep->sensp()->foreach([](const AstVarRef* refp) { refp->varScopep()->user1(true); });
     }
 
     void visit(AstVarRef* nodep) override {

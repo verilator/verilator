@@ -16,7 +16,7 @@
   <netlist>
     <module loc="d,7,8,7,9" name="$root" origName="$root" topModule="1" public="true">
       <var loc="d,15,22,15,23" name="q" dtype_id="1" dir="output" pinIndex="1" vartype="logic" origName="q" public="true"/>
-      <var loc="d,13,10,13,13" name="clk" dtype_id="2" dir="input" pinIndex="2" vartype="logic" origName="clk" clocker="true" public="true"/>
+      <var loc="d,13,10,13,13" name="clk" dtype_id="2" dir="input" pinIndex="2" vartype="logic" origName="clk" public="true"/>
       <var loc="d,14,16,14,17" name="d" dtype_id="1" dir="input" pinIndex="3" vartype="logic" origName="d" public="true"/>
       <var loc="d,15,22,15,23" name="t.q" dtype_id="1" vartype="logic" origName="q"/>
       <var loc="d,13,10,13,13" name="t.clk" dtype_id="2" vartype="logic" origName="clk"/>

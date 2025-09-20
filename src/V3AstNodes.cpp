@@ -2686,11 +2686,11 @@ void AstVar::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isSc()) str << " [SC]";
     if (isPrimaryIO()) str << (isInout() ? " [PIO]" : (isWritable() ? " [PO]" : " [PI]"));
+    if (isPrimaryClock()) str << " [PCLK]";
     if (isIO()) str << " " << direction().ascii();
     if (isConst()) str << " [CONST]";
     if (isPullup()) str << " [PULLUP]";
     if (isPulldown()) str << " [PULLDOWN]";
-    if (isUsedClock()) str << " [CLK]";
     if (isSigPublic()) str << " [P]";
     if (isSigUserRdPublic()) str << " [PRD]";
     if (isSigUserRWPublic()) str << " [PWR]";
@@ -2709,7 +2709,6 @@ void AstVar::dump(std::ostream& str) const {
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
-    if (!attrClocker().unknown()) str << " [" << attrClocker().ascii() << "] ";
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
 }
@@ -2717,11 +2716,11 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origName);
     dumpJsonBoolFunc(str, isSc);
     dumpJsonBoolFunc(str, isPrimaryIO);
+    dumpJsonBoolFunc(str, isPrimaryClock);
     dumpJsonStr(str, "direction", direction().ascii());
     dumpJsonBoolFunc(str, isConst);
     dumpJsonBoolFunc(str, isPullup);
     dumpJsonBoolFunc(str, isPulldown);
-    dumpJsonBoolFunc(str, isUsedClock);
     dumpJsonBoolFunc(str, isSigPublic);
     dumpJsonBoolFunc(str, isLatched);
     dumpJsonBoolFunc(str, isUsedLoopIdx);
@@ -2731,7 +2730,6 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, isDpiOpenArray);
     dumpJsonBoolFunc(str, isFuncReturn);
     dumpJsonBoolFunc(str, isFuncLocal);
-    dumpJsonStr(str, "attrClocker", (attrClocker().unknown() ? "UNKNOWN" : attrClocker().ascii()));
     dumpJsonStr(str, "lifetime", lifetime().ascii());
     dumpJsonStr(str, "varType", varType().ascii());
     if (dtypep()) dumpJsonStr(str, "dtypeName", dtypep()->name());
