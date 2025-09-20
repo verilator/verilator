@@ -574,7 +574,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
                     // Reach past a cast then add to frozen nodes to be added to final reduction
                     if (const AstCCast* const castp = VN_CAST(opp, CCast)) opp = castp->lhsp();
                     const bool pol = isXorTree() || m_polarity;  // Only AND/OR tree needs polarity
-                    UASSERT(pol, "AND/OR tree expects m_polarity==true");
+                    UASSERT_OBJ(pol, nodep, "AND/OR tree expects m_polarity==true");
                     m_frozenNodes.emplace_back(opp, FrozenNodeInfo{pol, m_lsb});
                     m_failed = origFailed;
                     continue;
@@ -2274,7 +2274,8 @@ class ConstVisitor final : public VNVisitor {
             if (VN_IS(dstDTypep, UnpackArrayDType)) {
                 streamp = new AstCvtPackedToArray{nodep->fileline(), streamp, dstDTypep};
             } else {
-                UASSERT(sWidth >= dWidth, "sWidth >= dWidth should have caused an error earlier");
+                UASSERT_OBJ(sWidth >= dWidth, nodep,
+                            "sWidth >= dWidth should have caused an error earlier");
                 if (dWidth == 0) {
                     streamp = new AstCvtPackedToArray{nodep->fileline(), streamp, dstDTypep};
                 } else if (sWidth >= dWidth) {
@@ -2307,7 +2308,8 @@ class ConstVisitor final : public VNVisitor {
                 }
                 srcp = new AstCvtPackedToArray{nodep->fileline(), srcp, dstDTypep};
             } else {
-                UASSERT(sWidth >= dWidth, "sWidth >= dWidth should have caused an error earlier");
+                UASSERT_OBJ(sWidth >= dWidth, nodep,
+                            "sWidth >= dWidth should have caused an error earlier");
                 if (dWidth == 0) {
                     srcp = new AstCvtPackedToArray{nodep->fileline(), srcp, dstDTypep};
                 } else if (sWidth >= dWidth) {

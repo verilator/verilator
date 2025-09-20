@@ -69,7 +69,7 @@ class LinkIncVisitor final : public VNVisitor {
         } else if (m_modp) {
             stmtsp = m_modp->stmtsp();
         }
-        UASSERT(stmtsp, "Variable not under FTASK/MODULE");
+        UASSERT_OBJ(stmtsp, newp, "Variable not under FTASK/MODULE");
         newp->addNext(stmtsp->unlinkFrBackWithNext());
         if (m_ftaskp) {
             m_ftaskp->addStmtsp(newp);

@@ -308,7 +308,7 @@ class CaseVisitor final : public VNVisitor {
         for (uint32_t i = 0; i < numCases; ++i) {
             if (AstNode* const condp = m_valueItem[i]) {
                 const AstCaseItem* const caseItemp = caseItemMap[condp];
-                UASSERT(caseItemp, "caseItemp should exist");
+                UASSERT_OBJ(caseItemp, condp, "caseItemp should exist");
                 m_valueItem[i] = caseItemp->stmtsp();
             }
         }

@@ -136,7 +136,7 @@ public:
     }
     AstNodeModule* findByParams(const string& origName, AstPin* firstPinp,
                                 const AstNodeModule* modp) {
-        UASSERT(isHierBlock(origName), origName << " is not hierarchical block\n");
+        UASSERT(isHierBlock(origName), origName << " is not hierarchical block");
         // This module is a hierarchical block. Need to replace it by the --lib-create wrapper.
         const std::pair<HierMapIt, HierMapIt> candidates
             = m_hierBlockOptsByOrigName.equal_range(origName);

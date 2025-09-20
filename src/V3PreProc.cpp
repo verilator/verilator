@@ -1154,7 +1154,7 @@ int V3PreProcImp::getStateToken() {
                     m_lexp->pushStateDefForm();
                     goto next_tok;
                 } else {  // LCOV_EXCL_LINE
-                    v3fatalSrc("Bad case\n");
+                    v3fatalSrc("Bad case");
                 }
                 goto next_tok;
             } else if (tok == VP_TEXT) {
@@ -1521,7 +1521,7 @@ int V3PreProcImp::getStateToken() {
                 goto next_tok;
             }
         }
-        default: v3fatalSrc("Bad case\n");
+        default: v3fatalSrc("Bad case");
         }
         // Default is to do top level expansion of some tokens
         switch (tok) {
@@ -1637,7 +1637,7 @@ int V3PreProcImp::getStateToken() {
                     goto next_tok;
                 }
             }
-            v3fatalSrc("Bad case\n");  // FALLTHRU
+            v3fatalSrc("Bad case");  // FALLTHRU
             goto next_tok;  // above fatal means unreachable, but fixes static analysis warning
         }
         case VP_ERROR: {

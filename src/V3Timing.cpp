@@ -253,7 +253,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstClass* nodep) override {
-        UASSERT(!m_classp, "Class under class");
+        UASSERT_OBJ(!m_classp, nodep, "Class under class");
         VL_RESTORER(m_classp);
         m_classp = nodep;
         iterateChildren(nodep);
@@ -752,7 +752,7 @@ class TimingControlVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
-        UASSERT(!m_classp, "Module or class under class");
+        UASSERT_OBJ(!m_classp, nodep, "Module or class under class");
         VL_RESTORER(m_classp);
         m_classp = VN_CAST(nodep, Class);
         VL_RESTORER(m_forkCnt);

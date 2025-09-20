@@ -575,7 +575,7 @@ class ForkVisitor final : public VNVisitor {
         if (!m_newProcess || nodep->user1()) {
             VL_RESTORER(m_forkDepth);
             if (nodep->user1()) {
-                UASSERT(m_forkDepth > 0, "Wrong fork depth!");
+                UASSERT_OBJ(m_forkDepth > 0, nodep, "Wrong fork depth");
                 --m_forkDepth;
             }
             iterateChildren(nodep);
@@ -601,7 +601,7 @@ class ForkVisitor final : public VNVisitor {
         AstTask* taskp = nullptr;
 
         if (AstBegin* const beginp = VN_CAST(nodep, Begin)) {
-            UASSERT(beginp->stmtsp(), "No stmtsp\n");
+            UASSERT_OBJ(beginp->stmtsp(), beginp, "No stmtsp");
             const string taskName = generateTaskName(beginp, "fork_begin");
             taskp
                 = makeTask(beginp->fileline(), beginp->stmtsp()->unlinkFrBackWithNext(), taskName);
