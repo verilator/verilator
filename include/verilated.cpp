@@ -1322,6 +1322,19 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 _vl_vsss_advance(fp, floc);
                 break;
             }
+            case '0':  // FALLTHRU
+            case '1':  // FALLTHRU
+            case '2':  // FALLTHRU
+            case '3':  // FALLTHRU
+            case '4':  // FALLTHRU
+            case '5':  // FALLTHRU
+            case '6':  // FALLTHRU
+            case '7':  // FALLTHRU
+            case '8':  // FALLTHRU
+            case '9': {
+                inPct = true;
+                break;
+            }
             case '*':
                 inPct = true;
                 inIgnore = true;

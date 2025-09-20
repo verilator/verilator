@@ -20,6 +20,7 @@ Verilator 5.041 devel
 * Add error on localparam value from hierarchical path (#6456). [Luca Rufer]
 * Deprecate sensitivity list on public_flat_rw attributes (#6443). [Geza Lore]
 * Support modports referencing clocking blocks (#4555) (#6436). [Ryszard Rozak, Antmicro Ltd.]
+* Support digits in `$sscanf` field width formats (#6083). [Iztok Jeras]
 * Support pure functions in sensitivity lists (#6393). [Krzysztof Bieganski, Antmicro Ltd.]
 * Improve automatic selection of logic for DFG synthesis (#6370). [Geza Lore]
 * Improve `covergroup with function sample` handling  (#6387). [Jakub Wasilewski]
