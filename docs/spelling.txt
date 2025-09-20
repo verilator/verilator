@@ -748,6 +748,7 @@ gantt
 gcc
 gcda
 gdb
+gdbinit
 genblk
 genvar
 genvars

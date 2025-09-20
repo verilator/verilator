@@ -24,7 +24,7 @@ Verilator 5.041 devel
 * Improve `covergroup with function sample` handling  (#6387). [Jakub Wasilewski]
 * Improve DFG type system (#6390). [Geza Lore]
 * Improve DFG variable removal and temporary insertion (#6401). [Geza Lore]
-* Optimize dead functions without references (#6380). [Artur Bieniek, Antmicro Ltd.]
+* Optimize dead functions in more cases (#6380) (#6430). [Artur Bieniek, Antmicro Ltd.]
 * Optimize constant folding in wide expression expansion (#6381). [Geza Lore]
 * Fix false CONSTVAR error on initializers (#4992).
 * Fix cell scoping performance (#6059). [Jerry Tianchen]
@@ -47,11 +47,17 @@ Verilator 5.041 devel
 * Fix memory leaks (#6411) (#6417) (#6419) (#6437) (#6439). [Geza Lore]
 * Fix parameter implicit type from string (#6414). [Alex Solomatnikov]
 * Fix parsing for sequence expressions (#6427). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix parameterized class super functions (#6431) (#6438). [Artur Bieniek, Antmicro Ltd.]
 * Fix external function declarations with class typedef references (#6433).
 * Fix internal error on out-of-bounds real array access.
 * Fix pre/post increments in assertions (#6434).
 * Fix elaboration displays with `%m` and some `%p` (#6445) (#6451). [Alex Solomatnikov]
+* Fix cast in gdbinit.py (#6447). [Artur Bieniek, Antmicro Ltd.]
 * Fix false unique assertions on `else ;` (#6450). [Don Owen]
+* Fix loss of clock attribute in DFG variable removal (#6453). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix data types of method calls without parenthesis (#6457). [Artur Bieniek, Antmicro Ltd.]
+* Fix segfault on unsupported PLI calls (#6458). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix false assertion failure on failed DFG driver tracing (#6459). [Geza Lore]
 
 
 Verilator 5.040 2025-08-30
