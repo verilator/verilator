@@ -1220,10 +1220,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-CFLAGS", CbVal, callStrSetter(&V3Options::addCFlags));
     DECL_OPTION("-cc", CbCall, [this]() { ccSet(); });
     DECL_OPTION("-clk", CbVal, [fl](const std::string&) {
-        fl->v3warn(DEPRECATED, "Option --clk is deprecated and has no effect.");
+        fl->v3warn(DEPRECATED, "Option '--clk' is deprecated and has no effect.");
     });
     DECL_OPTION("-no-clk", CbVal, [fl](const std::string&) {
-        fl->v3warn(DEPRECATED, "Option --no-clk is deprecated and has no effect.");
+        fl->v3warn(DEPRECATED, "Option '--no-clk' is deprecated and has no effect.");
     });
     DECL_OPTION("-comp-limit-blocks", Set, &m_compLimitBlocks).undocumented();
     DECL_OPTION("-comp-limit-members", Set,

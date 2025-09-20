@@ -708,9 +708,14 @@ class GateInline final {
             for (V3GraphEdge* const edgep : vVtxp->outEdges().unlinkable()) {
                 GateLogicVertex* const dstVtxp = edgep->top()->as<GateLogicVertex>();
 
-                // Do not inline into sensitivity lists. If the signal becomes
-                // constant, we might miss an initialization time edge.
-                if (VN_IS(dstVtxp->nodep(), SenItem)) continue;
+                // Do not inline anything other than buffers and inverters into
+                // sensitivity lists. If the signal becomes constant, we might
+                // miss an initialization time edge.
+                if (VN_IS(dstVtxp->nodep(), SenItem)) {
+                    AstNode* nodep = substp;
+                    if (AstNot* const notp = VN_CAST(nodep, Not)) nodep = notp->lhsp();
+                    if (!VN_IS(nodep, VarRef)) continue;
+                }
 
                 // If the consumer logic writes one of the variables that the substitution
                 // is reading, then we would get a cycles, so we cannot do that.
