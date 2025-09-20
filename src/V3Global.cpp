@@ -137,6 +137,7 @@ void V3Global::readFiles() {
 void V3Global::removeStd() {
     // Delete the std package if unused
     if (!usesStdPackage()) {
+        UINFO(3, "Removing unused std:: package");
         if (AstNodeModule* stdp = v3Global.rootp()->stdPackagep()) {
             v3Global.rootp()->stdPackagep(nullptr);
             VL_DO_DANGLING(stdp->unlinkFrBack()->deleteTree(), stdp);

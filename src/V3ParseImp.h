@@ -300,7 +300,7 @@ public:
     void dumpInputsFile() VL_MT_DISABLED;
     void dumpTokensAhead(int line) VL_MT_DISABLED;
     static void candidatePli(VSpellCheck* spellerp) VL_MT_DISABLED;
-    void importIfInStd(FileLine* fileline, const string& id);
+    void importIfInStd(FileLine* fileline, const string& id, bool doImport);
 
 private:
     void preprocDumps(std::ostream& os);

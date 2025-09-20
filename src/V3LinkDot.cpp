@@ -4314,6 +4314,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                            || nodep->name() == "rand_mode" || nodep->name() == "constraint_mode") {
                     if (AstClass* const classp = VN_CAST(m_modp, Class)) {
                         nodep->classOrPackagep(classp);
+                    } else if (nodep->name() == "randomize") {
+                        // A std::randomize resolved in V3Width
+                        nodep->classOrPackagep(v3Global.rootp()->stdPackagep());
                     } else {
                         nodep->v3error("Calling implicit class method "
                                        << nodep->prettyNameQ() << " without being under class");
