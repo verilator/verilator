@@ -236,8 +236,6 @@ private:
     V3StringSet m_future0s;     // argument: -future list
     V3StringSet m_future1s;     // argument: -future1 list
     VFileLibSet m_libraryFiles; // argument: Verilog -v files
-    V3StringSet m_clockers;     // argument: Verilog -clk signals
-    V3StringSet m_noClockers;   // argument: Verilog -noclk signals
     VFileLibList m_vFiles;      // argument: Verilog files to read
     VFileLibSet m_vltFiles;     // argument: Verilator config files to read
     V3StringList m_forceIncs;   // argument: -FI
@@ -496,8 +494,6 @@ public:
     void addLdLibs(const string& filename);
     void addMakeFlags(const string& filename);
     void addLibraryFile(const string& filename, const string& libname);
-    void addClocker(const string& signame);
-    void addNoClocker(const string& signame);
     void addVFile(const string& filename, const string& libname);
     void addVltFile(const string& filename, const string& libname);
     void addForceInc(const string& filename);
@@ -724,8 +720,6 @@ public:
     bool isFuture0(const string& flag) const;
     bool isFuture1(const string& flag) const;
     bool isLibraryFile(const string& filename, const string& libname) const;
-    bool isClocker(const string& signame) const;
-    bool isNoClocker(const string& signame) const;
 
     // ACCESSORS (optimization options)
     bool fAcycSimp() const { return m_fAcycSimp; }

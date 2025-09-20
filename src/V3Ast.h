@@ -514,7 +514,6 @@ public:
         TYPENAME,                       // V3Width processes
         //
         VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
-        VAR_CLOCK_ENABLE,               // Ignored, accepted for compatibility
         VAR_FORCEABLE,                  // V3LinkParse moves to AstVar::isForceable
         VAR_PORT_DTYPE,                 // V3LinkDot for V3Width to check port dtype
         VAR_PUBLIC,                     // V3LinkParse moves to AstVar::sigPublic
@@ -524,8 +523,6 @@ public:
         VAR_ISOLATE_ASSIGNMENTS,        // V3LinkParse moves to AstVar::attrIsolateAssign
         VAR_SC_BV,                      // V3LinkParse moves to AstVar::attrScBv
         VAR_SFORMAT,                    // V3LinkParse moves to AstVar::attrSFormat
-        VAR_CLOCKER,                    // V3LinkParse moves to AstVar::attrClocker
-        VAR_NO_CLOCKER,                 // V3LinkParse moves to AstVar::attrClocker
         VAR_SPLIT_VAR                   // V3LinkParse moves to AstVar::attrSplitVar
     };
     // clang-format on
@@ -542,10 +539,10 @@ public:
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
             "FUNC_ARG_PROTO", "FUNC_RETURN_PROTO",
             "TYPEID", "TYPENAME",
-            "VAR_BASE", "VAR_CLOCK_ENABLE", "VAR_FORCEABLE", "VAR_PORT_DTYPE", "VAR_PUBLIC",
+            "VAR_BASE", "VAR_FORCEABLE", "VAR_PORT_DTYPE", "VAR_PUBLIC",
             "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
-            "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT", "VAR_CLOCKER",
-            "VAR_NO_CLOCKER", "VAR_SPLIT_VAR"
+            "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT",
+            "VAR_SPLIT_VAR"
         };
         // clang-format on
         return names[m_e];
@@ -1083,49 +1080,6 @@ constexpr bool operator==(const VBranchPred& lhs, const VBranchPred& rhs) {
 constexpr bool operator==(const VBranchPred& lhs, VBranchPred::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VBranchPred::en lhs, const VBranchPred& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
-    return os << rhs.ascii();
-}
-
-// ######################################################################
-
-class VVarAttrClocker final {
-public:
-    enum en : uint8_t { CLOCKER_UNKNOWN = 0, CLOCKER_YES, CLOCKER_NO, _ENUM_END };
-    enum en m_e;
-    // CONSTRUCTOR - note defaults to *UNKNOWN*
-    VVarAttrClocker()
-        : m_e{CLOCKER_UNKNOWN} {}
-    // cppcheck-suppress noExplicitConstructor
-    constexpr VVarAttrClocker(en _e)
-        : m_e{_e} {}
-    explicit VVarAttrClocker(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    constexpr operator en() const { return m_e; }
-    bool unknown() const { return m_e == CLOCKER_UNKNOWN; }
-    VVarAttrClocker invert() const {
-        if (m_e == CLOCKER_YES) {
-            return CLOCKER_NO;
-        } else if (m_e == CLOCKER_NO) {
-            return CLOCKER_YES;
-        } else {
-            return m_e;
-        }
-    }
-    const char* ascii() const {
-        static const char* const names[] = {"", "clker", "non_clker"};
-        return names[m_e];
-    }
-};
-constexpr bool operator==(const VVarAttrClocker& lhs, const VVarAttrClocker& rhs) {
-    return lhs.m_e == rhs.m_e;
-}
-constexpr bool operator==(const VVarAttrClocker& lhs, VVarAttrClocker::en rhs) {
-    return lhs.m_e == rhs;
-}
-constexpr bool operator==(VVarAttrClocker::en lhs, const VVarAttrClocker& rhs) {
-    return lhs == rhs.m_e;
-}
-inline std::ostream& operator<<(std::ostream& os, const VVarAttrClocker& rhs) {
     return os << rhs.ascii();
 }
 

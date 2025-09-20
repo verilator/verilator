@@ -425,7 +425,7 @@ class ProtectVisitor final : public VNVisitor {
     void visit(AstVar* nodep) override {
         if (!nodep->isIO()) return;
         if (nodep->direction() == VDirection::INPUT) {
-            if (nodep->isUsedClock() || nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
+            if (nodep->isPrimaryClock()) {
                 UASSERT_OBJ(m_hasClk, nodep, "checkIfClockExists() didn't find this clock");
                 handleClock(nodep);
             } else {
@@ -514,9 +514,7 @@ class ProtectVisitor final : public VNVisitor {
     static bool checkIfClockExists(const AstNodeModule* modp) {
         for (const AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
-                if (varp->direction() == VDirection::INPUT
-                    && (varp->isUsedClock()
-                        || varp->attrClocker() == VVarAttrClocker::CLOCKER_YES)) {
+                if (varp->direction() == VDirection::INPUT && varp->isPrimaryClock()) {
                     return true;
                 }
             }

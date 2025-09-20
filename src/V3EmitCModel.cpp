@@ -329,7 +329,7 @@ class EmitCModel final : public EmitCFunc {
             if (v3Global.usesTiming()) puts("SC_METHOD(eval_sens);\n");
             for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
                 if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                    if (varp->isNonOutput() && (varp->isScSensitive() || varp->isUsedClock())) {
+                    if (varp->isNonOutput() && (varp->isScSensitive() || varp->isPrimaryClock())) {
                         int vects = 0;
                         // This isn't very robust and may need cleanup for other data types
                         for (AstUnpackArrayDType* arrayp

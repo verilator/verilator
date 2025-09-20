@@ -386,14 +386,6 @@ bool V3Options::isLibraryFile(const string& filename, const string& libname) con
 void V3Options::addLibraryFile(const string& filename, const string& libname) {
     m_libraryFiles.insert({filename, libname});
 }
-bool V3Options::isClocker(const string& signame) const {
-    return m_clockers.find(signame) != m_clockers.end();
-}
-void V3Options::addClocker(const string& signame) { m_clockers.insert(signame); }
-bool V3Options::isNoClocker(const string& signame) const {
-    return m_noClockers.find(signame) != m_noClockers.end();
-}
-void V3Options::addNoClocker(const string& signame) { m_noClockers.insert(signame); }
 void V3Options::addVFile(const string& filename, const string& libname) {
     // We use a list for v files, because it's legal to have includes
     // in a specific order and multiple of them.
@@ -1227,8 +1219,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     DECL_OPTION("-CFLAGS", CbVal, callStrSetter(&V3Options::addCFlags));
     DECL_OPTION("-cc", CbCall, [this]() { ccSet(); });
-    DECL_OPTION("-clk", CbVal, callStrSetter(&V3Options::addClocker));
-    DECL_OPTION("-no-clk", CbVal, callStrSetter(&V3Options::addNoClocker));
+    DECL_OPTION("-clk", CbVal, [fl](const std::string&) {
+        fl->v3warn(DEPRECATED, "Option '--clk' is deprecated and has no effect.");
+    });
+    DECL_OPTION("-no-clk", CbVal, [fl](const std::string&) {
+        fl->v3warn(DEPRECATED, "Option '--no-clk' is deprecated and has no effect.");
+    });
     DECL_OPTION("-comp-limit-blocks", Set, &m_compLimitBlocks).undocumented();
     DECL_OPTION("-comp-limit-members", Set,
                 &m_compLimitMembers)

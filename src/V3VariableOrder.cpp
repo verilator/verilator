@@ -221,16 +221,16 @@ class VariableOrder final {
                 // Compute attributes up front
                 // Stratum
                 const int sigbytes = varp->dtypeSkipRefp()->widthAlignBytes();
-                const uint8_t stratum = (v3Global.opt.hierChild() && varp->isPrimaryIO()) ? 0
-                                        : (varp->isUsedClock() && varp->widthMin() == 1)  ? 1
-                                        : VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)  ? 9
-                                        : (varp->basicp() && varp->basicp()->isOpaque())  ? 8
-                                        : (varp->isScBv() || varp->isScBigUint())         ? 7
-                                        : (sigbytes == 8)                                 ? 6
-                                        : (sigbytes == 4)                                 ? 5
-                                        : (sigbytes == 2)                                 ? 3
-                                        : (sigbytes == 1)                                 ? 2
-                                                                                          : 10;
+                const uint8_t stratum = (v3Global.opt.hierChild() && varp->isPrimaryIO())   ? 0
+                                        : (varp->isPrimaryClock() && varp->widthMin() == 1) ? 1
+                                        : VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)    ? 9
+                                        : (varp->basicp() && varp->basicp()->isOpaque())    ? 8
+                                        : (varp->isScBv() || varp->isScBigUint())           ? 7
+                                        : (sigbytes == 8)                                   ? 6
+                                        : (sigbytes == 4)                                   ? 5
+                                        : (sigbytes == 2)                                   ? 3
+                                        : (sigbytes == 1)                                   ? 2
+                                                                                            : 10;
                 m_attributes.emplace(varp, VarAttributes{stratum, EmitCUtil::isAnonOk(varp)});
             }
         }

@@ -198,11 +198,6 @@ class EmitXmlFileVisitor final : public VNVisitorConst {
         puts(" origName=");
         putsQuoted(nodep->origName());
         // Attributes
-        if (nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
-            puts(" clocker=\"true\"");
-        } else if (nodep->attrClocker() == VVarAttrClocker::CLOCKER_NO) {
-            puts(" clocker=\"false\"");
-        }
         if (nodep->attrIsolateAssign()) puts(" isolate_assignments=\"true\"");
         if (nodep->isLatched()) puts(" latched=\"true\"");
         if (nodep->isSigPublic()) puts(" public=\"true\"");

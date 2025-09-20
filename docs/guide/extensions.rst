@@ -255,6 +255,10 @@ or "`ifdef`"'s may break other tools.
 
 .. option:: /*verilator&32;no_clocker*/
 
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.042:
+
    Specifies whether the signal is used as clock or not. See :vlopt:`--clk`.
 
    Same as :option:`clocker` and :option:`no_clocker` in configuration

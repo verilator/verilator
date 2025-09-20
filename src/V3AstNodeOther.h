@@ -1845,13 +1845,13 @@ class AstVar final : public AstNode {
     VDirection m_direction;  // Direction input/output etc
     VDirection m_declDirection;  // Declared direction input/output etc
     VLifetime m_lifetime;  // Lifetime
-    VVarAttrClocker m_attrClocker;
     VRandAttr m_rand;  // Randomizability of this variable (rand, randc, etc)
     int m_pinNum = 0;  // For XML, if non-zero the connection pin number
     bool m_ansi : 1;  // Params or pins declared in the module header, rather than the body
     bool m_declTyped : 1;  // Declared as type (for dedup check)
     bool m_tristate : 1;  // Inout or triwire or trireg
     bool m_primaryIO : 1;  // In/out to top level (or directly assigned from same)
+    bool m_primaryClock : 1;  // In/out to top level and is, or combinationally drives a SenItem
     bool m_sc : 1;  // SystemC variable
     bool m_scClocked : 1;  // SystemC sc_clk<> needed
     bool m_scSensitive : 1;  // SystemC sensitive() needed
@@ -1859,7 +1859,6 @@ class AstVar final : public AstNode {
     bool m_sigModPublic : 1;  // User C code accesses this signal and module
     bool m_sigUserRdPublic : 1;  // User C code accesses this signal, read only
     bool m_sigUserRWPublic : 1;  // User C code accesses this signal, read-write
-    bool m_usedClock : 1;  // Signal used as a clock
     bool m_usedParam : 1;  // Parameter is referenced (on link; later signals not setup)
     bool m_usedLoopIdx : 1;  // Variable subject of for unrolling
     bool m_funcLocal : 1;  // Local variable for a function
@@ -1902,10 +1901,10 @@ class AstVar final : public AstNode {
         m_declTyped = false;
         m_tristate = false;
         m_primaryIO = false;
+        m_primaryClock = false;
         m_sc = false;
         m_scClocked = false;
         m_scSensitive = false;
-        m_usedClock = false;
         m_usedParam = false;
         m_usedLoopIdx = false;
         m_sigPublic = false;
@@ -1946,7 +1945,6 @@ class AstVar final : public AstNode {
         m_ignorePostWrite = false;
         m_ignoreSchedWrite = false;
         m_dfgMultidriven = false;
-        m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
     }
 
 public:
@@ -2043,7 +2041,6 @@ public:
     void ansi(bool flag) { m_ansi = flag; }
     void declTyped(bool flag) { m_declTyped = flag; }
     void sensIfacep(AstIface* nodep) { m_sensIfacep = nodep; }
-    void attrClocker(VVarAttrClocker flag) { m_attrClocker = flag; }
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
     void attrScClocked(bool flag) { m_scClocked = flag; }
     void attrScBv(bool flag) { m_attrScBv = flag; }
@@ -2051,7 +2048,6 @@ public:
     void attrSFormat(bool flag) { m_attrSFormat = flag; }
     void attrSplitVar(bool flag) { m_attrSplitVar = flag; }
     void rand(const VRandAttr flag) { m_rand = flag; }
-    void usedClock(bool flag) { m_usedClock = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }
     void sigPublic(bool flag) { m_sigPublic = flag; }
@@ -2132,6 +2128,8 @@ public:
     bool isTristate() const { return m_tristate; }
     bool isPrimaryIO() const VL_MT_SAFE { return m_primaryIO; }
     bool isPrimaryInish() const { return isPrimaryIO() && isNonOutput(); }
+    bool isPrimaryClock() const VL_MT_SAFE { return m_primaryClock; }
+    void setPrimaryClock() { m_primaryClock = true; }
     bool isIfaceRef() const { return varType() == VVarType::IFACEREF; }
     void setIfaceRef() {
         m_direction = VDirection::NONE;
@@ -2161,7 +2159,6 @@ public:
         const AstBasicDType* const bdtypep = basicp();
         return bdtypep && bdtypep->isBitLogic();
     }
-    bool isUsedClock() const VL_MT_SAFE { return m_usedClock; }
     bool isUsedParam() const { return m_usedParam; }
     bool isUsedLoopIdx() const { return m_usedLoopIdx; }
     bool isSc() const VL_MT_SAFE { return m_sc; }
@@ -2193,7 +2190,6 @@ public:
     bool attrSplitVar() const { return m_attrSplitVar; }
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
     AstIface* sensIfacep() const { return m_sensIfacep; }
-    VVarAttrClocker attrClocker() const { return m_attrClocker; }
     VRandAttr rand() const { return m_rand; }
     string verilogKwd() const override;
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }

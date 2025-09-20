@@ -790,12 +790,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
             return out;
         } else {
             string out = varNameProtected + suffix;
-            // If --x-initial-edge is set, we want to force an initial
-            // edge on uninitialized clocks (from 'X' to whatever the
-            // first value is). Since the class is instantiated before
-            // initial blocks are evaluated, this should not clash
-            // with any initial block settings.
-            if (zeroit || (v3Global.opt.xInitialEdge() && varp->isUsedClock())) {
+            if (zeroit) {
                 out += " = 0;\n";
             } else {
                 emitVarResetScopeHash();

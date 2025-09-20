@@ -36,7 +36,7 @@ test.run(cmd=[
 
 if test.vltmt:
     test.file_grep(gantt_log, r'Total threads += 2')
-    test.file_grep(gantt_log, r'Total mtasks += 8')
+    test.file_grep(gantt_log, r'Total mtasks += 11')
     # Predicted thread utilization should be less than 100%
     test.file_grep_not(gantt_log, r'Thread utilization =\s*\d\d\d+\.\d+%')
 else:
