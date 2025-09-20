@@ -651,7 +651,7 @@ void V3Control::addInline(FileLine* fl, const string& module, const string& ftas
         V3ControlResolver::s().modules().at(module).setInline(on);
     } else {
         if (!on) {
-            fl->v3error("Unsupported: no_inline for tasks");
+            fl->v3warn(E_UNSUPPORTED, "Unsupported: no_inline for tasks");
         } else {
             V3ControlResolver::s().modules().at(module).ftasks().at(ftask).setNoInline(on);
         }

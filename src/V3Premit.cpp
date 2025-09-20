@@ -118,9 +118,10 @@ class PremitVisitor final : public VNVisitor {
         UINFO(4, "  ShiftFix  " << nodep);
         const AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const);
         if (shiftp && shiftp->num().mostSetBitP1() > 32) {
-            shiftp->v3error(
+            shiftp->v3warn(
+                E_UNSUPPORTED,
                 "Unsupported: Shifting of by over 32-bit number isn't supported."
-                << " (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
+                    << " (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
         }
         if (nodep->widthMin() <= 64  // Else we'll use large operators which work right
                                      // C operator's width must be < maximum shift which is

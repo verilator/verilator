@@ -408,7 +408,8 @@ class ForceReplaceVisitor final : public VNVisitor {
         default:
             if (!m_inLogic) return;
             if (m_state.tryGetForceComponents(nodep) || m_state.getValVscps(nodep)) {
-                nodep->v3error(
+                nodep->v3warn(
+                    E_UNSUPPORTED,
                     "Unsupported: Signals used via read-write reference cannot be forced");
             }
             break;

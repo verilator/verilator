@@ -274,9 +274,9 @@ public:
             const TristateVertex& vvertex = static_cast<TristateVertex&>(vtx);
             if (vvertex.isTristate() && !vvertex.processed()) {
                 // Not v3errorSrc as no reason to stop the world
-                vvertex.nodep()->v3error("Unsupported tristate construct"
-                                         " (in graph; not converted): "
-                                         << vvertex.nodep()->prettyTypeName());
+                vvertex.nodep()->v3warn(E_UNSUPPORTED, "Unsupported tristate construct"
+                                                       " (in graph; not converted): "
+                                                           << vvertex.nodep()->prettyTypeName());
             }
         }
         m_graph.clear();
@@ -320,8 +320,9 @@ public:
         TristateVertex* const vertexp = reinterpret_cast<TristateVertex*>(nodep->user4p());
         if (!vertexp) {
             // Not v3errorSrc as no reason to stop the world
-            nodep->v3error("Unsupported tristate construct (not in propagation graph): "
-                           << nodep->prettyTypeName());
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported tristate construct (not in propagation graph): "
+                              << nodep->prettyTypeName());
         } else {
             // We don't warn if no vertexp->isTristate() as the creation
             // process makes midling nodes that don't have it set

@@ -269,9 +269,10 @@ public:
     }
     string unquoteString(FileLine* fileline, const std::string& text) VL_MT_DISABLED;
     void checkDpiVer(FileLine* fileline, const string& str) {
-        if (str != "DPI-C" && !v3Global.opt.bboxSys()) {
-            fileline->v3error("Unsupported DPI type '" << str << "': Use 'DPI-C'");
-        }
+        if (str != "DPI-C" && !v3Global.opt.bboxSys())
+            fileline->v3warn(E_UNSUPPORTED, "Unsupported DPI type '"
+                                                << str
+                                                << "': Use 'DPI-C' (IEEE 1800-2023 35.5.4)");
     }
     // Given a list of clocking declarations, put them in clocking items
     AstClockingItem* makeClockingItemList(FileLine* flp, const VDirection direction,
