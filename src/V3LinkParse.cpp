@@ -300,6 +300,12 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->v3warn(STATICVAR, "Static variable with assignment declaration declared in a "
                                      "loop converted to automatic");
         }
+        if (!m_lifetimeAllowed && nodep->lifetime().isAutomatic()) {
+            nodep->v3error(
+                "Module variables cannot have automatic lifetime (IEEE 1800-2023 6.21): "
+                << nodep->prettyNameQ());
+            nodep->lifetime(VLifetime::STATIC);
+        }
         if (!nodep->direction().isAny()) {  // Not a port
             if (nodep->lifetime().isNone()) {
                 if (m_lifetimeAllowed) {

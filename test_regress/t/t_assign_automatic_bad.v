@@ -23,8 +23,6 @@ module t(clk);
 
   Cls c;
 
-  automatic int bad_auto3;
-  automatic int bad_auto4;
   int bad_dyn5[];
   int bad_dyn6[];
   int empty_dyn[];
@@ -34,7 +32,6 @@ module t(clk);
   int bad_assoc[int];
   Cls clist[1];
 
-  assign bad_auto3 = 2;  // <--- Error: continuous automatic
   assign bad_dyn5[0] = empty_dyn;  // <--- Error: continuous dynarray element
   assign bad_dyn5 = empty_dyn;  // <--- OK: continuous dynarray assignment, not to its element
   assign c.m_bad1 = 2;  // <--- Error: continuous class non-static
@@ -47,7 +44,6 @@ module t(clk);
   endtask
 
   always @(posedge clk) begin
-    bad_auto4 <= 2;  // <--- Error: nonblocking automatic
     bad_dyn6[0] <= 2;  // <--- Error: nonblocking dynarray element
     bad_dyn6 <= empty_dyn;  // <--- OK: nonblocking dynarray assignment, not to its element
     bad_queue[0] <= 2; // Error: nonblocking queue element assignment
