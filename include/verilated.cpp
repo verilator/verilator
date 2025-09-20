@@ -2849,11 +2849,13 @@ void VerilatedContext::addModel(const VerilatedModel* modelp) {
 
     // We look for time passing, as opposed to post-eval(), as embedded
     // models might get added inside initial blocks.
-    if (VL_UNLIKELY(time()))
-        VL_FATAL_MT(
-            "", 0, "",
-            "Adding model when time is non-zero. ... Suggest check time(), or for restarting"
-            " model use a new VerilatedContext");
+    if (VL_UNLIKELY(time())) {
+        const std::string msg
+            = "Adding model '"s + modelp->hierName()
+              + "' when time is non-zero. ... Suggest check time(), or for restarting"
+                " model use a new VerilatedContext";
+        VL_FATAL_MT("", 0, "", msg.c_str());
+    }
 
     threadPoolp();  // Ensure thread pool is created, so m_threads cannot change any more
     m_threadsInModels += modelp->threads();
