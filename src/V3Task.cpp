@@ -1348,7 +1348,8 @@ class TaskVisitor final : public VNVisitor {
         AstNode* bodysp = nodep->stmtsp();
         if (bodysp) {
             unlinkAndClone(nodep, bodysp, true);
-            AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", bodysp};
+            AstBegin* const tempp
+                = new AstBegin{nodep->fileline(), "[EditWrapper]", bodysp, false, false};
             VL_DANGLING(bodysp);
             // If we cloned due to recursion, now need to rip out the ports
             // (that remained in place) then got cloned

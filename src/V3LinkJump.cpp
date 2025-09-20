@@ -425,7 +425,7 @@ class LinkJumpVisitor final : public VNVisitor {
                 // Further handling of disable stmt requires all forks to be begin blocks
                 AstBegin* beginp = VN_CAST(forkItemp, Begin);
                 if (!beginp) {
-                    beginp = new AstBegin{fl, "", nullptr};
+                    beginp = new AstBegin{fl, "", nullptr, false, false};
                     forkItemp->replaceWith(beginp);
                     beginp->addStmtsp(forkItemp);
                     // In order to continue the iteration

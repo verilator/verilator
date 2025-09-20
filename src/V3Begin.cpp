@@ -125,7 +125,8 @@ class BeginVisitor final : public VNVisitor {
         // replaced with multiple statements)
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (!VN_IS(stmtp, Begin)) {
-                AstBegin* const beginp = new AstBegin{stmtp->fileline(), "", nullptr};
+                AstBegin* const beginp
+                    = new AstBegin{stmtp->fileline(), "", nullptr, false, false};
                 stmtp->replaceWith(beginp);
                 beginp->addStmtsp(stmtp);
                 stmtp = beginp;
@@ -430,7 +431,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     AstNodeDType* fromDtp = fromp->dtypep()->skipRefp();
     // Split into for loop
     // We record where the body needs to eventually go with bodyPointp
-    AstNode* bodyPointp = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr};
+    AstNode* bodyPointp = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr, false, false};
     AstNode* newp = nullptr;
     AstNode* lastp = nodep;
     AstVar* nestedIndexp = nullptr;
