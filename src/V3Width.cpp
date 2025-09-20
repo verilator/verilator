@@ -7307,6 +7307,18 @@ class WidthVisitor final : public VNVisitor {
                 iterateCheckReal(nodep, "LHS", nodep->lhsp(), FINAL);
                 iterateCheckReal(nodep, "RHS", nodep->rhsp(), FINAL);
                 return;
+            } else if (nodep->lhsp()->isString() || nodep->rhsp()->isString()) {
+                nodep->v3error(
+                    "Operator "
+                    << nodep->prettyTypeName()
+                    << " is not legal on string data types (IEEE 1800-2023 6.16)\n"
+                    << (VN_IS(nodep, Add)
+                            ? (nodep->warnMore()
+                               + "... Suggest to concatenate strings use '{LHS, RHS, ...}'")
+                            : ""));
+                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::String{}, ""});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
             } else {
                 const int width = std::max(nodep->lhsp()->width(), nodep->rhsp()->width());
                 const int mwidth = std::max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
