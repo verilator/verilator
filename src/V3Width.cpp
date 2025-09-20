@@ -744,7 +744,8 @@ class WidthVisitor final : public VNVisitor {
                     || (!nodep->stmtsp()->nextp() && !nodep->joinType().joinNone())))) {
             AstNode* stmtsp = nullptr;
             if (nodep->stmtsp()) stmtsp = nodep->stmtsp()->unlinkFrBack();
-            AstBegin* const newp = new AstBegin{nodep->fileline(), nodep->name(), stmtsp};
+            AstBegin* const newp
+                = new AstBegin{nodep->fileline(), nodep->name(), stmtsp, false, false};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else if (v3Global.opt.timing().isSetTrue()) {

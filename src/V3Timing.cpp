@@ -1029,7 +1029,7 @@ class TimingControlVisitor final : public VNVisitor {
             }
             controlp->replaceWith(forkp);
             AstBegin* beginp = VN_CAST(controlp, Begin);
-            if (!beginp) beginp = new AstBegin{nodep->fileline(), "", controlp};
+            if (!beginp) beginp = new AstBegin{nodep->fileline(), "", controlp, false, false};
             forkp->addStmtsp(beginp);
             controlp = forkp;
         }

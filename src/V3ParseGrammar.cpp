@@ -86,16 +86,13 @@ void V3ParseImp::parserClear() {
 
 AstArg* V3ParseGrammar::argWrapList(AstNodeExpr* nodep) {
     // Convert list of expressions to list of arguments
-    if (!nodep) return nullptr;
     AstArg* outp = nullptr;
-    AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nodep};
     while (nodep) {
         AstNodeExpr* const nextp = VN_AS(nodep->nextp(), NodeExpr);
-        AstNodeExpr* const exprp = nodep->unlinkFrBack();
+        if (nextp) nextp->unlinkFrBackWithNext();
+        outp = AstNode::addNext(outp, new AstArg{nodep->fileline(), "", nodep});
         nodep = nextp;
-        outp = AstNode::addNext(outp, new AstArg{exprp->fileline(), "", exprp});
     }
-    VL_DO_DANGLING(tempp->deleteTree(), tempp);
     return outp;
 }
 
