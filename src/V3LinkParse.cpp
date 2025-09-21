@@ -618,38 +618,37 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_lifetime);
         VL_RESTORER(m_lifetimeAllowed);
         VL_RESTORER(m_moduleWithGenericIface);
-        {
-            // Module: Create sim table for entire module and iterate
-            cleanFileline(nodep);
-            // Classes inherit from upper package
-            if (m_modp && nodep->timeunit().isNone()) nodep->timeunit(m_modp->timeunit());
-            m_modp = nodep;
-            m_anonUdpId = 0;
-            m_genblkAbove = 0;
-            m_genblkNum = 0;
-            m_beginDepth = 0;
-            m_implTypedef.clear();
-            m_valueModp = nodep;
-            m_lifetime = nodep->lifetime();
-            m_lifetimeAllowed = VN_IS(nodep, Class);
-            m_moduleWithGenericIface = false;
-            if (m_lifetime.isNone()) {
-                m_lifetime = VN_IS(nodep, Class) ? VLifetime::AUTOMATIC : VLifetime::STATIC;
-            }
-            if (nodep->name() == "TOP") {
-                // May mess up scope resolution and cause infinite loop
-                nodep->v3warn(E_UNSUPPORTED, "Module cannot be named 'TOP' as conflicts with "
-                                             "Verilator top-level internals");
-            }
-            iterateChildren(nodep);
-            if (AstModule* const modp = VN_CAST(nodep, Module)) {
-                modp->hasGenericIface(m_moduleWithGenericIface);
-            }
-        }
+        VL_RESTORER(m_valueModp);
+
+        // Module: Create sim table for entire module and iterate
+        cleanFileline(nodep);
+        // Classes inherit from upper package
+        if (m_modp && nodep->timeunit().isNone()) nodep->timeunit(m_modp->timeunit());
+        m_modp = nodep;
+        m_anonUdpId = 0;
+        m_genblkAbove = 0;
+        m_genblkNum = 0;
+        m_beginDepth = 0;
+        m_implTypedef.clear();
         m_valueModp = nodep;
+        m_lifetime = nodep->lifetime();
+        m_lifetimeAllowed = VN_IS(nodep, Class);
+        m_moduleWithGenericIface = false;
+        if (m_lifetime.isNone()) {
+            m_lifetime = VN_IS(nodep, Class) ? VLifetime::AUTOMATIC : VLifetime::STATIC;
+        }
+        if (nodep->name() == "TOP") {
+            // May mess up scope resolution and cause infinite loop
+            nodep->v3warn(E_UNSUPPORTED, "Module cannot be named 'TOP' as conflicts with "
+                                         "Verilator top-level internals");
+        }
+        iterateChildren(nodep);
+        if (AstModule* const modp = VN_CAST(nodep, Module)) {
+            modp->hasGenericIface(m_moduleWithGenericIface);
+        }
     }
     void visitIterateNoValueMod(AstNode* nodep) {
-        // Iterate a node which shouldn't have any local variables moved to an Initial
+        // Iterate a node which any Var within shouldn't create an Initial procedure
         cleanFileline(nodep);
         VL_RESTORER(m_valueModp);
         m_valueModp = nullptr;
