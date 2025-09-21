@@ -18,7 +18,7 @@
      "childDTypep": [
       {"type":"BASICDTYPE","name":"logic","addr":"(P)","loc":"e,14:4,14:7","dtypep":"(P)","keyword":"logic","generic":false,
        "rangep": [
-        {"type":"RANGE","name":"","addr":"(Q)","loc":"e,14:8,14:9","ascending":false,
+        {"type":"RANGE","name":"","addr":"(Q)","loc":"e,14:8,14:9","ascending":false,"fromBracket":false,
          "leftp": [
           {"type":"CONST","name":"?32?sh3f","addr":"(R)","loc":"e,14:9,14:11","dtypep":"(S)"}
         ],
@@ -31,7 +31,7 @@
      "childDTypep": [
       {"type":"BASICDTYPE","name":"logic","addr":"(V)","loc":"e,15:4,15:7","dtypep":"(V)","keyword":"logic","generic":false,
        "rangep": [
-        {"type":"RANGE","name":"","addr":"(W)","loc":"e,15:8,15:9","ascending":false,
+        {"type":"RANGE","name":"","addr":"(W)","loc":"e,15:8,15:9","ascending":false,"fromBracket":false,
          "leftp": [
           {"type":"CONST","name":"?32?sh3f","addr":"(X)","loc":"e,15:9,15:11","dtypep":"(S)"}
         ],
@@ -44,7 +44,7 @@
      "childDTypep": [
       {"type":"BASICDTYPE","name":"logic","addr":"(AB)","loc":"e,18:9,18:10","dtypep":"(AB)","keyword":"logic","generic":false,
        "rangep": [
-        {"type":"RANGE","name":"","addr":"(BB)","loc":"e,18:9,18:10","ascending":false,
+        {"type":"RANGE","name":"","addr":"(BB)","loc":"e,18:9,18:10","ascending":false,"fromBracket":false,
          "leftp": [
           {"type":"CONST","name":"?32?sh1f","addr":"(CB)","loc":"e,18:10,18:12","dtypep":"(DB)"}
         ],
@@ -73,7 +73,7 @@
      "childDTypep": [
       {"type":"BASICDTYPE","name":"logic","addr":"(MB)","loc":"e,22:9,22:10","dtypep":"(MB)","keyword":"logic","generic":false,
        "rangep": [
-        {"type":"RANGE","name":"","addr":"(NB)","loc":"e,22:9,22:10","ascending":false,
+        {"type":"RANGE","name":"","addr":"(NB)","loc":"e,22:9,22:10","ascending":false,"fromBracket":false,
          "leftp": [
           {"type":"CONST","name":"?32?sh1f","addr":"(OB)","loc":"e,22:10,22:12","dtypep":"(DB)"}
         ],
@@ -119,7 +119,7 @@
      "childDTypep": [
       {"type":"BASICDTYPE","name":"logic","addr":"(FC)","loc":"e,33:9,33:10","dtypep":"(FC)","keyword":"logic","generic":false,
        "rangep": [
-        {"type":"RANGE","name":"","addr":"(GC)","loc":"e,33:9,33:10","ascending":false,
+        {"type":"RANGE","name":"","addr":"(GC)","loc":"e,33:9,33:10","ascending":false,"fromBracket":false,
          "leftp": [
           {"type":"CONST","name":"?32?sh3f","addr":"(HC)","loc":"e,33:10,33:12","dtypep":"(S)"}
         ],
@@ -444,7 +444,7 @@
      "childDTypep": [
       {"type":"BASICDTYPE","name":"logic","addr":"(GH)","loc":"e,79:10,79:11","dtypep":"(GH)","keyword":"logic","generic":false,
        "rangep": [
-        {"type":"RANGE","name":"","addr":"(HH)","loc":"e,79:10,79:11","ascending":false,
+        {"type":"RANGE","name":"","addr":"(HH)","loc":"e,79:10,79:11","ascending":false,"fromBracket":false,
          "leftp": [
           {"type":"CONST","name":"?32?sh1f","addr":"(IH)","loc":"e,79:11,79:13","dtypep":"(DB)"}
         ],
@@ -457,7 +457,7 @@
      "childDTypep": [
       {"type":"BASICDTYPE","name":"logic","addr":"(LH)","loc":"e,80:11,80:14","dtypep":"(LH)","keyword":"logic","generic":false,
        "rangep": [
-        {"type":"RANGE","name":"","addr":"(MH)","loc":"e,80:15,80:16","ascending":false,
+        {"type":"RANGE","name":"","addr":"(MH)","loc":"e,80:15,80:16","ascending":false,"fromBracket":false,
          "leftp": [
           {"type":"CONST","name":"?32?sh1f","addr":"(NH)","loc":"e,80:16,80:18","dtypep":"(DB)"}
         ],

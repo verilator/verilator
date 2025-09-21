@@ -79,7 +79,7 @@
     {"type":"REFDTYPE","name":"my_struct","addr":"(WB)","loc":"d,31:4,31:13","dtypep":"(K)","generic":false,"typedefp":"UNLINKED","refDTypep":"(K)","classOrPackagep":"UNLINKED","typeofp": [],"classOrPackageOpp": [],"paramsp": []},
     {"type":"UNPACKARRAYDTYPE","name":"","addr":"(Q)","loc":"d,31:26,31:27","dtypep":"(Q)","isCompound":false,"declRange":"[0:1]","generic":false,"refDTypep":"(WB)","childDTypep": [],
      "rangep": [
-      {"type":"RANGE","name":"","addr":"(XB)","loc":"d,31:26,31:27","ascending":true,
+      {"type":"RANGE","name":"","addr":"(XB)","loc":"d,31:26,31:27","ascending":true,"fromBracket":true,
        "leftp": [
         {"type":"CONST","name":"32'h0","addr":"(YB)","loc":"d,31:27,31:28","dtypep":"(S)"}
       ],

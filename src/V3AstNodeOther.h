@@ -2720,7 +2720,7 @@ public:
 
 // === AstNodeRange ===
 class AstBracketRange final : public AstNodeRange {
-    // Parser only concept "[lhsp]", an AstUnknownRange, QueueRange or Range,
+    // Parser only concept C-style "[lhsp]", an AstUnknownRange, QueueRange or Range,
     // unknown until lhsp type is determined
     // @astgen op1 := elementsp : AstNode<AstNodeExpr|AstNodeDType>
 public:
@@ -2740,9 +2740,11 @@ class AstRange final : public AstNodeRange {
     // Range specification, for use under variables and cells
     // @astgen op1 := leftp : AstNodeExpr
     // @astgen op2 := rightp : AstNodeExpr
+    const bool m_fromBracket = false;  // From C-style '[x]' declaration
 public:
-    AstRange(FileLine* fl, AstNodeExpr* leftp, AstNodeExpr* rightp)
-        : ASTGEN_SUPER_Range(fl) {
+    AstRange(FileLine* fl, AstNodeExpr* leftp, AstNodeExpr* rightp, bool fromBracket = false)
+        : ASTGEN_SUPER_Range(fl)
+        , m_fromBracket{fromBracket} {
         this->leftp(leftp);
         this->rightp(rightp);
     }
@@ -2766,7 +2768,11 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        const AstRange* const asamep = VN_DBG_AS(samep, Range);
+        return fromBracket() == asamep->fromBracket();
+    }
+    bool fromBracket() const { return m_fromBracket; }
 };
 class AstUnsizedRange final : public AstNodeRange {
     // Unsized range specification, for open arrays

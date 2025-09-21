@@ -71,7 +71,7 @@
    "typesp": [
     {"type":"UNPACKARRAYDTYPE","name":"","addr":"(RB)","loc":"d,58:34,58:35","dtypep":"(RB)","isCompound":false,"declRange":"[5:0]","generic":false,"refDTypep":"(J)","childDTypep": [],
      "rangep": [
-      {"type":"RANGE","name":"","addr":"(TB)","loc":"d,58:34,58:35","ascending":false,
+      {"type":"RANGE","name":"","addr":"(TB)","loc":"d,58:34,58:35","ascending":false,"fromBracket":false,
        "leftp": [
         {"type":"CONST","name":"32'sh5","addr":"(UB)","loc":"d,58:35,58:36","dtypep":"(VB)"}
       ],
@@ -82,7 +82,7 @@
     {"type":"BASICDTYPE","name":"logic","addr":"(J)","loc":"d,58:41,58:56","dtypep":"(J)","keyword":"logic","generic":true,"rangep": []},
     {"type":"UNPACKARRAYDTYPE","name":"","addr":"(CB)","loc":"d,40:36,40:37","dtypep":"(CB)","isCompound":false,"declRange":"[5:0]","generic":false,"refDTypep":"(J)","childDTypep": [],
      "rangep": [
-      {"type":"RANGE","name":"","addr":"(XB)","loc":"d,40:36,40:37","ascending":false,
+      {"type":"RANGE","name":"","addr":"(XB)","loc":"d,40:36,40:37","ascending":false,"fromBracket":false,
        "leftp": [
         {"type":"CONST","name":"32'sh5","addr":"(YB)","loc":"d,40:37,40:38","dtypep":"(VB)"}
       ],

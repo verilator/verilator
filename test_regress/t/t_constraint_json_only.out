@@ -63,7 +63,7 @@
     {"type":"BASICDTYPE","name":"bit","addr":"(U)","loc":"d,11:9,11:12","dtypep":"(U)","keyword":"bit","generic":true,"rangep": []},
     {"type":"UNPACKARRAYDTYPE","name":"","addr":"(Y)","loc":"d,15:18,15:19","dtypep":"(Y)","isCompound":false,"declRange":"[0:1]","generic":false,"refDTypep":"(Q)","childDTypep": [],
      "rangep": [
-      {"type":"RANGE","name":"","addr":"(PB)","loc":"d,15:18,15:19","ascending":true,
+      {"type":"RANGE","name":"","addr":"(PB)","loc":"d,15:18,15:19","ascending":true,"fromBracket":true,
        "leftp": [
         {"type":"CONST","name":"32'h0","addr":"(QB)","loc":"d,15:19,15:20","dtypep":"(OB)"}
       ],

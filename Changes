@@ -13,6 +13,7 @@ Verilator 5.041 devel
 
 **Other:**
 
+* Add error on zero/negative unpacked dimensions (#1642). [Stefan Wallentowitz]
 * Add error on non-packed struct randc (#5999). [Seth Pellegrino]
 * Add configure `--enable-asan` to compile verilator_bin with the address sanitizer (#6404). [Geza Lore]
 * Add $(LDFLAGS) and $(LIBS) to when building shared libraries (#6425) (#6426). [Ahmed El-Mahmoudy]

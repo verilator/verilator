@@ -2217,10 +2217,12 @@ void AstNodeRange::dump(std::ostream& str) const { this->AstNode::dump(str); }
 void AstNodeRange::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstRange::dump(std::ostream& str) const {
     this->AstNodeRange::dump(str);
+    if (fromBracket()) str << " [FB]";
     if (ascending()) str << " [ASCENDING]";
 }
 void AstRange::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, ascending);
+    dumpJsonBoolFunc(str, fromBracket);
     dumpJsonGen(str);
 }
 void AstParamTypeDType::dump(std::ostream& str) const {

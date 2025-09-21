@@ -961,7 +961,14 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             // Don't need to iterate because V3Const already constified
             const int width = nodep->elementsConst();
-            if (width > (1 << 28)) {
+            if (nodep->fromBracket() && nodep->leftConst() > nodep->rightConst()) {
+                // From a C-Style '[size]' declaration, due to range handling a '[-1]'
+                // will get transformed to look like a '[0:1]', instead report as error
+                // now we know the datatype is used
+                nodep->v3error("Size of range is '["
+                               << (-width + 2)
+                               << "]', must be positive integer (IEEE 1800-2023 7.4.2)");
+            } else if (width > (1 << 28)) {
                 nodep->v3error("Width of bit range is huge; vector of over 1 billion bits: 0x"
                                << std::hex << width << std::dec);
             }
@@ -1921,7 +1928,7 @@ class WidthVisitor final : public VNVisitor {
         // Cleanup array size
         userIterateAndNext(nodep->rangep(), WidthVP{SELF, BOTH}.p());
         nodep->dtypep(nodep);  // The array itself, not subDtype
-        if (auto* const adtypep = VN_CAST(nodep, UnpackArrayDType)) {
+        if (AstUnpackArrayDType* const adtypep = VN_CAST(nodep, UnpackArrayDType)) {
             // Historically array elements have width of the ref type not the full array
             nodep->widthFromSub(nodep->subDTypep());
             if (nodep->subDTypep()->skipRefp()->isCompound()) adtypep->isCompound(true);
@@ -1964,7 +1971,8 @@ class WidthVisitor final : public VNVisitor {
                 nodep->fileline(), VFlagChildDType{}, childp,
                 new AstRange{nodep->fileline(), new AstConst(elementsp->fileline(), 0),
                              new AstSub{elementsNewFl, VN_AS(elementsp, NodeExpr),
-                                        new AstConst(elementsNewFl, 1)}}};
+                                        new AstConst(elementsNewFl, 1)},
+                             true}};
         }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
