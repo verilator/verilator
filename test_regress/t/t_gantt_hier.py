@@ -12,10 +12,11 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
-test.top_filename = "t/t_gen_alw.v"  # Any, as long as runs a few cycles
+test.top_filename = "t/t_gantt.v"
+test.pli_filename = "t/t_gantt_c.cpp"
 
 test.compile(
-    v_flags2=["--prof-exec", "--hierarchical"],
+    verilator_flags2=["--prof-exec", "--hierarchical", test.pli_filename],
     # Checks below care about thread count, so use 2 (minimum reasonable)
     threads=(2 if test.vltmt else 1))
 
@@ -35,13 +36,13 @@ test.run(cmd=[
 ])
 
 if test.vltmt:
-    test.file_grep(gantt_log, r'Total threads += 2')
-    test.file_grep(gantt_log, r'Total mtasks += 11')
+    test.file_grep(gantt_log, r'Total threads += +(\d+)', 2)
+    test.file_grep(gantt_log, r'Total mtasks += +(\d+)', 6)
     # Predicted thread utilization should be less than 100%
     test.file_grep_not(gantt_log, r'Thread utilization =\s*\d\d\d+\.\d+%')
 else:
-    test.file_grep(gantt_log, r'Total threads += 1')
-    test.file_grep(gantt_log, r'Total mtasks += 0')
+    test.file_grep(gantt_log, r'Total threads += +(\d+)', 1)
+    test.file_grep(gantt_log, r'Total mtasks += +(\d+)', 0)
 
 test.file_grep(gantt_log, r'\|\s+2\s+\|\s+2\.0+\s+\|\s+eval')
 

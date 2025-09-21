@@ -446,7 +446,7 @@ void EmitCSyms::emitSymHdr() {
     }
 
     puts("\n// SYMS CLASS (contains all model state)\n");
-    puts("class alignas(VL_CACHE_LINE_BYTES)" + EmitCUtil::symClassName()
+    puts("class alignas(VL_CACHE_LINE_BYTES) " + EmitCUtil::symClassName()
          + " final : public VerilatedSyms {\n");
     ofp()->putsPrivate(false);  // public:
 

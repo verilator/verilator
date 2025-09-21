@@ -681,7 +681,7 @@ class TaskVisitor final : public VNVisitor {
             }
         }
         // First argument is symbol table, then output if a function
-        const bool needSyms = !refp->taskp()->dpiImport();
+        const bool needSyms = !refp->taskp()->dpiImport() || v3Global.opt.profExec();
         if (needSyms) ccallp->argTypes("vlSymsp");
 
         if (refp->taskp()->dpiContext()) {
@@ -972,7 +972,7 @@ class TaskVisitor final : public VNVisitor {
         if (rtnvarp) {
             funcp->addStmtsp(createDpiTemp(rtnvarp, ""));
             funcp->addStmtsp(createAssignInternalToDpi(rtnvarp, false, tmpSuffixp, ""));
-            string stmt = "return " + rtnvarp->name();
+            string stmt = "return " + rtnvarp->name();  // TODO use AstCReturn?
             stmt += rtnvarp->basicp()->isDpiPrimitive() ? ";\n" : "[0];\n";
             funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
         }
@@ -1077,6 +1077,12 @@ class TaskVisitor final : public VNVisitor {
     void bodyDpiImportFunc(AstNodeFTask* nodep, AstVarScope* rtnvscp, AstCFunc* cfuncp,
                            AstCFunc* dpiFuncp) {
         const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
+
+        if (v3Global.opt.profExec())
+            cfuncp->addStmtsp(
+                new AstCStmt{nodep->fileline(),
+                             "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"dpiimports\");\n"});
+
         // Convert input/inout arguments to DPI types
         string args;
         for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
@@ -1162,6 +1168,10 @@ class TaskVisitor final : public VNVisitor {
                 }
             }
         }
+
+        if (v3Global.opt.profExec())
+            cfuncp->addStmtsp(new AstCStmt{nodep->fileline(),
+                                           "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();\n"});
     }
 
     AstVarScope* getDpiExporTrigger() {
@@ -1285,9 +1295,12 @@ class TaskVisitor final : public VNVisitor {
 
         if (cfuncp->dpiImportWrapper()) cfuncp->cname(nodep->cname());
 
+        const bool needSyms
+            = (!nodep->dpiImport() && !nodep->taskPublic()) || v3Global.opt.profExec();
+        if (needSyms) cfuncp->argTypes(EmitCUtil::symClassVar());
+
         if (!nodep->dpiImport() && !nodep->taskPublic()) {
             // Need symbol table
-            cfuncp->argTypes(EmitCUtil::symClassVar());
             if (cfuncp->name() == "new") {
                 const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);\n";
                 cfuncp->addInitsp(new AstCStmt{nodep->fileline(), stmt});
