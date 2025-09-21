@@ -2274,8 +2274,6 @@ class ConstVisitor final : public VNVisitor {
             if (VN_IS(dstDTypep, UnpackArrayDType)) {
                 streamp = new AstCvtPackedToArray{nodep->fileline(), streamp, dstDTypep};
             } else {
-                UASSERT_OBJ(sWidth >= dWidth, nodep,
-                            "sWidth >= dWidth should have caused an error earlier");
                 if (dWidth == 0) {
                     streamp = new AstCvtPackedToArray{nodep->fileline(), streamp, dstDTypep};
                 } else if (sWidth >= dWidth) {
