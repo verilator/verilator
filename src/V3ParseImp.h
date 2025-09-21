@@ -93,7 +93,7 @@ struct VMemberQualifiers final {
             if (m_randc) nodep->rand(VRandAttr::RAND_CYCLIC);
             if (m_local) nodep->isHideLocal(true);
             if (m_protected) nodep->isHideProtected(true);
-            if (m_static) nodep->lifetime(VLifetime::STATIC);
+            if (m_static) nodep->lifetime(VLifetime::STATIC_EXPLICIT);
             if (m_const) nodep->isConst(true);
             if (m_virtual) {
                 nodep->v3error("Syntax error: 'virtual' not allowed before var declaration");

@@ -54,7 +54,8 @@ module t;
 
    always
       begin
-         sig_t val = '0;
+         sig_t val;
+         val = '0;
          cb.D <= val;
          for (int i = 0; i < 5; i++) begin ##(`TEST_CYCLE_DELAY+`TEST_OUTPUT_SKEW/`TEST_CLK_PERIOD+1)
             val = {`TEST_WIDTH{(`TEST_BITS/`TEST_WIDTH)'('ha + i)}};

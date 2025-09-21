@@ -91,7 +91,7 @@ public:
             = new AstVar{m_procp->fileline(), VVarType::BLOCKTEMP,
                          generateDynScopeHandleName(m_procp), m_instance.m_refDTypep};
         m_instance.m_handlep->funcLocal(true);
-        m_instance.m_handlep->lifetime(VLifetime::AUTOMATIC);
+        m_instance.m_handlep->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         UINFO(9, "new dynscope var " << m_instance.m_handlep);
 
         return m_instance;
@@ -118,7 +118,7 @@ public:
             }
             varp->funcLocal(false);
             varp->varType(VVarType::MEMBER);
-            varp->lifetime(VLifetime::AUTOMATIC);
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             varp->usedLoopIdx(false);  // No longer unrollable
             UINFO(9, "insert DynScope member " << varp);
             m_instance.m_classp->addStmtsp(varp);
@@ -549,7 +549,7 @@ class ForkVisitor final : public VNVisitor {
             varp = new AstVar{refp->fileline(), VVarType::BLOCKTEMP, refp->name(), refp->dtypep()};
             varp->direction(VDirection::INPUT);
             varp->funcLocal(true);
-            varp->lifetime(VLifetime::AUTOMATIC);
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             UINFO(9, "new capture var " << varp);
             m_capturedVarsp = AstNode::addNext(m_capturedVarsp, varp);
             // Use the original ref as an argument for call

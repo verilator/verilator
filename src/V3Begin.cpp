@@ -488,7 +488,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 AstVar* const first_varp = new AstVar{
                     fl, VVarType::BLOCKTEMP, varp->name() + "__Vfirst", VFlagBitPacked{}, 1};
                 first_varp->usedLoopIdx(true);
-                first_varp->lifetime(VLifetime::AUTOMATIC);
+                first_varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                 AstNodeExpr* const firstp
                     = new AstCMethodHard{fl, subfromp->cloneTreePure(false), "first",
                                          new AstVarRef{fl, varp, VAccess::READWRITE}};

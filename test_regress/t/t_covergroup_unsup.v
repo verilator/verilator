@@ -179,11 +179,14 @@ module t (/*AUTOARG*/
       endgroup
    endclass
 
-   always @(posedge clk) begin
+   initial begin
       cg_empty cov1 = new;
 `ifndef T_COVERGROUP_UNSUP_IGN
       cgArgs cov2 = new(2);
 `endif
+   end
+
+   always @(posedge clk) begin
       if (cyc == 10) begin
          $write("*-* All Finished *-*\n");
          $finish;

@@ -96,7 +96,7 @@ public:
         // Hidden static to take unspecified reference argument results
         AstVar* const defaultVarp
             = new AstVar{nodep->fileline(), VVarType::MEMBER, "__Vint", nodep->findIntDType()};
-        defaultVarp->lifetime(VLifetime::STATIC);
+        defaultVarp->lifetime(VLifetime::STATIC_EXPLICIT);
         nodep->addStmtsp(defaultVarp);
 
         // IEEE: function void sample()
@@ -125,7 +125,7 @@ public:
             {
                 AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, name,
                                                 nodep->findDoubleDType()};
-                varp->lifetime(VLifetime::AUTOMATIC);
+                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                 varp->funcLocal(true);
                 varp->direction(VDirection::OUTPUT);
                 varp->funcReturn(true);
@@ -134,7 +134,7 @@ public:
             for (const string& varname : {"covered_bins"s, "total_bins"s}) {
                 AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, varname,
                                                 nodep->findStringDType()};
-                varp->lifetime(VLifetime::AUTOMATIC);
+                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                 varp->funcLocal(true);
                 varp->direction(VDirection::INPUT);
                 varp->valuep(new AstVarRef{nodep->fileline(), defaultVarp, VAccess::READ});
@@ -150,7 +150,7 @@ public:
             nodep->addMembersp(funcp);
             AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, "name",
                                             nodep->findStringDType()};
-            varp->lifetime(VLifetime::AUTOMATIC);
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             varp->funcLocal(true);
             varp->direction(VDirection::INPUT);
             funcp->addStmtsp(varp);

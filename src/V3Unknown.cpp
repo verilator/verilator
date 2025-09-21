@@ -346,7 +346,7 @@ class UnknownVisitor final : public VNVisitor {
                 AstVar* const newvarp
                     = new AstVar{nodep->fileline(), VVarType::XTEMP, m_xrandNames->get(nullptr),
                                  VFlagLogicPacked{}, nodep->width()};
-                newvarp->lifetime(VLifetime::STATIC);
+                newvarp->lifetime(VLifetime::STATIC_EXPLICIT);
                 ++m_statUnkVars;
                 VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);

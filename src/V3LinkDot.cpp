@@ -1347,7 +1347,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                 = new AstVar{nodep->fileline(), VVarType::VAR, nodep->name(), VFlagChildDType{},
                              dtypep};  // Not dtype resolved yet
             newvarp->direction(VDirection::OUTPUT);
-            newvarp->lifetime(VLifetime::AUTOMATIC);
+            newvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             newvarp->funcReturn(true);
             newvarp->trace(false);  // Not user visible
             newvarp->attrIsolateAssign(nodep->attrIsolateAssign());
@@ -1411,7 +1411,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         }
         AstVar* const newvarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP, varname,
                                            VFlagChildDType{}, dtypep};
-        newvarp->lifetime(VLifetime::STATIC);
+        newvarp->lifetime(VLifetime::STATIC_EXPLICIT);
         nodep->varp(newvarp);
         iterate(nodep->exprp());
     }
@@ -1772,7 +1772,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                     // We use an int type, this might get changed in V3Width when types resolve
                     argrefp = new AstVar{parserefp->fileline(), VVarType::BLOCKTEMP,
                                          parserefp->name(), argp->findSigned32DType()};
-                    argrefp->lifetime(VLifetime::AUTOMATIC);
+                    argrefp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                     parserefp->replaceWith(argrefp);
                     VL_DO_DANGLING(parserefp->deleteTree(), parserefp);
                     // Insert argref's name into symbol table

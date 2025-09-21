@@ -3952,14 +3952,14 @@ for_initializationItem<nodep>:          // IEEE: variable_assignment + for_varia
                 data_type idAny/*new*/ '=' expr
                         { VARRESET_NONLIST(VAR); VARDTYPE($1);
                           AstVar* const varp = VARDONEA($<fl>2, *$2, nullptr, nullptr);
-                          varp->lifetime(VLifetime::AUTOMATIC);
+                          varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                           $$ = varp;
                           $$->addNext(new AstAssign{$3, new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2}, $4}); }
         //                      // IEEE-2012:
         |       yVAR data_type idAny/*new*/ '=' expr
                         { VARRESET_NONLIST(VAR); VARDTYPE($2);
                           AstVar* const varp = VARDONEA($<fl>3, *$3, nullptr, nullptr);
-                          varp->lifetime(VLifetime::AUTOMATIC);
+                          varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                           $$ = varp;
                           $$->addNext(new AstAssign{$4, new AstParseRef{$<fl>3, VParseRefExp::PX_TEXT, *$3}, $5}); }
         //                      // IEEE: variable_assignment
@@ -3967,7 +3967,7 @@ for_initializationItem<nodep>:          // IEEE: variable_assignment + for_varia
         |       id/*newOrExisting*/ '=' expr
                         { if (GRAMMARP->m_varDecl) {
                               AstVar* const varp = VARDONEA($<fl>1, *$1, nullptr, nullptr);
-                              varp->lifetime(VLifetime::AUTOMATIC);
+                              varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                               $$ = varp;
                               $$->addNext(new AstAssign{$2, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $3});
                           } else {
@@ -4538,8 +4538,8 @@ lifetimeE<lifetime>:            // IEEE: [lifetime]
 
 lifetime<lifetime>:             // ==IEEE: lifetime
         //                      // Note lifetime used by members is instead under memberQual
-                ySTATIC__ETC                            { $$ = VLifetime::STATIC; }
-        |       yAUTOMATIC                              { $$ = VLifetime::AUTOMATIC; }
+                ySTATIC__ETC                            { $$ = VLifetime::STATIC_EXPLICIT; }
+        |       yAUTOMATIC                              { $$ = VLifetime::AUTOMATIC_EXPLICIT; }
         ;
 
 taskId<nodeFTaskp>:
@@ -5364,7 +5364,7 @@ let_port_item<varp>:  // IEEE: let_port_Item
                         { $$ = new AstVar{$<fl>2, VVarType::VAR, *$2, VFlagChildDType{},
                                           new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
                           $$->direction(VDirection::INOUT);
-                          $$->lifetime(VLifetime::AUTOMATIC);
+                          $$->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                           if ($4) $$->valuep($4);
                           PINNUMINC(); }
         |       data_type idAny/*formal_port_identifier*/ variable_dimensionListE exprEqE
@@ -5372,7 +5372,7 @@ let_port_item<varp>:  // IEEE: let_port_Item
                           $$ = new AstVar{$<fl>2, VVarType::VAR, *$2, VFlagChildDType{},
                                           new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
                           $$->direction(VDirection::INOUT);
-                          $$->lifetime(VLifetime::AUTOMATIC);
+                          $$->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                           if ($4) $$->valuep($4);
                           PINNUMINC(); }
         |       implicit_typeE id/*formal_port_identifier*/ variable_dimensionListE exprEqE
@@ -5380,7 +5380,7 @@ let_port_item<varp>:  // IEEE: let_port_Item
                           $$ = new AstVar{$<fl>2, VVarType::VAR, *$2, VFlagChildDType{},
                                           new AstBasicDType{$<fl>2, LOGIC_IMPLICIT}};
                           $$->direction(VDirection::INOUT);
-                          $$->lifetime(VLifetime::AUTOMATIC);
+                          $$->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                           if ($4) $$->valuep($4);
                           PINNUMINC(); }
         ;
