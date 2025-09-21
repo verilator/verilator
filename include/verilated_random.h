@@ -597,8 +597,6 @@ public:
         value = VL_MASK_I(width) & VL_RANDOM_RNG_I(m_rng);
         return true;
     }
-    bool next(){
-        return VlRandomizer::next(m_rng);
-    }
+    bool next() { return VlRandomizer::next(m_rng); }
 };
 #endif  // Guard
