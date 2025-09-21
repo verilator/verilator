@@ -30,6 +30,7 @@ Verilator 5.041 devel
 * Improve DFG variable removal and temporary insertion (#6401). [Geza Lore]
 * Optimize dead functions in more cases (#6380) (#6430). [Artur Bieniek, Antmicro Ltd.]
 * Optimize constant folding in wide expression expansion (#6381). [Geza Lore]
+* Fix missing BLKSEQ when connecting module port to array (#2973).
 * Fix false CONSTVAR error on initializers (#4992).
 * Fix cell scoping performance (#6059). [Jerry Tianchen]
 * Fix hierarchical `--prof-pgo` (#6213). [Bartłomiej Chmiel, Antmicro Ltd.]

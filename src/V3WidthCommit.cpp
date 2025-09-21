@@ -50,7 +50,8 @@ class WidthCommitVisitor final : public VNVisitor {
     bool m_dynsizedelem
         = false;  // Writing a dynamically-sized array element, not the array itself
     VMemberMap m_memberMap;  // Member names cached for fast lookup
-    bool m_underSel = false;  // Whether is currently under AstMemberSel or AstSel
+    bool m_underSel = false;  // Under AstMemberSel or AstSel
+    bool m_underAlwaysClocked = false;  // Under always with sequential SenTree
     std::vector<AstNew*> m_virtualNewsp;  // Instantiations of virtual classes
     std::vector<AstNodeFTask*> m_tasksp;  // All the tasks, we will check if they are ever called
 
@@ -208,6 +209,9 @@ private:
                 return;
             }
         }
+        VL_RESTORER(m_underAlwaysClocked);
+        m_underAlwaysClocked
+            = nodep->sentreep() && nodep->sentreep()->sensesp() && nodep->sentreep()->hasClocked();
         // Iterate will delete ComboStar sentrees, so after above
         iterateChildren(nodep);
         editDType(nodep);
@@ -368,6 +372,28 @@ private:
         editDType(nodep);
         classEncapCheck(nodep, nodep->varp(), VN_CAST(nodep->classOrPackagep(), Class));
         if (nodep->access().isWriteOrRW()) varLifetimeCheck(nodep, nodep->varp());
+    }
+    void visit(AstAssign* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        // Lint
+        if (m_underAlwaysClocked) {
+            const bool ignore = nodep->lhsp()->forall([&](const AstVarRef* refp) {
+                // Ignore reads (e.g.: index expressions)
+                if (refp->access().isReadOnly()) return true;
+                const AstVar* const varp = refp->varp();
+                // Ignore ...
+                return varp->isUsedLoopIdx()  // ... loop indices
+                       || varp->isTemp()  // ... temporaries
+                       || varp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ);  // ... user said so
+            });
+            if (!ignore) {
+                nodep->v3warn(BLKSEQ,
+                              "Blocking assignment '=' in sequential logic process\n"
+                                  << nodep->warnMore()  //
+                                  << "... Suggest using delayed assignment '<='");
+            }
+        }
     }
     void visit(AstAssignDly* nodep) override {
         iterateAndNextNull(nodep->timingControlp());

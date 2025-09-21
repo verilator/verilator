@@ -384,28 +384,6 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
-    void visit(AstAssign* nodep) override {
-        // Blocking assignments are always OK in combinational (and initial/final) processes
-        if (m_check != CT_SEQ) return;
-
-        const bool ignore = nodep->lhsp()->forall([&](const AstVarRef* refp) {
-            // Ignore reads (e.g.: index expressions)
-            if (refp->access().isReadOnly()) return true;
-            const AstVar* const varp = refp->varp();
-            // Ignore ...
-            return varp->isUsedLoopIdx()  // ... loop indices
-                   || varp->isTemp()  // ... temporaries
-                   || varp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ);  // ... user said so
-        });
-
-        if (ignore) return;
-
-        nodep->v3warn(BLKSEQ,
-                      "Blocking assignment '=' in sequential logic process\n"
-                          << nodep->warnMore()  //
-                          << "... Suggest using delayed assignment '<='");
-    }
-
     //--------------------
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
