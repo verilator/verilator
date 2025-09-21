@@ -201,7 +201,7 @@ class LinkJumpVisitor final : public VNVisitor {
             fl, VVarType::VAR, m_queueNames.get(targetName), VFlagChildDType{},
             new AstQueueDType{fl, VFlagChildDType{},
                               new AstClassRefDType{fl, processClassp, nullptr}, nullptr}};
-        processQueuep->lifetime(VLifetime::STATIC);
+        processQueuep->lifetime(VLifetime::STATIC_EXPLICIT);
         topPkgp->addStmtsp(processQueuep);
 
         AstVarRef* const queueWriteRefp
@@ -293,7 +293,7 @@ class LinkJumpVisitor final : public VNVisitor {
         // Spec says value is integral, if negative is ignored
         AstVar* const varp
             = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP, name, nodep->findSigned32DType()};
-        varp->lifetime(VLifetime::AUTOMATIC);
+        varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         varp->usedLoopIdx(true);
         beginp->addStmtsp(varp);
         AstNode* initsp = new AstAssign{

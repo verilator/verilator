@@ -16,7 +16,7 @@ module tb2 ();
    always #(CLK_PERIOD / 2) clk = ~clk;
 
    always begin
-      int counter = 0;
+      static int counter = 0;
       while (counter < 3) begin
          counter += 1;
          $display("[%0t] Running loop %0d", $time, counter);

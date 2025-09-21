@@ -208,7 +208,7 @@ private:
             // A var to keep the previous value of the clockvar
             AstVar* const prevVarp = new AstVar{
                 flp, VVarType::MODULETEMP, "__Vclocking_prev__" + varp->name(), exprp->dtypep()};
-            prevVarp->lifetime(VLifetime::STATIC);
+            prevVarp->lifetime(VLifetime::STATIC_EXPLICIT);
             AstInitialStatic* const initPrevClockvarp = new AstInitialStatic{
                 flp, new AstAssign{flp, new AstVarRef{flp, prevVarp, VAccess::WRITE},
                                    skewedReadRefp->cloneTreePure(false)}};
@@ -280,7 +280,7 @@ private:
                 m_netlistp->typeTablep()->addTypesp(queueDtp);
                 AstVar* const queueVarp
                     = new AstVar{flp, VVarType::MODULETEMP, "__Vqueue__" + varp->name(), queueDtp};
-                queueVarp->lifetime(VLifetime::STATIC);
+                queueVarp->lifetime(VLifetime::STATIC_EXPLICIT);
                 m_clockingp->addNextHere(queueVarp);
                 // Create a process like this:
                 //     always queue.push(<sampled var>);
@@ -347,7 +347,7 @@ private:
         const std::string delayName = m_cycleDlyNames.get(nodep);
         AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__counter",
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
-        cntVarp->lifetime(VLifetime::AUTOMATIC);
+        cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         cntVarp->funcLocal(true);
         AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, false, true};
         beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});

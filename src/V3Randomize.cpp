@@ -1105,7 +1105,7 @@ class CaptureVisitor final : public VNVisitor {
             newVarp->varType(VVarType::BLOCKTEMP);
             newVarp->funcLocal(true);
             newVarp->direction(VDirection::INPUT);
-            newVarp->lifetime(VLifetime::AUTOMATIC);
+            newVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
 
             m_varCloneMap.emplace(varrefp->varp(), newVarp);
             varp = newVarp;
@@ -1133,7 +1133,7 @@ class CaptureVisitor final : public VNVisitor {
             v3Global.rootp()->typeTablep()->addTypesp(refDTypep);
             m_thisp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vthis", refDTypep};
             m_thisp->funcLocal(true);
-            m_thisp->lifetime(VLifetime::AUTOMATIC);
+            m_thisp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             m_thisp->direction(VDirection::INPUT);
             m_argsp = AstNode::addNext(m_argsp, new AstArg{fl, "", new AstThisRef{fl, refDTypep}});
         }
@@ -1515,7 +1515,7 @@ class RandomizeVisitor final : public VNVisitor {
                                     AstNodeExpr* const rhsp, bool inTask) {
         AstVar* const iterVarp = new AstVar{fl, VVarType::BLOCKTEMP, "i", lhsp->findUInt32DType()};
         iterVarp->funcLocal(inTask);
-        iterVarp->lifetime(VLifetime::AUTOMATIC);
+        iterVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         AstCMethodHard* const sizep = new AstCMethodHard{fl, lhsp, "size", nullptr};
         sizep->dtypeSetUInt32();
         AstCMethodHard* const setp = new AstCMethodHard{
@@ -1829,7 +1829,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstVar* const randModeTmpVarp = new AstVar{
             fl, VVarType::BLOCKTEMP, m_modeUniqueNames.get(randModeVarp), randModeVarp->dtypep()};
         randModeTmpVarp->funcLocal(m_ftaskp);
-        randModeTmpVarp->lifetime(VLifetime::AUTOMATIC);
+        randModeTmpVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         storeStmtspr = AstNode::addNext(
             storeStmtspr,
             new AstAssign{fl, new AstVarRef{fl, randModeTmpVarp, VAccess::WRITE},
@@ -2308,7 +2308,7 @@ class RandomizeVisitor final : public VNVisitor {
                                  "__Varg"s + std::to_string(++argn), exprp->dtypep()};
                 refvarp->direction(VDirection::REF);
                 refvarp->funcLocal(true);
-                refvarp->lifetime(VLifetime::AUTOMATIC);
+                refvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                 randomizeFuncp->addStmtsp(refvarp);
 
                 const size_t width = exprp->width();
@@ -2541,7 +2541,7 @@ AstFunc* V3Randomize::newRandomizeFunc(VMemberMap& memberMap, AstClass* nodep,
                                   ? new AstVar{nodep->fileline(), VVarType::MEMBER, name,
                                                VFlagChildDType{}, dtypep}
                                   : new AstVar{nodep->fileline(), VVarType::MEMBER, name, dtypep};
-        fvarp->lifetime(VLifetime::AUTOMATIC);
+        fvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         fvarp->funcLocal(true);
         fvarp->funcReturn(true);
         fvarp->direction(VDirection::OUTPUT);
@@ -2562,7 +2562,7 @@ AstFunc* V3Randomize::newRandomizeStdFunc(VMemberMap& memberMap, AstNodeModule* 
     v3Global.useRandomizeMethods(true);
     AstNodeDType* const dtypep = nodep->findBitDType(32, 32, VSigning::SIGNED);
     AstVar* const fvarp = new AstVar{nodep->fileline(), VVarType::MEMBER, name, dtypep};
-    fvarp->lifetime(VLifetime::AUTOMATIC);
+    fvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
     fvarp->funcLocal(true);
     fvarp->funcReturn(true);
     fvarp->direction(VDirection::OUTPUT);
@@ -2586,7 +2586,7 @@ AstFunc* V3Randomize::newSRandomFunc(VMemberMap& memberMap, AstClass* nodep) {
         AstNodeDType* const dtypep
             = basep->findBitDType(32, 32, VSigning::SIGNED);  // IEEE says argument 0/1
         AstVar* const ivarp = new AstVar{basep->fileline(), VVarType::MEMBER, "seed", dtypep};
-        ivarp->lifetime(VLifetime::AUTOMATIC);
+        ivarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         ivarp->funcLocal(true);
         ivarp->direction(VDirection::INPUT);
         funcp = new AstFunc{basep->fileline(), "srandom", ivarp, nullptr};

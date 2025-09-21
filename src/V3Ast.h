@@ -135,10 +135,16 @@ inline std::ostream& operator<<(std::ostream& os, const VNType& rhs) { return os
 
 class VLifetime final {
 public:
-    enum en : uint8_t { NONE, AUTOMATIC, STATIC };
+    enum en : uint8_t {
+        NONE,
+        AUTOMATIC_EXPLICIT,  // Automatic assigned by user
+        AUTOMATIC_IMPLICIT,  // AUtomatic propagated from above
+        STATIC_EXPLICIT,  // Static assigned by user
+        STATIC_IMPLICIT
+    };  // Static propagated from above
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"NONE", "VAUTOM", "VSTATIC"};
+        static const char* const names[] = {"NONE", "VAUTOM", "VAUTOMI", "VSTATIC", "VSTATICI"};
         return names[m_e];
     }
     VLifetime()
@@ -150,8 +156,16 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     bool isNone() const { return m_e == NONE; }
-    bool isAutomatic() const { return m_e == AUTOMATIC; }
-    bool isStatic() const { return m_e == STATIC; }
+    bool isAutomatic() const { return m_e == AUTOMATIC_EXPLICIT || m_e == AUTOMATIC_IMPLICIT; }
+    bool isStatic() const { return m_e == STATIC_EXPLICIT || m_e == STATIC_IMPLICIT; }
+    bool isStaticExplicit() const { return m_e == STATIC_EXPLICIT; }
+    VLifetime makeImplicit() {
+        switch (m_e) {
+        case AUTOMATIC_EXPLICIT: return AUTOMATIC_IMPLICIT;
+        case STATIC_EXPLICIT: return STATIC_IMPLICIT;
+        default: return m_e;
+        }
+    }
 };
 constexpr bool operator==(const VLifetime& lhs, const VLifetime& rhs) {
     return lhs.m_e == rhs.m_e;

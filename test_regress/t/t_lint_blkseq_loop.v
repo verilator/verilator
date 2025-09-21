@@ -76,7 +76,9 @@ module reg_1r1w
 
     // Message 679
     always @(posedge clk) begin
+       // verilator lint_off IMPLICITSTATIC
        int tmp = x + 1;
+       // verilator lint_on IMPLICITSTATIC
        if (tmp !== x + 1) $stop;
     end
 

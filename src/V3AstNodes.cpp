@@ -351,7 +351,7 @@ AstVar* AstClocking::ensureEventp(bool childDType) {
                                       new AstBasicDType{fileline(), VBasicDTypeKwd::EVENT}}
                          : new AstVar{fileline(), VVarType::MODULETEMP, m_name,
                                       findBasicDType(VBasicDTypeKwd::EVENT)};
-        evp->lifetime(VLifetime::STATIC);
+        evp->lifetime(VLifetime::STATIC_EXPLICIT);
         eventp(evp);
         // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
         addNextHere(new AstAlwaysObserved{

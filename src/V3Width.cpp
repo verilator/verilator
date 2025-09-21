@@ -8436,7 +8436,7 @@ class WidthVisitor final : public VNVisitor {
                                             "__Venumtab_" + VString::downcase(attrType.ascii())
                                                 + cvtToStr(nodep->uniqueNum()),
                                             vardtypep};
-            varp->lifetime(VLifetime::STATIC);
+            varp->lifetime(VLifetime::STATIC_EXPLICIT);
             varp->isConst(true);
             varp->isStatic(true);
             varp->valuep(initp);

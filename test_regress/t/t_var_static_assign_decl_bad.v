@@ -91,7 +91,7 @@ module no_warn#(PARAM = 1)(input in, input clk);
   end
 
   always @(posedge clk) begin
-    logic always_tmp = in;
+    static logic always_tmp = in;
   end
 endmodule
 

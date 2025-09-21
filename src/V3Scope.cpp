@@ -35,7 +35,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class ScopeVisitor final : public VNVisitor {
     // NODE STATE
-    // AstVar::user1p           -> AstVarScope replacement for this variable
+    // AstVar::user1p           -> AstVarScope*.  Replacement for this variable
     // AstCell::user2p          -> AstScope*.  The scope created inside the cell
     // AstTask::user2p          -> AstTask*.  Replacement task
     const VNUser1InUse m_inuser1;
@@ -47,6 +47,7 @@ class ScopeVisitor final : public VNVisitor {
 
     // STATE, inside processing a single module
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
     AstScope* m_scopep = nullptr;  // Current scope we are building
     // STATE, for passing down one level of hierarchy (may need save/restore)
     AstCell* m_aboveCellp = nullptr;  // Cell that instantiates this module
@@ -197,6 +198,10 @@ class ScopeVisitor final : public VNVisitor {
     }
     void visit(AstNodeProcedure* nodep) override {
         // Add to list of blocks under this scope
+        // Check don't miss varref scope assignments
+        UASSERT_OBJ(!m_procedurep, nodep, "prodedure in procedure");
+        VL_RESTORER(m_procedurep);
+        m_procedurep = nodep;
         UINFO(4, "    Move " << nodep);
         AstNode* const clonep = nodep->cloneTree(false);
         nodep->user2p(clonep);

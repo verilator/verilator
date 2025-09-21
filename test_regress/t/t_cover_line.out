@@ -258,15 +258,15 @@
         
         class Cls;
            bit m_toggle;
-%000001    function new(bit toggle);
--000001  point: comment=block hier=top.$unit::Cls__Vclpkg
-%000001       m_toggle = toggle;
--000001  point: comment=block hier=top.$unit::Cls__Vclpkg
-%000001       if (m_toggle) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
--000001  point: comment=if hier=top.$unit::Cls__Vclpkg
+ 000011    function new(bit toggle);
++000011  point: comment=block hier=top.$unit::Cls__Vclpkg
+ 000011       m_toggle = toggle;
++000011  point: comment=block hier=top.$unit::Cls__Vclpkg
+~000011       if (m_toggle) begin  // CHECK_COVER(0,"top.$unit::Cls",1)
++000011  point: comment=if hier=top.$unit::Cls__Vclpkg
 -000000  point: comment=else hier=top.$unit::Cls__Vclpkg
-%000001          $write("");
--000001  point: comment=if hier=top.$unit::Cls__Vclpkg
+ 000011          $write("");
++000011  point: comment=if hier=top.$unit::Cls__Vclpkg
               end
            endfunction
  000011    static function void fstatic(bit toggle);
@@ -304,7 +304,7 @@
 +000010  point: comment=block hier=top.t.t1
            end
         
- 000011    task center_task;
+ 000011    task automatic center_task;
 +000011  point: comment=block hier=top.t.t1
               input external;
  000011       begin
@@ -324,8 +324,9 @@
               end
  000011       begin
 +000011  point: comment=block hier=top.t.t1
-%000001          Cls c = new(1'b1);
--000001  point: comment=block hier=top.t.t1
+                 Cls c;
+ 000011          c = new(1'b1);
++000011  point: comment=block hier=top.t.t1
  000011          c.fauto();
 +000011  point: comment=block hier=top.t.t1
  000011          Cls::fstatic(1'b1);
