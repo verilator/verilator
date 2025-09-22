@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_alias_tristate_unsup.v:17:9: Unsupported: Tristate var ref in alias
+                                                   : ... note: In instance 't'
+   17 |   alias a = b;
+      |         ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
