@@ -158,9 +158,15 @@ Those developing Verilator itself also need these (see internals.rst):
 
    sudo apt-get install clang clang-format-18 cmake gdb gprof graphviz lcov
    sudo apt-get install python3-clang python3-distro yapf3 bear jq
-   sudo pip3 install sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe gersemi mbake ruff sarif-tools
-   sudo pip3 install git+https://github.com/antmicro/astsee.git
+   python3 -m venv --system-site-packages ~/.verilator_pyenv
+   source ~/.verilator_pyenv/bin/activate
+   pip3 install sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe gersemi mbake ruff
+   pip3 install git+https://github.com/antmicro/astsee.git
+   pipx install sarif-tools
    cpan install Pod::Perldoc
+   #
+   # Later, when building or testing Verilator, you will need
+   source ~/.verilator_pyenv/bin/activate
 
 
 Install SystemC

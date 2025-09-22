@@ -63,10 +63,14 @@ rst_prolog = """
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+#
 # To install:
 #   sudo install enchant
-#   sudo pip3 install sphinx sphinx_rtd_theme breathe sphinxcontrib-spelling
-# We keep this list empty for now to avoid needing dependencies
+#   python3 -m venv --system-site-packages ~/.verilator_pyenv
+#   source ~/.verilator_pyenv/bin/activate
+#   pip3 install sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe
+#
+# We keep this extensions list empty for now to avoid needing dependencies
 extensions = []
 # extensions = ['breathe', 'sphinxcontrib.spelling']
 
