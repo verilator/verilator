@@ -327,10 +327,7 @@ class OrderGraphBuilder final : public VNVisitor {
         nodep->v3fatalSrc("AstFinal should not need ordering");
     }  // LCOV_EXCL_STOP
 
-    //--- Logic akin go SystemVerilog continuous assignments
-    void visit(AstAssignAlias* nodep) override {  //
-        iterateLogic(nodep);
-    }
+    //--- SystemVerilog continuous assignments
     void visit(AstAssignW* nodep) override { iterateLogic(nodep); }
 
     //--- Verilator concoctions

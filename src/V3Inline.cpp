@@ -317,7 +317,7 @@ class InlineRelinkVisitor final : public VNVisitor {
         nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
         iterateChildren(nodep);
     }
-    void visit(AstAssignAlias* nodep) override {
+    void visit(AstAlias* nodep) override {
         // Don't replace port variable in the alias
     }
     void visit(AstVarRef* nodep) override {
@@ -501,8 +501,7 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
             modp->addStmtsp(
                 new AstAssignVarScope{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
         } else {
-            modp->addStmtsp(
-                new AstAssignAlias{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
+            modp->addStmtsp(new AstAlias{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
         }
         // They will become the same variable, so propagate file-line and variable attributes
         pinRefp->varp()->fileline()->modifyStateInherit(flp);

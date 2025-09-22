@@ -98,7 +98,7 @@ class LinkLValueVisitor final : public VNVisitor {
         VL_RESTORER(m_setStrengthSpecified);
         {
             m_setRefLvalue = VAccess::WRITE;
-            m_setContinuously = VN_IS(nodep, AssignW) || VN_IS(nodep, AssignAlias);
+            m_setContinuously = VN_IS(nodep, AssignW);
             if (const AstAssignW* const assignwp = VN_CAST(nodep, AssignW)) {
                 if (assignwp->strengthSpecp()) m_setStrengthSpecified = true;
             }

@@ -456,6 +456,21 @@ public:
     inline bool hasClocked() const;
     inline bool hasCombo() const;
 };
+class AstAlias final : public AstNode {
+    // Alias (currently only used internally, not as the SV 'alias' construct).
+    // All references to the LHS are treated as references to the RHS
+    // If both sides are wires, there's no LHS vs RHS,
+    // @astgen op1 := rhsp : AstVarRef
+    // @astgen op2 := lhsp : AstVarRef
+
+public:
+    AstAlias(FileLine* fl, AstVarRef* lhsp, AstVarRef* rhsp)
+        : ASTGEN_SUPER_Alias(fl) {
+        this->lhsp(lhsp);
+        this->rhsp(rhsp);
+    }
+    ASTGEN_MEMBERS_AstAlias;
+};
 class AstBind final : public AstNode {
     // Parents: MODULE
     // Children: CELL

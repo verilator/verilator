@@ -505,7 +505,6 @@ class ActiveVisitor final : public VNVisitor {
         const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
         moveUnderSpecial<AstSenItem::Final>(nodep);
     }
-    void visit(AstAssignAlias* nodep) override { moveUnderSpecial<AstSenItem::Combo>(nodep); }
     void visit(AstCoverToggle* nodep) override { moveUnderSpecial<AstSenItem::Combo>(nodep); }
     void visit(AstAssignW* nodep) override { moveUnderSpecial<AstSenItem::Combo>(nodep); }
     void visit(AstAlways* nodep) override {

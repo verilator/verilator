@@ -2974,7 +2974,7 @@
     ]},
     {"type":"REFDTYPE","name":"my_t","addr":"(VB)","loc":"d,52:12,52:16","dtypep":"(ERB)","generic":false,"typedefp":"UNLINKED","refDTypep":"(ERB)","classOrPackagep":"UNLINKED","typeofp": [],"classOrPackageOpp": [],"paramsp": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(KB)","loc":"d,23:23,23:24","dtypep":"(KB)","keyword":"logic","range":"31:0","generic":true,"rangep": []},
-    {"type":"VOIDDTYPE","name":"","addr":"(CB)","loc":"d,11:8,11:9","dtypep":"(CB)","generic":false},
+    {"type":"VOIDDTYPE","name":"","addr":"(CB)","loc":"a,0:0,0:0","dtypep":"(CB)","generic":false},
     {"type":"BASICDTYPE","name":"VlTriggerVec","addr":"(V)","loc":"d,11:8,11:9","dtypep":"(V)","keyword":"VlTriggerVec","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"QData","addr":"(JQ)","loc":"d,11:8,11:9","dtypep":"(JQ)","keyword":"QData","range":"63:0","generic":true,"rangep": []},
     {"type":"BASICDTYPE","name":"logic","addr":"(GQ)","loc":"d,11:8,11:9","dtypep":"(GQ)","keyword":"logic","range":"63:0","generic":true,"rangep": []},
