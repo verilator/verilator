@@ -208,7 +208,7 @@ class ScopeVisitor final : public VNVisitor {
         m_scopep->addBlocksp(clonep);
         iterateChildren(clonep);  // We iterate under the *clone*
     }
-    void visit(AstAssignAlias* nodep) override {
+    void visit(AstAlias* nodep) override {
         // Add to list of blocks under this scope
         UINFO(4, "    Move " << nodep);
         AstNode* const clonep = nodep->cloneTree(false);
@@ -353,7 +353,7 @@ class ScopeCleanupVisitor final : public VNVisitor {
     }
 
     void visit(AstNodeProcedure* nodep) override { movedDeleteOrIterate(nodep); }
-    void visit(AstAssignAlias* nodep) override { movedDeleteOrIterate(nodep); }
+    void visit(AstAlias* nodep) override { movedDeleteOrIterate(nodep); }
     void visit(AstAssignVarScope* nodep) override { movedDeleteOrIterate(nodep); }
     void visit(AstAssignW* nodep) override { movedDeleteOrIterate(nodep); }
     void visit(AstCoverToggle* nodep) override { movedDeleteOrIterate(nodep); }

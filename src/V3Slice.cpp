@@ -286,7 +286,6 @@ class SliceVisitor final : public VNVisitor {
     void visit(AstNodeAssign* nodep) override {
         // Called recursively on newly created assignments
         if (nodep->user1SetOnce()) return;  // Process once
-        if (VN_IS(nodep, AssignAlias)) return;
         UINFOTREE(9, nodep, "", "Deslice-In");
         VL_RESTORER(m_assignError);
         VL_RESTORER(m_assignp);

@@ -32,34 +32,34 @@
         {"type":"VARSCOPE","name":"__Vfunc_vlvbound_test.foo__1__i","addr":"(OB)","loc":"d,17:13,17:14","dtypep":"(GB)","isTrace":true,"scopep":"(Q)","varp":"(PB)"}
       ],
        "blocksp": [
-        {"type":"ASSIGNALIAS","name":"","addr":"(QB)","loc":"d,9:25,9:28","dtypep":"(H)",
+        {"type":"ASSIGNW","name":"","addr":"(QB)","loc":"d,9:25,9:28","dtypep":"(H)",
          "rhsp": [
           {"type":"VARREF","name":"i_a","addr":"(RB)","loc":"d,9:25,9:28","dtypep":"(H)","access":"RD","varp":"(G)","varScopep":"(R)","classOrPackagep":"UNLINKED"}
         ],
          "lhsp": [
           {"type":"VARREF","name":"vlvbound_test.i_a","addr":"(SB)","loc":"d,9:25,9:28","dtypep":"(H)","access":"WR","varp":"(M)","varScopep":"(V)","classOrPackagep":"UNLINKED"}
-        ],"timingControlp": []},
-        {"type":"ASSIGNALIAS","name":"","addr":"(TB)","loc":"d,10:25,10:28","dtypep":"(H)",
+        ],"timingControlp": [],"strengthSpecp": []},
+        {"type":"ASSIGNW","name":"","addr":"(TB)","loc":"d,10:25,10:28","dtypep":"(H)",
          "rhsp": [
           {"type":"VARREF","name":"i_b","addr":"(UB)","loc":"d,10:25,10:28","dtypep":"(H)","access":"RD","varp":"(I)","varScopep":"(S)","classOrPackagep":"UNLINKED"}
         ],
          "lhsp": [
           {"type":"VARREF","name":"vlvbound_test.i_b","addr":"(VB)","loc":"d,10:25,10:28","dtypep":"(H)","access":"WR","varp":"(N)","varScopep":"(W)","classOrPackagep":"UNLINKED"}
-        ],"timingControlp": []},
-        {"type":"ASSIGNALIAS","name":"","addr":"(WB)","loc":"d,11:25,11:28","dtypep":"(K)",
+        ],"timingControlp": [],"strengthSpecp": []},
+        {"type":"ASSIGNW","name":"","addr":"(WB)","loc":"d,11:25,11:28","dtypep":"(K)",
          "rhsp": [
           {"type":"VARREF","name":"o_a","addr":"(XB)","loc":"d,11:25,11:28","dtypep":"(K)","access":"RD","varp":"(J)","varScopep":"(T)","classOrPackagep":"UNLINKED"}
         ],
          "lhsp": [
           {"type":"VARREF","name":"vlvbound_test.o_a","addr":"(YB)","loc":"d,11:25,11:28","dtypep":"(K)","access":"WR","varp":"(O)","varScopep":"(X)","classOrPackagep":"UNLINKED"}
-        ],"timingControlp": []},
-        {"type":"ASSIGNALIAS","name":"","addr":"(ZB)","loc":"d,12:25,12:28","dtypep":"(K)",
+        ],"timingControlp": [],"strengthSpecp": []},
+        {"type":"ASSIGNW","name":"","addr":"(ZB)","loc":"d,12:25,12:28","dtypep":"(K)",
          "rhsp": [
           {"type":"VARREF","name":"o_b","addr":"(AC)","loc":"d,12:25,12:28","dtypep":"(K)","access":"RD","varp":"(L)","varScopep":"(U)","classOrPackagep":"UNLINKED"}
         ],
          "lhsp": [
           {"type":"VARREF","name":"vlvbound_test.o_b","addr":"(BC)","loc":"d,12:25,12:28","dtypep":"(K)","access":"WR","varp":"(P)","varScopep":"(Y)","classOrPackagep":"UNLINKED"}
-        ],"timingControlp": []},
+        ],"timingControlp": [],"strengthSpecp": []},
         {"type":"ALWAYS","name":"","addr":"(CC)","loc":"d,24:14,24:15","keyword":"always","isSuspendable":false,"needProcess":false,"sentreep": [],
          "stmtsp": [
           {"type":"COMMENT","name":"Function: foo","addr":"(DC)","loc":"d,24:16,24:19"},

@@ -2102,18 +2102,7 @@ class LinkDotParamVisitor final : public VNVisitor {
         pinImplicitExprRecurse(nodep->lhsp());
         iterateChildren(nodep);
     }
-    void visit(AstAssignAlias* nodep) override {  // ParamVisitor::
-        // tran gates need implicit creation
-        // As VarRefs don't exist in forPrimary, sanity check
-        UASSERT_OBJ(!m_statep->forPrimary(), nodep, "Assign aliases unexpected pre-dot");
-        if (AstVarRef* const forrefp = VN_CAST(nodep->lhsp(), VarRef)) {
-            pinImplicitExprRecurse(forrefp);
-        }
-        if (AstVarRef* const forrefp = VN_CAST(nodep->rhsp(), VarRef)) {
-            pinImplicitExprRecurse(forrefp);
-        }
-        iterateChildren(nodep);
-    }
+
     void visit(AstImplicit* nodep) override {  // ParamVisitor::
         // Unsupported gates need implicit creation
         pinImplicitExprRecurse(nodep->exprsp());
@@ -2265,15 +2254,25 @@ class LinkDotScopeVisitor final : public VNVisitor {
         symp->fallbackp(m_modSymp);
         // No recursion, we don't want to pick up variables
     }
-    void visit(AstAssignAlias* nodep) override {  // ScopeVisitor::
+    void visit(AstAlias* nodep) override {  // ScopeVisitor::
         // Track aliases created by V3Inline; if we get a VARXREF(aliased_from)
         // we'll need to replace it with a VARXREF(aliased_to)
         UINFOTREE(9, nodep, "", "alias");
-        AstVarScope* const fromVscp = VN_AS(nodep->lhsp(), VarRef)->varScopep();
-        AstVarScope* const toVscp = VN_AS(nodep->rhsp(), VarRef)->varScopep();
+        AstVarRef* const lhsp = nodep->lhsp();
+        AstVarRef* const rhsp = nodep->rhsp();
+        AstVarScope* const fromVscp = lhsp->varScopep();
+        AstVarScope* const toVscp = rhsp->varScopep();
         UASSERT_OBJ(fromVscp && toVscp, nodep, "Bad alias scopes");
         fromVscp->user2p(toVscp);
-        iterateChildren(nodep);
+
+        // Replace alias with an assignment. The LHS might still be references from otuside,
+        // eg throught the VPI, and is traced, so we need the value to propagate.
+        // TODO: this means external writes to the LHS (e.g.: through the VPI) don't work
+        AstAssignW* const newp
+            = new AstAssignW{nodep->fileline(), lhsp->unlinkFrBack(), rhsp->unlinkFrBack()};
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        iterateChildren(newp);
     }
     void visit(AstAssignVarScope* nodep) override {  // ScopeVisitor::
         UINFO(5, "ASSIGNVARSCOPE  " << nodep);

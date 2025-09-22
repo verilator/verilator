@@ -41,22 +41,22 @@
           <varscope loc="d,15,57,15,60" name="__Vfunc_vlvbound_test.foo__1__val" dtype_id="1"/>
           <varscope loc="d,16,17,16,20" name="__Vfunc_vlvbound_test.foo__1__ret" dtype_id="2"/>
           <varscope loc="d,17,13,17,14" name="__Vfunc_vlvbound_test.foo__1__i" dtype_id="3"/>
-          <assignalias loc="d,9,25,9,28" dtype_id="1">
+          <contassign loc="d,9,25,9,28" dtype_id="1">
             <varref loc="d,9,25,9,28" name="i_a" dtype_id="1"/>
             <varref loc="d,9,25,9,28" name="vlvbound_test.i_a" dtype_id="1"/>
-          </assignalias>
-          <assignalias loc="d,10,25,10,28" dtype_id="1">
+          </contassign>
+          <contassign loc="d,10,25,10,28" dtype_id="1">
             <varref loc="d,10,25,10,28" name="i_b" dtype_id="1"/>
             <varref loc="d,10,25,10,28" name="vlvbound_test.i_b" dtype_id="1"/>
-          </assignalias>
-          <assignalias loc="d,11,25,11,28" dtype_id="2">
+          </contassign>
+          <contassign loc="d,11,25,11,28" dtype_id="2">
             <varref loc="d,11,25,11,28" name="o_a" dtype_id="2"/>
             <varref loc="d,11,25,11,28" name="vlvbound_test.o_a" dtype_id="2"/>
-          </assignalias>
-          <assignalias loc="d,12,25,12,28" dtype_id="2">
+          </contassign>
+          <contassign loc="d,12,25,12,28" dtype_id="2">
             <varref loc="d,12,25,12,28" name="o_b" dtype_id="2"/>
             <varref loc="d,12,25,12,28" name="vlvbound_test.o_b" dtype_id="2"/>
-          </assignalias>
+          </contassign>
           <always loc="d,24,14,24,15">
             <comment loc="d,24,16,24,19" name="Function: foo"/>
             <assign loc="d,24,20,24,23" dtype_id="1">

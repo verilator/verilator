@@ -1826,7 +1826,7 @@
       </unpackarraydtype>
       <refdtype loc="d,52,12,52,16" id="22" name="my_t" sub_dtype_id="2"/>
       <basicdtype loc="d,23,23,23,24" id="9" name="logic" left="31" right="0" signed="true"/>
-      <voiddtype loc="d,11,8,11,9" id="7"/>
+      <voiddtype loc="a,0,0,0,0" id="7"/>
       <basicdtype loc="d,11,8,11,9" id="6" name="VlTriggerVec"/>
       <basicdtype loc="d,11,8,11,9" id="18" name="QData" left="63" right="0"/>
       <basicdtype loc="d,11,8,11,9" id="17" name="logic" left="63" right="0"/>

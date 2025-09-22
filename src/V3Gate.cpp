@@ -257,9 +257,6 @@ class GateBuildVisitor final : public VNVisitorConst {
         const bool slow = VN_IS(nodep, Initial) || VN_IS(nodep, Final);
         iterateLogic(nodep, slow, nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts");
     }
-    void visit(AstAssignAlias* nodep) override {  //
-        iterateLogic(nodep);
-    }
     void visit(AstAssignW* nodep) override {  //
         iterateLogic(nodep);
     }
