@@ -401,7 +401,6 @@ class EmitCModel final : public EmitCFunc {
             puts("next_trigger(dt);\n");
             puts("}\n");
             puts("}\n");
-
         }
 
         // ::eval_step
