@@ -3556,7 +3556,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         // last component, `targetp()` field will be overwritten by next components
                         m_ds.m_disablep->targetp(foundp->nodep());
                     }
-                    if (const AstGenBlock* const beginp = VN_CAST(foundp->nodep(), GenBlock)) {
+                    if (VN_IS(foundp->nodep(), GenBlock)) {
                         m_ds.m_genBlk = true;
                         if (m_ds.m_disablep) {
                             m_ds.m_disablep->v3warn(
