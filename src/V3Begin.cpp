@@ -199,6 +199,17 @@ class BeginVisitor final : public VNVisitor {
             m_liftedp = nullptr;
         }
     }
+    void visit(AstNodeProcedure* nodep) override {
+        UINFO(8, "  " << nodep);
+        VL_RESTORER(m_keepBegins);
+        m_keepBegins = false;
+        iterateChildren(nodep);
+        nodep->foreach([nodep](AstInitialStatic* const initp) {
+            if (initp == nodep) return;  // As InitialStatic is a NodeProcedure itself
+            initp->unlinkFrBack();
+            nodep->addHereThisAsNext(initp);
+        });
+    }
     void visit(AstBegin* nodep) override {
         // Begin blocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep);

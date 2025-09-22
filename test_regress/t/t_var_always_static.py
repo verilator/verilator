@@ -11,10 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--binary", "--stats", "t/t_wide_temp_while_cond.cpp"])
-
-if test.vlt or test.vltmt:
-    test.file_grep(test.stats, r'Optimizations, Prelim temporary variables created\s+(\d+)', 4)
+test.compile(verilator_flags2=['--binary'])
 
 test.execute()
 
