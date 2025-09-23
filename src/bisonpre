@@ -23,18 +23,20 @@ def process():
     clean_input(Args.input, tmp_prefix() + ".y")
 
     # Run bison
-    command = [Args.yacc]
-    if Args.debug: command.append("-t")
-    if Args.definitions: command.append("-d")
-    if Args.token_table: command.append("-k")
-    if Args.verbose: command.append("-v")
-    if Args.Wcounterexamples: command.append("-Wcounterexamples")
-    if (Args.verbose and supports_report):
-        command.extend(["--report=itemset", "--report=lookahead"])
-    if Args.name_prefix: command.extend(["-p", Args.name_prefix])
-    command.extend(["-b", tmp_prefix()])
-    command.extend(["-o", tmp_prefix() + ".c"])
-    command.extend([tmp_prefix() + ".y"])
+    prefix = tmp_prefix()
+    command = [
+        Args.yacc,
+        *(["-t"] if Args.debug else []),
+        *(["-d"] if Args.definitions else []),
+        *(["-k"] if Args.token_table else []),
+        *(["-v"] if Args.verbose else []),
+        *(["-Wcounterexamples"] if Args.Wcounterexamples else []),
+        *(["--report=itemset", "--report=lookahead"] if (Args.verbose and supports_report) else []),
+        *(["-p", Args.name_prefix] if Args.name_prefix else []),
+        "-b", prefix,
+        "-o", f"{prefix}.c",
+        f"{prefix}.y",
+    ]
 
     print(f"Executing: {subprocess.list2cmdline(command)}", flush=True)
     status = subprocess.call(command)
