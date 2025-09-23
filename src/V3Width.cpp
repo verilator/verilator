@@ -1189,7 +1189,7 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstAssignAlias* nodep) override {
+    void visit(AstAlias* nodep) override {
         if (!nodep->didWidthAndSet()) {
             userIterate(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
             userIterate(nodep->rhsp(), WidthVP{SELF, BOTH}.p());
@@ -1217,7 +1217,6 @@ class WidthVisitor final : public VNVisitor {
         if (!nodep->lhsp()->dtypep()->similarDType(nodep->rhsp()->dtypep())) {
             nodep->v3error("Incompatible types of nets used for net alias");
         }
-        nodep->dtypeFrom(nodep->lhsp());
     }
 
     void visit(AstWildcardSel* nodep) override {

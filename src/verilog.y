@@ -2637,7 +2637,7 @@ net_alias<nodep>:               // IEEE: net_alias
                                 BBUNSUP($1, "Unsupported: alias statements with more than 2 operands");
                                 $3->nextp()->unlinkFrBackWithNext()->deleteTree();
                             }
-                            $$ = new AstAssignAlias{$1, $2, $3}; }
+                            $$ = new AstAlias{$1, $2, $3}; }
         ;
 
 aliasEqList<nodeExprp>:                    // IEEE: part of net_alias
