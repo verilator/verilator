@@ -1357,6 +1357,21 @@ class ParamVisitor final : public VNVisitor {
         m_iterateModule = false;
     }
 
+    void checkParamNotHier(AstNode* valuep) {
+        if (!valuep) return;
+        valuep->foreachAndNext([&](const AstNodeExpr* exprp) {
+            if (const AstVarXRef* refp = VN_CAST(exprp, VarXRef)) {
+                refp->v3error("Parameter values cannot use hierarchical values"
+                              " (IEEE 1800-2023 6.20.2)");
+            } else if (const AstNodeFTaskRef* refp = VN_CAST(exprp, NodeFTaskRef)) {
+                if (refp->dotted() != "") {
+                    refp->v3error("Parameter values cannot call hierarchical functions"
+                                  " (IEEE 1800-2023 6.20.2)");
+                }
+            }
+        });
+    }
+
     // A generic visitor for cells and class refs
     void visitCellOrClassRef(AstNode* nodep, bool isIface) {
         // Must do ifaces first, so push to list and do in proper order
@@ -1396,14 +1411,17 @@ class ParamVisitor final : public VNVisitor {
             processWorkQ();
         }
     }
-
     void visit(AstCell* nodep) override {
+        checkParamNotHier(nodep->paramsp());
         visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
     }
     void visit(AstIfaceRefDType* nodep) override {
         if (nodep->ifacep()) visitCellOrClassRef(nodep, true);
     }
-    void visit(AstClassRefDType* nodep) override { visitCellOrClassRef(nodep, false); }
+    void visit(AstClassRefDType* nodep) override {
+        checkParamNotHier(nodep->paramsp());
+        visitCellOrClassRef(nodep, false);
+    }
     void visit(AstClassOrPackageRef* nodep) override {
         // If it points to a typedef it is not really a class reference. That typedef will be
         // visited anyway (from its parent node), so even if it points to a parameterized class
@@ -1416,13 +1434,7 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->user2SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isParam()) {
-            // See if any Future before we process
-            if (nodep->valuep())
-                nodep->valuep()->foreach([&](const AstVarXRef* refp) {
-                    refp->v3error("Parameter values cannot be hierarchical"
-                                  " (IEEE 1800-2023 6.20.2): "
-                                  << nodep->prettyNameQ());
-                });
+            checkParamNotHier(nodep->valuep());
             if (!nodep->valuep() && !VN_IS(m_modp, Class)) {
                 nodep->v3error("Parameter without default value is never given value"
                                << " (IEEE 1800-2023 6.20.1): " << nodep->prettyNameQ());

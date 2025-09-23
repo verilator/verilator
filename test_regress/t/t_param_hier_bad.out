@@ -1,6 +1,14 @@
-%Error: t/t_param_hier_bad.v:26:32: Parameter values cannot be hierarchical (IEEE 1800-2023 6.20.2): 'SUB_Y'
+%Error: t/t_param_hier_bad.v:36:32: Parameter values cannot use hierarchical values (IEEE 1800-2023 6.20.2)
                                   : ... note: In instance 't'
-   26 |   localparam int SUB_Y = u_sub.Y;   
+   36 |   localparam int SUB_Y = u_sub.Y;   
       |                                ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_param_hier_bad.v:38:35: Parameter values cannot call hierarchical functions (IEEE 1800-2023 6.20.2)
+                                  : ... note: In instance 't'
+   38 |   localparam int SUB_FUNC = u_sub.sub_func();   
+      |                                   ^~~~~~~~
+%Error: t/t_param_hier_bad.v:44:18: Parameter values cannot call hierarchical functions (IEEE 1800-2023 6.20.2)
+                                  : ... note: In instance 't'
+   44 |   sub #(.X(block.block_func())) u_sub2 ();   
+      |                  ^~~~~~~~~~
 %Error: Exiting due to
