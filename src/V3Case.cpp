@@ -53,20 +53,22 @@ class CaseLintVisitor final : public VNVisitorConst {
     const AstNode* m_casep = nullptr;
 
     // METHODS
-    static void detectMultipleDefaults(AstCaseItem* itemsp) {
+    template <typename CaseItem>
+    static void detectMultipleDefaults(CaseItem* itemsp) {
         bool hitDefault = false;
-        for (AstCaseItem* itemp = itemsp; itemp; itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
             if (!itemp->isDefault()) continue;
             if (hitDefault) itemp->v3error("Multiple default statements in case statement.");
             hitDefault = true;
         }
     }
 
-    void checkXZinNonCaseX(AstNode* casep, AstNodeExpr* exprp, AstCaseItem* itemsp) {
+    template <typename CaseItem>
+    void checkXZinNonCaseX(AstNode* casep, AstNodeExpr* exprp, CaseItem* itemsp) {
         VL_RESTORER(m_casep);
         m_casep = casep;
         iterateConst(exprp);
-        for (AstCaseItem* itemp = itemsp; itemp; itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
             iterateAndNextConstNull(itemp->condsp());
         }
     }

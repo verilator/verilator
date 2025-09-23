@@ -1223,8 +1223,8 @@ class LinkDotFindVisitor final : public VNVisitor {
             // unnamed#'s would just confuse tracing variables in
             // places such as tasks, where "task ...; begin ... end"
             // are common.
-            for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (VN_IS(stmtp, Var) || VN_IS(stmtp, Foreach)) {
+            for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+                if (VN_IS(itemp, Var) || VN_IS(itemp, Foreach)) {
                     std::string name;
                     const std::string stepStr = m_statep->forPrimary()
                                                     ? ""
@@ -2364,6 +2364,9 @@ class LinkDotScopeVisitor final : public VNVisitor {
         m_statep->insertScopeAlias(LinkDotState::SAMN_IFTOP, lhsSymp, rhsSymp);
         // We have stored the link, we don't need these any more
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
+    void visit(AstNodeGen* nodep) override {  // LCOV_EXCL_LINE
+        nodep->v3fatalSrc("Generate constructs should have been reduced out");
     }
     // For speed, don't recurse things that can't have scope
     // Note we allow AstNodeStmt's as generates may be under them

@@ -675,21 +675,6 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }
     VUseType useType() const { return m_useType; }
 };
-class AstCaseItem final : public AstNode {
-    // Single item of a case statement
-    // @astgen op1 := condsp : List[AstNodeExpr]
-    // @astgen op2 := stmtsp : List[AstNode]
-public:
-    AstCaseItem(FileLine* fl, AstNodeExpr* condsp, AstNode* stmtsp)
-        : ASTGEN_SUPER_CaseItem(fl) {
-        addCondsp(condsp);
-        addStmtsp(stmtsp);
-    }
-    ASTGEN_MEMBERS_AstCaseItem;
-    int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
-    bool isDefault() const { return condsp() == nullptr; }
-    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
-};
 class AstCell final : public AstNode {
     // A instantiation cell or interface call (don't know which until link)
     // @astgen op1 := pinsp : List[AstPin] // List of port assignments
@@ -1143,6 +1128,19 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }
     V3Graph* depGraphp() { return m_depGraphp; }
     const V3Graph* depGraphp() const { return m_depGraphp; }
+};
+class AstGenCaseItem final : public AstNode {
+    // Single item of an AstGenCase
+    // @astgen op1 := condsp : List[AstNodeExpr]
+    // @astgen op2 := itemsp : List[AstNode]
+public:
+    AstGenCaseItem(FileLine* fl, AstNodeExpr* condsp, AstNode* itemsp)
+        : ASTGEN_SUPER_GenCaseItem(fl) {
+        addCondsp(condsp);
+        addItemsp(itemsp);
+    }
+    ASTGEN_MEMBERS_AstGenCaseItem;
+    bool isDefault() const { return condsp() == nullptr; }
 };
 class AstImplicit final : public AstNode {
     // Create implicit wires and do nothing else, for gates that are ignored
@@ -2470,18 +2468,18 @@ public:
 class AstGenBlock final : public AstNodeGen {
     // Generate 'begin'
     // @astgen op1 := genforp : Optional[AstNode]
-    // @astgen op2 := stmtsp : List[AstNode]
+    // @astgen op2 := itemsp : List[AstNode]
     std::string m_name;  // Name of block
     const bool m_unnamed;  // Originally unnamed (name change does not affect this)
     const bool m_implied;  // Not inserted by user
 
 public:
-    AstGenBlock(FileLine* fl, const string& name, AstNode* stmtsp, bool implied)
+    AstGenBlock(FileLine* fl, const string& name, AstNode* itemsp, bool implied)
         : ASTGEN_SUPER_GenBlock(fl)
         , m_name{name}
         , m_unnamed{name.empty()}
         , m_implied{implied} {
-        this->addStmtsp(stmtsp);
+        this->addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstGenBlock;
     void dump(std::ostream& str) const override;
@@ -2494,9 +2492,9 @@ public:
 class AstGenCase final : public AstNodeGen {
     // Generate 'case'
     // @astgen op1 := exprp : AstNodeExpr // Condition (scurtinee) expression
-    // @astgen op2 := itemsp : List[AstCaseItem]
+    // @astgen op2 := itemsp : List[AstGenCaseItem]
 public:
-    AstGenCase(FileLine* fl, AstNodeExpr* exprp, AstCaseItem* itemsp)
+    AstGenCase(FileLine* fl, AstNodeExpr* exprp, AstGenCaseItem* itemsp)
         : ASTGEN_SUPER_GenCase(fl) {
         this->exprp(exprp);
         this->addItemsp(itemsp);
@@ -2508,14 +2506,14 @@ class AstGenFor final : public AstNodeGen {
     // @astgen op1 := initsp : List[AstNode]
     // @astgen op2 := condp : AstNodeExpr
     // @astgen op3 := incsp : List[AstNode]
-    // @astgen op4 := stmtsp : List[AstNode]
+    // @astgen op4 := itemsp : List[AstNode]
 public:
-    AstGenFor(FileLine* fl, AstNode* initsp, AstNodeExpr* condp, AstNode* incsp, AstNode* stmtsp)
+    AstGenFor(FileLine* fl, AstNode* initsp, AstNodeExpr* condp, AstNode* incsp, AstNode* itemsp)
         : ASTGEN_SUPER_GenFor(fl) {
         this->addInitsp(initsp);
         this->condp(condp);
         this->addIncsp(incsp);
-        this->addStmtsp(stmtsp);
+        this->addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstGenFor;
 };

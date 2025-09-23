@@ -182,6 +182,23 @@ public:
 
 // === Concrete node types =====================================================
 
+// === AstNode ===
+class AstCaseItem final : public AstNode {
+    // Single item of AstCase/AstRandCase
+    // @astgen op1 := condsp : List[AstNodeExpr]
+    // @astgen op2 := stmtsp : List[AstNode]
+public:
+    AstCaseItem(FileLine* fl, AstNodeExpr* condsp, AstNode* stmtsp)
+        : ASTGEN_SUPER_CaseItem(fl) {
+        addCondsp(condsp);
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstCaseItem;
+    int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    bool isDefault() const { return condsp() == nullptr; }
+    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
+};
+
 // === AstNodeStmt ===
 class AstAssertCtl final : public AstNodeStmt {
     // @astgen op1 := controlTypep : AstNodeExpr

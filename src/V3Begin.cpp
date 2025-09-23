@@ -206,10 +206,10 @@ class BeginVisitor final : public VNVisitor {
         VL_RESTORER(m_namedScope);
         VL_RESTORER(m_unnamedScope);
         UASSERT_OBJ(!m_keepBegins, nodep, "Should be able to eliminate all AstGenBlock");
-        dotNames(nodep->name(), nodep->fileline(), nodep->stmtsp(), "__BEGIN__");
+        dotNames(nodep->name(), nodep->fileline(), nodep->itemsp(), "__BEGIN__");
         // Repalce node with body then delete
-        if (AstNode* const stmtsp = nodep->stmtsp()) {
-            nodep->addNextHere(stmtsp->unlinkFrBackWithNext());
+        if (AstNode* const itemsp = nodep->itemsp()) {
+            nodep->addNextHere(itemsp->unlinkFrBackWithNext());
         }
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }

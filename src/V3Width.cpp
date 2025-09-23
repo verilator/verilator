@@ -5260,7 +5260,8 @@ class WidthVisitor final : public VNVisitor {
     //--------------------
     // Top levels
 
-    void handleCaseType(AstNode* casep, AstNodeExpr* exprp, AstCaseItem* itemsp) {
+    template <typename CaseItem>
+    void handleCaseType(AstNode* casep, AstNodeExpr* exprp, CaseItem* itemsp) {
         AstAttrOf* const exprap = VN_CAST(exprp, AttrOf);
         if (!exprap) return;
         if (exprap->attrType() != VAttrType::TYPEID) return;
@@ -5274,7 +5275,7 @@ class WidthVisitor final : public VNVisitor {
         newfl->warnOff(V3ErrorCode::CASEINCOMPLETE, true);  // Side effect of transform
         newfl->warnOff(V3ErrorCode::CASEOVERLAP, true);  // Side effect of transform
         casep->fileline(newfl);
-        for (AstCaseItem* itemp = itemsp; itemp; itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
             if (itemp->isDefault()) continue;
             bool hit = false;
             for (AstNode* condp = itemp->condsp(); condp; condp = condp->nextp()) {
@@ -5297,13 +5298,14 @@ class WidthVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(exprap), exprap);
     }
 
-    void handleCase(AstNode* casep, AstNodeExpr* exprp, AstCaseItem* itemsp) {
+    template <typename CaseItem>
+    void handleCase(AstNode* casep, AstNodeExpr* exprp, CaseItem* itemsp) {
         // IEEE-2012 12.5:
         //    Width: MAX(expr, all items)
         //    Signed: Only if expr, and all items signed
         // Take width as maximum across all items, if any is real whole thing is real
         AstNodeDType* subDTypep = exprp->dtypep();
-        for (AstCaseItem* itemp = itemsp; itemp; itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
             for (AstNode* condp = itemp->condsp(); condp; condp = condp->nextp()) {
                 if (condp->dtypep() == subDTypep) continue;
 
@@ -5322,7 +5324,7 @@ class WidthVisitor final : public VNVisitor {
 
         // Apply width
         iterateCheck(casep, "Case expression", exprp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
-        for (AstCaseItem* itemp = itemsp; itemp; itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
             for (AstNode *nextcp, *condp = itemp->condsp(); condp; condp = nextcp) {
                 nextcp = condp->nextp();  // Final may cause the node to get replaced
                 iterateCheck(casep, "Case Item", condp, CONTEXT_DET, FINAL, subDTypep, EXTEND_LHS);
@@ -5334,10 +5336,12 @@ class WidthVisitor final : public VNVisitor {
         assertAtStatement(nodep);
         // Type check expression and case item conditions, but not bodies
         userIterateAndNext(nodep->exprp(), WidthVP{CONTEXT_DET, PRELIM}.p());
-        for (AstCaseItem *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
-            nextip = VN_AS(itemp->nextp(), CaseItem);  // Prelim may cause the node to get replaced
+        for (AstGenCaseItem *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
+            // Prelim may cause the node to get replaced, pick up next up front
+            nextip = VN_AS(itemp->nextp(), GenCaseItem);
             for (AstNode *nextcp, *condp = itemp->condsp(); condp; condp = nextcp) {
-                nextcp = condp->nextp();  // Prelim may cause the node to get replaced
+                // Prelim may cause the node to get replaced, pick up next up front
+                nextcp = condp->nextp();
                 VL_DO_DANGLING(userIterate(condp, WidthVP{CONTEXT_DET, PRELIM}.p()), condp);
             }
         }

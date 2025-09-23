@@ -102,6 +102,14 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateAndNextConstNull(nodep->itemsp());
         putqs(nodep, "endcase\n");
     }
+    void visit(AstGenCaseItem* nodep) override {
+        if (nodep->condsp()) {
+            iterateAndNextConstNull(nodep->condsp());
+        } else {
+            putbs("default");
+        }
+        iterateAndNextConstNull(nodep->itemsp());
+    }
     void visit(AstGenFor* nodep) override {
         putfs(nodep, "/* generate */ for (");
         {
@@ -114,7 +122,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             iterateAndNextConstNull(nodep->incsp());
         }
         puts(") begin\n");
-        iterateAndNextConstNull(nodep->stmtsp());
+        iterateAndNextConstNull(nodep->itemsp());
         putqs(nodep, "end\n");
     }
     void visit(AstGenIf* nodep) override {

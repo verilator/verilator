@@ -2803,27 +2803,23 @@ c_conditional_generate_construct<nodep>:  // IEEE: conditional_generate_construc
 loop_generate_construct<nodep>: // ==IEEE: loop_generate_construct
                 yFOR '(' genvar_initialization ';' expr ';' genvar_iteration ')' ~c~generate_block_or_null
                         { // Convert BEGIN(...) to BEGIN(GENFOR(...)), as we need the BEGIN to hide the local genvar
-                          AstGenBlock* lowerBegp = VN_CAST($9, GenBlock);
-                          UASSERT_OBJ(!($9 && !lowerBegp), $9, "Child of GENFOR should have been begin");
-
-                          if (!lowerBegp) lowerBegp = new AstGenBlock{$1, "", nullptr, false};  // Empty body
-                          AstNode* const lowerNoBegp = lowerBegp->stmtsp();
-                          if (lowerNoBegp) lowerNoBegp->unlinkFrBackWithNext();
-                          //
-                          AstGenBlock* const blkp = new AstGenBlock{$1, lowerBegp->name(), nullptr, true};
+                          AstGenBlock* lowerp = VN_CAST($9, GenBlock);
+                          UASSERT_OBJ(!$9 || lowerp, $9, "Child of GENFOR should have been begin");
+                          AstNode* const itemsp = lowerp && lowerp->itemsp() ? lowerp->itemsp()->unlinkFrBackWithNext() : nullptr;
+                          AstGenBlock* const blkp = new AstGenBlock{$1, lowerp ? lowerp->name() : "", nullptr, true};
                           // V3LinkDot detects BEGIN(GENFOR(...)) as a special case
                           AstNode* initp = $3;
                           AstNode* const varp = $3;
                           if (VN_IS(varp, Var)) {  // Genvar
                                 initp = varp->nextp();
                                 initp->unlinkFrBackWithNext();  // Detach 2nd from varp, make 1st init
-                                blkp->addStmtsp(varp);
+                                blkp->addItemsp(varp);
                           }
                           // Statements are under 'genforp' as instances under this
                           // for loop won't get an extra layer of hierarchy tacked on
-                          blkp->genforp(new AstGenFor{$1, initp, $5, $7, lowerNoBegp});
+                          blkp->genforp(new AstGenFor{$1, initp, $5, $7, itemsp});
                           $$ = blkp;
-                          VL_DO_DANGLING(lowerBegp->deleteTree(), lowerBegp);
+                          DEL(lowerp);
                         }
         ;
 
@@ -2878,22 +2874,22 @@ genvar_iteration<nodep>:        // ==IEEE: genvar_iteration
                                                                 new AstConst{$2, AstConst::StringToParse{}, "'b1"}}}; }
         ;
 
-case_generate_itemList<caseItemp>:  // IEEE: { case_generate_itemList }
+case_generate_itemList<genCaseItemp>:  // IEEE: { case_generate_itemList }
                 ~c~case_generate_item                   { $$ = $1; }
         |       ~c~case_generate_itemList ~c~case_generate_item         { $$ = $1; $1->addNext($2); }
         ;
 
-c_case_generate_itemList<caseItemp>:  // IEEE: { case_generate_item } (for checkers)
+c_case_generate_itemList<genCaseItemp>:  // IEEE: { case_generate_item } (for checkers)
                 BISONPRE_COPY(case_generate_itemList,{s/~c~/c_/g})      // {copied}
         ;
 
-case_generate_item<caseItemp>:      // ==IEEE: case_generate_item
-                caseCondList colon ~c~generate_block_or_null    { $$ = new AstCaseItem{$2, $1, $3}; }
-        |       yDEFAULT colon ~c~generate_block_or_null        { $$ = new AstCaseItem{$1, nullptr, $3}; }
-        |       yDEFAULT ~c~generate_block_or_null              { $$ = new AstCaseItem{$1, nullptr, $2}; }
+case_generate_item<genCaseItemp>:      // ==IEEE: case_generate_item
+                caseCondList colon ~c~generate_block_or_null    { $$ = new AstGenCaseItem{$2, $1, $3}; }
+        |       yDEFAULT colon ~c~generate_block_or_null        { $$ = new AstGenCaseItem{$1, nullptr, $3}; }
+        |       yDEFAULT ~c~generate_block_or_null              { $$ = new AstGenCaseItem{$1, nullptr, $2}; }
         ;
 
-c_case_generate_item<caseItemp>:  // IEEE: case_generate_item (for checkers)
+c_case_generate_item<genCaseItemp>:  // IEEE: case_generate_item (for checkers)
                 BISONPRE_COPY(case_generate_item,{s/~c~/c_/g})  // {copied}
         ;
 

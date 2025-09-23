@@ -264,7 +264,7 @@ public:
         if (!nodep->unnamed()) {
             for (const string& i : m_coverageOffBlocks) {
                 if (VString::wildmatch(nodep->prettyOrigOrName(), i)) {
-                    nodep->addStmtsp(new AstPragma{nodep->fileline(), pragma});
+                    nodep->addItemsp(new AstPragma{nodep->fileline(), pragma});
                 }
             }
         }
@@ -390,7 +390,7 @@ public:
         // Apply to block at this line
         const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
         if (lineMatch(nodep->fileline()->lineno(), pragma)) {
-            nodep->addStmtsp(new AstPragma{nodep->fileline(), pragma});
+            nodep->addItemsp(new AstPragma{nodep->fileline(), pragma});
         }
     }
     void applyBlock(AstNodeBlock* nodep) {

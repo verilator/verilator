@@ -434,7 +434,7 @@ class UnrollVisitor final : public VNVisitor {
                 // deleted by V3Const.
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             } else if (forUnrollCheck(nodep, VOptionBool{}, nodep->initsp(), nodep->condp(),
-                                      nodep->incsp(), nodep->stmtsp())) {
+                                      nodep->incsp(), nodep->itemsp())) {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Did replacement
             } else {
                 nodep->v3error("For loop doesn't have genvar index, or is malformed");

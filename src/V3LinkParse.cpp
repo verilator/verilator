@@ -122,8 +122,8 @@ class LinkParseVisitor final : public VNVisitor {
         return (nodep->implied()  // User didn't provide begin/end
                 && VN_IS(backp, GenIf) && VN_CAST(backp, GenIf)->elsesp() == nodep
                 && !nodep->nextp()  // No other statements under upper genif else
-                && (VN_IS(nodep->stmtsp(), GenIf))  // Begin has if underneath
-                && !nodep->stmtsp()->nextp());  // Has only one item
+                && (VN_IS(nodep->itemsp(), GenIf))  // Begin has if underneath
+                && !nodep->itemsp()->nextp());  // Has only one item
     }
 
     void checkIndent(AstNode* nodep, AstNode* childp) {
@@ -671,13 +671,13 @@ class LinkParseVisitor final : public VNVisitor {
         if (nodep->genforp()) {
             ++m_genblkNum;
             if (nodep->name() == "") assignGenBlkNum = m_genblkNum;
-        } else if (nodep->name() == "" && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf))
+        } else if (nodep->name() == "" && (VN_IS(backp, GenCaseItem) || VN_IS(backp, GenIf))
                    && !nestedIf) {
             assignGenBlkNum = m_genblkAbove;
         }
         if (assignGenBlkNum != -1) {
             nodep->name("genblk" + cvtToStr(assignGenBlkNum));
-            if (nodep->stmtsp()) {
+            if (nodep->itemsp()) {
                 nodep->v3warn(GENUNNAMED,
                               "Unnamed generate block "
                                   << nodep->prettyNameQ() << " (IEEE 1800-2023 27.6)\n"
