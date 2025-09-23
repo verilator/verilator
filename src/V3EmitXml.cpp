@@ -410,6 +410,11 @@ class HierCellsXmlVisitor final : public VNVisitorConst {
         m_hier = hier;
         m_hasChildren = true;
     }
+    void visit(AstGenBlock* nodep) override {
+        VL_RESTORER(m_hier);
+        if (nodep->name() != "") m_hier += nodep->name() + ".";
+        iterateChildrenConst(nodep);
+    }
     void visit(AstBegin* nodep) override {
         VL_RESTORER(m_hier);
         if (nodep->name() != "") m_hier += nodep->name() + ".";

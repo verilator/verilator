@@ -111,19 +111,19 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    bool nestedIfBegin(AstBegin* nodep) {  // Point at begin inside the GenIf
+    bool nestedIfBegin(AstGenBlock* nodep) {  // Point at begin inside the GenIf
         // IEEE says directly nested item is not a new block
         // The genblk name will get attached to the if true/false LOWER begin block(s)
         //    1: GENIF
-        // -> 1:3: BEGIN [GEN] [IMPLIED]  // nodep passed to this function
+        // -> 1:3: GENBLOCK [IMPLIED]  // nodep passed to this function
         //    1:3:1: GENIF
-        //    1:3:1:2: BEGIN genblk1 [GEN] [IMPLIED]
+        //    1:3:1:2: GENBLOCK genblk1 [IMPLIED]
         const AstNode* const backp = nodep->backp();
         return (nodep->implied()  // User didn't provide begin/end
                 && VN_IS(backp, GenIf) && VN_CAST(backp, GenIf)->elsesp() == nodep
                 && !nodep->nextp()  // No other statements under upper genif else
-                && (VN_IS(nodep->stmtsp(), GenIf))  // Begin has if underneath
-                && !nodep->stmtsp()->nextp());  // Has only one item
+                && (VN_IS(nodep->itemsp(), GenIf))  // Begin has if underneath
+                && !nodep->itemsp()->nextp());  // Has only one item
     }
 
     void checkIndent(AstNode* nodep, AstNode* childp) {
@@ -657,7 +657,7 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstCover* nodep) override { visitIterateNoValueMod(nodep); }
     void visit(AstRestrict* nodep) override { visitIterateNoValueMod(nodep); }
 
-    void visit(AstBegin* nodep) override {
+    void visit(AstGenBlock* nodep) override {
         V3Control::applyCoverageBlock(m_modp, nodep);
         cleanFileline(nodep);
         VL_RESTORER(m_beginDepth);
@@ -671,13 +671,13 @@ class LinkParseVisitor final : public VNVisitor {
         if (nodep->genforp()) {
             ++m_genblkNum;
             if (nodep->name() == "") assignGenBlkNum = m_genblkNum;
-        } else if (nodep->generate() && nodep->name() == ""
-                   && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf)) && !nestedIf) {
+        } else if (nodep->name() == "" && (VN_IS(backp, GenCaseItem) || VN_IS(backp, GenIf))
+                   && !nestedIf) {
             assignGenBlkNum = m_genblkAbove;
         }
         if (assignGenBlkNum != -1) {
             nodep->name("genblk" + cvtToStr(assignGenBlkNum));
-            if (nodep->stmtsp()) {
+            if (nodep->itemsp()) {
                 nodep->v3warn(GENUNNAMED,
                               "Unnamed generate block "
                                   << nodep->prettyNameQ() << " (IEEE 1800-2023 27.6)\n"
@@ -696,6 +696,31 @@ class LinkParseVisitor final : public VNVisitor {
             iterateChildren(nodep);
         }
     }
+    void visit(AstGenCase* nodep) override {
+        ++m_genblkNum;
+        cleanFileline(nodep);
+        VL_RESTORER(m_genblkAbove);
+        VL_RESTORER(m_genblkNum);
+        m_genblkAbove = m_genblkNum;
+        m_genblkNum = 0;
+        iterateChildren(nodep);
+    }
+    void visit(AstGenIf* nodep) override {
+        cleanFileline(nodep);
+        checkIndent(nodep, nodep->elsesp() ? nodep->elsesp() : nodep->thensp());
+        const bool nestedIf = (VN_IS(nodep->backp(), GenBlock)
+                               && nestedIfBegin(VN_CAST(nodep->backp(), GenBlock)));
+        if (nestedIf) {
+            iterateChildren(nodep);
+        } else {
+            ++m_genblkNum;
+            VL_RESTORER(m_genblkAbove);
+            VL_RESTORER(m_genblkNum);
+            m_genblkAbove = m_genblkNum;
+            m_genblkNum = 0;
+            iterateChildren(nodep);
+        }
+    }
     void visit(AstCell* nodep) override {
         if (nodep->origName().empty()) {
             if (!VN_IS(nodep->modp(), Primitive)) {  // Module/Program/Iface
@@ -710,30 +735,10 @@ class LinkParseVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
-    void visit(AstGenCase* nodep) override {
-        ++m_genblkNum;
+    void visit(AstBegin* nodep) override {
+        V3Control::applyCoverageBlock(m_modp, nodep);
         cleanFileline(nodep);
-        VL_RESTORER(m_genblkAbove);
-        VL_RESTORER(m_genblkNum);
-        m_genblkAbove = m_genblkNum;
-        m_genblkNum = 0;
         iterateChildren(nodep);
-    }
-    void visit(AstGenIf* nodep) override {
-        cleanFileline(nodep);
-        checkIndent(nodep, nodep->elsesp() ? nodep->elsesp() : nodep->thensp());
-        const bool nestedIf
-            = (VN_IS(nodep->backp(), Begin) && nestedIfBegin(VN_CAST(nodep->backp(), Begin)));
-        if (nestedIf) {
-            iterateChildren(nodep);
-        } else {
-            ++m_genblkNum;
-            VL_RESTORER(m_genblkAbove);
-            VL_RESTORER(m_genblkNum);
-            m_genblkAbove = m_genblkNum;
-            m_genblkNum = 0;
-            iterateChildren(nodep);
-        }
     }
     void visit(AstCase* nodep) override {
         V3Control::applyCase(nodep);

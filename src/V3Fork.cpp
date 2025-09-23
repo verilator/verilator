@@ -231,7 +231,7 @@ private:
         AstBegin* const beginp = new AstBegin{
             forkp->fileline(),
             "_Vwrapped_" + (forkp->name().empty() ? "" : forkp->name() + "_") + cvtToStr(m_id),
-            m_instance.m_handlep, false, true};
+            m_instance.m_handlep, true};
         forkHandle.relink(beginp);
 
         AstNode* const instAsgnp = instantiateDynScope(memberMap);
@@ -470,7 +470,7 @@ class DynScopeVisitor final : public VNVisitor {
                 })) {
             nodep->user2(true);
             // Put it in a fork to prevent lifetime issues with the local
-            AstBegin* const beginp = new AstBegin{nodep->fileline(), "", nullptr, false, false};
+            AstBegin* const beginp = new AstBegin{nodep->fileline(), "", nullptr, false};
             AstFork* const forkp = new AstFork{nodep->fileline(), "", beginp};
             forkp->joinType(VJoinType::JOIN_NONE);
             nodep->replaceWith(forkp);

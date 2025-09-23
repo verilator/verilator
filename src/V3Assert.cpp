@@ -129,7 +129,7 @@ class AssertVisitor final : public VNVisitor {
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Last module
-    const AstBegin* m_beginp = nullptr;  // Last begin
+    const AstNode* m_beginp = nullptr;  // Last AstBegin/AstGenBlock
     unsigned m_monitorNum = 0;  // Global $monitor numbering (not per module)
     AstVar* m_monitorNumVarp = nullptr;  // $monitor number variable
     AstVar* m_monitorOffVarp = nullptr;  // $monitoroff variable
@@ -807,6 +807,13 @@ class AssertVisitor final : public VNVisitor {
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procedurep);
         m_procedurep = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstGenBlock* nodep) override {
+        // This code is needed rather than a visitor in V3Begin,
+        // because V3Assert is called before V3Begin
+        VL_RESTORER(m_beginp);
+        m_beginp = nodep;
         iterateChildren(nodep);
     }
     void visit(AstBegin* nodep) override {

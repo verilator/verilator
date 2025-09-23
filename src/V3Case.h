@@ -21,14 +21,14 @@
 #include "verilatedos.h"
 
 class AstNetlist;
-class AstNodeCase;
+class AstGenCase;
 
 //============================================================================
 
 class V3Case final {
 public:
     static void caseAll(AstNetlist* nodep) VL_MT_DISABLED;
-    static void caseLint(AstNodeCase* nodep) VL_MT_DISABLED;
+    static void caseLint(AstGenCase* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

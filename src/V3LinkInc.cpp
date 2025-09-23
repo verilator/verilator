@@ -162,10 +162,6 @@ class LinkIncVisitor final : public VNVisitor {
         m_insStmtp = nullptr;  // Next thing should be new statement
         iterateAndNextNull(nodep->stmtsp());
     }
-    void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc(
-            "For statements should have been converted to while statements in V3Begin.cpp");
-    }
     void visit(AstDelay* nodep) override {
         m_insStmtp = nodep;
         iterateAndNextNull(nodep->lhsp());

@@ -194,7 +194,7 @@ struct SplitVarImpl VL_NOT_FINAL {
             stmtp->unlinkFrBack();
             // Insert begin-end because temp value may be inserted to this block later.
             const std::string name = "__VsplitVarBlk" + cvtToStr(modp->user1Inc(1));
-            ap->addStmtsp(new AstBegin{ap->fileline(), name, stmtp, false, false});
+            ap->addStmtsp(new AstBegin{ap->fileline(), name, stmtp, false});
         }
     }
 
@@ -204,7 +204,7 @@ struct SplitVarImpl VL_NOT_FINAL {
             // Insert begin-end because temp value may be inserted to this block later.
             FileLine* const fl = initp->fileline();
             const std::string name = "__VsplitVarBlk" + cvtToStr(modp->user1Inc(1));
-            initp->replaceWith(new AstInitial{fl, new AstBegin{fl, name, stmtp, false, false}});
+            initp->replaceWith(new AstInitial{fl, new AstBegin{fl, name, stmtp, false}});
             VL_DO_DANGLING(initp->deleteTree(), initp);
         }
     }

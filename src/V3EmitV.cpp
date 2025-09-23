@@ -89,6 +89,54 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         putfs(nodep, func ? "endfunction\n" : "endtask\n");
     }
 
+    void visit(AstGenBlock* nodep) override {
+        const std::string name = nodep->name().empty() ? "" : " : " + nodep->name();
+        putbs("/* generate */ begin" + name + '\n');
+        iterateChildrenConst(nodep);
+        puts("end" + name + '\n');
+    }
+    void visit(AstGenCase* nodep) override {
+        putfs(nodep, "/* generate */ case (");
+        iterateAndNextConstNull(nodep->exprp());
+        puts(")\n");
+        iterateAndNextConstNull(nodep->itemsp());
+        putqs(nodep, "endcase\n");
+    }
+    void visit(AstGenCaseItem* nodep) override {
+        if (nodep->condsp()) {
+            iterateAndNextConstNull(nodep->condsp());
+        } else {
+            putbs("default");
+        }
+        iterateAndNextConstNull(nodep->itemsp());
+    }
+    void visit(AstGenFor* nodep) override {
+        putfs(nodep, "/* generate */ for (");
+        {
+            VL_RESTORER(m_suppressSemi);
+            m_suppressSemi = true;
+            iterateAndNextConstNull(nodep->initsp());
+            puts(";");
+            iterateAndNextConstNull(nodep->condp());
+            puts(";");
+            iterateAndNextConstNull(nodep->incsp());
+        }
+        puts(") begin\n");
+        iterateAndNextConstNull(nodep->itemsp());
+        putqs(nodep, "end\n");
+    }
+    void visit(AstGenIf* nodep) override {
+        putfs(nodep, "");
+        puts("/* generate */ if (");
+        iterateAndNextConstNull(nodep->condp());
+        puts(") begin\n");
+        iterateAndNextConstNull(nodep->thensp());
+        if (nodep->elsesp()) {
+            putqs(nodep, "end else begin\n");
+            iterateAndNextConstNull(nodep->elsesp());
+        }
+        putqs(nodep, "end\n");
+    }
     void visit(AstBegin* nodep) override {
         if (nodep->name() == "") {
             putbs("begin\n");
@@ -193,23 +241,19 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         if (nodep->sensp()) puts(" ");
         iterateChildrenConst(nodep);
     }
-    void visit(AstNodeCase* nodep) override {
+    void visit(AstCase* nodep) override {
         putfs(nodep, "");
-        if (const AstCase* const casep = VN_CAST(nodep, Case)) {
-            if (casep->priorityPragma()) puts("priority ");
-            if (casep->uniquePragma()) puts("unique ");
-            if (casep->unique0Pragma()) puts("unique0 ");
-        }
+        if (nodep->priorityPragma()) puts("priority ");
+        if (nodep->uniquePragma()) puts("unique ");
+        if (nodep->unique0Pragma()) puts("unique0 ");
         puts(nodep->verilogKwd());
         puts(" (");
         iterateAndNextConstNull(nodep->exprp());
         puts(")\n");
-        if (const AstCase* const casep = VN_CAST(nodep, Case)) {
-            if (casep->fullPragma() || casep->parallelPragma()) {
-                puts(" // synopsys");
-                if (casep->fullPragma()) puts(" full_case");
-                if (casep->parallelPragma()) puts(" parallel_case");
-            }
+        if (nodep->fullPragma() || nodep->parallelPragma()) {
+            puts(" // synopsys");
+            if (nodep->fullPragma()) puts(" full_case");
+            if (nodep->parallelPragma()) puts(" parallel_case");
         }
         iterateAndNextConstNull(nodep->itemsp());
         putqs(nodep, "endcase\n");
@@ -347,21 +391,6 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         putbs("(");
         iterateAndNextConstNull(nodep->exprsp());
         puts(");\n");
-    }
-    void visit(AstNodeFor* nodep) override {
-        putfs(nodep, "for (");
-        {
-            VL_RESTORER(m_suppressSemi);
-            m_suppressSemi = true;
-            iterateAndNextConstNull(nodep->initsp());
-            puts(";");
-            iterateAndNextConstNull(nodep->condp());
-            puts(";");
-            iterateAndNextConstNull(nodep->incsp());
-        }
-        puts(") begin\n");
-        iterateAndNextConstNull(nodep->stmtsp());
-        putqs(nodep, "end\n");
     }
     void visit(AstRepeat* nodep) override {
         putfs(nodep, "repeat (");

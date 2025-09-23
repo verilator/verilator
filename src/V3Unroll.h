@@ -38,8 +38,7 @@ public:
     UnrollStateful() VL_MT_DISABLED;
     ~UnrollStateful() VL_MT_DISABLED;
     // METHODS
-    void unrollGen(AstNodeFor* nodep, const string& beginName) VL_MT_DISABLED;
-    void unrollAll(AstNetlist* nodep) VL_MT_DISABLED;
+    void unrollGen(AstGenFor* nodep, const string& beginName) VL_MT_DISABLED;
 };
 
 //============================================================================

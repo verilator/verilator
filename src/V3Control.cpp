@@ -259,6 +259,17 @@ public:
         }
     }
 
+    void applyBlock(AstGenBlock* nodep) {
+        const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
+        if (!nodep->unnamed()) {
+            for (const string& i : m_coverageOffBlocks) {
+                if (VString::wildmatch(nodep->prettyOrigOrName(), i)) {
+                    nodep->addItemsp(new AstPragma{nodep->fileline(), pragma});
+                }
+            }
+        }
+    }
+
     void applyBlock(AstNodeBlock* nodep) {
         const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
         if (!nodep->unnamed()) {
@@ -375,6 +386,13 @@ public:
         m_waivers.emplace_back(WaiverSetting{code, contents, newMatch});
     }
 
+    void applyBlock(AstGenBlock* nodep) {
+        // Apply to block at this line
+        const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
+        if (lineMatch(nodep->fileline()->lineno(), pragma)) {
+            nodep->addItemsp(new AstPragma{nodep->fileline(), pragma});
+        }
+    }
     void applyBlock(AstNodeBlock* nodep) {
         // Apply to block at this line
         const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
@@ -733,6 +751,15 @@ void V3Control::applyCase(AstCase* nodep) {
 }
 
 void V3Control::applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep) {
+    const string& filename = nodep->fileline()->filename();
+    V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
+    if (filep) filep->applyBlock(nodep);
+    const string& modname = modulep->prettyOrigOrName();
+    V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
+    if (modp) modp->applyBlock(nodep);
+}
+
+void V3Control::applyCoverageBlock(AstNodeModule* modulep, AstGenBlock* nodep) {
     const string& filename = nodep->fileline()->filename();
     V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
     if (filep) filep->applyBlock(nodep);

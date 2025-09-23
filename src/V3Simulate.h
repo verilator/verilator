@@ -991,7 +991,7 @@ private:
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
     }
-    void visit(AstNodeCase* nodep) override {
+    void visit(AstCase* nodep) override {
         if (jumpingOver()) return;
         UINFO(5, "   CASE " << nodep);
         checkNodeInfo(nodep);
@@ -1081,39 +1081,6 @@ private:
                 "$stop executed during function constification; maybe indicates assertion firing");
         }
         checkNodeInfo(nodep);
-    }
-
-    void visit(AstNodeFor* nodep) override {
-        // Doing lots of Whiles is slow, so only for parameters
-        UINFO(5, "   FOR " << nodep);
-        if (!m_params) {
-            badNodeType(nodep);
-            return;
-        }
-        checkNodeInfo(nodep);
-        if (m_checkOnly) {
-            iterateChildrenConst(nodep);
-        } else if (optimizable()) {
-            int loops = 0;
-            iterateAndNextConstNull(nodep->initsp());
-            while (true) {
-                UINFO(5, "    FOR-ITER " << nodep);
-                iterateAndNextConstNull(nodep->condp());
-                if (!optimizable()) break;
-                if (!fetchConst(nodep->condp())->num().isNeqZero()) {  //
-                    break;
-                }
-                iterateAndNextConstNull(nodep->stmtsp());
-                iterateAndNextConstNull(nodep->incsp());
-                if (loops++ > v3Global.opt.unrollCountAdjusted(VOptionBool{}, m_params, true)) {
-                    clearOptimizable(nodep, "Loop unrolling took too long; probably this is an"
-                                            "infinite loop, or use /*verilator unroll_full*/, or "
-                                            "set --unroll-count above "
-                                                + cvtToStr(loops));
-                    break;
-                }
-            }
-        }
     }
 
     void visit(AstWhile* nodep) override {

@@ -33,7 +33,7 @@
     ],"scopeNamep": []},
     {"type":"INITIAL","name":"","addr":"(FB)","loc":"d,39:4,39:11","isSuspendable":false,"needProcess":false,
      "stmtsp": [
-      {"type":"BEGIN","name":"","addr":"(GB)","loc":"d,39:12,39:17","generate":false,"genfor":false,"implied":false,"needProcess":false,"unnamed":true,"genforp": [],
+      {"type":"BEGIN","name":"","addr":"(GB)","loc":"d,39:12,39:17","implied":false,"needProcess":false,"unnamed":true,
        "stmtsp": [
         {"type":"STMTEXPR","name":"","addr":"(HB)","loc":"d,41:7,41:8",
          "exprp": [

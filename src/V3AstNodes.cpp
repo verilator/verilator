@@ -1928,6 +1928,18 @@ const char* AstEnumDType::broken() const {
 }
 
 void AstEnumItemRef::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+
+void AstGenBlock::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (implied()) str << " [IMPLIED]";
+    if (unnamed()) str << " [UNNAMED]";
+}
+void AstGenBlock::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, implied);
+    dumpJsonBoolFunc(str, unnamed);
+    dumpJsonGen(str);
+}
+
 void AstIfaceRefDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
     if (isPortDecl()) str << " [PORTDECL]";
@@ -2941,14 +2953,10 @@ void AstNodeBlock::dumpJson(std::ostream& str) const {
 }
 void AstBegin::dump(std::ostream& str) const {
     this->AstNodeBlock::dump(str);
-    if (generate()) str << " [GEN]";
-    if (genforp()) str << " [GENFOR]";
     if (implied()) str << " [IMPLIED]";
     if (needProcess()) str << " [NPRC]";
 }
 void AstBegin::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFunc(str, generate);
-    dumpJsonBool(str, "genfor", bool(genforp()));
     dumpJsonBoolFunc(str, implied);
     dumpJsonBoolFunc(str, needProcess);
     dumpJsonGen(str);
@@ -3258,7 +3266,7 @@ AstAlways* AstAssignW::convertToAlways() {
     if (hasTimingControl) {
         // If there's a timing control, put the assignment in a fork..join_none. This process won't
         // get marked as suspendable and thus will be scheduled normally
-        AstBegin* const beginp = new AstBegin{flp, "", bodysp, false, false};
+        AstBegin* const beginp = new AstBegin{flp, "", bodysp, false};
         AstFork* const forkp = new AstFork{flp, "", beginp};
         forkp->joinType(VJoinType::JOIN_NONE);
         bodysp = forkp;

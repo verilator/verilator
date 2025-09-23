@@ -2713,7 +2713,7 @@ generate_block_or_null<nodep>:  // IEEE: generate_block_or_null (called from gen
         //                      // IEEE: generate_block
         //                      // Must always return a BEGIN node, or nullptr - see GenFor construction
                 ~c~generate_item
-                        { $$ = $1 ? (new AstBegin{$1->fileline(), "", $1, true, true}) : nullptr; }
+                        { $$ = $1 ? (new AstGenBlock{$1->fileline(), "", $1, true}) : nullptr; }
         |       ~c~genItemBegin                         { $$ = $1; }
         ;
 
@@ -2722,19 +2722,19 @@ c_generate_block_or_null<nodep>:  // IEEE: generate_block_or_null (for checkers)
         ;
 
 genItemBegin<nodep>:            // IEEE: part of generate_block
-                yBEGIN ~c~genItemList yEND              { $$ = new AstBegin{$1, "", $2, true, false}; }
+                yBEGIN ~c~genItemList yEND              { $$ = new AstGenBlock{$1, "", $2, false}; }
         |       yBEGIN yEND                             { $$ = nullptr; }
         |       id yP_COLON__BEGIN yBEGIN ~c~genItemList yEND endLabelE
-                        { $$ = new AstBegin{$<fl>1, *$1, $4, true, false};
+                        { $$ = new AstGenBlock{$<fl>1, *$1, $4, false};
                           GRAMMARP->endLabel($<fl>6, *$1, $6); }
         |       id yP_COLON__BEGIN yBEGIN yEND endLabelE
-                        { $$ = new AstBegin{$<fl>1, *$1, nullptr, true, false};
+                        { $$ = new AstGenBlock{$<fl>1, *$1, nullptr, false};
                           GRAMMARP->endLabel($<fl>5, *$1, $5); }
         |       yBEGIN ':' idAny ~c~genItemList yEND endLabelE
-                        { $$ = new AstBegin{$<fl>3, *$3, $4, true, false};
+                        { $$ = new AstGenBlock{$<fl>3, *$3, $4, false};
                           GRAMMARP->endLabel($<fl>6, *$3, $6); }
         |       yBEGIN ':' idAny yEND endLabelE
-                        { $$ = new AstBegin{$<fl>3, *$3, nullptr, true, false};
+                        { $$ = new AstGenBlock{$<fl>3, *$3, nullptr, false};
                           GRAMMARP->endLabel($<fl>5, *$3, $5); }
         ;
 
@@ -2803,27 +2803,23 @@ c_conditional_generate_construct<nodep>:  // IEEE: conditional_generate_construc
 loop_generate_construct<nodep>: // ==IEEE: loop_generate_construct
                 yFOR '(' genvar_initialization ';' expr ';' genvar_iteration ')' ~c~generate_block_or_null
                         { // Convert BEGIN(...) to BEGIN(GENFOR(...)), as we need the BEGIN to hide the local genvar
-                          AstBegin* lowerBegp = VN_CAST($9, Begin);
-                          UASSERT_OBJ(!($9 && !lowerBegp), $9, "Child of GENFOR should have been begin");
-
-                          if (!lowerBegp) lowerBegp = new AstBegin{$1, "", nullptr, true, false};  // Empty body
-                          AstNode* const lowerNoBegp = lowerBegp->stmtsp();
-                          if (lowerNoBegp) lowerNoBegp->unlinkFrBackWithNext();
-                          //
-                          AstBegin* const blkp = new AstBegin{$1, lowerBegp->name(), nullptr, true, true};
+                          AstGenBlock* lowerp = VN_CAST($9, GenBlock);
+                          UASSERT_OBJ(!$9 || lowerp, $9, "Child of GENFOR should have been begin");
+                          AstNode* const itemsp = lowerp && lowerp->itemsp() ? lowerp->itemsp()->unlinkFrBackWithNext() : nullptr;
+                          AstGenBlock* const blkp = new AstGenBlock{$1, lowerp ? lowerp->name() : "", nullptr, true};
                           // V3LinkDot detects BEGIN(GENFOR(...)) as a special case
                           AstNode* initp = $3;
                           AstNode* const varp = $3;
                           if (VN_IS(varp, Var)) {  // Genvar
                                 initp = varp->nextp();
                                 initp->unlinkFrBackWithNext();  // Detach 2nd from varp, make 1st init
-                                blkp->addStmtsp(varp);
+                                blkp->addItemsp(varp);
                           }
                           // Statements are under 'genforp' as instances under this
                           // for loop won't get an extra layer of hierarchy tacked on
-                          blkp->genforp(new AstGenFor{$1, initp, $5, $7, lowerNoBegp});
+                          blkp->genforp(new AstGenFor{$1, initp, $5, $7, itemsp});
                           $$ = blkp;
-                          VL_DO_DANGLING(lowerBegp->deleteTree(), lowerBegp);
+                          DEL(lowerp);
                         }
         ;
 
@@ -2878,22 +2874,22 @@ genvar_iteration<nodep>:        // ==IEEE: genvar_iteration
                                                                 new AstConst{$2, AstConst::StringToParse{}, "'b1"}}}; }
         ;
 
-case_generate_itemList<caseItemp>:  // IEEE: { case_generate_itemList }
+case_generate_itemList<genCaseItemp>:  // IEEE: { case_generate_itemList }
                 ~c~case_generate_item                   { $$ = $1; }
         |       ~c~case_generate_itemList ~c~case_generate_item         { $$ = $1; $1->addNext($2); }
         ;
 
-c_case_generate_itemList<caseItemp>:  // IEEE: { case_generate_item } (for checkers)
+c_case_generate_itemList<genCaseItemp>:  // IEEE: { case_generate_item } (for checkers)
                 BISONPRE_COPY(case_generate_itemList,{s/~c~/c_/g})      // {copied}
         ;
 
-case_generate_item<caseItemp>:      // ==IEEE: case_generate_item
-                caseCondList colon ~c~generate_block_or_null    { $$ = new AstCaseItem{$2, $1, $3}; }
-        |       yDEFAULT colon ~c~generate_block_or_null        { $$ = new AstCaseItem{$1, nullptr, $3}; }
-        |       yDEFAULT ~c~generate_block_or_null              { $$ = new AstCaseItem{$1, nullptr, $2}; }
+case_generate_item<genCaseItemp>:      // ==IEEE: case_generate_item
+                caseCondList colon ~c~generate_block_or_null    { $$ = new AstGenCaseItem{$2, $1, $3}; }
+        |       yDEFAULT colon ~c~generate_block_or_null        { $$ = new AstGenCaseItem{$1, nullptr, $3}; }
+        |       yDEFAULT ~c~generate_block_or_null              { $$ = new AstGenCaseItem{$1, nullptr, $2}; }
         ;
 
-c_case_generate_item<caseItemp>:  // IEEE: case_generate_item (for checkers)
+c_case_generate_item<genCaseItemp>:  // IEEE: case_generate_item (for checkers)
                 BISONPRE_COPY(case_generate_item,{s/~c~/c_/g})  // {copied}
         ;
 
@@ -3409,9 +3405,9 @@ par_blockPreId<nodep>:          // ==IEEE: par_block but called with leading ID
 
 seq_blockFront<beginp>:         // IEEE: part of seq_block
                 yBEGIN
-                        { $$ = new AstBegin{$1, "", nullptr, false, false}; }
+                        { $$ = new AstBegin{$1, "", nullptr, false}; }
         |       yBEGIN ':' idAny/*new-block_identifier*/
-                        { $$ = new AstBegin{$<fl>3, *$3, nullptr, false, false}; }
+                        { $$ = new AstBegin{$<fl>3, *$3, nullptr, false}; }
         ;
 
 par_blockFront<forkp>:          // IEEE: part of par_block
@@ -3423,7 +3419,7 @@ par_blockFront<forkp>:          // IEEE: part of par_block
 
 seq_blockFrontPreId<beginp>:    // IEEE: part of seq_block/stmt with leading id
                 id/*block_identifier*/ yP_COLON__BEGIN yBEGIN
-                        { $$ = new AstBegin{$3, *$1, nullptr, false, false}; }
+                        { $$ = new AstBegin{$3, *$1, nullptr, false}; }
         ;
 
 par_blockFrontPreId<forkp>:     // IEEE: part of par_block/stmt with leading id
@@ -3468,7 +3464,7 @@ stmtList<nodep>:
 stmt<nodep>:                    // IEEE: statement_or_null == function_statement_or_null
                 statement_item                          { $$ = $1; }
         //                      // S05 block creation rule
-        |       id/*block_identifier*/ ':' statement_item       { $$ = new AstBegin{$<fl>1, *$1, $3, false, false}; }
+        |       id/*block_identifier*/ ':' statement_item       { $$ = new AstBegin{$<fl>1, *$1, $3, false}; }
         //                      // from _or_null
         |       ';'                                     { $$ = nullptr; }
         //                      // labeled par_block/seq_block with leading ':'
@@ -3590,7 +3586,7 @@ statement_item<nodep>:          // IEEE: statement_item
         |       yDO stmtBlock yWHILE '(' expr ')' ';'   { $$ = new AstDoWhile{$1, $5, $2}; }
         //                      // IEEE says array_identifier here, but dotted accepted in VMM and 1800-2009
         |       yFOREACH '(' idClassSelForeach ')' stmtBlock
-                        { $$ = new AstBegin{$1, "", new AstForeach{$1, $3, $5}, false, true}; }
+                        { $$ = new AstBegin{$1, "", new AstForeach{$1, $3, $5}, true}; }
         //
         //                      // IEEE: jump_statement
         |       yRETURN ';'                             { $$ = new AstReturn{$1}; }
@@ -3652,10 +3648,10 @@ statement_item<nodep>:          // IEEE: statement_item
 
 statementFor<beginp>:           // IEEE: part of statement
                 yFOR beginForParen for_initialization expr ';' for_stepE ')' stmtBlock
-                        { $$ = new AstBegin{$1, "", $3, false, true};
+                        { $$ = new AstBegin{$1, "", $3, true};
                           $$->addStmtsp(new AstWhile{$1, $4, $8, $6}); }
         |       yFOR beginForParen for_initialization ';' for_stepE ')' stmtBlock
-                        { $$ = new AstBegin{$1, "", $3, false, true};
+                        { $$ = new AstBegin{$1, "", $3, true};
                           $$->addStmtsp(new AstWhile{$1, new AstConst{$1, AstConst::BitTrue{}}, $7, $5}); }
         ;
 beginForParen:  // IEEE: Part of statement (for loop beginning paren)
@@ -6160,7 +6156,7 @@ assertion_item<nodep>:          // ==IEEE: assertion_item
 deferred_immediate_assertion_item<nodep>:       // ==IEEE: deferred_immediate_assertion_item
                 deferred_immediate_assertion_statement  { $$ = $1; }
         |       id/*block_identifier*/ ':' deferred_immediate_assertion_statement
-                        { $$ = new AstBegin{$<fl>1, *$1, $3, false, true}; }
+                        { $$ = new AstBegin{$<fl>1, *$1, $3, true}; }
         ;
 
 procedural_assertion_statement<nodep>:  // ==IEEE: procedural_assertion_statement
@@ -6216,7 +6212,7 @@ deferred_immediate_assertion_statement<nodep>:  // ==IEEE: deferred_immediate_as
 concurrent_assertion_item<nodep>:       // IEEE: concurrent_assertion_item
                 concurrent_assertion_statement          { $$ = $1; }
         |       id/*block_identifier*/ ':' concurrent_assertion_statement
-                        { $$ = new AstBegin{$<fl>1, *$1, $3, false, true}; }
+                        { $$ = new AstBegin{$<fl>1, *$1, $3, true}; }
         //                      // IEEE: checker_instantiation
         //                      // identical to module_instantiation; see etcInst
         ;

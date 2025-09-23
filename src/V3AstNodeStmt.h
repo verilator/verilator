@@ -70,21 +70,6 @@ public:
     bool isTimingControl() const override { return timingControlp(); }
     virtual bool brokeLhsMustBeLvalue() const = 0;
 };
-class AstNodeCase VL_NOT_FINAL : public AstNodeStmt {
-    // @astgen op1 := exprp : AstNodeExpr // Condition (scurtinee) expression
-    // @astgen op2 := itemsp : List[AstCaseItem]
-    // @astgen op3 := notParallelp : List[AstNode] // assertion code for non-full case's
-protected:
-    AstNodeCase(VNType t, FileLine* fl, AstNodeExpr* exprp, AstCaseItem* itemsp)
-        : AstNodeStmt{t, fl} {
-        this->exprp(exprp);
-        addItemsp(itemsp);
-    }
-
-public:
-    ASTGEN_MEMBERS_AstNodeCase;
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
-};
 class AstNodeCoverOrAssert VL_NOT_FINAL : public AstNodeStmt {
     // Cover or Assert
     // Parents:  {statement list}
@@ -120,27 +105,6 @@ public:
                                         | VAssertType::FINAL_DEFERRED_IMMEDIATE)
                || this->type() == VAssertType::INTERNAL;
     }
-};
-class AstNodeFor VL_NOT_FINAL : public AstNodeStmt {
-    // @astgen op1 := initsp : List[AstNode]
-    // @astgen op2 := condp : AstNodeExpr
-    // @astgen op3 := incsp : List[AstNode]
-    // @astgen op4 := stmtsp : List[AstNode]
-protected:
-    AstNodeFor(VNType t, FileLine* fl, AstNode* initsp, AstNodeExpr* condp, AstNode* incsp,
-               AstNode* stmtsp)
-        : AstNodeStmt{t, fl} {
-        addInitsp(initsp);
-        this->condp(condp);
-        addIncsp(incsp);
-        addStmtsp(stmtsp);
-    }
-
-public:
-    ASTGEN_MEMBERS_AstNodeFor;
-    bool isGateOptimizable() const override { return false; }
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstNodeForeach VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := arrayp : AstNode
@@ -217,6 +181,23 @@ public:
 };
 
 // === Concrete node types =====================================================
+
+// === AstNode ===
+class AstCaseItem final : public AstNode {
+    // Single item of AstCase/AstRandCase
+    // @astgen op1 := condsp : List[AstNodeExpr]
+    // @astgen op2 := stmtsp : List[AstNode]
+public:
+    AstCaseItem(FileLine* fl, AstNodeExpr* condsp, AstNode* stmtsp)
+        : ASTGEN_SUPER_CaseItem(fl) {
+        addCondsp(condsp);
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstCaseItem;
+    int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
+    bool isDefault() const { return condsp() == nullptr; }
+    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
+};
 
 // === AstNodeStmt ===
 class AstAssertCtl final : public AstNodeStmt {
@@ -305,6 +286,47 @@ public:
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
+class AstCase final : public AstNodeStmt {
+    // Case statement
+    // @astgen op1 := exprp : AstNodeExpr // Condition (scurtinee) expression
+    // @astgen op2 := itemsp : List[AstCaseItem]
+    // @astgen op3 := notParallelp : List[AstNode] // assertion code for non-full case's
+    VCaseType m_casex;  // 0=case, 1=casex, 2=casez
+    bool m_fullPragma = false;  // Synthesis full_case
+    bool m_parallelPragma = false;  // Synthesis parallel_case
+    bool m_uniquePragma = false;  // unique case
+    bool m_unique0Pragma = false;  // unique0 case
+    bool m_priorityPragma = false;  // priority case
+public:
+    AstCase(FileLine* fl, VCaseType casex, AstNodeExpr* exprp, AstCaseItem* itemsp)
+        : ASTGEN_SUPER_Case(fl)
+        , m_casex{casex} {
+        this->exprp(exprp);
+        addItemsp(itemsp);
+    }
+    ASTGEN_MEMBERS_AstCase;
+    int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    string verilogKwd() const override { return casez() ? "casez" : casex() ? "casex" : "case"; }
+    bool sameNode(const AstNode* samep) const override {
+        return m_casex == VN_DBG_AS(samep, Case)->m_casex;
+    }
+    bool casex() const { return m_casex == VCaseType::CT_CASEX; }
+    bool casez() const { return m_casex == VCaseType::CT_CASEZ; }
+    bool caseInside() const { return m_casex == VCaseType::CT_CASEINSIDE; }
+    bool caseSimple() const { return m_casex == VCaseType::CT_CASE; }
+    void caseInsideSet() { m_casex = VCaseType::CT_CASEINSIDE; }
+    bool fullPragma() const { return m_fullPragma; }
+    void fullPragma(bool flag) { m_fullPragma = flag; }
+    bool parallelPragma() const { return m_parallelPragma; }
+    void parallelPragma(bool flag) { m_parallelPragma = flag; }
+    bool uniquePragma() const { return m_uniquePragma; }
+    void uniquePragma(bool flag) { m_uniquePragma = flag; }
+    bool unique0Pragma() const { return m_unique0Pragma; }
+    void unique0Pragma(bool flag) { m_unique0Pragma = flag; }
+    bool priorityPragma() const { return m_priorityPragma; }
+    void priorityPragma(bool flag) { m_priorityPragma = flag; }
+    string pragmaString() const;
 };
 class AstComment final : public AstNodeStmt {
     // Some comment to put into the output stream
@@ -1130,49 +1152,6 @@ public:
     AstAlways* convertToAlways();
 };
 
-// === AstNodeCase ===
-class AstCase final : public AstNodeCase {
-    // Case statement
-    VCaseType m_casex;  // 0=case, 1=casex, 2=casez
-    bool m_fullPragma = false;  // Synthesis full_case
-    bool m_parallelPragma = false;  // Synthesis parallel_case
-    bool m_uniquePragma = false;  // unique case
-    bool m_unique0Pragma = false;  // unique0 case
-    bool m_priorityPragma = false;  // priority case
-public:
-    AstCase(FileLine* fl, VCaseType casex, AstNodeExpr* exprp, AstCaseItem* itemsp)
-        : ASTGEN_SUPER_Case(fl, exprp, itemsp)
-        , m_casex{casex} {}
-    ASTGEN_MEMBERS_AstCase;
-    string verilogKwd() const override { return casez() ? "casez" : casex() ? "casex" : "case"; }
-    bool sameNode(const AstNode* samep) const override {
-        return m_casex == VN_DBG_AS(samep, Case)->m_casex;
-    }
-    bool casex() const { return m_casex == VCaseType::CT_CASEX; }
-    bool casez() const { return m_casex == VCaseType::CT_CASEZ; }
-    bool caseInside() const { return m_casex == VCaseType::CT_CASEINSIDE; }
-    bool caseSimple() const { return m_casex == VCaseType::CT_CASE; }
-    void caseInsideSet() { m_casex = VCaseType::CT_CASEINSIDE; }
-    bool fullPragma() const { return m_fullPragma; }
-    void fullPragma(bool flag) { m_fullPragma = flag; }
-    bool parallelPragma() const { return m_parallelPragma; }
-    void parallelPragma(bool flag) { m_parallelPragma = flag; }
-    bool uniquePragma() const { return m_uniquePragma; }
-    void uniquePragma(bool flag) { m_uniquePragma = flag; }
-    bool unique0Pragma() const { return m_unique0Pragma; }
-    void unique0Pragma(bool flag) { m_unique0Pragma = flag; }
-    bool priorityPragma() const { return m_priorityPragma; }
-    void priorityPragma(bool flag) { m_priorityPragma = flag; }
-    string pragmaString() const;
-};
-class AstGenCase final : public AstNodeCase {
-    // Generate Case statement
-public:
-    AstGenCase(FileLine* fl, AstNodeExpr* exprp, AstCaseItem* itemsp)
-        : ASTGEN_SUPER_GenCase(fl, exprp, itemsp) {}
-    ASTGEN_MEMBERS_AstGenCase;
-};
-
 // === AstNodeCoverOrAssert ===
 class AstAssert final : public AstNodeCoverOrAssert {
     // @astgen op3 := failsp: List[AstNode] // Statements when propp is failing/falsey
@@ -1215,14 +1194,6 @@ public:
                                 VAssertDirectiveType::RESTRICT) {}
 };
 
-// === AstNodeFor ===
-class AstGenFor final : public AstNodeFor {
-public:
-    AstGenFor(FileLine* fl, AstNode* initsp, AstNodeExpr* condp, AstNode* incsp, AstNode* stmtsp)
-        : ASTGEN_SUPER_GenFor(fl, initsp, condp, incsp, stmtsp) {}
-    ASTGEN_MEMBERS_AstGenFor;
-};
-
 // === AstNodeForeach ===
 class AstConstraintForeach final : public AstNodeForeach {
     // Constraint foreach statement
@@ -1245,12 +1216,7 @@ public:
         : ASTGEN_SUPER_ConstraintIf(fl, condp, thensp, elsesp) {}
     ASTGEN_MEMBERS_AstConstraintIf;
 };
-class AstGenIf final : public AstNodeIf {
-public:
-    AstGenIf(FileLine* fl, AstNodeExpr* condp, AstNode* thensp, AstNode* elsesp)
-        : ASTGEN_SUPER_GenIf(fl, condp, thensp, elsesp) {}
-    ASTGEN_MEMBERS_AstGenIf;
-};
+
 class AstIf final : public AstNodeIf {
     bool m_uniquePragma = false;  // unique case
     bool m_unique0Pragma = false;  // unique0 case

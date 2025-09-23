@@ -73,31 +73,32 @@ class BeginVisitor final : public VNVisitor {
 
     string dot(const string& a, const string& b) { return VString::dot(a, "__DOT__", b); }
 
-    void dotNames(const AstNodeBlock* const nodep, const char* const blockName) {
+    void dotNames(const std::string& name, FileLine* const flp, AstNode* stmtsp,
+                  const char* const blockName) {
         UINFO(8, "nname " << m_namedScope);
-        if (nodep->name() != "") {  // Else unneeded unnamed block
+        if (name != "") {  // Else unneeded unnamed block
             // Create data for dotted variable resolution
-            string dottedname = nodep->name() + "__DOT__";  // So always found
+            string dottedname = name + "__DOT__";  // So always found
             string::size_type pos;
             while ((pos = dottedname.find("__DOT__")) != string::npos) {
                 const string ident = dottedname.substr(0, pos);
                 dottedname = dottedname.substr(pos + std::strlen("__DOT__"));
-                if (nodep->name() != "") {
+                if (name != "") {
                     m_displayScope = dot(m_displayScope, ident);
                     m_namedScope = dot(m_namedScope, ident);
                 }
                 m_unnamedScope = dot(m_unnamedScope, ident);
                 // Create CellInline for dotted var resolution
                 if (!m_ftaskp) {
-                    AstCellInline* const inlinep = new AstCellInline{
-                        nodep->fileline(), m_unnamedScope, blockName, m_modp->timeunit()};
+                    AstCellInline* const inlinep
+                        = new AstCellInline{flp, m_unnamedScope, blockName, m_modp->timeunit()};
                     m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
                 }
             }
         }
 
         // Remap var names and replace lower Begins
-        iterateAndNextNull(nodep->stmtsp());
+        iterateAndNextNull(stmtsp);
     }
 
     void liftNode(AstNode* nodep) {
@@ -125,14 +126,13 @@ class BeginVisitor final : public VNVisitor {
         // replaced with multiple statements)
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (!VN_IS(stmtp, Begin)) {
-                AstBegin* const beginp
-                    = new AstBegin{stmtp->fileline(), "", nullptr, false, false};
+                AstBegin* const beginp = new AstBegin{stmtp->fileline(), "", nullptr, false};
                 stmtp->replaceWith(beginp);
                 beginp->addStmtsp(stmtp);
                 stmtp = beginp;
             }
         }
-        dotNames(nodep, "__FORK__");
+        dotNames(nodep->name(), nodep->fileline(), nodep->stmtsp(), "__FORK__");
         nodep->name("");
     }
     void visit(AstForeach* nodep) override {
@@ -199,6 +199,20 @@ class BeginVisitor final : public VNVisitor {
             m_liftedp = nullptr;
         }
     }
+    void visit(AstGenBlock* nodep) override {
+        // GenBlocks were only useful in variable creation, change names and delete
+        UINFO(8, "  " << nodep);
+        VL_RESTORER(m_displayScope);
+        VL_RESTORER(m_namedScope);
+        VL_RESTORER(m_unnamedScope);
+        UASSERT_OBJ(!m_keepBegins, nodep, "Should be able to eliminate all AstGenBlock");
+        dotNames(nodep->name(), nodep->fileline(), nodep->itemsp(), "__BEGIN__");
+        // Repalce node with body then delete
+        if (AstNode* const itemsp = nodep->itemsp()) {
+            nodep->addNextHere(itemsp->unlinkFrBackWithNext());
+        }
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
     void visit(AstBegin* nodep) override {
         // Begin blocks were only useful in variable creation, change names and delete
         UINFO(8, "  " << nodep);
@@ -208,9 +222,8 @@ class BeginVisitor final : public VNVisitor {
         {
             VL_RESTORER(m_keepBegins);
             m_keepBegins = false;
-            dotNames(nodep, "__BEGIN__");
+            dotNames(nodep->name(), nodep->fileline(), nodep->stmtsp(), "__BEGIN__");
         }
-        UASSERT_OBJ(!nodep->genforp(), nodep, "GENFORs should have been expanded earlier");
 
         // Cleanup
         if (m_keepBegins) {
@@ -431,7 +444,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     AstNodeDType* fromDtp = fromp->dtypep()->skipRefp();
     // Split into for loop
     // We record where the body needs to eventually go with bodyPointp
-    AstNode* bodyPointp = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr, false, false};
+    AstNode* bodyPointp = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr, false};
     AstNode* newp = nullptr;
     AstNode* lastp = nodep;
     AstVar* nestedIndexp = nullptr;

@@ -1610,7 +1610,7 @@ class ParamVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstBegin* nodep) override {
+    void visit(AstGenBlock* nodep) override {
         // Parameter substitution for generated for loops.
         // TODO Unlike generated IF, we don't have to worry about short-circuiting the
         // conditional expression, since this is currently restricted to simple
@@ -1663,8 +1663,8 @@ class ParamVisitor final : public VNVisitor {
         V3Const::constifyParamsEdit(nodep->exprp());  // exprp may change
         const AstConst* const exprp = VN_AS(nodep->exprp(), Const);
         // Constify
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstGenCaseItem* itemp = nodep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), GenCaseItem)) {
             for (AstNode* ep = itemp->condsp(); ep;) {
                 AstNode* const nextp = ep->nextp();  // May edit list
                 iterateAndNextNull(ep);
@@ -1673,8 +1673,8 @@ class ParamVisitor final : public VNVisitor {
             }
         }
         // Item match
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstGenCaseItem* itemp = nodep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), GenCaseItem)) {
             if (!itemp->isDefault()) {
                 for (AstNode* ep = itemp->condsp(); ep; ep = ep->nextp()) {
                     if (const AstConst* const ccondp = VN_CAST(ep, Const)) {
@@ -1682,7 +1682,7 @@ class ParamVisitor final : public VNVisitor {
                         match.opEq(ccondp->num(), exprp->num());
                         if (!hit && match.isNeqZero()) {
                             hit = true;
-                            keepp = itemp->stmtsp();
+                            keepp = itemp->itemsp();
                         }
                     } else {
                         itemp->v3error("Generate Case item does not evaluate to constant");
@@ -1691,12 +1691,12 @@ class ParamVisitor final : public VNVisitor {
             }
         }
         // Else default match
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstGenCaseItem* itemp = nodep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), GenCaseItem)) {
             if (itemp->isDefault()) {
                 if (!hit) {
                     hit = true;
-                    keepp = itemp->stmtsp();
+                    keepp = itemp->itemsp();
                 }
             }
         }

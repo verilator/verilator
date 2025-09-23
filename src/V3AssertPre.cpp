@@ -349,7 +349,7 @@ private:
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         cntVarp->funcLocal(true);
-        AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, false, true};
+        AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, true};
         beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});
         beginp->addStmtsp(new AstWhile{
             nodep->fileline(),

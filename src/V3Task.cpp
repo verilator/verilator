@@ -1362,7 +1362,7 @@ class TaskVisitor final : public VNVisitor {
         if (bodysp) {
             unlinkAndClone(nodep, bodysp, true);
             AstBegin* const tempp
-                = new AstBegin{nodep->fileline(), "[EditWrapper]", bodysp, false, false};
+                = new AstBegin{nodep->fileline(), "[EditWrapper]", bodysp, false};
             VL_DANGLING(bodysp);
             // If we cloned due to recursion, now need to rip out the ports
             // (that remained in place) then got cloned
@@ -1623,10 +1623,6 @@ class TaskVisitor final : public VNVisitor {
     void visit(AstNodeForeach* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "Foreach statements should have been converted to while statements in V3Begin.cpp");
-    }
-    void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc(
-            "For statements should have been converted to while statements in V3Begin.cpp");
     }
     void visit(AstNodeStmt* nodep) override {
         VL_RESTORER(m_insStmtp);

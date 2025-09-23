@@ -252,7 +252,7 @@ public:
     // would misfire
     AstNode* newBlock(FileLine* fl, AstNode* nodep) {
         if (nodep) return nodep;
-        return new AstBegin{fl, "", nullptr, false, true};
+        return new AstBegin{fl, "", nullptr, true};
     }
 
     // Bison sometimes needs error context without a token, so remember last token's line

@@ -49,64 +49,80 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class CaseLintVisitor final : public VNVisitorConst {
-    const AstNodeCase* m_caseExprp
-        = nullptr;  // Under a CASE value node, if so the relevant case statement
+    // Under a CASE value node, if so the relevant case statement
+    const AstNode* m_casep = nullptr;
 
     // METHODS
+    template <typename CaseItem>
+    static void detectMultipleDefaults(CaseItem* itemsp) {
+        bool hitDefault = false;
+        for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
+            if (!itemp->isDefault()) continue;
+            if (hitDefault) itemp->v3error("Multiple default statements in case statement.");
+            hitDefault = true;
+        }
+    }
 
-    void visit(AstNodeCase* nodep) override {
-        if (VN_IS(nodep, Case) && VN_AS(nodep, Case)->casex()) {
+    template <typename CaseItem>
+    void checkXZinNonCaseX(AstNode* casep, AstNodeExpr* exprp, CaseItem* itemsp) {
+        VL_RESTORER(m_casep);
+        m_casep = casep;
+        iterateConst(exprp);
+        for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
+            iterateAndNextConstNull(itemp->condsp());
+        }
+    }
+
+    // VISITORS
+    void visit(AstGenCase* nodep) override {
+        // Detect multiple defaults
+        detectMultipleDefaults(nodep->itemsp());
+        // Check for X/Z in non-casex statements
+        checkXZinNonCaseX(nodep, nodep->exprp(), nodep->itemsp());
+    }
+
+    void visit(AstCase* nodep) override {
+        if (nodep->casex()) {
             nodep->v3warn(CASEX, "Suggest casez (with ?'s) in place of casex (with X's)");
         }
         // Detect multiple defaults
-        bool hitDefault = false;
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
-            if (itemp->isDefault()) {
-                if (hitDefault) {
-                    itemp->v3error("Multiple default statements in case statement.");
-                }
-                hitDefault = true;
-            }
-        }
-
+        detectMultipleDefaults(nodep->itemsp());
         // Check for X/Z in non-casex statements
-        {
-            VL_RESTORER(m_caseExprp);
-            m_caseExprp = nodep;
-            iterateConst(nodep->exprp());
-            for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), CaseItem)) {
-                iterateAndNextConstNull(itemp->condsp());
-            }
-        }
+        checkXZinNonCaseX(nodep, nodep->exprp(), nodep->itemsp());
     }
     void visit(AstConst* nodep) override {
-        // See also neverItem
-        if (m_caseExprp && nodep->num().isFourState()) {
-            if (VN_IS(m_caseExprp, GenCase)) {
-                nodep->v3error("Use of x/? constant in generate case statement, "
-                               "(no such thing as 'generate casez')");
-            } else if (VN_IS(m_caseExprp, Case) && VN_AS(m_caseExprp, Case)->casex()) {
-                // Don't sweat it, we already complained about casex in general
-            } else if (VN_IS(m_caseExprp, Case)
-                       && (VN_AS(m_caseExprp, Case)->casez()
-                           || VN_AS(m_caseExprp, Case)->caseInside())) {
-                if (nodep->num().isAnyX()) {
-                    nodep->v3warn(CASEWITHX, "Use of x constant in casez statement, "
-                                             "(perhaps intended ?/z in constant)");
-                }
-            } else {
-                nodep->v3warn(CASEWITHX, "Use of x/? constant in case statement, "
-                                         "(perhaps intended casex/casez)");
-            }
+        if (!nodep->num().isFourState()) return;
+
+        // Error if generate case
+        if (VN_IS(m_casep, GenCase)) {
+            nodep->v3error("Use of x/? constant in generate case statement, "
+                           "(no such thing as 'generate casez')");
+            return;
         }
+
+        // Otherwise must be a case statement
+        const AstCase* const casep = VN_AS(m_casep, Case);
+
+        // Don't sweat it, we already complained about casex in general
+        if (casep->casex()) return;
+
+        if (casep->casez() || casep->caseInside()) {
+            if (nodep->num().isAnyX()) {
+                nodep->v3warn(CASEWITHX, "Use of x constant in casez statement, "
+                                         "(perhaps intended ?/z in constant)");
+            }
+            return;
+        }
+
+        nodep->v3warn(CASEWITHX, "Use of x/? constant in case statement, "
+                                 "(perhaps intended casex/casez)");
     }
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit CaseLintVisitor(AstNodeCase* nodep) { iterateConst(nodep); }
+    explicit CaseLintVisitor(AstCase* nodep) { iterateConst(nodep); }
+    explicit CaseLintVisitor(AstGenCase* nodep) { iterateConst(nodep); }
     ~CaseLintVisitor() override = default;
 };
 
@@ -562,7 +578,7 @@ class CaseVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstCase* nodep) override {
-        V3Case::caseLint(nodep);
+        { CaseLintVisitor{nodep}; }
         iterateChildren(nodep);
         UINFOTREE(9, nodep, "", "case_old");
         if (isCaseTreeFast(nodep) && v3Global.opt.fCase()) {
@@ -605,7 +621,7 @@ void V3Case::caseAll(AstNetlist* nodep) {
     { CaseVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("case", 0, dumpTreeEitherLevel() >= 3);
 }
-void V3Case::caseLint(AstNodeCase* nodep) {
+void V3Case::caseLint(AstGenCase* nodep) {
     UINFO(4, __FUNCTION__ << ": ");
     { CaseLintVisitor{nodep}; }
 }

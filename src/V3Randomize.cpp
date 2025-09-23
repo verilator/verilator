@@ -597,7 +597,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         {
             AstBegin* const tempp
-                = new AstBegin{fl, "[EditWrapper]", itemsp->unlinkFrBackWithNext(), false, false};
+                = new AstBegin{fl, "[EditWrapper]", itemsp->unlinkFrBackWithNext(), false};
             VL_DO_DANGLING(iterateAndNextNull(tempp->stmtsp()), itemsp);
             itemsp = tempp->stmtsp();
             if (itemsp) itemsp->unlinkFrBackWithNext();
@@ -937,6 +937,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
+    void visit(AstGenBlock* nodep) override {
+        // Dubious but this is what we used to do. Does that mean no randomzie
+        // methods work under a generage block?
+    }
     void visit(AstBegin* nodep) override {}
     void visit(AstConstraintForeach* nodep) override {
         // Convert to plain foreach
@@ -951,7 +955,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             exprsp->addNext(new AstBegin{
                 fl, "",
                 new AstForeach{fl, nodep->arrayp()->unlinkFrBack(), new AstCStmt{fl, cstmtp}},
-                false, true});
+                true});
             exprsp->addNext(
                 new AstText{fl, "return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";})()"});
             AstNodeExpr* const newp = new AstCExpr{fl, exprsp};
@@ -963,7 +967,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 new AstBegin{fl, "",
                              new AstForeach{fl, nodep->arrayp()->unlinkFrBack(),
                                             nodep->stmtsp()->unlinkFrBackWithNext()},
-                             false, true});
+                             true});
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -1027,8 +1031,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             cstmtp->addNext(iterateSubtreeReturnEdits(itemp));
             cstmtp->addNext(new AstText{fl, ";"});
             AstNode* const exprsp = new AstText{fl, "([&]{ std::string ret;"};
-            exprsp->addNext(new AstBegin{
-                fl, "", new AstForeach{fl, arrayp, new AstCStmt{fl, cstmtp}}, false, true});
+            exprsp->addNext(
+                new AstBegin{fl, "", new AstForeach{fl, arrayp, new AstCStmt{fl, cstmtp}}, true});
             exprsp->addNext(
                 new AstText{fl, "return ret.empty() ? \"#b0\" : \"(bvor\" + ret + \")\";})()"});
             AstNodeExpr* const newp = new AstCExpr{fl, exprsp};
@@ -1530,7 +1534,7 @@ class RandomizeVisitor final : public VNVisitor {
                          new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
                                        new AstAdd{fl, new AstConst{fl, 1},
                                                   new AstVarRef{fl, iterVarp, VAccess::READ}}}});
-        return new AstBegin{fl, "", stmtsp, false, true};
+        return new AstBegin{fl, "", stmtsp, true};
     }
     static AstNodeStmt* wrapIfRandMode(AstClass* classp, AstVar* const varp, AstNodeStmt* stmtp) {
         const RandomizeMode rmode = {.asInt = varp->user1()};
@@ -1939,7 +1943,7 @@ class RandomizeVisitor final : public VNVisitor {
                 AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
                 AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp, basicFvarp);
                 if (!refp->backp()) VL_DO_DANGLING(refp->deleteTree(), refp);
-                basicRandomizep->addStmtsp(new AstBegin{fl, "", stmtp, false, false});
+                basicRandomizep->addStmtsp(new AstBegin{fl, "", stmtp, false});
             }
         });
     }
@@ -2072,7 +2076,7 @@ class RandomizeVisitor final : public VNVisitor {
             stmtsp->addNext(setStmtsp);
             stmtsp->addNext(m_stmtp);
             stmtsp->addNext(restoreStmtsp);
-            relinker.relink(new AstBegin{nodep->fileline(), "", stmtsp, false, true});
+            relinker.relink(new AstBegin{nodep->fileline(), "", stmtsp, true});
         }
     }
 

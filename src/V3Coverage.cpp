@@ -710,6 +710,16 @@ class CoverageVisitor final : public VNVisitor {
             lineTrack(nodep);
         }
     }
+    void visit(AstGenBlock* nodep) override {
+        // Similar to AstBegin
+        VL_RESTORER(m_beginHier);
+        if (nodep->name() != "") {
+            m_beginHier = m_beginHier + (m_beginHier != "" ? "__DOT__" : "") + nodep->name();
+        }
+        iterateChildren(nodep);
+        lineTrack(nodep);
+    }
+
     void visit(AstBegin* nodep) override {
         // Record the hierarchy of any named begins, so we can apply to user
         // coverage points.  This is because there may be cov points inside
@@ -718,7 +728,7 @@ class CoverageVisitor final : public VNVisitor {
         // covers the code in that line.)
         VL_RESTORER(m_beginHier);
         VL_RESTORER(m_inToggleOff);
-        if (!nodep->generate()) m_inToggleOff = true;
+        m_inToggleOff = true;
         if (nodep->name() != "") {
             m_beginHier = m_beginHier + (m_beginHier != "" ? "__DOT__" : "") + nodep->name();
         }

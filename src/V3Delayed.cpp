@@ -1297,9 +1297,6 @@ class DelayedVisitor final : public VNVisitor {
         // Record write reference
         recordWriteRef(nodep, false);
     }
-    void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc("For statements should have been converted to while statements");
-    }
     void visit(AstWhile* nodep) override {
         VL_RESTORER(m_inLoop);
         m_inLoop = true;
