@@ -2180,6 +2180,26 @@ class LinkDotScopeVisitor final : public VNVisitor {
     const AstScope* m_scopep = nullptr;  // The current scope
     VSymEnt* m_modSymp = nullptr;  // Symbol entry for current module
 
+    // METHODS
+public:
+    // getAliasVarScopep and setAliasVarScope implement disjoint-set data structure.
+    // This algorithm is needed for the case when multiple alias statements
+    // reference partially the same variables.
+    static AstVarScope* getAliasVarScopep(AstVarScope* const vscp) {
+        if (vscp->user2p() && vscp != vscp->user2p()) {
+            AstVarScope* const aliasp = getAliasVarScopep(VN_AS(vscp->user2p(), VarScope));
+            vscp->user2p(aliasp);
+            return aliasp;
+        } else {
+            return vscp;
+        }
+    }
+
+private:
+    void setAliasVarScope(AstVarScope* const vscp, AstVarScope* const aliasp) {
+        getAliasVarScopep(vscp)->user2p(aliasp);
+    }
+
     // VISITORS
     void visit(AstNetlist* nodep) override {  // ScopeVisitor::
         // Recurse..., backward as must do packages before using packages
@@ -2263,7 +2283,7 @@ class LinkDotScopeVisitor final : public VNVisitor {
         AstVarScope* const fromVscp = lhsp->varScopep();
         AstVarScope* const toVscp = rhsp->varScopep();
         UASSERT_OBJ(fromVscp && toVscp, nodep, "Bad alias scopes");
-        fromVscp->user2p(toVscp);
+        setAliasVarScope(fromVscp, toVscp);
         iterateChildren(nodep);
         pushDeletep(nodep->unlinkFrBack());
     }
@@ -3943,11 +3963,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
         }
         AstVarScope* vscp = nodep->varScopep();
-        if (vscp && vscp->user2p() && m_replaceWithAlias) {
-            while (vscp->user2p()) {
-                UINFO(7, indent() << "Resolved pre-alias " << vscp);  // Also prints taskp
-                vscp = VN_AS(vscp->user2p(), VarScope);
-            }
+        if (vscp && vscp->user2p() != vscp && m_replaceWithAlias) {
+            vscp = LinkDotScopeVisitor::getAliasVarScopep(vscp);
             nodep->varp(vscp->varp());
             nodep->varScopep(vscp);
             updateVarUse(nodep->varp());
@@ -4069,10 +4086,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                    << nodep->warnContextPrimary()
                                    << okSymp->cellErrorScopes(nodep));
                 } else {
-                    while (vscp->user2p() && m_replaceWithAlias) {
-                        // If V3Inline aliased it, pick up the new signal
-                        UINFO(7, indent() << "Resolved pre-alias " << vscp);  // Also prints taskp
-                        vscp = VN_AS(vscp->user2p(), VarScope);
+                    if (vscp->user2p() && m_replaceWithAlias) {
+                        vscp = LinkDotScopeVisitor::getAliasVarScopep(vscp);
                     }
                     // Convert the VarXRef to a VarRef, so we don't need
                     // later optimizations to deal with VarXRef.
@@ -4160,7 +4175,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
         iterateChildren(nodep);
-        AstVarScope* aliasp = VN_CAST(nodep->user2p(), VarScope);
+        AstVarScope* aliasp = LinkDotScopeVisitor::getAliasVarScopep(nodep);
         if (aliasp && aliasp != nodep) {
             AstAssignW* const assignp = new AstAssignW{
                 nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
