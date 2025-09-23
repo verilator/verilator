@@ -4177,6 +4177,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         iterateChildren(nodep);
         AstVarScope* aliasp = LinkDotScopeVisitor::getAliasVarScopep(nodep);
         if (aliasp && aliasp != nodep) {
+            // Aliased variable might still be references from outside,
+            // eg through the VPI, and is traced, so we need the value to propagate.
+            // TODO: this means external writes to the LHS (e.g.: through the VPI) don't work
             AstAssignW* const assignp = new AstAssignW{
                 nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
                 new AstVarRef{nodep->fileline(), aliasp, VAccess::READ}};
