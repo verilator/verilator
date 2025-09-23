@@ -168,6 +168,7 @@ class V3ParseImp final {
 
     AstNode* m_tagNodep = nullptr;  // Points to the node to set to m_tag or nullptr to not set.
     VTimescale m_timeLastUnit;  // Last `timescale's unit
+    VTimescale m_timeLastPrec;  // Last `timescale's precision
 
 public:
     VL_DEFINE_DEBUG_FUNCTIONS;
@@ -185,6 +186,7 @@ public:
     AstPragma* createTimescale(FileLine* fl, bool unitSet, double unitVal, bool precSet,
                                double precVal) VL_MT_DISABLED;
     VTimescale timeLastUnit() const { return m_timeLastUnit; }
+    VTimescale timeLastPrec() const { return m_timeLastPrec; }
 
     void lexFileline(FileLine* fl) { m_lexFileline = fl; }
     FileLine* lexFileline() const { return m_lexFileline; }
@@ -286,6 +288,7 @@ public:
         , m_filterp{filterp} {
         m_lexKwdLast = stateVerilogRecent();
         m_timeLastUnit = v3Global.opt.timeDefaultUnit();
+        m_timeLastPrec = v3Global.opt.timeDefaultPrec();
     }
     ~V3ParseImp() VL_MT_DISABLED;
     void parserClear() VL_MT_DISABLED;

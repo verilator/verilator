@@ -1180,8 +1180,10 @@ public:
     void visit(AstTime* nodep) override {
         putns(nodep, "VL_TIME_UNITED_Q(");
         UASSERT_OBJ(!nodep->timeunit().isNone(), nodep, "$time has no units");
-        puts(cvtToStr(nodep->timeunit().multiplier()
-                      / v3Global.rootp()->timeprecision().multiplier()));
+        const double time
+            = nodep->timeunit().multiplier() / v3Global.rootp()->timeprecision().multiplier();
+        UASSERT_OBJ(time >= 1, nodep, "TimeQ is less than 1, will result in division by zero");
+        puts(cvtToStr(time));
         puts(")");
     }
     void visit(AstTimeD* nodep) override {
