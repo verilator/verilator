@@ -28,7 +28,7 @@
           </contassign>
           <varscope loc="d,7,24,7,29" name="top.f.i_clk" dtype_id="1"/>
           <contassign loc="d,7,24,7,29" dtype_id="1">
-            <varref loc="d,7,24,7,29" name="top.i_clk" dtype_id="1"/>
+            <varref loc="d,7,24,7,29" name="i_clk" dtype_id="1"/>
             <varref loc="d,7,24,7,29" name="top.f.i_clk" dtype_id="1"/>
           </contassign>
         </scope>

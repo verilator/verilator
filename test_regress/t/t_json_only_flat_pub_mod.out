@@ -21,7 +21,7 @@
         {"type":"VARSCOPE","name":"top.f.i_clk","addr":"(Q)","loc":"d,7:24,7:29","dtypep":"(H)","isTrace":true,"scopep":"(K)","varp":"(J)"},
         {"type":"ASSIGNW","name":"","addr":"(R)","loc":"d,7:24,7:29","dtypep":"(H)",
          "rhsp": [
-          {"type":"VARREF","name":"top.i_clk","addr":"(S)","loc":"d,7:24,7:29","dtypep":"(H)","access":"RD","varp":"(I)","varScopep":"(M)","classOrPackagep":"UNLINKED"}
+          {"type":"VARREF","name":"i_clk","addr":"(S)","loc":"d,7:24,7:29","dtypep":"(H)","access":"RD","varp":"(G)","varScopep":"(L)","classOrPackagep":"UNLINKED"}
         ],
          "lhsp": [
           {"type":"VARREF","name":"top.f.i_clk","addr":"(T)","loc":"d,7:24,7:29","dtypep":"(H)","access":"WR","varp":"(J)","varScopep":"(Q)","classOrPackagep":"UNLINKED"}

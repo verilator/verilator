@@ -59,7 +59,7 @@
         {"type":"VARSCOPE","name":"t.cell1.clk","addr":"(SB)","loc":"d,34:24,34:27","dtypep":"(J)","isTrace":true,"scopep":"(AB)","varp":"(S)"},
         {"type":"ASSIGNW","name":"","addr":"(TB)","loc":"d,34:24,34:27","dtypep":"(J)",
          "rhsp": [
-          {"type":"VARREF","name":"t.clk","addr":"(UB)","loc":"d,34:24,34:27","dtypep":"(J)","access":"RD","varp":"(M)","varScopep":"(IB)","classOrPackagep":"UNLINKED"}
+          {"type":"VARREF","name":"clk","addr":"(UB)","loc":"d,34:24,34:27","dtypep":"(J)","access":"RD","varp":"(I)","varScopep":"(CB)","classOrPackagep":"UNLINKED"}
         ],
          "lhsp": [
           {"type":"VARREF","name":"t.cell1.clk","addr":"(VB)","loc":"d,34:24,34:27","dtypep":"(J)","access":"WR","varp":"(S)","varScopep":"(SB)","classOrPackagep":"UNLINKED"}
@@ -67,7 +67,7 @@
         {"type":"VARSCOPE","name":"t.cell1.d","addr":"(WB)","loc":"d,35:30,35:31","dtypep":"(H)","isTrace":true,"scopep":"(AB)","varp":"(T)"},
         {"type":"ASSIGNW","name":"","addr":"(XB)","loc":"d,35:30,35:31","dtypep":"(H)",
          "rhsp": [
-          {"type":"VARREF","name":"t.d","addr":"(YB)","loc":"d,35:30,35:31","dtypep":"(H)","access":"RD","varp":"(N)","varScopep":"(MB)","classOrPackagep":"UNLINKED"}
+          {"type":"VARREF","name":"d","addr":"(YB)","loc":"d,35:30,35:31","dtypep":"(H)","access":"RD","varp":"(K)","varScopep":"(DB)","classOrPackagep":"UNLINKED"}
         ],
          "lhsp": [
           {"type":"VARREF","name":"t.cell1.d","addr":"(ZB)","loc":"d,35:30,35:31","dtypep":"(H)","access":"WR","varp":"(T)","varScopep":"(WB)","classOrPackagep":"UNLINKED"}
@@ -84,7 +84,7 @@
         {"type":"VARSCOPE","name":"t.cell2.clk","addr":"(FC)","loc":"d,48:10,48:13","dtypep":"(J)","isTrace":true,"scopep":"(AB)","varp":"(X)"},
         {"type":"ASSIGNW","name":"","addr":"(GC)","loc":"d,48:10,48:13","dtypep":"(J)",
          "rhsp": [
-          {"type":"VARREF","name":"t.clk","addr":"(HC)","loc":"d,48:10,48:13","dtypep":"(J)","access":"RD","varp":"(M)","varScopep":"(IB)","classOrPackagep":"UNLINKED"}
+          {"type":"VARREF","name":"clk","addr":"(HC)","loc":"d,48:10,48:13","dtypep":"(J)","access":"RD","varp":"(I)","varScopep":"(CB)","classOrPackagep":"UNLINKED"}
         ],
          "lhsp": [
           {"type":"VARREF","name":"t.cell2.clk","addr":"(IC)","loc":"d,48:10,48:13","dtypep":"(J)","access":"WR","varp":"(X)","varScopep":"(FC)","classOrPackagep":"UNLINKED"}
@@ -100,7 +100,7 @@
         {"type":"VARSCOPE","name":"t.cell2.q","addr":"(NC)","loc":"d,50:22,50:23","dtypep":"(H)","isTrace":true,"scopep":"(AB)","varp":"(Z)"},
         {"type":"ASSIGNW","name":"","addr":"(OC)","loc":"d,50:22,50:23","dtypep":"(H)",
          "rhsp": [
-          {"type":"VARREF","name":"t.q","addr":"(PC)","loc":"d,50:22,50:23","dtypep":"(H)","access":"RD","varp":"(L)","varScopep":"(EB)","classOrPackagep":"UNLINKED"}
+          {"type":"VARREF","name":"q","addr":"(PC)","loc":"d,50:22,50:23","dtypep":"(H)","access":"RD","varp":"(G)","varScopep":"(BB)","classOrPackagep":"UNLINKED"}
         ],
          "lhsp": [
           {"type":"VARREF","name":"t.cell2.q","addr":"(QC)","loc":"d,50:22,50:23","dtypep":"(H)","access":"WR","varp":"(Z)","varScopep":"(NC)","classOrPackagep":"UNLINKED"}

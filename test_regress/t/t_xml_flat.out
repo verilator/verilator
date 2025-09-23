@@ -58,12 +58,12 @@
           <varscope loc="d,32,15,32,20" name="t.cell1.WIDTH" dtype_id="3"/>
           <varscope loc="d,34,24,34,27" name="t.cell1.clk" dtype_id="2"/>
           <contassign loc="d,34,24,34,27" dtype_id="2">
-            <varref loc="d,34,24,34,27" name="t.clk" dtype_id="2"/>
+            <varref loc="d,34,24,34,27" name="clk" dtype_id="2"/>
             <varref loc="d,34,24,34,27" name="t.cell1.clk" dtype_id="2"/>
           </contassign>
           <varscope loc="d,35,30,35,31" name="t.cell1.d" dtype_id="1"/>
           <contassign loc="d,35,30,35,31" dtype_id="1">
-            <varref loc="d,35,30,35,31" name="t.d" dtype_id="1"/>
+            <varref loc="d,35,30,35,31" name="d" dtype_id="1"/>
             <varref loc="d,35,30,35,31" name="t.cell1.d" dtype_id="1"/>
           </contassign>
           <varscope loc="d,36,30,36,31" name="t.cell1.q" dtype_id="1"/>
@@ -74,7 +74,7 @@
           <varscope loc="d,39,15,39,22" name="t.cell1.IGNORED" dtype_id="3"/>
           <varscope loc="d,48,10,48,13" name="t.cell2.clk" dtype_id="2"/>
           <contassign loc="d,48,10,48,13" dtype_id="2">
-            <varref loc="d,48,10,48,13" name="t.clk" dtype_id="2"/>
+            <varref loc="d,48,10,48,13" name="clk" dtype_id="2"/>
             <varref loc="d,48,10,48,13" name="t.cell2.clk" dtype_id="2"/>
           </contassign>
           <varscope loc="d,49,16,49,17" name="t.cell2.d" dtype_id="1"/>
@@ -84,7 +84,7 @@
           </contassign>
           <varscope loc="d,50,22,50,23" name="t.cell2.q" dtype_id="1"/>
           <contassign loc="d,50,22,50,23" dtype_id="1">
-            <varref loc="d,50,22,50,23" name="t.q" dtype_id="1"/>
+            <varref loc="d,50,22,50,23" name="q" dtype_id="1"/>
             <varref loc="d,50,22,50,23" name="t.cell2.q" dtype_id="1"/>
           </contassign>
           <always loc="d,41,4,41,10">
