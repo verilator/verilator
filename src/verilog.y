@@ -3496,7 +3496,7 @@ statement_item<nodep>:          // IEEE: statement_item
         |       fexprLvalue yP_EQ__NEW dynamic_array_new ';'   { $$ = new AstAssign{$2, $1, $3}; }
         |       fexprLvalue yP_EQ__NEW class_new ';'    { $$ = new AstAssign{$2, $1, $3}; }
         //                      // IEEE: inc_or_dec_expression
-        |       finc_or_dec_expression ';'              { $$ = $1; }
+        |       finc_or_dec_expression ';'              { $$ = new AstStmtExpr{$<fl>1, $1}; }
         //
         //                      // IEEE: nonblocking_assignment
         |       fexprLvalue yP_LTE delay_or_event_controlE expr ';'
@@ -4004,7 +4004,7 @@ for_step<nodep>:                // IEEE: for_step
 
 for_step_assignment<nodep>:     // ==IEEE: for_step_assignment
                 foperator_assignment                    { $$ = $1; }
-        |       finc_or_dec_expression                  { $$ = $1; }
+        |       finc_or_dec_expression                  { $$ = new AstStmtExpr{$<fl>1, $1}; }
         //                      // IEEE: function_subroutine_call
         |       task_subroutine_callNoSemi              { $$ = $1; }
         ;
