@@ -453,12 +453,17 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
         m_forPackedSplit.m_refs[m_modp].add(refp);
         return refp;
     }
+    void handleVarXRef(AstVarXRef* const nodep) {
+        UINFO(4, nodep->varp() << " Has hierarchical reference");
+        m_forPackedSplit.m_hasXref.emplace(nodep->varp());
+    }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
     void visit(AstNodeModule* nodep) override {
         UINFO(4, "Start checking " << nodep->prettyNameQ());
         if (!VN_IS(nodep, Module)) {
             UINFO(4, "Skip " << nodep->prettyNameQ());
+            nodep->foreach([this](AstVarXRef* const nodep) { handleVarXRef(nodep); });
             return;
         }
         UASSERT_OBJ(!m_modp, m_modp, "Nested module declaration");
@@ -547,10 +552,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             m_foundTargetVar.insert(nodep->varp());
         }
     }
-    void visit(AstVarXRef* nodep) override {
-        UINFO(4, nodep->varp() << " Has hierarchical reference");
-        m_forPackedSplit.m_hasXref.emplace(nodep->varp());
-    }
+    void visit(AstVarXRef* nodep) override { handleVarXRef(nodep); }
     void visit(AstSel* nodep) override {
         if (VN_IS(nodep->fromp(), VarRef)) m_forPackedSplit.m_refs[m_modp].add(nodep);
         iterateChildren(nodep);
