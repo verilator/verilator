@@ -63,7 +63,6 @@ class UnknownVisitor final : public VNVisitor {
     AstNode* m_timingControlp = nullptr;  // Current assignment's intra timing control
     bool m_constXCvt = false;  // Convert X's
     bool m_allowXUnique = true;  // Allow unique assignments
-    bool m_inProcedure = false;  // Whether in procedure
 
     // METHODS
 
@@ -172,11 +171,6 @@ class UnknownVisitor final : public VNVisitor {
             iterateChildren(nodep);
             xrandNames.swap(m_xrandNames);
         }
-    }
-    void visit(AstNodeProcedure* nodep) override {
-        VL_RESTORER(m_inProcedure);
-        m_inProcedure = true;
-        iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_ftaskp);
@@ -404,9 +398,6 @@ class UnknownVisitor final : public VNVisitor {
     void visit(AstSel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
-            if ((m_inProcedure || m_ftaskp) && !nodep->fromp()->isPure()) {
-                createTemp(nodep->fromp());
-            }
             // Guard against reading/writing past end of bit vector array
             const AstNode* const basefromp = AstArraySel::baseFromp(nodep, true);
             bool lvalue = false;
