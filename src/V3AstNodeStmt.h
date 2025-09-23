@@ -119,7 +119,6 @@ public:
     bool isGateOptimizable() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
-    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
 };
 class AstNodeIf VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := condp : AstNodeExpr
@@ -146,9 +145,6 @@ public:
     VBranchPred branchPred() const { return m_branchPred; }
     void isBoundsCheck(bool flag) { m_isBoundsCheck = flag; }
     bool isBoundsCheck() const { return m_isBoundsCheck; }
-    bool isFirstInMyListOfStatements(AstNode* n) const override {
-        return n == thensp() || n == elsesp();
-    }
 };
 class AstNodeReadWriteMem VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := filenamep : AstNodeExpr
@@ -196,7 +192,6 @@ public:
     ASTGEN_MEMBERS_AstCaseItem;
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool isDefault() const { return condsp() == nullptr; }
-    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
 };
 
 // === AstNodeStmt ===
@@ -538,8 +533,6 @@ public:
     bool isGateOptimizable() const override { return false; }
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
-    // Stop statement searchback here
-    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
 };
 class AstDumpCtl final : public AstNodeStmt {
     // $dumpon etc
@@ -757,7 +750,6 @@ public:
     bool isGateOptimizable() const override { return false; }  // Not relevant - converted to FOR
     int instrCount() const override { return INSTR_COUNT_BRANCH; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
-    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
 };
 class AstReturn final : public AstNodeStmt {
     // @astgen op1 := lhsp : Optional[AstNodeExpr]
@@ -1042,7 +1034,6 @@ public:
         addStmtsp(stmtsp);
     }
     ASTGEN_MEMBERS_AstWait;
-    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
     bool isTimingControl() const override { return true; }
 };
 class AstWaitFork final : public AstNodeStmt {
@@ -1072,7 +1063,6 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     // Stop statement searchback here
     void addNextStmt(AstNode* newp, AstNode* belowp) override;
-    bool isFirstInMyListOfStatements(AstNode* n) const override { return n == stmtsp(); }
     VOptionBool unrollFull() const { return m_unrollFull; }
     void unrollFull(const VOptionBool flag) { m_unrollFull = flag; }
 };

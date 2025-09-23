@@ -2158,16 +2158,6 @@ public:
     AstNode* firstAbovep() const {  // Returns nullptr when second or later in list
         return ((backp() && backp()->nextp() != this) ? backp() : nullptr);
     }
-    // isFirstInMyListOfStatements(n) -- implemented by child classes:
-    // AstNodeBlock, AstCaseItem, AstNodeIf, AstNodeFTask, and possibly others.
-    virtual bool isFirstInMyListOfStatements(AstNode* n) const { return false; }
-    // isStandaloneBodyStmt == Do we need a ; on generated cpp for this node?
-    bool isStandaloneBodyStmt() {
-        return (!firstAbovep()  // we're 2nd or later in the list, so yes need ;
-
-                // If we're first in the list, check what backp() thinks of us:
-                || (backp() && backp()->isFirstInMyListOfStatements(this)));
-    }
     uint8_t brokenState() const VL_MT_SAFE { return m_brokenState; }
     void brokenState(uint8_t value) { m_brokenState = value; }
 
