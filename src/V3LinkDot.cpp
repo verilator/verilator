@@ -2260,8 +2260,6 @@ class LinkDotScopeVisitor final : public VNVisitor {
         UINFOTREE(9, nodep, "", "alias");
         AstVarRef* const lhsp = VN_AS(nodep->lhsp(), VarRef);
         AstVarRef* const rhsp = VN_AS(nodep->rhsp(), VarRef);
-        lhsp->access(VAccess::WRITE);
-        rhsp->access(VAccess::READ);
         AstVarScope* const fromVscp = lhsp->varScopep();
         AstVarScope* const toVscp = rhsp->varScopep();
         UASSERT_OBJ(fromVscp && toVscp, nodep, "Bad alias scopes");
