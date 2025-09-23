@@ -17,8 +17,8 @@ module t (  /*AUTOARG*/
 
   alias a = b;
   alias a = b;
-//  alias b = a;
-//  alias a = a;
+  alias b = a;
+  alias a = a;
 
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
