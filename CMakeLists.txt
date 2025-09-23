@@ -49,8 +49,13 @@ if(WIN32)
     if(DEFINED ENV{WIN_FLEX_BISON})
         set(WIN_FLEX_BISON "$ENV{WIN_FLEX_BISON}")
     endif()
-    if(EXISTS ${WIN_FLEX_BISON})
+    if(IS_DIRECTORY ${WIN_FLEX_BISON})
         list(APPEND CMAKE_PREFIX_PATH ${WIN_FLEX_BISON})
+    else()
+        message(
+            FATAL_ERROR
+            "The path specified by WIN_FLEX_BISON environment variable is not an existing folder: ${WIN_FLEX_BISON}"
+        )
     endif()
     if(NOT WIN_FLEX_BISON)
         message(
