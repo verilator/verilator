@@ -142,23 +142,17 @@ class UnknownVisitor final : public VNVisitor {
         }
     }
 
-    void createTemp(AstNodeExpr* const nodep) {
-        AstNode* stmtp = nodep;
-        while (VL_LIKELY(stmtp) && !VN_IS(stmtp, NodeStmt)) stmtp = stmtp->backp();
-        UASSERT_OBJ(stmtp, nodep, "Not isnide a statement");
+    AstVar* createTemp(const AstNodeExpr* const nodep) {
         AstVar* const varp = new AstVar{nodep->fileline(), VVarType::XTEMP,
                                         m_xrandNames->get(nodep), nodep->dtypep()};
-        nodep->replaceWith(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
-        AstAssign* const assignp = new AstAssign{
-            nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE}, nodep};
         if (m_ftaskp) {
             varp->funcLocal(true);
-            varp->lifetime(VLifetime::AUTOMATIC);
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             m_ftaskp->stmtsp()->addHereThisAsNext(varp);
         } else {
             m_modp->stmtsp()->addHereThisAsNext(varp);
         }
-        stmtp->addHereThisAsNext(assignp);
+        return varp;
     }
 
     // VISITORS
@@ -429,14 +423,27 @@ class UnknownVisitor final : public VNVisitor {
                 = new AstGte{nodep->fileline(),
                              new AstConst(nodep->fileline(), AstConst::WidthedValue{},
                                           nodep->lsbp()->width(), maxmsb),
-                             nodep->lsbp()->cloneTreePure(false)};
+                             nodep->lsbp()->cloneTree(false)};
             // See if the condition is constant true (e.g. always in bound due to constant select)
             // Note below has null backp(); the Edit function knows how to deal with that.
             condp = V3Const::constifyEdit(condp);
             if (condp->isOne()) {
                 // We don't need to add a conditional; we know the existing expression is ok
                 VL_DO_DANGLING(condp->deleteTree(), condp);
-            } else if (!lvalue) {
+                return;
+            }
+            if (!nodep->lsbp()->isPure()) {
+                AstVar* const varp = createTemp(nodep->lsbp());
+                FileLine* const filelinep = nodep->lsbp()->fileline();
+                VN_AS(condp, Gte)
+                    ->rhsp(new AstExprStmt{
+                        filelinep,
+                        new AstAssign{filelinep, new AstVarRef{filelinep, varp, VAccess::WRITE},
+                                      nodep->lsbp()->unlinkFrBack()},
+                        new AstVarRef{filelinep, varp, VAccess::READ}});
+                nodep->lsbp(new AstVarRef{filelinep, varp, VAccess::READ});
+            }
+            if (!lvalue) {
                 // SEL(...) -> COND(LTE(bit<=maxmsb), ARRAYSEL(...), {width{1'bx}})
                 VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
@@ -468,7 +475,6 @@ class UnknownVisitor final : public VNVisitor {
     void visit(AstArraySel* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
-            if ((m_inProcedure || m_ftaskp) && !nodep->bitp()->isPure()) createTemp(nodep->bitp());
             UINFOTREE(9, nodep, "", "in");
             // Guard against reading/writing past end of arrays
             AstNode* const basefromp = AstArraySel::baseFromp(nodep->fromp(), true);
@@ -506,16 +512,29 @@ class UnknownVisitor final : public VNVisitor {
                 = new AstGte{nodep->fileline(),
                              new AstConst(nodep->fileline(), AstConst::WidthedValue{},
                                           nodep->bitp()->width(), declElements - 1),
-                             nodep->bitp()->cloneTreePure(false)};
+                             nodep->bitp()->cloneTree(false)};
             // Note below has null backp(); the Edit function knows how to deal with that.
             condp = V3Const::constifyEdit(condp);
             const AstNodeDType* const nodeDtp = nodep->dtypep()->skipRefp();
             if (condp->isOne()) {
                 // We don't need to add a conditional; we know the existing expression is ok
                 VL_DO_DANGLING(condp->deleteTree(), condp);
-            } else if (!lvalue
-                       // Making a scalar would break if we're making an array
-                       && VN_IS(nodeDtp, BasicDType)) {
+                return;
+            }
+            if (!nodep->bitp()->isPure()) {
+                AstVar* const varp = createTemp(nodep->bitp());
+                FileLine* const filelinep = nodep->bitp()->fileline();
+                VN_AS(condp, Gte)
+                    ->rhsp(new AstExprStmt{
+                        filelinep,
+                        new AstAssign{filelinep, new AstVarRef{filelinep, varp, VAccess::WRITE},
+                                      nodep->bitp()->unlinkFrBack()},
+                        new AstVarRef{filelinep, varp, VAccess::READ}});
+                nodep->bitp(new AstVarRef{filelinep, varp, VAccess::READ});
+            }
+            if (!lvalue
+                // Making a scalar would break if we're making an array
+                && VN_IS(nodeDtp, BasicDType)) {
                 // ARRAYSEL(...) -> COND(LT(bit<maxbit), ARRAYSEL(...), {width{1'bx}})
                 VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
