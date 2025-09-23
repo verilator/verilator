@@ -36,9 +36,8 @@ def process():
     command.extend(["-o", tmp_prefix() + ".c"])
     command.extend([tmp_prefix() + ".y"])
 
-    print(" ".join(command))
-    result = subprocess.run(command, shell=True)
-    status = result.returncode
+    print(f"Executing: {subprocess.list2cmdline(command)}", flush=True)
+    status = subprocess.call(command)
     if status != 0:
         unlink_outputs()
         sys.exit("bisonpre: %Error: " + Args.yacc + " version " + str(Bison_Version) +
@@ -84,7 +83,7 @@ def unlink_outputs():
 
 
 def bison_version_check():
-    with subprocess.Popen([Args.yacc, "--version"], shell=True, stdout=subprocess.PIPE) as sp:
+    with subprocess.Popen([Args.yacc, "--version"], stdout=subprocess.PIPE) as sp:
         out = str(sp.stdout.read())
     match = re.search(r'([0-9]+\.[0-9]+)', out)
     if match:
