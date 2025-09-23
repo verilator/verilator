@@ -2266,6 +2266,8 @@ class LinkDotScopeVisitor final : public VNVisitor {
         AstVarScope* const toVscp = rhsp->varScopep();
         UASSERT_OBJ(fromVscp && toVscp, nodep, "Bad alias scopes");
         fromVscp->user2p(toVscp);
+        iterateChildren(nodep);
+        pushDeletep(nodep->unlinkFrBack());
     }
     void visit(AstAssignVarScope* nodep) override {  // ScopeVisitor::
         UINFO(5, "ASSIGNVARSCOPE  " << nodep);
