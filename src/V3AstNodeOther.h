@@ -132,6 +132,8 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     bool m_recursive : 1;  // Recursive or part of recursion
     bool m_static : 1;  // Static method in class
     bool m_underGenerate : 1;  // Under generate (for warning)
+    bool m_verilogFunction : 1;  // Declared by user as function (versus internal-made)
+    bool m_verilogTask : 1;  // Declared by user as task (versus internal-made)
     bool m_virtual : 1;  // Virtual method in class
     bool m_needProcess : 1;  // Needs access to VlProcess of the caller
     VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
@@ -162,6 +164,8 @@ protected:
         , m_recursive{false}
         , m_static{false}
         , m_underGenerate{false}
+        , m_verilogFunction{false}
+        , m_verilogTask{false}
         , m_virtual{false}
         , m_needProcess{false} {
         addStmtsp(stmtsp);
@@ -227,6 +231,10 @@ public:
     void isStatic(bool flag) { m_static = flag; }
     bool underGenerate() const { return m_underGenerate; }
     void underGenerate(bool flag) { m_underGenerate = flag; }
+    bool verilogFunction() const { return m_verilogFunction; }
+    void verilogFunction(bool flag) { m_verilogFunction = flag; }
+    bool verilogTask() const { return m_verilogTask; }
+    void verilogTask(bool flag) { m_verilogTask = flag; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
     bool needProcess() const { return m_needProcess; }

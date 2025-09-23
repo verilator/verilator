@@ -2901,6 +2901,8 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (recursive()) str << " [RECURSIVE]";
     if (taskPublic()) str << " [PUBLIC]";
     if (isStatic()) str << " [STATIC]";
+    if (verilogTask()) str << " [VTASK]";
+    if (verilogFunction()) str << " [VFUNC]";
     if ((dpiImport() || dpiExport()) && cname() != name()) str << " [c=" << cname() << "]";
 }
 bool AstNodeFTask::isPure() {

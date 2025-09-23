@@ -4546,14 +4546,17 @@ lifetime<lifetime>:             // ==IEEE: lifetime
 
 taskId<nodeFTaskp>:
                 id
-                        { $$ = new AstTask{$<fl>$, *$1, nullptr}; }
+                        { $$ = new AstTask{$<fl>$, *$1, nullptr};
+                          $$->verilogTask(true); }
         //
         |       id/*interface_identifier*/ '.' idAny
                         { $$ = new AstTask{$<fl>$, *$3, nullptr};
+                          $$->verilogTask(true);
                           BBUNSUP($2, "Unsupported: Out of block function declaration"); }
         //
         |       packageClassScope id
                         { $$ = new AstTask{$<fl>$, *$2, nullptr};
+                          $$->verilogTask(true);
                           $$->classOrPackagep($1);
                           $$->classMethod(true); }
         ;
@@ -4584,18 +4587,23 @@ funcId<nodeFTaskp>:             // IEEE: function_data_type_or_implicit + part o
                           $$->fvarp(GRAMMARP->createArray(refp, $4, true)); }
         //                      // To verilator tasks are the same as void functions (we separately detect time passing)
         |       yVOID taskId
-                        { $$ = $2; }
+                        { $$ = $2;  // Internals represent it as a task, not a function (TODO cleanup)
+                          $$->verilogTask(false);
+                          $$->verilogFunction(true); }
         ;
 
 funcIdNew<nodeFTaskp>:          // IEEE: from class_constructor_declaration
                 yNEW__ETC
                         { $$ = new AstFunc{$<fl>1, "new", nullptr, nullptr};
+                          $$->verilogFunction(true);
                           $$->isConstructor(true); }
         |       yNEW__PAREN
                         { $$ = new AstFunc{$<fl>1, "new", nullptr, nullptr};
+                          $$->verilogFunction(true);
                           $$->isConstructor(true); }
         |       packageClassScopeNoId yNEW__PAREN
                         { $$ = new AstFunc{$<fl>2, "new", nullptr, nullptr};
+                          $$->verilogFunction(true);
                           $$->classOrPackagep($1);
                           $$->isConstructor(true);
                           $$->classMethod(true); }
@@ -4605,16 +4613,19 @@ fIdScoped<funcp>:               // IEEE: part of function_body_declaration/task_
         //                      // IEEE: [ interface_identifier '.' | class_scope ] function_identifier
                 id
                         { $<fl>$ = $<fl>1;
-                          $$ = new AstFunc{$<fl>$, *$1, nullptr, nullptr}; }
+                          $$ = new AstFunc{$<fl>$, *$1, nullptr, nullptr};
+                          $$->verilogFunction(true); }
         //
         |       id/*interface_identifier*/ '.' idAny
                         { $<fl>$ = $<fl>1;
                           $$ = new AstFunc{$<fl>$, *$1, nullptr, nullptr};
+                          $$->verilogFunction(true);
                           BBUNSUP($2, "Unsupported: Out of block function declaration"); }
         //
         |       packageClassScope id
                         { $<fl>$ = $<fl>1;
                           $$ = new AstFunc{$<fl>$, *$2, nullptr, nullptr};
+                          $$->verilogFunction(true);
                           $$->classMethod(true);
                           $$->classOrPackagep($1); }
         ;

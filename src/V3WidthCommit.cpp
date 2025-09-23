@@ -45,11 +45,13 @@ class WidthCommitVisitor final : public VNVisitor {
     const VNUser2InUse m_inuser2;
 
     // STATE
-    AstNodeModule* m_modp = nullptr;
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstNodeModule* m_modp = nullptr;  // Current module
     std::string m_contNba;  // In continuous- or non-blocking assignment
     bool m_dynsizedelem
         = false;  // Writing a dynamically-sized array element, not the array itself
     VMemberMap m_memberMap;  // Member names cached for fast lookup
+    bool m_taskRefWarn = true;  // Allow task reference warnings
     bool m_underSel = false;  // Under AstMemberSel or AstSel
     bool m_underAlwaysClocked = false;  // Under always with sequential SenTree
     std::vector<AstNew*> m_virtualNewsp;  // Instantiations of virtual classes
@@ -216,6 +218,13 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
     }
+    void visit(AstFork* nodep) override {
+        VL_RESTORER(m_taskRefWarn);
+        // fork..join_any is allowed to call tasks, and UVM does this
+        if (nodep->joinType().joinNone()) m_taskRefWarn = false;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
     void visit(AstSenTree* nodep) override {
         if (nodep->sensesp() && nodep->sensesp()->isComboStar()) {
             UASSERT_OBJ(!nodep->sensesp()->nextp(), nodep, "Shouldn't be senitems after .*");
@@ -317,6 +326,8 @@ private:
     void visit(AstNodeFTask* nodep) override {
         if (!nodep->taskPublic() && !nodep->dpiExport() && !nodep->dpiImport())
             m_tasksp.push_back(nodep);
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
         iterateChildren(nodep);
         editDType(nodep);
         {
@@ -419,6 +430,17 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
         classEncapCheck(nodep, nodep->taskp(), VN_CAST(nodep->classOrPackagep(), Class));
+        if (nodep->taskp() && nodep->taskp()->verilogTask() && m_ftaskp
+            && m_ftaskp->verilogFunction() && m_taskRefWarn) {
+            nodep->v3error("Functions cannot invoke tasks (IEEE 1800-2023 13.4)\n"
+                           << nodep->warnContextPrimary() << "\n"
+                           << nodep->warnMore() << "... Suggest make caller 'function "
+                           << m_ftaskp->prettyName() << "' a task\n"
+                           << m_ftaskp->warnContextSecondary() << "\n"
+                           << nodep->warnMore() << "... Or, suggest make called 'task "
+                           << nodep->taskp()->prettyName() << "' a function void\n"
+                           << nodep->taskp()->warnContextSecondary());
+        }
         if (nodep->taskp()) nodep->taskp()->user2(1);
         if (AstNew* const newp = VN_CAST(nodep, New)) {
             if (!VN_IS(newp->backp(), Assign)) return;

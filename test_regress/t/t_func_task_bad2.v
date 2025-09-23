@@ -6,12 +6,18 @@
 
 module t;
 
-  initial begin
-    if (a_task(1'b0)) $stop;  // <--- Bad: Calling task _as_ function
-  end
-
   task a_task;
     input ign;
   endtask
+
+  function void func_calls_task;
+    a_task(1'b0);  // <--- Bad: Calling task _from_ function
+  endfunction
+
+  function void func_ok;
+    fork
+      a_task(1'b0);  // ok, and done in UVM
+    join_none
+  endfunction
 
 endmodule
