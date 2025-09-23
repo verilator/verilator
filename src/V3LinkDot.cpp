@@ -131,6 +131,7 @@ class LinkDotState final {
     //  AstNodeModule::user2()          // bool.          Currently processing for recursion check
     //  ...  Note maybe more than one, as can be multiple hierarchy places
     //  AstVarScope::user2p()           // AstVarScope*.  Base alias for AstInline of this signal
+    //  AstAssignW::user2()             // bool.          Created for aliases handling. Don't replace var refs
     //  AstVar::user2p()                // AstFTask*.     If a function variable, the task
     //                                                    that links to the variable
     //  AstVar::user4()                 // bool.          True if port set for this variable
@@ -2197,7 +2198,7 @@ public:
 
 private:
     void setAliasVarScope(AstVarScope* const vscp, AstVarScope* const aliasp) {
-        getAliasVarScopep(vscp)->user2p(aliasp);
+        getAliasVarScopep(vscp)->user2p(getAliasVarScopep(aliasp));
     }
 
     // VISITORS
@@ -2275,7 +2276,7 @@ private:
         // No recursion, we don't want to pick up variables
     }
     void visit(AstAlias* nodep) override {  // ScopeVisitor::
-        // Track aliases created by V3Inline; if we get a NODEVARREF(aliased_from)
+        // Track aliases; if we get a NODEVARREF(aliased_from)
         // we'll need to replace it with a NODEVARREF(aliased_to)
         UINFOTREE(9, nodep, "", "alias");
         AstVarRef* const lhsp = VN_AS(nodep->lhsp(), VarRef);
@@ -2283,7 +2284,7 @@ private:
         AstVarScope* const fromVscp = lhsp->varScopep();
         AstVarScope* const toVscp = rhsp->varScopep();
         UASSERT_OBJ(fromVscp && toVscp, nodep, "Bad alias scopes");
-        setAliasVarScope(fromVscp, getAliasVarScopep(toVscp));
+        setAliasVarScope(fromVscp, toVscp);
         iterateChildren(nodep);
         pushDeletep(nodep->unlinkFrBack());
     }
