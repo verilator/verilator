@@ -31,10 +31,13 @@ def process():
         *(["-k"] if Args.token_table else []),
         *(["-v"] if Args.verbose else []),
         *(["-Wcounterexamples"] if Args.Wcounterexamples else []),
-        *(["--report=itemset", "--report=lookahead"] if (Args.verbose and supports_report) else []),
+        *(["--report=itemset", "--report=lookahead"] if
+          (Args.verbose and supports_report) else []),
         *(["-p", Args.name_prefix] if Args.name_prefix else []),
-        "-b", prefix,
-        "-o", f"{prefix}.c",
+        "-b",
+        prefix,
+        "-o",
+        f"{prefix}.c",
         f"{prefix}.y",
     ]
 
