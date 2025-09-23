@@ -2283,7 +2283,7 @@ private:
         AstVarScope* const fromVscp = lhsp->varScopep();
         AstVarScope* const toVscp = rhsp->varScopep();
         UASSERT_OBJ(fromVscp && toVscp, nodep, "Bad alias scopes");
-        setAliasVarScope(fromVscp, toVscp);
+        setAliasVarScope(fromVscp, getAliasVarScopep(toVscp));
         iterateChildren(nodep);
         pushDeletep(nodep->unlinkFrBack());
     }
