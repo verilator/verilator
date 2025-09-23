@@ -22,6 +22,7 @@ Verilator 5.041 devel
 * Add ASSIGNEQEXPR when use `=` inside expressions (#5567). [Ethan Sifferman]
 * Add IMPLICITSTATIC also on procedure variables.
 * Deprecate sensitivity list on public_flat_rw attributes (#6443). [Geza Lore]
+* Deprecate clocker attribute and --clk option (#6463). [Geza Lore]
 * Support modports referencing clocking blocks (#4555) (#6436). [Ryszard Rozak, Antmicro Ltd.]
 * Support digits in `$sscanf` field width formats (#6083). [Iztok Jeras]
 * Support pure functions in sensitivity lists (#6393). [Krzysztof Bieganski, Antmicro Ltd.]
@@ -64,6 +65,9 @@ Verilator 5.041 devel
 * Fix data types of method calls without parenthesis (#6457). [Artur Bieniek, Antmicro Ltd.]
 * Fix segfault on unsupported PLI calls (#6458). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix false assertion failure on failed DFG driver tracing (#6459). [Geza Lore]
+* Fix timeprecision backward assignment (#6469). [Artur Bieniek, Antmicro Ltd.]
+* Fix splitting hierarchically referenced variables (#6475). [Ryszard Rozak, Antmicro Ltd.]
+* Fix Windows compilation of Verilator with spaces in the path (#6477). [Fabian Keßler-Schulz]
 
 
 Verilator 5.040 2025-08-30
