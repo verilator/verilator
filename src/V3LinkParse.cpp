@@ -390,7 +390,7 @@ class LinkParseVisitor final : public VNVisitor {
                 nodep->valuep()->unlinkFrBack()->deleteTree();
             }  // 2. Under modules/class, it's an initial value to be loaded at time 0 via an
                // AstInitial
-            else if (m_valueModp) {
+            else {
                 // Making an AstAssign (vs AstAssignW) to a wire is an error, suppress it
                 FileLine* const newfl = new FileLine{fl};
                 newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
@@ -401,17 +401,15 @@ class LinkParseVisitor final : public VNVisitor {
                     newfl, new AstParseRef{newfl, VParseRefExp::PX_TEXT, nodep->name()},
                     VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)};
                 if (nodep->lifetime().isAutomatic()) {
-                    nodep->addNextHere(new AstInitialAutomatic{newfl, assp});
+                    if (m_valueModp) {
+                        // 4. Under blocks, it's an initial value to be under an assign
+                        nodep->addNextHere(new AstInitialAutomatic{newfl, assp});
+                    } else {
+                        nodep->addNextHere(assp);
+                    }
                 } else {
                     nodep->addNextHere(new AstInitialStatic{newfl, assp});
                 }
-            }  // 4. Under blocks, it's an initial value to be under an assign
-            else {
-                FileLine* const newfl = new FileLine{fl};
-                newfl->warnOff(V3ErrorCode::E_CONSTWRITTEN, true);
-                nodep->addNextHere(
-                    new AstAssign{newfl, new AstVarRef{newfl, nodep, VAccess::WRITE},
-                                  VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)});
             }
         }
     }
