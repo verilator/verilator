@@ -84,9 +84,7 @@ def unlink_outputs():
 
 
 def bison_version_check():
-    with subprocess.Popen([Args.yacc, "--version"],
-                          shell=True,
-                          stdout=subprocess.PIPE) as sp:
+    with subprocess.Popen([Args.yacc, "--version"], shell=True, stdout=subprocess.PIPE) as sp:
         out = str(sp.stdout.read())
     match = re.search(r'([0-9]+\.[0-9]+)', out)
     if match:
