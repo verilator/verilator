@@ -133,7 +133,7 @@ class LinkParseVisitor final : public VNVisitor {
         if (!nextp && VN_IS(nodep, While) && VN_IS(nodep->backp(), Begin))
             nextp = nodep->backp()->nextp();
         if (!nextp) return;
-        if (VN_IS(childp, Begin)) return;
+        if (VN_IS(childp, Begin) || VN_IS(childp, GenBlock)) return;
         FileLine* const nodeFlp = nodep->fileline();
         FileLine* const childFlp = childp->fileline();
         FileLine* const nextFlp = nextp->fileline();
