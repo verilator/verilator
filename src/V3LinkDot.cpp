@@ -131,8 +131,9 @@ class LinkDotState final {
     //  AstNodeModule::user2()          // bool.          Currently processing for recursion check
     //  ...  Note maybe more than one, as can be multiple hierarchy places
     //  AstVarScope::user2p()           // AstVarScope*.  Base alias for AstInline of this signal
-    //  AstAssignW::user2()             // bool.          Created for aliases handling. Don't
-    //  replace var refs AstVar::user2p()                // AstFTask*.     If a function variable,
+    //  AstAssignW::user2()             // bool.          Created for aliases handling.
+    //  ... Don't replace var refs if set
+    //  AstVar::user2p()                // AstFTask*.     If a function variable,
     //  the task
     //                                                    that links to the variable
     //  AstVar::user4()                 // bool.          True if port set for this variable
