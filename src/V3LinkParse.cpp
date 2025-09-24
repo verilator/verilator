@@ -354,7 +354,7 @@ class LinkParseVisitor final : public VNVisitor {
             } else if (v3Global.opt.publicParams() && nodep->isParam()) {
                 nodep->sigUserRWPublic(true);
             } else if (m_modp && v3Global.opt.publicDepth()) {
-                if ((m_modp->level() - 1) <= v3Global.opt.publicDepth()) {
+                if ((m_modp->depth() - 1) <= v3Global.opt.publicDepth()) {
                     nodep->sigUserRWPublic(true);
                 } else if (VN_IS(m_modp, Package) && nodep->isParam()) {
                     nodep->sigUserRWPublic(true);
@@ -365,7 +365,7 @@ class LinkParseVisitor final : public VNVisitor {
         // We used modTrace before leveling, and we may now
         // want to turn it off now that we know the levelizations
         if (v3Global.opt.traceDepth() && m_modp
-            && (m_modp->level() - 1) > v3Global.opt.traceDepth()) {
+            && (m_modp->depth() - 1) > v3Global.opt.traceDepth()) {
             m_modp->modTrace(false);
             nodep->trace(false);
         }

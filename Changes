@@ -35,6 +35,7 @@ Verilator 5.041 devel
 * Optimize constant folding in wide expression expansion (#6381). [Geza Lore]
 * Fix missing BLKSEQ when connecting module port to array (#2973).
 * Fix false CONSTVAR error on initializers (#4992).
+* Fix interface exposure with `--public-depth` or `--trace-depth` (#5758).
 * Fix cell scoping performance (#6059). [Jerry Tianchen]
 * Fix hierarchical `--prof-pgo` (#6213). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix while loop hang on timing-delayed assignment (#6343) (#6354). [Krzysztof Bieganski, Antmicro Ltd.]

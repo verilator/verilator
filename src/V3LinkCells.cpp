@@ -205,6 +205,14 @@ class LinkCellsVisitor final : public VNVisitor {
                 modp->level(vvertexp->rank() + 1);
             }
         }
+        m_graph.rankMin();
+        for (V3GraphVertex& vtx : m_graph.vertices()) {
+            if (const LinkCellsVertex* const vvertexp = vtx.cast<LinkCellsVertex>()) {
+                // +1 so we leave level 1  for the new wrapper we'll make in a moment
+                AstNodeModule* const modp = vvertexp->modp();
+                modp->depth(vvertexp->rank() + 1);
+            }
+        }
         if (v3Global.opt.topModule() != "" && !m_topVertexp) {
             v3error("Specified --top-module '" << v3Global.opt.topModule()
                                                << "' was not found in design.");

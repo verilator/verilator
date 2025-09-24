@@ -1761,6 +1761,9 @@ class ParamTop final : VNDeleter {
             maxParentLevel = std::max(maxParentLevel, parentp->level());
         }
         if (modp->level() <= maxParentLevel) modp->level(maxParentLevel + 1);
+        // Not correct fixup of depth(), as it should be mininum.  But depth() is unused
+        // past V3LinkParse, so just do something sane in case this code doesn't get updated
+        modp->depth(modp->level());
     }
 
     void resortNetlistModules(AstNetlist* netlistp) {

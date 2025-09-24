@@ -2419,6 +2419,7 @@ void AstNetlist::createTopScope(AstScope* scopep) {
 void AstNodeModule::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << "  L" << level();
+    str << " D" << depth();
     if (modPublic()) str << " [P]";
     if (inLibrary()) str << " [LIB]";
     if (dead()) str << " [DEAD]";

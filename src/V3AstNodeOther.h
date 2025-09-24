@@ -293,7 +293,8 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     string m_someInstanceName;  // Hierarchical name of some arbitrary instance of this module.
                                 // Used for user messages only.
     string m_libname;  // Work library
-    int m_level = 0;  // 1=top module, 2=cell off top module, ...
+    int m_depth = 0;  // 1=top module, 2=cell off top, shared things low, for -depth options
+    int m_level = 0;  // 1=top module, 2=cell off top, shared things have high number
     VLifetime m_lifetime;  // Lifetime
     VTimescale m_timeunit;  // Global time unit
     VOptionBool m_unconnectedDrive;  // State of `unconnected_drive
@@ -341,7 +342,9 @@ public:
     void someInstanceName(const string& name) { m_someInstanceName = name; }
     bool inLibrary() const { return m_inLibrary; }
     void inLibrary(bool flag) { m_inLibrary = flag; }
-    void level(int level) { m_level = level; }
+    void depth(int value) { m_depth = value; }
+    int depth() const VL_MT_SAFE { return m_depth; }
+    void level(int value) { m_level = value; }
     int level() const VL_MT_SAFE { return m_level; }
     string libname() const { return m_libname; }
     string prettyLibnameQ() const { return "'" + prettyName(libname()) + "'"; }

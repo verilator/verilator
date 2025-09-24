@@ -271,12 +271,9 @@ class GraphAlgRank final : GraphAlg<> {
             vertex.user(0);
         }
         for (V3GraphVertex& vertex : m_graphp->vertices()) {
-            if (!vertex.user()) {  //
-                vertexIterate(&vertex, 1);
-            }
+            if (!vertex.user()) vertexIterate(&vertex, 1);
         }
     }
-
     void vertexIterate(V3GraphVertex* vertexp, uint32_t currentRank) {
         // Assign rank to each unvisited node
         // If larger rank is found, assign it and loop back through
@@ -302,9 +299,62 @@ public:
     ~GraphAlgRank() = default;
 };
 
-void V3Graph::rank() { GraphAlgRank{this, &V3GraphEdge::followAlwaysTrue}; }
-
+void V3Graph::rank() { rank(&V3GraphEdge::followAlwaysTrue); }
 void V3Graph::rank(V3EdgeFuncP edgeFuncp) { GraphAlgRank{this, edgeFuncp}; }
+
+//######################################################################
+//######################################################################
+// Algorithms - ranking min
+// Changes user() and rank()
+
+class GraphAlgRankMin final : GraphAlg<> {
+    void main() {
+        // Rank each vertex, ignoring cutable edges
+        // Vertex::m_user begin: 1 indicates processing, 2 indicates completed
+        // Clear existing ranks
+        for (V3GraphVertex& vertex : m_graphp->vertices()) {
+            vertex.rank(0);
+            vertex.user(0);
+        }
+        for (V3GraphVertex& vertex : m_graphp->vertices()) {
+            if (!vertex.user()) vertexIterate(&vertex);
+        }
+    }
+    uint32_t vertexIterate(V3GraphVertex* vertexp) {
+        // Assign rank to each unvisited node
+        // If we hit a back node make a list of all loops
+        if (vertexp->user() == 1) {
+            m_graphp->loopsMessageCb(vertexp, m_edgeFuncp);
+            return vertexp->rank();
+        }
+        if (vertexp->user()) return vertexp->rank();  // Done earlier
+        vertexp->user(1);
+        vertexp->rank(1);  // In case loop
+        // If no input edges, then rank 1 (+ adder)
+        // Otherwise, get minimum from following all inputs.
+        uint32_t minrank = ~0U;
+        for (V3GraphEdge& edge : vertexp->inEdges()) {
+            if (followEdge(&edge)) {
+                const uint32_t nrank = vertexIterate(edge.fromp());
+                minrank = std::min(minrank, nrank);
+            }
+        }
+        if (minrank == ~0U) minrank = 0;
+        vertexp->rank(minrank + vertexp->rankAdder());
+        vertexp->user(2);
+        return vertexp->rank();
+    }
+
+public:
+    GraphAlgRankMin(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
+        : GraphAlg<>{graphp, edgeFuncp} {
+        main();
+    }
+    ~GraphAlgRankMin() = default;
+};
+
+void V3Graph::rankMin() { rankMin(&V3GraphEdge::followAlwaysTrue); }
+void V3Graph::rankMin(V3EdgeFuncP edgeFuncp) { GraphAlgRankMin{this, edgeFuncp}; }
 
 //######################################################################
 //######################################################################
