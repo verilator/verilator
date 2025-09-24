@@ -2311,15 +2311,18 @@ private:
         // No recursion, we don't want to pick up variables
     }
     void visit(AstAlias* nodep) override {  // ScopeVisitor::
-        // Track aliases; if we get a NODEVARREF(aliased_from)
-        // we'll need to replace it with a NODEVARREF(aliased_to)
+        // Track aliases
         UINFOTREE(9, nodep, "", "alias");
-        AstVarRef* const lhsp = VN_AS(nodep->lhsp(), VarRef);
-        AstVarRef* const rhsp = VN_AS(nodep->rhsp(), VarRef);
-        AstVarScope* const fromVscp = lhsp->varScopep();
-        AstVarScope* const toVscp = rhsp->varScopep();
-        UASSERT_OBJ(fromVscp && toVscp, nodep, "Bad alias scopes");
-        setAliasVarScope(fromVscp, toVscp);
+        AstVarScope* aliasVscp = nullptr;
+        for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+            AstVarScope* const vscp = VN_AS(itemp, VarRef)->varScopep();
+            UASSERT_OBJ(vscp, nodep, "VarScope unset");
+            if (aliasVscp) {
+                setAliasVarScope(aliasVscp, vscp);
+            } else {
+                aliasVscp = vscp;
+            }
+        }
         iterateChildren(nodep);
         pushDeletep(nodep->unlinkFrBack());
     }
