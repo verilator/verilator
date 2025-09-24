@@ -1,4 +1,4 @@
-%Error: t/t_alias_width_bad.v:18:3: Incompatible data types of nets used for net alias, got 'logic[1:0]' and 'logic[2:0]'
+%Error: t/t_alias_width_bad.v:18:3: Incompatible data types of nets used for net alias
                                   : ... note: In instance 't'
    18 |   alias a = b;
       |   ^~~~~
