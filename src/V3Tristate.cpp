@@ -1367,12 +1367,12 @@ class TristateVisitor final : public TristateBaseVisitor {
         m_inAlias = true;
         if (m_graphing) {
             if (nodep->user2() & U2_GRAPHING) return;
-            m_alhs = true;  // In AstAlias both sides should be considered as lhs
+            m_alhs = true;  // In AstAlias all operands should be considered as lhs
             iterateChildren(nodep);
-            associateLogic(nodep->rhsp(), nodep);
-            associateLogic(nodep, nodep->rhsp());
-            associateLogic(nodep, nodep->lhsp());
-            associateLogic(nodep->lhsp(), nodep);
+            for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+                associateLogic(itemp, nodep);
+                associateLogic(nodep, itemp);
+            }
         } else {
             iterateChildren(nodep);
         }
