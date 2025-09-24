@@ -228,6 +228,7 @@ class WidthVisitor final : public VNVisitor {
     TableMap m_tableMap;  // Created tables so can remove duplicates
     std::map<const AstNodeDType*, AstQueueDType*>
         m_queueDTypeIndexed;  // Queues with given index type
+    std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
 
     static constexpr int ENUM_LOOKUP_BITS = 16;  // Maximum # bits to make enum lookup table
 
@@ -1195,26 +1196,41 @@ class WidthVisitor final : public VNVisitor {
             userIterate(nodep->rhsp(), WidthVP{SELF, BOTH}.p());
         }
 
-        const auto checkIfExprOk = [](const AstNodeExpr* const exprp) {
+        const auto checkIfExprOk = [this](const AstNodeExpr* const exprp) {
             if (VN_IS(exprp, VarXRef)) {
                 exprp->v3error("Hierarchical reference used for net alias (IEEE 1800-2023 10.11)");
-                return;
+                return false;
             }
 
-            if (const AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
-                if (!varRefp->varp()->isNet()) {
-                    exprp->v3error(
-                        "Only nets are allowed in alias: " << varRefp->varp()->prettyNameQ());
-                }
-            } else {
+            const AstVarRef* const varRefp = VN_CAST(exprp, VarRef);
+            if (!varRefp) {
                 exprp->v3warn(
                     E_UNSUPPORTED,
                     "Unsupported: Operand of alias statement is not a variable reference");
+                return false;
             }
+            AstVar* const varp = varRefp->varp();
+            if (!varp->isNet()) {
+                exprp->v3error(
+                    "Only nets are allowed in alias: " << varp->prettyNameQ());
+                return false;
+            }
+            if (m_aliasedVars.find(varp) != m_aliasedVars.end()) {
+                varRefp->v3error("Alias is specified more than once (IEEE 1800-2023 10.11): " << varp->prettyNameQ());
+                return false;
+            } else {
+                m_aliasedVars.insert(varp);
+            }
+            return true;
         };
 
-        checkIfExprOk(nodep->lhsp());
-        checkIfExprOk(nodep->rhsp());
+        const bool lhsOk = checkIfExprOk(nodep->lhsp());
+        const bool rhsOk = checkIfExprOk(nodep->rhsp());
+        if (!lhsOk || !rhsOk) return;
+
+        if (VN_AS(nodep->lhsp(), VarRef)->varp() == VN_AS(nodep->rhsp(), VarRef)->varp()) {
+            nodep->v3error("Alias from an individual signal to itself (IEEE 1800-2023 10.11)");
+        }
         const AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep();
         const AstNodeDType* const rhsDtypep = nodep->rhsp()->dtypep();
         if (!lhsDtypep->similarDType(rhsDtypep)) {
