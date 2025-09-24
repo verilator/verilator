@@ -70,6 +70,7 @@ Verilator 5.041 devel
 * Fix timeprecision backward assignment (#6469). [Artur Bieniek, Antmicro Ltd.]
 * Fix splitting hierarchically referenced variables (#6475). [Ryszard Rozak, Antmicro Ltd.]
 * Fix Windows compilation of Verilator with spaces in the path (#6477). [Fabian Keßler-Schulz]
+* Fix PROTOTYPEMIS error on implicit logic (#6482). [Alex Solomatnikov]
 
 
 Verilator 5.040 2025-08-30

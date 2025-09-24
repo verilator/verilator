@@ -258,7 +258,23 @@ int AstBasicDType::widthTotalBytes() const {
 
 bool AstBasicDType::sameNode(const AstNode* samep) const {
     const AstBasicDType* const sp = VN_DBG_AS(samep, BasicDType);
-    if (!(m == sp->m) || numeric() != sp->numeric()) return false;
+    if (!(m == sp->m)) return false;
+    if (numeric() != sp->numeric()) return false;
+    if (!rangep() && !sp->rangep()) return true;
+    return rangep() && rangep()->sameTree(sp->rangep());
+}
+bool AstBasicDType::similarDTypeNode(const AstNodeDType* samep) const {
+    if (sameNode(samep)) return true;
+    const AstBasicDType* const sp = VN_DBG_AS(samep, BasicDType);
+    if (!(m.m_keyword == sp->m.m_keyword
+          || (m.m_keyword == VBasicDTypeKwd::LOGIC_IMPLICIT
+              && sp->m.m_keyword == VBasicDTypeKwd::LOGIC)
+          || (m.m_keyword == VBasicDTypeKwd::LOGIC
+              && sp->m.m_keyword == VBasicDTypeKwd::LOGIC_IMPLICIT)))
+        return false;
+    if (!(m.m_nrange == sp->m.m_nrange)) return false;
+    // Squash so NOSIGN == UNSIGNED
+    if (numeric().isSigned() != sp->numeric().isSigned()) return false;
     if (!rangep() && !sp->rangep()) return true;
     return rangep() && rangep()->sameTree(sp->rangep());
 }

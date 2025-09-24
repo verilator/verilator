@@ -430,7 +430,7 @@ public:
     void dumpJson(std::ostream& str) const override;
     // width/widthMin/numeric compared elsewhere
     bool sameNode(const AstNode* samep) const override;
-    bool similarDTypeNode(const AstNodeDType* samep) const override { return sameNode(samep); }
+    bool similarDTypeNode(const AstNodeDType* samep) const override;
     string name() const override VL_MT_STABLE { return m.m_keyword.ascii(); }
     string prettyDTypeName(bool full) const override;
     const char* broken() const override {
