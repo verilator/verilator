@@ -147,6 +147,7 @@ class CaseVisitor final : public VNVisitor {
     bool m_caseNoOverlapsAllCovered = false;  // Proven to be synopsys parallel_case compliant
     // For each possible value, the case branch we need
     std::array<AstNode*, 1 << CASE_OVERLAP_WIDTH> m_valueItem;
+    bool m_needToClearCache = false;  // Whether cache needs to be cleared
 
     // METHODS
     //! Determine whether we should check case items are complete
@@ -386,11 +387,33 @@ class CaseVisitor final : public VNVisitor {
         }
     }
 
+    static bool replaceFirstVarRefOfWithExpr(AstNode* const nodep, const AstVar* const varp,
+                                             AstNodeExpr* const exprp) {
+        if (!nodep) return false;
+        if (AstVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
+            if (varrefp->varp()->isSame(varp)) {
+                VL_DO_DANGLING(nodep->replaceWith(exprp), nodep);
+                return true;
+            }
+        }
+        return replaceFirstVarRefOfWithExpr(nodep->op1p(), varp, exprp)
+               || replaceFirstVarRefOfWithExpr(nodep->op2p(), varp, exprp)
+               || replaceFirstVarRefOfWithExpr(nodep->op3p(), varp, exprp)
+               || replaceFirstVarRefOfWithExpr(nodep->op4p(), varp, exprp);
+    }
+
     void replaceCaseFast(AstCase* nodep) {
         // CASEx(cexpr,....
         // ->  tree of IF(msb,  IF(msb-1, 11, 10)
         //                      IF(msb-1, 01, 00))
-        AstNodeExpr* const cexprp = nodep->exprp()->unlinkFrBack();
+        AstNodeExpr* cexprp;
+        AstExprStmt* cexprStmtp = nullptr;
+        if (nodep->exprp()->isPure()) {
+            cexprp = nodep->exprp()->unlinkFrBack();
+        } else {
+            cexprStmtp = VN_AS(nodep->exprp()->unlinkFrBack(), ExprStmt);
+            cexprp = cexprStmtp->resultp()->cloneTreePure(false);
+        }
 
         if (debug() >= 9) {  // LCOV_EXCL_START
             for (uint32_t i = 0; i < (1UL << m_caseWidth); ++i) {
@@ -405,6 +428,14 @@ class CaseVisitor final : public VNVisitor {
 
         AstNode::user3ClearTree();
         AstNode* ifrootp = replaceCaseFastRecurse(cexprp, m_caseWidth - 1, 0UL);
+        if (cexprStmtp) {
+            UASSERT_OBJ(replaceFirstVarRefOfWithExpr(VN_AS(ifrootp, If)->condp(),
+                                                     VN_AS(cexprStmtp->resultp(), VarRef)->varp(),
+                                                     cexprStmtp),
+                        nodep, "Case expression if's shall utilize temporary variable");
+            m_needToClearCache = true;
+        }
+
         // Case expressions can't be linked twice, so clone them
         if (ifrootp && !ifrootp->user3()) ifrootp = ifrootp->cloneTree(true);
 
@@ -423,7 +454,14 @@ class CaseVisitor final : public VNVisitor {
         // ->  IF((cexpr==icond1),istmts1,
         //                       IF((EQ (AND MASK cexpr) (AND MASK icond1)
         //                              ,istmts2, istmts3
-        AstNodeExpr* const cexprp = nodep->exprp()->unlinkFrBack();
+        AstNodeExpr* cexprp;
+        AstExprStmt* cexprStmtp = nullptr;
+        if (nodep->exprp()->isPure()) {
+            cexprp = nodep->exprp()->unlinkFrBack();
+        } else {
+            cexprStmtp = VN_AS(nodep->exprp(), ExprStmt)->unlinkFrBack();
+            cexprp = cexprStmtp->resultp()->cloneTreePure(false);
+        }
         // We'll do this in two stages.  First stage, convert the conditions to
         // the appropriate IF AND terms.
         UINFOTREE(9, nodep, "", "_comp_IN::");
@@ -502,7 +540,7 @@ class CaseVisitor final : public VNVisitor {
         // should pull out the most common item from here and instead make
         // it the first IF branch.
         int depth = 0;
-        AstNode* grouprootp = nullptr;
+        AstIf* grouprootp = nullptr;
         AstIf* groupnextp = nullptr;
         AstIf* itemnextp = nullptr;
         for (AstCaseItem* itemp = nodep->itemsp(); itemp;
@@ -551,6 +589,13 @@ class CaseVisitor final : public VNVisitor {
         if (grouprootp) {
             UINFOTREE(9, grouprootp, "", "_new");
             nodep->replaceWith(grouprootp);
+            if (cexprStmtp) {
+                UASSERT_OBJ(replaceFirstVarRefOfWithExpr(
+                                grouprootp->condp(), VN_AS(cexprStmtp->resultp(), VarRef)->varp(),
+                                cexprStmtp),
+                            nodep, "Case expression if's shall utilize temporary variable");
+                m_needToClearCache = true;
+            }
         } else {
             nodep->unlinkFrBack();
         }
@@ -611,6 +656,7 @@ public:
     explicit CaseVisitor(AstNetlist* nodep) {
         for (auto& itr : m_valueItem) itr = nullptr;
         iterate(nodep);
+        if (m_needToClearCache) VIsCached::clearCacheTree();
     }
     ~CaseVisitor() override {
         V3Stats::addStat("Optimizations, Cases parallelized", m_statCaseFast);

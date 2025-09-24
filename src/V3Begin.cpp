@@ -314,21 +314,22 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstNodeCase* nodep) override {
         if (!nodep->exprp()->isPure()) {
+            FileLine* const fileline = nodep->exprp()->fileline();
             AstVar* const varp
-                = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP,
-                             "__VCaseTmp_" + m_tempNames.get(nodep), nodep->exprp()->dtypep()};
-            AstAssign* const assignp = new AstAssign{
-                nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE},
-                nodep->exprp()->unlinkFrBack()};
-            nodep->exprp(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
+                = new AstVar{fileline, VVarType::XTEMP, "__VCaseTmp_" + m_tempNames.get(nodep),
+                             nodep->exprp()->dtypep()};
+            nodep->exprp(new AstExprStmt{
+                fileline,
+                new AstAssign{nodep->fileline(), new AstVarRef{fileline, varp, VAccess::WRITE},
+                              nodep->exprp()->unlinkFrBack()},
+                new AstVarRef{fileline, varp, VAccess::READ}});
             if (m_ftaskp) {
                 varp->funcLocal(true);
-                varp->lifetime(VLifetime::AUTOMATIC);
+                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                 m_ftaskp->stmtsp()->addHereThisAsNext(varp);
             } else {
-                m_modp->addStmtsp(varp);
+                m_modp->stmtsp()->addHereThisAsNext(varp);
             }
-            nodep->addHereThisAsNext(assignp);
         }
         iterateChildren(nodep);
     }

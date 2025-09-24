@@ -3071,7 +3071,7 @@ class WidthVisitor final : public VNVisitor {
             nodep->exprp(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
             if (m_ftaskp) {
                 varp->funcLocal(true);
-                varp->lifetime(VLifetime::AUTOMATIC);
+                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                 m_ftaskp->stmtsp()->addHereThisAsNext(varp);
             } else {
                 m_modep->stmtsp()->addHereThisAsNext(varp);
