@@ -15,10 +15,9 @@ module t (  /*AUTOARG*/
   wire [31:0] a = 32'hdeadbeef;
   wire [31:0] b;
 
-  alias a = b;
+  alias a = a;
   alias a = b;
   alias b = a;
-  alias a = a;
 
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE

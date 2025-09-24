@@ -1211,12 +1211,12 @@ class WidthVisitor final : public VNVisitor {
             }
             AstVar* const varp = varRefp->varp();
             if (!varp->isNet()) {
-                exprp->v3error(
-                    "Only nets are allowed in alias: " << varp->prettyNameQ());
+                exprp->v3error("Only nets are allowed in alias: " << varp->prettyNameQ());
                 return false;
             }
             if (m_aliasedVars.find(varp) != m_aliasedVars.end()) {
-                varRefp->v3error("Alias is specified more than once (IEEE 1800-2023 10.11): " << varp->prettyNameQ());
+                varRefp->v3error("Alias is specified more than once (IEEE 1800-2023 10.11): "
+                                 << varp->prettyNameQ());
                 return false;
             } else {
                 m_aliasedVars.insert(varp);
@@ -1228,9 +1228,6 @@ class WidthVisitor final : public VNVisitor {
         const bool rhsOk = checkIfExprOk(nodep->rhsp());
         if (!lhsOk || !rhsOk) return;
 
-        if (VN_AS(nodep->lhsp(), VarRef)->varp() == VN_AS(nodep->rhsp(), VarRef)->varp()) {
-            nodep->v3error("Alias from an individual signal to itself (IEEE 1800-2023 10.11)");
-        }
         const AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep();
         const AstNodeDType* const rhsDtypep = nodep->rhsp()->dtypep();
         if (!lhsDtypep->similarDType(rhsDtypep)) {
