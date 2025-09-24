@@ -64,8 +64,15 @@ public:
 private:
     // METHODS
     void editDType(AstNode* nodep) {
-        // Edit dtypes for this node
+        // Called by every visitor. Edit dtypes for this node, also check for some warnings
         nodep->dtypep(editOneDType(nodep->dtypep()));
+        if (m_ftaskp && m_ftaskp->verilogFunction() && m_taskRefWarn && nodep->isTimingControl())
+            nodep->v3error(
+                "Functions cannot contain time-controlling statements (IEEE 1800-2023 13.4)\n"
+                << nodep->warnContextPrimary() << "\n"
+                << nodep->warnMore() << "... Suggest make caller 'function "
+                << m_ftaskp->prettyName() << "' a task\n"
+                << m_ftaskp->warnContextSecondary());
     }
     AstNodeDType* editOneDType(AstNodeDType* nodep) {
         // See if the dtype/refDType can be converted to a standard one
@@ -221,7 +228,7 @@ private:
     void visit(AstFork* nodep) override {
         VL_RESTORER(m_taskRefWarn);
         // fork..join_any is allowed to call tasks, and UVM does this
-        if (nodep->joinType().joinNone()) m_taskRefWarn = false;
+        if (!nodep->isTimingControl()) m_taskRefWarn = false;
         iterateChildren(nodep);
         editDType(nodep);
     }

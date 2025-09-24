@@ -1,0 +1,16 @@
+%Error: t/t_func_bad_time.v:12:5: Functions cannot contain time-controlling statements (IEEE 1800-2023 13.4)
+                                : ... note: In instance 't'
+   12 |     @e;  
+      |     ^
+                                : ... Suggest make caller 'function calls_timing_ctl' a task
+   11 |   function void calls_timing_ctl;
+      |                 ^~~~~~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_func_bad_time.v:17:5: Functions cannot contain time-controlling statements (IEEE 1800-2023 13.4)
+                                : ... note: In instance 't'
+   17 |     wait (s);  
+      |     ^~~~
+                                : ... Suggest make caller 'function calls_timing_ctl' a task
+   11 |   function void calls_timing_ctl;
+      |                 ^~~~~~~~~~~~~~~~
+%Error: Exiting due to
