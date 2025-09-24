@@ -4186,9 +4186,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             AstAssignW* const assignp = new AstAssignW{
                 nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
                 new AstVarRef{nodep->fileline(), aliasp, VAccess::READ}};
-            nodep->varp()->isContinuously(true);
             assignp->user2(true);
             nodep->addNextHere(assignp);
+            // Propagate attributes of the replaced variable,
+            // because all references to it are replaced with references to the alias variable
+            aliasp->varp()->propagateAttrFrom(nodep->varp());
         }
     }
     void visit(AstNodeFTaskRef* nodep) override {
