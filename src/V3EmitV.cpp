@@ -205,9 +205,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstAlias* nodep) override {
         putbs("alias ");
-        iterateAndNextConstNull(nodep->lhsp());
-        putfs(nodep, " = ");
-        iterateAndNextConstNull(nodep->rhsp());
+        iterateConst(nodep->itemsp());
+        for (AstNode* itemp = nodep->itemsp()->nextp(); itemp; itemp = itemp->nextp()) {
+            putfs(nodep, " = ");
+            iterateConst(itemp);
+        }
         if (!m_suppressSemi) puts(";\n");
     }
     void visit(AstAssignW* nodep) override {
