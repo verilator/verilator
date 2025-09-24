@@ -374,6 +374,7 @@ class TaskVisitor final : public VNVisitor {
     AstScope* m_scopep = nullptr;  // Current scope
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     bool m_inSensesp = false;  // Are we under a senitem?
+    bool m_inNew = false;  // Are we under a constructor?
     int m_modNCalls = 0;  // Incrementing func # for making symbols
 
     // STATE - across all visitors
@@ -1476,6 +1477,11 @@ class TaskVisitor final : public VNVisitor {
         iterateChildren(nodep);
         UASSERT_OBJ(!m_insStmtp, nodep, "Didn't finish out last statement");
     }
+    void visit(AstCNew* nodep) override {
+        VL_RESTORER(m_inNew);
+        m_inNew = true;
+        iterateChildren(nodep);
+    }
     void visit(AstNodeFTaskRef* nodep) override {
         if (m_inSensesp && !nodep->isPure()) {
             nodep->v3warn(E_UNSUPPORTED,
@@ -1525,10 +1531,33 @@ class TaskVisitor final : public VNVisitor {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep,
                         "funcref-like expression to non-function");
             AstVarRef* const outrefp = new AstVarRef{nodep->fileline(), outvscp, VAccess::READ};
-            beginp = new AstExprStmt{nodep->fileline(), beginp, outrefp};
+            AstExprStmt* lambdap = new AstExprStmt{nodep->fileline(), beginp, outrefp};
+
+            if (m_inNew) {
+                AstVar* varp = outvscp->varp();
+                varp->funcLocal(true);
+
+                // Create a new var that will be inside the lambda
+                AstVar* newvarp = varp->cloneTree(false);
+
+                // Replace all references so they point to the new var
+                lambdap->stmtsp()->foreachAndNext([varp, newvarp](AstVarRef* refp) {
+                    if (refp->varp() == varp) refp->varp(newvarp);
+                });
+
+                // Add variable initialization
+                lambdap->stmtsp()->addHereThisAsNext(newvarp);
+                lambdap->hasResult(false);
+
+                // Add return statement
+                AstCExpr* const exprp = new AstCExpr{nodep->fileline(), varp->name(), 0};
+                exprp->dtypeSetString();
+                lambdap->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
+            }
+
             // AstExprStmt is currently treated as impure, so clear the cached purity of its
             // parents
-            nodep->replaceWith(beginp);
+            nodep->replaceWith(lambdap);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             VIsCached::clearCacheTree();
         } else {  // VN_IS(nodep->backp(), StmtExpr)
