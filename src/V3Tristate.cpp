@@ -1778,10 +1778,11 @@ class TristateVisitor final : public TristateBaseVisitor {
                 if (m_inAlias) {
                     if (nodep->varp()->direction().isAny()) {
                         nodep->v3warn(E_UNSUPPORTED, "Unsupported: Port as alias argument: "
-                                      << nodep->prettyNameQ());
+                                                         << nodep->prettyNameQ());
                     } else {
-                        nodep->v3warn(E_UNSUPPORTED, "Unsupported: Tristate variable referenced in alias: "
-                                      << nodep->prettyNameQ());
+                        nodep->v3warn(E_UNSUPPORTED,
+                                      "Unsupported: Tristate variable referenced in alias: "
+                                          << nodep->prettyNameQ());
                     }
                     return;
                 }

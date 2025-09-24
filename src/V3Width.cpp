@@ -1203,7 +1203,8 @@ class WidthVisitor final : public VNVisitor {
 
             if (const AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
                 if (!varRefp->varp()->isNet()) {
-                    exprp->v3error("Only nets are allowed in alias: " << varRefp->varp()->prettyNameQ());
+                    exprp->v3error(
+                        "Only nets are allowed in alias: " << varRefp->varp()->prettyNameQ());
                 }
             } else {
                 exprp->v3warn(
@@ -1218,7 +1219,8 @@ class WidthVisitor final : public VNVisitor {
         const AstNodeDType* const rhsDtypep = nodep->rhsp()->dtypep();
         if (!lhsDtypep->similarDType(rhsDtypep)) {
             nodep->v3error("Incompatible data types of nets used for net alias, got "
-                           << lhsDtypep->prettyDTypeNameQ() << " and " << rhsDtypep->prettyDTypeNameQ());
+                           << lhsDtypep->prettyDTypeNameQ() << " and "
+                           << rhsDtypep->prettyDTypeNameQ());
         }
     }
 
