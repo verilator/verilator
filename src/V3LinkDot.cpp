@@ -5039,16 +5039,22 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
     void visit(AstAttrOf* nodep) override { iterateChildren(nodep); }
 
+    void visit(AstAssignW* nodep) override {
+        LINKDOT_VISIT_START();
+        checkNoDot(nodep);
+        VL_RESTORER(m_replaceWithAlias);
+        if (nodep->user2()) m_replaceWithAlias = false;
+        iterateChildren(nodep);
+    }
+
     void visit(AstNode* nodep) override {
         VL_RESTORER(m_inPackedArray);
-        VL_RESTORER(m_replaceWithAlias);
         if (VN_IS(nodep, PackArrayDType)) {
             m_inPackedArray = true;
         } else if (!m_inPackedArray) {
             LINKDOT_VISIT_START();
             checkNoDot(nodep);
         }
-        if (VN_IS(nodep, AssignW) && nodep->user2()) m_replaceWithAlias = false;
         iterateChildren(nodep);
     }
 
