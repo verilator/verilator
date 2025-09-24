@@ -1197,13 +1197,13 @@ class WidthVisitor final : public VNVisitor {
 
         const auto checkIfExprOk = [](const AstNodeExpr* const exprp) {
             if (VN_IS(exprp, VarXRef)) {
-                exprp->v3error("Hierarchical reference used for net alias");
+                exprp->v3error("Hierarchical reference used for net alias (IEEE 1800-2023 10.11)");
                 return;
             }
 
             if (const AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
                 if (!varRefp->varp()->isNet()) {
-                    exprp->v3error("Only nets are allowed in alias");
+                    exprp->v3error("Only nets are allowed in alias: " << varRefp->varp()->prettyNameQ());
                 }
             } else {
                 exprp->v3warn(
@@ -1214,8 +1214,11 @@ class WidthVisitor final : public VNVisitor {
 
         checkIfExprOk(nodep->lhsp());
         checkIfExprOk(nodep->rhsp());
-        if (!nodep->lhsp()->dtypep()->similarDType(nodep->rhsp()->dtypep())) {
-            nodep->v3error("Incompatible types of nets used for net alias");
+        const AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep();
+        const AstNodeDType* const rhsDtypep = nodep->rhsp()->dtypep();
+        if (!lhsDtypep->similarDType(rhsDtypep)) {
+            nodep->v3error("Incompatible data types of nets used for net alias, got "
+                           << lhsDtypep->prettyDTypeNameQ() << " and " << rhsDtypep->prettyDTypeNameQ());
         }
     }
 
