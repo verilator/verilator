@@ -122,6 +122,8 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCExpr
     bool m_emitConstInit = false;  // Emitting constant initializer
     bool m_createdScopeHash = false;  // Already created a scope hash
+    std::unordered_set<const AstVar*> localLambdaVars;  // Which vars are only local inside
+                                                        // lambdas, should not be used from classes
 
     // State associated with processing $display style string formatting
     struct EmitDispState final {
@@ -1169,6 +1171,30 @@ public:
         // GCC allows compound statements in expressions, but this is not standard.
         // So we use an immediate-evaluation lambda and comma operator
         putnbs(nodep, "([&]() {\n");
+
+        if (AstVarRef* varrefp = VN_CAST(nodep->resultp(), VarRef)) {
+            AstVar* varp = varrefp->varp();
+            bool exists = false;
+            for (AstNode* nextp = nodep->stmtsp(); nextp; nextp = nextp->nextp()) {
+                if (nextp->exists([varp](AstVarRef* refp2) { return varp == refp2->varp(); })) {
+                    exists = true;
+                    break;
+                }
+            }
+
+            if (exists && !varrefp->selfPointer().isEmpty() && !m_usevlSelfRef) {
+                // If this->localLambdaVar would be emitted here, construct it as a local variable
+                // instead
+                localLambdaVars.insert(varp);
+                nodep->stmtsp()->addHereThisAsNext(varp->unlinkFrBack());
+                AstCExpr* const exprp = new AstCExpr{nodep->fileline(), varp->name(), 0};
+                exprp->dtypeSetString();
+                nodep->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
+                iterateAndNextConstNull(nodep->stmtsp());
+                puts("}())");
+                return;
+            }
+        }
         iterateAndNextConstNull(nodep->stmtsp());
         puts("}(), ");
         iterateAndNextConstNull(nodep->resultp());
@@ -1509,7 +1535,9 @@ public:
             putns(nodep, nodep->selfPointerProtect(m_useSelfForThis));
             return;
         } else if (!nodep->selfPointer().isEmpty()) {
-            emitDereference(nodep, nodep->selfPointerProtect(m_useSelfForThis));
+            if (localLambdaVars.find(varp) == localLambdaVars.end()) {
+                emitDereference(nodep, nodep->selfPointerProtect(m_useSelfForThis));
+            }
         }
         putns(nodep, nodep->varp()->nameProtect());
     }
