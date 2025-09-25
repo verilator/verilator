@@ -414,23 +414,22 @@ class UnknownVisitor final : public VNVisitor {
             // Note below has null backp(); the Edit function knows how to deal with that.
             AstConst* const maxmsbConstp = new AstConst(
                 nodep->fileline(), AstConst::WidthedValue{}, nodep->lsbp()->width(), maxmsb);
-            nodep->lsbp(V3Const::constifyEdit(nodep->lsbp()->unlinkFrBack()));
-            if (AstConst* const constp = VN_CAST(nodep->lsbp(), Const)) {
+            AstNodeExpr* lsbp = V3Const::constifyEdit(nodep->lsbp()->unlinkFrBack());
+            if (AstConst* const constp = VN_CAST(lsbp, Const)) {
                 if (V3Number{nodep}.opGte(maxmsbConstp->num(), constp->num()).isNeqZero()) {
                     // We don't need to add a conditional; we know the existing expression is ok
                     VL_DO_DANGLING(maxmsbConstp->deleteTree(), maxmsbConstp);
+                    nodep->lsbp(lsbp);
                     return;
                 }
             }
-            AstNodeExpr* lsbp = nodep->lsbp()->unlinkFrBack();
             if (!lsbp->isPure()) {
                 AstVar* const varp = createTemp(lsbp);
-                FileLine* const filelinep = lsbp->fileline();
+                FileLine* const fl = lsbp->fileline();
                 lsbp = new AstExprStmt{
-                    filelinep,
-                    new AstAssign{filelinep, new AstVarRef{filelinep, varp, VAccess::WRITE}, lsbp},
-                    new AstVarRef{filelinep, varp, VAccess::READ}};
-                nodep->lsbp(new AstVarRef{filelinep, varp, VAccess::READ});
+                    fl, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, lsbp},
+                    new AstVarRef{fl, varp, VAccess::READ}};
+                nodep->lsbp(new AstVarRef{fl, varp, VAccess::READ});
             } else {
                 nodep->lsbp(lsbp->cloneTreePure(false));
             }
@@ -504,23 +503,22 @@ class UnknownVisitor final : public VNVisitor {
             AstConst* const declElementsp
                 = new AstConst(nodep->fileline(), AstConst::WidthedValue{}, nodep->bitp()->width(),
                                declElements - 1);
-            nodep->bitp(V3Const::constifyEdit(nodep->bitp()->unlinkFrBack()));
-            if (AstConst* const constp = VN_CAST(nodep->bitp(), Const)) {
+            AstNodeExpr* bitp = V3Const::constifyEdit(nodep->bitp()->unlinkFrBack());
+            if (AstConst* const constp = VN_CAST(bitp, Const)) {
                 if (V3Number{nodep}.opGte(declElementsp->num(), constp->num()).isNeqZero()) {
                     // We don't need to add a conditional; we know the existing expression is ok
                     VL_DO_DANGLING(declElementsp->deleteTree(), declElementsp);
+                    nodep->bitp(bitp);
                     return;
                 }
             }
-            AstNodeExpr* bitp = nodep->bitp()->unlinkFrBack();
             if (!bitp->isPure()) {
                 AstVar* const varp = createTemp(bitp);
-                FileLine* const filelinep = bitp->fileline();
+                FileLine* const fl = bitp->fileline();
                 bitp = new AstExprStmt{
-                    filelinep,
-                    new AstAssign{filelinep, new AstVarRef{filelinep, varp, VAccess::WRITE}, bitp},
-                    new AstVarRef{filelinep, varp, VAccess::READ}};
-                nodep->bitp(new AstVarRef{filelinep, varp, VAccess::READ});
+                    fl, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, bitp},
+                    new AstVarRef{fl, varp, VAccess::READ}};
+                nodep->bitp(new AstVarRef{fl, varp, VAccess::READ});
             } else {
                 nodep->bitp(bitp->cloneTreePure(false));
             }
