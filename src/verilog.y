@@ -3915,6 +3915,9 @@ patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_patt
                         { $$ = $1; }
         //                      // expanded from simple_type ps_type_identifier (part of simple_type)
         //                      // expanded from simple_type ps_parameter_identifier (part of simple_type)
+        |       packageClassScope id
+                        { $$ = AstDot::newIfPkg($<fl>1, $1,
+                                                new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}); }
         |       packageClassScopeE idType
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
                           $$ = refp; }
