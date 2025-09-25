@@ -3002,7 +3002,8 @@ class WidthVisitor final : public VNVisitor {
         AstNodeExpr* newp = nullptr;
         for (AstDistItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), DistItem)) {
-            AstNodeExpr* inewp = insideItem(nodep, nodep->exprp(), itemp->rangep());
+            AstNodeExpr* inewp
+                = insideItem(nodep, nodep->exprp()->cloneTreePure(false), itemp->rangep());
             if (!inewp) continue;
             AstNodeExpr* const cmpp
                 = new AstGt{itemp->fileline(), itemp->weightp()->unlinkFrBack(),
@@ -3061,14 +3062,19 @@ class WidthVisitor final : public VNVisitor {
                              EXTEND_EXP);
         }
 
+        AstNodeExpr* exprp;
+        AstExprStmt* exprStmtp = nullptr;
         if (!m_constraintp && !m_withp && !nodep->exprp()->isPure()) {
+            FileLine* const fileline = nodep->exprp()->fileline();
             AstVar* const varp
-                = new AstVar{nodep->fileline(), VVarType::VAR,
-                             "__VInsideTmp_" + m_tempNames.get(nodep), nodep->exprp()->dtypep()};
-            AstAssign* const assignp = new AstAssign{
-                nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE},
-                nodep->exprp()->unlinkFrBack()};
-            nodep->exprp(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
+                = new AstVar{fileline, VVarType::XTEMP, "__VInsideTmp_" + m_tempNames.get(nodep),
+                             nodep->exprp()->dtypep()};
+            exprp = new AstVarRef{fileline, varp, VAccess::READ};
+            exprStmtp = new AstExprStmt{
+                fileline,
+                new AstAssign{fileline, new AstVarRef{fileline, varp, VAccess::WRITE},
+                              nodep->exprp()->unlinkFrBack()},
+                exprp};
             if (m_ftaskp) {
                 varp->funcLocal(true);
                 varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
@@ -3076,25 +3082,33 @@ class WidthVisitor final : public VNVisitor {
             } else {
                 m_modep->stmtsp()->addHereThisAsNext(varp);
             }
-            AstNode* nodep2 = nodep;
-            while (!VN_IS(nodep2, NodeStmt)) nodep2 = nodep2->backp();
-            UASSERT_OBJ(nodep2, nodep, "Not isnide a statement");
-            nodep2->addHereThisAsNext(assignp);
             iterate(varp);
             iterateChildren(varp);
-            iterate(assignp);
-            iterateChildren(assignp);
+            iterate(exprStmtp);
+            iterateChildren(exprStmtp);
+        } else {
+            exprp = nodep->exprp();
         }
         UINFOTREE(9, nodep, "", "inside-in");
         // Now rip out the inside and replace with simple math
         AstNodeExpr* newp = nullptr;
         for (AstNodeExpr *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = VN_AS(itemp->nextp(), NodeExpr);  // Will be unlinking
-            AstNodeExpr* const inewp = insideItem(nodep, nodep->exprp(), itemp);
+            AstNodeExpr* inewp;
+            if (exprStmtp) {
+                inewp = insideItem(nodep, exprStmtp, itemp);
+                exprStmtp = nullptr;
+            } else {
+                inewp = insideItem(nodep, exprp->cloneTreePure(true), itemp);
+            }
             if (!inewp) continue;
             newp = newp ? new AstLogOr{nodep->fileline(), newp, inewp} : inewp;
         }
-        if (!newp) newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+        if (exprStmtp) VL_DO_DANGLING(exprStmtp->deleteTree(), exprStmtp);
+        if (!newp) {
+            newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+        } else if (exprStmtp) {
+        }
         UINFOTREE(9, newp, "", "inside-out");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -3108,21 +3122,19 @@ class WidthVisitor final : public VNVisitor {
         } else if (VN_IS(itemDtp, UnpackArrayDType) || VN_IS(itemDtp, DynArrayDType)
                    || VN_IS(itemDtp, QueueDType)) {
             // Unsupported in parameters
-            AstNodeExpr* const cexprp = exprp->cloneTreePure(true);
-            AstNodeExpr* const inewp = new AstCMethodHard{nodep->fileline(), itemp->unlinkFrBack(),
-                                                          VCMethod::ARRAY_INSIDE, cexprp};
-            iterateCheckTyped(nodep, "inside value", cexprp, itemDtp->subDTypep(), BOTH);
-            VL_DANGLING(cexprp);  // Might have been replaced
+            AstNodeExpr* const inewp
+                = new AstCMethodHard{nodep->fileline(), itemp->unlinkFrBack(), VCMethod::ARRAY_INSIDE, exprp};
+            iterateCheckTyped(nodep, "inside value", exprp, itemDtp->subDTypep(), BOTH);
             inewp->dtypeSetBit();
             inewp->didWidth(true);
             return inewp;
         } else if (VN_IS(itemDtp, AssocArrayDType)) {
             nodep->v3error("Inside operator not specified on associative arrays "
                            "(IEEE 1800-2023 11.4.13)");
+            VL_DANGLING(exprp);
             return nullptr;
         }
-        return AstEqWild::newTyped(itemp->fileline(), exprp->cloneTreePure(true),
-                                   itemp->unlinkFrBack());
+        return AstEqWild::newTyped(itemp->fileline(), exprp, itemp->unlinkFrBack());
     }
     void visit(AstInsideRange* nodep) override {
         // Just do each side; AstInside will rip these nodes out later

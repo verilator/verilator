@@ -387,19 +387,19 @@ class CaseVisitor final : public VNVisitor {
         }
     }
 
-    static bool replaceFirstVarRefOfWithExpr(AstNode* const nodep, const AstVar* const varp,
-                                             AstNodeExpr* const exprp) {
+    static bool replaceFirstVarRefOf(AstNode* const nodep, const AstVar* const varp,
+                                     AstNodeExpr* const exprp) {
         if (!nodep) return false;
-        if (AstVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
-            if (varrefp->varp()->isSame(varp)) {
+        if (AstVarRef* const varRefp = VN_CAST(nodep, VarRef)) {
+            if (varRefp->varp()->isSame(varp)) {
                 VL_DO_DANGLING(nodep->replaceWith(exprp), nodep);
                 return true;
             }
         }
-        return replaceFirstVarRefOfWithExpr(nodep->op1p(), varp, exprp)
-               || replaceFirstVarRefOfWithExpr(nodep->op2p(), varp, exprp)
-               || replaceFirstVarRefOfWithExpr(nodep->op3p(), varp, exprp)
-               || replaceFirstVarRefOfWithExpr(nodep->op4p(), varp, exprp);
+        return replaceFirstVarRefOf(nodep->op1p(), varp, exprp)
+               || replaceFirstVarRefOf(nodep->op2p(), varp, exprp)
+               || replaceFirstVarRefOf(nodep->op3p(), varp, exprp)
+               || replaceFirstVarRefOf(nodep->op4p(), varp, exprp);
     }
 
     void replaceCaseFast(AstCase* nodep) {
@@ -429,9 +429,9 @@ class CaseVisitor final : public VNVisitor {
         AstNode::user3ClearTree();
         AstNode* ifrootp = replaceCaseFastRecurse(cexprp, m_caseWidth - 1, 0UL);
         if (cexprStmtp) {
-            UASSERT_OBJ(replaceFirstVarRefOfWithExpr(VN_AS(ifrootp, If)->condp(),
-                                                     VN_AS(cexprStmtp->resultp(), VarRef)->varp(),
-                                                     cexprStmtp),
+            UASSERT_OBJ(replaceFirstVarRefOf(VN_AS(ifrootp, If)->condp(),
+                                             VN_AS(cexprStmtp->resultp(), VarRef)->varp(),
+                                             cexprStmtp),
                         nodep, "Case expression if's shall utilize temporary variable");
             m_needToClearCache = true;
         }
@@ -491,7 +491,8 @@ class CaseVisitor final : public VNVisitor {
                         condp = new AstConst{itemp->fileline(), AstConst::BitFalse{}};
                     } else if (AstInsideRange* const irangep = VN_CAST(icondp, InsideRange)) {
                         // Similar logic in V3Width::visit(AstInside)
-                        condp = irangep->newAndFromInside(cexprp, irangep->lhsp()->unlinkFrBack(),
+                        condp = irangep->newAndFromInside(cexprp->cloneTreePure(true),
+                                                          irangep->lhsp()->unlinkFrBack(),
                                                           irangep->rhsp()->unlinkFrBack());
                         VL_DO_DANGLING(icondp->deleteTree(), icondp);
                     } else if (iconstp && iconstp->num().isFourState()
@@ -590,9 +591,9 @@ class CaseVisitor final : public VNVisitor {
             UINFOTREE(9, grouprootp, "", "_new");
             nodep->replaceWith(grouprootp);
             if (cexprStmtp) {
-                UASSERT_OBJ(replaceFirstVarRefOfWithExpr(
-                                grouprootp->condp(), VN_AS(cexprStmtp->resultp(), VarRef)->varp(),
-                                cexprStmtp),
+                UASSERT_OBJ(replaceFirstVarRefOf(grouprootp->condp(),
+                                                 VN_AS(cexprStmtp->resultp(), VarRef)->varp(),
+                                                 cexprStmtp),
                             nodep, "Case expression if's shall utilize temporary variable");
                 m_needToClearCache = true;
             }
