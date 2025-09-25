@@ -410,30 +410,31 @@ class UnknownVisitor final : public VNVisitor {
             UINFOTREE(9, nodep, "", "sel_old");
 
             // If (maxmsb >= selected), we're in bound
-            AstNodeExpr* condp
-                = new AstGte{nodep->fileline(),
-                             new AstConst(nodep->fileline(), AstConst::WidthedValue{},
-                                          nodep->lsbp()->width(), maxmsb),
-                             nodep->lsbp()->cloneTree(false)};
             // See if the condition is constant true (e.g. always in bound due to constant select)
             // Note below has null backp(); the Edit function knows how to deal with that.
-            condp = V3Const::constifyEdit(condp);
-            if (condp->isOne()) {
-                // We don't need to add a conditional; we know the existing expression is ok
-                VL_DO_DANGLING(condp->deleteTree(), condp);
-                return;
+            AstConst* const maxmsbConstp = new AstConst(
+                nodep->fileline(), AstConst::WidthedValue{}, nodep->lsbp()->width(), maxmsb);
+            nodep->lsbp(V3Const::constifyEdit(nodep->lsbp()));
+            if (AstConst* const constp = VN_CAST(nodep->lsbp(), Const)) {
+                if (V3Number{nodep}.opGte(maxmsbConstp->num(), constp->num()).isNeqZero()) {
+                    // We don't need to add a conditional; we know the existing expression is ok
+                    VL_DO_DANGLING(maxmsbConstp->deleteTree(), maxmsbConstp);
+                    return;
+                }
             }
-            if (!nodep->lsbp()->isPure()) {
-                AstVar* const varp = createTemp(nodep->lsbp());
-                FileLine* const filelinep = nodep->lsbp()->fileline();
-                VN_AS(condp, Gte)
-                    ->rhsp(new AstExprStmt{
-                        filelinep,
-                        new AstAssign{filelinep, new AstVarRef{filelinep, varp, VAccess::WRITE},
-                                      nodep->lsbp()->unlinkFrBack()},
-                        new AstVarRef{filelinep, varp, VAccess::READ}});
+            AstNodeExpr* lsbp = nodep->lsbp()->unlinkFrBack();
+            if (!lsbp->isPure()) {
+                AstVar* const varp = createTemp(lsbp);
+                FileLine* const filelinep = lsbp->fileline();
+                lsbp = new AstExprStmt{
+                    filelinep,
+                    new AstAssign{filelinep, new AstVarRef{filelinep, varp, VAccess::WRITE}, lsbp},
+                    new AstVarRef{filelinep, varp, VAccess::READ}};
                 nodep->lsbp(new AstVarRef{filelinep, varp, VAccess::READ});
+            } else {
+                nodep->lsbp(lsbp->cloneTreePure(false));
             }
+            AstNodeExpr* condp = new AstGte{nodep->fileline(), maxmsbConstp, lsbp};
             if (!lvalue) {
                 // SEL(...) -> COND(LTE(bit<=maxmsb), ARRAYSEL(...), {width{1'bx}})
                 VNRelinker replaceHandle;
