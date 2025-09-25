@@ -4,25 +4,26 @@
 // without warranty, 2019 by Driss Hafdi.
 // SPDX-License-Identifier: CC0-1.0
 
-interface Foo();
-   logic quux;
+interface Foo;
+  logic quux;
 endinterface
 
-module Bar();
-   always_comb foo.quux = '0;
+module Bar;
+  // Issue# 1623 - seems legal
+  always_comb foo.quux = '0;
 endmodule
 
-module Baz();
-   Foo foo();
-   Bar bar();
+module Baz;
+  Foo foo ();
+  Bar bar ();
 endmodule
 
 module t;
 
-   Baz baz();
+  Baz baz ();
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
-   end
+  initial begin
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
 endmodule
