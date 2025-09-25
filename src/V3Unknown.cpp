@@ -141,7 +141,7 @@ class UnknownVisitor final : public VNVisitor {
         }
     }
 
-    AstVar* createTemp(const AstNodeExpr* const nodep) {
+    AstVar* createAddTemp(const AstNodeExpr* const nodep) {
         AstVar* const varp = new AstVar{nodep->fileline(), VVarType::XTEMP,
                                         m_xrandNames->get(nodep), nodep->dtypep()};
         if (m_ftaskp) {
@@ -412,8 +412,9 @@ class UnknownVisitor final : public VNVisitor {
             // If (maxmsb >= selected), we're in bound
             // See if the condition is constant true (e.g. always in bound due to constant select)
             // Note below has null backp(); the Edit function knows how to deal with that.
-            AstConst* const maxmsbConstp = new AstConst(
-                nodep->fileline(), AstConst::WidthedValue{}, nodep->lsbp()->width(), maxmsb);
+            AstConst* const maxmsbConstp
+                = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, nodep->lsbp()->width(),
+                               static_cast<uint32_t>(maxmsb)};
             AstNodeExpr* lsbp = V3Const::constifyEdit(nodep->lsbp()->unlinkFrBack());
             if (AstConst* const constp = VN_CAST(lsbp, Const)) {
                 if (V3Number{nodep}.opGte(maxmsbConstp->num(), constp->num()).isNeqZero()) {
@@ -424,7 +425,7 @@ class UnknownVisitor final : public VNVisitor {
                 }
             }
             if (!lsbp->isPure()) {
-                AstVar* const varp = createTemp(lsbp);
+                AstVar* const varp = createAddTemp(lsbp);
                 FileLine* const fl = lsbp->fileline();
                 lsbp = new AstExprStmt{
                     fl, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, lsbp},
@@ -501,8 +502,8 @@ class UnknownVisitor final : public VNVisitor {
 
             // See if the condition is constant true
             AstConst* const declElementsp
-                = new AstConst(nodep->fileline(), AstConst::WidthedValue{}, nodep->bitp()->width(),
-                               declElements - 1);
+                = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, nodep->bitp()->width(),
+                               static_cast<uint32_t>(declElements - 1)};
             AstNodeExpr* bitp = V3Const::constifyEdit(nodep->bitp()->unlinkFrBack());
             if (AstConst* const constp = VN_CAST(bitp, Const)) {
                 if (V3Number{nodep}.opGte(declElementsp->num(), constp->num()).isNeqZero()) {
@@ -513,7 +514,7 @@ class UnknownVisitor final : public VNVisitor {
                 }
             }
             if (!bitp->isPure()) {
-                AstVar* const varp = createTemp(bitp);
+                AstVar* const varp = createAddTemp(bitp);
                 FileLine* const fl = bitp->fileline();
                 bitp = new AstExprStmt{
                     fl, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, bitp},
