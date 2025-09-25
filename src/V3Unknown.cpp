@@ -414,7 +414,7 @@ class UnknownVisitor final : public VNVisitor {
             // Note below has null backp(); the Edit function knows how to deal with that.
             AstConst* const maxmsbConstp = new AstConst(
                 nodep->fileline(), AstConst::WidthedValue{}, nodep->lsbp()->width(), maxmsb);
-            nodep->lsbp(V3Const::constifyEdit(nodep->lsbp()));
+            nodep->lsbp(V3Const::constifyEdit(nodep->lsbp()->unlinkFrBack()));
             if (AstConst* const constp = VN_CAST(nodep->lsbp(), Const)) {
                 if (V3Number{nodep}.opGte(maxmsbConstp->num(), constp->num()).isNeqZero()) {
                     // We don't need to add a conditional; we know the existing expression is ok
@@ -499,31 +499,34 @@ class UnknownVisitor final : public VNVisitor {
                     }
                 }
             }
+
             // See if the condition is constant true
-            AstNodeExpr* condp
-                = new AstGte{nodep->fileline(),
-                             new AstConst(nodep->fileline(), AstConst::WidthedValue{},
-                                          nodep->bitp()->width(), declElements - 1),
-                             nodep->bitp()->cloneTree(false)};
-            // Note below has null backp(); the Edit function knows how to deal with that.
-            condp = V3Const::constifyEdit(condp);
-            const AstNodeDType* const nodeDtp = nodep->dtypep()->skipRefp();
-            if (condp->isOne()) {
-                // We don't need to add a conditional; we know the existing expression is ok
-                VL_DO_DANGLING(condp->deleteTree(), condp);
-                return;
+            AstConst* const declElementsp
+                = new AstConst(nodep->fileline(), AstConst::WidthedValue{}, nodep->bitp()->width(),
+                               declElements - 1);
+            nodep->bitp(V3Const::constifyEdit(nodep->bitp()->unlinkFrBack()));
+            if (AstConst* const constp = VN_CAST(nodep->bitp(), Const)) {
+                if (V3Number{nodep}.opGte(declElementsp->num(), constp->num()).isNeqZero()) {
+                    // We don't need to add a conditional; we know the existing expression is ok
+                    VL_DO_DANGLING(declElementsp->deleteTree(), declElementsp);
+                    return;
+                }
             }
-            if (!nodep->bitp()->isPure()) {
-                AstVar* const varp = createTemp(nodep->bitp());
-                FileLine* const filelinep = nodep->bitp()->fileline();
-                VN_AS(condp, Gte)
-                    ->rhsp(new AstExprStmt{
-                        filelinep,
-                        new AstAssign{filelinep, new AstVarRef{filelinep, varp, VAccess::WRITE},
-                                      nodep->bitp()->unlinkFrBack()},
-                        new AstVarRef{filelinep, varp, VAccess::READ}});
+            AstNodeExpr* bitp = nodep->bitp()->unlinkFrBack();
+            if (!bitp->isPure()) {
+                AstVar* const varp = createTemp(bitp);
+                FileLine* const filelinep = bitp->fileline();
+                bitp = new AstExprStmt{
+                    filelinep,
+                    new AstAssign{filelinep, new AstVarRef{filelinep, varp, VAccess::WRITE}, bitp},
+                    new AstVarRef{filelinep, varp, VAccess::READ}};
                 nodep->bitp(new AstVarRef{filelinep, varp, VAccess::READ});
+            } else {
+                nodep->bitp(bitp->cloneTreePure(false));
             }
+            AstNodeExpr* condp = new AstGte{nodep->fileline(), declElementsp, bitp};
+            // Note below has null backp(); the Edit function knows how to deal with that.
+            const AstNodeDType* const nodeDtp = nodep->dtypep()->skipRefp();
             if (!lvalue
                 // Making a scalar would break if we're making an array
                 && VN_IS(nodeDtp, BasicDType)) {
