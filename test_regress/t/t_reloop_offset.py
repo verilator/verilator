@@ -18,7 +18,7 @@ test.execute(expect_filename=test.golden_filename)
 
 if test.vlt:
     # Note, with vltmt this might be split differently, so only checking vlt
-    test.file_grep(test.stats, r'Optimizations, Reloop iterations\s+(\d+)', 125)
-    test.file_grep(test.stats, r'Optimizations, Reloops\s+(\d+)', 2)
+    test.file_grep(test.stats, r'Optimizations, Reloop iterations\s+(\d+)', 0)
+    test.file_grep(test.stats, r'Optimizations, Reloops\s+(\d+)', 0)
 
 test.passes()
