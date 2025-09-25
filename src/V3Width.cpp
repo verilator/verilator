@@ -3131,7 +3131,7 @@ class WidthVisitor final : public VNVisitor {
         } else if (VN_IS(itemDtp, AssocArrayDType)) {
             nodep->v3error("Inside operator not specified on associative arrays "
                            "(IEEE 1800-2023 11.4.13)");
-            VL_DANGLING(exprp);
+            VL_DO_DANGLING(exprp->deleteTree(), exprp);
             return nullptr;
         }
         return AstEqWild::newTyped(itemp->fileline(), exprp, itemp->unlinkFrBack());
