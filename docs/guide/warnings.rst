@@ -896,6 +896,25 @@ List Of Warnings
    This setting on the top module will be ignored.
 
 
+.. option:: HIERPARAM
+
+   An error that a hierarchical value or function is being used to assign a parameter.
+   IEEE 1800-2023 6.20.2 requires this error.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_HIERPARAM_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_HIERPARAM_msg.rst
+
+   Suppressing this error may allow some hierarchical references to work (especially hierarchical
+   references into interface references), however not all cases are possible, e.g. it cannot
+   reference the parameter of a lower module in a way that affects determining the parameters
+   that elaborate that lower module.
+
+
 .. option:: IFDEPTH
 
    Warns that if/if else statements have exceeded the depth specified with

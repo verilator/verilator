@@ -108,6 +108,7 @@ public:
         GENCLK,         // Generated Clock. Historical, never issued.
         GENUNNAMED,     // Generate unnamed, without label
         HIERBLOCK,      // Ignored hierarchical block setting
+        HIERPARAM,      // Parameter using hierarchical value
         IFDEPTH,        // If statements too deep
         IGNOREDRETURN,  // Ignoring return value (function as task)
         IMPERFECTSCH,   // Imperfect schedule (disabled by default). Historical, never issued.
@@ -213,19 +214,19 @@ public:
             "CDCRSTLOGIC", "CLKDATA", "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN",
             "CONTASSREG", "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED",
             "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "GENCLK",
-            "GENUNNAMED", "HIERBLOCK", "IFDEPTH", "IGNOREDRETURN", "IMPERFECTSCH", "IMPLICIT",
-            "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH", "INFINITELOOP", "INITIALDLY",
-            "INSECURE", "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP", "MODMISSING",
-            "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NULLPORT",
-            "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT", "PINNOTFOUND",
-            "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED",
-            "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY", "SELRANGE",
-            "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN", "SPLITVAR", "STATICVAR", "STMTDLY",
-            "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN", "UNOPT",
-            "UNOPTFLAT", "UNOPTTHREADS", "UNPACKED", "UNSIGNED", "UNUSEDGENVAR", "UNUSEDLOOP",
-            "UNUSEDPARAM", "UNUSEDSIGNAL", "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
-            "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT", "WIDTHEXPAND", "WIDTHTRUNC",
-            "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
+            "GENUNNAMED", "HIERBLOCK", "HIERPARAM", "IFDEPTH", "IGNOREDRETURN", "IMPERFECTSCH",
+            "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH", "INFINITELOOP",
+            "INITIALDLY", "INSECURE", "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP",
+            "MODMISSING", "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD",
+            "NULLPORT", "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT",
+            "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE",
+            "PROFOUTOFDATE", "PROTECTED", "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO",
+            "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN", "SPLITVAR",
+            "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD",
+            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS", "UNPACKED", "UNSIGNED",
+            "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL", "USERERROR", "USERFATAL",
+            "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",
+            "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
@@ -252,10 +253,10 @@ public:
     bool pretendError() const VL_MT_SAFE {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BADVLTPRAGMA || m_e == BLKANDNBLK
                 || m_e == BLKLOOPINIT || m_e == CONTASSREG || m_e == ENCAPSULATED
-                || m_e == ENDLABEL || m_e == ENUMITEMWIDTH || m_e == ENUMVALUE || m_e == IMPURE
-                || m_e == MODMISSING || m_e == PARAMNODEFAULT || m_e == PINNOTFOUND
-                || m_e == PKGNODECL || m_e == PROCASSWIRE || m_e == PROTOTYPEMIS
-                || m_e == ZEROREPL  // Says IEEE
+                || m_e == ENDLABEL || m_e == ENUMITEMWIDTH || m_e == ENUMVALUE || m_e == HIERPARAM
+                || m_e == IMPURE || m_e == MODMISSING || m_e == PARAMNODEFAULT
+                || m_e == PINNOTFOUND || m_e == PKGNODECL || m_e == PROCASSWIRE
+                || m_e == PROTOTYPEMIS || m_e == ZEROREPL  // Says IEEE
         );
     }
     // Warnings to mention manual

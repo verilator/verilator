@@ -12,7 +12,9 @@ interface intf
 endinterface
 
 module sub (intf.modp the_intf_port [4]);
-    const int intf_foo = the_intf_port[0].FOO;
+    // verilator lint_off HIERPARAM
+    localparam intf_foo = the_intf_port[0].FOO;
+    // verilator lint_on HIERPARAM
 
     initial begin
         if (intf_foo != 4) $stop;

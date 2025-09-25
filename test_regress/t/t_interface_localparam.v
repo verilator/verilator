@@ -35,7 +35,9 @@ module Core(
 );
 
    // this will constify and valDiv2 will have the default value
-   const int valDiv4Upper = intf.valDiv2;
+   // verilator lint_off HIERPARAM
+   localparam valDiv4Upper = intf.valDiv2;
+   // verilator lint_on HIERPARAM
 
    SimpleIntf #(.VAL(68)) core_intf ();
 

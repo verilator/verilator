@@ -1361,8 +1361,8 @@ class ParamVisitor final : public VNVisitor {
         if (!valuep) return;
         valuep->foreachAndNext([&](const AstNodeExpr* exprp) {
             if (const AstVarXRef* refp = VN_CAST(exprp, VarXRef)) {
-                refp->v3error("Parameter values cannot use hierarchical values"
-                              " (IEEE 1800-2023 6.20.2)");
+                refp->v3warn(HIERPARAM, "Parameter values cannot use hierarchical values"
+                                        " (IEEE 1800-2023 6.20.2)");
             } else if (const AstNodeFTaskRef* refp = VN_CAST(exprp, NodeFTaskRef)) {
                 if (refp->dotted() != "") {
                     refp->v3error("Parameter values cannot call hierarchical functions"
