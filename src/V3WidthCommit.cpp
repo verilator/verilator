@@ -67,12 +67,13 @@ private:
         // Called by every visitor. Edit dtypes for this node, also check for some warnings
         nodep->dtypep(editOneDType(nodep->dtypep()));
         if (m_ftaskp && m_ftaskp->verilogFunction() && m_taskRefWarn && nodep->isTimingControl())
-            nodep->v3error(
+            nodep->v3warn(
+                FUNCTIMECTL,
                 "Functions cannot contain time-controlling statements (IEEE 1800-2023 13.4)\n"
-                << nodep->warnContextPrimary() << "\n"
-                << nodep->warnMore() << "... Suggest make caller 'function "
-                << m_ftaskp->prettyName() << "' a task\n"
-                << m_ftaskp->warnContextSecondary());
+                    << nodep->warnContextPrimary() << "\n"
+                    << nodep->warnMore() << "... Suggest make caller 'function "
+                    << m_ftaskp->prettyName() << "' a task\n"
+                    << m_ftaskp->warnContextSecondary());
     }
     AstNodeDType* editOneDType(AstNodeDType* nodep) {
         // See if the dtype/refDType can be converted to a standard one
@@ -439,14 +440,15 @@ private:
         classEncapCheck(nodep, nodep->taskp(), VN_CAST(nodep->classOrPackagep(), Class));
         if (nodep->taskp() && nodep->taskp()->verilogTask() && m_ftaskp
             && m_ftaskp->verilogFunction() && m_taskRefWarn) {
-            nodep->v3error("Functions cannot invoke tasks (IEEE 1800-2023 13.4)\n"
-                           << nodep->warnContextPrimary() << "\n"
-                           << nodep->warnMore() << "... Suggest make caller 'function "
-                           << m_ftaskp->prettyName() << "' a task\n"
-                           << m_ftaskp->warnContextSecondary() << "\n"
-                           << nodep->warnMore() << "... Or, suggest make called 'task "
-                           << nodep->taskp()->prettyName() << "' a function void\n"
-                           << nodep->taskp()->warnContextSecondary());
+            nodep->v3warn(FUNCTIMECTL,
+                          "Functions cannot invoke tasks (IEEE 1800-2023 13.4)\n"
+                              << nodep->warnContextPrimary() << "\n"
+                              << nodep->warnMore() << "... Suggest make caller 'function "
+                              << m_ftaskp->prettyName() << "' a task\n"
+                              << m_ftaskp->warnContextSecondary() << "\n"
+                              << nodep->warnMore() << "... Or, suggest make called 'task "
+                              << nodep->taskp()->prettyName() << "' a function void\n"
+                              << nodep->taskp()->warnContextSecondary());
         }
         if (nodep->taskp()) nodep->taskp()->user2(1);
         if (AstNew* const newp = VN_CAST(nodep, New)) {

@@ -835,6 +835,25 @@ List Of Warnings
    with a newline."
 
 
+.. option:: FUNCTIMECTL
+
+   Error that a function contains a time-controlling statement or call of a
+   task.  IEEE 1800-2023 13.4 requires this error.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_FUNCTIMECTL_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_FUNCTIMECTL_msg.rst
+
+   Suppressing this error will only suppress the IEEE-required check; in
+   most cases Verilator treats functions and tasks identically and relies
+   on analysis to determine what functions/tasks need to allow time to
+   pass.
+
+
 .. option:: GENCLK
 
    Historical, never issued since version 5.000.

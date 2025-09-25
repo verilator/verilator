@@ -13,4 +13,12 @@ test.scenarios('linter')
 
 test.lint(verilator_flags2=['--timing'], fails=test.vlt_all, expect_filename=test.golden_filename)
 
+test.extract(in_filename=test.top_filename,
+             out_filename=test.root + "/docs/gen/ex_FUNCTIMECTL_faulty.rst",
+             lines="11-12")
+
+test.extract(in_filename=test.golden_filename,
+             out_filename=test.root + "/docs/gen/ex_FUNCTIMECTL_msg.rst",
+             lines="1-1")
+
 test.passes()

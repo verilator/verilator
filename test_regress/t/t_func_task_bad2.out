@@ -1,12 +1,12 @@
-%Error: t/t_func_task_bad2.v:14:5: Functions cannot invoke tasks (IEEE 1800-2023 13.4)
-                                 : ... note: In instance 't'
+%Error-FUNCTIMECTL: t/t_func_task_bad2.v:14:5: Functions cannot invoke tasks (IEEE 1800-2023 13.4)
+                                             : ... note: In instance 't'
    14 |     a_task(1'b0);   
       |     ^~~~~~
-                                 : ... Suggest make caller 'function func_calls_task' a task
+                                             : ... Suggest make caller 'function func_calls_task' a task
    13 |   function void func_calls_task;
       |                 ^~~~~~~~~~~~~~~
-                                 : ... Or, suggest make called 'task a_task' a function void
+                                             : ... Or, suggest make called 'task a_task' a function void
     9 |   task a_task;
       |        ^~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+                    ... For error description see https://verilator.org/warn/FUNCTIMECTL?v=latest
 %Error: Exiting due to

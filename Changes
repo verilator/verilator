@@ -21,7 +21,7 @@ Verilator 5.041 devel
 * Add configure `--enable-asan` to compile verilator_bin with the address sanitizer (#6404). [Geza Lore]
 * Add $(LDFLAGS) and $(LIBS) to when building shared libraries (#6425) (#6426). [Ahmed El-Mahmoudy]
 * Add IMPLICITSTATIC also on procedure variables.
-* Add error on function invoking task or time-controlling statements (#6385).
+* Add FUNCTIMCTL error on function invoking task or time-controlling statements (#6385).
 * Deprecate sensitivity list on public_flat_rw attributes (#6443). [Geza Lore]
 * Deprecate clocker attribute and --clk option (#6463). [Geza Lore]
 * Support modports referencing clocking blocks (#4555) (#6436). [Ryszard Rozak, Antmicro Ltd.]
