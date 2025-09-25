@@ -1228,7 +1228,10 @@ class WidthVisitor final : public VNVisitor {
         for (AstNode* itemp = nodep->itemsp()->nextp(); itemp; itemp = itemp->nextp()) {
             checkIfExprOk(VN_AS(itemp, NodeExpr));
             if (!firstItemDtypep->similarDType(itemp->dtypep())) {
-                nodep->v3error("Incompatible data types of nets used for net alias");
+                itemp->v3error("Incompatible data types of nets used for net alias. First operand "
+                               "has the type "
+                               << firstItemDtypep->prettyDTypeNameQ() << ", other has "
+                               << itemp->dtypep()->prettyDTypeNameQ());
             }
         }
     }
