@@ -11,9 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-if not os.path.exists(test.root + "/.git"):
-    test.skip("Not in a git repository")
-
 test.compile(verilator_flags2=['--assert'],
              nc_flags2=['+assert'],
              vcs_flags2=['-assert svaext'],
