@@ -435,6 +435,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     VarToAssignsMap m_assigns;  // Assigns in current module
     int m_unique = 0;
     bool m_alhs = false;  // On LHS of assignment
+    bool m_inAlias = false;  // Inside alias statement
     VStrength m_currentStrength = VStrength::STRONG;  // Current strength of assignment,
                                                       // Used only on LHS of assignment
     const AstNode* m_logicp = nullptr;  // Current logic being built
@@ -1360,6 +1361,22 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
     void visit(AstAssignW* nodep) override { visitAssign(nodep); }
     void visit(AstAssign* nodep) override { visitAssign(nodep); }
+    void visit(AstAlias* nodep) override {
+        VL_RESTORER(m_alhs);
+        VL_RESTORER(m_inAlias);
+        m_inAlias = true;
+        if (m_graphing) {
+            if (nodep->user2() & U2_GRAPHING) return;
+            m_alhs = true;  // In AstAlias both sides should be considered as lhs
+            iterateChildren(nodep);
+            associateLogic(nodep->rhsp(), nodep);
+            associateLogic(nodep, nodep->rhsp());
+            associateLogic(nodep, nodep->lhsp());
+            associateLogic(nodep->lhsp(), nodep);
+        } else {
+            iterateChildren(nodep);
+        }
+    }
 
     void visitCaseEq(AstNodeBiop* nodep, bool neq) {
         if (m_graphing) {
@@ -1753,6 +1770,17 @@ class TristateVisitor final : public TristateBaseVisitor {
             // any tristate logic on the driver.
             if (nodep->access().isWriteOrRW() && m_tgraph.isTristate(nodep->varp())) {
                 UINFO(9, "     Ref-to-lvalue " << nodep);
+                if (m_inAlias) {
+                    if (nodep->varp()->direction().isAny()) {
+                        nodep->v3warn(E_UNSUPPORTED, "Unsupported: Port as alias argument: "
+                                                         << nodep->prettyNameQ());
+                    } else {
+                        nodep->v3warn(E_UNSUPPORTED,
+                                      "Unsupported: Tristate variable referenced in alias: "
+                                          << nodep->prettyNameQ());
+                    }
+                    return;
+                }
                 UASSERT_OBJ(!nodep->access().isRW(), nodep, "Tristate unexpected on R/W access");
                 m_tgraph.didProcess(nodep);
                 mapInsertLhsVarRef(nodep);

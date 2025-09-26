@@ -228,6 +228,7 @@ class WidthVisitor final : public VNVisitor {
     TableMap m_tableMap;  // Created tables so can remove duplicates
     std::map<const AstNodeDType*, AstQueueDType*>
         m_queueDTypeIndexed;  // Queues with given index type
+    std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
 
     static constexpr int ENUM_LOOKUP_BITS = 16;  // Maximum # bits to make enum lookup table
 
@@ -1185,6 +1186,54 @@ class WidthVisitor final : public VNVisitor {
             iterateCheckTyped(nodep, "Associative select", nodep->bitp(), adtypep->keyDTypep(),
                               BOTH);
             nodep->dtypeFrom(adtypep->subDTypep());
+        }
+    }
+
+    void visit(AstAlias* nodep) override {
+        if (!nodep->didWidthAndSet()) {
+            userIterate(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
+            userIterate(nodep->rhsp(), WidthVP{SELF, BOTH}.p());
+        }
+
+        const auto checkIfExprOk = [this](const AstNodeExpr* const exprp) {
+            if (VN_IS(exprp, VarXRef)) {
+                exprp->v3error("Hierarchical reference used for net alias (IEEE 1800-2023 10.11)");
+                return false;
+            }
+
+            const AstVarRef* const varRefp = VN_CAST(exprp, VarRef);
+            if (!varRefp) {
+                exprp->v3warn(
+                    E_UNSUPPORTED,
+                    "Unsupported: Operand of alias statement is not a variable reference");
+                return false;
+            }
+            AstVar* const varp = varRefp->varp();
+            if (!varp->isNet()) {
+                exprp->v3error("Only nets are allowed in alias (IEEE 1800-2023 10.11): "
+                               << varp->prettyNameQ());
+                return false;
+            }
+            if (m_aliasedVars.find(varp) != m_aliasedVars.end()) {
+                varRefp->v3error("Alias is specified more than once (IEEE 1800-2023 10.11): "
+                                 << varp->prettyNameQ());
+                return false;
+            } else {
+                m_aliasedVars.insert(varp);
+            }
+            return true;
+        };
+
+        const bool lhsOk = checkIfExprOk(nodep->lhsp());
+        const bool rhsOk = checkIfExprOk(nodep->rhsp());
+        if (!lhsOk || !rhsOk) return;
+
+        const AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep();
+        const AstNodeDType* const rhsDtypep = nodep->rhsp()->dtypep();
+        if (!lhsDtypep->similarDType(rhsDtypep)) {
+            nodep->v3error("Incompatible data types of nets used for net alias, got "
+                           << lhsDtypep->prettyDTypeNameQ() << " and "
+                           << rhsDtypep->prettyDTypeNameQ());
         }
     }
 

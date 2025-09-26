@@ -1,0 +1,10 @@
+%Error: t/t_alias_var_bad.v:18:9: Only nets are allowed in alias (IEEE 1800-2023 10.11): 'a'
+                                : ... note: In instance 't'
+   18 |   alias a = b;
+      |         ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_alias_var_bad.v:18:13: Only nets are allowed in alias (IEEE 1800-2023 10.11): 'b'
+                                 : ... note: In instance 't'
+   18 |   alias a = b;
+      |             ^
+%Error: Exiting due to

@@ -131,6 +131,8 @@ class LinkDotState final {
     //  AstNodeModule::user2()          // bool.          Currently processing for recursion check
     //  ...  Note maybe more than one, as can be multiple hierarchy places
     //  AstVarScope::user2p()           // AstVarScope*.  Base alias for AstInline of this signal
+    //  AstAssignW::user2()             // bool.          Created for aliases handling.
+    //  ... Don't replace var refs if set
     //  AstVar::user2p()                // AstFTask*.     If a function variable, the task
     //                                                    that links to the variable
     //  AstVar::user4()                 // bool.          True if port set for this variable
@@ -2214,6 +2216,26 @@ class LinkDotScopeVisitor final : public VNVisitor {
     const AstScope* m_scopep = nullptr;  // The current scope
     VSymEnt* m_modSymp = nullptr;  // Symbol entry for current module
 
+    // METHODS
+public:
+    // getAliasVarScopep and setAliasVarScope implement disjoint-set data structure.
+    // This algorithm is needed for the case when multiple alias statements
+    // reference partially the same variables.
+    static AstVarScope* getAliasVarScopep(AstVarScope* const vscp) {
+        if (vscp->user2p() && vscp != vscp->user2p()) {
+            AstVarScope* const aliasp = getAliasVarScopep(VN_AS(vscp->user2p(), VarScope));
+            vscp->user2p(aliasp);
+            return aliasp;
+        } else {
+            return vscp;
+        }
+    }
+
+private:
+    void setAliasVarScope(AstVarScope* const vscp, AstVarScope* const aliasp) {
+        getAliasVarScopep(vscp)->user2p(getAliasVarScopep(aliasp));
+    }
+
     // VISITORS
     void visit(AstNetlist* nodep) override {  // ScopeVisitor::
         // Recurse..., backward as must do packages before using packages
@@ -2289,24 +2311,17 @@ class LinkDotScopeVisitor final : public VNVisitor {
         // No recursion, we don't want to pick up variables
     }
     void visit(AstAlias* nodep) override {  // ScopeVisitor::
-        // Track aliases created by V3Inline; if we get a VARXREF(aliased_from)
-        // we'll need to replace it with a VARXREF(aliased_to)
+        // Track aliases; if we get a NODEVARREF(aliased_from)
+        // we'll need to replace it with a NODEVARREF(aliased_to)
         UINFOTREE(9, nodep, "", "alias");
-        AstVarRef* const lhsp = nodep->lhsp();
-        AstVarRef* const rhsp = nodep->rhsp();
+        AstVarRef* const lhsp = VN_AS(nodep->lhsp(), VarRef);
+        AstVarRef* const rhsp = VN_AS(nodep->rhsp(), VarRef);
         AstVarScope* const fromVscp = lhsp->varScopep();
         AstVarScope* const toVscp = rhsp->varScopep();
         UASSERT_OBJ(fromVscp && toVscp, nodep, "Bad alias scopes");
-        fromVscp->user2p(toVscp);
-
-        // Replace alias with an assignment. The LHS might still be references from otuside,
-        // eg throught the VPI, and is traced, so we need the value to propagate.
-        // TODO: this means external writes to the LHS (e.g.: through the VPI) don't work
-        AstAssignW* const newp
-            = new AstAssignW{nodep->fileline(), lhsp->unlinkFrBack(), rhsp->unlinkFrBack()};
-        nodep->replaceWith(newp);
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        iterateChildren(newp);
+        setAliasVarScope(fromVscp, toVscp);
+        iterateChildren(nodep);
+        pushDeletep(nodep->unlinkFrBack());
     }
     void visit(AstAssignVarScope* nodep) override {  // ScopeVisitor::
         UINFO(5, "ASSIGNVARSCOPE  " << nodep);
@@ -2535,6 +2550,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
     AstNode* m_lastDeferredp = nullptr;  // Last node which requested a revisit of its module
     AstNodeDType* m_packedArrayDtp = nullptr;  // Datatype reference for packed array
     bool m_inPackedArray = false;  // Currently traversing a packed array tree
+    bool m_replaceWithAlias
+        = true;  // Replace VarScope with an alias. Used in the handling of AstAlias
 
     struct DotStates final {
         DotPosition m_dotPos;  // Scope part of dotted resolution
@@ -3983,6 +4000,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                << nodep->prettyNameQ());
             }
         }
+        AstVarScope* vscp = nodep->varScopep();
+        if (vscp && vscp->user2p() != vscp && m_replaceWithAlias) {
+            vscp = LinkDotScopeVisitor::getAliasVarScopep(vscp);
+            nodep->varp(vscp->varp());
+            nodep->varScopep(vscp);
+            updateVarUse(nodep->varp());
+            UINFO(7, indent() << "Resolved " << nodep);  // Also prints taskp
+        }
     }
     void visit(AstVarXRef* nodep) override {
         // VarRef: Resolve its reference
@@ -4099,9 +4124,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                    << nodep->warnContextPrimary()
                                    << okSymp->cellErrorScopes(nodep));
                 } else {
-                    while (vscp->user2p()) {  // If V3Inline aliased it, pick up the new signal
-                        UINFO(7, indent() << "Resolved pre-alias " << vscp);  // Also prints taskp
-                        vscp = VN_AS(vscp->user2p(), VarScope);
+                    if (vscp->user2p() && m_replaceWithAlias) {
+                        vscp = LinkDotScopeVisitor::getAliasVarScopep(vscp);
                     }
                     // Convert the VarXRef to a VarRef, so we don't need
                     // later optimizations to deal with VarXRef.
@@ -4183,6 +4207,25 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (m_statep->forPrimary() && nodep->isIO() && !m_ftaskp && !nodep->user4()) {
             nodep->v3error(
                 "Input/output/inout does not appear in port list: " << nodep->prettyNameQ());
+        }
+    }
+    void visit(AstVarScope* nodep) override {
+        LINKDOT_VISIT_START();
+        checkNoDot(nodep);
+        iterateChildren(nodep);
+        AstVarScope* aliasp = LinkDotScopeVisitor::getAliasVarScopep(nodep);
+        if (aliasp && aliasp != nodep) {
+            // Aliased variable might still be references from outside,
+            // eg through the VPI, and is traced, so we need the value to propagate.
+            // TODO: this means external writes to the LHS (e.g.: through the VPI) don't work
+            AstAssignW* const assignp = new AstAssignW{
+                nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
+                new AstVarRef{nodep->fileline(), aliasp, VAccess::READ}};
+            assignp->user2(true);
+            nodep->addNextHere(assignp);
+            // Propagate attributes of the replaced variable,
+            // because all references to it are replaced with references to the alias variable
+            aliasp->varp()->propagateAttrFrom(nodep->varp());
         }
     }
     void visit(AstNodeFTaskRef* nodep) override {
@@ -5048,6 +5091,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstAttrOf* nodep) override { iterateChildren(nodep); }
+
+    void visit(AstAssignW* nodep) override {
+        LINKDOT_VISIT_START();
+        checkNoDot(nodep);
+        VL_RESTORER(m_replaceWithAlias);
+        if (nodep->user2()) m_replaceWithAlias = false;
+        iterateChildren(nodep);
+    }
 
     void visit(AstNode* nodep) override {
         VL_RESTORER(m_inPackedArray);

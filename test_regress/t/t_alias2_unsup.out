@@ -1,5 +1,0 @@
-%Error-UNSUPPORTED: t/t_alias2_unsup.v:39:4: Unsupported: alias statements
-   39 |    alias b = {a[3:0],a[7:4]};
-      |    ^~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to

@@ -473,14 +473,14 @@ public:
     inline bool hasCombo() const;
 };
 class AstAlias final : public AstNode {
-    // Alias (currently only used internally, not as the SV 'alias' construct).
+    // Alias statement
     // All references to the LHS are treated as references to the RHS
     // If both sides are wires, there's no LHS vs RHS,
-    // @astgen op1 := rhsp : AstVarRef
-    // @astgen op2 := lhsp : AstVarRef
+    // @astgen op1 := rhsp : AstNodeExpr
+    // @astgen op2 := lhsp : AstNodeExpr
 
 public:
-    AstAlias(FileLine* fl, AstVarRef* lhsp, AstVarRef* rhsp)
+    AstAlias(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
         : ASTGEN_SUPER_Alias(fl) {
         this->lhsp(lhsp);
         this->rhsp(rhsp);

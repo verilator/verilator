@@ -1,5 +1,6 @@
-%Error-UNSUPPORTED: t/t_alias_unsup.v:46:4: Unsupported: alias statements
-   46 |    alias {a[7:0],a[15:8],a[23:16],a[31:24]} = b;
-      |    ^~~~~
+%Error-UNSUPPORTED: t/t_alias_unsup.v:50:35: Unsupported: Operand of alias statement is not a variable reference
+                                           : ... note: In instance 't.swap_bwd_i'
+   50 |   alias {a[7:0], a[15:8], a[23:16], a[31:24]} = b;
+      |                                   ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

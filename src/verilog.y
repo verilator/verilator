@@ -2606,9 +2606,7 @@ module_common_item<nodep>:      // ==IEEE: module_common_item
         |       assertion_item                          { $$ = $1; }
         |       bind_directive                          { $$ = $1; }
         |       continuous_assign                       { $$ = $1; }
-        //                      // IEEE: net_alias
-        |       yALIAS variable_lvalue aliasEqList ';'
-                        { $$ = nullptr; BBUNSUP($1, "Unsupported: alias statements"); DEL($2); }
+        |       net_alias                               { $$ = $1; }
         |       initial_construct                       { $$ = $1; }
         |       final_construct                         { $$ = $1; }
         |       always_construct                        { $$ = $1; }
@@ -2638,6 +2636,21 @@ initial_construct<nodep>:       // IEEE: initial_construct
                 yINITIAL stmtBlock                      { $$ = new AstInitial{$1, $2}; }
         ;
 
+
+net_alias<nodep>:               // IEEE: net_alias
+                yALIAS variable_lvalue aliasEqList ';'
+                        { if ($3->nextp()) {
+                                BBUNSUP($1, "Unsupported: alias statements with more than 2 operands");
+                                $3->nextp()->unlinkFrBackWithNext()->deleteTree();
+                            }
+                            $$ = new AstAlias{$1, $2, $3}; }
+        ;
+
+aliasEqList<nodeExprp>:                    // IEEE: part of net_alias
+                '=' variable_lvalue                     { $$ = $2; }
+        |       aliasEqList '=' variable_lvalue         { $$ = $1->addNext($3); }
+        ;
+
 final_construct<nodep>:         // IEEE: final_construct
                 yFINAL stmtBlock                        { $$ = new AstFinal{$1, $2}; }
         ;
@@ -2658,11 +2671,6 @@ modDefaultClocking<nodep>:  // IEEE: part of module_or_generate_item_declaration
 defaultDisable<nodep>:  // IEEE: part of module_/checker_or_generate_item_declaration
                 yDEFAULT yDISABLE yIFF expr/*expression_or_dist*/ ';'
                         { $$ = new AstDefaultDisable{$1, $4}; }
-        ;
-
-aliasEqList:                    // IEEE: part of net_alias
-                '=' variable_lvalue                     { }
-        |       aliasEqList '=' variable_lvalue         { }
         ;
 
 bind_directive<nodep>:          // ==IEEE: bind_directive + bind_target_scope
