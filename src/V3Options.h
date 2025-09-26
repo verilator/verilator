@@ -339,7 +339,7 @@ private:
     int         m_coverageExprMax = 32;    // main switch: --coverage-expr-max
     int         m_convergeLimit = 100;  // main switch: --converge-limit
     int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
-    int         m_expandLimit = 64;  // main switch: --expand-limit
+    int         m_expandLimit = 256;  // main switch: --expand-limit
     int         m_gateStmts = 100;    // main switch: --gate-stmts
     int         m_hierChild = 0;      // main switch: --hierarchical-child
     int         m_hierThreads = 0;      // main switch: --hierarchical-threads
