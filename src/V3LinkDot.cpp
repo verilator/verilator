@@ -133,8 +133,7 @@ class LinkDotState final {
     //  AstVarScope::user2p()           // AstVarScope*.  Base alias for AstInline of this signal
     //  AstAssignW::user2()             // bool.          Created for aliases handling.
     //  ... Don't replace var refs if set
-    //  AstVar::user2p()                // AstFTask*.     If a function variable,
-    //  the task
+    //  AstVar::user2p()                // AstFTask*.     If a function variable, the task
     //                                                    that links to the variable
     //  AstVar::user4()                 // bool.          True if port set for this variable
     //  AstNodeBlock::user4()           // bool.          Did name processing
