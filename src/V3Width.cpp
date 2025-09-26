@@ -1211,7 +1211,8 @@ class WidthVisitor final : public VNVisitor {
             }
             AstVar* const varp = varRefp->varp();
             if (!varp->isNet()) {
-                exprp->v3error("Only nets are allowed in alias: " << varp->prettyNameQ());
+                exprp->v3error("Only nets are allowed in alias (IEEE 1800-2023 10.11): "
+                               << varp->prettyNameQ());
                 return false;
             }
             if (m_aliasedVars.find(varp) != m_aliasedVars.end()) {
