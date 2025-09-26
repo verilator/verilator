@@ -72,6 +72,7 @@ Verilator 5.041 devel
 * Fix splitting hierarchically referenced variables (#6475). [Ryszard Rozak, Antmicro Ltd.]
 * Fix Windows compilation of Verilator with spaces in the path (#6477). [Fabian Keßler-Schulz]
 * Fix PROTOTYPEMIS error on implicit logic (#6482). [Alex Solomatnikov]
+* Fix configure misdetecting C++14 (#6488). [Thomas O'Keeffe]
 
 
 Verilator 5.040 2025-08-30

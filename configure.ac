@@ -590,18 +590,17 @@ AC_SUBST(CFG_LIBS)
 AC_DEFUN([_MY_CXX_CHECK_CXX_VER],
    [# _MY_CXX_CHECK_CXX_VER(flag) -- Check if compiler runs C++14
     # Set $_my_result
-    AC_LINK_IFELSE(
+    AC_RUN_IFELSE(
      [AC_LANG_PROGRAM([#include <thread>
 #if (__cplusplus < 201402L)
 # error "Too old"
 #endif
-    ], [[ ]])],
-     [_my_result=yes
-      if test -s conftest.err; then
-        if grep -e "$1" conftest.err >/dev/null; then
-          _my_result=no
-        fi
-      fi],
+    ], [[
+       std::thread t([]{});
+       t.join();
+     ]])],
+     [_my_result=yes],
+     [_my_result=no],
      [_my_result=no])
    ])
 
