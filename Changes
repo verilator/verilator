@@ -24,6 +24,7 @@ Verilator 5.041 devel
 * Add FUNCTIMCTL error on function invoking task or time-controlling statements (#6385).
 * Deprecate sensitivity list on public_flat_rw attributes (#6443). [Geza Lore]
 * Deprecate clocker attribute and --clk option (#6463). [Geza Lore]
+* Change default `--expand-limit` to 256 (#3419).
 * Support modports referencing clocking blocks (#4555) (#6436). [Ryszard Rozak, Antmicro Ltd.]
 * Support class package reference on pattern keys (#5653). [Todd Strader]
 * Support digits in `$sscanf` field width formats (#6083). [Iztok Jeras]
