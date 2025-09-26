@@ -505,9 +505,8 @@ class UnknownVisitor final : public VNVisitor {
                 = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, nodep->bitp()->width(),
                                static_cast<uint32_t>(declElements - 1)};
             AstNodeExpr* bitp = V3Const::constifyEdit(nodep->bitp()->unlinkFrBack());
-            bool static_ok
-                = declElementsp->width() >= bitp->width()
-                  && static_cast<uint32_t>(declElements - 1) >= (1 << bitp->width()) - 1;
+            bool static_ok = declElementsp->width() >= bitp->width()
+                             && declElements - 1 >= (1 << bitp->width()) - 1;
             if (AstConst* const constp = VN_CAST(bitp, Const)) {
                 static_ok
                     |= V3Number{nodep}.opGte(declElementsp->num(), constp->num()).isNeqZero();
