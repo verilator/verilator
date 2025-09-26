@@ -314,14 +314,14 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstCase* nodep) override {
         if (!nodep->exprp()->isPure()) {
-            FileLine* const fileline = nodep->exprp()->fileline();
-            AstVar* const varp = new AstVar{fileline, VVarType::XTEMP, m_caseTempNames.get(nodep),
+            FileLine* const fl = nodep->exprp()->fileline();
+            AstVar* const varp = new AstVar{fl, VVarType::XTEMP, m_caseTempNames.get(nodep),
                                             nodep->exprp()->dtypep()};
-            nodep->exprp(new AstExprStmt{
-                fileline,
-                new AstAssign{nodep->fileline(), new AstVarRef{fileline, varp, VAccess::WRITE},
-                              nodep->exprp()->unlinkFrBack()},
-                new AstVarRef{fileline, varp, VAccess::READ}});
+            nodep->exprp(new AstExprStmt{fl,
+                                         new AstAssign{nodep->fileline(),
+                                                       new AstVarRef{fl, varp, VAccess::WRITE},
+                                                       nodep->exprp()->unlinkFrBack()},
+                                         new AstVarRef{fl, varp, VAccess::READ}});
             if (m_ftaskp) {
                 varp->funcLocal(true);
                 varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
@@ -358,8 +358,8 @@ class BeginVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     BeginVisitor(AstNetlist* nodep, BeginState* statep)
-        : m_statep{statep}
-        , m_caseTempNames{"__VCaseTmp"} {
+        : m_caseTempNames{"__VCaseTmp"}
+        , m_statep{statep} {
         iterate(nodep);
     }
     ~BeginVisitor() override = default;
