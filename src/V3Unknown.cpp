@@ -154,14 +154,15 @@ class UnknownVisitor final : public VNVisitor {
         return varp;
     }
 
-    // Checks whether we are sure at compile time that `msbConstp` is greater than or equal `exprp`
+    // Returns true if it is known at compile time that `msbConstp` is greater than or equal
+    // `exprp`
     static bool isStaticlyGte(AstConst* const msbConstp, const AstNodeExpr* const exprp) {
-        bool static_ok = msbConstp->width() >= exprp->width()
+        bool staticGte = msbConstp->width() >= exprp->width()
                          && msbConstp->num().toSInt() >= (1 << exprp->width()) - 1;
         if (const AstConst* const constp = VN_CAST(exprp, Const)) {
-            static_ok |= V3Number{msbConstp}.opGte(msbConstp->num(), constp->num()).isNeqZero();
+            staticGte |= V3Number{msbConstp}.opGte(msbConstp->num(), constp->num()).isNeqZero();
         }
-        return static_ok;
+        return staticGte;
     }
 
     // VISITORS
@@ -416,15 +417,14 @@ class UnknownVisitor final : public VNVisitor {
             }
             // Find range of dtype we are selecting from
             // Similar code in V3Const::warnSelect
-            const int maxmsb = nodep->fromp()->dtypep()->width() - 1;
+            const uint32_t maxmsb = nodep->fromp()->dtypep()->width() - 1;
             UINFOTREE(9, nodep, "", "sel_old");
 
             // If (maxmsb >= selected), we're in bound
             // See if the condition is constant true (e.g. always in bound due to constant select)
             // Note below has null backp(); the Edit function knows how to deal with that.
-            AstConst* const maxmsbConstp
-                = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, nodep->lsbp()->width(),
-                               static_cast<uint32_t>(maxmsb)};
+            AstConst* const maxmsbConstp = new AstConst{
+                nodep->fileline(), AstConst::WidthedValue{}, nodep->lsbp()->width(), maxmsb};
             AstNodeExpr* lsbp = V3Const::constifyEdit(nodep->lsbp()->unlinkFrBack());
             if (isStaticlyGte(maxmsbConstp, lsbp)) {
                 // We don't need to add a conditional; we know the existing expression is ok
