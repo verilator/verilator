@@ -787,7 +787,7 @@ class TimingControlVisitor final : public VNVisitor {
         visit(static_cast<AstNodeProcedure*>(nodep));
         if (nodep->needProcess() && !nodep->user1SetOnce()) {
             nodep->addStmtsp(
-                new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);\n"});
+                new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);"});
         }
     }
     void visit(AstJumpBlock* nodep) override {
@@ -833,7 +833,7 @@ class TimingControlVisitor final : public VNVisitor {
 
         nodep->rtnType("VlCoroutine");
         // If in a class, create a shared pointer to 'this'
-        if (m_classp) nodep->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;\n"});
+        if (m_classp) nodep->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;"});
         AstNode* firstCoStmtp = nullptr;  // First co_* statement in the function
         nodep->exists([&](AstCAwait* const awaitp) -> bool { return (firstCoStmtp = awaitp); });
         if (!firstCoStmtp) {
@@ -841,7 +841,7 @@ class TimingControlVisitor final : public VNVisitor {
             // overridden by a suspendable, but doesn't have any awaits itself). Add a
             // co_return at the end (either that or a co_await is required in a
             // coroutine)
-            firstCoStmtp = new AstCStmt{nodep->fileline(), "co_return;\n"};
+            firstCoStmtp = new AstCStmt{nodep->fileline(), "co_return;"};
             nodep->addStmtsp(firstCoStmtp);
         }
         if (nodep->dpiExportImpl()) {

@@ -502,12 +502,12 @@ class ProtectVisitor final : public VNVisitor {
         m_comboAssignsp->addText(fl,
                                  varp->prettyName() + " = " + varp->prettyName() + "_combo__V;\n");
         m_cComboParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
-        m_cComboOutsp->addText(fl,
-                               V3Task::assignInternalToDpi(varp, true, "", "", "handlep__V->"));
+        m_cComboOutsp->addText(fl, V3Task::assignInternalToDpi(varp, true, "", "", "handlep__V->")
+                                       + "\n");
         if (m_hasClk) {
             m_cSeqParamsp->addText(fl, varp->dpiArgType(true, false) + "\n");
-            m_cSeqOutsp->addText(fl,
-                                 V3Task::assignInternalToDpi(varp, true, "", "", "handlep__V->"));
+            m_cSeqOutsp->addText(
+                fl, V3Task::assignInternalToDpi(varp, true, "", "", "handlep__V->") + "\n");
         }
     }
 

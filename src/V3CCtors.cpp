@@ -68,10 +68,10 @@ class V3CCtorsBuilder final {
         string preventUnusedStmt;
         if (m_type.isClass()) {
             funcp->argTypes(EmitCUtil::symClassVar());
-            preventUnusedStmt = "(void)vlSymsp;  // Prevent unused variable warning\n";
+            preventUnusedStmt = "(void)vlSymsp;  // Prevent unused variable warning";
         } else if (m_type.isCoverage()) {
             funcp->argTypes("bool first");
-            preventUnusedStmt = "(void)first;  // Prevent unused variable warning\n";
+            preventUnusedStmt = "(void)first;  // Prevent unused variable warning";
         }
         if (!preventUnusedStmt.empty()) {
             funcp->addStmtsp(new AstCStmt{m_modp->fileline(), preventUnusedStmt});

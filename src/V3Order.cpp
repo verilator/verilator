@@ -125,8 +125,8 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
     if (v3Global.opt.profExec()) {
         const string name
             = (v3Global.opt.hierChild() ? (v3Global.opt.topModule() + " ") : "") + "func " + tag;
-        funcp->addStmtsp(new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\""
-                                               + name + "\");\n"});
+        funcp->addStmtsp(
+            new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"" + name + "\");"});
     }
 
     // Build the OrderGraph
@@ -155,7 +155,7 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
     for (auto* const lbsp : logic) lbsp->deleteActives();
 
     if (v3Global.opt.profExec()) {
-        funcp->addStmtsp(new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();\n"});
+        funcp->addStmtsp(new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();"});
     }
 
     // Done

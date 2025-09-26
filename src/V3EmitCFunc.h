@@ -378,7 +378,7 @@ public:
         });
         if (m_instantiatesOwnProcess) {
             AstNode* const vlprocp = new AstCStmt{
-                nodep->fileline(), "VlProcessRef vlProcess = std::make_shared<VlProcess>();\n"};
+                nodep->fileline(), "VlProcessRef vlProcess = std::make_shared<VlProcess>();"};
             nodep->stmtsp()->addHereThisAsNext(vlprocp);
         }
 
@@ -1246,6 +1246,7 @@ public:
     void visit(AstCStmt* nodep) override {
         putnbs(nodep, "");
         iterateAndNextConstNull(nodep->exprsp());
+        puts("\n");
     }
     void visit(AstCExpr* nodep) override {
         putnbs(nodep, "");

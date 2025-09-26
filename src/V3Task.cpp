@@ -753,7 +753,7 @@ class TaskVisitor final : public VNVisitor {
     }
 
     static AstNode* createDpiTemp(AstVar* portp, const string& suffix) {
-        const string stmt = portp->dpiTmpVarType(portp->name() + suffix) + ";\n";
+        const string stmt = portp->dpiTmpVarType(portp->name() + suffix) + ";";
         return new AstCStmt{portp->fileline(), stmt};
     }
 
@@ -826,7 +826,7 @@ class TaskVisitor final : public VNVisitor {
                 linesp->addNext(srcp);
                 linesp->addNext(
                     new AstText{portvscp->fileline(),
-                                ", " + frName + " + " + cvtToStr(i * widthWords) + ");\n"});
+                                ", " + frName + " + " + cvtToStr(i * widthWords) + ");"});
                 stmtp = new AstCStmt{portvscp->fileline(), linesp};
             } else {
                 string from = frstmt;
@@ -877,22 +877,26 @@ class TaskVisitor final : public VNVisitor {
             // We could use 64-bits of a MD5/SHA hash rather than a string here,
             // but the compare is only done on first call then memoized, so
             // it's not worth optimizing.
-            string stmt;
+
             // Static doesn't need save-restore as if below will re-fill proper value
-            stmt += "static int __Vfuncnum = -1;\n";
+            funcp->addStmtsp(new AstCStmt{nodep->fileline(), "static int __Vfuncnum = -1;"});
             // First time init (faster than what the compiler does if we did a singleton
-            stmt += "if (VL_UNLIKELY(__Vfuncnum == -1)) __Vfuncnum = Verilated::exportFuncNum(\""
-                    + nodep->cname() + "\");\n";
+            funcp->addStmtsp(new AstCStmt{
+                nodep->fileline(),
+                "if (VL_UNLIKELY(__Vfuncnum == -1)) __Vfuncnum = Verilated::exportFuncNum(\""
+                    + nodep->cname() + "\");"});
             // If the find fails, it will throw an error
-            stmt += "const VerilatedScope* const __Vscopep = Verilated::dpiScope();\n";
+            funcp->addStmtsp(
+                new AstCStmt{nodep->fileline(),
+                             "const VerilatedScope* const __Vscopep = Verilated::dpiScope();"});
             // If dpiScope is fails and is null; the exportFind function throws and error
+            // If __Vcb is null the exportFind function throws and error
             const string cbtype
                 = VIdProtect::protect(v3Global.opt.prefix() + "__Vcb_" + nodep->cname() + "_t");
-            stmt += cbtype + " __Vcb = (" + cbtype
-                    + ")(VerilatedScope::exportFind(__Vscopep, __Vfuncnum));\n";  // Can't use
-                                                                                  // static_cast
-            // If __Vcb is null the exportFind function throws and error
-            funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
+            funcp->addStmtsp(
+                new AstCStmt{nodep->fileline(),
+                             cbtype + " __Vcb = (" + cbtype + ")("  // Can't use static_cast
+                                 + "VerilatedScope::exportFind(__Vscopep, __Vfuncnum));"});
         }
 
         // Convert input/inout DPI arguments to Internal types
@@ -973,7 +977,7 @@ class TaskVisitor final : public VNVisitor {
             funcp->addStmtsp(createDpiTemp(rtnvarp, ""));
             funcp->addStmtsp(createAssignInternalToDpi(rtnvarp, false, tmpSuffixp, ""));
             string stmt = "return " + rtnvarp->name();  // TODO use AstCReturn?
-            stmt += rtnvarp->basicp()->isDpiPrimitive() ? ";\n" : "[0];\n";
+            stmt += rtnvarp->basicp()->isDpiPrimitive() ? ";"s : "[0];"s;
             funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
         }
         if (!makePortList(nodep, funcp)) return nullptr;
@@ -1081,7 +1085,7 @@ class TaskVisitor final : public VNVisitor {
         if (v3Global.opt.profExec())
             cfuncp->addStmtsp(
                 new AstCStmt{nodep->fileline(),
-                             "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"dpiimports\");\n"});
+                             "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"dpiimports\");"});
 
         // Convert input/inout arguments to DPI types
         string args;
@@ -1137,7 +1141,7 @@ class TaskVisitor final : public VNVisitor {
 
         // Store context, if needed
         if (nodep->dpiContext()) {
-            const string stmt = "Verilated::dpiContext(__Vscopep, __Vfilenamep, __Vlineno);\n";
+            const string stmt = "Verilated::dpiContext(__Vscopep, __Vfilenamep, __Vlineno);";
             cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
         }
 
@@ -1171,7 +1175,7 @@ class TaskVisitor final : public VNVisitor {
 
         if (v3Global.opt.profExec())
             cfuncp->addStmtsp(new AstCStmt{nodep->fileline(),
-                                           "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();\n"});
+                                           "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();"});
     }
 
     AstVarScope* getDpiExporTrigger() {
@@ -1302,7 +1306,7 @@ class TaskVisitor final : public VNVisitor {
         if (!nodep->dpiImport() && !nodep->taskPublic()) {
             // Need symbol table
             if (cfuncp->name() == "new") {
-                const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);\n";
+                const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);";
                 cfuncp->addInitsp(new AstCStmt{nodep->fileline(), stmt});
             }
         }
@@ -2020,7 +2024,7 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
         }
         if (isString) stmt += ".c_str()";
     }
-    stmt += ket + ";\n";
+    stmt += ket + ";";
     return stmt;
 }
 

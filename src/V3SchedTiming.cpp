@@ -346,7 +346,7 @@ void transformForks(AstNetlist* const netlistp) {
             if (nodep->isCoroutine() && m_awaitMoved
                 && !nodep->stmtsp()->exists([](AstCAwait*) { return true; })) {
                 // co_return at the end (either that or a co_await is required in a coroutine
-                nodep->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
+                nodep->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;"});
             }
         }
         void visit(AstVar* nodep) override {
@@ -389,7 +389,7 @@ void transformForks(AstNetlist* const netlistp) {
                 nodep->replaceWith(callp->makeStmt());
                 // If we're in a class, add a vlSymsp arg
                 if (m_inClass) {
-                    newfuncp->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;\n"});
+                    newfuncp->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;"});
                     newfuncp->argTypes(EmitCUtil::symClassVar());
                     callp->argTypes("vlSymsp");
                 }
@@ -397,12 +397,12 @@ void transformForks(AstNetlist* const netlistp) {
                 newfuncp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
                 if (nodep->needProcess()) {
                     newfuncp->setNeedProcess();
-                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(),
-                                                     "vlProcess->state(VlProcess::FINISHED);\n"});
+                    newfuncp->addStmtsp(
+                        new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);"});
                 }
                 if (!m_beginHasAwaits) {
                     // co_return at the end (either that or a co_await is required in a coroutine
-                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
+                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;"});
                 } else {
                     m_awaitMoved = true;
                 }

@@ -222,7 +222,7 @@ class TraceDeclVisitor final : public VNVisitor {
             const string n = cvtToStr(m_subFuncps.size());
             const string name{"trace_init_sub__" + m_currScopep->nameDotless() + "__" + n};
             AstCFunc* const funcp = newCFunc(flp, name);
-            funcp->addInitsp(new AstCStmt{flp, "const int c = vlSymsp->__Vm_baseCode;\n"});
+            funcp->addInitsp(new AstCStmt{flp, "const int c = vlSymsp->__Vm_baseCode;"});
             m_subFuncps.push_back(funcp);
         }
         m_subFuncps.back()->addStmtsp(stmtp);

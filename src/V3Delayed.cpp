@@ -1161,7 +1161,7 @@ class DelayedVisitor final : public VNVisitor {
         AstTextBlock* const blockp = new AstTextBlock{flp};
         blockp->addText(flp, "vlSymsp->fireEvent(", true);
         blockp->addNodesp(eventp);
-        blockp->addText(flp, ");\n", true);
+        blockp->addText(flp, ");", true);
 
         AstNode* newp = new AstCStmt{flp, blockp};
         if (nodep->isDelayed()) {

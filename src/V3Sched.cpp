@@ -176,11 +176,11 @@ AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVa
 AstNodeStmt* profExecSectionPush(FileLine* flp, const string& section) {
     const string name
         = (v3Global.opt.hierChild() ? (v3Global.opt.topModule() + " ") : "") + section;
-    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"" + name + "\");\n"};
+    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"" + name + "\");"};
 }
 
 AstNodeStmt* profExecSectionPop(FileLine* flp) {
-    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();\n"};
+    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();"};
 }
 
 struct EvalLoop final {
@@ -668,8 +668,7 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
         callp->dtypeSetBit();
         AstIf* const ifp = new AstIf{flp, callp};
         dumpp->addStmtsp(ifp);
-        ifp->addElsesp(
-            new AstText{flp, "VL_DBG_MSGF(\"         No triggers active\\n\");\n", true});
+        ifp->addElsesp(new AstCStmt{flp, "VL_DBG_MSGF(\"         No triggers active\\n\");"});
     }
 
     // Set the given trigger to the given value

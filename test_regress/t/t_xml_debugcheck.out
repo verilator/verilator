@@ -639,7 +639,9 @@
             </not>
           </and>
           <begin>
-            <text loc="d,11,8,11,9"/>
+            <cstmt loc="d,11,8,11,9">
+              <text loc="d,11,8,11,9"/>
+            </cstmt>
           </begin>
         </if>
         <if loc="d,11,8,11,9">
@@ -666,7 +668,9 @@
             </not>
           </and>
           <begin>
-            <text loc="d,11,8,11,9"/>
+            <cstmt loc="d,11,8,11,9">
+              <text loc="d,11,8,11,9"/>
+            </cstmt>
           </begin>
         </if>
         <if loc="d,11,8,11,9">
