@@ -154,7 +154,8 @@ class UnknownVisitor final : public VNVisitor {
         return varp;
     }
 
-    static bool isSelStaticlyOk(AstConst* const msbConstp, const AstNodeExpr* const exprp) {
+    // Checks whether we are sure at compile time that `msbConstp` is greater than or equal `exprp`
+    static bool isStaticlyGte(AstConst* const msbConstp, const AstNodeExpr* const exprp) {
         bool static_ok = msbConstp->width() >= exprp->width()
                          && msbConstp->num().toSInt() >= (1 << exprp->width()) - 1;
         if (const AstConst* const constp = VN_CAST(exprp, Const)) {
@@ -425,7 +426,7 @@ class UnknownVisitor final : public VNVisitor {
                 = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, nodep->lsbp()->width(),
                                static_cast<uint32_t>(maxmsb)};
             AstNodeExpr* lsbp = V3Const::constifyEdit(nodep->lsbp()->unlinkFrBack());
-            if (isSelStaticlyOk(maxmsbConstp, lsbp)) {
+            if (isStaticlyGte(maxmsbConstp, lsbp)) {
                 // We don't need to add a conditional; we know the existing expression is ok
                 VL_DO_DANGLING(maxmsbConstp->deleteTree(), maxmsbConstp);
                 nodep->lsbp(lsbp);
@@ -513,7 +514,7 @@ class UnknownVisitor final : public VNVisitor {
                 = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, nodep->bitp()->width(),
                                static_cast<uint32_t>(declElements - 1)};
             AstNodeExpr* bitp = V3Const::constifyEdit(nodep->bitp()->unlinkFrBack());
-            if (isSelStaticlyOk(declElementsp, bitp)) {
+            if (isStaticlyGte(declElementsp, bitp)) {
                 // We don't need to add a conditional; we know the existing expression is ok
                 VL_DO_DANGLING(declElementsp->deleteTree(), declElementsp);
                 nodep->bitp(bitp);
