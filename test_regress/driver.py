@@ -2674,6 +2674,11 @@ class VlTest:
             regexp=r'.*',
             lineno_adjust=-9999,  #
             lines=None) -> None:  #'#, #-#'
+
+        if not os.path.exists(test.root + "/.git"):
+            self.skip("Not in a git repository")
+            return
+
         temp_fn = out_filename
         temp_fn = re.sub(r'.*/', '', temp_fn)
         temp_fn = self.obj_dir + "/" + temp_fn

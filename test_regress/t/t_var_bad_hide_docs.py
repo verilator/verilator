@@ -11,9 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-if not os.path.exists(test.root + "/.git"):
-    test.skip("Not in a git repository")
-
 test.lint(verilator_flags2=["--lint-only -Wwarn-VARHIDDEN"],
           fails=test.vlt_all,
           expect_filename=test.golden_filename)
