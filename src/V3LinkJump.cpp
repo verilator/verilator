@@ -265,7 +265,7 @@ class LinkJumpVisitor final : public VNVisitor {
                     itr->user3(itr->user3() | CIF_CONTAINS);
                 }
             }
-            nodep->user3(CIF_INSIDE);
+            if (m_inFork) nodep->user3(CIF_INSIDE);
             iterateChildren(nodep);
         }
         m_blockStack.pop_back();
