@@ -57,7 +57,7 @@ public:
 //######################################################################
 
 class BeginVisitor final : public VNVisitor {
-    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
+    V3UniqueNames m_caseTempNames;  // For generating unique temporary variable names
     // STATE - across all visitors
     BeginState* const m_statep;  // Current global state
 
@@ -148,7 +148,7 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        m_tempNames.reset();
+        m_caseTempNames.reset();
         m_modp = nodep;
         // Rename it (e.g. class under a generate)
         if (m_unnamedScope != "") {
@@ -182,7 +182,7 @@ class BeginVisitor final : public VNVisitor {
         VL_RESTORER(m_liftedp);
         VL_RESTORER(m_namedScope);
         VL_RESTORER(m_unnamedScope);
-        m_tempNames.reset();
+        m_caseTempNames.reset();
         m_displayScope = dot(m_displayScope, nodep->name());
         m_namedScope = "";
         m_unnamedScope = "";
@@ -312,12 +312,11 @@ class BeginVisitor final : public VNVisitor {
         // any BEGINs, but V3Coverage adds them all under the module itself.
         iterateChildren(nodep);
     }
-    void visit(AstNodeCase* nodep) override {
+    void visit(AstCase* nodep) override {
         if (!nodep->exprp()->isPure()) {
             FileLine* const fileline = nodep->exprp()->fileline();
-            AstVar* const varp
-                = new AstVar{fileline, VVarType::XTEMP, "__VCaseTmp_" + m_tempNames.get(nodep),
-                             nodep->exprp()->dtypep()};
+            AstVar* const varp = new AstVar{fileline, VVarType::XTEMP, m_caseTempNames.get(nodep),
+                                            nodep->exprp()->dtypep()};
             nodep->exprp(new AstExprStmt{
                 fileline,
                 new AstAssign{nodep->fileline(), new AstVarRef{fileline, varp, VAccess::WRITE},
@@ -359,7 +358,8 @@ class BeginVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     BeginVisitor(AstNetlist* nodep, BeginState* statep)
-        : m_statep{statep} {
+        : m_statep{statep}
+        , m_caseTempNames{"__VCaseTmp"} {
         iterate(nodep);
     }
     ~BeginVisitor() override = default;
