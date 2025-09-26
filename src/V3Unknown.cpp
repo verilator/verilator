@@ -154,6 +154,15 @@ class UnknownVisitor final : public VNVisitor {
         return varp;
     }
 
+    static bool isSelStaticlyOk(AstConst* const msbConstp, const AstNodeExpr* const exprp) {
+        bool static_ok = msbConstp->width() >= exprp->width()
+                         && msbConstp->num().toSInt() >= (1 << exprp->width()) - 1;
+        if (const AstConst* const constp = VN_CAST(exprp, Const)) {
+            static_ok |= V3Number{msbConstp}.opGte(msbConstp->num(), constp->num()).isNeqZero();
+        }
+        return static_ok;
+    }
+
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep);
@@ -416,13 +425,11 @@ class UnknownVisitor final : public VNVisitor {
                 = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, nodep->lsbp()->width(),
                                static_cast<uint32_t>(maxmsb)};
             AstNodeExpr* lsbp = V3Const::constifyEdit(nodep->lsbp()->unlinkFrBack());
-            if (AstConst* const constp = VN_CAST(lsbp, Const)) {
-                if (V3Number{nodep}.opGte(maxmsbConstp->num(), constp->num()).isNeqZero()) {
-                    // We don't need to add a conditional; we know the existing expression is ok
-                    VL_DO_DANGLING(maxmsbConstp->deleteTree(), maxmsbConstp);
-                    nodep->lsbp(lsbp);
-                    return;
-                }
+            if (isSelStaticlyOk(maxmsbConstp, lsbp)) {
+                // We don't need to add a conditional; we know the existing expression is ok
+                VL_DO_DANGLING(maxmsbConstp->deleteTree(), maxmsbConstp);
+                nodep->lsbp(lsbp);
+                return;
             }
             if (!lsbp->isPure()) {
                 AstVar* const varp = createAddTemp(lsbp);
@@ -434,7 +441,8 @@ class UnknownVisitor final : public VNVisitor {
             } else {
                 nodep->lsbp(lsbp->cloneTreePure(false));
             }
-            AstNodeExpr* condp = new AstGte{nodep->fileline(), maxmsbConstp, lsbp};
+            AstNodeExpr* condp
+                = V3Const::constifyEdit(new AstGte{nodep->fileline(), maxmsbConstp, lsbp});
             if (!lvalue) {
                 // SEL(...) -> COND(LTE(bit<=maxmsb), ARRAYSEL(...), {width{1'bx}})
                 VNRelinker replaceHandle;
@@ -505,13 +513,7 @@ class UnknownVisitor final : public VNVisitor {
                 = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, nodep->bitp()->width(),
                                static_cast<uint32_t>(declElements - 1)};
             AstNodeExpr* bitp = V3Const::constifyEdit(nodep->bitp()->unlinkFrBack());
-            bool static_ok = declElementsp->width() >= bitp->width()
-                             && declElements - 1 >= (1 << bitp->width()) - 1;
-            if (AstConst* const constp = VN_CAST(bitp, Const)) {
-                static_ok
-                    |= V3Number{nodep}.opGte(declElementsp->num(), constp->num()).isNeqZero();
-            }
-            if (static_ok) {
+            if (isSelStaticlyOk(declElementsp, bitp)) {
                 // We don't need to add a conditional; we know the existing expression is ok
                 VL_DO_DANGLING(declElementsp->deleteTree(), declElementsp);
                 nodep->bitp(bitp);
