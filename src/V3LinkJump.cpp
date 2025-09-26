@@ -425,12 +425,12 @@ class LinkJumpVisitor final : public VNVisitor {
             } else {
                 const std::string targetName = beginp->name();
                 if (existsBlockAbove(targetName)) {
-                    if (beginp->user3() & CIF_CONTAINS) {
-                        nodep->v3warn(E_UNSUPPORTED,
-                                      "Unsupported: disabling block that contains a fork");
-                    } else if (beginp->user3() & CIF_INSIDE) {
+                    if (beginp->user3() & CIF_INSIDE) {
                         nodep->v3warn(E_UNSUPPORTED,
                                       "Unsupported: disabling block inside a fork");
+                    } if (beginp->user3() & CIF_CONTAINS) {
+                        nodep->v3warn(E_UNSUPPORTED,
+                                      "Unsupported: disabling block that contains a fork");
                     } else {
                         // Jump to the end of the named block
                         AstJumpBlock* const blockp = getJumpBlock(beginp, false);
