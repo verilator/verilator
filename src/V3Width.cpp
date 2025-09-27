@@ -6254,6 +6254,12 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3error("The 'constraint_mode' method is built-in and cannot be overridden"
                            " (IEEE 1800-2023 18.9)");
         }
+        if (nodep->classMethod() && nodep->name() == "new") {
+            if (nodep->isVirtual())
+                nodep->v3error("class 'new()' cannot be virual (IEEE 1800-2023 18.3)");
+            if (nodep->isStatic())
+                nodep->v3error("class 'new()' cannot be static (IEEE 1800-2023 18.3)");
+        }
         // Function hasn't been widthed, so make it so.
         // Would use user1 etc, but V3Width called from too many places to spend a user
         nodep->doingWidth(true);
