@@ -157,7 +157,7 @@ Those developing Verilator itself also need these (see internals.rst):
 .. code-block:: bash
 
    sudo apt-get install clang clang-format-18 cmake gdb gprof graphviz lcov
-   sudo apt-get install python3-clang python3-distro yapf3 bear jq
+   sudo apt-get install python3-clang python3-distro pipx yapf3 bear jq
    python3 -m venv --system-site-packages ~/.verilator_pyenv
    source ~/.verilator_pyenv/bin/activate
    pip3 install sphinx sphinx_rtd_theme sphinxcontrib-spelling breathe gersemi mbake ruff
