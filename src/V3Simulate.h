@@ -141,7 +141,7 @@ private:
     int m_instrCount;  ///< Number of nodes
     int m_dataCount;  ///< Bytes of data
     int m_recurseCount = 0;  // Now deep in current recursion
-    AstJumpGo* m_jumpp = nullptr;  ///< Jump label we're branching from
+    AstNode* m_jumptargetp = nullptr;  // AstJumpBlock/AstLoop we are branching over
     // Simulating:
     // Allocators for constants of various data types
     std::unordered_map<const AstNodeDType*, ConstAllocator> m_constps;
@@ -409,7 +409,7 @@ private:
     }
 
     // True if current node might be jumped over - all visitors must call this up front
-    bool jumpingOver() const { return m_jumpp; }
+    bool jumpingOver() const { return m_jumptargetp; }
     void assignOutValue(const AstNodeAssign* nodep, AstNode* vscp, const AstNodeExpr* valuep) {
         if (VN_IS(nodep, AssignDly)) {
             // Don't do setValue, as value isn't yet visible to following statements
@@ -1056,9 +1056,9 @@ private:
     void visit(AstJumpBlock* nodep) override {
         if (jumpingOver()) return;
         iterateChildrenConst(nodep);
-        if (m_jumpp && m_jumpp->blockp() == nodep) {
+        if (m_jumptargetp == nodep) {
             UINFO(5, "   JUMP DONE " << nodep);
-            m_jumpp = nullptr;
+            m_jumptargetp = nullptr;
         }
     }
     void visit(AstJumpGo* nodep) override {
@@ -1066,9 +1066,55 @@ private:
         checkNodeInfo(nodep);
         if (!m_checkOnly) {
             UINFO(5, "   JUMP GO " << nodep);
-            // Should be back at the JumpBlock and clear m_jumpp before another JumpGo
-            UASSERT_OBJ(!m_jumpp, nodep, "Jump inside jump");
-            m_jumpp = nodep;
+            UASSERT_OBJ(!m_jumptargetp, nodep, "Jump inside jump");
+            m_jumptargetp = nodep->blockp();
+        }
+    }
+    void visit(AstLoop* nodep) override {
+        UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
+        if (jumpingOver()) return;
+        UINFO(5, "   LOOP " << nodep);
+        // Doing lots of loops is slow, so only for parameters
+        if (!m_params) {
+            badNodeType(nodep);
+            return;
+        }
+        checkNodeInfo(nodep);
+        if (m_checkOnly) {
+            iterateChildrenConst(nodep);
+            return;
+        }
+        if (!optimizable()) return;
+
+        int loops = 0;
+        while (true) {
+            UINFO(5, "    LOOP-ITER " << nodep);
+            iterateAndNextConstNull(nodep->stmtsp());
+            if (jumpingOver()) break;
+
+            // Prep for next loop
+            if (loops++ > v3Global.opt.unrollCountAdjusted(nodep->unroll(), m_params, true)) {
+                clearOptimizable(nodep, "Loop unrolling took too long; probably this is an"
+                                        "infinite loop, or use /*verilator unroll_full*/, or "
+                                        "set --unroll-count above "
+                                            + cvtToStr(loops));
+                break;
+            }
+        }
+
+        if (m_jumptargetp == nodep) {
+            UINFO(5, "   LOOP TEST DONE " << nodep);
+            m_jumptargetp = nullptr;
+        }
+    }
+    void visit(AstLoopTest* nodep) override {
+        if (jumpingOver()) return;
+        checkNodeInfo(nodep);
+        iterateConst(nodep->condp());
+        if (!m_checkOnly && optimizable() && fetchConst(nodep->condp())->num().isEqZero()) {
+            UINFO(5, "   LOOP TEST GO " << nodep);
+            UASSERT_OBJ(!m_jumptargetp, nodep, "Jump inside jump");
+            m_jumptargetp = nodep->loopp();
         }
     }
 
@@ -1082,46 +1128,6 @@ private:
         }
         checkNodeInfo(nodep);
     }
-
-    void visit(AstWhile* nodep) override {
-        // Doing lots of Whiles is slow, so only for parameters
-        if (jumpingOver()) return;
-        UINFO(5, "   WHILE " << nodep);
-        if (!m_params) {
-            badNodeType(nodep);
-            return;
-        }
-        checkNodeInfo(nodep);
-        if (m_checkOnly) {
-            iterateChildrenConst(nodep);
-        } else if (optimizable()) {
-            int loops = 0;
-            while (true) {
-                UINFO(5, "    WHILE-ITER " << nodep);
-                iterateAndNextConstNull(nodep->condp());
-                if (jumpingOver()) break;
-                if (!optimizable()) break;
-                if (!fetchConst(nodep->condp())->num().isNeqZero()) {  //
-                    break;
-                }
-                iterateAndNextConstNull(nodep->stmtsp());
-                if (jumpingOver()) break;
-                iterateAndNextConstNull(nodep->incsp());
-                if (jumpingOver()) break;
-
-                // Prep for next loop
-                if (loops++
-                    > v3Global.opt.unrollCountAdjusted(nodep->unrollFull(), m_params, true)) {
-                    clearOptimizable(nodep, "Loop unrolling took too long; probably this is an"
-                                            "infinite loop, or use /*verilator unroll_full*/, or "
-                                            "set --unroll-count above "
-                                                + cvtToStr(loops));
-                    break;
-                }
-            }
-        }
-    }
-
     void visit(AstFuncRef* nodep) override {
         if (jumpingOver()) return;
         if (!optimizable()) return;  // Accelerate
@@ -1375,7 +1381,7 @@ private:
     }
     void mainGuts(AstNode* nodep) {
         iterateConst(nodep);
-        UASSERT_OBJ(!m_jumpp, m_jumpp, "JumpGo branched to label that wasn't found");
+        UASSERT_OBJ(!m_jumptargetp, m_jumptargetp, "Jump target was not found");
     }
 
 public:
@@ -1395,7 +1401,7 @@ public:
         m_isCoverage = false;
         m_instrCount = 0;
         m_dataCount = 0;
-        m_jumpp = nullptr;
+        m_jumptargetp = nullptr;
 
         AstNode::user1ClearTree();
         m_varAux.clear();
@@ -1407,10 +1413,6 @@ public:
     }
     void mainTableEmulate(AstNode* nodep) {
         setMode(true /*scoped*/, false /*checking*/, false /*params*/);
-        mainGuts(nodep);
-    }
-    void mainCheckTree(AstNode* nodep) {
-        setMode(false /*scoped*/, true /*checking*/, false /*params*/);
         mainGuts(nodep);
     }
     void mainParamEmulate(AstNode* nodep) {

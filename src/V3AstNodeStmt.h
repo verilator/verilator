@@ -520,20 +520,6 @@ public:
     // * = Add a newline for $display
     bool addNewline() const { return displayType().addNewline(); }
 };
-class AstDoWhile final : public AstNodeStmt {
-    // @astgen op1 := condp : AstNodeExpr
-    // @astgen op2 := stmtsp : List[AstNode]
-public:
-    AstDoWhile(FileLine* fl, AstNodeExpr* conditionp, AstNode* stmtsp = nullptr)
-        : ASTGEN_SUPER_DoWhile(fl) {
-        condp(conditionp);
-        addStmtsp(stmtsp);
-    }
-    ASTGEN_MEMBERS_AstDoWhile;
-    bool isGateOptimizable() const override { return false; }
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
-};
 class AstDumpCtl final : public AstNodeStmt {
     // $dumpon etc
     // Parents: expr
@@ -676,6 +662,58 @@ public:
         return true;  // SPECIAL: We don't process code after breaks
     }
     AstJumpBlock* blockp() const { return m_blockp; }
+};
+class AstLoop final : public AstNodeStmt {
+    // An inifinite loop, used to model all source level procedural loops.
+    // Executes as:
+    //  while (true) {
+    //      stmtsp;
+    //      // <- 'continue' inside 'stmtsp goes here
+    //      contsp;
+    //  }
+    // 'contsp' is moved into 'stmtsp' in LinkJump when 'continue' statements are resovled.
+    // @astgen op1 := stmtsp : List[AstNode]
+    // @astgen op2 := contsp : List[AstNode] // Empty after LinkJump
+    VOptionBool m_unroll;  // Full, none, or default unrolling
+public:
+    AstLoop(FileLine* fl)
+        : ASTGEN_SUPER_Loop(fl) {}
+    ASTGEN_MEMBERS_AstLoop;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool sameNode(const AstNode* thatp) const override {
+        return m_unroll == VN_DBG_AS(thatp, Loop)->m_unroll;
+    }
+    bool isGateOptimizable() const override { return false; }
+    int instrCount() const override { return INSTR_COUNT_BRANCH; }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
+    // ACCESSORS
+    VOptionBool unroll() const { return m_unroll; }
+    void unroll(const VOptionBool flag) { m_unroll = flag; }
+};
+class AstLoopTest final : public AstNodeStmt {
+    // The condition test inside an AstLoop. If the condition is true,
+    // execution continues after this AstLoopTest statement. If the condition
+    // is false, control is transfered to after the corresponding AstLoop.
+    // In other words: AstLoopTest is like a conditional 'break' statement,
+    // which breaks out of the loop if the condition is false.
+    // @astgen op1 := condp : AstNodeExpr  // The loop condition
+    // @astgen ptr := m_loopp : AstLoop  // The corresponding AstLoop
+public:
+    AstLoopTest(FileLine* fl, AstLoop* loopp, AstNodeExpr* condp)
+        : ASTGEN_SUPER_LoopTest(fl)
+        , m_loopp{loopp} {
+        this->condp(condp);
+    }
+    ASTGEN_MEMBERS_AstLoopTest;
+    const char* broken() const override;
+    void dump(std::ostream& str) const override;
+    bool sameNode(const AstNode*) const override { return true; }
+    bool isGateOptimizable() const override { return false; }
+    bool isBrancher() const override { return true; }
+    int instrCount() const override { return 0; }
+    // ACCESSORS
+    AstLoop* loopp() const { return m_loopp; }
 };
 class AstMonitorOff final : public AstNodeStmt {
     const bool m_off;  // Monitor off.  Using 0=on allows faster init and comparison
@@ -1043,28 +1081,6 @@ public:
         : ASTGEN_SUPER_WaitFork(fl) {}
     ASTGEN_MEMBERS_AstWaitFork;
     bool isTimingControl() const override { return true; }
-};
-class AstWhile final : public AstNodeStmt {
-    // @astgen op1 := condp : AstNodeExpr
-    // @astgen op2 := stmtsp : List[AstNode]
-    // @astgen op3 := incsp : List[AstNode]
-    VOptionBool m_unrollFull;  // Full, disable, or default unrolling
-public:
-    AstWhile(FileLine* fl, AstNodeExpr* condp, AstNode* stmtsp = nullptr, AstNode* incsp = nullptr)
-        : ASTGEN_SUPER_While(fl) {
-        this->condp(condp);
-        addStmtsp(stmtsp);
-        addIncsp(incsp);
-    }
-    ASTGEN_MEMBERS_AstWhile;
-    void dump(std::ostream& str) const override;
-    bool isGateOptimizable() const override { return false; }
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
-    // Stop statement searchback here
-    void addNextStmt(AstNode* newp, AstNode* belowp) override;
-    VOptionBool unrollFull() const { return m_unrollFull; }
-    void unrollFull(const VOptionBool flag) { m_unrollFull = flag; }
 };
 
 // === AstNodeAssign ===

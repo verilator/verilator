@@ -1610,21 +1610,6 @@ class TaskVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
-    void visit(AstWhile* nodep) override {
-        // Special, as statements need to be put in different places
-        {
-            // Conditions will create a StmtExpr
-            // Leave m_instStmtp = null, so will assert if not
-            iterateAndNextNull(nodep->condp());
-        }
-        {
-            // Body insert just before themselves
-            VL_RESTORER(m_insStmtp);
-            m_insStmtp = nullptr;  // First thing should be new statement
-            iterateAndNextNull(nodep->stmtsp());
-            iterateAndNextNull(nodep->incsp());
-        }
-    }
     void visit(AstNodeForeach* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc(
             "Foreach statements should have been converted to while statements in V3Begin.cpp");

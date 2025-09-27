@@ -268,7 +268,8 @@ class CleanVisitor final : public VNVisitor {
         ensureClean(nodep->condp());
         setClean(nodep, isClean(nodep->thenp()) && isClean(nodep->elsep()));
     }
-    void visit(AstWhile* nodep) override {
+    void visit(AstLoop* nodep) override { iterateChildren(nodep); }
+    void visit(AstLoopTest* nodep) override {
         iterateChildren(nodep);
         ensureClean(nodep->condp());
     }

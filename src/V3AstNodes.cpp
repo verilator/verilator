@@ -1551,24 +1551,6 @@ void AstNodeStmt::addNextStmt(AstNode* newp, AstNode*) {
     this->addNextHere(newp);
 }
 
-void AstWhile::addNextStmt(AstNode* newp, AstNode* belowp) {
-    // Special, as statements need to be put in different places
-    // Belowp is how we came to recurse up to this point
-    if (belowp == condp()) {
-        // Becomes first statement in body, body may have been empty
-        if (stmtsp()) {
-            stmtsp()->addHereThisAsNext(newp);
-        } else {
-            addStmtsp(newp);
-        }
-    } else if (belowp == stmtsp()) {
-        // Next statement in body
-        belowp->addNextHere(newp);
-    } else {
-        belowp->v3fatalSrc("Doesn't look like this was really under the while");
-    }
-}
-
 //======================================================================
 // Per-type Debugging
 
@@ -2062,6 +2044,30 @@ void AstJumpGo::dump(std::ostream& str) const {
 void AstJumpGo::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 const char* AstJumpGo::broken() const {
     BROKEN_RTN(!blockp()->brokeExistsAbove());
+    return nullptr;
+}
+
+void AstLoop::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (unroll().isSetTrue())
+        str << " [unrollfull]";
+    else if (unroll().isSetFalse())
+        str << " [unrollnone]";
+}
+void AstLoop::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "unroll",
+                unroll().isSetTrue()    ? "full"
+                : unroll().isSetFalse() ? "none"
+                                        : "default");
+    dumpJsonGen(str);
+}
+void AstLoopTest::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " -> ";
+    loopp()->dump(str);
+}
+const char* AstLoopTest::broken() const {
+    BROKEN_RTN(!loopp()->brokeExistsAbove());
     return nullptr;
 }
 
@@ -2732,7 +2738,7 @@ void AstVar::dump(std::ostream& str) const {
     if (isSigUserRWPublic()) str << " [PWR]";
     if (isInternal()) str << " [INTERNAL]";
     if (isLatched()) str << " [LATCHED]";
-    if (isUsedLoopIdx()) str << " [LOOP]";
+    if (isUsedLoopIdx()) str << " [LOOPIDX]";
     if (rand().isRandomizable()) str << rand();
     if (noReset()) str << " [!RST]";
     if (attrIsolateAssign()) str << " [aISO]";
@@ -2782,13 +2788,6 @@ void AstVar::dumpJson(std::ostream& str) const {
 bool AstVar::sameNode(const AstNode* samep) const {
     const AstVar* const asamep = VN_DBG_AS(samep, Var);
     return name() == asamep->name() && varType() == asamep->varType();
-}
-void AstWhile::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
-    if (unrollFull().isSetTrue())
-        str << " [unrollfull]";
-    else if (unrollFull().isSetFalse())
-        str << " [unrolldis]";
 }
 void AstScope::dump(std::ostream& str) const {
     this->AstNode::dump(str);

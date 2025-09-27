@@ -1298,7 +1298,7 @@ class DelayedVisitor final : public VNVisitor {
         // Record write reference
         recordWriteRef(nodep, false);
     }
-    void visit(AstWhile* nodep) override {
+    void visit(AstLoop* nodep) override {
         VL_RESTORER(m_inLoop);
         m_inLoop = true;
         iterateChildren(nodep);

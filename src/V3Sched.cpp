@@ -263,8 +263,9 @@ EvalLoop createEvalLoop(
 
     // The loop
     {
-        AstWhile* const loopp
-            = new AstWhile{flp, new AstVarRef{flp, continueFlagp, VAccess::READ}};
+        AstNodeExpr* const condp = new AstVarRef{flp, continueFlagp, VAccess::READ};
+        AstLoop* const loopp = new AstLoop{flp};
+        loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
 
         // Check the iteration limit (aborts if exceeded)
         loopp->addStmtsp(checkIterationLimit(netlistp, name, counterp, dumpFuncp));
@@ -451,14 +452,12 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                         if (VN_IS(procp, Always)) {
                             subFuncp->slow(false);
                             FileLine* const flp = procp->fileline();
-                            bodyp = new AstWhile{
-                                flp,
-                                // If we change to use exceptions to handle finish/stop,
-                                // this can get removed
-                                new AstCExpr{flp,
-                                             "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1,
-                                             true},
-                                bodyp};
+                            AstNodeExpr* const condp = new AstCExpr{
+                                flp, "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1, true};
+                            AstLoop* const loopp = new AstLoop{flp};
+                            loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
+                            loopp->addStmtsp(bodyp);
+                            bodyp = loopp;
                         }
                     }
                     subFuncp->addStmtsp(bodyp);

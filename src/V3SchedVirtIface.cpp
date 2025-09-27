@@ -195,9 +195,8 @@ private:
             m_trigAssignMemberVarp = nullptr;
         }
     }
-    void visit(AstWhile* nodep) override {
-        unsupportedWriteToVirtIface(nodep->condp(), "loop condition");
-        unsupportedWriteToVirtIface(nodep->incsp(), "loop increment statement");
+    void visit(AstLoop* nodep) override {
+        UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
         {
             VL_RESTORER(m_trigAssignp);
             VL_RESTORER(m_trigAssignIfacep);
@@ -210,6 +209,9 @@ private:
             m_trigAssignIfacep = nullptr;
             m_trigAssignMemberVarp = nullptr;
         }
+    }
+    void visit(AstLoopTest* nodep) override {
+        unsupportedWriteToVirtIface(nodep->condp(), "loop condition");
     }
     void visit(AstJumpBlock* nodep) override {
         {

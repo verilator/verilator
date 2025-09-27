@@ -349,16 +349,21 @@ private:
         AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__counter",
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-        cntVarp->funcLocal(true);
         AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, true};
         beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});
-        beginp->addStmtsp(new AstWhile{
-            nodep->fileline(),
-            new AstGt{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 0}},
-            controlp,
-            new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
-                          new AstSub{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
-                                     new AstConst{flp, 1}}}});
+
+        {
+            AstLoop* const loopp = new AstLoop{flp};
+            loopp->addStmtsp(new AstLoopTest{
+                flp, loopp,
+                new AstGt{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 0}}});
+            loopp->addStmtsp(controlp);
+            loopp->addStmtsp(
+                new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE},
+                              new AstSub{flp, new AstVarRef{flp, cntVarp, VAccess::READ},
+                                         new AstConst{flp, 1}}});
+            beginp->addStmtsp(loopp);
+        }
         nodep->replaceWith(beginp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }

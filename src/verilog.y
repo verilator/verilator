@@ -3590,14 +3590,31 @@ statement_item<nodep>:          // IEEE: statement_item
         |       yP_MINUSGTGT delay_or_event_controlE expr ';'
                         { $$ = new AstFireEvent{$1, $3, true}; }
         //
-        //                      // IEEE: loop_statement
+        // do/for/forever/while loops all modelled as AstLoop
+        |       yDO stmtBlock yWHILE '(' expr ')' ';'
+                        { AstLoop* const loopp = new AstLoop{$1};
+                          loopp->addStmtsp($2);
+                          loopp->addContsp(new AstLoopTest{$<fl>5, loopp, $5});
+                          $$ = loopp; }
+        |       yFOR  '(' { VARRESET_NONLIST(UNKNOWN); } for_initializationE ';' exprE ';' for_stepE ')' stmtBlock
+                        { AstBegin* const blockp = new AstBegin{$1, "", $4, true};
+                          AstLoop* const loopp = new AstLoop{$1};
+                          if ($6) loopp->addStmtsp(new AstLoopTest{$<fl>6, loopp, $6});
+                          loopp->addStmtsp($10);
+                          loopp->addContsp($8);
+                          blockp->addStmtsp(loopp);
+                          $$ = blockp; }
         |       yFOREVER stmtBlock
-                        { $$ = new AstWhile{$1, new AstConst{$1, AstConst::BitTrue{}}, $2}; }
+                        { AstLoop* const loopp = new AstLoop{$1};
+                          loopp->addStmtsp($2);
+                          $$ = loopp; }
+        |       yWHILE '(' expr ')' stmtBlock
+                        { AstLoop* const loopp = new AstLoop{$1};
+                          loopp->addStmtsp(new AstLoopTest{$<fl>3, loopp, $3});
+                          loopp->addStmtsp($5);
+                          $$ = loopp; }
+        // Other loop statements
         |       yREPEAT '(' expr ')' stmtBlock          { $$ = new AstRepeat{$1, $3, $5}; }
-        |       yWHILE '(' expr ')' stmtBlock           { $$ = new AstWhile{$1, $3, $5}; }
-        //                      // for's first ';' is in for_initialization
-        |       statementFor                            { $$ = $1; }
-        |       yDO stmtBlock yWHILE '(' expr ')' ';'   { $$ = new AstDoWhile{$1, $5, $2}; }
         //                      // IEEE says array_identifier here, but dotted accepted in VMM and 1800-2009
         |       yFOREACH '(' idClassSelForeach ')' stmtBlock
                         { $$ = new AstBegin{$1, "", new AstForeach{$1, $3, $5}, true}; }
@@ -3658,18 +3675,6 @@ statement_item<nodep>:          // IEEE: statement_item
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); DEL($3, $5, $7); }
         |       yEXPECT '(' property_spec ')' yELSE stmt
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); DEL($3, $6); }
-        ;
-
-statementFor<beginp>:           // IEEE: part of statement
-                yFOR beginForParen for_initialization expr ';' for_stepE ')' stmtBlock
-                        { $$ = new AstBegin{$1, "", $3, true};
-                          $$->addStmtsp(new AstWhile{$1, $4, $8, $6}); }
-        |       yFOR beginForParen for_initialization ';' for_stepE ')' stmtBlock
-                        { $$ = new AstBegin{$1, "", $3, true};
-                          $$->addStmtsp(new AstWhile{$1, new AstConst{$1, AstConst::BitTrue{}}, $7, $5}); }
-        ;
-beginForParen:  // IEEE: Part of statement (for loop beginning paren)
-                '('                                     { VARRESET_NONLIST(UNKNOWN); }
         ;
 
 statementVerilatorPragmas<nodep>:
@@ -3948,11 +3953,9 @@ assignment_pattern<patternp>:   // ==IEEE: assignment_pattern
         ;
 
 // "datatype id = x {, id = x }"  |  "yaId = x {, id=x}" is legal
-for_initialization<nodep>:      // ==IEEE: for_initialization + for_variable_declaration + extra terminating ";"
-        //                      // IEEE: for_variable_declaration
-                for_initializationItemList ';'          { $$ = $1; }
-        //                      // IEEE: 1800-2017 empty initialization
-        |       ';'                                     { $$ = nullptr; }
+for_initializationE<nodep>:      // ==IEEE: for_initialization + for_variable_declaration
+                /* empty */                     { $$ = nullptr; }
+        |       for_initializationItemList      { $$ = $1; }
         ;
 
 for_initializationItemList<nodep>:      // IEEE: [for_variable_declaration...]
