@@ -233,7 +233,8 @@ private:
                     new AstSenItem{flp, VEdgeType::ET_CHANGED, skewedReadRefp->cloneTree(false)});
                 AstCMethodHard* const trigp = new AstCMethodHard{
                     nodep->fileline(),
-                    new AstVarRef{flp, m_clockingp->ensureEventp(), VAccess::READ}, "isTriggered"};
+                    new AstVarRef{flp, m_clockingp->ensureEventp(), VAccess::READ},
+                    VCMethod::EVENT_IS_TRIGGERED};
                 trigp->dtypeSetBit();
                 ifp->condp(new AstLogAnd{flp, ifp->condp()->unlinkFrBack(), trigp});
                 m_clockingp->addNextHere(new AstAlwaysReactive{flp, senTreep, ifp});
@@ -285,7 +286,7 @@ private:
                 // Create a process like this:
                 //     always queue.push(<sampled var>);
                 AstCMethodHard* const pushp = new AstCMethodHard{
-                    flp, new AstVarRef{flp, queueVarp, VAccess::WRITE}, "push",
+                    flp, new AstVarRef{flp, queueVarp, VAccess::WRITE}, VCMethod::DYN_PUSH,
                     new AstTime{nodep->fileline(), m_modp->timeunit()}};
                 pushp->addPinsp(exprp->cloneTreePure(false));
                 pushp->dtypeSetVoid();
@@ -294,7 +295,7 @@ private:
                 // Create a process like this:
                 //     always @<clocking event> queue.pop(<skew>, /*out*/<skewed var>);
                 AstCMethodHard* const popp = new AstCMethodHard{
-                    flp, new AstVarRef{flp, queueVarp, VAccess::READWRITE}, "pop",
+                    flp, new AstVarRef{flp, queueVarp, VAccess::READWRITE}, VCMethod::DYN_POP,
                     new AstTime{nodep->fileline(), m_modp->timeunit()}};
                 popp->addPinsp(skewp->unlinkFrBack());
                 popp->addPinsp(refp);

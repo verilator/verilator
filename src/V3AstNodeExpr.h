@@ -618,24 +618,22 @@ class AstCMethodHard final : public AstNodeExpr {
     // PARENTS: stmt/expr
     // @astgen op1 := fromp : AstNodeExpr // Subject of method call
     // @astgen op2 := pinsp : List[AstNodeExpr] // Arguments
-    string m_name;  // Name of method
+    VCMethod m_method;  // Which method to call
     bool m_pure = false;  // Pure optimizable
     bool m_usePtr = false;  // Use '->' not '.'
 public:
-    AstCMethodHard(FileLine* fl, AstNodeExpr* fromp, const string& name,
-                   AstNodeExpr* pinsp = nullptr)
+    AstCMethodHard(FileLine* fl, AstNodeExpr* fromp, VCMethod method, AstNodeExpr* pinsp = nullptr)
         : ASTGEN_SUPER_CMethodHard(fl)
-        , m_name{name} {
+        , m_method{method} {
         this->fromp(fromp);
         addPinsp(pinsp);
         setPurity();
     }
     ASTGEN_MEMBERS_AstCMethodHard;
-    string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
-    void name(const string& name) override { m_name = name; }
+    string name() const override VL_MT_STABLE { return method().ascii(); }
     bool sameNode(const AstNode* samep) const override {
         const AstCMethodHard* const asamep = VN_DBG_AS(samep, CMethodHard);
-        return (m_name == asamep->m_name);
+        return (m_method == asamep->m_method);
     }
     bool isPure() override { return m_pure; }
     int instrCount() const override;
@@ -644,6 +642,8 @@ public:
     bool cleanOut() const override { return true; }
     bool usePtr() const { return m_usePtr; }
     void usePtr(bool flag) { m_usePtr = flag; }
+    VCMethod method() const VL_MT_STABLE { return m_method; }
+    void method(VCMethod value) { m_method = value; }
 
 private:
     void setPurity();

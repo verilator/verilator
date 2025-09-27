@@ -3012,8 +3012,8 @@ class ConstVisitor final : public VNVisitor {
 
             if (const AstCMethodHard* const aCallp = VN_CAST(ap, CMethodHard)) {
                 const AstCMethodHard* const bCallp = VN_AS(bp, CMethodHard);
-                if (aCallp->name() < bCallp->name()) return -1;
-                if (aCallp->name() > bCallp->name()) return 1;
+                if (aCallp->method() < bCallp->method()) return -1;
+                if (aCallp->method() > bCallp->method()) return 1;
                 if (const int c = cmp(aCallp->fromp(), bCallp->fromp())) return c;
                 const AstNodeExpr* aPinsp = aCallp->pinsp();
                 const AstNodeExpr* bPinsp = bCallp->pinsp();

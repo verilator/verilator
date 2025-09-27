@@ -485,9 +485,9 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                         ? new AstArraySel{fl, subfromp->cloneTreePure(false),
                                           new AstVarRef{fl, nestedIndexp, VAccess::READ}}
                         : subfromp->cloneTreePure(false),
-                    "size"};
+                    VCMethod::DYN_SIZE};
                 AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
-                subfromp = new AstCMethodHard{fl, subfromp, "at", varRefp};
+                subfromp = new AstCMethodHard{fl, subfromp, VCMethod::ARRAY_AT, varRefp};
                 subfromp->dtypep(fromDtp);
                 rightp->dtypeSetSigned32();
                 rightp->protect(false);
@@ -503,15 +503,15 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 first_varp->usedLoopIdx(true);
                 first_varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                 AstNodeExpr* const firstp
-                    = new AstCMethodHard{fl, subfromp->cloneTreePure(false), "first",
+                    = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_FIRST,
                                          new AstVarRef{fl, varp, VAccess::READWRITE}};
                 firstp->dtypeSetSigned32();
                 AstNodeExpr* const nextp
-                    = new AstCMethodHard{fl, subfromp->cloneTreePure(false), "next",
+                    = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_NEXT,
                                          new AstVarRef{fl, varp, VAccess::READWRITE}};
                 nextp->dtypeSetSigned32();
                 AstVarRef* varRefp = new AstVarRef{fl, varp, VAccess::READ};
-                subfromp = new AstCMethodHard{fl, subfromp, "at", varRefp};
+                subfromp = new AstCMethodHard{fl, subfromp, VCMethod::ARRAY_AT, varRefp};
                 subfromp->dtypep(fromDtp);
                 AstNode* const first_clearp
                     = new AstAssign{fl, new AstVarRef{fl, first_varp, VAccess::WRITE},

@@ -703,6 +703,247 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
 
 // ######################################################################
 
+class VCMethod final {
+public:
+    // Entries in this table need to match below VCMethod::s_itemData[] table
+    enum en : uint8_t {
+        _NONE,  // Unknown
+        ARRAY_AND,
+        ARRAY_AT,
+        ARRAY_AT_BACK,
+        ARRAY_AT_WRITE,
+        ARRAY_FIND,
+        ARRAY_FIND_FIRST,
+        ARRAY_FIND_FIRST_INDEX,
+        ARRAY_FIND_INDEX,
+        ARRAY_FIND_LAST,
+        ARRAY_FIND_LAST_INDEX,
+        ARRAY_FIRST,
+        ARRAY_INSIDE,
+        ARRAY_LAST,
+        ARRAY_MAX,
+        ARRAY_MIN,
+        ARRAY_NEXT,
+        ARRAY_OR,
+        ARRAY_POP_BACK,
+        ARRAY_POP_FRONT,
+        ARRAY_PREV,
+        ARRAY_PRODUCT,
+        ARRAY_PUSH_BACK,
+        ARRAY_PUSH_FRONT,
+        ARRAY_REVERSE,
+        ARRAY_RSORT,
+        ARRAY_R_AND,
+        ARRAY_R_OR,
+        ARRAY_R_PRODUCT,
+        ARRAY_R_SUM,
+        ARRAY_R_XOR,
+        ARRAY_SHUFFLE,
+        ARRAY_SORT,
+        ARRAY_SUM,
+        ARRAY_UNIQUE,
+        ARRAY_UNIQUE_INDEX,
+        ARRAY_XOR,
+        ASSOC_CLEAR,
+        ASSOC_ERASE,
+        ASSOC_EXISTS,
+        ASSOC_FIRST,
+        ASSOC_NEXT,
+        ASSOC_SIZE,
+        CLASS_SET_RANDMODE,
+        DYN_AT_WRITE_APPEND,
+        DYN_AT_WRITE_APPEND_BACK,
+        DYN_CLEAR,
+        DYN_ERASE,
+        DYN_INSERT,
+        DYN_POP,
+        DYN_POP_FRONT,
+        DYN_PUSH,
+        DYN_PUSH_FRONT,
+        DYN_RENEW,
+        DYN_RENEW_COPY,
+        DYN_RESIZE,
+        DYN_SIZE,
+        DYN_SLICE,
+        DYN_SLICE_BACK_BACK,
+        DYN_SLICE_FRONT_BACK,
+        EVENT_CLEAR_FIRED,
+        EVENT_CLEAR_TRIGGERED,
+        EVENT_FIRE,
+        EVENT_IS_FIRED,
+        EVENT_IS_TRIGGERED,
+        FORK_DONE,
+        FORK_INIT,
+        FORK_JOIN,
+        RANDOMIZER_BASIC_STD_RANDOMIZATION,
+        RANDOMIZER_CLEAR,
+        RANDOMIZER_HARD,
+        RANDOMIZER_WRITE_VAR,
+        RNG_GET_RANDSTATE,
+        RNG_SET_RANDSTATE,
+        SCHED_ANY_TRIGGERED,
+        SCHED_AWAITING_CURRENT_TIME,
+        SCHED_COMMIT,
+        SCHED_DELAY,
+        SCHED_DO_POST_UPDATES,
+        SCHED_ENQUEUE,
+        SCHED_EVALUATE,
+        SCHED_EVALUATION,
+        SCHED_POST_UPDATE,
+        SCHED_RESUME,
+        SCHED_RESUMPTION,
+        SCHED_TRIGGER,
+        SCHED_TRIGGERED,
+        TRIGGER_AND_NOT,
+        TRIGGER_ANY,
+        TRIGGER_CLEAR,
+        TRIGGER_SET_BIT,
+        TRIGGER_SET_WORD,
+        TRIGGER_THIS_OR,
+        TRIGGER_WORD,
+        UNPACKED_ASSIGN,
+        UNPACKED_FILL,
+        UNPACKED_NEQ,
+        _ENUM_MAX  // Leave last
+    };
+
+private:
+    struct Item final {
+        enum en m_e;  // Method's enum mnemonic, for checking
+        const char* m_name;  // Method name, printed into C++
+        bool m_pure;  // Method being called is pure
+    };
+    static Item s_itemData[];
+
+public:
+    enum en m_e;
+    VCMethod()
+        : m_e{_NONE} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCMethod(en _e)
+        : m_e{_e} {}
+    explicit VCMethod(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    const char* ascii() const VL_PURE { return s_itemData[m_e].m_name; }
+    bool isPure() const VL_PURE { return s_itemData[m_e].m_pure; }
+    // Return array method for given name
+    static VCMethod arrayMethod(const string& name);
+    static void selfTest();
+};
+constexpr bool operator==(const VCMethod& lhs, const VCMethod& rhs) { return lhs.m_e == rhs.m_e; }
+constexpr bool operator==(const VCMethod& lhs, VCMethod::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VCMethod::en lhs, const VCMethod& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
+    return os << rhs.ascii();
+}
+
+// Entries in this table need to match above VCMethod enum table
+//
+// {Mnemonic, C++ method, pure}
+#define V3AST_VCMETHOD_ITEMDATA_DECL \
+    VCMethod::Item VCMethod::s_itemData[] \
+        = {{_NONE, "_none", false}, \
+           {ARRAY_AND, "and", true}, \
+           {ARRAY_AT, "at", true}, \
+           {ARRAY_AT_BACK, "atBack", true}, \
+           {ARRAY_AT_WRITE, "atWrite", true}, \
+           {ARRAY_FIND, "find", true}, \
+           {ARRAY_FIND_FIRST, "find_first", true}, \
+           {ARRAY_FIND_FIRST_INDEX, "find_first_index", true}, \
+           {ARRAY_FIND_INDEX, "find_index", true}, \
+           {ARRAY_FIND_LAST, "find_last", true}, \
+           {ARRAY_FIND_LAST_INDEX, "find_last_index", true}, \
+           {ARRAY_FIRST, "first", false}, \
+           {ARRAY_INSIDE, "inside", true}, \
+           {ARRAY_LAST, "last", false}, \
+           {ARRAY_MAX, "max", true}, \
+           {ARRAY_MIN, "min", true}, \
+           {ARRAY_NEXT, "next", false}, \
+           {ARRAY_OR, "or", true}, \
+           {ARRAY_POP_BACK, "pop_back", false}, \
+           {ARRAY_POP_FRONT, "pop_front", false}, \
+           {ARRAY_PREV, "prev", false}, \
+           {ARRAY_PRODUCT, "product", true}, \
+           {ARRAY_PUSH_BACK, "push_back", false}, \
+           {ARRAY_PUSH_FRONT, "push_front", false}, \
+           {ARRAY_REVERSE, "reverse", false}, \
+           {ARRAY_RSORT, "rsort", false}, \
+           {ARRAY_R_AND, "r_and", true}, \
+           {ARRAY_R_OR, "r_or", true}, \
+           {ARRAY_R_PRODUCT, "r_product", true}, \
+           {ARRAY_R_SUM, "r_sum", true}, \
+           {ARRAY_R_XOR, "r_xor", true}, \
+           {ARRAY_SHUFFLE, "shuffle", false}, \
+           {ARRAY_SORT, "sort", false}, \
+           {ARRAY_SUM, "sum", true}, \
+           {ARRAY_UNIQUE, "unique", true}, \
+           {ARRAY_UNIQUE_INDEX, "unique_index", true}, \
+           {ARRAY_XOR, "xor", true}, \
+           {ASSOC_CLEAR, "clear", false}, \
+           {ASSOC_ERASE, "erase", false}, \
+           {ASSOC_EXISTS, "exists", true}, \
+           {ASSOC_FIRST, "first", false}, \
+           {ASSOC_NEXT, "next", false}, \
+           {ASSOC_SIZE, "size", true}, \
+           {CLASS_SET_RANDMODE, "set_randmode", false}, \
+           {DYN_AT_WRITE_APPEND, "atWriteAppend", false}, \
+           {DYN_AT_WRITE_APPEND_BACK, "atWriteAppendBack", false}, \
+           {DYN_CLEAR, "clear", false}, \
+           {DYN_ERASE, "erase", false}, \
+           {DYN_INSERT, "insert", false}, \
+           {DYN_POP, "pop", false}, \
+           {DYN_POP_FRONT, "pop_front", false}, \
+           {DYN_PUSH, "push", false}, \
+           {DYN_PUSH_FRONT, "push_front", false}, \
+           {DYN_RENEW, "renew", false}, \
+           {DYN_RENEW_COPY, "renew_copy", false}, \
+           {DYN_RESIZE, "resize", false}, \
+           {DYN_SIZE, "size", true}, \
+           {DYN_SLICE, "slice", true}, \
+           {DYN_SLICE_BACK_BACK, "sliceBackBack", true}, \
+           {DYN_SLICE_FRONT_BACK, "sliceFrontBack", true}, \
+           {EVENT_CLEAR_FIRED, "clearFired", false}, \
+           {EVENT_CLEAR_TRIGGERED, "clearTriggered", false}, \
+           {EVENT_FIRE, "fire", false}, \
+           {EVENT_IS_FIRED, "isFired", true}, \
+           {EVENT_IS_TRIGGERED, "isTriggered", true}, \
+           {FORK_DONE, "done", false}, \
+           {FORK_INIT, "init", false}, \
+           {FORK_JOIN, "join", false}, \
+           {RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization", false}, \
+           {RANDOMIZER_CLEAR, "clear", false}, \
+           {RANDOMIZER_HARD, "hard", false}, \
+           {RANDOMIZER_WRITE_VAR, "write_var", false}, \
+           {RNG_GET_RANDSTATE, "__Vm_rng.get_randstate", true}, \
+           {RNG_SET_RANDSTATE, "__Vm_rng.set_randstate", false}, \
+           {SCHED_ANY_TRIGGERED, "anyTriggered", false}, \
+           {SCHED_AWAITING_CURRENT_TIME, "awaitingCurrentTime", true}, \
+           {SCHED_COMMIT, "commit", false}, \
+           {SCHED_DELAY, "delay", false}, \
+           {SCHED_DO_POST_UPDATES, "doPostUpdates", false}, \
+           {SCHED_ENQUEUE, "enqueue", false}, \
+           {SCHED_EVALUATE, "evaluate", false}, \
+           {SCHED_EVALUATION, "evaluation", false}, \
+           {SCHED_POST_UPDATE, "postUpdate", false}, \
+           {SCHED_RESUME, "resume", false}, \
+           {SCHED_RESUMPTION, "resumption", false}, \
+           {SCHED_TRIGGER, "trigger", false}, \
+           {SCHED_TRIGGERED, "triggered", false}, \
+           {TRIGGER_AND_NOT, "andNot", false}, \
+           {TRIGGER_ANY, "any", true}, \
+           {TRIGGER_CLEAR, "clear", false}, \
+           {TRIGGER_SET_BIT, "setBit", false}, \
+           {TRIGGER_SET_WORD, "setWord", false}, \
+           {TRIGGER_THIS_OR, "thisOr", false}, \
+           {TRIGGER_WORD, "word", true}, \
+           {UNPACKED_ASSIGN, "assign", false}, \
+           {UNPACKED_FILL, "fill", false}, \
+           {UNPACKED_NEQ, "neq", true}, \
+           {_ENUM_MAX, "_ENUM_MAX", false}};
+
+// ######################################################################
+
 class VCaseType final {
 public:
     enum en : uint8_t { CT_CASE, CT_CASEX, CT_CASEZ, CT_CASEINSIDE };

@@ -506,10 +506,11 @@ class TaskVisitor final : public VNVisitor {
                     refArgOk = true;
                 } else if (AstCMethodHard* const cMethodp = VN_CAST(pinp, CMethodHard)) {
                     if (VN_IS(cMethodp->fromp()->dtypep()->skipRefp(), QueueDType)) {
-                        refArgOk = cMethodp->name() == "atWriteAppend"
-                                   || cMethodp->name() == "atWriteAppendBack";
+                        refArgOk = cMethodp->method() == VCMethod::DYN_AT_WRITE_APPEND
+                                   || cMethodp->method() == VCMethod::DYN_AT_WRITE_APPEND_BACK;
                     } else {
-                        refArgOk = cMethodp->name() == "at" || cMethodp->name() == "atBack";
+                        refArgOk = cMethodp->method() == VCMethod::ARRAY_AT
+                                   || cMethodp->method() == VCMethod::ARRAY_AT_BACK;
                     }
                 }
                 if (refArgOk) {

@@ -488,8 +488,8 @@ private:
     }
     void visit(AstCMethodHard* nodep) override {
         VL_RESTORER(m_dynsizedelem);
-        if (nodep->name() == "atWrite" || nodep->name() == "atWriteAppend"
-            || nodep->name() == "at")
+        if (nodep->method() == VCMethod::ARRAY_AT || nodep->method() == VCMethod::ARRAY_AT_WRITE
+            || nodep->method() == VCMethod::DYN_AT_WRITE_APPEND)
             m_dynsizedelem = true;
         iterateChildren(nodep);
         editDType(nodep);

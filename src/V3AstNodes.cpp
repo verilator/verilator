@@ -91,12 +91,10 @@ bool AstNodeFTaskRef::getPurityRecurse() const {
     AstNodeFTask* const taskp = this->taskp();
     // Unlinked yet, so treat as impure
     if (!taskp) return false;
-
     // First compute the purity of arguments
     for (AstNode* pinp = this->pinsp(); pinp; pinp = pinp->nextp()) {
         if (!pinp->isPure()) return false;
     }
-
     return taskp->isPure();
 }
 bool AstNodeFTaskRef::isGateOptimizable() const { return m_taskp && m_taskp->isGateOptimizable(); }
@@ -3144,94 +3142,17 @@ void AstCAwait::dump(std::ostream& str) const {
 void AstCAwait::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 int AstCMethodHard::instrCount() const {
     if (const AstBasicDType* const basicp = fromp()->dtypep()->basicp()) {
-        // TODO: add a more structured description of library methods, rather than using string
-        //       matching. See issue #3715.
-        if (basicp->isTriggerVec() && m_name == "word") {
+        if (basicp->isTriggerVec() && m_method == VCMethod::TRIGGER_WORD) {
             // This is an important special case for scheduling so we compute it precisely,
             // it is simply a load.
             return INSTR_COUNT_LD;
         }
     }
-    return 0;
+    return 0;  // TODO
 }
 void AstCMethodHard::setPurity() {
-    static const std::map<std::string, bool> isPureMethod{{"__Vm_rng.get_randstate", true},
-                                                          {"__Vm_rng.set_randstate", false},
-                                                          {"andNot", false},
-                                                          {"any", true},
-                                                          {"anyTriggered", false},
-                                                          {"assign", false},
-                                                          {"at", true},
-                                                          {"atBack", true},
-                                                          {"atWrite", true},
-                                                          {"awaitingCurrentTime", true},
-                                                          {"basicStdRandomization", false},
-                                                          {"clear", false},
-                                                          {"clearFired", false},
-                                                          {"commit", false},
-                                                          {"delay", false},
-                                                          {"done", false},
-                                                          {"enqueue", false},
-                                                          {"erase", false},
-                                                          {"evaluate", false},
-                                                          {"evaluation", false},
-                                                          {"exists", true},
-                                                          {"fill", false},
-                                                          {"find", true},
-                                                          {"find_first", true},
-                                                          {"find_first_index", true},
-                                                          {"find_index", true},
-                                                          {"find_last", true},
-                                                          {"find_last_index", true},
-                                                          {"fire", false},
-                                                          {"first", false},
-                                                          {"hard", false},
-                                                          {"init", false},
-                                                          {"insert", false},
-                                                          {"inside", true},
-                                                          {"isFired", true},
-                                                          {"isTriggered", true},
-                                                          {"join", false},
-                                                          {"last", false},
-                                                          {"max", true},
-                                                          {"min", true},
-                                                          {"neq", true},
-                                                          {"next", false},
-                                                          {"pop", false},
-                                                          {"pop_back", false},
-                                                          {"pop_front", false},
-                                                          {"prev", false},
-                                                          {"push", false},
-                                                          {"push_back", false},
-                                                          {"push_front", false},
-                                                          {"r_and", true},
-                                                          {"r_or", true},
-                                                          {"r_product", true},
-                                                          {"r_sum", true},
-                                                          {"r_xor", true},
-                                                          {"renew", false},
-                                                          {"renew_copy", false},
-                                                          {"resize", false},
-                                                          {"resume", false},
-                                                          {"reverse", false},
-                                                          {"rsort", false},
-                                                          {"setBit", false},
-                                                          {"setWord", false},
-                                                          {"set_randmode", false},
-                                                          {"shuffle", false},
-                                                          {"size", true},
-                                                          {"slice", true},
-                                                          {"sliceBackBack", true},
-                                                          {"sliceFrontBack", true},
-                                                          {"sort", false},
-                                                          {"thisOr", false},
-                                                          {"trigger", false},
-                                                          {"unique", true},
-                                                          {"unique_index", true},
-                                                          {"word", true},
-                                                          {"write_var", false}};
-
-    if (name() == "atWriteAppend" || name() == "atWriteAppendBack") {
+    if (method() == VCMethod::DYN_AT_WRITE_APPEND
+        || method() == VCMethod::DYN_AT_WRITE_APPEND_BACK) {
         m_pure = false;
         // Treat atWriteAppend as pure if the argument is a loop iterator
         if (const AstNodeExpr* const argp = pinsp()) {
@@ -3241,11 +3162,7 @@ void AstCMethodHard::setPurity() {
         }
         return;
     }
-    auto isPureIt = isPureMethod.find(name());
-    // cppcheck-suppress derefInvalidIteratorRedundantCheck
-    UASSERT_OBJ(isPureIt != isPureMethod.end(), this, "Unknown purity of method " + name());
-    // cppcheck-suppress derefInvalidIteratorRedundantCheck
-    m_pure = isPureIt->second;
+    m_pure = method().isPure();
     if (!m_pure) return;
     if (!fromp()->isPure()) m_pure = false;
     if (!m_pure) return;

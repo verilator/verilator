@@ -133,7 +133,8 @@ private:
             }
 
             if (VN_IS(exprp->dtypep()->skipRefp(), UnpackArrayDType)) {
-                AstCMethodHard* const cmhp = new AstCMethodHard{flp, wrPrev(), "assign", rdCurr()};
+                AstCMethodHard* const cmhp
+                    = new AstCMethodHard{flp, wrPrev(), VCMethod::UNPACKED_ASSIGN, rdCurr()};
                 cmhp->dtypeSetVoid();
                 m_results.m_postUpdates.push_back(cmhp->makeStmt());
             } else {
@@ -160,7 +161,8 @@ private:
             if (VN_IS(senp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 // operand order reversed to avoid calling neq() method on non-VlUnpacked type, see
                 // issue #5125
-                AstCMethodHard* const resultp = new AstCMethodHard{flp, prevp(), "neq", currp()};
+                AstCMethodHard* const resultp
+                    = new AstCMethodHard{flp, prevp(), VCMethod::UNPACKED_NEQ, currp()};
                 resultp->dtypeSetBit();
                 return {resultp, true};
             }
@@ -176,13 +178,15 @@ private:
             {
                 // Clear 'fired' state when done
                 // No need to check if the event was fired, we need the flag clear regardless
-                AstCMethodHard* const clearp = new AstCMethodHard{flp, currp(), "clearFired"};
+                AstCMethodHard* const clearp
+                    = new AstCMethodHard{flp, currp(), VCMethod::EVENT_CLEAR_FIRED};
                 clearp->dtypeSetVoid();
                 m_results.m_postUpdates.push_back(clearp->makeStmt());
             }
 
             // Get 'fired' state
-            AstCMethodHard* const callp = new AstCMethodHard{flp, currp(), "isFired"};
+            AstCMethodHard* const callp
+                = new AstCMethodHard{flp, currp(), VCMethod::EVENT_IS_FIRED};
             callp->dtypeSetBit();
             return {callp, false};
         }
