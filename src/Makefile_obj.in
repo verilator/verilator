@@ -333,6 +333,7 @@ VLCOV_OBJS = \
   VlcMain.o \
 
 NON_STANDALONE_HEADERS = \
+  V3AstAttr.h \
   V3AstInlines.h \
   V3AstNodeDType.h \
   V3AstNodeExpr.h \
