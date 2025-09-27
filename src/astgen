@@ -1027,6 +1027,16 @@ def write_ast_impl(filename):
 
                 emitBlock("}}\n")
 
+            emitBlock("void Ast{t}::foreachLink(std::function<void(" +
+                      "AstNode** linkpp, const char* namep)> f) {{\n",
+                      t=node.name)
+            if node.superClass.name != 'Node':
+                emitBlock("    Ast{base}::foreachLink(f);\n", base=node.superClass.name)
+            for ptr in node.ptrs:
+                emitBlock("    f(reinterpret_cast<AstNode**>(&m_{name}), \"{name}\");",
+                          name=ptr['name'])
+            emitBlock("}}\n")
+
             emitBlock("void Ast{t}::dumpJsonGen(std::ostream& str) const {{\n", t=node.name)
             if node.superClass.name != 'Node':
                 emitBlock("    Ast{base}::dumpJson(str);\n", base=node.superClass.name)
@@ -1088,6 +1098,7 @@ def write_ast_macros(filename):
             Ast{t}* clonep() const {{ return static_cast<Ast{t}*>(AstNode::clonep()); }}
             Ast{t}* addNext(Ast{t}* nodep) {{ return static_cast<Ast{t}*>(AstNode::addNext(this, nodep)); }}
             const char* brokenGen() const override;
+            void foreachLink(std::function<void(AstNode** linkpp, const char* namep)> f) override;
             bool wouldBreakGen(const AstNode* const oldp, const AstNode* const newp) const override;
             void dumpTreeJsonOpGen(std::ostream& str, const string& indent) const override;
             void dumpJsonGen(std::ostream& str) const;

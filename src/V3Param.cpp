@@ -1110,7 +1110,7 @@ class ParamProcessor final {
             UINFO(8, "     Done with " << modInfop->m_modp);
             newModp = modInfop->m_modp;
         }
-        if (defaultsResolved) { srcModp->user4p(newModp); }
+        if (defaultsResolved) srcModp->user4p(newModp);
 
         for (auto* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
@@ -1843,12 +1843,15 @@ public:
         resortNetlistModules(netlistp);
 
         // Remove defaulted classes
+        // Unlike modules, which we keep around and mark dead() for later V3Dead
+        std::unordered_set<AstClass*> removedClassps;
         for (AstClass* const classp : m_state.m_paramClasses) {
             if (!classp->user3p()) {
                 // If there was an error, don't remove classes as they might
                 // have remained referenced, and  will crash in V3Broken or
                 // other locations. This is fine, we will abort imminently.
                 if (V3Error::errorCount()) continue;
+                removedClassps.emplace(classp);
                 VL_DO_DANGLING(pushDeletep(classp->unlinkFrBack()), classp);
             } else {
                 // Referenced. classp became a specialized class with the default
@@ -1856,6 +1859,18 @@ public:
                 classp->hasGParam(false);
             }
         }
+        // Remove references to defaulted classes
+        // Reuse user3 to mark all nodes being deleted
+        AstNode::user3ClearTree();
+        for (AstClass* classp : removedClassps) {
+            classp->foreach([](AstNode* const nodep) { nodep->user3(true); });
+        }
+        // Set all links pointing to a user3 (deleting) node as null
+        netlistp->foreach([](AstNode* const nodep) {
+            nodep->foreachLink([](AstNode** const linkpp, const char*) {
+                if (*linkpp && (*linkpp)->user3()) *linkpp = nullptr;
+            });
+        });
     }
     ~ParamTop() = default;
     VL_UNCOPYABLE(ParamTop);

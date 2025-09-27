@@ -2165,6 +2165,9 @@ public:
     bool brokeExists() const { return V3Broken::isLinkable(this); }
     bool brokeExistsAbove() const { return brokeExists() && (m_brokenState >> 7); }
 
+    // Perform a function on every link in a node
+    virtual void foreachLink(std::function<void(AstNode** linkpp, const char* namep)> f) = 0;
+
 #ifdef VL_LEAK_CHECKS
     static void* operator new(size_t size);
     static void operator delete(void* obj, size_t size);
