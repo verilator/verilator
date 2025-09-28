@@ -225,9 +225,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             AstArg* const argp = VN_CAST(pinp, Arg);
             //AstNodeExpr* exprp = argp->exprp();
             AstWith* const withp = VN_CAST(pinp, With);
-            if (withp == nodep) {
-                instdwith = true;
-            }
+            if (withp == nodep) { instdwith = true; }
         }
         iterateChildrenConst(nodep);
         instdwith = false;
@@ -485,11 +483,12 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 if (VN_IS(pinp, With)) continue;
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 AstNodeExpr* exprp = argp->exprp();
-                if( VN_IS(exprp, NodeVarRef) && nodep->varp() == VN_CAST(exprp, NodeVarRef)->varp()){
+                if (VN_IS(exprp, NodeVarRef)
+                    && nodep->varp() == VN_CAST(exprp, NodeVarRef)->varp()) {
                     nodep->user1(true);
                 }
 
-                else{
+                else {
                     // nodep->user1(false);
                 }
             }
@@ -503,17 +502,19 @@ class RandomizeMarkVisitor final : public VNVisitor {
         // of type AstLambdaArgRef. They are randomized too.
         const bool randObject = nodep->fromp()->user1() || VN_IS(nodep->fromp(), LambdaArgRef);
         // nodep->user1((randObject && nodep->varp()->rand().isRandomizable()));
-        nodep->user1((randObject && nodep->varp()->rand().isRandomizable()
-                      && !(instdwith && stdrandcall)));  //        nodep->user1((randObject &&
-                                                         //        nodep->varp()->rand().isRandomizable())
-                                                         //        || (instdwith && stdrandcall));
+        nodep->user1(
+            (randObject && nodep->varp()->rand().isRandomizable()
+             && !(instdwith && stdrandcall)));  //        nodep->user1((randObject &&
+                                                //        nodep->varp()->rand().isRandomizable())
+                                                //        || (instdwith && stdrandcall));
         nodep->user2p(m_modp);
         if (instdwith && stdrandcall) {
             for (AstNode* pinp = stdrandcall->pinsp(); pinp; pinp = pinp->nextp()) {
                 if (VN_IS(pinp, With)) continue;
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 AstNodeExpr* exprp = argp->exprp();
-                if( VN_IS(exprp, MemberSel) && nodep->varp()== VN_CAST(exprp, MemberSel)->varp()){
+                if (VN_IS(exprp, MemberSel)
+                    && nodep->varp() == VN_CAST(exprp, MemberSel)->varp()) {
 
                     nodep->user1(true);
                     if (VN_IS(nodep->fromp(), VarRef))
@@ -523,7 +524,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                                     /// membersel req as in vARREF visitor checks for it.
                 }
 
-                else{
+                else {
                     // nodep->user1(false);
                 }
             }
