@@ -219,7 +219,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
     }
     void visit(AstWith* nodep) override {
 
-        cout << " Whattttt " << stdrandcall << endl;
         // stdrandcall->dumpTreeJson(cout);
         for (AstNode* pinp = stdrandcall ? stdrandcall->pinsp() : nullptr; pinp;
              pinp = pinp->nextp()) {
@@ -227,7 +226,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
             //AstNodeExpr* exprp = argp->exprp();
             AstWith* const withp = VN_CAST(pinp, With);
             if (withp == nodep) {
-                cout << "YAYYYY same " << endl;
                 instdwith = true;
             }
         }
@@ -394,7 +392,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
             markMembers(classp);
         }
         if (nodep->classOrPackagep()->name() == "std") {
-            cout << "yesssss" << endl;
             stdrandcall = nullptr;
             for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
                 AstArg* const argp = VN_CAST(pinp, Arg);
@@ -412,7 +409,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
                         randVarp = varrefp->varp();
                         exprp = nullptr;
                         varrefp->user1(true);
-                        cout << " QUACKKKKKKK    " << varrefp << endl;
                     }
                     UASSERT_OBJ(randVarp, nodep, "No rand variable found");
                     AstNode* backp = randVarp;
@@ -489,16 +485,11 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 if (VN_IS(pinp, With)) continue;
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 AstNodeExpr* exprp = argp->exprp();
-                if (VN_IS(exprp, NodeVarRef)
-                    && nodep->varp() == VN_CAST(exprp, NodeVarRef)->varp()) {
-                    cout << " LLLLLOOOOOOLLLLLLLOOOOOOLLLLL OKKKK" << nodep->varp()->name()
-                         << endl;
-
+                if( VN_IS(exprp, NodeVarRef) && nodep->varp() == VN_CAST(exprp, NodeVarRef)->varp()){
                     nodep->user1(true);
                 }
 
-                else {
-                    cout << " NEEEEIIIIINNNNN" << endl;
+                else{
                     // nodep->user1(false);
                 }
             }
@@ -522,9 +513,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 if (VN_IS(pinp, With)) continue;
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 AstNodeExpr* exprp = argp->exprp();
-                if (VN_IS(exprp, MemberSel)
-                    && nodep->varp() == VN_CAST(exprp, MemberSel)->varp()) {
-                    cout << " LLLLLOOOOOOLLLLLLLOOOOOOLLLLL" << endl;
+                if( VN_IS(exprp, MemberSel) && nodep->varp()== VN_CAST(exprp, MemberSel)->varp()){
 
                     nodep->user1(true);
                     if (VN_IS(nodep->fromp(), VarRef))
@@ -534,8 +523,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                                     /// membersel req as in vARREF visitor checks for it.
                 }
 
-                else {
-                    cout << " NEEEEIIIIINNNNN" << endl;
+                else{
                     // nodep->user1(false);
                 }
             }
@@ -831,7 +819,6 @@ class ConstraintExprVisitor final : public VNVisitor {
         iterate(sump);
     }
     void visit(AstNodeBiop* nodep) override {
-        cout << endl << " HAHAH I AMHERE" << nodep->user1() << endl;
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
     }
@@ -989,7 +976,6 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstMemberSel* nodep) override {
         if (nodep->user1()) {
             // nodep->v3warn(CONSTRAINTIGN, "Global constraints ignored (unsupported)");
-            cout << " WOWOWOWOWOWWOWOWOWOWO" << endl;
             iterateChildren(nodep);
             nodep->replaceWith(nodep->fromp()->unlinkFrBack());
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -2383,7 +2369,6 @@ class RandomizeVisitor final : public VNVisitor {
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 AstWith* const withp = VN_CAST(pinp, With);
                 if (withp) {
-                    cout << "OH YEAH" << endl;
                     // Detach the expression and prepare variable copies
                     captured = new CaptureVisitor{withp->exprp(), m_modp, nullptr};
                     // Add function arguments
@@ -2402,7 +2387,6 @@ class RandomizeVisitor final : public VNVisitor {
                         // setupAllTaskp, nullptr}; randomizeFuncp->addStmtsp(callp->makeStmt());
                     }
                     AstNode* const capturedTreep = withp->exprp()->unlinkFrBackWithNext();
-                    capturedTreep->dumpTreeJson(cout);
                     randomizeFuncp->addStmtsp(capturedTreep);
                     {
                         ConstraintExprVisitor{m_memberMap, capturedTreep, randomizeFuncp, stdrand,
@@ -2452,11 +2436,6 @@ class RandomizeVisitor final : public VNVisitor {
             if (VN_IS(m_modp, Class)) nodep->classOrPackagep(m_modp);
             if (nodep->pinsp()) pushDeletep(nodep->pinsp()->unlinkFrBackWithNext());
             if (captured) nodep->addPinsp(captured->getArgs());
-            if (captured) {
-                cout << "What ARGS HUHHHHHH " << captured->getArgs() << endl;
-                captured->getArgs()->dumpTreeJson(cout);
-            }
-
             return;
         }
         handleRandomizeArgs(nodep);
