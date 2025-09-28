@@ -151,7 +151,7 @@ VTimescale::VTimescale(const string& value, bool& badr)
 // Parse "--hierarchical-block orig_name,mangled_name,param0_name,param0_value,... " option.
 // The format of value is as same as -G option. (can be string literal surrounded by ")
 V3HierarchicalBlockOption::V3HierarchicalBlockOption(const string& opts) {
-    V3StringList vals;
+    VStringList vals;
     bool inStr = false;
     string cur;
     static const string hierBlock("--hierarchical-block");

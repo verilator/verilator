@@ -24,11 +24,15 @@
 
 #include <iomanip>
 #include <map>
+#include <set>
 #include <sstream>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
+
+using VStringList = std::vector<std::string>;
+using VStringSet = std::set<std::string>;
 
 //######################################################################
 // Global string-related functions

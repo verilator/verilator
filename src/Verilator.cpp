@@ -797,7 +797,7 @@ static bool verilate(const string& argString) {
 }
 
 static string buildMakeCmd(const string& makefile, const string& target) {
-    const V3StringList& makeFlags = v3Global.opt.makeFlags();
+    const VStringList& makeFlags = v3Global.opt.makeFlags();
     const int jobs = v3Global.opt.buildJobs();
     UASSERT(jobs >= 0, "-j option parser in V3Options.cpp filters out negative value");
 

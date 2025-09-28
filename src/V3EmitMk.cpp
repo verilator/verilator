@@ -686,20 +686,20 @@ public:
             of.puts("\t-DVM_SOLVER_DEFAULT='\"" + V3OutFormatter::quoteNameControls(solver)
                     + "\"' \\\n");
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
-        const V3StringList& cFlags = v3Global.opt.cFlags();
+        const VStringList& cFlags = v3Global.opt.cFlags();
         for (const string& i : cFlags) of.puts("  " + i + " \\\n");
         of.puts("\n");
 
         of.puts("# User LDLIBS (from -LDFLAGS on Verilator command line)\n");
         of.puts("VM_USER_LDLIBS = \\\n");
-        const V3StringList& ldLibs = v3Global.opt.ldLibs();
+        const VStringList& ldLibs = v3Global.opt.ldLibs();
         for (const string& i : ldLibs) of.puts("  " + i + " \\\n");
         of.puts("\n");
 
-        V3StringSet dirs;
+        VStringSet dirs;
         of.puts("# User .cpp files (from .cpp's on Verilator command line)\n");
         of.puts("VM_USER_CLASSES = \\\n");
-        const V3StringSet& cppFiles = v3Global.opt.cppFiles();
+        const VStringSet& cppFiles = v3Global.opt.cppFiles();
         for (const auto& cppfile : cppFiles) {
             of.puts("  " + V3Os::filenameNonDirExt(cppfile) + " \\\n");
             const string dir

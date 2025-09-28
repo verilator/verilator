@@ -158,8 +158,8 @@ V3HierBlock::StrGParams V3HierBlock::stringifyParams(const V3HierBlockParams::GP
     return strParams;
 }
 
-V3StringList V3HierBlock::commandArgs(bool forCMake) const {
-    V3StringList opts;
+VStringList V3HierBlock::commandArgs(bool forCMake) const {
+    VStringList opts;
     const string prefix = hierPrefix();
     if (!forCMake) {
         opts.push_back(" --prefix " + prefix);
@@ -200,8 +200,8 @@ V3StringList V3HierBlock::commandArgs(bool forCMake) const {
     return opts;
 }
 
-V3StringList V3HierBlock::hierBlockArgs() const {
-    V3StringList opts;
+VStringList V3HierBlock::hierBlockArgs() const {
+    VStringList opts;
     const StrGParams gparamsStr = stringifyParams(params().gparams(), false);
     opts.push_back("--hierarchical-block ");
     string s = modp()->origName();  // origName
@@ -260,7 +260,7 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
         *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
     }
     V3HierWriteCommonInputs(this, of.get(), forCMake);
-    const V3StringList& commandOpts = commandArgs(false);
+    const VStringList& commandOpts = commandArgs(false);
     for (const string& opt : commandOpts) *of << opt << "\n";
     *of << hierBlockArgs().front() << "\n";
     for (const V3HierBlock* const hierblockp : m_children) {
@@ -471,7 +471,7 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
     }
     V3HierWriteCommonInputs(nullptr, of.get(), forCMake);
     if (!forCMake) {
-        const V3StringSet& cppFiles = v3Global.opt.cppFiles();
+        const VStringSet& cppFiles = v3Global.opt.cppFiles();
         for (const string& i : cppFiles) *of << i << "\n";
         *of << "--top-module " << v3Global.rootp()->topModulep()->name() << "\n";
         *of << "--prefix " << v3Global.opt.prefix() << "\n";

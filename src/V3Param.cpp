@@ -265,7 +265,7 @@ class ParamProcessor final {
 
     // All module names that are loaded from source code
     // Generated modules by this visitor is not included
-    V3StringSet m_allModuleNames;
+    VStringSet m_allModuleNames;
 
     CloneMap m_originalParams;  // Map between parameters of copied parameteized classes and their
                                 // original nodes

@@ -102,8 +102,8 @@ public:
     const AstNodeModule* modp() const { return m_modp; }
 
     // For emitting Makefile and CMakeLists.txt
-    V3StringList commandArgs(bool forCMake) const VL_MT_DISABLED;
-    V3StringList hierBlockArgs() const VL_MT_DISABLED;
+    VStringList commandArgs(bool forCMake) const VL_MT_DISABLED;
+    VStringList hierBlockArgs() const VL_MT_DISABLED;
     string hierPrefix() const VL_MT_DISABLED;
     string hierSomeFilename(bool withDir, const char* prefix,
                             const char* suffix) const VL_MT_DISABLED;

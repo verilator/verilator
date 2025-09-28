@@ -186,9 +186,6 @@ constexpr bool operator==(const TraceFormat& lhs, const TraceFormat& rhs) {
 constexpr bool operator==(const TraceFormat& lhs, TraceFormat::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(TraceFormat::en lhs, const TraceFormat& rhs) { return lhs == rhs.m_e; }
 
-using V3StringList = std::vector<std::string>;
-using V3StringSet = std::set<std::string>;
-
 // ######################################################################
 
 // Information given by --hierarchical-block option
@@ -227,23 +224,23 @@ private:
     V3OptionsImp* m_impp;  // Slow hidden options
 
     // clang-format off
-    V3StringSet m_cppFiles;     // argument: C++ files to link against
-    V3StringList m_cFlags;      // argument: user CFLAGS
-    V3StringList m_ldLibs;      // argument: user LDFLAGS
-    V3StringList m_makeFlags;   // argument: user MAKEFLAGS
-    V3StringSet m_compilerIncludes; // argument: user --compiler-include
-    V3StringSet m_futures;      // argument: -Wfuture- list
-    V3StringSet m_future0s;     // argument: -future list
-    V3StringSet m_future1s;     // argument: -future1 list
+    VStringSet m_cppFiles;     // argument: C++ files to link against
+    VStringList m_cFlags;      // argument: user CFLAGS
+    VStringList m_ldLibs;      // argument: user LDFLAGS
+    VStringList m_makeFlags;   // argument: user MAKEFLAGS
+    VStringSet m_compilerIncludes; // argument: user --compiler-include
+    VStringSet m_futures;      // argument: -Wfuture- list
+    VStringSet m_future0s;     // argument: -future list
+    VStringSet m_future1s;     // argument: -future1 list
     VFileLibSet m_libraryFiles; // argument: Verilog -v files
     VFileLibList m_vFiles;      // argument: Verilog files to read
     VFileLibSet m_vltFiles;     // argument: Verilator config files to read
-    V3StringList m_forceIncs;   // argument: -FI
+    VStringList m_forceIncs;   // argument: -FI
     DebugLevelMap m_debugLevel; // argument: --debugi-<srcfile/tag> <level>
     DebugLevelMap m_dumpLevel;  // argument: --dumpi-<srcfile/tag> <level>
     std::map<const string, string> m_parameters;  // Parameters
     std::map<const string, V3HierarchicalBlockOption> m_hierBlocks;  // main switch: --hierarchical-block
-    V3StringSet m_fDfgPeepholeDisabled; // argument: -f[no-]dfg-peephole-<name>
+    VStringSet m_fDfgPeepholeDisabled; // argument: -f[no-]dfg-peephole-<name>
 
     bool m_preprocOnly = false;     // main switch: -E
     bool m_preprocResolve = false;  // main switch: --preproc-resolve
@@ -702,15 +699,15 @@ public:
     string xInitial() const { return m_xInitial; }
     string xmlOutput() const { return m_xmlOutput; }
 
-    const V3StringSet& cppFiles() const { return m_cppFiles; }
-    const V3StringList& cFlags() const { return m_cFlags; }
-    const V3StringSet& compilerIncludes() const { return m_compilerIncludes; }
-    const V3StringList& ldLibs() const { return m_ldLibs; }
-    const V3StringList& makeFlags() const { return m_makeFlags; }
+    const VStringSet& cppFiles() const { return m_cppFiles; }
+    const VStringList& cFlags() const { return m_cFlags; }
+    const VStringSet& compilerIncludes() const { return m_compilerIncludes; }
+    const VStringList& ldLibs() const { return m_ldLibs; }
+    const VStringList& makeFlags() const { return m_makeFlags; }
     const VFileLibSet& libraryFiles() const { return m_libraryFiles; }
     const VFileLibList& vFiles() const { return m_vFiles; }
     const VFileLibSet& vltFiles() const { return m_vltFiles; }
-    const V3StringList& forceIncs() const { return m_forceIncs; }
+    const VStringList& forceIncs() const { return m_forceIncs; }
 
     bool hasParameter(const string& name);
     string parameter(const string& name);
