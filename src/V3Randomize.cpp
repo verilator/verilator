@@ -524,7 +524,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
             else if (m_classp->user1() == IS_RANDOMIZED_INLINE)
                 m_classp->user1(IS_RANDOMIZED_INLINE_WITH_GLOBAL_CONSTRAINTS);
             // Mark the object variable as participating in global constraints
-            if(VN_IS(nodep->fromp(), VarRef))VN_AS(nodep->fromp(), VarRef)->varp()->setGlobalConstrained(true);
+            if (VN_IS(nodep->fromp(), VarRef))
+                VN_AS(nodep->fromp(), VarRef)->varp()->setGlobalConstrained(true);
 
             // Global constraint processing algorithm:
             // 1. Detect globally constrained object variables in randomized classes
@@ -751,16 +752,15 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         AstClass* withinclass = nullptr;
         AstNode* fromp = nodep->backp();
-        std::string strr = nodep->name()+"."+fromp->name();
-        while(VN_IS(fromp->backp(), MemberSel)){
+        std::string strr = nodep->name() + "." + fromp->name();
+        while (VN_IS(fromp->backp(), MemberSel)) {
             fromp = fromp->backp();
-            strr = strr+"."+fromp->name();
+            strr = strr + "." + fromp->name();
         }
-        AstMemberSel* membersel = VN_IS(fromp, MemberSel)
-                                      ? VN_AS(fromp, MemberSel)->cloneTree(false)
-                                      : nullptr;
+        AstMemberSel* membersel
+            = VN_IS(fromp, MemberSel) ? VN_AS(fromp, MemberSel)->cloneTree(false) : nullptr;
 
-        cout<<" IN ASTVARREF "<< "                 "<< strr<<endl;
+        cout << " IN ASTVARREF " << "                 " << strr << endl;
 
         // AstMemberSel* membersel = VN_IS(nodep->backp(), MemberSel)
         //                               ? VN_AS(nodep->backp(), MemberSel)->cloneTree(false)
@@ -772,9 +772,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (!randMode.usesMode && editFormat(nodep)) return;
 
         // In SMT just variable name, but we also ensure write_var for the variable
-        const std::string smtName = membersel
-                                        ? strr//membersel->fromp()->name() + "." + membersel->name()
-                                        : nodep->name();  // Can be anything unique
+        const std::string smtName
+            = membersel ? strr  //membersel->fromp()->name() + "." + membersel->name()
+                        : nodep->name();  // Can be anything unique
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
         AstNodeExpr* exprp = new AstSFormatF{nodep->fileline(), smtName, false, nullptr};
@@ -792,8 +792,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         relinker.relink(exprp);
 
-        if (!varp->user3()
-            || (membersel && nodep->varp()->isGlobalConstrained())) {
+        if (!varp->user3() || (membersel && nodep->varp()->isGlobalConstrained())) {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             AstCMethodHard* const methodp = new AstCMethodHard{
                 varp->fileline(),
@@ -1036,12 +1035,15 @@ class ConstraintExprVisitor final : public VNVisitor {
         // if (nodep->user1()) {
         //     nodep->v3warn(CONSTRAINTIGN, "Global constraints ignored (unsupported)");
         // }
-        cout<<"HAHAHAHAHAHHAHA"<<endl;
+        cout << "HAHAHAHAHAHHAHA" << endl;
         nodep->dumpTreeJson(cout);
-        cout<<endl<<endl;
+        cout << endl << endl;
         if (nodep->varp()->rand().isRandomizable()) {
             if (nodep->user2p()
-                == VN_AS(VN_IS(nodep->fromp(), VarRef)?VN_AS(nodep->fromp(), VarRef)->dtypep():VN_AS(nodep->fromp(), MemberSel)->dtypep(), ClassRefDType)
+                == VN_AS(VN_IS(nodep->fromp(), VarRef)
+                             ? VN_AS(nodep->fromp(), VarRef)->dtypep()
+                             : VN_AS(nodep->fromp(), MemberSel)->dtypep(),
+                         ClassRefDType)
                        ->classp())  // contraint is from inside the class or outside( with class
                                     // var or outside var)
             {
@@ -1052,10 +1054,13 @@ class ConstraintExprVisitor final : public VNVisitor {
                 return;
             }
             AstNode* fromp = nodep->fromp();
-            while(!VN_IS(fromp, NodeVarRef)){
-                fromp = VN_AS(fromp,MemberSel)->fromp();
-            }
-            if (VN_IS(nodep->fromp(), VarRef)?VN_AS(nodep->fromp(), VarRef)->varp()->isGlobalConstrained():VN_AS(nodep->fromp(), MemberSel)->varp()->isGlobalConstrained()) {// if (VN_AS(nodep->fromp(), VarRef)->varp()->isGlobalConstrained()) {
+            while (!VN_IS(fromp, NodeVarRef)) { fromp = VN_AS(fromp, MemberSel)->fromp(); }
+            if (VN_IS(nodep->fromp(), VarRef)
+                    ? VN_AS(nodep->fromp(), VarRef)->varp()->isGlobalConstrained()
+                    : VN_AS(nodep->fromp(), MemberSel)
+                          ->varp()
+                          ->isGlobalConstrained()) {  // if (VN_AS(nodep->fromp(),
+                                                      // VarRef)->varp()->isGlobalConstrained()) {
                 iterateChildren(nodep);
                 nodep->replaceWith(nodep->fromp()->unlinkFrBack());
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
