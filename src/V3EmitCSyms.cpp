@@ -416,7 +416,8 @@ void EmitCSyms::emitSymHdr() {
     ofp()->putsIntTopInclude();
     puts("#include \"verilated.h\"\n");
     if (v3Global.needTraceDumper()) {
-        puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
+        for (const string& base : v3Global.opt.traceSourceLangs())
+            puts("#include \"" + base + ".h\"\n");
     }
     if (v3Global.opt.usesProfiler()) puts("#include \"verilated_profiler.h\"\n");
 
@@ -747,7 +748,7 @@ void EmitCSyms::emitSymImp() {
         puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
         puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
         puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
-        puts("std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
+        puts("const std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
         puts("__Vm_dumperp->open(dumpfile.c_str());\n");
         puts("__Vm_dumping = true;\n");
         puts("}\n");

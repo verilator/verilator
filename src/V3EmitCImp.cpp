@@ -664,7 +664,8 @@ class EmitCTrace final : EmitCFunc {
              "IPTION: Verilator output: Tracing implementation internals\n");
 
         // Includes
-        puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
+        for (const string& base : v3Global.opt.traceSourceLangs())
+            puts("#include \"" + base + ".h\"\n");
         puts("#include \"" + EmitCUtil::symClassName() + ".h\"\n");
         puts("\n");
     }
@@ -693,7 +694,8 @@ class EmitCTrace final : EmitCFunc {
                         "IPTION: Verilator output: Tracing declarations\n");
 
         // Includes
-        typesFp()->puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
+        for (const string& base : v3Global.opt.traceSourceLangs())
+            typesFp()->puts("#include \"" + base + ".h\"\n");
         typesFp()->puts("\n");
 
         typesFp()->puts("\nvoid " + EmitCUtil::prefixNameProtect(m_modp) + "__"
@@ -860,7 +862,7 @@ class EmitCTrace final : EmitCFunc {
 
     int emitTraceDeclDType(AstNodeDType* nodep) {
         // Return enum number or -1 for none
-        if (v3Global.opt.traceFormat().fst()) {
+        if (v3Global.opt.traceEnabledFst()) {
             // Skip over refs-to-refs, but stop before final ref so can get data type name
             // Alternatively back in V3Width we could push enum names from upper typedefs
             if (AstEnumDType* const enump = VN_CAST(nodep->skipRefToEnump(), EnumDType)) {

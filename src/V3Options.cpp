@@ -477,6 +477,41 @@ void V3Options::decorations(FileLine* fl, const string& arg) {  // --decorations
     }
 }
 
+std::vector<std::string> V3Options::traceClassBases() const VL_MT_SAFE {
+    std::vector<std::string> result;
+    if (traceEnabledFst()) result.emplace_back("VerilatedFst");
+    if (traceEnabledSaif()) result.emplace_back("VerilatedSaif");
+    if (traceEnabledVcd()) result.emplace_back("VerilatedVcd");
+    return result;
+}
+std::vector<std::string> V3Options::traceClassLangs() const VL_MT_SAFE {
+    std::vector<std::string> result;
+    for (auto& cbase : traceClassBases()) result.emplace_back(cbase + (systemC() ? "Sc" : "C"));
+    return result;
+}
+std::vector<std::string> V3Options::traceSourceBases() const VL_MT_SAFE {
+    std::vector<std::string> result;
+    if (traceEnabledFst()) result.emplace_back("verilated_fst");
+    if (traceEnabledSaif()) result.emplace_back("verilated_saif");
+    if (traceEnabledVcd()) result.emplace_back("verilated_vcd");
+    return result;
+}
+std::vector<std::string> V3Options::traceSourceLangs() const VL_MT_SAFE {
+    std::vector<std::string> result = traceSourceBases();
+    for (std::string& str : result) str += systemC() ? "_sc"s : "_c"s;
+    return result;
+}
+std::string V3Options::traceClassBase() const VL_MT_SAFE {
+    // Deprecated - Needs to be fixed to support multiple trace, issue #5813
+    UASSERT(!traceClassBases().empty(), "Call traceClassBase only when trace() enabled");
+    return traceClassBases().front();
+}
+std::string V3Options::traceClassLang() const VL_MT_SAFE {
+    // Deprecated - Needs to be fixed to support multiple trace, issue #5813
+    UASSERT(!traceClassBases().empty(), "Call traceClassLang only when trace() enabled");
+    return traceClassLangs().front();
+}
+
 //######################################################################
 // File searching
 
@@ -903,6 +938,14 @@ void V3Options::notify() VL_MT_DISABLED {
         m_main = false;
     }
 
+    if (trace() && !traceEnabledFst() && !traceEnabledSaif() && !traceEnabledVcd()) {
+        m_traceEnabledVcd = true;  // No format, with --trace means wanted --trace-vcd
+    }
+    if (traceEnabledFst() || traceEnabledSaif() || traceEnabledVcd()) m_trace = true;
+    const int ntraces = traceEnabledFst() + traceEnabledSaif() + traceEnabledVcd();
+    if (ntraces > 1)  // Issue #5813
+        cmdfl->v3error("Only one of --trace-fst, --trace-saif or --trace--vcd may be used");
+
     if (protectIds()) {
         if (allPublic()) {
             // We always call protect() on names, we don't check if public or not
@@ -940,7 +983,7 @@ void V3Options::notify() VL_MT_DISABLED {
 
     if (trace()) {
         // With --trace-vcd, --trace-threads is ignored
-        if (traceFormat().vcd()) m_traceThreads = 1;
+        if (traceEnabledVcd()) m_traceThreads = 1;
     }
 
     UASSERT(!(useTraceParallel() && useTraceOffload()),
@@ -1671,20 +1714,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-top", Set, &m_topModule);
     DECL_OPTION("-top-module", Set, &m_topModule);
     DECL_OPTION("-trace", OnOff, &m_trace);
-    DECL_OPTION("-trace-saif", CbCall, [this]() {
-        m_trace = true;
-        m_traceFormat = TraceFormat::SAIF;
-    });
+    DECL_OPTION("-trace-saif", CbCall, [this]() { m_traceEnabledSaif = true; });
     DECL_OPTION("-trace-coverage", OnOff, &m_traceCoverage);
     DECL_OPTION("-trace-depth", Set, &m_traceDepth);
     DECL_OPTION("-trace-fst", CbCall, [this]() {
-        m_trace = true;
-        m_traceFormat = TraceFormat::FST;
+        m_traceEnabledFst = true;
         addLdLibs("-lz");
     });
     DECL_OPTION("-trace-fst-thread", CbCall, [this, fl]() {
-        m_trace = true;
-        m_traceFormat = TraceFormat::FST;
+        m_traceEnabledFst = true;
         addLdLibs("-lz");
         fl->v3warn(DEPRECATED, "Option --trace-fst-thread is deprecated. "
                                "Use --trace-fst with --trace-threads > 0.");
@@ -1701,10 +1739,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-no-trace-top", Set, &m_noTraceTop);
     DECL_OPTION("-trace-underscore", OnOff, &m_traceUnderscore);
-    DECL_OPTION("-trace-vcd", CbCall, [this]() {
-        m_trace = true;
-        m_traceFormat = TraceFormat::VCD;
-    });
+    DECL_OPTION("-trace-vcd", CbCall, [this]() { m_traceEnabledVcd = true; });
 
     DECL_OPTION("-U", CbPartialMatch, &V3PreShell::undef);
     DECL_OPTION("-underline-zero", OnOff, &m_underlineZero);  // Deprecated
@@ -2126,8 +2161,6 @@ void V3Options::showVersion(bool verbose) {
 
 V3Options::V3Options() {
     m_impp = new V3OptionsImp;
-
-    m_traceFormat = TraceFormat::VCD;
 
     m_makeDir = "obj_dir";
     m_unusedRegexp = "*unused*";

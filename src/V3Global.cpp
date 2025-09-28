@@ -226,7 +226,8 @@ std::vector<std::string> V3Global::verilatedCppFiles() {
     if (v3Global.opt.vpi()) result.emplace_back("verilated_vpi.cpp");
     if (v3Global.opt.savable()) result.emplace_back("verilated_save.cpp");
     if (v3Global.opt.coverage()) result.emplace_back("verilated_cov.cpp");
-    if (v3Global.opt.trace()) result.emplace_back(v3Global.opt.traceSourceBase() + "_c.cpp");
+    for (const string& base : v3Global.opt.traceSourceBases())
+        result.emplace_back(base + "_c.cpp");
     if (v3Global.usesProbDist()) result.emplace_back("verilated_probdist.cpp");
     if (v3Global.usesTiming()) result.emplace_back("verilated_timing.cpp");
     if (v3Global.useRandomizeMethods()) result.emplace_back("verilated_random.cpp");

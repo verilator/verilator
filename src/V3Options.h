@@ -159,35 +159,6 @@ inline std::ostream& operator<<(std::ostream& os, const VTimescale& rhs) {
 
 // ######################################################################
 
-class TraceFormat final {
-public:
-    enum en : uint8_t { VCD = 0, FST, SAIF } m_e;
-    // cppcheck-suppress noExplicitConstructor
-    constexpr TraceFormat(en _e = VCD)
-        : m_e{_e} {}
-    explicit TraceFormat(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    constexpr operator en() const { return m_e; }
-    bool fst() const { return m_e == FST; }
-    bool saif() const { return m_e == SAIF; }
-    bool vcd() const { return m_e == VCD; }
-    string classBase() const VL_MT_SAFE {
-        static const char* const names[] = {"VerilatedVcd", "VerilatedFst", "VerilatedSaif"};
-        return names[m_e];
-    }
-    string sourceName() const VL_MT_SAFE {
-        static const char* const names[] = {"verilated_vcd", "verilated_fst", "verilated_saif"};
-        return names[m_e];
-    }
-};
-constexpr bool operator==(const TraceFormat& lhs, const TraceFormat& rhs) {
-    return lhs.m_e == rhs.m_e;
-}
-constexpr bool operator==(const TraceFormat& lhs, TraceFormat::en rhs) { return lhs.m_e == rhs; }
-constexpr bool operator==(TraceFormat::en lhs, const TraceFormat& rhs) { return lhs == rhs.m_e; }
-
-// ######################################################################
-
 // Information given by --hierarchical-block option
 class V3HierarchicalBlockOption final {
 public:
@@ -321,6 +292,9 @@ private:
     VOptionBool m_timing;           // main switch: --timing
     bool m_trace = false;           // main switch: --trace
     bool m_traceCoverage = false;   // main switch: --trace-coverage
+    bool m_traceEnabledFst = false;  // main switch: --trace-fst
+    bool m_traceEnabledSaif = false;  // main switch: --trace-saif
+    bool m_traceEnabledVcd = false;  // main switch: --trace-vcd
     bool m_traceParams = true;      // main switch: --trace-params
     bool m_traceStructs = false;    // main switch: --trace-structs
     bool m_noTraceTop = false;      // main switch: --no-trace-top
@@ -366,7 +340,6 @@ private:
     VTimescale  m_timeOverridePrec;  // main switch: --timescale-override
     VTimescale  m_timeOverrideUnit;  // main switch: --timescale-override
     int         m_traceDepth = 0;   // main switch: --trace-depth
-    TraceFormat m_traceFormat;  // main switch: --trace or --trace-fst
     int         m_traceMaxArray = 32;  // main switch: --trace-max-array
     int         m_traceMaxWidth = 256; // main switch: --trace-max-width
     int         m_traceThreads = 0; // main switch: --trace-threads
@@ -565,6 +538,9 @@ public:
     VOptionBool timing() const { return m_timing; }
     bool trace() const { return m_trace; }
     bool traceCoverage() const { return m_traceCoverage; }
+    bool traceEnabledFst() const { return m_traceEnabledFst; }
+    bool traceEnabledSaif() const { return m_traceEnabledSaif; }
+    bool traceEnabledVcd() const { return m_traceEnabledVcd; }
     bool traceParams() const { return m_traceParams; }
     bool traceStructs() const { return m_traceStructs; }
     bool traceUnderscore() const { return m_traceUnderscore; }
@@ -638,18 +614,14 @@ public:
     VTimescale timeComputePrec(const VTimescale& flag) const;
     VTimescale timeComputeUnit(const VTimescale& flag) const;
     int traceDepth() const { return m_traceDepth; }
-    TraceFormat traceFormat() const { return m_traceFormat; }
-    bool traceEnabledFst() const { return trace() && traceFormat().fst(); }
-    bool traceEnabledSaif() const { return trace() && traceFormat().saif(); }
-    bool traceEnabledVcd() const { return trace() && traceFormat().vcd(); }
     int traceMaxArray() const { return m_traceMaxArray; }
     int traceMaxWidth() const { return m_traceMaxWidth; }
     int traceThreads() const { return m_traceThreads; }
-    bool useTraceOffload() const { return trace() && traceFormat().fst() && traceThreads() > 1; }
+    bool useTraceOffload() const { return trace() && traceEnabledFst() && traceThreads() > 1; }
     bool useTraceParallel() const {
-        return trace() && traceFormat().vcd() && (threads() > 1 || hierChild() > 1);
+        return trace() && traceEnabledVcd() && (threads() > 1 || hierChild() > 1);
     }
-    bool useFstWriterThread() const { return traceThreads() && traceFormat().fst(); }
+    bool useFstWriterThread() const { return traceThreads() && traceEnabledFst(); }
     unsigned vmTraceThreads() const {
         return useTraceParallel() ? threads() : useTraceOffload() ? 1 : 0;
     }
@@ -762,12 +734,12 @@ public:
     bool fTaskifyAll() const { return m_fTaskifyAll; }
     bool fVarSplit() const { return m_fVarSplit; }
 
-    string traceClassBase() const VL_MT_SAFE { return m_traceFormat.classBase(); }
-    string traceClassLang() const { return m_traceFormat.classBase() + (systemC() ? "Sc" : "C"); }
-    string traceSourceBase() const { return m_traceFormat.sourceName(); }
-    string traceSourceLang() const VL_MT_SAFE {
-        return m_traceFormat.sourceName() + (systemC() ? "_sc" : "_c");
-    }
+    std::string traceClassBase() const VL_MT_SAFE;  // Deprecated
+    std::string traceClassLang() const VL_MT_SAFE;  // Deprecated
+    std::vector<std::string> traceClassBases() const VL_MT_SAFE;
+    std::vector<std::string> traceClassLangs() const VL_MT_SAFE;
+    std::vector<std::string> traceSourceBases() const VL_MT_SAFE;
+    std::vector<std::string> traceSourceLangs() const VL_MT_SAFE;
 
     bool hierarchical() const { return m_hierarchical; }
     int hierChild() const VL_MT_SAFE { return m_hierChild; }
