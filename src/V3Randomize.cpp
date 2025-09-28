@@ -480,26 +480,28 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
         if (nodep->varp()->lifetime().isStatic()) m_staticRefs.emplace(nodep);
 
-        if (nodep->varp()->rand().isRandomizable() && !(instdwith && stdrandcall)) // if (nodep->varp()->rand().isRandomizable() || (instdwith && stdrandcall))
+        if (nodep->varp()->rand().isRandomizable()
+            && !(instdwith && stdrandcall))  // if (nodep->varp()->rand().isRandomizable() ||
+                                             // (instdwith && stdrandcall))
             nodep->user1(true);
-        if(instdwith && stdrandcall){
-            for (AstNode* pinp =  stdrandcall->pinsp(); pinp; pinp = pinp->nextp()) {
-                if(VN_IS(pinp, With)) continue;
+        if (instdwith && stdrandcall) {
+            for (AstNode* pinp = stdrandcall->pinsp(); pinp; pinp = pinp->nextp()) {
+                if (VN_IS(pinp, With)) continue;
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 AstNodeExpr* exprp = argp->exprp();
-                if( VN_IS(exprp, NodeVarRef) && nodep->varp() == VN_CAST(exprp, NodeVarRef)->varp()){
-                    cout<<" LLLLLOOOOOOLLLLLLLOOOOOOLLLLL OKKKK"<< nodep->varp()->name()<<endl;
+                if (VN_IS(exprp, NodeVarRef)
+                    && nodep->varp() == VN_CAST(exprp, NodeVarRef)->varp()) {
+                    cout << " LLLLLOOOOOOLLLLLLLOOOOOOLLLLL OKKKK" << nodep->varp()->name()
+                         << endl;
 
                     nodep->user1(true);
                 }
 
-                else{
-                    cout<<" NEEEEIIIIINNNNN"<<endl;
+                else {
+                    cout << " NEEEEIIIIINNNNN" << endl;
                     // nodep->user1(false);
                 }
             }
-
-
         }
     }
     void visit(AstMemberSel* nodep) override {
@@ -510,22 +512,30 @@ class RandomizeMarkVisitor final : public VNVisitor {
         // of type AstLambdaArgRef. They are randomized too.
         const bool randObject = nodep->fromp()->user1() || VN_IS(nodep->fromp(), LambdaArgRef);
         // nodep->user1((randObject && nodep->varp()->rand().isRandomizable()));
-        nodep->user1((randObject && nodep->varp()->rand().isRandomizable() && !(instdwith && stdrandcall))); //        nodep->user1((randObject && nodep->varp()->rand().isRandomizable()) || (instdwith && stdrandcall));
+        nodep->user1((randObject && nodep->varp()->rand().isRandomizable()
+                      && !(instdwith && stdrandcall)));  //        nodep->user1((randObject &&
+                                                         //        nodep->varp()->rand().isRandomizable())
+                                                         //        || (instdwith && stdrandcall));
         nodep->user2p(m_modp);
-        if(instdwith && stdrandcall){
-            for (AstNode* pinp = stdrandcall->pinsp() ; pinp; pinp = pinp->nextp()) {
-                if(VN_IS(pinp, With)) continue;
+        if (instdwith && stdrandcall) {
+            for (AstNode* pinp = stdrandcall->pinsp(); pinp; pinp = pinp->nextp()) {
+                if (VN_IS(pinp, With)) continue;
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 AstNodeExpr* exprp = argp->exprp();
-                if( VN_IS(exprp, MemberSel) && nodep->varp()== VN_CAST(exprp, MemberSel)->varp()){
-                    cout<<" LLLLLOOOOOOLLLLLLLOOOOOOLLLLL"<<endl;
+                if (VN_IS(exprp, MemberSel)
+                    && nodep->varp() == VN_CAST(exprp, MemberSel)->varp()) {
+                    cout << " LLLLLOOOOOOLLLLLLLOOOOOOLLLLL" << endl;
 
                     nodep->user1(true);
-                    if(VN_IS(nodep->fromp(), VarRef)) nodep->fromp()->user1(true); /// need more smart way for this, It is neded when membersel is iterated in constraint visitor, var ref in the fromp of membersel req as in vARREF visitor checks for it. 
+                    if (VN_IS(nodep->fromp(), VarRef))
+                        nodep->fromp()->user1(
+                            true);  /// need more smart way for this, It is neded when membersel is
+                                    /// iterated in constraint visitor, var ref in the fromp of
+                                    /// membersel req as in vARREF visitor checks for it.
                 }
 
-                else{
-                    cout<<" NEEEEIIIIINNNNN"<<endl;
+                else {
+                    cout << " NEEEEIIIIINNNNN" << endl;
                     // nodep->user1(false);
                 }
             }
