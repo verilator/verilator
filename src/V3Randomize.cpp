@@ -220,6 +220,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     void visit(AstWith* nodep) override {
 
         cout << " Whattttt " << stdrandcall << endl;
+        // stdrandcall->dumpTreeJson(cout);
         for (AstNode* pinp = stdrandcall ? stdrandcall->pinsp() : nullptr; pinp;
              pinp = pinp->nextp()) {
             AstArg* const argp = VN_CAST(pinp, Arg);
@@ -479,8 +480,27 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
         if (nodep->varp()->lifetime().isStatic()) m_staticRefs.emplace(nodep);
 
-        if (nodep->varp()->rand().isRandomizable() || (instdwith && stdrandcall))
+        if (nodep->varp()->rand().isRandomizable() && !(instdwith && stdrandcall)) // if (nodep->varp()->rand().isRandomizable() || (instdwith && stdrandcall))
             nodep->user1(true);
+        if(instdwith && stdrandcall){
+            for (AstNode* pinp =  stdrandcall->pinsp(); pinp; pinp = pinp->nextp()) {
+                if(VN_IS(pinp, With)) continue;
+                AstArg* const argp = VN_CAST(pinp, Arg);
+                AstNodeExpr* exprp = argp->exprp();
+                if( VN_IS(exprp, NodeVarRef) && nodep->varp() == VN_CAST(exprp, NodeVarRef)->varp()){
+                    cout<<" LLLLLOOOOOOLLLLLLLOOOOOOLLLLL OKKKK"<< nodep->varp()->name()<<endl;
+
+                    nodep->user1(true);
+                }
+
+                else{
+                    cout<<" NEEEEIIIIINNNNN"<<endl;
+                    // nodep->user1(false);
+                }
+            }
+
+
+        }
     }
     void visit(AstMemberSel* nodep) override {
         if (!m_constraintExprGenp) return;
@@ -490,9 +510,26 @@ class RandomizeMarkVisitor final : public VNVisitor {
         // of type AstLambdaArgRef. They are randomized too.
         const bool randObject = nodep->fromp()->user1() || VN_IS(nodep->fromp(), LambdaArgRef);
         // nodep->user1((randObject && nodep->varp()->rand().isRandomizable()));
-        nodep->user1((randObject && nodep->varp()->rand().isRandomizable())
-                     || (instdwith && stdrandcall));
+        nodep->user1((randObject && nodep->varp()->rand().isRandomizable() && !(instdwith && stdrandcall))); //        nodep->user1((randObject && nodep->varp()->rand().isRandomizable()) || (instdwith && stdrandcall));
         nodep->user2p(m_modp);
+        if(instdwith && stdrandcall){
+            for (AstNode* pinp = stdrandcall->pinsp() ; pinp; pinp = pinp->nextp()) {
+                if(VN_IS(pinp, With)) continue;
+                AstArg* const argp = VN_CAST(pinp, Arg);
+                AstNodeExpr* exprp = argp->exprp();
+                if( VN_IS(exprp, MemberSel) && nodep->varp()== VN_CAST(exprp, MemberSel)->varp()){
+                    cout<<" LLLLLOOOOOOLLLLLLLOOOOOOLLLLL"<<endl;
+
+                    nodep->user1(true);
+                    if(VN_IS(nodep->fromp(), VarRef)) nodep->fromp()->user1(true); /// need more smart way for this, It is neded when membersel is iterated in constraint visitor, var ref in the fromp of membersel req as in vARREF visitor checks for it. 
+                }
+
+                else{
+                    cout<<" NEEEEIIIIINNNNN"<<endl;
+                    // nodep->user1(false);
+                }
+            }
+        }
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -945,14 +982,15 @@ class ConstraintExprVisitor final : public VNVisitor {
             cout << " WOWOWOWOWOWWOWOWOWOWO" << endl;
             iterateChildren(nodep);
             nodep->replaceWith(nodep->fromp()->unlinkFrBack());
-            return;
-        }
-        if (VN_IS(nodep->fromp(), NodeVarRef) && nodep->varp()->isRand() && m_inlineInitTaskp) {
-            iterateChildren(nodep);
-            nodep->replaceWith(nodep->fromp()->unlinkFrBack());
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
+        // if (VN_IS(nodep->fromp(), NodeVarRef) && nodep->varp()->isRand() && m_inlineInitTaskp) {
+        //     iterateChildren(nodep);
+        //     nodep->replaceWith(nodep->fromp()->unlinkFrBack());
+        //     VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        //     return;
+        // }
         editFormat(nodep);
     }
     void visit(AstSFormatF* nodep) override {}
