@@ -1244,6 +1244,13 @@ bool AstSenTree::hasClocked() const {
     }
     return false;
 }
+bool AstSenTree::hasEdge() const {
+    UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
+    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
+        if (senp->edgeType().anEdge()) return true;
+    }
+    return false;
+}
 bool AstSenTree::hasStatic() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
     for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {

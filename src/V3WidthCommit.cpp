@@ -53,7 +53,7 @@ class WidthCommitVisitor final : public VNVisitor {
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     bool m_taskRefWarn = true;  // Allow task reference warnings
     bool m_underSel = false;  // Under AstMemberSel or AstSel
-    bool m_underAlwaysClocked = false;  // Under always with sequential SenTree
+    bool m_underAlwaysEdged = false;  // Under always with sequential SenTree
     std::vector<AstNew*> m_virtualNewsp;  // Instantiations of virtual classes
     std::vector<AstNodeFTask*> m_tasksp;  // All the tasks, we will check if they are ever called
 
@@ -219,9 +219,9 @@ private:
                 return;
             }
         }
-        VL_RESTORER(m_underAlwaysClocked);
-        m_underAlwaysClocked
-            = nodep->sentreep() && nodep->sentreep()->sensesp() && nodep->sentreep()->hasClocked();
+        VL_RESTORER(m_underAlwaysEdged);
+        m_underAlwaysEdged
+            = nodep->sentreep() && nodep->sentreep()->sensesp() && nodep->sentreep()->hasEdge();
         // Iterate will delete ComboStar sentrees, so after above
         iterateChildren(nodep);
         editDType(nodep);
@@ -396,7 +396,7 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
         // Lint
-        if (m_underAlwaysClocked) {
+        if (m_underAlwaysEdged) {
             const bool ignore = nodep->lhsp()->forall([&](const AstVarRef* refp) {
                 // Ignore reads (e.g.: index expressions)
                 if (refp->access().isReadOnly()) return true;

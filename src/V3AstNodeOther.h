@@ -1660,6 +1660,7 @@ public:
     void multi(bool flag) { m_multi = true; }
     // METHODS
     bool hasClocked() const;  // Includes a clocked statement
+    bool hasEdge() const;  // Includes a posedge/negedge/bothedge clocked statement
     bool hasStatic() const;  // Includes a STATIC SenItem
     bool hasInitial() const;  // Includes a INITIAL SenItem
     bool hasFinal() const;  // Includes a FINAL SenItem

@@ -112,6 +112,8 @@ def read_messages():
     for filename in test.glob_some(test.root + "/src/*"):
         if not os.path.isfile(filename):
             continue
+        if '#' in filename:
+            continue
         with open(filename, 'r', encoding="utf8") as fh:
             lineno = 0
             read_next = None
