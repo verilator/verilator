@@ -933,6 +933,8 @@ class ConstVisitor final : public VNVisitor {
     const AstNode* m_scopep = nullptr;  // Current scope
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
     VDouble0 m_statBitOpReduction;  // Ops reduced in ConstBitOpTreeVisitor
+    VDouble0 m_statCondExprRedundant;  // Conditional repeated expressions
+    VDouble0 m_statIfCondExprRedundant;  // Conditional repeated expressions
     const bool m_globalPass;  // ConstVisitor invoked as a global pass
     static uint32_t s_globalPassNum;  // Counts number of times ConstVisitor invoked as global pass
     V3UniqueNames m_concswapNames;  // For generating unique temporary variable names
@@ -1117,6 +1119,99 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         return true;
     }
+
+    bool matchCondCond(AstCond* nodep) {
+        // Same condition on either leg of a condition means that
+        // expression is either always true or always false
+        if (VN_IS(nodep->backp(), Cond)) return false;  // Was checked when visited parent
+        if (!VN_IS(nodep->thenp(), Cond) && !VN_IS(nodep->elsep(), Cond))
+            return false;  // Short circuit
+        std::vector<AstNodeExpr*> truesp;
+        std::vector<AstNodeExpr*> falsesp;
+        matchCondCondRecurse(nodep, truesp /*ref*/, falsesp /*ref*/);
+        return false;  // Can optimize further
+    }
+    void matchCondCondRecurse(AstCond* nodep, std::vector<AstNodeExpr*>& truesp,
+                              std::vector<AstNodeExpr*>& falsesp) {
+        // Avoid O(n^2) compares
+        // Could reduce cost with hash table, but seems unlikely to be worth cost
+        if (truesp.size() > 4 || falsesp.size() > 4) return;
+        if (!nodep->condp()->isPure()) return;
+        bool replaced = false;
+        for (AstNodeExpr* condp : truesp) {
+            if (replaced) break;
+            if (!operandsSame(nodep->condp(), condp)) continue;
+            UINFO(9, "COND(c, CONDb(c, tt, tf), f) -> CONDb(1, tt, tf) " << nodep);
+            replaceNum(nodep->condp(), 1);
+            replaced = true;
+            ++m_statCondExprRedundant;
+        }
+        for (AstNodeExpr* condp : falsesp) {
+            if (replaced) break;
+            if (!operandsSame(nodep->condp(), condp)) continue;
+            UINFO(9, "COND(c, t, CONDb(c, ft, ff)) -> CONDb(0, ft, ff) " << nodep);
+            replaceZero(nodep->condp());
+            replaced = true;
+            ++m_statCondExprRedundant;
+        }
+        if (AstCond* subCondp = VN_CAST(nodep->thenp(), Cond)) {
+            if (!replaced) truesp.emplace_back(nodep->condp());
+            matchCondCondRecurse(subCondp, truesp /*ref*/, falsesp /*ref*/);
+            if (!replaced) truesp.pop_back();
+        }
+        if (AstCond* subCondp = VN_CAST(nodep->elsep(), Cond)) {
+            if (!replaced) falsesp.emplace_back(nodep->condp());
+            matchCondCondRecurse(subCondp, truesp /*ref*/, falsesp /*ref*/);
+            if (!replaced) falsesp.pop_back();
+        }
+    }
+    void matchIfCondCond(AstNodeIf* nodep) {
+        // Same condition on either leg of a condition means that
+        // expression is either always true or always false
+        if (VN_IS(nodep->backp(), If)) return;  // Was checked when visited parent
+        if (!VN_IS(nodep->thensp(), If) && !VN_IS(nodep->elsesp(), If)) return;  // Short circuit
+        std::vector<AstNodeExpr*> truesp;
+        std::vector<AstNodeExpr*> falsesp;
+        matchIfCondCondRecurse(nodep, truesp /*ref*/, falsesp /*ref*/);
+    }
+    void matchIfCondCondRecurse(AstNodeIf* nodep, std::vector<AstNodeExpr*>& truesp,
+                                std::vector<AstNodeExpr*>& falsesp) {
+        // Avoid O(n^2) compares
+        // Could reduce cost with hash table, but seems unlikely to be worth cost
+        if (truesp.size() > 4 || falsesp.size() > 4) return;
+        if (!nodep->condp()->isPure()) return;
+        bool replaced = false;
+        for (AstNodeExpr* condp : truesp) {
+            if (replaced) break;
+            if (!operandsSame(nodep->condp(), condp)) continue;
+            UINFO(9, "COND(c, CONDb(c, tt, tf), f) -> CONDb(1, tt, tf) " << nodep);
+            replaceNum(nodep->condp(), 1);
+            replaced = true;
+            ++m_statIfCondExprRedundant;
+        }
+        for (AstNodeExpr* condp : falsesp) {
+            if (replaced) break;
+            if (!operandsSame(nodep->condp(), condp)) continue;
+            UINFO(9, "COND(c, t, CONDb(c, ft, ff)) -> CONDb(0, ft, ff) " << nodep);
+            replaceZero(nodep->condp());
+            replaced = true;
+            ++m_statIfCondExprRedundant;
+        }
+        // We only check the first statement of parent IF is an If
+        // So we don't need to check for effects in the executing thensp/elsesp
+        // altering the child't condition.  e.g. 'if (x) begin x=1; if (x) end'
+        if (AstNodeIf* subIfp = VN_CAST(nodep->thensp(), NodeIf)) {
+            if (!replaced) truesp.emplace_back(nodep->condp());
+            matchIfCondCondRecurse(subIfp, truesp /*ref*/, falsesp /*ref*/);
+            if (!replaced) truesp.pop_back();
+        }
+        if (AstNodeIf* subIfp = VN_CAST(nodep->elsesp(), NodeIf)) {
+            if (!replaced) falsesp.emplace_back(nodep->condp());
+            matchIfCondCondRecurse(subIfp, truesp /*ref*/, falsesp /*ref*/);
+            if (!replaced) falsesp.pop_back();
+        }
+    }
+
     bool matchMaskedOr(AstAnd* nodep) {
         // Masking an OR with terms that have no bits set under the mask is replaced with masking
         // only the remaining terms. Canonical example as generated by V3Expand is:
@@ -3340,6 +3435,7 @@ class ConstVisitor final : public VNVisitor {
             } else {
                 // Optimizations that don't reform the IF itself
                 if (operandBoolShift(nodep->condp())) replaceBoolShift(nodep->condp());
+                matchIfCondCond(nodep);
             }
         }
     }
@@ -3702,6 +3798,7 @@ class ConstVisitor final : public VNVisitor {
     TREEOPA("AstCond{$condp.isZero,       $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$elsep)");
     TREEOPA("AstCond{$condp.isNeqZero,    $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$thenp)");
     TREEOP ("AstCond{$condp, operandsSame($thenp,,$elsep)}","replaceWChild(nodep,$thenp)");
+    TREEOP ("AstCond{$condp, matchCondCond(nodep)}", "DONE")  // Same condition then skip
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstCond{$condp.isZero}",           "replaceWIteratedThs(nodep)");
     TREEOPS("AstCond{$condp.isNeqZero}",        "replaceWIteratedRhs(nodep)");
@@ -3996,6 +4093,9 @@ public:
                 V3Stats::addStatSum("Optimizations, Const bit op reduction", m_statBitOpReduction);
             }
         }
+        V3Stats::addStatSum("Optimizations, Cond redundant expressions", m_statCondExprRedundant);
+        V3Stats::addStatSum("Optimizations, If cond redundant expressions",
+                            m_statIfCondExprRedundant);
     }
 
     AstNode* mainAcceptEdit(AstNode* nodep) {
