@@ -175,7 +175,8 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void visit(AstStmtExpr* nodep) override {
         AstNodeExpr* const exprp = nodep->exprp();
-        if (VN_IS(exprp, PostAdd) || VN_IS(exprp, PostSub) || VN_IS(exprp, PreAdd) || VN_IS(exprp, PreSub)) {
+        if (VN_IS(exprp, PostAdd) || VN_IS(exprp, PostSub) || VN_IS(exprp, PreAdd)
+            || VN_IS(exprp, PreSub)) {
             // Repalce this StmtExpr with the expression, visiting it will turn it into a NodeStmt
             nodep->replaceWith(exprp->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
