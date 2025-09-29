@@ -8,6 +8,9 @@ on:
     branches-ignore:
       - 'dependabot/**'  # Avoid duplicates: only run the PR, not the push
 
+permissions:
+  contents: write
+
 jobs:
   format:
     runs-on: ubuntu-24.04
