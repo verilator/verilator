@@ -1224,7 +1224,7 @@ class WidthVisitor final : public VNVisitor {
         };
 
         checkIfExprOk(nodep->itemsp());
-        AstNodeDType* firstItemDtypep = nodep->itemsp()->dtypep();
+        AstNodeDType* const firstItemDtypep = nodep->itemsp()->dtypep();
         for (AstNode* itemp = nodep->itemsp()->nextp(); itemp; itemp = itemp->nextp()) {
             checkIfExprOk(VN_AS(itemp, NodeExpr));
             if (!firstItemDtypep->similarDType(itemp->dtypep())) {
