@@ -425,11 +425,6 @@ class LinkJumpVisitor final : public VNVisitor {
                     if (beginp->user3() & CIF_CONTAINS) {
                         std::vector<AstBegin*> blocks{beginp};
                         handleDisableOnFork(nodep, blocks, "disableForkQueue");
-                        if (m_ftaskp) {
-                            nodep->v3warn(E_UNSUPPORTED,
-                                          "Unsupported: disabling block that is inside task / "
-                                          "function and contains a fork");
-                        }
                     } else {
                         // Jump to the end of the named block
                         AstJumpBlock* const blockp = getJumpBlock(beginp, false);
