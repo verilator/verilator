@@ -499,7 +499,7 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
         UINFO(6, "Inlning port variable: " << nodep);
         if (nodep->isIfaceRef()) {
             modp->addStmtsp(
-                new AstAssignVarScope{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
+                new AstAliasScope{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
         } else {
             AstVarRef* const aliasArgsp = portRef(VAccess::WRITE);
             aliasArgsp->addNext(pinRef(VAccess::READ));
@@ -633,7 +633,7 @@ void process(AstNetlist* netlistp, ModuleStateUser1Allocator& moduleStates) {
     // Clean up AstIfaceRefDType references
     // If the cell has been removed let's make sure we don't leave a
     // reference to it. This dtype may still be in use by the
-    // AstAssignVarScope created earlier but that'll get cleared up later
+    // AstAliasScope created earlier but that'll get cleared up later
     netlistp->typeTablep()->foreach([](AstIfaceRefDType* nodep) {
         if (nodep->user1()) nodep->cellp(nullptr);
     });

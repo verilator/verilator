@@ -2326,8 +2326,8 @@ private:
         iterateChildren(nodep);
         pushDeletep(nodep->unlinkFrBack());
     }
-    void visit(AstAssignVarScope* nodep) override {  // ScopeVisitor::
-        UINFO(5, "ASSIGNVARSCOPE  " << nodep);
+    void visit(AstAliasScope* nodep) override {  // ScopeVisitor::
+        UINFO(5, "ALIASSCOPE  " << nodep);
         UINFOTREE(9, nodep, "", "avs");
         VSymEnt* rhsSymp;
         {
