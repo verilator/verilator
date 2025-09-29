@@ -56,7 +56,6 @@ class BranchVisitor final : public VNVisitorConst {
         }  // else leave unknown
     }
 
-
     void visit(AstNode* nodep) override {
         if (nodep->isUnlikely()) {
             UINFO(4, "  UNLIKELY: " << nodep);
