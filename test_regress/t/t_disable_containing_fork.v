@@ -16,7 +16,7 @@ module t;
         end
       join_none
       #1;
-    disable blk;
+      disable blk;
     end
     #2;
     if (x != 1) $stop;
