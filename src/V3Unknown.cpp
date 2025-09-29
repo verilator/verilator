@@ -157,12 +157,28 @@ class UnknownVisitor final : public VNVisitor {
     // Returns true if it is known at compile time that `msbConstp` is greater than or equal
     // `exprp`
     static bool isStaticlyGte(AstConst* const msbConstp, const AstNodeExpr* const exprp) {
-        bool staticGte = msbConstp->width() >= exprp->width()
-                         && msbConstp->num().toSInt() >= (1 << exprp->width()) - 1;
-        if (const AstConst* const constp = VN_CAST(exprp, Const)) {
-            staticGte |= V3Number{msbConstp}.opGte(msbConstp->num(), constp->num()).isNeqZero();
+        if (msbConstp->width() >= exprp->width()
+            && msbConstp->num().toSInt() >= (1 << exprp->width()) - 1) {
+            return true;
         }
-        return staticGte;
+        if (const AstConst* const constp = VN_CAST(exprp, Const)) {
+            if (V3Number{msbConstp}.opGte(msbConstp->num(), constp->num()).isNeqZero()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    AstNodeExpr* newExprStmtOrClone(AstNodeExpr*& exprp) {
+        if (!exprp->isPure()) {
+            AstVar* const varp = createAddTemp(exprp);
+            FileLine* const fl = exprp->fileline();
+            exprp = new AstExprStmt{
+                fl, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, exprp},
+                new AstVarRef{fl, varp, VAccess::READ}};
+            return new AstVarRef{fl, varp, VAccess::READ};
+        }
+        return exprp->cloneTreePure(false);
     }
 
     // VISITORS
@@ -432,16 +448,7 @@ class UnknownVisitor final : public VNVisitor {
                 nodep->lsbp(lsbp);
                 return;
             }
-            if (!lsbp->isPure()) {
-                AstVar* const varp = createAddTemp(lsbp);
-                FileLine* const fl = lsbp->fileline();
-                lsbp = new AstExprStmt{
-                    fl, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, lsbp},
-                    new AstVarRef{fl, varp, VAccess::READ}};
-                nodep->lsbp(new AstVarRef{fl, varp, VAccess::READ});
-            } else {
-                nodep->lsbp(lsbp->cloneTreePure(false));
-            }
+            nodep->lsbp(newExprStmtOrClone(lsbp));
             AstNodeExpr* condp
                 = V3Const::constifyEdit(new AstGte{nodep->fileline(), maxmsbConstp, lsbp});
             if (!lvalue) {
@@ -520,16 +527,7 @@ class UnknownVisitor final : public VNVisitor {
                 nodep->bitp(bitp);
                 return;
             }
-            if (!bitp->isPure()) {
-                AstVar* const varp = createAddTemp(bitp);
-                FileLine* const fl = bitp->fileline();
-                bitp = new AstExprStmt{
-                    fl, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, bitp},
-                    new AstVarRef{fl, varp, VAccess::READ}};
-                nodep->bitp(new AstVarRef{fl, varp, VAccess::READ});
-            } else {
-                nodep->bitp(bitp->cloneTreePure(false));
-            }
+            nodep->bitp(newExprStmtOrClone(bitp));
             AstNodeExpr* condp = new AstGte{nodep->fileline(), declElementsp, bitp};
             // Note below has null backp(); the Edit function knows how to deal with that.
             const AstNodeDType* const nodeDtp = nodep->dtypep()->skipRefp();
