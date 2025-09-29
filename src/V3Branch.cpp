@@ -56,7 +56,6 @@ class BranchVisitor final : public VNVisitorConst {
         }  // else leave unknown
     }
 
-    void visit(AstCFunc* nodep) override { iterateChildrenConst(nodep); }
 
     void visit(AstNode* nodep) override {
         if (nodep->isUnlikely()) {
