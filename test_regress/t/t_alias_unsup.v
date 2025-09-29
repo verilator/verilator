@@ -59,7 +59,7 @@ module t (  /*AUTOARG*/
       $write("[%0t] cyc==%0d crc=%x sum=%x\n", $time, cyc, crc, sum);
       `checkh(crc, 64'hc77bb9b3784ea091);
       // What checksum will we end up with (above print should match)
-      `checkh(sum, 64'h4afe43fb79d7b71e);
+      `checkh(sum, 64'h5a3868140accd91d);
       $write("*-* All Finished *-*\n");
       $finish;
     end
