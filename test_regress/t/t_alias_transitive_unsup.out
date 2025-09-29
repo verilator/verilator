@@ -1,5 +1,0 @@
-%Error-UNSUPPORTED: t/t_alias_transitive_unsup.v:19:3: Unsupported: alias statements with more than 2 operands
-   19 |   alias a = b = c;
-      |   ^~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: Exiting due to

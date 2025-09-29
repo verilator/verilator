@@ -501,7 +501,9 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
             modp->addStmtsp(
                 new AstAssignVarScope{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
         } else {
-            modp->addStmtsp(new AstAlias{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
+            AstVarRef* const aliasArgsp = portRef(VAccess::WRITE);
+            aliasArgsp->addNext(pinRef(VAccess::READ));
+            modp->addStmtsp(new AstAlias{flp, aliasArgsp});
         }
         // They will become the same variable, so propagate file-line and variable attributes
         pinRefp->varp()->fileline()->modifyStateInherit(flp);

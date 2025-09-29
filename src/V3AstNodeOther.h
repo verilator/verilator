@@ -474,16 +474,11 @@ public:
 };
 class AstAlias final : public AstNode {
     // Alias statement
-    // All references to the LHS are treated as references to the RHS
-    // If both sides are wires, there's no LHS vs RHS,
-    // @astgen op1 := rhsp : AstNodeExpr
-    // @astgen op2 := lhsp : AstNodeExpr
-
+    // @astgen op1 := itemsp : List[AstNodeExpr]  // Alias operands
 public:
-    AstAlias(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+    AstAlias(FileLine* fl, AstNodeExpr* itemsp)
         : ASTGEN_SUPER_Alias(fl) {
-        this->lhsp(lhsp);
-        this->rhsp(rhsp);
+        addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstAlias;
 };

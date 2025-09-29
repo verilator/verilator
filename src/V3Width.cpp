@@ -1191,8 +1191,7 @@ class WidthVisitor final : public VNVisitor {
 
     void visit(AstAlias* nodep) override {
         if (!nodep->didWidthAndSet()) {
-            userIterate(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
-            userIterate(nodep->rhsp(), WidthVP{SELF, BOTH}.p());
+            userIterateAndNext(nodep->itemsp(), WidthVP{SELF, BOTH}.p());
         }
 
         const auto checkIfExprOk = [this](const AstNodeExpr* const exprp) {
@@ -1224,16 +1223,16 @@ class WidthVisitor final : public VNVisitor {
             return true;
         };
 
-        const bool lhsOk = checkIfExprOk(nodep->lhsp());
-        const bool rhsOk = checkIfExprOk(nodep->rhsp());
-        if (!lhsOk || !rhsOk) return;
-
-        const AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep();
-        const AstNodeDType* const rhsDtypep = nodep->rhsp()->dtypep();
-        if (!lhsDtypep->similarDType(rhsDtypep)) {
-            nodep->v3error("Incompatible data types of nets used for net alias, got "
-                           << lhsDtypep->prettyDTypeNameQ() << " and "
-                           << rhsDtypep->prettyDTypeNameQ());
+        checkIfExprOk(nodep->itemsp());
+        AstNodeDType* const firstItemDtypep = nodep->itemsp()->dtypep();
+        for (AstNode* itemp = nodep->itemsp()->nextp(); itemp; itemp = itemp->nextp()) {
+            checkIfExprOk(VN_AS(itemp, NodeExpr));
+            if (!firstItemDtypep->similarDType(itemp->dtypep())) {
+                itemp->v3error("Incompatible data types of nets used for net alias. First operand "
+                               "has the type "
+                               << firstItemDtypep->prettyDTypeNameQ() << ", other has "
+                               << itemp->dtypep()->prettyDTypeNameQ());
+            }
         }
     }
 

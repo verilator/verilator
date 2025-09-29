@@ -2639,11 +2639,8 @@ initial_construct<nodep>:       // IEEE: initial_construct
 
 net_alias<nodep>:               // IEEE: net_alias
                 yALIAS variable_lvalue aliasEqList ';'
-                        { if ($3->nextp()) {
-                                BBUNSUP($1, "Unsupported: alias statements with more than 2 operands");
-                                $3->nextp()->unlinkFrBackWithNext()->deleteTree();
-                            }
-                            $$ = new AstAlias{$1, $2, $3}; }
+                        { $2->addNext($3);
+                          $$ = new AstAlias{$1, $2}; }
         ;
 
 aliasEqList<nodeExprp>:                    // IEEE: part of net_alias
