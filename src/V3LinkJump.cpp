@@ -44,14 +44,11 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 
 class LinkJumpVisitor final : public VNVisitor {
-    // TYPES
-    enum ContainsOrInsideFork : uint8_t { CIF_CONTAINS = 0x1, CIF_INSIDE = 0x2 };
-
     // NODE STATE
     //  AstBegin/etc::user1()  -> AstJumpBlock*, for body of this loop
     //  AstFinish::user1()     -> bool, processed
     //  AstNode::user2()       -> AstJumpBlock*, for this block
-    //  AstNodeBlock::user3()  -> ContainsOrInsideFork
+    //  AstNodeBlock::user3()  -> bool, true if inside a fork
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
@@ -256,14 +253,8 @@ class LinkJumpVisitor final : public VNVisitor {
         {
             if (VN_IS(nodep, Fork)) {
                 m_inFork = true;  // And remains set for children
-                // Mark all upper blocks also, can stop once see
-                // one set to avoid O(n^2)
-                for (auto itr : vlstd::reverse_view(m_blockStack)) {
-                    if (itr->user3() & CIF_CONTAINS) break;
-                    itr->user3(itr->user3() | CIF_CONTAINS);
-                }
             }
-            if (m_inFork) nodep->user3(CIF_INSIDE);
+            nodep->user3(m_inFork);
             iterateChildren(nodep);
         }
         m_blockStack.pop_back();
@@ -419,15 +410,11 @@ class LinkJumpVisitor final : public VNVisitor {
             } else {
                 const std::string targetName = beginp->name();
                 if (existsBlockAbove(targetName)) {
-                    if (beginp->user3() & CIF_INSIDE) {
+                    if (beginp->user3()) {
                         nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling block inside a fork");
-                    } else if (beginp->user3() & CIF_CONTAINS) {
+                    } else {
                         std::vector<AstBegin*> blocks{beginp};
                         handleDisable(nodep, blocks, "disableForkQueue");
-                    } else {
-                        // Jump to the end of the named block
-                        AstJumpBlock* const blockp = getJumpBlock(beginp, false);
-                        nodep->addNextHere(new AstJumpGo{nodep->fileline(), blockp});
                     }
                 } else {
                     nodep->v3warn(E_UNSUPPORTED, "disable isn't underneath a begin with name: '"
