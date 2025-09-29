@@ -592,7 +592,8 @@ class CaseVisitor final : public VNVisitor {
             VL_DO_DANGLING(replaceCaseFast(nodep), nodep);
         } else {
             // If a case statement is whole, presume signals involved aren't forming a latch
-            if (m_alwaysp && !m_caseIncomplete) m_alwaysp->fileline()->warnOff(V3ErrorCode::LATCH, true);
+            if (m_alwaysp && !m_caseIncomplete)
+                m_alwaysp->fileline()->warnOff(V3ErrorCode::LATCH, true);
             ++m_statCaseSlow;
             VL_DO_DANGLING(replaceCaseComplicated(nodep), nodep);
         }
