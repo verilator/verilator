@@ -166,11 +166,6 @@ Unfortunately, using the optimizer with SystemC files can result in
 compilation taking several minutes. (The SystemC libraries have many little
 inlined functions that drive the compiler nuts.)
 
-If using your own makefiles, you may want to compile the Verilated
-code with ``--MAKEFLAGS -DVL_INLINE_OPT=inline``. This will inline
-functions; however, this requires that all cpp files be compiled in a single
-compiler run.
-
 You may uncover further tuning possibilities by profiling the Verilog code.
 See :ref:`profiling`.
 
