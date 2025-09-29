@@ -3095,7 +3095,7 @@ class WidthVisitor final : public VNVisitor {
                 inewp = insideItem(nodep, exprStmtp, itemp);
                 exprStmtp = nullptr;
             } else {
-                inewp = insideItem(nodep, exprp->cloneTreePure(true), itemp);
+                inewp = insideItem(nodep, exprp->cloneTreePure(false), itemp);
             }
             if (!inewp) continue;
             newp = newp ? new AstLogOr{nodep->fileline(), newp, inewp} : inewp;
