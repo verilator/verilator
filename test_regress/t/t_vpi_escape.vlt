@@ -7,3 +7,4 @@
 `verilator_config
 
 public_flat_rd -module "*" -var "double__underscore__vlt"
+public_flat_rd -module "sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name" -var "subsig2"

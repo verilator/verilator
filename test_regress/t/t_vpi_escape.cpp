@@ -156,7 +156,7 @@ int _mon_check_iter() {
     TEST_CHECK_CSTR(p, "\\mod.with_dot ");
     if (TestSimulator::is_verilator()) {
         p = vpi_get_str(vpiDefName, vh2);
-        TEST_CHECK_CSTR(p, "sub");
+        TEST_CHECK_CSTR(p, "sub_with_very___05Fvery_____VhshsmH6BYHIAHq4mnPF8T3lXnhhONMT1I4ouBvkJk58");
     }
 
     TestVpiHandle vh_null_name = my_vpi_handle("___0_");
