@@ -209,7 +209,7 @@ class WidthVisitor final : public VNVisitor {
     using DTypeMap = std::map<const std::string, AstPatMember*>;
 
     // STATE
-    V3UniqueNames m_tempNames;  // For generating unique temporary variable names
+    V3UniqueNames m_insideTempNames;  // For generating unique temporary variable names for `inside` expressions
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     V3TaskConnectState m_taskConnectState;  // State to cache V3Task::taskConnects
     WidthVP* m_vup = nullptr;  // Current node state
@@ -3062,13 +3062,11 @@ class WidthVisitor final : public VNVisitor {
                              EXTEND_EXP);
         }
 
-        AstNodeExpr* exprp;
+        AstNodeExpr* exprp = nullptr;
         AstExprStmt* exprStmtp = nullptr;
         if (!m_constraintp && !nodep->exprp()->isPure()) {
             FileLine* const fileline = nodep->exprp()->fileline();
-            AstVar* const varp
-                = new AstVar{fileline, VVarType::XTEMP, "__VInsideTmp_" + m_tempNames.get(nodep),
-                             nodep->exprp()->dtypep()};
+            AstVar* const varp = new AstVar{fileline, VVarType::XTEMP, m_insideTempNames.get(nodep), nodep->exprp()->dtypep()};
             exprp = new AstVarRef{fileline, varp, VAccess::READ};
             exprStmtp = new AstExprStmt{
                 fileline,
@@ -3083,9 +3081,7 @@ class WidthVisitor final : public VNVisitor {
                 m_modep->stmtsp()->addHereThisAsNext(varp);
             }
             iterate(varp);
-            iterateChildren(varp);
             iterate(exprStmtp);
-            iterateChildren(exprStmtp);
         } else {
             exprp = nodep->exprp();
         }
@@ -3094,7 +3090,7 @@ class WidthVisitor final : public VNVisitor {
         AstNodeExpr* newp = nullptr;
         for (AstNodeExpr *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = VN_AS(itemp->nextp(), NodeExpr);  // Will be unlinking
-            AstNodeExpr* inewp;
+            AstNodeExpr* inewp = nullptr;
             if (exprStmtp) {
                 inewp = insideItem(nodep, exprStmtp, itemp);
                 exprStmtp = nullptr;
@@ -3107,7 +3103,6 @@ class WidthVisitor final : public VNVisitor {
         if (exprStmtp) VL_DO_DANGLING(exprStmtp->deleteTree(), exprStmtp);
         if (!newp) {
             newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
-        } else if (exprStmtp) {
         }
         UINFOTREE(9, newp, "", "inside-out");
         nodep->replaceWith(newp);
@@ -3223,7 +3218,7 @@ class WidthVisitor final : public VNVisitor {
         // UINFOTREE(9, nodep, "", "class-out");
     }
     void visit(AstClass* nodep) override {
-        m_tempNames.reset();
+        m_insideTempNames.reset();
         if (nodep->didWidthAndSet()) return;
 
         // If the class is std::process
@@ -6920,7 +6915,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         UASSERT_OBJ(!m_vup, nodep,
                     "Visit function missing? Widthed expectation for this node: " << nodep);
-        m_tempNames.reset();
+        m_insideTempNames.reset();
         VL_RESTORER(m_modep);
         m_modep = nodep;
         userIterateChildren(nodep, nullptr);
@@ -8952,7 +8947,8 @@ public:
     WidthVisitor(bool paramsOnly,  // [in] TRUE if we are considering parameters only.
                  bool doGenerate)  // [in] TRUE if we are inside a generate statement and
         //                           // don't wish to trigger errors
-        : m_paramsOnly{paramsOnly}
+        : m_insideTempNames{"__VInsideTmp"}
+        , m_paramsOnly{paramsOnly}
         , m_doGenerate{doGenerate} {}
     AstNode* mainAcceptEdit(AstNode* nodep) {
         return userIterateSubtreeReturnEdits(nodep, WidthVP{SELF, BOTH}.p());
