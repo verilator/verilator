@@ -173,6 +173,20 @@ class LinkIncVisitor final : public VNVisitor {
         iterateChildren(nodep);
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
+    void visit(AstStmtExpr* nodep) override {
+        AstNodeExpr* const exprp = nodep->exprp();
+        if (VN_IS(exprp, PostAdd) || VN_IS(exprp, PostSub) || VN_IS(exprp, PreAdd)
+            || VN_IS(exprp, PreSub)) {
+            // Repalce this StmtExpr with the expression, visiting it will turn it into a NodeStmt
+            nodep->replaceWith(exprp->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            m_insStmtp = nullptr;
+            iterate(exprp);
+            m_insStmtp = nullptr;
+            return;
+        }
+        visit(static_cast<AstNodeStmt*>(nodep));
+    }
     void visit(AstNodeStmt* nodep) override {
         m_insStmtp = nodep;
         iterateChildren(nodep);
