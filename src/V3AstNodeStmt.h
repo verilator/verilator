@@ -70,6 +70,29 @@ public:
     bool isTimingControl() const override { return timingControlp(); }
     virtual bool brokeLhsMustBeLvalue() const = 0;
 };
+class AstNodeBlock VL_NOT_FINAL : public AstNodeStmt {
+    // A Begin/fork block
+    // @astgen op2 := stmtsp : List[AstNode]
+    // Parents: statement
+    string m_name;  // Name of block
+    bool m_unnamed;  // Originally unnamed (name change does not affect this)
+protected:
+    AstNodeBlock(VNType t, FileLine* fl, const string& name, AstNode* stmtsp)
+        : AstNodeStmt{t, fl}
+        , m_name{name} {
+        addStmtsp(stmtsp);
+        m_unnamed = (name == "");
+    }
+
+public:
+    ASTGEN_MEMBERS_AstNodeBlock;
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    string name() const override VL_MT_STABLE { return m_name; }  // * = Block name
+    void name(const string& name) override { m_name = name; }
+    bool unnamed() const { return m_unnamed; }
+};
 class AstNodeCoverOrAssert VL_NOT_FINAL : public AstNodeStmt {
     // Cover or Assert
     // Parents:  {statement list}
@@ -1156,6 +1179,44 @@ public:
     bool brokeLhsMustBeLvalue() const override { return true; }
     AstDelay* getLhsNetDelay() const;
     AstAlways* convertToAlways();
+};
+
+// === AstNodeBlock ===
+class AstBegin final : public AstNodeBlock {
+    // A Begin/end named block, only exists shortly after parsing until linking
+    // Parents: statement
+
+    bool m_needProcess : 1;  // Uses VlProcess
+    const bool m_implied : 1;  // Not inserted by user
+public:
+    // Node that puts name into the output stream
+    AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool implied)
+        : ASTGEN_SUPER_Begin(fl, name, stmtsp)
+        , m_needProcess{false}
+        , m_implied{implied} {}
+    ASTGEN_MEMBERS_AstBegin;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    void setNeedProcess() { m_needProcess = true; }
+    bool needProcess() const { return m_needProcess; }
+    bool implied() const { return m_implied; }
+};
+class AstFork final : public AstNodeBlock {
+    // A fork named block
+    // @astgen op1 := initsp : List[AstNode]
+    // Parents: statement
+    // Children: statements
+    VJoinType m_joinType;  // Join keyword type
+public:
+    // Node that puts name into the output stream
+    AstFork(FileLine* fl, const string& name, AstNode* stmtsp)
+        : ASTGEN_SUPER_Fork(fl, name, stmtsp) {}
+    ASTGEN_MEMBERS_AstFork;
+    bool isTimingControl() const override { return !joinType().joinNone(); }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    VJoinType joinType() const { return m_joinType; }
+    void joinType(const VJoinType& flag) { m_joinType = flag; }
 };
 
 // === AstNodeCoverOrAssert ===
