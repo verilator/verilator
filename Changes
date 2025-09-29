@@ -37,6 +37,7 @@ Verilator 5.041 devel
 * Optimize dead functions in more cases (#6380) (#6430). [Artur Bieniek, Antmicro Ltd.]
 * Optimize constant folding in wide expression expansion (#6381). [Geza Lore]
 * Fix missing BLKSEQ when connecting module port to array (#2973).
+* Fix LATCH warning with CASEINCOMPLETE (#3301).
 * Fix unused parameterized class causing internal error (#4013). [Alberto Del Rio]
 * Fix false CONSTVAR error on initializers (#4992).
 * Fix interface exposure with `--public-depth` or `--trace-depth` (#5758).

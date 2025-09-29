@@ -143,6 +143,7 @@ class CaseVisitor final : public VNVisitor {
     // Per-CASE
     int m_caseWidth = 0;  // Width of valueItems
     int m_caseItems = 0;  // Number of caseItem unique values
+    bool m_caseIncomplete = false;  // Proven incomplete
     bool m_caseNoOverlapsAllCovered = false;  // Proven to be synopsys parallel_case compliant
     // For each possible value, the case branch we need
     std::array<AstNode*, 1 << CASE_OVERLAP_WIDTH> m_valueItem;
@@ -178,6 +179,7 @@ class CaseVisitor final : public VNVisitor {
                     if (!m_valueItem[i]) {
                         nodep->v3warn(CASEINCOMPLETE, "Enum item " << itemp->prettyNameQ()
                                                                    << " not covered by case\n");
+                        m_caseIncomplete = true;
                         return false;  // enum has uncovered value by case items
                     }
                 }
@@ -306,6 +308,7 @@ class CaseVisitor final : public VNVisitor {
                         nodep->v3warn(CASEINCOMPLETE, "Case values incompletely covered "
                                                       "(example pattern 0x"
                                                           << std::hex << i << ")");
+                        m_caseIncomplete = true;
                         m_caseNoOverlapsAllCovered = false;
                         return false;
                     }
@@ -578,6 +581,7 @@ class CaseVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstCase* nodep) override {
+        VL_RESTORER(m_caseIncomplete);
         { CaseLintVisitor{nodep}; }
         iterateChildren(nodep);
         UINFOTREE(9, nodep, "", "case_old");
@@ -588,7 +592,7 @@ class CaseVisitor final : public VNVisitor {
             VL_DO_DANGLING(replaceCaseFast(nodep), nodep);
         } else {
             // If a case statement is whole, presume signals involved aren't forming a latch
-            if (m_alwaysp) m_alwaysp->fileline()->warnOff(V3ErrorCode::LATCH, true);
+            if (m_alwaysp && !m_caseIncomplete) m_alwaysp->fileline()->warnOff(V3ErrorCode::LATCH, true);
             ++m_statCaseSlow;
             VL_DO_DANGLING(replaceCaseComplicated(nodep), nodep);
         }
