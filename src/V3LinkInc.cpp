@@ -56,7 +56,6 @@ class LinkIncVisitor final : public VNVisitor {
     AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
     AstNodeModule* m_modp = nullptr;  // Module we're inside
     int m_modIncrementsNum = 0;  // Var name counter
-    AstWhile* m_inWhileCondp = nullptr;  // Inside condition of this while loop
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     bool m_unsupportedHere = false;  // Used to detect where it's not supported yet
 
@@ -81,14 +80,12 @@ class LinkIncVisitor final : public VNVisitor {
         // Return node that must be visited, if any
         UINFOTREE(9, newp, "", "newstmt");
         UASSERT_OBJ(m_insStmtp, nodep, "Expression not underneath a statement");
-        // In a while condition, the statement also needs to go on the
-        // back-edge to the loop header, 'incsp' is that place.
-        if (m_inWhileCondp) m_inWhileCondp->addIncsp(newp->cloneTreePure(true));
         m_insStmtp->addHereThisAsNext(newp);
     }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
+        if (nodep->dead()) return;
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modIncrementsNum);
         m_modp = nodep;
@@ -113,20 +110,10 @@ class LinkIncVisitor final : public VNVisitor {
         }
         iterateAndNextNull(nodep->passsp());
     }
-    void visit(AstWhile* nodep) override {
-        // Special, as statements need to be put in different places
-        m_insStmtp = nodep;
-        {
-            // Conditions insert before the loop and into incsp
-            VL_RESTORER(m_inWhileCondp);
-            m_inWhileCondp = nodep;
-            iterateAndNextNull(nodep->condp());
-        }
-        // Body insert just before themselves
+    void visit(AstLoop* nodep) override {
+        UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
         m_insStmtp = nullptr;  // First thing should be new statement
         iterateAndNextNull(nodep->stmtsp());
-        iterateAndNextNull(nodep->incsp());
-        // Done the loop
         m_insStmtp = nullptr;  // Next thing should be new statement
     }
     void visit(AstNodeForeach* nodep) override {
@@ -180,6 +167,11 @@ class LinkIncVisitor final : public VNVisitor {
         m_insStmtp = nullptr;
         iterateAndNextNull(nodep->stmtsp());
         m_insStmtp = nullptr;
+    }
+    void visit(AstBegin* nodep) override {
+        m_insStmtp = nullptr;  // Pretend not a statement TODO: parse ++/-- as ExprStmt
+        iterateChildren(nodep);
+        m_insStmtp = nullptr;  // Next thing should be new statement
     }
     void visit(AstNodeStmt* nodep) override {
         m_insStmtp = nodep;

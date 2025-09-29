@@ -169,7 +169,7 @@ class CfgLiveVariables final : VNVisitorConst {
 
     // Only the condition check belongs to the terminated basic block
     void visit(AstIf* nodep) override { single(nodep->condp()); }
-    void visit(AstWhile* nodep) override { single(nodep->condp()); }
+    void visit(AstLoopTest* nodep) override { single(nodep->condp()); }
 
     // CONSTRUCTOR
     explicit CfgLiveVariables(const CfgGraph& cfg)

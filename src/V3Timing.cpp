@@ -944,9 +944,11 @@ class TimingControlVisitor final : public VNVisitor {
             }
             // Create the trigger eval loop, which will await the evaluation step and check the
             // trigger
-            AstWhile* const loopp = new AstWhile{
-                flp, new AstLogNot{flp, new AstVarRef{flp, trigvscp, VAccess::READ}},
-                awaitEvalp->makeStmt()};
+            AstNodeExpr* const condp
+                = new AstLogNot{flp, new AstVarRef{flp, trigvscp, VAccess::READ}};
+            AstLoop* const loopp = new AstLoop{flp};
+            loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
+            loopp->addStmtsp(awaitEvalp->makeStmt());
             // Put pre updates before the trigger check and assignment
             for (AstNodeStmt* const stmtp : senResults.m_preUpdates) loopp->addStmtsp(stmtp);
             // Then the trigger check and assignment
@@ -1206,7 +1208,9 @@ class TimingControlVisitor final : public VNVisitor {
                     flp, new AstSenItem{flp, VEdgeType::ET_CHANGED, condp->cloneTree(false)}},
                 nullptr};
             controlp->user2(true);  // Commit immediately
-            AstWhile* const loopp = new AstWhile{flp, new AstLogNot{flp, condp}, controlp};
+            AstLoop* const loopp = new AstLoop{flp};
+            loopp->addStmtsp(new AstLoopTest{flp, loopp, new AstLogNot{flp, condp}});
+            loopp->addStmtsp(controlp);
             if (stmtsp) AstNode::addNext<AstNode, AstNode>(loopp, stmtsp);
             nodep->replaceWith(loopp);
         }

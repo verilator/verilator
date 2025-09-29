@@ -130,7 +130,7 @@ class LinkParseVisitor final : public VNVisitor {
         // Try very hard to avoid false positives
         AstNode* nextp = nodep->nextp();
         if (!childp) return;
-        if (!nextp && VN_IS(nodep, While) && VN_IS(nodep->backp(), Begin))
+        if (!nextp && VN_IS(nodep, Loop) && VN_IS(nodep->backp(), Begin))
             nextp = nodep->backp()->nextp();
         if (!nextp) return;
         if (VN_IS(childp, Begin) || VN_IS(childp, GenBlock)) return;
@@ -573,10 +573,15 @@ class LinkParseVisitor final : public VNVisitor {
         checkIndent(nodep, nodep->stmtsp());
         iterateChildren(nodep);
     }
-    void visit(AstDoWhile* nodep) override {
+    void visit(AstLoop* nodep) override {
         cleanFileline(nodep);
         VL_RESTORER(m_insideLoop);
         m_insideLoop = true;
+        if (VN_IS(nodep->stmtsp(), LoopTest)) {
+            checkIndent(nodep, nodep->stmtsp()->nextp());
+        } else {
+            checkIndent(nodep, nodep->stmtsp());
+        }
         iterateChildren(nodep);
     }
     void visit(AstWait* nodep) override {
@@ -589,13 +594,6 @@ class LinkParseVisitor final : public VNVisitor {
             newfl->warnOff(V3ErrorCode::WAITCONST, true);
             nodep->fileline(newfl);
         }
-    }
-    void visit(AstWhile* nodep) override {
-        cleanFileline(nodep);
-        VL_RESTORER(m_insideLoop);
-        m_insideLoop = true;
-        checkIndent(nodep, nodep->stmtsp());
-        iterateChildren(nodep);
     }
     void visit(AstNodeModule* nodep) override {
         V3Control::applyModule(nodep);

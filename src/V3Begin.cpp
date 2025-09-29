@@ -415,11 +415,13 @@ static AstNode* createForeachLoop(AstNodeForeach* nodep, AstNode* bodysp, AstVar
     else
         incp = new AstSub{fl, varRefp->cloneTree(false), new AstConst{fl, 1}};
 
-    AstWhile* const whilep = new AstWhile{
-        fl, condp, bodysp, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, incp}};
+    AstLoop* const loopp = new AstLoop{fl};
+    loopp->addStmtsp(new AstLoopTest{fl, loopp, condp});
+    loopp->addStmtsp(bodysp);
+    loopp->addStmtsp(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, incp});
     AstNode* const stmtsp = varp;  // New statements for outer loop
     stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, leftp});
-    stmtsp->addNext(whilep);
+    stmtsp->addNext(loopp);
     return stmtsp;
 }
 static AstNode* createForeachLoopRanged(AstNodeForeach* nodep, AstNode* bodysp, AstVar* varp,
@@ -519,12 +521,14 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
                 AstLogOr* const orp
                     = new AstLogOr{fl, new AstVarRef{fl, first_varp, VAccess::READ},
                                    new AstNeq{fl, new AstConst{fl, 0}, nextp}};
-                AstNode* const whilep = new AstWhile{fl, orp, first_clearp};
+                AstLoop* const lp = new AstLoop{fl};
+                lp->addStmtsp(new AstLoopTest{fl, lp, orp});
+                lp->addStmtsp(first_clearp);
                 first_clearp->addNext(bodyPointp);
                 AstNode* const ifbodyp
                     = new AstAssign{fl, new AstVarRef{fl, first_varp, VAccess::WRITE},
                                     new AstConst{fl, AstConst::BitTrue{}}};
-                ifbodyp->addNext(whilep);
+                ifbodyp->addNext(lp);
                 loopp = varp;
                 loopp->addNext(first_varp);
                 loopp->addNext(

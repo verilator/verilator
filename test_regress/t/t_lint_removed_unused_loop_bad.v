@@ -155,10 +155,7 @@ module non_parametrized_initial;
       while(0);
       while(always_false);
       while(always_zero < 0);
-
-      // inlined - no warning
-      do begin
-      end while(0);
+      do ; while(0);
 
       // unrolled - no warning
       for (int i = 0; i < 1; i++);

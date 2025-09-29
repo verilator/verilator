@@ -39,10 +39,10 @@ std::string CfgBlock::name() const {
             ss << "if (";
             V3EmitV::debugVerilogForTree(ifp->condp(), ss);
             ss << ") ...";
-        } else if (const AstWhile* const whilep = VN_CAST(nodep, While)) {
-            ss << "while (";
-            V3EmitV::debugVerilogForTree(whilep->condp(), ss);
-            ss << ") ...";
+        } else if (const AstLoopTest* const testp = VN_CAST(nodep, LoopTest)) {
+            ss << "if  (!";
+            V3EmitV::debugVerilogForTree(testp->condp(), ss);
+            ss << ") break;";
         } else {
             V3EmitV::debugVerilogForTree(nodep, ss);
         }

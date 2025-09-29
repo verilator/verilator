@@ -18,7 +18,7 @@ test.execute()
 test.file_grep(test.stats, r'NBA, variables using ShadowVar scheme\s+(\d+)', 1)
 test.file_grep(test.stats, r'NBA, variables using ShadowVarMasked scheme\s+(\d+)', 2)
 test.file_grep(test.stats, r'NBA, variables using FlagUnique scheme\s+(\d+)', 1)
-test.file_grep(test.stats, r'Optimizations, Unrolled Loops\s+(\d+)', 0)
+test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled loops\s+(\d+)', 0)
 test.file_grep_not(test.stats, r'Warnings, Suppressed BLKANDNBLK')
 
 test.passes()

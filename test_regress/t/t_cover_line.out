@@ -148,12 +148,12 @@
 -000000  point: comment=block hier=top.t
 ~000010          do begin
 -000000  point: comment=block hier=top.t
-+000010  point: comment=if hier=top.t
-~000010             $write("");
++000010  point: comment=block hier=top.t
+ 000010             $write("");
++000010  point: comment=block hier=top.t
+~000010          end while (0);
 -000000  point: comment=block hier=top.t
-+000010  point: comment=if hier=top.t
-%000000          end while (0);
--000000  point: comment=block hier=top.t
++000010  point: comment=block hier=top.t
                  //===
                  // Task and complicated
 %000001          if (cyc==3) begin
@@ -522,6 +522,8 @@
               end
  000044       for (int i = 0; i < 7; i = (i > 4) ? i + 1 : i + 2) begin
 +000011  point: comment=block hier=top.t.cond1
++000011  point: comment=cond_then hier=top.t.cond1
++000033  point: comment=cond_else hier=top.t.cond1
 +000044  point: comment=block hier=top.t.cond1
  000044          k = 1'(i);
 +000044  point: comment=block hier=top.t.cond1

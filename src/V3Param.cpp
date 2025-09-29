@@ -55,6 +55,8 @@
 #include "V3Hasher.h"
 #include "V3Os.h"
 #include "V3Parse.h"
+#include "V3Simulate.h"
+#include "V3Stats.h"
 #include "V3Unroll.h"
 #include "V3Width.h"
 
@@ -1267,7 +1269,7 @@ class ParamVisitor final : public VNVisitor {
     // STATE - across all visitors
     ParamState& m_state;  // Common state
     ParamProcessor m_processor;  // De-parameterize a cell, build modules
-    UnrollStateful m_unroller;  // Loop unroller
+    GenForUnroller m_unroller;  // Unroller for AstGenFor
 
     bool m_iterateModule = false;  // Iterating module body
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
@@ -1632,10 +1634,10 @@ class ParamVisitor final : public VNVisitor {
             // a BEGIN("zzz__BRA__{loop#}__KET__")
             const string beginName = nodep->name();
             // Leave the original Begin, as need a container for the (possible) GENVAR
-            // Note V3Unroll will replace some AstVarRef's to the loop variable with constants
+            // Note m_unroller will replace some AstVarRef's to the loop variable with constants
             // Don't remove any deleted nodes in m_unroller until whole process finishes,
-            // (are held in m_unroller), as some AstXRefs may still point to old nodes.
-            VL_DO_DANGLING(m_unroller.unrollGen(forp, beginName), forp);
+            // as some AstXRefs may still point to old nodes.
+            VL_DO_DANGLING(m_unroller.unroll(forp, beginName), forp);
             // Blocks were constructed under the special begin, move them up
             // Note forp is null, so grab statements again
             if (AstNode* const stmtsp = nodep->genforp()) {

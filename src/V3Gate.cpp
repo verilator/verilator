@@ -1229,9 +1229,9 @@ class GateUnused final {
 
         if (const AstNodeProcedure* const procedurep = VN_CAST(nodep, NodeProcedure)) {
             if (procedurep->stmtsp())
-                procedurep->stmtsp()->foreach([](const AstWhile* const whilep) {  //
-                    whilep->v3warn(UNUSEDLOOP, "Loop is not used and will be optimized out");
-                    whilep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
+                procedurep->stmtsp()->foreach([](const AstLoop* const loopp) {  //
+                    loopp->v3warn(UNUSEDLOOP, "Loop is not used and will be optimized out");
+                    loopp->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
                 });
         }
     }

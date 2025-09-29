@@ -926,7 +926,8 @@ class ConstVisitor final : public VNVisitor {
     bool m_doV = false;  // Verilog, not C++ conversion
     bool m_doGenerate = false;  // Postpone width checking inside generate
     bool m_convertLogicToBit = false;  // Convert logical operators to bitwise
-    bool m_hasJumpDelay = false;  // JumpGo or Delay under this while
+    bool m_hasJumpDelay = false;  // JumpGo or Delay under this loop
+    bool m_hasLoopTest = false;  // Contains AstLoopTest
     bool m_underRecFunc = false;  // Under a recursive function
     AstNodeModule* m_modp = nullptr;  // Current module
     const AstArraySel* m_selp = nullptr;  // Current select
@@ -3588,31 +3589,62 @@ class ConstVisitor final : public VNVisitor {
         // replaceWithSimulation on the Arg's parent FuncRef replaces these
         iterateChildren(nodep);
     }
-    void visit(AstWhile* nodep) override {
+    void visit(AstLoop* nodep) override {
+        VL_RESTORER(m_hasLoopTest);
         const bool oldHasJumpDelay = m_hasJumpDelay;
         m_hasJumpDelay = false;
-        { iterateChildren(nodep); }
-        const bool thisWhileHasJumpDelay = m_hasJumpDelay;
-        m_hasJumpDelay = thisWhileHasJumpDelay || oldHasJumpDelay;
-        if (m_doNConst) {
-            if (nodep->condp()->isZero()) {
-                UINFO(4, "WHILE(0) => nop " << nodep);
-                nodep->v3warn(UNUSEDLOOP,
-                              "Loop condition is always false; body will never execute");
-                nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
-                nodep->unlinkFrBack();
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            } else if (nodep->condp()->isNeqZero()) {
-                if (!thisWhileHasJumpDelay) {
-                    nodep->v3warn(INFINITELOOP, "Infinite loop (condition always true)");
-                    nodep->fileline()->modifyWarnOff(V3ErrorCode::INFINITELOOP,
-                                                     true);  // Complain just once
-                }
-            } else if (operandBoolShift(nodep->condp())) {
-                replaceBoolShift(nodep->condp());
+        m_hasLoopTest = false;
+        iterateChildren(nodep);
+        bool thisLoopHasJumpDelay = m_hasJumpDelay;
+        m_hasJumpDelay = thisLoopHasJumpDelay || oldHasJumpDelay;
+        // If the first statement always break, the loop is useless
+        if (AstLoopTest* const testp = VN_CAST(nodep->stmtsp(), LoopTest)) {
+            if (testp->condp()->isZero()) {
+                nodep->v3warn(UNUSEDLOOP, "Loop condition is always false");
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
             }
         }
+        // If last statement always breaks, repalce loop with body
+        if (AstNode* lastp = nodep->stmtsp()) {
+            while (AstNode* const nextp = lastp->nextp()) lastp = nextp;
+            if (AstLoopTest* const testp = VN_CAST(lastp, LoopTest)) {
+                if (testp->condp()->isZero()) {
+                    VL_DO_DANGLING(pushDeletep(testp->unlinkFrBack()), testp);
+                    nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
+            }
+        }
+        // Warn on infinite loop
+        if (!m_hasLoopTest && !thisLoopHasJumpDelay) {
+            nodep->v3warn(INFINITELOOP, "Infinite loop (condition always true)");
+            nodep->fileline()->modifyWarnOff(V3ErrorCode::INFINITELOOP, true);  // Complain once
+        }
     }
+    void visit(AstLoopTest* nodep) override {
+        iterateChildren(nodep);
+
+        // If never breaks, remove
+        if (nodep->condp()->isNeqZero()) {
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
+
+        m_hasLoopTest = true;
+
+        // If always breaks, subsequent statements are dead code, delete them
+        if (nodep->condp()->isZero()) {
+            if (AstNode* const nextp = nodep->nextp()) {
+                VL_DO_DANGLING(pushDeletep(nextp->unlinkFrBackWithNext()), nodep);
+            }
+            return;
+        }
+
+        if (operandBoolShift(nodep->condp())) replaceBoolShift(nodep->condp());
+    }
+
     void visit(AstInitArray* nodep) override { iterateChildren(nodep); }
     void visit(AstInitItem* nodep) override { iterateChildren(nodep); }
     void visit(AstUnbounded* nodep) override { iterateChildren(nodep); }
@@ -3673,6 +3705,11 @@ class ConstVisitor final : public VNVisitor {
 
     void visit(AstJumpBlock* nodep) override {
         iterateChildren(nodep);
+
+        // If first statement is an AstLoopTest, pull it before the jump block
+        if (AstLoopTest* const testp = VN_CAST(nodep->stmtsp(), LoopTest)) {
+            nodep->addHereThisAsNext(testp->unlinkFrBack());
+        }
 
         // Remove if empty
         if (!nodep->stmtsp()) {

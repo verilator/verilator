@@ -118,7 +118,7 @@ public:
 class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     VMemberMap m_memberMap;
     AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
-    std::unordered_map<AstJumpBlock*, size_t> m_labelNumbers;  // Label numbers for JumpBlocks
+    std::unordered_map<AstJumpBlock*, size_t> m_labelNumbers;  // Label numbers for AstJumpBlocks
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCExpr
     bool m_emitConstInit = false;  // Emitting constant initializer
     bool m_createdScopeHash = false;  // Already created a scope hash
@@ -1095,19 +1095,45 @@ public:
         // Emit
         putns(nodep, "goto __Vlabel" + std::to_string(n) + ";\n");
     }
+    void visit(AstLoop* nodep) override {
+        UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
+        VL_RESTORER(m_createdScopeHash);
+        // Special case when the AstLoopTest is first for output readability
+        if (AstLoopTest* const testp = VN_CAST(nodep->stmtsp(), LoopTest)) {
+            putns(nodep, "while (");
+            iterateConst(testp->condp());
+            puts(") {\n");
+            iterateAndNextConstNull(testp->nextp());
+            puts("}\n");
+            return;
+        }
+        // Special case when the AstLoopTest is last for output readability
+        if (AstNode* lastp = nodep->stmtsp()) {
+            while (AstNode* const nextp = lastp->nextp()) lastp = nextp;
+            if (AstLoopTest* const testp = VN_CAST(lastp, LoopTest)) {
+                putns(nodep, "do {\n");
+                for (AstNode* p = nodep->stmtsp(); p != lastp; p = p->nextp()) iterateConst(p);
+                puts("} while (");
+                iterateConst(testp->condp());
+                puts(");\n");
+                return;
+            }
+        }
+        // Emit generic case directly
+        putns(nodep, "while (true) {\n");
+        iterateAndNextConstNull(nodep->stmtsp());
+        puts("}\n");
+    }
+    void visit(AstLoopTest* nodep) override {
+        VL_RESTORER(m_createdScopeHash);
+        putns(nodep, "if (!(");
+        iterateAndNextConstNull(nodep->condp());
+        puts(")) break;\n");
+    }
     void visit(AstCLocalScope* nodep) override {
         putns(nodep, "{\n");
         VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->stmtsp());
-        puts("}\n");
-    }
-    void visit(AstWhile* nodep) override {
-        VL_RESTORER(m_createdScopeHash);
-        putns(nodep, "while (");
-        iterateAndNextConstNull(nodep->condp());
-        puts(") {\n");
-        iterateAndNextConstNull(nodep->stmtsp());
-        iterateAndNextConstNull(nodep->incsp());
         puts("}\n");
     }
     void visit(AstNodeIf* nodep) override {

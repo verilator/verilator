@@ -5466,17 +5466,19 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    void visit(AstLoop* nodep) override {
+        UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
+        assertAtStatement(nodep);
+        userIterateAndNext(nodep->stmtsp(), nullptr);
+    }
+    void visit(AstLoopTest* nodep) override {
+        assertAtStatement(nodep);
+        iterateCheckBool(nodep, "Loop Condition", nodep->condp(), BOTH);
+    }
     void visit(AstRepeat* nodep) override {
         assertAtStatement(nodep);
         userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
         userIterateAndNext(nodep->stmtsp(), nullptr);
-    }
-    void visit(AstWhile* nodep) override {
-        assertAtStatement(nodep);
-        iterateCheckBool(nodep, "For Test Condition", nodep->condp(),
-                         BOTH);  // it's like an if() condition.
-        userIterateAndNext(nodep->stmtsp(), nullptr);
-        userIterateAndNext(nodep->incsp(), nullptr);
     }
     void visit(AstNodeIf* nodep) override {
         assertAtStatement(nodep);

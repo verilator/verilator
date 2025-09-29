@@ -399,13 +399,38 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateAndNextConstNull(nodep->stmtsp());
         putfs(nodep, "end\n");
     }
-    void visit(AstWhile* nodep) override {
-        putfs(nodep, "while (");
-        iterateAndNextConstNull(nodep->condp());
-        puts(") begin\n");
+    void visit(AstLoop* nodep) override {
+        // Special case when the AstLoopTest is first for output readability
+        if (AstLoopTest* const testp = VN_CAST(nodep->stmtsp(), LoopTest)) {
+            putfs(nodep, "while (");
+            iterateConst(testp->condp());
+            puts(") begin\n");
+            iterateAndNextConstNull(testp->nextp());
+            puts("end\n");
+            return;
+        }
+        // Special case when the AstLoopTest is last for output readability
+        if (AstNode* lastp = nodep->stmtsp()) {
+            while (AstNode* const nextp = lastp->nextp()) lastp = nextp;
+            if (AstLoopTest* const testp = VN_CAST(lastp, LoopTest)) {
+                putfs(nodep, "do begin\n");
+                for (AstNode* p = nodep->stmtsp(); p != lastp; p = p->nextp()) iterateConst(p);
+                puts("end while (");
+                iterateConst(testp->condp());
+                puts(")\n");
+                return;
+            }
+        }
+        // Generic case
+        putfs(nodep, "while (true) begin\n");
         iterateAndNextConstNull(nodep->stmtsp());
-        iterateAndNextConstNull(nodep->incsp());
+        iterateAndNextConstNull(nodep->contsp());
         putfs(nodep, "end\n");
+    }
+    void visit(AstLoopTest* nodep) override {
+        putfs(nodep, "if (!(");
+        iterateAndNextConstNull(nodep->condp());
+        puts(")) break;\n");
     }
     void visit(AstNodeIf* nodep) override {
         putfs(nodep, "");

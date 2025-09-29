@@ -372,7 +372,7 @@ static void process() {
             // After V3Task so task internal variables will get renamed
             V3Name::nameAll(v3Global.rootp());
 
-            // Loop unrolling & convert FORs to WHILEs
+            // Loop unrolling
             V3Unroll::unrollAll(v3Global.rootp());
 
             // Expand slices of arrays

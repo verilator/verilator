@@ -338,8 +338,7 @@ protected:
     void visit(AstAlways* nodep) override = 0;
     void visit(AstNodeIf* nodep) override = 0;
 
-    // We don't do AstWhile loops, due to the standard question
-    // of what is before vs. after
+    // We don't do AstLoop, due to the standard question of what is before vs. after
 
     void visit(AstAssignDly* nodep) override {
         VL_RESTORER(m_inDly);

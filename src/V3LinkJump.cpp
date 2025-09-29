@@ -86,24 +86,18 @@ class LinkJumpVisitor final : public VNVisitor {
         } else if (AstForeach* const foreachp = VN_CAST(nodep, Foreach)) {
             if (endOfIter) {
                 underp = foreachp->stmtsp();
+                // Keep a LoopTest **at the front** outside the jump block
+                if (VN_IS(underp, LoopTest)) underp = underp->nextp();
             } else {
                 underp = nodep;
                 under_and_next = false;  // IE we skip the entire foreach
             }
-        } else if (AstWhile* const whilep = VN_CAST(nodep, While)) {
+        } else if (AstLoop* const loopp = VN_CAST(nodep, Loop)) {
             if (endOfIter) {
-                underp = whilep->stmtsp();
+                underp = loopp->stmtsp();
             } else {
                 underp = nodep;
-                under_and_next = false;  // IE we skip the entire while
-            }
-        } else if (AstDoWhile* const dowhilep = VN_CAST(nodep, DoWhile)) {
-            // Handle it the same as AstWhile, because it will be converted to it
-            if (endOfIter) {
-                underp = dowhilep->stmtsp();
-            } else {
-                underp = nodep;
-                under_and_next = false;
+                under_and_next = false;  // IE we skip the entire loop
             }
         } else {
             nodep->v3fatalSrc("Unknown jump point for break/disable/continue");
@@ -307,52 +301,34 @@ class LinkJumpVisitor final : public VNVisitor {
             nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::READ}, zerosp};
         AstNode* const bodysp = nodep->stmtsp();
         if (bodysp) bodysp->unlinkFrBackWithNext();
-        AstWhile* const whilep = new AstWhile{nodep->fileline(), condp, bodysp, decp};
-        if (!m_unrollFull.isDefault()) whilep->unrollFull(m_unrollFull);
+        FileLine* const flp = nodep->fileline();
+        AstLoop* const loopp = new AstLoop{flp};
+        loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
+        loopp->addStmtsp(bodysp);
+        loopp->addContsp(decp);
+        if (!m_unrollFull.isDefault()) loopp->unroll(m_unrollFull);
         m_unrollFull = VOptionBool::OPT_DEFAULT_FALSE;
         beginp->addStmtsp(initsp);
-        beginp->addStmtsp(whilep);
+        beginp->addStmtsp(loopp);
+        // Replacement AstBegin will be iterated next
         nodep->replaceWith(beginp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    void visit(AstWhile* nodep) override {
-        // Don't need to track AstRepeat/AstFor as they have already been converted
-        if (!m_unrollFull.isDefault()) nodep->unrollFull(m_unrollFull);
-        if (m_modp->hasParameterList() || m_modp->hasGParam())
+    void visit(AstLoop* nodep) override {
+        if (!m_unrollFull.isDefault()) nodep->unroll(m_unrollFull);
+        if (m_modp->hasParameterList() || m_modp->hasGParam()) {
             nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
+        }
         m_unrollFull = VOptionBool::OPT_DEFAULT_FALSE;
         VL_RESTORER(m_loopp);
         VL_RESTORER(m_loopInc);
         m_loopp = nodep;
         m_loopInc = false;
-        iterateAndNextNull(nodep->condp());
         iterateAndNextNull(nodep->stmtsp());
         m_loopInc = true;
-        iterateAndNextNull(nodep->incsp());
-    }
-    void visit(AstDoWhile* nodep) override {
-        // It is converted to AstWhile in this visit method
-        VL_RESTORER(m_loopp);
-        {
-            m_loopp = nodep;
-            iterateAndNextNull(nodep->condp());
-            iterateAndNextNull(nodep->stmtsp());
-        }
-        AstNodeExpr* const condp = nodep->condp() ? nodep->condp()->unlinkFrBack() : nullptr;
-        AstNode* const bodyp = nodep->stmtsp() ? nodep->stmtsp()->unlinkFrBack() : nullptr;
-        AstWhile* const whilep = new AstWhile{nodep->fileline(), condp, bodyp};
-        if (!m_unrollFull.isDefault()) whilep->unrollFull(m_unrollFull);
-        m_unrollFull = VOptionBool::OPT_DEFAULT_FALSE;
-        // No unused warning for converted AstDoWhile, as body always executes once
-        nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
-        nodep->replaceWith(whilep);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        if (bodyp) {
-            AstNode* const copiedBodyp = bodyp->cloneTree(false);
-            addPrefixToBlocksRecurse("__Vdo_while1_", copiedBodyp);
-            addPrefixToBlocksRecurse("__Vdo_while2_", bodyp);
-            whilep->addHereThisAsNext(copiedBodyp);
-        }
+        iterateAndNextNull(nodep->contsp());
+        // Move contsp into stmtsp, no longer needed to keep separately
+        if (nodep->contsp()) nodep->addStmtsp(nodep->contsp()->unlinkFrBackWithNext());
     }
     void visit(AstNodeForeach* nodep) override {
         VL_RESTORER(m_loopp);

@@ -17,7 +17,7 @@ test.compile(v_flags2=['+define+TEST_FULL', '--stats'])
 
 test.execute(expect_filename=test.golden_filename)
 
-test.file_grep(test.stats, r'Optimizations, Unrolled Iterations\s+(\d+)', 11)
-test.file_grep(test.stats, r'Optimizations, Unrolled Loops\s+(\d+)', 4)
+test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled iterations\s+(\d+)', 107)
+test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled loops\s+(\d+)', 27)
 
 test.passes()

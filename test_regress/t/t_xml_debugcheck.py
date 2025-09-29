@@ -26,8 +26,8 @@ test.files_identical(out_filename, test.golden_filename, 'logfile')
 test.file_grep(out_filename, r'<constpool')
 test.file_grep(out_filename, r'<inititem')
 test.file_grep(out_filename, r'<if')
-test.file_grep(out_filename, r'<while')
-test.file_grep(out_filename, r'<begin>')  # for <if> and <while>
+test.file_grep(out_filename, r'<loop')
+test.file_grep(out_filename, r'<begin>')  # for <if> and <loop>
 test.file_grep(out_filename, r' signed=')  # for <basicdtype>
 test.file_grep(out_filename, r' func=')  # for <ccall>
 

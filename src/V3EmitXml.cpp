@@ -126,25 +126,26 @@ class EmitXmlFileVisitor final : public VNVisitorConst {
         }
         puts("</if>\n");
     }
-    void visit(AstWhile* nodep) override {
-        outputTag(nodep, "while");
+    void visit(AstLoop* nodep) override {
+        outputTag(nodep, "loop");
         puts(">\n");
-        if (nodep->condp()) {
-            puts("<begin>\n");
-            iterateAndNextConstNull(nodep->condp());
-            puts("</begin>\n");
-        }
         if (nodep->stmtsp()) {
             puts("<begin>\n");
             iterateAndNextConstNull(nodep->stmtsp());
             puts("</begin>\n");
         }
-        if (nodep->incsp()) {
+        if (nodep->contsp()) {
             puts("<begin>\n");
-            iterateAndNextConstNull(nodep->incsp());
+            iterateAndNextConstNull(nodep->contsp());
             puts("</begin>\n");
         }
-        puts("</while>\n");
+        puts("</loop>\n");
+    }
+    void visit(AstLoopTest* nodep) override {
+        outputTag(nodep, "looptest");
+        puts(">\n");
+        iterateAndNextConstNull(nodep->condp());
+        puts("</looptest>\n");
     }
     void visit(AstNetlist* nodep) override {
         puts("<netlist>\n");

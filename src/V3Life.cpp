@@ -387,37 +387,25 @@ class LifeVisitor final : public VNVisitor {
         VL_DO_DANGLING(delete ifLifep, ifLifep);
         VL_DO_DANGLING(delete elseLifep, elseLifep);
     }
-
-    void visit(AstWhile* nodep) override {
-        // While's are a problem, as we don't allow loops in the graph.  We
-        // may go around the cond/body multiple times.  Thus a
-        // lifelication just in the body is ok, but we can't delete an
-        // assignment in the body that's used in the cond.  (And otherwise
-        // would because it only appears used after-the-fact.  So, we model
-        // it as a IF statement, and just don't allow elimination of
-        // variables across the body.
+    void visit(AstLoop* nodep) override {
+        // Similar problem to AstJumpBlock, don't optimize loop bodies - most are unrolled
+        UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
         LifeBlock* const prevLifep = m_lifep;
-        LifeBlock* const condLifep = new LifeBlock{prevLifep, m_statep};
         LifeBlock* const bodyLifep = new LifeBlock{prevLifep, m_statep};
         {
-            m_lifep = condLifep;
-            iterateAndNextNull(nodep->condp());
-        }
-        {
+            VL_RESTORER(m_noopt);
             m_lifep = bodyLifep;
+            setNoopt();
             iterateAndNextNull(nodep->stmtsp());
-            iterateAndNextNull(nodep->incsp());
+            m_lifep = prevLifep;
         }
-        m_lifep = prevLifep;
-        UINFO(4, "   joinfor");
+        UINFO(4, "   joinloop");
         // For the next assignments, clear any variables that were read or written in the block
-        condLifep->lifeToAbove();
         bodyLifep->lifeToAbove();
-        VL_DO_DANGLING(delete condLifep, condLifep);
         VL_DO_DANGLING(delete bodyLifep, bodyLifep);
     }
     void visit(AstJumpBlock* nodep) override {
-        // As with While's we can't predict if a JumpGo will kill us or not
+        // As with Loop's we can't predict if a JumpGo will kill us or not
         // It's worse though as an IF(..., JUMPGO) may change the control flow.
         // Just don't optimize blocks with labels; they're rare - so far.
         LifeBlock* const prevLifep = m_lifep;
