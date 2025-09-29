@@ -22,6 +22,8 @@ module t (  /*AUTOARG*/
 `ifdef TEST_VERBOSE
     $write("a = %x, b = %x, c = %x\n", a, b, c);
 `endif
+    if (a != 32'hdeadbeef) $stop;
+    if (b != 32'hdeadbeef) $stop;
     if (c != 32'hdeadbeef) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
