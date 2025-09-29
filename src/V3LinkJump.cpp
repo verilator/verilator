@@ -421,8 +421,7 @@ class LinkJumpVisitor final : public VNVisitor {
                 if (existsBlockAbove(targetName)) {
                     if (beginp->user3() & CIF_INSIDE) {
                         nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling block inside a fork");
-                    }
-                    if (beginp->user3() & CIF_CONTAINS) {
+                    } else if (beginp->user3() & CIF_CONTAINS) {
                         std::vector<AstBegin*> blocks{beginp};
                         handleDisableOnFork(nodep, blocks, "disableForkQueue");
                     } else {
