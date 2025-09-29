@@ -23,6 +23,7 @@ module t (  /*AUTOARG*/
   event e9;
   event e10;
   event e11;
+  event e12;
   integer cyc = 1;
 
   always @(negedge clk) begin
@@ -79,19 +80,25 @@ module t (  /*AUTOARG*/
     if (cyc >= 41 && cyc <= 45) begin
       ->e9;
 `ifdef TEST_VERBOSE
-      $display("[%0t] triggered e8", $time);
+      $display("[%0t] triggered e9", $time);
 `endif
     end
     if (cyc >= 46 && cyc <= 50) begin
       ->e10;
 `ifdef TEST_VERBOSE
-      $display("[%0t] triggered e8", $time);
+      $display("[%0t] triggered e10", $time);
 `endif
     end
     if (cyc >= 51 && cyc <= 55) begin
       ->e11;
 `ifdef TEST_VERBOSE
-      $display("[%0t] triggered e8", $time);
+      $display("[%0t] triggered e11", $time);
+`endif
+    end
+    if (cyc >= 60 && cyc <= 64) begin
+      ->e12;
+`ifdef TEST_VERBOSE
+      $display("[%0t] triggered e12", $time);
 `endif
     end
 `ifdef TEST_VERBOSE
@@ -145,4 +152,11 @@ module t (  /*AUTOARG*/
   restrict property (@(e11) ##1 val[0]);
 
   restrict property (@(e11) not ##1 val[0]);
+
+  property prop();
+    @(e12) not ##1 val[0]
+  endproperty
+
+  assert property(prop) $display("[%0t] property, fileline:%d", $time, `__LINE__);
+  else $display("[%0t] property, fileline:%d", $time, `__LINE__);
 endmodule
