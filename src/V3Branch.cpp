@@ -56,7 +56,7 @@ class BranchVisitor final : public VNVisitorConst {
         }  // else leave unknown
     }
 
-    void visit(AstCFunc* nodep) {
+    void visit(AstCFunc* nodep) override {
         if (!nodep->dontInline()) nodep->isInline(true);
         iterateChildrenConst(nodep);
     }
