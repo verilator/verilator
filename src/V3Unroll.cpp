@@ -94,7 +94,7 @@ class UnrollOneVisitor final : VNVisitor {
         // True if the loop contains at least one dependent AstLoopTest
         bool foundLoopTest = false;
         // Process one body statement at a time
-        for (AstNode *stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
             // Check if this is a loop test - before substitution
             if (AstLoopTest* const testp = VN_CAST(stmtp, LoopTest)) {
                 AstNode* const condp = V3Const::constifyEdit(testp->condp());
