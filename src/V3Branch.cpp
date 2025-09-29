@@ -33,85 +33,45 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Branch state, as a visitor of each AstNode
 
 class BranchVisitor final : public VNVisitorConst {
-    // NODE STATE
-    // Entire netlist:
-    //  AstFTask::user1()       -> int.  Number of references
-    const VNUser1InUse m_inuser1;
-
-    // STATE - across all visitors
-    std::vector<AstCFunc*> m_cfuncsp;  // List of all tasks
-
     // STATE - for current visit position (use VL_RESTORER)
-    int m_likely = false;  // Excuses for branch likely taken
-    int m_unlikely = false;  // Excuses for branch likely not taken
-
-    // METHODS
-
-    void reset() {
-        m_likely = false;
-        m_unlikely = false;
-    }
-    void checkUnlikely(const AstNode* nodep) {
-        if (nodep->isUnlikely()) {
-            UINFO(4, "  UNLIKELY: " << nodep);
-            m_unlikely++;
-        }
-    }
+    int m_unlikely = 0;  // Excuses for branch likely not taken
 
     // VISITORS
     void visit(AstNodeIf* nodep) override {
         UINFO(4, " IF: " << nodep);
-        VL_RESTORER(m_likely);
         VL_RESTORER(m_unlikely);
-        {
-            // Do if
-            reset();
-            iterateAndNextConstNull(nodep->thensp());
-            const int ifLikely = m_likely;
-            const int ifUnlikely = m_unlikely;
-            // Do else
-            reset();
-            iterateAndNextConstNull(nodep->elsesp());
-            const int elseLikely = m_likely;
-            const int elseUnlikely = m_unlikely;
-            // Compute
-            const int likeness = ifLikely - ifUnlikely - (elseLikely - elseUnlikely);
-            if (likeness > 0) {
-                nodep->branchPred(VBranchPred::BP_LIKELY);
-            } else if (likeness < 0) {
-                nodep->branchPred(VBranchPred::BP_UNLIKELY);
-            }  // else leave unknown
-        }
+        // Do then
+        m_unlikely = 0;
+        iterateAndNextConstNull(nodep->thensp());
+        const int thenUnlikely = m_unlikely;
+        // Do else
+        m_unlikely = 0;
+        iterateAndNextConstNull(nodep->elsesp());
+        const int elseUnlikely = m_unlikely;
+        // Compute
+        if (elseUnlikely > thenUnlikely) {
+            nodep->branchPred(VBranchPred::BP_LIKELY);
+        } else if (elseUnlikely < thenUnlikely) {
+            nodep->branchPred(VBranchPred::BP_UNLIKELY);
+        }  // else leave unknown
     }
-    void visit(AstNodeCCall* nodep) override {
-        checkUnlikely(nodep);
-        nodep->funcp()->user1Inc();
-        iterateChildrenConst(nodep);
-    }
+
     void visit(AstCFunc* nodep) override {
-        checkUnlikely(nodep);
-        m_cfuncsp.push_back(nodep);
-        iterateChildrenConst(nodep);
-    }
-    void visit(AstNode* nodep) override {
-        checkUnlikely(nodep);
+        if (!nodep->dontInline()) nodep->isInline(true);
         iterateChildrenConst(nodep);
     }
 
-    // METHODS
-    void calc_tasks() {
-        for (AstCFunc* nodep : m_cfuncsp) {
-            if (!nodep->dontInline()) nodep->isInline(true);
+    void visit(AstNode* nodep) override {
+        if (nodep->isUnlikely()) {
+            UINFO(4, "  UNLIKELY: " << nodep);
+            ++m_unlikely;
         }
+        iterateChildrenConst(nodep);
     }
 
 public:
     // CONSTRUCTORS
-    explicit BranchVisitor(AstNetlist* nodep) {
-        reset();
-        iterateChildrenConst(nodep);
-        calc_tasks();
-    }
+    explicit BranchVisitor(AstNetlist* nodep) { iterateChildrenConst(nodep); }
     ~BranchVisitor() override = default;
 };
 
@@ -121,4 +81,5 @@ public:
 void V3Branch::branchAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { BranchVisitor{nodep}; }
+    V3Global::dumpCheckGlobalTree("branch", 0, dumpTreeEitherLevel() >= 3);
 }
