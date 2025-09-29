@@ -45,7 +45,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class LinkJumpVisitor final : public VNVisitor {
     // TYPES
-    enum ContainsOrInsideFork : uint8_t { CIF_CONTAINS = 0x1, CIF_INSIDE = 0x2, CIF_BOTH = 0x3 };
+    enum ContainsOrInsideFork : uint8_t { CIF_CONTAINS = 0x1, CIF_INSIDE = 0x2 };
 
     // NODE STATE
     //  AstBegin/etc::user1()  -> AstJumpBlock*, for body of this loop
@@ -177,18 +177,18 @@ class LinkJumpVisitor final : public VNVisitor {
         return new AstStmtExpr{
             fl, new AstMethodCall{fl, queueRefp, "push_back", new AstArg{fl, "", processSelfp}}};
     }
-    void handleDisableOnFork(AstDisable* const nodep, const std::vector<AstBegin*>& forks,
+    void handleDisableOnFork(AstDisable* const nodep, const std::vector<AstBegin*>& blocks,
                              const std::string& methodName) {
-        // The support utilizes the process::kill()` method. For each `disable` a queue of
-        // processes is declared. At the beginning of each fork that can be disabled, its process
-        // handle is pushed to the queue. `disable` statement is replaced with calling `kill()`
-        // method on each element of the queue.
+        // The support utilizes the `process::kill()` or `disable fork` functionality.
+        // For each `disable` a queue of processes is declared. At the beginning of each block
+        // that can be disabled, its process handle is pushed to the queue. `disable` statement
+        // is replaced with calling the appropriate method on each element of the queue.
         FileLine* const fl = nodep->fileline();
         const std::string targetName = nodep->targetp()->name();
         if (m_ftaskp) {
             if (!m_ftaskp->exists([targetp = nodep->targetp()](const AstNodeBlock* blockp)
                                       -> bool { return blockp == targetp; })) {
-                // Disabling a fork, which is within the same task, is not a problem
+                // Disabling a block, which is within the same task, is not a problem
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from task / function");
             }
         }
@@ -207,7 +207,7 @@ class LinkJumpVisitor final : public VNVisitor {
             = new AstVarRef{fl, topPkgp, processQueuep, VAccess::WRITE};
         AstStmtExpr* pushCurrentProcessp = getQueuePushProcessSelfp(queueWriteRefp);
 
-        for (AstBegin* const beginp : forks) {
+        for (AstBegin* const beginp : blocks) {
             if (pushCurrentProcessp->backp()) {
                 pushCurrentProcessp = pushCurrentProcessp->cloneTree(false);
             }
@@ -217,18 +217,15 @@ class LinkJumpVisitor final : public VNVisitor {
             }
         }
         AstVarRef* const queueRefp = new AstVarRef{fl, topPkgp, processQueuep, VAccess::READWRITE};
-        AstTaskRef* const killQueueCall
-            = new AstTaskRef{fl, VN_AS(getMemberp(processClassp, methodName), Task),
-                             new AstArg{fl, "", queueRefp}};
-        killQueueCall->classOrPackagep(processClassp);
-        AstStmtExpr* const killStmtp = new AstStmtExpr{fl, killQueueCall};
-        nodep->addNextHere(killStmtp);
+        AstTaskRef* const methodCallp = new AstTaskRef{
+            fl, VN_AS(getMemberp(processClassp, methodName), Task), new AstArg{fl, "", queueRefp}};
+        methodCallp->classOrPackagep(processClassp);
+        AstStmtExpr* const callStmtp = new AstStmtExpr{fl, methodCallp};
+        nodep->addNextHere(callStmtp);
         if (existsBlockAbove(targetName)) {
-            // process::kill doesn't kill the current process immediately, because it is in the
-            // running state. Since the current process has to be terminated immediately, we jump
-            // at the end of the fork that is being disabled
+            // The current process has to be terminated immediately, so we jump at its end
             AstJumpBlock* const jumpBlockp = getJumpBlock(nodep->targetp(), false);
-            killStmtp->addNextHere(new AstJumpGo{fl, jumpBlockp});
+            callStmtp->addNextHere(new AstJumpGo{fl, jumpBlockp});
         }
     }
     static bool directlyUnderFork(const AstNode* const nodep) {
