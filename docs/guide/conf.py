@@ -73,6 +73,9 @@ rst_prolog = """
 # We keep this extensions list empty for now to avoid needing dependencies
 extensions = []
 # extensions = ['breathe', 'sphinxcontrib.spelling']
+# For website builds, this will add sphinxcontrib.jquery
+if 'VERILATOR_SPHINX_EXTENSIONS' in os.environ:
+    extensions.extend(os.environ.get('VERILATOR_SPHINX_EXTENSIONS', '').split(':'))
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
