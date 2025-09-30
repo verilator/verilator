@@ -139,7 +139,12 @@ public:
     // e.g.: replaceWords("one apple bad_apple", "apple", "banana") -> "one banana bad_apple"
     static string replaceWord(const string& str, const string& from, const string& to);
     // Predicate to check if 'str' starts with 'prefix'
-    static bool startsWith(const string& str, const string& prefix);
+    static bool startsWith(const string& str, const char* prefixp) {
+        return !str.rfind(prefixp, 0);  // Faster than .find(_) == 0
+    }
+    static bool startsWith(const string& str, const string& prefix) {
+        return !str.rfind(prefix, 0);  // Faster than .find(_) == 0
+    }
     // Predicate to check if 'str' ends with 'suffix'
     static bool endsWith(const string& str, const string& suffix);
     // Return proper article (a/an) for a word. May be inaccurate for some special words

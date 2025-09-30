@@ -195,6 +195,8 @@ public:
     // For getline()
     string m_lineChars;  ///< Characters left for next line
 
+    string m_tokenBuf;  // Token buffer, to avoid repeated alloc/free
+
     void v3errorEnd(std::ostringstream& str) VL_RELEASE(V3Error::s().m_mutex) {
         fileline()->v3errorEnd(str);
     }
@@ -1687,7 +1689,7 @@ int V3PreProcImp::getFinalToken(string& buf) {
     if (!m_finAhead) {
         m_finAhead = true;
         m_finToken = getStateToken();
-        m_finBuf = string{yyourtext(), yyourleng()};
+        m_finBuf.assign(yyourtext(), yyourleng());
     }
     const int tok = m_finToken;
     buf = m_finBuf;
@@ -1748,10 +1750,10 @@ string V3PreProcImp::getline() {
     const char* rtnp;
     bool gotEof = false;
     while (nullptr == (rtnp = std::strchr(m_lineChars.c_str(), '\n')) && !gotEof) {
-        string buf;
-        const int tok = getFinalToken(buf /*ref*/);
+        m_tokenBuf.clear();
+        const int tok = getFinalToken(m_tokenBuf /*ref*/);
         if (debug() >= 5) {
-            const string bufcln = V3PreLex::cleanDbgStrg(buf);
+            const string bufcln = V3PreLex::cleanDbgStrg(m_tokenBuf);
             const string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
             UINFO(0, flcol << ": GETFETC:  " << tokenName(tok) << ": " << bufcln);
         }
@@ -1762,7 +1764,7 @@ string V3PreProcImp::getline() {
             }
             gotEof = true;
         } else {
-            m_lineChars.append(buf);
+            m_lineChars.append(m_tokenBuf);
         }
     }
 

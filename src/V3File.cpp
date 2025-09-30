@@ -651,10 +651,18 @@ V3OutFormatter::V3OutFormatter(V3OutFormatter::Language lang)
 
 //----------------------------------------------------------------------
 
-string V3OutFormatter::indentSpaces(int num) {
+static constexpr int MAXSPACE = 80;  // After this indent, stop indenting more
+
+// Table of spaces, so we don't have to alloc/free them all the time
+static const std::array<std::string, MAXSPACE + 1> s_indentSpaces = []() {
+    std::array<std::string, MAXSPACE + 1> table;
+    for (int i = 0; i <= MAXSPACE; ++i) table[i] = std::string(static_cast<size_t>(i), ' ');
+    return table;
+}();
+
+const std::string& V3OutFormatter::indentSpaces(int num) {
     // Indent the specified number of spaces.
-    if (num <= 0) return std::string{};
-    return std::string(std::min<size_t>(num, MAXSPACE), ' ');
+    return s_indentSpaces[std::max(0, std::min(num, MAXSPACE))];
 }
 
 bool V3OutFormatter::tokenMatch(const char* cp, const char* cmp) {

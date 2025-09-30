@@ -106,7 +106,6 @@ public:
 
 class V3OutFormatter VL_NOT_FINAL {
     // TYPES
-    static constexpr int MAXSPACE = 80;  // After this indent, stop indenting more
 public:
     enum AlignClass : uint8_t { AL_AUTO = 0, AL_STATIC = 1 };
     enum Language : uint8_t { LA_C, LA_JSON, LA_MK, LA_VERILOG, LA_XML };
@@ -173,7 +172,7 @@ public:
         if (!m_nobreak) puts("\n");
     }
     // STATIC METHODS
-    static string indentSpaces(int num);
+    static const std::string& indentSpaces(int num);
     // Add escaped characters to strings
     static string quoteNameControls(const string& namein, Language lang = LA_C) VL_PURE;
     static bool tokenMatch(const char* cp, const char* cmp);

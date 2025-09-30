@@ -64,55 +64,48 @@ class LifeVarEntry final {
     // Last assignment to this varscope, nullptr if no longer relevant
     AstNodeStmt* m_assignp = nullptr;
     AstConst* m_constp = nullptr;  // Known constant value
+    bool m_isNew = true;  // Is just created
     // First access was a set (and thus block above may have a set that can be deleted
-    bool m_setBeforeUse;
+    bool m_setBeforeUse = false;
     // Was ever assigned (and thus above block may not preserve constant propagation)
     bool m_everSet = false;
 
 public:
-    class CRESET {};
-    class SIMPLEASSIGN {};
-    class COMPLEXASSIGN {};
-    class CONSUMED {};
-
-    LifeVarEntry(CRESET, AstCReset* nodep)
-        : m_setBeforeUse{true} {
-        resetStatement(nodep);
-    }
-    LifeVarEntry(SIMPLEASSIGN, AstNodeAssign* nodep)
-        : m_setBeforeUse{true} {
-        simpleAssign(nodep);
-    }
-    explicit LifeVarEntry(COMPLEXASSIGN)
-        : m_setBeforeUse{false} {
-        complexAssign();
-    }
-    explicit LifeVarEntry(CONSUMED)
-        : m_setBeforeUse{false} {
-        consumed();
-    }
+    LifeVarEntry() = default;
     ~LifeVarEntry() = default;
+
+    void init(bool setBeforeUse) {
+        UASSERT(m_isNew, "Not a new entry");
+        m_isNew = false;
+        m_setBeforeUse = setBeforeUse;
+    }
+
     void simpleAssign(AstNodeAssign* nodep) {  // New simple A=.... assignment
+        UASSERT_OBJ(!m_isNew, nodep, "Uninitialzized new entry");
         m_assignp = nodep;
         m_constp = nullptr;
         m_everSet = true;
         if (VN_IS(nodep->rhsp(), Const)) m_constp = VN_AS(nodep->rhsp(), Const);
     }
     void resetStatement(AstCReset* nodep) {  // New CReset(A) assignment
+        UASSERT_OBJ(!m_isNew, nodep, "Uninitialzized new entry");
         m_assignp = nodep;
         m_constp = nullptr;
         m_everSet = true;
     }
     void complexAssign() {  // A[x]=... or some complicated assignment
+        UASSERT(!m_isNew, "Uninitialzized new entry");
         m_assignp = nullptr;
         m_constp = nullptr;
         m_everSet = true;
     }
     void consumed() {  // Rvalue read of A
+        UASSERT(!m_isNew, "Uninitialzized new entry");
         m_assignp = nullptr;
     }
     AstNodeStmt* assignp() const { return m_assignp; }
     AstConst* constNodep() const { return m_constp; }
+    bool isNew() const { return m_isNew; }
     bool setBeforeUse() const { return m_setBeforeUse; }
     bool everSet() const { return m_everSet; }
 };
@@ -126,9 +119,9 @@ class LifeBlock final {
     //   AstVarScope::user1()   -> int.       Used in combining to detect duplicates
 
     // LIFE MAP
-    //  For each basic block, we'll make a new map of what variables that if/else is changing
-    using LifeMap = std::unordered_map<AstVarScope*, LifeVarEntry>;
-    LifeMap m_map;  // Current active lifetime map for current scope
+    // For each basic block, we'll make a new map of what variables that if/else is changing
+    // Current active lifetime map for current scope
+    std::unordered_map<AstVarScope*, LifeVarEntry> m_map;
     LifeBlock* const m_aboveLifep;  // Upper life, or nullptr
     LifeState* const m_statep;  // Current global state
     bool m_replacedVref = false;  // Replaced a variable reference since last clearing
@@ -140,20 +133,19 @@ public:
         , m_statep{statep} {}
     ~LifeBlock() = default;
     // METHODS
-    void checkRemoveAssign(const LifeMap::iterator& it) {
-        const AstVar* const varp = it->first->varp();
-        LifeVarEntry* const entp = &(it->second);
+    void checkRemoveAssign(AstVarScope* vscp, LifeVarEntry& entr) {
+        const AstVar* const varp = vscp->varp();
         if (!varp->isSigPublic() && !varp->sensIfacep()) {
             // Rather than track what sigs AstUCFunc/AstUCStmt may change,
             // we just don't optimize any public sigs
             // Check the var entry, and remove if appropriate
-            if (AstNodeStmt* const oldassp = entp->assignp()) {
+            if (AstNodeStmt* const oldassp = entr.assignp()) {
                 UINFO(7, "       PREV: " << oldassp);
                 // Redundant assignment, in same level block
                 // Don't delete it now as it will confuse iteration since it maybe WAY
                 // above our current iteration point.
                 UINFOTREE(7, oldassp, "", "REMOVE/SAMEBLK");
-                entp->complexAssign();
+                entr.complexAssign();
                 oldassp->unlinkFrBack();
                 if (VN_IS(oldassp, CReset)) {
                     ++m_statep->m_statCResetDel;
@@ -168,40 +160,43 @@ public:
         // Do we have a old assignment we can nuke?
         UINFO(4, "     CRESETof: " << nodep);
         UINFO(7, "       new: " << rstp);
-        const auto pair = m_map.emplace(std::piecewise_construct,  //
-                                        std::forward_as_tuple(nodep),
-                                        std::forward_as_tuple(LifeVarEntry::CRESET{}, rstp));
-        if (!pair.second) {
-            checkRemoveAssign(pair.first);
-            pair.first->second.resetStatement(rstp);
+        LifeVarEntry& entr = m_map[nodep];
+        if (entr.isNew()) {
+            entr.init(true);
+        } else {
+            checkRemoveAssign(nodep, entr);
         }
+        entr.resetStatement(rstp);
         // lifeDump();
     }
     void simpleAssign(AstVarScope* nodep, AstNodeAssign* assp) {
         // Do we have a old assignment we can nuke?
         UINFO(4, "     ASSIGNof: " << nodep);
         UINFO(7, "       new: " << assp);
-        const auto pair = m_map.emplace(std::piecewise_construct,  //
-                                        std::forward_as_tuple(nodep),
-                                        std::forward_as_tuple(LifeVarEntry::SIMPLEASSIGN{}, assp));
-        if (!pair.second) {
-            checkRemoveAssign(pair.first);
-            pair.first->second.simpleAssign(assp);
+        LifeVarEntry& entr = m_map[nodep];
+        if (entr.isNew()) {
+            entr.init(true);
+        } else {
+            checkRemoveAssign(nodep, entr);
         }
+        entr.simpleAssign(assp);
         // lifeDump();
     }
     void complexAssign(AstVarScope* nodep) {
         UINFO(4, "     clearof: " << nodep);
-        const auto pair = m_map.emplace(nodep, LifeVarEntry::COMPLEXASSIGN{});
-        if (!pair.second) pair.first->second.complexAssign();
+        LifeVarEntry& entr = m_map[nodep];
+        if (entr.isNew()) entr.init(false);
+        entr.complexAssign();
     }
     void clearReplaced() { m_replacedVref = false; }
     bool replaced() const { return m_replacedVref; }
     void varUsageReplace(AstVarScope* nodep, AstVarRef* varrefp) {
         // Variable rvalue.  If it references a constant, we can replace it
-        const auto pair = m_map.emplace(nodep, LifeVarEntry::CONSUMED{});
-        if (!pair.second) {
-            if (AstConst* const constp = pair.first->second.constNodep()) {
+        LifeVarEntry& entr = m_map[nodep];
+        if (entr.isNew()) {
+            entr.init(false);
+        } else {
+            if (AstConst* const constp = entr.constNodep()) {
                 if (!varrefp->varp()->isSigPublic() && !varrefp->varp()->sensIfacep()) {
                     // Aha, variable is constant; substitute in.
                     // We'll later constant propagate
@@ -214,19 +209,19 @@ public:
                 }
             }
             UINFO(4, "     usage: " << nodep);
-            pair.first->second.consumed();
         }
+        entr.consumed();
     }
     void complexAssignFind(AstVarScope* nodep) {
-        const auto pair = m_map.emplace(nodep, LifeVarEntry::COMPLEXASSIGN{});
-        if (!pair.second) {
-            UINFO(4, "     casfind: " << pair.first->first);
-            pair.first->second.complexAssign();
-        }
+        UINFO(4, "     casfind: " << nodep);
+        LifeVarEntry& entr = m_map[nodep];
+        if (entr.isNew()) entr.init(false);
+        entr.complexAssign();
     }
     void consumedFind(AstVarScope* nodep) {
-        const auto pair = m_map.emplace(nodep, LifeVarEntry::CONSUMED{});
-        if (!pair.second) pair.first->second.consumed();
+        LifeVarEntry& entr = m_map[nodep];
+        if (entr.isNew()) entr.init(false);
+        entr.consumed();
     }
     void lifeToAbove() {
         // Any varrefs under a if/else branch affect statements outside and after the if/else
@@ -259,7 +254,7 @@ public:
                 // Both branches set the var, we can remove the assignment before the IF.
                 UINFO(4, "DUALBRANCH " << nodep);
                 const auto itab = m_map.find(nodep);
-                if (itab != m_map.end()) checkRemoveAssign(itab);
+                if (itab != m_map.end()) checkRemoveAssign(nodep, itab->second);
             }
         }
         // this->lifeDump();
@@ -287,12 +282,7 @@ class LifeVisitor final : public VNVisitor {
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
     bool m_noopt = false;  // Disable optimization of variables in this block
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
-
-    // LIFE MAP
-    //  For each basic block, we'll make a new map of what variables that if/else is changing
-    using LifeMap = std::unordered_map<AstVarScope*, LifeVarEntry>;
-    // cppcheck-suppress memleak  // cppcheck bug - it is deleted
-    LifeBlock* m_lifep;  // Current active lifetime map for current scope
+    LifeBlock* m_lifep = nullptr;  // Current active lifetime map for current scope
 
     // METHODS
     void setNoopt() {
