@@ -175,7 +175,7 @@ class LinkJumpVisitor final : public VNVisitor {
             fl, new AstMethodCall{fl, queueRefp, "push_back", new AstArg{fl, "", processSelfp}}};
     }
     void handleDisable(AstDisable* const nodep, const std::vector<AstBegin*>& blocks,
-                             const std::string& methodName) {
+                       const std::string& methodName) {
         // The support utilizes the `process::kill()` or `disable fork` functionality.
         // For each `disable` a queue of processes is declared. At the beginning of each block
         // that can be disabled, its process handle is pushed to the queue. `disable` statement
