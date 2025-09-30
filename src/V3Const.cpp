@@ -4133,6 +4133,7 @@ public:
         V3Stats::addStatSum("Optimizations, Cond redundant expressions", m_statCondExprRedundant);
         V3Stats::addStatSum("Optimizations, If cond redundant expressions",
                             m_statIfCondExprRedundant);
+        VIsCached::clearCacheTree();
     }
 
     AstNode* mainAcceptEdit(AstNode* nodep) {
