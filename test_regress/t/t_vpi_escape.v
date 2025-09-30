@@ -62,13 +62,13 @@ extern "C" int mon_check();
 
    integer        status;
 
-   sub a0 (.cyc(cyc));
+   sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name a0 (.cyc(cyc));
 
-   sub \mod.with_dot (.cyc(cyc));
+   sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name \mod.with_dot (.cyc(cyc));
 
    // Check if scope names are not decoded twice
-   sub ___0F_ (.cyc(cyc));
-   sub ___0_ (.cyc(cyc));
+   sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name ___0F_ (.cyc(cyc));
+   sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name ___0_ (.cyc(cyc));
 
    initial begin
 
@@ -112,12 +112,12 @@ extern "C" int mon_check();
 
 endmodule
 
-module sub (
+module sub_with_very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very__very_long_name (
             input [31:0] cyc /*verilator public_flat_rd*/
             );
    reg \b.c /*verilator public_flat_rw*/;
    reg subsig1 /*verilator public_flat_rd*/;
-   reg subsig2 /*verilator public_flat_rd*/;
+   reg subsig2; // public in .vlt
 `ifdef IVERILOG
    // stop icarus optimizing signals away
    wire redundant = subsig1 | subsig2 | \b.c ;

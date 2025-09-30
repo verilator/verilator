@@ -263,7 +263,7 @@ public:
         const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
         if (!nodep->unnamed()) {
             for (const string& i : m_coverageOffBlocks) {
-                if (VString::wildmatch(nodep->prettyOrigOrName(), i)) {
+                if (VString::wildmatch(nodep->prettyDehashOrigOrName(), i)) {
                     nodep->addItemsp(new AstPragma{nodep->fileline(), pragma});
                 }
             }
@@ -274,7 +274,7 @@ public:
         const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
         if (!nodep->unnamed()) {
             for (const string& i : m_coverageOffBlocks) {
-                if (VString::wildmatch(nodep->prettyOrigOrName(), i)) {
+                if (VString::wildmatch(nodep->prettyDehashOrigOrName(), i)) {
                     nodep->addStmtsp(new AstPragma{nodep->fileline(), pragma});
                 }
             }
@@ -754,7 +754,7 @@ void V3Control::applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep) {
     const string& filename = nodep->fileline()->filename();
     V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
     if (filep) filep->applyBlock(nodep);
-    const string& modname = modulep->prettyOrigOrName();
+    const string& modname = modulep->prettyDehashOrigOrName();
     V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (modp) modp->applyBlock(nodep);
 }
@@ -763,7 +763,7 @@ void V3Control::applyCoverageBlock(AstNodeModule* modulep, AstGenBlock* nodep) {
     const string& filename = nodep->fileline()->filename();
     V3ControlFile* const filep = V3ControlResolver::s().files().resolve(filename);
     if (filep) filep->applyBlock(nodep);
-    const string& modname = modulep->prettyOrigOrName();
+    const string& modname = modulep->prettyDehashOrigOrName();
     V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (modp) modp->applyBlock(nodep);
 }
@@ -775,16 +775,16 @@ void V3Control::applyIgnores(FileLine* filelinep) {
 }
 
 void V3Control::applyModule(AstNodeModule* modulep) {
-    const string& modname = modulep->prettyOrigOrName();
+    const string& modname = modulep->prettyDehashOrigOrName();
     V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (modp) modp->apply(modulep);
 }
 
 void V3Control::applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp) {
-    const string& modname = modulep->prettyOrigOrName();
+    const string& modname = modulep->prettyDehashOrigOrName();
     V3ControlModule* const modp = V3ControlResolver::s().modules().resolve(modname);
     if (!modp) return;
-    const V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->prettyOrigOrName());
+    const V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->prettyDehashOrigOrName());
     if (ftp) ftp->apply(ftaskp);
 }
 
@@ -792,14 +792,14 @@ void V3Control::applyVarAttr(const AstNodeModule* modulep, const AstNodeFTask* f
                              AstVar* varp) {
     V3ControlVar* vp;
     V3ControlModule* const modp
-        = V3ControlResolver::s().modules().resolve(modulep->prettyOrigOrName());
+        = V3ControlResolver::s().modules().resolve(modulep->prettyDehashOrigOrName());
     if (!modp) return;
     if (ftaskp) {
-        V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->prettyOrigOrName());
+        V3ControlFTask* const ftp = modp->ftasks().resolve(ftaskp->prettyDehashOrigOrName());
         if (!ftp) return;
-        vp = ftp->vars().resolve(varp->prettyOrigOrName());
+        vp = ftp->vars().resolve(varp->prettyDehashOrigOrName());
     } else {
-        vp = modp->vars().resolve(varp->prettyOrigOrName());
+        vp = modp->vars().resolve(varp->prettyDehashOrigOrName());
     }
     if (vp) vp->apply(varp);
 }
