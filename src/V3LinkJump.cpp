@@ -418,7 +418,7 @@ class LinkJumpVisitor final : public VNVisitor {
                     } else if (beginp->user3()) {
                         nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling block inside a fork");
                     } else if (m_ftaskp) {
-                        // Unsuppoted, because the function can be called in a fork
+                        // Unsupported, because the function can be called in a fork
                         nodep->v3warn(E_UNSUPPORTED,
                                       "Unsupported: disabling block inside a function/task");
                     } else {
