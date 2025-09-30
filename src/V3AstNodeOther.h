@@ -450,7 +450,7 @@ public:
     inline bool hasCombo() const;
 };
 class AstAlias final : public AstNode {
-    // Alias statement
+    // Alias construct - Used for source level net alias, and also for variable aliases internally
     // @astgen op1 := itemsp : List[AstNodeExpr]  // Alias operands
 public:
     AstAlias(FileLine* fl, AstNodeExpr* itemsp)
@@ -458,6 +458,18 @@ public:
         addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstAlias;
+};
+class AstAliasScope final : public AstNode {
+    // Like AstAlias, but aliases two scopes instead of nets/variables
+    // @astgen op1 := rhsp : AstNodeExpr
+    // @astgen op2 := lhsp : AstNodeExpr
+public:
+    AstAliasScope(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : ASTGEN_SUPER_AliasScope(fl) {
+        this->lhsp(lhsp);
+        this->rhsp(rhsp);
+    }
+    ASTGEN_MEMBERS_AstAliasScope;
 };
 class AstBind final : public AstNode {
     // Parents: MODULE

@@ -68,7 +68,6 @@ public:
     bool sameNode(const AstNode*) const override { return true; }
     string verilogKwd() const override { return "="; }
     bool isTimingControl() const override { return timingControlp(); }
-    virtual bool brokeLhsMustBeLvalue() const = 0;
 };
 class AstNodeBlock VL_NOT_FINAL : public AstNodeStmt {
     // A Begin/fork block
@@ -1119,7 +1118,6 @@ public:
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
         return new AstAssign{fileline(), lhsp, rhsp, controlp};
     }
-    bool brokeLhsMustBeLvalue() const override { return true; }
 };
 class AstAssignDly final : public AstNodeAssign {
 public:
@@ -1133,7 +1131,6 @@ public:
     }
     bool isGateOptimizable() const override { return false; }
     string verilogKwd() const override { return "<="; }
-    bool brokeLhsMustBeLvalue() const override { return true; }
 };
 class AstAssignForce final : public AstNodeAssign {
     // Procedural 'force' statement
@@ -1144,20 +1141,6 @@ public:
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         return new AstAssignForce{fileline(), lhsp, rhsp};
     }
-    bool brokeLhsMustBeLvalue() const override { return true; }
-};
-class AstAssignVarScope final : public AstNodeAssign {
-    // Assign two VarScopes to each other
-public:
-    AstAssignVarScope(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_AssignVarScope(fl, lhsp, rhsp) {
-        dtypeFrom(rhsp);
-    }
-    ASTGEN_MEMBERS_AstAssignVarScope;
-    AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
-        return new AstAssignVarScope{fileline(), lhsp, rhsp};
-    }
-    bool brokeLhsMustBeLvalue() const override { return false; }
 };
 class AstAssignW final : public AstNodeAssign {
     // Like assign, but wire/assign's in verilog, the only setting of the specified variable
@@ -1176,7 +1159,6 @@ public:
             return refp->access().isWriteOrRW() && refp->varp()->delayp();
         });
     }
-    bool brokeLhsMustBeLvalue() const override { return true; }
     AstDelay* getLhsNetDelay() const;
     AstAlways* convertToAlways();
 };

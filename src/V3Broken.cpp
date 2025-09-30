@@ -225,8 +225,7 @@ private:
     // VISITORS
     void visit(AstNodeAssign* nodep) override {
         processAndIterate(nodep);
-        UASSERT_OBJ(!(v3Global.assertDTypesResolved() && nodep->brokeLhsMustBeLvalue()
-                      && VN_IS(nodep->lhsp(), NodeVarRef)
+        UASSERT_OBJ(!(v3Global.assertDTypesResolved() && VN_IS(nodep->lhsp(), NodeVarRef)
                       && !VN_AS(nodep->lhsp(), NodeVarRef)->access().isWriteOrRW()),
                     nodep, "Assignment LHS is not an lvalue");
     }

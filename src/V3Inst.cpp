@@ -90,7 +90,7 @@ class InstVisitor final : public VNVisitor {
                                         ->subDTypep()
                                         ->skipRefp(),
                                     IfaceRefDType))) {
-                // Create an AstAssignVarScope for Vars to Cells so we can
+                // Create an AstAliasScope for Vars to Cells so we can
                 // link with their scope later
                 AstNodeExpr* const lhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
                                                          m_cellp->name(), VAccess::READ};
@@ -98,9 +98,7 @@ class InstVisitor final : public VNVisitor {
                 const AstVarXRef* const xrefp = VN_CAST(exprp, VarXRef);
                 UASSERT_OBJ(refp || xrefp, exprp,
                             "Interfaces: Pin is not connected to a VarRef or VarXRef");
-                AstAssignVarScope* const assp
-                    = new AstAssignVarScope{exprp->fileline(), lhsp, exprp};
-                m_cellp->addNextHere(assp);
+                m_cellp->addNextHere(new AstAliasScope{exprp->fileline(), lhsp, exprp});
             } else {
                 nodep->v3error("Assigned pin is neither input nor output");
             }

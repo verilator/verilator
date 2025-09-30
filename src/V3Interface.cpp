@@ -70,7 +70,7 @@ class InlineIntfRefVisitor final : public VNVisitor {
 
         iterateChildren(modp);
     }
-    void visit(AstAssignVarScope* nodep) override {
+    void visit(AstAliasScope* nodep) override {
         // Reference
         const AstVarRef* const reflp = VN_CAST(nodep->lhsp(), VarRef);
         // What the reference refers to
