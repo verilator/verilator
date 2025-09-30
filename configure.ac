@@ -596,8 +596,6 @@ AC_DEFUN([_MY_CXX_CHECK_CXX_VER],
 # error "Too old"
 #endif
     ], [[
-       std::thread t([]{});
-       t.join();
      ]])],
      [_my_result=yes],
      [_my_result=no],
