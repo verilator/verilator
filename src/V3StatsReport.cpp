@@ -160,7 +160,12 @@ class StatsReport final {
 
 public:
     // METHODS
-    static void addStat(const V3Statistic& stat) { s_allStats.push_back(stat); }
+    static void addStat(const V3Statistic& stat) {
+        // Avoid memory blow-up when called frequently with zero adds,
+        // e.g. from V3Const invoked on individual expressions.
+        if (stat.sumit() && stat.value() == 0.0) return;
+        s_allStats.push_back(stat);
+    }
 
     static double getStatSum(const string& name) {
         // O(n^2) if called a lot; present assumption is only a small call count
