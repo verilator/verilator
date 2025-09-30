@@ -177,7 +177,7 @@ class LinkJumpVisitor final : public VNVisitor {
         return new AstStmtExpr{
             fl, new AstMethodCall{fl, queueRefp, "push_back", new AstArg{fl, "", processSelfp}}};
     }
-    void handleDisableOnFork(AstDisable* const nodep, const std::vector<AstBegin*>& blocks,
+    void handleDisable(AstDisable* const nodep, const std::vector<AstBegin*>& blocks,
                              const std::string& methodName) {
         // The support utilizes the `process::kill()` or `disable fork` functionality.
         // For each `disable` a queue of processes is declared. At the beginning of each block
@@ -411,11 +411,11 @@ class LinkJumpVisitor final : public VNVisitor {
                 }
                 forks.push_back(beginp);
             }
-            handleDisableOnFork(nodep, forks, "killQueue");
+            handleDisable(nodep, forks, "killQueue");
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
             if (directlyUnderFork(beginp)) {
                 std::vector<AstBegin*> forks{beginp};
-                handleDisableOnFork(nodep, forks, "killQueue");
+                handleDisable(nodep, forks, "killQueue");
             } else {
                 const std::string targetName = beginp->name();
                 if (existsBlockAbove(targetName)) {
@@ -423,7 +423,7 @@ class LinkJumpVisitor final : public VNVisitor {
                         nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling block inside a fork");
                     } else if (beginp->user3() & CIF_CONTAINS) {
                         std::vector<AstBegin*> blocks{beginp};
-                        handleDisableOnFork(nodep, blocks, "disableForkQueue");
+                        handleDisable(nodep, blocks, "disableForkQueue");
                     } else {
                         // Jump to the end of the named block
                         AstJumpBlock* const blockp = getJumpBlock(beginp, false);
