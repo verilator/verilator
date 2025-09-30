@@ -29,11 +29,12 @@ Verilator 5.041 devel
 * Support class package reference on pattern keys (#5653). [Todd Strader]
 * Support digits in `$sscanf` field width formats (#6083). [Iztok Jeras]
 * Support pure functions in sensitivity lists (#6393). [Krzysztof Bieganski, Antmicro Ltd.]
-* Support simple alias statements (#6339). [Ryszard Rozak, Antmicro Ltd.]
+* Support simple alias statements (#6339) (#6501). [Ryszard Rozak, Antmicro Ltd.]
 * Improve automatic selection of logic for DFG synthesis (#6370). [Geza Lore]
 * Improve `covergroup with function sample` handling  (#6387). [Jakub Wasilewski]
 * Improve DFG type system (#6390). [Geza Lore]
 * Improve DFG variable removal and temporary insertion (#6401). [Geza Lore]
+* Optimize duplicate 'if' and '?:' conditions (#3807) (#6495)
 * Optimize dead functions in more cases (#6380) (#6430). [Artur Bieniek, Antmicro Ltd.]
 * Optimize constant folding in wide expression expansion (#6381). [Geza Lore]
 * Fix missing BLKSEQ when connecting module port to array (#2973).
@@ -72,6 +73,7 @@ Verilator 5.041 devel
 * Fix data types of method calls without parenthesis (#6457). [Artur Bieniek, Antmicro Ltd.]
 * Fix segfault on unsupported PLI calls (#6458). [Krzysztof Bieganski, Antmicro Ltd.]
 * Fix false assertion failure on failed DFG driver tracing (#6459). [Geza Lore]
+* Fix side effects when using select (#6460). [Igor Zaworski, Antmicro Ltd.]
 * Fix timeprecision backward assignment (#6469). [Artur Bieniek, Antmicro Ltd.]
 * Fix splitting hierarchically referenced variables (#6475). [Ryszard Rozak, Antmicro Ltd.]
 * Fix Windows compilation of Verilator with spaces in the path (#6477). [Fabian Keßler-Schulz]
