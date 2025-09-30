@@ -116,6 +116,7 @@ class V3Global final {
     bool m_dpi = false;  // Need __Dpi include files
     bool m_hasEvents = false;  // Design uses SystemVerilog named events
     bool m_hasClasses = false;  // Design uses SystemVerilog classes
+    bool m_hasForks = false;  // Design uses SystemVerilog forks
     bool m_hasSampled = false;  // Design uses SAMPLED expresions
     bool m_hasTable = false;  // Desgin has the UDP Table.
     bool m_hasVirtIfaces = false;  // Design uses virtual interfaces
@@ -183,6 +184,8 @@ public:
     void setHasEvents() { m_hasEvents = true; }
     bool hasClasses() const { return m_hasClasses; }
     void setHasClasses() { m_hasClasses = true; }
+    bool hasForks() const { return m_hasForks; }
+    void setHasForks() { m_hasForks = true; }
     bool hasSampled() const { return m_hasSampled; }
     void setHasSampled() { m_hasSampled = true; }
     bool hasTable() const { return m_hasTable; }

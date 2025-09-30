@@ -410,7 +410,12 @@ class LinkJumpVisitor final : public VNVisitor {
             } else {
                 const std::string targetName = beginp->name();
                 if (existsBlockAbove(targetName)) {
-                    if (beginp->user3()) {
+                    if (!v3Global.hasForks()) {
+                        // No forks in the user code, so can be handled in simple way
+                        // by jumping to the end of the named block
+                        AstJumpBlock* const blockp = getJumpBlock(beginp, false);
+                        nodep->addNextHere(new AstJumpGo{nodep->fileline(), blockp});
+                    } else if (beginp->user3()) {
                         nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling block inside a fork");
                     } else if (m_ftaskp) {
                         // Unsuppoted, because the function can be called in a fork
