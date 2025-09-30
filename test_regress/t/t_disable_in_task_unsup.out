@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_disable_in_task_unsup.v:14:9: Unsupported: disabling block inside a function/task
+   14 |         disable blk;
+      |         ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
