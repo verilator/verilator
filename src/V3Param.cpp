@@ -1414,14 +1414,15 @@ class ParamVisitor final : public VNVisitor {
         }
     }
     void visit(AstRefDType* nodep) override {
-        if (nodep->subDTypep()
+        if (nodep->typedefp() && nodep->subDTypep()
             && (VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
                 || VN_IS(nodep->subDTypep()->skipRefOrNullp(), ClassRefDType))) {
             AstNodeDType* const newp = nodep->skipRefp()->cloneTree(false);
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            newp->dumpTree();
             iterate(newp);
+        } else {
+            iterateChildren(nodep);
         }
     }
     void visit(AstCell* nodep) override {
