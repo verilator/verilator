@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
 
     std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{"top"}};
 
-    std::ofstream logFile("obj_vlt/t_instrumentation/simulation_output.log");
+    std::ofstream logFile("obj_vlt/t_instrument/simulation_output.log");
     if (!logFile.is_open()) {
         printf("Error: Could not open log file\n");
         return 1;

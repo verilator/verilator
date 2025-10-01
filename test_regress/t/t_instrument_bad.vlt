@@ -1,0 +1,17 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2025 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+instrument -callback "instrument_var" -id 0 -target "top_module.outa"
+
+instrument -callback "instrument_var" -id 0 -target "top.a1.b1.out"
+
+instrument -callback "instrument_var" -id 0 -target "top_module.a3.b1.out"
+
+instrument -callback "instrument_var" -id 0 -target "top_module.a1.b3.out"
+
+instrument -callback "instrument_var" -id 0 -target "top_module.a1.b1.clk"

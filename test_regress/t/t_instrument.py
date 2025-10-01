@@ -10,12 +10,12 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_instrumentation.v"
+test.top_filename = "t/t_instrument.v"
 
 sim_filename = "t/" + test.name + ".cpp"
-dpi_filename = "t/t_instrumentationDPI.cpp"
+dpi_filename = "t/t_instrumentDPI.cpp"
 vlt_filename = "t/" + test.name + ".vlt"
-log_filename = "obj_vlt/t_instrumentation/simulation_output.log"
+log_filename = "obj_vlt/t_instrument/simulation_output.log"
 
 test.compile(make_top_shell=False,
              make_main=False,
