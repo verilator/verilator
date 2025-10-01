@@ -1946,6 +1946,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         addIncDirUser(parseFileArg(optdir, string{valp}));
     });
 
+    DECL_OPTION("-instrument", OnOff, &m_instrument);
+
     parser.finalize();
 
     for (int i = 0; i < argc;) {

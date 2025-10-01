@@ -286,6 +286,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Inline.o \
   V3Inst.o \
   V3InstrCount.o \
+  V3Instrumentation.o \
   V3Interface.o \
   V3Life.o \
   V3LifePost.o \

@@ -64,6 +64,7 @@
 #include "V3HierBlock.h"
 #include "V3Inline.h"
 #include "V3Inst.h"
+#include "V3Instrumentation.h"
 #include "V3Interface.h"
 #include "V3Life.h"
 #include "V3LifePost.h"
@@ -150,6 +151,14 @@ static void process() {
         if (v3Global.opt.debugExitParse()) {
             cout << "--debug-exit-parse: Exiting after parse\n";
             v3Global.vlExit(0);
+        }
+
+        // Instrument Design with the configurations given in .vlt file
+        if (v3Global.opt.instrument()) {
+            v3Global.dpi(true);
+            V3Instrumentation::findTargets(v3Global.rootp());
+            V3Error::abortIfErrors();
+            V3Instrumentation::instrument(v3Global.rootp());
         }
 
         // Convert parseref's to varrefs, and other directly post parsing fixups
