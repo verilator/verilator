@@ -2969,17 +2969,9 @@ netSigList<varp>:               // IEEE: list_of_port_identifiers
         ;
 
 netSig<varp>:                   // IEEE: net_decl_assignment -  one element from list_of_port_identifiers
-                netId sigAttrListE
-                        { $$ = VARDONEA($<fl>1, *$1, nullptr, $2); }
-        |       netId sigAttrListE '=' expr
-                        { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
-                          AstDelay* const delayp = $$->delayp() ? $$->delayp()->unlinkFrBack() : nullptr;
-                          AstAssignW* const assignp = new AstAssignW{$3, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $4, delayp};
-                          if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
-                          AstNode::addNext<AstNode, AstNode>($$, assignp); }
-        |       netId variable_dimensionList sigAttrListE
+                netId variable_dimensionListE sigAttrListE
                         { $$ = VARDONEA($<fl>1, *$1, $2, $3); }
-        |       netId variable_dimensionList sigAttrListE '=' expr
+        |       netId variable_dimensionListE sigAttrListE '=' expr
                         { $$ = VARDONEA($<fl>1, *$1, $2, $3);
                           AstDelay* const delayp = $$->delayp() ? $$->delayp()->unlinkFrBack() : nullptr;
                           AstAssignW* const assignp = new AstAssignW{$4, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $5, delayp};
