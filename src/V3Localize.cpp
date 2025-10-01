@@ -206,7 +206,7 @@ class LocalizeVisitor final : public VNVisitor {
         AstVarScope* const varScopep = nodep->varScopep();
         // Remember this function accesses this VarScope (we always need this as we might optimize
         // this VarScope into a local, even if it's not assigned. See 'isOptimizable')
-        m_accessors(varScopep).insert(m_cfuncp);
+        m_accessors(varScopep).insert(m_cfuncp);  // emplace performs a temporary malloc
         // Remember the reference so we can fix it up later (we always need this as well)
         m_references(m_cfuncp).emplace(varScopep, nodep);
 
