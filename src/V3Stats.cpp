@@ -169,11 +169,6 @@ public:
 //######################################################################
 // Top Stats class
 
-void V3Stats::addStatSum(const string& name, double count) VL_MT_SAFE_EXCLUDES(s_mutex) {
-    V3LockGuard lock{s_mutex};
-    addStat(V3Statistic{"*", name, count, 0, true});
-}
-
 void V3Stats::statsStageAll(AstNetlist* nodep, const std::string& stage, bool fastOnly) {
     StatsVisitor{nodep, stage, fastOnly};
 }

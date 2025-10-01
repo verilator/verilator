@@ -64,12 +64,16 @@ public:
     V3Hash operator+(T that) const {
         return V3Hash{combine(m_value, V3Hash{that}.m_value)};
     }
+    V3Hash operator+(const std::string& that) const {
+        return V3Hash{combine(m_value, V3Hash{that}.m_value)};
+    }
 
     // '+=' combines in place
     template <typename T>
     V3Hash& operator+=(T that) {
         return *this = *this + that;
     }
+    V3Hash& operator+=(const std::string& that) { return *this = *this + that; }
 };
 
 std::ostream& operator<<(std::ostream& os, const V3Hash& rhs) VL_MT_SAFE;

@@ -1287,30 +1287,24 @@ void AstNode::foreachImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& f
     using T_Arg_NonConst = typename std::remove_const<T_Arg>::type;
     using Node = ConstCorrectAstNode<T_Arg>;
 
-    // Traversal stack
-    std::vector<Node*> stack;  // Kept as a vector for easy resizing
-    Node** basep = nullptr;  // Pointer to base of stack
-    Node** topp = nullptr;  // Pointer to top of stack
-    Node** limp = nullptr;  // Pointer to stack limit (when need growing)
-
     // We prefetch this far into the stack
-    constexpr int prefetchDistance = 2;
+    constexpr int PrefetchDistance = 2;
+    // We push max 5 items per iteration
+    constexpr size_t MaxPushesPerIteration = 5;
+    // Initial stack sie
+    constexpr size_t InitialStackSize = 32;
 
-    // Grow stack to given size
-    const auto grow = [&](size_t size) {
-        const ptrdiff_t occupancy = topp - basep;
-        stack.resize(size);
-        basep = stack.data() + prefetchDistance;
-        topp = basep + occupancy;
-        limp = basep + size - 5;  // We push max 5 items per iteration
-    };
-
-    // Initial stack size
-    grow(32);
+    // Traversal stack. Because we often iterate over small trees, use an in-line initial stack
+    size_t stackSize = InitialStackSize;
+    Node* inLineStack[InitialStackSize];  // In-line initial stack storage
+    std::unique_ptr<Node*[]> outOfLineStackp{nullptr};  // In case we need more, we will allocate
+    Node** basep = inLineStack + PrefetchDistance;  // Pointer to base of stack
+    Node** topp = basep;  // Pointer to top of stack
+    Node** limp = inLineStack + stackSize - MaxPushesPerIteration;  // Pointer to grow limit
 
     // We want some non-null pointers at the beginning. These will be prefetched, but not
     // visited, so the root node will suffice. This eliminates needing branches in the loop.
-    for (int i = -prefetchDistance; i; ++i) basep[i] = nodep;
+    for (int i = -PrefetchDistance; i; ++i) basep[i] = nodep;
 
     // Visit given node, enqueue children for traversal
     const auto visit = [&](Node* currp) {
@@ -1343,10 +1337,23 @@ void AstNode::foreachImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& f
         Node* const headp = *--topp;
 
         // Prefetch in case we are ascending the tree
-        ASTNODE_PREFETCH_NON_NULL(topp[-prefetchDistance]);
+        ASTNODE_PREFETCH_NON_NULL(topp[-PrefetchDistance]);
 
         // Ensure we have stack space for nextp and the 4 children
-        if (VL_UNLIKELY(topp >= limp)) grow(stack.size() * 2);
+        if (VL_UNLIKELY(topp >= limp)) {
+            const ptrdiff_t occupancy = topp - basep;
+            {
+                const size_t newStackSize = stackSize * 2;
+                Node** const newStackp = new Node*[newStackSize];
+                std::memcpy(newStackp, basep - PrefetchDistance,
+                            sizeof(Node**) * (occupancy + PrefetchDistance));
+                stackSize = newStackSize;
+                outOfLineStackp.reset(newStackp);
+            }
+            basep = outOfLineStackp.get() + PrefetchDistance;
+            topp = basep + occupancy;
+            limp = outOfLineStackp.get() + stackSize - MaxPushesPerIteration;
+        }
 
         // Enqueue the next node
         if (headp->nextp()) *topp++ = headp->nextp();
@@ -1363,30 +1370,24 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable&
     using T_Arg_NonConst = typename std::remove_const<T_Arg>::type;
     using Node = ConstCorrectAstNode<T_Arg>;
 
-    // Traversal stack
-    std::vector<Node*> stack;  // Kept as a vector for easy resizing
-    Node** basep = nullptr;  // Pointer to base of stack
-    Node** topp = nullptr;  // Pointer to top of stack
-    Node** limp = nullptr;  // Pointer to stack limit (when need growing)
-
     // We prefetch this far into the stack
-    constexpr int prefetchDistance = 2;
+    constexpr int PrefetchDistance = 2;
+    // We push max 5 items per iteration
+    constexpr size_t MaxPushesPerIteration = 5;
+    // Initial stack sie
+    constexpr size_t InitialStackSize = 32;
 
-    // Grow stack to given size
-    const auto grow = [&](size_t size) {
-        const ptrdiff_t occupancy = topp - basep;
-        stack.resize(size);
-        basep = stack.data() + prefetchDistance;
-        topp = basep + occupancy;
-        limp = basep + size - 5;  // We push max 5 items per iteration
-    };
-
-    // Initial stack size
-    grow(32);
+    // Traversal stack. Because we often iterate over small trees, use an in-line initial stack
+    size_t stackSize = InitialStackSize;
+    Node* inLineStack[InitialStackSize];  // In-line initial stack storage
+    std::unique_ptr<Node*[]> outOfLineStackp{nullptr};  // In case we need more, we will allocate
+    Node** basep = inLineStack + PrefetchDistance;  // Pointer to base of stack
+    Node** topp = basep;  // Pointer to top of stack
+    Node** limp = inLineStack + stackSize - MaxPushesPerIteration;  // Pointer to grow limit
 
     // We want some non-null pointers at the beginning. These will be prefetched, but not
     // visited, so the root node will suffice. This eliminates needing branches in the loop.
-    for (int i = -prefetchDistance; i; ++i) basep[i] = nodep;
+    for (int i = -PrefetchDistance; i; ++i) basep[i] = nodep;
 
     // Visit given node, enqueue children for traversal, return true if result determined.
     const auto visit = [&](Node* currp) {
@@ -1418,10 +1419,23 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable&
         Node* const headp = *--topp;
 
         // Prefetch in case we are ascending the tree
-        ASTNODE_PREFETCH_NON_NULL(topp[-prefetchDistance]);
+        ASTNODE_PREFETCH_NON_NULL(topp[-PrefetchDistance]);
 
         // Ensure we have stack space for nextp and the 4 children
-        if (VL_UNLIKELY(topp >= limp)) grow(stack.size() * 2);
+        if (VL_UNLIKELY(topp >= limp)) {
+            const ptrdiff_t occupancy = topp - basep;
+            {
+                const size_t newStackSize = stackSize * 2;
+                Node** const newStackp = new Node*[newStackSize];
+                std::memcpy(newStackp, basep - PrefetchDistance,
+                            sizeof(Node**) * (occupancy + PrefetchDistance));
+                stackSize = newStackSize;
+                outOfLineStackp.reset(newStackp);
+            }
+            basep = outOfLineStackp.get() + PrefetchDistance;
+            topp = basep + occupancy;
+            limp = outOfLineStackp.get() + stackSize - MaxPushesPerIteration;
+        }
 
         // Enqueue the next node
         if (headp->nextp()) *topp++ = headp->nextp();

@@ -465,22 +465,14 @@ void V3Graph::subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp, V3Grap
 //######################################################################
 // Algorithms - sorting
 
-struct GraphSortVertexCmp final {
-    bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
-        return lhsp->sortCmp(rhsp) < 0;
-    }
-};
-struct GraphSortEdgeCmp final {
-    bool operator()(const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
-        return lhsp->sortCmp(rhsp) < 0;
-    }
-};
-
 void V3Graph::sortVertices() {
     // Sort list of vertices by rank, then fanout
     std::vector<V3GraphVertex*> vertexps;
     for (V3GraphVertex& vertex : m_vertices) vertexps.push_back(&vertex);
-    std::stable_sort(vertexps.begin(), vertexps.end(), GraphSortVertexCmp());
+    std::stable_sort(vertexps.begin(), vertexps.end(),
+                     [](const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) {  //
+                         return lhsp->sortCmp(rhsp) < 0;
+                     });
     // Re-insert in sorted order
     for (V3GraphVertex* const vertexp : vertexps) {
         m_vertices.unlink(vertexp);
@@ -495,7 +487,10 @@ void V3Graph::sortEdges() {
         // Make a vector
         for (V3GraphEdge& edge : vertex.outEdges()) edges.push_back(&edge);
         // Sort
-        std::stable_sort(edges.begin(), edges.end(), GraphSortEdgeCmp());
+        std::stable_sort(edges.begin(), edges.end(),
+                         [](const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) {  //
+                             return lhsp->sortCmp(rhsp) < 0;
+                         });
         // Relink edges in specified order
         for (V3GraphEdge* const edgep : edges) edgep->relinkFromp(&vertex);
         // Prep for next

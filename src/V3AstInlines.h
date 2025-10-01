@@ -170,6 +170,11 @@ AstCExpr::AstCExpr(FileLine* fl, const string& textStmt, int setwidth, bool clea
     if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
 }
 
+bool AstVar::sameNode(const AstNode* samep) const {
+    const AstVar* const asamep = VN_DBG_AS(samep, Var);
+    return m_name == asamep->m_name && varType() == asamep->varType();
+}
+
 AstVarRef::AstVarRef(FileLine* fl, AstVar* varp, const VAccess& access)
     : ASTGEN_SUPER_VarRef(fl, varp, access) {}
 AstVarRef::AstVarRef(FileLine* fl, AstNodeModule* pkgp, AstVar* varp, const VAccess& access)
@@ -190,7 +195,7 @@ bool AstVarRef::sameNode(const AstVarRef* samep) const {
     } else {
         return (selfPointer() == samep->selfPointer()
                 && classOrPackagep() == samep->classOrPackagep() && access() == samep->access()
-                && (varp() && samep->varp() && varp()->name() == samep->varp()->name()));
+                && (varp() && samep->varp() && varp()->sameNode(samep->varp())));
     }
 }
 bool AstVarRef::sameNoLvalue(const AstVarRef* samep) const {
@@ -200,7 +205,7 @@ bool AstVarRef::sameNoLvalue(const AstVarRef* samep) const {
         return (selfPointer() == samep->selfPointer()
                 && classOrPackagep() == samep->classOrPackagep()
                 && (!selfPointer().isEmpty() || !samep->selfPointer().isEmpty())
-                && varp()->name() == samep->varp()->name());
+                && varp()->sameNode(samep->varp()));
     }
 }
 

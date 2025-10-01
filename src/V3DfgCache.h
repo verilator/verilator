@@ -167,55 +167,47 @@ using CacheTernary = Cache<KeyTernary, DfgVertexTernary*>;
 // These return a reference to the mapped entry, inserting a nullptr if not yet exists
 inline DfgSel*& getEntry(CacheSel& cache, const DfgDataType& dtype, DfgVertex* src0p,
                          uint32_t lsb) {
-    return cache
-        .emplace(std::piecewise_construct,  //
-                 std::forward_as_tuple(src0p, lsb, dtype.size()),  //
-                 std::forward_as_tuple(nullptr))
-        .first->second;
+    const KeySel key{src0p, lsb, dtype.size()};
+    return cache[key];
 }
 
 inline DfgVertexUnary*& getEntry(CacheUnary& cache, const DfgDataType&, DfgVertex* src0p) {
-    return cache
-        .emplace(std::piecewise_construct,  //
-                 std::forward_as_tuple(src0p),  //
-                 std::forward_as_tuple(nullptr))
-        .first->second;
+    const KeyUnary key{src0p};
+    return cache[key];
 }
 
 inline DfgVertexBinary*& getEntry(CacheBinary& cache, const DfgDataType&, DfgVertex* src0p,
                                   DfgVertex* src1p) {
-    return cache
-        .emplace(std::piecewise_construct,  //
-                 std::forward_as_tuple(src0p, src1p),  //
-                 std::forward_as_tuple(nullptr))
-        .first->second;
+    const KeyBinary key{src0p, src1p};
+    return cache[key];
 }
 
 inline DfgVertexTernary*& getEntry(CacheTernary& cache, const DfgDataType&, DfgVertex* src0p,
                                    DfgVertex* src1p, DfgVertex* src2p) {
-    return cache
-        .emplace(std::piecewise_construct,  //
-                 std::forward_as_tuple(src0p, src1p, src2p),  //
-                 std::forward_as_tuple(nullptr))
-        .first->second;
+    const KeyTernary key{src0p, src1p, src2p};
+    return cache[key];
 }
 
 // These return a reference to the mapped entry, inserting a nullptr if not yet exists
 inline CacheSel::iterator find(CacheSel& cache, DfgVertex* src0p, uint32_t lsb, uint32_t size) {
-    return cache.find({src0p, lsb, size});
+    const KeySel key{src0p, lsb, size};
+    return cache.find(key);
 }
 
 inline CacheUnary::iterator find(CacheUnary& cache, DfgVertex* src0p) {
-    return cache.find({src0p});
+    const KeyUnary key{src0p};
+    return cache.find(key);
 }
 
 inline CacheBinary::iterator find(CacheBinary& cache, DfgVertex* src0p, DfgVertex* src1p) {
-    return cache.find({src0p, src1p});
+    const KeyBinary key{src0p, src1p};
+    return cache.find(key);
 }
 
 inline CacheTernary::iterator find(CacheTernary& cache, DfgVertex* src0p, DfgVertex* src1p,
                                    DfgVertex* src2p) {
-    return cache.find({src0p, src1p, src2p});
+    const KeyTernary key{src0p, src1p, src2p};
+    return cache.find(key);
 }
 
 // These set the operands of a new vertex

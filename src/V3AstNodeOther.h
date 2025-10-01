@@ -1704,6 +1704,7 @@ public:
                                      VSigning numeric);
     AstBasicDType* findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, const VNumRange& range,
                                      int widthMin, VSigning numeric);
+    AstBasicDType* findCreateSameDType(AstBasicDType& node);
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
     AstConstraintRefDType* findConstraintRefDType(FileLine* fl);
     AstEmptyQueueDType* findEmptyQueueDType(FileLine* fl);
@@ -2003,7 +2004,7 @@ public:
     ASTGEN_MEMBERS_AstVar;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    bool sameNode(const AstNode* samep) const override;
+    inline bool sameNode(const AstNode* samep) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     bool hasDType() const override VL_MT_SAFE { return true; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }

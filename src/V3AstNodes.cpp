@@ -1355,46 +1355,38 @@ AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
 }
 
 AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, VBasicDTypeKwd kwd) {
-    if (m_basicps[kwd]) return m_basicps[kwd];
-    //
-    AstBasicDType* const new1p = new AstBasicDType{fl, kwd};
-    // Because the detailed map doesn't update this map,
-    // check the detailed map for this same node
-    // Also adds this new node to the detailed map
-    AstBasicDType* const newp = findInsertSameDType(new1p);
-    if (newp != new1p) {
-        VL_DO_DANGLING(new1p->deleteTree(), new1p);
-    } else {
-        addTypesp(newp);
+    // Because the detailed map doesn't update m_basicps, check the detailed
+    // map for this same node. Also adds this new node to the detailed map
+    if (!m_basicps[kwd]) {
+        AstBasicDType basic{fl, kwd};
+        m_basicps[kwd] = findCreateSameDType(basic);
     }
-    //
-    m_basicps[kwd] = newp;
-    return newp;
+    return m_basicps[kwd];
 }
 
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, int width,
                                                int widthMin, VSigning numeric) {
-    AstBasicDType* const new1p = new AstBasicDType{fl, kwd, numeric, width, widthMin};
-    AstBasicDType* const newp = findInsertSameDType(new1p);
-    if (newp != new1p) {
-        VL_DO_DANGLING(new1p->deleteTree(), new1p);
-    } else {
-        addTypesp(newp);
-    }
-    return newp;
+    AstBasicDType basic{fl, kwd, numeric, width, widthMin};
+    return findCreateSameDType(basic);
 }
 
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd,
                                                const VNumRange& range, int widthMin,
                                                VSigning numeric) {
-    AstBasicDType* const new1p = new AstBasicDType{fl, kwd, numeric, range, widthMin};
-    AstBasicDType* const newp = findInsertSameDType(new1p);
-    if (newp != new1p) {
-        VL_DO_DANGLING(new1p->deleteTree(), new1p);
-    } else {
-        addTypesp(newp);
+    AstBasicDType basic{fl, kwd, numeric, range, widthMin};
+    return findCreateSameDType(basic);
+}
+
+AstBasicDType* AstTypeTable::findCreateSameDType(AstBasicDType& node) {
+    const VBasicTypeKey key{node.width(), node.widthMin(), node.numeric(), node.keyword(),
+                            node.nrange()};
+    AstBasicDType*& entryr = m_detailedMap[key];
+    if (!entryr) {
+        entryr = node.cloneTree(false);
+        entryr->generic(true);
+        addTypesp(entryr);
     }
-    return newp;
+    return entryr;
 }
 
 // cppcheck-suppress duplInheritedMember
@@ -2784,10 +2776,6 @@ void AstVar::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, ignorePostWrite);
     dumpJsonBoolFunc(str, ignoreSchedWrite);
     dumpJsonGen(str);
-}
-bool AstVar::sameNode(const AstNode* samep) const {
-    const AstVar* const asamep = VN_DBG_AS(samep, Var);
-    return name() == asamep->name() && varType() == asamep->varType();
 }
 void AstScope::dump(std::ostream& str) const {
     this->AstNode::dump(str);
