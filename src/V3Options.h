@@ -250,6 +250,7 @@ private:
     bool m_decorationNodes = false;  // main switch: --decoration=nodes
     bool m_diagnosticsSarif = false;  // main switch: --diagnostics-sarif
     bool m_dpiHdrOnly = false;      // main switch: --dpi-hdr-only
+    bool m_dumpSignals = false;     // main switch: --dump-signals
     bool m_emitAccessors = false;   // main switch: --emit-accessors
     bool m_exe = false;             // main switch: --exe
     bool m_flatten = false;         // main switch: --flatten
@@ -529,6 +530,7 @@ public:
     bool diagnosticsSarif() const VL_MT_SAFE { return m_diagnosticsSarif; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
     bool dumpDefines() const { return m_dumpLevel.count("defines") && m_dumpLevel.at("defines"); }
+    bool dumpSignals() const { return m_dumpSignals; }
     bool dumpTreeDot() const {
         return m_dumpLevel.count("tree-dot") && m_dumpLevel.at("tree-dot");
     }
