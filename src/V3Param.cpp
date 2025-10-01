@@ -1413,6 +1413,17 @@ class ParamVisitor final : public VNVisitor {
             processWorkQ();
         }
     }
+    void visit(AstRefDType* nodep) override {
+        if (nodep->subDTypep()
+            && (VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
+                || VN_IS(nodep->subDTypep()->skipRefOrNullp(), ClassRefDType))) {
+            AstNodeDType* const newp = nodep->skipRefp()->cloneTree(false);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            newp->dumpTree();
+            iterate(newp);
+        }
+    }
     void visit(AstCell* nodep) override {
         checkParamNotHier(nodep->paramsp());
         visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
