@@ -1296,8 +1296,8 @@ void AstNode::foreachImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& f
 
     // Traversal stack. Because we often iterate over small trees, use an in-line initial stack
     size_t stackSize = InitialStackSize;
-    Node* inLineStack[InitialStackSize]; // In-line initial stack storage
-    std::unique_ptr<Node*[]> outOfLineStackp{nullptr}; // In case we need more, we will allocate
+    Node* inLineStack[InitialStackSize];  // In-line initial stack storage
+    std::unique_ptr<Node*[]> outOfLineStackp{nullptr};  // In case we need more, we will allocate
     Node** basep = inLineStack + PrefetchDistance;  // Pointer to base of stack
     Node** topp = basep;  // Pointer to top of stack
     Node** limp = inLineStack + stackSize - MaxPushesPerIteration;  // Pointer to grow limit
@@ -1379,8 +1379,8 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable&
 
     // Traversal stack. Because we often iterate over small trees, use an in-line initial stack
     size_t stackSize = InitialStackSize;
-    Node* inLineStack[InitialStackSize]; // In-line initial stack storage
-    std::unique_ptr<Node*[]> outOfLineStackp{nullptr}; // In case we need more, we will allocate
+    Node* inLineStack[InitialStackSize];  // In-line initial stack storage
+    std::unique_ptr<Node*[]> outOfLineStackp{nullptr};  // In case we need more, we will allocate
     Node** basep = inLineStack + PrefetchDistance;  // Pointer to base of stack
     Node** topp = basep;  // Pointer to top of stack
     Node** limp = inLineStack + stackSize - MaxPushesPerIteration;  // Pointer to grow limit
