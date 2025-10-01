@@ -1281,7 +1281,7 @@ char* AstNode::dumpTreeJsonGdb(intptr_t nodep) {
     return dumpTreeJsonGdb(reinterpret_cast<const AstNode*>(nodep));
 }
 // cppcheck-suppress unusedFunction  // Debug only
-void AstNode::dumpGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_LINE
+void AstNode::dumpGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_START
     if (!nodep) {
         cout << "<nullptr>" << endl;
         return;

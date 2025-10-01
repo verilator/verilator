@@ -180,7 +180,7 @@ private:
     // Cadence Incisive has these as abstract functions so we must create them
     void set_time_unit(int exponent10_seconds) override {}  // deprecated
 #endif
-    void set_time_unit(double v, sc_core::sc_time_unit tu) override {}  // LCOV_EXCL_LINE
+    void set_time_unit(double v, sc_core::sc_time_unit tu) override {}
 
     //--------------------------------------------------
     // SystemC 2.1.v1

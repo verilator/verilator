@@ -805,7 +805,7 @@ public:
             cout << "-  Needs flipping: " << needsFlip << "\n";
             cout << "-  Needs cleaning: " << needsCleaning << "\n";
             cout << "-  Size: " << resultOps << " input size: " << visitor.m_ops << "\n";
-        }  // LCOV_EXCL_END
+        }  // LCOV_EXCL_STOP
 
         // Sometimes we have no terms left after ignoring redundant terms
         // (all of which were zeroes)

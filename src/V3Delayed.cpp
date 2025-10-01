@@ -1007,7 +1007,7 @@ class DelayedVisitor final : public VNVisitor {
             switch (vscpInfo.m_scheme) {
             case Scheme::Undecided:  // LCOV_EXCL_START
                 UASSERT_OBJ(false, vscp, "Failed to choose NBA scheme");
-                break;
+                break; // LCOV_EXCL_STOP
             case Scheme::UnsupportedCompoundArrayInLoop: {
                 // Will report error at the site of the NBA
                 break;
