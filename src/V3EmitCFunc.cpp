@@ -596,6 +596,7 @@ void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string
 }
 
 void EmitCFunc::emitConstantString(const AstConst* nodep) {
+    // Const might be a Verilog array-type string, but need to always output std::string
     putnbs(nodep, "std::string{");
     const string str = nodep->num().toString();
     if (!str.empty()) putsQuoted(str);

@@ -972,13 +972,13 @@ public:
     class StringToParse {};  // for creator type-overload selection
     AstConst(FileLine* fl, StringToParse, const char* sourcep)
         : ASTGEN_SUPER_Const(fl)
-        , m_num{this, sourcep} {
+        , m_num{this, V3Number::VerilogNumberLiteral{}, sourcep} {
         initWithNumber();
     }
     class VerilogStringLiteral {};  // for creator type-overload selection
     AstConst(FileLine* fl, VerilogStringLiteral, const string& str)
         : ASTGEN_SUPER_Const(fl)
-        , m_num{V3Number::VerilogStringLiteral{}, this, str} {
+        , m_num{this, V3Number::VerilogStringLiteral{}, str} {
         initWithNumber();
     }
     AstConst(FileLine* fl, uint32_t num)
@@ -1024,7 +1024,7 @@ public:
     class String {};  // for creator type-overload selection
     AstConst(FileLine* fl, String, const string& num)
         : ASTGEN_SUPER_Const(fl)
-        , m_num{V3Number::String{}, this, num} {
+        , m_num{this, V3Number::String{}, num} {
         dtypeSetString();
     }
     class BitFalse {};
@@ -1043,28 +1043,28 @@ public:
     class All0 {};
     AstConst(FileLine* fl, All0)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, "'0") {  // Need () constructor
+        , m_num{this, V3Number::VerilogNumberLiteral{}, "'0"} {
         initWithNumber();
         fl->warnOff(V3ErrorCode::NEWERSTD, true);
     }
     class All1 {};
     AstConst(FileLine* fl, All1)
         : ASTGEN_SUPER_Const(fl)
-        , m_num(this, "'1") {  // Need () constructor
+        , m_num{this, V3Number::VerilogNumberLiteral{}, "'1"} {
         initWithNumber();
         fl->warnOff(V3ErrorCode::NEWERSTD, true);
     }
     class Null {};
     AstConst(FileLine* fl, Null)
         : ASTGEN_SUPER_Const(fl)
-        , m_num{V3Number::Null{}, this} {
+        , m_num{this, V3Number::Null{}} {
         dtypeSetBit();  // Events 1 bit, objects 64 bits, so autoExtend=1 and use bit here
         initWithNumber();
     }
     class OneStep {};
     AstConst(FileLine* fl, OneStep)
         : ASTGEN_SUPER_Const(fl)
-        , m_num{V3Number::OneStep{}, this} {
+        , m_num{this, V3Number::OneStep{}} {
         dtypeSetLogicSized(64, VSigning::UNSIGNED);
         initWithNumber();
     }

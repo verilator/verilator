@@ -540,9 +540,9 @@ class UnknownVisitor final : public VNVisitor {
                 // TODO make a tieoff function that takes AstNode and returns typed value
                 V3Number xnum{nodep, nodep->width()};
                 if (nodeDtp->isDouble()) {
-                    xnum = V3Number{V3Number::Double{}, nodep, 0.0};
+                    xnum = V3Number{nodep, V3Number::Double{}, 0.0};
                 } else if (nodeDtp->isString()) {
-                    xnum = V3Number{V3Number::String{}, nodep, ""};
+                    xnum = V3Number{nodep, V3Number::String{}, ""};
                 } else {
                     xnum.setAllBitsX();
                 }

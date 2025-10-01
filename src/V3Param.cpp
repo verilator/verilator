@@ -198,7 +198,7 @@ public:
             if (pinValuep->isDouble()) {
                 var = pinValuep->num().toDouble();
             } else {  // Cast from integer to real
-                V3Number varNum{pinValuep, 0.0};
+                V3Number varNum{pinValuep, V3Number::Double{}, 0.0};
                 varNum.opIToRD(pinValuep->num());
                 var = varNum.toDouble();
             }

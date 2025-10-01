@@ -245,7 +245,7 @@ public:
         return strp;
     }
     V3Number* newNumber(FileLine* flp, const char* text) {
-        V3Number* nump = new V3Number{flp, text};
+        V3Number* nump = new V3Number{flp, V3Number::VerilogNumberLiteral{}, text};
         m_numberps.push_back(nump);
         return nump;
     }

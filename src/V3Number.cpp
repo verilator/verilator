@@ -95,7 +95,7 @@ void V3Number::v3errorEndFatal(const std::ostringstream& str) const
 // Read class functions
 // CREATION
 
-V3Number::V3Number(VerilogStringLiteral, AstNode* nodep, const string& str) {
+V3Number::V3Number(AstNode* nodep, VerilogStringLiteral, const string& str) {
     // Create a number using a verilog string as the value, thus 8 bits per character.
     if (str.empty()) {  // IEEE 1800-2023 11.10.3 "" = "\000"
         init(nodep, 8);
