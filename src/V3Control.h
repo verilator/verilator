@@ -71,7 +71,8 @@ public:
     static void addInline(FileLine* fl, const string& module, const string& ftask, bool on);
     static void addInstrumentationConfigs(FileLine* fl, const string& instrumentationfunc,
                                           int instrID, const string& target);
-    static std::map<string, InstrumentationTarget, LengthThenLexiographic>& getInstrumentationConfigs();
+    static std::map<string, InstrumentationTarget, LengthThenLexiographic>&
+    getInstrumentationConfigs();
     static void addModulePragma(const string& module, VPragmaType pragma);
     static void addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost);
     static void addProfileData(FileLine* fl, const string& model, const string& key,
