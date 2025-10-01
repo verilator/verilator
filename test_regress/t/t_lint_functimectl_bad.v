@@ -19,4 +19,10 @@ module t;
     // TODO ##
     // TODO expect
   endfunction
+
+  // No warning here
+  wire [31:0] #5 __test_wire = 32'd0;
+  function void f;
+    int x;
+  endfunction
 endmodule

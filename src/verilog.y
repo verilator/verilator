@@ -1790,7 +1790,8 @@ net_declaration<nodep>:         // IEEE: net_declaration - excluding implict
                         { $$ = $2;
                           if (GRAMMARP->m_netStrengthp) {
                               VL_DO_CLEAR(delete GRAMMARP->m_netStrengthp, GRAMMARP->m_netStrengthp = nullptr);
-                          }}
+                          }
+                          GRAMMARP->setNetDelay(nullptr); }
         ;
 
 net_declarationFront:           // IEEE: beginning of net_declaration
@@ -2971,21 +2972,17 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
                 netId sigAttrListE
                         { $$ = VARDONEA($<fl>1, *$1, nullptr, $2); }
         |       netId sigAttrListE '=' expr
-                        { AstDelay* const delayp = GRAMMARP->m_netDelayp ? GRAMMARP->m_netDelayp->cloneTree(false) : nullptr;
+                        { $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
+                          AstDelay* const delayp = $$->delayp() ? $$->delayp()->unlinkFrBack() : nullptr;
                           AstAssignW* const assignp = new AstAssignW{$3, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $4, delayp};
-                          GRAMMARP->setNetDelay(nullptr);
-                          $$ = VARDONEA($<fl>1, *$1, nullptr, $2);
-                          if (delayp) GRAMMARP->setNetDelay(delayp->cloneTree(false));
                           if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
                           AstNode::addNext<AstNode, AstNode>($$, assignp); }
         |       netId variable_dimensionList sigAttrListE
                         { $$ = VARDONEA($<fl>1, *$1, $2, $3); }
         |       netId variable_dimensionList sigAttrListE '=' expr
-                        { AstDelay* const delayp = GRAMMARP->m_netDelayp ? GRAMMARP->m_netDelayp->cloneTree(false) : nullptr;
+                        { $$ = VARDONEA($<fl>1, *$1, $2, $3);
+                          AstDelay* const delayp = $$->delayp() ? $$->delayp()->unlinkFrBack() : nullptr;
                           AstAssignW* const assignp = new AstAssignW{$4, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $5, delayp};
-                          GRAMMARP->setNetDelay(nullptr);
-                          $$ = VARDONEA($<fl>1, *$1, $2, $3);
-                          if (delayp) GRAMMARP->setNetDelay(delayp->cloneTree(false));
                           if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
                           AstNode::addNext<AstNode, AstNode>($$, assignp); }
         ;
