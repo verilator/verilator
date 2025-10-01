@@ -22,8 +22,8 @@
 
 #include "V3Global.h"
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -38,46 +38,52 @@ class DumpSignals final : public VNVisitor {
     // Methods
     void processVar(AstVar* varp) {
         if (varp->basicp() && varp->basicp()->name() != "") {
-                        bool hasRangep = varp->basicp()->rangep() != nullptr;
-                        bool isSized = varp->basicp()->widthSized();
-                        if (hasRangep) {
-                            std::string varHier = m_currHier + varp->name() + " : Type[" + varp->basicp()->name() + "] Width[" + std::to_string(varp->basicp()->rangep()->elementsConst()) + "]";
-                            m_signalFile << varHier << "\n";
-                        } else {
-                            if (varp->basicp()->implicit()){
-                                // Since Var is implicit set the width to 1 like in V3Width.cpp in the AstVar visitor
-                                std::string varHier = m_currHier + varp->name() + " : Type[" + varp->basicp()->name() + "] Width[" + std::to_string(1) + "]";
-                                m_signalFile << varHier << "\n";
-                            } else {
-                                std::string varHier = m_currHier + varp->name() + " : Type[" + varp->basicp()->name() + "] Width[" + std::to_string(varp->basicp()->width()) + "]";
-                                m_signalFile << varHier << "\n";
-                            }
-                        }
-                    }
+            bool hasRangep = varp->basicp()->rangep() != nullptr;
+            bool isSized = varp->basicp()->widthSized();
+            if (hasRangep) {
+                std::string varHier
+                    = m_currHier + varp->name() + " : Type[" + varp->basicp()->name() + "] Width["
+                      + std::to_string(varp->basicp()->rangep()->elementsConst()) + "]";
+                m_signalFile << varHier << "\n";
+            } else {
+                if (varp->basicp()->implicit()) {
+                    // Since Var is implicit set the width to 1 like in V3Width.cpp in the AstVar
+                    // visitor
+                    std::string varHier = m_currHier + varp->name() + " : Type["
+                                          + varp->basicp()->name() + "] Width[" + std::to_string(1)
+                                          + "]";
+                    m_signalFile << varHier << "\n";
+                } else {
+                    std::string varHier = m_currHier + varp->name() + " : Type["
+                                          + varp->basicp()->name() + "] Width["
+                                          + std::to_string(varp->basicp()->width()) + "]";
+                    m_signalFile << varHier << "\n";
+                }
+            }
+        }
     }
 
     void processChildrenNode(AstNode* nodep) {
         for (AstNode* n = nodep->op2p(); n; n = n->nextp()) {
-                if (VN_IS(n, Var)) {
-                    AstVar* varp = VN_AS(n, Var);
-                    if (!varp->isParam() && !varp->isGenVar() && !varp->isIfaceRef() && !varp->isIfaceParent()) {
-                        processVar(varp);
-                    }
-                } else if (VN_IS(n, Cell)) {
-                    if (VN_IS(VN_AS(n, Cell)->modp(), Module)) {
-                        m_foundCell = true;
-                        std::string oldHier = m_currHier;
-                        m_currHier += n->name() + ".";
-                        diveIntoCellModp(VN_AS(n, Cell)->modp());
-                        m_currHier = oldHier;
-                    }
+            if (VN_IS(n, Var)) {
+                AstVar* varp = VN_AS(n, Var);
+                if (!varp->isParam() && !varp->isGenVar() && !varp->isIfaceRef()
+                    && !varp->isIfaceParent()) {
+                    processVar(varp);
+                }
+            } else if (VN_IS(n, Cell)) {
+                if (VN_IS(VN_AS(n, Cell)->modp(), Module)) {
+                    m_foundCell = true;
+                    std::string oldHier = m_currHier;
+                    m_currHier += n->name() + ".";
+                    diveIntoCellModp(VN_AS(n, Cell)->modp());
+                    m_currHier = oldHier;
                 }
             }
+        }
     }
 
-    void diveIntoCellModp(AstNodeModule* modp) {
-        processChildrenNode(modp);
-    }
+    void diveIntoCellModp(AstNodeModule* modp) { processChildrenNode(modp); }
 
     // VISITORS
     void visit(AstModule* nodep) override {
@@ -89,9 +95,7 @@ class DumpSignals final : public VNVisitor {
     }
 
     //-----------------
-    void visit(AstNode* nodep) override {
-        iterateChildren(nodep);
-    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     explicit DumpSignals(AstNetlist* nodep) {
@@ -101,9 +105,7 @@ public:
     }
 
     ~DumpSignals() override {
-        if (m_signalFile.is_open()) {
-            m_signalFile.close();
-        }
+        if (m_signalFile.is_open()) { m_signalFile.close(); }
     }
 };
 
