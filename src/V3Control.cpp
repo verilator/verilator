@@ -643,8 +643,10 @@ public:
         }
         // Implement custom iterator to remove the last part of the target and insert it into the vector of the map
         // If the target string is the same as one already in the map, push the var to the vector
-        auto [prefix, varTarget] = splitPrefixAndVar(target);
-        InstrumentationEntry entry{instrID, instrFunction, varTarget};
+        auto result = splitPrefixAndVar(target);
+        auto prefix    = result.first;
+        auto varTarget = result.second;
+        InstrumentationEntry entry{instrID, instrFunction, varTarget, {}, {}};
         auto it = m_instrCfg.find(prefix);
         if (it != m_instrCfg.end()) {
             it->second.entries.push_back(entry);

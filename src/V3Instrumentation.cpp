@@ -298,7 +298,7 @@ class InstrumentationTargetFinder final : public VNVisitor {
     //are added to the instrumentation configs map. Independetly from these conditions the INSTRUMENT
     //parameter is added to the module nodes in the target path. This parameter is used to control
     //the instrumentation of the target.
-    void visit (AstModule* nodep) {
+    void visit (AstModule* nodep) override {
         if (m_initModp) {
             if (targetHasTop(nodep->name(), m_target)) {
                 m_foundModp = true;
@@ -396,7 +396,7 @@ class InstrumentationTargetFinder final : public VNVisitor {
     //current hierarchy with the cell name fully matches a target path, with the last two entrances
     //removed (Module, Var). This function ensures that the correct cells in the design hierarchy are
     //instrumented and tracked, supporting both unique and repeated module instances.
-    void visit (AstCell* nodep) {
+    void visit (AstCell* nodep) override {
         if (m_initModp) {
             if (targetHasFullName(m_currHier + "." + nodep->name(), m_target)) {
                 m_foundCellp = true;
@@ -452,13 +452,13 @@ class InstrumentationTargetFinder final : public VNVisitor {
     //in the hierarchy of the model, we can check for this variable. If a variable is found, with its
     //name added to the current hierarchy, that siuts the target string, an edited version and the
     //original version are added to the instrumentation config map.
-    void visit (AstVar* nodep) {
+    void visit (AstVar* nodep) override {
         if (m_targetModp != nullptr) {
             const InstrumentationTarget& target = V3Control::getInstrumentationConfigs().find(
                 m_currHier)->second;
             for (const auto& entry : target.entries) {
                 if (nodep->name() == entry.varTarget) {
-                    int width;
+                    int width = 0;
                     AstBasicDType* basicp = nodep->basicp();
                     bool literal = basicp->isLiteralType();
                     bool implicit = basicp->implicit();
@@ -685,7 +685,7 @@ class InstrumentationFunction final : public VNVisitor {
     AstNode* createDPIInterface(AstModule* nodep, AstVar* orig_varp, const string& task_name) {
         AstBasicDType* basicp = nullptr;
         if (orig_varp->basicp()->isLiteralType() || orig_varp->basicp()->implicit()) {
-            int width;
+            int width = 0;
             if (orig_varp->basicp()->implicit()) {
                 // Since Var is implicit set/assume the width as 1 like in V3Width.cpp in the AstVar visitor
                 width = 1;
@@ -714,7 +714,7 @@ class InstrumentationFunction final : public VNVisitor {
 
     //ASTNETLIST VISITOR FUNCTION:
     //Loop over map entries for module nodes and add them to the tree
-    void visit(AstNetlist* nodep) {
+    void visit(AstNetlist* nodep) override {
         const auto& instrCfg = V3Control::getInstrumentationConfigs();
         for (const auto& pair : instrCfg) {
             nodep->addModulesp(pair.second.instrModulep);
@@ -742,12 +742,11 @@ class InstrumentationFunction final : public VNVisitor {
     //number for the INSTRUMENT parameter.\ Since the cell which need to be edited are located not in
     //the original module, but in the pointing/top module, the current_module_cell_check variable is
     //set to the module visited by the function and fulfilling this condition.
-    void visit(AstModule* nodep) {
+    void visit(AstModule* nodep) override {
         const InstrumentationTarget& target = V3Control::getInstrumentationConfigs().find(
                 m_targetKey)->second;
         const auto& entries = target.entries;
         for (m_targetIndex = 0; m_targetIndex < entries.size(); ++m_targetIndex) {
-            const auto& entry = entries[m_targetIndex];
             m_tmp_varp = getMapEntryInstVar(m_targetKey, m_targetIndex);
             m_orig_varp = getMapEntryVar(m_targetKey, m_targetIndex);
             m_task_name = getMapEntryFunction(m_targetKey, m_targetIndex);
@@ -859,7 +858,7 @@ class InstrumentationFunction final : public VNVisitor {
     //instrumented port on the position of the original port in the module and move the original port
     //to another pin number.
     //This should ensure the linking over the name and the port position in the module should work.
-    void visit(AstPort* nodep) {
+    void visit(AstPort* nodep) override {
         if (m_current_module != nullptr && m_orig_varp->direction() == VDirection::OUTPUT
             && nodep->name() == m_orig_varp->name() && !m_addedport) {
             m_orig_portp = nodep->cloneTree(false);
@@ -885,7 +884,7 @@ class InstrumentationFunction final : public VNVisitor {
     //statment deciding between the instrumented and the original cell can be created/used. A third
     //action is performed if the variable beeing instrumented is an ouput variable. In this case the
     //children of this cell nodes are visited by the ASTPIN VISITOR FUNCTION.
-    void visit(AstCell* nodep) {
+    void visit(AstCell* nodep) override {
         if (m_current_module_cell_check != nullptr && !hasMultiple(m_targetKey)
             && nodep == getMapEntryCell(m_targetKey)) {
             nodep->modp(getMapEntryInstModule(m_targetKey));
@@ -906,7 +905,7 @@ class InstrumentationFunction final : public VNVisitor {
     //The function is used to change the pin name of the original variable to the instrumented
     //variable name. This is done to ensure that the pin is correctly linked to the instrumented
     //variable in the cell.
-    void visit(AstPin* nodep) {
+    void visit(AstPin* nodep) override {
         if (nodep->name() == m_orig_varp->name() && m_orig_varp->direction() == VDirection::INPUT) {
             iterateChildren(nodep);
         } else if (nodep->name() == m_orig_varp->name()) {
@@ -916,7 +915,7 @@ class InstrumentationFunction final : public VNVisitor {
 
     //ASTTASK VISITOR FUNCTION:
     //The function is used to further specify the task node created at the module visitor.
-    void visit(AstTask* nodep) {
+    void visit(AstTask* nodep) override {
         if (m_addedTask == false && nodep == m_taskp && m_current_module != nullptr) {
             AstVar* instrID = nullptr;
             AstVar* var_x_task = nullptr;
@@ -943,7 +942,7 @@ class InstrumentationFunction final : public VNVisitor {
 
     //ASTFUNC VISITOR FUNCITON:
     //The function is used to further specify the function node created at the module visitor.
-    void visit(AstFunc* nodep) {
+    void visit(AstFunc* nodep) override {
         if (m_addedFunc == false && nodep == m_funcp && m_current_module != nullptr) {
             AstVar* instrID = nullptr;
             AstVar* var_x_func = nullptr;
@@ -965,7 +964,7 @@ class InstrumentationFunction final : public VNVisitor {
     //ASTALWAYS VISITOR FUNCTION:
     //The function is used to add the task reference node to the always node and further specify the
     //always node.
-    void visit(AstAlways* nodep) {
+    void visit(AstAlways* nodep) override {
         if (nodep == m_alwaysp && m_current_module != nullptr) {
             AstBegin* newBegin = nullptr;
 
@@ -979,7 +978,7 @@ class InstrumentationFunction final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    void visit(AstVar* nodep) {
+    void visit(AstVar* nodep) override {
         if (m_current_module != nullptr && nodep->name() == m_orig_varp->name()) {
             m_orig_varp_instMod = nodep;
         }
@@ -987,12 +986,12 @@ class InstrumentationFunction final : public VNVisitor {
 
     //ASTTASKREF VISITOR FUNCTION:
     //The function is used to further specify the task reference node called by the always node.
-    void visit(AstTaskRef* nodep) {
+    void visit(AstTaskRef* nodep) override {
         if (nodep == m_taskrefp && m_current_module != nullptr) {
             AstConst* constp_id = nullptr;
 
             constp_id = new AstConst{nodep->fileline(), AstConst::Unsized32{},
-                                     getMapEntryFaultCase(m_targetKey, m_targetIndex)};
+                                     static_cast<uint32_t>(getMapEntryFaultCase(m_targetKey, m_targetIndex))};
 
             AstVarRef* added_varrefp = new AstVarRef{nodep->fileline(), m_orig_varp_instMod, VAccess::READ};
 
@@ -1007,12 +1006,12 @@ class InstrumentationFunction final : public VNVisitor {
 
     //ASTFUNCREF VISITOR FUNCTION:
     //The function is used to further specify the function reference node called by the assignw node
-    void visit(AstFuncRef* nodep) {
+    void visit(AstFuncRef* nodep) override {
         if (nodep == m_funcrefp && m_current_module != nullptr) {
             AstConst* constp_id = nullptr;
 
             constp_id = new AstConst{nodep->fileline(), AstConst::Unsized32{},
-                                     getMapEntryFaultCase(m_targetKey, m_targetIndex)};
+                                     static_cast<uint32_t>(getMapEntryFaultCase(m_targetKey, m_targetIndex))};
 
             AstVarRef* added_varrefp = new AstVarRef{nodep->fileline(), m_orig_varp_instMod, VAccess::READ};
 
@@ -1026,7 +1025,7 @@ class InstrumentationFunction final : public VNVisitor {
     //Sets the m_assignw flag to true if the current module is not null.
     //Necessary for the AstParseRef visitor function to determine if the current node is part of an
     //assignment.
-    void visit(AstAssignW* nodep) {
+    void visit(AstAssignW* nodep) override {
         if (m_current_module != nullptr) {
             if (nodep != m_assignwp) {
                 m_assignw = true;
@@ -1038,12 +1037,12 @@ class InstrumentationFunction final : public VNVisitor {
     }
 
     // These two function are used to circumvent the instrumentation of ParseRef nodes for interfaces
-    void visit(AstDot* nodep) {
+    void visit(AstDot* nodep) override {
         if (m_current_module != nullptr) {
             m_interface = true;
         }
     }
-    void visit(AstReplicate* nodep) {
+    void visit(AstReplicate* nodep) override {
         if (m_current_module != nullptr) {
             m_interface = true;
         }
@@ -1059,7 +1058,7 @@ class InstrumentationFunction final : public VNVisitor {
     //    - If the original variable is an input variable, every parseref node is changed to link to
     //the instrumented variable. This ensures that the instrumented variable is used as the new
     //input.
-    void visit(AstParseRef* nodep) {
+    void visit(AstParseRef* nodep) override {
         if (m_current_module != nullptr && m_orig_varp != nullptr
             && nodep->name() == m_orig_varp->name()) {
             if (m_assignw && !m_interface && m_orig_varp->direction() != VDirection::OUTPUT) {
