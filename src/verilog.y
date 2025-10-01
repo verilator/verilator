@@ -8014,7 +8014,7 @@ vltItem:
         |       vltInlineFront vltDModuleE vltDFTaskE
                         { V3Control::addInline($<fl>1, *$2, *$3, $1); }
         |       yVLT_INSTRUMENT yVLT_D_MODEL yaSTRING yVLT_D_ID yaINTNUM yVLT_D_TARGET yaSTRING
-                        { V3Control::addInstrumentationConfigs($<fl>1, *$3, $5->toSInt(), *$7); }
+                        { V3Control::addInstrumentCfg($<fl>1, *$3, $5->toSInt(), *$7); }
         |       yVLT_COVERAGE_BLOCK_OFF vltDFile
                         { V3Control::addCoverageBlockOff(*$2, 0); }
         |       yVLT_COVERAGE_BLOCK_OFF vltDFile yVLT_D_LINES yaINTNUM

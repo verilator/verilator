@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef VERILATOR_V3INSTRUMENTATION_H_
-#define VERILATOR_V3INSTRUMENTATION_H_
+#ifndef VERILATOR_V3INSTRUMENT_H_
+#define VERILATOR_V3INSTRUMENT_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -24,7 +24,7 @@ class AstNetlist;
 
 //=========================================================================
 
-class V3Instrumentation final {
+class V3Instrument final {
 public:
     static void findTargets(AstNetlist* nodep) VL_MT_DISABLED;
     static void instrument(AstNetlist* nodep) VL_MT_DISABLED;

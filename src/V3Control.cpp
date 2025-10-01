@@ -576,7 +576,7 @@ class V3ControlResolver final {
     uint8_t m_mode = NONE;
     std::unordered_map<string, V3ControlResolverHierWorkerEntry> m_hierWorkers;
     FileLine* m_profileFileLine = nullptr;
-    std::map<string, InstrumentationTarget, LengthThenLexiographic> m_instrCfg;
+    std::map<string, InstrumentTarget, LengthThenLexiographic> m_instrCfg;
 
     V3ControlResolver() = default;
     ~V3ControlResolver() = default;
@@ -652,8 +652,8 @@ public:
         return {prefix, varTarget};
     }
     // Add the instrumentation config data to the map to create the initial map (Used in verilog.y)
-    void addInstrumentationConfigs(FileLine* fl, const string& instrFunction, int instrID,
-                                   const string& target) {
+    void addInstrumentCfg(FileLine* fl, const string& instrFunction, int instrID,
+                          const string& target) {
         // Error MSG if the instrumentation of the top module is not possible
         if ((std::count(target.begin(), target.end(), '.') < 2)) {
             v3fatal(
@@ -664,19 +664,21 @@ public:
         // Implement custom iterator to remove the last part of the target and insert it into the
         // vector of the map If the target string is the same as one already in the map, push the
         // var to the vector
-        auto [prefix, varTarget] = splitPrefixAndVar(target);
-        InstrumentationEntry entry{instrID, instrFunction, varTarget};
+        auto result = splitPrefixAndVar(target);
+        auto prefix = result.first;
+        auto varTarget = result.second;
+        InstrumentEntry entry{instrID, instrFunction, varTarget, {}, {}};
         auto it = m_instrCfg.find(prefix);
         if (it != m_instrCfg.end()) {
             it->second.entries.push_back(entry);
         } else {
             // Create a new entry in the map
-            InstrumentationTarget newTarget;
+            InstrumentTarget newTarget;
             newTarget.entries.push_back(entry);
             m_instrCfg[prefix] = std::move(newTarget);
         }
     }
-    std::map<string, InstrumentationTarget, LengthThenLexiographic>& getInstrumentationConfigs() {
+    std::map<string, InstrumentTarget, LengthThenLexiographic>& getInstrumentCfg() {
         return m_instrCfg;
     }
 };
@@ -737,9 +739,9 @@ void V3Control::addModulePragma(const string& module, VPragmaType pragma) {
     V3ControlResolver::s().modules().at(module).addModulePragma(pragma);
 }
 
-void V3Control::addInstrumentationConfigs(FileLine* fl, const string& instrumentationfunc,
-                                          int instrID, const string& target) {
-    V3ControlResolver::s().addInstrumentationConfigs(fl, instrumentationfunc, instrID, target);
+void V3Control::addInstrumentCfg(FileLine* fl, const string& instrumentfunc, int instrID,
+                                 const string& target) {
+    V3ControlResolver::s().addInstrumentCfg(fl, instrumentfunc, instrID, target);
 }
 
 void V3Control::addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost) {
@@ -903,9 +905,8 @@ int V3Control::getHierWorkers(const string& model) {
 FileLine* V3Control::getHierWorkersFileLine(const string& model) {
     return V3ControlResolver::s().getHierWorkersFileLine(model);
 }
-std::map<string, InstrumentationTarget, LengthThenLexiographic>&
-V3Control::getInstrumentationConfigs() {
-    return V3ControlResolver::s().getInstrumentationConfigs();
+std::map<string, InstrumentTarget, LengthThenLexiographic>& V3Control::getInstrumentCfg() {
+    return V3ControlResolver::s().getInstrumentCfg();
 }
 uint64_t V3Control::getProfileData(const string& hierDpi) {
     return V3ControlResolver::s().getProfileData(hierDpi);
