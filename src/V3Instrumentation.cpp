@@ -944,8 +944,9 @@ class InstrumentationFunction final : public VNVisitor {
         if (nodep == m_taskrefp && m_current_module != nullptr) {
             AstConst* constp_id = nullptr;
 
-            constp_id = new AstConst{nodep->fileline(), AstConst::Unsized32{},
-                                     static_cast<uint32_t>(getMapEntryFaultCase(m_targetKey, m_targetIndex))};
+            constp_id = new AstConst{
+                nodep->fileline(), AstConst::Unsized32{},
+                static_cast<uint32_t>(getMapEntryFaultCase(m_targetKey, m_targetIndex))};
 
             AstVarRef* added_varrefp
                 = new AstVarRef{nodep->fileline(), m_orig_varp_instMod, VAccess::READ};
@@ -966,8 +967,9 @@ class InstrumentationFunction final : public VNVisitor {
         if (nodep == m_funcrefp && m_current_module != nullptr) {
             AstConst* constp_id = nullptr;
 
-            constp_id = new AstConst{nodep->fileline(), AstConst::Unsized32{},
-                                     static_cast<uint32_t>(getMapEntryFaultCase(m_targetKey, m_targetIndex))};
+            constp_id = new AstConst{
+                nodep->fileline(), AstConst::Unsized32{},
+                static_cast<uint32_t>(getMapEntryFaultCase(m_targetKey, m_targetIndex))};
 
             AstVarRef* added_varrefp
                 = new AstVarRef{nodep->fileline(), m_orig_varp_instMod, VAccess::READ};
