@@ -1533,12 +1533,12 @@ public:
     enum class Type : uint8_t { OVERLAPPED, NONOVERLAPPED };
 
 private:
-    const Type m_type;  // Implication type
+    const bool m_isOverlapped;  // True if overlapped
 
 public:
     AstImplication(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, Type type)
         : ASTGEN_SUPER_Implication(fl)
-        , m_type{type} {
+        , m_isOverlapped{type == Type::OVERLAPPED} {
         this->lhsp(lhsp);
         this->rhsp(rhsp);
     }
@@ -1549,7 +1549,7 @@ public:
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
-    bool isOverlapped() const { return m_type == Type::OVERLAPPED; }
+    bool isOverlapped() const { return m_isOverlapped; }
 };
 class AstInitArray final : public AstNodeExpr {
     // This is also used as an array value in V3Simulate/const prop.
