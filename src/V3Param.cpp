@@ -1414,13 +1414,15 @@ class ParamVisitor final : public VNVisitor {
         }
     }
     void visit(AstRefDType* nodep) override {
-        if (nodep->typedefp() && nodep->subDTypep()
-            && (VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
-                || VN_IS(nodep->subDTypep()->skipRefOrNullp(), ClassRefDType))) {
-            AstNodeDType* const newp = nodep->skipRefp()->cloneTree(false);
-            nodep->replaceWith(newp);
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            iterate(newp);
+        if (nodep->typedefp() && nodep->subDTypep()) {
+            V3Width::widthParamsEdit(nodep);
+            if ((VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
+                 || VN_IS(nodep->subDTypep()->skipRefOrNullp(), ClassRefDType))) {
+                AstNodeDType* const newp = nodep->skipRefp()->cloneTree(true);
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                iterate(newp);
+            }
         } else {
             iterateChildren(nodep);
         }

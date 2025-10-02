@@ -2,4 +2,10 @@
     8 | typedef a_t b_t;
       |         ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_typedef_circ_bad.v:9:9: Recursive type definition, or over 1000 types deep
+    9 | typedef b_t a_t;
+      |         ^~~
+%Error: t/t_typedef_circ_bad.v:8:9: Recursive type definition, or over 1000 types deep
+    8 | typedef a_t b_t;
+      |         ^~~
 %Error: Exiting due to
