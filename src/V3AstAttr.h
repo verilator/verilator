@@ -185,11 +185,22 @@ public:
         : m_e{_e} {}
     explicit VAssertDirectiveType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    const char* ascii() const {
-        static const char* const names[]
-            = {"INTERNAL",       "ASSERT",       "COVER",     "ASSUME",
-               "VIOLATION_CASE", "VIOLATION_IF", "INTRINSIC", "RESTRICT"};
-        return names[m_e];
+    string ascii() const {
+        std::stringstream types;
+        if (m_e == INTERNAL)
+            types << "INTERNAL ";
+        else {
+            if (m_e & ASSERT) types << "ASSERT ";
+            if (m_e & COVER) types << "COVER ";
+            if (m_e & ASSUME) types << "ASSUME ";
+            if (m_e & VIOLATION_CASE) types << "VIOLATION_CASE ";
+            if (m_e & VIOLATION_IF) types << "VIOLATION_IF ";
+            if (m_e & INTRINSIC) types << "INTRINSIC ";
+            if (m_e & RESTRICT) types << "RESTRICT ";
+        }
+        const string str = types.str();
+        UASSERT(!str.empty(), "Assert should be of one of types");
+        return str.substr(0, str.size() - 1);
     }
     constexpr operator en() const { return m_e; }
 };
@@ -232,17 +243,23 @@ public:
     explicit VAssertType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     bool containsAny(VAssertType other) const { return m_e & other.m_e; }
-    const char* ascii() const {
-        static const char* const names[] = {"INTERNAL",
-                                            "CONCURRENT",
-                                            "SIMPLE_IMMEDIATE",
-                                            "OBSERVED_DEFERRED_IMMEDIATE",
-                                            "FINAL_DEFERRED_IMMEDIATE",
-                                            "EXPECT",
-                                            "UNIQUE",
-                                            "UNIQUE0",
-                                            "PRIORITY"};
-        return names[m_e];
+    string ascii() const {
+        std::stringstream types;
+        if (m_e == INTERNAL)
+            types << "INTERNAL ";
+        else {
+            if (m_e & CONCURRENT) types << "CONCURRENT ";
+            if (m_e & SIMPLE_IMMEDIATE) types << "SIMPLE_IMMEDIATE ";
+            if (m_e & OBSERVED_DEFERRED_IMMEDIATE) types << "OBSERVED_DEFERRED_IMMEDIATE ";
+            if (m_e & FINAL_DEFERRED_IMMEDIATE) types << "FINAL_DEFERRED_IMMEDIATE ";
+            if (m_e & EXPECT) types << "EXPECT ";
+            if (m_e & UNIQUE) types << "UNIQUE ";
+            if (m_e & UNIQUE0) types << "UNIQUE0 ";
+            if (m_e & PRIORITY) types << "PRIORITY ";
+        }
+        const string str = types.str();
+        UASSERT(!str.empty(), "Assert should be of one of types");
+        return str.substr(0, str.size() - 1);
     }
     constexpr operator en() const { return m_e; }
 };

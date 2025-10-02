@@ -1669,10 +1669,18 @@ AstAssertCtl::AstAssertCtl(FileLine* fl, AstNodeExpr* controlTypep, AstNodeExpr*
 }
 void AstAssertCtl::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    str << " [" << ctlType().ascii() << "]";
+    if (ctlType() != VAssertCtlType::_TO_BE_EVALUATED) {
+        str << " [" << ctlType().ascii() << "]";
+        str << " [" << ctlAssertTypes().ascii() << "]";
+        str << " [" << ctlDirectiveTypes().ascii() << "]";
+    }
 }
 void AstAssertCtl::dumpJson(std::ostream& str) const {
-    dumpJsonStr(str, "ctlType", ctlType().ascii());
+    if (ctlType() != VAssertCtlType::_TO_BE_EVALUATED) {
+        dumpJsonStr(str, "ctlType", ctlType().ascii());
+        dumpJsonStr(str, "ctlAssertTypes", ctlAssertTypes().ascii());
+        dumpJsonStr(str, "ctlDirectiveTypes", ctlDirectiveTypes().ascii());
+    }
     dumpJsonGen(str);
 }
 void AstAttrOf::dump(std::ostream& str) const {
