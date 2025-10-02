@@ -37,6 +37,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     AstSenTree* m_sentreep = nullptr;  // Domain for printing one a ALWAYS under a ACTIVE
     bool m_suppressSemi = false;  // Non-statement, don't print ;
     bool m_suppressVarSemi = false;  // Suppress emitting semicolon for AstVars
+    bool m_suppressSampled = false;  // Suppress emitting sampled in assertion properties
     bool m_arrayPost = false;  // Print array information that goes after identifier (vs after)
     bool m_prefixed = true;  // Whether constants need to be prefixed
     std::deque<AstNodeArrayDType*> m_packedps;  // Packed arrays to print with BasicDType
@@ -81,13 +82,13 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstPort* nodep) override {}
     void visit(AstNodeFTask* nodep) override {
         const bool func = nodep->isFunction() || nodep->name() == "new";
-        putfs(nodep, func ? "function" : "task");
+        putfs(nodep, nodep->verilogKwd());
         puts(" ");
         puts(nodep->prettyName());
         puts(";\n");
         // Only putfs the first time for each visitor; later for same node is putqs
         iterateAndNextConstNull(nodep->stmtsp());
-        putfs(nodep, func ? "endfunction\n" : "endtask\n");
+        putqs(nodep, "end" + nodep->verilogKwd() + "\n");
     }
 
     void visit(AstGenBlock* nodep) override {
@@ -467,9 +468,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(")");
     }
     void visit(AstSampled* nodep) override {
-        putfs(nodep, "$sampled(");
-        iterateAndNextConstNull(nodep->exprp());
-        puts(")");
+        if (!m_suppressSampled) {
+            putfs(nodep, "$sampled(");
+            iterateAndNextConstNull(nodep->exprp());
+            puts(")");
+        }
     }
     void visit(AstRising* nodep) override {
         putfs(nodep, "$rising(");
@@ -758,6 +761,45 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(nodep->prettyName());
         puts(";\n");
     }
+    void visit(AstNodeCoverOrAssert* nodep) override {
+        if (const AstPExpr* const pexprp = VN_CAST(nodep->propp(), PExpr)) {
+            iterateAndNextConstNull(nodep->propp());
+        }
+        putfs(nodep, nodep->verilogKwd() + " ");
+        if (nodep->type() == VAssertType::OBSERVED_DEFERRED_IMMEDIATE) {
+            puts("#0 ");
+        } else if (nodep->type() == VAssertType::FINAL_DEFERRED_IMMEDIATE) {
+            puts("final ");
+        } else if (nodep->type() == VAssertType::CONCURRENT) {
+            puts("property ");
+        }
+        iterateConstNull(nodep->sentreep());
+        puts("(");
+        if (const AstPExpr* const pexprp = VN_CAST(nodep->propp(), PExpr)) {
+            iterateAndNextConstNull(pexprp->condp());
+        } else {
+            if (AstSampled* const sampledp = VN_CAST(nodep->propp(), Sampled)) {
+                iterateAndNextConstNull(sampledp->exprp());
+            } else {
+                iterateAndNextConstNull(nodep->propp());
+            }
+        }
+        puts(") ");
+        if (nodep->passsp()) {
+            puts("begin\n");
+            iterateAndNextConstNull(nodep->passsp());
+            puts("end\n");
+        }
+        if (const AstAssert* const assertp = VN_CAST(nodep, Assert)) {
+            puts("else begin\n");
+            iterateAndNextConstNull(assertp->failsp());
+            puts("end\n");
+        } else if (const AstAssertIntrinsic* const assertp = VN_CAST(nodep, AssertIntrinsic)) {
+            puts("else begin\n");
+            iterateAndNextConstNull(assertp->failsp());
+            puts("end\n");
+        }
+    }
     void visit(AstAssocArrayDType* nodep) override {
         if (!m_arrayPost) {
             iterateConst(nodep->subDTypep());
@@ -935,9 +977,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         } else {
             putfs(nodep, nodep->prettyName());
         }
-        puts("(");
-        iterateAndNextConstNull(nodep->pinsp());
-        puts(")");
+        if (!VN_IS(nodep->taskp(), Property)) {
+            puts("(");
+            iterateAndNextConstNull(nodep->pinsp());
+            puts(")");
+        }
     }
     void visit(AstCCall* nodep) override {
         puts(nodep->funcp()->name());
@@ -951,22 +995,27 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(";\n");
     }
     void visit(AstPropSpec* nodep) override {
-        // Same dumping as in AstSenTree
-        putfs(nodep, "@(");
-        for (AstNode* expp = nodep->sensesp(); expp; expp = expp->nextp()) {
-            iterateConst(expp);
-            if (expp->nextp()) putqs(expp->nextp(), " or ");
+        if (!VN_IS(nodep->propp(), FuncRef)) {
+            // Same dumping as in AstSenTree
+            putfs(nodep, "@(");
+            for (AstNode* expp = nodep->sensesp(); expp; expp = expp->nextp()) {
+                iterateConst(expp);
+                if (expp->nextp()) putqs(expp->nextp(), " or ");
+            }
+            puts(")");
         }
-        puts(")");
         if (nodep->disablep()) {
             puts(" disable iff ");
             iterateConst(nodep->disablep());
         }
+
         puts(" ");
         iterateConstNull(nodep->propp());
-        puts(";\n");
+        puts("\n");
     }
-    void visit(AstPExpr* nodep) override { iterateConstNull(nodep->precondp()); }
+    void visit(AstPExpr* nodep) override {
+        iterateAndNextConstNull(nodep->precondp());  // condp emitted by AstNodeCoverOrAssert
+    }
     void visit(AstSExpr* nodep) override {
         {
             VL_RESTORER(m_suppressSemi);
