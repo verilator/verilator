@@ -488,7 +488,7 @@
            "lhsp": [
             {"type":"PARSEREF","name":"out","addr":"(XH)","loc":"e,83:7,83:10","dtypep":"UNLINKED","expect":"TEXT","lhsp": [],"ftaskrefp": []}
           ],"timingControlp": []},
-          {"type":"ASSERTCTL","name":"","addr":"(YH)","loc":"e,86:7,86:17","ctlType":"",
+          {"type":"ASSERTCTL","name":"","addr":"(YH)","loc":"e,86:7,86:17",
            "controlTypep": [
             {"type":"CONST","name":"32'h4","addr":"(ZH)","loc":"e,86:7,86:17","dtypep":"(OC)"}
           ],
@@ -498,7 +498,7 @@
            "directiveTypesp": [
             {"type":"CONST","name":"32'h7","addr":"(BI)","loc":"e,86:7,86:17","dtypep":"(OC)"}
           ]},
-          {"type":"ASSERTCTL","name":"","addr":"(CI)","loc":"e,87:7,87:18","ctlType":"",
+          {"type":"ASSERTCTL","name":"","addr":"(CI)","loc":"e,87:7,87:18",
            "controlTypep": [
             {"type":"CONST","name":"32'h5","addr":"(DI)","loc":"e,87:7,87:18","dtypep":"(OC)"}
           ],
@@ -512,7 +512,7 @@
            "propp": [
             {"type":"CONST","name":"?32?sh0","addr":"(HI)","loc":"e,88:14,88:15","dtypep":"(N)"}
           ],"sentreep": [],"failsp": [],"passsp": []},
-          {"type":"ASSERTCTL","name":"","addr":"(II)","loc":"e,89:7,89:16","ctlType":"",
+          {"type":"ASSERTCTL","name":"","addr":"(II)","loc":"e,89:7,89:16",
            "controlTypep": [
             {"type":"CONST","name":"32'h3","addr":"(JI)","loc":"e,89:7,89:16","dtypep":"(OC)"}
           ],
@@ -522,7 +522,7 @@
            "directiveTypesp": [
             {"type":"CONST","name":"32'h7","addr":"(LI)","loc":"e,89:7,89:16","dtypep":"(OC)"}
           ]},
-          {"type":"ASSERTCTL","name":"","addr":"(MI)","loc":"e,90:7,90:21","ctlType":"",
+          {"type":"ASSERTCTL","name":"","addr":"(MI)","loc":"e,90:7,90:21",
            "controlTypep": [
             {"type":"CONST","name":"?32?sh3","addr":"(NI)","loc":"e,90:22,90:23","dtypep":"(SD)"}
           ],
