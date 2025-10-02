@@ -1418,10 +1418,7 @@ class ParamVisitor final : public VNVisitor {
             V3Width::widthParamsEdit(nodep);
             if ((VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
                  || VN_IS(nodep->subDTypep()->skipRefOrNullp(), ClassRefDType))) {
-                AstNodeDType* const newp = nodep->skipRefp()->cloneTree(true);
-                nodep->replaceWith(newp);
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                iterate(newp);
+                iterate(nodep->skipRefp());
             }
         } else {
             iterateChildren(nodep);
