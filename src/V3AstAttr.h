@@ -242,7 +242,8 @@ public:
                                             "UNIQUE",
                                             "UNIQUE0",
                                             "PRIORITY"};
-        return names[m_e];
+        const uint8_t index = static_cast<uint8_t>(std::log2(m_e == 0 ? 1 : m_e << 1));
+        return names[index];
     }
     constexpr operator en() const { return m_e; }
 };
