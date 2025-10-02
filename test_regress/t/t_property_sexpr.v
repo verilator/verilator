@@ -112,42 +112,42 @@ module t (  /*AUTOARG*/
   end
 
   assert property (@(e1) ##1 1)
-    $display("[%0t] single delay with const stmt, fileline:%d", $time, `__LINE__);
+    $display("[%0t] single delay with const stmt, fileline:%0d", $time, `__LINE__);
 
   assert property (@(e2) ##1 val[0])
-    $display("[%0t] single delay with var stmt, fileline:%d", $time, `__LINE__);
-  else $display("[%0t] single delay with var else, fileline:%d", $time, `__LINE__);
+    $display("[%0t] single delay with var stmt, fileline:%0d", $time, `__LINE__);
+  else $display("[%0t] single delay with var else, fileline:%0d", $time, `__LINE__);
 
   assert property (@(e3) ##2 val[0])
-    $display("[%0t] single multi-cycle delay with var stmt, fileline:%d", $time, `__LINE__);
-  else $display("[%0t] single multi-cycle delay with var else, fileline:%d", $time, `__LINE__);
+    $display("[%0t] single multi-cycle delay with var stmt, fileline:%0d", $time, `__LINE__);
+  else $display("[%0t] single multi-cycle delay with var else, fileline:%0d", $time, `__LINE__);
 
   assert property (@(e4) ##1 (val[0]))
-    $display("[%0t] single delay with var brackets 1 stmt, fileline:%d", $time, `__LINE__);
-  else $display("[%0t] single delay with var brackets 1 else, fileline:%d", $time, `__LINE__);
+    $display("[%0t] single delay with var brackets 1 stmt, fileline:%0d", $time, `__LINE__);
+  else $display("[%0t] single delay with var brackets 1 else, fileline:%0d", $time, `__LINE__);
 
   assert property (@(e5) (##1 (val[0])))
-    $display("[%0t] single delay with var brackets 2 stmt, fileline:%d", $time, `__LINE__);
-  else $display("[%0t] single delay with var brackets 2 else, fileline:%d", $time, `__LINE__);
+    $display("[%0t] single delay with var brackets 2 stmt, fileline:%0d", $time, `__LINE__);
+  else $display("[%0t] single delay with var brackets 2 else, fileline:%0d", $time, `__LINE__);
 
   assert property (@(e6) (##1 val[0] && val[1]))
-    $display("[%0t] single delay with negated var stmt, fileline:%d", $time, `__LINE__);
-  else $display("[%0t] single delay with negated var else, fileline:%d", $time, `__LINE__);
+    $display("[%0t] single delay with negated var stmt, fileline:%0d", $time, `__LINE__);
+  else $display("[%0t] single delay with negated var else, fileline:%0d", $time, `__LINE__);
 
   assert property (@(e7) not ##1 val[0])
-    $display("[%0t] single delay with negated var stmt, fileline:%d", $time, `__LINE__);
-  else $display("[%0t] single delay with negated var else, fileline:%d", $time, `__LINE__);
+    $display("[%0t] single delay with negated var stmt, fileline:%0d", $time, `__LINE__);
+  else $display("[%0t] single delay with negated var else, fileline:%0d", $time, `__LINE__);
 
   assume property (@(e8) not (##1 val[0]))
-    $display("[%0t] single delay with negated var brackets stmt, fileline:%d", $time, `__LINE__);
-  else $display("[%0t] single delay with negated var brackets else, fileline:%d", $time, `__LINE__);
+    $display("[%0t] single delay with negated var brackets stmt, fileline:%0d", $time, `__LINE__);
+  else $display("[%0t] single delay with negated var brackets else, fileline:%0d", $time, `__LINE__);
 
   assume property (@(e9) not (##1 val[0]))
-  else $display("[%0t] single delay with negated var brackets else, fileline:%d", $time, `__LINE__);
+  else $display("[%0t] single delay with negated var brackets else, fileline:%0d", $time, `__LINE__);
 
   cover property (@(e10) ##1 val[0]);
 
-  cover property (@(e11) not ##1 val[1]) $display("[%0t] cover property, fileline:%d", $time, `__LINE__);
+  cover property (@(e11) not ##1 val[1]) $display("[%0t] cover property, fileline:%0d", $time, `__LINE__);
 
   restrict property (@(e11) ##1 val[0]);
 
@@ -157,6 +157,6 @@ module t (  /*AUTOARG*/
     @(e12) not ##1 val[0]
   endproperty
 
-  assert property(prop) $display("[%0t] property, fileline:%d", $time, `__LINE__);
-  else $display("[%0t] property, fileline:%d", $time, `__LINE__);
+  assert property(prop) $display("[%0t] property, fileline:%0d", $time, `__LINE__);
+  else $display("[%0t] property, fileline:%0d", $time, `__LINE__);
 endmodule
