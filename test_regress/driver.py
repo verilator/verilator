@@ -128,6 +128,7 @@ class Capabilities:
     _cached_cxx_version = None
     _cached_have_coroutines = None
     _cached_have_dev_asan = None
+    _cached_have_dev_gcov = None
     _cached_have_gdb = None
     _cached_have_sc = None
     _cached_have_solver = None
@@ -167,6 +168,13 @@ class Capabilities:
             Capabilities._cached_have_dev_asan = bool(
                 Capabilities._verilator_get_supported('DEV_ASAN'))
         return Capabilities._cached_have_dev_asan
+
+    @staticproperty
+    def have_dev_gcov() -> bool:  # pylint: disable=no-method-argument
+        if Capabilities._cached_have_dev_gcov is None:
+            Capabilities._cached_have_dev_gcov = bool(
+                Capabilities._verilator_get_supported('DEV_GCOV'))
+        return Capabilities._cached_have_dev_gcov
 
     @staticproperty
     def have_gdb() -> bool:  # pylint: disable=no-method-argument
@@ -214,6 +222,7 @@ class Capabilities:
     def warmup_cache() -> None:
         _ignore = Capabilities.have_coroutines
         _ignore = Capabilities.have_dev_asan
+        _ignore = Capabilities.have_dev_gcov
         _ignore = Capabilities.have_gdb
         _ignore = Capabilities.have_sc
         _ignore = Capabilities.have_solver
@@ -1670,6 +1679,10 @@ class VlTest:
         return Capabilities.have_dev_asan
 
     @property
+    def have_dev_gcov(self) -> bool:
+        return Capabilities.have_dev_gcov
+
+    @property
     def have_gdb(self) -> bool:
         return Capabilities.have_gdb
 
@@ -1743,19 +1756,6 @@ class VlTest:
 
         if Args.benchmark and re.match(r'^cd ', command):
             command = "time " + command
-
-        if verilator_run:
-            # Gcov fails when parallel jobs write same data file,
-            # so we make sure .gcda output dir is unique across all running jobs.
-            # We can't just put each one in an unique obj_dir as it uses too much disk.
-            # Must use absolute path as some execute()s have different PWD
-            self.setenv('GCOV_PREFIX_STRIP', '99')
-            self.setenv('GCOV_PREFIX',
-                        os.path.abspath(__file__ + "/../obj_dist/gcov_" + str(self.running_id)))
-            os.makedirs(os.environ['GCOV_PREFIX'], exist_ok=True)
-        else:
-            VtOs.delenv('GCOV_PREFIX_STRIP')
-            VtOs.delenv('GCOV_PREFIX')
 
         print("\t" + command + (("   > " + logfile) if logfile else ""))
 

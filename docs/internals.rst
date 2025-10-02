@@ -1656,6 +1656,45 @@ significant variance. Experience shows that a ~20% time difference can be
 reliably measured on GitHub hosted runners, and smaller differences are
 noticeable over a few days of reruns as trends emerge from the noise.
 
+Code coverage
+-------------
+
+Code coverage for Verilator itself can be collected using ``gcc`` and ``gcov``
+with the following flow. Note that configuring with ``--enable-dev-gcov``
+disables optimization for both the debug and optimized builds of Verilator, so
+running the resulting executables can be slow:
+
+.. code:: shell
+
+   ./configure --enable-longtests --enable-dev-gcov
+   make -j$(nproc)        # Build verilator
+   make test              # Run the tests - this will generate .gcda files
+   make coverage-view     # Create and open HTML coverate reprot
+
+
+The ``coverage-view`` make target opens the generated coverage report. This
+depends on ``coverage-report``, which generates the HTML coverage report. That
+turn depends on ``coverage-combine``, which combines all ``.gcda`` files into
+an lcov data file. Each of these make targets can be used separately if
+desired.
+
+You can also use the ``coverage-zero`` target to remove all ``.gcda`` files,
+which in effect clears all collected coverage data. This can be useful when
+checking individual test cases while modifying them.
+
+To collect coverage only for select tests, instead of ``make test``, run the
+individual ``test_regress/t/*.py`` cases, then use ``make coverage-view`` as
+before.
+
+Note that every time binary built with coverage collection is invoked, it will
+add the coverage data collected during that invocation to the existing
+``.gcda`` files. This means that ``verilator`` can also be run on any other
+external files or projects to collect code coverage on those invocations.
+
+Be aware if changing a test, if that test no longer covers some item, the
+report will still contain the old coverage. Use ``make coverage-zero`` and
+rerun all tests if this is a concern.
+
 Fuzzing
 -------
 

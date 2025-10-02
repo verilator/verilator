@@ -843,6 +843,8 @@ string V3Options::getSupported(const string& var) {
         return "1";
     } else if (var == "DEV_ASAN" && devAsan()) {
         return "1";
+    } else if (var == "DEV_GCOV" && devGcov()) {
+        return "1";
         // cppcheck-suppress knownConditionTrueFalse
     } else if (var == "SYSTEMC" && systemCFound()) {
         return "1";
@@ -874,6 +876,14 @@ bool V3Options::coroutineSupport() {
 
 bool V3Options::devAsan() {
 #ifdef HAVE_DEV_ASAN
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool V3Options::devGcov() {
+#ifdef HAVE_DEV_GCOV
     return true;
 #else
     return false;

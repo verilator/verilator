@@ -27,6 +27,9 @@ def check_all_file():
 
 
 def check_gcc_flags(filename):
+    # Coverage collection alters optimization flags
+    if test.have_dev_gcov:
+        return
     with open(filename, 'r', encoding="utf8") as fh:
         for line in fh:
             line = line.rstrip()

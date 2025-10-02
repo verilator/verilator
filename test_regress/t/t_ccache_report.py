@@ -10,6 +10,10 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+
+if test.have_dev_gcov:
+    test.skip("Code coverage build upsets ccache")
+
 test.top_filename = "t_a1_first_cc.v"
 
 if not test.cfg_with_ccache:

@@ -371,10 +371,10 @@ void V3Error::abortIfWarnings() {
 // Abort/exit
 
 void V3Error::vlAbort() {
-    VL_GCOV_DUMP();
 #ifndef V3ERROR_NO_GLOBAL_
     v3Global.shutdown();
 #endif
+    VL_GCOV_DUMP();
     std::abort();
 }
 std::ostringstream& V3Error::v3errorPrep(V3ErrorCode code) VL_ACQUIRE(s().m_mutex) {

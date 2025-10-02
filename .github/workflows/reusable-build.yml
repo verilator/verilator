@@ -19,6 +19,9 @@ on:
       asan:
         required: true
         type: number
+      gcov:
+        required: true
+        type: number
 
 env:
   CI_OS_NAME: ${{ inputs.os-name }}
@@ -41,6 +44,7 @@ jobs:
     env:
       CI_ASAN: ${{ inputs.asan }}
       CI_BUILD_STAGE_NAME: build
+      CI_GCOV: ${{ inputs.gcov }}
       CI_RUNS_ON: ${{ inputs.os }}
       CC: ${{ inputs.cc }}
       CXX: ${{ inputs.cc == 'clang' && 'clang++' || 'g++' }}

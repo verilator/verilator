@@ -785,6 +785,7 @@ public:
     static bool systemCFound();  // SystemC installed, or environment points to it
     static bool coroutineSupport();  // Compiler supports coroutines
     static bool devAsan();  // Compiler built with AddressSanitizer
+    static bool devGcov();  // Compiler built with code coverage for gcov
 
     // METHODS (file utilities using these options)
     string fileExists(const string& filename);

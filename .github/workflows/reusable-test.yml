@@ -19,6 +19,9 @@ on:
       suite:  # e.g. dist-vlt-0
         required: true
         type: string
+      gcov:
+        required: true
+        type: number
 
 env:
   CI_OS_NAME: linux
@@ -73,6 +76,15 @@ jobs:
         run: ./ci/ci-install.bash
 
       - name: Test
+        continue-on-error: ${{ inputs.gcov }} # Ignore failures in coverage runs
         env:
           TESTS: ${{ inputs.suite }}
         run: ./ci/ci-script.bash
+
+      - name: Publish code coverage to codecov.io
+        if: ${{ inputs.gcov }}
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          make coverage-combine
+          ./ci/codecov --verbose upload-process --fail-on-error --sha ${{ github.sha }} --disable-search --disable-file-fixes --plugin noop -f obj_coverage/verilator.info
