@@ -139,4 +139,6 @@ module Test(/*AUTOARG*/
 
    cover_concurrent: cover property(prop);
    cover_concurrent_stmt: cover property(prop) $display("pass");
+
+   restrict property (prop);
 endmodule
