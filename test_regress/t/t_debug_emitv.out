@@ -74,7 +74,7 @@ module Vt_debug_emitv_t;
             if (the_ifaces[2].ifsig) begin
                 $write("");
             end
-            #64'h1;
+            #1;
             $write("After #1 delay");
         end
     end
@@ -359,6 +359,15 @@ module Vt_debug_emitv_t;
             release sum;
         end
     end
+    task p;
+        @(posedge clk) ##1 sum[0];
+    endtask
+    task p1;
+        @( clk) sum[0];
+    endtask
+    task p2;
+        @(posedge clk) disable iff (cyc == 'sh1) ##1 sum[0];
+    endtask
 endmodule
 package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;

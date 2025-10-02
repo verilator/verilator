@@ -38,6 +38,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     bool m_suppressSemi = false;  // Non-statement, don't print ;
     bool m_suppressVarSemi = false;  // Suppress emitting semicolon for AstVars
     bool m_arrayPost = false;  // Print array information that goes after identifier (vs after)
+    bool m_prefixed = true;  // Whether constants need to be prefixed
     std::deque<AstNodeArrayDType*> m_packedps;  // Packed arrays to print with BasicDType
     std::unordered_map<AstJumpBlock*, size_t> m_labelNumbers;  // Label numbers for JumpBlocks
 
@@ -949,6 +950,31 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(nodep->verilogKwd());
         puts(";\n");
     }
+    void visit(AstPropSpec* nodep) override {
+        // Same dumping as in AstSenTree
+        putfs(nodep, "@(");
+        for (AstNode* expp = nodep->sensesp(); expp; expp = expp->nextp()) {
+            iterateConst(expp);
+            if (expp->nextp()) putqs(expp->nextp(), " or ");
+        }
+        puts(")");
+        if (nodep->disablep()) {
+            puts(" disable iff ");
+            iterateConst(nodep->disablep());
+        }
+        puts(" ");
+        iterateConstNull(nodep->propp());
+        puts(";\n");
+    }
+    void visit(AstPExpr* nodep) override { iterateConstNull(nodep->precondp()); }
+    void visit(AstSExpr* nodep) override {
+        {
+            VL_RESTORER(m_suppressSemi);
+            m_suppressSemi = true;
+            iterateConstNull(nodep->delayp());
+        }
+        iterateConstNull(nodep->exprp());
+    }
 
     // Terminals
     void visit(AstVarRef* nodep) override {
@@ -977,7 +1003,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             puts(nodep->prettyName());
         }
     }
-    void visit(AstConst* nodep) override { putfs(nodep, nodep->num().ascii(true, true)); }
+    void visit(AstConst* nodep) override { putfs(nodep, nodep->num().ascii(m_prefixed, true)); }
 
     // Just iterate
     void visit(AstTopScope* nodep) override { iterateChildrenConst(nodep); }
@@ -1003,9 +1029,19 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstDelay* nodep) override {
         puts("");  // this is for proper alignment
-        puts("#");
+        if (nodep->isCycleDelay()) {
+            puts("##");
+        } else {
+            puts("#");
+        }
+        VL_RESTORER(m_prefixed);
+        m_prefixed = false;
         iterateConst(nodep->lhsp());
-        puts(";\n");
+        if (!m_suppressSemi) {
+            puts(";\n");
+        } else {
+            puts(" ");
+        }
         iterateAndNextConstNull(nodep->stmtsp());
     }
     void visit(AstCAwait* nodep) override {

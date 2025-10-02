@@ -269,6 +269,16 @@ module t (/*AUTOARG*/
       repeat (2) if (sum != 10) $stop;
       release sum;
    end
+
+   property p;
+      @(posedge clk) ##1 sum[0];
+   endproperty
+   property p1;
+      @(clk) sum[0];
+   endproperty
+   property p2;
+      @(posedge clk) disable iff (cyc == 1) ##1 sum[0];
+   endproperty
 endmodule
 
 module sub(input logic clk);
