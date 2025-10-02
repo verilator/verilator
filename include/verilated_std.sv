@@ -177,10 +177,24 @@ package std;
 `endif
     endtask
 
+    local task disableFork();
+`ifdef VERILATOR_TIMING
+      $c(m_process, "->disableFork();");
+`endif
+    endtask
+
     static task killQueue(ref process processQueue[$]);
 `ifdef VERILATOR_TIMING
       while (processQueue.size() > 0) begin
         processQueue.pop_back().kill();
+      end
+`endif
+    endtask
+
+    static task disableForkQueue(ref process processQueue[$]);
+`ifdef VERILATOR_TIMING
+      while (processQueue.size() > 0) begin
+        processQueue.pop_back().disableFork();
       end
 `endif
     endtask

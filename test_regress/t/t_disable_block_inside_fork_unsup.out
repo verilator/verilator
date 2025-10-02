@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_disable_block_inside_fork_unsup.v:15:11: Unsupported: disabling block inside a fork
+   15 |           disable blk2;
+      |           ^~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

@@ -1192,7 +1192,9 @@ class AstFork final : public AstNodeBlock {
 public:
     // Node that puts name into the output stream
     AstFork(FileLine* fl, const string& name, AstNode* stmtsp)
-        : ASTGEN_SUPER_Fork(fl, name, stmtsp) {}
+        : ASTGEN_SUPER_Fork(fl, name, stmtsp) {
+        v3Global.setHasForks();
+    }
     ASTGEN_MEMBERS_AstFork;
     bool isTimingControl() const override { return !joinType().joinNone(); }
     void dump(std::ostream& str) const override;
