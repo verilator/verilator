@@ -76,6 +76,7 @@ jobs:
         run: ./ci/ci-install.bash
 
       - name: Test
+        id: run-test
         continue-on-error: true
         env:
           TESTS: ${{ inputs.suite }}
@@ -96,5 +97,5 @@ jobs:
           name: code-coverage-${{ inputs.suite }}
 
       - name: Fail job if a test failed
-        if: ${{ failure() && !cancelled() }}
+        if: ${{ steps.run-test.outcome == 'failure' && !cancelled() }}
         run: exit 1
