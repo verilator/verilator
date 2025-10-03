@@ -52,9 +52,6 @@ module t (/*AUTOARG*/
       a intersect b;
    endsequence
 
-   sequence s_uni_cycdelay_int;
-      ## 1 b;
-   endsequence
    sequence s_uni_cycdelay_id;
       ## DELAY b;
    endsequence
