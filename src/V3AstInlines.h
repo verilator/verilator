@@ -102,13 +102,6 @@ int AstRange::rightConst() const VL_MT_STABLE {
     return (constp ? constp->toSInt() : 0);
 }
 
-AstPin::AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp)
-    : ASTGEN_SUPER_Pin(fl)
-    , m_pinNum{pinNum}
-    , m_name{varname->name()} {
-    this->exprp(exprp);
-}
-
 AstPackArrayDType::AstPackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp,
                                      AstRange* rangep)
     : ASTGEN_SUPER_PackArrayDType(fl) {

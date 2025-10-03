@@ -316,7 +316,9 @@ class SliceVisitor final : public VNVisitor {
                     "Array initialization should have been removed earlier");
     }
 
-    void expandBiOp(AstNodeBiop* nodep) {
+    template <typename T_NodeBiop>
+    void expandBiOp(T_NodeBiop* biopp) {
+        AstNodeBiop* nodep = biopp;
         if (nodep->user1SetOnce()) return;  // Process once
         UINFO(9, "  Bi-Eq/Neq expansion " << nodep);
 
@@ -330,10 +332,9 @@ class SliceVisitor final : public VNVisitor {
                 // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
                 // Original node is replaced, so it is safe to copy it one time even if it is
                 // impure.
-                AstNodeBiop* const clonep = VN_AS(
-                    nodep->cloneType(cloneAndSel(nodep->lhsp(), elements, elemIdx, elemIdx != 0),
-                                     cloneAndSel(nodep->rhsp(), elements, elemIdx, elemIdx != 0)),
-                    NodeBiop);
+                T_NodeBiop* const clonep = new T_NodeBiop{
+                    nodep->fileline(), cloneAndSel(nodep->lhsp(), elements, elemIdx, elemIdx != 0),
+                    cloneAndSel(nodep->rhsp(), elements, elemIdx, elemIdx != 0)};
                 if (elemIdx == 0) {
                     nodep->foreach([this](AstExprStmt* const exprp) {
                         // Result expression is always evaluated to the same value, so the

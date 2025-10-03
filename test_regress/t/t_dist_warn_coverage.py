@@ -26,7 +26,6 @@ for s in [
         'EOF in unterminated string',  # Instead get normal unterminated
         'Enum ranges must be integral, per spec',  # Hard to hit
         'Expecting define formal arguments. Found: ',  # Instead define syntax error
-        'Return with return value isn\'t underneath a function',  # Hard to hit, get other bad return messages
         'Syntax error parsing real: \'',  # Instead can't lex the number
         'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance ',  # Instead get syntax error
         'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
@@ -62,6 +61,7 @@ for s in [
         'Slices of arrays in assignments have different unpacked dimensions, ',
         'String of ',
         'Symbol matching ',
+        'Type cannot be selected from',
         'Unexpected connection to arrayed port',
         'Unsized numbers/parameters not allowed in streams.',
         'Unsupported RHS tristate construct: ',

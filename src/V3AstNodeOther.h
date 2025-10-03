@@ -322,7 +322,6 @@ public:
     void level(int value) { m_level = value; }
     int level() const VL_MT_SAFE { return m_level; }
     string libname() const { return m_libname; }
-    string prettyLibnameQ() const { return "'" + prettyName(libname()) + "'"; }
     bool isTop() const VL_MT_SAFE { return level() == 1; }
     bool modPublic() const { return m_modPublic; }
     void modPublic(bool flag) { m_modPublic = flag; }
@@ -409,13 +408,12 @@ public:
     void text(const string& value) { m_text = value; }
 };
 class AstNodeSimpleText VL_NOT_FINAL : public AstNodeText {
-    bool m_tracking;  // When emit, it's ok to parse the string to do indentation
+    const bool m_tracking;  // When emit, it's ok to parse the string to do indentation
 public:
     AstNodeSimpleText(VNType t, FileLine* fl, const string& textp, bool tracking = false)
         : AstNodeText{t, fl, textp}
         , m_tracking{tracking} {}
     ASTGEN_MEMBERS_AstNodeSimpleText;
-    void tracking(bool flag) { m_tracking = flag; }
     bool tracking() const { return m_tracking; }
 };
 
@@ -725,14 +723,11 @@ class AstCellInline final : public AstNode {
     // @astgen ptr := m_scopep : Optional[AstScope]  // The scope that the cell is inlined into
     string m_name;  // Cell name, possibly {a}__DOT__{b}...
     const string m_origModName;  // Original name of module, ignoring name() changes, for LinkDot
-    VTimescale m_timeunit;  // Parent module time unit
 public:
-    AstCellInline(FileLine* fl, const string& name, const string& origModName,
-                  const VTimescale& timeunit)
+    AstCellInline(FileLine* fl, const string& name, const string& origModName)
         : ASTGEN_SUPER_CellInline(fl)
         , m_name{name}
-        , m_origModName{origModName}
-        , m_timeunit{timeunit} {}
+        , m_origModName{origModName} {}
     ASTGEN_MEMBERS_AstCellInline;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -741,8 +736,6 @@ public:
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
     string origModName() const { return m_origModName; }  // * = modp()->origName() before inlining
     void name(const string& name) override { m_name = name; }
-    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
-    VTimescale timeunit() const { return m_timeunit; }
 };
 class AstCellInlineScope final : public AstNode {
     // A particular scoped usage of a Cell Inline
@@ -770,7 +763,6 @@ public:
     string origModName() const {
         return m_cellp->origModName();
     }  // * = modp()->origName() before inlining
-    void scopep(AstScope* nodep) { m_scopep = nodep; }
 };
 class AstClassExtends final : public AstNode {
     // class extends class name, or class implements class name
@@ -943,7 +935,7 @@ public:
     explicit AstConstPool(FileLine* fl);
     ASTGEN_MEMBERS_AstConstPool;
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    void cloneRelink() override { UASSERT(!clonep(), "Not cloneable"); }
+    void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
     AstModule* modp() const { return m_modp; }
 
     // Find a table (unpacked array) within the constant pool which is initialized with the
@@ -1108,7 +1100,7 @@ public:
     explicit AstExecGraph(FileLine* fl, const string& name) VL_MT_DISABLED;
     ~AstExecGraph() override;
     ASTGEN_MEMBERS_AstExecGraph;
-    void cloneRelink() override { UASSERT(!clonep(), "Not cloneable"); }
+    void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
     const char* broken() const override {
         BROKEN_RTN(!m_depGraphp);
         return nullptr;
@@ -1256,7 +1248,7 @@ class AstModportVarRef final : public AstNode {
     //
     // @astgen ptr := m_varp : Optional[AstVar]  // Link to the actual Var
     string m_name;  // Name of the variable referenced
-    VDirection m_direction;  // Direction of the variable (in/out)
+    const VDirection m_direction;  // Direction of the variable (in/out)
 public:
     AstModportVarRef(FileLine* fl, const string& name, VDirection::en direction)
         : ASTGEN_SUPER_ModportVarRef(fl)
@@ -1266,7 +1258,6 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
-    void direction(const VDirection& flag) { m_direction = flag; }
     VDirection direction() const { return m_direction; }
     AstVar* varp() const VL_MT_STABLE { return m_varp; }  // [After Link] Pointer to variable
     void varp(AstVar* varp) { m_varp = varp; }
@@ -1297,7 +1288,7 @@ public:
     AstNetlist();
     ASTGEN_MEMBERS_AstNetlist;
     void deleteContents();
-    void cloneRelink() override { UASSERT(!clonep(), "Not cloneable"); }
+    void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
     string name() const override VL_MT_STABLE { return "$root"; }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1343,12 +1334,6 @@ class AstPackageExport final : public AstNode {
     string m_pkgName;  // Module the cell instances
 
 public:
-    AstPackageExport(FileLine* fl, AstPackage* packagep, const string& name)
-        : ASTGEN_SUPER_PackageExport(fl)
-        , m_name{name}
-        , m_packagep{packagep} {
-        pkgNameFrom();
-    }
     AstPackageExport(FileLine* fl, const string& pkgName, const string& name)
         : ASTGEN_SUPER_PackageExport(fl)
         , m_name{name}
@@ -1362,9 +1347,6 @@ public:
     string prettyPkgNameQ() const { return "'" + prettyName(pkgName()) + "'"; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
-
-private:
-    void pkgNameFrom();
 };
 class AstPackageExportStarStar final : public AstNode {
     // A package export *::* declaration
@@ -1424,7 +1406,6 @@ public:
         , m_name{name} {
         this->exprp(exprp);
     }
-    inline AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp);
     ASTGEN_MEMBERS_AstPin;
     void cloneRelink() override {}  // TODO V3Param shouldn't require avoiding cloneRelinkGen
     void dump(std::ostream& str) const override;
@@ -1698,7 +1679,7 @@ public:
     explicit AstTypeTable(FileLine* fl);
     ASTGEN_MEMBERS_AstTypeTable;
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    void cloneRelink() override { UASSERT(!clonep(), "Not cloneable"); }
+    void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
     AstBasicDType* findBasicDType(FileLine* fl, VBasicDTypeKwd kwd);
     AstBasicDType* findLogicBitDType(FileLine* fl, VBasicDTypeKwd kwd, int width, int widthMin,
                                      VSigning numeric);
@@ -1863,7 +1844,6 @@ class AstVar final : public AstNode {
     bool m_primaryIO : 1;  // In/out to top level (or directly assigned from same)
     bool m_primaryClock : 1;  // In/out to top level and is, or combinationally drives a SenItem
     bool m_sc : 1;  // SystemC variable
-    bool m_scClocked : 1;  // SystemC sc_clk<> needed
     bool m_scSensitive : 1;  // SystemC sensitive() needed
     bool m_sigPublic : 1;  // User C code accesses this signal or is top signal
     bool m_sigModPublic : 1;  // User C code accesses this signal and module
@@ -1913,7 +1893,6 @@ class AstVar final : public AstNode {
         m_primaryIO = false;
         m_primaryClock = false;
         m_sc = false;
-        m_scClocked = false;
         m_scSensitive = false;
         m_usedParam = false;
         m_usedLoopIdx = false;
@@ -2052,7 +2031,6 @@ public:
     void declTyped(bool flag) { m_declTyped = flag; }
     void sensIfacep(AstIface* nodep) { m_sensIfacep = nodep; }
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
-    void attrScClocked(bool flag) { m_scClocked = flag; }
     void attrScBv(bool flag) { m_attrScBv = flag; }
     void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     void attrSFormat(bool flag) { m_attrSFormat = flag; }
@@ -2195,7 +2173,6 @@ public:
     bool isPulldown() const { return m_isPulldown; }
     bool attrScBv() const { return m_attrScBv; }
     bool attrFileDescr() const { return m_fileDescr; }
-    bool attrScClocked() const { return m_scClocked; }
     bool attrSFormat() const { return m_attrSFormat; }
     bool attrSplitVar() const { return m_attrSplitVar; }
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }

@@ -91,7 +91,7 @@ class BeginVisitor final : public VNVisitor {
                 // Create CellInline for dotted var resolution
                 if (!m_ftaskp) {
                     AstCellInline* const inlinep
-                        = new AstCellInline{flp, m_unnamedScope, blockName, m_modp->timeunit()};
+                        = new AstCellInline{flp, m_unnamedScope, blockName};
                     m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
                 }
             }
@@ -407,7 +407,7 @@ static AstNode* createForeachLoop(AstNodeForeach* nodep, AstNode* bodysp, AstVar
         condp = new AstGteS{fl, varRefp, rightp};
         inc = false;
         break;
-    default: UASSERT_OBJ(0, varp, "Missing comparison handling"); break;
+    default: varp->v3fatalSrc("Missing comparison handling"); break;
     }
     AstNodeExpr* incp;
     if (inc)

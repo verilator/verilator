@@ -254,9 +254,7 @@ public:
         : ASTGEN_SUPER_Break(fl) {}
     ASTGEN_MEMBERS_AstBreak;
     string verilogKwd() const override { return "break"; }
-    bool isBrancher() const override {
-        return true;  // SPECIAL: We don't process code after breaks
-    }
+    bool isBrancher() const override { V3ERROR_NA_RETURN(true); }  // Node removed early
 };
 class AstCReset final : public AstNodeStmt {
     // Reset variable at startup
@@ -399,9 +397,7 @@ public:
         : ASTGEN_SUPER_Continue(fl) {}
     ASTGEN_MEMBERS_AstContinue;
     string verilogKwd() const override { return "continue"; }
-    bool isBrancher() const override {
-        return true;  // SPECIAL: We don't process code after breaks
-    }
+    bool isBrancher() const override { V3ERROR_NA_RETURN(true); }  // Node removed early
 };
 class AstCoverInc final : public AstNodeStmt {
     // Coverage analysis point; increment coverage count
@@ -485,9 +481,7 @@ public:
     void dump(std::ostream& str) const override;
     void targetp(AstNode* nodep) { m_targetp = nodep; }
     AstNode* targetp() const { return m_targetp; }
-    bool isBrancher() const override {
-        return true;  // SPECIAL: We don't process code after breaks
-    }
+    bool isBrancher() const override { V3ERROR_NA_RETURN(true); }  // Node removed early
 };
 class AstDisableFork final : public AstNodeStmt {
     // A "disable fork" statement
@@ -820,9 +814,7 @@ public:
     }
     ASTGEN_MEMBERS_AstReturn;
     string verilogKwd() const override { return "return"; }
-    bool isBrancher() const override {
-        return true;  // SPECIAL: We don't process code after breaks
-    }
+    bool isBrancher() const override { V3ERROR_NA_RETURN(true); }  // Node removed early
 };
 class AstSFormat final : public AstNodeStmt {
     // Parents: statement container

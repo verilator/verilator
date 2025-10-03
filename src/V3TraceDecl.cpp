@@ -337,10 +337,10 @@ class TraceDeclVisitor final : public VNVisitor {
     void checkCalls(const AstCFunc* funcp) {
         if (!v3Global.opt.debugCheck()) return;
         checkCallsRecurse(funcp);
-        if (!m_declUncalledps.empty()) {
+        if (!m_declUncalledps.empty()) {  // LCOV_EXCL_START
             for (auto tracep : m_declUncalledps) UINFO(0, "-nodep " << tracep);
             (*(m_declUncalledps.begin()))->v3fatalSrc("Created TraceDecl which is never called");
-        }
+        }  // LCOV_EXCL_STOP
     }
     void checkCallsRecurse(const AstCFunc* funcp) {
         funcp->foreach([this](const AstNode* nodep) {

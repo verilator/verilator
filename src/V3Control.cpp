@@ -383,7 +383,7 @@ public:
         // allow old rules to still match using a final '*'
         string newMatch = match;
         if (newMatch.empty() || newMatch.back() != '*') newMatch += '*';
-        m_waivers.emplace_back(WaiverSetting{code, contents, newMatch});
+        m_waivers.emplace_back(code, contents, newMatch);
     }
 
     void applyBlock(AstGenBlock* nodep) {

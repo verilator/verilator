@@ -541,9 +541,9 @@ public:
                 continue;
             } else if (ifacerefp->ifaceViaCellp()->dead()
                        || !existsNodeSym(ifacerefp->ifaceViaCellp())) {
-                UASSERT_OBJ(false, ifacerefp->ifaceViaCellp(),
-                            "Interface referenced by virtual iface is dead. "
-                            "Dead interfaces have required linking steps skipped");
+                ifacerefp->ifaceViaCellp()->v3fatalSrc(
+                    "Interface referenced by virtual iface is dead. "
+                    "Dead interfaces have required linking steps skipped");
             }
             VSymEnt* const ifaceSymp = getNodeSym(ifacerefp->ifaceViaCellp());
             VSymEnt* ifOrPortSymp = ifaceSymp;

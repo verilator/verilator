@@ -520,7 +520,7 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     } else if (nodep->direction() == VDirection::OUTPUT) {
         modp->addStmtsp(new AstAssignW{flp, pinRef(VAccess::WRITE), portRef(VAccess::READ)});
     } else {
-        pinExprp->v3fatalSrc("V3Tristate left INOUT port");  // LCOV_EXCL_LINE
+        pinExprp->v3fatalSrc("V3Tristate left INOUT port");
     }
 }
 
@@ -555,8 +555,8 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last) {
     }
 
     // Create data for resolving hierarchical references later.
-    modp->addInlinesp(new AstCellInline{cellp->fileline(), cellp->name(),
-                                        cellp->modp()->origName(), cellp->modp()->timeunit()});
+    modp->addInlinesp(
+        new AstCellInline{cellp->fileline(), cellp->name(), cellp->modp()->origName()});
 
     // Connect the pins on the instance
     for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {

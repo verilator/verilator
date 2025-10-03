@@ -1121,7 +1121,7 @@ class FixUpIndependentRanges final {
         if (const DfgVertexVar* const varp = vtx.cast<DfgVertexVar>()) {
             return varp->nodep()->name();
         }
-        vtx.v3fatalSrc("Unhandled node type");  // LCOV_EXCL_LINE
+        vtx.v3fatalSrc("Unhandled node type");
     }
 
     // Trace drivers of independent bits of 'vtxp' in the range '[hi:lo]'

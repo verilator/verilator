@@ -157,12 +157,10 @@ public:
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
         return reinterpret_cast<T>(m_u.up);
     }
-    WidthVP* c() const { return to<WidthVP*>(); }
     VSymEnt* toSymEnt() const { return to<VSymEnt*>(); }
     AstNode* toNodep() const VL_MT_SAFE { return to<AstNode*>(); }
     V3GraphVertex* toGraphVertex() const { return to<V3GraphVertex*>(); }
     int toInt() const { return m_u.ui; }
-    static VNUser fromInt(int i) { return VNUser{i}; }
 };
 
 //######################################################################
@@ -358,7 +356,6 @@ public:
             UASSERT_STATIC(!m_backp, "Active linker must be relink()ed before destruction"););
     }
     inline void relink(AstNode* newp);
-    AstNode* oldp() const { return m_oldp; }
     void dump(std::ostream& str = std::cout) const;
 };
 inline std::ostream& operator<<(std::ostream& os, const VNRelinker& rhs) {
@@ -827,7 +824,6 @@ public:
     AstNode* unlinkFrBackWithNext(VNRelinker* linkerp = nullptr);
     void swapWith(AstNode* bp);
     void relink(VNRelinker* linkerp);  // Generally use linker->relink() instead
-    void cloneRelinkNode() { cloneRelink(); }
     // Iterate and insert - assumes tree format
     virtual void addNextStmt(AstNode* newp,
                              AstNode* belowp);  // When calling, "this" is second argument
@@ -967,21 +963,21 @@ protected:
 
     // For internal use only.
     template <typename T_TargetType, typename T_DeclType>
-    constexpr static bool uselessCast() VL_PURE {
+    constexpr static bool uselessCast() VL_PURE {  // LCOV_EXCL_START
         using NonRef = typename std::remove_reference<T_DeclType>::type;
         using NonPtr = typename std::remove_pointer<NonRef>::type;
         using NonCV = typename std::remove_cv<NonPtr>::type;
         return std::is_base_of<T_TargetType, NonCV>::value;
-    }
+    }  // LCOV_EXCL_STOP
 
     // For internal use only.
     template <typename T_TargetType, typename T_DeclType>
-    constexpr static bool impossibleCast() VL_PURE {
+    constexpr static bool impossibleCast() VL_PURE {  // LCOV_EXCL_START
         using NonRef = typename std::remove_reference<T_DeclType>::type;
         using NonPtr = typename std::remove_pointer<NonRef>::type;
         using NonCV = typename std::remove_cv<NonPtr>::type;
         return !std::is_base_of<NonCV, T_TargetType>::value;
-    }
+    }  // LCOV_EXCL_STOP
 
 public:
     // For use via the VN_IS macro only, or in templated code

@@ -54,7 +54,7 @@ class V3MutexConfig final {
 
 public:
     static V3MutexConfig& s() VL_MT_SAFE {
-        static V3MutexConfig s;
+        static V3MutexConfig s{};
         return s;
     }
 
@@ -67,7 +67,7 @@ public:
             // requires <iostream>
             // avoided to reduce compile time
             // std::cerr << "%Error: V3Mutex already configured." << std::endl;
-            std::abort();
+            std::abort();  // LCOV_EXCL_LINE
         }
     }
     bool lockConfig() VL_MT_SAFE { return m_lockConfig; }

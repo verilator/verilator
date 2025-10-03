@@ -367,10 +367,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         if ((nodep->isSigUserRdPublic() || nodep->isSigUserRWPublic()) && !m_cfuncp)
             m_modVars.emplace_back(m_modp, nodep);
     }
-    void visit(AstVarScope* nodep) override {
-        iterateChildrenConst(nodep);
-        m_statVarScopeBytes += nodep->varp()->dtypep()->widthTotalBytes();
-    }
     void visit(AstNodeCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use
         if (!nodep->dataDeclNullp()) {  // else duplicate we don't need code for
@@ -830,6 +826,7 @@ void EmitCSyms::emitSymImp() {
         if (v3Global.opt.debugStackCheck()) stackSize += 1024 * 1024 * 1024;
         V3Stats::addStat("Size prediction, Stack (bytes)", stackSize);
         puts("    Verilated::stackCheck(" + cvtToStr(stackSize) + ");\n");
+        // TODO: 'm_statVarScopeBytes' is always 0, AstVarScope doesn't reach here (V3Descope)
         V3Stats::addStat("Size prediction, Heap, from Var Scopes (bytes)", m_statVarScopeBytes);
         V3Stats::addStat(V3Stats::STAT_MODEL_SIZE, stackSize + m_statVarScopeBytes);
     }

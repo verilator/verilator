@@ -319,6 +319,7 @@ public:
     inline bool isCheaperThanLoad() const;
 
     // Methods that allow DfgVertex to participate in error reporting/messaging
+    // LCOV_EXCL_START
     void v3errorEnd(std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex) {
         m_filelinep->v3errorEnd(str);
     }
@@ -332,6 +333,7 @@ public:
     string warnContextSecondary() const { return fileline()->warnContextSecondary(); }
     string warnMore() const VL_REQUIRES(V3Error::s().m_mutex) { return fileline()->warnMore(); }
     string warnOther() const VL_REQUIRES(V3Error::s().m_mutex) { return fileline()->warnOther(); }
+    // LCOV_EXCL_STOP
 
 private:
     // For internal use only.
