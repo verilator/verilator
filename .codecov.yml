@@ -20,6 +20,6 @@ coverage:
   round: down
 comment:
   layout: "condensed_header,condensed_files"
-  behavior: new
+  behavior: default # Update if exists, otherwise post new
   hide_project_coverage: true # PR patch coverage only
   require_base: false
