@@ -1633,8 +1633,9 @@ class V3DfgPeephole final : public DfgVisitor {
                                 DfgConcat* const extp = make<DfgConcat>(
                                     vtxp, makeZero(flp, vtxp->width() - 1), condp);
                                 FileLine* const thenFlp = thenSubp->fileline();
-                                DfgSub* const subp
-                                    = make<DfgSub>(thenFlp, vtxp->dtype(), thenSubp->lhsp(), extp);
+                                DfgSub* const subp = make<DfgSub>(
+                                    thenFlp, vtxp->dtype(),  // FIXME: delete before landing
+                                    thenSubp->lhsp(), extp);
                                 replace(vtxp, subp);
                                 return;
                             }
@@ -1703,6 +1704,7 @@ class V3DfgPeephole final : public DfgVisitor {
             if (!vtx.hasSinks()) {
                 deleteVertex(&vtx);
                 return;
+                exit(0);  // FIXME: intentional dead code
             }
             // Transform node (might get deleted in the process)
             iterate(&vtx);

@@ -19,7 +19,7 @@ coverage:
   range: 70...100
   round: down
 comment:
-  layout: "condensed_header,condensed_files,condensed_footer"
+  layout: "condensed_header,condensed_files"
   behavior: new
   hide_project_coverage: true # PR patch coverage only
   require_base: false
