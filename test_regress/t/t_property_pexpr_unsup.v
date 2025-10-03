@@ -77,10 +77,6 @@ module t (/*AUTOARG*/
       nexttime [2] always a;
    endproperty
 
-   property p_nexttime_eventually;
-      nexttime eventually a;
-   endproperty
-
    property p_nexttime_eventually2;
       nexttime [2] always a;
    endproperty
