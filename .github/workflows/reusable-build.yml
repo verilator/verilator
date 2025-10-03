@@ -52,7 +52,6 @@ jobs:
       CCACHE_MAXSIZE: 1000M  # Per build matrix entry (* 5 = 5000M in total)
       VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ inputs.os }}-${{ inputs.cc }}.tar.gz
     steps:
-
       - name: Checkout
         uses: actions/checkout@v5
         with:

@@ -12,11 +12,6 @@ on:
 permissions:
   contents: read
 
-defaults:
-  run:
-    shell: bash
-    working-directory: repo
-
 jobs:
 
   build:
@@ -41,7 +36,6 @@ jobs:
       reloc: 0
       suite: ${{ matrix.test }}${{ matrix.num }}
       gcov: 1
-    secrets: inherit
     strategy:
       fail-fast: false
       matrix:
@@ -49,3 +43,67 @@ jobs:
         num: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         include:
           - {test: coverage-dist, num: ''}
+
+  publish:
+    name: Publish results to codecov.io
+    needs: test
+    if: ${{ contains(needs.*.result, 'success') && !cancelled() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download code coverage data
+        uses: actions/download-artifact@v5
+        with:
+          pattern: code-coverage-*
+          path: obj_coverage
+          merge-multiple: true
+
+      - name: List files
+        id: list-files
+        run: |
+          ls -lsha obj_coverage
+          find obj_coverage -type f | paste -sd, | sed "s/^/files=/" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v5
+        with:
+          disable_file_fixes: true
+          disable_search: true
+          fail_ci_if_error: true
+          files: ${{ steps.list-files.outputs.files }}
+          plugins: noop
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+
+  # Create GitHub issue for failed scheduled jobs
+  # This should always be the last job (we want an issue if anything breaks)
+  create-issue:
+    name: Create issue on failure
+    needs: publish
+    if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && failure() && !cancelled() }}
+    runs-on: ubuntu-24.04
+    steps:
+      # Creating issues requires elevated privilege
+      - name: Generate access token
+        id: generate-token
+        uses: actions/create-github-app-token@v2.1.4
+        with:
+          app-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
+          owner: verilator
+          repositories: verilator
+          permission-issues: write
+      - name: Create issue
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |-
+          echo "This issue was created automatically by the GitHub Actions CI due to the failure of a scheduled Code coverage run." >> body.txt
+          echo "" >> body.txt
+          echo "Workflow status: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> body.txt
+          gh issue --repo ${{ github.repository }} create \
+            --title "Code coverage run #${{ github.run_number }} Failed" \
+            --body-file body.txt \
+            --label new \
+            --assignee gezalore,wsnyder

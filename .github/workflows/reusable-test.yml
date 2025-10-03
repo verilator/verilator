@@ -76,15 +76,25 @@ jobs:
         run: ./ci/ci-install.bash
 
       - name: Test
-        continue-on-error: ${{ inputs.gcov }} # Ignore failures in coverage runs
+        continue-on-error: true
         env:
           TESTS: ${{ inputs.suite }}
         run: ./ci/ci-script.bash
 
-      - name: Publish code coverage to codecov.io
+      - name: Combine code coverage data
         if: ${{ inputs.gcov }}
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
           make coverage-combine
-          ./ci/codecov --verbose upload-process --fail-on-error --sha ${{ github.sha }} --disable-search --disable-file-fixes --plugin noop -f obj_coverage/verilator.info
+          mv obj_coverage/verilator.info obj_coverage/verilator-${{ inputs.suite }}.info
+          ls -lsha obj_coverage
+
+      - name: Upload code coverage data
+        if: ${{ inputs.gcov }}
+        uses: actions/upload-artifact@v4
+        with:
+          path: ${{ github.workspace }}/repo/obj_coverage/verilator-${{ inputs.suite }}.info
+          name: code-coverage-${{ inputs.suite }}
+
+      - name: Fail job if a test failed
+        if: ${{ failure() && !cancelled() }}
+        run: exit 1
