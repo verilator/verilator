@@ -8,29 +8,18 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 ####################
 # Validate:
-#  curl --data-binary @codecov.yml https://codecov.io/validate
+#  curl --data-binary @.codecov.yml https://codecov.io/validate
 #
 codecov:
   require_ci_to_pass: false
+  notify:
+    wait_for_ci: false
 coverage:
   precision: 2
+  range: 70...100
   round: down
-  range: 50...100
-  ignore:
-    - "ci"  #
-    - "docs"  #
-    - "examples"  #
-    - "include/gtkwave"  #
-    - "include/vltstd"  #
-    - "test_regress"  #
-parsers:
-  gcov:
-    branch_detection:
-      conditional: true
-      loop: true
-      method: false
-      macro: false
 comment:
-  layout: "reach,diff,flags,tree"
-  behavior: default
-  require_changes: true
+  layout: "condensed_header,condensed_files,condensed_footer"
+  behavior: new
+  hide_project_coverage: true # PR patch coverage only
+  require_base: false

@@ -8,16 +8,34 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * 0'  # weekly
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  # At most 1 job per branch. Auto cancel all but scheduled jobs
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
 
   build:
     name: Build
     # Only run scheduled jobs if explicitly enabled for that repo (e.g.: not on forks)
-    if: ${{ github.event_name != 'schedule' || vars.ENABLE_SCHEDULED_JOBS == 'true' }}
+    # Only run pull request jobs if labelled as needing an RTLMeter run
+    # Always run workflow dispatch jobs
+    if: |
+      (github.event_name == 'schedule'
+        && vars.ENABLE_SCHEDULED_JOBS == 'true') ||
+      (github.event_name == 'pull_request'
+        && contains(github.event.pull_request.labels.*.name, 'pr: dev-coverage')) ||
+      (github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/reusable-build.yml
     with:
       os: ubuntu-24.04
