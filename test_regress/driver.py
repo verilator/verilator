@@ -126,8 +126,8 @@ class Capabilities:
     # @lru_cache(maxsize=1024) broken with @staticmethod on older pythons we use
     _cached_cmake_version = None
     _cached_cxx_version = None
-    _cached_have_asan = None
     _cached_have_coroutines = None
+    _cached_have_dev_asan = None
     _cached_have_gdb = None
     _cached_have_sc = None
     _cached_have_solver = None
@@ -155,17 +155,18 @@ class Capabilities:
         return Capabilities._cached_cxx_version
 
     @staticproperty
-    def have_asan() -> bool:  # pylint: disable=no-method-argument
-        if Capabilities._cached_have_asan is None:
-            Capabilities._cached_have_asan = bool(Capabilities._verilator_get_supported('ASAN'))
-        return Capabilities._cached_have_asan
-
-    @staticproperty
     def have_coroutines() -> bool:  # pylint: disable=no-method-argument
         if Capabilities._cached_have_coroutines is None:
             Capabilities._cached_have_coroutines = bool(
                 Capabilities._verilator_get_supported('COROUTINES'))
         return Capabilities._cached_have_coroutines
+
+    @staticproperty
+    def have_dev_asan() -> bool:  # pylint: disable=no-method-argument
+        if Capabilities._cached_have_dev_asan is None:
+            Capabilities._cached_have_dev_asan = bool(
+                Capabilities._verilator_get_supported('DEV_ASAN'))
+        return Capabilities._cached_have_dev_asan
 
     @staticproperty
     def have_gdb() -> bool:  # pylint: disable=no-method-argument
@@ -211,8 +212,8 @@ class Capabilities:
     # Fetch
     @staticmethod
     def warmup_cache() -> None:
-        _ignore = Capabilities.have_asan
         _ignore = Capabilities.have_coroutines
+        _ignore = Capabilities.have_dev_asan
         _ignore = Capabilities.have_gdb
         _ignore = Capabilities.have_sc
         _ignore = Capabilities.have_solver
@@ -1651,10 +1652,6 @@ class VlTest:
         return Capabilities.cxx_version
 
     @property
-    def have_asan(self) -> bool:
-        return Capabilities.have_asan
-
-    @property
     def have_cmake(self) -> bool:
         ver = Capabilities.cmake_version
         if not ver:
@@ -1667,6 +1664,10 @@ class VlTest:
     @property
     def have_coroutines(self) -> bool:
         return Capabilities.have_coroutines
+
+    @property
+    def have_dev_asan(self) -> bool:
+        return Capabilities.have_dev_asan
 
     @property
     def have_gdb(self) -> bool:

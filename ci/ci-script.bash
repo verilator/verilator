@@ -43,7 +43,7 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
     autoconf
     CONFIGURE_ARGS="--enable-longtests --enable-ccwarn"
     if [ "$CI_ASAN" = 1 ]; then
-      CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-asan"
+      CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-dev-asan"
       CXX="$CXX -DVL_LEAK_CHECKS"
     fi
     ./configure $CONFIGURE_ARGS --prefix="$INSTALL_DIR"

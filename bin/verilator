@@ -205,7 +205,7 @@ sub ulimit_stack_unlimited {
     return "" if !$opt_unlimited_stack;
     my $limit = "unlimited";
     # AddressSanitizer doesn't work with 'ulimit -s unlimted'
-    if (`${\(verilator_bin())} --get-supported ASAN` eq "1\n") {
+    if (`${\(verilator_bin())} --get-supported DEV_ASAN` eq "1\n") {
         # Use host 'physical memory / #cores / 8' instead
         open(my $fh, "<", "/proc/meminfo") || die "Can't read host memory for asan";
         while (<$fh>) {

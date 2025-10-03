@@ -841,10 +841,10 @@ string V3Options::getSupported(const string& var) {
     // If update below, also update V3Options::showVersion()
     if (var == "COROUTINES" && coroutineSupport()) {
         return "1";
+    } else if (var == "DEV_ASAN" && devAsan()) {
+        return "1";
         // cppcheck-suppress knownConditionTrueFalse
     } else if (var == "SYSTEMC" && systemCFound()) {
-        return "1";
-    } else if (var == "ASAN" && builtWithAsan()) {
         return "1";
     } else {
         return "";
@@ -872,8 +872,8 @@ bool V3Options::coroutineSupport() {
 #endif
 }
 
-bool V3Options::builtWithAsan() {
-#ifdef HAVE_ASAN
+bool V3Options::devAsan() {
+#ifdef HAVE_DEV_ASAN
     return true;
 #else
     return false;

@@ -19,7 +19,7 @@ with open(test.top_filename, "w", encoding="utf8") as f:
         f.write(f"  int x{i} = 'd{i};\n")
     f.write("endmodule\n")
 
-test.timeout(30 if not test.have_asan else 60)
+test.timeout(30 if not test.have_dev_asan else 60)
 
 test.lint(verilator_flags2=[f"--max-num-width {2**29}"])
 
