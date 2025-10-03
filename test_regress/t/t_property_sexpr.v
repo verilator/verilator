@@ -95,7 +95,7 @@ module t (  /*AUTOARG*/
       $display("[%0t] triggered e11", $time);
 `endif
     end
-    if (cyc >= 60 && cyc <= 64) begin
+    if (cyc >= 56 && cyc <= 60) begin
       ->e12;
 `ifdef TEST_VERBOSE
       $display("[%0t] triggered e12", $time);
@@ -140,23 +140,29 @@ module t (  /*AUTOARG*/
 
   assume property (@(e8) not (##1 val[0]))
     $display("[%0t] single delay with negated var brackets stmt, fileline:%0d", $time, `__LINE__);
-  else $display("[%0t] single delay with negated var brackets else, fileline:%0d", $time, `__LINE__);
+  else
+    $display("[%0t] single delay with negated var brackets else, fileline:%0d", $time, `__LINE__);
 
   assume property (@(e9) not (##1 val[0]))
-  else $display("[%0t] single delay with negated var brackets else, fileline:%0d", $time, `__LINE__);
+  else
+    $display("[%0t] single delay with negated var brackets else, fileline:%0d", $time, `__LINE__);
 
-  cover property (@(e10) ##1 val[0]);
-
-  cover property (@(e11) not ##1 val[1]) $display("[%0t] cover property, fileline:%0d", $time, `__LINE__);
+  assert property (@(e10) not (not ##1 val[0]))
+    $display("[%0t] single delay with nested not stmt, fileline:%0d", $time, `__LINE__);
+  else $display("[%0t] single delay with nested not else, fileline:%0d", $time, `__LINE__);
 
   restrict property (@(e11) ##1 val[0]);
 
   restrict property (@(e11) not ##1 val[0]);
 
-  property prop();
+  property prop;
     @(e12) not ##1 val[0]
   endproperty
 
-  assert property(prop) $display("[%0t] property, fileline:%0d", $time, `__LINE__);
+  assert property (prop) $display("[%0t] property, fileline:%0d", $time, `__LINE__);
   else $display("[%0t] property, fileline:%0d", $time, `__LINE__);
+
+  assert property (@(posedge clk) not (not ##2 val[0] && val[1]))
+    $display("[%0t] concurrent assert stmt, fileline:%0d", $time, `__LINE__);
+  else $display("[%0t] concurrent assert else, fileline:%0d", $time, `__LINE__);
 endmodule

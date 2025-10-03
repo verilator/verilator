@@ -81,7 +81,6 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstPort* nodep) override {}
     void visit(AstNodeFTask* nodep) override {
-        const bool func = nodep->isFunction() || nodep->name() == "new";
         putfs(nodep, nodep->verilogKwd());
         puts(" ");
         puts(nodep->prettyName());

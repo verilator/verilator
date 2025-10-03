@@ -5,31 +5,31 @@
 %Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:30:43: Unsupported: ## (in sequence expression)
    30 |   assert property (@(posedge clk) ##1 val ##2 val) $display("[%0t] sequence stmt, fileline:%d", $time, 30);
       |                                           ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:65:14: Unsupported sequence match items
-   65 |     ($rose(a), l_b = b) |-> ##[3:10] q[l_b];
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:71:14: Unsupported sequence match items
+   71 |     ($rose(a), l_b = b) |-> ##[3:10] q[l_b];
       |              ^
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:65:29: Unsupported: ## range cycle delay range expression
-   65 |     ($rose(a), l_b = b) |-> ##[3:10] q[l_b];
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:71:29: Unsupported: ## range cycle delay range expression
+   71 |     ($rose(a), l_b = b) |-> ##[3:10] q[l_b];
       |                             ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:64:13: Unsupported: property variable declaration
-   64 |     integer l_b;
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:70:13: Unsupported: property variable declaration
+   70 |     integer l_b;
       |             ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:82:16: Unsupported sequence match items
-   82 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:88:16: Unsupported sequence match items
+   88 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
       |                ^
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:82:51: Unsupported: [-> boolean abbrev expression
-   82 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:88:51: Unsupported: [-> boolean abbrev expression
+   88 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
       |                                                   ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:82:54: Unsupported: boolean abbrev (in sequence expression)
-   82 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:88:54: Unsupported: boolean abbrev (in sequence expression)
+   88 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
       |                                                      ^
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:82:35: Unsupported: ## (in sequence expression)
-   82 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:88:35: Unsupported: ## (in sequence expression)
+   88 |     (count == 0, l_t = $realtime) ##1 (count == 7)[->1] |-> $realtime - l_t < 50.5;
       |                                   ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:80:14: Unsupported: property variable declaration
-   80 |     realtime l_t;
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:86:14: Unsupported: property variable declaration
+   86 |     realtime l_t;
       |              ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:86:31: Unsupported: ## (in sequence expression)
-   86 |   assert property (@clk not a ##1 b);
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:92:31: Unsupported: ## (in sequence expression)
+   92 |   assert property (@clk not a ##1 b);
       |                               ^~
 %Error: Exiting due to

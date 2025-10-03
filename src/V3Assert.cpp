@@ -275,6 +275,23 @@ class AssertVisitor final : public VNVisitor {
         return newp;
     }
 
+    static AstFork* cycleDelayAssertBody(AstPExpr* pExpr, AstNode* bodysp, AstNode* failsp,
+                                         AstNodeCoverOrAssert* nodep) {
+        AstNode* const precondps = pExpr->precondp();
+        UASSERT_OBJ(precondps, pExpr, "Should have precondition");
+        AstIf* const ifp
+            = new AstIf{nodep->fileline(), pExpr->condp()->unlinkFrBack(), bodysp, failsp};
+        ifp->isBoundsCheck(true);  // To avoid LATCH warning
+        // It's more LIKELY that we'll take the nullptr if clause
+        // than the sim-killing else clause:
+        ifp->branchPred(VBranchPred::BP_LIKELY);
+        precondps->unlinkFrBackWithNext()->addNext(ifp);
+        bodysp = newIfAssertOn(precondps, nodep->directive(), nodep->type());
+        AstFork* const forkp = new AstFork{precondps->fileline(), "", bodysp};
+        forkp->joinType(VJoinType::JOIN_NONE);
+        return forkp;
+    }
+
     AstNodeStmt* newFireAssertUnchecked(const AstNodeStmt* nodep, const string& message,
                                         AstNodeExpr* exprsp = nullptr) {
         // Like newFireAssert() but omits the asserts-on check
@@ -335,28 +352,16 @@ class AssertVisitor final : public VNVisitor {
                 covincp->unlinkFrBackWithNext();  // next() might have  AstAssign for trace
                 if (message != "") covincp->declp()->comment(message);
                 bodysp = covincp;
-                if (passsp) bodysp = bodysp->addNext(passsp);
+            }
+            if (bodysp && passsp) bodysp = bodysp->addNext(passsp);
 
-                AstIf* ifp = nullptr;
-                if (AstPExpr* const pExpr = VN_CAST(propp, PExpr)) {
-                    ifp = new AstIf{nodep->fileline(), pExpr->condp()->unlinkFrBack(), bodysp,
-                                    failsp};
-                    AstNode* precondps = pExpr->precondp();
-                    if (precondps) {
-                        precondps->unlinkFrBackWithNext()->addNext(ifp);
-                    } else {
-                        precondps = ifp;
-                    }
-                    bodysp = newIfAssertOn(precondps, nodep->directive(), nodep->type());
-                    AstFork* const forkp = new AstFork{precondps->fileline(), "", bodysp};
-                    forkp->joinType(VJoinType::JOIN_NONE);
-                    bodysp = forkp;
-                } else {
-                    bodysp = newIfAssertOn(bodysp, nodep->directive(), nodep->type());
-                    ifp = new AstIf{nodep->fileline(), propp, bodysp};
-                    bodysp = ifp;
-                }
+            if (AstPExpr* const pExpr = VN_CAST(propp, PExpr)) {
+                bodysp = cycleDelayAssertBody(pExpr, bodysp, failsp, nodep);
+            } else {
+                if (bodysp) bodysp = newIfAssertOn(bodysp, nodep->directive(), nodep->type());
+                AstIf* const ifp = new AstIf{nodep->fileline(), propp, bodysp};
                 ifp->isBoundsCheck(true);  // To avoid LATCH warning
+                bodysp = ifp;
             }
         } else if (VN_IS(nodep, Assert) || VN_IS(nodep, AssertIntrinsic)) {
             if (nodep->immediate()) {
@@ -365,27 +370,16 @@ class AssertVisitor final : public VNVisitor {
                 ++m_statAsNotImm;
             }
             if (!passsp && !failsp) failsp = newFireAssertUnchecked(nodep, "'assert' failed.");
-            AstIf* ifp = nullptr;
             if (AstPExpr* const pExpr = VN_CAST(propp, PExpr)) {
-                ifp = new AstIf{nodep->fileline(), pExpr->condp()->unlinkFrBack(), passsp, failsp};
-                AstNode* precondps = pExpr->precondp();
-                if (precondps) {
-                    precondps->unlinkFrBackWithNext()->addNext(ifp);
-                } else {
-                    precondps = ifp;
-                }
-                bodysp = newIfAssertOn(precondps, nodep->directive(), nodep->type());
-                AstFork* const forkp = new AstFork{precondps->fileline(), "", bodysp};
-                forkp->joinType(VJoinType::JOIN_NONE);
-                bodysp = forkp;
+                bodysp = cycleDelayAssertBody(pExpr, passsp, failsp, nodep);
             } else {
-                ifp = new AstIf{nodep->fileline(), propp, passsp, failsp};
+                AstIf* const ifp = new AstIf{nodep->fileline(), propp, passsp, failsp};
+                ifp->isBoundsCheck(true);  // To avoid LATCH warning
+                // It's more LIKELY that we'll take the nullptr if clause
+                // than the sim-killing else clause:
+                ifp->branchPred(VBranchPred::BP_LIKELY);
                 bodysp = newIfAssertOn(ifp, nodep->directive(), nodep->type());
             }
-            ifp->isBoundsCheck(true);  // To avoid LATCH warning
-            // It's more LIKELY that we'll take the nullptr if clause
-            // than the sim-killing else clause:
-            ifp->branchPred(VBranchPred::BP_LIKELY);
         } else {
             nodep->v3fatalSrc("Unknown node type");
         }
@@ -403,7 +397,7 @@ class AssertVisitor final : public VNVisitor {
         if (selfDestruct) {
             // Delete it after making the tree.  This way we can tell the user
             // if it wasn't constructed nicely or has other errors without needing --coverage.
-            if (newp) VL_DO_DANGLING(newp->deleteTree(), newp);
+            VL_DO_DANGLING(newp->deleteTree(), newp);
             nodep->unlinkFrBack();
         } else {
             nodep->replaceWith(newp);
@@ -637,7 +631,7 @@ class AssertVisitor final : public VNVisitor {
     }
     void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
-        if (m_inSampled && nodep->name().find("__VpropPrecond") == string::npos) {
+        if (m_inSampled && !VString::startsWith(nodep->name(), "__VpropPrecond")) {
             if (!nodep->access().isReadOnly()) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: Write to variable in sampled expression");

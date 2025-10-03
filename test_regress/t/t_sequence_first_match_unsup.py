@@ -11,8 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(timing_loop=True, verilator_flags2=['--assert', '--timing'])
-
-test.execute(expect_filename=test.golden_filename)
+test.lint(expect_filename=test.golden_filename,
+          verilator_flags2=['--assert --error-limit 1000'],
+          fails=True)
 
 test.passes()

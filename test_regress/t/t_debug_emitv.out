@@ -368,6 +368,9 @@ module Vt_debug_emitv_t;
     property p2;
     @(posedge clk) disable iff (cyc == 'sh1) ##1 sum[0]
     endproperty
+    assert property (@( clk) (! ##1 in)
+    ) else begin
+    end
     initial begin
         begin
             begin : assert_simple_immediate_else
@@ -611,9 +614,6 @@ module Vt_debug_emitv_t;
         ) begin
             $display("pass");
         end
-    end
-    assert property (@( clk) (! ##1 in)
-    ) else begin
     end
 endmodule
 package Vt_debug_emitv___024unit;

@@ -59,12 +59,12 @@ private:
     V3UniqueNames m_propPrecondNames{"__VpropPrecond"};  // Cycle delay temporaries name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
-    bool m_inSExpr = false;  // True if in AstSExpr
-    AstPExpr* m_pExpr = nullptr;  // Current AstPExpr
     bool m_inSynchDrive = false;  // True if in synchronous drive
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
+    AstNodeExpr* m_hasUnsupp = nullptr;  // True if assert has unsupported construct inside
+    AstPExpr* m_pExpr = nullptr;  // Current AstPExpr
     bool m_hasSExpr = false;  // True if assert has AstSExpr inside
-    AstNode* m_hasUnsupp = nullptr;  // True if assert has unsupported construct inside
+    bool m_inSExpr = false;  // True if in AstSExpr
 
     // METHODS
 
@@ -421,7 +421,7 @@ private:
         } else if (m_inSExpr && !nodep->user1()) {
             AstVar* const preVarp
                 = new AstVar{nodep->varp()->fileline(), VVarType::BLOCKTEMP,
-                             m_propPrecondNames.get(nodep->varp()) + nodep->varp()->name(),
+                             m_propPrecondNames.get(nodep->varp()) + "__" + nodep->varp()->name(),
                              nodep->varp()->dtypep()};
             preVarp->lifetime(VLifetime::STATIC_EXPLICIT);
             m_modp->addStmtsp(preVarp);
@@ -434,8 +434,9 @@ private:
 
             // Pack assignments in sampled as in concurrent assertions they are needed.
             // Then, in assert's propp, sample only non-precondition variables.
-            AstSampled* sampledp = new AstSampled{origp->fileline(), origp};
+            AstSampled* const sampledp = new AstSampled{origp->fileline(), origp};
             sampledp->dtypeFrom(origp);
+            UASSERT(m_pExpr, "Should be under assertion");
             AstAssign* const assignp = new AstAssign{m_pExpr->fileline(), precondp, sampledp};
             m_pExpr->addPrecondp(assignp);
 
@@ -502,15 +503,18 @@ private:
         VL_RESTORER(m_hasUnsupp);
 
         clearAssertInfo();
-        AstPExpr* const pexprp = new AstPExpr{nodep->propp()->fileline()};
-        pexprp->dtypeFrom(nodep->propp());
-        m_pExpr = pexprp;
+        m_pExpr = new AstPExpr{nodep->propp()->fileline()};
+        m_pExpr->dtypeFrom(nodep->propp());
 
         // Find Clocking's buried under nodep->exprsp
         iterateChildren(nodep);
         if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep));
         if (m_hasSExpr && m_hasUnsupp) {
-            m_hasUnsupp->v3warn(E_UNSUPPORTED, "Implication with sequence expression");
+            if (VN_IS(m_hasUnsupp, Implication)) {
+                m_hasUnsupp->v3warn(E_UNSUPPORTED, "Implication with sequence expression");
+            } else {
+                m_hasUnsupp->v3warn(E_UNSUPPORTED, "Disable iff with sequence expression");
+            }
             if (m_pExpr) VL_DO_DANGLING(pushDeletep(m_pExpr), m_pExpr);
         } else if (m_pExpr && m_pExpr->precondp()) {
             m_pExpr->condp(VN_AS(nodep->propp()->unlinkFrBackWithNext(), NodeExpr));
@@ -678,6 +682,7 @@ private:
         }
         if (AstNodeExpr* const disablep = nodep->disablep()) {
             m_disablep = disablep;
+            m_hasUnsupp = disablep;
             if (VN_IS(nodep->backp(), Cover)) {
                 blockp = new AstAnd{disablep->fileline(),
                                     new AstNot{disablep->fileline(), disablep->unlinkFrBack()},
@@ -696,7 +701,7 @@ private:
         m_inSExpr = true;
         m_hasSExpr = true;
 
-        UASSERT_OBJ(m_pExpr, nodep, "Should be created for each assert");
+        UASSERT_OBJ(m_pExpr, nodep, "Should be under assertion");
         if (AstDelay* const delayp = VN_CAST(nodep->delayp(), Delay))
             m_pExpr->addPrecondp(delayp->unlinkFrBack());
 
