@@ -26,6 +26,8 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+// TODO: this file is completely uncovered by tests
+
 // ######################################################################
 //  Emit statements
 

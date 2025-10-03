@@ -873,9 +873,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
         str = displayPad(fmtsizen, ' ', left, toString());
         return str;
     }
-    default:
-        fl->v3fatalSrc("Unknown $display-like format code for number: %" << pos[0]);
-        return "ERR";
+    default: fl->v3fatalSrc("Unknown $display-like format code for number: %" << pos[0]);
     }
 }
 

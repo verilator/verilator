@@ -193,21 +193,17 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
 
     if (nodep->isIO() && nodep->isSc()) {
         UASSERT_OBJ(basicp, nodep, "Unimplemented: Outputting this data type");
-        if (nodep->attrScClocked() && nodep->isReadOnly()) {
-            putns(nodep, "sc_core::sc_in_clk ");
+        if (nodep->isInout()) {
+            putns(nodep, "sc_core::sc_inout<");
+        } else if (nodep->isWritable()) {
+            putns(nodep, "sc_core::sc_out<");
+        } else if (nodep->isNonOutput()) {
+            putns(nodep, "sc_core::sc_in<");
         } else {
-            if (nodep->isInout()) {
-                putns(nodep, "sc_core::sc_inout<");
-            } else if (nodep->isWritable()) {
-                putns(nodep, "sc_core::sc_out<");
-            } else if (nodep->isNonOutput()) {
-                putns(nodep, "sc_core::sc_in<");
-            } else {
-                nodep->v3fatalSrc("Unknown type");
-            }
-            puts(nodep->scType());
-            puts("> ");
+            nodep->v3fatalSrc("Unknown type");
         }
+        puts(nodep->scType());
+        puts("> ");
         if (asRef) {
             if (refNeedParens) putns(nodep, "(");
             putns(nodep, "&");

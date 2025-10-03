@@ -247,12 +247,11 @@ void EmitCFunc::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const 
     AstNode* argp = nullptr;
     if (!ignore) {
         argp = *elistp;
-        if (VL_UNCOVERABLE(!argp)) {
+        if (VL_UNCOVERABLE(!argp)) {  // LCOV_EXCL_START
             // expectDisplay() checks this first, so internal error if found here
-            dispp->v3error(
-                "Internal: Missing arguments for $display-like format");  // LCOV_EXCL_LINE
-            return;  // LCOV_EXCL_LINE
-        }
+            dispp->v3error("Internal: Missing arguments for $display-like format");
+            return;
+        }  // LCOV_EXCL_STOP
         // Prep for next parameter
         *elistp = (*elistp)->nextp();
         if (argp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {

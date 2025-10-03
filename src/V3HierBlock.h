@@ -51,8 +51,6 @@ public:
 
     const GParams& gparams() const { return m_params; };
     const GTypeParams& gTypeParams() const { return m_typeParams; };
-    GParams& gparams() { return m_params; };
-    GTypeParams& gTypeParams() { return m_typeParams; };
 
     void swap(V3HierBlockParams& other) {
         m_params.swap(other.m_params);

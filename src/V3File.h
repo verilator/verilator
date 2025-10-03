@@ -133,8 +133,6 @@ public:
     V3OutFormatter(Language lang);
     virtual ~V3OutFormatter() = default;
     // ACCESSORS
-    int column() const { return m_column; }
-    int blockIndent() const { return m_blockIndent; }
     void blockIndent(int flag) { m_blockIndent = flag; }
     // METHODS
     void printf(const char* fmt...) VL_ATTR_PRINTF(2);

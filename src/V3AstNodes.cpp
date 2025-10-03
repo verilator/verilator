@@ -513,7 +513,6 @@ void AstVar::combineType(const AstVar* otherp) {
     if (otherp->isSigModPublic()) sigModPublic(true);
     if (otherp->isSigUserRdPublic()) sigUserRdPublic(true);
     if (otherp->isSigUserRWPublic()) sigUserRWPublic(true);
-    if (otherp->attrScClocked()) attrScClocked(true);
     if (otherp->varType() == VVarType::PORT) {
         varType(otherp->varType());
         direction(otherp->direction());
@@ -2203,8 +2202,6 @@ void AstPrintTimeScale::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 
-void AstNodeTermop::dump(std::ostream& str) const { this->AstNodeExpr::dump(str); }
-void AstNodeTermop::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstTime::dump(std::ostream& str) const {
     this->AstNodeTermop::dump(str);
     str << " " << timeunit();
@@ -2479,9 +2476,6 @@ void AstPackageExport::dump(std::ostream& str) const {
     }
 }
 void AstPackageExport::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-void AstPackageExport::pkgNameFrom() {
-    if (packagep()) m_pkgName = packagep()->name();
-}
 void AstPackageImport::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (packagep()) {
@@ -2832,14 +2826,6 @@ void AstStrengthSpec::dump(std::ostream& str) const {
 void AstStrengthSpec::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "strength0", m_s0.ascii());
     dumpJsonStr(str, "strength1", m_s1.ascii());
-    dumpJsonGen(str);
-}
-void AstParseRef::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
-    str << " [" << expect().ascii() << "]";
-}
-void AstParseRef::dumpJson(std::ostream& str) const {
-    dumpJsonStr(str, "expect", expect().ascii());
     dumpJsonGen(str);
 }
 void AstClassOrPackageRef::dump(std::ostream& str) const {

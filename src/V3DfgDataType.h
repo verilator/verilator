@@ -168,9 +168,7 @@ public:
             UASSERT(lo + size - 1 < dtype.size(), "Out of range");
             return DfgDataType::array(dtype.elemDtype(), size);
         }
-        case Kind::Null: {
-            UASSERT(false, "Type cannot be selected from");
-        }
+        case Kind::Null: v3fatal("Type cannot be selected from");  // LCOV_EXCL_LINE
         }
         VL_UNREACHABLE;
     }

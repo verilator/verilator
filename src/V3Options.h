@@ -354,7 +354,6 @@ private:
     string      m_buildDepBin;  // main switch: --build-dep-bin {filename}
     string      m_diagnosticsSarifOutput;  // main switch: --diagnostics-sarif-output
     string      m_exeName;      // main switch: -o {name}
-    string      m_flags;        // main switch: -f {name}
     VFileLibList m_hierParamsFile; // main switch: --hierarchical-params-file
     string      m_jsonOnlyOutput;    // main switch: --json-only-output
     string      m_jsonOnlyMetaOutput;    // main switch: --json-only-meta-output
@@ -479,7 +478,6 @@ public:
     bool preprocResolve() const { return m_preprocResolve; }
     int preprocTokenLimit() const { return m_preprocTokenLimit; }
     bool underlineZero() const { return m_underlineZero; }
-    string flags() const { return m_flags; }
     bool systemC() const VL_MT_SAFE { return m_systemC; }
     bool savable() const VL_MT_SAFE { return m_savable; }
     bool stats() const { return m_stats; }
@@ -492,7 +490,6 @@ public:
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
-    bool binary() const { return m_binary; }
     bool build() const { return m_build; }
     string buildDepBin() const { return m_buildDepBin; }
     void buildDepBin(const string& flag) { m_buildDepBin = flag; }
@@ -622,9 +619,6 @@ public:
         return trace() && traceEnabledVcd() && (threads() > 1 || hierChild() > 1);
     }
     bool useFstWriterThread() const { return traceThreads() && traceEnabledFst(); }
-    unsigned vmTraceThreads() const {
-        return useTraceParallel() ? threads() : useTraceOffload() ? 1 : 0;
-    }
     int unrollCount() const { return m_unrollCount; }
     int unrollCountAdjusted(const VOptionBool& full, bool generate, bool simulate);
     int unrollStmts() const { return m_unrollStmts; }

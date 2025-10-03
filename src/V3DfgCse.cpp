@@ -46,13 +46,15 @@ class V3DfgCse final {
     static V3Hash vertexSelfHash(const DfgVertex& vtx) {
         switch (vtx.type()) {
         // Unhandled vertices
-        case VDfgType::Logic:
-        case VDfgType::Unresolved: vtx.v3fatalSrc("Should not have reached CSE");
+        case VDfgType::Logic:  // LCOV_EXCL_LINE
+        case VDfgType::Unresolved:  // LCOV_EXCL_STOP
+            vtx.v3fatalSrc("Should not have reached CSE");
 
         // Special vertices
-        case VDfgType::Const:
+        case VDfgType::Const:  // LCOV_EXCL_START
         case VDfgType::VarArray:
-        case VDfgType::VarPacked: vtx.v3fatalSrc("Hash should have been pre-computed");
+        case VDfgType::VarPacked:  // LCOV_EXCL_STOP
+            vtx.v3fatalSrc("Hash should have been pre-computed");
 
         // Vertices with internal information
         case VDfgType::Sel: return V3Hash{vtx.as<DfgSel>()->lsb()};
@@ -155,8 +157,9 @@ class V3DfgCse final {
         // by 'vertexEquivalent'.
         switch (a.type()) {
         // Unhandled vertices
-        case VDfgType::Logic:
-        case VDfgType::Unresolved: a.v3fatalSrc("Should not have reached CSE");
+        case VDfgType::Logic:  // LCOV_EXCL_START
+        case VDfgType::Unresolved:  // LCOV_EXCL_STOP
+            a.v3fatalSrc("Should not have reached CSE");
 
         // Special vertices
         case VDfgType::Const: return a.as<DfgConst>()->num().isCaseEq(b.as<DfgConst>()->num());

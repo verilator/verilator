@@ -1329,8 +1329,7 @@ int V3PreProcImp::getStateToken() {
                     define(fileline(), m_lastSym, value, formals, false);
                 }
             } else {
-                const string msg = "Bad define text, unexpected "s + tokenName(tok) + "\n";
-                v3fatalSrc(msg);
+                v3fatalSrc("Bad define text, unexpected "s + tokenName(tok) + "\n");
             }
             statePop();
             // DEFVALUE is terminated by a return, but lex can't return both tokens.

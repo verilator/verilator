@@ -2209,7 +2209,7 @@ tf_variable_identifier<varp>:           // IEEE: part of list_of_tf_variable_ide
                 id variable_dimensionListE sigAttrListE exprEqE
                         { $$ = VARDONEA($<fl>1, *$1, $2, $3);
                           if ($4) AstNode::addNext<AstNode, AstNode>(
-                                      $$, new AstAssign{$4->fileline(), new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $4}); }
+                                      $$, new AstAssign{$4->fileline(), new AstParseRef{$<fl>1, *$1}, $4}); }
         ;
 
 variable_declExpr<nodep>:               // IEEE: part of variable_decl_assignment - rhs of expr
@@ -2974,7 +2974,7 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
         |       netId variable_dimensionListE sigAttrListE '=' expr
                         { $$ = VARDONEA($<fl>1, *$1, $2, $3);
                           AstDelay* const delayp = $$->delayp() ? $$->delayp()->unlinkFrBack() : nullptr;
-                          AstAssignW* const assignp = new AstAssignW{$4, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $5, delayp};
+                          AstAssignW* const assignp = new AstAssignW{$4, new AstParseRef{$<fl>1, *$1}, $5, delayp};
                           if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
                           AstNode::addNext<AstNode, AstNode>($$, assignp); }
         ;
@@ -3222,11 +3222,11 @@ instParamItem<pinp>:            // IEEE: named_parameter_assignment + empty
                           $$->svDotName(true); }
         |       '.' idSVKwd
                         { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2,
-                                          new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}};
+                                          new AstParseRef{$<fl>2, *$2, nullptr, nullptr}};
                           $$->svDotName(true); $$->svImplicit(true); }
         |       '.' idAny
                         { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2,
-                                          new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}};
+                                          new AstParseRef{$<fl>2, *$2, nullptr, nullptr}};
                           $$->svDotName(true); $$->svImplicit(true); }
         //                      // mintypmax is expanded here, as it might be a UDP or gate primitive
         //                      // data_type for 'parameter type' hookups
@@ -3261,11 +3261,11 @@ instPinItemE<pinp>:             // IEEE: named_port_connection + empty
                           $$->svDotName(true); }
         |       '.' idSVKwd
                         { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2,
-                                          new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}};
+                                          new AstParseRef{$<fl>2, *$2, nullptr, nullptr}};
                           $$->svDotName(true); $$->svImplicit(true); }
         |       '.' idAny
                         { $$ = new AstPin{$<fl>2, PINNUMINC(), *$2,
-                                          new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}};
+                                          new AstParseRef{$<fl>2, *$2, nullptr, nullptr}};
                           $$->svDotName(true); $$->svImplicit(true); }
         //                      // mintypmax is expanded here, as it might be a UDP or gate primitive
         //UNSUP               pev_expr below
@@ -3916,7 +3916,7 @@ patternKey<nodep>:              // IEEE: merge structure_pattern_key, array_patt
         //                      // expanded from simple_type ps_parameter_identifier (part of simple_type)
         |       packageClassScope id
                         { $$ = AstDot::newIfPkg($<fl>1, $1,
-                                                new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}); }
+                                                new AstParseRef{$<fl>2, *$2, nullptr, nullptr}); }
         |       packageClassScopeE idType
                         { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
                           $$ = refp; }
@@ -3956,14 +3956,14 @@ for_initializationItem<nodep>:          // IEEE: variable_assignment + for_varia
                           AstVar* const varp = VARDONEA($<fl>2, *$2, nullptr, nullptr);
                           varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                           $$ = varp;
-                          $$->addNext(new AstAssign{$3, new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2}, $4}); }
+                          $$->addNext(new AstAssign{$3, new AstParseRef{$<fl>2, *$2}, $4}); }
         //                      // IEEE-2012:
         |       yVAR data_type idAny/*new*/ '=' expr
                         { VARRESET_NONLIST(VAR); VARDTYPE($2);
                           AstVar* const varp = VARDONEA($<fl>3, *$3, nullptr, nullptr);
                           varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                           $$ = varp;
-                          $$->addNext(new AstAssign{$4, new AstParseRef{$<fl>3, VParseRefExp::PX_TEXT, *$3}, $5}); }
+                          $$->addNext(new AstAssign{$4, new AstParseRef{$<fl>3, *$3}, $5}); }
         //                      // IEEE: variable_assignment
         //                      // UNSUP variable_lvalue below
         |       id/*newOrExisting*/ '=' expr
@@ -3971,9 +3971,9 @@ for_initializationItem<nodep>:          // IEEE: variable_assignment + for_varia
                               AstVar* const varp = VARDONEA($<fl>1, *$1, nullptr, nullptr);
                               varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                               $$ = varp;
-                              $$->addNext(new AstAssign{$2, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $3});
+                              $$->addNext(new AstAssign{$2, new AstParseRef{$<fl>1, *$1}, $3});
                           } else {
-                              $$ = new AstAssign{$2, new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}, $3};
+                              $$ = new AstAssign{$2, new AstParseRef{$<fl>1, *$1}, $3};
                           }
                         }
         ;
@@ -5149,8 +5149,8 @@ exprScope<nodeExprp>:               // scope and variable for use to inside an e
         //                      // IEEE: [ implicit_class_handle . | class_scope | package_scope ] hierarchical_identifier select
         //                      // Or method_call_body without parenthesis
         //                      // See also varRefClassBit, which is the non-expr version of most of this
-                yTHIS                                   { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "this"}; }
-        |       yD_ROOT                                 { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "$root"}; }
+                yTHIS                                   { $$ = new AstParseRef{$<fl>1, "this"}; }
+        |       yD_ROOT                                 { $$ = new AstParseRef{$<fl>1, "$root"}; }
         |       idArrayed                               { $$ = $1; }
         |       packageClassScope idArrayed             { $$ = AstDot::newIfPkg($2->fileline(), $1, $2); }
         |       ~l~expr '.' idArrayed                   { $$ = new AstDot{$<fl>2, false, $1, $3}; }
@@ -5158,14 +5158,14 @@ exprScope<nodeExprp>:               // scope and variable for use to inside an e
         |       ~l~expr '.' ySUPER
                         { AstParseRef* const anodep = VN_CAST($1, ParseRef);
                           if (anodep && anodep->name() == "this") {
-                              $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "super"};
+                              $$ = new AstParseRef{$<fl>1, "super"};
                               $1->deleteTree();
                           } else {
                               $$ = $1;  $$->v3error("Syntax error: 'super' must be first name component, or after 'this.'");
                           }
                         }
         //                      // Part of implicit_class_handle
-        |       ySUPER                                  { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "super"}; }
+        |       ySUPER                                  { $$ = new AstParseRef{$<fl>1, "super"}; }
         ;
 
 fexprScope<nodeExprp>:              // exprScope, For use as first part of statement (disambiguates <=)
@@ -5854,7 +5854,7 @@ idPathpulse<strp>:  // Id for specparam PATHPULSE$, IEEE: part of pulse_control_
 
 idAnyAsParseRef<parseRefp>:  // Any kind of identifier as a ParseRef
                 idAny
-                        { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}; }
+                        { $$ = new AstParseRef{$<fl>1, *$1}; }
         ;
 
 
@@ -5918,11 +5918,11 @@ idClass<nodeExprp>:             // Misc Ref to dotted, and/or arrayed, and/or bi
                 idDotted                                { $$ = $1; }
         //                      // IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
         |       yTHIS '.' idDotted
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "this"}, $3}; }
+                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "this"}, $3}; }
         |       ySUPER '.' idDotted
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "super"}, $3}; }
+                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "super"}, $3}; }
         |       yTHIS '.' ySUPER '.' idDotted
-                        { $$ = new AstDot{$4, false, new AstParseRef{$<fl>3, VParseRefExp::PX_ROOT, "super"}, $5}; }
+                        { $$ = new AstDot{$4, false, new AstParseRef{$<fl>3, "super"}, $5}; }
         //                      // Expanded: package_scope idDottedSel
         |       packageClassScope idDotted              { $$ = new AstDot{$<fl>2, true, $1, $2}; }
         ;
@@ -5931,11 +5931,11 @@ idClassSel<nodeExprp>:          // Misc Ref to dotted, and/or arrayed, and/or bi
                 idDottedSel                             { $$ = $1; }
         //                      // IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
         |       yTHIS '.' idDottedSel
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "this"}, $3}; }
+                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "this"}, $3}; }
         |       ySUPER '.' idDottedSel
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "super"}, $3}; }
+                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "super"}, $3}; }
         |       yTHIS '.' ySUPER '.' idDottedSel
-                        { $$ = new AstDot{$4, false, new AstParseRef{$<fl>3, VParseRefExp::PX_ROOT, "super"}, $5}; }
+                        { $$ = new AstDot{$4, false, new AstParseRef{$<fl>3, "super"}, $5}; }
         //                      // Expanded: package_scope idDottedSel
         |       packageClassScope idDottedSel           { $$ = new AstDot{$<fl>2, true, $1, $2}; }
         ;
@@ -5944,30 +5944,30 @@ idClassSelForeach<nodeExprp>:
                 idDottedForeach                         { $$ = $1; }
         //                      // IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
         |       yTHIS '.' idDottedForeach
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "this"}, $3}; }
+                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "this"}, $3}; }
         |       ySUPER '.' idDottedForeach
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "super"}, $3}; }
+                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "super"}, $3}; }
         |       yTHIS '.' ySUPER '.' idDottedForeach
-                        { $$ = new AstDot{$4, false, new AstParseRef{$<fl>3, VParseRefExp::PX_ROOT, "super"}, $5}; }
+                        { $$ = new AstDot{$4, false, new AstParseRef{$<fl>3, "super"}, $5}; }
         //                      // Expanded: package_scope idForeach
         |       packageClassScope idDottedForeach       { $$ = new AstDot{$<fl>2, true, $1, $2}; }
         ;
 
 idDotted<nodeExprp>:
                 yD_ROOT '.' idDottedMore
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "$root"}, $3}; }
+                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "$root"}, $3}; }
         |       idDottedMore                            { $$ = $1; }
         ;
 
 idDottedSel<nodeExprp>:
                 yD_ROOT '.' idDottedSelMore
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "$root"}, $3}; }
+                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "$root"}, $3}; }
         |       idDottedSelMore                         { $$ = $1; }
         ;
 
 idDottedForeach<nodeExprp>:
                 yD_ROOT '.' idDottedMoreForeach
-                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, VParseRefExp::PX_ROOT, "$root"}, $3}; }
+                        { $$ = new AstDot{$2, false, new AstParseRef{$<fl>1, "$root"}, $3}; }
         |       idDottedMoreForeach                     { $$ = $1; }
         ;
 
@@ -5993,7 +5993,7 @@ idDottedMoreForeach<nodeExprp>:
 //       enum_identifier
 idArrayed<nodeExprp>:               // IEEE: id + select
                 id
-                        { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1, nullptr, nullptr}; }
+                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
         //                      // IEEE: id + part_select_range/constant_part_select_range
         |       idArrayed '[' expr ']'                          { $$ = new AstSelBit{$2, $1, $3}; }  // Or AstArraySel, don't know yet.
         |       idArrayed '[' constExpr ':' constExpr ']'       { $$ = new AstSelExtract{$2, $1, $3, $5}; }
@@ -6004,7 +6004,7 @@ idArrayed<nodeExprp>:               // IEEE: id + select
 
 idArrayedForeach<nodeExprp>:    // IEEE: id + select (under foreach expression)
                 id
-                        { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1, nullptr, nullptr}; }
+                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
         //                      // IEEE: id + part_select_range/constant_part_select_range
         |       idArrayed '[' expr ']'                          { $$ = new AstSelBit{$2, $1, $3}; }  // Or AstArraySel, don't know yet.
         |       idArrayed '[' constExpr ':' constExpr ']'       { $$ = new AstSelExtract{$2, $1, $3, $5}; }
@@ -6023,13 +6023,13 @@ idArrayedForeach<nodeExprp>:    // IEEE: id + select (under foreach expression)
 
 // VarRef without any dots or vectorizaion
 varRefBase<parseRefp>:
-                id                                      { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1}; }
+                id                                      { $$ = new AstParseRef{$<fl>1, *$1}; }
         ;
 
 // ParseRef
 parseRefBase<nodep>:
                 id
-                        { $$ = new AstParseRef{$<fl>1, VParseRefExp::PX_TEXT, *$1, nullptr, nullptr}; }
+                        { $$ = new AstParseRef{$<fl>1, *$1, nullptr, nullptr}; }
         ;
 
 // yaSTRING shouldn't be used directly, instead via an abstraction below
@@ -6084,7 +6084,7 @@ clocking_event<senItemp>:       // IEEE: clocking_event
         //UNSUP: '@' idClassSel/*ps_identifier*/
                 '@' id
                         { $$ = new AstSenItem{$<fl>2, VEdgeType::ET_CHANGED,
-                                              new AstParseRef{$<fl>2, VParseRefExp::PX_TEXT, *$2, nullptr, nullptr}}; }
+                                              new AstParseRef{$<fl>2, *$2, nullptr, nullptr}}; }
         |       '@' '(' event_expression ')'            { $$ = $3; }
         ;
 

@@ -5487,11 +5487,7 @@ class WidthVisitor final : public VNVisitor {
         assertAtStatement(nodep);
         iterateCheckBool(nodep, "Loop Condition", nodep->condp(), BOTH);
     }
-    void visit(AstRepeat* nodep) override {
-        assertAtStatement(nodep);
-        userIterateAndNext(nodep->countp(), WidthVP{SELF, BOTH}.p());
-        userIterateAndNext(nodep->stmtsp(), nullptr);
-    }
+    void visit(AstRepeat* nodep) override { nodep->v3fatalSrc("'repeat' missed in LinkJump"); }
     void visit(AstNodeIf* nodep) override {
         assertAtStatement(nodep);
         // UINFOTREE(1, nodep, "", "IfPre");
@@ -5863,10 +5859,7 @@ class WidthVisitor final : public VNVisitor {
         nodep->text(newFormat);
         UINFO(9, "  Display out " << nodep->text());
     }
-    void visit(AstCReturn* nodep) override {
-        assertAtStatement(nodep);
-        userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
-    }
+    void visit(AstCReturn* nodep) override { nodep->v3fatalSrc("Should not exist yet"); }
     void visit(AstConstraintRef* nodep) override { userIterateChildren(nodep, nullptr); }
     void visit(AstDisplay* nodep) override {
         assertAtStatement(nodep);
@@ -6428,23 +6421,7 @@ class WidthVisitor final : public VNVisitor {
         nodep->didWidth(true);
         nodep->doingWidth(false);
     }
-    void visit(AstReturn* nodep) override {
-        // IEEE: Assignment-like context
-        assertAtStatement(nodep);
-        if (!m_funcp) {
-            if (nodep->lhsp()) {  // Return w/o value ok other places
-                nodep->v3error("Return with return value isn't underneath a function");
-            }
-        } else {
-            if (nodep->lhsp()) {
-                // Function hasn't been widthed, so make it so.
-                nodep->dtypeFrom(m_funcp->fvarp());
-                // AstPattern requires assignments to pass datatype on PRELIM
-                userIterateAndNext(nodep->lhsp(), WidthVP{nodep->dtypep(), PRELIM}.p());
-                iterateCheckAssign(nodep, "Return value", nodep->lhsp(), FINAL, nodep->dtypep());
-            }
-        }
-    }
+    void visit(AstReturn* nodep) override { nodep->v3fatalSrc("'return' missed in LinkJump"); }
 
     AstPackage* getItemPackage(AstNode* pkgItemp) {
         while (pkgItemp->backp() && pkgItemp->backp()->nextp() == pkgItemp) {
