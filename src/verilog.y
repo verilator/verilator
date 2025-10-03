@@ -6540,14 +6540,12 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
                         { $$ = $3; BBUNSUP($1, "Unsupported: always[] (in property expression)"); DEL($2); }
         |       yS_ALWAYS anyrange pexpr  %prec yS_ALWAYS
                         { $$ = $3; BBUNSUP($1, "Unsupported: s_always (in property expression)"); DEL($2); }
-        |       yEVENTUALLY pexpr
-                        { $$ = $2; BBUNSUP($1, "Unsupported: eventually (in property expression)"); }
         |       yS_EVENTUALLY pexpr
                         { $$ = $2; BBUNSUP($1, "Unsupported: s_eventually (in property expression)"); }
-        |       yEVENTUALLY '[' constExpr ']' pexpr  %prec yEVENTUALLY
-                        { $$ = $5; BBUNSUP($1, "Unsupported: eventually[] (in property expression)"); DEL($3); }
         |       yS_EVENTUALLY anyrange pexpr  %prec yS_EVENTUALLY
                         { $$ = $3; BBUNSUP($1, "Unsupported: s_eventually[] (in property expression)"); DEL($2); }
+        |       yEVENTUALLY anyrange pexpr  %prec yS_EVENTUALLY
+                        { $$ = $3; BBUNSUP($1, "Unsupported: eventually[] (in property expression)"); DEL($2); }
         |       ~o~pexpr yUNTIL pexpr
                         { $$ = $1; BBUNSUP($2, "Unsupported: until (in property expression)"); }
         |       ~o~pexpr yS_UNTIL pexpr
