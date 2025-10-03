@@ -780,7 +780,8 @@ Summary:
    be useful in makefiles. See also :vlopt:`-V`, and the various
    :file:`*.mk` files.
 
-   Feature may be one of the following: COROUTINES, DEV_ASAN, SYSTEMC.
+   Feature may be one of the following: COROUTINES, DEV_ASAN, DEV_GCOV,
+   SYSTEMC.
 
 .. option:: --getenv <variable>
 

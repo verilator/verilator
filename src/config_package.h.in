@@ -47,6 +47,9 @@ PACKAGE_VERSION_STRING_CHAR
 // Define if compiled with AddressSanitizer
 #undef HAVE_DEV_ASAN
 
+// Define if compiled with code coverage collection
+#undef HAVE_DEV_GCOV
+
 //**********************************************************************
 //**** This file sometimes gets truncated, so check in consumers
 #define HAVE_CONFIG_PACKAGE

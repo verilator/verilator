@@ -35,7 +35,8 @@ jobs:
       os: ${{ matrix.os }}
       os-name: linux
       cc: ${{ matrix.cc }}
-      asan: ${{ matrix.asan }}
+      dev-asan: ${{ matrix.asan }}
+      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:
@@ -49,7 +50,8 @@ jobs:
       os: ${{ matrix.os }}
       os-name: linux
       cc: ${{ matrix.cc }}
-      asan: ${{ matrix.asan }}
+      dev-asan: ${{ matrix.asan }}
+      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:
@@ -63,7 +65,8 @@ jobs:
       os: ${{ matrix.os }}
       os-name: linux
       cc: ${{ matrix.cc }}
-      asan: ${{ matrix.asan }}
+      dev-asan: ${{ matrix.asan }}
+      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:
@@ -77,7 +80,8 @@ jobs:
       os: ${{ matrix.os }}
       os-name: linux
       cc: ${{ matrix.cc }}
-      asan: ${{ matrix.asan }}
+      dev-asan: ${{ matrix.asan }}
+      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:
@@ -91,7 +95,8 @@ jobs:
       os: ${{ matrix.os }}
       os-name: osx
       cc: ${{ matrix.cc }}
-      asan: ${{ matrix.asan }}
+      dev-asan: ${{ matrix.asan }}
+      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:
@@ -105,7 +110,8 @@ jobs:
       os: ${{ matrix.os }}
       os-name: osx
       cc: ${{ matrix.cc }}
-      asan: ${{ matrix.asan }}
+      dev-asan: ${{ matrix.asan }}
+      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:
@@ -157,6 +163,7 @@ jobs:
       cc: ${{ matrix.cc }}
       reloc: ${{ matrix.reloc }}
       suite: ${{ matrix.suite }}
+      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:
@@ -179,6 +186,7 @@ jobs:
       cc: ${{ matrix.cc }}
       reloc: ${{ matrix.reloc }}
       suite: ${{ matrix.suite }}
+      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:
@@ -201,6 +209,7 @@ jobs:
       cc: ${{ matrix.cc }}
       reloc: ${{ matrix.reloc }}
       suite: ${{ matrix.suite }}
+      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:
@@ -223,6 +232,7 @@ jobs:
       cc: ${{ matrix.cc }}
       reloc: ${{ matrix.reloc }}
       suite: ${{ matrix.suite }}
+      dev-gcov: 0
     strategy:
       fail-fast: false
       matrix:

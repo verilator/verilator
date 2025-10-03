@@ -36,6 +36,10 @@ def check_files():
             continue
         if re.search(r'^(.*\.(o|a)|Vprefix)$', filename):
             continue
+        if re.search(r'\.gcda$', filename):
+            continue
+        if re.search(r'\.gcno$', filename):
+            continue
         with open(path, 'r', encoding="utf8") as fh:
             for line in fh:
                 line = re.sub(r'--prefix V?t_flag_prefix', '', line)

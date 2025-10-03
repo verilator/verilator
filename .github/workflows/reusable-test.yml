@@ -19,6 +19,9 @@ on:
       suite:  # e.g. dist-vlt-0
         required: true
         type: string
+      dev-gcov:
+        required: true
+        type: number
 
 env:
   CI_OS_NAME: linux
@@ -73,6 +76,25 @@ jobs:
         run: ./ci/ci-install.bash
 
       - name: Test
+        continue-on-error: true
         env:
           TESTS: ${{ inputs.suite }}
         run: ./ci/ci-script.bash
+
+      - name: Combine code coverage data
+        if: ${{ inputs.dev-gcov }}
+        run: |
+          make coverage-combine
+          mv obj_coverage/verilator.info obj_coverage/verilator-${{ inputs.suite }}.info
+          ls -lsha obj_coverage
+
+      - name: Upload code coverage data
+        if: ${{ inputs.dev-gcov }}
+        uses: actions/upload-artifact@v4
+        with:
+          path: ${{ github.workspace }}/repo/obj_coverage/verilator-${{ inputs.suite }}.info
+          name: code-coverage-${{ inputs.suite }}
+
+      - name: Fail job if a test failed
+        if: ${{ failure() && !cancelled() }}
+        run: exit 1

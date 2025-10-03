@@ -11,6 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
+if test.have_dev_gcov:
+    test.skip("Too slow with code coverage")
+
 test.top_filename = f"{test.obj_dir}/in.v"
 
 with open(test.top_filename, "w", encoding="utf8") as f:

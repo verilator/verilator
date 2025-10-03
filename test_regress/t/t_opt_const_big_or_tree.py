@@ -11,6 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
+if test.have_dev_gcov:
+    test.skip("Too slow with code coverage")
+
 test.timeout(10)
 
 test.compile(verilator_make_gmake=False)

@@ -92,19 +92,20 @@ else
   AC_MSG_RESULT($CFG_WITH_TCMALLOC)
 fi
 
-# Flag to enable coverage build
-AC_MSG_CHECKING(whether to build for coverage collection)
-AC_ARG_ENABLE([coverage],
-              [AS_HELP_STRING([--enable-coverage],
-                              [Build Verilator for code coverage collection.
+# Flag to enable code coverage build with gcov
+AC_MSG_CHECKING(whether to build for gcov code coverage collection)
+AC_ARG_ENABLE([dev-gcov],
+              [AS_HELP_STRING([--enable-dev-gcov],
+                              [Build Verilator for code coverage collection with gcov.
                                For developers only.])],
               [case "${enableval}" in
-                yes) CFG_ENABLE_COVERAGE=yes ;;
-                no)  CFG_ENABLE_COVERAGE=no ;;
-                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-coverage]) ;;
+                yes) CFG_WITH_DEV_GCOV=yes ;;
+                no)  CFG_WITH_DEV_GCOV=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-dev-gcov]) ;;
                esac],
-               CFG_ENABLE_COVERAGE=no)
-AC_MSG_RESULT($CFG_ENABLE_COVERAGE)
+               CFG_WITH_DEV_GCOV=no)
+AC_SUBST(CFG_WITH_DEV_GCOV)
+AC_MSG_RESULT($CFG_WITH_DEV_GCOV)
 
 # Special Substitutions - CFG_WITH_DEFENV
 AC_MSG_CHECKING(whether to use hardcoded paths)
@@ -399,7 +400,7 @@ AC_DEFUN([_MY_LDLIBS_CHECK_OPT],
    ])
 
 # Add the coverage flags early as they influence later checks.
-if test "$CFG_ENABLE_COVERAGE" = "yes"; then
+if test "$CFG_WITH_DEV_GCOV" = "yes"; then
   _MY_CXX_CHECK_OPT(CXX,--coverage)
   # Otherwise inline may not show as uncovered
   #  If we use this then e.g. verilated.h functions properly show up
@@ -411,11 +412,19 @@ if test "$CFG_ENABLE_COVERAGE" = "yes"; then
   #  _MY_CXX_CHECK_OPT(CXX,-fkeep-inline-functions)
   # Otherwise static may not show as uncovered
   _MY_CXX_CHECK_OPT(CXX,-fkeep-static-functions)
-  # Exceptions can pollute the branch coverage data
-  _MY_CXX_CHECK_OPT(CXX,-fno-exceptions)
-  # Define-out some impossible stuff
+  # Similarly for inline functions. - This is too slow. See Makefile_obj instead.
+  #_MY_CXX_CHECK_OPT(CXX,-fkeep-inline-functions)
+  # Make sure profiling is thread-safe
+  _MY_CXX_CHECK_OPT(CXX,-fprofile-update=atomic)
+  # Ensure data files can be written from parallel runs
+  _MY_CXX_CHECK_OPT(CXX,-fprofile-reproducible=parallel-runs)
+  # Save source files as absolute paths in gcno files
+  _MY_CXX_CHECK_OPT(CXX,-fprofile-abs-path)
+  # Define so compiled code can know
   _MY_CXX_CHECK_OPT(CXX,-DVL_GCOV)
+  AC_DEFINE([HAVE_DEV_GCOV],[1],[Defined if compiled with code coverage collection for gcov])]
 fi
+AC_SUBST(HAVE_DEV_GCOV)
 
 # Compiler flags to enable profiling
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PROFILE,-pg)
@@ -476,16 +485,22 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-unused)
 AC_SUBST(CFG_CXXFLAGS_PARSER)
 
 # Flags for compiling the debug version of Verilator (in addition to above CFG_CXXFLAGS_SRC)
-if test "$CFG_ENABLE_COVERAGE" = "no"; then # Do not optimize for the coverage build
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-Og)
+if test "$CFG_WITH_DEV_GCOV" = "no"; then # Do not optimize for the coverage build
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-Og)
 fi
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-ggdb)
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-gz)
-AC_SUBST(CFG_CXXFLAGS_DEBUG)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-ggdb)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-gz)
+AC_SUBST(CFG_CXXFLAGS_DBG)
 
 # Flags for linking the debug version of Verilator (in addition to above CFG_LDFLAGS_SRC)
-_MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_DEBUG,-gz)
-AC_SUBST(CFG_LDFLAGS_DEBUG)
+_MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_DBG,-gz)
+AC_SUBST(CFG_LDFLAGS_DBG)
+
+# Flags for compiling the optimized version of Verilator (in addition to above CFG_CXXFLAGS_SRC)
+if test "$CFG_WITH_DEV_GCOV" = "no"; then # Do not optimize for the coverage build
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_OPT,-O3)
+fi
+AC_SUBST(CFG_CXXFLAGS_OPT)
 
 # Flags for Verilated makefile
 # For example, -Wno-div-by-zero isn't in 4.1.2
