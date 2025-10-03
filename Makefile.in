@@ -607,7 +607,6 @@ ifeq ($(CFG_WITH_DEV_GCOV),yes)
 COVERAGE_REF_BASE := $(if $(COVERAGE_BASE),$(shell git rev-parse --short $(COVERAGE_BASE)))
 COVERAGE_REF_HEAD := $(shell git rev-parse --short HEAD)
 override undefine COVERAGE_BASE # Use the above variabels instead
-COVERAGE_PATCH_FILE := $(COVERAGE_DIR)/$(if $(COVERAGE_REF_BASE),$(COVERAGE_REF_BASE).patch,.none.pach)
 
 # 'fastcov' setup
 FASTCOV := nodist/fastcov.py
@@ -649,7 +648,6 @@ FASTCOV_OPT += BROKEN_BASE_RTN
 FASTCOV_OPT += SELF_CHECK
 FASTCOV_OPT += 'if (VL_UNCOVERABLE'
 FASTCOV_OPT += '} else if (VL_UNCOVERABLE'
-FASTCOV_OPT += $(if $(COVERAGE_REF_BASE),--diff-filter $(COVERAGE_PATCH_FILE))
 
 # 'genhtml' setup
 GENHTML := genhtml
@@ -662,7 +660,7 @@ GENHTML_OPT += --ignore-errors negative
 ifeq ($(COVERAGE_REF_BASE),)
 GENHTML_OPT += --header-title "Code coverage for Verilator $(shell git describe --dirty)"
 else
-GENHTML_OPT += --header-title "Patch coverage for Verilator $(COVERAGE_REF_BASE)..$(COVERAGE_REF_HEAD)$(if $(git status --porcelain),,-dirty)"
+GENHTML_OPT += --header-title "Patch coverage for Verilator $(COVERAGE_REF_BASE)..$(COVERAGE_REF_HEAD)$(if $(shell git status --porcelain),-dirty)"
 endif
 GENHTML_OPT += --flat
 GENHTML_OPT += --precision 2
@@ -674,30 +672,35 @@ GENHTML_OPT += --filter brace,blank,range
 GCNO_FILES = $(shell find . -name '*.gcno')
 GCDA_FILES = $(shell find . -name '*.gcda')
 
-# Patch file to filter coverage with - unused if doing full coverage
-$(COVERAGE_PATCH_FILE):
-	@mkdir -p $(COVERAGE_DIR)
-	@touch $@
-	$(if $(COVERAGE_REF_BASE), git diff $(COVERAGE_REF_BASE) > $(COVERAGE_PATCH_FILE))
-
 # Combine all .gcda coverage date files into lcov .info file
-$(COVERAGE_DIR)/verilator.info: $(COVERAGE_PATCH_FILE) $(GCNO_FILES) $(GCDA_FILES)
+$(COVERAGE_DIR)/verilator.info: $(GCNO_FILES) $(GCDA_FILES)
 	@echo "####################################################################"
 	@echo "# fastcov: combining all .gcda files into lcov .info"
 	@echo "####################################################################"
+	@mkdir -p $(COVERAGE_DIR)
 	/usr/bin/time -f "That took %E" \
     $(FASTCOV) $(FASTCOV_OPT) --output $@
-	@# Uncommitted changes not tracked, force rebuild on next run if patch coverage
-	@$(if $(COVERAGE_REF_BASE),rm $(COVERAGE_PATCH_FILE))
+
+# Filter combined .info file for patch coverage
+$(COVERAGE_DIR)/verilator-patch.info: $(COVERAGE_DIR)/verilator.info
+	@echo "####################################################################"
+	@echo "# fastcov: Filtering for patch coverage"
+	@echo "####################################################################"
+	rm -f $(COVERAGE_DIR)/empty-patch
+	git diff $(COVERAGE_REF_BASE) -- include src > $(COVERAGE_DIR)/filter.patch
+	[ -s $(COVERAGE_DIR)/filter.patch ]] || touch $(COVERAGE_DIR)/empty-patch
+	$(FASTCOV) -C $^ --lcov -o $@ --diff-filter $(COVERAGE_DIR)/filter.patch
 
 # Build coverage report
-$(COVERAGE_DIR)/report/index.html: $(COVERAGE_DIR)/verilator.info
+$(COVERAGE_DIR)/report/index.html: $(COVERAGE_DIR)/verilator$(if $(COVERAGE_REF_BASE),-patch).info
 	@echo "####################################################################"
 	@echo "# genhtml: Generating coverage report"
 	@echo "####################################################################"
-	@rm -rf $(COVERAGE_DIR)/reprot
-	/usr/bin/time -f "That took %E" \
-    $(GENHTML) $(GENHTML_OPT) --output-directory $(COVERAGE_DIR)/report $^
+	@rm -rf $(COVERAGE_DIR)/report
+	[ -f $(COVERAGE_DIR)/empty-patch ]] || /usr/bin/time -f "That took %E" \
+    $(GENHTML) $(GENHTML_OPT) --output-directory $(COVERAGE_DIR)/report $^ || true
+	@# Uncommitted changes not tracked, force rebuild on next run if patch coverage
+	@$(if $(COVERAGE_REF_BASE),mv $(COVERAGE_DIR)/verilator-patch.info $(COVERAGE_DIR)/verilator-patch-last.info)
 
 # Convenience targets
 .PHONY: coverage-combine
@@ -706,16 +709,22 @@ coverage-combine: $(COVERAGE_DIR)/verilator.info
 # Via recursive make, so the message is always printed
 .PHONY: coverage-report
 coverage-report:
-	@$(MAKE) --no-print-directory $(COVERAGE_DIR)/report/index.html
+	@$(MAKE) --no-print-directory $(COVERAGE_DIR)/report/index.html || true
 	@echo "####################################################################"
-	@echo "# Coverage report is at: $(COVERAGE_DIR)/report/index.html"
-	@echo "# Use 'make coverage-view' to open it in your default browser"
+	@if [ -f $(COVERAGE_DIR)/report/index.html ]; then \
+    echo "# Coverage report is at: $(COVERAGE_DIR)/report/index.html"; \
+    echo "# Use 'make coverage-view' to open it in your default browser"; \
+  elif [ -f $(COVERAGE_DIR)/empty-patch ]; then\
+    echo "# Patch is empty"; \
+  else \
+    echo "# Failed to create coverage report. Maybe there is no data?"; \
+  fi
 	@echo "####################################################################"
 
 # Open covarage report in default web browser
 .PHONY: coverage-view
-coverage-view: $(COVERAGE_DIR)/report/index.html
-	open $<
+coverage-view: coverage-report
+	@test -f $(COVERAGE_DIR)/report/index.html && open $(COVERAGE_DIR)/report/index.html || true
 
 # Deletes all coverage data files (.gcda)
 .PHONY: coverage-zero
