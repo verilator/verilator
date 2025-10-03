@@ -19,7 +19,7 @@ on:
       suite:  # e.g. dist-vlt-0
         required: true
         type: string
-      gcov:
+      dev-gcov:
         required: true
         type: number
 
@@ -82,14 +82,14 @@ jobs:
         run: ./ci/ci-script.bash
 
       - name: Combine code coverage data
-        if: ${{ inputs.gcov }}
+        if: ${{ inputs.dev-gcov }}
         run: |
           make coverage-combine
           mv obj_coverage/verilator.info obj_coverage/verilator-${{ inputs.suite }}.info
           ls -lsha obj_coverage
 
       - name: Upload code coverage data
-        if: ${{ inputs.gcov }}
+        if: ${{ inputs.dev-gcov }}
         uses: actions/upload-artifact@v4
         with:
           path: ${{ github.workspace }}/repo/obj_coverage/verilator-${{ inputs.suite }}.info

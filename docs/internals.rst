@@ -1659,10 +1659,10 @@ noticeable over a few days of reruns as trends emerge from the noise.
 Code coverage
 -------------
 
-Code coverage for Verilator itself can be collected using ``gcc`` and ``gcov``
-with the following flow. Note that configuring with ``--enable-dev-gcov``
-disables optimization for both the debug and optimized builds of Verilator, so
-running the resulting executables can be slow:
+Code coverage for developing Verilator itself can be collected using ``gcc``
+and ``gcov`` with the following flow. Note that configuring with
+``--enable-dev-gcov`` disables optimization for both the debug and optimized
+builds of Verilator, so running the resulting executables can be slow:
 
 .. code:: shell
 

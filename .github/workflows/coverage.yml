@@ -23,8 +23,8 @@ jobs:
       os: ubuntu-24.04
       os-name: linux
       cc: gcc
-      asan: 0
-      gcov: 1
+      dev-asan: 0
+      dev-gcov: 1
 
   test:
     name: Test | ${{ matrix.test }}${{ matrix.num }}
@@ -35,7 +35,7 @@ jobs:
       cc: gcc
       reloc: 0
       suite: ${{ matrix.test }}${{ matrix.num }}
-      gcov: 1
+      dev-gcov: 1
     strategy:
       fail-fast: false
       matrix:
