@@ -18,6 +18,8 @@
 
 #include "V3Number.h"
 
+#include "V3File.h"
+
 #include <algorithm>
 #include <cerrno>
 #include <cmath>
@@ -875,6 +877,65 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const VL_MT_STAB
         fl->v3fatalSrc("Unknown $display-like format code for number: %" << pos[0]);
         return "ERR";
     }
+}
+
+string V3Number::emitC() const VL_MT_STABLE {
+    constexpr size_t bufsize = 1000;
+    char sbuf[bufsize];
+    string result;
+    if (isNull()) {
+        return "VlNull{}";
+    } else if (isDouble()) {
+        const double dnum = toDouble();
+        if (std::isinf(dnum)) {
+            if (std::signbit(dnum)) result += '-';
+            result += "std::numeric_limits<double>::infinity()";
+        } else if (std::isnan(dnum)) {
+            if (std::signbit(dnum)) result += '-';
+            result += "std::numeric_limits<double>::quiet_NaN()";
+        } else {
+            const char* const fmt = (static_cast<int>(dnum) == dnum && -1000 < dnum && dnum < 1000)
+                                        ? "%3.1f"  // Force decimal point
+                                        : "%.17e";  // %e always yields a float literal
+            VL_SNPRINTF(sbuf, bufsize, fmt, dnum);
+            return sbuf;
+        }
+    } else if (isString()) {
+        const string strg = toString();
+        const string quoted
+            = V3OutFormatter::quoteNameControls(strg, V3OutFormatter::Language::LA_C);
+        // Note: putsQuoted does not track indentation, so we use this instead
+        return '"' + quoted + "\"s";
+    } else if (words() > 2) {
+        // Note the double {{ initializer. The first { starts the initializer of the VlWide,
+        // and the second starts the initializer of m_storage within the VlWide.
+        // Alternative is to have constructor with std::initializer_list
+        result = "VlWide<" + std::to_string(words()) + ">{{";
+        if (words() > 4) result += '\n';
+        for (int n = 0; n < words(); ++n) {
+            if (n) result += ((n % 4) ? ", " : ",\n");
+            VL_SNPRINTF(sbuf, bufsize, "0x%08" PRIx32, edataWord(n));
+            result += sbuf;
+        }
+        if (words() > 4) result += '\n';
+        result += "}}";
+    } else if (words() == 2) {  // Quad
+        const uint64_t qnum = static_cast<uint64_t>(toUQuad());
+        const char* const fmt = (qnum < 10) ? ("%" PRIx64 "ULL") : ("0x%016" PRIx64 "ULL");
+        VL_SNPRINTF(sbuf, bufsize, fmt, qnum);
+        return sbuf;
+    } else {
+        // Always emit unsigned, if signed, will call correct signed functions
+        // The 'U' must be here, to avoid <= comparisons etc ending up signed
+        const uint32_t unum = toUInt();
+        const char* const fmt = (unum < 10)      ? ("%" PRIu32 "U")
+                                : (width() > 16) ? ("0x%08" PRIx32 "U")
+                                : (width() > 8)  ? ("0x%04" PRIx32 "U")
+                                                 : ("0x%02" PRIx32 "U");
+        VL_SNPRINTF(sbuf, bufsize, fmt, unum);
+        return sbuf;
+    }
+    return result;
 }
 
 string V3Number::toDecimalS() const VL_MT_STABLE {

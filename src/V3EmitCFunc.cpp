@@ -488,111 +488,14 @@ void EmitCFunc::emitCvtWideArray(AstNode* nodep, AstNode* fromp) {
     puts(")");
 }
 
-void EmitCFunc::emitConstant(AstConst* nodep, AstVarRef* assigntop, const string& assignString) {
+void EmitCFunc::emitConstant(AstConst* nodep) {
     // Put out constant set to the specified variable, or given variable in a string
-    // TODO merge with V3EmitCConstInit::visit(AstConst)
-    putns(nodep, "");
-    if (nodep->num().isNull()) {
-        putns(nodep, "VlNull{}");
-    } else if (nodep->num().isFourState()) {
+    const V3Number& num = nodep->num();
+    if (num.isFourState()) {
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: 4-state numbers in this context");
-    } else if (nodep->num().isString()) {
-        emitConstantString(nodep);
-    } else if (nodep->isWide()) {
-        int upWidth = nodep->num().widthToFit();
-        int chunks = 0;
-        if (upWidth > EMITC_NUM_CONSTW * VL_EDATASIZE) {
-            // Output e.g. 8 words in groups of e.g. 8
-            chunks = (upWidth - 1) / (EMITC_NUM_CONSTW * VL_EDATASIZE);
-            upWidth %= (EMITC_NUM_CONSTW * VL_EDATASIZE);
-            if (upWidth == 0) upWidth = (EMITC_NUM_CONSTW * VL_EDATASIZE);
-        }
-        {  // Upper e.g. 8 words
-            if (chunks) {
-                putnbs(nodep, "VL_CONSTHI_W_");
-                puts(cvtToStr(VL_WORDS_I(upWidth)));
-                puts("X(");
-                puts(cvtToStr(nodep->widthMin()));
-                puts(",");
-                puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
-            } else {
-                putnbs(nodep, "VL_CONST_W_");
-                puts(cvtToStr(VL_WORDS_I(upWidth)));
-                puts("X(");
-                puts(cvtToStr(nodep->widthMin()));
-            }
-            puts(",");
-            if (!assigntop) {
-                puts(assignString);
-            } else {
-                if (!assigntop->selfPointer().isEmpty()) {
-                    emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
-                }
-                puts(assigntop->varp()->nameProtect());
-            }
-            for (int word = VL_WORDS_I(upWidth) - 1; word >= 0; word--) {
-                // Only 32 bits - llx + long long here just to appease CPP format warning
-                ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
-                                                   word + chunks * EMITC_NUM_CONSTW)));
-            }
-            puts(")");
-        }
-        for (chunks--; chunks >= 0; chunks--) {
-            puts(";\n");
-            putbs("VL_CONSTLO_W_");
-            puts(cvtToStr(EMITC_NUM_CONSTW));
-            puts("X(");
-            puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
-            puts(",");
-            if (!assigntop) {
-                puts(assignString);
-            } else {
-                if (!assigntop->selfPointer().isEmpty()) {
-                    emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
-                }
-                puts(assigntop->varp()->nameProtect());
-            }
-            for (int word = EMITC_NUM_CONSTW - 1; word >= 0; word--) {
-                // Only 32 bits - llx + long long here just to appease CPP format warning
-                ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
-                                                   word + chunks * EMITC_NUM_CONSTW)));
-            }
-            puts(")");
-        }
-    } else if (nodep->isDouble()) {
-        if (int(nodep->num().toDouble()) == nodep->num().toDouble()
-            && nodep->num().toDouble() < 1000 && nodep->num().toDouble() > -1000) {
-            ofp()->printf("%3.1f", nodep->num().toDouble());  // Force decimal point
-        } else if (std::isinf(nodep->num().toDouble())) {
-            if (std::signbit(nodep->num().toDouble())) puts("-");
-            ofp()->puts("std::numeric_limits<double>::infinity()");
-        } else if (std::isnan(nodep->num().toDouble())) {
-            if (std::signbit(nodep->num().toDouble())) puts("-");
-            ofp()->puts("std::numeric_limits<double>::quiet_NaN()");
-        } else {
-            // Not %g as will not always put in decimal point, so not obvious to compiler
-            // is a real number
-            ofp()->printf("%.17e", nodep->num().toDouble());
-        }
-    } else if (nodep->isQuad()) {
-        const uint64_t num = nodep->toUQuad();
-        if (num < 10) {
-            ofp()->printf("%" PRIu64 "ULL", num);
-        } else {
-            ofp()->printf("0x%" PRIx64 "ULL", num);
-        }
-    } else {
-        const uint32_t num = nodep->toUInt();
-        // Only 32 bits - llx + long long here just to appease CPP format warning
-        if (num < 10) {
-            puts(cvtToStr(num));
-        } else {
-            ofp()->printf("0x%" PRIx64, static_cast<uint64_t>(num));
-        }
-        // If signed, we'll do our own functions
-        // But must be here, or <= comparisons etc may end up signed
-        puts("U");
+        return;
     }
+    putns(nodep, num.emitC());
 }
 
 void EmitCFunc::emitConstantString(const AstConst* nodep) {
@@ -604,11 +507,9 @@ void EmitCFunc::emitConstantString(const AstConst* nodep) {
 }
 
 void EmitCFunc::emitSetVarConstant(const string& assignString, AstConst* constp) {
-    if (!constp->isWide()) {
-        puts(assignString);
-        puts(" = ");
-    }
-    emitConstant(constp, nullptr, assignString);
+    puts(assignString);
+    puts(" = ");
+    emitConstant(constp);
     puts(";\n");
 }
 

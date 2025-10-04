@@ -595,6 +595,7 @@ public:
     string displayed(const AstNode* nodep, const string& vformat) const VL_MT_STABLE;
     string displayed(FileLine* fl, const string& vformat) const VL_MT_STABLE;
     static bool displayedFmtLegal(char format, bool isScan);  // Is this a valid format letter?
+    string emitC() const VL_MT_STABLE;
     int width() const VL_MT_SAFE { return m_data.width(); }
     int widthToFit() const;  // Minimum width that can represent this number (~== log2(num)+1)
     bool sized() const VL_MT_SAFE { return m_data.m_sized; }

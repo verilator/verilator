@@ -120,7 +120,6 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
     std::unordered_map<AstJumpBlock*, size_t> m_labelNumbers;  // Label numbers for AstJumpBlocks
     bool m_inUC = false;  // Inside an AstUCStmt or AstUCExpr
-    bool m_emitConstInit = false;  // Emitting constant initializer
     bool m_createdScopeHash = false;  // Already created a scope hash
 
     // State associated with processing $display style string formatting
@@ -221,7 +220,7 @@ public:
     void emitDereference(AstNode* nodep, const string& pointer);
     void emitCvtPackStr(AstNode* nodep);
     void emitCvtWideArray(AstNode* nodep, AstNode* fromp);
-    void emitConstant(AstConst* nodep, AstVarRef* assigntop, const string& assignString);
+    void emitConstant(AstConst* nodep);
     void emitConstantString(const AstConst* nodep);
     void emitSetVarConstant(const string& assignString, AstConst* constp);
     void emitVarReset(AstVar* varp, bool constructing);
@@ -230,13 +229,7 @@ public:
                                const string& suffix);
     void emitVarResetScopeHash();
     void emitChangeDet();
-    void emitConstInit(AstNode* initp) {
-        // We should refactor emit to produce output into a provided buffer, not go through members
-        // variables. That way we could just invoke the appropriate emitter as needed.
-        VL_RESTORER(m_emitConstInit);
-        m_emitConstInit = true;
-        iterateConst(initp);
-    }
+    void emitConstInit(AstNode* initp) { iterateConst(initp); }
     void putCommaIterateNext(AstNode* nodep, bool comma = false) {
         for (AstNode* subnodep = nodep; subnodep; subnodep = subnodep->nextp()) {
             if (comma) puts(", ");
@@ -263,6 +256,70 @@ public:
         if (const AstCNew* const cnewp = getSuperNewCallRecursep(nodep->nextp())) return cnewp;
         return nullptr;
     }
+
+    void emitConstantW(AstConst* nodep, AstVarRef* assigntop) {
+        // For tradition and compilation speed, assign each word directly into
+        // output variable instead of using '='
+        putns(nodep, "");
+        if (nodep->num().isFourState()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: 4-state numbers in this context");
+            return;
+        }
+
+        int upWidth = nodep->num().widthToFit();
+        int chunks = 0;
+        if (upWidth > EMITC_NUM_CONSTW * VL_EDATASIZE) {
+            // Output e.g. 8 words in groups of e.g. 8
+            chunks = (upWidth - 1) / (EMITC_NUM_CONSTW * VL_EDATASIZE);
+            upWidth %= (EMITC_NUM_CONSTW * VL_EDATASIZE);
+            if (upWidth == 0) upWidth = (EMITC_NUM_CONSTW * VL_EDATASIZE);
+        }
+        {  // Upper e.g. 8 words
+            if (chunks) {
+                putnbs(nodep, "VL_CONSTHI_W_");
+                puts(cvtToStr(VL_WORDS_I(upWidth)));
+                puts("X(");
+                puts(cvtToStr(nodep->widthMin()));
+                puts(",");
+                puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
+            } else {
+                putnbs(nodep, "VL_CONST_W_");
+                puts(cvtToStr(VL_WORDS_I(upWidth)));
+                puts("X(");
+                puts(cvtToStr(nodep->widthMin()));
+            }
+            puts(",");
+            if (!assigntop->selfPointer().isEmpty()) {
+                emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
+            }
+            puts(assigntop->varp()->nameProtect());
+            for (int word = VL_WORDS_I(upWidth) - 1; word >= 0; word--) {
+                // Only 32 bits - llx + long long here just to appease CPP format warning
+                ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
+                                                   word + chunks * EMITC_NUM_CONSTW)));
+            }
+            puts(")");
+        }
+        for (chunks--; chunks >= 0; chunks--) {
+            puts(";\n");
+            putbs("VL_CONSTLO_W_");
+            puts(cvtToStr(EMITC_NUM_CONSTW));
+            puts("X(");
+            puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
+            puts(",");
+            if (!assigntop->selfPointer().isEmpty()) {
+                emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
+            }
+            puts(assigntop->varp()->nameProtect());
+            for (int word = EMITC_NUM_CONSTW - 1; word >= 0; word--) {
+                // Only 32 bits - llx + long long here just to appease CPP format warning
+                ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
+                                                   word + chunks * EMITC_NUM_CONSTW)));
+            }
+            puts(")");
+        }
+    }
+
     void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp) {
         // Virtual bases in depth-first left-to-right order
         std::vector<AstClass*> virtualBases;
@@ -549,6 +606,9 @@ public:
         } else if (nodep->isWide() && VN_IS(nodep->lhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), CExpr)  //
                    && !VN_IS(nodep->rhsp(), CMethodHard)  //
+                   // Although not here currently, note putting !VN_IS(Const) works,
+                   // and means using '=' and bypasses using emitConstantW.
+                   // Whuch we don't want to do as slows compiler down.
                    && !VN_IS(nodep->rhsp(), VarRef)  //
                    && !VN_IS(nodep->rhsp(), AssocSel)  //
                    && !VN_IS(nodep->rhsp(), MemberSel)  //
@@ -558,7 +618,8 @@ public:
             // Wide functions assign into the array directly, don't need separate assign statement
             m_wideTempRefp = VN_AS(nodep->lhsp(), VarRef);
             paren = false;
-        } else if (nodep->isWide() && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
+        } else if (nodep->isWide() && !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
+                   && !VN_IS(nodep->rhsp(), Const)) {
             putnbs(nodep, "VL_ASSIGN_W(");
             puts(cvtToStr(nodep->widthMin()) + ", ");
             iterateAndNextConstNull(nodep->lhsp());
@@ -1519,15 +1580,13 @@ public:
         putns(nodep, "&");
         puts(funcNameProtect(funcp));
     }
-    void visit(AstConst* nodep) override {
-        if (m_emitConstInit) {
-            EmitCConstInit::visit(nodep);
-        } else if (nodep->isWide()) {
+    void visit(AstConst* nodep) override {  //
+        if (m_wideTempRefp && nodep->isWide()) {
             UASSERT_OBJ(m_wideTempRefp, nodep, "Wide Constant w/ no temp");
-            emitConstant(nodep, m_wideTempRefp, "");
+            emitConstantW(nodep, m_wideTempRefp);
             m_wideTempRefp = nullptr;  // We used it, fail if set it a second time
         } else {
-            emitConstant(nodep, nullptr, "");
+            emitConstant(nodep);
         }
     }
     void visit(AstThisRef* nodep) override {
