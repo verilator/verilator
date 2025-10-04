@@ -44,7 +44,7 @@ jobs:
         include:
           - {test: coverage-dist, num: ''}
 
-  publish:
+  publish-codecov:
     name: Publish results to codecov.io
     needs: test
     if: ${{ contains(needs.*.result, 'success') && !cancelled() }}
@@ -77,11 +77,52 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
 
+  prepare-report:
+    name: Prepare HTML report
+    needs: test
+    runs-on: ubuntu-24.04
+    env:
+      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-ubuntu-24.04-gcc.tar.gz
+    steps:
+      - name: Install dependencies
+        run: sudo apt install lcov
+
+      - name: Download tar archive
+        uses: actions/download-artifact@v5
+        with:
+          name: ${{ env.VERILATOR_ARCHIVE }}
+          path: ${{ github.workspace }}
+
+      - name: Unpack tar archive
+        run: tar -x -z -f ${{ env.VERILATOR_ARCHIVE }}
+
+      - name: Download code coverage data
+        uses: actions/download-artifact@v5
+        with:
+          pattern: code-coverage-*
+          path: repo/obj_coverage
+          merge-multiple: true
+
+      - name: Create report
+        working-directory: repo
+        run: |
+          ls -lsha obj_coverage
+          make coverage-combine # Just to create dependency files, overwrite below
+          nodist/fastcov.py -C obj_coverage/verilator-*.info --lcov -o obj_coverage/verilator.info
+          make coverage-report
+          find obj_coverage -mindepth 1 -maxdepth 1 -not -name report | xargs rm -rf
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          path: repo/obj_coverage
+          name: coverage-report
+
   # Create GitHub issue for failed scheduled jobs
   # This should always be the last job (we want an issue if anything breaks)
   create-issue:
     name: Create issue on failure
-    needs: publish
+    needs: [publish-codecov,prepare-report]
     if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && failure() && !cancelled() }}
     runs-on: ubuntu-24.04
     steps:
