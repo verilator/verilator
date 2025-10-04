@@ -1695,6 +1695,15 @@ Be aware if changing a test, if that test no longer covers some item, the
 report will still contain the old coverage. Use ``make coverage-zero`` and
 rerun all tests if this is a concern.
 
+It is also possible to generate a 'patch coverage' report, which will only
+contain information about lines modified compared to a Git ref specified by the
+``COVERAGE_BASE`` Make variable (including uncommitted changes). For example,
+to see coverage of changes compared to upstream, use:
+
+.. code:: shell
+
+   make coverage-view COVERAGE_BASE=origin/master
+
 Fuzzing
 -------
 

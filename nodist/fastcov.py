@@ -509,6 +509,13 @@ def containsMarker(markers, strBody):
 def exclProcessSource(fastcov_sources, source, exclude_branches_sw, include_branches_sw, exclude_line_marker, fallback_encodings, gcov_prefix, gcov_prefix_strip):
     source_to_open = processPrefix(source, gcov_prefix, gcov_prefix_strip)
 
+    # Before doing any work, check if this file even needs to be processed
+    if not exclude_branches_sw and not include_branches_sw:
+        # Ignore unencodable characters
+        with open(source_to_open, errors="ignore") as f:
+            if not containsMarker(exclude_line_marker + ["LCOV_EXCL"], f.read()):
+                return False
+
     # If we've made it this far we have to check every line
 
     start_line = 0
@@ -526,10 +533,8 @@ def exclProcessSource(fastcov_sources, source, exclude_branches_sw, include_bran
                 if del_exclude_br or del_include_br:
                     del fastcov_data["branches"][i]
 
-            lineIsClosingBrace = line.strip() == "}"
-
             # Skip to next line as soon as possible
-            if not containsMarker(exclude_line_marker + ["LCOV_EXCL"], line) and not lineIsClosingBrace:
+            if not containsMarker(exclude_line_marker + ["LCOV_EXCL"], line):
                 continue
 
             # Build line to function dict so can quickly delete by line number
@@ -540,7 +545,7 @@ def exclProcessSource(fastcov_sources, source, exclude_branches_sw, include_bran
                     line_to_func[l] = set()
                 line_to_func[l].add(f)
 
-            if lineIsClosingBrace or any(marker in line for marker in exclude_line_marker):
+            if any(marker in line for marker in exclude_line_marker):
                 for key in ["lines", "branches"]:
                     if i in fastcov_data[key]:
                         del fastcov_data[key][i]
