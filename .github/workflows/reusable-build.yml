@@ -7,6 +7,10 @@ name: reusable-build
 on:
   workflow_call:
     inputs:
+      sha:
+        description: "Commit SHA to build"
+        required: true
+        type: string
       os:  # e.g. ubuntu-24.04
         required: true
         type: string
@@ -22,6 +26,10 @@ on:
       dev-gcov:
         required: true
         type: number
+    outputs:
+      archive:
+        description: "Name of the built repository archive artifact"
+        value: ${{ jobs.build.outputs.archive }}
 
 env:
   CI_OS_NAME: ${{ inputs.os-name }}
@@ -39,8 +47,10 @@ defaults:
 jobs:
 
   build:
-    runs-on: ${{ inputs.os }}
     name: Build
+    runs-on: ${{ inputs.os }}
+    outputs:
+      archive: ${{ steps.create-archive.outputs.archive }}
     env:
       CI_BUILD_STAGE_NAME: build
       CI_DEV_ASAN: ${{ inputs.dev-asan }}
@@ -50,12 +60,13 @@ jobs:
       CXX: ${{ inputs.cc == 'clang' && 'clang++' || 'g++' }}
       CACHE_BASE_KEY: build-${{ inputs.os }}-${{ inputs.cc }}
       CCACHE_MAXSIZE: 1000M  # Per build matrix entry (* 5 = 5000M in total)
-      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-${{ inputs.os }}-${{ inputs.cc }}.tar.gz
     steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
           path: repo
+          ref: ${{ inputs.sha }}
+          fetch-depth: ${{ inputs.dev-gcov && '0' || '1' }} # Coverage flow needs full history
 
       - name: Cache $CCACHE_DIR
         uses: actions/cache@v4
@@ -63,7 +74,7 @@ jobs:
           CACHE_KEY: ${{ env.CACHE_BASE_KEY }}-ccache
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.CACHE_KEY }}-${{ github.sha }}
+          key: ${{ env.CACHE_KEY }}-${{ inputs.sha }}
           restore-keys: |
             ${{ env.CACHE_KEY }}-
 
@@ -73,12 +84,17 @@ jobs:
       - name: Build
         run: ./ci/ci-script.bash
 
-      - name: Tar up repository
+      - name: Create repository archive
+        id: create-archive
         working-directory: ${{ github.workspace }}
-        run: tar --posix -c -z -f ${{ env.VERILATOR_ARCHIVE }} repo
+        run: |
+          # Name of the archive must be unique based on the build parameters
+          ARCHIVE=verilator-${{ inputs.sha }}-${{ inputs.os }}-${{ inputs.cc }}-${{ inputs.dev-asan }}-${{ inputs.dev-gcov }}.tar.gz
+          tar --posix -c -z -f $ARCHIVE repo
+          echo "archive=$ARCHIVE" >> "$GITHUB_OUTPUT"
 
-      - name: Upload tar archive
+      - name: Upload repository archive
         uses: actions/upload-artifact@v4
         with:
-          path: ${{ github.workspace }}/${{ env.VERILATOR_ARCHIVE }}
-          name: ${{ env.VERILATOR_ARCHIVE }}
+          path: ${{ github.workspace }}/${{ steps.create-archive.outputs.archive }}
+          name: ${{ steps.create-archive.outputs.archive }}

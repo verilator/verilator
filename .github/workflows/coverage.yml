@@ -20,6 +20,7 @@ jobs:
     if: ${{ github.event_name != 'schedule' || vars.ENABLE_SCHEDULED_JOBS == 'true' }}
     uses: ./.github/workflows/reusable-build.yml
     with:
+      sha: ${{ github.sha }}
       os: ubuntu-24.04
       os-name: linux
       cc: gcc
@@ -31,6 +32,7 @@ jobs:
     needs: build
     uses: ./.github/workflows/reusable-test.yml
     with:
+      archive: ${{ needs.build.outputs.archive }}
       os: ubuntu-24.04
       cc: gcc
       reloc: 0
@@ -79,22 +81,22 @@ jobs:
 
   prepare-report:
     name: Prepare HTML report
-    needs: test
+    needs: [build, test]
     runs-on: ubuntu-24.04
-    env:
-      VERILATOR_ARCHIVE: verilator-${{ github.sha }}-ubuntu-24.04-gcc.tar.gz
     steps:
       - name: Install dependencies
         run: sudo apt install lcov
 
-      - name: Download tar archive
+      - name: Download repository archive
         uses: actions/download-artifact@v5
         with:
-          name: ${{ env.VERILATOR_ARCHIVE }}
+          name: ${{ needs.build.outputs.archive }}
           path: ${{ github.workspace }}
 
-      - name: Unpack tar archive
-        run: tar -x -z -f ${{ env.VERILATOR_ARCHIVE }}
+      - name: Unpack repository archive
+        run: |
+          tar -x -z -f ${{ needs.build.outputs.archive }}
+          ls -lsha
 
       - name: Download code coverage data
         uses: actions/download-artifact@v5

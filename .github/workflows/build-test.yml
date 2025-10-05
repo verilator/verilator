@@ -32,6 +32,7 @@ jobs:
     name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
     uses: ./.github/workflows/reusable-build.yml
     with:
+      sha: ${{ github.sha }}
       os: ${{ matrix.os }}
       os-name: linux
       cc: ${{ matrix.cc }}
@@ -47,6 +48,7 @@ jobs:
     name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
     uses: ./.github/workflows/reusable-build.yml
     with:
+      sha: ${{ github.sha }}
       os: ${{ matrix.os }}
       os-name: linux
       cc: ${{ matrix.cc }}
@@ -62,6 +64,7 @@ jobs:
     name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
     uses: ./.github/workflows/reusable-build.yml
     with:
+      sha: ${{ github.sha }}
       os: ${{ matrix.os }}
       os-name: linux
       cc: ${{ matrix.cc }}
@@ -77,6 +80,7 @@ jobs:
     name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
     uses: ./.github/workflows/reusable-build.yml
     with:
+      sha: ${{ github.sha }}
       os: ${{ matrix.os }}
       os-name: linux
       cc: ${{ matrix.cc }}
@@ -92,6 +96,7 @@ jobs:
     name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
     uses: ./.github/workflows/reusable-build.yml
     with:
+      sha: ${{ github.sha }}
       os: ${{ matrix.os }}
       os-name: osx
       cc: ${{ matrix.cc }}
@@ -107,6 +112,7 @@ jobs:
     name: Build | ${{ matrix.os }} | ${{ matrix.cc }}${{ matrix.asan && ' | asan' || '' }}
     uses: ./.github/workflows/reusable-build.yml
     with:
+      sha: ${{ github.sha }}
       os: ${{ matrix.os }}
       os-name: osx
       cc: ${{ matrix.cc }}
@@ -159,6 +165,7 @@ jobs:
     needs: build-2404-gcc
     uses: ./.github/workflows/reusable-test.yml
     with:
+      archive: ${{ needs.build-2404-gcc.outputs.archive }}
       os: ${{ matrix.os }}
       cc: ${{ matrix.cc }}
       reloc: ${{ matrix.reloc }}
@@ -182,6 +189,7 @@ jobs:
     needs: build-2404-clang
     uses: ./.github/workflows/reusable-test.yml
     with:
+      archive: ${{ needs.build-2404-clang.outputs.archive }}
       os: ${{ matrix.os }}
       cc: ${{ matrix.cc }}
       reloc: ${{ matrix.reloc }}
@@ -205,6 +213,7 @@ jobs:
     needs: build-2204-gcc
     uses: ./.github/workflows/reusable-test.yml
     with:
+      archive: ${{ needs.build-2204-gcc.outputs.archive }}
       os: ${{ matrix.os }}
       cc: ${{ matrix.cc }}
       reloc: ${{ matrix.reloc }}
@@ -228,6 +237,7 @@ jobs:
     needs: build-2204-clang
     uses: ./.github/workflows/reusable-test.yml
     with:
+      archive: ${{ needs.build-2204-clang.outputs.archive }}
       os: ${{ matrix.os }}
       cc: ${{ matrix.cc }}
       reloc: ${{ matrix.reloc }}
