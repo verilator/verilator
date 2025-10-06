@@ -43,6 +43,7 @@ EXEMPT_FILES_LIST = """
     test_regress/t/t_flag_f__3.v
     test_regress/t/t_fuzz_eof_bad.v
     test_regress/t/t_incr_void.v
+    test_regress/t/t_property_unsup.v
     test_regress/t/tsub/t_flag_f_tsub.v
     test_regress/t/tsub/t_flag_f_tsub_inc.v
     test_regress/t/uvm/dpi

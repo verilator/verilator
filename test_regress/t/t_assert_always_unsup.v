@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2022 by Antmicro Ltd.
+// any use, without warranty, 2022-2025 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
@@ -27,10 +27,6 @@ module t (/*AUTOARG*/
 
    property p_ev;
       eventually [2:5] a;
-   endproperty
-
-   property p_ev2;
-      eventually [2] a;
    endproperty
 
    property p_s_ev;
