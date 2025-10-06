@@ -1,10 +1,3 @@
-// DESCRIPTION: Verilator: Verilog Test module
-//
-// This file ONLY is placed under the Creative Commons Public Domain, for
-// any use, without warranty, 2025 by Antmicro.
-// SPDX-License-Identifier: CC0-1.0
-
-
 // (C) 2001-2020, Daniel Kroening, Edmund Clarke,
 // Computer Science Department, University of Oxford
 // Computer Science Department, Carnegie Mellon University
@@ -39,8 +32,6 @@
 // You can contact the author at:
 //   - homepage : https://www.cprover.org/ebmc/
 //   - source repository : https://github.com/diffblue/hw-cbmc
-//
-// SPDX-License-Identifier: BSD-3-Clause
 
 module t (  /*AUTOARG*/
     // Inputs
