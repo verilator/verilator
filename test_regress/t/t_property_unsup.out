@@ -1,116 +1,116 @@
-%Error-UNSUPPORTED: t/t_property_unsup.v:68:41: Unsupported: eventually[] (in property expression)
-   68 |   assert property (counter == 1 implies eventually[1: 2] counter == 3);
+%Error-UNSUPPORTED: t/t_property_unsup.v:71:41: Unsupported: eventually[] (in property expression)
+   71 |   assert property (counter == 1 implies eventually[1: 2] counter == 3);
       |                                         ^~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_unsup.v:83:20: Unsupported: eventually[] (in property expression)
-   83 |   assert property (eventually[0: 2] counter == 3);
+%Error-UNSUPPORTED: t/t_property_unsup.v:86:20: Unsupported: eventually[] (in property expression)
+   86 |   assert property (eventually[0: 2] counter == 3);
       |                    ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:93:21: Unsupported: always (in property expression)
-   93 |   assert property ((always a) implies (always a));
+%Error-UNSUPPORTED: t/t_property_unsup.v:96:21: Unsupported: always (in property expression)
+   96 |   assert property ((always a) implies (always a));
       |                     ^~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:93:40: Unsupported: always (in property expression)
-   93 |   assert property ((always a) implies (always a));
+%Error-UNSUPPORTED: t/t_property_unsup.v:96:40: Unsupported: always (in property expression)
+   96 |   assert property ((always a) implies (always a));
       |                                        ^~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:95:26: Unsupported: always (in property expression)
-   95 |   assert property ((a or(always b)) implies (a or(always b)));
+%Error-UNSUPPORTED: t/t_property_unsup.v:98:26: Unsupported: always (in property expression)
+   98 |   assert property ((a or(always b)) implies (a or(always b)));
       |                          ^~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:95:23: Unsupported: or (in sequence expression)
-   95 |   assert property ((a or(always b)) implies (a or(always b)));
+%Error-UNSUPPORTED: t/t_property_unsup.v:98:23: Unsupported: or (in sequence expression)
+   98 |   assert property ((a or(always b)) implies (a or(always b)));
       |                       ^~
-%Error-UNSUPPORTED: t/t_property_unsup.v:95:51: Unsupported: always (in property expression)
-   95 |   assert property ((a or(always b)) implies (a or(always b)));
+%Error-UNSUPPORTED: t/t_property_unsup.v:98:51: Unsupported: always (in property expression)
+   98 |   assert property ((a or(always b)) implies (a or(always b)));
       |                                                   ^~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:95:48: Unsupported: or (in sequence expression)
-   95 |   assert property ((a or(always b)) implies (a or(always b)));
+%Error-UNSUPPORTED: t/t_property_unsup.v:98:48: Unsupported: or (in sequence expression)
+   98 |   assert property ((a or(always b)) implies (a or(always b)));
       |                                                ^~
-%Error-UNSUPPORTED: t/t_property_unsup.v:97:21: Unsupported: eventually[] (in property expression)
-   97 |   assert property ((eventually[0: 1] a) implies (eventually[0: 1] a));
+%Error-UNSUPPORTED: t/t_property_unsup.v:100:21: Unsupported: eventually[] (in property expression)
+  100 |   assert property ((eventually[0: 1] a) implies (eventually[0: 1] a));
       |                     ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:97:50: Unsupported: eventually[] (in property expression)
-   97 |   assert property ((eventually[0: 1] a) implies (eventually[0: 1] a));
+%Error-UNSUPPORTED: t/t_property_unsup.v:100:50: Unsupported: eventually[] (in property expression)
+  100 |   assert property ((eventually[0: 1] a) implies (eventually[0: 1] a));
       |                                                  ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:99:21: Unsupported: s_eventually (in property expression)
-   99 |   assert property ((s_eventually a) implies (s_eventually a));
+%Error-UNSUPPORTED: t/t_property_unsup.v:102:21: Unsupported: s_eventually (in property expression)
+  102 |   assert property ((s_eventually a) implies (s_eventually a));
       |                     ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:99:46: Unsupported: s_eventually (in property expression)
-   99 |   assert property ((s_eventually a) implies (s_eventually a));
+%Error-UNSUPPORTED: t/t_property_unsup.v:102:46: Unsupported: s_eventually (in property expression)
+  102 |   assert property ((s_eventually a) implies (s_eventually a));
       |                                              ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:101:23: Unsupported: until (in property expression)
-  101 |   assert property ((a until b) implies (a until b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:104:23: Unsupported: until (in property expression)
+  104 |   assert property ((a until b) implies (a until b));
       |                       ^~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:101:43: Unsupported: until (in property expression)
-  101 |   assert property ((a until b) implies (a until b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:104:43: Unsupported: until (in property expression)
+  104 |   assert property ((a until b) implies (a until b));
       |                                           ^~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:103:23: Unsupported: s_until (in property expression)
-  103 |   assert property ((a s_until b) implies (a s_until b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:106:23: Unsupported: s_until (in property expression)
+  106 |   assert property ((a s_until b) implies (a s_until b));
       |                       ^~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:103:45: Unsupported: s_until (in property expression)
-  103 |   assert property ((a s_until b) implies (a s_until b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:106:45: Unsupported: s_until (in property expression)
+  106 |   assert property ((a s_until b) implies (a s_until b));
       |                                             ^~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:105:23: Unsupported: until_with (in property expression)
-  105 |   assert property ((a until_with b) implies (a until_with b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:108:23: Unsupported: until_with (in property expression)
+  108 |   assert property ((a until_with b) implies (a until_with b));
       |                       ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:105:48: Unsupported: until_with (in property expression)
-  105 |   assert property ((a until_with b) implies (a until_with b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:108:48: Unsupported: until_with (in property expression)
+  108 |   assert property ((a until_with b) implies (a until_with b));
       |                                                ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:107:23: Unsupported: s_until_with (in property expression)
-  107 |   assert property ((a s_until_with b) implies (a s_until_with b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:110:23: Unsupported: s_until_with (in property expression)
+  110 |   assert property ((a s_until_with b) implies (a s_until_with b));
       |                       ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:107:50: Unsupported: s_until_with (in property expression)
-  107 |   assert property ((a s_until_with b) implies (a s_until_with b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:110:50: Unsupported: s_until_with (in property expression)
+  110 |   assert property ((a s_until_with b) implies (a s_until_with b));
       |                                                  ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:111:23: Unsupported: #-# (in property expression)
-  111 |   assert property ((a #-# b) implies (a #-# b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:114:23: Unsupported: #-# (in property expression)
+  114 |   assert property ((a #-# b) implies (a #-# b));
       |                       ^~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:111:41: Unsupported: #-# (in property expression)
-  111 |   assert property ((a #-# b) implies (a #-# b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:114:41: Unsupported: #-# (in property expression)
+  114 |   assert property ((a #-# b) implies (a #-# b));
       |                                         ^~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:121:21: Unsupported: always (in property expression)
-  121 |   assert property ((always a) iff (always a));
+%Error-UNSUPPORTED: t/t_property_unsup.v:124:21: Unsupported: always (in property expression)
+  124 |   assert property ((always a) iff (always a));
       |                     ^~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:121:36: Unsupported: always (in property expression)
-  121 |   assert property ((always a) iff (always a));
+%Error-UNSUPPORTED: t/t_property_unsup.v:124:36: Unsupported: always (in property expression)
+  124 |   assert property ((always a) iff (always a));
       |                                    ^~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:123:21: Unsupported: eventually[] (in property expression)
-  123 |   assert property ((eventually[0: 1] a) iff (eventually[0: 1] a));
+%Error-UNSUPPORTED: t/t_property_unsup.v:126:21: Unsupported: eventually[] (in property expression)
+  126 |   assert property ((eventually[0: 1] a) iff (eventually[0: 1] a));
       |                     ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:123:46: Unsupported: eventually[] (in property expression)
-  123 |   assert property ((eventually[0: 1] a) iff (eventually[0: 1] a));
+%Error-UNSUPPORTED: t/t_property_unsup.v:126:46: Unsupported: eventually[] (in property expression)
+  126 |   assert property ((eventually[0: 1] a) iff (eventually[0: 1] a));
       |                                              ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:125:21: Unsupported: s_eventually (in property expression)
-  125 |   assert property ((s_eventually a) iff (s_eventually a));
+%Error-UNSUPPORTED: t/t_property_unsup.v:128:21: Unsupported: s_eventually (in property expression)
+  128 |   assert property ((s_eventually a) iff (s_eventually a));
       |                     ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:125:42: Unsupported: s_eventually (in property expression)
-  125 |   assert property ((s_eventually a) iff (s_eventually a));
+%Error-UNSUPPORTED: t/t_property_unsup.v:128:42: Unsupported: s_eventually (in property expression)
+  128 |   assert property ((s_eventually a) iff (s_eventually a));
       |                                          ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:127:23: Unsupported: until (in property expression)
-  127 |   assert property ((a until b) iff (a until b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:130:23: Unsupported: until (in property expression)
+  130 |   assert property ((a until b) iff (a until b));
       |                       ^~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:127:39: Unsupported: until (in property expression)
-  127 |   assert property ((a until b) iff (a until b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:130:39: Unsupported: until (in property expression)
+  130 |   assert property ((a until b) iff (a until b));
       |                                       ^~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:129:23: Unsupported: s_until (in property expression)
-  129 |   assert property ((a s_until b) iff (a s_until b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:132:23: Unsupported: s_until (in property expression)
+  132 |   assert property ((a s_until b) iff (a s_until b));
       |                       ^~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:129:41: Unsupported: s_until (in property expression)
-  129 |   assert property ((a s_until b) iff (a s_until b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:132:41: Unsupported: s_until (in property expression)
+  132 |   assert property ((a s_until b) iff (a s_until b));
       |                                         ^~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:131:23: Unsupported: until_with (in property expression)
-  131 |   assert property ((a until_with b) iff (a until_with b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:134:23: Unsupported: until_with (in property expression)
+  134 |   assert property ((a until_with b) iff (a until_with b));
       |                       ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:131:44: Unsupported: until_with (in property expression)
-  131 |   assert property ((a until_with b) iff (a until_with b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:134:44: Unsupported: until_with (in property expression)
+  134 |   assert property ((a until_with b) iff (a until_with b));
       |                                            ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:133:23: Unsupported: s_until_with (in property expression)
-  133 |   assert property ((a s_until_with b) iff (a s_until_with b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:136:23: Unsupported: s_until_with (in property expression)
+  136 |   assert property ((a s_until_with b) iff (a s_until_with b));
       |                       ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:133:46: Unsupported: s_until_with (in property expression)
-  133 |   assert property ((a s_until_with b) iff (a s_until_with b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:136:46: Unsupported: s_until_with (in property expression)
+  136 |   assert property ((a s_until_with b) iff (a s_until_with b));
       |                                              ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:137:23: Unsupported: #-# (in property expression)
-  137 |   assert property ((a #-# b) iff (a #-# b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:140:23: Unsupported: #-# (in property expression)
+  140 |   assert property ((a #-# b) iff (a #-# b));
       |                       ^~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:137:37: Unsupported: #-# (in property expression)
-  137 |   assert property ((a #-# b) iff (a #-# b));
+%Error-UNSUPPORTED: t/t_property_unsup.v:140:37: Unsupported: #-# (in property expression)
+  140 |   assert property ((a #-# b) iff (a #-# b));
       |                                     ^~~
 %Error: Exiting due to
