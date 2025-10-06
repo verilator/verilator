@@ -3106,7 +3106,14 @@ class WidthVisitor final : public VNVisitor {
         UINFO(4, "dtWidthed " << nodep);
     }
     void visit(AstNodeUOrStructDType* nodep) override {
+        if (nodep->doingWidth()) {  // Early exit if have circular parameter definition
+            nodep->v3error("Struct's type is circular: " << nodep->prettyName());
+            nodep->dtypeSetBit();
+            nodep->doingWidth(false);
+            return;
+        }
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+        nodep->doingWidth(true);
         UINFO(5, "   NODEUORS " << nodep);
         // UINFOTREE(9, nodep, "", "class-in");
         if (!nodep->packed() && v3Global.opt.structsPacked()) nodep->packed(true);
@@ -3167,6 +3174,7 @@ class WidthVisitor final : public VNVisitor {
         } else {
             nodep->widthForce(1, 1);
         }
+        nodep->doingWidth(false);
         // UINFOTREE(9, nodep, "", "class-out");
     }
     void visit(AstClass* nodep) override {
