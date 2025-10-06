@@ -45,7 +45,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class LinkJumpVisitor final : public VNVisitor {
     // NODE STATE
-    //  AstNode::user1()       -> AstJumpBlock*, for body of this loop
+    //  AstBegin/etc::user1()  -> AstJumpBlock*, for body of this loop
+    //  AstFinish::user1()     -> bool, processed
     //  AstNode::user2()       -> AstJumpBlock*, for this block
     //  AstNodeBlock::user3()  -> bool, true if contains a fork
     const VNUser1InUse m_user1InUse;
@@ -436,6 +437,15 @@ class LinkJumpVisitor final : public VNVisitor {
         }
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void visit(AstFinish* nodep) override {
+        if (nodep->user1SetOnce()) return;  // Process once
+        iterateChildren(nodep);
+        if (m_loopp) {
+            // Jump to the end of the loop (post-finish)
+            AstJumpBlock* const blockp = getJumpBlock(m_loopp, false);
+            nodep->addNextHere(new AstJumpGo{nodep->fileline(), blockp});
+        }
     }
     void visit(AstVarRef* nodep) override {
         if (m_loopInc && nodep->varp()) nodep->varp()->usedLoopIdx(true);
