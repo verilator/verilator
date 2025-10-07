@@ -825,11 +825,11 @@ void EmitCSyms::emitSymImp() {
     puts("{\n");
 
     {
-        puts("    // Check resources\n");
+        puts("// Check resources\n");
         uint64_t stackSize = V3StackCount::count(v3Global.rootp());
         if (v3Global.opt.debugStackCheck()) stackSize += 1024 * 1024 * 1024;
         V3Stats::addStat("Size prediction, Stack (bytes)", stackSize);
-        puts("    Verilated::stackCheck(" + cvtToStr(stackSize) + ");\n");
+        puts("Verilated::stackCheck(" + cvtToStr(stackSize) + ");\n");
         V3Stats::addStat("Size prediction, Heap, from Var Scopes (bytes)", m_statVarScopeBytes);
         V3Stats::addStat(V3Stats::STAT_MODEL_SIZE, stackSize + m_statVarScopeBytes);
     }
