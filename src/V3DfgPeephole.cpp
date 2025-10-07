@@ -1635,12 +1635,6 @@ class V3DfgPeephole final : public DfgVisitor {
                                 FileLine* const thenFlp = thenSubp->fileline();
                                 DfgSub* const subp
                                     = make<DfgSub>(thenFlp, vtxp->dtype(), thenSubp->lhsp(), extp);
-                                // FIXME: delete before landing
-                                if (subp->cast<DfgVertexVariadic>()) {  //
-                                    UINFO(0, "can't reach");
-                                } else {
-                                    UINFO(9, "Will reach");
-                                }
                                 replace(vtxp, subp);
                                 return;
                             }

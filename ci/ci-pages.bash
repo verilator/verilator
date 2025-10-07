@@ -159,8 +159,7 @@ CONTENTS_TEMPLATE
 INDEX_TEMPLATE
 
   # Report size
-  ${COVERAGE_ROOT}
-  du -shc *
+  du -shc ${COVERAGE_ROOT}/*
 
   # Set output
   echo "coverage-pr-run-ids=${PR_RUN_IDS}" >> $GITHUB_OUTPUT
