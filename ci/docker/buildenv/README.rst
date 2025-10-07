@@ -35,7 +35,7 @@ To change the compiler use the `-e` switch to pass environment variables:
 
 ::
 
-   docker run -ti -e CC=clang-18 -e CXX=clang++-18 verilator/verilator-buildenv test
+   docker run -ti -e CXX=clang++-18 verilator/verilator-buildenv test
 
 The tests, that involve numactl are not working due to security restrictions.
 To run those too, add the CAP_SYS_NICE capability during the start of the container:

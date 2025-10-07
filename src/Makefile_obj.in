@@ -35,7 +35,7 @@ incdir = $(srcdir)/../include
 bldsrc = ..
 
 # Programs
-CC = @CC@
+CC = false # Everything is built as C++ via CXX
 CXX = @CXX@
 LINK = @CXX@
 LEX = @LEX@
@@ -396,8 +396,6 @@ $(TGT): $(PREDEP_H) $(OBJS)
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSWALL} ${CFG_CXXFLAGS_PCH} -c $< -o $@
 %.o: %.cpp
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSWALL} -c $< -o $@
-%.o: %.c
-	$(OBJCACHE) ${CC}  ${CFLAGS} ${CPPFLAGSWALL} -c $< -o $@
 
 V3ParseLex.o: V3ParseLex.cpp V3Lexer.yy.cpp V3ParseBison.c
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CXXFLAGSOBJ} ${CPPFLAGSPARSER} -c $< -o $@

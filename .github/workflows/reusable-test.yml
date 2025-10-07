@@ -49,7 +49,6 @@ jobs:
       CI_BUILD_STAGE_NAME: test
       CI_RUNS_ON: ${{ inputs.os }}
       CI_RELOC: ${{inputs.reloc }}
-      CC: ${{ inputs.cc }}
       CXX: ${{ inputs.cc == 'clang' && 'clang++' || 'g++' }}
       CACHE_BASE_KEY: test-${{ inputs.os }}-${{ inputs.cc }}-${{inputs.reloc }}-${{ inputs.suite }}
       CCACHE_MAXSIZE: 100M  # Per build per suite (* 5 * 5 = 2500M in total)
