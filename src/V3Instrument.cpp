@@ -24,7 +24,7 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3Instrumentation.h"
+#include "V3Instrument.h"
 
 #include "V3Control.h"
 #include "V3File.h"
@@ -40,7 +40,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 //##################################################################################
 // Instrumentation class finder
-class InstrumentationTargetFinder final : public VNVisitor {
+class InstrumentTargetFndr final : public VNVisitor {
     AstNetlist* m_netlist
         = nullptr;  // Enable traversing from the beginning if the visitor is to deep
     AstNodeModule* m_cellModp = nullptr;  // Stores the modulep of a Cell node
@@ -87,7 +87,7 @@ class InstrumentationTargetFinder final : public VNVisitor {
     }
     // Check if the multipleCellps flag is set for the given target
     bool hasMultiple(const std::string& target) {
-        auto& instrCfg = V3Control::getInstrumentationConfigs();
+        auto& instrCfg = V3Control::getInstrumentCfg();
         auto it = instrCfg.find(target);
         if (it != instrCfg.end()) { return it->second.multipleCellps; }
         return false;
@@ -95,7 +95,7 @@ class InstrumentationTargetFinder final : public VNVisitor {
     // Check if the direct predecessor in the target string has been instrumented,
     // to create the correct link between the already instrumented module and the current one.
     bool hasPrior(AstModule* modulep, const string& target) {
-        const auto& instrCfg = V3Control::getInstrumentationConfigs();
+        const auto& instrCfg = V3Control::getInstrumentCfg();
         auto priorTarget = reduce2Depth(split(target), KeyDepth::RelevantModule);
         auto it = instrCfg.find(priorTarget);
         return it != instrCfg.end() && it->second.processed;
@@ -165,13 +165,13 @@ class InstrumentationTargetFinder final : public VNVisitor {
     }
     // Edit the instrumentation data for the cell in the map
     void editInstrData(AstCell* cellp, const string& target) {
-        auto& instrCfg = V3Control::getInstrumentationConfigs();
+        auto& instrCfg = V3Control::getInstrumentCfg();
         auto it = instrCfg.find(target);
         if (it != instrCfg.end()) { it->second.cellp = cellp; }
     }
     // Edit the instrumentation data for the pointing module in the map
     void editInstrData(AstModule* modulep, const string& target) {
-        auto& instrCfg = V3Control::getInstrumentationConfigs();
+        auto& instrCfg = V3Control::getInstrumentCfg();
         auto it = instrCfg.find(target);
         if (it != instrCfg.end()) { it->second.pointingModulep = modulep; }
     }
@@ -190,13 +190,13 @@ class InstrumentationTargetFinder final : public VNVisitor {
     }
     // Insert the cell node that is/will pointing/point to the targeted module
     void setCell(AstCell* cellp, const string& target) {
-        auto& instrCfg = V3Control::getInstrumentationConfigs();
+        auto& instrCfg = V3Control::getInstrumentCfg();
         auto it = instrCfg.find(target);
         if (it != instrCfg.end()) { it->second.cellp = cellp; }
     }
     // Insert the original and instrumented module nodes to the map
     void setInstrModule(AstModule* origModulep, AstModule* instrModulep, const string& target) {
-        auto& instrCfg = V3Control::getInstrumentationConfigs();
+        auto& instrCfg = V3Control::getInstrumentCfg();
         auto it = instrCfg.find(target);
         if (it != instrCfg.end()) {
             it->second.origModulep = origModulep;
@@ -205,32 +205,32 @@ class InstrumentationTargetFinder final : public VNVisitor {
     }
     // Set the multipleCellps flag
     void setMultiple(const string& target) {
-        auto& instrCfg = V3Control::getInstrumentationConfigs();
+        auto& instrCfg = V3Control::getInstrumentCfg();
         auto it = instrCfg.find(target);
         if (it != instrCfg.end()) { it->second.multipleCellps = true; }
     }
     // Insert the module node that includes the cell pointing to the targeted module
     // to the map
     void setPointingMod(AstModule* modulep, const string& target) {
-        auto& instrCfg = V3Control::getInstrumentationConfigs();
+        auto& instrCfg = V3Control::getInstrumentCfg();
         auto it = instrCfg.find(target);
         if (it != instrCfg.end()) { it->second.pointingModulep = modulep; }
     }
     // Set the processed flag
     void setProcessed(const string& target) {
-        auto& instrCfg = V3Control::getInstrumentationConfigs();
+        auto& instrCfg = V3Control::getInstrumentCfg();
         auto it = instrCfg.find(target);
         if (it != instrCfg.end()) { it->second.processed = true; }
     }
     // Insert the top module node of the netlist to the map
     void setTopMod(AstModule* modulep, const string& target) {
-        auto& instrCfg = V3Control::getInstrumentationConfigs();
+        auto& instrCfg = V3Control::getInstrumentCfg();
         auto it = instrCfg.find(target);
         if (it != instrCfg.end()) { it->second.topModulep = modulep; }
     }
     // Insert the original and instrumented variable nodes to the map
     void setVar(AstVar* varp, AstVar* instVarp, const string& target) {
-        auto& instrCfg = V3Control::getInstrumentationConfigs();
+        auto& instrCfg = V3Control::getInstrumentCfg();
         auto it = instrCfg.find(target);
         if (it != instrCfg.end()) {
             for (auto& entry : it->second.entries) {
@@ -299,7 +299,7 @@ class InstrumentationTargetFinder final : public VNVisitor {
                 m_cellModp = nullptr;
                 // Check for prior changes made to the tree
                 if (hasPrior(nodep, m_currHier)) {
-                    auto& instrCfg = V3Control::getInstrumentationConfigs();
+                    auto& instrCfg = V3Control::getInstrumentCfg();
                     instrModp
                         = instrCfg.find(reduce2Depth(split(m_currHier), KeyDepth::RelevantModule))
                               ->second.instrModulep;
@@ -417,8 +417,8 @@ class InstrumentationTargetFinder final : public VNVisitor {
     //the original version are added to the instrumentation config map.
     void visit(AstVar* nodep) override {
         if (m_targetModp != nullptr) {
-            const InstrumentationTarget& target
-                = V3Control::getInstrumentationConfigs().find(m_currHier)->second;
+            const InstrumentTarget& target
+                = V3Control::getInstrumentCfg().find(m_currHier)->second;
             for (const auto& entry : target.entries) {
                 if (nodep->name() == entry.varTarget) {
                     int width = 0;
@@ -461,8 +461,8 @@ class InstrumentationTargetFinder final : public VNVisitor {
 public:
     // CONSTRUCTOR
     //-------------------------------------------------------------------------------
-    explicit InstrumentationTargetFinder(AstNetlist* nodep) {
-        const auto& instrCfg = V3Control::getInstrumentationConfigs();
+    explicit InstrumentTargetFndr(AstNetlist* nodep) {
+        const auto& instrCfg = V3Control::getInstrumentCfg();
         for (const auto& pair : instrCfg) {
             m_netlist = nodep;
             m_target = pair.first;
@@ -479,12 +479,12 @@ public:
             m_instrIdx++;
         }
     };
-    ~InstrumentationTargetFinder() override = default;
+    ~InstrumentTargetFndr() override = default;
 };
 
 //##################################################################################
 // Instrumentation class functions
-class InstrumentationFunction final : public VNVisitor {
+class InstrumentFunc final : public VNVisitor {
     bool m_assignw = false;  // Flag if a assignw exists in the netlist
     bool m_addedport = false;  // Flag if a port was already added
     bool m_addedTask = false;  // Flag if a task was already added
@@ -514,8 +514,8 @@ class InstrumentationFunction final : public VNVisitor {
     // METHODS
     //----------------------------------------------------------------------------------
     // Find the relevant instrumentation config in the map corresponding to the given key
-    const InstrumentationTarget* getInstrCfg(const std::string& key) {
-        const auto& map = V3Control::getInstrumentationConfigs();
+    const InstrumentTarget* getInstrCfg(const std::string& key) {
+        const auto& map = V3Control::getInstrumentCfg();
         auto instrCfg = map.find(key);
         if (instrCfg != map.end()) {
             return &instrCfg->second;
@@ -558,7 +558,7 @@ class InstrumentationFunction final : public VNVisitor {
     // Check if the given module node pointer is an instrumented module entry in the configuration
     // map for the given key
     bool isInstModEntry(AstModule* nodep, const std::string& key) {
-        const auto& map = V3Control::getInstrumentationConfigs();
+        const auto& map = V3Control::getInstrumentCfg();
         const auto instrCfg = map.find(key);
         if (instrCfg != map.end() && instrCfg->second.instrModulep == nodep) {
             return true;
@@ -568,7 +568,7 @@ class InstrumentationFunction final : public VNVisitor {
     }
     // Check if the given module node pointer is the top module entry in the configuration map
     bool isTopModEntry(AstModule* nodep) {
-        auto& instrCfg = V3Control::getInstrumentationConfigs();
+        auto& instrCfg = V3Control::getInstrumentCfg();
         for (const auto& pair : instrCfg) {
             if (nodep == pair.second.topModulep) { return true; }
         }
@@ -576,7 +576,7 @@ class InstrumentationFunction final : public VNVisitor {
     }
     // Check if the given module node pointer is the pointing module entry in the configuration map
     bool isPointingModEntry(AstModule* nodep) {
-        auto& instrCfg = V3Control::getInstrumentationConfigs();
+        auto& instrCfg = V3Control::getInstrumentCfg();
         for (const auto& pair : instrCfg) {
             if (nodep == pair.second.pointingModulep) { return true; }
         }
@@ -584,7 +584,7 @@ class InstrumentationFunction final : public VNVisitor {
     }
     // Check if the given module node pointer has already been instrumented/done flag has been set
     bool isDone(AstModule* nodep) {
-        auto& instrCfg = V3Control::getInstrumentationConfigs();
+        auto& instrCfg = V3Control::getInstrumentCfg();
         for (const auto& pair : instrCfg) {
             if (nodep == pair.second.instrModulep) { return pair.second.done; }
         }
@@ -592,7 +592,7 @@ class InstrumentationFunction final : public VNVisitor {
     }
     // Check if the multipleCellps flag is set for the given key in the configuration map
     bool hasMultiple(const std::string& key) {
-        const auto& map = V3Control::getInstrumentationConfigs();
+        const auto& map = V3Control::getInstrumentCfg();
         const auto instrCfg = map.find(key);
         if (instrCfg != map.end()) {
             return instrCfg->second.multipleCellps;
@@ -602,7 +602,7 @@ class InstrumentationFunction final : public VNVisitor {
     }
     // Get the fault case for the given key in the configuration map
     int getMapEntryFaultCase(const std::string& key, size_t index) {
-        const auto& map = V3Control::getInstrumentationConfigs();
+        const auto& map = V3Control::getInstrumentCfg();
         const auto instrCfg = map.find(key);
         if (instrCfg != map.end()) {
             const auto& entries = instrCfg->second.entries;
@@ -614,7 +614,7 @@ class InstrumentationFunction final : public VNVisitor {
     }
     // Get the instrumentation function name for the given key in the configuration map
     string getMapEntryFunction(const std::string& key, size_t index) {
-        const auto& map = V3Control::getInstrumentationConfigs();
+        const auto& map = V3Control::getInstrumentCfg();
         const auto instrCfg = map.find(key);
         if (instrCfg != map.end()) {
             const auto& entries = instrCfg->second.entries;
@@ -626,7 +626,7 @@ class InstrumentationFunction final : public VNVisitor {
     }
     // Set the done flag for the given module node pointer in the configuraiton map
     void setDone(AstModule* nodep) {
-        auto& instrCfg = V3Control::getInstrumentationConfigs();
+        auto& instrCfg = V3Control::getInstrumentCfg();
         for (auto& pair : instrCfg) {
             if (nodep == pair.second.instrModulep) { pair.second.done = true; }
         }
@@ -665,7 +665,7 @@ class InstrumentationFunction final : public VNVisitor {
     //ASTNETLIST VISITOR FUNCTION:
     //Loop over map entries for module nodes and add them to the tree
     void visit(AstNetlist* nodep) override {
-        const auto& instrCfg = V3Control::getInstrumentationConfigs();
+        const auto& instrCfg = V3Control::getInstrumentCfg();
         for (const auto& pair : instrCfg) {
             nodep->addModulesp(pair.second.instrModulep);
             m_targetKey = pair.first;
@@ -695,8 +695,8 @@ class InstrumentationFunction final : public VNVisitor {
     //in the original module, but in the pointing/top module, the current_module_cell_check
     //variable is set to the module visited by the function and fulfilling this condition.
     void visit(AstModule* nodep) override {
-        const InstrumentationTarget& target
-            = V3Control::getInstrumentationConfigs().find(m_targetKey)->second;
+        const InstrumentTarget& target
+            = V3Control::getInstrumentCfg().find(m_targetKey)->second;
         const auto& entries = target.entries;
         for (m_targetIndex = 0; m_targetIndex < entries.size(); ++m_targetIndex) {
             m_tmp_varp = getMapEntryInstVar(m_targetKey, m_targetIndex);
@@ -1029,8 +1029,8 @@ class InstrumentationFunction final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit InstrumentationFunction(AstNetlist* nodep) { iterate(nodep); }
-    ~InstrumentationFunction() override = default;
+    explicit InstrumentFunc(AstNetlist* nodep) { iterate(nodep); }
+    ~InstrumentFunc() override = default;
 };
 
 //##################################################################################
@@ -1038,15 +1038,15 @@ public:
 
 // Function to find instrumentation targets and additional information for the instrumentation
 // process
-void V3Instrumentation::findTargets(AstNetlist* nodep) {
+void V3Instrument::findTargets(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { InstrumentationTargetFinder{nodep}; }
+    { InstrumentTargetFndr{nodep}; }
     V3Global::dumpCheckGlobalTree("instrumentationFinder", 0, dumpTreeEitherLevel() >= 3);
 }
 
 // Function for the actual instrumentation process
-void V3Instrumentation::instrument(AstNetlist* nodep) {
+void V3Instrument::instrument(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { InstrumentationFunction{nodep}; }
+    { InstrumentFunc{nodep}; }
     V3Global::dumpCheckGlobalTree("instrumentationFunction", 0, dumpTreeEitherLevel() >= 3);
 }
