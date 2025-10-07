@@ -1668,14 +1668,15 @@ Summary:
 .. option:: --trace-max-array <depth>
 
    Rarely needed.  Specify the maximum array depth of a signal that may be
-   traced.  Defaults to 32, as tracing large arrays may greatly slow traced
-   simulations.
+   traced.  Zero allows any width. Defaults to 32, as tracing large arrays
+   may greatly slow traced simulations.
 
 .. option:: --trace-max-width <width>
 
-   Rarely needed.  Specify the maximum bit width of a signal that may be
-   traced.  Defaults to 256, as tracing large vectors may greatly slow
-   traced simulations.
+   Rarely needed.  Specify the maximum total bit width of a signal, across
+   all elements if an array, that may be traced.  Zero allows any width.
+   Defaults to 4096, as tracing large vectors may greatly slow traced
+   simulations.
 
 .. option:: --no-trace-params
 

@@ -341,7 +341,7 @@ private:
     VTimescale  m_timeOverrideUnit;  // main switch: --timescale-override
     int         m_traceDepth = 0;   // main switch: --trace-depth
     int         m_traceMaxArray = 32;  // main switch: --trace-max-array
-    int         m_traceMaxWidth = 256; // main switch: --trace-max-width
+    int         m_traceMaxWidth = 4096; // main switch: --trace-max-width
     int         m_traceThreads = 0; // main switch: --trace-threads
     int         m_unrollCount = 64;  // main switch: --unroll-count
     int         m_unrollStmts = 30000;  // main switch: --unroll-stmts
