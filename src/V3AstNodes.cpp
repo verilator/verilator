@@ -3270,35 +3270,3 @@ const char* AstNot::widthMismatch() const VL_MT_STABLE {
     BROKEN_RTN(lhsp()->widthMin() != widthMin());
     return nullptr;
 }
-bool AstNodeStmt::getPurityRecurse() {
-    for (AstNode* nodep = op1p(); nodep; nodep = nodep->nextp()) {
-        if (!nodep->isPure()) return false;
-    }
-    for (AstNode* nodep = op2p(); nodep; nodep = nodep->nextp()) {
-        if (!nodep->isPure()) return false;
-    }
-    for (AstNode* nodep = op3p(); nodep; nodep = nodep->nextp()) {
-        if (!nodep->isPure()) return false;
-    }
-    for (AstNode* nodep = op4p(); nodep; nodep = nodep->nextp()) {
-        if (!nodep->isPure()) return false;
-    }
-    return true;
-}
-bool AstNodeStmt::isPure() {
-    if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
-    return m_purity.get();
-}
-bool AstCaseItem::getPurityRecurse() {
-    for (AstNode* nodep = condsp(); nodep; nodep = nodep->nextp()) {
-        if (!nodep->isPure()) return false;
-    }
-    for (AstNode* nodep = stmtsp(); nodep; nodep = nodep->nextp()) {
-        if (!nodep->isPure()) return false;
-    }
-    return true;
-}
-bool AstCaseItem::isPure() {
-    if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
-    return m_purity.get();
-}

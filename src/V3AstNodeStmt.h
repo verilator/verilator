@@ -31,10 +31,6 @@
 
 class AstNodeStmt VL_NOT_FINAL : public AstNode {
     // Procedural statement
-    VIsCached m_purity;  // Pure state
-
-    bool getPurityRecurse();
-
 protected:
     AstNodeStmt(VNType t, FileLine* fl)
         : AstNode{t, fl} {}
@@ -46,7 +42,6 @@ public:
                      AstNode* belowp) override;  // Stop statement searchback here
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
-    bool isPure() override;
 };
 class AstNodeAssign VL_NOT_FINAL : public AstNodeStmt {
     // Iteration is in order, and we want rhsp to be visited first (which is the execution order)
@@ -210,10 +205,6 @@ class AstCaseItem final : public AstNode {
     // Single item of AstCase/AstRandCase/AstRSCase
     // @astgen op1 := condsp : List[AstNodeExpr]
     // @astgen op2 := stmtsp : List[AstNode]
-
-    VIsCached m_purity;  // Pure state
-    bool getPurityRecurse();
-
 public:
     AstCaseItem(FileLine* fl, AstNodeExpr* condsp, AstNode* stmtsp)
         : ASTGEN_SUPER_CaseItem(fl) {
@@ -223,7 +214,6 @@ public:
     ASTGEN_MEMBERS_AstCaseItem;
     int instrCount() const override { return widthInstrs() + INSTR_COUNT_BRANCH; }
     bool isDefault() const { return condsp() == nullptr; }
-    bool isPure() override;
 };
 
 // === AstNodeStmt ===
