@@ -824,6 +824,7 @@ public:
     AstNode* unlinkFrBackWithNext(VNRelinker* linkerp = nullptr);
     void swapWith(AstNode* bp);
     void relink(VNRelinker* linkerp);  // Generally use linker->relink() instead
+    void cloneRelinkNode() { cloneRelink(); }
     // Iterate and insert - assumes tree format
     virtual void addNextStmt(AstNode* newp,
                              AstNode* belowp);  // When calling, "this" is second argument
