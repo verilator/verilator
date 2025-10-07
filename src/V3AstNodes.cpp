@@ -2828,14 +2828,6 @@ void AstStrengthSpec::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "strength1", m_s1.ascii());
     dumpJsonGen(str);
 }
-void AstParseRef::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
-    str << " [" << expect().ascii() << "]";
-}
-void AstParseRef::dumpJson(std::ostream& str) const {
-    dumpJsonStr(str, "expect", expect().ascii());
-    dumpJsonGen(str);
-}
 void AstClassOrPackageRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (classOrPackageNodep()) str << " cpkg=" << nodeAddr(classOrPackageNodep());

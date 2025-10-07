@@ -1439,38 +1439,6 @@ inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) {
 
 // ######################################################################
 
-class VParseRefExp final {
-public:
-    enum en : uint8_t {
-        PX_NONE,  // Used in V3LinkParse only
-        PX_ROOT,
-        PX_TEXT  // Unknown ID component
-    };
-    enum en m_e;
-    VParseRefExp()
-        : m_e{PX_NONE} {}
-    // cppcheck-suppress noExplicitConstructor
-    constexpr VParseRefExp(en _e)
-        : m_e{_e} {}
-    explicit VParseRefExp(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    constexpr operator en() const { return m_e; }
-    const char* ascii() const {
-        static const char* const names[] = {"", "$root", "TEXT", "PREDOT"};
-        return names[m_e];
-    }
-};
-constexpr bool operator==(const VParseRefExp& lhs, const VParseRefExp& rhs) {
-    return lhs.m_e == rhs.m_e;
-}
-constexpr bool operator==(const VParseRefExp& lhs, VParseRefExp::en rhs) { return lhs.m_e == rhs; }
-constexpr bool operator==(VParseRefExp::en lhs, const VParseRefExp& rhs) { return lhs == rhs.m_e; }
-inline std::ostream& operator<<(std::ostream& os, const VParseRefExp& rhs) {
-    return os << rhs.ascii();
-}
-
-// ######################################################################
-
 class VPragmaType final {
 public:
     enum en : uint8_t {

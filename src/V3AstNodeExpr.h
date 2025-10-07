@@ -1724,29 +1724,24 @@ class AstParseRef final : public AstNodeExpr {
     // @astgen op1 := lhsp : Optional[AstNode]
     // @astgen op2 := ftaskrefp : Optional[AstNodeFTaskRef]
 
-    VParseRefExp m_expect;  // Type we think it should resolve to
     string m_name;
 
 public:
     // TODO: 'expect' is only every used for dumping and has no functional effect (sameNode unused)
-    AstParseRef(FileLine* fl, VParseRefExp expect, const string& name, AstNode* lhsp = nullptr,
+    AstParseRef(FileLine* fl, const string& name, AstNode* lhsp = nullptr,
                 AstNodeFTaskRef* ftaskrefp = nullptr)
         : ASTGEN_SUPER_ParseRef(fl)
-        , m_expect{expect}
         , m_name{name} {
         this->lhsp(lhsp);
         this->ftaskrefp(ftaskrefp);
     }
     ASTGEN_MEMBERS_AstParseRef;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
+    void name(const string& name) override { m_name = name; }
     bool sameNode(const AstNode* samep) const override {
         const AstParseRef* const asamep = VN_DBG_AS(samep, ParseRef);
-        return (expect() == asamep->expect() && m_name == asamep->m_name);
+        return m_name == asamep->m_name;
     }
-    void name(const string& name) override { m_name = name; }
-    VParseRefExp expect() const { return m_expect; }
 
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }

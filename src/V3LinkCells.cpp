@@ -470,10 +470,10 @@ class LinkCellsVisitor final : public VNVisitor {
                         if (pinStar) {
                             UINFO(9, "    need .* PORT  " << portp);
                             // Create any not already connected
-                            AstPin* const newp = new AstPin{
-                                nodep->fileline(), 0, portp->name(),
-                                new AstParseRef{nodep->fileline(), VParseRefExp::PX_TEXT,
-                                                portp->name(), nullptr, nullptr}};
+                            AstPin* const newp
+                                = new AstPin{nodep->fileline(), 0, portp->name(),
+                                             new AstParseRef{nodep->fileline(), portp->name(),
+                                                             nullptr, nullptr}};
                             newp->svDotName(true);
                             newp->svImplicit(true);
                             nodep->addPinsp(newp);

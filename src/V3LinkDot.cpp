@@ -2664,8 +2664,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (classExtendsp->argsp()) pinsp = classExtendsp->argsp()->cloneTree(true);
         AstNew* const newExprp = new AstNew{fl, pinsp};
         newExprp->isImplicit(true);
-        AstDot* const superNewp
-            = new AstDot{fl, false, new AstParseRef{fl, VParseRefExp::PX_ROOT, "super"}, newExprp};
+        AstDot* const superNewp = new AstDot{fl, false, new AstParseRef{fl, "super"}, newExprp};
         AstNodeStmt* const superNewStmtp = superNewp->makeStmt();
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             // super.new shall be the first statement (IEEE 1800-2023 8.15)
@@ -3510,7 +3509,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 allowVar = true;
             } else {
                 UINFO(1, "ds=" << m_ds.ascii());
-                nodep->v3fatalSrc("Unhandled VParseRefExp");
+                nodep->v3fatalSrc("Unhandled DotPosition");
             }
             // Lookup
             VSymEnt* foundp;
