@@ -56,7 +56,6 @@ jobs:
       CI_DEV_ASAN: ${{ inputs.dev-asan }}
       CI_DEV_GCOV: ${{ inputs.dev-gcov }}
       CI_RUNS_ON: ${{ inputs.os }}
-      CC: ${{ inputs.cc }}
       CXX: ${{ inputs.cc == 'clang' && 'clang++' || 'g++' }}
       CACHE_BASE_KEY: build-${{ inputs.os }}-${{ inputs.cc }}
       CCACHE_MAXSIZE: 1000M  # Per build matrix entry (* 5 = 5000M in total)
