@@ -1415,6 +1415,7 @@ class ParamVisitor final : public VNVisitor {
     }
     void visit(AstRefDType* nodep) override {
         if (nodep->typedefp() && nodep->subDTypep()) {
+            V3Width::widthParamsEdit(nodep->typedefp());
             V3Width::widthParamsEdit(nodep);
             if ((VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
                  || VN_IS(nodep->subDTypep()->skipRefOrNullp(), ClassRefDType))) {
