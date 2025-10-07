@@ -37,10 +37,13 @@ jobs:
   build:
     name: Build content
     runs-on: ubuntu-24.04
+    outputs:
+      coverage-pr-run-ids: ${{ steps.build.outputs.coverage-pr-run-ids }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
       - name: Build pages
+        id: build
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -62,3 +65,28 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
+
+  notify:
+    name: Notify
+    needs:
+      - build
+      - deploy
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository == 'verilator/verilator' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      # Use the Verilator CI app to post the comment
+      - name: Generate access token
+        id: generate-token
+        uses: actions/create-github-app-token@v2.1.4
+        with:
+          app-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
+          permission-actions: write
+          permission-pull-requests: write
+      - name: Comment on PR
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+          COVERAGE_PR_RUN_IDS: ${{ needs.build.outputs.coverage-pr-run-ids }}
+        run: bash -x ./ci/ci-pages-notify.bash

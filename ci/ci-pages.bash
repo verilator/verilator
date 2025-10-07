@@ -24,9 +24,13 @@ mkdir -p ${PAGES_ROOT}
 # Get the current repo URL - might differ on a fork
 readonly REPO_URL=$(gh repo view --json url --jq .url)
 
+# Set GITHUB_OUTPUT when run locally for testing
+if [[ -z "$GITHUB_OUTPUT" ]]; then
+  GITHUB_OUTPUT=github-output.txt
+fi
+
 # Populates ${PAGES_ROOT}/coverage-reports
 compile_coverage_reports() {
-
   # We will process all runs up to and including this date. This is chosen to be
   # slightly less than the artifact retention period for simplicity.
   local OLDEST=$(date --date="28 days ago" --iso-8601=date)
@@ -50,8 +54,11 @@ compile_coverage_reports() {
   mkdir -p ${COVERAGE_ROOT}
 
   # Create index page contents fragment
-  local CONTENTSS=contents.tmp
-  echo > ${CONTENTSS}
+  local CONTENTS=contents.tmp
+  echo > ${CONTENTS}
+
+  # Run IDs of PR jobs processed
+  local PR_RUN_IDS=""
 
   # Iterate over all unique event types that triggered the workflows
   for EVENT in $(jq -r 'map(.event) | sort | unique | .[]' completedRuns.json); do
@@ -61,19 +68,28 @@ compile_coverage_reports() {
     EMIT_SECTION_HEADER=1
 
     # For each worfklow run that was triggered by this event type
-    for WORKFLOW_ID in $(jq ".[] | select(.event == \"${EVENT}\") |.databaseId" completedRuns.json); do
-      echo "@@@ Processing run ${WORKFLOW_ID}"
+    for RUN_ID in $(jq ".[] | select(.event == \"${EVENT}\") |.databaseId" completedRuns.json); do
+      echo "@@@ Processing run ${RUN_ID}"
 
       # Extract the info of this run
-      jq ".[] | select(.databaseId == $WORKFLOW_ID)" completedRuns.json > workflow.json
+      jq ".[] | select(.databaseId == $RUN_ID)" completedRuns.json > workflow.json
       jq "." workflow.json
 
+      # Record run ID of PR job
+      if [[ $EVENT == "pull_request" ]]; then
+        if [[ -z "$PR_RUN_IDS" ]]; then
+          PR_RUN_IDS="$RUN_ID"
+        else
+          PR_RUN_IDS="$PR_RUN_IDS,$RUN_ID"
+        fi
+      fi
+
       # Create workflow artifacts directory
-      local ARTIFACTS_DIR=${ARTIFACTS_ROOT}/${WORKFLOW_ID}
+      local ARTIFACTS_DIR=${ARTIFACTS_ROOT}/${RUN_ID}
       mkdir -p ${ARTIFACTS_DIR}
 
       # Download artifacts of this run, if exists
-      gh run download ${WORKFLOW_ID} --name coverage-report --dir ${ARTIFACTS_DIR} || true
+      gh run download ${RUN_ID} --name coverage-report --dir ${ARTIFACTS_DIR} || true
       ls -lsha ${ARTIFACTS_DIR}
 
       # Move on if no coverage report is available
@@ -86,26 +102,34 @@ compile_coverage_reports() {
       # Emit section header
       if [[ -n $EMIT_SECTION_HEADER ]]; then
         unset EMIT_SECTION_HEADER
-        echo "<h4>Coverage reports for '${EVENT}' runs:</h4>" >> ${CONTENTSS}
+        if [[ $EVENT == "pull_request" ]]; then
+          echo "<h4>Patch coverage reports for '${EVENT}' runs:</h4>" >> ${CONTENTS}
+        else
+          echo "<h4>Code coverage reports for '${EVENT}' runs:</h4>" >> ${CONTENTS}
+        fi
       fi
 
-      #Create pages subdirectory
-      mv ${ARTIFACTS_DIR}/report ${COVERAGE_ROOT}/${WORKFLOW_ID}
+      # Create pages subdirectory
+      mv ${ARTIFACTS_DIR}/report ${COVERAGE_ROOT}/${RUN_ID}
 
       # Add index page content
       local WORKFLOW_CREATED=$(jq -r '.createdAt' workflow.json)
       local WOFKRLOW_NUMBER=$(jq -r '.number' workflow.json)
-      cat >> ${CONTENTSS} <<CONTENTS_TEMPLATE
-        Run <a href="${WORKFLOW_ID}/index.html">#${WOFKRLOW_NUMBER}</a>
-        | GitHub: <a href="${REPO_URL}/actions/runs/${WORKFLOW_ID}">${WORKFLOW_ID}</a>
+      cat >> ${CONTENTS} <<CONTENTS_TEMPLATE
+        Run <a href="${RUN_ID}/index.html">#${WOFKRLOW_NUMBER}</a>
+        | GitHub: <a href="${REPO_URL}/actions/runs/${RUN_ID}">${RUN_ID}</a>
         | started at: ${WORKFLOW_CREATED}
-        <br>
 CONTENTS_TEMPLATE
+      if [ -e ${ARTIFACTS_DIR}/pr-number.txt ]; then
+        local PRNUMBER=$(cat ${ARTIFACTS_DIR}/pr-number.txt)
+        echo " | Pull request: <a href=\"${REPO_URL}/pull/${PRNUMBER}\">#${PRNUMBER}</a>" >> ${CONTENTS}
+      fi
+      echo "<br>" >> ${CONTENTS}
     done
 
     # Section break
-    if [[ -z $EMIT_SECTION_HEADER ]]; then
-      echo "<hr>" >> ${CONTENTSS}
+    if [[ -z "$EMIT_SECTION_HEADER" ]]; then
+      echo "<hr>" >> ${CONTENTS}
     fi
   done
 
@@ -118,7 +142,7 @@ CONTENTS_TEMPLATE
     <style>
     body {
       font-family: courier, serif;
-      background-color: #dddddd;
+      background-color: #f3f3f3;
       a {
         color: #008fd7;
       }
@@ -127,12 +151,19 @@ CONTENTS_TEMPLATE
   </head>
 
   <body>
-  $(cat ${CONTENTSS})
+  $(cat ${CONTENTS})
   <h4>Assembled $(date --iso-8601=minutes --utc)</h1>
   <body>
 
   </html>
 INDEX_TEMPLATE
+
+  # Report size
+  ${COVERAGE_ROOT}
+  du -shc *
+
+  # Set output
+  echo "coverage-pr-run-ids=${PR_RUN_IDS}" >> $GITHUB_OUTPUT
 }
 
 # Compilie coverage reports
