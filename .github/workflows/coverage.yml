@@ -8,19 +8,40 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * 0'  # weekly
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  # At most 1 job per branch. Auto cancel all but scheduled jobs
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
 
   build:
     name: Build
     # Only run scheduled jobs if explicitly enabled for that repo (e.g.: not on forks)
-    if: ${{ github.event_name != 'schedule' || vars.ENABLE_SCHEDULED_JOBS == 'true' }}
+    # Only run pull request jobs if labelled as needing an coverage run
+    # Always run workflow dispatch jobs
+    if: |
+      (github.event_name == 'schedule'
+        && vars.ENABLE_SCHEDULED_JOBS == 'true') ||
+      (github.event_name == 'pull_request'
+        && contains(github.event.pull_request.labels.*.name, 'pr: dev-coverage')) ||
+      (github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/reusable-build.yml
     with:
-      sha: ${{ github.sha }}
+      # For pull requests, build the head of the pull request branch, not the
+      # merge commit, otherwise patch coverage would include the changes
+      # between the root of the pull request and the target branch
+      sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
       os: ubuntu-24.04
       os-name: linux
       cc: gcc
@@ -82,10 +103,14 @@ jobs:
   prepare-report:
     name: Prepare HTML report
     needs: [build, test]
+    if: ${{ contains(needs.*.result, 'success') && !cancelled() }}
     runs-on: ubuntu-24.04
     steps:
       - name: Install dependencies
-        run: sudo apt install lcov
+        run: |
+          echo 'set man-db/auto-update false' | sudo debconf-communicate >/dev/null
+          sudo dpkg-reconfigure man-db
+          sudo apt install lcov
 
       - name: Download repository archive
         uses: actions/download-artifact@v5
@@ -107,18 +132,54 @@ jobs:
 
       - name: Create report
         working-directory: repo
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           ls -lsha obj_coverage
-          make coverage-combine # Just to create dependency files, overwrite below
+          # Combine reports from test jobs
           nodist/fastcov.py -C obj_coverage/verilator-*.info --lcov -o obj_coverage/verilator.info
-          make coverage-report
-          find obj_coverage -mindepth 1 -maxdepth 1 -not -name report | xargs rm -rf
+          # For a PR, report patch coverage against the merge-base between the head of the PR and the target branch
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            COVERAGE_BASE=$(git rev-parse --short $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}))
+            make coverage-report COVERAGE_BASE=${COVERAGE_BASE} |& tee ${{ github.workspace }}/make-coverage-report.log
+          else
+            make coverage-report
+          fi
+          # Remove data files
+          rm -f obj_coverage/verilator*.info
+          # Some extra work for PRs only
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # Save PR number in report
+            echo ${{ github.event.number }} > obj_coverage/pr-number.txt
+            # Generate notification comment content
+            mkdir -p notification
+            echo ${{ github.event.number }} > notification/pr-number.txt
+            NUM=$(gh run view ${{ github.run_id }} --json number --jq ".number")
+            URL=$(gh run view ${{ github.run_id }} --json url    --jq ".url")
+            echo "Patch coverage from PR workflow [#$NUM]($URL) (code coverage of lines changed relative to ${COVERAGE_BASE}):" > notification/body.txt
+            if [[ ! -f obj_coverage/empty-patch ]]; then
+              echo "<pre>" >> notification/body.txt
+              grep -E "(lines|branches)\.*:" ${{ github.workspace }}/make-coverage-report.log | sed "s/\.*:/:/" >> notification/body.txt || true
+              echo "</pre>" >> notification/body.txt
+              echo "Report: [${{ github.run_id }}](https://${{ github.repository_owner }}.github.io/verilator/coverage-reports/${{ github.run_id }}/index.html)" >> notification/body.txt
+            else
+              echo "Patch contains no code changes" >> notification/body.txt
+            fi
+            cat notification/body.txt
+          fi
 
       - name: Upload report
         uses: actions/upload-artifact@v4
         with:
           path: repo/obj_coverage
           name: coverage-report
+
+      - name: Upload notification
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v4
+        with:
+          path: repo/notification
+          name: coverage-pr-notification
 
   # Create GitHub issue for failed scheduled jobs
   # This should always be the last job (we want an issue if anything breaks)
