@@ -2357,9 +2357,9 @@ class AstUCFunc final : public AstNodeExpr {
     // @astgen op1 := exprsp : List[AstNode] // Expressions to print (some are AstText)
     bool m_purity;  // Whether the expression is pure
 public:
-    AstUCFunc(FileLine* fl, AstNode* exprsp, bool is_pure = false)
+    AstUCFunc(FileLine* fl, AstNode* exprsp, bool pure = false)
         : ASTGEN_SUPER_UCFunc(fl)
-        , m_purity(is_pure) {
+        , m_purity(pure) {
         addExprsp(exprsp);
     }
     ASTGEN_MEMBERS_AstUCFunc;

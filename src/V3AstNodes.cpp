@@ -344,7 +344,7 @@ AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* l
                                               AstNodeExpr* rhsp) {
     AstNodeExpr* const ap = new AstGte{fileline(), exprp, lhsp};
     AstNodeExpr* bp;
-    if (AstExprStmt* const exprStmt = VN_CAST(exprp, ExprStmt)) {
+    if (const AstExprStmt* const exprStmt = VN_CAST(exprp, ExprStmt)) {
         bp = new AstLte{fileline(), exprStmt->resultp()->cloneTreePure(true), rhsp};
     } else {
         bp = new AstLte{fileline(), exprp->cloneTreePure(true), rhsp};

@@ -57,7 +57,7 @@ public:
 //######################################################################
 
 class BeginVisitor final : public VNVisitor {
-    V3UniqueNames m_caseTempNames;  // For generating unique temporary variable names
+    V3UniqueNames m_caseTempNames;  // For generating unique temporary variable names used by cases
     // STATE - across all visitors
     BeginState* const m_statep;  // Current global state
 
@@ -318,8 +318,7 @@ class BeginVisitor final : public VNVisitor {
             AstVar* const varp = new AstVar{fl, VVarType::XTEMP, m_caseTempNames.get(nodep),
                                             nodep->exprp()->dtypep()};
             nodep->exprp(new AstExprStmt{fl,
-                                         new AstAssign{nodep->fileline(),
-                                                       new AstVarRef{fl, varp, VAccess::WRITE},
+                                         new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
                                                        nodep->exprp()->unlinkFrBack()},
                                          new AstVarRef{fl, varp, VAccess::READ}});
             if (m_ftaskp) {

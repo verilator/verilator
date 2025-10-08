@@ -209,7 +209,8 @@ class WidthVisitor final : public VNVisitor {
     using DTypeMap = std::map<const std::string, AstPatMember*>;
 
     // STATE
-    V3UniqueNames m_insideTempNames;  // For generating unique temporary variable names for `inside` expressions
+    V3UniqueNames m_insideTempNames;  // For generating unique temporary variable names for
+                                      // `inside` expressions
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     V3TaskConnectState m_taskConnectState;  // State to cache V3Task::taskConnects
     WidthVP* m_vup = nullptr;  // Current node state
@@ -3065,14 +3066,14 @@ class WidthVisitor final : public VNVisitor {
         AstNodeExpr* exprp = nullptr;
         AstExprStmt* exprStmtp = nullptr;
         if (!m_constraintp && !nodep->exprp()->isPure()) {
-            FileLine* const fileline = nodep->exprp()->fileline();
-            AstVar* const varp = new AstVar{fileline, VVarType::XTEMP, m_insideTempNames.get(nodep), nodep->exprp()->dtypep()};
-            exprp = new AstVarRef{fileline, varp, VAccess::READ};
-            exprStmtp = new AstExprStmt{
-                fileline,
-                new AstAssign{fileline, new AstVarRef{fileline, varp, VAccess::WRITE},
-                              nodep->exprp()->unlinkFrBack()},
-                exprp};
+            FileLine* const fl = nodep->exprp()->fileline();
+            AstVar* const varp = new AstVar{fl, VVarType::XTEMP, m_insideTempNames.get(nodep),
+                                            nodep->exprp()->dtypep()};
+            exprp = new AstVarRef{fl, varp, VAccess::READ};
+            exprStmtp = new AstExprStmt{fl,
+                                        new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                                      nodep->exprp()->unlinkFrBack()},
+                                        exprp};
             if (m_ftaskp) {
                 varp->funcLocal(true);
                 varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
@@ -3101,9 +3102,7 @@ class WidthVisitor final : public VNVisitor {
             newp = newp ? new AstLogOr{nodep->fileline(), newp, inewp} : inewp;
         }
         if (exprStmtp) VL_DO_DANGLING(exprStmtp->deleteTree(), exprStmtp);
-        if (!newp) {
-            newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
-        }
+        if (!newp) newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
         UINFOTREE(9, newp, "", "inside-out");
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -3117,8 +3116,8 @@ class WidthVisitor final : public VNVisitor {
         } else if (VN_IS(itemDtp, UnpackArrayDType) || VN_IS(itemDtp, DynArrayDType)
                    || VN_IS(itemDtp, QueueDType)) {
             // Unsupported in parameters
-            AstNodeExpr* const inewp
-                = new AstCMethodHard{nodep->fileline(), itemp->unlinkFrBack(), VCMethod::ARRAY_INSIDE, exprp};
+            AstNodeExpr* const inewp = new AstCMethodHard{nodep->fileline(), itemp->unlinkFrBack(),
+                                                          VCMethod::ARRAY_INSIDE, exprp};
             iterateCheckTyped(nodep, "inside value", exprp, itemDtp->subDTypep(), BOTH);
             inewp->dtypeSetBit();
             inewp->didWidth(true);
