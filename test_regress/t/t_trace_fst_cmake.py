@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(v_flags2=["--trace-fst"], verilator_make_gmake=False, verilator_make_cmake=1)
+test.compile(v_flags2=["--trace-fst"], verilator_make_gmake=False, verilator_make_cmake=True)
 
 test.execute()
 

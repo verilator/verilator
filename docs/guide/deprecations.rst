@@ -20,3 +20,9 @@ C++14 compiler support
 XML output
   Verilator currently supports XML parser output (enabled with `--xml-only`).
   Support for `--xml-*` options will be deprecated no sooner than January 2026.
+
+--make cmake
+  The `--make cmake` options is deprecated and will be removed no sooner than
+  January 2026. Use `--make json` instead. Note that the CMake integration
+  shipping with verialtor (verilator-config.mk) alerady uses `--make json` so
+  no changes are necessary if using taht

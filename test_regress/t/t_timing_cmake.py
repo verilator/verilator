@@ -14,8 +14,6 @@ test.top_filename = "t/t_timing_events.v"
 
 if not test.have_coroutines:
     test.skip("No coroutine support")
-if not test.have_cmake:
-    test.skip("cmake is not installed")
 
 if re.search(r'clang', test.cxx_version):
     test.skip("Known clang bug on ubuntu-24.04")

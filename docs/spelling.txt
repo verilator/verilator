@@ -768,7 +768,7 @@ hdr
 hdzhangdoc
 hh
 hier
-hierCMakeArgs
+hierMkJsonArgs
 hierMkArgs
 hierParameters
 hierVer

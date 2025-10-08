@@ -99,8 +99,8 @@ public:
     const V3HierBlockParams& params() const { return m_params; }
     const AstNodeModule* modp() const { return m_modp; }
 
-    // For emitting Makefile and CMakeLists.txt
-    VStringList commandArgs(bool forCMake) const VL_MT_DISABLED;
+    // For emitting Makefile and build definition JSON
+    VStringList commandArgs(bool forMkJson) const VL_MT_DISABLED;
     VStringList hierBlockArgs() const VL_MT_DISABLED;
     string hierPrefix() const VL_MT_DISABLED;
     string hierSomeFilename(bool withDir, const char* prefix,
@@ -112,9 +112,9 @@ public:
     // Returns the original HDL file if it is not included in v3Global.opt.vFiles().
     string vFileIfNecessary() const VL_MT_DISABLED;
     // Write command line arguments to .f file for this hierarchical block
-    void writeCommandArgsFile(bool forCMake) const VL_MT_DISABLED;
+    void writeCommandArgsFile(bool forMkJson) const VL_MT_DISABLED;
     void writeParametersFile() const VL_MT_DISABLED;
-    string commandArgsFilename(bool forCMake) const VL_MT_DISABLED;
+    string commandArgsFilename(bool forMkJson) const VL_MT_DISABLED;
     string typeParametersFilename() const VL_MT_DISABLED;
 };
 
@@ -146,9 +146,9 @@ public:
     HierVector hierBlocksSorted() const VL_MT_DISABLED;
 
     // Write command line arguments to .f files for child Verilation run
-    void writeCommandArgsFiles(bool forCMake) const VL_MT_DISABLED;
+    void writeCommandArgsFiles(bool forMkJson) const VL_MT_DISABLED;
     void writeParametersFiles() const VL_MT_DISABLED;
-    static string topCommandArgsFilename(bool forCMake) VL_MT_DISABLED;
+    static string topCommandArgsFilename(bool forMkJson) VL_MT_DISABLED;
 
     static void createPlan(AstNetlist* nodep) VL_MT_DISABLED;
 };
