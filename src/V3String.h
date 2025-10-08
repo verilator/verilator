@@ -22,6 +22,7 @@
 
 // No V3 headers here - this is a base class for Vlc etc
 
+#include <deque>
 #include <iomanip>
 #include <map>
 #include <set>
@@ -138,6 +139,8 @@ public:
     // to be a consecutive sequence of the characters [a-zA-Z0-9_]. Sub-words are not replaced.
     // e.g.: replaceWords("one apple bad_apple", "apple", "banana") -> "one banana bad_apple"
     static string replaceWord(const string& str, const string& from, const string& to);
+    // Return deque of strings split by the given delimiter
+    static std::deque<string> split(const string& str, char delimiter = ',');
     // Predicate to check if 'str' starts with 'prefix'
     static bool startsWith(const string& str, const char* prefixp) {
         return !str.rfind(prefixp, 0);  // Faster than .find(_) == 0

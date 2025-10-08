@@ -327,6 +327,14 @@ string VString::replaceWord(const string& str, const string& from, const string&
     return result;
 }
 
+std::deque<string> VString::split(const string& str, char delimiter) {
+    std::deque<std::string> results;
+    std::istringstream is{str};
+    std::string token;
+    while (std::getline(is, token, delimiter)) results.push_back(token);
+    return results;
+}
+
 bool VString::endsWith(const string& str, const string& suffix) {
     if (str.length() < suffix.length()) return false;
     return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;

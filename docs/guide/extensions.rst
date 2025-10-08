@@ -362,15 +362,20 @@ or "`ifdef`"'s may break other tools.
 
    Same as :option:`isolate_assignments` control file option.
 
-.. option:: /*verilator&32;lint_off <msg>*/
+.. option:: /*verilator&32;lint_off <msgs>*/
 
-   Disable the specified warning message for any warnings following the
-   comment.
+   Disable the specified warning message(s) for any warnings following the
+   comment.  Multiple messages may be specified, separated with commas.
 
-.. option:: /*verilator&32;lint_on <msg>*/
+   If a one-line slash-slash-format comment is used, then the metacomment
+   ends at the newline or at an earlier next slash-slash. This allow
+   commenting the reason for the disable, e.g. :code:`// verilator lint_off
+   MSG // Because...`.
 
-   Re-enable the specified warning message for any warnings following the
-   comment.
+.. option:: /*verilator&32;lint_on <msgs>*/
+
+   Re-enable the specified warning message(s) for any warnings following
+   the comment.  Multiple messages may be specified, separated with commas.
 
 .. option:: /*verilator&32;lint_restore*/
 

@@ -438,10 +438,10 @@ bom             [\357\273\277]
 <ARGMODE>.              { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }
 
         /* Pragma comments. */
-<INITIAL>"//"{ws}*"verilator lint_off"[^\n\r]*       { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, true); return VP_COMMENT; }
-<INITIAL>"//"{ws}*"verilator lint_on"[^\n\r]*        { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, false); return VP_COMMENT; }
-<INITIAL>"//"{ws}*"verilator lint_restore"[^\n\r]*   { FL_FWDC; LEXP->verilatorCmtLintRestore(); return VP_COMMENT; }
-<INITIAL>"//"{ws}*"verilator lint_save"[^\n\r]*      { FL_FWDC; LEXP->verilatorCmtLintSave(); return VP_COMMENT; }
+<INITIAL>"//"{ws}*"verilator lint_off"[^\n\r/]*      { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, true); return VP_COMMENT; }
+<INITIAL>"//"{ws}*"verilator lint_on"[^\n\r/]*       { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, false); return VP_COMMENT; }
+<INITIAL>"//"{ws}*"verilator lint_restore"[^\n\r/]*  { FL_FWDC; LEXP->verilatorCmtLintRestore(); return VP_COMMENT; }
+<INITIAL>"//"{ws}*"verilator lint_save"[^\n\r/]*     { FL_FWDC; LEXP->verilatorCmtLintSave(); return VP_COMMENT; }
 <INITIAL>"/*"{ws}*"verilator lint_off"[^*]*"*/"      { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, true); return VP_COMMENT; }
 <INITIAL>"/*"{ws}*"verilator lint_on"[^*]*"*/"       { FL_FWDC; LEXP->verilatorCmtLint(yytext + 2, false); return VP_COMMENT; }
 <INITIAL>"/*"{ws}*"verilator lint_restore"[^*]*"*/"  { FL_FWDC; LEXP->verilatorCmtLintRestore(); return VP_COMMENT; }
@@ -788,7 +788,7 @@ void V3PreLex::verilatorCmtLint(const char* textp, bool warnOff) {
         }
     }
     // No warnings on bad warning codes - the verilog.y parse will report as appropriate
-    curFilelinep()->warnOff(msg, warnOff);
+    curFilelinep()->warnOffParse(msg, warnOff);
 }
 
 /*###################################################################

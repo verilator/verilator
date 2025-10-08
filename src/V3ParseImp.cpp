@@ -171,12 +171,9 @@ void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnO
     string::size_type pos;
     if ((pos = msg.find('*')) != string::npos) msg.erase(pos);
     // Use parsep()->lexFileline() as want to affect later FileLine's warnings
-    if (!(parsep()->lexFileline()->warnOff(msg, warnOff))) {
-        if (!v3Global.opt.isFuture(msg)) {
-            fl->v3error("Unknown verilator lint message code: '" << msg << "', in '" << textp
-                                                                 << "'");
-        }
-    }
+    const string err = parsep()->lexFileline()->warnOffParse(msg, warnOff);
+    if (!err.empty())
+        fl->v3error("Unknown verilator lint message code: '" << err << "', in '" << textp << "'");
 }
 
 void V3ParseImp::lexVerilatorCmtBad(FileLine* fl, const char* textp) {

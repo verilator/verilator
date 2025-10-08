@@ -33,6 +33,7 @@ Verilator 5.041 devel
 * Support digits in `$sscanf` field width formats (#6083). [Iztok Jeras]
 * Support pure functions in sensitivity lists (#6393). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support simple alias statements (#6339) (#6501). [Ryszard Rozak, Antmicro Ltd.]
+* Improve `lint_off` to allow multiple messages and comments (#2755).
 * Improve automatic selection of logic for DFG synthesis (#6370). [Geza Lore]
 * Improve `covergroup with function sample` handling  (#6387). [Jakub Wasilewski]
 * Improve DFG type system (#6390). [Geza Lore]
