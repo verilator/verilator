@@ -1265,6 +1265,7 @@ public:
 class ParamVisitor final : public VNVisitor {
     // NODE STATE
     // AstNodeModule::user1 -> bool: already fixed level (temporary)
+    // AstRefDType::user2   -> bool: already followed to the actual type
 
     // STATE - across all visitors
     ParamState& m_state;  // Common state
@@ -1416,7 +1417,8 @@ class ParamVisitor final : public VNVisitor {
     void visit(AstRefDType* nodep) override {
         if (nodep->typedefp() && nodep->subDTypep()) {
             if ((VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
-                 || VN_IS(nodep->subDTypep()->skipRefOrNullp(), ClassRefDType))) {
+                 || VN_IS(nodep->subDTypep()->skipRefOrNullp(), ClassRefDType))
+                && !nodep->skipRefp()->user2SetOnce()) {
                 iterate(nodep->skipRefp());
             }
         } else {
