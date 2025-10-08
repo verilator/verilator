@@ -90,9 +90,6 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     export VERILATOR_TEST_NO_GPROF=1 # gprof is a bit different on FreeBSD, disable
   fi
 
-  # Run sanitize on Ubuntu 22.04 only
-  ( [[ "$CI_RUNS_ON" =~ 'ubuntu-22.04' ]] || [[ "$CI_RUNS_ON" =~ 'ubuntu-24.04' ]] ) && sanitize='--sanitize' || sanitize=''
-
   TEST_REGRESS=test_regress
   if [ "$CI_RELOC" == 1 ]; then
      # Testing that the installation is relocatable.
@@ -113,16 +110,16 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   ccache -z
   case $TESTS in
     dist-vlt-0)
-      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean $sanitize" DRIVER_HASHSET=--hashset=0/4
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean" DRIVER_HASHSET=--hashset=0/4
       ;;
     dist-vlt-1)
-      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean $sanitize" DRIVER_HASHSET=--hashset=1/4
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean" DRIVER_HASHSET=--hashset=1/4
       ;;
     dist-vlt-2)
-      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean $sanitize" DRIVER_HASHSET=--hashset=2/4
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean" DRIVER_HASHSET=--hashset=2/4
       ;;
     dist-vlt-3)
-      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean $sanitize" DRIVER_HASHSET=--hashset=3/4
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean" DRIVER_HASHSET=--hashset=3/4
       ;;
     vltmt-0)
       "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --driver-clean" DRIVER_HASHSET=--hashset=0/3

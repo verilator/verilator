@@ -12,14 +12,9 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_trace_ub_misaligned_address.v"
 
-test.compile(verilator_flags2=[
-    "--binary --trace-vcd", "-CFLAGS -fsanitize=address,undefined",
-    "-LDFLAGS -fsanitize=address,undefined"
-])
+test.compile(verilator_flags2=["--binary --trace-vcd", "--runtime-debug"])
 
-test.execute(
-    # Some GCC versions hit an address-sanitizer bug otherwise)
-    aslr_off=True)
+test.execute(aslr_off=True)
 
 # Make sure that there are no additional messages (such as runtime messages
 # regarding undefined behavior).test.files_identical(test.obj_dir + "/vlt_sim.log", test.golden_filename, "logfile")

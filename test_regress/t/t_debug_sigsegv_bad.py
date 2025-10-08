@@ -14,7 +14,7 @@ test.scenarios('vlt')
 test.setenv("ASAN_OPTIONS", "handle_segv=0")
 test.leak_check_disable()
 
-test.lint(v_flags=["--debug-sigsegv"], fails='any', sanitize=0)
+test.lint(v_flags=["--debug-sigsegv"], fails='any')
 
 test.file_grep(test.compile_log_filename,
                r'%Error: Verilator internal fault, sorry. Suggest trying --debug --gdbbt')

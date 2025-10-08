@@ -2242,11 +2242,6 @@ driver.py Non-Scenario Arguments
 --rrsim
   Run Verilator generated executable and record with ``rr``.
 
---sanitize
-  Enable address sanitizer to compile Verilated C++ code.  This may detect
-  misuses of memory, such as out-of-bound accesses, use-after-free, and
-  memory leaks.
-
 --site
   Run site-specific tests also.
 

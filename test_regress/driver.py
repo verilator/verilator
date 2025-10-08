@@ -1033,7 +1033,6 @@ class VlTest:
             bool(re.search(r'-savable\b', checkflags)))
         self.coverage = (  # pylint: disable=attribute-defined-outside-init
             bool(re.search(r'-coverage\b', checkflags)))
-        self.sanitize = param.get('sanitize', None)  # pylint: disable=attribute-defined-outside-init
         self.sc = (  # pylint: disable=attribute-defined-outside-init
             bool(re.search(r'-sc\b', checkflags)))
         self.timing = (  # pylint: disable=attribute-defined-outside-init
@@ -1078,10 +1077,6 @@ class VlTest:
             verilator_flags += ["--threads", str(param['threads'])]
         if param['vltmt'] and re.search(r'-trace-fst ', checkflags):
             verilator_flags += ["--trace-threads 2"]
-        if self.sanitize:
-            verilator_flags += [
-                "-CFLAGS -fsanitize=address,undefined -LDFLAGS -fsanitize=address,undefined"
-            ]
         if param['verilator_make_cmake']:
             verilator_flags += ["--make cmake"]
         if param['verilator_make_gmake']:
@@ -2918,7 +2913,6 @@ if __name__ == '__main__':
     parser.add_argument('--rerun', action='store_true', help='rerun all tests that fail')
     parser.add_argument('--rr', action='store_true', help='run Verilator executable with rr')
     parser.add_argument('--rrsim', action='store_true', help='run Verilated executable with rr')
-    parser.add_argument('--sanitize', action='store_true', help='run address sanitizer')
     parser.add_argument('--site',
                         action='store_true',
                         help='include VERILATOR_TEST_SITE test list')
