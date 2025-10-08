@@ -1265,7 +1265,7 @@ public:
 class ParamVisitor final : public VNVisitor {
     // NODE STATE
     // AstNodeModule::user1 -> bool: already fixed level (temporary)
-    // AstRefDType::user2   -> bool: already followed to the actual type
+    // AstNodeDType::user2  -> bool: already visited from typedef
 
     // STATE - across all visitors
     ParamState& m_state;  // Common state
