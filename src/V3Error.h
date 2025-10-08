@@ -133,6 +133,7 @@ public:
         NOEFFECT,       // Statement has no effect
         NOLATCH,        // No latch detected in always_latch block
         NONSTD,         // Non-standard feature present in other sims
+        NORETURN,       // Function with no return
         NULLPORT,       // Null port detected in module definition
         PARAMNODEFAULT, // Parameter without default
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
@@ -219,8 +220,8 @@ public:
             "IMPERFECTSCH", "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH",
             "INFINITELOOP", "INITIALDLY", "INSECURE", "LATCH", "LITENDIAN", "MINTYPMAXDLY",
             "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN", "MULTITOP", "NEWERSTD", "NOEFFECT",
-            "NOLATCH", "NONSTD", "NULLPORT", "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING",
-            "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT",
+            "NOLATCH", "NONSTD", "NORETURN", "NULLPORT", "PARAMNODEFAULT", "PINCONNECTEMPTY",
+            "PINMISSING", "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT",
             "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED", "PROTOTYPEMIS", "RANDC", "REALCVT",
             "REDEFMACRO", "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SPECIFYIGN",
             "SPLITVAR", "STATICVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT",

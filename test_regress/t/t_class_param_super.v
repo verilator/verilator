@@ -12,7 +12,7 @@ class base #(
 endclass
 
 class ext extends base;
-   function fext();
+   function void fext();
       super.fbase();
    endfunction
 endclass

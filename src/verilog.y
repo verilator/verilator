@@ -6721,6 +6721,7 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
         /*cont*/ yENDGROUP endLabelE
                         { AstClass *cgClassp = new AstClass{$<fl>2, *$2, PARSEP->libname()};
                           AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
+                          newp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
                           newp->classMethod(true);
                           newp->isConstructor(true);
                           newp->dtypep(cgClassp->dtypep());
@@ -6737,6 +6738,7 @@ covergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
         /*cont*/ yENDGROUP endLabelE
                         { AstClass *cgClassp = new AstClass{$<fl>3, *$3, PARSEP->libname()};
                           AstFunc* const newp = new AstFunc{$<fl>1, "new", nullptr, nullptr};
+                          newp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
                           newp->classMethod(true);
                           newp->isConstructor(true);
                           newp->dtypep(cgClassp->dtypep());

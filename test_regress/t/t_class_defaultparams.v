@@ -4,6 +4,7 @@
 // any use, without warranty, 2025 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
+// verilator lint_off NORETURN
 class c0 #(type T= real);
   static function T f();
   endfunction

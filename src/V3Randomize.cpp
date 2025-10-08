@@ -2554,6 +2554,7 @@ AstFunc* V3Randomize::newRandomizeFunc(VMemberMap& memberMap, AstClass* nodep,
                                   ? new AstVar{nodep->fileline(), VVarType::MEMBER, name,
                                                VFlagChildDType{}, dtypep}
                                   : new AstVar{nodep->fileline(), VVarType::MEMBER, name, dtypep};
+        fvarp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
         fvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         fvarp->funcLocal(true);
         fvarp->funcReturn(true);

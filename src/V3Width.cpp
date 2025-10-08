@@ -6324,6 +6324,13 @@ class WidthVisitor final : public VNVisitor {
             nodep->dpiOpenParentInc();  // Mark so V3Task will wait for a child to build calling
                                         // func
         }
+        if (nodep->fvarp() && !nodep->dpiImport() && !nodep->pureVirtual()
+            && (!nodep->stmtsp() || !nodep->stmtsp()->existsAndNext([&](const AstVarRef* varrefp) {
+                   return varrefp->varp() == nodep->fvarp();
+               }))) {
+            nodep->v3warn(NORETURN,
+                          "Non-void function " << nodep->prettyNameQ() << " has no return value");
+        }
 
         std::vector<AstVar*> ports;
         std::vector<AstAttrOf*> protos;

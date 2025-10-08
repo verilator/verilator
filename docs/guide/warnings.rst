@@ -1439,6 +1439,27 @@ List Of Warnings
    simulate correctly.
 
 
+.. option:: NORETURN
+
+   Warns that a non-void function has no return statement, nor sets the
+   output result of the function.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_NORETURN_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_NORETURN_msg.rst
+
+   To fix the issue, add a :code:`return` statement, or set the output
+   variable of the function, or make the function of data type
+   :code:`void`.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+
 .. option:: NOTIMING
 
    Error when a timing-related construct that requires :vlopt:`--timing` has

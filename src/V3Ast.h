@@ -1100,7 +1100,8 @@ private:
                                    bool visitNext);
 
     template <typename T_Arg, bool N_Default, typename T_Callable>
-    inline static bool predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& p);
+    inline static bool predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& p,
+                                     bool visitNext);
 
 public:
     // Given a callable 'f' that takes a single argument of some AstNode subtype 'T_Node', traverse
@@ -1119,7 +1120,6 @@ public:
                       "with 'T_Node' being a subtype of 'AstNode'");
         foreachImpl<T_Node>(this, f, /* visitNext: */ false);
     }
-
     // Same as above, but for 'const' nodes
     template <typename T_Callable>
     void foreach(T_Callable&& f) const {
@@ -1131,7 +1131,6 @@ public:
             "with 'T_Node' being a subtype of 'AstNode'");
         foreachImpl<const T_Node>(this, f, /* visitNext: */ false);
     }
-
     // Same as 'foreach' but also traverses 'this->nextp()' transitively
     template <typename T_Callable>
     void foreachAndNext(T_Callable&& f) {
@@ -1142,7 +1141,6 @@ public:
                       "with 'T_Node' being a subtype of 'AstNode'");
         foreachImpl<T_Node>(this, f, /* visitNext: */ true);
     }
-
     // Same as above, but for 'const' nodes
     template <typename T_Callable>
     void foreachAndNext(T_Callable&& f) const {
@@ -1167,9 +1165,8 @@ public:
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(T_Node*)', "
                       "with 'T_Node' being a subtype of 'AstNode'");
-        return predicateImpl<T_Node, /* N_Default: */ false>(this, p);
+        return predicateImpl<T_Node, /* N_Default: */ false>(this, p, /* visitNext: */ false);
     }
-
     // Same as above, but for 'const' nodes
     template <typename T_Callable>
     bool exists(T_Callable&& p) const {
@@ -1178,7 +1175,28 @@ public:
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(const T_Node*)', "
                       "with 'T_Node' being a subtype of 'AstNode'");
-        return predicateImpl<const T_Node, /* N_Default: */ false>(this, p);
+        return predicateImpl<const T_Node, /* N_Default: */ false>(this, p,
+                                                                   /* visitNext: */ false);
+    }
+    // Same as 'exists' but also traverses 'this->nextp()' transitively
+    template <typename T_Callable>
+    bool existsAndNext(T_Callable&& p) {
+        using T_Node = typename FunctionArgNoPointerNoCV<T_Callable, 0>::type;
+        static_assert(vlstd::is_invocable_r<bool, T_Callable, const T_Node*>::value
+                          && std::is_base_of<AstNode, T_Node>::value,
+                      "Predicate 'p' must have a signature compatible with 'bool(const T_Node*)', "
+                      "with 'T_Node' being a subtype of 'AstNode'");
+        return predicateImpl<T_Node, /* N_Default: */ false>(this, p, /* visitNext: */ true);
+    }
+    // Same as above, but for 'const' nodes
+    template <typename T_Callable>
+    bool existsAndNext(T_Callable&& p) const {
+        using T_Node = typename FunctionArgNoPointerNoCV<T_Callable, 0>::type;
+        static_assert(vlstd::is_invocable_r<bool, T_Callable, const T_Node*>::value
+                          && std::is_base_of<AstNode, T_Node>::value,
+                      "Predicate 'p' must have a signature compatible with 'bool(const T_Node*)', "
+                      "with 'T_Node' being a subtype of 'AstNode'");
+        return predicateImpl<const T_Node, /* N_Default: */ false>(this, p, /* visitNext: */ true);
     }
 
     // Given a predicate 'p' that takes a single argument of some AstNode subtype 'T_Node', return
@@ -1192,9 +1210,8 @@ public:
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(T_Node*)', "
                       "with 'T_Node' being a subtype of 'AstNode'");
-        return predicateImpl<T_Node, /* N_Default: */ true>(this, p);
+        return predicateImpl<T_Node, /* N_Default: */ true>(this, p, /* visitNext: */ false);
     }
-
     // Same as above, but for 'const' nodes
     template <typename T_Callable>
     bool forall(T_Callable&& p) const {
@@ -1203,7 +1220,7 @@ public:
                           && std::is_base_of<AstNode, T_Node>::value,
                       "Predicate 'p' must have a signature compatible with 'bool(const T_Node*)', "
                       "with 'T_Node' being a subtype of 'AstNode'");
-        return predicateImpl<const T_Node, /* N_Default: */ true>(this, p);
+        return predicateImpl<const T_Node, /* N_Default: */ true>(this, p, /* visitNext: */ false);
     }
 
     int nodeCount() const {
@@ -1365,7 +1382,8 @@ void AstNode::foreachImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& f
 
 // predicate implementation
 template <typename T_Arg, bool N_Default, typename T_Callable>
-bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& p) {
+bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable& p,
+                            bool visitNext) {
     // Implementation similar to foreach, but abort traversal as soon as result is determined
     using T_Arg_NonConst = typename std::remove_const<T_Arg>::type;
     using Node = ConstCorrectAstNode<T_Arg>;
@@ -1409,6 +1427,9 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable&
 
         return false;
     };
+
+    // Enqueue the next of the root node, if required
+    if (visitNext && nodep->nextp()) *topp++ = nodep->nextp();
 
     // Visit the root node
     if (visit(nodep)) return !N_Default;

@@ -118,6 +118,7 @@ public:
         // IEEE: function real get_inst_coverage(optional ref int, optional ref int)
         for (const string& name : {"get_coverage"s, "get_inst_coverage"s}) {
             AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nullptr, nullptr};
+            funcp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
             funcp->isStatic(name == "get_coverage");
             funcp->classMethod(true);
             funcp->dtypep(funcp->findVoidDType());

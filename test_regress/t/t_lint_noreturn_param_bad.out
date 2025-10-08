@@ -1,0 +1,12 @@
+%Warning-NORETURN: t/t_lint_noreturn_param_bad.v:14:20: Non-void function 'no_rtn' has no return value
+                                                      : ... note: In instance 't'
+   14 |   function integer no_rtn();   
+      |                    ^~~~~~
+                   ... For warning description see https://verilator.org/warn/NORETURN?v=latest
+                   ... Use "/* verilator lint_off NORETURN */" and lint_on around source to disable this message.
+%Error: t/t_lint_noreturn_param_bad.v:19:16: left side of bit range isn't a two-state constant (IEEE 1800-2023 6.9.1)
+                                           : ... note: In instance 't'
+   19 |   output [WIDTH-1:0] o;
+      |                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

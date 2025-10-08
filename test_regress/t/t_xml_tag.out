@@ -29,15 +29,14 @@
         <varxref loc="d,33,30,33,35" name="value" dtype_id="6" dotted="itop"/>
         <varref loc="d,33,16,33,22" name="dotted" dtype_id="5"/>
       </contassign>
-      <func loc="d,35,13,35,14" name="f" dtype_id="1">
-        <var loc="d,35,13,35,14" name="f" dtype_id="1" dir="output" vartype="logic" origName="f"/>
-        <var loc="d,35,28,35,29" name="m" dtype_id="7" dir="input" vartype="string" origName="m"/>
+      <task loc="d,35,18,35,19" name="f">
+        <var loc="d,35,33,35,34" name="m" dtype_id="7" dir="input" vartype="string" origName="m"/>
         <display loc="d,36,7,36,15" displaytype="$display">
           <sformatf loc="d,36,7,36,15" name="%@" dtype_id="7">
             <varref loc="d,36,22,36,23" name="m" dtype_id="7"/>
           </sformatf>
         </display>
-      </func>
+      </task>
       <initial loc="d,39,4,39,11">
         <begin loc="d,39,12,39,17">
           <stmtexpr loc="d,41,7,41,8">
@@ -79,7 +78,7 @@
           <const loc="d,31,27,31,28" name="32&apos;h1" dtype_id="5"/>
         </range>
       </unpackarraydtype>
-      <basicdtype loc="d,35,21,35,27" id="7" name="string"/>
+      <basicdtype loc="d,35,26,35,32" id="7" name="string"/>
     </typetable>
   </netlist>
 </verilator_xml>

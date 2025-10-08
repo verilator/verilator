@@ -22,7 +22,7 @@ module t;
    ClsExt c_ext;
 
    task t(Cls c); endtask
-   function f(ClsExt c); endfunction
+   function void f(ClsExt c); endfunction
 
    initial begin
       c = 0;

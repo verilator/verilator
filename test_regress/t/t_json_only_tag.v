@@ -32,7 +32,7 @@ module m
 
    wire [31:0] dotted = itop.value;
 
-   function f(input string m);
+   function void f(input string m);
       $display("%s", m);
    endfunction
 

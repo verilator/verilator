@@ -5,13 +5,15 @@
 // SPDX-License-Identifier: CC0-1.0
 
 class c;
-   function f();
-   endfunction
+  function bit f();
+    return 1'b0;
+  endfunction
 endclass
 module t;
-   c cinst;
-   initial begin
-      cinst = new();
-      if(cinst.f) begin end
-   end
+  c cinst;
+  initial begin
+    cinst = new();
+    if (cinst.f) begin
+    end
+  end
 endmodule
