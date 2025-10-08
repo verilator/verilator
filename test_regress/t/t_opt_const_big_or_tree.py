@@ -14,7 +14,7 @@ test.scenarios('vlt_all')
 if test.have_dev_gcov:
     test.skip("Too slow with code coverage")
 
-test.timeout(10)
+test.timeout(10 if not test.have_dev_asan else 30)
 
 test.compile(verilator_make_gmake=False)
 
