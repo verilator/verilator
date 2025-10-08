@@ -102,19 +102,19 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-static string V3HierCommandArgsFilename(const string& prefix, bool forCMake) {
+static string V3HierCommandArgsFilename(const string& prefix, bool forMkJson) {
     return v3Global.opt.makeDir() + "/" + prefix
-           + (forCMake ? "__hierCMakeArgs.f" : "__hierMkArgs.f");
+           + (forMkJson ? "__hierMkJsonArgs.f" : "__hierMkArgs.f");
 }
 
 static string V3HierParametersFileName(const string& prefix) {
     return v3Global.opt.makeDir() + "/" + prefix + "__hierParameters.v";
 }
 
-static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of, bool forCMake) {
+static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of, bool forMkJson) {
     string topModuleFile;
     if (hblockp) topModuleFile = hblockp->vFileIfNecessary();
-    if (!forCMake) {
+    if (!forMkJson) {
         if (!topModuleFile.empty()) *of << topModuleFile << "\n";
         for (const auto& i : v3Global.opt.vFiles()) *of << i.filename() << "\n";
     }
@@ -158,10 +158,10 @@ V3HierBlock::StrGParams V3HierBlock::stringifyParams(const V3HierBlockParams::GP
     return strParams;
 }
 
-VStringList V3HierBlock::commandArgs(bool forCMake) const {
+VStringList V3HierBlock::commandArgs(bool forMkJson) const {
     VStringList opts;
     const string prefix = hierPrefix();
-    if (!forCMake) {
+    if (!forMkJson) {
         opts.push_back(" --prefix " + prefix);
         opts.push_back(" --mod-prefix " + prefix);
         opts.push_back(" --top-module " + modp()->name());
@@ -249,17 +249,17 @@ string V3HierBlock::vFileIfNecessary() const {
     return filename;
 }
 
-void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
-    const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(commandArgsFilename(forCMake))};
+void V3HierBlock::writeCommandArgsFile(bool forMkJson) const {
+    const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(commandArgsFilename(forMkJson))};
     *of << "--cc\n";
 
-    if (!forCMake) {
+    if (!forMkJson) {
         for (const V3HierBlock* const hierblockp : m_children) {
             *of << v3Global.opt.makeDir() << "/" << hierblockp->hierWrapperFilename(true) << "\n";
         }
         *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
     }
-    V3HierWriteCommonInputs(this, of.get(), forCMake);
+    V3HierWriteCommonInputs(this, of.get(), forMkJson);
     const VStringList& commandOpts = commandArgs(false);
     for (const string& opt : commandOpts) *of << opt << "\n";
     *of << hierBlockArgs().front() << "\n";
@@ -269,8 +269,8 @@ void V3HierBlock::writeCommandArgsFile(bool forCMake) const {
     *of << v3Global.opt.allArgsStringForHierBlock(false) << "\n";
 }
 
-string V3HierBlock::commandArgsFilename(bool forCMake) const {
-    return V3HierCommandArgsFilename(hierPrefix(), forCMake);
+string V3HierBlock::commandArgsFilename(bool forMkJson) const {
+    return V3HierCommandArgsFilename(hierPrefix(), forMkJson);
 }
 
 string V3HierBlock::typeParametersFilename() const {
@@ -456,21 +456,21 @@ V3HierBlockPlan::HierVector V3HierBlockPlan::hierBlocksSorted() const {
     return sorted;
 }
 
-void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
+void V3HierBlockPlan::writeCommandArgsFiles(bool forMkJson) const {
     for (const_iterator it = begin(); it != end(); ++it) {
-        it->second.writeCommandArgsFile(forCMake);
+        it->second.writeCommandArgsFile(forMkJson);
     }
     // For the top module
     const std::unique_ptr<std::ofstream> of{
-        V3File::new_ofstream(topCommandArgsFilename(forCMake))};
-    if (!forCMake) {
+        V3File::new_ofstream(topCommandArgsFilename(forMkJson))};
+    if (!forMkJson) {
         // Load wrappers first not to be overwritten by the original HDL
         for (const_iterator it = begin(); it != end(); ++it) {
             *of << it->second.hierWrapperFilename(true) << "\n";
         }
     }
-    V3HierWriteCommonInputs(nullptr, of.get(), forCMake);
-    if (!forCMake) {
+    V3HierWriteCommonInputs(nullptr, of.get(), forMkJson);
+    if (!forMkJson) {
         const VStringSet& cppFiles = v3Global.opt.cppFiles();
         for (const string& i : cppFiles) *of << i << "\n";
         *of << "--top-module " << v3Global.rootp()->topModulep()->name() << "\n";
@@ -493,8 +493,8 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forCMake) const {
     *of << v3Global.opt.allArgsStringForHierBlock(true) << "\n";
 }
 
-string V3HierBlockPlan::topCommandArgsFilename(bool forCMake) {
-    return V3HierCommandArgsFilename(v3Global.opt.prefix(), forCMake);
+string V3HierBlockPlan::topCommandArgsFilename(bool forMkJson) {
+    return V3HierCommandArgsFilename(v3Global.opt.prefix(), forMkJson);
 }
 
 void V3HierBlockPlan::writeParametersFiles() const {

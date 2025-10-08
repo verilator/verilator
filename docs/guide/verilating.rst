@@ -59,7 +59,7 @@ When using these options:
    makefiles to generate an archive (.a) containing the objects.
 
 #. If :vlopt:`--binary` or :vlopt:`--build` is used, it calls :ref:`GNU
-   Make` or :ref:`CMake` to build the model.
+   Make` to build the model.
 
 Once a model is built, the next step is typically for the user to run it,
 see :ref:`Simulating`.

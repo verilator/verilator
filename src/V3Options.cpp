@@ -1520,6 +1520,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-make", CbVal, [this, fl](const char* valp) {
         if (!std::strcmp(valp, "cmake")) {
             m_cmake = true;
+            fl->v3warn(DEPRECATED,
+                       "Option '--make cmake' is deprecated, use '--make json' instead");
         } else if (!std::strcmp(valp, "gmake")) {
             m_gmake = true;
         } else if (!std::strcmp(valp, "json")) {

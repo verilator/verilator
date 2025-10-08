@@ -1077,10 +1077,6 @@ class VlTest:
             verilator_flags += ["--threads", str(param['threads'])]
         if param['vltmt'] and re.search(r'-trace-fst ', checkflags):
             verilator_flags += ["--trace-threads 2"]
-        if param['verilator_make_cmake']:
-            verilator_flags += ["--make cmake"]
-        if param['verilator_make_gmake']:
-            verilator_flags += ["--make gmake"]
         if param['make_main'] and param['verilator_make_gmake']:
             verilator_flags += ["--exe"]
         if param['make_main'] and param['verilator_make_gmake']:

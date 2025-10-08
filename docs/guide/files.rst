@@ -42,8 +42,8 @@ For --cc/--sc, it creates:
 
 .. list-table::
 
-   * - *{prefix}*\ .cmake
-     - CMake include script for compiling (from --make cmake)
+   * - *{prefix}*\ .json
+     - JSON build definition compiling (from --make json)
    * - *{prefix}*\ .mk
      - Make include file for compiling (from --make gmake)
    * - *{prefix}*\ _classes.mk
@@ -99,8 +99,8 @@ For --hierarchical mode, it creates:
      - Make dependencies of the top module (from --hierarchical)
    * - *{prefix}*\ _hier.mk
      - Make file for hierarchical blocks (from --make gmake)
-   * - *{prefix}*\ __hierCMakeArgs.f
-     - Arguments for hierarchical Verilation (from --make cmake)
+   * - *{prefix}*\ __hierMkJsonArgs.f
+     - Arguments for hierarchical Verilation (from --make json)
    * - *{prefix}*\ __hierMkArgs.f
      - Arguments for hierarchical Verilation (from --make gmake)
    * - *{prefix}*\ __hierParameters.v

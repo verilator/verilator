@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_probdist.v"
 
-test.compile(verilator_make_gmake=False, verilator_make_cmake=1)
+test.compile(verilator_make_gmake=False, verilator_make_cmake=True)
 
 test.execute()
 

@@ -819,6 +819,7 @@ static void execBuildJob() {
     UASSERT(v3Global.opt.build(), "--build is not specified.");
     UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
     UASSERT(!v3Global.opt.cmake(), "--build cannot use CMake.");
+    UASSERT(!v3Global.opt.makeJson(), "--build cannot use json build.");
     VlOs::DeltaWallTime buildWallTime{true};
     UINFO(1, "Start Build");
 
