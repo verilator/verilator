@@ -23,6 +23,7 @@ Verilator 5.041 devel
 * Add IMPLICITSTATIC also on procedure variables.
 * Add FUNCTIMCTL error on function invoking task or time-controlling statements (#6385).
 * Add error on `virtual new` (#6486). [Alex Solomatnikov]
+* Add error on ranges with tristate values (#6534). [Alex Solomatnikov]
 * Deprecate sensitivity list on public_flat_rw attributes (#6443). [Geza Lore]
 * Deprecate clocker attribute and --clk option (#6463). [Geza Lore]
 * Change default `--expand-limit` to 256 (#3419).

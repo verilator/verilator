@@ -7,6 +7,8 @@
 module t;
   int array_bad[0];  // <--- Error: Must be positive size
   int array2_bad[-1];  // <--- Error: Must be positive size
+  localparam X = 32'bz;
+  logic [X:0] x;  // <--- Error: X range
   sub #(1) u_sub();
 endmodule
 

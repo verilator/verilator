@@ -7,4 +7,8 @@
                                           : ... note: In instance 't'
     9 |   int array2_bad[-1];   
       |                 ^
+%Error: t/t_lint_range_negative_bad.v:11:10: left side of bit range isn't a two-state constant (IEEE 1800-2023 6.9.1)
+                                           : ... note: In instance 't'
+   11 |   logic [X:0] x;   
+      |          ^
 %Error: Exiting due to

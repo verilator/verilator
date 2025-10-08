@@ -956,8 +956,12 @@ class WidthVisitor final : public VNVisitor {
         UINFO(6, "RANGE " << nodep);
         V3Const::constifyParamsEdit(nodep->leftp());  // May relink pointed to node
         V3Const::constifyParamsEdit(nodep->rightp());  // May relink pointed to node
-        checkConstantOrReplace(nodep->leftp(), "left side of bit range isn't a constant");
-        checkConstantOrReplace(nodep->rightp(), "right side of bit range isn't a constant");
+        checkConstantOrReplace(nodep->leftp(), true,
+                               "left side of bit range isn't a two-state constant"
+                               " (IEEE 1800-2023 6.9.1)");
+        checkConstantOrReplace(nodep->rightp(), true,
+                               "right side of bit range isn't a two-state constant"
+                               " (IEEE 1800-2023 6.9.1)");
         if (m_vup->prelim()) {
             // Don't need to iterate because V3Const already constified
             const int width = nodep->elementsConst();
@@ -2643,8 +2647,9 @@ class WidthVisitor final : public VNVisitor {
         if (!nodep->varp()) {
             if (m_paramsOnly && VN_IS(nodep, VarXRef)) {
                 checkConstantOrReplace(
-                    nodep, "Parameter-resolved constants must not use dotted references: "
-                               + nodep->prettyNameQ());
+                    nodep, false,
+                    "Parameter-resolved constants must not use dotted references: "
+                        + nodep->prettyNameQ());
                 VL_DANGLING(nodep);
                 return;
             } else {
@@ -8831,13 +8836,15 @@ class WidthVisitor final : public VNVisitor {
             nodep->v3fatalSrc("No dtype expected at statement " << nodep->prettyTypeName());
         }
     }
-    void checkConstantOrReplace(AstNode* nodep, const string& message) {
+    void checkConstantOrReplace(AstNode* nodep, bool noFourState, const string& message) {
         // See also V3WidthSel::checkConstantOrReplace
         // Note can't call V3Const::constifyParam(nodep) here, as constify may change nodep on us!
-        if (!VN_IS(nodep, Const)) {
+        AstConst* const constp = VN_CAST(nodep, Const);
+        if (!constp || (noFourState && constp->num().isFourState())) {
             nodep->v3error(message);
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::Unsized32{}, 1});
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
         }
     }
     static AstVarRef* newVarRefDollarUnit(AstVar* nodep) {
