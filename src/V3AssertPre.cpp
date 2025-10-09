@@ -511,9 +511,9 @@ private:
         if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep));
         if (m_hasSExpr && m_hasUnsupp) {
             if (VN_IS(m_hasUnsupp, Implication)) {
-                m_hasUnsupp->v3warn(E_UNSUPPORTED, "Implication with sequence expression");
+                m_hasUnsupp->v3warn(E_UNSUPPORTED, "Unsupported: Implication with sequence expression");
             } else {
-                m_hasUnsupp->v3warn(E_UNSUPPORTED, "Disable iff with sequence expression");
+                m_hasUnsupp->v3warn(E_UNSUPPORTED, "Unsupported: Disable iff with sequence expression");
             }
             if (m_pExpr) VL_DO_DANGLING(pushDeletep(m_pExpr), m_pExpr);
         } else if (m_pExpr && m_pExpr->precondp()) {
