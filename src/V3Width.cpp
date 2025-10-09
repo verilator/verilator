@@ -2108,12 +2108,6 @@ class WidthVisitor final : public VNVisitor {
         UINFO(4, "dtWidthed " << nodep);
     }
     void visit(AstRefDType* nodep) override {
-        if (nodep->doingWidth()) {  // Early exit if have circular parameter definition
-            nodep->v3error("Typedef's type is circular: " << nodep->prettyName());
-            nodep->dtypeSetBit();
-            nodep->doingWidth(false);
-            return;
-        }
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         nodep->doingWidth(true);
         if (nodep->typeofp()) {  // type(typeofp_expression)
@@ -8957,4 +8951,13 @@ AstNode* V3Width::widthGenerateParamsEdit(
     nodep = visitor.mainAcceptEdit(nodep);
     // No WidthRemoveVisitor, as don't want to drop $signed etc inside gen blocks
     return nodep;
+}
+
+bool V3Width::isCircularType(const AstRefDType* nodep) {
+    std::set<const AstRefDType*> visited;
+    while (nodep) {
+        if (!visited.insert(nodep).second) return true;
+        nodep = VN_CAST(nodep->subDTypep(), RefDType);
+    }
+    return false;
 }

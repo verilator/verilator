@@ -1415,15 +1415,15 @@ class ParamVisitor final : public VNVisitor {
         }
     }
     void visit(AstRefDType* nodep) override {
-        if (nodep->typedefp() && nodep->subDTypep()) {
-            if ((VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
-                 || VN_IS(nodep->subDTypep()->skipRefOrNullp(), ClassRefDType))
-                && !nodep->skipRefp()->user2SetOnce()) {
-                iterate(nodep->skipRefp());
-            }
-        } else {
-            iterateChildren(nodep);
+        if (V3Width::isCircularType(nodep)) {
+            nodep->v3error("Typedef's type is circular: " << nodep->prettyName());
+        } else if (nodep->typedefp() && nodep->subDTypep()
+                   && (VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
+                       || VN_IS(nodep->subDTypep()->skipRefOrNullp(), ClassRefDType))
+                   && !nodep->skipRefp()->user2SetOnce()) {
+            iterate(nodep->skipRefp());
         }
+        iterateChildren(nodep);
     }
     void visit(AstCell* nodep) override {
         checkParamNotHier(nodep->paramsp());
