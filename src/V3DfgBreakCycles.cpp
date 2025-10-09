@@ -187,7 +187,8 @@ class TraceDriver final : public DfgVisitor {
             // as a splice cannot be fed into arbitray logic
             if (DfgVertexSplice* const splicep = resp->cast<DfgVertexSplice>()) {
                 DfgVertexVar* const tmpp = createTmp("TraceDriver", splicep);
-                splicep->replaceWith(tmpp);
+                // Note: we can't do 'splicep->replaceWith(tmpp)', as other
+                // variable sinks of the splice might have a defaultp driver.
                 tmpp->srcp(splicep);
                 resp = tmpp;
             }
