@@ -275,21 +275,34 @@ class AssertVisitor final : public VNVisitor {
         return newp;
     }
 
-    static AstFork* cycleDelayAssertBody(AstPExpr* pExpr, AstNode* bodysp, AstNode* failsp,
+    static AstFork* cycleDelayAssertBody(AstPExpr* pExpr, AstNode* passsp, AstNode* failsp,
                                          AstNodeCoverOrAssert* nodep) {
         AstNode* const precondps = pExpr->precondp();
         UASSERT_OBJ(precondps, pExpr, "Should have precondition");
         AstIf* const ifp
-            = new AstIf{nodep->fileline(), pExpr->condp()->unlinkFrBack(), bodysp, failsp};
-        ifp->isBoundsCheck(true);  // To avoid LATCH warning
+            = new AstIf{nodep->fileline(), pExpr->condp()->unlinkFrBack(), passsp, failsp};
         // It's more LIKELY that we'll take the nullptr if clause
         // than the sim-killing else clause:
         ifp->branchPred(VBranchPred::BP_LIKELY);
+        ifp->isBoundsCheck(true);  // To avoid LATCH warning
         precondps->unlinkFrBackWithNext()->addNext(ifp);
-        bodysp = newIfAssertOn(precondps, nodep->directive(), nodep->type());
-        AstFork* const forkp = new AstFork{precondps->fileline(), "", bodysp};
+        passsp = newIfAssertOn(precondps, nodep->directive(), nodep->type());
+        AstFork* const forkp = new AstFork{precondps->fileline(), "", passsp};
         forkp->joinType(VJoinType::JOIN_NONE);
         return forkp;
+    }
+    static AstNode* assertBody(AstNodeCoverOrAssert* nodep, AstNodeExpr* propp, AstNode* passsp,
+                               AstNode* failsp) {
+        if (AstPExpr* const pExpr = VN_CAST(propp, PExpr)) {
+            return cycleDelayAssertBody(pExpr, passsp, failsp, nodep);
+        }
+
+        AstIf* const ifp = new AstIf{nodep->fileline(), propp, passsp, failsp};
+        // It's more LIKELY that we'll take the nullptr if clause
+        // than the sim-killing else clause:
+        ifp->branchPred(VBranchPred::BP_LIKELY);
+        ifp->isBoundsCheck(true);  // To avoid LATCH warning
+        return newIfAssertOn(ifp, nodep->directive(), nodep->type());
     }
 
     AstNodeStmt* newFireAssertUnchecked(const AstNodeStmt* nodep, const string& message,
@@ -339,7 +352,6 @@ class AssertVisitor final : public VNVisitor {
             }
         }
         //
-        AstNode* bodysp = nullptr;
         bool selfDestruct = false;
         if (const AstCover* const snodep = VN_CAST(nodep, Cover)) {
             ++m_statCover;
@@ -351,17 +363,11 @@ class AssertVisitor final : public VNVisitor {
                 UASSERT_OBJ(covincp, snodep, "Missing AstCoverInc under assertion");
                 covincp->unlinkFrBackWithNext();  // next() might have  AstAssign for trace
                 if (message != "") covincp->declp()->comment(message);
-                bodysp = covincp;
-            }
-            if (bodysp && passsp) bodysp = bodysp->addNext(passsp);
-
-            if (AstPExpr* const pExpr = VN_CAST(propp, PExpr)) {
-                bodysp = cycleDelayAssertBody(pExpr, bodysp, failsp, nodep);
-            } else {
-                if (bodysp) bodysp = newIfAssertOn(bodysp, nodep->directive(), nodep->type());
-                AstIf* const ifp = new AstIf{nodep->fileline(), propp, bodysp};
-                ifp->isBoundsCheck(true);  // To avoid LATCH warning
-                bodysp = ifp;
+                if (passsp) {
+                    passsp = AstNode::addNext<AstNode, AstNode>(covincp, passsp);
+                } else {
+                    passsp = covincp;
+                }
             }
         } else if (VN_IS(nodep, Assert) || VN_IS(nodep, AssertIntrinsic)) {
             if (nodep->immediate()) {
@@ -370,37 +376,26 @@ class AssertVisitor final : public VNVisitor {
                 ++m_statAsNotImm;
             }
             if (!passsp && !failsp) failsp = newFireAssertUnchecked(nodep, "'assert' failed.");
-            if (AstPExpr* const pExpr = VN_CAST(propp, PExpr)) {
-                bodysp = cycleDelayAssertBody(pExpr, passsp, failsp, nodep);
-            } else {
-                AstIf* const ifp = new AstIf{nodep->fileline(), propp, passsp, failsp};
-                ifp->isBoundsCheck(true);  // To avoid LATCH warning
-                // It's more LIKELY that we'll take the nullptr if clause
-                // than the sim-killing else clause:
-                ifp->branchPred(VBranchPred::BP_LIKELY);
-                bodysp = newIfAssertOn(ifp, nodep->directive(), nodep->type());
-            }
         } else {
             nodep->v3fatalSrc("Unknown node type");
+        }
+
+        AstNode* bodysp = assertBody(nodep, propp, passsp, failsp);
+        if (sentreep) {
+            bodysp = new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, bodysp};
         }
 
         if (passsp && !passsp->backp()) VL_DO_DANGLING(pushDeletep(passsp), passsp);
         if (failsp && !failsp->backp()) VL_DO_DANGLING(pushDeletep(failsp), failsp);
 
-        AstNode* newp = nullptr;
-        if (sentreep) {
-            newp = new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, bodysp};
-        } else {
-            newp = bodysp;
-        }
         // Install it
         if (selfDestruct) {
             // Delete it after making the tree.  This way we can tell the user
             // if it wasn't constructed nicely or has other errors without needing --coverage.
-            VL_DO_DANGLING(newp->deleteTree(), newp);
+            VL_DO_DANGLING(bodysp->deleteTree(), bodysp);
             nodep->unlinkFrBack();
         } else {
-            nodep->replaceWith(newp);
+            nodep->replaceWith(bodysp);
         }
         // Bye
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
