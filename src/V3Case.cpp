@@ -406,7 +406,7 @@ class CaseVisitor final : public VNVisitor {
         // CASEx(cexpr,....
         // ->  tree of IF(msb,  IF(msb-1, 11, 10)
         //                      IF(msb-1, 01, 00))
-        AstNodeExpr* cexprp = nullptr;
+        AstNodeExpr* cexprp;
         AstExprStmt* cexprStmtp = nullptr;
         if (nodep->exprp()->isPure()) {
             cexprp = nodep->exprp()->unlinkFrBack();
@@ -454,7 +454,7 @@ class CaseVisitor final : public VNVisitor {
         // ->  IF((cexpr==icond1),istmts1,
         //                       IF((EQ (AND MASK cexpr) (AND MASK icond1)
         //                              ,istmts2, istmts3
-        AstNodeExpr* cexprp = nullptr;
+        AstNodeExpr* cexprp;
         AstExprStmt* cexprStmtp = nullptr;
         if (nodep->exprp()->isPure()) {
             cexprp = nodep->exprp()->unlinkFrBack();

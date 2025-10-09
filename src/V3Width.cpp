@@ -3063,7 +3063,7 @@ class WidthVisitor final : public VNVisitor {
                              EXTEND_EXP);
         }
 
-        AstNodeExpr* exprp = nullptr;
+        AstNodeExpr* exprp;
         AstExprStmt* exprStmtp = nullptr;
         if (!m_constraintp && !nodep->exprp()->isPure()) {
             FileLine* const fl = nodep->exprp()->fileline();
@@ -3091,7 +3091,7 @@ class WidthVisitor final : public VNVisitor {
         AstNodeExpr* newp = nullptr;
         for (AstNodeExpr *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = VN_AS(itemp->nextp(), NodeExpr);  // Will be unlinking
-            AstNodeExpr* inewp = nullptr;
+            AstNodeExpr* inewp;
             if (exprStmtp) {
                 inewp = insideItem(nodep, exprStmtp, itemp);
                 exprStmtp = nullptr;
