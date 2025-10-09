@@ -710,16 +710,21 @@ coverage-combine: $(COVERAGE_DIR)/verilator.info
 .PHONY: coverage-report
 coverage-report:
 	@$(MAKE) --no-print-directory $(COVERAGE_DIR)/report/index.html || true
-	@echo "####################################################################"
 	@if [ -f $(COVERAGE_DIR)/report/index.html ]; then \
+    echo "####################################################################"; \
     echo "# Coverage report is at: $(COVERAGE_DIR)/report/index.html"; \
     echo "# Use 'make coverage-view' to open it in your default browser"; \
+    echo "####################################################################"; \
   elif [ -f $(COVERAGE_DIR)/empty-patch ]; then\
+    echo "####################################################################"; \
     echo "# Patch is empty"; \
+    echo "####################################################################"; \
   else \
-    echo "# Failed to create coverage report. Maybe there is no data?"; \
+    echo "####################################################################"; \
+    echo "# Failed to create coverage report. Maybe no data, or error?"; \
+    echo "####################################################################"; \
+    false; \
   fi
-	@echo "####################################################################"
 
 # Open covarage report in default web browser
 .PHONY: coverage-view

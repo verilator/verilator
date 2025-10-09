@@ -46,7 +46,7 @@ class V3DfgCse final {
     static V3Hash vertexSelfHash(const DfgVertex& vtx) {
         switch (vtx.type()) {
         // Unhandled vertices
-        case VDfgType::Logic:  // LCOV_EXCL_LINE
+        case VDfgType::Logic:  // LCOV_EXCL_START
         case VDfgType::Unresolved:  // LCOV_EXCL_STOP
             vtx.v3fatalSrc("Should not have reached CSE");
 
