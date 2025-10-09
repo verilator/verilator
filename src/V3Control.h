@@ -63,10 +63,9 @@ public:
     static void addIgnoreMatch(V3ErrorCode code, const string& filename, const string& contents,
                                const string& match);
     static void addInline(FileLine* fl, const string& module, const string& ftask, bool on);
-    static void addInstrumentCfg(FileLine* fl, const string& instrumentfunc,
-                                          int instrID, const string& target);
-    static std::map<string, InstrumentTarget, LengthThenLexiographic>&
-    getInstrumentCfg();
+    static void addInstrumentCfg(FileLine* fl, const string& instrumentfunc, int instrID,
+                                 const string& target);
+    static std::map<string, InstrumentTarget, LengthThenLexiographic>& getInstrumentCfg();
     static void addModulePragma(const string& module, VPragmaType pragma);
     static void addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost);
     static void addProfileData(FileLine* fl, const string& model, const string& key,

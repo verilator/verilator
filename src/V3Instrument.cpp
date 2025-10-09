@@ -695,8 +695,7 @@ class InstrumentFunc final : public VNVisitor {
     //in the original module, but in the pointing/top module, the current_module_cell_check
     //variable is set to the module visited by the function and fulfilling this condition.
     void visit(AstModule* nodep) override {
-        const InstrumentTarget& target
-            = V3Control::getInstrumentCfg().find(m_targetKey)->second;
+        const InstrumentTarget& target = V3Control::getInstrumentCfg().find(m_targetKey)->second;
         const auto& entries = target.entries;
         for (m_targetIndex = 0; m_targetIndex < entries.size(); ++m_targetIndex) {
             m_tmp_varp = getMapEntryInstVar(m_targetKey, m_targetIndex);
