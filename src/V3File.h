@@ -339,11 +339,10 @@ public:
     V3OutJsonFile& put(bool value) { return putNamed("", value ? "true" : "false", false); }
     V3OutJsonFile& put(int value) { return putNamed("", std::to_string(value), false); }
 
-    template <typename T>
-    V3OutJsonFile& putList(const std::string& name, const T& list) {
+    V3OutJsonFile& putList(const std::string& name, const std::vector<std::string>& list) {
         if (list.empty()) return *this;
         begin(name, '[');
-        for (auto it = list.begin(); it != list.end(); ++it) put(*it);
+        for (const std::string& str : list) put(str);
         return end();
     }
 

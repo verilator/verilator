@@ -126,7 +126,7 @@ static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of
 
 //######################################################################
 
-V3HierBlock::StrGParams V3HierBlock::stringifyParams(const V3HierBlockParams::GParams& gparams,
+V3HierBlock::StrGParams V3HierBlock::stringifyParams(const std::vector<AstVar*>& gparams,
                                                      bool forGOption) {
     StrGParams strParams;
     for (const AstVar* const gparam : gparams) {
@@ -171,18 +171,19 @@ VStringList V3HierBlock::commandArgs(bool forMkJson) const {
         opts.push_back(" --protect-key " + v3Global.opt.protectKeyDefaulted());
     opts.push_back(" --hierarchical-child " + cvtToStr(v3Global.opt.threads()));
 
-    const StrGParams gparamsStr = stringifyParams(params().gparams(), true);
+    const StrGParams gparamsStr = stringifyParams(m_params, true);
     for (const StrGParam& param : gparamsStr) {
         const string name = param.first;
         const string value = param.second;
         opts.push_back("-G" + name + "=" + value + "");
     }
-    if (!params().gTypeParams().empty())
+    if (!m_typeParams.empty()) {
         opts.push_back(" --hierarchical-params-file " + typeParametersFilename());
+    }
 
     const int blockThreads = V3Control::getHierWorkers(m_modp->origName());
     if (blockThreads > 1) {
-        if (hasParent()) {
+        if (!inEmpty()) {
             V3Control::getHierWorkersFileLine(m_modp->origName())
                 ->v3warn(E_UNSUPPORTED, "Specifying workers for nested hierarchical blocks");
         } else {
@@ -202,14 +203,13 @@ VStringList V3HierBlock::commandArgs(bool forMkJson) const {
 
 VStringList V3HierBlock::hierBlockArgs() const {
     VStringList opts;
-    const StrGParams gparamsStr = stringifyParams(params().gparams(), false);
+    const StrGParams gparamsStr = stringifyParams(m_params, false);
     opts.push_back("--hierarchical-block ");
     string s = modp()->origName();  // origName
     s += "," + modp()->name();  // mangledName
-    for (StrGParams::const_iterator paramIt = gparamsStr.begin(); paramIt != gparamsStr.end();
-         ++paramIt) {
-        s += "," + paramIt->first;
-        s += "," + paramIt->second;
+    for (const StrGParam& pair : gparamsStr) {
+        s += "," + pair.first;
+        s += "," + pair.second;
     }
     opts.back() += s;
     return opts;
@@ -254,8 +254,9 @@ void V3HierBlock::writeCommandArgsFile(bool forMkJson) const {
     *of << "--cc\n";
 
     if (!forMkJson) {
-        for (const V3HierBlock* const hierblockp : m_children) {
-            *of << v3Global.opt.makeDir() << "/" << hierblockp->hierWrapperFilename(true) << "\n";
+        for (const V3GraphEdge& edge : outEdges()) {
+            const V3HierBlock* const dependencyp = edge.top()->as<V3HierBlock>();
+            *of << v3Global.opt.makeDir() << "/" << dependencyp->hierWrapperFilename(true) << "\n";
         }
         *of << "-Mdir " << v3Global.opt.makeDir() << "/" << hierPrefix() << " \n";
     }
@@ -263,8 +264,9 @@ void V3HierBlock::writeCommandArgsFile(bool forMkJson) const {
     const VStringList& commandOpts = commandArgs(false);
     for (const string& opt : commandOpts) *of << opt << "\n";
     *of << hierBlockArgs().front() << "\n";
-    for (const V3HierBlock* const hierblockp : m_children) {
-        *of << hierblockp->hierBlockArgs().front() << "\n";
+    for (const V3GraphEdge& edge : outEdges()) {
+        const V3HierBlock* const dependencyp = edge.top()->as<V3HierBlock>();
+        *of << dependencyp->hierBlockArgs().front() << "\n";
     }
     *of << v3Global.opt.allArgsStringForHierBlock(false) << "\n";
 }
@@ -278,13 +280,13 @@ string V3HierBlock::typeParametersFilename() const {
 }
 
 void V3HierBlock::writeParametersFile() const {
-    if (m_params.gTypeParams().empty()) return;
+    if (m_typeParams.empty()) return;
 
     VHashSha256 hash{"type params"};
     const string moduleName = "Vhsh" + hash.digestSymbol();
     const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(typeParametersFilename())};
     *of << "module " << moduleName << ";\n";
-    for (AstParamTypeDType* const gparam : m_params.gTypeParams()) {
+    for (AstParamTypeDType* const gparam : m_typeParams) {
         AstTypedef* tdefp
             = new AstTypedef{new FileLine{FileLine::builtInFilename()}, gparam->name(), nullptr,
                              VFlagChildDType{}, gparam->skipRefp()->cloneTreePure(true)};
@@ -297,176 +299,113 @@ void V3HierBlock::writeParametersFile() const {
 }
 
 //######################################################################
-// Collect how hierarchical blocks are used
+// Construct graph of hierarchical blocks
 class HierBlockUsageCollectVisitor final : public VNVisitorConst {
     // NODE STATE
-    // AstNode::user1()            -> bool. Processed
+    // AstNode::user1()            -> bool. Already visited
     const VNUser1InUse m_inuser1;
 
     // STATE
-    using ModuleSet = std::unordered_set<const AstModule*>;
-    V3HierBlockPlan* const m_planp;
+    V3HierGraph* const m_graphp = new V3HierGraph{};  // The graph of hierarchical blocks
+    // Map from hier blocks to the corresponding V3HierBlock graph vertex
+    std::unordered_map<const AstModule*, V3HierBlock*> m_mod2vtx;
     AstModule* m_modp = nullptr;  // The current module
-    AstModule* m_hierBlockp = nullptr;  // The nearest parent module that is a hierarchical block
-    ModuleSet m_referred;  // Modules that have hier_block pragma
-    V3HierBlockParams m_params;
+    std::vector<AstVar*> m_params;  // Overridden value parameters of current module
+    std::vector<AstParamTypeDType*> m_typeParams;  // Type parameters of current module
+    // Hierarchical blocks instanciated (possibly indirectly) by current hierarchical block
+    std::vector<V3HierBlock*> m_childrenp;
 
+    // VISITORSs
+    void visit(AstNodeModule*) override {}  // Ignore all non AstModule
     void visit(AstModule* nodep) override {
-        // Don't visit twice
+        // Visit each module once
         if (nodep->user1SetOnce()) return;
-        UINFO(5, "Checking " << nodep->prettyNameQ() << " from "
-                             << (m_hierBlockp ? m_hierBlockp->prettyNameQ() : "null"s));
+
+        UINFO(5, "Visiting " << nodep->prettyNameQ());
         VL_RESTORER(m_modp);
-        AstModule* const prevHierBlockp = m_hierBlockp;
-        ModuleSet prevReferred;
-        V3HierBlockParams previousParams;
         m_modp = nodep;
-        if (nodep->hierBlock()) {
-            m_hierBlockp = nodep;
-            prevReferred.swap(m_referred);
-        }
-        previousParams.swap(m_params);
 
+        // If not a hierarchical block, just iterate and return
+        if (!nodep->hierBlock()) {
+            iterateChildrenConst(nodep);
+            return;
+        }
+
+        // This is a hierarchical block, gather parts
+        VL_RESTORER(m_params);
+        VL_RESTORER(m_typeParams);
+        VL_RESTORER(m_childrenp);
+        m_params.clear();
+        m_typeParams.clear();
+        m_childrenp.clear();
         iterateChildrenConst(nodep);
-
-        if (nodep->hierBlock()) {
-            m_planp->add(nodep, m_params);
-            for (const AstModule* modp : m_referred) m_planp->registerUsage(nodep, modp);
-            m_hierBlockp = prevHierBlockp;
-            m_referred = prevReferred;
-        }
-        m_params.swap(previousParams);
+        // Create the graph vertex for this hier block
+        V3HierBlock* const blockp = new V3HierBlock{m_graphp, nodep, m_params, m_typeParams};
+        // Record it
+        m_mod2vtx[nodep] = blockp;
+        // Add an edge to each child block
+        for (V3HierBlock* const childp : m_childrenp) new V3GraphEdge{m_graphp, blockp, childp, 1};
     }
     void visit(AstCell* nodep) override {
-        // Visit used module here to know that the module is hier_block or not.
-        // This visitor behaves almost depth first search
-        if (AstModule* const modp = VN_CAST(nodep->modp(), Module)) {
-            iterateConst(modp);
-            m_referred.insert(modp);
-        }
-        // Nothing to do for interface because hierarchical block does not exist
-        // beyond interface.
+        // Nothing to do for non AstModules because hierarchical block cannot exist under them.
+        AstModule* const modp = VN_CAST(nodep->modp(), Module);
+        if (!modp) return;
+        // Depth-first traversal of module hierechy
+        iterateConst(modp);
+        // If this is an instance of a hierarchical block, add to child array to link parent
+        if (modp->hierBlock()) m_childrenp.emplace_back(m_mod2vtx.at(modp));
     }
     void visit(AstVar* nodep) override {
         if (m_modp && m_modp->hierBlock() && nodep->isIfaceRef() && !nodep->isIfaceParent()) {
             nodep->v3error("Modport cannot be used at the hierarchical block boundary");
         }
-        if (nodep->isGParam() && nodep->overriddenParam()) m_params.add(nodep);
+        // Record overridden value parameter
+        if (nodep->isGParam() && nodep->overriddenParam()) {
+            UASSERT_OBJ(m_modp, nodep, "Value parameter not under module");
+            m_params.push_back(nodep);
+        }
+    }
+    void visit(AstParamTypeDType* nodep) override {
+        // Record type parameter
+        UASSERT_OBJ(m_modp, nodep, "Type parameter not under module");
+        m_typeParams.push_back(nodep);
     }
 
-    void visit(AstParamTypeDType* nodep) override { m_params.add(nodep); }
-
+    void visit(AstNodeStmt*) override {}  // Accelerate
     void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstConstPool*) override {}  // Accelerate
+    void visit(AstTypeTable*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
+    // CONSTRUCTOR
+    HierBlockUsageCollectVisitor(AstNetlist* netlistp) {
+        iterateChildrenConst(netlistp);
+        if (dumpGraphLevel() >= 3) m_graphp->dumpDotFilePrefixed("hierblocks_initial");
+        // Simplify dependencies
+        m_graphp->removeRedundantEdgesSum(&V3GraphEdge::followAlwaysTrue);
+        // Topologically sorder the graph
+        m_graphp->order();  // This is a bit heavy weight, but does produce a topological ordering
+        if (dumpGraphLevel() >= 3) m_graphp->dumpDotFilePrefixed("hierblocks");
+    }
+
 public:
-    HierBlockUsageCollectVisitor(V3HierBlockPlan* planp, AstNetlist* netlist)
-        : m_planp{planp} {
-        iterateChildrenConst(netlist);
+    static V3HierGraph* apply(AstNetlist* netlistp) {
+        return HierBlockUsageCollectVisitor{netlistp}.m_graphp;
     }
 };
 
-//######################################################################
+void V3HierGraph::writeCommandArgsFiles(bool forMkJson) const {
 
-void V3HierBlockPlan::add(const AstNodeModule* modp, const V3HierBlockParams& params) {
-    const bool newEntry = m_blocks
-                              .emplace(std::piecewise_construct, std::forward_as_tuple(modp),
-                                       std::forward_as_tuple(modp, params))
-                              .second;
-    if (newEntry) {
-        UINFO(3, "Add " << modp->prettyNameQ() << " with " << params.gparams().size()
-                        << " parameters and " << params.gTypeParams().size()
-                        << " type parameters");
-    }
-}
-
-void V3HierBlockPlan::registerUsage(const AstNodeModule* parentp, const AstNodeModule* childp) {
-    const iterator parent = m_blocks.find(parentp);
-    UASSERT_OBJ(parent != m_blocks.end(), parentp, "must be added");
-    const iterator child = m_blocks.find(childp);
-    if (child != m_blocks.end()) {
-        UINFO(3, "Found usage relation " << parentp->prettyNameQ() << " uses "
-                                         << childp->prettyNameQ());
-        parent->second.addChild(&child->second);
-        child->second.addParent(&parent->second);
-    }
-}
-
-void V3HierBlockPlan::createPlan(AstNetlist* nodep) {
-    // When processing a hierarchical block, no need to create a plan anymore.
-    if (v3Global.opt.hierChild()) return;
-
-    AstNodeModule* const modp = nodep->topModulep();
-    if (modp->hierBlock()) {
-        modp->v3warn(HIERBLOCK,
-                     "Top module illegally marked hierarchical block, ignoring marking\n"
-                         + modp->warnMore()
-                         + "... Suggest remove verilator hier_block on this module");
-        modp->hierBlock(false);
-    }
-
-    std::unique_ptr<V3HierBlockPlan> planp(new V3HierBlockPlan);
-    { HierBlockUsageCollectVisitor{planp.get(), nodep}; }
-
-    V3Stats::addStat("HierBlock, Hierarchical blocks", planp->m_blocks.size());
-
-    // No hierarchical block is found, nothing to do.
-    if (planp->empty()) return;
-
-    v3Global.hierPlanp(planp.release());
-}
-
-V3HierBlockPlan::HierVector V3HierBlockPlan::hierBlocksSorted() const {
-    using ChildrenMap
-        = std::unordered_map<const V3HierBlock*, std::unordered_set<const V3HierBlock*>>;
-    ChildrenMap childrenOfHierBlock;
-
-    HierVector sorted;
-    for (const_iterator it = begin(); it != end(); ++it) {
-        if (!it->second.hasChild()) {  // No children, already leaf
-            sorted.push_back(&it->second);
-        } else {
-            ChildrenMap::value_type::second_type& childrenSet
-                = childrenOfHierBlock[&it->second];  // insert
-            const V3HierBlock::HierBlockSet& c = it->second.children();
-            childrenSet.insert(c.begin(), c.end());
-        }
-    }
-
-    // Use index instead of iterator because new elements will be added in this loop
-    for (size_t i = 0; i < sorted.size(); ++i) {
-        // This hblockp is already leaf.
-        const V3HierBlock* hblockp = sorted[i];
-        const V3HierBlock::HierBlockSet& p = hblockp->parents();
-        for (V3HierBlock::HierBlockSet::const_iterator it = p.begin(); it != p.end(); ++it) {
-            // Delete hblockp from parents. If a parent does not have a child anymore, then it is
-            // a leaf too.
-            const auto parentIt = childrenOfHierBlock.find(*it);
-            UASSERT_OBJ(parentIt != childrenOfHierBlock.end(), (*it)->modp(), "must be included");
-            const V3HierBlock::HierBlockSet::size_type erased = parentIt->second.erase(hblockp);
-            UASSERT_OBJ(erased == 1, hblockp->modp(),
-                        " must be a child of " << parentIt->first->modp());
-            if (parentIt->second.empty()) {  // Now parentIt is leaf
-                sorted.push_back(parentIt->first);
-                childrenOfHierBlock.erase(parentIt);
-            }
-        }
-    }
-    return sorted;
-}
-
-void V3HierBlockPlan::writeCommandArgsFiles(bool forMkJson) const {
-    for (const_iterator it = begin(); it != end(); ++it) {
-        it->second.writeCommandArgsFile(forMkJson);
+    for (const V3GraphVertex& vtx : vertices()) {
+        vtx.as<V3HierBlock>()->writeCommandArgsFile(forMkJson);
     }
     // For the top module
     const std::unique_ptr<std::ofstream> of{
         V3File::new_ofstream(topCommandArgsFilename(forMkJson))};
     if (!forMkJson) {
         // Load wrappers first not to be overwritten by the original HDL
-        for (const_iterator it = begin(); it != end(); ++it) {
-            *of << it->second.hierWrapperFilename(true) << "\n";
+        for (const V3GraphVertex& vtx : vertices()) {
+            *of << vtx.as<V3HierBlock>()->hierWrapperFilename(true) << "\n";
         }
     }
     V3HierWriteCommonInputs(nullptr, of.get(), forMkJson);
@@ -478,8 +417,8 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forMkJson) const {
         *of << "-Mdir " << v3Global.opt.makeDir() << "\n";
         *of << "--mod-prefix " << v3Global.opt.modPrefix() << "\n";
     }
-    for (const_iterator it = begin(); it != end(); ++it) {
-        *of << it->second.hierBlockArgs().front() << "\n";
+    for (const V3GraphVertex& vtx : vertices()) {
+        *of << vtx.as<V3HierBlock>()->hierBlockArgs().front() << "\n";
     }
 
     if (!v3Global.opt.libCreate().empty()) {
@@ -493,10 +432,34 @@ void V3HierBlockPlan::writeCommandArgsFiles(bool forMkJson) const {
     *of << v3Global.opt.allArgsStringForHierBlock(true) << "\n";
 }
 
-string V3HierBlockPlan::topCommandArgsFilename(bool forMkJson) {
+string V3HierGraph::topCommandArgsFilename(bool forMkJson) {
     return V3HierCommandArgsFilename(v3Global.opt.prefix(), forMkJson);
 }
 
-void V3HierBlockPlan::writeParametersFiles() const {
-    for (const auto& block : *this) block.second.writeParametersFile();
+void V3HierGraph::writeParametersFiles() const {
+    for (const V3GraphVertex& vtx : vertices()) { vtx.as<V3HierBlock>()->writeParametersFile(); }
+}
+
+//######################################################################
+
+void V3Hierarchical::createGraph(AstNetlist* netlistp) {
+    UASSERT(!v3Global.hierGraphp(), "Should only be called once");
+
+    AstNodeModule* const modp = netlistp->topModulep();
+    if (modp->hierBlock()) {
+        modp->v3warn(HIERBLOCK, "Top module marked as hierarchical block, ignoring\n"
+                                    + modp->warnMore()
+                                    + "... Suggest remove verilator hier_block on this module");
+        modp->hierBlock(false);
+    }
+
+    V3HierGraph* const graphp = HierBlockUsageCollectVisitor::apply(netlistp);
+    V3Stats::addStat("HierBlock, Hierarchical blocks", graphp->vertices().size());
+    // No hierarchical block is found, nothing to do.
+    if (graphp->empty()) {
+        VL_DO_DANGLING(delete graphp, graphp);
+        return;
+    }
+    // Hold on to the graph
+    v3Global.hierGraphp(graphp);
 }
