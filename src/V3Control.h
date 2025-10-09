@@ -39,6 +39,7 @@ struct InstrumentEntry final {
     std::string varTarget;
     AstVar* origVarps;
     AstVar* instrVarps;
+    bool found = false;
 };
 struct InstrumentTarget final {
     std::vector<InstrumentEntry> entries;

@@ -237,6 +237,7 @@ class InstrumentTargetFndr final : public VNVisitor {
                 if (entry.varTarget == varp->name()) {
                     entry.origVarps = varp;
                     entry.instrVarps = instVarp;
+                    entry.found = true;
                     return;
                 }
             }
@@ -451,6 +452,11 @@ class InstrumentTargetFndr final : public VNVisitor {
                         m_initModp = false;
                     }
                     m_foundVarp = true;
+                } else if (nodep->nextp() == nullptr && !entry.found) {
+                        v3error("Verilator-configfile': could not find defined 'var' in "
+                        "'topModule.instance.var' ... Target string: '"
+                        << m_target+"."+entry.varTarget << "'");
+                        return;
                 }
             }
         }
@@ -600,6 +606,22 @@ class InstrumentFunc final : public VNVisitor {
             return false;
         }
     }
+    // Check if the module and instances defined in the target string were found in 
+    // the previous step
+    bool hasNullptr(const std::pair<const string, InstrumentTarget> &pair) {
+        bool moduleNullptr = pair.second.origModulep == nullptr;
+        bool cellNullptr = pair.second.cellp == nullptr;
+        return moduleNullptr || cellNullptr;
+    }
+    // Check if the, in the target string, defined variable was found in the previous step 
+    bool isFound(const std::pair<const string, InstrumentTarget> &pair) {
+        for (auto& entry : pair.second.entries) {
+            if (entry.found == false) {
+                return entry.found;
+            }
+        }
+        return true;
+    }
     // Get the fault case for the given key in the configuration map
     int getMapEntryFaultCase(const std::string& key, size_t index) {
         const auto& map = V3Control::getInstrumentCfg();
@@ -667,10 +689,16 @@ class InstrumentFunc final : public VNVisitor {
     void visit(AstNetlist* nodep) override {
         const auto& instrCfg = V3Control::getInstrumentCfg();
         for (const auto& pair : instrCfg) {
-            nodep->addModulesp(pair.second.instrModulep);
-            m_targetKey = pair.first;
-            iterateChildren(nodep);
-            m_assignw = false;
+            if (hasNullptr(pair) || !isFound(pair)) { 
+                v3error("Verilator-configfile: Incomplete instrumentation configuration for target '"
+                        << pair.first<< "'. Please check previous Errors from V3Instrument:findTargets and ensure"
+                        << " all necessary components are correct defined.");
+            } else {
+                nodep->addModulesp(pair.second.instrModulep);
+                m_targetKey = pair.first;
+                iterateChildren(nodep);
+                m_assignw = false;
+            }
         }
     }
 
@@ -695,10 +723,10 @@ class InstrumentFunc final : public VNVisitor {
     //in the original module, but in the pointing/top module, the current_module_cell_check
     //variable is set to the module visited by the function and fulfilling this condition.
     void visit(AstModule* nodep) override {
-        const InstrumentTarget& target
-            = V3Control::getInstrumentCfg().find(m_targetKey)->second;
+        const auto& instrCfg = V3Control::getInstrumentCfg().find(m_targetKey);
+        const InstrumentTarget& target = instrCfg->second;
         const auto& entries = target.entries;
-        for (m_targetIndex = 0; m_targetIndex < entries.size(); ++m_targetIndex) {
+        for (m_targetIndex = 0; m_targetIndex < entries.size(); ++m_targetIndex) {     
             m_tmp_varp = getMapEntryInstVar(m_targetKey, m_targetIndex);
             m_orig_varp = getMapEntryVar(m_targetKey, m_targetIndex);
             m_task_name = getMapEntryFunction(m_targetKey, m_targetIndex);

@@ -159,7 +159,6 @@ static void process() {
         if (v3Global.opt.instrument()) {
             v3Global.dpi(true);
             V3Instrument::findTargets(v3Global.rootp());
-            V3Error::abortIfErrors();
             V3Instrument::instrument(v3Global.rootp());
         }
 
