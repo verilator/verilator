@@ -635,7 +635,7 @@ public:
     }
     // Add the instrumentation config data to the map to create the initial map (Used in verilog.y)
     void addInstrumentCfg(FileLine* fl, const string& instrFunction, int instrID,
-                                   const string& target) {
+                          const string& target) {
         // Error MSG if the instrumentation of the top module is not possible
         if ((std::count(target.begin(), target.end(), '.') < 2)) {
             v3fatal(
@@ -721,8 +721,8 @@ void V3Control::addModulePragma(const string& module, VPragmaType pragma) {
     V3ControlResolver::s().modules().at(module).addModulePragma(pragma);
 }
 
-void V3Control::addInstrumentCfg(FileLine* fl, const string& instrumentfunc,
-                                          int instrID, const string& target) {
+void V3Control::addInstrumentCfg(FileLine* fl, const string& instrumentfunc, int instrID,
+                                 const string& target) {
     V3ControlResolver::s().addInstrumentCfg(fl, instrumentfunc, instrID, target);
 }
 
@@ -856,8 +856,7 @@ int V3Control::getHierWorkers(const string& model) {
 FileLine* V3Control::getHierWorkersFileLine(const string& model) {
     return V3ControlResolver::s().getHierWorkersFileLine(model);
 }
-std::map<string, InstrumentTarget, LengthThenLexiographic>&
-V3Control::getInstrumentCfg() {
+std::map<string, InstrumentTarget, LengthThenLexiographic>& V3Control::getInstrumentCfg() {
     return V3ControlResolver::s().getInstrumentCfg();
 }
 uint64_t V3Control::getProfileData(const string& hierDpi) {
