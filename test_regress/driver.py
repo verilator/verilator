@@ -1367,7 +1367,7 @@ class VlTest:
                              ("--verbose" if self.verbose else ""),
                          ])
         else:
-            self.error("No compile step defined for '%s' scenario" % self.scenario())
+            self.error("No compile step defined for '%s' scenario" % self.scenario)
 
         if param['make_pli']:
             if self.verbose:
