@@ -13,16 +13,16 @@ endclass
 typedef Bar#(string) s_t;
 
 class Some #(type T);
-   typedef Bar#(string) s_t;
+  typedef Bar#(string) s_t;
 endclass
 
 module t;
-   initial begin
-      Some#(int)::s_t x[string];
-      Bar#(string) y[string];
-      if ($typename(Foo#(s_t)) != $typename(Foo#(Bar#(string)))) $stop;
-      if ($typename(x) != $typename(y)) $stop;
-      $write("*-* All finished *-*\n");
-      $finish;
-   end
+  initial begin
+    Some#(int)::s_t x[string];
+    Bar#(string) y[string];
+    if ($typename(Foo#(s_t)) != $typename(Foo#(Bar#(string)))) $stop;
+    if ($typename(x) != $typename(y)) $stop;
+    $write("*-* All finished *-*\n");
+    $finish;
+  end
 endmodule
