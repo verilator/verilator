@@ -628,15 +628,15 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 if (m_processedVars.find(objVar) == m_processedVars.end()) {
 
                     // Clone constraints from the top-level class (e.g., Level1 for obj_a)
-                    gConsClass->foreachMember([&](AstClass* const classp,
-                                                  AstConstraint* const constrp) {
-                        if (!constrp) return;
-                        AstConstraint* cloneConstrp = constrp->cloneTree(false);
-                        if (!cloneConstrp) return;
-                        // Name manipulation
-                        nameManipulation(varRefp, cloneConstrp);
-                        m_clonedConstraints.push_back(cloneConstrp);
-                    });
+                    gConsClass->foreachMember(
+                        [&](AstClass* const classp, AstConstraint* const constrp) {
+                            if (!constrp) return;
+                            AstConstraint* cloneConstrp = constrp->cloneTree(false);
+                            if (!cloneConstrp) return;
+                            // Name manipulation
+                            nameManipulation(varRefp, cloneConstrp);
+                            m_clonedConstraints.push_back(cloneConstrp);
+                        });
 
                     // Recursively clone constraints from nested members (e.g., l2, l3, l4)
                     cloneNestedConstraints(varRefp, gConsClass);
