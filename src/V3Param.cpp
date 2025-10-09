@@ -62,6 +62,7 @@
 
 #include <cctype>
 #include <deque>
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -1280,6 +1281,8 @@ class ParamVisitor final : public VNVisitor {
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp;  // Module iterating
     string m_generateHierName;  // Generate portion of hierarchy name
+    std::map<const AstRefDType*, bool>
+        m_isCircularTypeCache;  // Caches return values of `V3Width::isCircularType` calls
 
     // METHODS
 
@@ -1415,7 +1418,15 @@ class ParamVisitor final : public VNVisitor {
         }
     }
     void visit(AstRefDType* nodep) override {
-        if (V3Width::isCircularType(nodep)) {
+        const auto iter = m_isCircularTypeCache.find(nodep);
+        bool isCircular;
+        if (iter != m_isCircularTypeCache.end()) {
+            isCircular = iter->second;
+        } else {
+            isCircular = V3Width::isCircularType(nodep);
+            m_isCircularTypeCache.emplace(nodep, isCircular);
+        }
+        if (isCircular) {
             nodep->v3error("Typedef's type is circular: " << nodep->prettyName());
         } else if (nodep->typedefp() && nodep->subDTypep()
                    && (VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
