@@ -62,6 +62,7 @@
 
 #include <cctype>
 #include <deque>
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -1276,6 +1277,8 @@ class ParamVisitor final : public VNVisitor {
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
     std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
     std::deque<std::string> m_strings;  // Allocator for temporary strings
+    std::map<const AstRefDType*, bool>
+        m_isCircular;  // Stores information whether `AstRefDType` is circular
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp;  // Module iterating
@@ -1414,8 +1417,22 @@ class ParamVisitor final : public VNVisitor {
             processWorkQ();
         }
     }
+
+    bool isCircularType(const AstRefDType* nodep) {
+        const auto iter = m_isCircular.find(nodep);
+        if (iter != m_isCircular.end()) return iter->second;
+        if (const AstRefDType* subDTypep = VN_CAST(nodep->subDTypep(), RefDType)) {
+            m_isCircular.emplace(nodep, true);
+            const bool ret = isCircularType(subDTypep);
+            m_isCircular[nodep] = ret;
+            return ret;
+        }
+        m_isCircular.emplace(nodep, false);
+        return false;
+    }
+
     void visit(AstRefDType* nodep) override {
-        if (V3Width::isCircularType(nodep)) {
+        if (isCircularType(nodep)) {
             nodep->v3error("Typedef's type is circular: " << nodep->prettyName());
         } else if (nodep->typedefp() && nodep->subDTypep()
                    && (VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)

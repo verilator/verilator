@@ -8952,12 +8952,3 @@ AstNode* V3Width::widthGenerateParamsEdit(
     // No WidthRemoveVisitor, as don't want to drop $signed etc inside gen blocks
     return nodep;
 }
-
-bool V3Width::isCircularType(const AstRefDType* nodep) {
-    std::set<const AstRefDType*> visited;
-    while (nodep) {
-        if (!visited.insert(nodep).second) return true;
-        nodep = VN_CAST(nodep->subDTypep(), RefDType);
-    }
-    return false;
-}
