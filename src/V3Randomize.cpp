@@ -207,23 +207,20 @@ class RandomizeMarkVisitor final : public VNVisitor {
             staticRefp->classOrPackagep(VN_AS(staticRefp->varp()->user2p(), NodeModule));
         }
     }
-    // Recursively mark all variables in a nested MemberSel chain as globally constrained
-    // This ensures that write_var is generated for each level (e.g., foo, foo.in, foo.in.val)
+    // Mark nested MemberSel chain variables as globally constrained
     void markNestedGlobalConstrained(AstNode* nodep) {
         if (!nodep) return;
 
         if (VN_IS(nodep, VarRef)) {
-            // Base case: direct variable reference
             VN_AS(nodep, VarRef)->varp()->setGlobalConstrained(true);
         } else if (VN_IS(nodep, MemberSel)) {
-            // Recursive case: mark the member and recurse to parent
             AstMemberSel* memberSelp = VN_AS(nodep, MemberSel);
             memberSelp->varp()->setGlobalConstrained(true);
             markNestedGlobalConstrained(memberSelp->fromp());  // Recurse up the chain
         }
     }
 
-    // Helper to build a MemberSel chain from a path like "l2.l3"
+    // Build MemberSel chain from variable path
     AstNodeExpr* buildMemberSelChain(AstVarRef* rootVarRefp, const std::vector<AstVar*>& path) {
         AstNodeExpr* current = rootVarRefp->cloneTree(false);
         for (AstVar* memberVarp : path) {
@@ -235,9 +232,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
         return current;
     }
 
-    // Recursively clone constraints from nested class members
-    // For obj_a with nested l2.l3.l4, this clones constraints from Level2, Level3, and Level4
-    // (Level1's constraints are handled by the caller)
+    // Clone constraints from nested rand class members recursively
     void cloneNestedConstraintsRecursive(AstVarRef* rootVarRefp, AstClass* classp,
                                          const std::vector<AstVar*>& pathToClass) {
         if (!classp) return;
@@ -252,11 +247,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     if (memberClassRefp && memberClassRefp->classp()) {
                         AstClass* nestedClassp = memberClassRefp->classp();
 
-                        // Build new path including this member
                         std::vector<AstVar*> newPath = pathToClass;
                         newPath.push_back(memberVarp);
 
-                        // Clone constraints from the nested class
                         nestedClassp->foreachMember([&](AstClass* const containingClassp,
                                                         AstConstraint* const constrp) {
                             if (!constrp) return;
@@ -264,17 +257,14 @@ class RandomizeMarkVisitor final : public VNVisitor {
                             AstConstraint* cloneConstrp = constrp->cloneTree(false);
                             if (!cloneConstrp) return;
 
-                            // Build path prefix string: "obj_a__DT__l2__DT__l3"
                             std::string pathPrefix = rootVarRefp->name();
                             for (AstVar* pathMemberVarp : newPath) {
                                 pathPrefix += GLOBAL_CONSTRAINT_SEPARATOR + pathMemberVarp->name();
                             }
 
-                            // Update constraint name
                             cloneConstrp->name(pathPrefix + GLOBAL_CONSTRAINT_SEPARATOR
                                                + cloneConstrp->name());
 
-                            // Replace VarRefs in the constraint with MemberSel chains
                             cloneConstrp->foreach([&](AstVarRef* varRefp) {
                                 if (!varRefp || !varRefp->varp()) return;
 
@@ -337,7 +327,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
         // Clear processed variables for each new class context
         m_processedVars.clear();
         iterateChildrenConst(nodep);
-        for (int i = 0; i < m_clonedConstraints.size(); i++) {
+        for (std::size_t i = 0; i < m_clonedConstraints.size(); i++) {
             m_classp->addStmtsp(m_clonedConstraints[i]);
         }
         m_clonedConstraints.clear();
@@ -895,8 +885,6 @@ class ConstraintExprVisitor final : public VNVisitor {
             strr = nodep->name();
         }
 
-        cout << " IN ASTVARREF nodep->name()=" << nodep->name() << " strr=" << strr << endl;
-
         if (membersel) varp = membersel->varp();
         withinclass = membersel ? VN_CAST(nodep->backp()->user2p(), Class) : nullptr;
         AstNodeModule* const classOrPackagep = nodep->classOrPackagep();
@@ -1161,12 +1149,6 @@ class ConstraintExprVisitor final : public VNVisitor {
         editSMT(nodep, nodep->fromp(), indexp);
     }
     void visit(AstMemberSel* nodep) override {
-        // if (nodep->user1()) {
-        //     nodep->v3warn(CONSTRAINTIGN, "Global constraints ignored (unsupported)");
-        // }
-        cout << "HAHAHAHAHAHHAHA" << endl;
-        nodep->dumpTreeJson(cout);
-        cout << endl << endl;
         if (nodep->varp()->rand().isRandomizable()) {
             // Determine dtype based on node type (VarRef or MemberSel)
             AstNodeDType* const dtype = VN_IS(nodep->fromp(), VarRef)
