@@ -453,10 +453,10 @@ class InstrumentTargetFndr final : public VNVisitor {
                     }
                     m_foundVarp = true;
                 } else if (nodep->nextp() == nullptr && !entry.found) {
-                        v3error("Verilator-configfile': could not find defined 'var' in "
-                        "'topModule.instance.var' ... Target string: '"
-                        << m_target+"."+entry.varTarget << "'");
-                        return;
+                    v3error("Verilator-configfile': could not find defined 'var' in "
+                            "'topModule.instance.var' ... Target string: '"
+                            << m_target + "." + entry.varTarget << "'");
+                    return;
                 }
             }
         }
@@ -606,19 +606,17 @@ class InstrumentFunc final : public VNVisitor {
             return false;
         }
     }
-    // Check if the module and instances defined in the target string were found in 
+    // Check if the module and instances defined in the target string were found in
     // the previous step
-    bool hasNullptr(const std::pair<const string, InstrumentTarget> &pair) {
+    bool hasNullptr(const std::pair<const string, InstrumentTarget>& pair) {
         bool moduleNullptr = pair.second.origModulep == nullptr;
         bool cellNullptr = pair.second.cellp == nullptr;
         return moduleNullptr || cellNullptr;
     }
-    // Check if the, in the target string, defined variable was found in the previous step 
-    bool isFound(const std::pair<const string, InstrumentTarget> &pair) {
+    // Check if the, in the target string, defined variable was found in the previous step
+    bool isFound(const std::pair<const string, InstrumentTarget>& pair) {
         for (auto& entry : pair.second.entries) {
-            if (entry.found == false) {
-                return entry.found;
-            }
+            if (entry.found == false) { return entry.found; }
         }
         return true;
     }
@@ -689,10 +687,12 @@ class InstrumentFunc final : public VNVisitor {
     void visit(AstNetlist* nodep) override {
         const auto& instrCfg = V3Control::getInstrumentCfg();
         for (const auto& pair : instrCfg) {
-            if (hasNullptr(pair) || !isFound(pair)) { 
-                v3error("Verilator-configfile: Incomplete instrumentation configuration for target '"
-                        << pair.first<< "'. Please check previous Errors from V3Instrument:findTargets and ensure"
-                        << " all necessary components are correct defined.");
+            if (hasNullptr(pair) || !isFound(pair)) {
+                v3error(
+                    "Verilator-configfile: Incomplete instrumentation configuration for target '"
+                    << pair.first
+                    << "'. Please check previous Errors from V3Instrument:findTargets and ensure"
+                    << " all necessary components are correct defined.");
             } else {
                 nodep->addModulesp(pair.second.instrModulep);
                 m_targetKey = pair.first;
