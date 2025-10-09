@@ -761,8 +761,8 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(";\n");
     }
     void visit(AstNodeCoverOrAssert* nodep) override {
-        if (const AstPExpr* const pexprp = VN_CAST(nodep->propp(), PExpr)) {
-            iterateAndNextConstNull(nodep->propp());
+        if (AstPExpr* const pexprp = VN_CAST(nodep->propp(), PExpr)) {
+            iterateAndNextConstNull(pexprp);
         }
         putfs(nodep, nodep->verilogKwd() + " ");
         if (nodep->type() == VAssertType::OBSERVED_DEFERRED_IMMEDIATE) {
