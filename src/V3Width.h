@@ -23,6 +23,7 @@
 class AstNetlist;
 class AstNode;
 class AstNodeDType;
+class AstRefDType;
 
 //============================================================================
 
