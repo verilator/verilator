@@ -6519,8 +6519,8 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //
         //                      // IEEE: "sequence_expr yP_ORMINUSGT pexpr"
         //                      // Instead we use pexpr to prevent conflicts
-        |       ~o~pexpr yP_ORMINUSGT pexpr             { $$ = new AstImplication{$2, $1, $3, AstImplication::Type::OVERLAPPED}; }
-        |       ~o~pexpr yP_OREQGT pexpr                { $$ = new AstImplication{$2, $1, $3, AstImplication::Type::NONOVERLAPPED}; }
+        |       ~o~pexpr yP_ORMINUSGT pexpr             { $$ = new AstImplication{$2, $1, $3, true}; }
+        |       ~o~pexpr yP_OREQGT pexpr                { $$ = new AstImplication{$2, $1, $3, false}; }
         //
         //                      // IEEE-2009: property_statement
         //                      // IEEE-2012: yIF and yCASE

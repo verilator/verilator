@@ -1529,16 +1529,13 @@ class AstImplication final : public AstNodeExpr {
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := sentreep : Optional[AstSenTree]
 
-public:
-    enum class Type : uint8_t { OVERLAPPED, NONOVERLAPPED };
-
 private:
     const bool m_isOverlapped;  // True if overlapped
 
 public:
-    AstImplication(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, Type type)
+    AstImplication(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool isOverlapped)
         : ASTGEN_SUPER_Implication(fl)
-        , m_isOverlapped{type == Type::OVERLAPPED} {
+        , m_isOverlapped{isOverlapped} {
         this->lhsp(lhsp);
         this->rhsp(rhsp);
     }
