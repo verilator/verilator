@@ -1939,10 +1939,10 @@ public:
 };
 class AstSExpr final : public AstNodeExpr {
     // Sequence expression
-    // @astgen op1 := delayp : AstNode
+    // @astgen op1 := delayp : AstDelay
     // @astgen op2 := exprp : AstNodeExpr
 public:
-    explicit AstSExpr(FileLine* fl, AstNode* delayp, AstNodeExpr* exprp)
+    explicit AstSExpr(FileLine* fl, AstDelay* delayp, AstNodeExpr* exprp)
         : ASTGEN_SUPER_SExpr(fl) {
         this->delayp(delayp);
         this->exprp(exprp);

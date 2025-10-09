@@ -704,8 +704,7 @@ private:
         m_hasSExpr = true;
 
         UASSERT_OBJ(m_pExpr, nodep, "Should be under assertion");
-        if (AstDelay* const delayp = VN_CAST(nodep->delayp(), Delay))
-            m_pExpr->addPrecondp(delayp->unlinkFrBack());
+        m_pExpr->addPrecondp(nodep->delayp()->unlinkFrBack());
 
         iterateChildren(nodep);
         nodep->replaceWith(nodep->exprp()->unlinkFrBack());
