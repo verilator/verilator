@@ -193,11 +193,11 @@ static void process() {
 
         // Create a hierarchical Verilation plan
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
-            && v3Global.opt.hierarchical()) {
-            V3HierBlockPlan::createPlan(v3Global.rootp());
+            && v3Global.opt.hierarchical() && !v3Global.opt.hierChild()) {
+            V3Hierarchical::createGraph(v3Global.rootp());
             // If a plan is created, further analysis is not necessary.
             // The actual Verilation will be done based on this plan.
-            if (v3Global.hierPlanp()) {
+            if (v3Global.hierGraphp()) {
                 reportStatsIfEnabled();
                 return;
             }
@@ -744,23 +744,24 @@ static bool verilate(const string& argString) {
 
     V3Error::abortIfWarnings();
 
-    if (v3Global.hierPlanp()) {  // This run is for just write a makefile
+    if (V3HierGraph* const hierGraphp
+        = v3Global.hierGraphp()) {  // This run is for just write a makefile
         UASSERT(v3Global.opt.hierarchical(), "hierarchical must be set");
         UASSERT(!v3Global.opt.hierChild(), "This must not be a hierarchical-child run");
         UASSERT(v3Global.opt.hierBlocks().empty(), "hierarchical-block must not be set");
         if (v3Global.opt.gmake()) {
-            v3Global.hierPlanp()->writeCommandArgsFiles(false);
-            V3EmitMk::emitHierVerilation(v3Global.hierPlanp());
+            hierGraphp->writeCommandArgsFiles(false);
+            V3EmitMk::emitHierVerilation(hierGraphp);
         }
         if (v3Global.opt.cmake()) {
-            v3Global.hierPlanp()->writeCommandArgsFiles(true);
+            hierGraphp->writeCommandArgsFiles(true);
             V3EmitCMake::emit();
         }
         if (v3Global.opt.makeJson()) {
-            v3Global.hierPlanp()->writeCommandArgsFiles(true);
+            hierGraphp->writeCommandArgsFiles(true);
             V3EmitMkJson::emit();
         }
-        v3Global.hierPlanp()->writeParametersFiles();
+        hierGraphp->writeParametersFiles();
     }
     if (v3Global.opt.makeDepend().isTrue()) {
         string filename = v3Global.opt.makeDir() + "/" + v3Global.opt.prefix();
@@ -835,7 +836,7 @@ static void execBuildJob() {
 }
 
 static void execHierVerilation() {
-    UASSERT(v3Global.hierPlanp(), "must be called only when plan exists");
+    UASSERT(v3Global.hierGraphp(), "must be called only when plan exists");
     const string makefile = v3Global.opt.prefix() + "_hier.mk ";
     const string target = v3Global.opt.build() ? " hier_build" : " hier_verilation";
     const string cmdStr = buildMakeCmd(makefile, target);
@@ -885,7 +886,7 @@ int main(int argc, char** argv) {
         UINFO(1, "Option --no-verilate: Skip Verilation");
     }
 
-    if (v3Global.hierPlanp() && v3Global.opt.gmake()) {
+    if (v3Global.hierGraphp() && v3Global.opt.gmake()) {
         execHierVerilation();  // execHierVerilation() takes care of --build too
     } else if (v3Global.opt.build()) {
         execBuildJob();

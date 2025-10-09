@@ -803,7 +803,7 @@ public:
 //######################################################################
 
 class EmitMkHierVerilation final {
-    const V3HierBlockPlan* const m_planp;
+    const V3HierGraph* const m_graphp;
     const string m_makefile;  // path of this makefile
     void emitCommonOpts(V3OutMkFile& of) const {
         const string cwd = V3Os::filenameRealPath(".");
@@ -830,8 +830,7 @@ class EmitMkHierVerilation final {
     }
     void emit(V3OutMkFile& of) const {
         of.puts("# Hierarchical Verilation -*- Makefile -*-\n");
-        of.puts("# DESCR"
-                "IPTION: Verilator output: Makefile for hierarchical Verilation\n");
+        of.puts("# DESCRIPTION: Verilator output: Makefile for hierarchical Verilation\n");
         of.puts("#\n");
         of.puts("# The main makefile " + v3Global.opt.prefix() + ".mk calls this makefile\n");
         of.puts("\n");
@@ -843,11 +842,9 @@ class EmitMkHierVerilation final {
 
         of.puts("# Libraries of hierarchical blocks\n");
         of.puts("VM_HIER_LIBS := \\\n");
-        const V3HierBlockPlan::HierVector blocks
-            = m_planp->hierBlocksSorted();  // leaf comes first
-        // List in order of leaf-last order so that linker can resolve dependency
-        for (const auto& block : vlstd::reverse_view(blocks)) {
-            of.puts("  " + block->hierLibFilename(true) + " \\\n");
+        for (const V3GraphVertex& vtx : m_graphp->vertices()) {
+            const V3HierBlock* const blockp = vtx.as<V3HierBlock>();
+            of.puts("  " + blockp->hierLibFilename(true) + " \\\n");
         }
         of.puts("\n");
 
@@ -866,28 +863,31 @@ class EmitMkHierVerilation final {
 
         // Top level module
         {
-            const string argsFile = v3Global.hierPlanp()->topCommandArgsFilename(false);
+            const string argsFile = v3Global.hierGraphp()->topCommandArgsFilename(false);
             of.puts("\n# Verilate the top module\n");
             of.puts(v3Global.opt.prefix()
                     + ".mk: $(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
             of.puts(V3Os::filenameNonDir(argsFile) + " ");
-            for (const auto& itr : *m_planp) of.puts(itr.second.hierWrapperFilename(true) + " ");
+            for (const V3GraphVertex& vtx : m_graphp->vertices()) {
+                const V3HierBlock* const blockp = vtx.as<V3HierBlock>();
+                of.puts(blockp->hierWrapperFilename(true) + " ");
+            }
             of.puts("\n");
             emitLaunchVerilator(of, argsFile);
         }
 
         // Rules to process hierarchical blocks
         of.puts("\n# Verilate hierarchical blocks\n");
-        for (const V3HierBlock* const blockp : m_planp->hierBlocksSorted()) {
+        for (const V3GraphVertex& vtx : m_graphp->vertices()) {
+            const V3HierBlock* const blockp = vtx.as<V3HierBlock>();
             const string prefix = blockp->hierPrefix();
             const string argsFilename = blockp->commandArgsFilename(false);
             of.puts(blockp->hierGeneratedFilenames(true));
             of.puts(": $(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
             of.puts(V3Os::filenameNonDir(argsFilename) + " ");
-            const V3HierBlock::HierBlockSet& children = blockp->children();
-            for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
-                 child != children.end(); ++child) {
-                of.puts((*child)->hierWrapperFilename(true) + " ");
+            for (const V3GraphEdge& edge : blockp->outEdges()) {
+                const V3HierBlock* const dependencyp = edge.top()->as<V3HierBlock>();
+                of.puts(dependencyp->hierWrapperFilename(true) + " ");
             }
             of.puts("\n");
             emitLaunchVerilator(of, argsFilename);
@@ -897,9 +897,9 @@ class EmitMkHierVerilation final {
             of.puts(": ");
             of.puts(blockp->hierMkFilename(true));
             of.puts(" ");
-            for (V3HierBlock::HierBlockSet::const_iterator child = children.begin();
-                 child != children.end(); ++child) {
-                of.puts((*child)->hierLibFilename(true));
+            for (const V3GraphEdge& edge : blockp->outEdges()) {
+                const V3HierBlock* const dependencyp = edge.top()->as<V3HierBlock>();
+                of.puts(dependencyp->hierLibFilename(true));
                 of.puts(" ");
             }
             of.puts("\n\t$(MAKE) -f " + blockp->hierMkFilename(false) + " -C " + prefix);
@@ -910,8 +910,8 @@ class EmitMkHierVerilation final {
     }
 
 public:
-    explicit EmitMkHierVerilation(const V3HierBlockPlan* planp)
-        : m_planp{planp}
+    explicit EmitMkHierVerilation(const V3HierGraph* graphp)
+        : m_graphp{graphp}
         , m_makefile{v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "_hier.mk"} {
         V3OutMkFile of{m_makefile};
         emit(of);
@@ -926,7 +926,7 @@ void V3EmitMk::emitmk() {
     const EmitMk emitter;
 }
 
-void V3EmitMk::emitHierVerilation(const V3HierBlockPlan* planp) {
+void V3EmitMk::emitHierVerilation(const V3HierGraph* graphp) {
     UINFO(2, __FUNCTION__ << ":");
-    EmitMkHierVerilation{planp};
+    EmitMkHierVerilation{graphp};
 }
