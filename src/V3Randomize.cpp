@@ -61,6 +61,12 @@ enum ClassRandom : uint8_t {
 };
 
 // ######################################################################
+// Constants for global constraint processing
+
+static constexpr const char* GLOBAL_CONSTRAINT_SEPARATOR = "__DT__";
+static constexpr const char* BASIC_RANDOMIZE_FUNC_NAME = "__Vbasic_randomize";
+
+// ######################################################################
 // Establishes the target of a rand_mode() call
 
 struct RandModeTarget final {
@@ -145,10 +151,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
     std::vector<AstConstraint*> m_clonedConstraints;
     std::unordered_set<const AstVar*> m_processedVars;  // Track by variable instance, not class
 
-    // Constants for global constraint processing
-    static constexpr const char* GLOBAL_CONSTRAINT_SEPARATOR = "__DT__";
-    static constexpr const char* BASIC_RANDOMIZE_FUNC_NAME = "__Vbasic_randomize";
-
     // METHODS
     void markMembers(const AstClass* nodep) {
         for (const AstClass* classp = nodep; classp;
@@ -216,7 +218,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
         } else if (VN_IS(nodep, MemberSel)) {
             AstMemberSel* memberSelp = VN_AS(nodep, MemberSel);
             memberSelp->varp()->setGlobalConstrained(true);
-            markNestedGlobalConstrained(memberSelp->fromp());  // Recurse up the chain
+            markNestedGlobalConstrained(memberSelp->fromp());
         }
     }
 
@@ -226,18 +228,16 @@ class RandomizeMarkVisitor final : public VNVisitor {
         for (AstVar* memberVarp : path) {
             AstMemberSel* memberSel
                 = new AstMemberSel(rootVarRefp->fileline(), current, memberVarp);
-            memberSel->user2p(m_classp);  // Set containing class for all MemberSel nodes
+            memberSel->user2p(m_classp);
             current = memberSel;
         }
         return current;
     }
 
-    // Clone constraints from nested rand class members recursively
+    // Clone constraints from nested rand class members
     void cloneNestedConstraintsRecursive(AstVarRef* rootVarRefp, AstClass* classp,
                                          const std::vector<AstVar*>& pathToClass) {
         if (!classp) return;
-
-        // Recursively process nested rand members first
         for (AstNode* memberNodep = classp->membersp(); memberNodep;
              memberNodep = memberNodep->nextp()) {
             if (AstVar* memberVarp = VN_CAST(memberNodep, Var)) {
@@ -268,11 +268,10 @@ class RandomizeMarkVisitor final : public VNVisitor {
                             cloneConstrp->foreach([&](AstVarRef* varRefp) {
                                 if (!varRefp || !varRefp->varp()) return;
 
-                                // Build chain: rootVarRef.pathMember1.pathMember2...finalVar
                                 AstNodeExpr* chain = buildMemberSelChain(rootVarRefp, newPath);
                                 AstMemberSel* finalSel = new AstMemberSel(varRefp->fileline(),
                                                                           chain, varRefp->varp());
-                                finalSel->user2p(m_classp);  // Set containing class
+                                finalSel->user2p(m_classp);
                                 varRefp->replaceWith(finalSel);
                                 VL_DO_DANGLING(varRefp->deleteTree(), varRefp);
                             });
@@ -280,7 +279,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
                             m_clonedConstraints.push_back(cloneConstrp);
                         });
 
-                        // Recurse deeper
                         cloneNestedConstraintsRecursive(rootVarRefp, nestedClassp, newPath);
                     }
                 }
@@ -288,29 +286,19 @@ class RandomizeMarkVisitor final : public VNVisitor {
         }
     }
 
-    // Wrapper to start the recursive cloning
     void cloneNestedConstraints(AstVarRef* rootVarRefp, AstClass* rootClass) {
         std::vector<AstVar*> emptyPath;
         cloneNestedConstraintsRecursive(rootVarRefp, rootClass, emptyPath);
     }
 
     void nameManipulation(AstVarRef* fromp, AstConstraint* cloneCons) {
-        if (!fromp || !cloneCons) {
-            UINFO(9, "Invalid parameters in nameManipulation\n");
-            return;
-        }
+        if (!fromp || !cloneCons) return;
         // Iterate through all variable references and replace them with member selections.
         cloneCons->name(fromp->name() + GLOBAL_CONSTRAINT_SEPARATOR + cloneCons->name());
         cloneCons->foreach([&](AstVarRef* varRefp) {
-            if (!varRefp || !varRefp->varp()) {
-                UINFO(9, "Invalid variable reference in constraint\n");
-                return;
-            }
+            if (!varRefp || !varRefp->varp()) return;
             AstVarRef* clonedFromp = fromp->cloneTree(false);
-            if (!clonedFromp) {
-                UINFO(9, "Failed to clone variable reference in nameManipulation\n");
-                return;
-            }
+            if (!clonedFromp) return;
             AstMemberSel* varMemberp
                 = new AstMemberSel{cloneCons->fileline(), clonedFromp, varRefp->varp()};
             varMemberp->user2p(m_classp);
@@ -642,15 +630,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     // Clone constraints from the top-level class (e.g., Level1 for obj_a)
                     gConsClass->foreachMember([&](AstClass* const classp,
                                                   AstConstraint* const constrp) {
-                        if (!constrp) {
-                            UINFO(9, "Null constraint found in class " << classp->name() << "\n");
-                            return;
-                        }
+                        if (!constrp) return;
                         AstConstraint* cloneConstrp = constrp->cloneTree(false);
-                        if (!cloneConstrp) {
-                            UINFO(9, "Failed to clone constraint " << constrp->name() << "\n");
-                            return;
-                        }
+                        if (!cloneConstrp) return;
                         // Name manipulation
                         nameManipulation(varRefp, cloneConstrp);
                         m_clonedConstraints.push_back(cloneConstrp);
@@ -1629,9 +1611,6 @@ class RandomizeVisitor final : public VNVisitor {
     std::map<AstClass*, AstStmtExpr*>
         m_clonedConstraints;  // Map of the class to the cloned constraint from the instantiated
                               // object
-
-    // Constants for global constraint processing
-    static constexpr const char* BASIC_RANDOMIZE_FUNC_NAME = "__Vbasic_randomize";
 
     // METHODS
     void createRandomGenerator(AstClass* const classp) {
