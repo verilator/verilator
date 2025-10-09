@@ -830,7 +830,8 @@ class EmitMkHierVerilation final {
     }
     void emit(V3OutMkFile& of) const {
         of.puts("# Hierarchical Verilation -*- Makefile -*-\n");
-        of.puts("# DESCRIPTION: Verilator output: Makefile for hierarchical Verilation\n");
+        of.puts("# DESCR"
+                "IPTION: Verilator output: Makefile for hierarchical Verilation\n");
         of.puts("#\n");
         of.puts("# The main makefile " + v3Global.opt.prefix() + ".mk calls this makefile\n");
         of.puts("\n");

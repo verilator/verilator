@@ -148,7 +148,7 @@ class V3EmitMkJsonEmitter final {
 
             // Top level reintegration
             {
-                // Gory as hell: When this reintegration "submodule" is built with the bundled
+                // TODO: When this reintegration "submodule" is built with the bundled
                 // CMake script, it will overwrite the original json manifest containing the
                 // "subodule" list we are creating here with one that doesn't have "submodule".
                 // Good luck debugging, suggest 'message(${MANIFEST})' in verilated-config.cmake.
