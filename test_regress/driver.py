@@ -789,7 +789,6 @@ class VlTest:
         ]
         self.xsim_run_flags2 = []  # Overridden in some sim files
         # Xcelium (xrun)
-        self.xrun = 0
         self.xrun_define = 'XRUN'
         self.xrun_flags = []  # Doesn't really have a compile step
         self.xrun_flags2 = []  # Overridden in some sim files
