@@ -2889,14 +2889,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
         dtypep = dtypep->skipRefp();
         while (true) {
             if (const AstBracketArrayDType* const adtypep = VN_CAST(dtypep, BracketArrayDType)) {
-                dtypep = adtypep->childDTypep()->skipRefp();
+                dtypep = adtypep->subDTypep()->skipRefp();
             } else if (const AstDynArrayDType* const adtypep = VN_CAST(dtypep, DynArrayDType)) {
-                dtypep = adtypep->childDTypep()->skipRefp();
+                dtypep = adtypep->subDTypep()->skipRefp();
             } else if (const AstQueueDType* const adtypep = VN_CAST(dtypep, QueueDType)) {
-                dtypep = adtypep->childDTypep()->skipRefp();
+                dtypep = adtypep->subDTypep()->skipRefp();
             } else if (const AstUnpackArrayDType* const adtypep
                        = VN_CAST(dtypep, UnpackArrayDType)) {
-                dtypep = adtypep->childDTypep()->skipRefp();
+                dtypep = adtypep->subDTypep()->skipRefp();
             } else {
                 break;
             }

@@ -23,6 +23,7 @@
 class AstNetlist;
 class AstNode;
 class AstNodeDType;
+class AstRefDType;
 
 //============================================================================
 
@@ -36,6 +37,8 @@ public:
     // Replace AstSelBit, etc with AstSel/AstArraySel
     // Returns replacement node if nodep was deleted, or null if none.
     static AstNode* widthSelNoIterEdit(AstNode* nodep) VL_MT_DISABLED;
+
+    static bool isCircularType(const AstRefDType* nodep);
 };
 
 #endif  // Guard
