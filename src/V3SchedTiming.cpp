@@ -346,7 +346,7 @@ void transformForks(AstNetlist* const netlistp) {
             if (nodep->isCoroutine() && m_awaitMoved
                 && !nodep->stmtsp()->exists([](AstCAwait*) { return true; })) {
                 // co_return at the end (either that or a co_await is required in a coroutine
-                nodep->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;"});
+                nodep->addStmtsp(new AstCReturn{nodep->fileline()});
             }
         }
         void visit(AstVar* nodep) override {
@@ -402,7 +402,7 @@ void transformForks(AstNetlist* const netlistp) {
                 }
                 if (!m_beginHasAwaits) {
                     // co_return at the end (either that or a co_await is required in a coroutine
-                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;"});
+                    newfuncp->addStmtsp(new AstCReturn{nodep->fileline()});
                 } else {
                     m_awaitMoved = true;
                 }

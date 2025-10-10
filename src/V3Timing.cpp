@@ -841,7 +841,7 @@ class TimingControlVisitor final : public VNVisitor {
             // overridden by a suspendable, but doesn't have any awaits itself). Add a
             // co_return at the end (either that or a co_await is required in a
             // coroutine)
-            firstCoStmtp = new AstCStmt{nodep->fileline(), "co_return;"};
+            firstCoStmtp = new AstCReturn{nodep->fileline()};
             nodep->addStmtsp(firstCoStmtp);
         }
         if (nodep->dpiExportImpl()) {
