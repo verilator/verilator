@@ -313,6 +313,9 @@ class BeginVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstCase* nodep) override {
+        // Introduce temporary variable for AstCase if needed - it is done here and not in V3Case
+        // because this phase is before V3Scope and V3Case is not. Doing it before V3Scope ensures
+        // that V3Scope will take care of a scope creation
         if (!nodep->exprp()->isPure()) {
             FileLine* const fl = nodep->exprp()->fileline();
             AstVar* const varp = new AstVar{fl, VVarType::XTEMP, m_caseTempNames.get(nodep),
