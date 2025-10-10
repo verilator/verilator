@@ -1266,6 +1266,9 @@ class AstExprStmt final : public AstNodeExpr {
     // resultp is evaluated AFTER the statement(s).
     // @astgen op1 := stmtsp : List[AstNode]
     // @astgen op2 := resultp : AstNodeExpr
+private:
+    bool m_hasResult = true;
+
 public:
     AstExprStmt(FileLine* fl, AstNode* stmtsp, AstNodeExpr* resultp)
         : ASTGEN_SUPER_ExprStmt(fl) {
@@ -1283,6 +1286,8 @@ public:
         return resultp()->isPure();
     }
     bool sameNode(const AstNode*) const override { return true; }
+    bool hasResult() { return m_hasResult; }
+    void hasResult(bool flag) { m_hasResult = flag; }
 };
 class AstFError final : public AstNodeExpr {
     // @astgen op1 := filep : AstNode
