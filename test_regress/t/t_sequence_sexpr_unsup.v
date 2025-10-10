@@ -90,14 +90,11 @@ module t (/*AUTOARG*/
       a ## [+] b;
    endsequence
 
-   sequence s_booleanabbrev_brastar;
-      a [*];
-   endsequence
    sequence s_booleanabbrev_brastar_int;
       a [* 1 ];
    endsequence
-   sequence s_booleanabbrev_brastar_range;
-      a [* 1 : 2];
+   sequence s_booleanabbrev_brastar;
+      a [*];
    endsequence
    sequence s_booleanabbrev_plus;
       a [+];
