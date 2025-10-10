@@ -1194,7 +1194,7 @@ class AstUCStmt final : public AstNodeStmt {
 public:
     AstUCStmt(FileLine* fl, AstNode* exprsp, bool purity = false)
         : ASTGEN_SUPER_UCStmt(fl)
-        , m_purity(purity) {
+        , m_purity{purity} {
         addExprsp(exprsp);
     }
     ASTGEN_MEMBERS_AstUCStmt;
