@@ -1419,15 +1419,14 @@ class ParamVisitor final : public VNVisitor {
     }
 
     bool isCircularType(const AstRefDType* nodep) {
-        const auto iter = m_isCircular.find(nodep);
-        if (iter != m_isCircular.end()) return iter->second;
+        const auto iter = m_isCircular.emplace(nodep, true);
+        if (!iter.second) return iter.first->second;
         if (const AstRefDType* subDTypep = VN_CAST(nodep->subDTypep(), RefDType)) {
-            m_isCircular.emplace(nodep, true);
             const bool ret = isCircularType(subDTypep);
-            m_isCircular[nodep] = ret;
+            iter.first->second = ret;
             return ret;
         }
-        m_isCircular.emplace(nodep, false);
+        iter.first->second = false;
         return false;
     }
 
