@@ -54,17 +54,23 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
     //  %k      Potential line break
     //  %P      Wide temporary name
     //  ,       Commas suppressed if the previous field is suppressed
-    string nextComma;
-    bool needComma = false;
-#define COMMA \
-    do { \
-        if (!nextComma.empty()) { \
-            puts(nextComma); \
-            nextComma = ""; \
-        } \
-    } while (false)
-
+    string out;
     putnbs(nodep, "");
+
+    bool needComma = false;
+    string nextComma;
+    auto commaOut = [&out, &nextComma]() {
+        if (!nextComma.empty()) {
+            out += nextComma;
+            nextComma = "";
+        }
+    };
+
+    auto putOut = [this, &out]() {
+        if (!out.empty()) puts(out);
+        out = "";
+    };
+
     for (string::const_iterator pos = format.begin(); pos != format.end(); ++pos) {
         if (pos[0] == ',') {
             // Remember we need to add one, but don't do yet to avoid ",)"
@@ -82,8 +88,11 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
             bool detail = false;
             AstNode* detailp = nullptr;
             switch (pos[0]) {
-            case '%': puts("%"); break;
-            case 'k': putbs(""); break;
+            case '%': out += '%'; break;
+            case 'k':
+                putOut();
+                putbs("");
+                break;
             case 'n':
                 detail = true;
                 detailp = nodep;
@@ -104,12 +113,13 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                 if (nodep->isWide()) {
                     UASSERT_OBJ(m_wideTempRefp, nodep,
                                 "Wide Op w/ no temp, perhaps missing op in V3EmitC?");
-                    COMMA;
+                    commaOut();
+                    putOut();
                     if (!m_wideTempRefp->selfPointer().isEmpty()) {
                         emitDereference(m_wideTempRefp,
                                         m_wideTempRefp->selfPointerProtect(m_useSelfForThis));
                     }
-                    puts(m_wideTempRefp->varp()->nameProtect());
+                    out += m_wideTempRefp->varp()->nameProtect();
                     m_wideTempRefp = nullptr;
                     needComma = true;
                 }
@@ -120,22 +130,26 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                 // Get next letter of %[nlrt]
                 ++pos;
                 switch (pos[0]) {
-                case 'q': emitIQW(detailp); break;
+                case 'q':
+                    putOut();
+                    emitIQW(detailp);
+                    break;
                 case 'w':
-                    COMMA;
-                    puts(cvtToStr(detailp->widthMin()));
+                    commaOut();
+                    out += cvtToStr(detailp->widthMin());
                     needComma = true;
                     break;
                 case 'W':
                     if (lhsp->isWide()) {
-                        COMMA;
-                        puts(cvtToStr(lhsp->widthWords()));
+                        commaOut();
+                        out += cvtToStr(lhsp->widthWords());
                         needComma = true;
                     }
                     break;
                 case 'i':
-                    COMMA;
+                    commaOut();
                     UASSERT_OBJ(detailp, nodep, "emitOperator() references undef node");
+                    putOut();
                     iterateAndNextConstNull(detailp);
                     needComma = true;
                     break;
@@ -146,20 +160,19 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
             }
         } else if (pos[0] == ')') {
             nextComma = "";
-            puts(")");
+            out += ')';
         } else if (pos[0] == '(') {
-            COMMA;
+            commaOut();
             needComma = false;
-            puts("(");
+            out += '(';
         } else {
             // Normal text
             if (std::isalnum(pos[0])) needComma = true;
-            COMMA;
-            string s;
-            s += pos[0];
-            puts(s);
+            commaOut();
+            out += pos[0];
         }
     }
+    putOut();
 }
 
 void EmitCFunc::displayEmit(AstNode* nodep, bool isScan) {
