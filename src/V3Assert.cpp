@@ -275,33 +275,35 @@ class AssertVisitor final : public VNVisitor {
         return newp;
     }
 
-    static AstFork* cycleDelayAssertBody(AstPExpr* pExpr, AstNode* passsp, AstNode* failsp,
-                                         AstNodeCoverOrAssert* nodep) {
-        AstNode* const precondps = pExpr->precondp();
-        UASSERT_OBJ(precondps, pExpr, "Should have precondition");
-        AstIf* const ifp
-            = new AstIf{nodep->fileline(), pExpr->condp()->unlinkFrBack(), passsp, failsp};
-        // It's more LIKELY that we'll take the nullptr if clause
-        // than the sim-killing else clause:
-        ifp->branchPred(VBranchPred::BP_LIKELY);
-        ifp->isBoundsCheck(true);  // To avoid LATCH warning
-        precondps->unlinkFrBackWithNext()->addNext(ifp);
-        passsp = newIfAssertOn(precondps, nodep->directive(), nodep->type());
-        AstFork* const forkp = new AstFork{precondps->fileline(), "", passsp};
-        forkp->joinType(VJoinType::JOIN_NONE);
-        return forkp;
-    }
-    static AstNode* assertBody(AstNodeCoverOrAssert* nodep, AstNodeExpr* propp, AstNode* passsp,
-                               AstNode* failsp) {
-        if (AstPExpr* const pExpr = VN_CAST(propp, PExpr)) {
-            return cycleDelayAssertBody(pExpr, passsp, failsp, nodep);
-        }
+    static AstIf* assertCond(AstNodeCoverOrAssert* nodep, AstNodeExpr* propp, AstNode* passsp,
+                             AstNode* failsp) {
 
         AstIf* const ifp = new AstIf{nodep->fileline(), propp, passsp, failsp};
         // It's more LIKELY that we'll take the nullptr if clause
         // than the sim-killing else clause:
         ifp->branchPred(VBranchPred::BP_LIKELY);
         ifp->isBoundsCheck(true);  // To avoid LATCH warning
+        return ifp;
+    }
+
+    static AstNode* assertBody(AstNodeCoverOrAssert* nodep, AstNodeExpr* propp, AstNode* passsp,
+                               AstNode* failsp) {
+        if (AstPExpr* const pExpr = VN_CAST(propp, PExpr)) {
+            AstNodeExpr* const condp = pExpr->condp();
+            UASSERT_OBJ(condp, pExpr, "Should have condition");
+            AstIf* const ifp = assertCond(nodep, condp->unlinkFrBack(), passsp, failsp);
+
+            AstNode* const precondps = pExpr->precondp();
+            UASSERT_OBJ(precondps, pExpr, "Should have precondition");
+            precondps->unlinkFrBackWithNext()->addNext(ifp);
+            AstNodeStmt* const assertOnp
+                = newIfAssertOn(precondps, nodep->directive(), nodep->type());
+            AstFork* const forkp = new AstFork{precondps->fileline(), "", assertOnp};
+            forkp->joinType(VJoinType::JOIN_NONE);
+            return forkp;
+        }
+
+        AstIf* const ifp = assertCond(nodep, propp, passsp, failsp);
         return newIfAssertOn(ifp, nodep->directive(), nodep->type());
     }
 
