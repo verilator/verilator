@@ -9,10 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('linter')
 
-test.compile(verilator_flags2=["--language 1364-2005"])
-
-test.execute()
+test.lint()
 
 test.passes()

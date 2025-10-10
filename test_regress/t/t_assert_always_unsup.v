@@ -29,6 +29,10 @@ module t (/*AUTOARG*/
       eventually [2:5] a;
    endproperty
 
+   property p_evc;
+      eventually [2] a;
+   endproperty
+
    property p_s_ev;
       s_eventually [2:5] a;
    endproperty

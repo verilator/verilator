@@ -687,7 +687,6 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
 <VA5,SAX>{
   /*     Generic unsupported warnings */
-   "1step"              { FL; return y1STEP; }
    "above"              { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "abs"                { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "absdelay"           { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }

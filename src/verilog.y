@@ -1026,7 +1026,7 @@ description:                    // ==IEEE: description
         |       yaT_UNCONNECTED_PULL0                   { PARSEP->unconnectedDrive(VOptionBool::OPT_FALSE); }
         |       yaT_UNCONNECTED_PULL1                   { PARSEP->unconnectedDrive(VOptionBool::OPT_TRUE); }
         |       vltItem                                 { }
-        |       error                                   { }
+        |       error                                   { }  // LCOV_EXCL_LINE
         ;
 
 timeunits_declaration<nodep>:   // ==IEEE: timeunits_declaration
@@ -2124,8 +2124,8 @@ struct_unionDecl<nodeUOrStructDTypep>:  // IEEE: part of data_type
 struct_union_memberListEnd<memberDTypep>: // IEEE: { struct_union_member } '}'
                 struct_union_memberList '}'                     { $$ = $1; }
         //
-        |       struct_union_memberList error '}'               { $$ = $1; }
-        |       error '}'                                       { $$ = nullptr; }
+        |       struct_union_memberList error '}'               { $$ = $1; }  // LCOV_EXCL_LINE
+        |       error '}'                                       { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
 struct_union_memberList<memberDTypep>: // IEEE: { struct_union_member }
@@ -2133,8 +2133,8 @@ struct_union_memberList<memberDTypep>: // IEEE: { struct_union_member }
 
         |       struct_union_memberList struct_union_member     { $$ = addNextNull($1, $2); }
         //
-        |       struct_union_memberList error ';'               { $$ = $1; }
-        |       error ';'                                       { $$ = nullptr; }
+        |       struct_union_memberList error ';'               { $$ = $1; }  // LCOV_EXCL_LINE
+        |       error ';'                                       { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
 struct_union_member<memberDTypep>:     // ==IEEE: struct_union_member
@@ -2514,7 +2514,7 @@ type_declaration<nodep>:        // ==IEEE: type_declaration
         |       yTYPEDEF yCLASS idAny ';'               { $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3, VFwdType::CLASS); }
         |       yTYPEDEF yINTERFACE yCLASS idAny ';'    { $$ = GRAMMARP->createTypedefFwd($<fl>4, *$4, VFwdType::INTERFACE_CLASS); }
         //
-        |       yTYPEDEF error idAny ';'                { $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3, VFwdType::NONE); }
+        |       yTYPEDEF error idAny ';'                { $$ = GRAMMARP->createTypedefFwd($<fl>3, *$3, VFwdType::NONE); }  // LCOV_EXCL_LINE
         ;
 
 dtypeAttrListE<nodep>:
@@ -2616,7 +2616,7 @@ module_common_item<nodep>:      // ==IEEE: module_common_item
         |       severity_system_task                    { $$ = $1; }
         |       sigAttrScope                            { $$ = nullptr; }
         //
-        |       error ';'                               { $$ = nullptr; }
+        |       error ';'                               { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
 always_construct<nodep>:        // IEEE: == always_construct
@@ -3444,8 +3444,8 @@ block_item_declarationList<nodep>:      // IEEE: [ block_item_declaration ]
                 block_item_declaration                  { $$ = $1; }
         |       block_item_declarationList block_item_declaration       { $$ = addNextNull($1, $2); }
         //
-        |       block_item_declarationList error ';'    { $$ = $1; }
-        |       error ';'                               { $$ = nullptr; }
+        |       block_item_declarationList error ';'    { $$ = $1; }  // LCOV_EXCL_LINE
+        |       error ';'                               { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
 block_item_declaration<nodep>:  // ==IEEE: block_item_declaration
@@ -3458,7 +3458,7 @@ stmtList<nodep>:
                 stmtBlock                               { $$ = $1; }
         |       stmtList stmtBlock                      { $$ = addNextNull($1, $2); }
         //
-        |       stmtList error ';'                      { $$ = $1; }
+        |       stmtList error ';'                      { $$ = $1; }  // LCOV_EXCL_LINE
         ;
 
 stmt<nodep>:                    // IEEE: statement_or_null == function_statement_or_null
@@ -5823,7 +5823,7 @@ junkToSemiList<fl>:
 
 junkToSemi:
                 BISONPRE_NOT(';',yD_SETUPHOLD,yENDMODULE,yENDSPECIFY,ySPECPARAM)        { }
-        |       error {}
+        |       error                                   { }  // LCOV_EXCL_LINE
         ;
 
 //************************************************
@@ -6775,7 +6775,7 @@ coverage_spec_or_option<nodep>:  // ==IEEE: coverage_spec_or_option
                 cover_point                             { $$ = $1; }
         |       cover_cross                             { $$ = $1; }
         |       coverage_option ';'                     { $$ = $1; }
-        |       error                                   { $$ = nullptr; }
+        |       error                                   { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
 coverage_option<nodep>:  // ==IEEE: coverage_option
@@ -6818,16 +6818,16 @@ bins_or_empty<nodep>:  // ==IEEE: bins_or_empty
         |       '{' '}'                                 { $$ = nullptr; }
         |       ';'                                     { $$ = nullptr; }
         //
-        |       '{' bins_or_optionsList error '}'       { $$ = $2; }
-        |       '{' error '}'                           { $$ = nullptr; }
+        |       '{' bins_or_optionsList error '}'       { $$ = $2; }  // LCOV_EXCL_LINE
+        |       '{' error '}'                           { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
 bins_or_optionsList<nodep>:  // IEEE: { bins_or_options ';' }
                 bins_or_options ';'                     { $$ = $1; }
         |       bins_or_optionsList bins_or_options ';' { $$ = addNextNull($1, $2); }
         //
-        |       bins_or_optionsList error ';'           { $$ = $1; }
-        |       error ';'                               { $$ = nullptr; }
+        |       bins_or_optionsList error ';'           { $$ = $1; }  // LCOV_EXCL_LINE
+        |       error ';'                               { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
 bins_or_options<nodep>:  // ==IEEE: bins_or_options
@@ -6933,8 +6933,8 @@ cross_body<nodep>:  // ==IEEE: cross_body
         |       '{' cross_body_itemList '}'             { $$ = $2; }
         |       ';'                                     { $$ = nullptr; }
         //
-        |       '{' cross_body_itemList error '}'       { $$ = $2; }
-        |       '{' error '}'                           { $$ = nullptr; }
+        |       '{' cross_body_itemList error '}'       { $$ = $2; }  // LCOV_EXCL_LINE
+        |       '{' error '}'                           { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
 cross_body_itemList<nodep>:  // IEEE: part of cross_body
@@ -6950,7 +6950,7 @@ cross_body_item<nodep>:  // ==IEEE: cross_body_item
         //                      // IEEE: bins_selection
         |       bins_keyword idAny/*new-bin_identifier*/ '=' select_expression iffE ';'
                         { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage cross bin"); DEL($4, $5); }
-        |       error ';'                               { $$ = nullptr; }
+        |       error ';'                               { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
 select_expression<nodep>:  // ==IEEE: select_expression
@@ -7462,8 +7462,8 @@ localNextId<nodeExprp>:         // local::
 class_itemListEnd<nodep>:
                 yENDCLASS                               { $$ = nullptr; }
         |       class_itemList yENDCLASS                { $$ = $1; }
-        |       error yENDCLASS                         { $$ = nullptr; }
-        |       class_itemList error yENDCLASS          { $$ = $1; }
+        |       error yENDCLASS                         { $$ = nullptr; }  // LCOV_EXCL_LINE
+        |       class_itemList error yENDCLASS          { $$ = $1; }  // LCOV_EXCL_LINE
         ;
 
 class_itemList<nodep>:
@@ -7492,7 +7492,7 @@ class_item<nodep>:                      // ==IEEE: class_item
         //                      // Verilator specific
         |       vlScBlock                               { $$ = $1; }
         //
-        |       error ';'                               { $$ = nullptr; }
+        |       error ';'                               { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
 class_method<nodep>:            // ==IEEE: class_method
@@ -7582,8 +7582,8 @@ constraint_block<nodep>:  // ==IEEE: constraint_block
                 '{' '}'                                         { $$ = nullptr; }
         |       '{' constraint_block_itemList '}'               { $$ = $2; }
         //
-        |       '{' error '}'                                   { $$ = nullptr; }
-        |       '{' constraint_block_itemList error '}'         { $$ = $2; }
+        |       '{' error '}'                                   { $$ = nullptr; }  // LCOV_EXCL_LINE
+        |       '{' constraint_block_itemList error '}'         { $$ = $2; }  // LCOV_EXCL_LINE
         ;
 
 constraint_block_itemList<nodep>:  // IEEE: { constraint_block_item }
@@ -7642,15 +7642,15 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
                           $$ = newp; }
         //
         |       error ';'
-                        { $$ = nullptr; }
+                        { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
 constraint_set<nodep>:  // ==IEEE: constraint_set
                 constraint_expression                   { $$ = $1; }
         |       '{' constraint_expressionList '}'       { $$ = $2; }
         //
-        |       '{' error '}'                           { $$ = nullptr; }
-        |       '{' constraint_expressionList error '}' { $$ = $2; }
+        |       '{' error '}'                           { $$ = nullptr; }  // LCOV_EXCL_LINE
+        |       '{' constraint_expressionList error '}' { $$ = $2; }  // LCOV_EXCL_LINE
         ;
 
 dist_list<distItemp>:  // ==IEEE: dist_list
@@ -7769,7 +7769,7 @@ config_rule_statement<nodep>:  // == IEEE: config_rule_statement
         |       yCELL configCell use_clause ';'
                         { $$ = new AstConfigRule{$1, $2, $3, true}; }
         |       error ';'
-                        { $$ = nullptr; }
+                        { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
 inst_name<nodeExprp>:  // == IEEE: inst_name

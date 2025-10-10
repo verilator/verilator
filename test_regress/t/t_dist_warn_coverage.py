@@ -71,8 +71,6 @@ for s in [
         'Unsupported tristate port expression: ',
         'Unsupported: $bits for queue',
         'Unsupported: &&& expression',
-        'Unsupported: +%- range',
-        'Unsupported: +/- range',
         'Unsupported: 4-state numbers in this context',
         'Unsupported: Bind with instance list',
         'Unsupported: Concatenation to form ',

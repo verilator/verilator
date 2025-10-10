@@ -8,19 +8,9 @@
 %Error-UNSUPPORTED: t/t_assert_always_unsup.v:29:7: Unsupported: eventually[] (in property expression)
    29 |       eventually [2:5] a;
       |       ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_always_unsup.v:33:7: Unsupported: s_eventually[] (in property expression)
-   33 |       s_eventually [2:5] a;
-      |       ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_always_unsup.v:37:14: Unsupported: s_eventually[] (in property expression)
-   37 |       always s_eventually [2:5] a;
-      |              ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_assert_always_unsup.v:37:7: Unsupported: always (in property expression)
-   37 |       always s_eventually [2:5] a;
-      |       ^~~~~~
-%Error-UNSUPPORTED: t/t_assert_always_unsup.v:41:20: Unsupported: always[] (in property expression)
-   41 |       s_eventually always [2:5] a;
-      |                    ^~~~~~
-%Error-UNSUPPORTED: t/t_assert_always_unsup.v:41:7: Unsupported: s_eventually (in property expression)
-   41 |       s_eventually always [2:5] a;
-      |       ^~~~~~~~~~~~
-%Error: Exiting due to
+%Error: t/t_assert_always_unsup.v:33:20: syntax error, unexpected ']', expecting ':'
+   33 |       eventually [2] a;
+      |                    ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Cannot continue
+        ... This fatal error may be caused by the earlier error(s); resolve those first.

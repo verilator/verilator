@@ -19,6 +19,7 @@ module t;
     $error;
     $error("User elaboration-time error");
     $fatal(0, "User elaboration-time fatal");
+    $fatal(0);
     $fatal;
   end
 

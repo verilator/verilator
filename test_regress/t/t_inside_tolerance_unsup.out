@@ -1,0 +1,26 @@
+%Error-UNSUPPORTED: t/t_inside_tolerance_unsup.v:18:23: Unsupported: +/- range
+   18 |     do if ((r inside {[1492 +/- 2]}) !== (1'b1)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_inside_tolerance_unsup.v",18, (r inside {[1492 +/- 2]}), (1'b1), "r inside {[1492 +/- 2]}", "1'b1"); $stop; end while(0);;
+      |                       ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_inside_tolerance_unsup.v:18:160: Unsupported: +/- range
+   18 |     do if ((r inside {[1492 +/- 2]}) !== (1'b1)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_inside_tolerance_unsup.v",18, (r inside {[1492 +/- 2]}), (1'b1), "r inside {[1492 +/- 2]}", "1'b1"); $stop; end while(0);;
+      |                                                                                                                                                                ^
+%Error-UNSUPPORTED: t/t_inside_tolerance_unsup.v:19:23: Unsupported: +/- range
+   19 |     do if ((r inside {[1482 +/- 2]}) !== (1'b0)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_inside_tolerance_unsup.v",19, (r inside {[1482 +/- 2]}), (1'b0), "r inside {[1482 +/- 2]}", "1'b0"); $stop; end while(0);;
+      |                       ^
+%Error-UNSUPPORTED: t/t_inside_tolerance_unsup.v:19:160: Unsupported: +/- range
+   19 |     do if ((r inside {[1482 +/- 2]}) !== (1'b0)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_inside_tolerance_unsup.v",19, (r inside {[1482 +/- 2]}), (1'b0), "r inside {[1482 +/- 2]}", "1'b0"); $stop; end while(0);;
+      |                                                                                                                                                                ^
+%Error-UNSUPPORTED: t/t_inside_tolerance_unsup.v:20:23: Unsupported: +%- range
+   20 |     do if ((r inside {[1490 +%- 10]}) !== (1'b1)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_inside_tolerance_unsup.v",20, (r inside {[1490 +%- 10]}), (1'b1), "r inside {[1490 +%- 10]}", "1'b1"); $stop; end while(0);;
+      |                       ^
+%Error-UNSUPPORTED: t/t_inside_tolerance_unsup.v:20:161: Unsupported: +%- range
+   20 |     do if ((r inside {[1490 +%- 10]}) !== (1'b1)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_inside_tolerance_unsup.v",20, (r inside {[1490 +%- 10]}), (1'b1), "r inside {[1490 +%- 10]}", "1'b1"); $stop; end while(0);;
+      |                                                                                                                                                                 ^
+%Error-UNSUPPORTED: t/t_inside_tolerance_unsup.v:21:23: Unsupported: +%- range
+   21 |     do if ((r inside {[1090 +%- 10]}) !== (1'b0)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_inside_tolerance_unsup.v",21, (r inside {[1090 +%- 10]}), (1'b0), "r inside {[1090 +%- 10]}", "1'b0"); $stop; end while(0);;
+      |                       ^
+%Error-UNSUPPORTED: t/t_inside_tolerance_unsup.v:21:161: Unsupported: +%- range
+   21 |     do if ((r inside {[1090 +%- 10]}) !== (1'b0)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", "t/t_inside_tolerance_unsup.v",21, (r inside {[1090 +%- 10]}), (1'b0), "r inside {[1090 +%- 10]}", "1'b0"); $stop; end while(0);;
+      |                                                                                                                                                                 ^
+%Error: Exiting due to

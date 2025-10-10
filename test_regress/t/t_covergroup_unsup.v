@@ -127,7 +127,7 @@ module t (/*AUTOARG*/
 
       { bins bts = ( 1, 2 ); }
       { wildcard bins wbts = ( 1, 2 ); }
-      { bins bts2 = ( 2, 3 ), ( [5:6] ) ; }
+      { bins bts2 = ( 2, 3 ), ( [5:6] ), ( [5 +/- 2] ), ( [ 5 +%- 20.0] ) ; }
 
       { bins bts2 = ( 1,5 => 6,7 ) ; }
       { bins bts2 = ( 3 [*5] ) ; }
