@@ -27,7 +27,9 @@ Verilator 5.041 devel
 * Add NORETURN warning on functions without return values (#6534). [Alex Solomatnikov]
 * Deprecate sensitivity list on public_flat_rw attributes (#6443). [Geza Lore]
 * Deprecate clocker attribute and --clk option (#6463). [Geza Lore]
+* Deprecate '--make cmake' option (#6540). [Geza Lore]
 * Change default `--expand-limit` to 256 (#3419).
+* Change developer coverage flow and add configure `--enable-dev-gcov` (#6526). [Geza Lore]
 * Support modports referencing clocking blocks (#4555) (#6436). [Ryszard Rozak, Antmicro Ltd.]
 * Support class package reference on pattern keys (#5653). [Todd Strader]
 * Support digits in `$sscanf` field width formats (#6083). [Iztok Jeras]
@@ -38,6 +40,7 @@ Verilator 5.041 devel
 * Improve `covergroup with function sample` handling  (#6387). [Jakub Wasilewski]
 * Improve DFG type system (#6390). [Geza Lore]
 * Improve DFG variable removal and temporary insertion (#6401). [Geza Lore]
+* Improve memory usage of statistics (#6513). [Geza Lore]
 * Optimize duplicate 'if' and '?:' conditions (#3807) (#6495)
 * Optimize dead functions in more cases (#6380) (#6430). [Artur Bieniek, Antmicro Ltd.]
 * Optimize constant folding in wide expression expansion (#6381). [Geza Lore]
@@ -64,7 +67,7 @@ Verilator 5.041 devel
 * Fix use after free in elaboration (#6403). [Geza Lore]
 * Fix address sanitizer issues (#6406). [Geza Lore]
 * Fix timing control under fork under function (#6407). [Krzysztof Bieganski, Antmicro Ltd.]
-* Fix memory leaks (#6411) (#6417) (#6419) (#6437) (#6439). [Geza Lore]
+* Fix memory leaks and reduce requirements (#6411) (#6417) (#6419) (#6437) (#6439) (#6517). [Geza Lore]
 * Fix parameter implicit type from string (#6414). [Alex Solomatnikov]
 * Fix parsing for sequence expressions (#6427). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix parameterized class super functions (#6431) (#6438). [Artur Bieniek, Antmicro Ltd.]
@@ -85,6 +88,14 @@ Verilator 5.041 devel
 * Fix PROTOTYPEMIS error on implicit logic (#6482). [Alex Solomatnikov]
 * Fix configure misdetecting C++14 (#6488) (#6515). [Thomas O'Keeffe]
 * Fix false BLKSEQ on non-edged sensitivity list (#6492). [Oron Port]
+* Fix .vlt public_flat* and others to support long identifier names (#6516). [Szymon Gizler, Antmicro Ltd.]
+* Fix always_ff on constants (#6519). [Todd Strader]
+* Fix find_index methods of associative arrays (#6525). [Ryszard Rozak, Antmicro Ltd.]
+* Fix parsing of `eventually[]` and property expression memory leaks (#6530). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix memory leak for unsupported `$past` (#6535). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix inconsistent force assignment (#6541). [Artur Bieniek, Antmicro Ltd.]
+* Fix DFG circular driver tracing with partial assignments. [Geza Lore]
+* Fix passing typedef value as parameter (#6543). [Igor Zaworski, Antmicro Ltd.]
 
 
 Verilator 5.040 2025-08-30

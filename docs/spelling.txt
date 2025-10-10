@@ -749,6 +749,7 @@ fwrite
 gantt
 gcc
 gcda
+gcov
 gdb
 gdbinit
 genblk
@@ -768,8 +769,8 @@ hdr
 hdzhangdoc
 hh
 hier
-hierMkJsonArgs
 hierMkArgs
+hierMkJsonArgs
 hierParameters
 hierVer
 html
