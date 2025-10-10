@@ -551,9 +551,11 @@ class RandomizeMarkVisitor final : public VNVisitor {
         }
     }
     void visit(AstConstraintExpr* nodep) override {
+        std::cout << "[DEBUG RandomizeMarkVisitor::visit(AstConstraintExpr)] Processing constraint expression" << std::endl;
         VL_RESTORER(m_constraintExprGenp);
         m_constraintExprGenp = nodep;
         iterateChildrenConst(nodep);
+        std::cout << "[DEBUG RandomizeMarkVisitor::visit(AstConstraintExpr)] Done processing constraint expression" << std::endl;
     }
     void visit(AstConstraintIf* nodep) override {
         {
@@ -567,9 +569,15 @@ class RandomizeMarkVisitor final : public VNVisitor {
     void visit(AstNodeVarRef* nodep) override {
         if (!m_constraintExprGenp) return;
 
+        std::cout << "[DEBUG RandomizeMarkVisitor::visit(AstNodeVarRef)] Processing VarRef: " << nodep->name() << std::endl;
+        std::cout << "  isRandomizable: " << nodep->varp()->rand().isRandomizable() << std::endl;
+
         if (nodep->varp()->lifetime().isStatic()) m_staticRefs.emplace(nodep);
 
-        if (nodep->varp()->rand().isRandomizable()) nodep->user1(true);
+        if (nodep->varp()->rand().isRandomizable()) {
+            std::cout << "  Setting user1(true) for randomizable var" << std::endl;
+            nodep->user1(true);
+        }
     }
     void visit(AstMemberSel* nodep) override {
         if (!m_constraintExprGenp) return;
@@ -579,6 +587,24 @@ class RandomizeMarkVisitor final : public VNVisitor {
         // of type AstLambdaArgRef. They are randomized too.
         const bool randObject = nodep->fromp()->user1() || VN_IS(nodep->fromp(), LambdaArgRef);
         nodep->user1(randObject && nodep->varp()->rand().isRandomizable());
+
+        // Debug output
+        if (nodep->user1()) {
+            std::cout << "[DEBUG RandomizeMarkVisitor::visit(AstMemberSel)] Setting user1=true for "
+                      << nodep->name() << std::endl;
+            std::cout << "  randObject=" << randObject << ", varp->rand().isRandomizable()="
+                      << nodep->varp()->rand().isRandomizable() << std::endl;
+            std::cout << "  fromp type: " << nodep->fromp()->typeName() << std::endl;
+            if (VN_IS(nodep->fromp(), VarRef)) {
+                AstVar* varp = VN_AS(nodep->fromp(), VarRef)->varp();
+                std::cout << "  fromp VarRef name: " << varp->name()
+                          << ", dtype: " << varp->dtypep()->typeName() << std::endl;
+            } else if (VN_IS(nodep->fromp(), MemberSel)) {
+                AstVar* varp = VN_AS(nodep->fromp(), MemberSel)->varp();
+                std::cout << "  fromp MemberSel name: " << varp->name()
+                          << ", dtype: " << varp->dtypep()->typeName() << std::endl;
+            }
+        }
         if (m_astWithp) {
             AstNode* backp = m_astWithp;
             while (backp->backp()) {
@@ -844,37 +870,51 @@ class ConstraintExprVisitor final : public VNVisitor {
                 CONSTRAINTIGN,
                 "Size constraint combined with element constraint may not work correctly");
         }
-        AstClass* withinclass = nullptr;
-        // Build full nested path for multi-level MemberSel chains (e.g., obj.container.data)
-        // Only build path if we're actually in a nested context (backp is MemberSel)
-        std::string strr;
-        AstNode* fromp = nodep->backp();
-        AstMemberSel* membersel = nullptr;
 
-        if (VN_IS(fromp, MemberSel)) {
-            // We're in a nested context: need to find the outermost MemberSel
-            // For foo.in.val: VarRef(foo)->backp() is MemberSel(in), but we need MemberSel(val)
-            // Traverse up via backp() to find the topmost MemberSel
-            AstNode* topMemberSel = fromp;
+        // Debug: check what backp is after unwrap
+        std::cout << "[DEBUG ConstraintExprVisitor::visit(AstNodeVarRef)] Processing VarRef: "
+                  << nodep->name() << std::endl;
+        std::cout << "  backp type: " << (nodep->backp() ? nodep->backp()->typeName() : "null") << std::endl;
+        std::cout << "  varp->isGlobalConstrained(): " << nodep->varp()->isGlobalConstrained() << std::endl;
+        std::cout << "  varp->user3(): " << (varp->user3() ? "true" : "false") << std::endl;
+
+        // Check if this variable is marked as globally constrained
+        bool isGlobalConstrained = nodep->varp()->isGlobalConstrained();
+
+        AstMemberSel* membersel = nullptr;
+        std::string smtName;
+
+        if (isGlobalConstrained && VN_IS(nodep->backp(), MemberSel)) {
+            // For global constraints: build complete path from topmost MemberSel
+            AstNode* topMemberSel = nodep->backp();
             while (VN_IS(topMemberSel->backp(), MemberSel)) {
                 topMemberSel = topMemberSel->backp();
             }
-
             membersel = VN_AS(topMemberSel, MemberSel)->cloneTree(false);
-            strr = buildMemberPath(membersel);
+            smtName = buildMemberPath(membersel);
+        } else if (VN_IS(nodep->backp(), MemberSel)) {
+            // Normal case: simple one-level MemberSel
+            membersel = VN_AS(nodep->backp(), MemberSel)->cloneTree(false);
+            smtName = membersel->fromp()->name() + "." + membersel->name();
         } else {
-            // Not a nested context: just use the variable name
-            strr = nodep->name();
+            // No MemberSel: just variable name
+            smtName = nodep->name();
         }
 
+        std::cout << "  -> Computed smtName: " << smtName << std::endl;
+
+        std::cout << "  Before varp update: varp->name() = " << varp->name() << std::endl;
         if (membersel) varp = membersel->varp();
-        withinclass = membersel ? VN_CAST(nodep->backp()->user2p(), Class) : nullptr;
+        std::cout << "  After varp update: varp->name() = " << varp->name() << std::endl;
         AstNodeModule* const classOrPackagep = nodep->classOrPackagep();
         const RandomizeMode randMode = {.asInt = varp->user1()};
-        if (!randMode.usesMode && editFormat(nodep)) return;
+        std::cout << "  randMode.usesMode = " << (randMode.usesMode ? "true" : "false") << std::endl;
+        if (!randMode.usesMode && editFormat(nodep)) {
+            std::cout << "  editFormat returned true, exiting" << std::endl;
+            return;
+        }
+        std::cout << "  Proceeding to create SFormatF..." << std::endl;
 
-        // In SMT: use full nested path for MemberSel chains, simple name otherwise
-        const std::string smtName = membersel ? strr : nodep->name();
         VNRelinker relinker;
         nodep->unlinkFrBack(&relinker);
         AstNodeExpr* exprp = new AstSFormatF{nodep->fileline(), smtName, false, nullptr};
@@ -887,12 +927,30 @@ class ConstraintExprVisitor final : public VNVisitor {
                 "at", new AstConst{nodep->fileline(), randMode.index}};
             atp->dtypeSetUInt32();
             exprp = new AstCond{varp->fileline(), atp, exprp, constFormatp};
+        } else if (!membersel || !isGlobalConstrained) {
+            // Only delete nodep here if it's not a global constraint
+            // Global constraints need nodep for write_var processing
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
-        // Note: VL_DO_DANGLING moved to conditional block below for proper cleanup
         relinker.relink(exprp);
 
+        // For global constraints: always call write_var with full path even if varp->user3() is set
+        // For normal constraints: only call write_var if varp->user3() is not set
         if (!varp->user3() || (membersel && nodep->varp()->isGlobalConstrained())) {
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            // Debug output for write_var
+            std::cout << "[DEBUG ConstraintExprVisitor::visit(AstNodeVarRef)] write_var for "
+                      << varp->name() << std::endl;
+            std::cout << "  smtName: " << smtName << std::endl;
+            std::cout << "  isGlobalConstrained: " << isGlobalConstrained << std::endl;
+            std::cout << "  membersel: " << (membersel ? "yes" : "no") << std::endl;
+            if (membersel) {
+                std::cout << "  membersel path: " << buildMemberPath(membersel) << std::endl;
+            }
+
+            // For global constraints, delete nodep here after processing
+            if (membersel && isGlobalConstrained) {
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            }
             AstCMethodHard* const methodp = new AstCMethodHard{
                 varp->fileline(),
                 new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
@@ -912,7 +970,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 dimension = 1;
             }
             methodp->dtypeSetVoid();
-            AstClass* const classp = membersel ? withinclass : VN_AS(varp->user2p(), Class);
+            AstClass* const classp
+                = membersel ? VN_AS(membersel->user2p(), Class) : VN_AS(varp->user2p(), Class);
             AstVarRef* const varRefp
                 = new AstVarRef{varp->fileline(), classp, varp, VAccess::WRITE};
             varRefp->classOrPackagep(classOrPackagep);
@@ -935,7 +994,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                     new AstConst{varp->fileline(), AstConst::Unsized64{}, randMode.index});
             }
             AstNodeFTask* initTaskp = m_inlineInitTaskp;
+            std::cout << "  m_inlineInitTaskp: " << (m_inlineInitTaskp ? "NOT NULL" : "NULL") << std::endl;
             if (!initTaskp) {
+                std::cout << "  Setting varp->user3(true) because initTaskp is NULL" << std::endl;
                 varp->user3(true);  // Mark as set up in new()
                 initTaskp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
                 UASSERT_OBJ(initTaskp, classp, "No new() in class");
@@ -1132,21 +1193,30 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstMemberSel* nodep) override {
         if (nodep->varp()->rand().isRandomizable()) {
+            std::cout << "[DEBUG ConstraintExprVisitor::visit(AstMemberSel)] Processing rand member: "
+                      << nodep->name() << std::endl;
+
             // Determine dtype based on node type (VarRef or MemberSel)
             AstNodeDType* const dtype = VN_IS(nodep->fromp(), VarRef)
                                             ? VN_AS(nodep->fromp(), VarRef)->dtypep()
                                             : VN_AS(nodep->fromp(), MemberSel)->dtypep();
             const AstClassRefDType* const classRefDType = VN_CAST(dtype, ClassRefDType);
+
             if (!classRefDType || !classRefDType->classp()) {
                 // Not a class reference type, skip processing
+                std::cout << "  -> Not a class type (struct/array), calling editFormat" << std::endl;
                 editFormat(nodep);
                 return;
             }
+
             AstClass* const refClass = classRefDType->classp();
+            std::cout << "  -> Is class type: " << refClass->name() << std::endl;
+            std::cout << "  -> nodep->user2p() = " << (nodep->user2p() ? VN_AS(nodep->user2p(), Class)->name() : "null") << std::endl;
 
             // Check if constraint is from inside the class (internal) or outside (global)
             if (nodep->user2p() == refClass) {
                 // Constraint is internal to the class
+                std::cout << "  -> Internal constraint, unwrapping" << std::endl;
                 iterateChildren(nodep);
                 nodep->replaceWith(nodep->fromp()->unlinkFrBack());
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1166,11 +1236,14 @@ class ConstraintExprVisitor final : public VNVisitor {
                       : (VN_IS(rootNode, MemberSel) ? VN_AS(rootNode, MemberSel)->varp()
                                                     : nullptr);
             if (constrainedVar && constrainedVar->isGlobalConstrained()) {
+                std::cout << "  -> Global constraint (root var: " << constrainedVar->name() << "), unwrapping" << std::endl;
                 iterateChildren(nodep);
                 nodep->replaceWith(nodep->fromp()->unlinkFrBack());
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 return;
             }
+
+            std::cout << "  -> No special handling needed, calling editFormat" << std::endl;
         }
         editFormat(nodep);
     }
