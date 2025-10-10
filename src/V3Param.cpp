@@ -1277,12 +1277,12 @@ class ParamVisitor final : public VNVisitor {
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
     std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
     std::deque<std::string> m_strings;  // Allocator for temporary strings
+    std::map<const AstRefDType*, bool>
+        m_isCircular;  // Stores information whether `AstRefDType` is circular
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp;  // Module iterating
     string m_generateHierName;  // Generate portion of hierarchy name
-    std::map<const AstRefDType*, bool>
-        m_isCircularTypeCache;  // Caches return values of `V3Width::isCircularType` calls
 
     // METHODS
 
@@ -1417,16 +1417,21 @@ class ParamVisitor final : public VNVisitor {
             processWorkQ();
         }
     }
-    void visit(AstRefDType* nodep) override {
-        const auto iter = m_isCircularTypeCache.find(nodep);
-        bool isCircular;
-        if (iter != m_isCircularTypeCache.end()) {
-            isCircular = iter->second;
-        } else {
-            isCircular = V3Width::isCircularType(nodep);
-            m_isCircularTypeCache.emplace(nodep, isCircular);
+
+    bool isCircularType(const AstRefDType* nodep) {
+        const auto iter = m_isCircular.emplace(nodep, true);
+        if (!iter.second) return iter.first->second;
+        if (const AstRefDType* const subDTypep = VN_CAST(nodep->subDTypep(), RefDType)) {
+            const bool ret = isCircularType(subDTypep);
+            iter.first->second = ret;
+            return ret;
         }
-        if (isCircular) {
+        iter.first->second = false;
+        return false;
+    }
+
+    void visit(AstRefDType* nodep) override {
+        if (isCircularType(nodep)) {
             nodep->v3error("Typedef's type is circular: " << nodep->prettyName());
         } else if (nodep->typedefp() && nodep->subDTypep()
                    && (VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
