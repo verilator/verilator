@@ -2366,7 +2366,7 @@ public:
     bool cleanOut() const override { return false; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool isPure() override { return m_purity; }  // SPECIAL: User may order w/other sigs
+    bool isPure() override { return m_purity; }
     bool isOutputter() override { return true; }
     bool isGateOptimizable() const override { return false; }
     bool isSubstOptimizable() const override { return false; }

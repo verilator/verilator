@@ -387,21 +387,6 @@ class CaseVisitor final : public VNVisitor {
         }
     }
 
-    static bool replaceFirstVarRefOf(AstNode* const nodep, const AstVar* const varp,
-                                     AstNodeExpr* const exprp) {
-        if (!nodep) return false;
-        if (AstVarRef* const varRefp = VN_CAST(nodep, VarRef)) {
-            if (varRefp->varp() == varp) {
-                VL_DO_DANGLING(nodep->replaceWith(exprp), nodep);
-                return true;
-            }
-        }
-        return replaceFirstVarRefOf(nodep->op1p(), varp, exprp)
-               || replaceFirstVarRefOf(nodep->op2p(), varp, exprp)
-               || replaceFirstVarRefOf(nodep->op3p(), varp, exprp)
-               || replaceFirstVarRefOf(nodep->op4p(), varp, exprp);
-    }
-
     void replaceCaseFast(AstCase* nodep) {
         // CASEx(cexpr,....
         // ->  tree of IF(msb,  IF(msb-1, 11, 10)
@@ -429,10 +414,10 @@ class CaseVisitor final : public VNVisitor {
         AstNode::user3ClearTree();
         AstNode* ifrootp = replaceCaseFastRecurse(cexprp, m_caseWidth - 1, 0UL);
         if (cexprStmtp) {
-            const bool success
-                = replaceFirstVarRefOf(VN_AS(ifrootp, If)->condp(),
-                                       VN_AS(cexprStmtp->resultp(), VarRef)->varp(), cexprStmtp);
-            UASSERT_OBJ(success, nodep, "Case expression if's shall utilize temporary variable");
+            cexprStmtp->resultp()->unlinkFrBack()->deleteTree();
+            AstIf* const ifp = VN_AS(ifrootp, If);
+            cexprStmtp->resultp(ifp->condp()->unlinkFrBack());
+            ifp->condp(cexprStmtp);
             m_needToClearCache = true;
         }
 
@@ -591,10 +576,9 @@ class CaseVisitor final : public VNVisitor {
             UINFOTREE(9, grouprootp, "", "_new");
             nodep->replaceWith(grouprootp);
             if (cexprStmtp) {
-                UASSERT_OBJ(replaceFirstVarRefOf(grouprootp->condp(),
-                                                 VN_AS(cexprStmtp->resultp(), VarRef)->varp(),
-                                                 cexprStmtp),
-                            nodep, "Case expression if's shall utilize temporary variable");
+                cexprStmtp->resultp()->unlinkFrBack()->deleteTree();
+                cexprStmtp->resultp(grouprootp->condp()->unlinkFrBack());
+                grouprootp->condp(cexprStmtp);
                 m_needToClearCache = true;
             }
         } else {
