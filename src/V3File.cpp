@@ -794,29 +794,37 @@ void V3OutFormatter::putns(const AstNode* nodep, const char* strg) {
             }
             break;
         case '{':
-            if (m_lang == LA_C && (equalsForBracket || m_bracketLevel)) {
-                // Break up large code inside "= { ..."
-                m_parenVec.push(m_indentLevel
-                                * m_blockIndent);  // Line up continuation with block+1
-                ++m_bracketLevel;
+            if (!m_inStringLiteral) {
+                if (m_lang == LA_C && (equalsForBracket || m_bracketLevel)) {
+                    // Break up large code inside "= { ..."
+                    m_parenVec.push(m_indentLevel
+                                    * m_blockIndent);  // Line up continuation with block+1
+                    ++m_bracketLevel;
+                }
+                indentInc();
             }
-            indentInc();
             break;
         case '}':
-            if (m_bracketLevel > 0) {
-                m_parenVec.pop();
-                --m_bracketLevel;
+            if (!m_inStringLiteral) {
+                if (m_bracketLevel > 0) {
+                    m_parenVec.pop();
+                    --m_bracketLevel;
+                }
+                indentDec();
             }
-            indentDec();
             break;
         case '(':
-            indentInc();
-            // Line up continuation with open paren, plus one indent
-            m_parenVec.push(m_column);
+            if (!m_inStringLiteral) {
+                indentInc();
+                // Line up continuation with open paren, plus one indent
+                m_parenVec.push(m_column);
+            }
             break;
         case ')':
-            if (!m_parenVec.empty()) m_parenVec.pop();
-            indentDec();
+            if (!m_inStringLiteral) {
+                if (!m_parenVec.empty()) m_parenVec.pop();
+                indentDec();
+            }
             break;
         case '<':
             if (m_lang == LA_XML) {
