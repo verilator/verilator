@@ -1421,7 +1421,7 @@ class ParamVisitor final : public VNVisitor {
     bool isCircularType(const AstRefDType* nodep) {
         const auto iter = m_isCircular.emplace(nodep, true);
         if (!iter.second) return iter.first->second;
-        if (const AstRefDType* subDTypep = VN_CAST(nodep->subDTypep(), RefDType)) {
+        if (const AstRefDType* const subDTypep = VN_CAST(nodep->subDTypep(), RefDType)) {
             const bool ret = isCircularType(subDTypep);
             iter.first->second = ret;
             return ret;
