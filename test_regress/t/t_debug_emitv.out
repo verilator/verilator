@@ -369,12 +369,16 @@ module Vt_debug_emitv_t;
     @(posedge clk) disable iff (cyc == 'sh1) ##1 sum[0]
     endproperty
     assert property (@( clk) (! ##1 in)
-    ) else begin
+    ) begin
+    end
+    else begin
     end
     initial begin
         begin
             begin : assert_simple_immediate_else
-                assert ('sh0) else begin
+                assert ('sh0) begin
+                end
+                else begin
                     $display("fail");
                 end
             end
@@ -394,11 +398,15 @@ module Vt_debug_emitv_t;
                 end
             end
             begin : assume_simple_immediate
-                assume ('sh0) else begin
+                assume ('sh0) begin
+                end
+                else begin
                 end
             end
             begin : assume_simple_immediate_else
-                assume ('sh0) else begin
+                assume ('sh0) begin
+                end
+                else begin
                     $display("fail");
                 end
             end
@@ -421,13 +429,17 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_observed_deferred_immediate
-            assert #0 ('sh0) else begin
+            assert #0 ('sh0) begin
+            end
+            else begin
             end
         end
     end
     always  begin
         begin : assert_observed_deferred_immediate_else
-            assert #0 ('sh0) else begin
+            assert #0 ('sh0) begin
+            end
+            else begin
                 $display("fail");
             end
         end
@@ -453,13 +465,17 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_observed_deferred_immediate
-            assume #0 ('sh0) else begin
+            assume #0 ('sh0) begin
+            end
+            else begin
             end
         end
     end
     always  begin
         begin : assume_observed_deferred_immediate_else
-            assume #0 ('sh0) else begin
+            assume #0 ('sh0) begin
+            end
+            else begin
                 $display("fail");
             end
         end
@@ -485,13 +501,17 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_final_deferred_immediate
-            assert final ('sh0) else begin
+            assert final ('sh0) begin
+            end
+            else begin
             end
         end
     end
     always  begin
         begin : assert_final_deferred_immediate_else
-            assert final ('sh0) else begin
+            assert final ('sh0) begin
+            end
+            else begin
                 $display("fail");
             end
         end
@@ -517,13 +537,17 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_final_deferred_immediate
-            assume final ('sh0) else begin
+            assume final ('sh0) begin
+            end
+            else begin
             end
         end
     end
     always  begin
         begin : assume_final_deferred_immediate_else
-            assume final ('sh0) else begin
+            assume final ('sh0) begin
+            end
+            else begin
                 $display("fail");
             end
         end
@@ -552,12 +576,16 @@ module Vt_debug_emitv_t;
     endproperty
     begin : assert_concurrent
         assert property ( prop
-        ) else begin
+        ) begin
+        end
+        else begin
         end
     end
     begin : assert_concurrent_else
         assert property ( prop
-        ) else begin
+        ) begin
+        end
+        else begin
             $display("fail");
         end
     end
@@ -580,12 +608,16 @@ module Vt_debug_emitv_t;
     end
     begin : assume_concurrent
         assume property ( prop
-        ) else begin
+        ) begin
+        end
+        else begin
         end
     end
     begin : assume_concurrent_else
         assume property ( prop
-        ) else begin
+        ) begin
+        end
+        else begin
             $display("fail");
         end
     end
@@ -608,7 +640,9 @@ module Vt_debug_emitv_t;
     end
     begin : cover_concurrent
         cover property ( prop
-        ) end
+        ) begin
+        end
+    end
     begin : cover_concurrent_stmt
         cover property ( prop
         ) begin
@@ -622,10 +656,14 @@ module Vt_debug_emitv_t;
             assert ((| $_EXPRSTMT(
                         ao = (a);
                         , );
-                )) else begin
+                )) begin
+            end
+            else begin
             end
         end
     end
+    restrict (@(posedge clk) ##1 a[0]
+    );
 endmodule
 package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;

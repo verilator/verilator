@@ -783,12 +783,14 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
                 iterateAndNextConstNull(nodep->propp());
             }
         }
-        puts(") ");
-        if (nodep->passsp()) {
-            puts("begin\n");
+        if (!VN_IS(nodep, Restrict)) {
+            puts(") begin\n");
             iterateAndNextConstNull(nodep->passsp());
             puts("end\n");
+        } else {
+            puts(");\n");
         }
+
         if (const AstAssert* const assertp = VN_CAST(nodep, Assert)) {
             puts("else begin\n");
             iterateAndNextConstNull(assertp->failsp());

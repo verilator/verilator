@@ -338,6 +338,8 @@ module t (/*AUTOARG*/
    initial begin : assert_intrinsic
       $cast(ao, a);
    end
+
+   restrict property (@(posedge clk) ##1 a[0]);
 endmodule
 
 module sub(input logic clk);
