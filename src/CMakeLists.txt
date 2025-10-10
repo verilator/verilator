@@ -83,6 +83,7 @@ set(HEADERS
     V3DfgPeepholePatterns.h
     V3DfgVertices.h
     V3DiagSarif.h
+    V3DumpSignals.h
     V3DupFinder.h
     V3EmitC.h
     V3EmitCBase.h
@@ -115,6 +116,7 @@ set(HEADERS
     V3Inline.h
     V3Inst.h
     V3InstrCount.h
+    V3Instrument.h
     V3Interface.h
     V3LangCode.h
     V3LanguageWords.h
@@ -248,6 +250,7 @@ set(COMMON_SOURCES
     V3DfgRegularize.cpp
     V3DfgSynthesize.cpp
     V3DiagSarif.cpp
+    V3DumpSignals.cpp
     V3DupFinder.cpp
     V3EmitCBase.cpp
     V3EmitCConstPool.cpp
@@ -285,6 +288,7 @@ set(COMMON_SOURCES
     V3Inline.cpp
     V3Inst.cpp
     V3InstrCount.cpp
+    V3Instrument.cpp
     V3Interface.cpp
     V3Life.cpp
     V3LifePost.cpp
