@@ -329,6 +329,15 @@ module t (/*AUTOARG*/
 
    cover_concurrent: cover property(prop);
    cover_concurrent_stmt: cover property(prop) $display("pass");
+
+
+   int a;
+   int ao;
+
+   // verilator lint_off CASTCONST
+   initial begin : assert_intrinsic
+      $cast(ao, a);
+   end
 endmodule
 
 module sub(input logic clk);

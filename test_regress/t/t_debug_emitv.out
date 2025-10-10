@@ -615,6 +615,17 @@ module Vt_debug_emitv_t;
             $display("pass");
         end
     end
+    int signed a;
+    int signed ao;
+    initial begin
+        begin : assert_intrinsic
+            assert ((| $_EXPRSTMT(
+                        ao = (a);
+                        , );
+                )) else begin
+            end
+        end
+    end
 endmodule
 package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;
