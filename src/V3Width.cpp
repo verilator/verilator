@@ -1551,6 +1551,13 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->seedp()) iterateCheckSigned32(nodep, "seed", nodep->seedp(), BOTH);
         }
     }
+    void visit(AstSExpr* nodep) override {
+        if (m_vup->prelim()) {
+            iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
+            iterate(nodep->delayp());
+            nodep->dtypeSetBit();
+        }
+    }
     void visit(AstURandomRange* nodep) override {
         if (m_vup->prelim()) {
             nodep->dtypeSetUInt32();  // Says the spec

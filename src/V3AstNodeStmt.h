@@ -1204,6 +1204,9 @@ public:
         : ASTGEN_SUPER_Assert(fl, propp, passsp, type, directive, name) {
         addFailsp(failsp);
     }
+    string verilogKwd() const override {
+        return directive() == VAssertDirectiveType::ASSERT ? "assert" : "assume";
+    }
 };
 class AstAssertIntrinsic final : public AstNodeCoverOrAssert {
     // A $cast or other compiler inserted assert, that must run even without --assert option
@@ -1217,6 +1220,7 @@ public:
                                        VAssertDirectiveType::INTRINSIC, name) {
         addFailsp(failsp);
     }
+    string verilogKwd() const override { return "assert"; }
 };
 class AstCover final : public AstNodeCoverOrAssert {
     // @astgen op3 := coverincsp: List[AstNode] // Coverage node
@@ -1225,6 +1229,7 @@ public:
     AstCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, VAssertType type,
              const string& name = "")
         : ASTGEN_SUPER_Cover(fl, propp, stmtsp, type, VAssertDirectiveType::COVER, name) {}
+    string verilogKwd() const override { return "cover"; }
 };
 class AstRestrict final : public AstNodeCoverOrAssert {
 public:
@@ -1233,6 +1238,7 @@ public:
         // Intrinsic asserts are always ignored thus 'type' field is set to INTERNAL.
         : ASTGEN_SUPER_Restrict(fl, propp, nullptr, VAssertType::INTERNAL,
                                 VAssertDirectiveType::RESTRICT) {}
+    string verilogKwd() const override { return "restrict"; }
 };
 
 // === AstNodeForeach ===

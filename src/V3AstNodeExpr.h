@@ -1523,14 +1523,19 @@ public:
 };
 class AstImplication final : public AstNodeExpr {
     // Verilog Implication Operator
-    // Nonoverlapping "|=>"
-    // Overlapping "|->" (doesn't currently use this - might make new Ast type)
+    // Nonoverlapped "|=>"
+    // Overlapped "|->"
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := sentreep : Optional[AstSenTree]
+
+private:
+    const bool m_isOverlapped;  // True if overlapped
+
 public:
-    AstImplication(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_Implication(fl) {
+    AstImplication(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, bool isOverlapped)
+        : ASTGEN_SUPER_Implication(fl)
+        , m_isOverlapped{isOverlapped} {
         this->lhsp(lhsp);
         this->rhsp(rhsp);
     }
@@ -1541,6 +1546,7 @@ public:
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isOverlapped() const { return m_isOverlapped; }
 };
 class AstInitArray final : public AstNodeExpr {
     // This is also used as an array value in V3Simulate/const prop.
@@ -1704,6 +1710,19 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    int instrCount() const override { return widthInstrs(); }
+};
+class AstPExpr final : public AstNodeExpr {
+    // Property expression
+    // @astgen op1 := precondp : List[AstNode]
+    // @astgen op2 := condp : Optional[AstNodeExpr]
+public:
+    explicit AstPExpr(FileLine* fl)
+        : ASTGEN_SUPER_PExpr(fl) {}
+    ASTGEN_MEMBERS_AstPExpr;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
 };
 class AstParseHolder final : public AstNodeExpr {
@@ -1914,6 +1933,22 @@ public:
     bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
+class AstSExpr final : public AstNodeExpr {
+    // Sequence expression
+    // @astgen op1 := delayp : AstDelay
+    // @astgen op2 := exprp : AstNodeExpr
+public:
+    explicit AstSExpr(FileLine* fl, AstDelay* delayp, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_SExpr(fl) {
+        this->delayp(delayp);
+        this->exprp(exprp);
+    }
+    ASTGEN_MEMBERS_AstSExpr;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
+    int instrCount() const override { return widthInstrs(); }
 };
 class AstSFormatF final : public AstNodeExpr {
     // Convert format to string, generally under an AstDisplay or AstSFormat

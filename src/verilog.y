@@ -6519,8 +6519,8 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //
         //                      // IEEE: "sequence_expr yP_ORMINUSGT pexpr"
         //                      // Instead we use pexpr to prevent conflicts
-        |       ~o~pexpr yP_ORMINUSGT pexpr             { $$ = new AstLogOr{$2, new AstLogNot{$2, $1}, $3}; }
-        |       ~o~pexpr yP_OREQGT pexpr                { $$ = new AstImplication{$2, $1, $3}; }
+        |       ~o~pexpr yP_ORMINUSGT pexpr             { $$ = new AstImplication{$2, $1, $3, true}; }
+        |       ~o~pexpr yP_OREQGT pexpr                { $$ = new AstImplication{$2, $1, $3, false}; }
         //
         //                      // IEEE-2009: property_statement
         //                      // IEEE-2012: yIF and yCASE
@@ -6596,7 +6596,7 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // IEEE: "sequence_expr cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }"
         //                      // Both rules basically mean we can repeat sequences, so make it simpler:
                 cycle_delay_range ~p~sexpr  %prec yP_POUNDPOUND
-                        { $$ = $2; BBUNSUP($2->fileline(), "Unsupported: ## (in sequence expression)"); DEL($1); }
+                        { $$ = new AstSExpr{$<fl>1, $1, $2}; }
         |       ~p~sexpr cycle_delay_range sexpr %prec prPOUNDPOUND_MULTI
                         { $$ = $1; BBUNSUP($2->fileline(), "Unsupported: ## (in sequence expression)"); DEL($2, $3); }
         //
@@ -6648,16 +6648,15 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         |       BISONPRE_COPY_ONCE(expr,{s/~l~/s/g; s/~p~/s/g; s/~noPar__IGNORE~'.'/yP_PAR__IGNORE /g; })  // {copied}
         ;
 
-cycle_delay_range<nodep>:  // IEEE: ==cycle_delay_range
+cycle_delay_range<delayp>:  // IEEE: ==cycle_delay_range
         //                      // These three terms in 1800-2005 ONLY
                 yP_POUNDPOUND intnumAsConst
-                        { $$ = $2;
-                          BBUNSUP($<fl>1, "Unsupported: ## () cycle delay range expression"); }
+                        { $$ = new AstDelay{$1, $2, true}; }
         |       yP_POUNDPOUND idAny
-                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
+                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
                           BBUNSUP($<fl>1, "Unsupported: ## id cycle delay range expression"); }
         |       yP_POUNDPOUND '(' constExpr ')'
-                        { $$ = $3;
+                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
                           BBUNSUP($<fl>1, "Unsupported: ## () cycle delay range expression"); }
         //                      // In 1800-2009 ONLY:
         //                      // IEEE: yP_POUNDPOUND constant_primary
@@ -6665,13 +6664,14 @@ cycle_delay_range<nodep>:  // IEEE: ==cycle_delay_range
         //                      // as ()'s mismatch between primary and the following statement
         //                      // the sv-ac committee has been asked to clarify  (Mantis 1901)
         |       yP_POUNDPOUND anyrange
-                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
-                          BBUNSUP($<fl>1, "Unsupported: ## range cycle delay range expression"); DEL($2); }
+                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
+                          DEL($2);
+                          BBUNSUP($<fl>1, "Unsupported: ## range cycle delay range expression"); }
         |       yP_POUNDPOUND yP_BRASTAR ']'
-                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
+                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
                           BBUNSUP($<fl>1, "Unsupported: ## [*] cycle delay range expression"); }
         |       yP_POUNDPOUND yP_BRAPLUSKET
-                        { $$ = new AstConst{$1, AstConst::BitFalse{}};
+                        { $$ = new AstDelay{$1, new AstConst{$1, AstConst::BitFalse{}}, true};
                           BBUNSUP($<fl>1, "Unsupported: ## [+] cycle delay range expression"); }
         ;
 
