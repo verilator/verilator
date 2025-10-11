@@ -75,6 +75,7 @@ static void appendDefValue(const char* t, size_t l) { LEXP->appendDefValue(t, l)
 %x ENCBASE64
 %x EXPR
 %x INCMODE
+%x PASSTHRU
 %x PRAGMA
 %x PRAGMAERR
 %x PRAGMAPRT
@@ -102,12 +103,15 @@ bom             [\357\273\277]
 
         /**************************************************************/
 %%
+        /* Passthru, to support dev-coverage of some main verilog.l rules */
+<PASSTHRU>{crnl}        { FL_FWDC; linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
+<PASSTHRU>{word}        { yymore(); }
+<PASSTHRU>.             { FL_FWDC; return VP_TEXT; }
 
+        /* Special directives we recognize */
 <INITIAL>{bom}          { }
 <INITIAL,STRIFY>^{ws}*"`line"{ws}+.*{crnl}      { FL_FWDC; LEXP->lineDirective(yytext);
                                                   return VP_LINE; }
-
-        /* Special directives we recognize */
 <INITIAL>"`define"      { FL_FWDC; return VP_DEFINE; }
 <INITIAL>"`else"        { FL_FWDC; return VP_ELSE; }
 <INITIAL>"`elsif"       { FL_FWDC; return VP_ELSIF; }
@@ -512,8 +516,19 @@ void V3PreLex::pushStateIncFilename() {
     yymore();
 }
 
+void V3PreLex::pushStatePassthru() {
+    yy_push_state(PASSTHRU);
+    yymore();
+}
+
 void V3PreLex::setYYDebug(bool on) {
     yy_flex_debug = static_cast<int>(on); }
+
+VPreStream* V3PreLex::newStream(FileLine* fl, V3PreLex* lexp) {
+    VPreStream* const streamp = new VPreStream{fl, lexp};
+    if (v3Global.opt.debugPreprocPassthru()) streamp->m_lexp->pushStatePassthru();
+    return streamp;
+}
 
 int V3PreLex::lex() {
     V3PreLex::s_currentLexp = this;  // Tell parser where to get/put data
@@ -640,7 +655,7 @@ string V3PreLex::endOfStream(bool& againr) {
 void V3PreLex::initFirstBuffer(FileLine* filelinep) {
     // Called from constructor to make first buffer
     // yy_create_buffer also sets yy_fill_buffer=1 so reads from YY_INPUT
-    VPreStream* const streamp = new VPreStream{filelinep, this};
+    VPreStream* const streamp = newStream(filelinep, this);
     streamp->m_eof = true;
     m_streampStack.push(streamp);
     //
@@ -656,7 +671,7 @@ void V3PreLex::scanNewFile(FileLine* filelinep) {
         yyerrorf("Recursive `define or other nested inclusion");
         curStreamp()->m_eof = true;  // Fake it to stop recursion
     } else {
-        VPreStream* const streamp = new VPreStream{filelinep, this};
+        VPreStream* const streamp = newStream(filelinep, this);
         m_tokFilelinep = curFilelinep();
         streamp->m_file = true;
         scanSwitchStream(streamp);
@@ -675,7 +690,7 @@ void V3PreLex::scanBytes(const string& str) {
         yyerrorf("Recursive `define or other nested inclusion");
         curStreamp()->m_eof = true;  // Fake it to stop recursion
     } else {
-        VPreStream* const streamp = new VPreStream{curFilelinep(), this};
+        VPreStream* const streamp = newStream(curFilelinep(), this);
         streamp->m_buffers.push_front(str);
         scanSwitchStream(streamp);
     }

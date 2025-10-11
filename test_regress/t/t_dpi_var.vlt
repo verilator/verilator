@@ -12,3 +12,5 @@ public_flat_rw -module "sub" -var "in_a"
 public_flat_rw -module "sub" -var "in_b" @(posedge t.monclk)
 public_flat_rw -module "sub" -var "fr_a"
 public_flat_rw -module "sub" -var "fr_b" @(posedge t.monclk)
+// Cover other edge declarations
+public_flat_rw -module "sub" -var "fr_chk" @(posedge t.monclk or negedge t.monclk or edge t.monclk)

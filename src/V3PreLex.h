@@ -195,6 +195,7 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
         VL_DO_CLEAR(yy_delete_buffer(m_bufferState), m_bufferState = nullptr);
         yylex_destroy();
     }
+    VPreStream* newStream(FileLine* fl, V3PreLex* lexp);
 
     // Called by V3PreLex.l from lexer
     VPreStream* curStreamp() { return m_streampStack.top(); }  // Can't be empty, "EOF" is on top
@@ -219,6 +220,7 @@ public:  // Used only by V3PreLex.cpp and V3PreProc.cpp
     void pushStateDefValue();
     void pushStateExpr();
     void pushStateIncFilename();
+    void pushStatePassthru();
     void scanNewFile(FileLine* filelinep);
     void scanBytes(const string& str);
     void scanBytesBack(const string& str);

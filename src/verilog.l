@@ -1045,14 +1045,14 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /************************************************************************/
   /* Tables */
-<TABLE>[rRfFpPnN\*]                     { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLE_FIELD; } /* edge_symbol */
-<TABLE>[01xX\?bB\-]                     { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLE_FIELD; } /* level_symbol, next_state */
-<TABLE>":"                              { FL; return yaTABLE_LRSEP; } /* LHS and RHS separator for table line. */
+<TABLE>[rRfFpPnN\*]                     { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLE_FIELD; }  /* edge_symbol */
+<TABLE>[01xX\?bB\-]                     { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLE_FIELD; }  /* level_symbol, next_state */
+<TABLE>":"                              { FL; return yaTABLE_LRSEP; }  /* LHS and RHS separator for table line. */
 <TABLE>";"                              { FL; return yaTABLE_LINEEND; }
 <TABLE>[\(\)]                           { FL; return yytext[0]; }
 <TABLE>{ws}|(\\){0,1}{crnl}             { FL_FWD; FL_BRK; }
 <TABLE>"`line"{ws}+[^\n\r]*{crnl}       { FL_FWD; PARSEP->lexPpline(yytext); FL_BRK; }
-<TABLE>"//"[^\n]*                       { FL_FWD; FL_BRK; }  /* throw away single line comments */
+<TABLE>"//"[^\n]*                       { FL_FWD; FL_BRK; }  /* Throw away single line comments */
 <TABLE>"endtable"                       { FL; yy_pop_state(); return yENDTABLE; }
 <TABLE><<EOF>>                          { FL; yylval.fl->v3error("EOF in 'table'");
                                               yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
@@ -1176,14 +1176,14 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,S23,SAX,VLT>{
   "`"[a-zA-Z_0-9]+      { FL; V3ParseImp::lexErrorPreprocDirective(yylval.fl, yytext); FL_BRK; }
   "//"[^\n]*            { FL_FWD; FL_BRK; }  /* throw away single line comments */
-  .                     { FL; return yytext[0]; }       /* return single char ops. */
+  .                     { FL; return yytext[0]; }  /* return single char ops. */
 }
 
   /* Catch all - absolutely last */
 <*>.|\n                 { FL; yylval.fl->v3error(  // LCOV_EXCL_LINE
                                  "Missing verilog.l rule: Default rule invoked in state "
                                  << YY_START << " '" << yytext << "'");
-                          FL_BRK; }
+                          FL_BRK; }  /* LCOV_EXCL_LINE */
 %%
 // Avoid code here as cl format misindents
 // For implementation functions see V3ParseImp.cpp

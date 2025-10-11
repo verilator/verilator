@@ -23,7 +23,6 @@ for s in [
         'Assigned pin is neither input nor output',  # Instead earlier error
         'Define missing argument \'',  # Instead get Define passed too many arguments
         'Define or directive not defined: `',  # Instead V3ParseImp will warn
-        'EOF in unterminated string',  # Instead get normal unterminated
         'Enum ranges must be integral, per spec',  # Hard to hit
         'Expecting define formal arguments. Found: ',  # Instead define syntax error
         'Syntax error parsing real: \'',  # Instead can't lex the number
@@ -61,13 +60,11 @@ for s in [
         'Slices of arrays in assignments have different unpacked dimensions, ',
         'String of ',
         'Symbol matching ',
-        'Type cannot be selected from',
         'Unexpected connection to arrayed port',
         'Unsized numbers/parameters not allowed in streams.',
         'Unsupported RHS tristate construct: ',
         'Unsupported or syntax error: Unsized range in instance or other declaration',
         'Unsupported pullup/down (weak driver) construct.',
-        'Unsupported tristate construct (not in propagation graph): ',
         'Unsupported tristate port expression: ',
         'Unsupported: $bits for queue',
         'Unsupported: &&& expression',
@@ -81,7 +78,6 @@ for s in [
         'Unsupported: Per-bit array instantiations ',
         'Unsupported: Public functions with >64 bit outputs; ',
         'Unsupported: Replication to form ',
-        'Unsupported: Shifting of by over 32-bit number isn\'t supported.',
         'Unsupported: Size-changing cast on non-basic data type',
         'Unsupported: Slice of non-constant bounds',
         'Unsupported: Unclocked assertion',
@@ -92,7 +88,6 @@ for s in [
         'Unsupported: \'{} .* patterns',
         'Unsupported: assertion items in clocking blocks',
         'Unsupported: don\'t know how to deal with ',
-        'Unsupported: eventually[] (in property expression)',
         'Unsupported: extern forkjoin',
         'Unsupported: extern task',
         'Unsupported: modport export',
