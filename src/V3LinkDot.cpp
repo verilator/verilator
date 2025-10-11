@@ -80,10 +80,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // ######################################################################
 //  Matcher classes (for suggestion matching)
 
-class LinkNodeMatcherClass final : public VNodeMatcher {
-public:
-    bool nodeMatch(const AstNode* nodep) const override { return VN_IS(nodep, Class); }
-};
 class LinkNodeMatcherClassOrPackage final : public VNodeMatcher {
 public:
     bool nodeMatch(const AstNode* nodep) const override {

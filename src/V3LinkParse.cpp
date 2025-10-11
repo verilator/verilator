@@ -584,6 +584,30 @@ class LinkParseVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
+    void visit(AstRandSequence* nodep) override {
+        cleanFileline(nodep);
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: randsequence");
+        iterateChildren(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
+    void visit(AstRSCase* nodep) override {
+        cleanFileline(nodep);
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: randsequence case");
+        iterateChildren(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
+    void visit(AstRSIf* nodep) override {
+        cleanFileline(nodep);
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: randsequence if");
+        iterateChildren(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
+    void visit(AstRSRepeat* nodep) override {
+        cleanFileline(nodep);
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: randsequence repeat");
+        iterateChildren(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
     void visit(AstWait* nodep) override {
         cleanFileline(nodep);
         iterateChildren(nodep);

@@ -6,22 +6,25 @@
 // Version 2.0.
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-module t;
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
 
-   initial begin;
-      randsequence(no_such_production)  // Bad
-         such_production: { };
-      endsequence
+module t(/*AUTOARG*/);
+
+   initial begin
+
+      int o;
+      int i;
+      o = 0;
+      i = 0;
 
       randsequence(main)
-         main: production_bad;  // Bad
-         production_baa: {};
+         main : recurse recurse;
+         recurse: { i++; if ((i % 4) == 0) break; } add recurse;
+         add: { o++; } ;
       endsequence
 
-      randsequence()
-         duplicated_bad: { $display("dup1"); };
-         duplicated_bad: { $display("dup2"); };  // Bad
-      endsequence
+     `checkd(o, 3);
 
       $write("*-* All Finished *-*\n");
       $finish;

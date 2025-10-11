@@ -2256,6 +2256,14 @@ void AstRange::dump(std::ostream& str) const {
     if (fromBracket()) str << " [FB]";
     if (ascending()) str << " [ASCENDING]";
 }
+void AstRSProdList::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFunc(str, randJoin);
+    dumpJsonGen(str);
+}
+void AstRSProdList::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (randJoin()) str << " [RANDJOIN]";
+}
 void AstRange::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, ascending);
     dumpJsonBoolFunc(str, fromBracket);

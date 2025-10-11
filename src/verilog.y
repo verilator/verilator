@@ -993,6 +993,11 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 //  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
 
 %start source_text
 
@@ -7038,46 +7043,76 @@ hierarchical_btf_identifier<nodep>:  // ==IEEE: hierarchical_btf_identifier
 
 randsequence_statement<nodep>:  // ==IEEE: randsequence_statement
                 yRANDSEQUENCE '(' ')' rs_productionList yENDSEQUENCE
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence"); DEL($4); }
+                        { $$ = new AstRandSequence{$1, "", $4}; }
         |       yRANDSEQUENCE '(' idAny/*rs_production_identifier*/ ')' rs_productionList yENDSEQUENCE
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence"); DEL($5); }
+                        { $$ = new AstRandSequence{$1, *$3, $5}; }
         ;
 
-rs_productionList<nodep>:  // IEEE: rs_production+
+rs_productionList<rSProdp>:  // IEEE: rs_production+
                 rs_production                           { $$ = $1; }
         |       rs_productionList rs_production         { $$ = addNextNull($1, $2); }
         ;
 
-rs_production<nodep>:  // ==IEEE: rs_production
+rs_production<rSProdp>:  // ==IEEE: rs_production
                 rs_productionFront ':' rs_ruleList ';'
-                        { // TODO makes a function, probably want a new Ast type instead
-                          $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: randsequence production"); DEL($1, $3); }
+                        { $$ = $1; $1->addRulesp($3); }
         ;
 
-rs_productionFront<nodeFTaskp>:  // IEEE: part of rs_production
-                funcId/*production_identifier*/         { $$ = $1; }
-        |       funcId '(' tf_port_listE ')'            { $$ = $1; $$->addStmtsp($3); }
+rs_productionFront<rSProdp>:  // IEEE: part of rs_production
+                rs_funcId/*rs_production_identifier*/   { $$ = $1; }
+        |       rs_funcId '(' tf_port_listE ')'         { $$ = $1; $$->addPortsp($3); }
         ;
 
-rs_ruleList<nodep>:  // IEEE: rs_rule+ part of rs_production
+rs_funcId<rSProdp>:  // IEEE: part of rs_production
+                /**/ rs_fId
+                        { $$ = $1; }  // Note is void as default, not logic as default like functions
+        |       signingE rangeList rs_fId
+                        { $$ = $3;
+                          $$->fvarp(new AstVar{$<fl>1, VVarType::PORT, $3->name(), VFlagChildDType{},
+                                               GRAMMARP->addRange(new AstBasicDType{$<fl>3, LOGIC_IMPLICIT, $1}, $2, true)}); }
+        |       signing rs_fId
+                        { $$ = $2;
+                          $$->fvarp(new AstVar{$<fl>1, VVarType::PORT, $2->name(), VFlagChildDType{},
+                                               new AstBasicDType{$<fl>2, LOGIC_IMPLICIT, $1}}); }
+        |       data_type rs_fId
+                        { $$ = $2;
+                          $$->fvarp(new AstVar{$<fl>1, VVarType::PORT, $2->name(), VFlagChildDType{},
+                                               $1}); }
+        |       yVOID rs_fId
+                        { $$ = $2; }
+        ;
+
+rs_fId<rSProdp>:  // IEEE: part of rs_production
+                id
+                        { $<fl>$ = $<fl>1;
+                          $$ = new AstRSProd{$<fl>$, *$1, nullptr, nullptr}; }
+        ;
+
+rs_ruleList<rSRulep>:  // IEEE: rs_rule+ part of rs_production
                 rs_rule                                 { $$ = $1; }
         |       rs_ruleList '|' rs_rule                 { $$ = addNextNull($1, $3); }
         ;
 
-rs_rule<nodep>:  // ==IEEE: rs_rule
-                rs_production_list                      { $$ = $1; }
+rs_rule<rSRulep>:  // ==IEEE: rs_rule
+                rs_production_list
+                        { $$ = new AstRSRule{$1->fileline(), nullptr, $1, nullptr}; }
         |       rs_production_list yP_COLONEQ rs_weight_specification
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence rule"); DEL($1, $3); }
+                        { $$ = new AstRSRule{$1->fileline(), $3, $1, nullptr}; }
         |       rs_production_list yP_COLONEQ rs_weight_specification rs_code_block
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence rule"); DEL($1, $3, $4); }
+                        { $$ = new AstRSRule{$1->fileline(), $3, $1, $4}; }
         ;
 
-rs_production_list<nodep>:  // ==IEEE: rs_production_list
-                rs_prodList                             { $$ = $1; }
+rs_production_list<rSProdListp>:  // ==IEEE: rs_production_list
+                rs_prodList
+                        { $$ = new AstRSProdList{CRELINE(), nullptr, $1}; }
         |       yRAND yJOIN rs_production_item rs_production_itemList
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence production list"); DEL($3, $4); }
+                        { $$ = new AstRSProdList{$1, new AstConst{$2, AstConst::RealDouble{}, 0.5}, $3};
+                          $$->randJoin(true);
+                          $$->addProdsp($4); }
         |       yRAND yJOIN '(' expr ')' rs_production_item rs_production_itemList
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence production list"); DEL($4, $6, $7); }
+                        { $$ = new AstRSProdList{$1, $4, $6};
+                          $$->randJoin(true);
+                          $$->addProdsp($7); }
         ;
 
 rs_weight_specification<nodeExprp>:  // ==IEEE: rs_weight_specification
@@ -7111,15 +7146,15 @@ rs_prod<nodep>:  // ==IEEE: rs_prod
         |       rs_code_block                           { $$ = $1; }
         //                      // IEEE: rs_if_else
         |       yIF '(' expr ')' rs_production_item %prec prLOWER_THAN_ELSE
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence if"); DEL($3, $5); }
+                        { $$ = new AstRSIf{$<fl>1, $3, $5, nullptr}; }
         |       yIF '(' expr ')' rs_production_item yELSE rs_production_item
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence if"); DEL($3, $5, $7); }
+                        { $$ = new AstRSIf{$<fl>1, $3, $5, $7}; }
         //                      // IEEE: rs_repeat
         |       yREPEAT '(' expr ')' rs_production_item
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence repeat"); DEL($3, $5); }
+                        { $$ = new AstRSRepeat{$<fl>1, $3, $5}; }
         //                      // IEEE: rs_case
         |       yCASE '(' expr ')' rs_case_itemList yENDCASE
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence case"); DEL($3, $5); }
+                        { $$ = new AstRSCase{$<fl>1, $3, $5}; }
         ;
 
 rs_production_itemList<nodep>:  // IEEE: rs_production_item+
@@ -7129,23 +7164,23 @@ rs_production_itemList<nodep>:  // IEEE: rs_production_item+
 
 rs_production_item<nodep>:  // ==IEEE: rs_production_item
                 idAny/*production_identifier*/
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence production id"); }
+                        { $$ = new AstRSProdItem{$<fl>1, *$1, nullptr}; }
         |       idAny/*production_identifier*/ '(' list_of_argumentsE ')'
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence production id"); DEL($3); }
+                        { $$ = new AstRSProdItem{$<fl>1, *$1, $3}; }
         ;
 
-rs_case_itemList<nodep>:  // IEEE: rs_case_item+
+rs_case_itemList<caseItemp>:  // IEEE: rs_case_item+
                 rs_case_item                            { $$ = $1; }
         |       rs_case_itemList rs_case_item           { $$ = addNextNull($1, $2); }
         ;
 
-rs_case_item<nodep>:  // ==IEEE: rs_case_item
+rs_case_item<caseItemp>:  // ==IEEE: rs_case_item
                 caseCondList ':' rs_production_item ';'
-                        { $$ = nullptr; BBUNSUP($<fl>2, "Unsupported: randsequence case item"); DEL($1, $3); }
+                        { $$ = new AstCaseItem{$<fl>1, $1, $3}; }
         |       yDEFAULT rs_production_item ';'
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence case item"); DEL($2); }
+                        { $$ = new AstCaseItem{$<fl>1, nullptr, $2}; }
         |       yDEFAULT ':' rs_production_item ';'
-                        { $$ = nullptr; BBUNSUP($<fl>1, "Unsupported: randsequence case item"); DEL($3); }
+                        { $$ = new AstCaseItem{$<fl>1, nullptr, $3}; }
         ;
 
 //**********************************************************************
