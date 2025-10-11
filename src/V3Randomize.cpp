@@ -591,7 +591,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
             }
         } else
             nodep->user2p(m_modp);
-        if (randObject && nodep->varp() && nodep->varp()->rand().isRandomizable()) {  // Process global constraints
+        if (randObject && nodep->varp()
+            && nodep->varp()->rand().isRandomizable()) {  // Process global constraints
             if (m_classp && m_classp->user1() == IS_RANDOMIZED)
                 m_classp->user1(IS_RANDOMIZED_WITH_GLOBAL_CONSTRAINTS);
             else if (m_classp && m_classp->user1() == IS_RANDOMIZED_INLINE)
