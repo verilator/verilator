@@ -217,7 +217,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             VN_AS(nodep, VarRef)->varp()->setGlobalConstrained(true);
         } else if (VN_IS(nodep, MemberSel)) {
             AstMemberSel* memberSelp = VN_AS(nodep, MemberSel);
-            memberSelp->varp()->setGlobalConstrained(true);
+            if (memberSelp->varp()) memberSelp->varp()->setGlobalConstrained(true);
             markNestedGlobalConstrained(memberSelp->fromp());
         }
     }
@@ -227,7 +227,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
         AstNodeExpr* current = rootVarRefp->cloneTree(false);
         for (AstVar* memberVarp : path) {
             AstMemberSel* memberSel
-                = new AstMemberSel(rootVarRefp->fileline(), current, memberVarp);
+                = new AstMemberSel{rootVarRefp->fileline(), current, memberVarp};
             memberSel->user2p(m_classp);
             current = memberSel;
         }
@@ -269,8 +269,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
                                 if (!varRefp || !varRefp->varp()) return;
 
                                 AstNodeExpr* chain = buildMemberSelChain(rootVarRefp, newPath);
-                                AstMemberSel* finalSel = new AstMemberSel(varRefp->fileline(),
-                                                                          chain, varRefp->varp());
+                                AstMemberSel* finalSel = new AstMemberSel{varRefp->fileline(),
+                                                                          chain, varRefp->varp()};
                                 finalSel->user2p(m_classp);
                                 varRefp->replaceWith(finalSel);
                                 VL_DO_DANGLING(varRefp->deleteTree(), varRefp);
@@ -591,10 +591,10 @@ class RandomizeMarkVisitor final : public VNVisitor {
             }
         } else
             nodep->user2p(m_modp);
-        if (randObject && nodep->varp()->rand().isRandomizable()) {  // Process global constraints
-            if (m_classp->user1() == IS_RANDOMIZED)
+        if (randObject && nodep->varp() && nodep->varp()->rand().isRandomizable()) {  // Process global constraints
+            if (m_classp && m_classp->user1() == IS_RANDOMIZED)
                 m_classp->user1(IS_RANDOMIZED_WITH_GLOBAL_CONSTRAINTS);
-            else if (m_classp->user1() == IS_RANDOMIZED_INLINE)
+            else if (m_classp && m_classp->user1() == IS_RANDOMIZED_INLINE)
                 m_classp->user1(IS_RANDOMIZED_INLINE_WITH_GLOBAL_CONSTRAINTS);
             // Mark the entire nested chain as participating in global constraints
             // For foo.in.val, this marks: foo, foo.in, and foo.in.val
@@ -1463,7 +1463,7 @@ class CaptureVisitor final : public VNVisitor {
         thisRefp->user1(true);
         m_ignore.emplace(thisRefp);
         AstMemberSel* const memberSelp
-            = new AstMemberSel(nodep->fileline(), thisRefp, nodep->varp());
+            = new AstMemberSel{nodep->fileline(), thisRefp, nodep->varp()};
         memberSelp->user2p(m_targetp);
         nodep->replaceWith(memberSelp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
