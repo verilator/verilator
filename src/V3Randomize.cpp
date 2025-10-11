@@ -137,11 +137,30 @@ class RandomizeMarkVisitor final : public VNVisitor {
     AstNode* m_constraintExprGenp = nullptr;  // Current constraint or constraint if expression
     AstNodeModule* m_modp;  // Current module
     AstNodeStmt* m_stmtp = nullptr;  // Current statement
-    AstNodeFTaskRef* stdrandcall = nullptr;
-    bool instdwith = false;
+    AstNodeFTaskRef* m_stdRandCallp = nullptr;  // Current std::randomize() call
+    bool m_inStdWith = false;  // True when inside a 'with {}' clause
     std::set<AstNodeVarRef*> m_staticRefs;  // References to static variables under `with` clauses
 
     // METHODS
+    // Check if a variable is listed in std::randomize() arguments
+    bool isVarInStdRandomizeArgs(const AstVar* varp) const {
+        if (!m_inStdWith || !m_stdRandCallp) return false;
+
+        for (AstNode* pinp = m_stdRandCallp->pinsp(); pinp; pinp = pinp->nextp()) {
+            if (VN_IS(pinp, With)) continue;
+            const AstArg* const argp = VN_CAST(pinp, Arg);
+            if (!argp) continue;
+
+            const AstNodeExpr* exprp = argp->exprp();
+            if (const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef)) {
+                if (varrefp->varp() == varp) return true;
+            } else if (const AstMemberSel* const memberselp = VN_CAST(exprp, MemberSel)) {
+                if (memberselp->varp() == varp) return true;
+            }
+        }
+        return false;
+    }
+
     void markMembers(const AstClass* nodep) {
         for (const AstClass* classp = nodep; classp;
              classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr) {
@@ -218,20 +237,17 @@ class RandomizeMarkVisitor final : public VNVisitor {
         if (!nodep->backp()) VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstWith* nodep) override {
-
-        // stdrandcall->dumpTreeJson(cout);
-        for (AstNode* pinp = stdrandcall ? stdrandcall->pinsp() : nullptr; pinp;
+        for (AstNode* pinp = m_stdRandCallp ? m_stdRandCallp->pinsp() : nullptr; pinp;
              pinp = pinp->nextp()) {
-            AstArg* const argp = VN_CAST(pinp, Arg);
-            //AstNodeExpr* exprp = argp->exprp();
             AstWith* const withp = VN_CAST(pinp, With);
-            if (withp == nodep) { instdwith = true; }
+            if (withp == nodep) m_inStdWith = true;
         }
         iterateChildrenConst(nodep);
-        instdwith = false;
+        m_inStdWith = false;
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        if (nodep->classOrPackagep()->name() == "std") { stdrandcall = nodep; }
+        if (nodep->classOrPackagep() && nodep->classOrPackagep()->name() == "std")
+            m_stdRandCallp = nodep;
 
         iterateChildrenConst(nodep);
         if (nodep->name() == "rand_mode") {
@@ -390,12 +406,11 @@ class RandomizeMarkVisitor final : public VNVisitor {
             markMembers(classp);
         }
         if (nodep->classOrPackagep()->name() == "std") {
-            stdrandcall = nullptr;
+            m_stdRandCallp = nullptr;
             for (AstNode* pinp = nodep->pinsp(); pinp; pinp = pinp->nextp()) {
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 if (!argp) continue;
                 AstNodeExpr* exprp = argp->exprp();
-                AstWith* const withp = VN_CAST(pinp, With);
 
                 while (exprp) {
                     AstVar* randVarp = nullptr;
@@ -474,61 +489,29 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
         if (nodep->varp()->lifetime().isStatic()) m_staticRefs.emplace(nodep);
 
-        if (nodep->varp()->rand().isRandomizable()
-            && !(instdwith && stdrandcall))  // if (nodep->varp()->rand().isRandomizable() ||
-                                             // (instdwith && stdrandcall))
+        // Mark as randomizable if: rand-declared, or listed in std::randomize() args
+        if (nodep->varp()->rand().isRandomizable() && !(m_inStdWith && m_stdRandCallp)) {
             nodep->user1(true);
-        if (instdwith && stdrandcall) {
-            for (AstNode* pinp = stdrandcall->pinsp(); pinp; pinp = pinp->nextp()) {
-                if (VN_IS(pinp, With)) continue;
-                AstArg* const argp = VN_CAST(pinp, Arg);
-                AstNodeExpr* exprp = argp->exprp();
-                if (VN_IS(exprp, NodeVarRef)
-                    && nodep->varp() == VN_CAST(exprp, NodeVarRef)->varp()) {
-                    nodep->user1(true);
-                }
-
-                else {
-                    // nodep->user1(false);
-                }
-            }
+        } else if (isVarInStdRandomizeArgs(nodep->varp())) {
+            nodep->user1(true);
         }
     }
     void visit(AstMemberSel* nodep) override {
         if (!m_constraintExprGenp) return;
         iterateChildrenConst(nodep);
-        // Member select are randomized when both object and member are marked as rand.
-        // Variable references in with clause are converted to member selects and their from() is
-        // of type AstLambdaArgRef. They are randomized too.
         const bool randObject = nodep->fromp()->user1() || VN_IS(nodep->fromp(), LambdaArgRef);
-        // nodep->user1((randObject && nodep->varp()->rand().isRandomizable()));
-        nodep->user1(
-            (randObject && nodep->varp()->rand().isRandomizable()
-             && !(instdwith && stdrandcall)));  //        nodep->user1((randObject &&
-                                                //        nodep->varp()->rand().isRandomizable())
-                                                //        || (instdwith && stdrandcall));
-        nodep->user2p(m_modp);
-        if (instdwith && stdrandcall) {
-            for (AstNode* pinp = stdrandcall->pinsp(); pinp; pinp = pinp->nextp()) {
-                if (VN_IS(pinp, With)) continue;
-                AstArg* const argp = VN_CAST(pinp, Arg);
-                AstNodeExpr* exprp = argp->exprp();
-                if (VN_IS(exprp, MemberSel)
-                    && nodep->varp() == VN_CAST(exprp, MemberSel)->varp()) {
+        const bool randMember = nodep->varp()->rand().isRandomizable();
+        const bool inStdWith = m_inStdWith && m_stdRandCallp;
 
-                    nodep->user1(true);
-                    if (VN_IS(nodep->fromp(), VarRef))
-                        nodep->fromp()->user1(
-                            true);  /// need more smart way for this, It is neded when membersel is
-                                    /// iterated in constraint visitor, var ref in the fromp of
-                                    /// membersel req as in vARREF visitor checks for it.
-                }
-
-                else {
-                    // nodep->user1(false);
-                }
-            }
+        if (randObject && randMember && !inStdWith) {
+            nodep->user1(true);
+        } else if (inStdWith && isVarInStdRandomizeArgs(nodep->varp())) {
+            nodep->user1(true);
+            // Mark parent object for constraint expression visitor
+            if (VN_IS(nodep->fromp(), VarRef)) nodep->fromp()->user1(true);
         }
+
+        nodep->user2p(m_modp);
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
@@ -976,18 +959,11 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstMemberSel* nodep) override {
         if (nodep->user1()) {
-            // nodep->v3warn(CONSTRAINTIGN, "Global constraints ignored (unsupported)");
             iterateChildren(nodep);
             nodep->replaceWith(nodep->fromp()->unlinkFrBack());
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
-        // if (VN_IS(nodep->fromp(), NodeVarRef) && nodep->varp()->isRand() && m_inlineInitTaskp) {
-        //     iterateChildren(nodep);
-        //     nodep->replaceWith(nodep->fromp()->unlinkFrBack());
-        //     VL_DO_DANGLING(nodep->deleteTree(), nodep);
-        //     return;
-        // }
         editFormat(nodep);
     }
     void visit(AstSFormatF* nodep) override {}
@@ -1245,7 +1221,6 @@ class CaptureVisitor final : public VNVisitor {
         // Static var in function (will not be inlined, because it's in class)
         if (callerIsClass && varIsFuncLocal) return CaptureMode::CAP_VALUE;
         if (callerIsClass && varIsFieldOfCaller) return CaptureMode::CAP_THIS;
-        // if( !m_targetp) return CaptureMode::CAP_THIS;
         UASSERT_OBJ(!callerIsClass, varRefp, "Invalid reference?");
         return CaptureMode::CAP_VALUE;
     }
@@ -2370,22 +2345,14 @@ class RandomizeVisitor final : public VNVisitor {
                 AstArg* const argp = VN_CAST(pinp, Arg);
                 AstWith* const withp = VN_CAST(pinp, With);
                 if (withp) {
-                    // Detach the expression and prepare variable copies
+                    // Capture variables in 'with {}' (nullptr = no target class)
                     captured = new CaptureVisitor{withp->exprp(), m_modp, nullptr};
-                    // Add function arguments
                     captured->addFunctionArguments(randomizeFuncp);
 
-                    // Add constraints clearing code
+                    // Clear old constraints
                     if (stdrand) {
                         randomizeFuncp->addStmtsp(
                             implementConstraintsClear(randomizeFuncp->fileline(), stdrand));
-
-                        // AstTask* setupAllTaskp = new AstTask{m_modp->fileline(),
-                        // "__Vsetup_constraints_hehe", nullptr}; setupAllTaskp->classMethod(true);
-                        // setupAllTaskp->isVirtual(true);
-                        // m_modp->addStmtsp(setupAllTaskp);
-                        // AstTaskRef* const callp = new AstTaskRef{nodep->fileline(),
-                        // setupAllTaskp, nullptr}; randomizeFuncp->addStmtsp(callp->makeStmt());
                     }
                     AstNode* const capturedTreep = withp->exprp()->unlinkFrBackWithNext();
                     randomizeFuncp->addStmtsp(capturedTreep);
