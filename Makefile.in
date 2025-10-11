@@ -655,6 +655,7 @@ GENHTML := genhtml
 GENHTML_OPT := -j $(shell nproc)
 GENHTML_OPT += --branch-coverage
 GENHTML_OPT += --demangle-cpp
+GENHTML_OPT += --missed
 GENHTML_OPT += --rc branch_coverage=1
 GENHTML_OPT += --rc genhtml_hi_limit=100
 GENHTML_OPT += --ignore-errors negative

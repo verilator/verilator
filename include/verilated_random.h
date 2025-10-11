@@ -111,7 +111,7 @@ public:
             return it->second->m_datap;
         } else {
             VL_FATAL_MT(__FILE__, __LINE__, "randomize", "indexed_name not found in m_arr_vars");
-            return nullptr;
+            return nullptr;  // LCOV_EXCL_BR_LINE
         }
     }
     void emitHexs(std::ostream& s, const std::vector<IData>& indices, const size_t bit_width,
