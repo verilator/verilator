@@ -1135,11 +1135,14 @@ class ConstraintExprVisitor final : public VNVisitor {
         editSMT(nodep, nodep->fromp(), indexp);
     }
     void visit(AstMemberSel* nodep) override {
-        if (nodep->varp()->rand().isRandomizable()) {
+        if (nodep->varp()->rand().isRandomizable() && nodep->fromp()) {
             // Determine dtype based on node type (VarRef or MemberSel)
-            AstNodeDType* const dtype = VN_IS(nodep->fromp(), VarRef)
-                                            ? VN_AS(nodep->fromp(), VarRef)->dtypep()
-                                            : VN_AS(nodep->fromp(), MemberSel)->dtypep();
+            AstNodeDType* dtype = nullptr;
+            if (VN_IS(nodep->fromp(), VarRef)) {
+                dtype = VN_AS(nodep->fromp(), VarRef)->dtypep();
+            } else if (VN_IS(nodep->fromp(), MemberSel)) {
+                dtype = VN_AS(nodep->fromp(), MemberSel)->dtypep();
+            }
             const AstClassRefDType* const classRefDType = VN_CAST(dtype, ClassRefDType);
 
             if (!classRefDType || !classRefDType->classp()) {
@@ -1152,8 +1155,9 @@ class ConstraintExprVisitor final : public VNVisitor {
 
             // Check if constraint is from inside the class (internal) or outside (global)
             if (nodep->user2p() == refClass) {
-                // Constraint is internal to the class
-                iterateChildren(nodep);
+                // Constraint is internal to the class - unwrap the MemberSel
+                // Process fromp first to ensure proper SMT generation
+                iterate(nodep->fromp());
                 nodep->replaceWith(nodep->fromp()->unlinkFrBack());
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 return;
@@ -1172,7 +1176,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                       : (VN_IS(rootNode, MemberSel) ? VN_AS(rootNode, MemberSel)->varp()
                                                     : nullptr);
             if (constrainedVar && constrainedVar->isGlobalConstrained()) {
-                iterateChildren(nodep);
+                // Global constraint - unwrap the MemberSel
+                iterate(nodep->fromp());
                 nodep->replaceWith(nodep->fromp()->unlinkFrBack());
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 return;
