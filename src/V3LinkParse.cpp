@@ -622,6 +622,11 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         V3Control::applyModule(nodep);
         ++m_statModules;
+        if (VN_IS(nodep, Class) && VN_CAST(nodep, Class)->isInterfaceClass()
+            && VN_IS(m_modp, Class) && VN_CAST(m_modp, Class)->isInterfaceClass()) {
+            nodep->v3error("Interface class shall not be nested within another interface class."
+                           " (IEEE 1800-2023 8.26)");
+        }
 
         VL_RESTORER(m_modp);
         VL_RESTORER(m_anonUdpId);

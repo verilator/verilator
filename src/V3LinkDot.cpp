@@ -4774,11 +4774,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
         checkNoDot(nodep);
-        AstClass* const topclassp = VN_CAST(m_modp, Class);
-        if (nodep->isInterfaceClass() && topclassp && topclassp->isInterfaceClass()) {
-            nodep->v3error("Interface class shall not be nested within another interface class."
-                           " (IEEE 1800-2023 8.26)");
-        }
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_modp);
