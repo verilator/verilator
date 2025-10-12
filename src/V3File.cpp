@@ -522,9 +522,8 @@ private:
         constexpr int P_RD = 0;
         constexpr int P_WR = 1;
 
-        if (pipe(fd_stdin) != 0 || pipe(fd_stdout) != 0) {
-            v3fatal("--pipe-filter: Can't pipe: " << std::strerror(errno));
-        }
+        if (VL_UNCOVERABLE(pipe(fd_stdin) != 0 || pipe(fd_stdout) != 0))
+            v3fatal("--pipe-filter: Can't pipe: " << std::strerror(errno));  // LCOV_EXCL_LINE
         if (fd_stdin[P_RD] <= 2 || fd_stdin[P_WR] <= 2 || fd_stdout[P_RD] <= 2
             || fd_stdout[P_WR] <= 2) {
             // We'd have to rearrange all of the FD usages in this case.
@@ -535,7 +534,8 @@ private:
         UINFO(1, "--pipe-filter: /bin/sh -c " << command);
 
         const pid_t pid = fork();
-        if (pid < 0) v3fatal("--pipe-filter: fork failed: " << std::strerror(errno));
+        if (VL_UNCOVERABLE(pid < 0))
+            v3fatal("--pipe-filter: fork failed: " << std::strerror(errno));  // LCOV_EXCL_LINE
         if (pid == 0) {  // Child
             UINFO(6, "In child");
             close(fd_stdin[P_WR]);

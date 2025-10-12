@@ -1322,7 +1322,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_debugLevel[optp] = std::atoi(valp);
     });
     DECL_OPTION("-debug-abort", CbCall, []() {
-        V3Error::vlAbort();
+        V3Error::vlAbort();  // LCOV_EXCL_LINE
     }).undocumented();  // See also --debug-sigseg
     DECL_OPTION("-debug-check", OnOff, &m_debugCheck);
     DECL_OPTION("-debug-collision", OnOff, &m_debugCollision).undocumented();

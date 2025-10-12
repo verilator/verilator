@@ -658,10 +658,6 @@ public:
         return names[m_e];
     }
     bool trueKnown() const { return m_e == BU_TRUE; }
-    bool trueUnknown() const { return m_e == BU_TRUE || m_e == BU_UNKNOWN; }
-    bool falseKnown() const { return m_e == BU_FALSE; }
-    bool falseUnknown() const { return m_e == BU_FALSE || m_e == BU_UNKNOWN; }
-    bool unknown() const { return m_e == BU_UNKNOWN; }
     void setTrueOrFalse(bool flag) { m_e = flag ? BU_TRUE : BU_FALSE; }
 };
 constexpr bool operator==(const VBoolOrUnknown& lhs, const VBoolOrUnknown& rhs) {
@@ -1769,7 +1765,6 @@ public:
                 || m_e == SUPPLY1 || m_e == TRIOR || m_e == TRIAND);
     }
     bool isWor() const { return (m_e == TRIOR); }
-    bool isWand() const { return (m_e == TRIAND); }
     bool isWiredNet() const { return (m_e == TRIOR || m_e == TRIAND); }
     bool isContAssignable() const {  // In Verilog, always ok in SystemVerilog
         return (m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == WIRE || m_e == WREAL || m_e == TRIWIRE

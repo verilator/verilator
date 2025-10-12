@@ -8322,10 +8322,8 @@ class WidthVisitor final : public VNVisitor {
     void replaceWithSFormat(AstMethodCall* nodep, const string& format) {
         // For string.itoa and similar, replace with SFormatF
         const AstArg* argp = VN_CAST(nodep->pinsp(), Arg);
-        if (!argp) {
-            nodep->v3error("Argument needed for string." + nodep->prettyName() + " method");
-            return;
-        }
+        UASSERT_OBJ(argp, nodep,
+                    "Argument needed for string method, call methodOkArguments before here");
         AstNodeVarRef* const fromp = VN_AS(nodep->fromp()->unlinkFrBack(), VarRef);
         AstNode* const newp = new AstAssign{
             nodep->fileline(), fromp,

@@ -55,7 +55,7 @@ module sub (input clk, input [31:0] i, output [31:0] z);
    assign z = z_tmp;
 
    always @(posedge z_tmp == 32'b11) begin
-     $display("%m z_tmp[0]: %d", z_tmp);
+     $display("%m z_tmp[0]: %0d", z_tmp);
    end
 
 endmodule

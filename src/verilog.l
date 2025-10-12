@@ -67,7 +67,9 @@ static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
     const string text = std::string{textp, length};
     bool success = false;
     const double d = VString::parseDouble(text, &success);
-    if (!success) fl->v3error("Syntax error parsing real: '" << textp << "'");
+    // Below never fails, instead can't lex the number
+    if (VL_UNCOVERABLE(!success))
+        fl->v3error("Syntax error parsing real: '" << textp << "'");  // LCOV_EXCL_LINE
     return d;
 }
 

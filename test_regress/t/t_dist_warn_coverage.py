@@ -16,22 +16,19 @@ Outputs = {}
 Suppressed = {}
 
 for s in [
+        # Cannot hit, and comment as to why
+        # Instead of adding here, consider adding a LCOV_EXCL_LINE/START/STOP to the sources on the message
         ' exited with ',  # Is hit; driver.py filters out
         ' loading non-variable',  # Instead 'storing to parameter' or syntax error
-        '--pipe-filter: Can\'t pipe: ',  # Can't test
-        '--pipe-filter: fork failed: ',  # Can't test
         'Assigned pin is neither input nor output',  # Instead earlier error
         'Define missing argument \'',  # Instead get Define passed too many arguments
         'Define or directive not defined: `',  # Instead V3ParseImp will warn
-        'Enum ranges must be integral, per spec',  # Hard to hit
         'Expecting define formal arguments. Found: ',  # Instead define syntax error
-        'Syntax error parsing real: \'',  # Instead can't lex the number
         'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance ',  # Instead get syntax error
         'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
         # Not yet analyzed
         '--pipe-filter protocol error, unexpected: ',
         '--pipe-filter returned bad status',
-        'Argument needed for string.',
         'Array initialization has too few elements, need element ',
         'Assignment pattern with no members',
         'Can\'t find varpin scope of ',
@@ -110,6 +107,8 @@ def read_messages():
         with open(filename, 'r', encoding="utf8") as fh:
             lineno = 0
             read_next = None
+            excl = False
+            excl_next = False
 
             for origline in fh:
                 line = origline
@@ -118,6 +117,12 @@ def read_messages():
                     continue
                 if re.match(r'^\s*/\*', line):
                     continue
+                excl = excl_next
+                if 'LCOV_EXCL_START' in line:
+                    excl = True
+                    excl_next = True
+                if 'LCOV_EXCL_STOP' in line:
+                    excl_next = False  # Reenables coverage on next line, not this one
                 if re.search(r'\b(v3error|v3warn|v3fatal|BBUNSUP)\b\($', line):
                     if 'LCOV_EXCL_LINE' not in line:
                         read_next = True
@@ -130,6 +135,8 @@ def read_messages():
                 if read_next:
                     read_next = False
                     if 'LCOV_EXCL_LINE' in line:
+                        continue
+                    if excl:
                         continue
                     if "\\" in line:  # \" messes up next part
                         continue

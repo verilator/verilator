@@ -277,11 +277,11 @@ void V3Number::create(const char* sourcep) {
                 break;
             }
             case '_': break;
-            default: {
+            default: {  // LCOV_EXCL_START
                 // Likely impossible as parser prevents hitting it
-                v3error("Illegal character in decimal constant: " << *cp);  // LCOV_EXCL_LINE
+                v3error("Illegal character in decimal constant: " << *cp);
                 break;
-            }
+            }  // LCOV_EXCL_STOP
             }
         }
         obit = width();
@@ -357,18 +357,18 @@ void V3Number::create(const char* sourcep) {
                 case 'x': setBit(obit++,'x'); setBit(obit++,'x'); setBit(obit++,'x'); setBit(obit++,'x'); break;
                     // clang-format on
                 case '_': break;
-                default:
+                default:  // LCOV_EXCL_START
                     // Likely impossible as parser prevents hitting it
-                    v3error("Illegal character in hex constant: " << *cp);  // LCOV_EXCL_LINE
+                    v3error("Illegal character in hex constant: " << *cp);
                     break;
-                }
+                }  // LCOV_EXCL_STOP
                 break;
             }
-            default:
+            default:  // LCOV_EXCL_START
                 // Likely impossible as parser prevents hitting it
-                v3error("Illegal base character: " << base);  // LCOV_EXCL_LINE
+                v3error("Illegal base character: " << base);
                 break;
-            }
+            }  // LCOV_EXCL_STOP
         }
     }
 

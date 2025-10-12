@@ -225,6 +225,8 @@ class TraceVisitor final : public VNVisitor {
                 }
             }
         }
+        if (dumpLevel() || debug() >= 9)
+            dupFinder.dumpFile(v3Global.debugFilename("trace") + ".hash", false);
     }
 
     void graphSimplify(bool initial) {

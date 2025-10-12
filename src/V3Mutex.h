@@ -70,7 +70,6 @@ public:
             std::abort();  // LCOV_EXCL_LINE
         }
     }
-    bool lockConfig() VL_MT_SAFE { return m_lockConfig; }
     bool enable() VL_MT_SAFE { return m_enable; }
 };
 

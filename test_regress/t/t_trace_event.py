@@ -11,7 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--trace-vcd --binary'])
+test.compile(verilator_flags2=[
+    '--trace-vcd --binary',
+    '--dumpi-V3Trace 9'  # Dev coverage of the V3DumpFinder debug code
+])
 
 test.execute()
 
