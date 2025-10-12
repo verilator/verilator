@@ -1136,32 +1136,6 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstMemberSel* nodep) override {
         if (nodep->varp()->rand().isRandomizable() && nodep->fromp()) {
-            // Determine dtype based on node type (VarRef or MemberSel)
-            AstNodeDType* dtype = nullptr;
-            if (VN_IS(nodep->fromp(), VarRef)) {
-                dtype = VN_AS(nodep->fromp(), VarRef)->dtypep();
-            } else if (VN_IS(nodep->fromp(), MemberSel)) {
-                dtype = VN_AS(nodep->fromp(), MemberSel)->dtypep();
-            }
-            const AstClassRefDType* const classRefDType = VN_CAST(dtype, ClassRefDType);
-
-            if (!classRefDType || !classRefDType->classp()) {
-                // Not a class reference type, skip processing
-                editFormat(nodep);
-                return;
-            }
-
-            AstClass* const refClass = classRefDType->classp();
-
-            // Check if constraint is from inside the class (internal) or outside (global)
-            if (nodep->user2p() == refClass) {
-                // Constraint is internal to the class - unwrap the MemberSel
-                // Process fromp first to ensure proper SMT generation
-                iterate(nodep->fromp());
-                nodep->replaceWith(nodep->fromp()->unlinkFrBack());
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
-                return;
-            }
 
             // Traverse MemberSel chain to find the root variable reference
             AstNode* rootNode = nodep->fromp();
@@ -1177,7 +1151,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                                     : nullptr);
             if (constrainedVar && constrainedVar->isGlobalConstrained()) {
                 // Global constraint - unwrap the MemberSel
-                iterate(nodep->fromp());
+                iterateChildren(nodep);
                 nodep->replaceWith(nodep->fromp()->unlinkFrBack());
                 VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 return;
