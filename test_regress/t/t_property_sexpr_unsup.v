@@ -25,9 +25,13 @@ module t (  /*AUTOARG*/
       end
     end
   end
+
 `ifdef PARSING_TIME
-  assert property (@(posedge clk) val ##1 val) $display("[%0t] var with single delay stmt, fileline:%d", $time, `__LINE__);
-  assert property (@(posedge clk) ##1 val ##2 val) $display("[%0t] sequence stmt, fileline:%d", $time, `__LINE__);
+  assert property (@(e14) not (val[0] ##2 val[1]));
+  assert property (@(posedge clk) not (not ##2 val[0] && val[1]));
+  assert property (@(posedge clk) not val ##2 val);
+  assert property (@(posedge clk) not (val ##1 val));
+  assert property (@(posedge clk) not ##1 val ##2 val);
 `else
   assert property (@(posedge clk) ##1 1 |-> 1) $display("[%0t] single delay with const implication stmt, fileline:%d", $time, `__LINE__);
 

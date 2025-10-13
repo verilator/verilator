@@ -12,10 +12,10 @@ module t (  /*AUTOARG*/
   input clk;
   bit val;
 
-  always @(negedge clk) begin
+  always @(posedge clk) begin
     $write("*-* All Finished *-*\n");
     $finish;
   end
 
-  assert property (@(posedge clk) ##1 not val) $display("[%0t] single delay with negated var stmt, fileline:%d", $time, `__LINE__);
+  assert property (@(posedge clk) ##1 not val);
 endmodule

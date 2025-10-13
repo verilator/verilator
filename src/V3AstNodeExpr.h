@@ -1715,19 +1715,6 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     int instrCount() const override { return widthInstrs(); }
 };
-class AstPExpr final : public AstNodeExpr {
-    // Property expression
-    // @astgen op1 := precondp : List[AstNode]
-    // @astgen op2 := condp : Optional[AstNodeExpr]
-public:
-    explicit AstPExpr(FileLine* fl)
-        : ASTGEN_SUPER_PExpr(fl) {}
-    ASTGEN_MEMBERS_AstPExpr;
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { V3ERROR_NA_RETURN(""); }
-    int instrCount() const override { return widthInstrs(); }
-};
 class AstParseHolder final : public AstNodeExpr {
     // A reference to something soon to replace, used in a select at parse time
     // that needs conversion to pull the upper lvalue later
@@ -1939,11 +1926,19 @@ public:
 };
 class AstSExpr final : public AstNodeExpr {
     // Sequence expression
-    // @astgen op1 := delayp : AstDelay
-    // @astgen op2 := exprp : AstNodeExpr
+    // @astgen op1 := preExprp: Optional[AstNodeExpr]
+    // @astgen op2 := delayp : AstNodeStmt<AstDelay|AstBegin>
+    // @astgen op3 := exprp : AstNodeExpr
 public:
-    explicit AstSExpr(FileLine* fl, AstDelay* delayp, AstNodeExpr* exprp)
+    explicit AstSExpr(FileLine* fl, AstNodeExpr* preExprp, AstNodeStmt* delayp, AstNodeExpr* exprp)
         : ASTGEN_SUPER_SExpr(fl) {
+        this->preExprp(preExprp);
+        this->delayp(delayp);
+        this->exprp(exprp);
+    }
+    explicit AstSExpr(FileLine* fl, AstNodeStmt* delayp, AstNodeExpr* exprp)
+        : ASTGEN_SUPER_SExpr(fl) {
+        this->preExprp(nullptr);
         this->delayp(delayp);
         this->exprp(exprp);
     }

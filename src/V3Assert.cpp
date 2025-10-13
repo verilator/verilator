@@ -19,6 +19,7 @@
 #include "V3Assert.h"
 
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -143,6 +144,10 @@ class AssertVisitor final : public VNVisitor {
     VDouble0 m_statPastVars;  // Statistic tracking
     bool m_inSampled = false;  // True inside a sampled expression
     bool m_inRestrict = false;  // True inside restrict assertion
+    AstNode* m_passsp = nullptr;
+    AstNode* m_failsp = nullptr;
+    AstNodeCoverOrAssert* m_assertp = nullptr;
+    V3UniqueNames m_assertCycleDelayNames{"__Vassert"};  // Names for assertions with cycle delays
 
     // METHODS
     static AstNodeExpr* assertOnCond(FileLine* fl, VAssertType type,
@@ -237,7 +242,7 @@ class AssertVisitor final : public VNVisitor {
             nodep->fmtp()->scopeNamep(new AstScopeName{nodep->fileline(), true});
         }
     }
-    AstSampled* newSampledExpr(AstNodeExpr* nodep) {
+    static AstSampled* newSampledExpr(AstNodeExpr* nodep) {
         AstSampled* const sampledp = new AstSampled{nodep->fileline(), nodep};
         sampledp->dtypeFrom(nodep);
         return sampledp;
@@ -286,25 +291,17 @@ class AssertVisitor final : public VNVisitor {
         return ifp;
     }
 
-    static AstNode* assertBody(AstNodeCoverOrAssert* nodep, AstNodeExpr* propp, AstNode* passsp,
-                               AstNode* failsp) {
-        if (AstPExpr* const pExpr = VN_CAST(propp, PExpr)) {
-            AstNodeExpr* const condp = pExpr->condp();
-            UASSERT_OBJ(condp, pExpr, "Should have condition");
-            AstIf* const ifp = assertCond(nodep, condp->unlinkFrBack(), passsp, failsp);
-
-            AstNode* const precondps = pExpr->precondp();
-            UASSERT_OBJ(precondps, pExpr, "Should have precondition");
-            precondps->unlinkFrBackWithNext()->addNext(ifp);
-            AstNodeStmt* const assertOnp
-                = newIfAssertOn(precondps, nodep->directive(), nodep->type());
-            AstFork* const forkp = new AstFork{precondps->fileline(), "", assertOnp};
+    AstNode* assertBody(AstNodeCoverOrAssert* nodep, AstNode* propp, AstNode* passsp,
+                        AstNode* failsp) {
+        AstNode* bodyp = nullptr;
+        if (VString::startsWith(propp->name(), m_assertCycleDelayNames.prefix())) {
+            AstFork* const forkp = new AstFork{nodep->fileline(), "", propp};
             forkp->joinType(VJoinType::JOIN_NONE);
-            return forkp;
+            bodyp = forkp;
+        } else {
+            bodyp = assertCond(nodep, VN_AS(propp, NodeExpr), passsp, failsp);
         }
-
-        AstIf* const ifp = assertCond(nodep, propp, passsp, failsp);
-        return newIfAssertOn(ifp, nodep->directive(), nodep->type());
+        return newIfAssertOn(bodyp, nodep->directive(), nodep->type());
     }
 
     AstNodeStmt* newFireAssertUnchecked(const AstNodeStmt* nodep, const string& message,
@@ -334,7 +331,6 @@ class AssertVisitor final : public VNVisitor {
         { AssertDeFuture{nodep->propp(), m_modp, m_modPastNum++}; }
         iterateChildren(nodep);
 
-        AstNodeExpr* const propp = VN_AS(nodep->propp()->unlinkFrBackWithNext(), NodeExpr);
         AstSenTree* const sentreep = nodep->sentreep();
         const string& message = nodep->name();
         AstNode* passsp = nodep->passsp();
@@ -382,7 +378,15 @@ class AssertVisitor final : public VNVisitor {
             nodep->v3fatalSrc("Unknown node type");
         }
 
-        AstNode* bodysp = assertBody(nodep, propp, passsp, failsp);
+        VL_RESTORER(m_passsp);
+        VL_RESTORER(m_failsp);
+        VL_RESTORER(m_assertp);
+        m_passsp = passsp;
+        m_failsp = failsp;
+        m_assertp = nodep;
+        iterate(nodep->propp());
+
+        AstNode* bodysp = assertBody(nodep, nodep->propp()->unlinkFrBack(), passsp, failsp);
         if (sentreep) {
             bodysp = new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, sentreep, bodysp};
         }
@@ -629,7 +633,7 @@ class AssertVisitor final : public VNVisitor {
     }
     void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
-        if (m_inSampled && !VString::startsWith(nodep->name(), "__VpropPrecond")) {
+        if (m_inSampled && !VString::startsWith(nodep->name(), "__VcycleDly")) {
             if (!nodep->access().isReadOnly()) {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: Write to variable in sampled expression");
@@ -649,17 +653,44 @@ class AssertVisitor final : public VNVisitor {
         m_inSampled = false;
         iterateChildren(nodep);
     }
-    void visit(AstPExpr* nodep) override {
-        {
-            VL_RESTORER(m_inSampled);
-            m_inSampled = false;
-            iterateAndNextNull(nodep->precondp());
-        }
-        iterate(nodep->condp());
-        if (!m_inRestrict) {
+    void visit(AstSExpr* nodep) override {
+        if (m_assertp) {
+            const auto makeFailsp
+                = [this]() { return m_failsp ? m_failsp->cloneTree(false) : nullptr; };
+
+            AstNodeStmt* const dlyp = nodep->delayp()->unlinkFrBack();
+
+            if (VN_IS(nodep->exprp(), SExpr)) {
+                dlyp->addNextHere(nodep->exprp()->unlinkFrBack());
+            } else {
+                dlyp->addNextHere(
+                    assertCond(m_assertp, nodep->exprp()->unlinkFrBack(), m_passsp, makeFailsp()));
+            }
+
+            // Wrap sequence expression with a block to insert a delay statement before conditions
+            AstBegin* const bodyp = new AstBegin{
+                nodep->fileline(), m_assertCycleDelayNames.get(nodep) + "__block", nullptr, true};
+            if (AstSExpr* const sexprp = VN_CAST(nodep->preExprp(), SExpr)) {
+                UASSERT_OBJ(!sexprp->preExprp() && !VN_IS(sexprp->exprp(), SExpr), sexprp,
+                            "Incorrect sexpr tree");
+                bodyp->addStmtsp(sexprp->delayp()->unlinkFrBack());
+                bodyp->addStmtsp(
+                    assertCond(m_assertp, sexprp->exprp()->unlinkFrBack(), dlyp, makeFailsp()));
+            } else if (nodep->preExprp()) {
+                bodyp->addStmtsp(
+                    assertCond(m_assertp, nodep->preExprp()->unlinkFrBack(), dlyp, makeFailsp()));
+            } else {
+                bodyp->addStmtsp(dlyp);
+            }
+
+            iterateChildren(bodyp);
+            nodep->replaceWith(bodyp);
+
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else {
+        } else if (m_inRestrict) {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        } else {
+            iterateChildren(nodep);
         }
     }
 

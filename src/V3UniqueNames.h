@@ -78,6 +78,7 @@ public:
 
     // Reset to initial state (as if just constructed)
     void reset() { m_multiplicity.clear(); }
+    std::string prefix() const { return m_prefix; }
 };
 
 #endif  // Guard
