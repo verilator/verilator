@@ -29,10 +29,14 @@
             integer other_int;
             logic some_bool;
         
-            wire t1 = cyc[0];
-            wire t2 = cyc[1];
-            wire t3 = cyc[2];
-            wire t4 = cyc[3];
+%000001     wire t1 = cyc[0];
+-000001  point: comment=block hier=top.t
+%000001     wire t2 = cyc[1];
+-000001  point: comment=block hier=top.t
+%000001     wire t3 = cyc[2];
+-000001  point: comment=block hier=top.t
+%000001     wire t4 = cyc[3];
+-000001  point: comment=block hier=top.t
         
             localparam bit ONE = 1'b1;
             localparam bit ZERO = 1'b0;

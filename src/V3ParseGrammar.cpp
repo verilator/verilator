@@ -96,7 +96,7 @@ AstArg* V3ParseGrammar::argWrapList(AstNodeExpr* nodep) {
     return outp;
 }
 
-AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& name, int value) {
+AstAssignW* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& name, int value) {
     AstAssignW* assignp = new AstAssignW{fileline, new AstParseRef{fileline, name},
                                          value ? new AstConst{fileline, AstConst::All1{}}
                                                : new AstConst{fileline, AstConst::All0{}}};
@@ -253,12 +253,12 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     }
 
     if (GRAMMARP->m_varDecl == VVarType::SUPPLY0) {
-        AstNode::addNext<AstNode, AstNode>(
-            nodep, V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 0));
+        AstAssignW* const ap = V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 0);
+        AstNode::addNext<AstNode, AstNode>(nodep, ap->mkProc());
     }
     if (GRAMMARP->m_varDecl == VVarType::SUPPLY1) {
-        AstNode::addNext<AstNode, AstNode>(
-            nodep, V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 1));
+        AstAssignW* const ap = V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 1);
+        AstNode::addNext<AstNode, AstNode>(nodep, ap->mkProc());
     }
     if (VN_IS(dtypep, ParseTypeDType)) {
         // Parser needs to know what is a type

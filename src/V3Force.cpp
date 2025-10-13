@@ -363,6 +363,15 @@ class ForceReplaceVisitor final : public VNVisitor {
     void visit(AstCFunc* nodep) override { iterateLogic(nodep); }
     void visit(AstCoverToggle* nodep) override { iterateLogic(nodep); }
     void visit(AstNodeProcedure* nodep) override { iterateLogic(nodep); }
+    void visit(AstAlways* nodep) override {
+        // TODO: this is the old behavioud prior to moving AssignW under Always.
+        // Review if this is appropriate or if we are missing something...
+        if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
+            iterateChildren(nodep);
+            return;
+        }
+        iterateLogic(nodep);
+    }
     void visit(AstSenItem* nodep) override { iterateLogic(nodep); }
     void visit(AstVarRef* nodep) override {
         if (ForceState::isNotReplaceable(nodep)) return;

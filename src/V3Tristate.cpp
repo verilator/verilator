@@ -625,10 +625,10 @@ class TristateVisitor final : public TristateBaseVisitor {
                     AstConst* const constp = newAllZerosOrOnes(varp, false);
                     AstVarRef* const varrefp
                         = new AstVarRef{varp->fileline(), varp, VAccess::WRITE};
-                    AstNode* const newp = new AstAssignW{varp->fileline(), varrefp, constp};
+                    AstAssignW* const newp = new AstAssignW{varp->fileline(), varrefp, constp};
                     UINFO(9, "       newoev " << newp);
                     varrefp->user1p(newAllZerosOrOnes(varp, false));
-                    nodep->addStmtsp(newp);
+                    nodep->addStmtsp(newp->mkProc());
                     mapInsertLhsVarRef(varrefp);  // insertTristates will convert
                     //                               // to a varref to the __out# variable
                 }
@@ -682,11 +682,11 @@ class TristateVisitor final : public TristateBaseVisitor {
             UINFO(9, "       newenlhsp " << newEnLhsp);
             nodep->addStmtsp(newEnLhsp);
 
-            AstNode* const enLhspAssignp = new AstAssignW{
+            AstAssignW* const enLhspAssignp = new AstAssignW{
                 refp->fileline(), new AstVarRef{refp->fileline(), newEnLhsp, VAccess::WRITE},
                 getEnp(refp)};
             UINFO(9, "       newenlhspAssignp " << enLhspAssignp);
-            nodep->addStmtsp(enLhspAssignp);
+            nodep->addStmtsp(enLhspAssignp->mkProc());
 
             // now append this driver to the driver logic.
             AstNodeExpr* const ref1p = new AstVarRef{refp->fileline(), newLhsp, VAccess::READ};
@@ -699,15 +699,15 @@ class TristateVisitor final : public TristateBaseVisitor {
             AstNodeExpr* const ref3p = new AstVarRef{refp->fileline(), newEnLhsp, VAccess::READ};
             enp = (!enp) ? ref3p : new AstOr{ref3p->fileline(), enp, ref3p};
         }
-        AstNode* const assp = new AstAssignW{
+        AstAssignW* const assp = new AstAssignW{
             varp->fileline(), new AstVarRef{varp->fileline(), varp, VAccess::WRITE}, orp};
         UINFO(9, "       newassp " << assp);
-        nodep->addStmtsp(assp);
+        nodep->addStmtsp(assp->mkProc());
 
-        AstNode* const enAssp = new AstAssignW{
+        AstAssignW* const enAssp = new AstAssignW{
             envarp->fileline(), new AstVarRef{envarp->fileline(), envarp, VAccess::WRITE}, enp};
         UINFO(9, "       newenassp " << enAssp);
-        nodep->addStmtsp(enAssp);
+        nodep->addStmtsp(enAssp->mkProc());
     }
 
     void insertTristatesSignal(AstNodeModule* nodep, AstVar* const invarp, RefStrengthVec* refsp) {
@@ -825,15 +825,15 @@ class TristateVisitor final : public TristateBaseVisitor {
             AstAssignW* const enAssp = new AstAssignW{
                 enp->fileline(), new AstVarRef{envarp->fileline(), envarp, VAccess::WRITE}, enp};
             UINFOTREE(9, enAssp, "", "enAssp");
-            nodep->addStmtsp(enAssp);
+            nodep->addStmtsp(enAssp->mkProc());
         }
 
         // __out (child) or <in> (parent) = drive-value expression
-        AstNode* const assp = new AstAssignW{
+        AstAssignW* const assp = new AstAssignW{
             lhsp->fileline(), new AstVarRef{lhsp->fileline(), lhsp, VAccess::WRITE}, orp};
         assp->user2(U2_BOTH);  // Don't process further; already resolved
         UINFOTREE(9, assp, "", "lhsp-eqn");
-        nodep->addStmtsp(assp);
+        nodep->addStmtsp(assp->mkProc());
 
         // If this is a top-level inout, make sure that the INOUT pins get __en and __out
         if (v3Global.opt.pinsInoutEnables() && isTopInout) {
@@ -848,8 +848,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
-    bool isOnlyAssignmentIsToLhsVar(AstAssignW* const nodep) {
-        if (AstVarRef* const varRefp = VN_CAST(nodep->lhsp(), VarRef)) {
+    bool isOnlyAssignmentIsToLhsVar(const AstAssignW* const nodep) {
+        if (const AstVarRef* const varRefp = VN_CAST(nodep->lhsp(), VarRef)) {
             auto foundIt = m_assigns.find(varRefp->varp());
             if (foundIt != m_assigns.end()) {
                 auto const& assignsToVar = foundIt->second;
@@ -873,15 +873,15 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
-    uint8_t getStrength(AstAssignW* const nodep, bool value) {
+    uint8_t getStrength(const AstAssignW* const nodep, bool value) {
         if (AstStrengthSpec* const strengthSpec = nodep->strengthSpecp()) {
             return value ? strengthSpec->strength1() : strengthSpec->strength0();
         }
         return VStrength::STRONG;  // default strength is strong
     }
 
-    bool assignmentOfValueOnAllBits(AstAssignW* const nodep, bool value) {
-        if (AstConst* const constp = VN_CAST(nodep->rhsp(), Const)) {
+    bool assignmentOfValueOnAllBits(const AstAssignW* const nodep, bool value) {
+        if (const AstConst* const constp = VN_CAST(nodep->rhsp(), Const)) {
             const V3Number num = constp->num();
             return value ? num.isEqAllOnes() : num.isEqZero();
         }
@@ -890,7 +890,7 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     AstAssignW* getStrongestAssignmentOfValue(const Assigns& assigns, bool value) {
         auto maxIt = std::max_element(
-            assigns.begin(), assigns.end(), [&](AstAssignW* ap, AstAssignW* bp) {
+            assigns.begin(), assigns.end(), [&](const AstAssignW* ap, const AstAssignW* bp) {
                 bool valuesOnRhsA = assignmentOfValueOnAllBits(ap, value);
                 bool valuesOnRhsB = assignmentOfValueOnAllBits(bp, value);
                 if (!valuesOnRhsA) return valuesOnRhsB;
@@ -903,7 +903,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         return assignmentOfValueOnAllBits(*maxIt, value) ? *maxIt : nullptr;
     }
 
-    bool isAssignmentNotStrongerThanStrength(AstAssignW* assignp, uint8_t strength) {
+    bool isAssignmentNotStrongerThanStrength(const AstAssignW* assignp, uint8_t strength) {
         // If the value of the RHS is known and has all bits equal, only strength corresponding to
         // its value is taken into account. In opposite case, both strengths are compared.
         const uint8_t strength0 = getStrength(assignp, 0);
@@ -958,7 +958,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
-    void removeNotStrongerAssignments(Assigns& assigns, AstAssignW* strongestp,
+    void removeNotStrongerAssignments(Assigns& assigns, const AstAssignW* strongestp,
                                       uint8_t greatestKnownStrength) {
         // Weaker assignments are these assignments that can't change the final value of the net.
         // They can be safely removed. Assignments of the same strength are also removed, because
@@ -985,12 +985,12 @@ class TristateVisitor final : public TristateBaseVisitor {
         for (auto& varpAssigns : m_assigns) {
             Assigns& assigns = varpAssigns.second;
             if (assigns.size() > 1) {
-                AstAssignW* const strongest0p = getStrongestAssignmentOfValue(assigns, 0);
-                AstAssignW* const strongest1p = getStrongestAssignmentOfValue(assigns, 1);
-                AstAssignW* strongestp = nullptr;
+                const AstAssignW* const strongest0p = getStrongestAssignmentOfValue(assigns, 0);
+                const AstAssignW* const strongest1p = getStrongestAssignmentOfValue(assigns, 1);
+                const AstAssignW* strongestp = nullptr;
                 uint8_t greatestKnownStrength = 0;
                 const auto getIfStrongest
-                    = [&](AstAssignW* const strongestCandidatep, bool value) {
+                    = [&](const AstAssignW* const strongestCandidatep, bool value) {
                           if (!strongestCandidatep) return;
                           uint8_t strength = getStrength(strongestCandidatep, value);
                           if (strength >= greatestKnownStrength) {
@@ -1017,19 +1017,22 @@ class TristateVisitor final : public TristateBaseVisitor {
         for (auto& varpAssigns : m_assigns) {
             Assigns& assigns = varpAssigns.second;
             if (assigns.size() > 1) {
-                auto maxIt = std::max_element(
-                    assigns.begin(), assigns.end(), [&](AstAssignW* ap, AstAssignW* bp) {
-                        if (m_tgraph.isTristate(ap)) return !m_tgraph.isTristate(bp);
-                        if (m_tgraph.isTristate(bp)) return false;
-                        const uint8_t minStrengthA
-                            = std::min(getStrength(ap, 0), getStrength(ap, 1));
-                        const uint8_t minStrengthB
-                            = std::min(getStrength(bp, 0), getStrength(bp, 1));
-                        return minStrengthA < minStrengthB;
-                    });
+                auto maxIt
+                    = std::max_element(assigns.begin(), assigns.end(),
+                                       [&](const AstAssignW* ap, const AstAssignW* bp) {
+                                           if (m_tgraph.isTristate(ap))
+                                               return !m_tgraph.isTristate(bp);
+                                           if (m_tgraph.isTristate(bp)) return false;
+                                           const uint8_t minStrengthA
+                                               = std::min(getStrength(ap, 0), getStrength(ap, 1));
+                                           const uint8_t minStrengthB
+                                               = std::min(getStrength(bp, 0), getStrength(bp, 1));
+                                           return minStrengthA < minStrengthB;
+                                       });
                 // If RHSs of all assignments are tristate, 1st element is returned, so it is
                 // needed to check if it is non-tristate.
-                AstAssignW* const strongestp = m_tgraph.isTristate(*maxIt) ? nullptr : *maxIt;
+                const AstAssignW* const strongestp
+                    = m_tgraph.isTristate(*maxIt) ? nullptr : *maxIt;
                 if (strongestp) {
                     uint8_t greatestKnownStrength
                         = std::min(getStrength(strongestp, 0), getStrength(strongestp, 1));

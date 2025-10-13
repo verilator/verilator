@@ -86,6 +86,7 @@ class CfgBuilder final : public VNVisitorConst {
 
     // Representable non control-flow statements
     void visit(AstAssign* nodep) override { simpleStatement(nodep, !nodep->timingControlp()); }
+    void visit(AstAssignW* nodep) override { simpleStatement(nodep, !nodep->timingControlp()); }
     void visit(AstComment*) override {}  // ignore entirely
     void visit(AstDisplay* nodep) override { simpleStatement(nodep); }
     void visit(AstFinish* nodep) override { simpleStatement(nodep); }

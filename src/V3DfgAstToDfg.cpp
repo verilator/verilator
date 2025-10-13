@@ -176,33 +176,35 @@ class AstToDfgVisitor final : public VNVisitor {
         }
     }
 
-    // Convert AstAssignW to DfgLogic, return true if successful.
-    bool convert(AstAssignW* nodep) {
-        // Cannot handle assignment with timing control
-        if (nodep->timingControlp()) return false;
-
-        // Potentially convertible block
-        ++m_ctx.m_inputs;
-        // Gather written variables, give up if any are not supported
-        const std::unique_ptr<std::vector<DfgVertexVar*>> oVarpsp = gatherWritten(nodep);
-        if (!oVarpsp) return false;
-        // Gather read variables, give up if any are not supported
-        const std::unique_ptr<std::vector<DfgVertexVar*>> iVarpsp = gatherRead(nodep);
-        if (!iVarpsp) return false;
-        // Create the DfgLogic
-        DfgLogic* const logicp = new DfgLogic{m_dfg, nodep, m_scopep};
-        // Connect it up
-        connect(*logicp, *iVarpsp, *oVarpsp);
-        // Done
-        ++m_ctx.m_representable;
-        return true;
-    }
-
     // Convert AstAlways to DfgLogic, return true if successful.
     bool convert(AstAlways* nodep) {
+        const VAlwaysKwd kwd = nodep->keyword();
+        if (kwd == VAlwaysKwd::CONT_ASSIGN) {
+            // TODO: simplify once CFG analysis can handle arrays
+            if (AstAssignW* const ap = VN_CAST(nodep->stmtsp(), AssignW)) {
+                if (ap->nextp()) return false;
+                // Cannot handle assignment with timing control
+                if (ap->timingControlp()) return false;
+                // Potentially convertible block
+                ++m_ctx.m_inputs;
+                // Gather written variables, give up if any are not supported
+                const std::unique_ptr<std::vector<DfgVertexVar*>> oVarpsp = gatherWritten(ap);
+                if (!oVarpsp) return false;
+                // Gather read variables, give up if any are not supported
+                const std::unique_ptr<std::vector<DfgVertexVar*>> iVarpsp = gatherRead(ap);
+                if (!iVarpsp) return false;
+                // Create the DfgLogic
+                DfgLogic* const logicp = new DfgLogic{m_dfg, nodep, m_scopep, nullptr};
+                // Connect it up
+                connect(*logicp, *iVarpsp, *oVarpsp);
+                // Done
+                ++m_ctx.m_representable;
+                return true;
+            }
+        }
+
         // Can only handle combinational logic
         if (nodep->sentreep()) return false;
-        const VAlwaysKwd kwd = nodep->keyword();
         if (kwd != VAlwaysKwd::ALWAYS && kwd != VAlwaysKwd::ALWAYS_COMB) return false;
 
         // Potentially convertible block
@@ -261,9 +263,6 @@ class AstToDfgVisitor final : public VNVisitor {
     void visit(AstNodeProcedure* nodep) override { markReferenced(nodep); }
 
     // Potentially representable constructs
-    void visit(AstAssignW* nodep) override {
-        if (!convert(nodep)) markReferenced(nodep);
-    }
     void visit(AstAlways* nodep) override {
         if (!convert(nodep)) markReferenced(nodep);
     }

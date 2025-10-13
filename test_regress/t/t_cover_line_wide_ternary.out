@@ -62,7 +62,8 @@
             end
         
             assign
-                {intf_sel_assign.foo, intf_sel_assign.bar, intf_sel_assign.baz} =
+ 000010         {intf_sel_assign.foo, intf_sel_assign.bar, intf_sel_assign.baz} =
++000010  point: comment=block hier=top.t
  000010             cyc[0] ?
 +000010  point: comment=cond_then hier=top.t
  000010             {intfs[1].foo, intfs[1].bar, intfs[1].baz} :

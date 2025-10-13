@@ -22,15 +22,19 @@
         <scope loc="d,11,8,11,11" name="TOP">
           <varscope loc="d,11,24,11,29" name="i_clk" dtype_id="1"/>
           <varscope loc="d,11,24,11,29" name="top.i_clk" dtype_id="1"/>
-          <contassign loc="d,11,24,11,29" dtype_id="1">
-            <varref loc="d,11,24,11,29" name="i_clk" dtype_id="1"/>
-            <varref loc="d,11,24,11,29" name="top.i_clk" dtype_id="1"/>
-          </contassign>
+          <always loc="d,11,24,11,29">
+            <contassign loc="d,11,24,11,29" dtype_id="1">
+              <varref loc="d,11,24,11,29" name="i_clk" dtype_id="1"/>
+              <varref loc="d,11,24,11,29" name="top.i_clk" dtype_id="1"/>
+            </contassign>
+          </always>
           <varscope loc="d,7,24,7,29" name="top.f.i_clk" dtype_id="1"/>
-          <contassign loc="d,7,24,7,29" dtype_id="1">
-            <varref loc="d,7,24,7,29" name="i_clk" dtype_id="1"/>
-            <varref loc="d,7,24,7,29" name="top.f.i_clk" dtype_id="1"/>
-          </contassign>
+          <always loc="d,7,24,7,29">
+            <contassign loc="d,7,24,7,29" dtype_id="1">
+              <varref loc="d,7,24,7,29" name="i_clk" dtype_id="1"/>
+              <varref loc="d,7,24,7,29" name="top.f.i_clk" dtype_id="1"/>
+            </contassign>
+          </always>
         </scope>
       </topscope>
     </module>

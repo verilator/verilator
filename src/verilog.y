@@ -46,23 +46,31 @@
             MINTYPMAXDLY, \
             "Unsupported: minimum/typical/maximum delay expressions. Using the typical delay"); \
     }
-// Given a list of assignments, if there is a delay add it to each assignment
-#define DELAY_LIST(delayp, assignsp) \
-    if (delayp) { \
-        for (auto* nodep = assignsp; nodep; nodep = nodep->nextp()) { \
-            if (VN_IS(nodep, Implicit)) continue; \
-            auto* const assignp = VN_AS(nodep, NodeAssign); \
-            assignp->timingControlp(nodep == assignsp ? delayp : delayp->cloneTree(false)); \
-        } \
-        if (!delayp->backp()) delayp->deleteTree(); \
+// Apply a delay to all continuous assignments under listp
+static void DELAY_LIST(AstNode* listp, AstDelay* delayp) {
+    if (!delayp) return;
+    for (AstNode* nodep = listp; nodep; nodep = nodep->nextp()) {
+        if (VN_IS(nodep, Implicit)) continue;
+        AstAlways* const alwaysp = VN_AS(nodep, Always);
+        AstAssignW* const assignp = VN_AS(alwaysp->stmtsp(), AssignW);
+        assignp->timingControlp(delayp->backp() ? delayp->cloneTree(false) : delayp);
     }
-#define STRENGTHUNSUP(nodep) \
-    { \
-        if (nodep) { \
-            BBUNSUP((nodep->fileline()), "Unsupported: Strength specifier on this gate type"); \
-            nodep->deleteTree(); \
-        } \
+}
+// Apply a strength to all continuous assignments under listp
+static void STRENGTH_LIST(AstNode* listp, AstStrengthSpec* specp) {
+    if (!specp) return;
+    for (AstNode* nodep = listp; nodep; nodep = nodep->nextp()) {
+        if (VN_IS(nodep, Implicit)) continue;
+        AstAlways* const alwaysp = VN_AS(nodep, Always);
+        AstAssignW* const assignp = VN_AS(alwaysp->stmtsp(), AssignW);
+        assignp->strengthSpecp(specp->backp() ? specp->cloneTree(false) : specp);
     }
+}
+static void STRENGTHUNSUP(AstStrengthSpec* nodep) {
+    if (!nodep) return;
+    BBUNSUP((nodep->fileline()), "Unsupported: Strength specifier on this gate type");
+    nodep->deleteTree();
+}
 
 //======================================================================
 // Statics (for here only)
@@ -131,19 +139,6 @@ const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
         AstNode* nodeps[] = {__VA_ARGS__}; \
         for (AstNode* const nodep : nodeps) \
             if (nodep) nodep->deleteTree(); \
-    }
-
-// Apply a strength to a list of nodes under beginp
-#define STRENGTH_LIST(beginp, strengthSpecNodep, typeToCast) \
-    { \
-        if (AstStrengthSpec* const specp = VN_CAST(strengthSpecNodep, StrengthSpec)) { \
-            for (auto* nodep = beginp; nodep; nodep = nodep->nextp()) { \
-                if (VN_IS(nodep, Implicit)) continue; \
-                auto* const assignp = VN_AS(nodep, typeToCast); \
-                assignp->strengthSpecp(nodep == beginp ? specp : specp->cloneTree(false)); \
-            } \
-            if (!strengthSpecNodep->backp()) strengthSpecNodep->deleteTree(); \
-        } \
     }
 
 static void ERRSVKWD(FileLine* fileline, const string& tokname) {
@@ -1802,8 +1797,7 @@ net_declaration<nodep>:         // IEEE: net_declaration - excluding implict
 net_declarationFront:           // IEEE: beginning of net_declaration
                 net_declRESET net_type driveStrengthE net_scalaredE net_dataTypeE
                         { VARDTYPE_NDECL($5);
-                          GRAMMARP->setNetStrength(VN_CAST($3, StrengthSpec));
-                        }
+                          GRAMMARP->setNetStrength($3); }
         |       net_declRESET yINTERCONNECT signingE rangeListE
                         { BBUNSUP($<fl>2, "Unsupported: interconnect");
                           VARDECL(WIRE);
@@ -2634,8 +2628,8 @@ always_construct<nodep>:        // IEEE: == always_construct
 continuous_assign<nodep>:       // IEEE: continuous_assign
                 yASSIGN driveStrengthE delay_controlE assignList ';'
                         { $$ = $4;
-                          STRENGTH_LIST($4, $2, AssignW);
-                          DELAY_LIST($3, $4); }
+                          STRENGTH_LIST($4, $2);
+                          DELAY_LIST($4, $3); }
         ;
 
 initial_construct<nodep>:       // IEEE: initial_construct
@@ -2913,13 +2907,14 @@ c_case_generate_item<genCaseItemp>:  // IEEE: case_generate_item (for checkers)
 //************************************************
 // Assignments and register declarations
 
-assignList<nodep>:
+assignList<alwaysp>:
                 assignOne                               { $$ = $1; }
         |       assignList ',' assignOne                { $$ = $1->addNext($3); }
         ;
 
-assignOne<nodep>:
-                variable_lvalue '=' expr                { $$ = new AstAssignW{$2, $1, $3}; }
+assignOne<alwaysp>:
+                variable_lvalue '=' expr                { AstAssignW* const ap = new AstAssignW{$2, $1, $3};
+                                                          $$ = ap->mkProc(); }
         ;
 
 delay_or_event_controlE<nodep>:  // IEEE: delay_or_event_control plus empty
@@ -2981,7 +2976,7 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
                           AstDelay* const delayp = $$->delayp() ? $$->delayp()->unlinkFrBack() : nullptr;
                           AstAssignW* const assignp = new AstAssignW{$4, new AstParseRef{$<fl>1, *$1}, $5, delayp};
                           if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
-                          AstNode::addNext<AstNode, AstNode>($$, assignp); }
+                          AstNode::addNext<AstNode, AstNode>($$, assignp->mkProc()); }
         ;
 
 netId<strp>:
@@ -5409,22 +5404,22 @@ let_port_item<varp>:  // IEEE: let_port_Item
 // Gate declarations
 
 gateDecl<nodep>:
-                yBUF    driveStrengthE delay_controlE gateBufList ';'     { $$ = $4; STRENGTHUNSUP($2); DELAY_LIST($3, $4); }
-        |       yBUFIF0 driveStrengthE delay_controlE gateBufif0List ';'  { $$ = $4; STRENGTHUNSUP($2); DELAY_LIST($3, $4); }
-        |       yBUFIF1 driveStrengthE delay_controlE gateBufif1List ';'  { $$ = $4; STRENGTHUNSUP($2); DELAY_LIST($3, $4); }
-        |       yNOT    driveStrengthE delay_controlE gateNotList ';'     { $$ = $4; STRENGTH_LIST($4, $2, AssignW); DELAY_LIST($3, $4); }
-        |       yNOTIF0 driveStrengthE delay_controlE gateNotif0List ';'  { $$ = $4; STRENGTHUNSUP($2); DELAY_LIST($3, $4); }
-        |       yNOTIF1 driveStrengthE delay_controlE gateNotif1List ';'  { $$ = $4; STRENGTHUNSUP($2); DELAY_LIST($3, $4); }
-        |       yAND    driveStrengthE delay_controlE gateAndList ';'     { $$ = $4; STRENGTH_LIST($4, $2, AssignW); DELAY_LIST($3, $4); }
-        |       yNAND   driveStrengthE delay_controlE gateNandList ';'    { $$ = $4; STRENGTH_LIST($4, $2, AssignW); DELAY_LIST($3, $4); }
-        |       yOR     driveStrengthE delay_controlE gateOrList ';'      { $$ = $4; STRENGTH_LIST($4, $2, AssignW); DELAY_LIST($3, $4); }
-        |       yNOR    driveStrengthE delay_controlE gateNorList ';'     { $$ = $4; STRENGTH_LIST($4, $2, AssignW); DELAY_LIST($3, $4); }
-        |       yXOR    driveStrengthE delay_controlE gateXorList ';'     { $$ = $4; STRENGTH_LIST($4, $2, AssignW); DELAY_LIST($3, $4); }
-        |       yXNOR   driveStrengthE delay_controlE gateXnorList ';'    { $$ = $4; STRENGTH_LIST($4, $2, AssignW); DELAY_LIST($3, $4); }
-        |       yPULLDOWN pulldown_strengthE delay_controlE gatePulldownList ';'   { $$ = $4; DELAY_LIST($3, $4); }
-        |       yPULLUP   pullup_strengthE   delay_controlE gatePullupList ';'     { $$ = $4; DELAY_LIST($3, $4); }
-        |       yNMOS     delay_controlE gateBufif1List ';'     { $$ = $3; DELAY_LIST($2, $3); }
-        |       yPMOS     delay_controlE gateBufif0List ';'     { $$ = $3; DELAY_LIST($2, $3); }
+                yBUF    driveStrengthE delay_controlE gateBufList ';'     { $$ = $4; STRENGTHUNSUP($2);     DELAY_LIST($4, $3); }
+        |       yBUFIF0 driveStrengthE delay_controlE gateBufif0List ';'  { $$ = $4; STRENGTHUNSUP($2);     DELAY_LIST($4, $3); }
+        |       yBUFIF1 driveStrengthE delay_controlE gateBufif1List ';'  { $$ = $4; STRENGTHUNSUP($2);     DELAY_LIST($4, $3); }
+        |       yNOT    driveStrengthE delay_controlE gateNotList ';'     { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
+        |       yNOTIF0 driveStrengthE delay_controlE gateNotif0List ';'  { $$ = $4; STRENGTHUNSUP($2);     DELAY_LIST($4, $3); }
+        |       yNOTIF1 driveStrengthE delay_controlE gateNotif1List ';'  { $$ = $4; STRENGTHUNSUP($2);     DELAY_LIST($4, $3); }
+        |       yAND    driveStrengthE delay_controlE gateAndList ';'     { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
+        |       yNAND   driveStrengthE delay_controlE gateNandList ';'    { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
+        |       yOR     driveStrengthE delay_controlE gateOrList ';'      { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
+        |       yNOR    driveStrengthE delay_controlE gateNorList ';'     { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
+        |       yXOR    driveStrengthE delay_controlE gateXorList ';'     { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
+        |       yXNOR   driveStrengthE delay_controlE gateXnorList ';'    { $$ = $4; STRENGTH_LIST($4, $2); DELAY_LIST($4, $3); }
+        |       yPULLDOWN pulldown_strengthE delay_controlE gatePulldownList ';'   { $$ = $4; DELAY_LIST($4, $3); }
+        |       yPULLUP   pullup_strengthE   delay_controlE gatePullupList ';'     { $$ = $4; DELAY_LIST($4, $3); }
+        |       yNMOS     delay_controlE gateBufif1List ';'     { $$ = $3; DELAY_LIST($3, $2); }
+        |       yPMOS     delay_controlE gateBufif0List ';'     { $$ = $3; DELAY_LIST($3, $2); }
         //
         |       yTRAN delay_controlE gateUnsupList ';'          { $$ = $3; GATEUNSUP($3, "tran"); }
         |       yRCMOS delay_controlE gateUnsupList ';'         { $$ = $3; GATEUNSUP($3, "rcmos"); }
@@ -5508,10 +5503,13 @@ gateBuf<nodep>:
                         { AstNodeExpr* inp = $4;
                           while (inp->nextp()) inp = VN_AS(inp->nextp(), NodeExpr);
                           $$ = new AstImplicit{$<fl>1, inp->cloneTree(false)};
-                          $$->addNext(new AstAssignW{$<fl>1, $2, GRAMMARP->createGatePin(inp->cloneTree(false))});
+                          AstNodeExpr* const rhsp = GRAMMARP->createGatePin(inp->cloneTree(false));
+                          AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
+                          $$->addNext(ap->mkProc());
                           for (AstNodeExpr* outp = $4; outp->nextp(); outp = VN_CAST(outp->nextp(), NodeExpr)) {
-                              $$->addNext(new AstAssignW{$<fl>1, outp->cloneTree(false),
-                                                         GRAMMARP->createGatePin(inp->cloneTree(false))});
+                              AstNodeExpr* const rhsp = GRAMMARP->createGatePin(inp->cloneTree(false));
+                              AstAssignW* const ap = new AstAssignW{$<fl>1, outp->cloneTree(false), rhsp};
+                              $$->addNext(ap->mkProc());
                           }
                           DEL($1); DEL($4); }
         ;
@@ -5520,69 +5518,99 @@ gateNot<nodep>:
                         { AstNodeExpr* inp = $4;
                           while (inp->nextp()) inp = VN_AS(inp->nextp(), NodeExpr);
                           $$ = new AstImplicit{$<fl>1, inp->cloneTree(false)};
-                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1,
-                                                                 GRAMMARP->createGatePin(inp->cloneTree(false))}});
+                          AstNodeExpr* const rhsp = new AstNot{$<fl>1, GRAMMARP->createGatePin(inp->cloneTree(false))};
+                          AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
+                          $$->addNext(ap->mkProc());
                           for (AstNodeExpr* outp = $4; outp->nextp(); outp = VN_CAST(outp->nextp(), NodeExpr)) {
-                              $$->addNext(new AstAssignW{$<fl>1, outp->cloneTree(false),
-                                                         new AstNot{$<fl>1,
-                                                                 GRAMMARP->createGatePin(inp->cloneTree(false))}});
+                              AstNodeExpr* const rhsp = new AstNot{$<fl>1, GRAMMARP->createGatePin(inp->cloneTree(false))};
+                              AstAssignW* const ap = new AstAssignW{$<fl>1, outp->cloneTree(false), rhsp};
+                              $$->addNext(ap->mkProc());
                           }
-                          DEL($1); DEL($4); }
+                          DEL($1, $4); }
         ;
 gateBufif0<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
                         { $$ = new AstImplicit{$<fl>1, $6->cloneTree(false)};
                           $<implicitp>$->addExprsp($4->cloneTree(false));
-                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstBufIf1{$<fl>1, new AstNot{$<fl>1, $6}, $4}}); DEL($1); }
+                          AstNodeExpr* const rhsp = new AstBufIf1{$<fl>1, new AstNot{$<fl>1, $6}, $4};
+                          AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
+                          $$->addNext(ap->mkProc());
+                          DEL($1); }
         ;
 gateBufif1<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
                         { $$ = new AstImplicit{$<fl>1, $6->cloneTree(false)};
                           $<implicitp>$->addExprsp($4->cloneTree(false));
-                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstBufIf1{$<fl>1, $6, $4}}); DEL($1); }
+                          AstNodeExpr* const rhsp = new AstBufIf1{$<fl>1, $6, $4};
+                          AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
+                          $$->addNext(ap->mkProc());
+                          DEL($1); }
         ;
 gateNotif0<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
                         { $$ = new AstImplicit{$<fl>1, $6->cloneTree(false)};
                           $<implicitp>$->addExprsp($4->cloneTree(false));
-                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstBufIf1{$<fl>1, new AstNot{$<fl>1, $6},
-                                                                        new AstNot{$<fl>1, $4}}}); DEL($1); }
+                          AstNodeExpr* const rhsp = new AstBufIf1{$<fl>1, new AstNot{$<fl>1, $6}, new AstNot{$<fl>1, $4}};
+                          AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
+                          $$->addNext(ap->mkProc());
+                          DEL($1); }
         ;
 gateNotif1<nodep>:
                 gateFront variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
                         { $$ = new AstImplicit{$<fl>1, $6->cloneTree(false)};
                           $<implicitp>$->addExprsp($4->cloneTree(false));
-                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstBufIf1{$<fl>1, $6, new AstNot{$<fl>1, $4}}}); DEL($1); }
+                          AstNodeExpr* const rhsp = new AstBufIf1{$<fl>1, $6, new AstNot{$<fl>1, $4}};
+                          AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
+                          $$->addNext(ap->mkProc());
+                          DEL($1); }
         ;
 gateAnd<nodep>:
                 gateFront variable_lvalue ',' gateAndPinList ')'
                         { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
-                          $$->addNext(new AstAssignW{$<fl>1, $2, $4}); DEL($1); }
+                          AstNodeExpr* const rhsp = $4;
+                          AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
+                          $$->addNext(ap->mkProc());
+                          DEL($1); }
         ;
 gateNand<nodep>:
                 gateFront variable_lvalue ',' gateAndPinList ')'
                         { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
-                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1, $4}}); DEL($1); }
+                          AstNodeExpr* const rhsp = new AstNot{$<fl>1, $4};
+                          AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
+                          $$->addNext(ap->mkProc());
+                          DEL($1); }
         ;
 gateOr<nodep>:
                 gateFront variable_lvalue ',' gateOrPinList ')'
                         { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
-                          $$->addNext(new AstAssignW{$<fl>1, $2, $4}); DEL($1); }
+                          AstNodeExpr* const rhsp = $4;
+                          AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
+                          $$->addNext(ap->mkProc());
+                          DEL($1); }
         ;
 gateNor<nodep>:
                 gateFront variable_lvalue ',' gateOrPinList ')'
                         { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
-                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1, $4}}); DEL($1); }
+                          AstNodeExpr* const rhsp = new AstNot{$<fl>1, $4};
+                          AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
+                          $$->addNext(ap->mkProc());
+                          DEL($1); }
         ;
 gateXor<nodep>:
                 gateFront variable_lvalue ',' gateXorPinList ')'
                         { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
-                          $$->addNext(new AstAssignW{$<fl>1, $2, $4}); DEL($1); }
+                          AstNodeExpr* const rhsp = $4;
+                          AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
+                          $$->addNext(ap->mkProc());
+                          DEL($1); }
         ;
 gateXnor<nodep>:
                 gateFront variable_lvalue ',' gateXorPinList ')'
                         { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
-                          $$->addNext(new AstAssignW{$<fl>1, $2, new AstNot{$<fl>1, $4}}); DEL($1); }
+                          AstNodeExpr* const rhsp = new AstNot{$<fl>1, $4};
+                          AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
+                          $$->addNext(ap->mkProc());
+                          DEL($1); }
         ;
 gatePullup<nodep>:
                 gateFront variable_lvalue ')'           { $$ = new AstPull{$<fl>1, $2, true}; DEL($1); }
@@ -5634,12 +5662,12 @@ strength1<strength>:
         |       yWEAK1                                  { $$ = VStrength::WEAK; }
         ;
 
-driveStrengthE<nodep>:
+driveStrengthE<strengthSpecp>:
                 /* empty */                             { $$ = nullptr; }
         |       driveStrength                           { $$ = $1; }
         ;
 
-driveStrength<nodep>:
+driveStrength<strengthSpecp>:
                 yP_PAR__STRENGTH strength0 ',' strength1 ')' { $$ = new AstStrengthSpec{$1, $2, $4}; }
         |       yP_PAR__STRENGTH strength1 ',' strength0 ')' { $$ = new AstStrengthSpec{$1, $4, $2}; }
         |       yP_PAR__STRENGTH strength0 ',' yHIGHZ1 ')' { $$ = nullptr; BBUNSUP($<fl>4, "Unsupported: highz strength"); }

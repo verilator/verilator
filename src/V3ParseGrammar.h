@@ -73,7 +73,7 @@ public:
                               bool isPacked) VL_MT_DISABLED;
     AstVar* createVariable(FileLine* fileline, const string& name, AstNodeRange* arrayp,
                            AstNode* attrsp) VL_MT_DISABLED;
-    AstNode* createSupplyExpr(FileLine* fileline, const string& name, int value) VL_MT_DISABLED;
+    AstAssignW* createSupplyExpr(FileLine* fileline, const string& name, int value) VL_MT_DISABLED;
     AstText* createTextQuoted(FileLine* fileline, const string& text) {
         string newtext = singletonp()->unquoteString(fileline, text);
         return new AstText{fileline, newtext};

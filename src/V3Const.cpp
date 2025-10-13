@@ -3250,9 +3250,11 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstAssignW* nodep) override {
         iterateChildren(nodep);
         if (m_doNConst && replaceNodeAssign(nodep)) return;
-        AstNodeVarRef* const varrefp = VN_CAST(
-            nodep->lhsp(),
-            VarRef);  // Not VarXRef, as different refs may set different values to each hierarchy
+        // Process containing this AssignW as single body statement
+        AstAlways* const procp = VN_CAST(nodep->backp(), Always);
+        if (!procp || procp->stmtsp() != nodep || nodep->nextp()) return;
+        // Not VarXRef, as different refs may set different values to each hierarchy
+        AstNodeVarRef* const varrefp = VN_CAST(nodep->lhsp(), VarRef);
         if (m_wremove && !m_params && m_doNConst && m_modp && operandConst(nodep->rhsp())
             && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
             && varrefp  // Don't do messes with BITREFs/ARRAYREFs
@@ -3266,10 +3268,10 @@ class ConstVisitor final : public VNVisitor {
             // Make a initial assignment
             AstNodeExpr* const exprp = nodep->rhsp()->unlinkFrBack();
             varrefp->unlinkFrBack();
-            AstInitial* const newinitp = new AstInitial{
-                nodep->fileline(), new AstAssign{nodep->fileline(), varrefp, exprp}};
-            nodep->replaceWith(newinitp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            FileLine* const flp = nodep->fileline();
+            AstInitial* const newinitp = new AstInitial{flp, new AstAssign{flp, varrefp, exprp}};
+            procp->replaceWith(newinitp);
+            VL_DO_DANGLING(pushDeletep(procp), procp);
             // Set the initial value right in the variable so we can constant propagate
             AstNode* const initvaluep = exprp->cloneTree(false);
             varrefp->varp()->valuep(initvaluep);

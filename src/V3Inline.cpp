@@ -171,7 +171,7 @@ class InlineMarkVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstAlways* nodep) override {
-        m_modp->user4Inc();  // statement count
+        if (nodep->keyword() != VAlwaysKwd::CONT_ASSIGN) nodep->user4Inc();  // statement count
         iterateChildren(nodep);
     }
     void visit(AstNodeAssign* nodep) override {
@@ -480,7 +480,9 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     // the port variable. The constant can still be inlined, in which case
     // this is needed for tracing the inlined port variable.
     if (AstConst* const pinp = VN_CAST(pinExprp, Const)) {
-        modp->addStmtsp(new AstAssignW{flp, portRef(VAccess::WRITE), pinp->cloneTree(false)});
+        AstAssignW* const ap
+            = new AstAssignW{flp, portRef(VAccess::WRITE), pinp->cloneTree(false)};
+        modp->addStmtsp(ap->mkProc());
         return;
     }
 
@@ -516,9 +518,11 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     // Otherwise create the continuous assignment between the port var and the pin expression
     UINFO(6, "Not inlning port variable: " << nodep);
     if (nodep->direction() == VDirection::INPUT) {
-        modp->addStmtsp(new AstAssignW{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
+        AstAssignW* const ap = new AstAssignW{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)};
+        modp->addStmtsp(ap->mkProc());
     } else if (nodep->direction() == VDirection::OUTPUT) {
-        modp->addStmtsp(new AstAssignW{flp, pinRef(VAccess::WRITE), portRef(VAccess::READ)});
+        AstAssignW* const ap = new AstAssignW{flp, pinRef(VAccess::WRITE), portRef(VAccess::READ)};
+        modp->addStmtsp(ap->mkProc());
     } else {
         pinExprp->v3fatalSrc("V3Tristate left INOUT port");
     }

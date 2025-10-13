@@ -107,7 +107,6 @@ class TaskStateVisitor final : public VNVisitor {
     // MEMBERS
     VarToScopeMap m_varToScopeMap;  // Map for Var -> VarScope mappings
     FuncToClassMap m_funcToClassMap;  // Map for ctor func -> class
-    AstAssignW* m_assignwp = nullptr;  // Current assignment
     AstNodeFTask* m_ctorp = nullptr;  // Class constructor
     AstClass* m_classp = nullptr;  // Current class
     V3Graph m_callGraph;  // Task call graph
@@ -144,13 +143,6 @@ public:
     void checkPurity(AstNodeFTask* nodep) { checkPurity(nodep, getFTaskVertex(nodep)); }
 
 private:
-    void convertAssignWToAlways() {
-        // Wire assigns must become always statements to deal with insertion
-        // of multiple statements.  Perhaps someday make all wassigns into always's?
-        UINFO(5, "     IM_WireRep  " << m_assignwp);
-        m_assignwp->convertToAlways();
-        VL_DO_CLEAR(pushDeletep(m_assignwp), m_assignwp = nullptr);
-    }
     void checkPurity(AstNodeFTask* nodep, TaskBaseVertex* vxp) {
         if (nodep->recursive()) return;  // Impure, but no warning
         if (!vxp->pure()) {
@@ -193,18 +185,7 @@ private:
         }
         iterateChildren(nodep);
     }
-    void visit(AstAssignW* nodep) override {
-        VL_RESTORER(m_assignwp);
-        m_assignwp = nodep;
-        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
-    }
-    void visit(AstExprStmt* nodep) override {
-        if (m_assignwp) convertAssignWToAlways();
-        iterateChildren(nodep);
-    }
     void visit(AstNodeFTaskRef* nodep) override {
-        // Includes handling AstMethodCall, AstNew
-        if (m_assignwp) convertAssignWToAlways();
         // We make multiple edges if a task is called multiple times from another task.
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked task");
         TaskFTaskVertex* const taskVtxp = getFTaskVertex(nodep->taskp());

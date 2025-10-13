@@ -1483,7 +1483,7 @@ class WidthVisitor final : public VNVisitor {
             pushDeletep(nodep->unlinkFrBack());
             return;
         }
-        nodep->replaceWith(newp);
+        nodep->replaceWith(newp->mkProc());
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
