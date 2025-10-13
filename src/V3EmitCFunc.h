@@ -1227,6 +1227,11 @@ public:
         // GCC allows compound statements in expressions, but this is not standard.
         // So we use an immediate-evaluation lambda and comma operator
         putnbs(nodep, "([&]() {\n");
+        if (!nodep->hasResult()) {
+            iterateAndNextConstNull(nodep->stmtsp());
+            puts("}())");
+            return;
+        }
         iterateAndNextConstNull(nodep->stmtsp());
         puts("}(), ");
         iterateAndNextConstNull(nodep->resultp());
