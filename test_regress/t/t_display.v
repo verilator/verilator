@@ -21,6 +21,9 @@ module t;
 
   reg [5:0]  assoc_c[int];
 
+  string s;
+  string not_fmt;
+
   sub sub ();
   sub2 sub2 ();
   sub3 sub3 ();
@@ -214,6 +217,18 @@ multiline", $time);
     $display("%o", 12'b1zx_zzx_x1z_xxx);
 
     $display(,, 10);  // Strange but legal
+
+    // $sformat allows only single format while $display/write allow multiple
+    $display("[50] FIFTY 50");
+    $display("[%0t]", $time, " FIFTY %-d", 50);
+    // This prints as %s, the %-d is not a format, as not_fmt is not literal
+    not_fmt = " not-fmt %-d";
+    $display("[%0t]", $time, not_fmt, 60);
+    // This prints as %s as forces the literal to a string
+    $display("[%0t] %s", $time, " fmt-as-string-not-%0x", 70);
+    // Sformat takes only single format per IEEE
+    s = $sformatf("[%0t] %s", $time, " fmt-string-not-%s");
+    $display("s=%s", s);
 
     $write("*-* All Finished *-*\n");
     $finish;
