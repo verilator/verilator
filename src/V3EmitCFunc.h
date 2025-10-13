@@ -864,7 +864,7 @@ public:
         switch (nodep->ctlType()) {
         case VDumpCtlType::FILE:
             putns(nodep, "vlSymsp->_vm_contextp__->dumpfile(");
-            emitCvtPackStr(nodep->exprp());
+            iterateConst(nodep->exprp());
             puts(");\n");
             break;
         case VDumpCtlType::VARS:
@@ -927,7 +927,7 @@ public:
         puts("(");
         puts(cvtToStr(nodep->outp()->widthMin()));
         puts(", ");
-        emitCvtPackStr(nodep->searchp());
+        iterateConst(nodep->searchp());
         puts(", ");
         putbs("");
         iterateAndNextConstNull(nodep->outp());
@@ -935,7 +935,7 @@ public:
     }
     void visit(AstTestPlusArgs* nodep) override {
         putns(nodep, "VL_TESTPLUSARGS_I(");
-        emitCvtPackStr(nodep->searchp());
+        iterateConst(nodep->searchp());
         puts(")");
     }
     void visit(AstFError* nodep) override {
@@ -965,16 +965,14 @@ public:
     }
     void visit(AstFOpen* nodep) override {
         putns(nodep, "VL_FOPEN_NN(");
-        emitCvtPackStr(nodep->filenamep());
+        iterateConst(nodep->filenamep());
         putbs(", ");
-        if (nodep->modep()->width() > 4 * 8)
-            nodep->modep()->v3error("$fopen mode should be <= 4 characters");
-        emitCvtPackStr(nodep->modep());
+        iterateConst(nodep->modep());
         puts(");\n");
     }
     void visit(AstFOpenMcd* nodep) override {
         putns(nodep, "VL_FOPEN_MCD_N(");
-        emitCvtPackStr(nodep->filenamep());
+        iterateConst(nodep->filenamep());
         puts(");\n");
     }
     void visit(AstNodeReadWriteMem* nodep) override {
@@ -1004,7 +1002,7 @@ public:
             }
         }
         putbs(", ");
-        emitCvtPackStr(nodep->filenamep());
+        iterateConst(nodep->filenamep());
         putbs(", ");
         {
             const bool need_ptr = !VN_IS(nodep->memp()->dtypep(), AssocArrayDType);
@@ -1297,7 +1295,7 @@ public:
         puts(", ");
         if (nodep->suffixp()) {
             puts("true, ");
-            emitCvtPackStr(nodep->suffixp());
+            iterateAndNextConstNull(nodep->suffixp());
         } else {
             puts("false, \"\"");
         }

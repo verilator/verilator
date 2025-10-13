@@ -5893,17 +5893,16 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstDumpCtl* nodep) override {
         assertAtStatement(nodep);
-        // Just let all arguments seek their natural sizes
-        userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
+        if (nodep->exprp()) iterateCheckString(nodep, "LHS", nodep->exprp(), BOTH);
     }
     void visit(AstFOpen* nodep) override {
         // Although a system function in IEEE, here a statement which sets the file pointer (MCD)
-        userIterateAndNext(nodep->filenamep(), WidthVP{SELF, BOTH}.p());
-        userIterateAndNext(nodep->modep(), WidthVP{SELF, BOTH}.p());
+        iterateCheckString(nodep, "filename", nodep->filenamep(), BOTH);
+        iterateCheckString(nodep, "mode", nodep->modep(), BOTH);
         nodep->dtypeSetLogicUnsized(32, 1, VSigning::SIGNED);  // Spec says integer return
     }
     void visit(AstFOpenMcd* nodep) override {
-        userIterateAndNext(nodep->filenamep(), WidthVP{SELF, BOTH}.p());
+        iterateCheckString(nodep, "filename", nodep->filenamep(), BOTH);
         nodep->dtypeSetLogicUnsized(32, 1, VSigning::SIGNED);  // Spec says integer return
     }
     void visit(AstFClose* nodep) override {
@@ -6005,7 +6004,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstNodeReadWriteMem* nodep) override {
         assertAtStatement(nodep);
-        userIterateAndNext(nodep->filenamep(), WidthVP{SELF, BOTH}.p());
+        iterateCheckString(nodep, "filename", nodep->filenamep(), BOTH);
         userIterateAndNext(nodep->memp(), WidthVP{SELF, BOTH}.p());
         const AstNodeDType* subp = nullptr;
         if (const AstAssocArrayDType* adtypep
@@ -6037,13 +6036,13 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstTestPlusArgs* nodep) override {
         if (m_vup->prelim()) {
-            userIterateAndNext(nodep->searchp(), WidthVP{SELF, BOTH}.p());
+            iterateCheckString(nodep, "LHS", nodep->searchp(), BOTH);
             nodep->dtypeChgWidthSigned(32, 1, VSigning::SIGNED);  // Spec says integer return
         }
     }
     void visit(AstValuePlusArgs* nodep) override {
         if (m_vup->prelim()) {
-            userIterateAndNext(nodep->searchp(), WidthVP{SELF, BOTH}.p());
+            iterateCheckString(nodep, "LHS", nodep->searchp(), BOTH);
             userIterateAndNext(nodep->outp(), WidthVP{SELF, BOTH}.p());
             nodep->dtypeChgWidthSigned(32, 1, VSigning::SIGNED);  // Spec says integer return
         }

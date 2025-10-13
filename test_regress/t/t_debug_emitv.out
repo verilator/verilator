@@ -40,7 +40,7 @@ module Vt_debug_emitv_t;
     Iface the_ifaces[3:0] ();
     initial begin
         begin
-            if ($test$plusargs(40'h48454c4c4f)) begin
+            if ($test$plusargs("HELLO")) begin
                 $display("Hello argument found.");
             end
             if ((Pkg::FOO == 'sh0)) begin
@@ -49,7 +49,7 @@ module Vt_debug_emitv_t;
             if ((ZERO == 'sh0)) begin
                 $write("");
             end
-            if ($value$plusargs(56'h544553543d2564i1)) begin
+            if ($value$plusargs("TEST=%d", i1)) begin
                 $display("value was %~", i1);
             end
             else begin
@@ -185,10 +185,10 @@ module Vt_debug_emitv_t;
                                  : $c('sh1e)));
             $c(;);
             $display("%d", $c(0));
-            fd = $fopen(72'h2f6465762f6e756c6c);
+            fd = $fopen("/dev/null");
             ;
             $fclose(fd);
-            fd = $fopen(72'h2f6465762f6e756c6c, 8'h72);
+            fd = $fopen("/dev/null", "r");
             ;
             $fgetc(fd);
             $fflush(fd);
@@ -196,9 +196,9 @@ module Vt_debug_emitv_t;
             ;
             $fdisplay(32'h69203d20, "%~", sum);
             $fwrite(fd, "hello");
-            $readmemh(fd, array);
-            $readmemh(fd, array, 'sh0);
-            $readmemh(fd, array, 'sh0, 'sh0);
+            $readmemh(string'(fd), array);
+            $readmemh(string'(fd), array, 'sh0);
+            $readmemh(string'(fd), array, 'sh0, 'sh0);
             sum = 'sh0;
             begin : unnamedblk3
                 int signed i;

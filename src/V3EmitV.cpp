@@ -283,6 +283,16 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstCoverInc*) override {}  // N/A
     void visit(AstCoverToggle*) override {}  // N/A
 
+    void visit(AstCvtPackString* nodep) override {
+        putfs(nodep, "");
+        if (AstConst* const lhsConstp = VN_CAST(nodep->lhsp(), Const)) {
+            putsQuoted(lhsConstp->num().toString());
+        } else {
+            puts("string'(");
+            iterateAndNextConstNull(nodep->lhsp());
+            puts(")");
+        }
+    }
     void visit(AstTestPlusArgs* nodep) override {
         putfs(nodep, nodep->verilogKwd());
         putbs("(");
@@ -292,7 +302,9 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstValuePlusArgs* nodep) override {
         putfs(nodep, nodep->verilogKwd());
         putbs("(");
-        iterateChildrenConst(nodep);
+        iterateConstNull(nodep->searchp());
+        putbs(", ");
+        iterateConstNull(nodep->outp());
         puts(")");
     }
     void visitNodeDisplay(AstNode* nodep, AstNode* fileOrStrgp, const string& text,
