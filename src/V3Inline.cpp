@@ -482,7 +482,7 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     if (AstConst* const pinp = VN_CAST(pinExprp, Const)) {
         AstAssignW* const ap
             = new AstAssignW{flp, portRef(VAccess::WRITE), pinp->cloneTree(false)};
-        modp->addStmtsp(ap->mkProc());
+        modp->addStmtsp(new AstAlways{ap});
         return;
     }
 
@@ -519,10 +519,10 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     UINFO(6, "Not inlning port variable: " << nodep);
     if (nodep->direction() == VDirection::INPUT) {
         AstAssignW* const ap = new AstAssignW{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)};
-        modp->addStmtsp(ap->mkProc());
+        modp->addStmtsp(new AstAlways{ap});
     } else if (nodep->direction() == VDirection::OUTPUT) {
         AstAssignW* const ap = new AstAssignW{flp, pinRef(VAccess::WRITE), portRef(VAccess::READ)};
-        modp->addStmtsp(ap->mkProc());
+        modp->addStmtsp(new AstAlways{ap});
     } else {
         pinExprp->v3fatalSrc("V3Tristate left INOUT port");
     }

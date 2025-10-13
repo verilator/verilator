@@ -254,11 +254,11 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
 
     if (GRAMMARP->m_varDecl == VVarType::SUPPLY0) {
         AstAssignW* const ap = V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 0);
-        AstNode::addNext<AstNode, AstNode>(nodep, ap->mkProc());
+        AstNode::addNext<AstNode, AstNode>(nodep, new AstAlways{ap});
     }
     if (GRAMMARP->m_varDecl == VVarType::SUPPLY1) {
         AstAssignW* const ap = V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 1);
-        AstNode::addNext<AstNode, AstNode>(nodep, ap->mkProc());
+        AstNode::addNext<AstNode, AstNode>(nodep, new AstAlways{ap});
     }
     if (VN_IS(dtypep, ParseTypeDType)) {
         // Parser needs to know what is a type

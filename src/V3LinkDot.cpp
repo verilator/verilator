@@ -4220,7 +4220,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
                 new AstVarRef{nodep->fileline(), aliasp, VAccess::READ}};
             assignp->user2(true);
-            nodep->addNextHere(assignp->mkProc());
+            nodep->addNextHere(new AstAlways{assignp});
             // Propagate attributes of the replaced variable,
             // because all references to it are replaced with references to the alias variable
             aliasp->varp()->propagateAttrFrom(nodep->varp());

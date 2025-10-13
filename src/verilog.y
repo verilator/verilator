@@ -2914,7 +2914,7 @@ assignList<alwaysp>:
 
 assignOne<alwaysp>:
                 variable_lvalue '=' expr                { AstAssignW* const ap = new AstAssignW{$2, $1, $3};
-                                                          $$ = ap->mkProc(); }
+                                                          $$ = new AstAlways{ap}; }
         ;
 
 delay_or_event_controlE<nodep>:  // IEEE: delay_or_event_control plus empty
@@ -2976,7 +2976,7 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
                           AstDelay* const delayp = $$->delayp() ? $$->delayp()->unlinkFrBack() : nullptr;
                           AstAssignW* const assignp = new AstAssignW{$4, new AstParseRef{$<fl>1, *$1}, $5, delayp};
                           if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
-                          AstNode::addNext<AstNode, AstNode>($$, assignp->mkProc()); }
+                          AstNode::addNext<AstNode, AstNode>($$, new AstAlways{assignp}); }
         ;
 
 netId<strp>:
@@ -5505,11 +5505,11 @@ gateBuf<nodep>:
                           $$ = new AstImplicit{$<fl>1, inp->cloneTree(false)};
                           AstNodeExpr* const rhsp = GRAMMARP->createGatePin(inp->cloneTree(false));
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
-                          $$->addNext(ap->mkProc());
+                          $$->addNext(new AstAlways{ap});
                           for (AstNodeExpr* outp = $4; outp->nextp(); outp = VN_CAST(outp->nextp(), NodeExpr)) {
                               AstNodeExpr* const rhsp = GRAMMARP->createGatePin(inp->cloneTree(false));
                               AstAssignW* const ap = new AstAssignW{$<fl>1, outp->cloneTree(false), rhsp};
-                              $$->addNext(ap->mkProc());
+                              $$->addNext(new AstAlways{ap});
                           }
                           DEL($1); DEL($4); }
         ;
@@ -5520,11 +5520,11 @@ gateNot<nodep>:
                           $$ = new AstImplicit{$<fl>1, inp->cloneTree(false)};
                           AstNodeExpr* const rhsp = new AstNot{$<fl>1, GRAMMARP->createGatePin(inp->cloneTree(false))};
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
-                          $$->addNext(ap->mkProc());
+                          $$->addNext(new AstAlways{ap});
                           for (AstNodeExpr* outp = $4; outp->nextp(); outp = VN_CAST(outp->nextp(), NodeExpr)) {
                               AstNodeExpr* const rhsp = new AstNot{$<fl>1, GRAMMARP->createGatePin(inp->cloneTree(false))};
                               AstAssignW* const ap = new AstAssignW{$<fl>1, outp->cloneTree(false), rhsp};
-                              $$->addNext(ap->mkProc());
+                              $$->addNext(new AstAlways{ap});
                           }
                           DEL($1, $4); }
         ;
@@ -5534,7 +5534,7 @@ gateBufif0<nodep>:
                           $<implicitp>$->addExprsp($4->cloneTree(false));
                           AstNodeExpr* const rhsp = new AstBufIf1{$<fl>1, new AstNot{$<fl>1, $6}, $4};
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
-                          $$->addNext(ap->mkProc());
+                          $$->addNext(new AstAlways{ap});
                           DEL($1); }
         ;
 gateBufif1<nodep>:
@@ -5543,7 +5543,7 @@ gateBufif1<nodep>:
                           $<implicitp>$->addExprsp($4->cloneTree(false));
                           AstNodeExpr* const rhsp = new AstBufIf1{$<fl>1, $6, $4};
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
-                          $$->addNext(ap->mkProc());
+                          $$->addNext(new AstAlways{ap});
                           DEL($1); }
         ;
 gateNotif0<nodep>:
@@ -5552,7 +5552,7 @@ gateNotif0<nodep>:
                           $<implicitp>$->addExprsp($4->cloneTree(false));
                           AstNodeExpr* const rhsp = new AstBufIf1{$<fl>1, new AstNot{$<fl>1, $6}, new AstNot{$<fl>1, $4}};
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
-                          $$->addNext(ap->mkProc());
+                          $$->addNext(new AstAlways{ap});
                           DEL($1); }
         ;
 gateNotif1<nodep>:
@@ -5561,7 +5561,7 @@ gateNotif1<nodep>:
                           $<implicitp>$->addExprsp($4->cloneTree(false));
                           AstNodeExpr* const rhsp = new AstBufIf1{$<fl>1, $6, new AstNot{$<fl>1, $4}};
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
-                          $$->addNext(ap->mkProc());
+                          $$->addNext(new AstAlways{ap});
                           DEL($1); }
         ;
 gateAnd<nodep>:
@@ -5569,7 +5569,7 @@ gateAnd<nodep>:
                         { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
                           AstNodeExpr* const rhsp = $4;
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
-                          $$->addNext(ap->mkProc());
+                          $$->addNext(new AstAlways{ap});
                           DEL($1); }
         ;
 gateNand<nodep>:
@@ -5577,7 +5577,7 @@ gateNand<nodep>:
                         { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
                           AstNodeExpr* const rhsp = new AstNot{$<fl>1, $4};
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
-                          $$->addNext(ap->mkProc());
+                          $$->addNext(new AstAlways{ap});
                           DEL($1); }
         ;
 gateOr<nodep>:
@@ -5585,7 +5585,7 @@ gateOr<nodep>:
                         { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
                           AstNodeExpr* const rhsp = $4;
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
-                          $$->addNext(ap->mkProc());
+                          $$->addNext(new AstAlways{ap});
                           DEL($1); }
         ;
 gateNor<nodep>:
@@ -5593,7 +5593,7 @@ gateNor<nodep>:
                         { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
                           AstNodeExpr* const rhsp = new AstNot{$<fl>1, $4};
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
-                          $$->addNext(ap->mkProc());
+                          $$->addNext(new AstAlways{ap});
                           DEL($1); }
         ;
 gateXor<nodep>:
@@ -5601,7 +5601,7 @@ gateXor<nodep>:
                         { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
                           AstNodeExpr* const rhsp = $4;
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
-                          $$->addNext(ap->mkProc());
+                          $$->addNext(new AstAlways{ap});
                           DEL($1); }
         ;
 gateXnor<nodep>:
@@ -5609,7 +5609,7 @@ gateXnor<nodep>:
                         { $$ = new AstImplicit{$<fl>1, $4->cloneTree(false)};
                           AstNodeExpr* const rhsp = new AstNot{$<fl>1, $4};
                           AstAssignW* const ap = new AstAssignW{$<fl>1, $2, rhsp};
-                          $$->addNext(ap->mkProc());
+                          $$->addNext(new AstAlways{ap});
                           DEL($1); }
         ;
 gatePullup<nodep>:

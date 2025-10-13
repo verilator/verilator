@@ -4,8 +4,8 @@
                     ... For warning description see https://verilator.org/warn/UNOPTFLAT?v=latest
                     ... Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
                     t/t_unoptflat_simple_3.v:16:15:      Example path: t.x
-                    t/t_unoptflat_simple_3.v:55:19:      Example path: ALWAYS
+                    t/t_unoptflat_simple_3.v:55:19:      Example path: ASSIGNW
                     t/t_unoptflat_simple_3.v:53:22:      Example path: t.__Vcellout__test1i__xvecout
-                    t/t_unoptflat_simple_3.v:20:20:      Example path: ALWAYS
+                    t/t_unoptflat_simple_3.v:20:20:      Example path: ASSIGNW
                     t/t_unoptflat_simple_3.v:16:15:      Example path: t.x
 %Error: Exiting due to

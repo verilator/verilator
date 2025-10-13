@@ -144,6 +144,10 @@ bool AstBasicDType::ascending() const {
 bool AstActive::hasClocked() const { return m_sentreep->hasClocked(); }
 bool AstActive::hasCombo() const { return m_sentreep->hasCombo(); }
 
+AstAlways::AstAlways(AstAssignW* assignp)
+    : ASTGEN_SUPER_Always(assignp->fileline(), assignp)
+    , m_keyword{VAlwaysKwd::CONT_ASSIGN} {}
+
 AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr* exprsp)
     : ASTGEN_SUPER_ElabDisplay(fl) {
     addFmtp(new AstSFormatF{fl, AstSFormatF::NoFormat{}, exprsp});

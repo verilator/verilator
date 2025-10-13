@@ -103,8 +103,13 @@ class Graph final : public V3Graph {
     string loopsVertexCb(V3GraphVertex* vtxp) override {
         if (SchedAcyclicLogicVertex* const lvtxp = vtxp->cast<SchedAcyclicLogicVertex>()) {
             AstNode* const logicp = lvtxp->logicp();
-            return logicp->fileline()->warnOther()
-                   + "     Example path: " + logicp->prettyTypeName() + "\n";
+            std::string logicName = logicp->prettyTypeName();
+            if (const AstAlways* const alwaysp = VN_CAST(logicp, Always)) {
+                if (alwaysp->keyword() == VAlwaysKwd::CONT_ASSIGN) {
+                    logicName = "ASSIGNW";  // Keep using historiacl name until we have better
+                }
+            }
+            return logicp->fileline()->warnOther() + "     Example path: " + logicName + "\n";
         } else {
             SchedAcyclicVarVertex* const vvtxp = vtxp->as<SchedAcyclicVarVertex>();
             AstVarScope* const vscp = vvtxp->vscp();

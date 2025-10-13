@@ -82,9 +82,7 @@ module Vt_debug_emitv_t;
     logic [15:0]  pubflat;
     logic [15:0]  pubflat_r;
     logic [15:0]  pubflat_w;
-    always  begin
-        assign pubflat_w = pubflat;
-    end
+    assign pubflat_w = pubflat;
     int signed fd;
     int signed i;
     int signed q[$];

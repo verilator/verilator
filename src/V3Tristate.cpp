@@ -628,7 +628,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     AstAssignW* const newp = new AstAssignW{varp->fileline(), varrefp, constp};
                     UINFO(9, "       newoev " << newp);
                     varrefp->user1p(newAllZerosOrOnes(varp, false));
-                    nodep->addStmtsp(newp->mkProc());
+                    nodep->addStmtsp(new AstAlways{newp});
                     mapInsertLhsVarRef(varrefp);  // insertTristates will convert
                     //                               // to a varref to the __out# variable
                 }
@@ -686,7 +686,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 refp->fileline(), new AstVarRef{refp->fileline(), newEnLhsp, VAccess::WRITE},
                 getEnp(refp)};
             UINFO(9, "       newenlhspAssignp " << enLhspAssignp);
-            nodep->addStmtsp(enLhspAssignp->mkProc());
+            nodep->addStmtsp(new AstAlways{enLhspAssignp});
 
             // now append this driver to the driver logic.
             AstNodeExpr* const ref1p = new AstVarRef{refp->fileline(), newLhsp, VAccess::READ};
@@ -702,12 +702,12 @@ class TristateVisitor final : public TristateBaseVisitor {
         AstAssignW* const assp = new AstAssignW{
             varp->fileline(), new AstVarRef{varp->fileline(), varp, VAccess::WRITE}, orp};
         UINFO(9, "       newassp " << assp);
-        nodep->addStmtsp(assp->mkProc());
+        nodep->addStmtsp(new AstAlways{assp});
 
         AstAssignW* const enAssp = new AstAssignW{
             envarp->fileline(), new AstVarRef{envarp->fileline(), envarp, VAccess::WRITE}, enp};
         UINFO(9, "       newenassp " << enAssp);
-        nodep->addStmtsp(enAssp->mkProc());
+        nodep->addStmtsp(new AstAlways{enAssp});
     }
 
     void insertTristatesSignal(AstNodeModule* nodep, AstVar* const invarp, RefStrengthVec* refsp) {
@@ -825,7 +825,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             AstAssignW* const enAssp = new AstAssignW{
                 enp->fileline(), new AstVarRef{envarp->fileline(), envarp, VAccess::WRITE}, enp};
             UINFOTREE(9, enAssp, "", "enAssp");
-            nodep->addStmtsp(enAssp->mkProc());
+            nodep->addStmtsp(new AstAlways{enAssp});
         }
 
         // __out (child) or <in> (parent) = drive-value expression
@@ -833,7 +833,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             lhsp->fileline(), new AstVarRef{lhsp->fileline(), lhsp, VAccess::WRITE}, orp};
         assp->user2(U2_BOTH);  // Don't process further; already resolved
         UINFOTREE(9, assp, "", "lhsp-eqn");
-        nodep->addStmtsp(assp->mkProc());
+        nodep->addStmtsp(new AstAlways{assp});
 
         // If this is a top-level inout, make sure that the INOUT pins get __en and __out
         if (v3Global.opt.pinsInoutEnables() && isTopInout) {

@@ -628,7 +628,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
             } else {
                 AstAssignW* const ap = new AstAssignW{fl, lhsp, rhsp};
                 // Continuous assignment must be in module context.
-                varp->addNextHere(ap->mkProc());
+                varp->addNextHere(new AstAlways{ap});
                 UASSERT_OBJ(!m_contextp, m_contextp, "must be null");
                 setContextAndIterate(ap, refp);
             }
@@ -656,7 +656,7 @@ class SplitUnpackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                 setContextAndIterate(ap, nodes[1]);
             } else {
                 AstAssignW* const ap = new AstAssignW{fl, lhsp, rhsp};
-                vars.at(i)->addNextHere(ap->mkProc());
+                vars.at(i)->addNextHere(new AstAlways{ap});
                 setContextAndIterate(ap, nodes[1]);
             }
         }
@@ -1052,7 +1052,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                 }
             } else {
                 AstAssignW* const ap = new AstAssignW{fl, lhsp, rhsp};
-                var.varp()->addNextHere(ap->mkProc());
+                var.varp()->addNextHere(new AstAlways{ap});
             }
         }
     }
@@ -1184,7 +1184,7 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                 } else {
                     AstAssignW* const ap
                         = new AstAssignW{fl, new AstVarRef{fl, varp, VAccess::WRITE}, rhsp};
-                    varp->addNextHere(ap->mkProc());
+                    varp->addNextHere(new AstAlways{ap});
                 }
             } else {  // the original variable is not used anymore.
                 VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);

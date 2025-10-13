@@ -1272,10 +1272,6 @@ public:
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
         return new AstAssignW{fileline(), lhsp, rhsp, controlp};
     }
-    // Wrap this AssignW into a process
-    AstAlways* mkProc() {
-        return new AstAlways{fileline(), VAlwaysKwd::CONT_ASSIGN, nullptr, this};
-    }
     bool isTimingControl() const override {
         return timingControlp() || lhsp()->exists([](const AstNodeVarRef* refp) {
             return refp->access().isWriteOrRW() && refp->varp()->delayp();

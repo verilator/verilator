@@ -2649,6 +2649,7 @@ public:
         , m_keyword{keyword} {
         this->sentreep(sentreep);
     }
+    inline AstAlways(AstAssignW* assignp);
     ASTGEN_MEMBERS_AstAlways;
     //
     void dump(std::ostream& str) const override;
