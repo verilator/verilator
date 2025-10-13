@@ -20,6 +20,7 @@
 #include "V3ActiveTop.h"
 #include "V3Assert.h"
 #include "V3AssertPre.h"
+#include "V3AssertProperties.h"
 #include "V3Ast.h"
 #include "V3Begin.h"
 #include "V3Branch.h"
@@ -240,6 +241,8 @@ static void process() {
 
         // Assertion insertion
         //    After we've added block coverage, but before other nasty transforms
+        V3AssertProperties::assertPropertiesAll(v3Global.rootp());
+        //
         V3AssertPre::assertPreAll(v3Global.rootp());
         //
         V3Assert::assertAll(v3Global.rootp());

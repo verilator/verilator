@@ -6534,7 +6534,7 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //                      // IEEE: '(' pexpr ')'
         //                      // Expanded below
         //
-                yNOT pexpr %prec prNEGATION             { $$ = new AstLogNot{$1, $2}; }
+                yNOT pexpr { $$ = new AstLogNot{$1, $2}; }
         |       ySTRONG '(' sexpr ')'
                         { $$ = $3; BBUNSUP($2, "Unsupported: strong (in property expression)"); }
         |       yWEAK '(' sexpr ')'
@@ -6622,9 +6622,15 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // IEEE: "sequence_expr cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }"
         //                      // Both rules basically mean we can repeat sequences, so make it simpler:
                 cycle_delay_range ~p~sexpr  %prec yP_POUNDPOUND
-                        { $$ = new AstSExpr{$<fl>1, $1, $2}; }
+                         { $$ = new AstSExpr{$<fl>1, $1, $2};
+                            if (VN_IS($2, LogNot)) {
+                                BBUNSUP($2->fileline(), "Unexpected not in sequence expression context");
+                            }
+                        }
         |       ~p~sexpr cycle_delay_range sexpr %prec prPOUNDPOUND_MULTI
-                        { $$ = $1; BBUNSUP($2->fileline(), "Unsupported: ## (in sequence expression)"); DEL($2, $3); }
+                        {
+                            $$ = new AstSExpr{$<fl>2, $1, $2, $3};
+                        }
         //
         //                      // IEEE: expression_or_dist [ boolean_abbrev ]
         //                      // Note expression_or_dist includes "expr"!

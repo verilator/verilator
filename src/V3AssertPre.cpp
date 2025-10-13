@@ -56,15 +56,13 @@ private:
     AstNodeExpr* m_disablep = nullptr;  // Last disable
     // Other:
     V3UniqueNames m_cycleDlyNames{"__VcycleDly"};  // Cycle delay counter name generator
-    V3UniqueNames m_propPrecondNames{"__VpropPrecond"};  // Cycle delay temporaries name generator
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
     AstNodeExpr* m_hasUnsupp = nullptr;  // True if assert has unsupported construct inside
-    AstPExpr* m_pExpr = nullptr;  // Current AstPExpr
-    bool m_hasSExpr = false;  // True if assert has AstSExpr inside
-    bool m_inSExpr = false;  // True if in AstSExpr
+    bool m_hasPExpr = false;  // True if assert has AstPExpr inside
+    bool m_inPExpr = false;  // True if in AstPExpr
 
     // METHODS
 
@@ -343,7 +341,7 @@ private:
         }
         AstSenItem* sensesp = nullptr;
         if (!m_defaultClockingp) {
-            if (!m_pExpr && !m_inSExpr) {
+            if (!m_inPExpr) {
                 nodep->v3error("Usage of cycle delays requires default clocking"
                                " (IEEE 1800-2023 14.11)");
                 VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
@@ -419,33 +417,6 @@ private:
                 }
             }
             nodep->user1(true);
-        } else if (m_inSExpr && !nodep->user1()) {
-            AstVar* const preVarp
-                = new AstVar{nodep->varp()->fileline(), VVarType::BLOCKTEMP,
-                             m_propPrecondNames.get(nodep->varp()) + "__" + nodep->varp()->name(),
-                             nodep->varp()->dtypep()};
-            preVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-            m_modp->addStmtsp(preVarp);
-            AstVarRef* const origp
-                = new AstVarRef{nodep->fileline(), nodep->varp(), VAccess::READ};
-            origp->user1(true);
-            AstVarRef* const precondp
-                = new AstVarRef{preVarp->fileline(), preVarp, VAccess::WRITE};
-            precondp->user1(true);
-
-            // Pack assignments in sampled as in concurrent assertions they are needed.
-            // Then, in assert's propp, sample only non-precondition variables.
-            AstSampled* const sampledp = new AstSampled{origp->fileline(), origp};
-            sampledp->dtypeFrom(origp);
-            UASSERT(m_pExpr, "Should be under assertion");
-            AstAssign* const assignp = new AstAssign{m_pExpr->fileline(), precondp, sampledp};
-            m_pExpr->addPrecondp(assignp);
-
-            AstVarRef* const precondReadp
-                = new AstVarRef{preVarp->fileline(), preVarp, VAccess::READ};
-            precondReadp->user1(true);
-            nodep->replaceWith(precondReadp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstMemberSel* nodep) override {
@@ -500,17 +471,15 @@ private:
     void visit(AstNodeCoverOrAssert* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
 
-        VL_RESTORER(m_hasSExpr);
+        VL_RESTORER(m_hasPExpr);
         VL_RESTORER(m_hasUnsupp);
 
         clearAssertInfo();
-        m_pExpr = new AstPExpr{nodep->propp()->fileline()};
-        m_pExpr->dtypeFrom(nodep->propp());
 
         // Find Clocking's buried under nodep->exprsp
         iterateChildren(nodep);
         if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep));
-        if (m_hasSExpr && m_hasUnsupp) {
+        if (m_hasPExpr && m_hasUnsupp) {
             if (VN_IS(m_hasUnsupp, Implication)) {
                 m_hasUnsupp->v3warn(E_UNSUPPORTED,
                                     "Unsupported: Implication with sequence expression");
@@ -518,13 +487,7 @@ private:
                 m_hasUnsupp->v3warn(E_UNSUPPORTED,
                                     "Unsupported: Disable iff with sequence expression");
             }
-            if (m_pExpr) VL_DO_DANGLING(pushDeletep(m_pExpr), m_pExpr);
-        } else if (m_pExpr && m_pExpr->precondp()) {
-            m_pExpr->condp(VN_AS(nodep->propp()->unlinkFrBackWithNext(), NodeExpr));
-            nodep->propp(m_pExpr);
-            iterateAndNextNull(m_pExpr->precondp());
-        } else if (m_pExpr) {
-            VL_DO_DANGLING(pushDeletep(m_pExpr), m_pExpr);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         clearAssertInfo();
     }
@@ -563,10 +526,6 @@ private:
         AstSenTree* const sentreep = nodep->sentreep();
         if (sentreep) VL_DO_DANGLING(pushDeletep(sentreep->unlinkFrBack()), sentreep);
         nodep->sentreep(newSenTree(nodep));
-    }
-    void visit(AstLogNot* nodep) override {
-        if (m_inSExpr) nodep->v3error("Syntax error: unexpected 'not' in sequence expression");
-        iterateChildren(nodep);
     }
     void visit(AstPast* nodep) override {
         if (nodep->sentreep()) return;  // Already processed
@@ -699,17 +658,20 @@ private:
         nodep->replaceWith(blockp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void visit(AstSExpr* nodep) override {
-        VL_RESTORER(m_inSExpr);
-        m_inSExpr = true;
-        m_hasSExpr = true;
+    void visit(AstPExpr* nodep) override {
+        VL_RESTORER(m_inPExpr);
+        m_inPExpr = true;
+        m_hasPExpr = true;
 
-        UASSERT_OBJ(m_pExpr, nodep, "Should be under assertion");
-        m_pExpr->addPrecondp(nodep->delayp()->unlinkFrBack());
+        if (AstLogNot* const notp = VN_CAST(nodep->backp(), LogNot)) {
+            notp->replaceWith(nodep->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(notp), notp);
+            iterate(nodep);
+        } else {
+            iterateChildren(nodep);
+        }
 
         iterateChildren(nodep);
-        nodep->replaceWith(nodep->exprp()->unlinkFrBack());
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_defaultClockingp);

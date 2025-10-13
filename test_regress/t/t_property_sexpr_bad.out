@@ -1,6 +1,5 @@
-%Error: t/t_property_sexpr_bad.v:20:39: Syntax error: unexpected 'not' in sequence expression
-                                      : ... note: In instance 't'
-   20 |   assert property (@(posedge clk) ##1 not val) $display("[%0t] single delay with negated var stmt, fileline:%d", $time, 20);
+%Error-UNSUPPORTED: t/t_property_sexpr_bad.v:20:39: Unexpected not in sequence expression context
+   20 |   assert property (@(posedge clk) ##1 not val);
       |                                       ^~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

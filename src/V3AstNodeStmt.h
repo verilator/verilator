@@ -821,6 +821,16 @@ public:
     }
     bool off() const { return m_off; }
 };
+class AstPExprClause final : public AstNodeStmt {
+    const bool m_passs;
+
+public:
+    ASTGEN_MEMBERS_AstPExprClause;
+    explicit AstPExprClause(FileLine* fl, bool passs = true)
+        : ASTGEN_SUPER_PExprClause(fl)
+        , m_passs{passs} {}
+    bool passs() const { return m_passs; }
+};
 class AstPrintTimeScale final : public AstNodeStmt {
     // Parents: stmtlist
     string m_name;  // Parent module name

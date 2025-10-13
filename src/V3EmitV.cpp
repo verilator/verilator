@@ -365,6 +365,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstSFormat* nodep) override {
         visitNodeDisplay(nodep, nodep->lhsp(), nodep->fmtp()->text(), nodep->fmtp()->exprsp());
     }
+    void visit(AstToStringN* nodep) override { iterateConst(nodep->lhsp()); }
     void visit(AstSFormatF* nodep) override {
         visitNodeDisplay(nodep, nullptr, nodep->text(), nodep->exprsp());
     }
@@ -799,9 +800,6 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(";\n");
     }
     void visit(AstNodeCoverOrAssert* nodep) override {
-        if (AstPExpr* const pexprp = VN_CAST(nodep->propp(), PExpr)) {
-            iterateAndNextConstNull(pexprp);
-        }
         putfs(nodep, nodep->verilogKwd() + " ");
         if (nodep->type() == VAssertType::OBSERVED_DEFERRED_IMMEDIATE) {
             puts("#0 ");
@@ -812,14 +810,10 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         iterateConstNull(nodep->sentreep());
         puts("(");
-        if (const AstPExpr* const pexprp = VN_CAST(nodep->propp(), PExpr)) {
-            iterateAndNextConstNull(pexprp->condp());
+        if (AstSampled* const sampledp = VN_CAST(nodep->propp(), Sampled)) {
+            iterateAndNextConstNull(sampledp->exprp());
         } else {
-            if (AstSampled* const sampledp = VN_CAST(nodep->propp(), Sampled)) {
-                iterateAndNextConstNull(sampledp->exprp());
-            } else {
-                iterateAndNextConstNull(nodep->propp());
-            }
+            iterateAndNextConstNull(nodep->propp());
         }
         if (!VN_IS(nodep, Restrict)) {
             puts(") begin\n");
@@ -1052,16 +1046,15 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateConstNull(nodep->propp());
         puts("\n");
     }
-    void visit(AstPExpr* nodep) override {
-        iterateAndNextConstNull(nodep->precondp());  // condp emitted by AstNodeCoverOrAssert
-    }
+    void visit(AstPExpr* nodep) override { iterateConst(nodep->bodyp()); }
     void visit(AstSExpr* nodep) override {
+        iterateConstNull(nodep->preExprp());
         {
             VL_RESTORER(m_suppressSemi);
             m_suppressSemi = true;
-            iterateConstNull(nodep->delayp());
+            iterateConst(nodep->delayp());
         }
-        iterateConstNull(nodep->exprp());
+        iterateConst(nodep->exprp());
     }
 
     // Terminals
