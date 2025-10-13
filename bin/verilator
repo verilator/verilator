@@ -240,17 +240,18 @@ sub run {
             warn "%Error: export VERILATOR_ROOT=" . ($ENV{VERILATOR_ROOT} || "") . "\n";
             warn "%Error: $command\n";
         }
-        if ($status & 127) {
-            if (($status & 127) == 4  # SIGILL
-                || ($status & 127) == 8  # SIGFPA
-                || ($status & 127) == 11) {  # SIGSEGV
+        my $signal = ($status & 127);
+        if ($signal) {
+            if ($signal == 4  # SIGILL
+                || $signal == 8  # SIGFPA
+                || $signal == 11) {  # SIGSEGV
                 warn "%Error: Verilator internal fault, sorry. "
                     . "Suggest trying --debug --gdbbt\n" if !$Debug;
-            } elsif (($status & 127) == 6) {  # SIGABRT
+            } elsif ($signal == 6) {  # SIGABRT
                 warn "%Error: Verilator aborted. "
                     . "Suggest trying --debug --gdbbt\n" if !$Debug;
             } else {
-                warn "%Error: Verilator threw signal $status. "
+                warn "%Error: Verilator threw signal $signal. "
                     . "Suggest trying --debug --gdbbt\n" if !$Debug;
             }
         }
@@ -259,7 +260,7 @@ sub run {
         }
         exit $! if $!;  # errno
         exit $? >> 8 if $? >> 8;  # pass along child exit code
-        exit 128 + ($status & 127);  # last resort
+        exit 128 + $signal;  # last resort
     }
 }
 

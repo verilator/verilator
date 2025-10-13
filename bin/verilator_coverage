@@ -118,21 +118,24 @@ sub run {
             warn "%Error: export VERILATOR_ROOT=" . ($ENV{VERILATOR_ROOT} || "") . "\n";
             warn "%Error: $command\n";
         }
-        if ($status & 127) {
-            if (($status & 127) == 8 || ($status & 127) == 11) {  # SIGFPA or SIGSEGV
+        my $signal = ($status & 127);
+        if ($signal) {
+            if ($signal == 4  # SIGILL
+                || $signal == 8  # SIGFPA
+                || $signal == 11) {  # SIGSEGV
                 warn "%Error: Verilator_coverage internal fault, sorry.\n" if !$Debug;
-            } elsif (($status & 127) == 6) {  # SIGABRT
+            } elsif ($signal == 6) {  # SIGABRT
                 warn "%Error: Verilator_coverage aborted.\n" if !$Debug;
             } else {
-                warn "%Error: Verilator_coverage threw signal $status.\n" if !$Debug;
+                warn "%Error: Verilator_coverage threw signal $signal.\n" if !$Debug;
             }
         }
         if ($status != 256 || $Debug) {  # i.e. not normal exit(1)
             warn "%Error: Command Failed $command\n";
         }
         exit $! if $!;  # errno
-        exit $? >> 8 if $? >> 8;  # child exit status
-        exit 255;  # last resort
+        exit $? >> 8 if $? >> 8;  # pass along child exit code
+        exit 128 + $signal;  # last resort
     }
 }
 
