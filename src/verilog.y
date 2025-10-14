@@ -6623,7 +6623,7 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
         //                      // "'(' sexpr ')' boolean_abbrev" matches "[sexpr:'(' expr ')'] boolean_abbrev" so we can drop it
         |       '(' ~p~sexpr ')'                        { $$ = $2; }
         |       '(' ~p~sexpr ',' sequence_match_itemList ')'
-                        { $$ = $2; BBUNSUP($3, "Unsupported sequence match items"); DEL($4); }
+                        { $$ = $2; BBUNSUP($3, "Unsupported: sequence match items"); DEL($4); }
         //
         //                      // AND/OR are between pexprs OR sexprs
         |       ~p~sexpr yAND ~p~sexpr

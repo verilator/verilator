@@ -42,7 +42,7 @@ class AssertDeFuture final : public VNVisitor {
         if (m_unsupported) return;
         m_unsupported = true;
         nodep->v3warn(E_UNSUPPORTED,
-                      "Unsupported/illegal: future value function used with expression with "
+                      "Unsupported/illegal: Future value function used with expression with "
                           << nodep->prettyOperatorName());
     }
     // VISITORS
@@ -809,12 +809,15 @@ class AssertVisitor final : public VNVisitor {
         case VAssertCtlType::NONVACUOUS_ON:
         case VAssertCtlType::VACUOUS_OFF: {
             nodep->unlinkFrBack();
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported assertcontrol control_type");
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: $assertcontrol control_type '" << cvtToStr(
+                                             static_cast<int>(nodep->ctlType())) << "'");
             break;
         }
         default: {
             nodep->unlinkFrBack();
-            nodep->v3warn(EC_ERROR, "Bad assertcontrol control_type (IEEE 1800-2023 Table 20-5)");
+            nodep->v3warn(EC_ERROR, "Bad $assertcontrol control_type '"
+                                        << cvtToStr(static_cast<int>(nodep->ctlType()))
+                                        << "' (IEEE 1800-2023 Table 20-5)");
         }
         }
         VL_DO_DANGLING(pushDeletep(nodep), nodep);

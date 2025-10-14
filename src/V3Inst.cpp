@@ -541,7 +541,7 @@ private:
                             lhsp = newarrselp;
                         } else {
                             nodep->v3warn(E_UNSUPPORTED,
-                                          "Unsupported lhs node type in array assignment");
+                                          "Unsupported LHS node type in array assignment");
                             return;
                         }
                         const AstVarRef* const rhsrefp = VN_CAST(nodep->rhsp(), VarRef);

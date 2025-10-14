@@ -1,4 +1,4 @@
-%Error-UNSUPPORTED: t/t_property_var_unsup.v:18:13: Unsupported sequence match items
+%Error-UNSUPPORTED: t/t_property_var_unsup.v:18:13: Unsupported: sequence match items
    18 |       (valid, prevcyc = cyc) |=> (cyc == prevcyc + 1);
       |             ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest

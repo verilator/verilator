@@ -1,8 +1,8 @@
-%Error: t/t_assert_ctl_type_bad.v:9:5: Bad assertcontrol control_type (IEEE 1800-2023 Table 20-5)
+%Error: t/t_assert_ctl_type_bad.v:9:5: Bad $assertcontrol control_type '0' (IEEE 1800-2023 Table 20-5)
     9 |     $assertcontrol(0);
       |     ^~~~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_assert_ctl_type_bad.v:10:5: Bad assertcontrol control_type (IEEE 1800-2023 Table 20-5)
+%Error: t/t_assert_ctl_type_bad.v:10:5: Bad $assertcontrol control_type '100' (IEEE 1800-2023 Table 20-5)
    10 |     $assertcontrol(100);
       |     ^~~~~~~~~~~~~~
 %Error: Exiting due to

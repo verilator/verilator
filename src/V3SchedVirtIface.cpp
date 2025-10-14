@@ -111,7 +111,7 @@ private:
         if (!nodep) return;
         foreachWrittenVirtIface(nodep, [locationp](AstVarRef* const selp, AstIface*) {
             selp->v3warn(E_UNSUPPORTED,
-                         "Unsupported: write to virtual interface in " << locationp);
+                         "Unsupported: Write to virtual interface in " << locationp);
         });
     }
     // Create trigger var for the given interface if it doesn't exist; return a write ref to it
