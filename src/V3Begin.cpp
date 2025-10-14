@@ -30,6 +30,7 @@
 
 #include "V3Begin.h"
 
+#include "V3Stats.h"
 #include "V3String.h"
 #include "V3UniqueNames.h"
 
@@ -57,6 +58,9 @@ public:
 //######################################################################
 
 class BeginVisitor final : public VNVisitor {
+    // NODE STATE
+    // AstCase::user1   -> bool, if already purified
+
     V3UniqueNames m_caseTempNames;  // For generating unique temporary variable names used by cases
     // STATE - across all visitors
     BeginState* const m_statep;  // Current global state
@@ -70,6 +74,7 @@ class BeginVisitor final : public VNVisitor {
     string m_unnamedScope;  // Name of begin blocks, including unnamed blocks
     int m_ifDepth = 0;  // Current if depth
     bool m_keepBegins = false;  // True if begins should not be inlined
+    VDouble0 m_statPurifiedCaseExpr;  // Count of purified case expressions
 
     // METHODS
 
@@ -316,7 +321,8 @@ class BeginVisitor final : public VNVisitor {
         // Introduce temporary variable for AstCase if needed - it is done here and not in V3Case
         // because this phase is before V3Scope and V3Case is not. Doing it before V3Scope ensures
         // that V3Scope will take care of a scope creation
-        if (!nodep->exprp()->isPure()) {
+        if (!nodep->exprp()->isPure() && !nodep->user1SetOnce()) {
+            ++m_statPurifiedCaseExpr;
             FileLine* const fl = nodep->exprp()->fileline();
             AstVar* const varp = new AstVar{fl, VVarType::XTEMP, m_caseTempNames.get(nodep),
                                             nodep->exprp()->dtypep()};
@@ -363,6 +369,7 @@ public:
         : m_caseTempNames{"__VCase"}
         , m_statep{statep} {
         iterate(nodep);
+        V3Stats::addStatSum("Count of impure case_expr", m_statPurifiedCaseExpr);
     }
     ~BeginVisitor() override = default;
 };

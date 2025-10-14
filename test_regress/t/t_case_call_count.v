@@ -17,6 +17,9 @@ class Foo;
     callCount2 += 1;
     return value2;
   endfunction
+  function int getPure();
+    return callCount2;
+  endfunction
 endclass
 
 module t;
@@ -39,6 +42,10 @@ module t;
       5: $stop;
       6: called = 1;
       7: $stop;
+      default: $stop;
+    endcase
+    case (foo.getPure())
+      1:;
       default: $stop;
     endcase
     if (!called) $stop;
