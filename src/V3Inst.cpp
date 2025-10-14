@@ -73,16 +73,16 @@ class InstVisitor final : public VNVisitor {
                 AstNodeExpr* const rhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
                                                          m_cellp->name(), VAccess::READ};
                 AstAssignW* const assp = new AstAssignW{exprp->fileline(), exprp, rhsp};
-                m_cellp->addNextHere(assp);
+                m_cellp->addNextHere(new AstAlways{assp});
             } else if (nodep->modVarp()->isNonOutput()) {
                 // Don't bother moving constants now,
                 // we'll be pushing the const down to the cell soon enough.
-                AstNode* const assp
+                AstAssignW* const assp
                     = new AstAssignW{exprp->fileline(),
                                      new AstVarXRef{exprp->fileline(), nodep->modVarp(),
                                                     m_cellp->name(), VAccess::WRITE},
                                      exprp};
-                m_cellp->addNextHere(assp);
+                m_cellp->addNextHere(new AstAlways{assp});
                 UINFOTREE(9, assp, "", "_new");
             } else if (nodep->modVarp()->isIfaceRef()
                        || (VN_IS(nodep->modVarp()->dtypep()->skipRefp(), UnpackArrayDType)
@@ -676,7 +676,7 @@ public:
                                          pinexprp};
                 pinp->exprp(new AstVarRef{pinexprp->fileline(), newvarp, VAccess::READ});
             }
-            if (assignp) cellp->addNextHere(assignp);
+            if (assignp) cellp->addNextHere(new AstAlways{assignp});
             // UINFOTREE(1, pinp, "", "out");
             // UINFOTREE(1, assignp, "", "aout");
         }

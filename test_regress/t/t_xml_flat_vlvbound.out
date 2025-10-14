@@ -30,25 +30,33 @@
           <varscope loc="d,11,25,11,28" name="o_a" dtype_id="2"/>
           <varscope loc="d,12,25,12,28" name="o_b" dtype_id="2"/>
           <varscope loc="d,9,25,9,28" name="vlvbound_test.i_a" dtype_id="1"/>
-          <contassign loc="d,9,25,9,28" dtype_id="1">
-            <varref loc="d,9,25,9,28" name="i_a" dtype_id="1"/>
-            <varref loc="d,9,25,9,28" name="vlvbound_test.i_a" dtype_id="1"/>
-          </contassign>
+          <always loc="d,9,25,9,28">
+            <contassign loc="d,9,25,9,28" dtype_id="1">
+              <varref loc="d,9,25,9,28" name="i_a" dtype_id="1"/>
+              <varref loc="d,9,25,9,28" name="vlvbound_test.i_a" dtype_id="1"/>
+            </contassign>
+          </always>
           <varscope loc="d,10,25,10,28" name="vlvbound_test.i_b" dtype_id="1"/>
-          <contassign loc="d,10,25,10,28" dtype_id="1">
-            <varref loc="d,10,25,10,28" name="i_b" dtype_id="1"/>
-            <varref loc="d,10,25,10,28" name="vlvbound_test.i_b" dtype_id="1"/>
-          </contassign>
+          <always loc="d,10,25,10,28">
+            <contassign loc="d,10,25,10,28" dtype_id="1">
+              <varref loc="d,10,25,10,28" name="i_b" dtype_id="1"/>
+              <varref loc="d,10,25,10,28" name="vlvbound_test.i_b" dtype_id="1"/>
+            </contassign>
+          </always>
           <varscope loc="d,11,25,11,28" name="vlvbound_test.o_a" dtype_id="2"/>
-          <contassign loc="d,11,25,11,28" dtype_id="2">
-            <varref loc="d,11,25,11,28" name="o_a" dtype_id="2"/>
-            <varref loc="d,11,25,11,28" name="vlvbound_test.o_a" dtype_id="2"/>
-          </contassign>
+          <always loc="d,11,25,11,28">
+            <contassign loc="d,11,25,11,28" dtype_id="2">
+              <varref loc="d,11,25,11,28" name="o_a" dtype_id="2"/>
+              <varref loc="d,11,25,11,28" name="vlvbound_test.o_a" dtype_id="2"/>
+            </contassign>
+          </always>
           <varscope loc="d,12,25,12,28" name="vlvbound_test.o_b" dtype_id="2"/>
-          <contassign loc="d,12,25,12,28" dtype_id="2">
-            <varref loc="d,12,25,12,28" name="o_b" dtype_id="2"/>
-            <varref loc="d,12,25,12,28" name="vlvbound_test.o_b" dtype_id="2"/>
-          </contassign>
+          <always loc="d,12,25,12,28">
+            <contassign loc="d,12,25,12,28" dtype_id="2">
+              <varref loc="d,12,25,12,28" name="o_b" dtype_id="2"/>
+              <varref loc="d,12,25,12,28" name="vlvbound_test.o_b" dtype_id="2"/>
+            </contassign>
+          </always>
           <varscope loc="d,15,34,15,37" name="__Vfunc_vlvbound_test.foo__0__Vfuncout" dtype_id="2"/>
           <varscope loc="d,15,57,15,60" name="__Vfunc_vlvbound_test.foo__0__val" dtype_id="1"/>
           <varscope loc="d,16,17,16,20" name="__Vfunc_vlvbound_test.foo__0__ret" dtype_id="2"/>
@@ -116,10 +124,10 @@
               <varref loc="d,21,12,21,15" name="__Vfunc_vlvbound_test.foo__0__ret" dtype_id="2"/>
               <varref loc="d,21,5,21,11" name="__Vfunc_vlvbound_test.foo__0__Vfuncout" dtype_id="2"/>
             </assign>
-            <assign loc="d,24,14,24,15" dtype_id="2">
+            <contassign loc="d,24,14,24,15" dtype_id="2">
               <varref loc="d,24,16,24,19" name="__Vfunc_vlvbound_test.foo__0__Vfuncout" dtype_id="2"/>
               <varref loc="d,24,10,24,13" name="o_a" dtype_id="2"/>
-            </assign>
+            </contassign>
           </always>
           <always loc="d,25,14,25,15">
             <comment loc="d,25,16,25,19" name="Function: foo"/>
@@ -180,10 +188,10 @@
               <varref loc="d,21,12,21,15" name="__Vfunc_vlvbound_test.foo__1__ret" dtype_id="2"/>
               <varref loc="d,21,5,21,11" name="__Vfunc_vlvbound_test.foo__1__Vfuncout" dtype_id="2"/>
             </assign>
-            <assign loc="d,25,14,25,15" dtype_id="2">
+            <contassign loc="d,25,14,25,15" dtype_id="2">
               <varref loc="d,25,16,25,19" name="__Vfunc_vlvbound_test.foo__1__Vfuncout" dtype_id="2"/>
               <varref loc="d,25,10,25,13" name="o_b" dtype_id="2"/>
-            </assign>
+            </contassign>
           </always>
         </scope>
       </topscope>

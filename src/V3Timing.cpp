@@ -381,6 +381,10 @@ class TimingSuspendableVisitor final : public VNVisitor {
         if (!VN_IS(m_procp, NodeProcedure)) v3Global.setUsesTiming();
         visit(static_cast<AstNode*>(nodep));
     }
+    void visit(AstAssignW* nodep) override {
+        if (nodep->timingControlp()) v3Global.setUsesTiming();
+        // Containing process will not suspend, don't mark it
+    }
     void visit(AstNode* nodep) override {
         if (nodep->isTimingControl()) {
             v3Global.setUsesTiming();
@@ -1096,24 +1100,30 @@ class TimingControlVisitor final : public VNVisitor {
                 refp->varp()->fileline()->modifyWarnOff(V3ErrorCode::UNOPTFLAT, true);
             }
         });
-        // Convert it to an always; the new assign with intra delay will be handled by
+        // Should be under an always
+        AstAlways* const alwaysp = VN_AS(m_procp, Always);
+        // Convert it to an Assign; the new assign with intra delay will be handled by
         // visit(AstNodeAssign*)
-        AstAlways* const alwaysp = nodep->convertToAlways();
-        visit(alwaysp);  // Visit now as we need to do some post-processing
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        AstNodeExpr* const lhs1p = nodep->lhsp()->unlinkFrBack();
+        AstNodeExpr* const rhs1p = nodep->rhsp()->unlinkFrBack();
+        AstNode* const controlp = nodep->timingControlp()->unlinkFrBack();
+        AstAssign* const assignp = new AstAssign{nodep->fileline(), lhs1p, rhs1p, controlp};
+        // Put the assignment in a fork..join_none.
+        AstBegin* const beginp = new AstBegin{flp, "", assignp, false};
+        AstFork* const forkp = new AstFork{flp, "", beginp};
+        forkp->joinType(VJoinType::JOIN_NONE);
+        nodep->replaceWith(forkp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        visit(forkp);  // Visit now as we need to do some post-processing
         // IEEE 1800-2023 10.3.3 - if the RHS value differs from the currently scheduled value to
         // be assigned, the currently scheduled assignment is descheduled. To keep track if an
         // assignment should be descheduled, each scheduled assignment event has a 'generation',
         // and if at assignment time its generation differs from the current generation, it won't
         // be performed
-        AstFork* const forkp = VN_AS(alwaysp->stmtsp(), Fork);
-        UASSERT_OBJ(forkp, alwaysp, "Fork should be there from convertToAlways()");
-        AstBegin* const beginp = VN_AS(forkp->stmtsp(), Begin);
-        UASSERT_OBJ(beginp, alwaysp, "Begin should be there from convertToAlways()");
         AstAssign* const preAssignp = VN_AS(beginp->stmtsp(), Assign);
-        UASSERT_OBJ(preAssignp, alwaysp, "Pre-assign should be there from convertToAlways()");
+        UASSERT_OBJ(preAssignp, alwaysp, "Pre-assign should be there from visit(AstFork)");
         AstAssign* const postAssignp = VN_AS(preAssignp->nextp()->nextp(), Assign);
-        UASSERT_OBJ(postAssignp, alwaysp, "Post-assign should be there from convertToAlways()");
+        UASSERT_OBJ(postAssignp, alwaysp, "Post-assign should be there from visit(AstFork)");
         // Increment generation and copy it to a local
         AstVarScope* const generationVarp
             = createTemp(flp, m_contAsgnGenNames.get(alwaysp), alwaysp->findUInt64DType());

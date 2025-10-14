@@ -257,9 +257,6 @@ class GateBuildVisitor final : public VNVisitorConst {
         const bool slow = VN_IS(nodep, Initial) || VN_IS(nodep, Final);
         iterateLogic(nodep, slow, nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts");
     }
-    void visit(AstAssignW* nodep) override {  //
-        iterateLogic(nodep);
-    }
     void visit(AstCoverToggle* nodep) override {
         iterateLogic(nodep, false, "CoverToggle", "CoverToggle");
     }
@@ -1121,13 +1118,15 @@ class GateMergeAssignments final {
 
     void process(GateVarVertex* vVtxp) {
         GateLogicVertex* prevLVtxp = nullptr;
-        AstNodeAssign* prevAssignp = nullptr;
+        AstAssignW* prevAssignp = nullptr;
 
         for (V3GraphEdge* const edgep : vVtxp->inEdges().unlinkable()) {
             GateLogicVertex* const lVtxp = edgep->fromp()->as<GateLogicVertex>();
             if (!lVtxp->outSize1()) continue;
 
-            AstNodeAssign* const assignp = VN_CAST(lVtxp->nodep(), NodeAssign);
+            AstAlways* const alwaysp = VN_CAST(lVtxp->nodep(), Always);
+            if (!alwaysp || !alwaysp->stmtsp() || alwaysp->stmtsp()->nextp()) return;
+            AstAssignW* const assignp = VN_CAST(alwaysp->stmtsp(), AssignW);
             if (!assignp) continue;
 
             if (!VN_IS(assignp->lhsp(), Sel)) continue;
@@ -1138,8 +1137,6 @@ class GateMergeAssignments final {
                 prevAssignp = assignp;
                 continue;
             }
-
-            UASSERT_OBJ(prevAssignp->type() == assignp->type(), assignp, "Mismatched types");
 
             AstSel* const prevSelp = VN_AS(prevAssignp->lhsp(), Sel);
             AstSel* const currSelp = VN_AS(assignp->lhsp(), Sel);

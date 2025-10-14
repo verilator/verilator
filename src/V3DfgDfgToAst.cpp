@@ -164,7 +164,8 @@ class DfgToAstVisitor final : DfgVisitor {
         }
 
         // Otherwise create an AssignW
-        m_containerp->addStmtsp(new AstAssignW{flp, lhsp, rhsp});
+        AstAssignW* const ap = new AstAssignW{flp, lhsp, rhsp};
+        m_containerp->addStmtsp(new AstAlways{ap});
     }
 
     void convertDriver(FileLine* flp, AstNodeExpr* lhsp, DfgVertex* driverp) {

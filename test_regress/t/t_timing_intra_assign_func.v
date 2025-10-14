@@ -9,7 +9,7 @@ module t;
   wire signed [3:0] iufunc;
 
   // verilator lint_off WIDTH
-  assign #1 iufunc = int_func(ia);
+  assign #2 iufunc = int_func(ia);
   // verilator lint_on WIDTH
 
   function [31:0] int_func;
@@ -17,9 +17,18 @@ module t;
     int_func = in * 2;
   endfunction
 
+  always @(iufunc) begin
+    if ($time > 0) begin
+      $display("time: %0t, iufunc: %0d", $time, iufunc);
+      if (iufunc != 4'd4) $stop;
+      if ($time != 3) $stop;
+    end
+  end
+
   initial begin
-      #1
-      if (iufunc != 4'd2) $stop;
+      #1;
+      ia = 4'd2;
+      #10;
       $write("*-* All Finished *-*\n");
       $finish;
   end

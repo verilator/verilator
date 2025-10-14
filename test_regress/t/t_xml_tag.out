@@ -25,10 +25,12 @@
       <var loc="d,29,8,29,12" name="itop" dtype_id="3" vartype="ifaceref" origName="itop__Viftop"/>
       <var loc="d,31,14,31,25" name="this_struct" tag="this_struct" dtype_id="4" vartype="" origName="this_struct"/>
       <var loc="d,33,16,33,22" name="dotted" dtype_id="5" vartype="logic" origName="dotted"/>
-      <contassign loc="d,33,23,33,24" dtype_id="5">
-        <varxref loc="d,33,30,33,35" name="value" dtype_id="6" dotted="itop"/>
-        <varref loc="d,33,16,33,22" name="dotted" dtype_id="5"/>
-      </contassign>
+      <always loc="d,33,23,33,24">
+        <contassign loc="d,33,23,33,24" dtype_id="5">
+          <varxref loc="d,33,30,33,35" name="value" dtype_id="6" dotted="itop"/>
+          <varref loc="d,33,16,33,22" name="dotted" dtype_id="5"/>
+        </contassign>
+      </always>
       <task loc="d,35,18,35,19" name="f">
         <var loc="d,35,33,35,34" name="m" dtype_id="7" dir="input" vartype="string" origName="m"/>
         <display loc="d,36,7,36,15" displaytype="$display">

@@ -1482,7 +1482,7 @@ class AstToDfgSynthesize final {
             }
 
             // TODO: computePropagatedDrivers cannot handle arrays, should
-            // never happen with AssignW
+            // never happen with simple continous assignments
             if (!resp->isPacked()) {
                 ++m_ctx.m_synt.nonSynArray;
                 return true;  // Not OK, give up
@@ -1597,8 +1597,9 @@ class AstToDfgSynthesize final {
         VL_RESTORER(m_logicp);
         m_logicp = &vtx;
 
-        if (AstAssignW* const nodep = VN_CAST(vtx.nodep(), AssignW)) {
-            if (!synthesizeAssignW(nodep)) return false;
+        if (AstAssignW* const ap = VN_CAST(vtx.nodep()->stmtsp(), AssignW)) {
+            if (ap->nextp()) return false;
+            if (!synthesizeAssignW(ap)) return false;
             ++m_ctx.m_synt.synthAssign;
             return true;
         }
@@ -1908,12 +1909,12 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
         });
     }
 
-    // Synthesize all AssignW and simple blocks driving exactly one variable
-    // This is approximately the old default behaviour of Dfg
+    // Synthesize all continuous assignments and simple blocks driving exactly
+    // one variable. This is approximately the old default behaviour of Dfg.
     for (DfgVertex& vtx : dfg.opVertices()) {
         DfgLogic* const logicp = vtx.cast<DfgLogic>();
         if (!logicp) continue;
-        if (VN_IS(logicp->nodep(), AssignW)) {
+        if (logicp->nodep()->keyword() == VAlwaysKwd::CONT_ASSIGN) {
             worklist.push_front(*logicp);
             continue;
         }

@@ -170,6 +170,20 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstInitialAutomatic* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstInitialStatic* nodep) override { iterateChildrenConst(nodep); }
     void visit(AstAlways* nodep) override {
+        if (const AstAssignW* const ap = VN_CAST(nodep->stmtsp(), AssignW)) {
+            if (!ap->nextp()) {
+                putfs(nodep, "assign ");
+                if (AstNode* const tcp = ap->timingControlp()) {
+                    iterateAndNextConstNull(tcp);
+                    putbs(" ");
+                }
+                iterateAndNextConstNull(ap->lhsp());
+                putbs(" = ");
+                iterateAndNextConstNull(ap->rhsp());
+                if (!m_suppressSemi) puts(";\n");
+                return;
+            }
+        }
         putfs(nodep, "always ");
         if (m_sentreep) {
             iterateAndNextConstNull(m_sentreep);
@@ -214,7 +228,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         if (!m_suppressSemi) puts(";\n");
     }
     void visit(AstAssignW* nodep) override {
-        putfs(nodep, "assign ");
+        putfs(nodep, "continuous assign ");
         iterateAndNextConstNull(nodep->lhsp());
         putbs(" = ");
         iterateAndNextConstNull(nodep->rhsp());

@@ -3188,25 +3188,6 @@ static AstDelay* getLhsNetDelayRecurse(const AstNodeExpr* const nodep) {
     return nullptr;
 }
 AstDelay* AstAssignW::getLhsNetDelay() const { return getLhsNetDelayRecurse(lhsp()); }
-AstAlways* AstAssignW::convertToAlways() {
-    const bool hasTimingControl = isTimingControl();
-    AstNodeExpr* const lhs1p = lhsp()->unlinkFrBack();
-    AstNodeExpr* const rhs1p = rhsp()->unlinkFrBack();
-    AstNode* const controlp = timingControlp() ? timingControlp()->unlinkFrBack() : nullptr;
-    FileLine* const flp = fileline();
-    AstNode* bodysp = new AstAssign{flp, lhs1p, rhs1p, controlp};
-    if (hasTimingControl) {
-        // If there's a timing control, put the assignment in a fork..join_none. This process won't
-        // get marked as suspendable and thus will be scheduled normally
-        AstBegin* const beginp = new AstBegin{flp, "", bodysp, false};
-        AstFork* const forkp = new AstFork{flp, "", beginp};
-        forkp->joinType(VJoinType::JOIN_NONE);
-        bodysp = forkp;
-    }
-    AstAlways* const newp = new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, bodysp};
-    replaceWith(newp);  // User expected to then deleteTree();
-    return newp;
-}
 
 string AstCase::pragmaString() const {
     if (fullPragma() && parallelPragma())

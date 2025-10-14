@@ -282,7 +282,14 @@ class CoverageVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
-
+    void visit(AstAlways* nodep) override {
+        if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
+            // Don't want line coverage for it, iterate for expression/toggle coverage only
+            iterateChildren(nodep);
+            return;
+        }
+        iterateProcedure(nodep);
+    }
     void visit(AstNodeProcedure* nodep) override { iterateProcedure(nodep); }
     void visit(AstLoop* nodep) override {
         UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");

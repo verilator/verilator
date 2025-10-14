@@ -19,9 +19,6 @@
 // Each interface type written to via virtual interface, or written to normally but read via
 // virtual interface:
 //     Create a trigger var for it
-// Each AssignW:
-//     If it writes to a virtual interface, or to a variable read via virtual interface:
-//         Convert to an always
 // Each statement:
 //     If it writes to a virtual interface, or to a variable read via virtual interface:
 //         Set the corresponding trigger to 1
@@ -165,13 +162,6 @@ private:
         VL_RESTORER(m_trigAssignMemberVarp);
         m_trigAssignMemberVarp = nullptr;
         iterateChildren(nodep);
-    }
-    void visit(AstAssignW* nodep) override {
-        if (writesToVirtIface(nodep)) {
-            // Convert to always, as we have to assign the trigger var
-            nodep->convertToAlways();
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        }
     }
     void visit(AstNodeIf* nodep) override {
         unsupportedWriteToVirtIface(nodep->condp(), "if condition");

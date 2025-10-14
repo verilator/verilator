@@ -58,7 +58,6 @@ class UnknownVisitor final : public VNVisitor {
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
-    AstAssignW* m_assignwp = nullptr;  // Current assignment
     AstAssignDly* m_assigndlyp = nullptr;  // Current assignment
     AstNode* m_timingControlp = nullptr;  // Current assignment's intra timing control
     bool m_constXCvt = false;  // Convert X's
@@ -82,13 +81,6 @@ class UnknownVisitor final : public VNVisitor {
         // but makes a mess in the emitter as lvalue switching is needed.  So 4.
         // SEL(...) -> temp
         //             if (COND(LTE(bit<=maxlsb))) ASSIGN(SEL(...)),temp)
-        if (m_assignwp) {
-            // Wire assigns must become always statements to deal with insertion
-            // of multiple statements.  Perhaps someday make all wassigns into always's?
-            UINFO(5, "     IM_WireRep  " << m_assignwp);
-            m_assignwp->convertToAlways();
-            VL_DO_CLEAR(pushDeletep(m_assignwp), m_assignwp = nullptr);
-        }
         const bool needDly = (m_assigndlyp != nullptr);
         if (m_assigndlyp) {
             // Delayed assignments become normal assignments,
@@ -212,9 +204,7 @@ class UnknownVisitor final : public VNVisitor {
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
     }
     void visit(AstAssignW* nodep) override {
-        VL_RESTORER(m_assignwp);
         VL_RESTORER(m_timingControlp);
-        m_assignwp = nodep;
         m_timingControlp = nodep->timingControlp();
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
     }

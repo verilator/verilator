@@ -138,8 +138,9 @@ class DataflowExtractVisitor final : public VNVisitor {
                 cnodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
 
                 // Add assignment driving temporary variable
-                modp->addStmtsp(
-                    new AstAssignW{flp, new AstVarRef{flp, varp, VAccess::WRITE}, cnodep});
+                AstAssignW* const ap
+                    = new AstAssignW{flp, new AstVarRef{flp, varp, VAccess::WRITE}, cnodep};
+                modp->addStmtsp(new AstAlways{ap});
             }
         }
     }

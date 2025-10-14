@@ -84,7 +84,7 @@ inline std::ostream& operator<<(std::ostream& os, const VAccess& rhs) { return o
 
 class VAlwaysKwd final {
 public:
-    enum en : uint8_t { ALWAYS, ALWAYS_FF, ALWAYS_LATCH, ALWAYS_COMB };
+    enum en : uint8_t { ALWAYS, ALWAYS_FF, ALWAYS_LATCH, ALWAYS_COMB, CONT_ASSIGN };
     enum en m_e;
     VAlwaysKwd()
         : m_e{ALWAYS} {}
@@ -95,7 +95,8 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"always", "always_ff", "always_latch", "always_comb"};
+        static const char* const names[]
+            = {"always", "always_ff", "always_latch", "always_comb", "cont_assign"};
         return names[m_e];
     }
 };

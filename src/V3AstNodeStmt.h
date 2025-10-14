@@ -1278,7 +1278,6 @@ public:
         });
     }
     AstDelay* getLhsNetDelay() const;
-    AstAlways* convertToAlways();
 };
 
 // === AstNodeBlock ===

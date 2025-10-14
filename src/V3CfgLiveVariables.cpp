@@ -162,6 +162,7 @@ class CfgLiveVariables final : VNVisitorConst {
     }
 
     void visit(AstAssign* nodep) override { single(nodep); }
+    void visit(AstAssignW* nodep) override { single(nodep); }
     void visit(AstDisplay* nodep) override { single(nodep); }
     void visit(AstFinish* nodep) override { single(nodep); }
     void visit(AstStmtExpr* nodep) override { single(nodep); }
