@@ -1643,6 +1643,29 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
 };
+class AstSystemCSection final : public AstNode {
+    // Verilator specific "`systemc_* block". This is a "module item"
+    // containing arbitrary text that is emitted to the C++ output in various
+    // locations depending on the sectionType.
+    const VSystemCSectionType m_sectionType;  // The section type
+    const std::string m_text;  // The text content
+
+public:
+    AstSystemCSection(FileLine* fl, VSystemCSectionType sectionType, const std::string& text)
+        : ASTGEN_SUPER_SystemCSection(fl)
+        , m_sectionType{sectionType}
+        , m_text{text} {
+        v3Global.setHasSystemCSections();
+    }
+    ASTGEN_MEMBERS_AstSystemCSection;
+    VSystemCSectionType sectionType() const { return m_sectionType; }
+    const std::string& text() const { return m_text; }
+    void dump(std::ostream&) const override;
+    void dumpJson(std::ostream&) const override;
+    bool sameNode(const AstNode*) const override { return false; }
+    bool isPure() override { return false; }
+    bool isOutputter() override { return true; }
+};
 class AstTopScope final : public AstNode {
     // A singleton, held under the top level AstModule. Holds the top level
     // AstScope, and after V3ActiveTop, the global list of AstSenTrees (list of
@@ -2806,64 +2829,6 @@ public:
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual string emitVerilog() { return "[*]"; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
-};
-
-// === AstNodeText ===
-class AstScCtor final : public AstNodeText {
-public:
-    AstScCtor(FileLine* fl, const string& textp)
-        : ASTGEN_SUPER_ScCtor(fl, textp) {}
-    ASTGEN_MEMBERS_AstScCtor;
-    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() override { return true; }
-};
-class AstScDtor final : public AstNodeText {
-public:
-    AstScDtor(FileLine* fl, const string& textp)
-        : ASTGEN_SUPER_ScDtor(fl, textp) {}
-    ASTGEN_MEMBERS_AstScDtor;
-    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() override { return true; }
-};
-class AstScHdr final : public AstNodeText {
-public:
-    AstScHdr(FileLine* fl, const string& textp)
-        : ASTGEN_SUPER_ScHdr(fl, textp) {}
-    ASTGEN_MEMBERS_AstScHdr;
-    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() override { return true; }
-};
-class AstScHdrPost final : public AstNodeText {
-public:
-    AstScHdrPost(FileLine* fl, const string& textp)
-        : ASTGEN_SUPER_ScHdrPost(fl, textp) {}
-    ASTGEN_MEMBERS_AstScHdrPost;
-    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() override { return true; }
-};
-class AstScImp final : public AstNodeText {
-public:
-    AstScImp(FileLine* fl, const string& textp)
-        : ASTGEN_SUPER_ScImp(fl, textp) {}
-    ASTGEN_MEMBERS_AstScImp;
-    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() override { return true; }
-};
-class AstScImpHdr final : public AstNodeText {
-public:
-    AstScImpHdr(FileLine* fl, const string& textp)
-        : ASTGEN_SUPER_ScImpHdr(fl, textp) {}
-    ASTGEN_MEMBERS_AstScImpHdr;
-    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() override { return true; }
-};
-class AstScInt final : public AstNodeText {
-public:
-    AstScInt(FileLine* fl, const string& textp)
-        : ASTGEN_SUPER_ScInt(fl, textp) {}
-    ASTGEN_MEMBERS_AstScInt;
-    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() override { return true; }
 };
 
 // === AstNodeSimpleText ===

@@ -123,7 +123,7 @@ class V3Global final {
     bool m_usesStdPackage = false;  // Design uses the std package
     bool m_usesTiming = false;  // Design uses timing constructs
     bool m_hasForceableSignals = false;  // Need to apply V3Force pass
-    bool m_hasSCTextSections = false;  // Has `systemc_* sections that need to be emitted
+    bool m_hasSystemCSections = false;  // Has AstSystemCSection that need to be emitted
     bool m_useParallelBuild = false;  // Use parallel build for model
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
     uint64_t m_currentHierBlockCost = 0;  // Total cost of this hier block, used for scheduling
@@ -197,8 +197,8 @@ public:
     void setUsesTiming() { m_usesTiming = true; }
     bool hasForceableSignals() const { return m_hasForceableSignals; }
     void setHasForceableSignals() { m_hasForceableSignals = true; }
-    bool hasSCTextSections() const VL_MT_SAFE { return m_hasSCTextSections; }
-    void setHasSCTextSections() { m_hasSCTextSections = true; }
+    bool hasSystemCSections() const VL_MT_SAFE { return m_hasSystemCSections; }
+    void setHasSystemCSections() { m_hasSystemCSections = true; }
     V3HierGraph* hierGraphp() const { return m_hierGraphp; }
     void hierGraphp(V3HierGraph* graphp) { m_hierGraphp = graphp; }
     bool useParallelBuild() const { return m_useParallelBuild; }

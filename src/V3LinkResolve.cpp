@@ -469,20 +469,15 @@ class LinkResolveVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstScCtor* nodep) override {
-        // Constructor info means the module must remain public
-        m_modp->modPublic(true);
-        iterateChildren(nodep);
-    }
-    void visit(AstScDtor* nodep) override {
-        // Destructor info means the module must remain public
-        m_modp->modPublic(true);
-        iterateChildren(nodep);
-    }
-    void visit(AstScInt* nodep) override {
-        // Special class info means the module must remain public
-        m_modp->modPublic(true);
-        iterateChildren(nodep);
+    void visit(AstSystemCSection* nodep) override {
+        switch (nodep->sectionType()) {
+        // Constructor, desctructor or special class info means the module must remain public
+        case VSystemCSectionType::CTOR:
+        case VSystemCSectionType::DTOR:
+        case VSystemCSectionType::INT: m_modp->modPublic(true); break;
+        default: break;
+        }
+        // Has no children
     }
 
     void visit(AstIfaceRefDType* nodep) override {

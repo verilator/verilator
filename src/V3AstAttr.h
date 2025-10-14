@@ -1604,6 +1604,37 @@ inline std::ostream& operator<<(std::ostream& os, const VStrength& rhs) {
     return os << rhs.ascii();
 }
 
+// ######################################################################
+//  VSystemCSectionType - Represents the type of a `systemc_* block (Verilator specific extension)
+
+class VSystemCSectionType final {
+public:
+    enum en : uint8_t {
+        CTOR,  // `systemc_ctor
+        DTOR,  // `systemc_dtor
+        HDR,  // `systemc_header
+        HDR_POST,  // `systemc_header_post
+        IMP,  // `systemc_implementation
+        IMP_HDR,  // `systemc_imp_header
+        INT  // `systemc_interface
+    };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[] = {"`systemc_ctor",  //
+                                            "`systemc_dtor",  //
+                                            "`systemc_header",  //
+                                            "`systemc_header_post",  //
+                                            "`systemc_implementation",  //
+                                            "`systemc_imp_header",  //
+                                            "`systemc_interface"};
+        return names[m_e];
+    }
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VSystemCSectionType(en _e)
+        : m_e{_e} {}
+    constexpr operator en() const { return m_e; }
+};
+
 //######################################################################
 
 class VTracePrefixType final {

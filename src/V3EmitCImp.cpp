@@ -200,7 +200,7 @@ class EmitCImp final : EmitCFunc {
         puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
         for (const string& name : headers) puts("#include \"" + name + ".h\"\n");
 
-        emitTextSection(m_modp, VNType::ScImpHdr);
+        emitSystemCSection(m_modp, VSystemCSectionType::IMP_HDR);
     }
 
     void emitStaticVarDefns(const AstNodeModule* modp) {
@@ -286,7 +286,7 @@ class EmitCImp final : EmitCFunc {
 
         putsDecoration(modp, "// Reset structure values\n");
         puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
-        emitTextSection(modp, VNType::ScCtor);
+        emitSystemCSection(modp, VSystemCSectionType::CTOR);
 
         puts("}\n");
     }
@@ -393,7 +393,7 @@ class EmitCImp final : EmitCFunc {
         puts("\n");
         putns(modp, EmitCUtil::prefixNameProtect(modp) + "::~" + EmitCUtil::prefixNameProtect(modp)
                         + "() {\n");
-        emitTextSection(modp, VNType::ScDtor);
+        emitSystemCSection(modp, VSystemCSectionType::DTOR);
         puts("}\n");
         splitSizeInc(10);
     }
@@ -487,9 +487,13 @@ class EmitCImp final : EmitCFunc {
         if (!modp) return false;
         // We always need the slow file
         if (m_slow) return true;
-        // The fast file is only required when we have ScImp nodes
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (VN_IS(nodep, ScImp)) return true;
+        // The fast file is only required when we have `systemc_implementation nodes
+        if (v3Global.hasSystemCSections()) {
+            for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                if (const AstSystemCSection* const ssp = VN_CAST(nodep, SystemCSection)) {
+                    if (ssp->sectionType() == VSystemCSectionType::IMP) return true;
+                }
+            }
         }
         return false;
     }
@@ -507,7 +511,7 @@ class EmitCImp final : EmitCFunc {
             emitSavableImp(modp);
         } else {
             // From `systemc_implementation
-            emitTextSection(modp, VNType::ScImp);
+            emitSystemCSection(modp, VSystemCSectionType::IMP);
         }
     }
     void emitCommonImp(const AstNodeModule* modp) {

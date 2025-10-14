@@ -2532,6 +2532,14 @@ void AstSliceSel::dumpJson(std::ostream& str) const {
     if (declRange().ranged()) dumpJsonStr(str, "declRange", cvtToStr(declRange()));
     dumpJsonGen(str);
 }
+void AstSystemCSection::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " sectionType=" << sectionType().ascii();
+}
+void AstSystemCSection::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "sectionType", sectionType().ascii());
+    dumpJsonGen(str);
+}
 void AstMTaskBody::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << " ";
