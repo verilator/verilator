@@ -31,6 +31,7 @@
 #include "V3Begin.h"
 
 #include "V3String.h"
+#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -56,6 +57,7 @@ public:
 //######################################################################
 
 class BeginVisitor final : public VNVisitor {
+    V3UniqueNames m_caseTempNames;  // For generating unique temporary variable names used by cases
     // STATE - across all visitors
     BeginState* const m_statep;  // Current global state
 
@@ -146,6 +148,7 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
+        m_caseTempNames.reset();
         m_modp = nodep;
         // Rename it (e.g. class under a generate)
         if (m_unnamedScope != "") {
@@ -179,6 +182,7 @@ class BeginVisitor final : public VNVisitor {
         VL_RESTORER(m_liftedp);
         VL_RESTORER(m_namedScope);
         VL_RESTORER(m_unnamedScope);
+        m_caseTempNames.reset();
         m_displayScope = dot(m_displayScope, nodep->name());
         m_namedScope = "";
         m_unnamedScope = "";
@@ -308,6 +312,28 @@ class BeginVisitor final : public VNVisitor {
         // any BEGINs, but V3Coverage adds them all under the module itself.
         iterateChildren(nodep);
     }
+    void visit(AstCase* nodep) override {
+        // Introduce temporary variable for AstCase if needed - it is done here and not in V3Case
+        // because this phase is before V3Scope and V3Case is not. Doing it before V3Scope ensures
+        // that V3Scope will take care of a scope creation
+        if (!nodep->exprp()->isPure()) {
+            FileLine* const fl = nodep->exprp()->fileline();
+            AstVar* const varp = new AstVar{fl, VVarType::XTEMP, m_caseTempNames.get(nodep),
+                                            nodep->exprp()->dtypep()};
+            nodep->exprp(new AstExprStmt{fl,
+                                         new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                                       nodep->exprp()->unlinkFrBack()},
+                                         new AstVarRef{fl, varp, VAccess::READ}});
+            if (m_ftaskp) {
+                varp->funcLocal(true);
+                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+            } else {
+                m_modp->stmtsp()->addHereThisAsNext(varp);
+            }
+        }
+        iterateChildren(nodep);
+    }
     // VISITORS - LINT CHECK
     void visit(AstIf* nodep) override {  // not AstNodeIf; other types not covered
         VL_RESTORER(m_keepBegins);
@@ -334,7 +360,8 @@ class BeginVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     BeginVisitor(AstNetlist* nodep, BeginState* statep)
-        : m_statep{statep} {
+        : m_caseTempNames{"__VCase"}
+        , m_statep{statep} {
         iterate(nodep);
     }
     ~BeginVisitor() override = default;
