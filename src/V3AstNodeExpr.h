@@ -2060,13 +2060,13 @@ public:
 };
 class AstScopeName final : public AstNodeExpr {
     // For display %m and DPI context imports
-    // Parents:  DISPLAY
-    // @astgen op1 := scopeAttrp : List[AstText]
-    // @astgen op2 := scopeEntrp : List[AstText]
+    // Parents:  AstSFormatF, AstNodeFTaskRef, AstNodeFTask
+    std::string m_scopeAttr;
+    std::string m_scopeEntr;
     bool m_dpiExport = false;  // Is for dpiExport
     const bool m_forFormat;  // Is for a format %m
-    string scopeNameFormatter(AstText* scopeTextp) const;
-    string scopePrettyNameFormatter(AstText* scopeTextp) const;
+    static std::string scopeNameFormatter(const std::string& text);
+    static std::string scopePrettyNameFormatter(const std::string& text);
 
 public:
     class ForFormat {};
@@ -2078,28 +2078,32 @@ public:
     ASTGEN_MEMBERS_AstScopeName;
     bool sameNode(const AstNode* samep) const override {
         const AstScopeName* const sp = VN_DBG_AS(samep, ScopeName);
-        return (m_dpiExport == sp->m_dpiExport && m_forFormat == sp->m_forFormat);
+        return m_scopeAttr == sp->m_scopeAttr  //
+               && m_scopeEntr == sp->m_scopeEntr  //
+               && m_dpiExport == sp->m_dpiExport  //
+               && m_forFormat == sp->m_forFormat;
     }
-    string emitVerilog() override { return ""; }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
-    string scopeSymName() const {  // Name for __Vscope variable including children
-        return scopeNameFormatter(scopeAttrp());
-    }
-    string scopeDpiName() const {  // Name for DPI import scope
-        return scopeNameFormatter(scopeEntrp());
-    }
-    string scopePrettySymName() const {  // Name for __Vscope variable including children
-        return scopePrettyNameFormatter(scopeAttrp());
-    }
-    string scopePrettyDpiName() const {  // Name for __Vscope variable including children
-        return scopePrettyNameFormatter(scopeEntrp());
-    }
+    // ACCESSORS
+    const std::string& scopeAttr() const { return m_scopeAttr; }
+    void scopeAttr(const std::string& val) { m_scopeAttr = val; }
+    const std::string& scopeEntr() const { return m_scopeEntr; }
+    void scopeEntr(const std::string& val) { m_scopeEntr = val; }
     bool dpiExport() const { return m_dpiExport; }
     void dpiExport(bool flag) { m_dpiExport = flag; }
     bool forFormat() const { return m_forFormat; }
+    // Name for __Vscope variable including children
+    string scopeSymName() const { return scopeNameFormatter(m_scopeAttr); }
+    // Name for DPI import scope
+    string scopeDpiName() const { return scopeNameFormatter(m_scopeEntr); }
+    // Name for __Vscope variable including children
+    string scopePrettySymName() const { return scopePrettyNameFormatter(m_scopeAttr); }
+    // Name for __Vscope variable including children
+    string scopePrettyDpiName() const { return scopePrettyNameFormatter(m_scopeEntr); }
 };
 class AstSelLoopVars final : public AstNodeExpr {
     // Parser only concept "[id, id, id]" for a foreach statement

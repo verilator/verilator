@@ -1211,28 +1211,22 @@ AstVarScope* AstScope::createTempLike(const string& name, const AstVarScope* vsc
     return createTemp(name, vscp->dtypep());
 }
 
-string AstScopeName::scopePrettyNameFormatter(AstText* scopeTextp) const {
-    string out;
-    for (AstText* textp = scopeTextp; textp; textp = VN_AS(textp->nextp(), Text)) {
-        out += textp->text();
-    }
+std::string AstScopeName::scopePrettyNameFormatter(const std::string& text) {
+    std::string out = text;
     // TOP will be replaced by top->name()
     if (out.substr(0, 10) == "__DOT__TOP") out.replace(0, 10, "");
     if (out.substr(0, 7) == "__DOT__") out.replace(0, 7, "");
     if (out.substr(0, 1) == ".") out.replace(0, 1, "");
     return AstNode::prettyName(out);
 }
-string AstScopeName::scopeNameFormatter(AstText* scopeTextp) const {
-    string out;
-    for (AstText* textp = scopeTextp; textp; textp = VN_AS(textp->nextp(), Text)) {
-        out += textp->text();
-    }
+std::string AstScopeName::scopeNameFormatter(const std::string& text) {
+    std::string out = text;
     if (out.substr(0, 10) == "__DOT__TOP") out.replace(0, 10, "");
     if (out.substr(0, 7) == "__DOT__") out.replace(0, 7, "");
     if (out.substr(0, 1) == ".") out.replace(0, 1, "");
-    string::size_type pos;
-    while ((pos = out.find('.')) != string::npos) out.replace(pos, 1, "__");
-    while ((pos = out.find("__DOT__")) != string::npos) out.replace(pos, 7, "__");
+    std::string::size_type pos;
+    while ((pos = out.find('.')) != std::string::npos) out.replace(pos, 1, "__");
+    while ((pos = out.find("__DOT__")) != std::string::npos) out.replace(pos, 7, "__");
     return out;
 }
 
@@ -2813,10 +2807,14 @@ void AstScopeName::dump(std::ostream& str) const {
     this->AstNodeExpr::dump(str);
     if (dpiExport()) str << " [DPIEX]";
     if (forFormat()) str << " [FMT]";
+    str << " scopeAttr=\"" << m_scopeAttr << "\"";
+    str << " scopeEntr=\"" << m_scopeEntr << "\"";
 }
 void AstScopeName::dumpJson(std::ostream& str) const {
     dumpJsonBoolFunc(str, dpiExport);
     dumpJsonBoolFunc(str, forFormat);
+    dumpJsonStr(str, "scopeAttr", m_scopeAttr);
+    dumpJsonStr(str, "scopeEntr", m_scopeEntr);
     dumpJsonGen(str);
 }
 void AstSenTree::dump(std::ostream& str) const {

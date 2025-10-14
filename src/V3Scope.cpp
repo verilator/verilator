@@ -291,15 +291,9 @@ class ScopeVisitor final : public VNVisitor {
         const string prefix = "__DOT__"s + m_scopep->name();
         // TOP and above will be the user's name().
         // Note 'TOP.' is stripped by scopePrettyName
-        // To keep correct visual order, must add before other Text's
-        AstText* afterp = nodep->scopeAttrp();
-        if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->addScopeAttrp(new AstText{nodep->fileline(), prefix});
-        if (afterp) nodep->addScopeAttrp(afterp);
-        afterp = nodep->scopeEntrp();
-        if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->addScopeEntrp(new AstText{nodep->fileline(), prefix});
-        if (afterp) nodep->addScopeEntrp(afterp);
+        // To keep correct visual order, must add before existing
+        nodep->scopeAttr(prefix + nodep->scopeAttr());
+        nodep->scopeEntr(prefix + nodep->scopeEntr());
         iterateChildren(nodep);
     }
     void visit(AstScope* nodep) override {

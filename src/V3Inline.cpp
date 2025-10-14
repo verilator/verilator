@@ -393,15 +393,9 @@ class InlineRelinkVisitor final : public VNVisitor {
     void visit(AstScopeName* nodep) override {
         // If there's a %m in the display text, we add a special node that will contain the name()
         // Similar code in V3Begin
-        // To keep correct visual order, must add before other Text's
-        AstText* afterp = nodep->scopeAttrp();
-        if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->addScopeAttrp(new AstText{nodep->fileline(), "__DOT__"s + m_cellp->name()});
-        if (afterp) nodep->addScopeAttrp(afterp);
-        afterp = nodep->scopeEntrp();
-        if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->addScopeEntrp(new AstText{nodep->fileline(), "__DOT__"s + m_cellp->name()});
-        if (afterp) nodep->addScopeEntrp(afterp);
+        // To keep correct visual order, must add before exising
+        nodep->scopeAttr("__DOT__" + m_cellp->name() + nodep->scopeAttr());
+        nodep->scopeEntr("__DOT__" + m_cellp->name() + nodep->scopeEntr());
         iterateChildren(nodep);
     }
     void visit(AstNodeCoverDecl* nodep) override {

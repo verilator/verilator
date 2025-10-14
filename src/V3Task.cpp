@@ -1303,8 +1303,8 @@ class TaskVisitor final : public VNVisitor {
         if (nodep->dpiExport()) {
             AstScopeName* const snp = nodep->scopeNamep();
             UASSERT_OBJ(snp, nodep, "Missing scoping context");
-            snp->dpiExport(
-                true);  // The AstScopeName is really a statement(ish) for tracking, not a function
+            // The AstScopeName is really a statement(ish) for tracking, not a function
+            snp->dpiExport(true);
             snp->unlinkFrBack();
             cfuncp->addInitsp(snp);
         }

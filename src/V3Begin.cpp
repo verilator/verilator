@@ -293,14 +293,9 @@ class BeginVisitor final : public VNVisitor {
         // Similar code in V3Inline
         if (nodep->user1SetOnce()) return;  // Don't double-add text's
         // DPI svGetScope doesn't include function name, but %m does
-        const string scname = nodep->forFormat() ? m_displayScope : m_namedScope;
-        if (!scname.empty()) {
-            // To keep correct visual order, must add before other Text's
-            AstText* const afterp = nodep->scopeAttrp();
-            if (afterp) afterp->unlinkFrBackWithNext();
-            nodep->addScopeAttrp(new AstText{nodep->fileline(), "__DOT__"s + scname});
-            if (afterp) nodep->addScopeAttrp(afterp);
-        }
+        const std::string scname = nodep->forFormat() ? m_displayScope : m_namedScope;
+        // To keep correct visual order, must add before exising
+        if (!scname.empty()) nodep->scopeAttr("__DOT__"s + scname + nodep->scopeAttr());
         iterateChildren(nodep);
     }
     void visit(AstNodeCoverDecl* nodep) override {
