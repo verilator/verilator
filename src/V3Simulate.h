@@ -1366,7 +1366,7 @@ private:
     // default
     // These types are definitely not reducible
     //   AstCoverInc, AstFinish,
-    //   AstRand, AstTime, AstUCFunc, AstCCall, AstCStmt, AstUCStmt
+    //   AstRand, AstTime, AstCCall, AstCStmt*, AstCExpr*
     void visit(AstNode* nodep) override {
         if (jumpingOver()) return;
         badNodeType(nodep);

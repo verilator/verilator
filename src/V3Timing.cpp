@@ -645,7 +645,7 @@ class TimingControlVisitor final : public VNVisitor {
             // possibly a multiline string
             std::string comment = ss.str();
             std::replace(comment.begin(), comment.end(), '\n', ' ');
-            AstCExpr* const commentp = new AstCExpr{sentreep->fileline(), comment, 0};
+            AstCExpr* const commentp = new AstCExpr{sentreep->fileline(), comment};
             commentp->dtypeSetString();
             sentreep->user2p(commentp);
             return commentp;
@@ -656,10 +656,10 @@ class TimingControlVisitor final : public VNVisitor {
     void addDebugInfo(AstCMethodHard* const methodp) const {
         if (v3Global.opt.protectIds()) return;
         FileLine* const flp = methodp->fileline();
-        AstCExpr* const ap = new AstCExpr{flp, '"' + flp->filenameEsc() + '"', 0};
+        AstCExpr* const ap = new AstCExpr{flp, '"' + flp->filenameEsc() + '"'};
         ap->dtypeSetString();
         methodp->addPinsp(ap);
-        AstCExpr* const bp = new AstCExpr{flp, cvtToStr(flp->lineno()), 0};
+        AstCExpr* const bp = new AstCExpr{flp, cvtToStr(flp->lineno())};
         bp->dtypeSetString();
         methodp->addPinsp(bp);
     }
@@ -673,8 +673,7 @@ class TimingControlVisitor final : public VNVisitor {
     void addProcessInfo(AstCMethodHard* const methodp) const {
         FileLine* const flp = methodp->fileline();
         AstCExpr* const ap = new AstCExpr{
-            flp, m_procp && (hasFlags(m_procp, T_HAS_PROC)) ? "vlProcess" : "nullptr", 0};
-        ap->dtypeSetVoid();
+            flp, m_procp && (hasFlags(m_procp, T_HAS_PROC)) ? "vlProcess" : "nullptr"};
         methodp->addPinsp(ap);
     }
     // Creates the fork handle type and returns it
@@ -1164,10 +1163,9 @@ class TimingControlVisitor final : public VNVisitor {
     }
     void visit(AstWaitFork* nodep) override {
         if (hasFlags(m_procp, T_HAS_PROC)) {
-            AstCExpr* const exprp
-                = new AstCExpr{nodep->fileline(), "vlProcess->completedFork()", 1};
-            exprp->pure(false);
-            AstWait* const waitp = new AstWait{nodep->fileline(), exprp, nullptr};
+            FileLine* const flp = nodep->fileline();
+            AstCExpr* const exprp = new AstCExpr{flp, "vlProcess->completedFork()", 1};
+            AstWait* const waitp = new AstWait{flp, exprp, nullptr};
             nodep->replaceWith(waitp);
         } else {
             // never reached by any process; remove to avoid compilation error
@@ -1186,8 +1184,7 @@ class TimingControlVisitor final : public VNVisitor {
             if (constp->isZero()) {
                 // We have to await forever instead of simply returning in case we're deep in a
                 // callstack
-                AstCExpr* const foreverp = new AstCExpr{flp, "VlForever{}", 0};
-                foreverp->dtypeSetVoid();  // TODO: this is sloppy but harmless
+                AstCExpr* const foreverp = new AstCExpr{flp, "VlForever{}"};
                 AstCAwait* const awaitp = new AstCAwait{flp, foreverp};
                 awaitp->dtypeSetVoid();
                 nodep->replaceWith(awaitp->makeStmt());

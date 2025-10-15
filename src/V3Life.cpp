@@ -135,26 +135,25 @@ public:
     // METHODS
     void checkRemoveAssign(AstVarScope* vscp, LifeVarEntry& entr) {
         const AstVar* const varp = vscp->varp();
-        if (!varp->isSigPublic() && !varp->sensIfacep()) {
-            // Rather than track what sigs AstUCFunc/AstUCStmt may change,
-            // we just don't optimize any public sigs
-            // Check the var entry, and remove if appropriate
-            if (AstNodeStmt* const oldassp = entr.assignp()) {
-                UINFO(7, "       PREV: " << oldassp);
-                // Redundant assignment, in same level block
-                // Don't delete it now as it will confuse iteration since it maybe WAY
-                // above our current iteration point.
-                UINFOTREE(7, oldassp, "", "REMOVE/SAMEBLK");
-                entr.complexAssign();
-                oldassp->unlinkFrBack();
-                if (VN_IS(oldassp, CReset)) {
-                    ++m_statep->m_statCResetDel;
-                } else {
-                    ++m_statep->m_statAssnDel;
-                }
-                VL_DO_DANGLING(m_deleter.pushDeletep(oldassp), oldassp);
-            }
+        // We don't optimize any public sigs
+        if (varp->isSigPublic()) return;
+        if (varp->sensIfacep()) return;
+        // Check the var entry, and remove if appropriate
+        AstNodeStmt* const oldassp = entr.assignp();
+        if (!oldassp) return;
+        UINFO(7, "       PREV: " << oldassp);
+        // Redundant assignment, in same level block
+        // Don't delete it now as it will confuse iteration since it maybe WAY
+        // above our current iteration point.
+        UINFOTREE(7, oldassp, "", "REMOVE/SAMEBLK");
+        entr.complexAssign();
+        oldassp->unlinkFrBack();
+        if (VN_IS(oldassp, CReset)) {
+            ++m_statep->m_statCResetDel;
+        } else {
+            ++m_statep->m_statAssnDel;
         }
+        VL_DO_DANGLING(m_deleter.pushDeletep(oldassp), oldassp);
     }
     void resetStatement(AstVarScope* nodep, AstCReset* rstp) {
         // Do we have a old assignment we can nuke?
@@ -434,7 +433,7 @@ class LifeVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
-    void visit(AstUCFunc* nodep) override {
+    void visit(AstCExprUser* nodep) override {
         m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         iterateChildren(nodep);
     }

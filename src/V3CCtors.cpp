@@ -139,12 +139,12 @@ class CCtorsVisitor final : public VNVisitor {
 
     // METHODS
     static void insertSc(AstCFunc* cfuncp, const AstNodeModule* modp, VSystemCSectionType type) {
-        auto textAndFileline = EmitCBaseVisitorConst::scSection(modp, type);
-        if (!textAndFileline.first.empty()) {
-            AstTextBlock* const newp
-                = new AstTextBlock{textAndFileline.second, textAndFileline.first, false, false};
-            cfuncp->addStmtsp(newp);
-        }
+        const auto txtAndFlp = EmitCBaseVisitorConst::scSection(modp, type);
+        if (txtAndFlp.first.empty()) return;
+        // Use an AstCStmtUser as this is from user input
+        AstCStmtUser* const cstmtp = new AstCStmtUser{txtAndFlp.second};
+        cstmtp->add(txtAndFlp.first);
+        cfuncp->addStmtsp(cstmtp);
     }
 
     // VISITORS

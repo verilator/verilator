@@ -289,18 +289,44 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstCStmt final : public AstNodeStmt {
-    // Emit C statement
-    // @astgen op1 := exprsp : List[AstNode]
+    // C statement emitted into output, with some arbitrary nodes interspersed
+    // @astgen op1 := nodesp : List[AstNode<AstNodeStmt|AstNodeExpr|AstText>]
 public:
-    AstCStmt(FileLine* fl, AstNode* exprsp)
+    AstCStmt(FileLine* fl, const std::string& text = "")
         : ASTGEN_SUPER_CStmt(fl) {
-        addExprsp(exprsp);
+        if (!text.empty()) add(text);
     }
-    inline AstCStmt(FileLine* fl, const string& textStmt);
     ASTGEN_MEMBERS_AstCStmt;
     bool isGateOptimizable() const override { return false; }
+    bool isOutputter() override { return true; }
     bool isPredictOptimizable() const override { return false; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool isPure() override { return false; }
+    bool sameNode(const AstNode*) const override { return true; }
+    // Add some text, or a node to this statement
+    void add(const std::string& text) { addNodesp(new AstText{fileline(), text}); }
+    void add(AstNode* nodep) { addNodesp(nodep); }
+};
+class AstCStmtUser final : public AstNodeStmt {
+    // User '$c' statement - Same as AstCStmt, with text tracking disabled
+    // Note this cannot be modelled as AstStmtExpr(AstCExprUser) because the
+    // latter would have an extra semicolon emitted, which might be undesirable
+    //
+    // Use AstCStmt instead, unless the text is from user input
+    //
+    // @astgen op1 := nodesp : List[AstNode<AstNodeExpr|AstText>]
+public:
+    AstCStmtUser(FileLine* fl)
+        : ASTGEN_SUPER_CStmtUser(fl) {}
+    ASTGEN_MEMBERS_AstCStmtUser;
+    // METHODS
+    bool isGateOptimizable() const override { return false; }
+    bool isOutputter() override { return true; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() override { return false; }
+    bool sameNode(const AstNode*) const override { return true; }
+    // Add some text, or a node to this statement
+    void add(const std::string& text) { addNodesp(new AstText{fileline(), text}); }
+    void add(AstNode* nodep) { addNodesp(nodep); }
 };
 class AstCase final : public AstNodeStmt {
     // Case statement
@@ -1200,21 +1226,6 @@ public:
     bool sameNode(const AstNode* samep) const override { return false; }
     string prefix() const { return m_prefix; }
     VTracePrefixType prefixType() const { return m_prefixType; }
-};
-class AstUCStmt final : public AstNodeStmt {
-    // User $c statement
-    // @astgen op1 := exprsp : List[AstNode] // (some are AstText)
-public:
-    AstUCStmt(FileLine* fl, AstNode* exprsp)
-        : ASTGEN_SUPER_UCStmt(fl) {
-        addExprsp(exprsp);
-    }
-    ASTGEN_MEMBERS_AstUCStmt;
-    bool isGateOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return false; }
-    bool isPure() override { return false; }
-    bool isOutputter() override { return true; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstWait final : public AstNodeStmt {
     // @astgen op1 := condp : AstNodeExpr

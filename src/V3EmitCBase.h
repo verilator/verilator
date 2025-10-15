@@ -90,7 +90,6 @@ public:
     V3OutCFile* m_ofp = nullptr;
     AstCFile* m_outFileNodep = nullptr;
     int m_splitSize = 0;  // # of cfunc nodes placed into output file
-    bool m_trackText = false;  // Always track AstText nodes
     // METHODS
 
     // Returns pointer to current output file object.

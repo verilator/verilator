@@ -166,7 +166,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
         // Add arguments to a resume() call based on arguments in the suspending call
         void addResumePins(AstCMethodHard* const resumep, AstNodeExpr* pinsp) {
             AstCExpr* const exprp = VN_CAST(pinsp, CExpr);
-            AstText* const textp = VN_CAST(exprp->exprsp(), Text);
+            AstText* const textp = VN_CAST(exprp->nodesp(), Text);
             if (textp) {
                 // The first argument, vlProcess, isn't used by any of resume() methods, skip it
                 if ((pinsp = VN_CAST(pinsp->nextp(), NodeExpr))) {

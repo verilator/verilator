@@ -181,10 +181,14 @@ module Vt_debug_emitv_t;
             sub.inc(fosum);
             sum = sub.f(sum);
             $display("[%0t] sum = %~", $time, sum);
-            $display("a?= %d", ($c('sh1) ? $c('sh14)
-                                 : $c('sh1e)));
-            $c(;);
-            $display("%d", $c(0));
+            $display("a?= %d", ($c(// $c expression at t/t_debug_emitv.v:171:26
+'sh1) ? $c(// $c expression at t/t_debug_emitv.v:171:34
+'sh14) : $c(// $c expression at t/t_debug_emitv.v:171:45
+'sh1e)));
+            $c(// $c statement at t/t_debug_emitv.v:173:7
+;);
+            $display("%d", $c(// $c expression at t/t_debug_emitv.v:174:22
+0));
             fd = $fopen("/dev/null");
             ;
             $fclose(fd);

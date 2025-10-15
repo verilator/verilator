@@ -702,7 +702,7 @@ int V3OutFormatter::endLevels(const char* strg) {
         case '\n':  // Newlines.. No need for whitespace before it
             return 0;
         case '#':  // Preproc directive
-            return 0;
+            if (m_lang == LA_C) return 0;
         }
         {
             // label/public/private:  Deindent by 2 spaces
@@ -738,20 +738,25 @@ void V3OutFormatter::putns(const AstNode* nodep, const char* strg) {
         return;
     }
 
-    if (m_prependIndent && strg[0] != '\n') {
+    const bool putNodeDecoration =  //
+        nodep  //
+        && v3Global.opt.decorationNodes()  //
+        && !v3Global.opt.protectIds()  //
+        && (m_sourceLastFilenameno != nodep->fileline()->filenameno()  //
+            || m_sourceLastLineno != nodep->fileline()->firstLineno())  //
+        && FileLine::builtInFilename() != nodep->fileline()->filename();
+
+    if (m_prependIndent && ((strg[0] && strg[0] != '\n') || putNodeDecoration)) {
         putsNoTracking(indentSpaces(endLevels(strg)));
         m_prependIndent = false;
     }
 
-    if (nodep && v3Global.opt.decorationNodes() && !v3Global.opt.protectIds()
-        && (m_sourceLastFilenameno != nodep->fileline()->filenameno()
-            || m_sourceLastLineno != nodep->fileline()->firstLineno())
-        && FileLine::builtInFilename() != nodep->fileline()->filename()) {
-        m_sourceLastLineno = nodep->fileline()->firstLineno();
-        m_sourceLastFilenameno = nodep->fileline()->filenameno();
-        putsNoTracking("/*" + nodep->fileline()->filename() + ":"
-                       + cvtToStr(nodep->fileline()->lineno()) + " " + cvtToStr((void*)nodep)
-                       + "*/");
+    if (putNodeDecoration) {
+        FileLine* const flp = nodep->fileline();
+        m_sourceLastLineno = flp->firstLineno();
+        m_sourceLastFilenameno = flp->filenameno();
+        const std::string lineno = std::to_string(flp->lineno());
+        putsNoTracking("/*" + flp->filename() + ":" + lineno + " " + cvtToHex(nodep) + "*/");
     }
 
     bool notstart = false;

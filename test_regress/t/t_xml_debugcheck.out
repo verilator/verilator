@@ -540,7 +540,7 @@
           <varref loc="d,63,22,63,25" name="clk" dtype_id="8"/>
           <varref loc="d,63,22,63,25" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="8"/>
         </assign>
-        <textblock loc="d,11,8,11,9">
+        <cstmt loc="d,11,8,11,9">
           <text loc="d,11,8,11,9"/>
           <text loc="d,11,8,11,9"/>
           <stmtexpr loc="a,0,0,0,0">
@@ -548,7 +548,7 @@
           </stmtexpr>
           <text loc="d,11,8,11,9"/>
           <text loc="d,11,8,11,9"/>
-        </textblock>
+        </cstmt>
       </cfunc>
       <cfunc loc="a,0,0,0,0" name="_dump_triggers__act">
         <if loc="d,11,8,11,9">
@@ -575,7 +575,9 @@
             </cmethodhard>
           </and>
           <begin>
-            <text loc="d,11,8,11,9"/>
+            <cstmt loc="d,11,8,11,9">
+              <text loc="d,11,8,11,9"/>
+            </cstmt>
           </begin>
         </if>
       </cfunc>
@@ -604,7 +606,9 @@
             </cmethodhard>
           </and>
           <begin>
-            <text loc="d,11,8,11,9"/>
+            <cstmt loc="d,11,8,11,9">
+              <text loc="d,11,8,11,9"/>
+            </cstmt>
           </begin>
         </if>
       </cfunc>
@@ -1529,15 +1533,14 @@
                 <varref loc="a,0,0,0,0" name="__VnbaIterCount" dtype_id="5"/>
               </lt>
               <begin>
-                <textblock loc="a,0,0,0,0">
+                <cstmt loc="a,0,0,0,0">
                   <text loc="a,0,0,0,0"/>
                   <stmtexpr loc="a,0,0,0,0">
                     <ccall loc="a,0,0,0,0" dtype_id="7" func="_dump_triggers__nba"/>
                   </stmtexpr>
                   <text loc="a,0,0,0,0"/>
                   <text loc="a,0,0,0,0"/>
-                  <text loc="a,0,0,0,0"/>
-                </textblock>
+                </cstmt>
               </begin>
             </if>
             <assign loc="d,11,8,11,9" dtype_id="5">
@@ -1572,15 +1575,14 @@
                     <varref loc="a,0,0,0,0" name="__VactIterCount" dtype_id="5"/>
                   </lt>
                   <begin>
-                    <textblock loc="a,0,0,0,0">
+                    <cstmt loc="a,0,0,0,0">
                       <text loc="a,0,0,0,0"/>
                       <stmtexpr loc="a,0,0,0,0">
                         <ccall loc="a,0,0,0,0" dtype_id="7" func="_dump_triggers__act"/>
                       </stmtexpr>
                       <text loc="a,0,0,0,0"/>
                       <text loc="a,0,0,0,0"/>
-                      <text loc="a,0,0,0,0"/>
-                    </textblock>
+                    </cstmt>
                   </begin>
                 </if>
                 <assign loc="d,11,8,11,9" dtype_id="5">

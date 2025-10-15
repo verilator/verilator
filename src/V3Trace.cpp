@@ -528,19 +528,21 @@ class TraceVisitor final : public VNVisitor {
                 addInitStr("if (VL_UNLIKELY(!vlSymsp->__Vm_activity)) return;\n");
             }
             // Register function
-            std::string str;
+            AstCStmt* const cstmtp = new AstCStmt{flp};
+            m_regFuncp->addStmtsp(cstmtp);
             if (traceType == VTraceType::CONSTANT) {
-                str = "tracep->addConstCb(";
+                cstmtp->add("tracep->addConstCb(");
+                cstmtp->add(new AstAddrOfCFunc{flp, funcp});
+                cstmtp->add(", " + std::to_string(funcNum) + ", vlSelf);");
             } else if (traceType == VTraceType::FULL) {
-                str = "tracep->addFullCb(";
+                cstmtp->add("tracep->addFullCb(");
+                cstmtp->add(new AstAddrOfCFunc{flp, funcp});
+                cstmtp->add(", " + std::to_string(funcNum) + ", vlSelf);");
             } else {
-                str = "tracep->addChgCb(";
+                cstmtp->add("tracep->addChgCb(");
+                cstmtp->add(new AstAddrOfCFunc{flp, funcp});
+                cstmtp->add(", " + std::to_string(funcNum) + ", vlSelf);");
             }
-            m_regFuncp->addStmtsp(new AstText{flp, str, true});
-            m_regFuncp->addStmtsp(new AstAddrOfCFunc{flp, funcp});
-            m_regFuncp->addStmtsp(new AstText{flp, ", ", true});
-            m_regFuncp->addStmtsp(new AstConst{flp, funcNum});
-            m_regFuncp->addStmtsp(new AstText{flp, ", vlSelf);\n", true});
         } else {
             // Sub functions
             funcp->argTypes(bufArg);
@@ -739,10 +741,11 @@ class TraceVisitor final : public VNVisitor {
 
         // Register it
         {
-            AstNode* const argsp = new AstText{fl, "tracep->addCleanupCb(", true};
-            argsp->addNext(new AstAddrOfCFunc{fl, cleanupFuncp});
-            argsp->addNext(new AstText{fl, ", vlSelf);"});
-            m_regFuncp->addStmtsp(new AstCStmt{fl, argsp});
+            AstCStmt* const cstmtp = new AstCStmt{fl};
+            m_regFuncp->addStmtsp(cstmtp);
+            cstmtp->add("tracep->addCleanupCb(");
+            cstmtp->add(new AstAddrOfCFunc{fl, cleanupFuncp});
+            cstmtp->add(", vlSelf);");
         }
 
         // Clear global activity flag

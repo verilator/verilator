@@ -119,7 +119,6 @@ class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
     VMemberMap m_memberMap;
     AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
     std::unordered_map<AstJumpBlock*, size_t> m_labelNumbers;  // Label numbers for AstJumpBlocks
-    bool m_inUC = false;  // Inside an AstUCStmt or AstUCExpr
     bool m_createdScopeHash = false;  // Already created a scope hash
 
     // State associated with processing $display style string formatting
@@ -320,6 +319,24 @@ public:
         }
     }
 
+    void emitNodesWithText(AstNode* nodesp, bool useSelfForThis, bool tracking,
+                           const std::string& separator) {
+        for (AstNode* nodep = nodesp; nodep; nodep = nodep->nextp()) {
+            if (const AstText* const textp = VN_CAST(nodep, Text)) {
+                const std::string text
+                    = VSelfPointerText::replaceThis(useSelfForThis, textp->text());
+                if (tracking) {
+                    puts(text);
+                } else {
+                    ofp()->putsNoTracking(text);
+                }
+            } else {
+                iterateConst(nodep);
+            }
+            if (nodep->nextp()) puts(separator);
+        }
+    }
+
     void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp) {
         // Virtual bases in depth-first left-to-right order
         std::vector<AstClass*> virtualBases;
@@ -433,8 +450,8 @@ public:
             return true;
         });
         if (m_instantiatesOwnProcess) {
-            AstNode* const vlprocp = new AstCStmt{
-                nodep->fileline(), "VlProcessRef vlProcess = std::make_shared<VlProcess>();"};
+            AstCStmt* const vlprocp = new AstCStmt{nodep->fileline()};
+            vlprocp->add("VlProcessRef vlProcess = std::make_shared<VlProcess>();");
             nodep->stmtsp()->addHereThisAsNext(vlprocp);
         }
 
@@ -1330,48 +1347,37 @@ public:
     void visit(AstTimePrecision* nodep) override {
         putns(nodep, "vlSymsp->_vm_contextp__->timeprecision()");
     }
-    void visit(AstNodeSimpleText* nodep) override {
-        const string text
-            = VSelfPointerText::replaceThis(m_inUC && m_useSelfForThis, nodep->text());
-        if (nodep->tracking() || m_trackText) {
-            puts(text);
-        } else {
-            ofp()->putsNoTracking(text);
-        }
+
+    // Nodes involing AstText
+    void visit(AstText* nodep) override {
+        // All Text should be under TextBlock/CStmt/CStmtUser/CExpr/CExprUser
+        nodep->v3fatalSrc("Text node in unexpected position");
     }
     void visit(AstTextBlock* nodep) override {
-        visit(static_cast<AstNodeSimpleText*>(nodep));
-        for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
-            iterateConst(childp);
-            if (nodep->commas() && childp->nextp()) puts(", ");
-        }
+        putnbs(nodep, "");
+        puts(nodep->prefix());
+        emitNodesWithText(nodep->nodesp(), false, true, nodep->separator());
+        puts(nodep->suffix());
     }
     void visit(AstCStmt* nodep) override {
         putnbs(nodep, "");
-        iterateAndNextConstNull(nodep->exprsp());
-        puts("\n");
+        emitNodesWithText(nodep->nodesp(), false, true, "");
+        ensureNewLine();
     }
     void visit(AstCExpr* nodep) override {
         putnbs(nodep, "");
-        iterateAndNextConstNull(nodep->exprsp());
+        emitNodesWithText(nodep->nodesp(), false, true, "");
     }
-    void visit(AstUCStmt* nodep) override {
-        VL_RESTORER(m_inUC);
-        m_inUC = true;
+    void visit(AstCStmtUser* nodep) override {
         putnbs(nodep, "");
-        putsDecoration(nodep, VIdProtect::ifNoProtect("// $c statement at "
-                                                      + nodep->fileline()->ascii() + "\n"));
-        iterateAndNextConstNull(nodep->exprsp());
+        ofp()->putsNoTracking("\n");
+        emitNodesWithText(nodep->nodesp(), m_useSelfForThis, false, "");
         puts("\n");
     }
-    void visit(AstUCFunc* nodep) override {
-        VL_RESTORER(m_inUC);
-        m_inUC = true;
-        puts("\n");
+    void visit(AstCExprUser* nodep) override {
         putnbs(nodep, "");
-        putsDecoration(nodep, VIdProtect::ifNoProtect("// $c function at "
-                                                      + nodep->fileline()->ascii() + "\n"));
-        iterateAndNextConstNull(nodep->exprsp());
+        ofp()->putsNoTracking("\n");
+        emitNodesWithText(nodep->nodesp(), m_useSelfForThis, false, "");
         puts("\n");
     }
 
@@ -1729,10 +1735,9 @@ public:
 
     EmitCFunc()
         : m_lazyDecls{*this} {}
-    EmitCFunc(AstNode* nodep, V3OutCFile* ofp, AstCFile* cfilep, bool trackText = false)
+    EmitCFunc(AstNode* nodep, V3OutCFile* ofp, AstCFile* cfilep)
         : EmitCFunc{} {
         setOutputFile(ofp, cfilep);
-        m_trackText = trackText;
         iterateConst(nodep);
     }
     ~EmitCFunc() override = default;

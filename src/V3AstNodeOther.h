@@ -385,37 +385,6 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
 };
-class AstNodeText VL_NOT_FINAL : public AstNode {
-    string m_text;
-    // METHODS
-    string shortText() const;
-
-protected:
-    // Node that puts text into the output stream
-    AstNodeText(VNType t, FileLine* fl, const string& text)
-        : AstNode{t, fl}
-        , m_text{text} {}
-
-public:
-    ASTGEN_MEMBERS_AstNodeText;
-    void dump(std::ostream& str = std::cout) const override;
-    void dumpJson(std::ostream& str = std::cout) const override;
-    bool sameNode(const AstNode* samep) const override {
-        const AstNodeText* asamep = VN_DBG_AS(samep, NodeText);
-        return text() == asamep->text();
-    }
-    const string& text() const VL_MT_SAFE { return m_text; }
-    void text(const string& value) { m_text = value; }
-};
-class AstNodeSimpleText VL_NOT_FINAL : public AstNodeText {
-    const bool m_tracking;  // When emit, it's ok to parse the string to do indentation
-public:
-    AstNodeSimpleText(VNType t, FileLine* fl, const string& textp, bool tracking = false)
-        : AstNodeText{t, fl, textp}
-        , m_tracking{tracking} {}
-    ASTGEN_MEMBERS_AstNodeSimpleText;
-    bool tracking() const { return m_tracking; }
-};
 
 // === Concrete node types =====================================================
 
@@ -1666,6 +1635,49 @@ public:
     bool isPure() override { return false; }
     bool isOutputter() override { return true; }
 };
+class AstText final : public AstNode {
+    // Represents a piece of text to be emitted into the output
+    //
+    // Avoid using this directly, internally you almost always want
+    // AstCStmt::add("text") or AstCExpr::add("text") instead
+    //
+    std::string m_text;  // The text to emit
+public:
+    AstText(FileLine* fl, const std::string& text)
+        : ASTGEN_SUPER_Text(fl)
+        , m_text{text} {}
+    ASTGEN_MEMBERS_AstText;
+    void dump(std::ostream& str = std::cout) const override;
+    void dumpJson(std::ostream& str = std::cout) const override;
+    bool sameNode(const AstNode* samep) const override {
+        return text() == VN_DBG_AS(samep, Text)->text();
+    }
+    const std::string& text() const VL_MT_SAFE { return m_text; }
+    void text(const string& value) { m_text = value; }
+};
+class AstTextBlock final : public AstNode {
+    // Text block emitted into output, with some arbitrary nodes interspersed
+    // @astgen op1 := nodesp : List[AstNode] // Nodes to print
+    const std::string m_prefix;  // Prefix to print before first element in 'nodesp'
+    const std::string m_separator;  // Separator to print between each element in 'nodesp'
+    const std::string m_suffix;  // Suffix to pring after last element in 'nodesp'
+public:
+    AstTextBlock(FileLine* fl,  //
+                 const std::string& prefix = "",  //
+                 const std::string& separator = "",  //
+                 const std::string& suffix = "")
+        : ASTGEN_SUPER_TextBlock(fl)
+        , m_prefix{prefix}
+        , m_separator{separator}
+        , m_suffix{suffix} {}
+    ASTGEN_MEMBERS_AstTextBlock;
+    const std::string& prefix() const { return m_prefix; }
+    const std::string& separator() const { return m_separator; }
+    const std::string& suffix() const { return m_suffix; }
+    // Add some text, or a node to this block
+    void add(const string& text) { addNodesp(new AstText{fileline(), text}); }
+    void add(AstNode* nodep) { addNodesp(nodep); }
+};
 class AstTopScope final : public AstNode {
     // A singleton, held under the top level AstModule. Holds the top level
     // AstScope, and after V3ActiveTop, the global list of AstSenTrees (list of
@@ -2829,29 +2841,6 @@ public:
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual string emitVerilog() { return "[*]"; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
-};
-
-// === AstNodeSimpleText ===
-class AstText final : public AstNodeSimpleText {
-public:
-    AstText(FileLine* fl, const string& textp, bool tracking = false)
-        : ASTGEN_SUPER_Text(fl, textp, tracking) {}
-    ASTGEN_MEMBERS_AstText;
-};
-class AstTextBlock final : public AstNodeSimpleText {
-    // @astgen op1 := nodesp : List[AstNode]
-    bool m_commas;  // Comma separate emitted children
-public:
-    explicit AstTextBlock(FileLine* fl, const string& textp = "", bool tracking = false,
-                          bool commas = false)
-        : ASTGEN_SUPER_TextBlock(fl, textp, tracking)
-        , m_commas{commas} {}
-    ASTGEN_MEMBERS_AstTextBlock;
-    bool commas() const { return m_commas; }
-    void commas(bool flag) { m_commas = flag; }
-    void addText(FileLine* fl, const string& textp, bool tracking = false) {
-        addNodesp(new AstText{fl, textp, tracking});
-    }
 };
 
 #endif  // Guard

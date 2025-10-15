@@ -563,27 +563,56 @@ public:
     bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
 };
 class AstCExpr final : public AstNodeExpr {
-    // @astgen op1 := exprsp : List[AstNode] // Expressions to print
-    bool m_pure;  // Pure optimizable
+    // C expression emitted into output, with some arbitrary nodes interspersed
+    // @astgen op1 := nodesp : List[AstNode<AstNodeExpr|AstText>]
+    const bool m_pure;  // Pure optimizable
 public:
-    // Emit C textual expr function (like AstUCFunc)
-    AstCExpr(FileLine* fl, AstNode* exprsp)
+    AstCExpr(FileLine* fl, const string& text = "", int setwidth = 0, bool pure = false)
         : ASTGEN_SUPER_CExpr(fl)
-        , m_pure{false} {
-        addExprsp(exprsp);
-        dtypeFrom(exprsp);
+        , m_pure{pure} {
+        if (!text.empty()) add(text);
+        if (setwidth) {
+            dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+        } else {
+            dtypeSetVoid();  // Caller to override if necessary
+        }
     }
-    inline AstCExpr(FileLine* fl, const string& textStmt, int setwidth);
     ASTGEN_MEMBERS_AstCExpr;
-    bool isGateOptimizable() const override { return m_pure; }
-    bool isPredictOptimizable() const override { return m_pure; }
+    // METHODS
     bool cleanOut() const override { return true; }
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
+    std::string emitC() override { V3ERROR_NA_RETURN(""); }
+    std::string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    bool isGateOptimizable() const override { return m_pure; }
+    bool isOutputter() override { return true; }
+    bool isPredictOptimizable() const override { return m_pure; }
+    bool isPure() override { return m_pure; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
-    bool isPure() override { return pure(); }
-    bool pure() const { return m_pure; }
-    void pure(bool flag) { m_pure = flag; }
+    // Add some text, or a node to this expression
+    void add(const std::string& text) { addNodesp(new AstText{fileline(), text}); }
+    void add(AstNode* nodep) { addNodesp(nodep); }
+};
+class AstCExprUser final : public AstNodeExpr {
+    // User '$c' statement - Like AstCStmt, with text tracking and optimizations disabled
+    //
+    // Use AstCExpr instead, unless the text is from user input
+    //
+    // @astgen op1 := nodesp : List[AstNode<AstNodeExpr|AstText>]
+public:
+    AstCExprUser(FileLine* fl)
+        : ASTGEN_SUPER_CExprUser(fl) {}
+    ASTGEN_MEMBERS_AstCExprUser;
+    // METHODS
+    bool cleanOut() const override { return false; }
+    std::string emitC() override { V3ERROR_NA_RETURN(""); }
+    std::string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    bool isGateOptimizable() const override { return false; }
+    bool isOutputter() override { return true; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() override { return false; }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    // Add some text, or a node to this expression
+    void add(const std::string& text) { addNodesp(new AstText{fileline(), text}); }
+    void add(AstNode* nodep) { addNodesp(nodep); }
 };
 class AstCMethodHard final : public AstNodeExpr {
     // A reference to a "C" hardcoded member task (or function)
@@ -2353,26 +2382,6 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     VTimescale timeunit() const { return m_timeunit; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
-};
-class AstUCFunc final : public AstNodeExpr {
-    // User's $c function
-    // @astgen op1 := exprsp : List[AstNode] // Expressions to print (some are AstText)
-public:
-    AstUCFunc(FileLine* fl, AstNode* exprsp)
-        : ASTGEN_SUPER_UCFunc(fl) {
-        addExprsp(exprsp);
-    }
-    ASTGEN_MEMBERS_AstUCFunc;
-    bool cleanOut() const override { return false; }
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool isPure() override { return false; }  // SPECIAL: User may order w/other sigs
-    bool isOutputter() override { return true; }
-    bool isGateOptimizable() const override { return false; }
-    bool isSubstOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return false; }
-    int instrCount() const override { return INSTR_COUNT_PLI; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstUnbounded final : public AstNodeExpr {
     // A $ in the parser, used for unbounded and queues
