@@ -4135,6 +4135,12 @@ public:
         V3Stats::addStatSum("Optimizations, Cond redundant expressions", m_statCondExprRedundant);
         V3Stats::addStatSum("Optimizations, If cond redundant expressions",
                             m_statIfCondExprRedundant);
+
+        if (m_statIfCondExprRedundant != 0) {
+            // Optimization that removes some if/else branches may result in change of FTask purity
+            // and in consequence potentially purity of every caller of this FTask
+            VIsCached::clearCacheTree();
+        }
     }
 
     AstNode* mainAcceptEdit(AstNode* nodep) {

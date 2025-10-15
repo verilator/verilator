@@ -1,0 +1,49 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2025 by Antmicro.
+// SPDX-License-Identifier: CC0-1.0
+
+class Foo;
+  int callCount = 0;
+  int callCount2 = 0;
+  int value = 6;
+  bit[5:0] value2 = 6;
+  function int get();
+    callCount += 1;
+    return value;
+  endfunction
+  function bit[5:0] get2();
+    callCount2 += 1;
+    return value2;
+  endfunction
+endclass
+
+module t;
+  Foo foo;
+  initial begin
+    bit called = 0;
+    foo = new;
+    case (foo.get())
+      4: $stop;
+      5: $stop;
+      6: called = 1;
+      7: $stop;
+      default: $stop;
+    endcase
+    if (!called) $stop;
+    if (foo.callCount != 1) $stop;
+    called = 0;
+    case (foo.get2())
+      4: $stop;
+      5: $stop;
+      6: called = 1;
+      7: $stop;
+      default: $stop;
+    endcase
+    if (!called) $stop;
+    if (foo.callCount2 != 1) $stop;
+    $write("*-* All Finished *-*\n");
+    $finish;
+  end
+endmodule

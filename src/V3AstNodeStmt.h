@@ -1190,15 +1190,17 @@ public:
 class AstUCStmt final : public AstNodeStmt {
     // User $c statement
     // @astgen op1 := exprsp : List[AstNode] // (some are AstText)
+    bool m_purity;  // Whether the statement is pure
 public:
-    AstUCStmt(FileLine* fl, AstNode* exprsp)
-        : ASTGEN_SUPER_UCStmt(fl) {
+    AstUCStmt(FileLine* fl, AstNode* exprsp, bool purity = false)
+        : ASTGEN_SUPER_UCStmt(fl)
+        , m_purity{purity} {
         addExprsp(exprsp);
     }
     ASTGEN_MEMBERS_AstUCStmt;
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() override { return false; }
+    bool isPure() override { return m_purity; }
     bool isOutputter() override { return true; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
