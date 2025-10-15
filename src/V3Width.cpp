@@ -3076,8 +3076,7 @@ class WidthVisitor final : public VNVisitor {
         const AstNodeDType* const itemDtp = itemp->dtypep()->skipRefp();
         if (AstInsideRange* const irangep = VN_CAST(itemp, InsideRange)) {
             // Similar logic in V3Case
-            return irangep->newAndFromInside(exprp->cloneTreePure(true),
-                                             irangep->lhsp()->unlinkFrBack(),
+            return irangep->newAndFromInside(exprp, irangep->lhsp()->unlinkFrBack(),
                                              irangep->rhsp()->unlinkFrBack());
         } else if (VN_IS(itemDtp, UnpackArrayDType) || VN_IS(itemDtp, DynArrayDType)
                    || VN_IS(itemDtp, QueueDType)) {
