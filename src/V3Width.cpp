@@ -3076,7 +3076,7 @@ class WidthVisitor final : public VNVisitor {
                                         exprp};
             if (m_ftaskp) {
                 varp->funcLocal(true);
-                varp->lifetime(VLifetime::AUTOMATIC);
+                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                 m_ftaskp->stmtsp()->addHereThisAsNext(varp);
             } else {
                 m_modep->stmtsp()->addHereThisAsNext(varp);
@@ -3217,7 +3217,7 @@ class WidthVisitor final : public VNVisitor {
         // UINFOTREE(9, nodep, "", "class-out");
     }
     void visit(AstClass* nodep) override {
-        m_insideTempNames.reset();
+        VL_RESTORER(m_insideTempNames);
         if (nodep->didWidthAndSet()) return;
 
         // If the class is std::process
@@ -6912,9 +6912,8 @@ class WidthVisitor final : public VNVisitor {
         userIterateChildren(nodep, nullptr);
     }
     void visit(AstNodeModule* nodep) override {
-        UASSERT_OBJ(!m_vup, nodep,
-                    "Visit function missing? Widthed expectation for this node: " << nodep);
-        m_insideTempNames.reset();
+        assertAtStatement(nodep);
+        VL_RESTORER(m_insideTempNames);
         VL_RESTORER(m_modep);
         m_modep = nodep;
         userIterateChildren(nodep, nullptr);
@@ -8946,7 +8945,7 @@ public:
     WidthVisitor(bool paramsOnly,  // [in] TRUE if we are considering parameters only.
                  bool doGenerate)  // [in] TRUE if we are inside a generate statement and
         //                           // don't wish to trigger errors
-        : m_insideTempNames{"__VInsideTmp"}
+        : m_insideTempNames{"__VInside"}
         , m_paramsOnly{paramsOnly}
         , m_doGenerate{doGenerate} {}
     AstNode* mainAcceptEdit(AstNode* nodep) {
