@@ -295,6 +295,16 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
 }
 
 //===========================================================================
+// Process -- parts of std::process implementation
+
+std::string VlProcess::randstate() const VL_MT_UNSAFE {
+    return VlRNG::vl_thread_rng().get_randstate();
+}
+void VlProcess::randstate(const std::string& state) VL_MT_UNSAFE {
+    VlRNG::vl_thread_rng().set_randstate(state);
+}
+
+//===========================================================================
 // Random -- Mostly called at init time, so not inline.
 
 VlRNG::VlRNG() VL_MT_SAFE {
