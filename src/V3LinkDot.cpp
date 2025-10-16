@@ -3599,8 +3599,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         m_ds.m_dotSymp = foundp;
                         m_ds.m_dotPos = DP_SCOPE;
                         UINFO(9, indent() << " cell -> iface varref " << foundp->nodep());
-                        AstNode* const newp = new AstVarXRef{nodep->fileline(), ifaceRefVarp,
-                                                             m_ds.m_dotText, VAccess::READ};
+                        AstNodeVarRef* newp;
+                        if (m_ds.m_dotText != "") {
+                            newp = new AstVarXRef{nodep->fileline(), ifaceRefVarp, m_ds.m_dotText,
+                                                  VAccess::READ};
+                        } else {
+                            newp = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
+                        }
                         nodep->replaceWith(newp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     } else if (VN_IS(cellp->modp(), NotFoundModule)) {
