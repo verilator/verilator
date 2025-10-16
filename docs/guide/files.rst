@@ -58,12 +58,8 @@ For --cc/--sc, it creates:
      - Top-level internal C++ file (from SystemVerilog $root)
    * - *{prefix}*\ ___024root\ *{__n}*\ .cpp
      - Additional top-level internal C++ files
-   * - *{prefix}*\ ___024root\ *{__DepSet_hash__n}*\ .cpp
-     - Additional top-level internal C++ files (hashed to reduce build times)
    * - *{prefix}*\ ___024root__Slow\ *{__n}*\ .cpp
      - Infrequent cold routines
-   * - *{prefix}*\ ___024root\ *{__DepSet_hash__n}*\ .cpp
-     - Infrequent cold routines (hashed to reduce build times)
    * - *{prefix}*\ ___024root__Trace\ *{__n}*\ .cpp
      - Wave file generation code (from --trace-\*)
    * - *{prefix}*\ ___024root__Trace__Slow\ *{__n}*\ .cpp
@@ -86,8 +82,6 @@ For --cc/--sc, it creates:
      - Lower level internal C++ files
    * - *{prefix}{each_verilog_module}{__n}*\ .cpp
      - Additional lower C++ files
-   * - *{prefix}{each_verilog_module}{__DepSet_hash__n}*\ .cpp
-     - Additional lower C++ files (hashed to reduce build times)
 
 For --hierarchical mode, it creates:
 
