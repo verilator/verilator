@@ -20,8 +20,7 @@ if test.vlt_all:
     has_xthis = False
     has_thisx = False
     has_xthisx = False
-    for filename in test.glob_some(test.obj_dir + "/" + test.vm_prefix +
-                                   "___024root__DepSet_*__0.cpp"):
+    for filename in test.glob_some(test.obj_dir + "/" + test.vm_prefix + "___024root__0.cpp"):
         text = test.file_contents(filename)
         if re.search(r'\bthis->clk\b', text):
             has_this = True
