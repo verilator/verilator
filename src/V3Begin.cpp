@@ -153,7 +153,7 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        m_caseTempNames.reset();
+        VL_RESTORER(m_caseTempNames);
         m_modp = nodep;
         // Rename it (e.g. class under a generate)
         if (m_unnamedScope != "") {
@@ -187,7 +187,7 @@ class BeginVisitor final : public VNVisitor {
         VL_RESTORER(m_liftedp);
         VL_RESTORER(m_namedScope);
         VL_RESTORER(m_unnamedScope);
-        m_caseTempNames.reset();
+        VL_RESTORER(m_caseTempNames);
         m_displayScope = dot(m_displayScope, nodep->name());
         m_namedScope = "";
         m_unnamedScope = "";
