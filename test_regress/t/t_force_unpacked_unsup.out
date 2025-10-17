@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_force_unpacked_unsup.v:19:8: Unsupported: Forced unpacked array variable with elements of opaque types
+   19 |   real in[2];
+      |        ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

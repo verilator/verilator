@@ -165,7 +165,9 @@ private:
                 return basicp && basicp->isOpaque();
             });
             if (containsOpaque) {
-                varp->v3warn(E_UNSUPPORTED, "Unsupported: Forced unpacked array variable with elements of opaque types");
+                varp->v3warn(
+                    E_UNSUPPORTED,
+                    "Unsupported: Forced unpacked array variable with elements of opaque types");
             }
             return varp->dtypep();
         } else {
