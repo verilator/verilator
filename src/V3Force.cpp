@@ -64,9 +64,8 @@ class ForceState final {
                                   varp->dtypep()}}
             , m_valVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceVal",
                                    varp->dtypep()}}
-            , m_enVarp{new AstVar{
-                  varp->fileline(), VVarType::VAR, varp->name() + "__VforceEn",
-                  (ForceState::isRangedDType(varp) ? varp->dtypep() : varp->findBitDType())}} {
+            , m_enVarp{new AstVar{varp->fileline(), VVarType::VAR, varp->name() + "__VforceEn",
+                                  getEnVarpDTypep(varp)}} {
             m_rdVarp->addNext(m_enVarp);
             m_rdVarp->addNext(m_valVarp);
             varp->addNextHere(m_rdVarp);
@@ -157,6 +156,22 @@ private:
                        std::pair<std::unordered_set<AstVarScope*>, std::vector<AstVarScope*>>>
         m_valVscps;
     // `valVscp` force components of a forced RHS
+
+    static AstNodeDType* getEnVarpDTypep(AstVar* const varp) {
+        AstNodeDType* const origDTypep = varp->dtypep()->skipRefp();
+        if (VN_IS(origDTypep, UnpackArrayDType)) {
+            const bool containsOpaque = origDTypep->exists([](const AstNodeDType* const dtypep) {
+                const AstBasicDType* const basicp = dtypep->skipRefp()->basicp();
+                return basicp && basicp->isOpaque();
+            });
+            if (containsOpaque) {
+                varp->v3warn(E_UNSUPPORTED, "Unsupported: Forced variable of unpacked array type");
+            }
+            return varp->dtypep();
+        } else {
+            return isRangedDType(varp) ? varp->dtypep() : varp->findBitDType();
+        }
+    }
 
 public:
     // CONSTRUCTORS
