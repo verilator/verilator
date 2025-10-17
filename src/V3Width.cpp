@@ -3218,39 +3218,6 @@ class WidthVisitor final : public VNVisitor {
         nodep->doingWidth(false);
         // UINFOTREE(9, nodep, "", "class-out");
     }
-    void visit(AstClass* nodep) override {
-        VL_RESTORER(m_insideTempNames);
-        if (nodep->didWidthAndSet()) return;
-
-        // If the class is std::process
-        if (nodep->name() == "process") {
-            AstPackage* const packagep = getItemPackage(nodep);
-            if (packagep && packagep->name() == "std") {
-                // Change type of m_process to VlProcessRef
-                if (AstVar* const varp
-                    = VN_CAST(m_memberMap.findMember(nodep, "m_process"), Var)) {
-                    AstNodeDType* const dtypep = varp->getChildDTypep();
-                    if (!varp->dtypep()) {
-                        VL_DO_DANGLING(pushDeletep(dtypep->unlinkFrBack()), dtypep);
-                    }
-                    AstBasicDType* const newdtypep = new AstBasicDType{
-                        nodep->fileline(), VBasicDTypeKwd::PROCESS_REFERENCE, VSigning::UNSIGNED};
-                    v3Global.rootp()->typeTablep()->addTypesp(newdtypep);
-                    varp->dtypep(newdtypep);
-                }
-                // Mark that self requires process instance
-                if (AstNodeFTask* const ftaskp
-                    = VN_CAST(m_memberMap.findMember(nodep, "self"), NodeFTask)) {
-                    ftaskp->setNeedProcess();
-                }
-            }
-        }
-
-        // Must do extends first, as we may in functions under this class
-        // start following a tree of extends that takes us to other classes
-        userIterateAndNext(nodep->extendsp(), nullptr);
-        userIterateChildren(nodep, nullptr);  // First size all members
-    }
     void visit(AstThisRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
         nodep->dtypep(iterateEditMoveDTypep(nodep, nodep->childDTypep()));
@@ -6913,12 +6880,48 @@ class WidthVisitor final : public VNVisitor {
         }
         userIterateChildren(nodep, nullptr);
     }
+    void visitClass(AstClass* nodep) {
+        if (nodep->didWidthAndSet()) return;
+
+        // If the class is std::process
+        if (nodep->name() == "process") {
+            AstPackage* const packagep = getItemPackage(nodep);
+            if (packagep && packagep->name() == "std") {
+                // Change type of m_process to VlProcessRef
+                if (AstVar* const varp
+                    = VN_CAST(m_memberMap.findMember(nodep, "m_process"), Var)) {
+                    AstNodeDType* const dtypep = varp->getChildDTypep();
+                    if (!varp->dtypep()) {
+                        VL_DO_DANGLING(pushDeletep(dtypep->unlinkFrBack()), dtypep);
+                    }
+                    AstBasicDType* const newdtypep = new AstBasicDType{
+                        nodep->fileline(), VBasicDTypeKwd::PROCESS_REFERENCE, VSigning::UNSIGNED};
+                    v3Global.rootp()->typeTablep()->addTypesp(newdtypep);
+                    varp->dtypep(newdtypep);
+                }
+                // Mark that self requires process instance
+                if (AstNodeFTask* const ftaskp
+                    = VN_CAST(m_memberMap.findMember(nodep, "self"), NodeFTask)) {
+                    ftaskp->setNeedProcess();
+                }
+            }
+        }
+
+        // Must do extends first, as we may in functions under this class
+        // start following a tree of extends that takes us to other classes
+        userIterateAndNext(nodep->extendsp(), nullptr);
+        userIterateChildren(nodep, nullptr);  // First size all members
+    }
     void visit(AstNodeModule* nodep) override {
         assertAtStatement(nodep);
         VL_RESTORER(m_insideTempNames);
-        VL_RESTORER(m_modep);
-        m_modep = nodep;
-        userIterateChildren(nodep, nullptr);
+        if (AstClass* const classp = VN_CAST(nodep, Class)) {
+            visitClass(classp);
+        } else {
+            VL_RESTORER(m_modep);
+            m_modep = nodep;
+            userIterateChildren(nodep, nullptr);
+        }
     }
     void visit(AstNode* nodep) override {
         // Default: Just iterate
