@@ -27,6 +27,7 @@
 #define VERILATOR_VERILATED_TIMING_H_
 
 #include "verilated.h"
+#include "verilated_fiber.h"
 
 #include <limits>
 #include <vector>
@@ -450,6 +451,7 @@ private:
     struct VlPromise final {
         std::coroutine_handle<> m_continuation;  // Coroutine to resume after this one finishes
         VlCoroutine* m_corop = nullptr;  // Pointer to the coroutine return object
+        VlFiber* m_fiberp = nullptr;  // Fiber to resume after completion (if any)
 
         ~VlPromise();
 
@@ -497,6 +499,15 @@ public:
     // Set the awaiting coroutine as the continuation of the current coroutine
     void await_suspend(std::coroutine_handle<> coro) { m_promisep->m_continuation = coro; }
     void await_resume() const noexcept {}
+
+    // Set fiber to be resumed when this coroutine completes (for DPI export timing support)
+    void setFiberContinuation(VlFiber* fiberp) {
+        if (VL_UNLIKELY(!m_promisep)) {
+            if (fiberp) fiberp->resume();
+            return;
+        }
+        m_promisep->m_fiberp = fiberp;
+    }
 };
 
 #endif  // Guard
