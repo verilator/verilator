@@ -3596,12 +3596,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             = findIfaceTopVarp(nodep, parentEntp, nodep->name());
                         //
                         ok = true;
-                        m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
                         m_ds.m_dotSymp = foundp;
                         m_ds.m_dotPos = DP_SCOPE;
                         UINFO(9, indent() << " cell -> iface varref " << foundp->nodep());
-                        AstNode* const newp
-                            = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
+                        AstNodeVarRef* newp;
+                        if (m_ds.m_dotText != "") {
+                            newp = new AstVarXRef{nodep->fileline(), ifaceRefVarp, m_ds.m_dotText,
+                                                  VAccess::READ};
+                        } else {
+                            newp = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
+                        }
                         nodep->replaceWith(newp);
                         VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     } else if (VN_IS(cellp->modp(), NotFoundModule)) {
