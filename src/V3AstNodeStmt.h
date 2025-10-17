@@ -278,12 +278,14 @@ public:
 };
 class AstCReturn final : public AstNodeStmt {
     // C++ return from a function
-    // @astgen op1 := lhsp : AstNodeExpr
+    // @astgen op1 := lhsp : Optional[AstNodeExpr]
 public:
     AstCReturn(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_CReturn(fl) {
         this->lhsp(lhsp);
     }
+    AstCReturn(FileLine* fl)
+        : ASTGEN_SUPER_CReturn(fl) {}
     ASTGEN_MEMBERS_AstCReturn;
     int instrCount() const override { return widthInstrs(); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }

@@ -357,6 +357,7 @@ class TaskVisitor final : public VNVisitor {
     bool m_inSensesp = false;  // Are we under a senitem?
     bool m_inNew = false;  // Are we under a constructor?
     int m_modNCalls = 0;  // Incrementing func # for making symbols
+    bool m_inLoop = false;  // True if under loop
 
     // STATE - across all visitors
     DpiCFuncs m_dpiNames;  // Map of all created DPI functions
@@ -1442,6 +1443,16 @@ class TaskVisitor final : public VNVisitor {
         m_modNCalls = 0;
         iterateChildren(nodep);
         UASSERT_OBJ(!m_insStmtp, nodep, "Didn't finish out last statement");
+    }
+    void visit(AstLoop* nodep) override {
+        VL_RESTORER(m_inLoop);
+        m_inLoop = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstFinish* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        iterateChildren(nodep);
+        if (m_inLoop) nodep->addNextHere(new AstCReturn{nodep->fileline()});
     }
     void visit(AstWith* nodep) override {
         if (nodep->user1SetOnce()) {

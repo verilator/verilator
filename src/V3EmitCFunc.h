@@ -851,9 +851,17 @@ public:
     }
     void visit(AstDisableFork* nodep) override { putns(nodep, "vlProcess->disableFork();\n"); }
     void visit(AstCReturn* nodep) override {
-        putns(nodep, "return (");
-        iterateAndNextConstNull(nodep->lhsp());
-        puts(");\n");
+        if (m_cfuncp->isCoroutine()) {
+            putns(nodep, "co_return");
+        } else {
+            putns(nodep, "return");
+        }
+        if (nodep->lhsp()) {
+            puts("(");
+            iterateAndNextConstNull(nodep->lhsp());
+            puts(")");
+        }
+        puts(";\n");
     }
     void visit(AstDisplay* nodep) override {
         string text = nodep->fmtp()->text();
