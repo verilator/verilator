@@ -372,7 +372,7 @@ chapter above).  There is also limited VPI access to public signals.
 If you want something more complex, since Verilator emits standard C++
 code, you can write C++ routines that can access and modify signal
 values without needing any PLI interface code, and call it with
-$c("{any_c++_statement}").
+$c("{any_c++_statement}") or $cpure("{any_c++_statement}").
 
 See the :ref:`Connecting` section.
 
@@ -381,7 +381,7 @@ How do I make a Verilog module that contains a C++ object?
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 You need to add the object to the structure Verilator creates, then
-use $c to call a method inside your object.  The
+use $c or $cpure to call a method inside your object.  The
 :file:`test_regress/t/t_extend_class` files in the distribution show an
 example of how to do this.
 

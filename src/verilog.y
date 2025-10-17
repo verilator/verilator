@@ -611,6 +611,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yD_BITSTOREAL   "$bitstoreal"
 %token<fl>              yD_BITSTOSHORTREAL "$bitstoshortreal"
 %token<fl>              yD_C            "$c"
+%token<fl>              yD_CPURE        "$cpure"
 %token<fl>              yD_CAST         "$cast"
 %token<fl>              yD_CEIL         "$ceil"
 %token<fl>              yD_CHANGED      "$changed"
@@ -4111,7 +4112,15 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
                     }
                     $$ = cstmtp;
                 }
-|       yD_SDF_ANNOTATE '(' exprEListE ')'      { $$ = nullptr; $1->v3warn(SPECIFYIGN, "Ignoring unsupported: $sdf_annotate"); DEL($3); }
+        |       yD_CPURE '(' cStrList ')' {
+                    AstCStmtUser* cstmtp = nullptr;
+                    if (!v3Global.opt.ignc()) {
+                        cstmtp = new AstCStmtUser{$1, true, true};
+                        cstmtp->add($3);
+                    }
+                    $$ = cstmtp;
+                }
+        |       yD_SDF_ANNOTATE '(' exprEListE ')'      { $$ = nullptr; $1->v3warn(SPECIFYIGN, "Ignoring unsupported: $sdf_annotate"); DEL($3); }
         |       yD_STACKTRACE parenE                    { $$ = new AstStackTraceT{$1}; }
         |       yD_SYSTEM '(' expr ')'                  { $$ = new AstSystemT{$1, $3}; }
         //
@@ -4274,6 +4283,14 @@ system_f_call<nodeExprp>:           // IEEE: system_tf_call (as func)
                     AstCExprUser* cexprp = nullptr;
                     if (!v3Global.opt.ignc()) {
                         cexprp = new AstCExprUser{$1};
+                        cexprp->add($3);
+                    }
+                    $$ = cexprp;
+                }
+        |       yD_CPURE '(' cStrList ')' {
+                    AstCExprUser* cexprp = nullptr;
+                    if (!v3Global.opt.ignc()) {
+                        cexprp = new AstCExprUser{$1, true};
                         cexprp->add($3);
                     }
                     $$ = cexprp;
