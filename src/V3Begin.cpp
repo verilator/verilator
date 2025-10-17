@@ -369,7 +369,7 @@ public:
         : m_caseTempNames{"__VCase"}
         , m_statep{statep} {
         iterate(nodep);
-        V3Stats::addStatSum("Count of impure case_expr", m_statPurifiedCaseExpr);
+        V3Stats::addStatSum("Impure case expressions", m_statPurifiedCaseExpr);
     }
     ~BeginVisitor() override = default;
 };

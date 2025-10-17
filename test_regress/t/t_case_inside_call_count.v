@@ -4,7 +4,7 @@
 // any use, without warranty, 2025 by Antmicro.
 // SPDX-License-Identifier: CC0-1.0
 
-class Foo;
+class Cls;
   int callCount = 0;
   int callCount2 = 0;
   int value = 6;
@@ -23,20 +23,20 @@ class Foo;
 endclass
 
 module t;
-  Foo foo;
+  Cls c;
   initial begin
     bit called = 0;
-    foo = new;
-    case (foo.get()) inside
+    c = new;
+    case (c.get()) inside
       [0:5]: $stop;
       [6:6]: called = 1;
       [7:100]: $stop;
       default: $stop;
     endcase
     if (!called) $stop;
-    if (foo.callCount != 1) $stop;
+    if (c.callCount != 1) $stop;
     called = 0;
-    case (foo.get2()) inside
+    case (c.get2()) inside
       [0:5]: $stop;
       [6:6]: called = 1;
       [7:100]: $stop;
@@ -44,13 +44,13 @@ module t;
     endcase
     if (!called) $stop;
     called = 0;
-    case (foo.getPure()) inside
+    case (c.getPure()) inside
       [0:1]: called = 1;
       [2:10]: $stop;
       default: $stop;
     endcase
     if (!called) $stop;
-    if (foo.callCount2 != 1) $stop;
+    if (c.callCount2 != 1) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
