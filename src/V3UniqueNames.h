@@ -28,11 +28,11 @@
 #include <string>
 
 class V3UniqueNames final {
-    const std::string m_prefix;  // Prefix to attach to all names
+    std::string m_prefix;  // Prefix to attach to all names
 
     std::map<std::string, unsigned> m_multiplicity;  // Suffix number for given key
 
-    const bool m_addSuffix = true;  // Ad suffix or not
+    bool m_addSuffix = true;  // Ad suffix or not
 
 public:
     V3UniqueNames() = default;
