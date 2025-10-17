@@ -3065,6 +3065,8 @@ class WidthVisitor final : public VNVisitor {
 
         AstNodeExpr* exprp;
         AstExprStmt* exprStmtp = nullptr;
+        // Skip constraints since those are declarative expressions and they are never actually
+        // executed so, there is no need for purification since they cannot generate sideeffects.
         if (!m_constraintp && !nodep->exprp()->isPure()) {
             FileLine* const fl = nodep->exprp()->fileline();
             AstVar* const varp = new AstVar{fl, VVarType::XTEMP, m_insideTempNames.get(nodep),

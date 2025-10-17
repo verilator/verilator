@@ -343,12 +343,13 @@ AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp);
 AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* lhsp,
                                               AstNodeExpr* rhsp) {
     AstNodeExpr* const ap = new AstGte{fileline(), exprp, lhsp};
-    AstNodeExpr* bp;
+    AstNodeExpr* lteLhsp;
     if (const AstExprStmt* const exprStmt = VN_CAST(exprp, ExprStmt)) {
-        bp = new AstLte{fileline(), exprStmt->resultp()->cloneTreePure(true), rhsp};
+        lteLhsp = exprStmt->resultp()->cloneTreePure(true);
     } else {
-        bp = new AstLte{fileline(), exprp->cloneTreePure(true), rhsp};
+        lteLhsp = exprp->cloneTreePure(true);
     }
+    AstNodeExpr* const bp = new AstLte{fileline(), lteLhsp, rhsp};
     ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
     bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
     return new AstLogAnd{fileline(), ap, bp};
