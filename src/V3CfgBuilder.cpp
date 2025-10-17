@@ -89,6 +89,7 @@ class CfgBuilder final : public VNVisitorConst {
     void visit(AstComment*) override {}  // ignore entirely
     void visit(AstDisplay* nodep) override { simpleStatement(nodep); }
     void visit(AstFinish* nodep) override { simpleStatement(nodep); }
+    void visit(AstFinishFork* nodep) override { simpleStatement(nodep); }
     void visit(AstStmtExpr* nodep) override { simpleStatement(nodep); }
     void visit(AstStop* nodep) override { simpleStatement(nodep); }
 

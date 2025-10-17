@@ -1248,6 +1248,18 @@ public:
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(", \"\");\n");
     }
+    void visit(AstFinishFork* nodep) override {
+        putns(nodep, "VL_FINISH_MT(");
+        putsQuoted(protect(nodep->fileline()->filename()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->lineno()));
+        puts(", \"\");\n");
+        if (m_cfuncp->isCoroutine()) {
+            putns(nodep, "co_return;\n");
+        } else {
+            putns(nodep, "return;\n");
+        }
+    }
     void visit(AstPrintTimeScale* nodep) override {
         putns(nodep, "VL_PRINTTIMESCALE(");
         putsQuoted(protect(nodep->prettyName()));
