@@ -15,8 +15,7 @@ test.compile()
 
 test.execute()
 
-for filename in test.glob_some(test.obj_dir + "/" + test.vm_prefix +
-                               "___024root__DepSet*__Slow.cpp"):
+for filename in test.glob_some(test.obj_dir + "/" + test.vm_prefix + "___024root__*__Slow.cpp"):
     test.file_grep_not(filename, r'(<<|>>)')
 
 test.passes()
