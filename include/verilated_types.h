@@ -157,6 +157,9 @@ public:
             if (!childp->completed()) return false;
         return true;
     }
+
+    std::string randstate() const VL_MT_UNSAFE;
+    void randstate(const std::string& state) VL_MT_UNSAFE;
 };
 
 inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
