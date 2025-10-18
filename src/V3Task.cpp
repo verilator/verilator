@@ -910,7 +910,7 @@ class TaskVisitor final : public VNVisitor {
                     if (portp->isNonOutput()) {
                         std::string frName
                             = portp->isInout() && portp->basicp()->isDpiPrimitive()
-                                      && portp->dtypep()->skipRefp()->arrayUnpackedElements() == 1
+                                      && portp->dtypep()->skipRefp()->dimensions(false).second == 0
                                   ? "*"
                                   : "";
                         frName += portp->name();
