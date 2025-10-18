@@ -118,7 +118,7 @@ class AstCoverCross final : public AstNode {
     //
     // @astgen op1 := itemsp : List[AstCoverpoint]
     // @astgen op2 := iffp : Optional[AstNodeExpr]
-    // @astgen op3 := binsp : List[AstCoverageBin]
+    // @astgen op3 := binsp : List[AstCoverBin]
     // @astgen op4 := optionsp : List[AstCoverOption]
 
 public:
@@ -130,7 +130,7 @@ public:
 class AstCoverOption final : public AstNode {
     // Represents a covergroup option
     //
-    // @astgen ptr := m_valuep : AstNodeExpr  // Value expression
+    // @astgen op1 := valuep : AstNodeExpr  // Value expression
     string m_name;  // Name of option
     bool m_type_option;
 
@@ -139,8 +139,8 @@ public:
         : AstNode{VNType::CoverOption, fl}
         , m_name{name}
         , m_type_option{type_option} {
-        addChildP(m_valuep, valuep);
-    }
+          this->valuep(valuep);
+        }
     ASTGEN_MEMBERS_AstCoverOption;
     const string& optionName() const { return m_name; }
     void optionName(const string& name) { m_name = name; }
@@ -152,11 +152,11 @@ public:
 class AstCoverpoint final : public AstNode {
     // Represents a coverpoint definition
     //
-    // @astgen op1 := m_exprp : AstNodeExpr                  // Target expression
+    // @astgen op1 := exprp : AstNodeExpr                  // Target expression
     // @astgen op2 := childDTypep : Optional[AstNodeDType]
     // @astgen op3 := iffp : Optional[AstNodeExpr]
-    // @astgen op4 := binsp : List[AstCoverageBin]      // Coverage bins
-    // @astgen ptr := m_optionsp : List[AstCoverOption]  // Coverpoint options
+    // @astgen op4 := binsp : List[AstCoverBin]      // Coverage bins
+    // @astgen op5 := optionsp : List[AstCoverOption]  // Coverpoint options
     bool m_implicit : 1;
 
 public:
@@ -206,9 +206,9 @@ public:
 class AstBinsSelectWith final : public AstNodeBinsSelect {
     // Represents a bins selection with a filter expression
     //
-    // @astgen op1 := m_exprp : AstNodeBinsSelect  // Base bins selection
-    // @astgen op2 := m_withp : AstNodeExpr  // Filter expression
-    // @astgen op3 := m_matchesp : Optional[AstNodeExpr]  // Matches expression
+    // @astgen op1 := exprp : AstNodeBinsSelect  // Base bins selection
+    // @astgen op2 := withp : AstNodeExpr  // Filter expression
+    // @astgen op3 := matchesp : Optional[AstNodeExpr]  // Matches expression
 
 public:
     AstBinsSelectWith(FileLine* fl)
@@ -223,8 +223,10 @@ class AstConditionBinsSelect final : public AstNodeBinsSelect {
     // @astgen op2 := intersectsp : List[AstNode]  // Intersects
 
 public:
-    AstConditionBinsSelect(FileLine* fl)
-        : AstNodeBinsSelect{VNType::ConditionBinsSelect, fl} {}
+    AstConditionBinsSelect(FileLine* fl, AstNode *binsp)
+        : AstNodeBinsSelect{VNType::ConditionBinsSelect, fl} {
+          this->binsp(binsp);
+        }
     ASTGEN_MEMBERS_AstConditionBinsSelect;
 };
 
@@ -249,20 +251,21 @@ class AstCrossSetExprBinsSelect final : public AstNodeBinsSelect {
 
 public:
     AstCrossSetExprBinsSelect(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* matchesp)
-        : AstNodeBinsSelect{VNType::CrossSetExprBinsSelect, fl}
-        , exprp{exprp}
-        , matchesp{matchesp} {}
+        : AstNodeBinsSelect{VNType::CrossSetExprBinsSelect, fl} {
+        this->exprp(exprp);
+        this->matchesp(matchesp);
+    }
     ASTGEN_MEMBERS_AstCrossSetExprBinsSelect;
 };
 
 class AstInvalidBinsSelect final : public AstNodeBinsSelect {
     // Represents an invalid bins selection
     //
-    // @astgen op1 := m_selectp : AstNodeBinsSelect  // Invalid bins selection
+    // @astgen op1 := selectp : AstNodeBinsSelect  // Invalid bins selection
 public:
     AstInvalidBinsSelect(FileLine* fl, AstNodeBinsSelect* selectp)
         : AstNodeBinsSelect{VNType::InvalidBinsSelect, fl} {
-        addChildHere(selectp);
+        this->selectp(selectp);
     };
     ASTGEN_MEMBERS_AstInvalidBinsSelect;
 };
