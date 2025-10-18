@@ -159,9 +159,8 @@ AstCStmt::AstCStmt(FileLine* fl, const string& textStmt)
     addExprsp(new AstText{fl, textStmt, true});
 }
 
-AstCExpr::AstCExpr(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut)
+AstCExpr::AstCExpr(FileLine* fl, const string& textStmt, int setwidth)
     : ASTGEN_SUPER_CExpr(fl)
-    , m_cleanOut{cleanOut}
     , m_pure{true} {
     addExprsp(new AstText{fl, textStmt, true});
     if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);

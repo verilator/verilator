@@ -453,7 +453,7 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                             subFuncp->slow(false);
                             FileLine* const flp = procp->fileline();
                             AstNodeExpr* const condp = new AstCExpr{
-                                flp, "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1, true};
+                                flp, "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1};
                             AstLoop* const loopp = new AstLoop{flp};
                             loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
                             loopp->addStmtsp(bodyp);

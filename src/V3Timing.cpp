@@ -1186,7 +1186,7 @@ class TimingControlVisitor final : public VNVisitor {
             if (constp->isZero()) {
                 // We have to await forever instead of simply returning in case we're deep in a
                 // callstack
-                AstCExpr* const foreverp = new AstCExpr{flp, "VlForever{}", 0, true};
+                AstCExpr* const foreverp = new AstCExpr{flp, "VlForever{}", 0};
                 foreverp->dtypeSetVoid();  // TODO: this is sloppy but harmless
                 AstCAwait* const awaitp = new AstCAwait{flp, foreverp};
                 awaitp->dtypeSetVoid();

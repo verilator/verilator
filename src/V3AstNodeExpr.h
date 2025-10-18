@@ -564,22 +564,20 @@ public:
 };
 class AstCExpr final : public AstNodeExpr {
     // @astgen op1 := exprsp : List[AstNode] // Expressions to print
-    const bool m_cleanOut;
     bool m_pure;  // Pure optimizable
 public:
     // Emit C textual expr function (like AstUCFunc)
     AstCExpr(FileLine* fl, AstNode* exprsp)
         : ASTGEN_SUPER_CExpr(fl)
-        , m_cleanOut{true}
         , m_pure{false} {
         addExprsp(exprsp);
         dtypeFrom(exprsp);
     }
-    inline AstCExpr(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut = true);
+    inline AstCExpr(FileLine* fl, const string& textStmt, int setwidth);
     ASTGEN_MEMBERS_AstCExpr;
     bool isGateOptimizable() const override { return m_pure; }
     bool isPredictOptimizable() const override { return m_pure; }
-    bool cleanOut() const override { return m_cleanOut; }
+    bool cleanOut() const override { return true; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
