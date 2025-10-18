@@ -78,6 +78,7 @@
 #include "V3Randomize.h"
 #include "V3String.h"
 #include "V3Task.h"
+#include "V3UniqueNames.h"
 #include "V3WidthCommit.h"
 
 // More code; this file was getting too large; see actions there
@@ -208,15 +209,18 @@ class WidthVisitor final : public VNVisitor {
     using DTypeMap = std::map<const std::string, AstPatMember*>;
 
     // STATE
+    V3UniqueNames m_insideTempNames;  // For generating unique temporary variable names for
+                                      // `inside` expressions
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     V3TaskConnectState m_taskConnectState;  // State to cache V3Task::taskConnects
     WidthVP* m_vup = nullptr;  // Current node state
     bool m_underFork = false;  // Visiting under a fork
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
-    const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    AstNodeModule* m_modep = nullptr;  // Current module
     const AstConstraint* m_constraintp = nullptr;  // Current constraint
-    const AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
+    AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
     const AstWith* m_withp = nullptr;  // Current 'with' statement
     const AstFunc* m_funcp = nullptr;  // Current function
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
@@ -2999,7 +3003,8 @@ class WidthVisitor final : public VNVisitor {
         AstNodeExpr* newp = nullptr;
         for (AstDistItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), DistItem)) {
-            AstNodeExpr* inewp = insideItem(nodep, nodep->exprp(), itemp->rangep());
+            AstNodeExpr* inewp
+                = insideItem(nodep, nodep->exprp()->cloneTreePure(false), itemp->rangep());
             if (!inewp) continue;
             AstNodeExpr* const cmpp
                 = new AstGt{itemp->fileline(), itemp->weightp()->unlinkFrBack(),
@@ -3058,15 +3063,47 @@ class WidthVisitor final : public VNVisitor {
                              EXTEND_EXP);
         }
 
+        AstNodeExpr* exprp;
+        AstExprStmt* exprStmtp = nullptr;
+        // Skip constraints since those are declarative expressions and they are never actually
+        // executed so, there is no need for purification since they cannot generate sideeffects.
+        if (!m_constraintp && !nodep->exprp()->isPure()) {
+            FileLine* const fl = nodep->exprp()->fileline();
+            AstVar* const varp = new AstVar{fl, VVarType::XTEMP, m_insideTempNames.get(nodep),
+                                            nodep->exprp()->dtypep()};
+            exprp = new AstVarRef{fl, varp, VAccess::READ};
+            exprStmtp = new AstExprStmt{fl,
+                                        new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                                      nodep->exprp()->unlinkFrBack()},
+                                        exprp};
+            if (m_ftaskp) {
+                varp->funcLocal(true);
+                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+            } else {
+                m_modep->stmtsp()->addHereThisAsNext(varp);
+            }
+            iterate(varp);
+            iterate(exprStmtp);
+        } else {
+            exprp = nodep->exprp();
+        }
         UINFOTREE(9, nodep, "", "inside-in");
         // Now rip out the inside and replace with simple math
         AstNodeExpr* newp = nullptr;
         for (AstNodeExpr *nextip, *itemp = nodep->itemsp(); itemp; itemp = nextip) {
             nextip = VN_AS(itemp->nextp(), NodeExpr);  // Will be unlinking
-            AstNodeExpr* const inewp = insideItem(nodep, nodep->exprp(), itemp);
+            AstNodeExpr* inewp;
+            if (exprStmtp) {
+                inewp = insideItem(nodep, exprStmtp, itemp);
+                exprStmtp = nullptr;
+            } else {
+                inewp = insideItem(nodep, exprp->cloneTreePure(false), itemp);
+            }
             if (!inewp) continue;
             newp = newp ? new AstLogOr{nodep->fileline(), newp, inewp} : inewp;
         }
+        if (exprStmtp) VL_DO_DANGLING(exprStmtp->deleteTree(), exprStmtp);
         if (!newp) newp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
         UINFOTREE(9, newp, "", "inside-out");
         nodep->replaceWith(newp);
@@ -3081,21 +3118,19 @@ class WidthVisitor final : public VNVisitor {
         } else if (VN_IS(itemDtp, UnpackArrayDType) || VN_IS(itemDtp, DynArrayDType)
                    || VN_IS(itemDtp, QueueDType)) {
             // Unsupported in parameters
-            AstNodeExpr* const cexprp = exprp->cloneTreePure(true);
             AstNodeExpr* const inewp = new AstCMethodHard{nodep->fileline(), itemp->unlinkFrBack(),
-                                                          VCMethod::ARRAY_INSIDE, cexprp};
-            iterateCheckTyped(nodep, "inside value", cexprp, itemDtp->subDTypep(), BOTH);
-            VL_DANGLING(cexprp);  // Might have been replaced
+                                                          VCMethod::ARRAY_INSIDE, exprp};
+            iterateCheckTyped(nodep, "inside value", exprp, itemDtp->subDTypep(), BOTH);
             inewp->dtypeSetBit();
             inewp->didWidth(true);
             return inewp;
         } else if (VN_IS(itemDtp, AssocArrayDType)) {
             nodep->v3error("Inside operator not specified on associative arrays "
                            "(IEEE 1800-2023 11.4.13)");
+            VL_DO_DANGLING(exprp->deleteTree(), exprp);
             return nullptr;
         }
-        return AstEqWild::newTyped(itemp->fileline(), exprp->cloneTreePure(true),
-                                   itemp->unlinkFrBack());
+        return AstEqWild::newTyped(itemp->fileline(), exprp, itemp->unlinkFrBack());
     }
     void visit(AstInsideRange* nodep) override {
         // Just do each side; AstInside will rip these nodes out later
@@ -3182,38 +3217,6 @@ class WidthVisitor final : public VNVisitor {
         }
         nodep->doingWidth(false);
         // UINFOTREE(9, nodep, "", "class-out");
-    }
-    void visit(AstClass* nodep) override {
-        if (nodep->didWidthAndSet()) return;
-
-        // If the class is std::process
-        if (nodep->name() == "process") {
-            AstPackage* const packagep = getItemPackage(nodep);
-            if (packagep && packagep->name() == "std") {
-                // Change type of m_process to VlProcessRef
-                if (AstVar* const varp
-                    = VN_CAST(m_memberMap.findMember(nodep, "m_process"), Var)) {
-                    AstNodeDType* const dtypep = varp->getChildDTypep();
-                    if (!varp->dtypep()) {
-                        VL_DO_DANGLING(pushDeletep(dtypep->unlinkFrBack()), dtypep);
-                    }
-                    AstBasicDType* const newdtypep = new AstBasicDType{
-                        nodep->fileline(), VBasicDTypeKwd::PROCESS_REFERENCE, VSigning::UNSIGNED};
-                    v3Global.rootp()->typeTablep()->addTypesp(newdtypep);
-                    varp->dtypep(newdtypep);
-                }
-                // Mark that self requires process instance
-                if (AstNodeFTask* const ftaskp
-                    = VN_CAST(m_memberMap.findMember(nodep, "self"), NodeFTask)) {
-                    ftaskp->setNeedProcess();
-                }
-            }
-        }
-
-        // Must do extends first, as we may in functions under this class
-        // start following a tree of extends that takes us to other classes
-        userIterateAndNext(nodep->extendsp(), nullptr);
-        userIterateChildren(nodep, nullptr);  // First size all members
     }
     void visit(AstThisRef* nodep) override {
         if (nodep->didWidthAndSet()) return;
@@ -6877,6 +6880,49 @@ class WidthVisitor final : public VNVisitor {
         }
         userIterateChildren(nodep, nullptr);
     }
+    void visitClass(AstClass* nodep) {
+        if (nodep->didWidthAndSet()) return;
+
+        // If the class is std::process
+        if (nodep->name() == "process") {
+            AstPackage* const packagep = getItemPackage(nodep);
+            if (packagep && packagep->name() == "std") {
+                // Change type of m_process to VlProcessRef
+                if (AstVar* const varp
+                    = VN_CAST(m_memberMap.findMember(nodep, "m_process"), Var)) {
+                    AstNodeDType* const dtypep = varp->getChildDTypep();
+                    if (!varp->dtypep()) {
+                        VL_DO_DANGLING(pushDeletep(dtypep->unlinkFrBack()), dtypep);
+                    }
+                    AstBasicDType* const newdtypep = new AstBasicDType{
+                        nodep->fileline(), VBasicDTypeKwd::PROCESS_REFERENCE, VSigning::UNSIGNED};
+                    v3Global.rootp()->typeTablep()->addTypesp(newdtypep);
+                    varp->dtypep(newdtypep);
+                }
+                // Mark that self requires process instance
+                if (AstNodeFTask* const ftaskp
+                    = VN_CAST(m_memberMap.findMember(nodep, "self"), NodeFTask)) {
+                    ftaskp->setNeedProcess();
+                }
+            }
+        }
+
+        // Must do extends first, as we may in functions under this class
+        // start following a tree of extends that takes us to other classes
+        userIterateAndNext(nodep->extendsp(), nullptr);
+        userIterateChildren(nodep, nullptr);  // First size all members
+    }
+    void visit(AstNodeModule* nodep) override {
+        assertAtStatement(nodep);
+        VL_RESTORER(m_insideTempNames);
+        if (AstClass* const classp = VN_CAST(nodep, Class)) {
+            visitClass(classp);
+        } else {
+            VL_RESTORER(m_modep);
+            m_modep = nodep;
+            userIterateChildren(nodep, nullptr);
+        }
+    }
     void visit(AstNode* nodep) override {
         // Default: Just iterate
         UASSERT_OBJ(!m_vup, nodep,
@@ -8904,7 +8950,8 @@ public:
     WidthVisitor(bool paramsOnly,  // [in] TRUE if we are considering parameters only.
                  bool doGenerate)  // [in] TRUE if we are inside a generate statement and
         //                           // don't wish to trigger errors
-        : m_paramsOnly{paramsOnly}
+        : m_insideTempNames{"__VInside"}
+        , m_paramsOnly{paramsOnly}
         , m_doGenerate{doGenerate} {}
     AstNode* mainAcceptEdit(AstNode* nodep) {
         return userIterateSubtreeReturnEdits(nodep, WidthVP{SELF, BOTH}.p());
