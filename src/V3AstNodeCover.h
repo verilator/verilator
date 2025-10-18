@@ -139,8 +139,8 @@ public:
         : AstNode{VNType::CoverOption, fl}
         , m_name{name}
         , m_type_option{type_option} {
-          this->valuep(valuep);
-        }
+        this->valuep(valuep);
+    }
     ASTGEN_MEMBERS_AstCoverOption;
     const string& optionName() const { return m_name; }
     void optionName(const string& name) { m_name = name; }
@@ -223,10 +223,10 @@ class AstConditionBinsSelect final : public AstNodeBinsSelect {
     // @astgen op2 := intersectsp : List[AstNode]  // Intersects
 
 public:
-    AstConditionBinsSelect(FileLine* fl, AstNode *binsp)
+    AstConditionBinsSelect(FileLine* fl, AstNode* binsp)
         : AstNodeBinsSelect{VNType::ConditionBinsSelect, fl} {
-          this->binsp(binsp);
-        }
+        this->binsp(binsp);
+    }
     ASTGEN_MEMBERS_AstConditionBinsSelect;
 };
 

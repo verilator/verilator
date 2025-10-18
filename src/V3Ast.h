@@ -1557,9 +1557,9 @@ AstNode* VNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
 #include "V3Ast__gen_macros.h"
 
 // AstNode subclasses
+#include "V3AstNodeCover.h"
 #include "V3AstNodeDType.h"
 #include "V3AstNodeExpr.h"
-#include "V3AstNodeCover.h"
 #include "V3AstNodeOther.h"
 #include "V3AstNodeStmt.h"
 
