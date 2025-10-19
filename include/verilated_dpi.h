@@ -42,10 +42,18 @@ static inline void VL_SET_W_SVBV(int obits, WDataOutP owp, const svBitVecVal* lw
     for (int i = 0; i < words - 1; ++i) owp[i] = lwp[i];
     owp[words - 1] = lwp[words - 1] & VL_MASK_I(obits);
 }
-static inline QData VL_SET_Q_SVBV(const svBitVecVal* lwp) VL_MT_SAFE {
-    return VL_SET_QII(lwp[1], lwp[0]);
+static inline void VL_SET_Q_SVBV(int obits, QData& out, const svBitVecVal* lwp) VL_MT_SAFE {
+    out = VL_MASK_Q(obits) & VL_SET_QII(lwp[1], lwp[0]);
 }
-static inline IData VL_SET_I_SVBV(const svBitVecVal* lwp) VL_MT_SAFE { return lwp[0]; }
+static inline void VL_SET_I_SVBV(int obits, IData& out, const svBitVecVal* lwp) VL_MT_SAFE {
+    out = VL_MASK_I(obits) & lwp[0];
+}
+static inline void VL_SET_S_SVBV(int obits, SData& out, const svBitVecVal* lwp) VL_MT_SAFE {
+    out = VL_MASK_I(obits) & lwp[0];
+}
+static inline void VL_SET_C_SVBV(int obits, CData& out, const svBitVecVal* lwp) VL_MT_SAFE {
+    out = VL_MASK_I(obits) & lwp[0];
+}
 
 // Convert Verilator internal data to svBitVecVal
 static inline void VL_SET_SVBV_W(int obits, svBitVecVal* owp, const WDataInP lwp) VL_MT_SAFE {
@@ -65,10 +73,18 @@ static inline void VL_SET_W_SVLV(int obits, WDataOutP owp, const svLogicVecVal* 
     for (int i = 0; i < words - 1; ++i) owp[i] = lwp[i].aval;
     owp[words - 1] = lwp[words - 1].aval & VL_MASK_I(obits);
 }
-static inline QData VL_SET_Q_SVLV(const svLogicVecVal* lwp) VL_MT_SAFE {
-    return VL_SET_QII(lwp[1].aval, lwp[0].aval);
+static inline void VL_SET_Q_SVLV(int obits, QData& out, const svLogicVecVal* lwp) VL_MT_SAFE {
+    out = VL_MASK_Q(obits) & VL_SET_QII(lwp[1].aval, lwp[0].aval);
 }
-static inline IData VL_SET_I_SVLV(const svLogicVecVal* lwp) VL_MT_SAFE { return lwp[0].aval; }
+static inline void VL_SET_I_SVLV(int obits, IData& out, const svLogicVecVal* lwp) VL_MT_SAFE {
+    out = VL_MASK_I(obits) & lwp[0].aval;
+}
+static inline void VL_SET_S_SVLV(int obits, SData& out, const svLogicVecVal* lwp) VL_MT_SAFE {
+    out = VL_MASK_I(obits) & lwp[0].aval;
+}
+static inline void VL_SET_C_SVLV(int obits, CData& out, const svLogicVecVal* lwp) VL_MT_SAFE {
+    out = VL_MASK_I(obits) & lwp[0].aval;
+}
 
 // Convert Verilator internal data to svLogicVecVal
 // Note these functions never create X/Z in svLogicVecVal

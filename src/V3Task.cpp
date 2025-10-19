@@ -289,46 +289,50 @@ public:
 // DPI related utility functions
 
 struct TaskDpiUtils final {
-    static std::vector<std::pair<AstUnpackArrayDType*, int>>
-    unpackDimsAndStrides(AstNodeDType* dtypep) {
-        std::vector<std::pair<AstUnpackArrayDType*, int>> dimStrides;
-        if (AstUnpackArrayDType* const unpackp = VN_CAST(dtypep->skipRefp(), UnpackArrayDType)) {
-            const std::vector<AstUnpackArrayDType*> dims = unpackp->unpackDimensions();
-            dimStrides.resize(dims.size(), {nullptr, 0});
-            dimStrides.back() = {dims.back(), 1};
-            for (ssize_t i = dims.size() - 2; i >= 0; --i) {
-                dimStrides[i].first = dims[i];
-                dimStrides[i].second = dimStrides[i + 1].second * dims[i + 1]->elementsConst();
-            }
+    // Returns a vector of ('elements', 'stride') pairs for each unpacked dimension
+    static std::vector<std::pair<int, int>> unpackDimsAndStrides(AstVar* varp) {
+        AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
+        std::vector<std::pair<int, int>> dimStrides;
+        AstUnpackArrayDType* const unpackp = VN_CAST(dtypep->skipRefp(), UnpackArrayDType);
+        if (!unpackp) return dimStrides;
+
+        const std::vector<AstUnpackArrayDType*> dims = unpackp->unpackDimensions();
+        const size_t nDims = dims.size();
+        dimStrides.resize(nDims);
+        // Stride of fastest varying dimension is 1.
+        dimStrides[nDims - 1].first = dims.back()->elementsConst();
+        dimStrides[nDims - 1].second = 1;
+        // Rest are densly packed
+        for (ssize_t i = nDims - 2; i >= 0; --i) {
+            dimStrides[i].first = dims[i]->elementsConst();
+            dimStrides[i].second = dimStrides[i + 1].first * dimStrides[i + 1].second;
         }
         return dimStrides;
     }
-    static bool dpiToInternalFrStmt(AstVar* portp, const string& frName, string& frstmt,
-                                    string& ket) {
-        ket.clear();
-        if (portp->basicp() && portp->basicp()->keyword() == VBasicDTypeKwd::CHANDLE) {
-            frstmt = "VL_CVT_VP_Q(" + frName;
-            ket = ")";
-        } else if (portp->basicp() && portp->basicp()->keyword() == VBasicDTypeKwd::STRING) {
-            frstmt = "VL_CVT_N_CSTR(" + frName;
-            ket = ")";
-        } else if ((portp->basicp() && portp->basicp()->isDpiPrimitive())) {
-            frstmt = frName;
-        } else {
-            const string frSvType = portp->basicp()->isDpiBitVec() ? "SVBV" : "SVLV";
-            if (portp->isWide()) {
-                // Need to convert to wide, using special function
-                frstmt = "VL_SET_W_" + frSvType + "(" + cvtToStr(portp->width()) + ", ";
-                return true;
-            } else {
-                const AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
-                frstmt = "VL_SET_" + string{dtypep->charIQWN()} + "_" + frSvType + "(";
-                if (VN_IS(dtypep, UnpackArrayDType)) frstmt += "&";
-                frstmt += frName;
-                ket = ")";
-            }
-        }
-        return false;
+    // Returns the prefix of a function-call like statement used to convert
+    // from IEEE DPI data types to internal types, and a bool that is true
+    // if type uses svBitVecVal/svLogicVecVal and ther result is returned via
+    // an output parameter, o false if uses C primitive type and result is the
+    // return value.
+    static std::pair<std::string, bool> dpiToInternalCvtStmt(AstVar* varp) {
+        AstBasicDType* const basicp = varp->basicp();
+
+        // DPI types using Primitive C types
+        if (basicp->keyword() == VBasicDTypeKwd::CHANDLE) return {"VL_CVT_VP_Q(", false};
+        if (basicp->keyword() == VBasicDTypeKwd::STRING) return {"VL_CVT_N_CSTR(", false};
+        if (basicp->isDpiPrimitive()) return {"(", false};
+
+        // DPI types using svBitVecVal/svLogicVecVal
+        UASSERT_OBJ(basicp->isDpiBitVec() || basicp->isDpiLogicVec(), varp,
+                    "Should use svBitVecVal/svLogicVecVal");
+
+        const std::string vecType = basicp->isDpiBitVec() ? "SVBV" : "SVLV";
+        const AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
+        const char sizeChar = dtypep->width() <= 8    ? 'C'
+                              : dtypep->width() <= 16 ? 'S'
+                                                      : *dtypep->charIQWN();
+        const std::string& size = std::to_string(dtypep->width());
+        return {"VL_SET_"s + sizeChar + "_" + vecType + "(" + size + ", ", true};
     }
 };
 
@@ -673,8 +677,8 @@ class TaskVisitor final : public VNVisitor {
             UASSERT_OBJ(snp, refp, "Missing scoping context");
             ccallp->addArgsp(snp);
             // __Vfilenamep
-            ccallp->addArgsp(new AstCExpr{
-                refp->fileline(), "\"" + refp->fileline()->filenameEsc() + "\"", 64, true});
+            ccallp->addArgsp(
+                new AstCExpr{refp->fileline(), "\"" + refp->fileline()->filenameEsc() + "\"", 64});
             // __Vlineno
             ccallp->addArgsp(new AstConst(refp->fileline(), refp->fileline()->lineno()));
         }
@@ -770,67 +774,48 @@ class TaskVisitor final : public VNVisitor {
         return new AstCStmt{portp->fileline(), stmt};
     }
 
-    AstNode* createAssignDpiToInternal(AstVarScope* portvscp, const string& frName) {
+    AstNodeStmt* createAssignDpiToInternal(AstVarScope* vscp, const std::string& rhsName) {
         // Create assignment from DPI temporary into internal format
         // DPI temporary is scalar or 1D array (if unpacked array)
         // Internal representation is scalar, 1D, or multi-dimensional array (similar to SV)
-        AstVar* const portp = portvscp->varp();
-        string frstmt;
-        string ket;
-        const bool useSetWSvlv = TaskDpiUtils::dpiToInternalFrStmt(portp, frName, frstmt, ket);
-        // Use a AstCExpr, as we want V3Clean to mask off bits that don't make sense.
-        int cwidth = VL_IDATASIZE;
-        if (!useSetWSvlv && portp->basicp()) {
-            if (portp->basicp()->keyword().isBitLogic()) {
-                cwidth = VL_EDATASIZE * portp->widthWords();
-            } else {
-                cwidth = portp->basicp()->keyword().width();
-            }
-        }
-
-        const std::vector<std::pair<AstUnpackArrayDType*, int>> dimStrides
-            = TaskDpiUtils::unpackDimsAndStrides(portp->dtypep());
-        const int total = dimStrides.empty() ? 1
-                                             : dimStrides.front().first->elementsConst()
-                                                   * dimStrides.front().second;
-        AstNode* newp = nullptr;
-        const int widthWords = portp->basicp()->widthWords();
+        AstVar* const varp = vscp->varp();
+        FileLine* const flp = vscp->fileline();
+        std::string cvt;
+        bool useSvVec;
+        std::tie(cvt, useSvVec) = TaskDpiUtils::dpiToInternalCvtStmt(varp);
+        const std::vector<std::pair<int, int>> strides = TaskDpiUtils::unpackDimsAndStrides(varp);
+        // Total number of elements in unpacked array
+        const int total = strides.empty() ? 1 : strides[0].first * strides[0].second;
+        // Number of words per element/primitive type
+        const int widthWords = varp->basicp()->widthWords();
+        // Number of bits in the C expression result, for masking.
+        const int cwidth = widthWords * VL_EDATASIZE;
+        // The resulting list of statements
+        AstNodeStmt* stmtsp = nullptr;
         for (int i = 0; i < total; ++i) {
-            AstNodeExpr* srcp = new AstVarRef{portvscp->fileline(), portvscp, VAccess::WRITE};
-            // extract a scalar from multi-dimensional array (internal format)
-            for (auto&& dimStride : dimStrides) {
-                const size_t dimIdx = (i / dimStride.second) % dimStride.first->elementsConst();
-                srcp = new AstArraySel(portvscp->fileline(), srcp, dimIdx);
+            AstNodeExpr* lhsp = new AstVarRef{flp, vscp, VAccess::WRITE};
+
+            // Extract a scalar from multi-dimensional array (internal format)
+            for (const auto& stride : strides) {
+                lhsp = new AstArraySel(flp, lhsp, (i / stride.second) % stride.first);
             }
-            AstNode* stmtp = nullptr;
-            // extract a scalar from DPI temporary var that is scalar or 1D array
-            if (useSetWSvlv) {
-                AstNode* const linesp = new AstText{portvscp->fileline(), frstmt + ket};
-                linesp->addNext(srcp);
-                linesp->addNext(
-                    new AstText{portvscp->fileline(),
-                                ", " + frName + " + " + cvtToStr(i * widthWords) + ");"});
-                stmtp = new AstCStmt{portvscp->fileline(), linesp};
+
+            // Extract a scalar from DPI temporary var that is scalar or 1D array
+            if (useSvVec) {
+                const std::string offset = std::to_string(i * widthWords);
+                AstCStmt* const cstmtp = new AstCStmt{flp, nullptr};
+                cstmtp->addExprsp(new AstText{flp, cvt});
+                cstmtp->addExprsp(lhsp);
+                cstmtp->addExprsp(new AstText{flp, ", " + rhsName + " + " + offset + ");"});
+                stmtsp = AstNode::addNext(stmtsp, cstmtp);
             } else {
-                string from = frstmt;
-                if (!dimStrides.empty()) {
-                    // e.g. time is 64bit svLogicVector
-                    const int coef = portp->basicp()->isDpiLogicVec() ? widthWords : 1;
-                    from += "[" + cvtToStr(i * coef) + "]";
-                }
-                from += ket;
-                AstNodeExpr* const rhsp = new AstSel{
-                    portp->fileline(), new AstCExpr{portp->fileline(), from, cwidth, false}, 0,
-                    portp->width()};
-                stmtp = new AstAssign{portp->fileline(), srcp, rhsp};
-            }
-            if (i > 0) {
-                newp->addNext(stmtp);
-            } else {
-                newp = stmtp;
+                const std::string elem = strides.empty() ? "" : "[" + std::to_string(i) + "]";
+                AstNodeExpr* rhsp = new AstCExpr{flp, cvt + rhsName + elem + ")", cwidth};
+                rhsp = new AstSel{flp, rhsp, 0, varp->width()};
+                stmtsp = AstNode::addNext(stmtsp, new AstAssign{flp, lhsp, rhsp});
             }
         }
-        return newp;
+        return stmtsp;
     }
 
     AstCFunc* makeDpiExportDispatcher(AstNodeFTask* nodep, AstVar* rtnvarp) {
@@ -2024,42 +2009,30 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
     return stmt;
 }
 
-string V3Task::assignDpiToInternal(const string& lhsName, AstVar* varp) {
-    // Create assignment from DPI temporary into internal format
-    // DPI temporary is scalar or 1D array (if unpacked array)
-    // Internal representation is scalar, 1D, or multi-dimensional array (similar to SV)
-    const string frName = varp->name();
-    string frstmt;
-    string ket;
-    const bool useSetWSvlv = TaskDpiUtils::dpiToInternalFrStmt(varp, frName, frstmt, ket);
-
-    const std::vector<std::pair<AstUnpackArrayDType*, int>> dimStrides
-        = TaskDpiUtils::unpackDimsAndStrides(varp->dtypep());
-    const int total = dimStrides.empty()
-                          ? 1
-                          : dimStrides.front().first->elementsConst() * dimStrides.front().second;
+// Create assignment from DPI temporary into internal format
+// DPI temporary is scalar or 1D array (if unpacked array)
+// Internal representation is scalar, 1D, or multi-dimensional array (similar to SV)
+std::string V3Task::assignDpiToInternal(const std::string& lhsName, AstVar* varp) {
+    std::string cvt;
+    bool useSvVec;
+    std::tie(cvt, useSvVec) = TaskDpiUtils::dpiToInternalCvtStmt(varp);
+    const std::vector<std::pair<int, int>> strides = TaskDpiUtils::unpackDimsAndStrides(varp);
+    const int total = strides.empty() ? 1 : strides[0].first * strides[0].second;
     const int widthWords = varp->basicp()->widthWords();
     string statements;
     for (int i = 0; i < total; ++i) {
-        string lhs = lhsName;
+        std::string lhs = lhsName;
         // extract a scalar from multi-dimensional array (internal format)
-        for (auto&& dimStride : dimStrides) {
-            const size_t dimIdx = (i / dimStride.second) % dimStride.first->elementsConst();
-            lhs += "[" + cvtToStr(dimIdx) + "]";
+        for (const auto& stride : strides) {
+            lhs += "[" + std::to_string((i / stride.second) % stride.first) + "]";
         }
         // extract a scalar from DPI temporary var that is scalar or 1D array
-        if (useSetWSvlv) {
-            statements += frstmt + ket + " " + lhs + ", " + frName + " + "
-                          + cvtToStr(i * widthWords) + ");\n";
+        if (useSvVec) {
+            const std::string offset = std::to_string(i * widthWords);
+            statements += cvt + " " + lhs + ", " + varp->name() + " + " + offset + ");\n";
         } else {
-            string rhs = frstmt;
-            if (!dimStrides.empty()) {
-                // e.g. time is 64bit svLogicVector
-                const int coef = varp->basicp()->isDpiLogicVec() ? widthWords : 1;
-                rhs += "[" + cvtToStr(i * coef) + "]";
-            }
-            rhs += ket;
-            statements += lhs + " = " + rhs + ";\n";
+            const std::string elem = strides.empty() ? "" : "[" + std::to_string(i) + "]";
+            statements += lhs + " = " + cvt + varp->name() + elem + ")" + ";\n";
         }
     }
     return statements;

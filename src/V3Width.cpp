@@ -6708,7 +6708,7 @@ class WidthVisitor final : public VNVisitor {
                 classp->baseMostClassp()->needRNG(true);
                 v3Global.useRandomizeMethods(true);
                 AstCExpr* const newp
-                    = new AstCExpr{nodep->fileline(), "__Vm_rng.get_randstate()", 1, true};
+                    = new AstCExpr{nodep->fileline(), "__Vm_rng.get_randstate()", 1};
                 newp->dtypeSetString();
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -6721,7 +6721,7 @@ class WidthVisitor final : public VNVisitor {
                 classp->baseMostClassp()->needRNG(true);
                 v3Global.useRandomizeMethods(true);
                 AstCExpr* const newp
-                    = new AstCExpr{nodep->fileline(), "__Vm_rng.set_randstate(", 1, true};
+                    = new AstCExpr{nodep->fileline(), "__Vm_rng.set_randstate(", 1};
                 newp->addExprsp(exprp->unlinkFrBack());
                 newp->addExprsp(new AstText{nodep->fileline(), ")", true});
                 newp->dtypeSetString();
