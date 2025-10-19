@@ -52,11 +52,11 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Determines if a class is used with randomization
 
 enum ClassRandom : uint8_t {
-    NONE,                         // randomize() is not called
-    IS_RANDOMIZED,                // randomize() is called
-    IS_RANDOMIZED_INLINE,         // randomize() with args is called
-    IS_STD_RANDOMIZED,            // std::randomize() is called
-    IS_RANDOMIZED_GLOBAL,         // randomize() is called with global constraints
+    NONE,  // randomize() is not called
+    IS_RANDOMIZED,  // randomize() is called
+    IS_RANDOMIZED_INLINE,  // randomize() with args is called
+    IS_STD_RANDOMIZED,  // std::randomize() is called
+    IS_RANDOMIZED_GLOBAL,  // randomize() is called with global constraints
     IS_RANDOMIZED_INLINE_GLOBAL,  // randomize() with args and global constraints
 };
 
@@ -242,7 +242,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
     // Clone constraints from nested rand class members
     void cloneNestedConstraintsRecurse(AstVarRef* rootVarRefp, AstClass* classp,
-                                         const std::vector<AstVar*>& pathToClass) {
+                                       const std::vector<AstVar*>& pathToClass) {
         if (!classp) return;
         for (AstNode* memberNodep = classp->membersp(); memberNodep;
              memberNodep = memberNodep->nextp()) {
