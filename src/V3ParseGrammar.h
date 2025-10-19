@@ -73,7 +73,7 @@ public:
                               bool isPacked) VL_MT_DISABLED;
     AstVar* createVariable(FileLine* fileline, const string& name, AstNodeRange* arrayp,
                            AstNode* attrsp) VL_MT_DISABLED;
-    AstNode* createSupplyExpr(FileLine* fileline, const string& name, int value) VL_MT_DISABLED;
+    AstAssignW* createSupplyExpr(FileLine* fileline, const string& name, int value) VL_MT_DISABLED;
     AstText* createTextQuoted(FileLine* fileline, const string& text) {
         string newtext = singletonp()->unquoteString(fileline, text);
         return new AstText{fileline, newtext};
@@ -96,7 +96,7 @@ public:
         // Hidden static to take unspecified reference argument results
         AstVar* const defaultVarp
             = new AstVar{nodep->fileline(), VVarType::MEMBER, "__Vint", nodep->findIntDType()};
-        defaultVarp->lifetime(VLifetime::STATIC);
+        defaultVarp->lifetime(VLifetime::STATIC_EXPLICIT);
         nodep->addStmtsp(defaultVarp);
 
         // IEEE: function void sample()
@@ -118,6 +118,7 @@ public:
         // IEEE: function real get_inst_coverage(optional ref int, optional ref int)
         for (const string& name : {"get_coverage"s, "get_inst_coverage"s}) {
             AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nullptr, nullptr};
+            funcp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
             funcp->isStatic(name == "get_coverage");
             funcp->classMethod(true);
             funcp->dtypep(funcp->findVoidDType());
@@ -125,7 +126,7 @@ public:
             {
                 AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, name,
                                                 nodep->findDoubleDType()};
-                varp->lifetime(VLifetime::AUTOMATIC);
+                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                 varp->funcLocal(true);
                 varp->direction(VDirection::OUTPUT);
                 varp->funcReturn(true);
@@ -134,7 +135,7 @@ public:
             for (const string& varname : {"covered_bins"s, "total_bins"s}) {
                 AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, varname,
                                                 nodep->findStringDType()};
-                varp->lifetime(VLifetime::AUTOMATIC);
+                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                 varp->funcLocal(true);
                 varp->direction(VDirection::INPUT);
                 varp->valuep(new AstVarRef{nodep->fileline(), defaultVarp, VAccess::READ});
@@ -150,7 +151,7 @@ public:
             nodep->addMembersp(funcp);
             AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, "name",
                                             nodep->findStringDType()};
-            varp->lifetime(VLifetime::AUTOMATIC);
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             varp->funcLocal(true);
             varp->direction(VDirection::INPUT);
             funcp->addStmtsp(varp);
@@ -176,7 +177,7 @@ public:
         return new AstSenTree{fl, new AstSenItem{fl, VEdgeType::ET_COMBO_STAR, nullptr}};
     }
     AstNodeExpr* createGlobalClockParseRef(FileLine* fl) {
-        return new AstParseRef{fl, VParseRefExp::PX_TEXT, "__024global_clock", nullptr, nullptr};
+        return new AstParseRef{fl, "__024global_clock", nullptr, nullptr};
     }
     AstSenTree* createGlobalClockSenTree(FileLine* fl) {
         return createSenTreeChanged(fl, createGlobalClockParseRef(fl));
@@ -269,9 +270,10 @@ public:
     }
     string unquoteString(FileLine* fileline, const std::string& text) VL_MT_DISABLED;
     void checkDpiVer(FileLine* fileline, const string& str) {
-        if (str != "DPI-C" && !v3Global.opt.bboxSys()) {
-            fileline->v3error("Unsupported DPI type '" << str << "': Use 'DPI-C'");
-        }
+        if (str != "DPI-C" && !v3Global.opt.bboxSys())
+            fileline->v3warn(E_UNSUPPORTED, "Unsupported DPI type '"
+                                                << str
+                                                << "': Use 'DPI-C' (IEEE 1800-2023 35.5.4)");
     }
     // Given a list of clocking declarations, put them in clocking items
     AstClockingItem* makeClockingItemList(FileLine* flp, const VDirection direction,

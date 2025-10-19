@@ -214,7 +214,7 @@ class CombineVisitor final : VNVisitor {
         // only used in tracing functions, which are not combined. Blow up in case this changes.
         nodep->v3fatalSrc(
             "Don't know how to combine functions that are referenced via AstAddrOfCFunc");
-        // LCOV_EXCL_END
+        // LCOV_EXCL_STOP
     }
 
     //--------------------

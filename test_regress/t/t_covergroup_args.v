@@ -16,7 +16,7 @@ module t;
   int i, j;
   real r;
 
-  function x();
+  function void x();
     cov1.set_inst_name("the_inst_name");
     cov1.start();
     cov1.sample();

@@ -195,6 +195,8 @@ public:
     // For getline()
     string m_lineChars;  ///< Characters left for next line
 
+    string m_tokenBuf;  // Token buffer, to avoid repeated alloc/free
+
     void v3errorEnd(std::ostringstream& str) VL_RELEASE(V3Error::s().m_mutex) {
         fileline()->v3errorEnd(str);
     }
@@ -295,7 +297,7 @@ public:
 // Creation
 
 V3PreProc* V3PreProc::createPreProc(FileLine* fl) {
-    V3PreProcImp* preprocp = new V3PreProcImp;
+    V3PreProcImp* const preprocp = new V3PreProcImp;
     preprocp->configure(fl);
     return preprocp;
 }
@@ -1154,7 +1156,7 @@ int V3PreProcImp::getStateToken() {
                     m_lexp->pushStateDefForm();
                     goto next_tok;
                 } else {  // LCOV_EXCL_LINE
-                    v3fatalSrc("Bad case\n");
+                    v3fatalSrc("Bad case");
                 }
                 goto next_tok;
             } else if (tok == VP_TEXT) {
@@ -1327,8 +1329,7 @@ int V3PreProcImp::getStateToken() {
                     define(fileline(), m_lastSym, value, formals, false);
                 }
             } else {
-                const string msg = "Bad define text, unexpected "s + tokenName(tok) + "\n";
-                v3fatalSrc(msg);
+                v3fatalSrc("Bad define text, unexpected "s + tokenName(tok) + "\n");
             }
             statePop();
             // DEFVALUE is terminated by a return, but lex can't return both tokens.
@@ -1521,7 +1522,7 @@ int V3PreProcImp::getStateToken() {
                 goto next_tok;
             }
         }
-        default: v3fatalSrc("Bad case\n");
+        default: v3fatalSrc("Bad case");
         }
         // Default is to do top level expansion of some tokens
         switch (tok) {
@@ -1637,7 +1638,7 @@ int V3PreProcImp::getStateToken() {
                     goto next_tok;
                 }
             }
-            v3fatalSrc("Bad case\n");  // FALLTHRU
+            v3fatalSrc("Bad case");  // FALLTHRU
             goto next_tok;  // above fatal means unreachable, but fixes static analysis warning
         }
         case VP_ERROR: {
@@ -1687,7 +1688,7 @@ int V3PreProcImp::getFinalToken(string& buf) {
     if (!m_finAhead) {
         m_finAhead = true;
         m_finToken = getStateToken();
-        m_finBuf = string{yyourtext(), yyourleng()};
+        m_finBuf.assign(yyourtext(), yyourleng());
     }
     const int tok = m_finToken;
     buf = m_finBuf;
@@ -1748,10 +1749,10 @@ string V3PreProcImp::getline() {
     const char* rtnp;
     bool gotEof = false;
     while (nullptr == (rtnp = std::strchr(m_lineChars.c_str(), '\n')) && !gotEof) {
-        string buf;
-        const int tok = getFinalToken(buf /*ref*/);
+        m_tokenBuf.clear();
+        const int tok = getFinalToken(m_tokenBuf /*ref*/);
         if (debug() >= 5) {
-            const string bufcln = V3PreLex::cleanDbgStrg(buf);
+            const string bufcln = V3PreLex::cleanDbgStrg(m_tokenBuf);
             const string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
             UINFO(0, flcol << ": GETFETC:  " << tokenName(tok) << ": " << bufcln);
         }
@@ -1762,7 +1763,7 @@ string V3PreProcImp::getline() {
             }
             gotEof = true;
         } else {
-            m_lineChars.append(buf);
+            m_lineChars.append(m_tokenBuf);
         }
     }
 

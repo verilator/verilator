@@ -384,28 +384,6 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
-    void visit(AstAssign* nodep) override {
-        // Blocking assignments are always OK in combinational (and initial/final) processes
-        if (m_check != CT_SEQ) return;
-
-        const bool ignore = nodep->lhsp()->forall([&](const AstVarRef* refp) {
-            // Ignore reads (e.g.: index expressions)
-            if (refp->access().isReadOnly()) return true;
-            const AstVar* const varp = refp->varp();
-            // Ignore ...
-            return varp->isUsedLoopIdx()  // ... loop indices
-                   || varp->isTemp()  // ... temporaries
-                   || varp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ);  // ... user said so
-        });
-
-        if (ignore) return;
-
-        nodep->v3warn(BLKSEQ,
-                      "Blocking assignment '=' in sequential logic process\n"
-                          << nodep->warnMore()  //
-                          << "... Suggest using delayed assignment '<='");
-    }
-
     //--------------------
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
@@ -527,12 +505,14 @@ class ActiveVisitor final : public VNVisitor {
         const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_INITIAL};
         moveUnderSpecial<AstSenItem::Final>(nodep);
     }
-    void visit(AstAssignAlias* nodep) override { moveUnderSpecial<AstSenItem::Combo>(nodep); }
     void visit(AstCoverToggle* nodep) override { moveUnderSpecial<AstSenItem::Combo>(nodep); }
-    void visit(AstAssignW* nodep) override { moveUnderSpecial<AstSenItem::Combo>(nodep); }
     void visit(AstAlways* nodep) override {
         if (!nodep->stmtsp()) {  // Empty always. Remove it now.
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            return;
+        }
+        if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
+            moveUnderSpecial<AstSenItem::Combo>(nodep);
             return;
         }
         visitSenItems(nodep);
@@ -577,10 +557,7 @@ class ActiveVisitor final : public VNVisitor {
             }
         }
 
-        nodep->sensp()->foreach([](const AstVarRef* refp) {
-            refp->varp()->usedClock(true);
-            refp->varScopep()->user1(true);
-        });
+        nodep->sensp()->foreach([](const AstVarRef* refp) { refp->varScopep()->user1(true); });
     }
 
     void visit(AstVarRef* nodep) override {

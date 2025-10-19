@@ -13,7 +13,10 @@ test.scenarios('vlt')
 test.top_filename = "t/t_trace_array.v"
 test.golden_filename = "t/t_trace_array_saif.out"
 
-test.compile(verilator_flags2=['--cc --trace-saif --trace-structs', '-CFLAGS -DVL_PORTABLE_ONLY'])
+# Don't pass  --trace-max-width 0, we shrink the file intentionally
+test.compile(verilator_flags2=[
+    '--cc --trace-saif --trace-structs --trace-max-width 0', '-CFLAGS -DVL_PORTABLE_ONLY'
+])
 
 test.execute()
 

@@ -176,11 +176,11 @@ AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVa
 AstNodeStmt* profExecSectionPush(FileLine* flp, const string& section) {
     const string name
         = (v3Global.opt.hierChild() ? (v3Global.opt.topModule() + " ") : "") + section;
-    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"" + name + "\");\n"};
+    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPush(\"" + name + "\");"};
 }
 
 AstNodeStmt* profExecSectionPop(FileLine* flp) {
-    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();\n"};
+    return new AstCStmt{flp, "VL_EXEC_TRACE_ADD_RECORD(vlSymsp).sectionPop();"};
 }
 
 struct EvalLoop final {
@@ -221,8 +221,8 @@ EvalLoop createEvalLoop(
         phaseFuncp->addStmtsp(phasePrepp);
 
         // Check if any triggers are fired, save the result
-        AstCMethodHard* const callp
-            = new AstCMethodHard{flp, new AstVarRef{flp, trigp, VAccess::READ}, "any"};
+        AstCMethodHard* const callp = new AstCMethodHard{
+            flp, new AstVarRef{flp, trigp, VAccess::READ}, VCMethod::TRIGGER_ANY};
         callp->dtypeSetBit();
         phaseFuncp->addStmtsp(
             new AstAssign{flp, new AstVarRef{flp, executeFlagp, VAccess::WRITE}, callp});
@@ -263,8 +263,9 @@ EvalLoop createEvalLoop(
 
     // The loop
     {
-        AstWhile* const loopp
-            = new AstWhile{flp, new AstVarRef{flp, continueFlagp, VAccess::READ}};
+        AstNodeExpr* const condp = new AstVarRef{flp, continueFlagp, VAccess::READ};
+        AstLoop* const loopp = new AstLoop{flp};
+        loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
 
         // Check the iteration limit (aborts if exceeded)
         loopp->addStmtsp(checkIterationLimit(netlistp, name, counterp, dumpFuncp));
@@ -345,7 +346,7 @@ void splitCheck(AstCFunc* ofuncp) {
 
     // Unlink all statements, then add item by item to new sub-functions
     AstBegin* const tempp = new AstBegin{ofuncp->fileline(), "[EditWrapper]",
-                                         ofuncp->stmtsp()->unlinkFrBackWithNext()};
+                                         ofuncp->stmtsp()->unlinkFrBackWithNext(), false};
     // Currently we do not use finalsp in V3Sched, if we do, it needs to be handled here
     UASSERT_OBJ(!ofuncp->finalsp(), ofuncp, "Should not have any finalps");
     while (tempp->stmtsp()) {
@@ -451,14 +452,12 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                         if (VN_IS(procp, Always)) {
                             subFuncp->slow(false);
                             FileLine* const flp = procp->fileline();
-                            bodyp = new AstWhile{
-                                flp,
-                                // If we change to use exceptions to handle finish/stop,
-                                // this can get removed
-                                new AstCExpr{flp,
-                                             "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1,
-                                             true},
-                                bodyp};
+                            AstNodeExpr* const condp = new AstCExpr{
+                                flp, "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1};
+                            AstLoop* const loopp = new AstLoop{flp};
+                            loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
+                            loopp->addStmtsp(bodyp);
+                            bodyp = loopp;
                         }
                     }
                     subFuncp->addStmtsp(bodyp);
@@ -523,7 +522,7 @@ struct TriggerKit final {
     void addFirstIterationTriggerAssignment(AstVarScope* flagp, uint32_t index) const {
         FileLine* const flp = flagp->fileline();
         AstVarRef* const vrefp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
-        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "setBit"};
+        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, VCMethod::TRIGGER_SET_BIT};
         callp->addPinsp(new AstConst{flp, index});
         callp->addPinsp(new AstVarRef{flp, flagp, VAccess::READ});
         callp->dtypeSetVoid();
@@ -534,7 +533,7 @@ struct TriggerKit final {
     void addExtraTriggerAssignment(AstVarScope* extraTriggerVscp, uint32_t index) const {
         FileLine* const flp = extraTriggerVscp->fileline();
         AstVarRef* const vrefp = new AstVarRef{flp, m_vscp, VAccess::WRITE};
-        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "setBit"};
+        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, VCMethod::TRIGGER_SET_BIT};
         callp->addPinsp(new AstConst{flp, index});
         callp->addPinsp(new AstVarRef{flp, extraTriggerVscp, VAccess::READ});
         callp->dtypeSetVoid();
@@ -570,7 +569,7 @@ AstSenTree* createTriggerSenTree(AstNetlist* netlistp, AstVarScope* const vscp, 
     const uint32_t wordIndex = index / 64;
     const uint32_t bitIndex = index % 64;
     AstCMethodHard* const callp
-        = new AstCMethodHard{flp, vrefp, "word", new AstConst{flp, wordIndex}};
+        = new AstCMethodHard{flp, vrefp, VCMethod::TRIGGER_WORD, new AstConst{flp, wordIndex}};
     callp->dtypeSetUInt64();
     AstNodeExpr* const termp
         = new AstAnd{flp, new AstConst{flp, AstConst::Unsized64{}, 1ULL << bitIndex}, callp};
@@ -663,19 +662,18 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
     // Add a print to the dumping function if there are no triggers pending
     {
-        AstCMethodHard* const callp
-            = new AstCMethodHard{flp, new AstVarRef{flp, vscp, VAccess::READ}, "any"};
+        AstCMethodHard* const callp = new AstCMethodHard{
+            flp, new AstVarRef{flp, vscp, VAccess::READ}, VCMethod::TRIGGER_ANY};
         callp->dtypeSetBit();
         AstIf* const ifp = new AstIf{flp, callp};
         dumpp->addStmtsp(ifp);
-        ifp->addElsesp(
-            new AstText{flp, "VL_DBG_MSGF(\"         No triggers active\\n\");\n", true});
+        ifp->addElsesp(new AstCStmt{flp, "VL_DBG_MSGF(\"         No triggers active\\n\");"});
     }
 
     // Set the given trigger to the given value
     const auto setTrigBit = [&](uint32_t index, AstNodeExpr* valp) {
         AstVarRef* const vrefp = new AstVarRef{flp, vscp, VAccess::WRITE};
-        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "setBit"};
+        AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, VCMethod::TRIGGER_SET_BIT};
         callp->addPinsp(new AstConst{flp, index});
         callp->addPinsp(valp);
         callp->dtypeSetVoid();
@@ -688,7 +686,7 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
         const uint32_t wordIndex = index / 64;
         const uint32_t bitIndex = index % 64;
         AstCMethodHard* const callp
-            = new AstCMethodHard{flp, vrefp, "word", new AstConst{flp, wordIndex}};
+            = new AstCMethodHard{flp, vrefp, VCMethod::TRIGGER_WORD, new AstConst{flp, wordIndex}};
         callp->dtypeSetUInt64();
         AstNodeExpr* const termp
             = new AstAnd{flp, new AstConst{flp, AstConst::Unsized64{}, 1ULL << bitIndex}, callp};
@@ -777,7 +775,8 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
                 }
                 // Set the whole word in the trigger vector
                 AstVarRef* const vrefp = new AstVarRef{flp, vscp, VAccess::WRITE};
-                AstCMethodHard* const callp = new AstCMethodHard{flp, vrefp, "setWord"};
+                AstCMethodHard* const callp
+                    = new AstCMethodHard{flp, vrefp, VCMethod::TRIGGER_SET_WORD};
                 callp->addPinsp(new AstConst{flp, triggerBitIdx / TRIG_VEC_WORD_SIZE});
                 callp->addPinsp(trigExprps[0]);
                 callp->dtypeSetVoid();
@@ -1016,7 +1015,7 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
 AstStmtExpr* createTriggerClearCall(FileLine* const flp, AstVarScope* const vscp) {  // Trigger
     AstVarRef* const refp = new AstVarRef{flp, vscp, VAccess::WRITE};
-    AstCMethodHard* const callp = new AstCMethodHard{flp, refp, "clear"};
+    AstCMethodHard* const callp = new AstCMethodHard{flp, refp, VCMethod::TRIGGER_CLEAR};
     callp->dtypeSetVoid();
     return callp->makeStmt();
 }
@@ -1025,7 +1024,7 @@ AstStmtExpr* createTriggerSetCall(FileLine* const flp, AstVarScope* const toVscp
                                   AstVarScope* const fromVscp) {
     AstVarRef* const lhsp = new AstVarRef{flp, toVscp, VAccess::WRITE};
     AstVarRef* const argp = new AstVarRef{flp, fromVscp, VAccess::READ};
-    AstCMethodHard* const callp = new AstCMethodHard{flp, lhsp, "thisOr", argp};
+    AstCMethodHard* const callp = new AstCMethodHard{flp, lhsp, VCMethod::TRIGGER_THIS_OR, argp};
     callp->dtypeSetVoid();
     return callp->makeStmt();
 }
@@ -1036,7 +1035,7 @@ AstStmtExpr* createTriggerAndNotCall(FileLine* const flp, AstVarScope* const lhs
     AstVarRef* const opap = new AstVarRef{flp, aVscp, VAccess::READ};
     AstVarRef* const opbp = new AstVarRef{flp, bVscp, VAccess::READ};
     opap->addNext(opbp);
-    AstCMethodHard* const callp = new AstCMethodHard{flp, lhsp, "andNot", opap};
+    AstCMethodHard* const callp = new AstCMethodHard{flp, lhsp, VCMethod::TRIGGER_AND_NOT, opap};
     callp->dtypeSetVoid();
     return callp->makeStmt();
 }
@@ -1126,8 +1125,8 @@ void createEval(AstNetlist* netlistp,  //
             AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, nbaEventTriggerp, VAccess::READ}};
             ifp->addThensp(setVar(continuep, 1));
             ifp->addThensp(setVar(nbaEventTriggerp, 0));
-            AstCMethodHard* const firep
-                = new AstCMethodHard{flp, new AstVarRef{flp, nbaEventp, VAccess::WRITE}, "fire"};
+            AstCMethodHard* const firep = new AstCMethodHard{
+                flp, new AstVarRef{flp, nbaEventp, VAccess::WRITE}, VCMethod::EVENT_FIRE};
             firep->dtypeSetVoid();
             ifp->addThensp(firep->makeStmt());
             return ifp;

@@ -1,4 +1,4 @@
-%Error-UNSUPPORTED: t/t_assert_future_unsup.v:21:54: Unsupported/illegal: future value function used with expression with operator FUNCREF 'func'
+%Error-UNSUPPORTED: t/t_assert_future_unsup.v:21:54: Unsupported/illegal: Future value function used with expression with operator FUNCREF 'func'
                                                    : ... note: In instance 't'
    21 |   assert property (@(posedge clk) $future_gclk(a) == func(a));
       |                                                      ^~~~

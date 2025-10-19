@@ -7,6 +7,7 @@ $timescale 1ps $end
    $var wire 32 $ cyc [31:0] $end
    $var wire 1 % net_1 $end
    $var wire 8 & net_8 [7:0] $end
+   $var wire 8 & alias_net_8 [7:0] $end
   $upscope $end
  $upscope $end
 $enddefinitions $end

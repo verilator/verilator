@@ -95,23 +95,16 @@ public:
     bool isTop() const { return m_isTop; }
     void setIsTop() { m_isTop = true; }
     bool isClock() const { return m_isClock; }
-    void setIsClock() {
-        m_isClock = true;
-        setConsumed("isclk");
-    }
+    void setIsClock() { m_isClock = true; }
     AstNode* rstSyncNodep() const { return m_rstSyncNodep; }
     void rstSyncNodep(AstNode* nodep) { m_rstSyncNodep = nodep; }
     AstNode* rstAsyncNodep() const { return m_rstAsyncNodep; }
     void rstAsyncNodep(AstNode* nodep) { m_rstAsyncNodep = nodep; }
 
     // METHODS
-    void propagateAttrClocksFrom(GateVarVertex* fromp) {
-        // Propagate clock and general attribute onto this node
+    void propagateAttrFrom(GateVarVertex* fromp) {
         varScp()->varp()->propagateAttrFrom(fromp->varScp()->varp());
-        if (fromp->isClock()) {
-            varScp()->varp()->usedClock(true);
-            setIsClock();
-        }
+        if (fromp->isClock()) setIsClock();
     }
 
     // DOT debug
@@ -179,7 +172,6 @@ public:
                 vVtxp->clearReducibleAndDedupable("isTop");
                 vVtxp->setConsumed("isTop");
             }
-            if (vscp->varp()->isUsedClock()) vVtxp->setConsumed("clock");
         }
         return vVtxp;
     }
@@ -264,12 +256,6 @@ class GateBuildVisitor final : public VNVisitorConst {
     void visit(AstNodeProcedure* nodep) override {
         const bool slow = VN_IS(nodep, Initial) || VN_IS(nodep, Final);
         iterateLogic(nodep, slow, nodep->isJustOneBodyStmt() ? nullptr : "Multiple Stmts");
-    }
-    void visit(AstAssignAlias* nodep) override {  //
-        iterateLogic(nodep);
-    }
-    void visit(AstAssignW* nodep) override {  //
-        iterateLogic(nodep);
     }
     void visit(AstCoverToggle* nodep) override {
         iterateLogic(nodep, false, "CoverToggle", "CoverToggle");
@@ -405,125 +391,6 @@ public:
 };
 
 //######################################################################
-// Recurse through the graph, looking for clock vectors to bypass
-
-class GateClkDecomp final {
-    // NODE STATE
-    // AstVarScope::user2p      -> bool: already visited
-    const VNUser2InUse m_inuser2;
-
-    GateGraph& m_graph;  // The graph being processed
-    bool m_clkVectors = false;  // A non-single-bit variable is involved in the path
-    GateVarVertex* m_clkVtxp = nullptr;  // The canonical clock variable vertex
-    GateConcatVisitor m_concatVisitor;
-
-    // Statistics
-    size_t m_seenClkVectors = 0;
-    size_t m_decomposedClkVectors = 0;
-
-    void visit(GateVarVertex* vVtxp, int offset) {
-        AstVarScope* const vscp = vVtxp->varScp();
-
-        // Can't propagate if this variable might be forced
-        if (vscp->varp()->isForced()) return;
-
-        // Check that we haven't been here before
-        if (vscp->user2SetOnce()) return;
-
-        UINFO(9, "CLK DECOMP Var - " << vVtxp << " : " << vscp);
-        VL_RESTORER(m_clkVectors);
-        if (vscp->varp()->width() > 1) {
-            m_clkVectors = true;
-            ++m_seenClkVectors;
-        }
-
-        // Edge might be deleted, so need unlinkable iteration
-        for (V3GraphEdge* const edgep : vVtxp->outEdges().unlinkable()) {
-            visit(edgep->top()->as<GateLogicVertex>(), offset, vscp);
-        }
-
-        vscp->user2(false);
-    }
-
-    void visit(GateLogicVertex* lVtxp, int offset, AstVarScope* lastVscp) {
-        int clkOffset = offset;
-        const AstAssignW* const assignp = VN_CAST(lVtxp->nodep(), AssignW);
-        if (!assignp || assignp->timingControlp()) return;
-        UASSERT_OBJ(lVtxp->outSize1(), assignp, "ASSIGNW Driving more than 1 LHS?");
-
-        AstNodeExpr* const rhsp = assignp->rhsp();
-        AstNodeExpr* const lhsp = assignp->lhsp();
-
-        // RHS
-        if (const AstSel* const rselp = VN_CAST(rhsp, Sel)) {
-            if (VN_IS(rselp->lsbp(), Const)) {
-                if (clkOffset < rselp->lsbConst() || clkOffset > rselp->msbConst()) return;
-                clkOffset -= rselp->lsbConst();
-            } else {
-                return;
-            }
-        } else if (AstConcat* const rcatp = VN_CAST(rhsp, Concat)) {
-            int concat_offset;
-            if (!m_concatVisitor.concatOffset(rcatp, lastVscp, concat_offset /*ref*/)) return;
-            clkOffset += concat_offset;
-        } else if (!VN_IS(rhsp, VarRef)) {
-            return;
-        }
-
-        // LHS
-        if (const AstSel* const lselp = VN_CAST(lhsp, Sel)) {
-            if (VN_IS(lselp->lsbp(), Const)) {
-                clkOffset += lselp->lsbConst();
-            } else {
-                return;
-            }
-        } else if (const AstVarRef* const refp = VN_CAST(lhsp, VarRef)) {
-            if (refp->dtypep()->width() == 1 && m_clkVectors) {
-                UASSERT_OBJ(clkOffset == 0, assignp,
-                            "Should only make it here with clkOffset == 0");
-                rhsp->replaceWith(
-                    new AstVarRef{rhsp->fileline(), m_clkVtxp->varScp(), VAccess::READ});
-                while (V3GraphEdge* const edgep = lVtxp->inEdges().frontp()) {
-                    VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
-                }
-                m_graph.addEdge(m_clkVtxp, lVtxp, 1);
-                ++m_decomposedClkVectors;
-            }
-        } else {
-            return;
-        }
-
-        visit(lVtxp->outEdges().frontp()->top()->as<GateVarVertex>(), clkOffset);
-    }
-
-    explicit GateClkDecomp(GateGraph& graph)
-        : m_graph{graph} {
-        UINFO(9, "Starting clock decomposition");
-        for (V3GraphVertex& vtx : graph.vertices()) {
-            GateVarVertex* const vVtxp = vtx.cast<GateVarVertex>();
-            if (!vVtxp) continue;
-
-            const AstVarScope* const vscp = vVtxp->varScp();
-            if (vscp->varp()->attrClocker() != VVarAttrClocker::CLOCKER_YES) continue;
-
-            if (vscp->varp()->width() == 1) {
-                UINFO(9, "CLK DECOMP - " << vVtxp << " : " << vscp);
-                m_clkVtxp = vVtxp;
-                visit(vVtxp, 0);
-            }
-        }
-    }
-
-    ~GateClkDecomp() {
-        V3Stats::addStat("Optimizations, Clocker seen vectors", m_seenClkVectors);
-        V3Stats::addStat("Optimizations, Clocker decomposed vectors", m_decomposedClkVectors);
-    }
-
-public:
-    static void apply(GateGraph& graph) { GateClkDecomp{graph}; }
-};
-
-//######################################################################
 // Is this a simple expression with a single input and single output?
 
 class GateOkVisitor final : public VNVisitorConst {
@@ -545,10 +412,6 @@ class GateOkVisitor final : public VNVisitorConst {
     void clearSimple(const char* because) {
         if (m_isSimple) UINFO(9, "Clear simple " << because);
         m_isSimple = false;
-    }
-
-    static bool multiInputOptimizable(const AstVarScope* vscp) {
-        return !vscp->varp()->isUsedClock();
     }
 
     // VISITORS
@@ -573,12 +436,7 @@ class GateOkVisitor final : public VNVisitorConst {
             AstVarScope* const vscp = nodep->varScopep();
             // TODO: possible bug, should it be >= 1 as add is below?
             if (m_readVscps.size() > 1) {
-                const AstVarScope* const lastVscp = m_readVscps.back();
-                if (m_buffersOnly) {
-                    clearSimple(">1 rhs varRefs");
-                } else if (!multiInputOptimizable(vscp) || !multiInputOptimizable(lastVscp)) {
-                    clearSimple("!multiInputOptimizable");
-                }
+                if (m_buffersOnly) clearSimple(">1 rhs varRefs");
             }
             m_readVscps.push_back(vscp);
         }
@@ -594,16 +452,7 @@ class GateOkVisitor final : public VNVisitorConst {
         } else {
             iterateChildrenConst(nodep);
         }
-        // We don't push logic other than assignments/NOTs into SenItems
-        // This avoids a mess in computing what exactly a POSEDGE is
-        // V3Const cleans up any NOTs by flipping the edges for us
-        if (m_buffersOnly
-            && !(
-                VN_IS(nodep->rhsp(), VarRef)
-                // Avoid making non-clocked logic into clocked,
-                // as it slows down the verilator_sim_benchmark
-                || (VN_IS(nodep->rhsp(), Not) && VN_IS(VN_AS(nodep->rhsp(), Not)->lhsp(), VarRef)
-                    && VN_AS(VN_AS(nodep->rhsp(), Not)->lhsp(), VarRef)->varp()->isUsedClock()))) {
+        if (m_buffersOnly && !VN_IS(nodep->rhsp(), VarRef)) {
             clearSimple("Not a buffer (goes to a clock)");
         }
     }
@@ -806,7 +655,7 @@ class GateInline final {
             commitSubstitutions(logicp);
 
             // Can we eliminate?
-            const GateOkVisitor okVisitor{logicp, vVtxp->isClock(), false};
+            const GateOkVisitor okVisitor{logicp, false, false};
 
             // Was it ok?
             if (!okVisitor.isSimple()) continue;
@@ -853,6 +702,15 @@ class GateInline final {
             for (V3GraphEdge* const edgep : vVtxp->outEdges().unlinkable()) {
                 GateLogicVertex* const dstVtxp = edgep->top()->as<GateLogicVertex>();
 
+                // Do not inline anything other than buffers and inverters into
+                // sensitivity lists. If the signal becomes constant, we might
+                // miss an initialization time edge.
+                if (VN_IS(dstVtxp->nodep(), SenItem)) {
+                    AstNode* nodep = substp;
+                    if (AstNot* const notp = VN_CAST(nodep, Not)) nodep = notp->lhsp();
+                    if (!VN_IS(nodep, VarRef)) continue;
+                }
+
                 // If the consumer logic writes one of the variables that the substitution
                 // is reading, then we would get a cycles, so we cannot do that.
                 bool canInline = true;
@@ -890,7 +748,7 @@ class GateInline final {
                     GateVarVertex* const varvertexp = m_graph.makeVarVertex(newVscp);
                     m_graph.addEdge(varvertexp, dstVtxp, 1);
                     // Propagate clock attribute onto generating node
-                    varvertexp->propagateAttrClocksFrom(vVtxp);
+                    varvertexp->propagateAttrFrom(vVtxp);
                 }
 
                 // Remove the edge
@@ -1192,7 +1050,7 @@ class GateDedupe final {
         }
 
         // Propagate attributes
-        dupVVtxp->propagateAttrClocksFrom(vVtxp);
+        dupVVtxp->propagateAttrFrom(vVtxp);
     }
 
     // Given iterated logic, starting at consumerVtxp, returns a varref that
@@ -1260,13 +1118,15 @@ class GateMergeAssignments final {
 
     void process(GateVarVertex* vVtxp) {
         GateLogicVertex* prevLVtxp = nullptr;
-        AstNodeAssign* prevAssignp = nullptr;
+        AstAssignW* prevAssignp = nullptr;
 
         for (V3GraphEdge* const edgep : vVtxp->inEdges().unlinkable()) {
             GateLogicVertex* const lVtxp = edgep->fromp()->as<GateLogicVertex>();
             if (!lVtxp->outSize1()) continue;
 
-            AstNodeAssign* const assignp = VN_CAST(lVtxp->nodep(), NodeAssign);
+            AstAlways* const alwaysp = VN_CAST(lVtxp->nodep(), Always);
+            if (!alwaysp || !alwaysp->stmtsp() || alwaysp->stmtsp()->nextp()) return;
+            AstAssignW* const assignp = VN_CAST(alwaysp->stmtsp(), AssignW);
             if (!assignp) continue;
 
             if (!VN_IS(assignp->lhsp(), Sel)) continue;
@@ -1277,8 +1137,6 @@ class GateMergeAssignments final {
                 prevAssignp = assignp;
                 continue;
             }
-
-            UASSERT_OBJ(prevAssignp->type() == assignp->type(), assignp, "Mismatched types");
 
             AstSel* const prevSelp = VN_AS(prevAssignp->lhsp(), Sel);
             AstSel* const currSelp = VN_AS(assignp->lhsp(), Sel);
@@ -1368,9 +1226,9 @@ class GateUnused final {
 
         if (const AstNodeProcedure* const procedurep = VN_CAST(nodep, NodeProcedure)) {
             if (procedurep->stmtsp())
-                procedurep->stmtsp()->foreach([](const AstWhile* const whilep) {  //
-                    whilep->v3warn(UNUSEDLOOP, "Loop is not used and will be optimized out");
-                    whilep->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
+                procedurep->stmtsp()->foreach([](const AstLoop* const loopp) {  //
+                    loopp->v3warn(UNUSEDLOOP, "Loop is not used and will be optimized out");
+                    loopp->fileline()->modifyWarnOff(V3ErrorCode::UNUSEDLOOP, true);
                 });
         }
     }
@@ -1415,10 +1273,6 @@ void V3Gate::gateAll(AstNetlist* netlistp) {
 
         // Warn, before loss of sync/async pointers
         v3GateWarnSyncAsync(*graphp);
-
-        // Decompose clock vectors -- need to do this before removing redundant edges
-        GateClkDecomp::apply(*graphp);
-        if (dumpGraphLevel() >= 6) graphp->dumpDotFilePrefixed("gate_decomp");
 
         // Remove redundant edges. Edge weighs are added, so a variable read twice by
         // the same logic block will have and edge to the logic block with weight 2

@@ -102,13 +102,6 @@ int AstRange::rightConst() const VL_MT_STABLE {
     return (constp ? constp->toSInt() : 0);
 }
 
-AstPin::AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp)
-    : ASTGEN_SUPER_Pin(fl)
-    , m_pinNum{pinNum}
-    , m_name{varname->name()} {
-    this->exprp(exprp);
-}
-
 AstPackArrayDType::AstPackArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp,
                                      AstRange* rangep)
     : ASTGEN_SUPER_PackArrayDType(fl) {
@@ -151,6 +144,10 @@ bool AstBasicDType::ascending() const {
 bool AstActive::hasClocked() const { return m_sentreep->hasClocked(); }
 bool AstActive::hasCombo() const { return m_sentreep->hasCombo(); }
 
+AstAlways::AstAlways(AstAssignW* assignp)
+    : ASTGEN_SUPER_Always(assignp->fileline(), assignp)
+    , m_keyword{VAlwaysKwd::CONT_ASSIGN} {}
+
 AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr* exprsp)
     : ASTGEN_SUPER_ElabDisplay(fl) {
     addFmtp(new AstSFormatF{fl, AstSFormatF::NoFormat{}, exprsp});
@@ -162,12 +159,16 @@ AstCStmt::AstCStmt(FileLine* fl, const string& textStmt)
     addExprsp(new AstText{fl, textStmt, true});
 }
 
-AstCExpr::AstCExpr(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut)
+AstCExpr::AstCExpr(FileLine* fl, const string& textStmt, int setwidth)
     : ASTGEN_SUPER_CExpr(fl)
-    , m_cleanOut{cleanOut}
     , m_pure{true} {
     addExprsp(new AstText{fl, textStmt, true});
     if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
+}
+
+bool AstVar::sameNode(const AstNode* samep) const {
+    const AstVar* const asamep = VN_DBG_AS(samep, Var);
+    return m_name == asamep->m_name && varType() == asamep->varType();
 }
 
 AstVarRef::AstVarRef(FileLine* fl, AstVar* varp, const VAccess& access)
@@ -190,7 +191,7 @@ bool AstVarRef::sameNode(const AstVarRef* samep) const {
     } else {
         return (selfPointer() == samep->selfPointer()
                 && classOrPackagep() == samep->classOrPackagep() && access() == samep->access()
-                && (varp() && samep->varp() && varp()->name() == samep->varp()->name()));
+                && (varp() && samep->varp() && varp()->sameNode(samep->varp())));
     }
 }
 bool AstVarRef::sameNoLvalue(const AstVarRef* samep) const {
@@ -200,7 +201,7 @@ bool AstVarRef::sameNoLvalue(const AstVarRef* samep) const {
         return (selfPointer() == samep->selfPointer()
                 && classOrPackagep() == samep->classOrPackagep()
                 && (!selfPointer().isEmpty() || !samep->selfPointer().isEmpty())
-                && varp()->name() == samep->varp()->name());
+                && varp()->sameNode(samep->varp()));
     }
 }
 

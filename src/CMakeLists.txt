@@ -44,6 +44,7 @@ set(HEADERS
     V3Assert.h
     V3AssertPre.h
     V3Ast.h
+    V3AstAttr.h
     V3AstInlines.h
     V3AstNodeDType.h
     V3AstNodeExpr.h
@@ -348,6 +349,7 @@ set(COMMON_SOURCES
     V3Undriven.cpp
     V3Unknown.cpp
     V3Unroll.cpp
+    V3UnrollGen.cpp
     V3VariableOrder.cpp
     V3Waiver.cpp
     V3Width.cpp

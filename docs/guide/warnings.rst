@@ -835,6 +835,25 @@ List Of Warnings
    with a newline."
 
 
+.. option:: FUNCTIMECTL
+
+   Error that a function contains a time-controlling statement or call of a
+   task.  IEEE 1800-2023 13.4 requires this error.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_FUNCTIMECTL_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_FUNCTIMECTL_msg.rst
+
+   Suppressing this error will only suppress the IEEE-required check; in
+   most cases Verilator treats functions and tasks identically and relies
+   on analysis to determine what functions/tasks need to allow time to
+   pass.
+
+
 .. option:: GENCLK
 
    Historical, never issued since version 5.000.
@@ -894,6 +913,25 @@ List Of Warnings
    Warns that the top module is marked as a hierarchy block by the
    :option:`/*verilator&32;hier_block*/` metacomment, which is not legal.
    This setting on the top module will be ignored.
+
+
+.. option:: HIERPARAM
+
+   An error that a hierarchical value or function is being used to assign a parameter.
+   IEEE 1800-2023 6.20.2 requires this error.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_HIERPARAM_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_HIERPARAM_msg.rst
+
+   Suppressing this error may allow some hierarchical references to work (especially hierarchical
+   references into interface references), however not all cases are possible, e.g. it cannot
+   reference the parameter of a lower module in a way that affects determining the parameters
+   that elaborate that lower module.
 
 
 .. option:: IFDEPTH
@@ -1396,6 +1434,27 @@ List Of Warnings
    equivalent, which might behave differently in corner cases. For example
    :code:`$psprintf` system function is replaced by its standard equivalent
    :code:`$sformatf`.
+
+   Ignoring this warning will only suppress the lint check; it will
+   simulate correctly.
+
+
+.. option:: NORETURN
+
+   Warns that a non-void function has no return statement, nor sets the
+   output result of the function.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_NORETURN_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_NORETURN_msg.rst
+
+   To fix the issue, add a :code:`return` statement, or set the output
+   variable of the function, or make the function of data type
+   :code:`void`.
 
    Ignoring this warning will only suppress the lint check; it will
    simulate correctly.

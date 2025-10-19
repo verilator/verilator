@@ -159,38 +159,6 @@ inline std::ostream& operator<<(std::ostream& os, const VTimescale& rhs) {
 
 // ######################################################################
 
-class TraceFormat final {
-public:
-    enum en : uint8_t { VCD = 0, FST, SAIF } m_e;
-    // cppcheck-suppress noExplicitConstructor
-    constexpr TraceFormat(en _e = VCD)
-        : m_e{_e} {}
-    explicit TraceFormat(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    constexpr operator en() const { return m_e; }
-    bool fst() const { return m_e == FST; }
-    bool saif() const { return m_e == SAIF; }
-    bool vcd() const { return m_e == VCD; }
-    string classBase() const VL_MT_SAFE {
-        static const char* const names[] = {"VerilatedVcd", "VerilatedFst", "VerilatedSaif"};
-        return names[m_e];
-    }
-    string sourceName() const VL_MT_SAFE {
-        static const char* const names[] = {"verilated_vcd", "verilated_fst", "verilated_saif"};
-        return names[m_e];
-    }
-};
-constexpr bool operator==(const TraceFormat& lhs, const TraceFormat& rhs) {
-    return lhs.m_e == rhs.m_e;
-}
-constexpr bool operator==(const TraceFormat& lhs, TraceFormat::en rhs) { return lhs.m_e == rhs; }
-constexpr bool operator==(TraceFormat::en lhs, const TraceFormat& rhs) { return lhs == rhs.m_e; }
-
-using V3StringList = std::vector<std::string>;
-using V3StringSet = std::set<std::string>;
-
-// ######################################################################
-
 // Information given by --hierarchical-block option
 class V3HierarchicalBlockOption final {
 public:
@@ -227,25 +195,23 @@ private:
     V3OptionsImp* m_impp;  // Slow hidden options
 
     // clang-format off
-    V3StringSet m_cppFiles;     // argument: C++ files to link against
-    V3StringList m_cFlags;      // argument: user CFLAGS
-    V3StringList m_ldLibs;      // argument: user LDFLAGS
-    V3StringList m_makeFlags;   // argument: user MAKEFLAGS
-    V3StringSet m_compilerIncludes; // argument: user --compiler-include
-    V3StringSet m_futures;      // argument: -Wfuture- list
-    V3StringSet m_future0s;     // argument: -future list
-    V3StringSet m_future1s;     // argument: -future1 list
+    VStringSet m_cppFiles;     // argument: C++ files to link against
+    VStringList m_cFlags;      // argument: user CFLAGS
+    VStringList m_ldLibs;      // argument: user LDFLAGS
+    VStringList m_makeFlags;   // argument: user MAKEFLAGS
+    VStringSet m_compilerIncludes; // argument: user --compiler-include
+    VStringSet m_futures;      // argument: -Wfuture- list
+    VStringSet m_future0s;     // argument: -future list
+    VStringSet m_future1s;     // argument: -future1 list
     VFileLibSet m_libraryFiles; // argument: Verilog -v files
-    V3StringSet m_clockers;     // argument: Verilog -clk signals
-    V3StringSet m_noClockers;   // argument: Verilog -noclk signals
     VFileLibList m_vFiles;      // argument: Verilog files to read
     VFileLibSet m_vltFiles;     // argument: Verilator config files to read
-    V3StringList m_forceIncs;   // argument: -FI
+    VStringList m_forceIncs;   // argument: -FI
     DebugLevelMap m_debugLevel; // argument: --debugi-<srcfile/tag> <level>
     DebugLevelMap m_dumpLevel;  // argument: --dumpi-<srcfile/tag> <level>
     std::map<const string, string> m_parameters;  // Parameters
     std::map<const string, V3HierarchicalBlockOption> m_hierBlocks;  // main switch: --hierarchical-block
-    V3StringSet m_fDfgPeepholeDisabled; // argument: -f[no-]dfg-peephole-<name>
+    VStringSet m_fDfgPeepholeDisabled; // argument: -f[no-]dfg-peephole-<name>
 
     bool m_preprocOnly = false;     // main switch: -E
     bool m_preprocResolve = false;  // main switch: --preproc-resolve
@@ -274,6 +240,7 @@ private:
     bool m_debugLeak = true;        // main switch: --debug-leak
     bool m_debugNondeterminism = false;  // main switch: --debug-nondeterminism
     bool m_debugPartition = false;  // main switch: --debug-partition
+    bool m_debugPreprocPassthru = false;  // main switch: --debug-preproc-passthru
     bool m_debugProtect = false;    // main switch: --debug-protect
     bool m_debugSelfTest = false;   // main switch: --debug-self-test
     bool m_debugStackCheck = false;  // main switch: --debug-stack-check
@@ -326,6 +293,9 @@ private:
     VOptionBool m_timing;           // main switch: --timing
     bool m_trace = false;           // main switch: --trace
     bool m_traceCoverage = false;   // main switch: --trace-coverage
+    bool m_traceEnabledFst = false;  // main switch: --trace-fst
+    bool m_traceEnabledSaif = false;  // main switch: --trace-saif
+    bool m_traceEnabledVcd = false;  // main switch: --trace-vcd
     bool m_traceParams = true;      // main switch: --trace-params
     bool m_traceStructs = false;    // main switch: --trace-structs
     bool m_noTraceTop = false;      // main switch: --no-trace-top
@@ -341,7 +311,7 @@ private:
     int         m_coverageExprMax = 32;    // main switch: --coverage-expr-max
     int         m_convergeLimit = 100;  // main switch: --converge-limit
     int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
-    int         m_expandLimit = 64;  // main switch: --expand-limit
+    int         m_expandLimit = 256;  // main switch: --expand-limit
     int         m_gateStmts = 100;    // main switch: --gate-stmts
     int         m_hierChild = 0;      // main switch: --hierarchical-child
     int         m_hierThreads = 0;      // main switch: --hierarchical-threads
@@ -371,9 +341,8 @@ private:
     VTimescale  m_timeOverridePrec;  // main switch: --timescale-override
     VTimescale  m_timeOverrideUnit;  // main switch: --timescale-override
     int         m_traceDepth = 0;   // main switch: --trace-depth
-    TraceFormat m_traceFormat;  // main switch: --trace or --trace-fst
     int         m_traceMaxArray = 32;  // main switch: --trace-max-array
-    int         m_traceMaxWidth = 256; // main switch: --trace-max-width
+    int         m_traceMaxWidth = 4096; // main switch: --trace-max-width
     int         m_traceThreads = 0; // main switch: --trace-threads
     int         m_unrollCount = 64;  // main switch: --unroll-count
     int         m_unrollStmts = 30000;  // main switch: --unroll-stmts
@@ -386,7 +355,6 @@ private:
     string      m_buildDepBin;  // main switch: --build-dep-bin {filename}
     string      m_diagnosticsSarifOutput;  // main switch: --diagnostics-sarif-output
     string      m_exeName;      // main switch: -o {name}
-    string      m_flags;        // main switch: -f {name}
     VFileLibList m_hierParamsFile; // main switch: --hierarchical-params-file
     string      m_jsonOnlyOutput;    // main switch: --json-only-output
     string      m_jsonOnlyMetaOutput;    // main switch: --json-only-meta-output
@@ -496,8 +464,6 @@ public:
     void addLdLibs(const string& filename);
     void addMakeFlags(const string& filename);
     void addLibraryFile(const string& filename, const string& libname);
-    void addClocker(const string& signame);
-    void addNoClocker(const string& signame);
     void addVFile(const string& filename, const string& libname);
     void addVltFile(const string& filename, const string& libname);
     void addForceInc(const string& filename);
@@ -513,7 +479,6 @@ public:
     bool preprocResolve() const { return m_preprocResolve; }
     int preprocTokenLimit() const { return m_preprocTokenLimit; }
     bool underlineZero() const { return m_underlineZero; }
-    string flags() const { return m_flags; }
     bool systemC() const VL_MT_SAFE { return m_systemC; }
     bool savable() const VL_MT_SAFE { return m_savable; }
     bool stats() const { return m_stats; }
@@ -526,7 +491,6 @@ public:
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
-    bool binary() const { return m_binary; }
     bool build() const { return m_build; }
     string buildDepBin() const { return m_buildDepBin; }
     void buildDepBin(const string& flag) { m_buildDepBin = flag; }
@@ -549,6 +513,7 @@ public:
     bool debugLeak() const { return m_debugLeak; }
     bool debugNondeterminism() const { return m_debugNondeterminism; }
     bool debugPartition() const { return m_debugPartition; }
+    bool debugPreprocPassthru() const VL_MT_SAFE { return m_debugPreprocPassthru; }
     bool debugProtect() const VL_MT_SAFE { return m_debugProtect; }
     bool debugSelfTest() const { return m_debugSelfTest; }
     bool debugStackCheck() const { return m_debugStackCheck; }
@@ -572,6 +537,9 @@ public:
     VOptionBool timing() const { return m_timing; }
     bool trace() const { return m_trace; }
     bool traceCoverage() const { return m_traceCoverage; }
+    bool traceEnabledFst() const { return m_traceEnabledFst; }
+    bool traceEnabledSaif() const { return m_traceEnabledSaif; }
+    bool traceEnabledVcd() const { return m_traceEnabledVcd; }
     bool traceParams() const { return m_traceParams; }
     bool traceStructs() const { return m_traceStructs; }
     bool traceUnderscore() const { return m_traceUnderscore; }
@@ -645,21 +613,14 @@ public:
     VTimescale timeComputePrec(const VTimescale& flag) const;
     VTimescale timeComputeUnit(const VTimescale& flag) const;
     int traceDepth() const { return m_traceDepth; }
-    TraceFormat traceFormat() const { return m_traceFormat; }
-    bool traceEnabledFst() const { return trace() && traceFormat().fst(); }
-    bool traceEnabledSaif() const { return trace() && traceFormat().saif(); }
-    bool traceEnabledVcd() const { return trace() && traceFormat().vcd(); }
     int traceMaxArray() const { return m_traceMaxArray; }
     int traceMaxWidth() const { return m_traceMaxWidth; }
     int traceThreads() const { return m_traceThreads; }
-    bool useTraceOffload() const { return trace() && traceFormat().fst() && traceThreads() > 1; }
+    bool useTraceOffload() const { return trace() && traceEnabledFst() && traceThreads() > 1; }
     bool useTraceParallel() const {
-        return trace() && traceFormat().vcd() && (threads() > 1 || hierChild() > 1);
+        return trace() && traceEnabledVcd() && (threads() > 1 || hierChild() > 1);
     }
-    bool useFstWriterThread() const { return traceThreads() && traceFormat().fst(); }
-    unsigned vmTraceThreads() const {
-        return useTraceParallel() ? threads() : useTraceOffload() ? 1 : 0;
-    }
+    bool useFstWriterThread() const { return traceThreads() && traceEnabledFst(); }
     int unrollCount() const { return m_unrollCount; }
     int unrollCountAdjusted(const VOptionBool& full, bool generate, bool simulate);
     int unrollStmts() const { return m_unrollStmts; }
@@ -706,15 +667,15 @@ public:
     string xInitial() const { return m_xInitial; }
     string xmlOutput() const { return m_xmlOutput; }
 
-    const V3StringSet& cppFiles() const { return m_cppFiles; }
-    const V3StringList& cFlags() const { return m_cFlags; }
-    const V3StringSet& compilerIncludes() const { return m_compilerIncludes; }
-    const V3StringList& ldLibs() const { return m_ldLibs; }
-    const V3StringList& makeFlags() const { return m_makeFlags; }
+    const VStringSet& cppFiles() const { return m_cppFiles; }
+    const VStringList& cFlags() const { return m_cFlags; }
+    const VStringSet& compilerIncludes() const { return m_compilerIncludes; }
+    const VStringList& ldLibs() const { return m_ldLibs; }
+    const VStringList& makeFlags() const { return m_makeFlags; }
     const VFileLibSet& libraryFiles() const { return m_libraryFiles; }
     const VFileLibList& vFiles() const { return m_vFiles; }
     const VFileLibSet& vltFiles() const { return m_vltFiles; }
-    const V3StringList& forceIncs() const { return m_forceIncs; }
+    const VStringList& forceIncs() const { return m_forceIncs; }
 
     bool hasParameter(const string& name);
     string parameter(const string& name);
@@ -724,8 +685,6 @@ public:
     bool isFuture0(const string& flag) const;
     bool isFuture1(const string& flag) const;
     bool isLibraryFile(const string& filename, const string& libname) const;
-    bool isClocker(const string& signame) const;
-    bool isNoClocker(const string& signame) const;
 
     // ACCESSORS (optimization options)
     bool fAcycSimp() const { return m_fAcycSimp; }
@@ -771,12 +730,12 @@ public:
     bool fTaskifyAll() const { return m_fTaskifyAll; }
     bool fVarSplit() const { return m_fVarSplit; }
 
-    string traceClassBase() const VL_MT_SAFE { return m_traceFormat.classBase(); }
-    string traceClassLang() const { return m_traceFormat.classBase() + (systemC() ? "Sc" : "C"); }
-    string traceSourceBase() const { return m_traceFormat.sourceName(); }
-    string traceSourceLang() const VL_MT_SAFE {
-        return m_traceFormat.sourceName() + (systemC() ? "_sc" : "_c");
-    }
+    std::string traceClassBase() const VL_MT_SAFE;  // Deprecated
+    std::string traceClassLang() const VL_MT_SAFE;  // Deprecated
+    std::vector<std::string> traceClassBases() const VL_MT_SAFE;
+    std::vector<std::string> traceClassLangs() const VL_MT_SAFE;
+    std::vector<std::string> traceSourceBases() const VL_MT_SAFE;
+    std::vector<std::string> traceSourceLangs() const VL_MT_SAFE;
 
     bool hierarchical() const { return m_hierarchical; }
     int hierChild() const VL_MT_SAFE { return m_hierChild; }
@@ -821,7 +780,8 @@ public:
     static bool systemCSystemWide();
     static bool systemCFound();  // SystemC installed, or environment points to it
     static bool coroutineSupport();  // Compiler supports coroutines
-    static bool builtWithAsan();  // Compiler built with AddressSanitizer
+    static bool devAsan();  // Compiler built with AddressSanitizer
+    static bool devGcov();  // Compiler built with code coverage for gcov
 
     // METHODS (file utilities using these options)
     string fileExists(const string& filename);

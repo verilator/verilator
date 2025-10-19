@@ -18,9 +18,10 @@ module t (/*AUTOARG*/
    always @(posedge clk) cyc <= cyc + 1;
 
    wire  net_1;
-   wire [7:0] net_8;
+   wire [7:0] net_8, alias_net_8;
    assign net_1 = ~cyc[0];
    assign net_8 = ~cyc[1 +: 8];
+   alias net_8 = alias_net_8;
 
    always @ (posedge clk) begin
       $display("%d pre : %x %x", cyc, net_8, net_1);
@@ -118,6 +119,7 @@ module t (/*AUTOARG*/
         end
         default: begin
            `checkh ({net_8, net_1}, ~cyc[0 +: 9]);
+           `checkh ({alias_net_8, net_1}, ~cyc[0 +: 9]);
         end
       endcase
 

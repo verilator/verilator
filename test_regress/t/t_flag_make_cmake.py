@@ -13,9 +13,6 @@ test.scenarios('simulator')
 
 test.compile(verilator_make_gmake=False, verilator_make_cmake=True)
 
-if not test.have_cmake:
-    test.skip("cmake is not installed")
-
 cmakecache = test.obj_dir + "/CMakeCache.txt"
 if not os.path.exists(cmakecache):
     test.error(cmakecache + " does not exist")

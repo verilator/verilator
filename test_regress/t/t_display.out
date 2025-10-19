@@ -101,4 +101,9 @@ ZzX
 ZzXx
 XXXx
          10
+[50] FIFTY 50
+[0] FIFTY 50
+[0] not-fmt %-d         60
+[0]  fmt-as-string-not-%0x         70
+s=[0]  fmt-string-not-%s
 *-* All Finished *-*

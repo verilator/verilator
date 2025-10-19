@@ -280,7 +280,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         }
         {  // tab.fill(0)
             AstCMethodHard* const callp = new AstCMethodHard{
-                flp, new AstVarRef{flp, tabVtxp->varp(), VAccess::WRITE}, "fill"};
+                flp, new AstVarRef{flp, tabVtxp->varp(), VAccess::WRITE}, VCMethod::UNPACKED_FILL};
             callp->addPinsp(new AstConst{flp, AstConst::BitFalse{}});
             callp->dtypeSetVoid();
             initp->addStmtsp(callp->makeStmt());

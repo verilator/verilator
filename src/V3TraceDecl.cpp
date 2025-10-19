@@ -170,23 +170,30 @@ class TraceDeclVisitor final : public VNVisitor {
 
     // METHODS
 
-    const char* vscIgnoreTrace(const AstVarScope* nodep) {
+    string vscIgnoreTrace(const AstVarScope* nodep) {
         // Return true if this shouldn't be traced
         // See also similar rule in V3Coverage::varIgnoreToggle
         const AstVar* const varp = nodep->varp();
-        if (!varp->isTrace()) {
-            return "Verilator trace_off";
-        } else if (!nodep->isTrace()) {
-            return "Verilator instance trace_off";
-        } else {
-            const string prettyName = nodep->prettyName();
-            if (!v3Global.opt.traceUnderscore()) {
-                if (!prettyName.empty() && prettyName[0] == '_') return "Leading underscore";
-                if (prettyName.find("._") != string::npos) return "Inlined leading underscore";
-            }
-            if (!V3Control::getScopeTraceOn(prettyName)) return "Vlt scope trace_off";
+        if (!varp->isTrace()) return "Verilator trace_off";
+        if (!nodep->isTrace()) return "Verilator instance trace_off";
+
+        const int width = recurseDTypeWidth(nodep->varp()->dtypep());
+        if (v3Global.opt.traceMaxWidth() && width > v3Global.opt.traceMaxWidth())
+            return "Width " + cvtToStr(width) + " > --trace-max-width";
+
+        const string prettyName = nodep->prettyName();
+        if (!V3Control::getScopeTraceOn(prettyName)) return "Vlt scope trace_off";
+        if (!v3Global.opt.traceUnderscore()) {
+            if (!prettyName.empty() && prettyName[0] == '_') return "Leading underscore";
+            if (prettyName.find("._") != string::npos) return "Inlined leading underscore";
         }
-        return nullptr;
+        return ""s;
+    }
+
+    int recurseDTypeWidth(const AstNodeDType* nodep) {
+        if (const AstNodeArrayDType* adtypep = VN_CAST(nodep, NodeArrayDType))
+            return recurseDTypeWidth(adtypep->subDTypep()) * adtypep->declRange().elements();
+        return nodep->width();
     }
 
     AstCFunc* newCFunc(FileLine* flp, const string& name) {
@@ -222,7 +229,7 @@ class TraceDeclVisitor final : public VNVisitor {
             const string n = cvtToStr(m_subFuncps.size());
             const string name{"trace_init_sub__" + m_currScopep->nameDotless() + "__" + n};
             AstCFunc* const funcp = newCFunc(flp, name);
-            funcp->addInitsp(new AstCStmt{flp, "const int c = vlSymsp->__Vm_baseCode;\n"});
+            funcp->addInitsp(new AstCStmt{flp, "const int c = vlSymsp->__Vm_baseCode;"});
             m_subFuncps.push_back(funcp);
         }
         m_subFuncps.back()->addStmtsp(stmtp);
@@ -245,7 +252,7 @@ class TraceDeclVisitor final : public VNVisitor {
         addToSubFunc(newp);
     }
 
-    void addIgnore(const char* why) {
+    void addIgnore(const string& why) {
         ++m_statIgnSigs;
         std::string cmt = "Tracing: "s + m_traName + " // Ignored: " + why;
         if (debug() > 3 && m_traVscp) std::cout << "- " << m_traVscp->fileline() << cmt << endl;
@@ -337,10 +344,10 @@ class TraceDeclVisitor final : public VNVisitor {
     void checkCalls(const AstCFunc* funcp) {
         if (!v3Global.opt.debugCheck()) return;
         checkCallsRecurse(funcp);
-        if (!m_declUncalledps.empty()) {
+        if (!m_declUncalledps.empty()) {  // LCOV_EXCL_START
             for (auto tracep : m_declUncalledps) UINFO(0, "-nodep " << tracep);
             (*(m_declUncalledps.begin()))->v3fatalSrc("Created TraceDecl which is never called");
-        }
+        }  // LCOV_EXCL_STOP
     }
     void checkCallsRecurse(const AstCFunc* funcp) {
         funcp->foreach([this](const AstNode* nodep) {
@@ -403,8 +410,9 @@ class TraceDeclVisitor final : public VNVisitor {
                 if (AstVarScope* const vscp = entry.vscp()) {
                     // This is a signal: build AstTraceDecl for it
                     m_traVscp = vscp;
-                    if (const char* const ignoreReasonp = vscIgnoreTrace(m_traVscp)) {
-                        addIgnore(ignoreReasonp);
+                    const string& ignoreReason = vscIgnoreTrace(m_traVscp);
+                    if (!ignoreReason.empty()) {
+                        addIgnore(ignoreReason);
                     } else {
                         ++m_statSigs;
                         // Create reference to whole signal. We will operate on this during the
@@ -514,7 +522,8 @@ class TraceDeclVisitor final : public VNVisitor {
         // Note more specific dtypes above
         if (!m_traVscp) return;
 
-        if (static_cast<int>(nodep->arrayUnpackedElements()) > v3Global.opt.traceMaxArray()) {
+        if (v3Global.opt.traceMaxArray()
+            && static_cast<int>(nodep->arrayUnpackedElements()) > v3Global.opt.traceMaxArray()) {
             addIgnore("Wide memory > --trace-max-array ents");
             return;
         }

@@ -11,8 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(sanitize=True)
+test.compile()
 
-test.execute(aslr_off=True)  # Some GCC versions hit an address-sanitizer bug otherwise)
+test.execute()
 
 test.passes()

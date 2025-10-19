@@ -93,7 +93,7 @@ struct VMemberQualifiers final {
             if (m_randc) nodep->rand(VRandAttr::RAND_CYCLIC);
             if (m_local) nodep->isHideLocal(true);
             if (m_protected) nodep->isHideProtected(true);
-            if (m_static) nodep->lifetime(VLifetime::STATIC);
+            if (m_static) nodep->lifetime(VLifetime::STATIC_EXPLICIT);
             if (m_const) nodep->isConst(true);
             if (m_virtual) {
                 nodep->v3error("Syntax error: 'virtual' not allowed before var declaration");
@@ -168,6 +168,7 @@ class V3ParseImp final {
 
     AstNode* m_tagNodep = nullptr;  // Points to the node to set to m_tag or nullptr to not set.
     VTimescale m_timeLastUnit;  // Last `timescale's unit
+    VTimescale m_timeLastPrec;  // Last `timescale's precision
 
 public:
     VL_DEFINE_DEBUG_FUNCTIONS;
@@ -185,6 +186,7 @@ public:
     AstPragma* createTimescale(FileLine* fl, bool unitSet, double unitVal, bool precSet,
                                double precVal) VL_MT_DISABLED;
     VTimescale timeLastUnit() const { return m_timeLastUnit; }
+    VTimescale timeLastPrec() const { return m_timeLastPrec; }
 
     void lexFileline(FileLine* fl) { m_lexFileline = fl; }
     FileLine* lexFileline() const { return m_lexFileline; }
@@ -243,7 +245,7 @@ public:
         return strp;
     }
     V3Number* newNumber(FileLine* flp, const char* text) {
-        V3Number* nump = new V3Number{flp, text};
+        V3Number* nump = new V3Number{flp, V3Number::VerilogNumberLiteral{}, text};
         m_numberps.push_back(nump);
         return nump;
     }
@@ -252,7 +254,7 @@ public:
     // would misfire
     AstNode* newBlock(FileLine* fl, AstNode* nodep) {
         if (nodep) return nodep;
-        return new AstBegin{fl, "", nullptr, false, true};
+        return new AstBegin{fl, "", nullptr, true};
     }
 
     // Bison sometimes needs error context without a token, so remember last token's line
@@ -286,6 +288,7 @@ public:
         , m_filterp{filterp} {
         m_lexKwdLast = stateVerilogRecent();
         m_timeLastUnit = v3Global.opt.timeDefaultUnit();
+        m_timeLastPrec = v3Global.opt.timeDefaultPrec();
     }
     ~V3ParseImp() VL_MT_DISABLED;
     void parserClear() VL_MT_DISABLED;
@@ -300,7 +303,7 @@ public:
     void dumpInputsFile() VL_MT_DISABLED;
     void dumpTokensAhead(int line) VL_MT_DISABLED;
     static void candidatePli(VSpellCheck* spellerp) VL_MT_DISABLED;
-    void importIfInStd(FileLine* fileline, const string& id);
+    void importIfInStd(FileLine* fileline, const string& id, bool doImport);
 
 private:
     void preprocDumps(std::ostream& os);
@@ -314,7 +317,7 @@ private:
     size_t tokenPipeScanIdType(size_t depth) VL_MT_DISABLED;
     size_t tokenPipeScanBracket(size_t depth) VL_MT_DISABLED;
     size_t tokenPipeScanParam(size_t depth, bool forInst) VL_MT_DISABLED;
-    size_t tokenPipeScanTypeEq(size_t depth) VL_MT_DISABLED;
+    size_t tokenPipeScanParens(size_t depth) VL_MT_DISABLED;
     size_t tokenPipeScanEqNew(size_t depth) VL_MT_DISABLED;
     const V3ParseBisonYYSType* tokenPeekp(size_t depth) VL_MT_DISABLED;
     void preprocDumps(std::ostream& os, bool forInputs) VL_MT_DISABLED;

@@ -170,14 +170,25 @@ public:
     static AstConcat* apply(AstConcat* rootp) { return balance(rootp); }
 };
 
+struct FuncOptStats final {
+    // STATE - Statistic tracking
+    VDouble0 m_balancedConcats;  // Number of concatenations balanced
+    VDouble0 m_concatSplits;  // Number of splits in assignments with Concat on RHS
+
+    FuncOptStats() = default;
+    ~FuncOptStats() {
+        V3Stats::addStat("Optimizations, FuncOpt concat trees balanced", m_balancedConcats);
+        V3Stats::addStat("Optimizations, FuncOpt concat splits", m_concatSplits);
+    }
+};
+
 class FuncOptVisitor final : public VNVisitor {
     // NODE STATE
     //  AstNodeAssign::user()     -> bool.  Already checked, safe to split. Omit expensive check.
     //  AstConcat::user()         -> bool.  Already balanced.
 
-    // STATE - Statistic tracking
-    VDouble0 m_balancedConcats;  // Number of concatenations balanced
-    VDouble0 m_concatSplits;  // Number of splits in assignments with Concat on RHS
+    // STATE
+    FuncOptStats& m_stats;  // Statistics
 
     // True for e.g.: foo = foo >> 1; or foo[foo[0]] = ...;
     static bool readsLhs(AstNodeAssign* nodep) {
@@ -256,7 +267,7 @@ class FuncOptVisitor final : public VNVisitor {
 
         // Ok, actually split it now
         UINFO(5, "splitConcat optimizing " << nodep);
-        ++m_concatSplits;
+        ++m_stats.m_concatSplits;
         // The 2 parts and their offsets
         AstNodeExpr* const rrp = rhsp->rhsp()->unlinkFrBack();
         AstNodeExpr* const rlp = rhsp->lhsp()->unlinkFrBack();
@@ -294,7 +305,7 @@ class FuncOptVisitor final : public VNVisitor {
         if (v3Global.opt.fFuncBalanceCat() && !nodep->user1() && !VN_IS(nodep->backp(), Concat)) {
             if (AstConcat* const newp = BalanceConcatTree::apply(nodep)) {
                 UINFO(5, "balanceConcat optimizing " << nodep);
-                ++m_balancedConcats;
+                ++m_stats.m_balancedConcats;
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 newp->user1(true);  // Must not attempt again.
@@ -308,14 +319,13 @@ class FuncOptVisitor final : public VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // CONSTRUCTORS
-    explicit FuncOptVisitor(AstCFunc* funcp) { iterateChildren(funcp); }
-    ~FuncOptVisitor() override {
-        V3Stats::addStatSum("Optimizations, FuncOpt concat trees balanced", m_balancedConcats);
-        V3Stats::addStatSum("Optimizations, FuncOpt concat splits", m_concatSplits);
+    explicit FuncOptVisitor(FuncOptStats& stats, AstCFunc* funcp)
+        : m_stats{stats} {
+        iterateChildren(funcp);
     }
 
 public:
-    static void apply(AstCFunc* funcp) { FuncOptVisitor{funcp}; }
+    static void apply(FuncOptStats& stats, AstCFunc* funcp) { FuncOptVisitor{stats, funcp}; }
 };
 
 //######################################################################
@@ -324,12 +334,13 @@ void V3FuncOpt::funcOptAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     {
         const VNUser1InUse user1InUse;
+        FuncOptStats stats;
         for (AstNodeModule *modp = nodep->modulesp(), *nextModp; modp; modp = nextModp) {
             nextModp = VN_AS(modp->nextp(), NodeModule);
             for (AstNode *stmtp = modp->stmtsp(), *nextStmtp; stmtp; stmtp = nextStmtp) {
                 nextStmtp = stmtp->nextp();
                 if (AstCFunc* const cfuncp = VN_CAST(stmtp, CFunc)) {
-                    FuncOptVisitor::apply(cfuncp);
+                    FuncOptVisitor::apply(stats, cfuncp);
                 }
             }
         }

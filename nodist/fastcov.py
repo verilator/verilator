@@ -32,7 +32,7 @@ import subprocess
 import multiprocessing
 from pathlib import Path
 
-FASTCOV_VERSION = (1,15)
+FASTCOV_VERSION = (1,17)
 MINIMUM_PYTHON  = (3,5)
 MINIMUM_GCOV    = (9,0,0)
 
@@ -56,6 +56,7 @@ EXIT_CODES = {
     "excl_not_found": 6,
     "bad_chunk_file": 7,
     "missing_json_key": 8,
+    "no_coverage_files": 9,
 }
 
 # Disable all logging in case developers are using this as a module
@@ -792,6 +793,7 @@ def parseInfo(path):
     }
 
     with open(path) as f:
+        current_test_name = ""
         for line in f:
             if line.startswith("TN:"):
                 current_test_name = line[3:].strip()
@@ -806,9 +808,10 @@ def parseInfo(path):
                 })
                 current_data = fastcov_json["sources"][current_sf][current_test_name]
             elif line.startswith("FN:"):
-                line_num, function_name = line[3:].strip().split(",")
+                line_nums, function_name = line[3:].strip().rsplit(",", maxsplit=1)
+                line_num_start = line_nums.split(",")[0]
                 current_data["functions"][function_name] = {}
-                current_data["functions"][function_name]["start_line"] = tryParseNumber(line_num)
+                current_data["functions"][function_name]["start_line"] = tryParseNumber(line_num_start)
             elif line.startswith("FNDA:"):
                 count, function_name = line[5:].strip().split(",")
                 current_data["functions"][function_name]["execution_count"] = tryParseNumber(count)
@@ -883,6 +886,11 @@ def getGcovCoverage(args):
         removeFiles(globCoverageFiles(args.directory, GCOV_GCDA_EXT))
         logging.info("Removed {} .gcda files".format(len(coverage_files)))
         sys.exit()
+
+    if not coverage_files:
+        logging.error("No coverage files found in directory '%s'", args.directory)
+        setExitCode("no_coverage_files")
+        sys.exit(EXIT_CODE)
 
     # Fire up one gcov per cpu and start processing gcdas
     gcov_filter_options = getGcovFilterOptions(args)

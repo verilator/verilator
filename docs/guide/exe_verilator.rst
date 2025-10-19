@@ -188,6 +188,10 @@ Summary:
 
 .. option:: --clk <signal-name>
 
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.042:
+
    With :vlopt:`--clk`, the specified signal is marked as a clock signal.
 
    The provided signal name is specified using a RTL hierarchy path. For
@@ -207,6 +211,10 @@ Summary:
    code. This may greatly improve performance.
 
 .. option:: --no-clk <signal-name>
+
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.042:
 
    Prevent the specified signal from being marked as a clock. See
    :vlopt:`--clk`.
@@ -772,7 +780,8 @@ Summary:
    be useful in makefiles. See also :vlopt:`-V`, and the various
    :file:`*.mk` files.
 
-   Feature may be one of the following: COROUTINES, SYSTEMC, ASAN.
+   Feature may be one of the following: COROUTINES, DEV_ASAN, DEV_GCOV,
+   SYSTEMC.
 
 .. option:: --getenv <variable>
 
@@ -1659,14 +1668,15 @@ Summary:
 .. option:: --trace-max-array <depth>
 
    Rarely needed.  Specify the maximum array depth of a signal that may be
-   traced.  Defaults to 32, as tracing large arrays may greatly slow traced
-   simulations.
+   traced.  Zero allows any width. Defaults to 32, as tracing large arrays
+   may greatly slow traced simulations.
 
 .. option:: --trace-max-width <width>
 
-   Rarely needed.  Specify the maximum bit width of a signal that may be
-   traced.  Defaults to 256, as tracing large vectors may greatly slow
-   traced simulations.
+   Rarely needed.  Specify the maximum total bit width of a signal, across
+   all elements if an array, that may be traced.  Zero allows any width.
+   Defaults to 4096, as tracing large vectors may greatly slow traced
+   simulations.
 
 .. option:: --no-trace-params
 
@@ -2169,6 +2179,10 @@ The grammar of control commands is as follows:
 .. option:: no_clocker -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
 .. option:: no_clocker -module "<modulename>" [-task "<taskname>"] -var "<signame>"
+
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.042:
 
    Indicates whether the signal is used as clock or not. Verilator uses
    this information to mark the signal and any derived signals as clocker.

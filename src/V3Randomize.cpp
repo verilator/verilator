@@ -351,7 +351,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 nodep->v3error("Cannot call 'rand_mode()' on packed array element");
                 valid = false;
             } else if (AstCMethodHard* const methodHardp = VN_CAST(fromp, CMethodHard)) {
-                if (methodHardp->name() == "at" || methodHardp->name() == "atWrite") {
+                if (methodHardp->method() == VCMethod::ARRAY_AT
+                    || methodHardp->method() == VCMethod::ARRAY_AT_WRITE) {
                     nodep->v3warn(E_UNSUPPORTED,
                                   "Unsupported: 'rand_mode()' on dynamic array element");
                     valid = false;
@@ -804,7 +805,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         {
             AstBegin* const tempp
-                = new AstBegin{fl, "[EditWrapper]", itemsp->unlinkFrBackWithNext()};
+                = new AstBegin{fl, "[EditWrapper]", itemsp->unlinkFrBackWithNext(), false};
             VL_DO_DANGLING(iterateAndNextNull(tempp->stmtsp()), itemsp);
             itemsp = tempp->stmtsp();
             if (itemsp) itemsp->unlinkFrBackWithNext();
@@ -829,7 +830,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeDType* const arrDtp = arrayp->unlinkFrBack()->dtypep();
         AstNodeExpr* selp = nullptr;
         if (VN_IS(arrDtp, QueueDType) || VN_IS(arrDtp, DynArrayDType))
-            selp = new AstCMethodHard{fl, arrayp, "at", idxp};
+            selp = new AstCMethodHard{fl, arrayp, VCMethod::ARRAY_AT, idxp};
         else if (VN_IS(arrDtp, UnpackArrayDType))
             selp = new AstArraySel{fl, arrayp, idxp};
         else if (VN_IS(arrDtp, AssocArrayDType))
@@ -885,7 +886,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 nodep->fileline(),
                 new AstVarRef{varp->fileline(), VN_AS(m_randModeVarp->user2p(), NodeModule),
                               m_randModeVarp, VAccess::READ},
-                "at", new AstConst{nodep->fileline(), randMode.index}};
+                VCMethod::ARRAY_AT, new AstConst{nodep->fileline(), randMode.index}};
             atp->dtypeSetUInt32();
             exprp = new AstCond{varp->fileline(), atp, exprp, constFormatp};
         } else if (!membersel || !isGlobalConstrained) {
@@ -904,7 +905,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 varp->fileline(),
                 new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
                               VAccess::READWRITE},
-                "write_var"};
+                VCMethod::RANDOMIZER_WRITE_VAR};
             uint32_t dimension = 0;
             if (VN_IS(varp->dtypep(), UnpackArrayDType) || VN_IS(varp->dtypep(), DynArrayDType)
                 || VN_IS(varp->dtypep(), QueueDType) || VN_IS(varp->dtypep(), AssocArrayDType)) {
@@ -1191,6 +1192,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
+    void visit(AstGenBlock* nodep) override {
+        // Dubious but this is what we used to do. Does that mean no randomzie
+        // methods work under a generage block?
+    }
     void visit(AstBegin* nodep) override {}
     void visit(AstConstraintForeach* nodep) override {
         // Convert to plain foreach
@@ -1205,7 +1210,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             exprsp->addNext(new AstBegin{
                 fl, "",
                 new AstForeach{fl, nodep->arrayp()->unlinkFrBack(), new AstCStmt{fl, cstmtp}},
-                false, true});
+                true});
             exprsp->addNext(
                 new AstText{fl, "return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";})()"});
             AstNodeExpr* const newp = new AstCExpr{fl, exprsp};
@@ -1217,7 +1222,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 new AstBegin{fl, "",
                              new AstForeach{fl, nodep->arrayp()->unlinkFrBack(),
                                             nodep->stmtsp()->unlinkFrBackWithNext()},
-                             false, true});
+                             true});
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -1241,7 +1246,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->fileline(),
             new AstVarRef{nodep->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
                           VAccess::READWRITE},
-            "hard", nodep->exprp()->unlinkFrBack()};
+            VCMethod::RANDOMIZER_HARD, nodep->exprp()->unlinkFrBack()};
         callp->dtypeSetVoid();
         nodep->replaceWith(callp->makeStmt());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -1250,7 +1255,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
 
-        if (nodep->name() == "at" && nodep->fromp()->user1()) {
+        if (nodep->method() == VCMethod::ARRAY_AT && nodep->fromp()->user1()) {
             iterateChildren(nodep);
             AstNodeExpr* pinp = nodep->pinsp()->unlinkFrBack();
             if (VN_IS(pinp, SFormatF) && m_structSel) VN_AS(pinp, SFormatF)->name("%x");
@@ -1265,7 +1270,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             return;
         }
 
-        if (nodep->name() == "inside") {
+        if (nodep->method() == VCMethod::ARRAY_INSIDE) {
             bool randArr = nodep->fromp()->user1();
 
             AstVar* const newVarp
@@ -1281,8 +1286,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             cstmtp->addNext(iterateSubtreeReturnEdits(itemp));
             cstmtp->addNext(new AstText{fl, ";"});
             AstNode* const exprsp = new AstText{fl, "([&]{ std::string ret;"};
-            exprsp->addNext(new AstBegin{
-                fl, "", new AstForeach{fl, arrayp, new AstCStmt{fl, cstmtp}}, false, true});
+            exprsp->addNext(
+                new AstBegin{fl, "", new AstForeach{fl, arrayp, new AstCStmt{fl, cstmtp}}, true});
             exprsp->addNext(
                 new AstText{fl, "return ret.empty() ? \"#b0\" : \"(bvor\" + ret + \")\";})()"});
             AstNodeExpr* const newp = new AstCExpr{fl, exprsp};
@@ -1359,7 +1364,7 @@ class CaptureVisitor final : public VNVisitor {
             newVarp->varType(VVarType::BLOCKTEMP);
             newVarp->funcLocal(true);
             newVarp->direction(VDirection::INPUT);
-            newVarp->lifetime(VLifetime::AUTOMATIC);
+            newVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
 
             m_varCloneMap.emplace(varrefp->varp(), newVarp);
             varp = newVarp;
@@ -1387,7 +1392,7 @@ class CaptureVisitor final : public VNVisitor {
             v3Global.rootp()->typeTablep()->addTypesp(refDTypep);
             m_thisp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vthis", refDTypep};
             m_thisp->funcLocal(true);
-            m_thisp->lifetime(VLifetime::AUTOMATIC);
+            m_thisp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             m_thisp->direction(VDirection::INPUT);
             m_argsp = AstNode::addNext(m_argsp, new AstArg{fl, "", new AstThisRef{fl, refDTypep}});
         }
@@ -1709,7 +1714,7 @@ class RandomizeVisitor final : public VNVisitor {
         FileLine* const fl = ftaskp->fileline();
         AstCMethodHard* const setRandModep = new AstCMethodHard{
             fl, new AstVarRef{fl, VN_AS(genp->user2p(), NodeModule), genp, VAccess::WRITE},
-            "set_randmode",
+            VCMethod::CLASS_SET_RANDMODE,
             new AstVarRef{fl, VN_AS(randModeVarp->user2p(), NodeModule), randModeVarp,
                           VAccess::READ}};
         setRandModep->dtypeSetVoid();
@@ -1760,7 +1765,7 @@ class RandomizeVisitor final : public VNVisitor {
         FileLine* fl = modeVarp->fileline();
         AstCMethodHard* const dynarrayNewp
             = new AstCMethodHard{fl, new AstVarRef{fl, modeVarModp, modeVarp, VAccess::WRITE},
-                                 "resize", new AstConst{fl, modeCount}};
+                                 VCMethod::DYN_RESIZE, new AstConst{fl, modeCount}};
         dynarrayNewp->dtypeSetVoid();
         AstNodeFTask* const newp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
         UASSERT_OBJ(newp, classp, "No new() in class");
@@ -1773,22 +1778,26 @@ class RandomizeVisitor final : public VNVisitor {
                                     AstNodeExpr* const rhsp, bool inTask) {
         AstVar* const iterVarp = new AstVar{fl, VVarType::BLOCKTEMP, "i", lhsp->findUInt32DType()};
         iterVarp->funcLocal(inTask);
-        iterVarp->lifetime(VLifetime::AUTOMATIC);
-        AstCMethodHard* const sizep = new AstCMethodHard{fl, lhsp, "size", nullptr};
+        iterVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        AstCMethodHard* const sizep = new AstCMethodHard{fl, lhsp, VCMethod::DYN_SIZE, nullptr};
         sizep->dtypeSetUInt32();
-        AstCMethodHard* const setp = new AstCMethodHard{
-            fl, lhsp->cloneTree(false), "atWrite", new AstVarRef{fl, iterVarp, VAccess::READ}};
+        AstCMethodHard* const setp
+            = new AstCMethodHard{fl, lhsp->cloneTree(false), VCMethod::ARRAY_AT_WRITE,
+                                 new AstVarRef{fl, iterVarp, VAccess::READ}};
         setp->dtypeSetUInt32();
         AstNode* const stmtsp = iterVarp;
         stmtsp->addNext(
             new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE}, new AstConst{fl, 0}});
-        stmtsp->addNext(
-            new AstWhile{fl, new AstLt{fl, new AstVarRef{fl, iterVarp, VAccess::READ}, sizep},
-                         new AstAssign{fl, setp, rhsp},
-                         new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
-                                       new AstAdd{fl, new AstConst{fl, 1},
-                                                  new AstVarRef{fl, iterVarp, VAccess::READ}}}});
-        return new AstBegin{fl, "", stmtsp, false, true};
+
+        AstLoop* const loopp = new AstLoop{fl};
+        stmtsp->addNext(loopp);
+        loopp->addStmtsp(new AstLoopTest{
+            fl, loopp, new AstLt{fl, new AstVarRef{fl, iterVarp, VAccess::READ}, sizep}});
+        loopp->addStmtsp(new AstAssign{fl, setp, rhsp});
+        loopp->addStmtsp(new AstAssign{
+            fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
+            new AstAdd{fl, new AstConst{fl, 1}, new AstVarRef{fl, iterVarp, VAccess::READ}}});
+        return new AstBegin{fl, "", stmtsp, true};
     }
     static AstNodeStmt* wrapIfRandMode(AstClass* classp, AstVar* const varp, AstNodeStmt* stmtp) {
         const RandomizeMode rmode = {.asInt = varp->user1()};
@@ -1804,7 +1813,7 @@ class RandomizeVisitor final : public VNVisitor {
         if (mode.usesMode) {
             AstCMethodHard* const atp = new AstCMethodHard{
                 fl, new AstVarRef{fl, VN_AS(modeVarp->user2p(), Class), modeVarp, VAccess::READ},
-                "at", new AstConst{fl, mode.index}};
+                VCMethod::ARRAY_AT, new AstConst{fl, mode.index}};
             atp->dtypeSetUInt32();
             return new AstIf{fl, atp, stmtp};
         }
@@ -1905,7 +1914,8 @@ class RandomizeVisitor final : public VNVisitor {
             AstNodeExpr* const tempExprp = tempElementp ? tempElementp : exprp;
             AstVarRef* const tempRefp = new AstVarRef{fl, newRandLoopIndxp, VAccess::READ};
             if (VN_IS(tempDTypep, DynArrayDType)) {
-                tempElementp = new AstCMethodHard{fl, tempExprp, "atWrite", tempRefp};
+                tempElementp
+                    = new AstCMethodHard{fl, tempExprp, VCMethod::ARRAY_AT_WRITE, tempRefp};
             } else if (VN_IS(tempDTypep, UnpackArrayDType)) {
                 AstNodeArrayDType* const aryDTypep = VN_CAST(tempDTypep, NodeArrayDType);
                 // Adjust the bitp to ensure it covers all possible indices
@@ -1919,7 +1929,8 @@ class RandomizeVisitor final : public VNVisitor {
             } else if (VN_IS(tempDTypep, AssocArrayDType)) {
                 tempElementp = new AstAssocSel{fl, tempExprp, tempRefp};
             } else if (VN_IS(tempDTypep, QueueDType)) {
-                tempElementp = new AstCMethodHard{fl, tempExprp, "atWriteAppend", tempRefp};
+                tempElementp
+                    = new AstCMethodHard{fl, tempExprp, VCMethod::DYN_AT_WRITE_APPEND, tempRefp};
             }
             tempElementp->dtypep(tempDTypep->subDTypep());
             tempDTypep = tempDTypep->virtRefDTypep();
@@ -2051,7 +2062,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstCMethodHard* const clearp = new AstCMethodHard{
             fileline,
             new AstVarRef{fileline, VN_AS(genp->user2p(), NodeModule), genp, VAccess::READWRITE},
-            "clear"};
+            VCMethod::RANDOMIZER_CLEAR};
         clearp->dtypeSetVoid();
         return clearp->makeStmt();
     }
@@ -2087,7 +2098,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstVar* const randModeTmpVarp = new AstVar{
             fl, VVarType::BLOCKTEMP, m_modeUniqueNames.get(randModeVarp), randModeVarp->dtypep()};
         randModeTmpVarp->funcLocal(m_ftaskp);
-        randModeTmpVarp->lifetime(VLifetime::AUTOMATIC);
+        randModeTmpVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         storeStmtspr = AstNode::addNext(
             storeStmtspr,
             new AstAssign{fl, new AstVarRef{fl, randModeTmpVarp, VAccess::WRITE},
@@ -2163,7 +2174,7 @@ class RandomizeVisitor final : public VNVisitor {
                     nodep->fileline(),
                     new AstVarRef{fl, VN_AS(randModeVarp->user2p(), NodeModule), randModeVarp,
                                   VAccess::WRITE},
-                    "atWrite", new AstConst{nodep->fileline(), randMode.index}};
+                    VCMethod::ARRAY_AT_WRITE, new AstConst{nodep->fileline(), randMode.index}};
                 setp->dtypeSetUInt32();
                 newp->addStmtsp(new AstAssign{fl, setp, new AstConst{fl, 0}});
             }
@@ -2206,7 +2217,7 @@ class RandomizeVisitor final : public VNVisitor {
                 AstVarRef* const refp = new AstVarRef{fl, classp, memberVarp, VAccess::WRITE};
                 AstNodeStmt* const stmtp = newRandStmtsp(fl, refp, randcVarp, basicFvarp);
                 if (!refp->backp()) VL_DO_DANGLING(refp->deleteTree(), refp);
-                basicRandomizep->addStmtsp(new AstBegin{fl, "", stmtp});
+                basicRandomizep->addStmtsp(new AstBegin{fl, "", stmtp, false});
             }
         });
     }
@@ -2236,8 +2247,8 @@ class RandomizeVisitor final : public VNVisitor {
                 // mode
                 const RandomizeMode rmode = {.asInt = receiverp->user1()};
                 UASSERT_OBJ(rmode.usesMode, ftaskRefp, "Failed to set usesMode");
-                AstCMethodHard* const setp
-                    = new AstCMethodHard{fl, lhsp, "atWrite", new AstConst{fl, rmode.index}};
+                AstCMethodHard* const setp = new AstCMethodHard{fl, lhsp, VCMethod::ARRAY_AT_WRITE,
+                                                                new AstConst{fl, rmode.index}};
                 setp->dtypeSetUInt32();
                 m_stmtp->replaceWith(new AstAssign{fl, setp, rhsp});
             } else {
@@ -2251,8 +2262,8 @@ class RandomizeVisitor final : public VNVisitor {
             UASSERT_OBJ(receiverp, ftaskRefp, "Should have receiver");
             const RandomizeMode rmode = {.asInt = receiverp->user1()};
             UASSERT_OBJ(rmode.usesMode, ftaskRefp, "Failed to set usesMode");
-            AstCMethodHard* const setp
-                = new AstCMethodHard{fl, lhsp, "atWrite", new AstConst{fl, rmode.index}};
+            AstCMethodHard* const setp = new AstCMethodHard{fl, lhsp, VCMethod::ARRAY_AT_WRITE,
+                                                            new AstConst{fl, rmode.index}};
             setp->dtypeSetUInt32();
             ftaskRefp->replaceWith(setp);
             VL_DO_DANGLING(pushDeletep(ftaskRefp), ftaskRefp);
@@ -2320,9 +2331,9 @@ class RandomizeVisitor final : public VNVisitor {
                     tmpVarps = AstNode::addNext(tmpVarps, randModeTmpVarp);
                 }
                 const RandomizeMode randMode = {.asInt = randVarp->user1()};
-                AstCMethodHard* setp
-                    = new AstCMethodHard{fl, makeSiblingRefp(exprp, randModeVarp, VAccess::WRITE),
-                                         "atWrite", new AstConst{fl, randMode.index}};
+                AstCMethodHard* setp = new AstCMethodHard{
+                    fl, makeSiblingRefp(exprp, randModeVarp, VAccess::WRITE),
+                    VCMethod::ARRAY_AT_WRITE, new AstConst{fl, randMode.index}};
                 setp->dtypeSetUInt32();
                 setStmtsp
                     = AstNode::addNext(setStmtsp, new AstAssign{fl, setp, new AstConst{fl, 1}});
@@ -2339,7 +2350,7 @@ class RandomizeVisitor final : public VNVisitor {
             stmtsp->addNext(setStmtsp);
             stmtsp->addNext(m_stmtp);
             stmtsp->addNext(restoreStmtsp);
-            relinker.relink(new AstBegin{nodep->fileline(), "", stmtsp, false, true});
+            relinker.relink(new AstBegin{nodep->fileline(), "", stmtsp, true});
         }
     }
 
@@ -2591,13 +2602,13 @@ class RandomizeVisitor final : public VNVisitor {
                 AstCMethodHard* const basicMethodp = new AstCMethodHard{
                     nodep->fileline(),
                     new AstVarRef{nodep->fileline(), stdrand, VAccess::READWRITE},
-                    "basicStdRandomization"};
+                    VCMethod::RANDOMIZER_BASIC_STD_RANDOMIZATION};
                 AstVar* const refvarp
                     = new AstVar{exprp->fileline(), VVarType::MEMBER,
                                  "__Varg"s + std::to_string(++argn), exprp->dtypep()};
                 refvarp->direction(VDirection::REF);
                 refvarp->funcLocal(true);
-                refvarp->lifetime(VLifetime::AUTOMATIC);
+                refvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                 randomizeFuncp->addStmtsp(refvarp);
 
                 const size_t width = exprp->width();
@@ -2741,7 +2752,9 @@ class RandomizeVisitor final : public VNVisitor {
     void visit(AstCMethodHard* nodep) override {
         iterateChildren(nodep);
         FileLine* const fl = nodep->fileline();
-        if (m_constraintp && nodep->fromp()->user1() && nodep->name() == "size") {
+        if (m_constraintp && nodep->fromp()->user1()
+            && (nodep->method() == VCMethod::ASSOC_SIZE
+                || nodep->method() == VCMethod::DYN_SIZE)) {
             AstClass* const classp = VN_AS(m_modp, Class);
             AstVarRef* const queueVarRefp = VN_CAST(nodep->fromp(), VarRef);
             if (!queueVarRefp) {
@@ -2765,7 +2778,7 @@ class RandomizeVisitor final : public VNVisitor {
                     m_constraintp->user3p(resizerTaskp);
                 }
                 AstCMethodHard* const resizep
-                    = new AstCMethodHard{fl, nodep->fromp()->unlinkFrBack(), "resize",
+                    = new AstCMethodHard{fl, nodep->fromp()->unlinkFrBack(), VCMethod::DYN_RESIZE,
                                          new AstVarRef{fl, sizeVarp, VAccess::READ}};
                 resizep->dtypep(nodep->findVoidDType());
                 resizerTaskp->addStmtsp(new AstStmtExpr{fl, resizep});
@@ -2830,7 +2843,8 @@ AstFunc* V3Randomize::newRandomizeFunc(VMemberMap& memberMap, AstClass* nodep,
                                   ? new AstVar{nodep->fileline(), VVarType::MEMBER, name,
                                                VFlagChildDType{}, dtypep}
                                   : new AstVar{nodep->fileline(), VVarType::MEMBER, name, dtypep};
-        fvarp->lifetime(VLifetime::AUTOMATIC);
+        fvarp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
+        fvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         fvarp->funcLocal(true);
         fvarp->funcReturn(true);
         fvarp->direction(VDirection::OUTPUT);
@@ -2851,7 +2865,7 @@ AstFunc* V3Randomize::newRandomizeStdFunc(VMemberMap& memberMap, AstNodeModule* 
     v3Global.useRandomizeMethods(true);
     AstNodeDType* const dtypep = nodep->findBitDType(32, 32, VSigning::SIGNED);
     AstVar* const fvarp = new AstVar{nodep->fileline(), VVarType::MEMBER, name, dtypep};
-    fvarp->lifetime(VLifetime::AUTOMATIC);
+    fvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
     fvarp->funcLocal(true);
     fvarp->funcReturn(true);
     fvarp->direction(VDirection::OUTPUT);
@@ -2875,7 +2889,7 @@ AstFunc* V3Randomize::newSRandomFunc(VMemberMap& memberMap, AstClass* nodep) {
         AstNodeDType* const dtypep
             = basep->findBitDType(32, 32, VSigning::SIGNED);  // IEEE says argument 0/1
         AstVar* const ivarp = new AstVar{basep->fileline(), VVarType::MEMBER, "seed", dtypep};
-        ivarp->lifetime(VLifetime::AUTOMATIC);
+        ivarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         ivarp->funcLocal(true);
         ivarp->direction(VDirection::INPUT);
         funcp = new AstFunc{basep->fileline(), "srandom", ivarp, nullptr};
@@ -2884,7 +2898,7 @@ AstFunc* V3Randomize::newSRandomFunc(VMemberMap& memberMap, AstClass* nodep) {
         funcp->isVirtual(false);
         basep->addMembersp(funcp);
         memberMap.insert(nodep, funcp);
-        funcp->addStmtsp(new AstCStmt{basep->fileline(), "__Vm_rng.srandom(seed);\n"});
+        funcp->addStmtsp(new AstCStmt{basep->fileline(), "__Vm_rng.srandom(seed);"});
         basep->needRNG(true);
     }
     return funcp;

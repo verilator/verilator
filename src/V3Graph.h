@@ -201,6 +201,7 @@ class V3GraphVertex VL_NOT_FINAL {
     friend class V3GraphEdge;
     friend class GraphAcyc;
     friend class GraphAlgRank;
+    friend class GraphAlgRankDepth;
     V3ListLinks<V3GraphVertex> m_links;  // List links to store instances of this class
     V3GraphEdge::OList m_outs;  // List of outbound edges
     V3GraphEdge::IList m_ins;  // List of inbound edges
@@ -382,10 +383,18 @@ public:
     void stronglyConnected(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
 
     /// Assign an ordering number to all vertexes in a tree.
+    /// For multiple usages of a vertex, get the maximum of all inbound ranks + 1
     /// All nodes with no inputs will get rank 1
     /// Side-effect: changes user()
     void rank(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
     void rank() VL_MT_DISABLED;
+
+    /// Assign an ordering number to all vertexes in a tree.
+    /// For multiple usages of a vertex, get the minimu of all inbound ranks + 1
+    /// All nodes with no inputs will get rank 1
+    /// Side-effect: changes user()
+    void rankMin(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
+    void rankMin() VL_MT_DISABLED;
 
     /// Sort all vertices and edges using the V3GraphVertex::sortCmp() function
     void sortVertices() VL_MT_DISABLED;

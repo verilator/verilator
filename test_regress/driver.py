@@ -126,8 +126,9 @@ class Capabilities:
     # @lru_cache(maxsize=1024) broken with @staticmethod on older pythons we use
     _cached_cmake_version = None
     _cached_cxx_version = None
-    _cached_have_asan = None
     _cached_have_coroutines = None
+    _cached_have_dev_asan = None
+    _cached_have_dev_gcov = None
     _cached_have_gdb = None
     _cached_have_sc = None
     _cached_have_solver = None
@@ -155,17 +156,25 @@ class Capabilities:
         return Capabilities._cached_cxx_version
 
     @staticproperty
-    def have_asan() -> bool:  # pylint: disable=no-method-argument
-        if Capabilities._cached_have_asan is None:
-            Capabilities._cached_have_asan = bool(Capabilities._verilator_get_supported('ASAN'))
-        return Capabilities._cached_have_asan
-
-    @staticproperty
     def have_coroutines() -> bool:  # pylint: disable=no-method-argument
         if Capabilities._cached_have_coroutines is None:
             Capabilities._cached_have_coroutines = bool(
                 Capabilities._verilator_get_supported('COROUTINES'))
         return Capabilities._cached_have_coroutines
+
+    @staticproperty
+    def have_dev_asan() -> bool:  # pylint: disable=no-method-argument
+        if Capabilities._cached_have_dev_asan is None:
+            Capabilities._cached_have_dev_asan = bool(
+                Capabilities._verilator_get_supported('DEV_ASAN'))
+        return Capabilities._cached_have_dev_asan
+
+    @staticproperty
+    def have_dev_gcov() -> bool:  # pylint: disable=no-method-argument
+        if Capabilities._cached_have_dev_gcov is None:
+            Capabilities._cached_have_dev_gcov = bool(
+                Capabilities._verilator_get_supported('DEV_GCOV'))
+        return Capabilities._cached_have_dev_gcov
 
     @staticproperty
     def have_gdb() -> bool:  # pylint: disable=no-method-argument
@@ -211,8 +220,9 @@ class Capabilities:
     # Fetch
     @staticmethod
     def warmup_cache() -> None:
-        _ignore = Capabilities.have_asan
         _ignore = Capabilities.have_coroutines
+        _ignore = Capabilities.have_dev_asan
+        _ignore = Capabilities.have_dev_gcov
         _ignore = Capabilities.have_gdb
         _ignore = Capabilities.have_sc
         _ignore = Capabilities.have_solver
@@ -799,7 +809,7 @@ class VlTest:
             "10"
         ]
         self.verilator_flags2 = []
-        self.verilator_flags3 = ["--clk clk"]
+        self.verilator_flags3 = []
         self.verilator_make_gmake = True
         self.verilator_make_cmake = False
         self.verilated_debug = Args.verilated_debug
@@ -1023,7 +1033,6 @@ class VlTest:
             bool(re.search(r'-savable\b', checkflags)))
         self.coverage = (  # pylint: disable=attribute-defined-outside-init
             bool(re.search(r'-coverage\b', checkflags)))
-        self.sanitize = param.get('sanitize', None)  # pylint: disable=attribute-defined-outside-init
         self.sc = (  # pylint: disable=attribute-defined-outside-init
             bool(re.search(r'-sc\b', checkflags)))
         self.timing = (  # pylint: disable=attribute-defined-outside-init
@@ -1068,14 +1077,6 @@ class VlTest:
             verilator_flags += ["--threads", str(param['threads'])]
         if param['vltmt'] and re.search(r'-trace-fst ', checkflags):
             verilator_flags += ["--trace-threads 2"]
-        if self.sanitize:
-            verilator_flags += [
-                "-CFLAGS -fsanitize=address,undefined -LDFLAGS -fsanitize=address,undefined"
-            ]
-        if param['verilator_make_cmake']:
-            verilator_flags += ["--make cmake"]
-        if param['verilator_make_gmake']:
-            verilator_flags += ["--make gmake"]
         if param['make_main'] and param['verilator_make_gmake']:
             verilator_flags += ["--exe"]
         if param['make_main'] and param['verilator_make_gmake']:
@@ -1651,10 +1652,6 @@ class VlTest:
         return Capabilities.cxx_version
 
     @property
-    def have_asan(self) -> bool:
-        return Capabilities.have_asan
-
-    @property
     def have_cmake(self) -> bool:
         ver = Capabilities.cmake_version
         if not ver:
@@ -1667,6 +1664,14 @@ class VlTest:
     @property
     def have_coroutines(self) -> bool:
         return Capabilities.have_coroutines
+
+    @property
+    def have_dev_asan(self) -> bool:
+        return Capabilities.have_dev_asan
+
+    @property
+    def have_dev_gcov(self) -> bool:
+        return Capabilities.have_dev_gcov
 
     @property
     def have_gdb(self) -> bool:
@@ -1742,19 +1747,6 @@ class VlTest:
 
         if Args.benchmark and re.match(r'^cd ', command):
             command = "time " + command
-
-        if verilator_run:
-            # Gcov fails when parallel jobs write same data file,
-            # so we make sure .gcda output dir is unique across all running jobs.
-            # We can't just put each one in an unique obj_dir as it uses too much disk.
-            # Must use absolute path as some execute()s have different PWD
-            self.setenv('GCOV_PREFIX_STRIP', '99')
-            self.setenv('GCOV_PREFIX',
-                        os.path.abspath(__file__ + "/../obj_dist/gcov_" + str(self.running_id)))
-            os.makedirs(os.environ['GCOV_PREFIX'], exist_ok=True)
-        else:
-            VtOs.delenv('GCOV_PREFIX_STRIP')
-            VtOs.delenv('GCOV_PREFIX')
 
         print("\t" + command + (("   > " + logfile) if logfile else ""))
 
@@ -2285,7 +2277,7 @@ class VlTest:
     #######################################################################
     # File utilities
 
-    def files_identical(self, fn1: str, fn2: str, is_logfile=False) -> None:
+    def files_identical(self, fn1: str, fn2: str, is_logfile=False, strip_hex=False) -> None:
         """Test if two files have identical contents"""
         delay = 0.25
         for tryn in range(Args.log_retries, -1, -1):
@@ -2294,10 +2286,11 @@ class VlTest:
                 delay = min(1, delay * 2)
             moretry = tryn != 0
             if not self._files_identical_try(
-                    fn1=fn1, fn2=fn2, is_logfile=is_logfile, moretry=moretry):
+                    fn1=fn1, fn2=fn2, is_logfile=is_logfile, strip_hex=strip_hex, moretry=moretry):
                 break
 
-    def _files_identical_try(self, fn1: str, fn2: str, is_logfile: bool, moretry: bool) -> bool:
+    def _files_identical_try(self, fn1: str, fn2: str, is_logfile: bool, strip_hex: bool,
+                             moretry: bool) -> bool:
         # If moretry, then return true to try again
         try:
             f1 = open(  # pylint: disable=consider-using-with
@@ -2321,6 +2314,7 @@ class VlTest:
                                              fn1=fn1,
                                              fn2=fn2,
                                              is_logfile=is_logfile,
+                                             strip_hex=strip_hex,
                                              moretry=moretry)
         if f1:
             f1.close()
@@ -2329,7 +2323,7 @@ class VlTest:
         return again
 
     def _files_identical_reader(self, f1, f2, fn1: str, fn2: str, is_logfile: bool,
-                                moretry: bool) -> None:
+                                strip_hex: bool, moretry: bool) -> None:
         # If moretry, then return true to try again
         l1s = f1.readlines()
         l2s = f2.readlines() if f2 else []
@@ -2375,6 +2369,13 @@ class VlTest:
                     break  # Trunc rest
                 l1o.append(line)
             #
+            l1s = l1o
+
+        if strip_hex:
+            l1o = []
+            for line in l1s:
+                line = re.sub(r'\b0x[0-9a-f]+', '0x#', line)
+                l1o.append(line)
             l1s = l1o
 
         for lineno_m1 in range(0, max(len(l1s), len(l2s))):
@@ -2665,6 +2666,11 @@ class VlTest:
             regexp=r'.*',
             lineno_adjust=-9999,  #
             lines=None) -> None:  #'#, #-#'
+
+        if not os.path.exists(test.root + "/.git"):
+            self.skip("Not in a git repository")
+            return
+
         temp_fn = out_filename
         temp_fn = re.sub(r'.*/', '', temp_fn)
         temp_fn = self.obj_dir + "/" + temp_fn
@@ -2903,7 +2909,6 @@ if __name__ == '__main__':
     parser.add_argument('--rerun', action='store_true', help='rerun all tests that fail')
     parser.add_argument('--rr', action='store_true', help='run Verilator executable with rr')
     parser.add_argument('--rrsim', action='store_true', help='run Verilated executable with rr')
-    parser.add_argument('--sanitize', action='store_true', help='run address sanitizer')
     parser.add_argument('--site',
                         action='store_true',
                         help='include VERILATOR_TEST_SITE test list')

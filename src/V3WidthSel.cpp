@@ -286,9 +286,10 @@ class WidthSelVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (const AstDynArrayDType* const adtypep = VN_CAST(ddtypep, DynArrayDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
-            const char* methodName = nodep->access().isWriteOrRW() ? "atWrite" : "at";
+            const VCMethod method
+                = nodep->access().isWriteOrRW() ? VCMethod::ARRAY_AT_WRITE : VCMethod::ARRAY_AT;
             AstCMethodHard* const newp
-                = new AstCMethodHard{nodep->fileline(), fromp, methodName, rhsp};
+                = new AstCMethodHard{nodep->fileline(), fromp, method, rhsp};
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             UINFOTREE(9, newp, "", "SELBTq");
             nodep->replaceWith(newp);
@@ -296,12 +297,16 @@ class WidthSelVisitor final : public VNVisitor {
         } else if (const AstQueueDType* const adtypep = VN_CAST(ddtypep, QueueDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
             AstCMethodHard* newp;
-            const char* methodName = nodep->access().isWriteOrRW() ? "atWriteAppend" : "at";
             if (AstNodeExpr* const backnessp = selQueueBackness(rhsp)) {
-                newp = new AstCMethodHard{nodep->fileline(), fromp,
-                                          std::string(methodName) + "Back", backnessp};
+                const VCMethod method = nodep->access().isWriteOrRW()
+                                            ? VCMethod::DYN_AT_WRITE_APPEND_BACK
+                                            : VCMethod::ARRAY_AT_BACK;
+                newp = new AstCMethodHard{nodep->fileline(), fromp, method, backnessp};
             } else {
-                newp = new AstCMethodHard{nodep->fileline(), fromp, methodName, rhsp};
+                const VCMethod method = nodep->access().isWriteOrRW()
+                                            ? VCMethod::DYN_AT_WRITE_APPEND
+                                            : VCMethod::ARRAY_AT;
+                newp = new AstCMethodHard{nodep->fileline(), fromp, method, rhsp};
             }
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             UINFOTREE(9, newp, "", "SELBTq");
@@ -379,10 +384,10 @@ class WidthSelVisitor final : public VNVisitor {
             // queue size, this allows a single queue reference, to support
             // for equations in side effects that select the queue to
             // operate upon.
-            std::string name = (qleftBacknessp    ? "sliceBackBack"
-                                : qrightBacknessp ? "sliceFrontBack"
-                                                  : "slice");
-            AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, name};
+            VCMethod method = (qleftBacknessp    ? VCMethod::DYN_SLICE_BACK_BACK
+                               : qrightBacknessp ? VCMethod::DYN_SLICE_FRONT_BACK
+                                                 : VCMethod::DYN_SLICE);
+            AstCMethodHard* const newp = new AstCMethodHard{nodep->fileline(), fromp, method};
             if (qleftBacknessp) {
                 VL_DO_DANGLING(pushDeletep(qleftp), qleftp);
                 newp->addPinsp(qleftBacknessp);

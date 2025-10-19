@@ -104,7 +104,7 @@ void V3ErrorGuarded::vlAbortOrExit() VL_REQUIRES(m_mutex) {
         VL_GCOV_DUMP();
         // Exit without triggering any global destructors. Used to prevent
         // detached V3ThreadPool jobs accessing destroyed static objects.
-        ::_exit(1);
+        ::_exit(1);  // LCOV_EXCL_LINE
     }
     v3Global.vlExit(1);
 #else
@@ -371,11 +371,11 @@ void V3Error::abortIfWarnings() {
 // Abort/exit
 
 void V3Error::vlAbort() {
-    VL_GCOV_DUMP();
 #ifndef V3ERROR_NO_GLOBAL_
     v3Global.shutdown();
 #endif
-    std::abort();
+    VL_GCOV_DUMP();
+    std::abort();  // LCOV_EXCL_LINE
 }
 std::ostringstream& V3Error::v3errorPrep(V3ErrorCode code) VL_ACQUIRE(s().m_mutex) {
     V3Error::s().m_mutex.lock();

@@ -327,12 +327,6 @@ class OrderGraphBuilder final : public VNVisitor {
         nodep->v3fatalSrc("AstFinal should not need ordering");
     }  // LCOV_EXCL_STOP
 
-    //--- Logic akin go SystemVerilog continuous assignments
-    void visit(AstAssignAlias* nodep) override {  //
-        iterateLogic(nodep);
-    }
-    void visit(AstAssignW* nodep) override { iterateLogic(nodep); }
-
     //--- Verilator concoctions
     void visit(AstCoverToggle* nodep) override {  //
         iterateLogic(nodep);
@@ -340,11 +334,11 @@ class OrderGraphBuilder final : public VNVisitor {
 
     //--- Ignored nodes
     void visit(AstVar*) override {}
-    void visit(AstVarScope* nodep) override {}
-    void visit(AstCell*) override {}  // Only interested in the respective AstScope
-    void visit(AstTypeTable*) override {}
-    void visit(AstConstPool*) override {}
-    void visit(AstClass*) override {}
+    void visit(AstVarScope* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
+    void visit(AstCell* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
+    void visit(AstTypeTable* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
+    void visit(AstConstPool* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
+    void visit(AstClass* nodep) override { nodep->v3fatalSrc("Should not reach V3Order"); }
     void visit(AstCFunc*) override {
         // Calls to DPI exports handled with AstCCall. /* verilator public */ functions are
         // ignored for now (and hence potentially mis-ordered), but could use the same or

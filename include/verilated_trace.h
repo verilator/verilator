@@ -531,7 +531,7 @@ public:
     }
     VL_ATTR_ALWINLINE void chgEventTriggered(uint32_t* oldp) { fullEventTriggered(oldp); }
     VL_ATTR_ALWINLINE void chgDouble(uint32_t* oldp, double newval) {
-        double old;
+        double old;  // LCOV_EXCL_LINE  // lcov bug
         std::memcpy(&old, oldp, sizeof(old));
         if (VL_UNLIKELY(old != newval)) fullDouble(oldp, newval);
     }

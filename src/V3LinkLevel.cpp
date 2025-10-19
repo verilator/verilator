@@ -173,6 +173,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
     // Make the new module first in the list
     oldmodp->unlinkFrBackWithNext();
     newmodp->addNext(oldmodp);
+    newmodp->depth(1);
     newmodp->level(1);
     newmodp->modPublic(true);
     newmodp->protect(false);

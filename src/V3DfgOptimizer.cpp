@@ -138,8 +138,9 @@ class DataflowExtractVisitor final : public VNVisitor {
                 cnodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
 
                 // Add assignment driving temporary variable
-                modp->addStmtsp(
-                    new AstAssignW{flp, new AstVarRef{flp, varp, VAccess::WRITE}, cnodep});
+                AstAssignW* const ap
+                    = new AstAssignW{flp, new AstVarRef{flp, varp, VAccess::WRITE}, cnodep};
+                modp->addStmtsp(new AstAlways{ap});
             }
         }
     }
@@ -255,7 +256,7 @@ class DataflowOptimize final {
 
     static void markExternallyReferencedVariables(AstNetlist* netlistp, bool scoped) {
         netlistp->foreach([scoped](AstNode* nodep) {
-            // Check variabel flags
+            // Check variable flags
             if (scoped) {
                 if (AstVarScope* const vscp = VN_CAST(nodep, VarScope)) {
                     const AstVar* const varp = vscp->varp();
@@ -265,6 +266,11 @@ class DataflowOptimize final {
                     if (hasExtRd) DfgVertexVar::setHasExtRdRefs(vscp);
                     if (hasExtWr) DfgVertexVar::setHasExtWrRefs(vscp);
                     return;
+                }
+                // TODO: remove once Actives can tolerate NEVER SenItems
+                if (AstSenItem* senItemp = VN_CAST(nodep, SenItem)) {
+                    senItemp->foreach(
+                        [](AstVarRef* refp) { DfgVertexVar::setHasExtRdRefs(refp->varScopep()); });
                 }
             } else {
                 if (AstVar* const varp = VN_CAST(nodep, Var)) {

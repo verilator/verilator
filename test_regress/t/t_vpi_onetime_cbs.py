@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.sanitize = False  # Test neads cleanup to reclaim all callbacks
 
 test.compile(make_top_shell=False,
              make_main=False,

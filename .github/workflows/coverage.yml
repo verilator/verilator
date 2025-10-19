@@ -2,95 +2,212 @@
 # DESCRIPTION: Github actions config
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-name: coverage
+name: Code coverage
 
 on:
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * 0'  # weekly
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   contents: read
 
-env:
-  CI_OS_NAME: linux
-  COVERAGE: 1
-  VERILATOR_ARCHIVE: verilator-coverage-${{ github.sha }}.tar.gz
-
 defaults:
   run:
     shell: bash
-    working-directory: repo
+
+concurrency:
+  # At most 1 job per branch. Auto cancel all but scheduled jobs
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
 
-  Build:
+  build:
+    name: Build
     # Only run scheduled jobs if explicitly enabled for that repo (e.g.: not on forks)
-    if: ${{ github.event_name != 'schedule' || vars.ENABLE_SCHEDULED_JOBS == 'true' }}
-    runs-on: ubuntu-24.04
-    env:
-      CI_BUILD_STAGE_NAME: build
-      CI_RUNS_ON: ubuntu-24.04
-    steps:
+    # Only run pull request jobs if labelled as needing an coverage run
+    # Always run workflow dispatch jobs
+    if: |
+      (github.event_name == 'schedule'
+        && vars.ENABLE_SCHEDULED_JOBS == 'true') ||
+      (github.event_name == 'pull_request'
+        && contains(github.event.pull_request.labels.*.name, 'pr: dev-coverage')) ||
+      (github.event_name == 'workflow_dispatch')
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      # For pull requests, build the head of the pull request branch, not the
+      # merge commit, otherwise patch coverage would include the changes
+      # between the root of the pull request and the target branch
+      sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      os: ubuntu-24.04
+      os-name: linux
+      cc: gcc
+      dev-asan: 0
+      dev-gcov: 1
 
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          path: repo
-
-      - name: Install packages for build
-        run: ./ci/ci-install.bash
-
-      - name: Build
-        run: ./ci/ci-script.bash
-
-      - name: Tar up repository
-        working-directory: ${{ github.workspace }}
-        run: tar --posix -c -z -f ${{ env.VERILATOR_ARCHIVE }} repo
-
-      - name: Upload tar archive
-        uses: actions/upload-artifact@v4
-        with:
-          path: ${{ github.workspace }}/${{ env.VERILATOR_ARCHIVE }}
-          name: ${{ env.VERILATOR_ARCHIVE }}
-
-  Test:
-    needs: Build
+  test:
+    name: Test | ${{ matrix.test }}${{ matrix.num }}
+    needs: build
+    uses: ./.github/workflows/reusable-test.yml
+    with:
+      archive: ${{ needs.build.outputs.archive }}
+      os: ubuntu-24.04
+      cc: gcc
+      reloc: 0
+      suite: ${{ matrix.test }}${{ matrix.num }}
+      dev-gcov: 1
     strategy:
       fail-fast: false
       matrix:
-        test: [vlt-, vltmt-]
+        test: [coverage-vlt-, coverage-vltmt-]
         num: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         include:
-          - {test: dist, num: ''}
-    runs-on: ubuntu-24.04
-    name: test-${{ matrix.test }}${{ matrix.num }}
-    env:
-      CI_BUILD_STAGE_NAME: test
-      CI_RUNS_ON: ubuntu-24.04
-    steps:
+          - {test: coverage-dist, num: ''}
 
-      - name: Download tar archive
+  publish-codecov:
+    name: Publish results to codecov.io
+    needs: test
+    if: ${{ contains(needs.*.result, 'success') && !cancelled() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download code coverage data
         uses: actions/download-artifact@v5
         with:
-          name: ${{ env.VERILATOR_ARCHIVE }}
+          pattern: code-coverage-*
+          path: obj_coverage
+          merge-multiple: true
+
+      - name: List files
+        id: list-files
+        run: |
+          ls -lsha obj_coverage
+          find obj_coverage -type f | paste -sd, | sed "s/^/files=/" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v5
+        with:
+          disable_file_fixes: true
+          disable_search: true
+          fail_ci_if_error: true
+          files: ${{ steps.list-files.outputs.files }}
+          plugins: noop
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
+
+  prepare-report:
+    name: Prepare HTML report
+    needs: [build, test]
+    if: ${{ contains(needs.*.result, 'success') && !cancelled() }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Install dependencies
+        run: |
+          echo 'set man-db/auto-update false' | sudo debconf-communicate >/dev/null
+          sudo dpkg-reconfigure man-db
+          sudo apt install lcov
+
+      - name: Download repository archive
+        uses: actions/download-artifact@v5
+        with:
+          name: ${{ needs.build.outputs.archive }}
           path: ${{ github.workspace }}
 
-      - name: Unpack tar archive
-        working-directory: ${{ github.workspace }}
-        run: tar -x -z -f ${{ env.VERILATOR_ARCHIVE }}
+      - name: Unpack repository archive
+        run: |
+          tar -x -z -f ${{ needs.build.outputs.archive }}
+          ls -lsha
 
-      - name: Install test dependencies
-        run: ./ci/ci-install.bash
+      - name: Download code coverage data
+        uses: actions/download-artifact@v5
+        with:
+          pattern: code-coverage-*
+          path: repo/obj_coverage
+          merge-multiple: true
 
-      - name: Test
+      - name: Create report
+        working-directory: repo
         env:
-          TESTS: coverage-${{ matrix.test }}${{ matrix.num }}
-        run: ./ci/ci-script.bash
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -lsha obj_coverage
+          # Combine reports from test jobs
+          nodist/fastcov.py -C obj_coverage/verilator-*.info --lcov -o obj_coverage/verilator.info
+          # For a PR, report patch coverage against the merge-base between the head of the PR and the target branch
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            COVERAGE_BASE=$(git rev-parse --short $(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}))
+            make coverage-report COVERAGE_BASE=${COVERAGE_BASE} |& tee ${{ github.workspace }}/make-coverage-report.log
+          else
+            make coverage-report
+          fi
+          # Remove data files
+          rm -f obj_coverage/verilator*.info
+          # Some extra work for PRs only
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # Save PR number in report
+            echo ${{ github.event.number }} > obj_coverage/pr-number.txt
+            # Generate notification comment content
+            mkdir -p notification
+            echo ${{ github.event.number }} > notification/pr-number.txt
+            NUM=$(gh run view ${{ github.run_id }} --json number --jq ".number")
+            URL=$(gh run view ${{ github.run_id }} --json url    --jq ".url")
+            echo "Patch coverage from PR workflow [#$NUM]($URL) (code coverage of lines changed relative to ${COVERAGE_BASE}):" > notification/body.txt
+            if [[ ! -f obj_coverage/empty-patch ]]; then
+              echo "<pre>" >> notification/body.txt
+              grep -E "(lines|branches)\.*:" ${{ github.workspace }}/make-coverage-report.log | sed "s/\.*:/:/" >> notification/body.txt || true
+              echo "</pre>" >> notification/body.txt
+              echo "Report: [${{ github.run_id }}](https://${{ github.repository_owner }}.github.io/verilator/coverage-reports/${{ github.run_id }}/index.html)" >> notification/body.txt
+            else
+              echo "Patch contains no code changes" >> notification/body.txt
+            fi
+            cat notification/body.txt
+          fi
 
-      - name: Upload coverage data to Codecov
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          path: repo/obj_coverage
+          name: coverage-report
+
+      - name: Upload notification
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v4
+        with:
+          path: repo/notification
+          name: coverage-pr-notification
+
+  # Create GitHub issue for failed scheduled jobs
+  # This should always be the last job (we want an issue if anything breaks)
+  create-issue:
+    name: Create issue on failure
+    needs: [publish-codecov,prepare-report]
+    if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && failure() && !cancelled() }}
+    runs-on: ubuntu-24.04
+    steps:
+      # Creating issues requires elevated privilege
+      - name: Generate access token
+        id: generate-token
+        uses: actions/create-github-app-token@v2.1.4
+        with:
+          app-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
+          owner: verilator
+          repositories: verilator
+          permission-issues: write
+      - name: Create issue
         env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |-
-          find . -name '*.gcno' -exec rm {} \;
-          ./ci/codecov -v upload-process -Z --sha ${{ github.sha }} -f nodist/obj_dir/coverage/app_total.info
+          echo "This issue was created automatically by the GitHub Actions CI due to the failure of a scheduled Code coverage run." >> body.txt
+          echo "" >> body.txt
+          echo "Workflow status: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> body.txt
+          gh issue --repo ${{ github.repository }} create \
+            --title "Code coverage run #${{ github.run_number }} Failed" \
+            --body-file body.txt \
+            --label new \
+            --assignee gezalore,wsnyder

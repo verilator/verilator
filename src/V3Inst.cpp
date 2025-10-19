@@ -73,16 +73,16 @@ class InstVisitor final : public VNVisitor {
                 AstNodeExpr* const rhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
                                                          m_cellp->name(), VAccess::READ};
                 AstAssignW* const assp = new AstAssignW{exprp->fileline(), exprp, rhsp};
-                m_cellp->addNextHere(assp);
+                m_cellp->addNextHere(new AstAlways{assp});
             } else if (nodep->modVarp()->isNonOutput()) {
                 // Don't bother moving constants now,
                 // we'll be pushing the const down to the cell soon enough.
-                AstNode* const assp
+                AstAssignW* const assp
                     = new AstAssignW{exprp->fileline(),
                                      new AstVarXRef{exprp->fileline(), nodep->modVarp(),
                                                     m_cellp->name(), VAccess::WRITE},
                                      exprp};
-                m_cellp->addNextHere(assp);
+                m_cellp->addNextHere(new AstAlways{assp});
                 UINFOTREE(9, assp, "", "_new");
             } else if (nodep->modVarp()->isIfaceRef()
                        || (VN_IS(nodep->modVarp()->dtypep()->skipRefp(), UnpackArrayDType)
@@ -90,7 +90,7 @@ class InstVisitor final : public VNVisitor {
                                         ->subDTypep()
                                         ->skipRefp(),
                                     IfaceRefDType))) {
-                // Create an AstAssignVarScope for Vars to Cells so we can
+                // Create an AstAliasScope for Vars to Cells so we can
                 // link with their scope later
                 AstNodeExpr* const lhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
                                                          m_cellp->name(), VAccess::READ};
@@ -98,9 +98,7 @@ class InstVisitor final : public VNVisitor {
                 const AstVarXRef* const xrefp = VN_CAST(exprp, VarXRef);
                 UASSERT_OBJ(refp || xrefp, exprp,
                             "Interfaces: Pin is not connected to a VarRef or VarXRef");
-                AstAssignVarScope* const assp
-                    = new AstAssignVarScope{exprp->fileline(), lhsp, exprp};
-                m_cellp->addNextHere(assp);
+                m_cellp->addNextHere(new AstAliasScope{exprp->fileline(), lhsp, exprp});
             } else {
                 nodep->v3error("Assigned pin is neither input nor output");
             }
@@ -377,7 +375,7 @@ private:
                 }
                 const string index = AstNode::encodeNumber(constp->toSInt() + arrp->lo());
                 if (VN_IS(arrselp->fromp(), SliceSel))
-                    arrselp->fromp()->v3error("Unsupported: interface slices");
+                    arrselp->fromp()->v3warn(E_UNSUPPORTED, "Unsupported: interface slices");
                 const AstVarRef* const varrefp = VN_CAST(arrselp->fromp(), VarRef);
                 UASSERT_OBJ(varrefp, arrselp, "No interface varref under array");
                 AstVarXRef* const newp = new AstVarXRef{
@@ -543,7 +541,7 @@ private:
                             lhsp = newarrselp;
                         } else {
                             nodep->v3warn(E_UNSUPPORTED,
-                                          "Unsupported lhs node type in array assignment");
+                                          "Unsupported LHS node type in array assignment");
                             return;
                         }
                         const AstVarRef* const rhsrefp = VN_CAST(nodep->rhsp(), VarRef);
@@ -678,7 +676,7 @@ public:
                                          pinexprp};
                 pinp->exprp(new AstVarRef{pinexprp->fileline(), newvarp, VAccess::READ});
             }
-            if (assignp) cellp->addNextHere(assignp);
+            if (assignp) cellp->addNextHere(new AstAlways{assignp});
             // UINFOTREE(1, pinp, "", "out");
             // UINFOTREE(1, assignp, "", "aout");
         }

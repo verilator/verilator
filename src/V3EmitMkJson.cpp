@@ -111,64 +111,69 @@ class V3EmitMkJsonEmitter final {
             .putList("user_classes", cppFiles)
             .end();
 
-        if (const V3HierBlockPlan* const planp = v3Global.hierPlanp()) {
-            // Sorted hierarchical blocks in order of leaf-first.
-            const V3HierBlockPlan::HierVector& hierBlocks = planp->hierBlocksSorted();
-
+        if (const V3HierGraph* const graphp = v3Global.hierGraphp()) {
             of.begin("submodules", '[');
 
-            for (V3HierBlockPlan::HierVector::const_iterator it = hierBlocks.begin();
-                 it != hierBlocks.end(); ++it) {
-                const V3HierBlock* hblockp = *it;
-                const V3HierBlock::HierBlockSet& children = hblockp->children();
-
-                std::vector<std::string> childDeps;
+            // Enumerate in dependency order, leaves first. TODO: Shouldn't
+            // really have to, but verilator-config.cmake.in depends on order.
+            for (const V3GraphVertex& vtx : vlstd::reverse_view(graphp->vertices())) {
+                const V3HierBlock* const hblockp = vtx.as<V3HierBlock>();
+                std::vector<std::string> deps;
                 std::vector<std::string> sources;
-
-                for (const V3HierBlock* const childp : children) {
-                    childDeps.emplace_back(childp->hierPrefix());
-                    sources.emplace_back(makeDir + "/" + childp->hierWrapperFilename(true));
+                for (const V3GraphEdge& edge : hblockp->outEdges()) {
+                    const V3HierBlock* const dependencyp = edge.top()->as<V3HierBlock>();
+                    deps.emplace_back(dependencyp->hierPrefix());
+                    sources.emplace_back(makeDir + "/" + dependencyp->hierWrapperFilename(true));
                 }
 
-                const string vFile = hblockp->vFileIfNecessary();
+                const std::string vFile = hblockp->vFileIfNecessary();
                 if (!vFile.empty()) sources.emplace_back(vFile);
 
-                for (const auto& i : v3Global.opt.vFiles())
-                    sources.emplace_back(
-                        V3Os::filenameSlashPath(V3Os::filenameRealPath(i.filename())));
-
-                std::vector<std::string> cflags;
-                cflags.emplace_back("-fPIC");
+                for (const VFileLibName& i : v3Global.opt.vFiles()) {
+                    const std::string fname = i.filename();
+                    sources.emplace_back(V3Os::filenameSlashPath(V3Os::filenameRealPath(fname)));
+                }
 
                 of.begin()
                     .put("prefix", hblockp->hierPrefix())
                     .put("top", hblockp->modp()->name())
-                    .putList("deps", childDeps)
+                    .putList("deps", deps)
                     .put("directory", makeDir + "/" + hblockp->hierPrefix())
                     .putList("sources", sources)
-                    .putList("cflags", cflags)
+                    .putList("cflags", {"-fPIC"})
                     .put("verilator_args", V3Os::filenameSlashPath(V3Os::filenameRealPath(
                                                hblockp->commandArgsFilename(true))))
                     .end();
             }
 
-            std::vector<std::string> sources;
-            for (const auto& itr : *planp)
-                sources.emplace_back(makeDir + "/" + itr.second.hierWrapperFilename(true));
+            // Top level reintegration
+            {
+                // TODO: When this reintegration "submodule" is built with the bundled
+                // CMake script, it will overwrite the original json manifest containing the
+                // "subodule" list we are creating here with one that doesn't have "submodule".
+                // Good luck debugging, suggest 'message(${MANIFEST})' in verilated-config.cmake.
+                std::vector<std::string> sources;
+                for (const V3GraphVertex& vtx : graphp->vertices()) {
+                    const V3HierBlock* const blockp = vtx.as<V3HierBlock>();
+                    sources.emplace_back(makeDir + "/" + blockp->hierWrapperFilename(true));
+                }
 
-            for (const auto& itr : v3Global.opt.vFiles())
-                sources.emplace_back(
-                    V3Os::filenameSlashPath(V3Os::filenameRealPath(itr.filename())));
+                for (const VFileLibName& i : v3Global.opt.vFiles()) {
+                    const std::string fname = i.filename();
+                    sources.emplace_back(V3Os::filenameSlashPath(V3Os::filenameRealPath(fname)));
+                }
 
-            of.begin()
-                .put("prefix", v3Global.opt.prefix())
-                .put("top", v3Global.rootp()->topModulep()->name())
-                .put("directory", makeDir)
-                .putList("sources", sources)
-                .put("verilator_args", V3Os::filenameSlashPath(V3Os::filenameRealPath(
-                                           planp->topCommandArgsFilename(true))))
-                .end()
-                .end();
+                of.begin()
+                    .put("prefix", v3Global.opt.prefix())
+                    .put("top", v3Global.rootp()->topModulep()->name())
+                    .put("directory", makeDir)
+                    .putList("sources", sources)
+                    .put("verilator_args", V3Os::filenameSlashPath(V3Os::filenameRealPath(
+                                               graphp->topCommandArgsFilename(true))))
+                    .end();
+            }
+
+            of.end();  // submodules
         }
     }
 

@@ -11,6 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
+if test.have_dev_gcov:
+    test.skip("Test suite intended for full dev coverage without needing this test")
+
 test.compile(v_flags2=["--timing", "+incdir+t/uvm", "t/t_uvm_todo.vlt", "-j 0"],
              make_flags=['-k'],
              verilator_make_gmake=False)

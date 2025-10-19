@@ -39,28 +39,27 @@ if [ "$CI_BUILD_STAGE_NAME" = "build" ]; then
   ##############################################################################
   # Build verilator
 
-  if [ "$COVERAGE" != 1 ]; then
-    autoconf
-    CONFIGURE_ARGS="--enable-longtests --enable-ccwarn"
-    if [ "$CI_ASAN" = 1 ]; then
-      CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-asan"
-      CXX="$CXX -DVL_LEAK_CHECKS"
-    fi
-    ./configure $CONFIGURE_ARGS --prefix="$INSTALL_DIR"
-    ccache -z
-    "$MAKE" -j "$NPROC" -k
-    # 22.04: ccache -s -v
-    ccache -s
-    if [ "$CI_OS_NAME" = "osx" ]; then
-      file bin/verilator_bin
-      file bin/verilator_bin_dbg
-      md5 bin/verilator_bin
-      md5 bin/verilator_bin_dbg
-      stat bin/verilator_bin
-      stat bin/verilator_bin_dbg
-    fi
-  else
-    nodist/code_coverage --stages 0-2
+  autoconf
+  CONFIGURE_ARGS="--enable-longtests --enable-ccwarn"
+  if [ "$CI_DEV_ASAN" = 1 ]; then
+    CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-dev-asan"
+    CXX="$CXX -DVL_LEAK_CHECKS"
+  fi
+  if [ "$CI_DEV_GCOV" = 1 ]; then
+    CONFIGURE_ARGS="$CONFIGURE_ARGS --enable-dev-gcov"
+  fi
+  ./configure $CONFIGURE_ARGS --prefix="$INSTALL_DIR"
+  ccache -z
+  "$MAKE" -j "$NPROC" -k
+  # 22.04: ccache -s -v
+  ccache -s
+  if [ "$CI_OS_NAME" = "osx" ]; then
+    file bin/verilator_bin
+    file bin/verilator_bin_dbg
+    md5 bin/verilator_bin
+    md5 bin/verilator_bin_dbg
+    stat bin/verilator_bin
+    stat bin/verilator_bin_dbg
   fi
 elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   ##############################################################################
@@ -91,9 +90,6 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     export VERILATOR_TEST_NO_GPROF=1 # gprof is a bit different on FreeBSD, disable
   fi
 
-  # Run sanitize on Ubuntu 22.04 only
-  ( [[ "$CI_RUNS_ON" =~ 'ubuntu-22.04' ]] || [[ "$CI_RUNS_ON" =~ 'ubuntu-24.04' ]] ) && sanitize='--sanitize' || sanitize=''
-
   TEST_REGRESS=test_regress
   if [ "$CI_RELOC" == 1 ]; then
      # Testing that the installation is relocatable.
@@ -114,16 +110,16 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
   ccache -z
   case $TESTS in
     dist-vlt-0)
-      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean $sanitize" DRIVER_HASHSET=--hashset=0/4
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean" DRIVER_HASHSET=--hashset=0/4
       ;;
     dist-vlt-1)
-      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean $sanitize" DRIVER_HASHSET=--hashset=1/4
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean" DRIVER_HASHSET=--hashset=1/4
       ;;
     dist-vlt-2)
-      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean $sanitize" DRIVER_HASHSET=--hashset=2/4
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean" DRIVER_HASHSET=--hashset=2/4
       ;;
     dist-vlt-3)
-      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean $sanitize" DRIVER_HASHSET=--hashset=3/4
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist --vlt --driver-clean" DRIVER_HASHSET=--hashset=3/4
       ;;
     vltmt-0)
       "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --driver-clean" DRIVER_HASHSET=--hashset=0/3
@@ -134,71 +130,68 @@ elif [ "$CI_BUILD_STAGE_NAME" = "test" ]; then
     vltmt-2)
       "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt --driver-clean" DRIVER_HASHSET=--hashset=2/3
       ;;
-    coverage-all)
-      nodist/code_coverage --stages 1-
-      ;;
     coverage-dist)
-      nodist/code_coverage --stages 1- --scenarios=--dist
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--dist"
       ;;
     coverage-vlt-0)
-      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=0/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=0/10
       ;;
     coverage-vlt-1)
-      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=1/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=1/10
       ;;
     coverage-vlt-2)
-      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=2/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=2/10
       ;;
     coverage-vlt-3)
-      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=3/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=3/10
       ;;
     coverage-vlt-4)
-      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=4/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=4/10
       ;;
     coverage-vlt-5)
-      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=5/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=5/10
       ;;
     coverage-vlt-6)
-      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=6/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=6/10
       ;;
     coverage-vlt-7)
-      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=7/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=7/10
       ;;
     coverage-vlt-8)
-      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=8/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=8/10
       ;;
     coverage-vlt-9)
-      nodist/code_coverage --stages 1- --scenarios=--vlt --hashset=9/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vlt" DRIVER_HASHSET=--hashset=9/10
       ;;
     coverage-vltmt-0)
-      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=0/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=0/10
       ;;
     coverage-vltmt-1)
-      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=1/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=1/10
       ;;
     coverage-vltmt-2)
-      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=2/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=2/10
       ;;
     coverage-vltmt-3)
-      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=3/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=3/10
       ;;
     coverage-vltmt-4)
-      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=4/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=4/10
       ;;
     coverage-vltmt-5)
-      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=5/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=5/10
       ;;
     coverage-vltmt-6)
-      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=6/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=6/10
       ;;
     coverage-vltmt-7)
-      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=7/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=7/10
       ;;
     coverage-vltmt-8)
-      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=8/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=8/10
       ;;
     coverage-vltmt-9)
-      nodist/code_coverage --stages 1- --scenarios=--vltmt --hashset=9/10
+      "$MAKE" -C "$TEST_REGRESS" SCENARIOS="--vltmt" DRIVER_HASHSET=--hashset=9/10
       ;;
     *)
       fatal "Unknown test: $TESTS"

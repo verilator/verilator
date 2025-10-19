@@ -327,8 +327,12 @@ string VString::replaceWord(const string& str, const string& from, const string&
     return result;
 }
 
-bool VString::startsWith(const string& str, const string& prefix) {
-    return str.rfind(prefix, 0) == 0;  // Faster than .find(_) == 0
+std::deque<string> VString::split(const string& str, char delimiter) {
+    std::deque<std::string> results;
+    std::istringstream is{str};
+    std::string token;
+    while (std::getline(is, token, delimiter)) results.push_back(token);
+    return results;
 }
 
 bool VString::endsWith(const string& str, const string& suffix) {

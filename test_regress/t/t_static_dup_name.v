@@ -5,7 +5,7 @@
 
 module t;
 
-  function do_stuff();
+  function void do_stuff();
     static int some_int;
     begin: block0
       static int some_int;

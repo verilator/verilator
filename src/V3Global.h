@@ -37,7 +37,7 @@
 #include <unordered_set>
 
 class AstNetlist;
-class V3HierBlockPlan;
+class V3HierGraph;
 class V3ThreadPool;
 
 //======================================================================
@@ -97,12 +97,12 @@ constexpr bool operator==(VWidthMinUsage::en lhs, const VWidthMinUsage& rhs) {
 
 class V3Global final {
     // Globals
-    AstNetlist* m_rootp = nullptr;  // Root of entire netlist,
-    // created by makeInitNetlist(} so static constructors run first
-    V3HierBlockPlan* m_hierPlanp = nullptr;  // Hierarchical Verilation plan,
-    // nullptr unless hier_block, set via hierPlanp(V3HierBlockPlan*}
-    V3ThreadPool* m_threadPoolp = nullptr;  // Thread Pool,
-    // nullptr unless 'verilatedJobs' is known, set via threadPoolp(V3ThreadPool*)
+    // Root of entire netlist, created by makeInitNetlist(} so static constructors run first
+    AstNetlist* m_rootp = nullptr;
+    // Hierarchical block graph (plan) iff hierarchical verilation is performed
+    V3HierGraph* m_hierGraphp = nullptr;
+    // Thread Pool, nullptr unless 'verilatedJobs' is known, set via threadPoolp(V3ThreadPool*)
+    V3ThreadPool* m_threadPoolp = nullptr;
     VWidthMinUsage m_widthMinUsage
         = VWidthMinUsage::LINT_WIDTH;  // What AstNode::widthMin() is used for
 
@@ -123,7 +123,7 @@ class V3Global final {
     bool m_usesStdPackage = false;  // Design uses the std package
     bool m_usesTiming = false;  // Design uses timing constructs
     bool m_hasForceableSignals = false;  // Need to apply V3Force pass
-    bool m_hasSCTextSections = false;  // Has `systemc_* sections that need to be emitted
+    bool m_hasSystemCSections = false;  // Has AstSystemCSection that need to be emitted
     bool m_useParallelBuild = false;  // Use parallel build for model
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
     uint64_t m_currentHierBlockCost = 0;  // Total cost of this hier block, used for scheduling
@@ -197,13 +197,10 @@ public:
     void setUsesTiming() { m_usesTiming = true; }
     bool hasForceableSignals() const { return m_hasForceableSignals; }
     void setHasForceableSignals() { m_hasForceableSignals = true; }
-    bool hasSCTextSections() const VL_MT_SAFE { return m_hasSCTextSections; }
-    void setHasSCTextSections() { m_hasSCTextSections = true; }
-    V3HierBlockPlan* hierPlanp() const { return m_hierPlanp; }
-    void hierPlanp(V3HierBlockPlan* plan) {
-        UASSERT(!m_hierPlanp, "call once");
-        m_hierPlanp = plan;
-    }
+    bool hasSystemCSections() const VL_MT_SAFE { return m_hasSystemCSections; }
+    void setHasSystemCSections() { m_hasSystemCSections = true; }
+    V3HierGraph* hierGraphp() const { return m_hierGraphp; }
+    void hierGraphp(V3HierGraph* graphp) { m_hierGraphp = graphp; }
     bool useParallelBuild() const { return m_useParallelBuild; }
     void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
     bool useRandomizeMethods() const { return m_useRandomizeMethods; }

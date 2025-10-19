@@ -13,20 +13,44 @@ Verilator 5.041 devel
 
 **Other:**
 
-* Add error on non-packed struct randc (#5999). [Seth Pellegrino]
-* Add configure `--enable-asan` to compile verilator_bin with the address sanitizer (#6404). [Geza Lore]
-* Add $(LDFLAGS) and $(LIBS) to when building shared libraries (#6425) (#6426). [Ahmed El-Mahmoudy]
+* Add HIERPARAM error on parameter values from hierarchical paths (#1626) (#6456) (#6484). [Todd Strader] [Luca Rufer]
+* Add error on zero/negative unpacked dimensions (#1642). [Stefan Wallentowitz]
+* Add verilator_gantt profiling of DPI imports (#3084). [Geza Lore]
 * Add ASSIGNEQEXPR when use `=` inside expressions (#5567). [Ethan Sifferman]
+* Add error on non-packed struct randc (#5999). [Seth Pellegrino]
+* Add configure `--enable-dev-asan` to compile verilator_bin with the address sanitizer (#6404). [Geza Lore]
+* Add $(LDFLAGS) and $(LIBS) to when building shared libraries (#6425) (#6426). [Ahmed El-Mahmoudy]
+* Add IMPLICITSTATIC also on procedure variables.
+* Add FUNCTIMCTL error on function invoking task or time-controlling statements (#6385).
+* Add error on `virtual new` (#6486). [Alex Solomatnikov]
+* Add error on ranges with tristate values (#6534). [Alex Solomatnikov]
+* Add NORETURN warning on functions without return values (#6534). [Alex Solomatnikov]
 * Deprecate sensitivity list on public_flat_rw attributes (#6443). [Geza Lore]
+* Deprecate clocker attribute and --clk option (#6463). [Geza Lore]
+* Deprecate '--make cmake' option (#6540). [Geza Lore]
+* Change default `--expand-limit` to 256 (#3419).
+* Change developer coverage flow and add configure `--enable-dev-gcov` (#6526). [Geza Lore]
 * Support modports referencing clocking blocks (#4555) (#6436). [Ryszard Rozak, Antmicro Ltd.]
+* Support class package reference on pattern keys (#5653). [Todd Strader]
+* Support digits in `$sscanf` field width formats (#6083). [Iztok Jeras]
 * Support pure functions in sensitivity lists (#6393). [Krzysztof Bieganski, Antmicro Ltd.]
+* Support simple alias statements (#6339) (#6501). [Ryszard Rozak, Antmicro Ltd.]
+* Support simple cycle delay sequence expressions inside properties (#6508). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Improve `lint_off` to allow multiple messages and comments (#2755).
 * Improve automatic selection of logic for DFG synthesis (#6370). [Geza Lore]
 * Improve `covergroup with function sample` handling  (#6387). [Jakub Wasilewski]
 * Improve DFG type system (#6390). [Geza Lore]
 * Improve DFG variable removal and temporary insertion (#6401). [Geza Lore]
-* Optimize dead functions without references (#6380). [Artur Bieniek, Antmicro Ltd.]
+* Improve memory usage of statistics (#6513). [Geza Lore]
+* Optimize duplicate 'if' and '?:' conditions (#3807) (#6495)
+* Optimize dead functions in more cases (#6380) (#6430). [Artur Bieniek, Antmicro Ltd.]
 * Optimize constant folding in wide expression expansion (#6381). [Geza Lore]
+* Fix `--trace-max-width` and increase to 4096. (#2385).
+* Fix missing BLKSEQ when connecting module port to array (#2973).
+* Fix LATCH warning with CASEINCOMPLETE (#3301).
+* Fix unused parameterized class causing internal error (#4013). [Alberto Del Rio]
 * Fix false CONSTVAR error on initializers (#4992).
+* Fix interface exposure with `--public-depth` or `--trace-depth` (#5758).
 * Fix cell scoping performance (#6059). [Jerry Tianchen]
 * Fix hierarchical `--prof-pgo` (#6213). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix while loop hang on timing-delayed assignment (#6343) (#6354). [Krzysztof Bieganski, Antmicro Ltd.]
@@ -44,14 +68,37 @@ Verilator 5.041 devel
 * Fix use after free in elaboration (#6403). [Geza Lore]
 * Fix address sanitizer issues (#6406). [Geza Lore]
 * Fix timing control under fork under function (#6407). [Krzysztof Bieganski, Antmicro Ltd.]
-* Fix memory leaks (#6411) (#6417) (#6419) (#6437) (#6439). [Geza Lore]
+* Fix memory leaks and reduce requirements (#6411) (#6417) (#6419) (#6437) (#6439) (#6517). [Geza Lore]
 * Fix parameter implicit type from string (#6414). [Alex Solomatnikov]
 * Fix parsing for sequence expressions (#6427). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix parameterized class super functions (#6431) (#6438). [Artur Bieniek, Antmicro Ltd.]
 * Fix external function declarations with class typedef references (#6433).
 * Fix internal error on out-of-bounds real array access.
 * Fix pre/post increments in assertions (#6434).
 * Fix elaboration displays with `%m` and some `%p` (#6445) (#6451). [Alex Solomatnikov]
+* Fix cast in gdbinit.py (#6447). [Artur Bieniek, Antmicro Ltd.]
 * Fix false unique assertions on `else ;` (#6450). [Don Owen]
+* Fix loss of clock attribute in DFG variable removal (#6453). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix data types of method calls without parenthesis (#6457). [Artur Bieniek, Antmicro Ltd.]
+* Fix segfault on unsupported PLI calls (#6458). [Krzysztof Bieganski, Antmicro Ltd.]
+* Fix false assertion failure on failed DFG driver tracing (#6459). [Geza Lore]
+* Fix side effects when using select (#6460). [Igor Zaworski, Antmicro Ltd.]
+* Fix timeprecision backward assignment (#6469). [Artur Bieniek, Antmicro Ltd.]
+* Fix splitting hierarchically referenced variables (#6475). [Ryszard Rozak, Antmicro Ltd.]
+* Fix Windows compilation of Verilator with spaces in the path (#6477). [Fabian Keßler-Schulz]
+* Fix PROTOTYPEMIS error on implicit logic (#6482). [Alex Solomatnikov]
+* Fix configure misdetecting C++14 (#6488) (#6515). [Thomas O'Keeffe]
+* Fix false BLKSEQ on non-edged sensitivity list (#6492). [Oron Port]
+* Fix .vlt public_flat* and others to support long identifier names (#6516). [Szymon Gizler, Antmicro Ltd.]
+* Fix always_ff on constants (#6519). [Todd Strader]
+* Fix find_index methods of associative arrays (#6525). [Ryszard Rozak, Antmicro Ltd.]
+* Fix parsing of `eventually[]` and property expression memory leaks (#6530). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix memory leak for unsupported `$past` (#6535). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix inconsistent force assignment (#6541). [Artur Bieniek, Antmicro Ltd.]
+* Fix DFG circular driver tracing with partial assignments. [Geza Lore]
+* Fix passing typedef value as parameter (#6543) (#6547). [Igor Zaworski, Antmicro Ltd.]
+* Fix indent error on quoted strings (#6544).
+* Fix incorrect nested interface-class error (#6549). [Matthew Ballance]
 
 
 Verilator 5.040 2025-08-30

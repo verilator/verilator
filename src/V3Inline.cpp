@@ -171,7 +171,7 @@ class InlineMarkVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstAlways* nodep) override {
-        m_modp->user4Inc();  // statement count
+        if (nodep->keyword() != VAlwaysKwd::CONT_ASSIGN) nodep->user4Inc();  // statement count
         iterateChildren(nodep);
     }
     void visit(AstNodeAssign* nodep) override {
@@ -317,7 +317,7 @@ class InlineRelinkVisitor final : public VNVisitor {
         nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
         iterateChildren(nodep);
     }
-    void visit(AstAssignAlias* nodep) override {
+    void visit(AstAlias* nodep) override {
         // Don't replace port variable in the alias
     }
     void visit(AstVarRef* nodep) override {
@@ -393,15 +393,9 @@ class InlineRelinkVisitor final : public VNVisitor {
     void visit(AstScopeName* nodep) override {
         // If there's a %m in the display text, we add a special node that will contain the name()
         // Similar code in V3Begin
-        // To keep correct visual order, must add before other Text's
-        AstText* afterp = nodep->scopeAttrp();
-        if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->addScopeAttrp(new AstText{nodep->fileline(), "__DOT__"s + m_cellp->name()});
-        if (afterp) nodep->addScopeAttrp(afterp);
-        afterp = nodep->scopeEntrp();
-        if (afterp) afterp->unlinkFrBackWithNext();
-        nodep->addScopeEntrp(new AstText{nodep->fileline(), "__DOT__"s + m_cellp->name()});
-        if (afterp) nodep->addScopeEntrp(afterp);
+        // To keep correct visual order, must add before exising
+        nodep->scopeAttr("__DOT__" + m_cellp->name() + nodep->scopeAttr());
+        nodep->scopeEntr("__DOT__" + m_cellp->name() + nodep->scopeEntr());
         iterateChildren(nodep);
     }
     void visit(AstNodeCoverDecl* nodep) override {
@@ -480,7 +474,9 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     // the port variable. The constant can still be inlined, in which case
     // this is needed for tracing the inlined port variable.
     if (AstConst* const pinp = VN_CAST(pinExprp, Const)) {
-        modp->addStmtsp(new AstAssignW{flp, portRef(VAccess::WRITE), pinp->cloneTree(false)});
+        AstAssignW* const ap
+            = new AstAssignW{flp, portRef(VAccess::WRITE), pinp->cloneTree(false)};
+        modp->addStmtsp(new AstAlways{ap});
         return;
     }
 
@@ -499,10 +495,11 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
         UINFO(6, "Inlning port variable: " << nodep);
         if (nodep->isIfaceRef()) {
             modp->addStmtsp(
-                new AstAssignVarScope{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
+                new AstAliasScope{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
         } else {
-            modp->addStmtsp(
-                new AstAssignAlias{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
+            AstVarRef* const aliasArgsp = portRef(VAccess::WRITE);
+            aliasArgsp->addNext(pinRef(VAccess::READ));
+            modp->addStmtsp(new AstAlias{flp, aliasArgsp});
         }
         // They will become the same variable, so propagate file-line and variable attributes
         pinRefp->varp()->fileline()->modifyStateInherit(flp);
@@ -515,11 +512,13 @@ void connectPort(AstNodeModule* modp, AstVar* nodep, AstNodeExpr* pinExprp) {
     // Otherwise create the continuous assignment between the port var and the pin expression
     UINFO(6, "Not inlning port variable: " << nodep);
     if (nodep->direction() == VDirection::INPUT) {
-        modp->addStmtsp(new AstAssignW{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)});
+        AstAssignW* const ap = new AstAssignW{flp, portRef(VAccess::WRITE), pinRef(VAccess::READ)};
+        modp->addStmtsp(new AstAlways{ap});
     } else if (nodep->direction() == VDirection::OUTPUT) {
-        modp->addStmtsp(new AstAssignW{flp, pinRef(VAccess::WRITE), portRef(VAccess::READ)});
+        AstAssignW* const ap = new AstAssignW{flp, pinRef(VAccess::WRITE), portRef(VAccess::READ)};
+        modp->addStmtsp(new AstAlways{ap});
     } else {
-        pinExprp->v3fatalSrc("V3Tristate left INOUT port");  // LCOV_EXCL_LINE
+        pinExprp->v3fatalSrc("V3Tristate left INOUT port");
     }
 }
 
@@ -554,8 +553,8 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last) {
     }
 
     // Create data for resolving hierarchical references later.
-    modp->addInlinesp(new AstCellInline{cellp->fileline(), cellp->name(),
-                                        cellp->modp()->origName(), cellp->modp()->timeunit()});
+    modp->addInlinesp(
+        new AstCellInline{cellp->fileline(), cellp->name(), cellp->modp()->origName()});
 
     // Connect the pins on the instance
     for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
@@ -632,7 +631,7 @@ void process(AstNetlist* netlistp, ModuleStateUser1Allocator& moduleStates) {
     // Clean up AstIfaceRefDType references
     // If the cell has been removed let's make sure we don't leave a
     // reference to it. This dtype may still be in use by the
-    // AstAssignVarScope created earlier but that'll get cleared up later
+    // AstAliasScope created earlier but that'll get cleared up later
     netlistp->typeTablep()->foreach([](AstIfaceRefDType* nodep) {
         if (nodep->user1()) nodep->cellp(nullptr);
     });

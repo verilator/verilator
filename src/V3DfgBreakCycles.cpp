@@ -176,45 +176,51 @@ class TraceDriver final : public DfgVisitor {
         // Trace the vertex
         onStackr = true;
 
+        // The resulting driver that is not part of m_component
+        DfgVertex* resp = nullptr;
+
         // If the currently traced vertex is in a different component,
         // then we found what we were looking for.
         if (m_vtx2Scc[vtxp] != m_component) {
-            m_resp = vtxp;
+            resp = vtxp;
             // If the result is a splice, we need to insert a temporary for it
             // as a splice cannot be fed into arbitray logic
-            if (DfgVertexSplice* const splicep = m_resp->cast<DfgVertexSplice>()) {
+            if (DfgVertexSplice* const splicep = resp->cast<DfgVertexSplice>()) {
                 DfgVertexVar* const tmpp = createTmp("TraceDriver", splicep);
-                splicep->replaceWith(tmpp);
+                // Note: we can't do 'splicep->replaceWith(tmpp)', as other
+                // variable sinks of the splice might have a defaultp driver.
                 tmpp->srcp(splicep);
-                m_resp = tmpp;
+                resp = tmpp;
             }
             // Apply a Sel to extract the relevant bits if only a part is needed
-            if (msb != m_resp->width() - 1 || lsb != 0) {
-                DfgSel* const selp = make<DfgSel>(m_resp, msb - lsb + 1);
-                selp->fromp(m_resp);
+            if (msb != resp->width() - 1 || lsb != 0) {
+                DfgSel* const selp = make<DfgSel>(resp, msb - lsb + 1);
+                selp->fromp(resp);
                 selp->lsb(lsb);
-                m_resp = selp;
+                resp = selp;
             }
         } else {
             // Otherwise visit the vertex
             VL_RESTORER(m_msb);
             VL_RESTORER(m_lsb);
+            VL_RESTORER(m_resp);
             m_msb = msb;
             m_lsb = lsb;
             m_resp = nullptr;
             iterate(vtxp);
+            resp = m_resp;
         }
-        UASSERT_OBJ(!m_resp || m_resp->width() == (msb - lsb + 1), vtxp, "Wrong result width");
+        UASSERT_OBJ(!resp || resp->width() == (msb - lsb + 1), vtxp, "Wrong result width");
 
         // Pop from stack
         onStackr = false;
         m_stack.pop_back();
 
         // Done
-        if (!m_resp) {
+        if (!resp) {
             UINFO(9, "TraceDriver - Failed to trace vertex of type: " << vtxp->typeName());
         }
-        return m_resp;
+        return resp;
     }
 
     template <typename Vertex>
@@ -1116,7 +1122,7 @@ class FixUpIndependentRanges final {
         if (const DfgVertexVar* const varp = vtx.cast<DfgVertexVar>()) {
             return varp->nodep()->name();
         }
-        vtx.v3fatalSrc("Unhandled node type");  // LCOV_EXCL_LINE
+        vtx.v3fatalSrc("Unhandled node type");
     }
 
     // Trace drivers of independent bits of 'vtxp' in the range '[hi:lo]'

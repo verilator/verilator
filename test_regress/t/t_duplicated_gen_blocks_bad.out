@@ -1,4 +1,4 @@
-%Error: t/t_duplicated_gen_blocks_bad.v:11:12: Duplicate declaration of block: 'block'
+%Error: t/t_duplicated_gen_blocks_bad.v:11:12: Duplicate declaration of generate block: 'block'
                                              : ... note: In instance 't'
    11 |    begin : block
       |            ^~~~~
@@ -6,7 +6,7 @@
     9 |    begin : block
       |            ^~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_duplicated_gen_blocks_bad.v:15:23: Duplicate declaration of block: 'block1'
+%Error: t/t_duplicated_gen_blocks_bad.v:15:23: Duplicate declaration of generate block: 'block1'
                                              : ... note: In instance 't'
    15 |    if (X > 1) begin : block1
       |                       ^~~~~~

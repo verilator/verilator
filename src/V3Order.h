@@ -43,15 +43,13 @@ using ExternalDomainsProvider = std::function<void(const AstVarScope*, std::vect
 // Map from Trigger Sensitivity tree to original Sensitivity tree
 using TrigToSenMap = std::unordered_map<const AstSenTree*, const AstSenTree*>;
 
-AstCFunc* order(
-    AstNetlist* netlistp,  //
-    const std::vector<V3Sched::LogicByScope*>& logic,  //
-    const TrigToSenMap& trigToSen,  //
-    const string& tag,  //
-    bool parallel,  //
-    bool slow,  //
-    const ExternalDomainsProvider& externalDomains
-    = [](const AstVarScope*, std::vector<AstSenTree*>&) {}) VL_MT_DISABLED;
+AstCFunc* order(AstNetlist* netlistp,  //
+                const std::vector<V3Sched::LogicByScope*>& logic,  //
+                const TrigToSenMap& trigToSen,  //
+                const string& tag,  //
+                bool parallel,  //
+                bool slow,  //
+                const ExternalDomainsProvider& externalDomains) VL_MT_DISABLED;
 
 void selfTestParallel();
 

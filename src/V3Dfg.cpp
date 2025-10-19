@@ -296,7 +296,7 @@ static void dumpDotVertex(std::ostream& os, const DfgVertex& vtx) {
         } else if (varVtxp->is<DfgVarArray>()) {
             os << ", shape=box3d";
         } else {
-            varVtxp->v3fatalSrc("Unhandled DfgVertexVar sub-type");  // LCOV_EXCL_LINE
+            varVtxp->v3fatalSrc("Unhandled DfgVertexVar sub-type");
         }
         // Color
         if (varp->direction() == VDirection::INPUT) {

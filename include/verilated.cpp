@@ -295,6 +295,16 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
 }
 
 //===========================================================================
+// Process -- parts of std::process implementation
+
+std::string VlProcess::randstate() const VL_MT_UNSAFE {
+    return VlRNG::vl_thread_rng().get_randstate();
+}
+void VlProcess::randstate(const std::string& state) VL_MT_UNSAFE {
+    VlRNG::vl_thread_rng().set_randstate(state);
+}
+
+//===========================================================================
 // Random -- Mostly called at init time, so not inline.
 
 VlRNG::VlRNG() VL_MT_SAFE {
@@ -1320,6 +1330,19 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 const int c = _vl_vsss_peek(fp, floc, fromp, fstr);
                 if (c != '%') goto done;
                 _vl_vsss_advance(fp, floc);
+                break;
+            }
+            case '0':  // FALLTHRU
+            case '1':  // FALLTHRU
+            case '2':  // FALLTHRU
+            case '3':  // FALLTHRU
+            case '4':  // FALLTHRU
+            case '5':  // FALLTHRU
+            case '6':  // FALLTHRU
+            case '7':  // FALLTHRU
+            case '8':  // FALLTHRU
+            case '9': {
+                inPct = true;
                 break;
             }
             case '*':
@@ -2836,11 +2859,13 @@ void VerilatedContext::addModel(const VerilatedModel* modelp) {
 
     // We look for time passing, as opposed to post-eval(), as embedded
     // models might get added inside initial blocks.
-    if (VL_UNLIKELY(time()))
-        VL_FATAL_MT(
-            "", 0, "",
-            "Adding model when time is non-zero. ... Suggest check time(), or for restarting"
-            " model use a new VerilatedContext");
+    if (VL_UNLIKELY(time())) {
+        const std::string msg
+            = "Adding model '"s + modelp->hierName()
+              + "' when time is non-zero. ... Suggest check time(), or for restarting"
+                " model use a new VerilatedContext";
+        VL_FATAL_MT("", 0, "", msg.c_str());
+    }
 
     threadPoolp();  // Ensure thread pool is created, so m_threads cannot change any more
     m_threadsInModels += modelp->threads();

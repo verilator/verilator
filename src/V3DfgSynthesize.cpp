@@ -170,7 +170,7 @@ class AstToDfgConverter final : public VNVisitor {
                 } else if (newp->is<DfgVarArray>()) {
                     newp->srcp(make<DfgSpliceArray>(newp->fileline(), newp->dtype()));
                 } else {
-                    nodep->v3fatalSrc("Unhandled DfgVertexVar sub-type");  // LCOV_EXCL_LINE
+                    nodep->v3fatalSrc("Unhandled DfgVertexVar sub-type");
                 }
 
                 // Use new temporary
@@ -245,7 +245,7 @@ class AstToDfgConverter final : public VNVisitor {
                     DfgSpliceArray* const newp = make<DfgSpliceArray>(flp, dtype);
                     splicep->addDriver(newp, index, flp);
                 } else {
-                    nodep->v3fatalSrc("Unhandled data type kind");  // LCOV_EXCL_LINE
+                    nodep->v3fatalSrc("Unhandled data type kind");
                 }
             }
 
@@ -345,7 +345,7 @@ class AstToDfgConverter final : public VNVisitor {
                     sap->addDriver(item.m_rhsp, item.m_idx, flp);
                 }
             } else {
-                item.m_lhsp->v3fatalSrc("Unhandled DfgVertexSplice sub-type");  // LCOV_EXCL_LINE
+                item.m_lhsp->v3fatalSrc("Unhandled DfgVertexSplice sub-type");
             }
         }
 
@@ -894,7 +894,7 @@ class AstToDfgSynthesize final {
         } else if (var.is<DfgVarArray>()) {
             splicep = make<DfgSpliceArray>(var.fileline(), var.dtype());
         } else {
-            var.v3fatalSrc("Unhandled DfgVertexVar sub-type");  // LCOV_EXCL_LINE
+            var.v3fatalSrc("Unhandled DfgVertexVar sub-type");
         }
         for (const Driver& d : newDrivers) splicep->addDriver(d.m_vtxp, d.m_lo, d.m_flp);
         return splicep;
@@ -1482,7 +1482,7 @@ class AstToDfgSynthesize final {
             }
 
             // TODO: computePropagatedDrivers cannot handle arrays, should
-            // never happen with AssignW
+            // never happen with simple continous assignments
             if (!resp->isPacked()) {
                 ++m_ctx.m_synt.nonSynArray;
                 return true;  // Not OK, give up
@@ -1597,8 +1597,9 @@ class AstToDfgSynthesize final {
         VL_RESTORER(m_logicp);
         m_logicp = &vtx;
 
-        if (AstAssignW* const nodep = VN_CAST(vtx.nodep(), AssignW)) {
-            if (!synthesizeAssignW(nodep)) return false;
+        if (AstAssignW* const ap = VN_CAST(vtx.nodep()->stmtsp(), AssignW)) {
+            if (ap->nextp()) return false;
+            if (!synthesizeAssignW(ap)) return false;
             ++m_ctx.m_synt.synthAssign;
             return true;
         }
@@ -1908,12 +1909,12 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
         });
     }
 
-    // Synthesize all AssignW and simple blocks driving exactly one variable
-    // This is approximately the old default behaviour of Dfg
+    // Synthesize all continuous assignments and simple blocks driving exactly
+    // one variable. This is approximately the old default behaviour of Dfg.
     for (DfgVertex& vtx : dfg.opVertices()) {
         DfgLogic* const logicp = vtx.cast<DfgLogic>();
         if (!logicp) continue;
-        if (VN_IS(logicp->nodep(), AssignW)) {
+        if (logicp->nodep()->keyword() == VAlwaysKwd::CONT_ASSIGN) {
             worklist.push_front(*logicp);
             continue;
         }

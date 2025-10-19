@@ -157,6 +157,9 @@ public:
             if (!childp->completed()) return false;
         return true;
     }
+
+    std::string randstate() const VL_MT_UNSAFE;
+    void randstate(const std::string& state) VL_MT_UNSAFE;
 };
 
 inline std::string VL_TO_STRING(const VlProcessRef& p) { return std::string("process"); }
@@ -1123,7 +1126,7 @@ public:
             = std::find_if(m_map.cbegin(), m_map.cend(), [=](const std::pair<T_Key, T_Value>& i) {
                   return with_func(i.first, i.second);
               });
-        if (it == m_map.end()) return VlQueue<T_Value>{};
+        if (it == m_map.end()) return VlQueue<T_Key>{};
         return VlQueue<T_Key>::consV(it->first);
     }
     template <typename T_Func>
@@ -1139,7 +1142,7 @@ public:
         const auto it = std::find_if(
             m_map.crbegin(), m_map.crend(),
             [=](const std::pair<T_Key, T_Value>& i) { return with_func(i.first, i.second); });
-        if (it == m_map.rend()) return VlQueue<T_Value>{};
+        if (it == m_map.rend()) return VlQueue<T_Key>{};
         return VlQueue<T_Key>::consV(it->first);
     }
 

@@ -312,8 +312,10 @@
 //=========================================================================
 // Optimization
 
-#ifndef VL_INLINE_OPT
-# define VL_INLINE_OPT  ///< "inline" if compiling all objects in single compiler run
+#ifndef VL_NO_LEGACY
+# ifndef VL_INLINE_OPT
+#   define VL_INLINE_OPT  // Historical, has no effect on Verilated models.
+# endif
 #endif
 
 //=========================================================================

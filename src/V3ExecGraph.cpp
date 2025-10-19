@@ -927,18 +927,17 @@ void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId,
         modp->addStmtsp(varp);
         // For now, reference is still via text bashing
         if (v3Global.opt.profExec()) {
-            addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitBegin();\n");
+            addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitBegin();");
         }
-        addStrStmt("vlSelf->" + name + +".waitUntilUpstreamDone(even_cycle);\n");
+        addStrStmt("vlSelf->" + name + +".waitUntilUpstreamDone(even_cycle);");
         if (v3Global.opt.profExec()) {
-            addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitEnd();\n");
+            addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitEnd();");
         }
     }
 
     if (v3Global.opt.profPgo()) {
         // No lock around startCounter, as counter numbers are unique per thread
-        addStrStmt("vlSymsp->_vm_pgoProfiler.startCounter(" + std::to_string(mtaskp->id())
-                   + ");\n");
+        addStrStmt("vlSymsp->_vm_pgoProfiler.startCounter(" + std::to_string(mtaskp->id()) + ");");
     }
 
     // Move the actual body into this function
@@ -946,8 +945,7 @@ void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId,
 
     if (v3Global.opt.profPgo()) {
         // No lock around stopCounter, as counter numbers are unique per thread
-        addStrStmt("vlSymsp->_vm_pgoProfiler.stopCounter(" + std::to_string(mtaskp->id())
-                   + ");\n");
+        addStrStmt("vlSymsp->_vm_pgoProfiler.stopCounter(" + std::to_string(mtaskp->id()) + ");");
     }
 
     // For any dependent mtask that's on another thread, signal one dependency completion.
@@ -955,7 +953,7 @@ void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId,
         const ExecMTask* const nextp = edge.top()->as<ExecMTask>();
         if (schedule.threadId(nextp) != threadId && schedule.contains(nextp)) {
             addStrStmt("vlSelf->__Vm_mtaskstate_" + cvtToStr(nextp->id())
-                       + ".signalUpstreamDone(even_cycle);\n");
+                       + ".signalUpstreamDone(even_cycle);");
         }
     }
 }
@@ -993,7 +991,7 @@ const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& schedul
         // Unblock the fake "final" mtask when this thread is finished
         funcp->addStmtsp(new AstCStmt{fl, "vlSelf->__Vm_mtaskstate_final__"
                                               + cvtToStr(schedule.id()) + tag
-                                              + ".signalUpstreamDone(even_cycle);\n"});
+                                              + ".signalUpstreamDone(even_cycle);"});
     }
 
     // Create the fake "final" mtask state variable
@@ -1020,13 +1018,12 @@ void addThreadStartWrapper(AstExecGraph* const execGraphp) {
     };
 
     if (v3Global.opt.profExec()) {
-        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).execGraphBegin();\n");
+        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).execGraphBegin();");
     }
 
-    addStrStmt("vlSymsp->__Vm_even_cycle__" + tag + " = !vlSymsp->__Vm_even_cycle__" + tag
-               + ";\n");
+    addStrStmt("vlSymsp->__Vm_even_cycle__" + tag + " = !vlSymsp->__Vm_even_cycle__" + tag + ";");
 
-    if (!v3Global.opt.hierBlocks().empty()) addStrStmt("std::vector<size_t> indexes;\n");
+    if (!v3Global.opt.hierBlocks().empty()) addStrStmt("std::vector<size_t> indexes;");
 }
 
 void addThreadEndWrapper(AstExecGraph* const execGraphp) {
@@ -1036,9 +1033,9 @@ void addThreadEndWrapper(AstExecGraph* const execGraphp) {
         execGraphp->addStmtsp(new AstCStmt{flp, stmt});
     };
 
-    addStrStmt("Verilated::mtaskId(0);\n");
+    addStrStmt("Verilated::mtaskId(0);");
     if (v3Global.opt.profExec()) {
-        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).execGraphEnd();\n");
+        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).execGraphEnd();");
     }
 }
 void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
@@ -1057,9 +1054,8 @@ void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
 
     const uint32_t last = funcps.size() - 1;
     if (!v3Global.opt.hierBlocks().empty() && last > 0) {
-        addStrStmt(
-            "for (size_t i = 0; i < " + cvtToStr(last)
-            + "; ++i) indexes.push_back(vlSymsp->__Vm_threadPoolp->assignWorkerIndex());\n");
+        addStrStmt("for (size_t i = 0; i < " + cvtToStr(last)
+                   + "; ++i) indexes.push_back(vlSymsp->__Vm_threadPoolp->assignWorkerIndex());");
     }
     uint32_t i = 0;
     for (AstCFunc* const funcp : funcps) {
@@ -1085,16 +1081,16 @@ void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
     V3Stats::addStatSum("Optimizations, Thread schedule total tasks", i);
 
     if (v3Global.opt.profExec()) {
-        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitBegin();\n");
+        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitBegin();");
     }
     addStrStmt("vlSelf->__Vm_mtaskstate_final__" + std::to_string(scheduleId) + tag
-               + ".waitUntilUpstreamDone(vlSymsp->__Vm_even_cycle__" + tag + ");\n");
+               + ".waitUntilUpstreamDone(vlSymsp->__Vm_even_cycle__" + tag + ");");
     if (v3Global.opt.profExec()) {
-        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitEnd();\n");
+        addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitEnd();");
     }
     // Free all assigned worker indices in this section
     if (!v3Global.opt.hierBlocks().empty() && last > 0) {
-        addStrStmt("vlSymsp->__Vm_threadPoolp->freeWorkerIndexes(indexes);\n");
+        addStrStmt("vlSymsp->__Vm_threadPoolp->freeWorkerIndexes(indexes);");
     }
 }
 
@@ -1116,31 +1112,31 @@ void wrapMTaskBodies(AstExecGraph* const execGraphp) {
             funcp->addStmtsp(new AstCStmt{flp, stmt});
         };
 
-        addStrStmt("static constexpr unsigned taskId = " + cvtToStr(mtaskp->id()) + ";\n");
+        addStrStmt("static constexpr unsigned taskId = " + cvtToStr(mtaskp->id()) + ";");
 
         if (v3Global.opt.profExec()) {
             const string& predictStart = std::to_string(mtaskp->predictStart());
             if (v3Global.opt.hierChild()) {
                 addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskBegin(taskId, " + predictStart
-                           + ", \"" + v3Global.opt.topModule() + "\");\n");
+                           + ", \"" + v3Global.opt.topModule() + "\");");
             } else {
                 addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskBegin(taskId, " + predictStart
-                           + ");\n");
+                           + ");");
             }
         }
 
         // Set mtask ID in the run-time system
-        addStrStmt("Verilated::mtaskId(taskId);\n");
+        addStrStmt("Verilated::mtaskId(taskId);");
 
         // Run body
         funcp->addStmtsp(mtaskBodyp->stmtsp()->unlinkFrBackWithNext());
 
         // Flush message queue
-        addStrStmt("Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);\n");
+        addStrStmt("Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);");
 
         if (v3Global.opt.profExec()) {
             const string& predictCost = std::to_string(mtaskp->cost());
-            addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskEnd(" + predictCost + ");\n");
+            addStrStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).mtaskEnd(" + predictCost + ");");
         }
 
         // AstMTask will simply contain a call

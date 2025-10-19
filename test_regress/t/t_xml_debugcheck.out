@@ -20,7 +20,7 @@
   </cells>
   <netlist>
     <module loc="d,11,8,11,9" name="$root" origName="$root" topModule="1" public="true">
-      <var loc="d,15,10,15,13" name="clk" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="clk" clocker="true" public="true"/>
+      <var loc="d,15,10,15,13" name="clk" dtype_id="1" dir="input" pinIndex="1" vartype="logic" origName="clk" public="true"/>
       <var loc="d,24,9,24,10" name="t.e" dtype_id="2" vartype="my_t" origName="e"/>
       <var loc="d,11,8,11,9" name="__Vtrigprevexpr___TOP__clk__0" dtype_id="1" vartype="logic" origName="__Vtrigprevexpr___TOP__clk__0"/>
       <var loc="d,11,8,11,9" name="__VactContinue" dtype_id="3" vartype="bit" origName="__VactContinue"/>
@@ -53,14 +53,6 @@
         </stmtexpr>
       </cfunc>
       <cfunc loc="d,11,8,11,9" name="_eval_initial__TOP">
-        <var loc="d,28,11,28,14" name="t.all" dtype_id="10" vartype="string" origName="t__DOT__all"/>
-        <creset loc="d,28,11,28,14">
-          <varref loc="d,28,11,28,14" name="t.all" dtype_id="10"/>
-        </creset>
-        <var loc="d,52,17,52,18" name="t.unnamedblk1.e" dtype_id="2" vartype="my_t" origName="t__DOT__unnamedblk1__DOT__e"/>
-        <creset loc="d,52,17,52,18">
-          <varref loc="d,52,17,52,18" name="t.unnamedblk1.e" dtype_id="2"/>
-        </creset>
         <var loc="d,49,120,49,121" name="__Vtemp_1" dtype_id="10" vartype="string" origName="__Vtemp_1"/>
         <assign loc="d,32,9,32,10" dtype_id="11">
           <const loc="d,32,11,32,14" name="4&apos;h3" dtype_id="11"/>
@@ -520,80 +512,10 @@
             <stop loc="d,49,139,49,144"/>
           </begin>
         </if>
-        <assign loc="d,51,11,51,12" dtype_id="10">
-          <const loc="d,51,13,51,15" name="&quot;&quot;" dtype_id="10"/>
-          <varref loc="d,51,7,51,10" name="t.all" dtype_id="10"/>
-        </assign>
-        <assign loc="d,52,19,52,20" dtype_id="11">
-          <const loc="d,52,23,52,28" name="4&apos;h1" dtype_id="11"/>
-          <varref loc="d,52,17,52,18" name="t.unnamedblk1.e" dtype_id="11"/>
-        </assign>
-        <while loc="d,52,7,52,10">
-          <begin>
-            <neq loc="d,52,32,52,34" dtype_id="8">
-              <const loc="d,52,37,52,41" name="4&apos;h4" dtype_id="11"/>
-              <ccast loc="d,52,30,52,31" dtype_id="11">
-                <varref loc="d,52,30,52,31" name="t.unnamedblk1.e" dtype_id="11"/>
-              </ccast>
-            </neq>
-          </begin>
-          <begin>
-            <assign loc="d,53,14,53,15" dtype_id="10">
-              <concatn loc="d,53,20,53,21" dtype_id="10">
-                <varref loc="d,53,17,53,20" name="t.all" dtype_id="10"/>
-                <arraysel loc="d,53,22,53,23" dtype_id="10">
-                  <varref loc="d,17,12,17,16" name="__Venumtab_enum_name1" dtype_id="16"/>
-                  <and loc="d,53,22,53,23" dtype_id="13">
-                    <const loc="d,53,22,53,23" name="32&apos;h7" dtype_id="14"/>
-                    <ccast loc="d,53,22,53,23" dtype_id="13">
-                      <varref loc="d,53,22,53,23" name="t.unnamedblk1.e" dtype_id="13"/>
-                    </ccast>
-                  </and>
-                </arraysel>
-              </concatn>
-              <varref loc="d,53,10,53,13" name="t.all" dtype_id="10"/>
-            </assign>
-          </begin>
-          <begin>
-            <assign loc="d,52,45,52,46" dtype_id="11">
-              <arraysel loc="d,52,47,52,48" dtype_id="11">
-                <varref loc="d,17,12,17,16" name="__Venumtab_enum_next1" dtype_id="12"/>
-                <and loc="d,52,47,52,48" dtype_id="13">
-                  <const loc="d,52,47,52,48" name="32&apos;h7" dtype_id="14"/>
-                  <ccast loc="d,52,47,52,48" dtype_id="13">
-                    <varref loc="d,52,47,52,48" name="t.unnamedblk1.e" dtype_id="13"/>
-                  </ccast>
-                </and>
-              </arraysel>
-              <varref loc="d,52,43,52,44" name="t.unnamedblk1.e" dtype_id="11"/>
-            </assign>
-          </begin>
-        </while>
         <assign loc="d,55,9,55,10" dtype_id="11">
           <const loc="d,55,13,55,17" name="4&apos;h4" dtype_id="11"/>
           <varref loc="d,55,7,55,8" name="t.e" dtype_id="11"/>
         </assign>
-        <assign loc="d,56,11,56,12" dtype_id="10">
-          <concatn loc="d,56,17,56,18" dtype_id="10">
-            <varref loc="d,56,14,56,17" name="t.all" dtype_id="10"/>
-            <const loc="d,17,12,17,16" name="&quot;E04&quot;" dtype_id="10"/>
-          </concatn>
-          <varref loc="d,56,7,56,10" name="t.all" dtype_id="10"/>
-        </assign>
-        <if loc="d,57,10,57,12">
-          <neqn loc="d,57,20,57,22" dtype_id="8">
-            <const loc="d,57,24,57,35" name="&quot;E01E03E04&quot;" dtype_id="10"/>
-            <varref loc="d,57,15,57,18" name="t.all" dtype_id="10"/>
-          </neqn>
-          <begin>
-            <display loc="d,57,44,57,50" displaytype="$write">
-              <sformatf loc="d,57,44,57,50" name="%%Error: t/t_enum_type_methods.v:57:  got=&apos;%@&apos; exp=&apos;E01E03E04&apos;&#10;" dtype_id="10">
-                <varref loc="d,57,123,57,126" name="t.all" dtype_id="10"/>
-              </sformatf>
-            </display>
-            <stop loc="d,57,145,57,150"/>
-          </begin>
-        </if>
       </cfunc>
       <cfunc loc="a,0,0,0,0" name="_eval_final"/>
       <cfunc loc="a,0,0,0,0" name="_eval_settle"/>
@@ -639,7 +561,9 @@
             </not>
           </and>
           <begin>
-            <text loc="d,11,8,11,9"/>
+            <cstmt loc="d,11,8,11,9">
+              <text loc="d,11,8,11,9"/>
+            </cstmt>
           </begin>
         </if>
         <if loc="d,11,8,11,9">
@@ -666,7 +590,9 @@
             </not>
           </and>
           <begin>
-            <text loc="d,11,8,11,9"/>
+            <cstmt loc="d,11,8,11,9">
+              <text loc="d,11,8,11,9"/>
+            </cstmt>
           </begin>
         </if>
         <if loc="d,11,8,11,9">
@@ -1592,11 +1518,11 @@
           <const loc="d,11,8,11,9" name="1&apos;h1" dtype_id="8"/>
           <varref loc="d,11,8,11,9" name="__VnbaContinue" dtype_id="8"/>
         </assign>
-        <while loc="a,0,0,0,0">
+        <loop loc="a,0,0,0,0">
           <begin>
-            <varref loc="a,0,0,0,0" name="__VnbaContinue" dtype_id="8"/>
-          </begin>
-          <begin>
+            <looptest loc="a,0,0,0,0">
+              <varref loc="a,0,0,0,0" name="__VnbaContinue" dtype_id="8"/>
+            </looptest>
             <if loc="a,0,0,0,0">
               <lt loc="a,0,0,0,0" dtype_id="8">
                 <const loc="a,0,0,0,0" name="32&apos;h64" dtype_id="14"/>
@@ -1635,11 +1561,11 @@
               <const loc="d,11,8,11,9" name="1&apos;h1" dtype_id="8"/>
               <varref loc="d,11,8,11,9" name="__VactContinue" dtype_id="8"/>
             </assign>
-            <while loc="a,0,0,0,0">
+            <loop loc="a,0,0,0,0">
               <begin>
-                <varref loc="a,0,0,0,0" name="__VactContinue" dtype_id="8"/>
-              </begin>
-              <begin>
+                <looptest loc="a,0,0,0,0">
+                  <varref loc="a,0,0,0,0" name="__VactContinue" dtype_id="8"/>
+                </looptest>
                 <if loc="a,0,0,0,0">
                   <lt loc="a,0,0,0,0" dtype_id="8">
                     <const loc="a,0,0,0,0" name="32&apos;h64" dtype_id="14"/>
@@ -1680,7 +1606,7 @@
                   </begin>
                 </if>
               </begin>
-            </while>
+            </loop>
             <if loc="a,0,0,0,0">
               <ccall loc="a,0,0,0,0" dtype_id="8" func="_eval_phase__nba"/>
               <begin>
@@ -1691,7 +1617,7 @@
               </begin>
             </if>
           </begin>
-        </while>
+        </loop>
       </cfunc>
       <cfunc loc="d,11,8,11,9" name="_eval_debug_assertions">
         <if loc="d,15,10,15,13">
@@ -1782,12 +1708,10 @@
     <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root.h"/>
     <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$unit.h"/>
     <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__Slow.cpp"/>
-    <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__DepSet_h########__0__Slow.cpp"/>
-    <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__DepSet_h########__0__Slow.cpp"/>
-    <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__DepSet_h########__0.cpp"/>
-    <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__DepSet_h########__0.cpp"/>
+    <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__0__Slow.cpp"/>
+    <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$root__0.cpp"/>
     <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$unit__Slow.cpp"/>
-    <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$unit__DepSet_h########__0__Slow.cpp"/>
+    <cfile loc="a,0,0,0,0" name="obj_vlt/t_xml_debugcheck/Vt_xml_debugcheck_$unit__0__Slow.cpp"/>
     <typetable loc="a,0,0,0,0">
       <basicdtype loc="d,33,24,33,27" id="1" name="logic"/>
       <basicdtype loc="d,53,16,53,17" id="14" name="logic" left="31" right="0"/>
@@ -1824,9 +1748,8 @@
           <const loc="d,17,12,17,16" name="32&apos;h0" dtype_id="14"/>
         </range>
       </unpackarraydtype>
-      <refdtype loc="d,52,12,52,16" id="22" name="my_t" sub_dtype_id="2"/>
       <basicdtype loc="d,23,23,23,24" id="9" name="logic" left="31" right="0" signed="true"/>
-      <voiddtype loc="d,11,8,11,9" id="7"/>
+      <voiddtype loc="a,0,0,0,0" id="7"/>
       <basicdtype loc="d,11,8,11,9" id="6" name="VlTriggerVec"/>
       <basicdtype loc="d,11,8,11,9" id="18" name="QData" left="63" right="0"/>
       <basicdtype loc="d,11,8,11,9" id="17" name="logic" left="63" right="0"/>

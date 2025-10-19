@@ -6,16 +6,17 @@
 
 module t;
 
-   function int f;
-      fork
-         ;
-      join_any  // Illegal 13.4.4
-   endfunction
+  function int f;
+    fork
+      ;
+    join_any  // Illegal 13.4.4
+    return 0;
+  endfunction
 
-   int i;
+  int i;
 
-   initial begin
-      i = f();
-   end
+  initial begin
+    i = f();
+  end
 
 endmodule

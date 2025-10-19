@@ -126,7 +126,7 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
             auto* const newactp = new AstActive{flp, "", negSentreep};
             // Create the commit call and put it in the commit function
             auto* const commitp = new AstCMethodHard{
-                flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, "commit"};
+                flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, VCMethod::SCHED_COMMIT};
             if (resumep->pinsp()) commitp->addPinsp(resumep->pinsp()->cloneTree(false));
             commitp->dtypeSetVoid();
             newactp->addStmtsp(commitp->makeStmt());
@@ -184,7 +184,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
             FileLine* const flp = sentreep->fileline();
             // Create a resume() call on the timing scheduler
             auto* const resumep = new AstCMethodHard{
-                flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, "resume"};
+                flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, VCMethod::SCHED_RESUME};
             resumep->dtypeSetVoid();
             if (schedulerp->dtypep()->basicp()->isTriggerScheduler()) {
                 UASSERT_OBJ(methodp->pinsp(), methodp,
@@ -197,7 +197,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
                 }
             } else if (schedulerp->dtypep()->basicp()->isDynamicTriggerScheduler()) {
                 auto* const postp = resumep->cloneTree(false);
-                postp->name("doPostUpdates");
+                postp->method(VCMethod::SCHED_DO_POST_UPDATES);
                 m_postUpdatesr = AstNode::addNext(m_postUpdatesr, postp->makeStmt());
             }
             // Put it in an active and put that in the global resume function
@@ -346,7 +346,7 @@ void transformForks(AstNetlist* const netlistp) {
             if (nodep->isCoroutine() && m_awaitMoved
                 && !nodep->stmtsp()->exists([](AstCAwait*) { return true; })) {
                 // co_return at the end (either that or a co_await is required in a coroutine
-                nodep->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
+                nodep->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;"});
             }
         }
         void visit(AstVar* nodep) override {
@@ -389,7 +389,7 @@ void transformForks(AstNetlist* const netlistp) {
                 nodep->replaceWith(callp->makeStmt());
                 // If we're in a class, add a vlSymsp arg
                 if (m_inClass) {
-                    newfuncp->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;\n"});
+                    newfuncp->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;"});
                     newfuncp->argTypes(EmitCUtil::symClassVar());
                     callp->argTypes("vlSymsp");
                 }
@@ -397,12 +397,12 @@ void transformForks(AstNetlist* const netlistp) {
                 newfuncp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
                 if (nodep->needProcess()) {
                     newfuncp->setNeedProcess();
-                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(),
-                                                     "vlProcess->state(VlProcess::FINISHED);\n"});
+                    newfuncp->addStmtsp(
+                        new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);"});
                 }
                 if (!m_beginHasAwaits) {
                     // co_return at the end (either that or a co_await is required in a coroutine
-                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;\n"});
+                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;"});
                 } else {
                     m_awaitMoved = true;
                 }

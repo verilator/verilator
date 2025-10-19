@@ -244,10 +244,16 @@
   129 |       { wildcard bins wbts = ( 1, 2 ); }
       |         ^~~~~~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:130:33: Ignoring unsupported: covergroup value range
-  130 |       { bins bts2 = ( 2, 3 ), ( [5:6] ) ; }
+  130 |       { bins bts2 = ( 2, 3 ), ( [5:6] ), ( [5 +/- 2] ), ( [ 5 +%- 20.0] ) ; }
       |                                 ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:130:44: Ignoring unsupported: covergroup value range
+  130 |       { bins bts2 = ( 2, 3 ), ( [5:6] ), ( [5 +/- 2] ), ( [ 5 +%- 20.0] ) ; }
+      |                                            ^
+%Warning-COVERIGN: t/t_covergroup_unsup.v:130:59: Ignoring unsupported: covergroup value range
+  130 |       { bins bts2 = ( 2, 3 ), ( [5:6] ), ( [5 +/- 2] ), ( [ 5 +%- 20.0] ) ; }
+      |                                                           ^
 %Warning-COVERIGN: t/t_covergroup_unsup.v:130:19: Ignoring unsupported: cover bin trans list
-  130 |       { bins bts2 = ( 2, 3 ), ( [5:6] ) ; }
+  130 |       { bins bts2 = ( 2, 3 ), ( [5:6] ), ( [5 +/- 2] ), ( [ 5 +%- 20.0] ) ; }
       |                   ^
 %Warning-COVERIGN: t/t_covergroup_unsup.v:132:27: Ignoring unsupported: cover trans set '=>'
   132 |       { bins bts2 = ( 1,5 => 6,7 ) ; }

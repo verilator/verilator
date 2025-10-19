@@ -57,7 +57,7 @@ class UnknownVisitor final : public VNVisitor {
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp = nullptr;  // Current module
-    AstAssignW* m_assignwp = nullptr;  // Current assignment
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstAssignDly* m_assigndlyp = nullptr;  // Current assignment
     AstNode* m_timingControlp = nullptr;  // Current assignment's intra timing control
     bool m_constXCvt = false;  // Convert X's
@@ -81,13 +81,6 @@ class UnknownVisitor final : public VNVisitor {
         // but makes a mess in the emitter as lvalue switching is needed.  So 4.
         // SEL(...) -> temp
         //             if (COND(LTE(bit<=maxlsb))) ASSIGN(SEL(...)),temp)
-        if (m_assignwp) {
-            // Wire assigns must become always statements to deal with insertion
-            // of multiple statements.  Perhaps someday make all wassigns into always's?
-            UINFO(5, "     IM_WireRep  " << m_assignwp);
-            m_assignwp->convertToAlways();
-            VL_DO_CLEAR(pushDeletep(m_assignwp), m_assignwp = nullptr);
-        }
         const bool needDly = (m_assigndlyp != nullptr);
         if (m_assigndlyp) {
             // Delayed assignments become normal assignments,
@@ -140,6 +133,46 @@ class UnknownVisitor final : public VNVisitor {
         }
     }
 
+    AstVar* createAddTemp(const AstNodeExpr* const nodep) {
+        AstVar* const varp = new AstVar{nodep->fileline(), VVarType::XTEMP,
+                                        m_xrandNames->get(nodep), nodep->dtypep()};
+        if (m_ftaskp) {
+            varp->funcLocal(true);
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+        } else {
+            m_modp->stmtsp()->addHereThisAsNext(varp);
+        }
+        return varp;
+    }
+
+    // Returns true if it is known at compile time that `msbConstp` is greater than or equal
+    // `exprp`
+    static bool isStaticlyGte(AstConst* const msbConstp, const AstNodeExpr* const exprp) {
+        if (msbConstp->width() >= exprp->width()
+            && msbConstp->num().toSInt() >= (1 << exprp->width()) - 1) {
+            return true;
+        }
+        if (const AstConst* const constp = VN_CAST(exprp, Const)) {
+            if (V3Number{msbConstp}.opGte(msbConstp->num(), constp->num()).isNeqZero()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    AstNodeExpr* newExprStmtOrClone(AstNodeExpr*& exprp) {
+        if (!exprp->isPure()) {
+            AstVar* const varp = createAddTemp(exprp);
+            FileLine* const fl = exprp->fileline();
+            exprp = new AstExprStmt{
+                fl, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, exprp},
+                new AstVarRef{fl, varp, VAccess::READ}};
+            return new AstVarRef{fl, varp, VAccess::READ};
+        }
+        return exprp->cloneTreePure(false);
+    }
+
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         UINFO(4, " MOD   " << nodep);
@@ -158,6 +191,11 @@ class UnknownVisitor final : public VNVisitor {
             xrandNames.swap(m_xrandNames);
         }
     }
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_ftaskp);
+        m_ftaskp = nodep;
+        iterateChildren(nodep);
+    }
     void visit(AstAssignDly* nodep) override {
         VL_RESTORER(m_assigndlyp);
         VL_RESTORER(m_timingControlp);
@@ -166,9 +204,7 @@ class UnknownVisitor final : public VNVisitor {
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
     }
     void visit(AstAssignW* nodep) override {
-        VL_RESTORER(m_assignwp);
         VL_RESTORER(m_timingControlp);
-        m_assignwp = nodep;
         m_timingControlp = nodep->timingControlp();
         VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
     }
@@ -346,7 +382,7 @@ class UnknownVisitor final : public VNVisitor {
                 AstVar* const newvarp
                     = new AstVar{nodep->fileline(), VVarType::XTEMP, m_xrandNames->get(nullptr),
                                  VFlagLogicPacked{}, nodep->width()};
-                newvarp->lifetime(VLifetime::STATIC);
+                newvarp->lifetime(VLifetime::STATIC_EXPLICIT);
                 ++m_statUnkVars;
                 VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
@@ -387,22 +423,25 @@ class UnknownVisitor final : public VNVisitor {
             }
             // Find range of dtype we are selecting from
             // Similar code in V3Const::warnSelect
-            const int maxmsb = nodep->fromp()->dtypep()->width() - 1;
+            const uint32_t maxmsb = nodep->fromp()->dtypep()->width() - 1;
             UINFOTREE(9, nodep, "", "sel_old");
 
             // If (maxmsb >= selected), we're in bound
-            AstNodeExpr* condp
-                = new AstGte{nodep->fileline(),
-                             new AstConst(nodep->fileline(), AstConst::WidthedValue{},
-                                          nodep->lsbp()->width(), maxmsb),
-                             nodep->lsbp()->cloneTreePure(false)};
             // See if the condition is constant true (e.g. always in bound due to constant select)
             // Note below has null backp(); the Edit function knows how to deal with that.
-            condp = V3Const::constifyEdit(condp);
-            if (condp->isOne()) {
+            AstConst* const maxmsbConstp = new AstConst{
+                nodep->fileline(), AstConst::WidthedValue{}, nodep->lsbp()->width(), maxmsb};
+            AstNodeExpr* lsbp = V3Const::constifyEdit(nodep->lsbp()->unlinkFrBack());
+            if (isStaticlyGte(maxmsbConstp, lsbp)) {
                 // We don't need to add a conditional; we know the existing expression is ok
-                VL_DO_DANGLING(condp->deleteTree(), condp);
-            } else if (!lvalue) {
+                VL_DO_DANGLING(maxmsbConstp->deleteTree(), maxmsbConstp);
+                nodep->lsbp(lsbp);
+                return;
+            }
+            nodep->lsbp(newExprStmtOrClone(lsbp));
+            AstNodeExpr* condp
+                = V3Const::constifyEdit(new AstGte{nodep->fileline(), maxmsbConstp, lsbp});
+            if (!lvalue) {
                 // SEL(...) -> COND(LTE(bit<=maxmsb), ARRAYSEL(...), {width{1'bx}})
                 VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
@@ -466,30 +505,34 @@ class UnknownVisitor final : public VNVisitor {
                     }
                 }
             }
+
             // See if the condition is constant true
-            AstNodeExpr* condp
-                = new AstGte{nodep->fileline(),
-                             new AstConst(nodep->fileline(), AstConst::WidthedValue{},
-                                          nodep->bitp()->width(), declElements - 1),
-                             nodep->bitp()->cloneTreePure(false)};
-            // Note below has null backp(); the Edit function knows how to deal with that.
-            condp = V3Const::constifyEdit(condp);
-            const AstNodeDType* const nodeDtp = nodep->dtypep()->skipRefp();
-            if (condp->isOne()) {
+            AstConst* const declElementsp
+                = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, nodep->bitp()->width(),
+                               static_cast<uint32_t>(declElements - 1)};
+            AstNodeExpr* bitp = V3Const::constifyEdit(nodep->bitp()->unlinkFrBack());
+            if (isStaticlyGte(declElementsp, bitp)) {
                 // We don't need to add a conditional; we know the existing expression is ok
-                VL_DO_DANGLING(condp->deleteTree(), condp);
-            } else if (!lvalue
-                       // Making a scalar would break if we're making an array
-                       && VN_IS(nodeDtp, BasicDType)) {
+                VL_DO_DANGLING(declElementsp->deleteTree(), declElementsp);
+                nodep->bitp(bitp);
+                return;
+            }
+            nodep->bitp(newExprStmtOrClone(bitp));
+            AstNodeExpr* condp = new AstGte{nodep->fileline(), declElementsp, bitp};
+            // Note below has null backp(); the Edit function knows how to deal with that.
+            const AstNodeDType* const nodeDtp = nodep->dtypep()->skipRefp();
+            if (!lvalue
+                // Making a scalar would break if we're making an array
+                && VN_IS(nodeDtp, BasicDType)) {
                 // ARRAYSEL(...) -> COND(LT(bit<maxbit), ARRAYSEL(...), {width{1'bx}})
                 VNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);
                 // TODO make a tieoff function that takes AstNode and returns typed value
                 V3Number xnum{nodep, nodep->width()};
                 if (nodeDtp->isDouble()) {
-                    xnum = V3Number{V3Number::Double{}, nodep, 0.0};
+                    xnum = V3Number{nodep, V3Number::Double{}, 0.0};
                 } else if (nodeDtp->isString()) {
-                    xnum = V3Number{V3Number::String{}, nodep, ""};
+                    xnum = V3Number{nodep, V3Number::String{}, ""};
                 } else {
                     xnum.setAllBitsX();
                 }

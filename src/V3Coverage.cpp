@@ -135,7 +135,7 @@ class CoverageVisitor final : public VNVisitor {
     // NODE STATE
     // Entire netlist:
     //  AstIf::user1()                  -> bool.  True indicates ifelse processed
-    //  AstIf::user2()                  -> bool.  True indicates coverage-generated
+    //  AstIf/AstLoopTest::user2()      -> bool.  True indicates coverage-generated
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 
@@ -153,7 +153,6 @@ class CoverageVisitor final : public VNVisitor {
     bool m_objective = false;  // Expression objective
     bool m_ifCond = false;  // Visiting if condition
     bool m_inToggleOff = false;  // In function/task etc
-    bool m_inLoopNotBody = false;  // Inside a loop, but not in its body
     string m_beginHier;  // AstBegin hier name for user coverage points
 
     // STATE - cleared each module
@@ -283,25 +282,23 @@ class CoverageVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
-
+    void visit(AstAlways* nodep) override {
+        if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
+            // Don't want line coverage for it, iterate for expression/toggle coverage only
+            iterateChildren(nodep);
+            return;
+        }
+        iterateProcedure(nodep);
+    }
     void visit(AstNodeProcedure* nodep) override { iterateProcedure(nodep); }
-    // we can cover expressions in while loops, but the counting goes outside
-    // the while, see: "minimally-intelligent decision about ... clock domain"
-    // in the Toggle Coverage docs
-    void visit(AstWhile* nodep) override {
+    void visit(AstLoop* nodep) override {
+        UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
         VL_RESTORER(m_state);
         VL_RESTORER(m_inToggleOff);
         m_inToggleOff = true;
         createHandle(nodep);
-        {
-            VL_RESTORER(m_inLoopNotBody);
-            m_inLoopNotBody = true;
-            iterateNull(nodep->condp());
-            iterateAndNextNull(nodep->incsp());
-        }
         iterateAndNextNull(nodep->stmtsp());
         if (m_state.lineCoverageOn(nodep)) {
-            lineTrack(nodep);
             AstCoverOtherDecl* const declp
                 = new AstCoverOtherDecl{nodep->fileline(), "v_line/" + m_modp->prettyName(),
                                         "block", linesCov(m_state, nodep), 0};
@@ -310,6 +307,21 @@ class CoverageVisitor final : public VNVisitor {
                 = newCoverInc(nodep->fileline(), declp, traceNameForLine(nodep, "block"));
             insertProcStatement(nodep, newp);
         }
+    }
+    void visit(AstLoopTest* nodep) override {
+        if (nodep->user2SetOnce()) return;
+        lineTrack(nodep);
+        if (m_state.lineCoverageOn(nodep) && nodep->backp()->nextp() == nodep) {
+            AstCoverOtherDecl* const declp
+                = new AstCoverOtherDecl{nodep->fileline(), "v_line/" + m_modp->prettyName(),
+                                        "block", linesCov(m_state, nodep), 0};
+            m_modp->addStmtsp(declp);
+            AstNode* const newp
+                = newCoverInc(nodep->fileline(), declp, traceNameForLine(nodep, "block"));
+            nodep->addHereThisAsNext(newp);
+            createHandle(nodep);
+        }
+        iterateChildren(nodep);
     }
 
     void visit(AstNodeFTask* nodep) override {
@@ -321,7 +333,7 @@ class CoverageVisitor final : public VNVisitor {
             itemp->addStmtsp(stmtp);
         } else if (AstNodeFTask* const itemp = VN_CAST(nodep, NodeFTask)) {
             itemp->addStmtsp(stmtp);
-        } else if (AstWhile* const itemp = VN_CAST(nodep, While)) {
+        } else if (AstLoop* const itemp = VN_CAST(nodep, Loop)) {
             itemp->addStmtsp(stmtp);
         } else if (AstIf* const itemp = VN_CAST(nodep, If)) {
             if (m_then) {
@@ -499,8 +511,7 @@ class CoverageVisitor final : public VNVisitor {
             return includeCondToBranchRecursive(backp);
         } else if (VN_IS(backp, Sel) && VN_AS(backp, Sel)->fromp() == nodep) {
             return includeCondToBranchRecursive(backp);
-        } else if (VN_IS(backp, NodeAssign) && VN_AS(backp, NodeAssign)->rhsp() == nodep
-                   && !m_inLoopNotBody) {
+        } else if (VN_IS(backp, NodeAssign) && VN_AS(backp, NodeAssign)->rhsp() == nodep) {
             return true;
         }
         return false;
@@ -710,6 +721,16 @@ class CoverageVisitor final : public VNVisitor {
             lineTrack(nodep);
         }
     }
+    void visit(AstGenBlock* nodep) override {
+        // Similar to AstBegin
+        VL_RESTORER(m_beginHier);
+        if (nodep->name() != "") {
+            m_beginHier = m_beginHier + (m_beginHier != "" ? "__DOT__" : "") + nodep->name();
+        }
+        iterateChildren(nodep);
+        lineTrack(nodep);
+    }
+
     void visit(AstBegin* nodep) override {
         // Record the hierarchy of any named begins, so we can apply to user
         // coverage points.  This is because there may be cov points inside
@@ -718,7 +739,7 @@ class CoverageVisitor final : public VNVisitor {
         // covers the code in that line.)
         VL_RESTORER(m_beginHier);
         VL_RESTORER(m_inToggleOff);
-        if (!nodep->generate()) m_inToggleOff = true;
+        m_inToggleOff = true;
         if (nodep->name() != "") {
             m_beginHier = m_beginHier + (m_beginHier != "" ? "__DOT__" : "") + nodep->name();
         }

@@ -225,6 +225,8 @@ class TraceVisitor final : public VNVisitor {
                 }
             }
         }
+        if (dumpLevel() || debug() >= 9)
+            dupFinder.dumpFile(v3Global.debugFilename("trace") + ".hash", false);
     }
 
     void graphSimplify(bool initial) {
@@ -736,13 +738,16 @@ class TraceVisitor final : public VNVisitor {
         cleanupFuncp->addInitsp(new AstCStmt{fl, EmitCUtil::symClassAssign()});
 
         // Register it
-        m_regFuncp->addStmtsp(new AstText{fl, "tracep->addCleanupCb(", true});
-        m_regFuncp->addStmtsp(new AstAddrOfCFunc{fl, cleanupFuncp});
-        m_regFuncp->addStmtsp(new AstText{fl, ", vlSelf);\n", true});
+        {
+            AstNode* const argsp = new AstText{fl, "tracep->addCleanupCb(", true};
+            argsp->addNext(new AstAddrOfCFunc{fl, cleanupFuncp});
+            argsp->addNext(new AstText{fl, ", vlSelf);"});
+            m_regFuncp->addStmtsp(new AstCStmt{fl, argsp});
+        }
 
         // Clear global activity flag
         cleanupFuncp->addStmtsp(
-            new AstCStmt{m_topScopep->fileline(), "vlSymsp->__Vm_activity = false;\n"s});
+            new AstCStmt{m_topScopep->fileline(), "vlSymsp->__Vm_activity = false;"s});
 
         // Clear fine grained activity flags
         for (uint32_t i = 0; i < m_activityNumber; ++i) {

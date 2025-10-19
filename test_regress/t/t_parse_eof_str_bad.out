@@ -1,0 +1,7 @@
+%Error: t/t_parse_eof_str_bad.v:9:10: syntax error, unexpected IDENTIFIER, expecting ';'
+    9 | `line 9 "t/t_parse_eof_str_bad.v" 0
+      |          ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_parse_eof_str_bad.v:11:33: Unterminated string
+%Error: t/t_parse_eof_str_bad.v:11:1: EOF in unterminated string
+%Error: Exiting due to

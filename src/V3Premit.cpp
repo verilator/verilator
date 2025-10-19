@@ -52,7 +52,6 @@ class PremitVisitor final : public VNVisitor {
     AstCFunc* m_cfuncp = nullptr;  // Current block
     size_t m_tmpVarCnt = 0;  // Number of temporary variables created inside a function
     AstNode* m_stmtp = nullptr;  // Current statement
-    AstWhile* m_inWhileCondp = nullptr;  // Inside condition of this while loop
     bool m_assignLhs = false;  // Inside assignment lhs, don't breakup extracts
 
     // METHODS
@@ -100,10 +99,6 @@ class PremitVisitor final : public VNVisitor {
                 = new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep};
             // Insert before the statement
             m_stmtp->addHereThisAsNext(assignp);
-            // Statements that are needed for the 'condition' in a while also
-            // need to be inserted on the back-edge to the loop header.
-            // 'incsp' is just right palce to do this
-            if (m_inWhileCondp) m_inWhileCondp->addIncsp(assignp->cloneTree(false));
         }
 
         // Replace node with VarRef to new Var
@@ -118,9 +113,10 @@ class PremitVisitor final : public VNVisitor {
         UINFO(4, "  ShiftFix  " << nodep);
         const AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const);
         if (shiftp && shiftp->num().mostSetBitP1() > 32) {
-            shiftp->v3error(
+            shiftp->v3warn(
+                E_UNSUPPORTED,
                 "Unsupported: Shifting of by over 32-bit number isn't supported."
-                << " (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
+                    << " (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
         }
         if (nodep->widthMin() <= 64  // Else we'll use large operators which work right
                                      // C operator's width must be < maximum shift which is
@@ -172,24 +168,9 @@ class PremitVisitor final : public VNVisitor {
     if (stmtp->user1SetOnce()) return; \
     VL_RESTORER(m_assignLhs); \
     VL_RESTORER(m_stmtp); \
-    VL_RESTORER(m_inWhileCondp); \
     m_assignLhs = false; \
-    m_stmtp = stmtp; \
-    m_inWhileCondp = nullptr
+    m_stmtp = stmtp;
 
-    void visit(AstWhile* nodep) override {
-        UINFO(4, "  WHILE  " << nodep);
-        // cppcheck-suppress shadowVariable  // Also restored below
-        START_STATEMENT_OR_RETURN(nodep);
-        {
-            // cppcheck-suppress shadowVariable  // Also restored above
-            VL_RESTORER(m_inWhileCondp);
-            m_inWhileCondp = nodep;
-            iterateAndNextNull(nodep->condp());
-        }
-        iterateAndNextNull(nodep->stmtsp());
-        iterateAndNextNull(nodep->incsp());
-    }
     void visit(AstNodeAssign* nodep) override {
         START_STATEMENT_OR_RETURN(nodep);
 

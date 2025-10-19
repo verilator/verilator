@@ -48,6 +48,12 @@
         yylval.fl = CRELINE(); \
     } while (false)
 
+#define STR \
+    do { \
+        const string str(yytext, yyleng); \
+        yylval.strp = PARSEP->newString(AstNode::encodeName(str)); \
+    } while (false)
+
 #define ERROR_RSVD_WORD(language) \
     do { \
         yylval.fl->v3warn(E_UNSUPPORTED, "Unsupported: " << language \
@@ -61,7 +67,9 @@ static double lexParseDouble(FileLine* fl, const char* textp, size_t length) {
     const string text = std::string{textp, length};
     bool success = false;
     const double d = VString::parseDouble(text, &success);
-    if (!success) fl->v3error("Syntax error parsing real: '" << textp << "'");
+    // Below never fails, instead can't lex the number
+    if (VL_UNCOVERABLE(!success))
+        fl->v3error("Syntax error parsing real: '" << textp << "'");  // LCOV_EXCL_LINE
     return d;
 }
 
@@ -257,11 +265,11 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$psprintf"           { FL; yylval.fl->v3warn(NONSTD, "Non-standard system function '" << yytext << "';"
                                                 " suggest use standard '$sformatf' (IEEE 1800-2023 21.3.3)");
                           return yD_SFORMATF; }
-  "$q_add"              { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
-  "$q_exam"             { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
-  "$q_full"             { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
-  "$q_initialize"       { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
-  "$q_remove"           { FL; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
+  "$q_add"              { FL; STR; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
+  "$q_exam"             { FL; STR; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
+  "$q_full"             { FL; STR; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
+  "$q_initialize"       { FL; STR; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
+  "$q_remove"           { FL; STR; ERROR_RSVD_WORD("IEEE 1364-1995"); return yaD_PLI; }
   "$random"             { FL; return yD_RANDOM; }
   "$readmemb"           { FL; return yD_READMEMB; }
   "$readmemh"           { FL; return yD_READMEMH; }
@@ -478,11 +486,11 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$changing_gclk"      { FL; return yD_CHANGING_GCLK; }
   "$countbits"          { FL; return yD_COUNTBITS; }
   "$countones"          { FL; return yD_COUNTONES; }
-  "$coverage_control"   { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
-  "$coverage_get"       { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
-  "$coverage_get_max"   { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
-  "$coverage_merge"     { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
-  "$coverage_save"      { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$coverage_control"   { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$coverage_get"       { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$coverage_get_max"   { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$coverage_merge"     { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$coverage_save"      { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$dimensions"         { FL; return yD_DIMENSIONS; }
   "$error"              { FL; return yD_ERROR; }
   "$falling_gclk"       { FL; return yD_FALLING_GCLK; }
@@ -490,16 +498,16 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$fell"               { FL; return yD_FELL; }
   "$fell_gclk"          { FL; return yD_FELL_GCLK; }
   "$future_gclk"        { FL; return yD_FUTURE_GCLK; }
-  "$get_coverage"       { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$get_coverage"       { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$high"               { FL; return yD_HIGH; }
   "$increment"          { FL; return yD_INCREMENT; }
-  "$inferred_clock"     { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$inferred_clock"     { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$inferred_disable"   { FL; return yD_INFERRED_DISABLE; }
   "$info"               { FL; return yD_INFO; }
   "$isunbounded"        { FL; return yD_ISUNBOUNDED; }
   "$isunknown"          { FL; return yD_ISUNKNOWN; }
   "$left"               { FL; return yD_LEFT; }
-  "$load_coverage_db"   { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$load_coverage_db"   { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$low"                { FL; return yD_LOW; }
   "$onehot"             { FL; return yD_ONEHOT; }
   "$onehot0"            { FL; return yD_ONEHOT0; }
@@ -510,7 +518,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$root"               { FL; return yD_ROOT; }
   "$rose"               { FL; return yD_ROSE; }
   "$rose_gclk"          { FL; return yD_ROSE_GCLK; }
-  "$set_coverage_db_name" { FL; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
+  "$set_coverage_db_name" { FL; STR; ERROR_RSVD_WORD("IEEE 1800-2005"); return yaD_PLI; }
   "$size"               { FL; return yD_SIZE; }
   "$stable"             { FL; return yD_STABLE; }
   "$stable_gclk"        { FL; return yD_STABLE_GCLK; }
@@ -673,10 +681,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /* Default PLI rule */
 <V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,S23,SAX>{
-  "$"[a-zA-Z0-9_$]+     { const string str (yytext, yyleng);
-                          yylval.strp = PARSEP->newString(AstNode::encodeName(str));
-                          FL; return yaD_PLI;
-                        }
+  "$"[a-zA-Z0-9_$]+     { FL; STR; return yaD_PLI; }
 }
 
   /************************************************************************/
@@ -684,7 +689,6 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
 <VA5,SAX>{
   /*     Generic unsupported warnings */
-   "1step"              { FL; return y1STEP; }
    "above"              { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "abs"                { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
    "absdelay"           { FL; ERROR_RSVD_WORD("AMS"); FL_BRK; }
@@ -1043,17 +1047,17 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /************************************************************************/
   /* Tables */
-<TABLE>[rRfFpPnN\*]                                             { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLE_FIELD; } /* edge_symbol */
-<TABLE>[01xX\?bB\-]                                             { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLE_FIELD; } /* level_symbol, next_state */
-<TABLE>":"                                                      { FL; return yaTABLE_LRSEP; } /* LHS and RHS separator for table line. */
-<TABLE>";"                                                      { FL; return yaTABLE_LINEEND; }
-<TABLE>[\(\)]                                                   { FL; return yytext[0]; }
-<TABLE>{ws}|(\\){0,1}{crnl}                                     { FL_FWD; FL_BRK; }
-<TABLE>"`line"{ws}+[^\n\r]*{crnl}                               { FL_FWD; PARSEP->lexPpline(yytext); FL_BRK; }
-<TABLE>"//"[^\n]*                                               { FL_FWD; FL_BRK; }  /* throw away single line comments */
-<TABLE>"endtable"                                               { FL; yy_pop_state(); return yENDTABLE; }
-<TABLE><<EOF>>                                                  { FL; yylval.fl->v3error("EOF in 'table'");
-                                                                      yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
+<TABLE>[rRfFpPnN\*]                     { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLE_FIELD; }  /* edge_symbol */
+<TABLE>[01xX\?bB\-]                     { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLE_FIELD; }  /* level_symbol, next_state */
+<TABLE>":"                              { FL; return yaTABLE_LRSEP; }  /* LHS and RHS separator for table line. */
+<TABLE>";"                              { FL; return yaTABLE_LINEEND; }
+<TABLE>[\(\)]                           { FL; return yytext[0]; }
+<TABLE>{ws}|(\\){0,1}{crnl}             { FL_FWD; FL_BRK; }
+<TABLE>"`line"{ws}+[^\n\r]*{crnl}       { FL_FWD; PARSEP->lexPpline(yytext); FL_BRK; }
+<TABLE>"//"[^\n]*                       { FL_FWD; FL_BRK; }  /* Throw away single line comments */
+<TABLE>"endtable"                       { FL; yy_pop_state(); return yENDTABLE; }
+<TABLE><<EOF>>                          { FL; yylval.fl->v3error("EOF in 'table'");
+                                              yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
 
 <EDGEDESC>{
   01|10|[01][zZxX]|[zZxX][01]  { FL; return yaEDGEDESC; }
@@ -1174,14 +1178,14 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <V95,V01NC,V01C,V05,VA5,S05,S09,S12,S17,S23,SAX,VLT>{
   "`"[a-zA-Z_0-9]+      { FL; V3ParseImp::lexErrorPreprocDirective(yylval.fl, yytext); FL_BRK; }
   "//"[^\n]*            { FL_FWD; FL_BRK; }  /* throw away single line comments */
-  .                     { FL; return yytext[0]; }       /* return single char ops. */
+  .                     { FL; return yytext[0]; }  /* return single char ops. */
 }
 
   /* Catch all - absolutely last */
 <*>.|\n                 { FL; yylval.fl->v3error(  // LCOV_EXCL_LINE
                                  "Missing verilog.l rule: Default rule invoked in state "
                                  << YY_START << " '" << yytext << "'");
-                          FL_BRK; }
+                          FL_BRK; }  /* LCOV_EXCL_LINE */
 %%
 // Avoid code here as cl format misindents
 // For implementation functions see V3ParseImp.cpp

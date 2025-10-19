@@ -5,11 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t (/*AUTOARG*/
-   // Outputs
-   state,
-   // Inputs
-   clk
-   );
+  // Outputs
+  state,
+  // Inouts
+  fst_inout,
+  // Inputs
+  clk
+  );
 
    input clk;
 
@@ -27,6 +29,7 @@ module t (/*AUTOARG*/
    shortint        fst_shortint;
    longint         fst_longint;
    byte            fst_byte;
+   time            fst_time;
 
    parameter       fst_parameter = 123;
    localparam      fst_lparam = 456;
@@ -36,6 +39,7 @@ module t (/*AUTOARG*/
    tri1            fst_tri1;
    tri             fst_tri;
    wire            fst_wire;
+   inout           fst_inout;
 
    Test test (/*AUTOINST*/
               // Outputs
@@ -47,6 +51,7 @@ module t (/*AUTOARG*/
    // Test loop
    always @ (posedge clk) begin
       cyc <= cyc + 1;
+      fst_time <= $time;
       if (cyc==0) begin
          // Setup
          rstn <= ~'1;

@@ -368,23 +368,29 @@ std::ostream& operator<<(std::ostream& os, FileLine* fileline) {
     return (os);
 }
 
-bool FileLine::warnOff(const string& msg, bool flag) {
-    const char* cmsg = msg.c_str();
-    // Backward compatibility with msg="UNUSED"
-    if (V3ErrorCode::unusedMsg(cmsg)) {
-        warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
-        warnOff(V3ErrorCode::UNUSEDLOOP, flag);
-        warnOff(V3ErrorCode::UNUSEDPARAM, flag);
-        warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
-        return true;
+string FileLine::warnOffParse(const string& msgs, bool flag) {
+    string result;
+    for (const string& msg : VString::split(msgs, ',')) {
+        const char* cmsg = msg.c_str();
+        // Backward compatibility with msg="UNUSED"
+        if (V3ErrorCode::unusedMsg(cmsg)) {
+            warnOff(V3ErrorCode::UNUSEDGENVAR, flag);
+            warnOff(V3ErrorCode::UNUSEDLOOP, flag);
+            warnOff(V3ErrorCode::UNUSEDPARAM, flag);
+            warnOff(V3ErrorCode::UNUSEDSIGNAL, flag);
+            continue;
+        }
+
+        const V3ErrorCode code{cmsg};
+        if (!code.hardError()) {
+            warnOff(code, flag);
+            continue;
+        }
+
+        // Error if not suppressed
+        if (!v3Global.opt.isFuture(msg)) result = VString::dot(result, ",", cmsg);
     }
-    const V3ErrorCode code{cmsg};
-    if (code.hardError()) {
-        return false;
-    } else {
-        warnOff(code, flag);
-        return true;
-    }
+    return result;
 }
 
 void FileLine::warnLintOff(bool flag) {

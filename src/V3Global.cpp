@@ -55,7 +55,7 @@ void V3Global::boot() {
 
 void V3Global::shutdown() {
     V3PreShell::shutdown();
-    VL_DO_CLEAR(delete m_hierPlanp, m_hierPlanp = nullptr);  // delete nullptr is safe
+    VL_DO_CLEAR(delete m_hierGraphp, m_hierGraphp = nullptr);  // delete nullptr is safe
     VL_DO_CLEAR(delete m_threadPoolp, m_threadPoolp = nullptr);  // delete nullptr is safe
 #ifdef VL_LEAK_CHECKS
     if (m_rootp) VL_DO_CLEAR(m_rootp->deleteTree(), m_rootp = nullptr);
@@ -137,6 +137,7 @@ void V3Global::readFiles() {
 void V3Global::removeStd() {
     // Delete the std package if unused
     if (!usesStdPackage()) {
+        UINFO(3, "Removing unused std:: package");
         if (AstNodeModule* stdp = v3Global.rootp()->stdPackagep()) {
             v3Global.rootp()->stdPackagep(nullptr);
             VL_DO_DANGLING(stdp->unlinkFrBack()->deleteTree(), stdp);
@@ -225,7 +226,8 @@ std::vector<std::string> V3Global::verilatedCppFiles() {
     if (v3Global.opt.vpi()) result.emplace_back("verilated_vpi.cpp");
     if (v3Global.opt.savable()) result.emplace_back("verilated_save.cpp");
     if (v3Global.opt.coverage()) result.emplace_back("verilated_cov.cpp");
-    if (v3Global.opt.trace()) result.emplace_back(v3Global.opt.traceSourceBase() + "_c.cpp");
+    for (const string& base : v3Global.opt.traceSourceBases())
+        result.emplace_back(base + "_c.cpp");
     if (v3Global.usesProbDist()) result.emplace_back("verilated_probdist.cpp");
     if (v3Global.usesTiming()) result.emplace_back("verilated_timing.cpp");
     if (v3Global.useRandomizeMethods()) result.emplace_back("verilated_random.cpp");

@@ -63,7 +63,7 @@ V3ParseImp::~V3ParseImp() {
 //######################################################################
 // Parser utility methods
 
-void V3ParseImp::importIfInStd(FileLine* fileline, const string& id) {
+void V3ParseImp::importIfInStd(FileLine* fileline, const string& id, bool doImport) {
     // Keywords that auto-import to require use of verilated_std.vh.
     // OK if overly sensitive; will over-import and keep std:: around
     // longer than migt otherwise.
@@ -76,9 +76,11 @@ void V3ParseImp::importIfInStd(FileLine* fileline, const string& id) {
     if (AstPackage* const stdpkgp
         = v3Global.rootp()->stdPackagep()) {  // else e.g. --no-std-package
         UINFO(9, "import and keep std:: for " << fileline);
-        AstPackageImport* const impp = new AstPackageImport{stdpkgp->fileline(), stdpkgp, "*"};
-        unitPackage(stdpkgp->fileline())->addStmtsp(impp);
         v3Global.setUsesStdPackage();
+        if (doImport) {
+            AstPackageImport* const impp = new AstPackageImport{stdpkgp->fileline(), stdpkgp, "*"};
+            unitPackage(stdpkgp->fileline())->addStmtsp(impp);
+        }
     }
 }
 
@@ -117,7 +119,7 @@ void V3ParseImp::lexTimescaleParse(FileLine* fl, const char* textp) {
     VTimescale prec;
     VTimescale::parseSlashed(fl, textp, unit /*ref*/, prec /*ref*/);
     m_timeLastUnit = v3Global.opt.timeComputeUnit(unit);
-    v3Global.rootp()->timeprecisionMerge(fl, prec);
+    m_timeLastPrec = v3Global.opt.timeComputePrec(prec);
 }
 AstPragma* V3ParseImp::createTimescale(FileLine* fl, bool unitSet, double unitVal, bool precSet,
                                        double precVal) {
@@ -169,12 +171,9 @@ void V3ParseImp::lexVerilatorCmtLint(FileLine* fl, const char* textp, bool warnO
     string::size_type pos;
     if ((pos = msg.find('*')) != string::npos) msg.erase(pos);
     // Use parsep()->lexFileline() as want to affect later FileLine's warnings
-    if (!(parsep()->lexFileline()->warnOff(msg, warnOff))) {
-        if (!v3Global.opt.isFuture(msg)) {
-            fl->v3error("Unknown verilator lint message code: '" << msg << "', in '" << textp
-                                                                 << "'");
-        }
-    }
+    const string err = parsep()->lexFileline()->warnOffParse(msg, warnOff);
+    if (!err.empty())
+        fl->v3error("Unknown verilator lint message code: '" << err << "', in '" << textp << "'");
 }
 
 void V3ParseImp::lexVerilatorCmtBad(FileLine* fl, const char* textp) {
@@ -531,17 +530,20 @@ size_t V3ParseImp::tokenPipeScanParam(size_t inDepth, bool forCell) {
     return depth;
 }
 
-size_t V3ParseImp::tokenPipeScanTypeEq(size_t depth) {
+size_t V3ParseImp::tokenPipeScanParens(size_t depth) {
     // Search around IEEE type_reference to see if is expression
     // Return location of following token, or input if not found
     // yTYPE__ETC '(' ... ')'  ['==' '===' '!=' '!===']
+    //             ^- depth
+    // yRANDOMIZE yWITH '(' ... ')'  ['{']
+    //                   ^- depth
     if (tokenPeekp(depth)->token != '(') return depth;
     depth += 1;  // Past the (
     int parens = 1;  // Count first (
     while (true) {
         const int tok = tokenPeekp(depth)->token;
         if (tok == 0) {  // LCOV_EXCL_BR_LINE
-            UINFO(9, "tokenPipeScanTypeEq hit EOF; probably syntax error to come");
+            UINFO(9, "tokenPipeScanTypeParens hit EOF; probably syntax error to come");
             break;  // LCOV_EXCL_LINE
         } else if (tok == '(') {
             ++parens;
@@ -678,11 +680,11 @@ void V3ParseImp::tokenPipeline() {
             }
         } else if (token == yTYPE__LEX) {
             VL_RESTORER(yylval);  // Remember value, as about to read ahead
-            const size_t depth = tokenPipeScanTypeEq(0);
+            const size_t depth = tokenPipeScanParens(0);
             const int postToken = tokenPeekp(depth)->token;
-            if (  // v-- token                v-- postToken
-                  // yTYPE__EQ '(' .... ')' EQ_OPERATOR yTYPE_ETC '(' ... ')'
-                postToken == yP_EQUAL || postToken == yP_NOTEQUAL || postToken == yP_CASEEQUAL
+            // v-- token                v-- postToken
+            // yTYPE__EQ '(' .... ')' EQ_OPERATOR yTYPE_ETC '(' ... ')'
+            if (postToken == yP_EQUAL || postToken == yP_NOTEQUAL || postToken == yP_CASEEQUAL
                 || postToken == yP_CASENOTEQUAL) {
                 token = yTYPE__EQ;
             } else {
@@ -702,7 +704,16 @@ void V3ParseImp::tokenPipeline() {
             }
         } else if (token == yWITH__LEX) {
             if (nexttok == '(') {
-                token = yWITH__PAREN;
+                VL_RESTORER(yylval);  // Remember value, as about to read ahead
+                const size_t depth = tokenPipeScanParens(0);
+                const int postToken = tokenPeekp(depth)->token;
+                // v-- token           v-- postToken
+                // yWITH '(' .... ')' '{'
+                if (postToken == '{') {
+                    token = yWITH__PAREN_CUR;
+                } else {
+                    token = yWITH__PAREN;
+                }
             } else if (nexttok == '[') {
                 token = yWITH__BRA;
             } else if (nexttok == '{') {
@@ -730,8 +741,9 @@ void V3ParseImp::tokenPipelineSym() {
     // Note above sometimes converts yGLOBAL to a yaID__LEX
     tokenPipeline();  // sets yylval
     int token = yylval.token;
-    if (token == yaID__LEX || token == yaID__CC || token == yaID__aTYPE) {
-        importIfInStd(yylval.fl, *(yylval.strp));
+    if (token == yRANDOMIZE) importIfInStd(yylval.fl, "randomize", false);
+    if (token == yaID__ETC || token == yaID__CC || token == yaID__LEX || token == yaID__aTYPE) {
+        importIfInStd(yylval.fl, *(yylval.strp), true);
         if (token == yaID__LEX) {
             if (VString::startsWith(*(yylval.strp), "PATHPULSE__024")) {
                 token = yaID__PATHPULSE;

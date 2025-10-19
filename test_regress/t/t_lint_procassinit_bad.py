@@ -11,9 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-if not os.path.exists(test.root + "/.git"):
-    test.skip("Not in a git repository")
-
 test.lint(verilator_flags2=['-Wall -Wno-DECLFILENAME'],
           fails=True,
           expect_filename=test.golden_filename)

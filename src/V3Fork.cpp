@@ -91,7 +91,7 @@ public:
             = new AstVar{m_procp->fileline(), VVarType::BLOCKTEMP,
                          generateDynScopeHandleName(m_procp), m_instance.m_refDTypep};
         m_instance.m_handlep->funcLocal(true);
-        m_instance.m_handlep->lifetime(VLifetime::AUTOMATIC);
+        m_instance.m_handlep->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         UINFO(9, "new dynscope var " << m_instance.m_handlep);
 
         return m_instance;
@@ -118,7 +118,7 @@ public:
             }
             varp->funcLocal(false);
             varp->varType(VVarType::MEMBER);
-            varp->lifetime(VLifetime::AUTOMATIC);
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             varp->usedLoopIdx(false);  // No longer unrollable
             UINFO(9, "insert DynScope member " << varp);
             m_instance.m_classp->addStmtsp(varp);
@@ -231,7 +231,7 @@ private:
         AstBegin* const beginp = new AstBegin{
             forkp->fileline(),
             "_Vwrapped_" + (forkp->name().empty() ? "" : forkp->name() + "_") + cvtToStr(m_id),
-            m_instance.m_handlep, false, true};
+            m_instance.m_handlep, true};
         forkHandle.relink(beginp);
 
         AstNode* const instAsgnp = instantiateDynScope(memberMap);
@@ -470,7 +470,7 @@ class DynScopeVisitor final : public VNVisitor {
                 })) {
             nodep->user2(true);
             // Put it in a fork to prevent lifetime issues with the local
-            AstBegin* const beginp = new AstBegin{nodep->fileline(), "", nullptr};
+            AstBegin* const beginp = new AstBegin{nodep->fileline(), "", nullptr, false};
             AstFork* const forkp = new AstFork{nodep->fileline(), "", beginp};
             forkp->joinType(VJoinType::JOIN_NONE);
             nodep->replaceWith(forkp);
@@ -549,7 +549,7 @@ class ForkVisitor final : public VNVisitor {
             varp = new AstVar{refp->fileline(), VVarType::BLOCKTEMP, refp->name(), refp->dtypep()};
             varp->direction(VDirection::INPUT);
             varp->funcLocal(true);
-            varp->lifetime(VLifetime::AUTOMATIC);
+            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             UINFO(9, "new capture var " << varp);
             m_capturedVarsp = AstNode::addNext(m_capturedVarsp, varp);
             // Use the original ref as an argument for call
@@ -575,7 +575,7 @@ class ForkVisitor final : public VNVisitor {
         if (!m_newProcess || nodep->user1()) {
             VL_RESTORER(m_forkDepth);
             if (nodep->user1()) {
-                UASSERT(m_forkDepth > 0, "Wrong fork depth!");
+                UASSERT_OBJ(m_forkDepth > 0, nodep, "Wrong fork depth");
                 --m_forkDepth;
             }
             iterateChildren(nodep);
@@ -601,7 +601,7 @@ class ForkVisitor final : public VNVisitor {
         AstTask* taskp = nullptr;
 
         if (AstBegin* const beginp = VN_CAST(nodep, Begin)) {
-            UASSERT(beginp->stmtsp(), "No stmtsp\n");
+            UASSERT_OBJ(beginp->stmtsp(), beginp, "No stmtsp");
             const string taskName = generateTaskName(beginp, "fork_begin");
             taskp
                 = makeTask(beginp->fileline(), beginp->stmtsp()->unlinkFrBackWithNext(), taskName);

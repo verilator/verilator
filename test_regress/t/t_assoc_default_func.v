@@ -9,6 +9,7 @@ module t;
       type T = bit
   );
     static function int get_type();
+      return 0;
     endfunction
   endclass
 

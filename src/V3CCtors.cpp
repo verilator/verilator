@@ -68,10 +68,10 @@ class V3CCtorsBuilder final {
         string preventUnusedStmt;
         if (m_type.isClass()) {
             funcp->argTypes(EmitCUtil::symClassVar());
-            preventUnusedStmt = "(void)vlSymsp;  // Prevent unused variable warning\n";
+            preventUnusedStmt = "(void)vlSymsp;  // Prevent unused variable warning";
         } else if (m_type.isCoverage()) {
             funcp->argTypes("bool first");
-            preventUnusedStmt = "(void)first;  // Prevent unused variable warning\n";
+            preventUnusedStmt = "(void)first;  // Prevent unused variable warning";
         }
         if (!preventUnusedStmt.empty()) {
             funcp->addStmtsp(new AstCStmt{m_modp->fileline(), preventUnusedStmt});
@@ -138,8 +138,8 @@ class CCtorsVisitor final : public VNVisitor {
     V3CCtorsBuilder* m_varResetp = nullptr;  // Builder of _ctor_var_reset
 
     // METHODS
-    static void insertSc(AstCFunc* cfuncp, const AstNodeModule* modp, VNType type) {
-        auto textAndFileline = EmitCBaseVisitorConst::textSection(modp, type);
+    static void insertSc(AstCFunc* cfuncp, const AstNodeModule* modp, VSystemCSectionType type) {
+        auto textAndFileline = EmitCBaseVisitorConst::scSection(modp, type);
         if (!textAndFileline.first.empty()) {
             AstTextBlock* const newp
                 = new AstTextBlock{textAndFileline.second, textAndFileline.first, false, false};
@@ -177,7 +177,7 @@ class CCtorsVisitor final : public VNVisitor {
             // If can be referred to by base pointer, need virtual delete
             funcp->isVirtual(classp->isExtended());
             funcp->slow(false);
-            insertSc(funcp, classp, VNType::ScDtor);
+            insertSc(funcp, classp, VSystemCSectionType::DTOR);
             classp->addStmtsp(funcp);
         }
     }
@@ -188,7 +188,7 @@ class CCtorsVisitor final : public VNVisitor {
         m_varResetp = nullptr;
         m_cfuncp = nodep;
         iterateChildren(nodep);
-        if (nodep->name() == "new") insertSc(nodep, m_modp, VNType::ScCtor);
+        if (nodep->name() == "new") insertSc(nodep, m_modp, VSystemCSectionType::CTOR);
     }
     void visit(AstVar* nodep) override {
         if (nodep->needsCReset()) {

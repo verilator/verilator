@@ -128,6 +128,11 @@ int main(int argc, char** argv) {
             int varLeft = varp->range(0)->left();
             int varBits = varLeft + 1;
             uint8_t* varData = reinterpret_cast<uint8_t*>(varp->datap());
+            // Cover illegal access
+            if (varp->range(1000) != nullptr) {
+                VL_PRINTF("%%Error: Range null mismatch\n");
+                return -1;
+            }
 
             // Check that all bits are high now
             for (int i = 0; i < varBits / 8; i++) {

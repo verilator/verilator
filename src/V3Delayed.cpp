@@ -859,8 +859,8 @@ class DelayedVisitor final : public VNVisitor {
         AstAlwaysPost* const postp = new AstAlwaysPost{flp};
         activep->addStmtsp(postp);
         // Add the commit
-        AstCMethodHard* const callp
-            = new AstCMethodHard{flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE}, "commit"};
+        AstCMethodHard* const callp = new AstCMethodHard{
+            flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE}, VCMethod::SCHED_COMMIT};
         callp->dtypeSetVoid();
         callp->addPinsp(new AstVarRef{flp, vscp, VAccess::WRITE});
         postp->addStmtsp(callp->makeStmt());
@@ -969,7 +969,8 @@ class DelayedVisitor final : public VNVisitor {
 
         // Enqueue the update at the site of the original NBA
         AstCMethodHard* const callp = new AstCMethodHard{
-            flp, new AstVarRef{flp, vscpInfo.valueQueueKit().vscp, VAccess::READWRITE}, "enqueue"};
+            flp, new AstVarRef{flp, vscpInfo.valueQueueKit().vscp, VAccess::READWRITE},
+            VCMethod::SCHED_ENQUEUE};
         callp->dtypeSetVoid();
         callp->addPinsp(valuep);
         if (partial) callp->addPinsp(maskp);
@@ -1006,7 +1007,7 @@ class DelayedVisitor final : public VNVisitor {
             switch (vscpInfo.m_scheme) {
             case Scheme::Undecided:  // LCOV_EXCL_START
                 UASSERT_OBJ(false, vscp, "Failed to choose NBA scheme");
-                break;
+                break;  // LCOV_EXCL_STOP
             case Scheme::UnsupportedCompoundArrayInLoop: {
                 // Will report error at the site of the NBA
                 break;
@@ -1161,7 +1162,7 @@ class DelayedVisitor final : public VNVisitor {
         AstTextBlock* const blockp = new AstTextBlock{flp};
         blockp->addText(flp, "vlSymsp->fireEvent(", true);
         blockp->addNodesp(eventp);
-        blockp->addText(flp, ");\n", true);
+        blockp->addText(flp, ");", true);
 
         AstNode* newp = new AstCStmt{flp, blockp};
         if (nodep->isDelayed()) {
@@ -1297,10 +1298,7 @@ class DelayedVisitor final : public VNVisitor {
         // Record write reference
         recordWriteRef(nodep, false);
     }
-    void visit(AstNodeFor* nodep) override {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc("For statements should have been converted to while statements");
-    }
-    void visit(AstWhile* nodep) override {
+    void visit(AstLoop* nodep) override {
         VL_RESTORER(m_inLoop);
         m_inLoop = true;
         iterateChildren(nodep);

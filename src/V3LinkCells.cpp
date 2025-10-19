@@ -205,6 +205,14 @@ class LinkCellsVisitor final : public VNVisitor {
                 modp->level(vvertexp->rank() + 1);
             }
         }
+        m_graph.rankMin();
+        for (V3GraphVertex& vtx : m_graph.vertices()) {
+            if (const LinkCellsVertex* const vvertexp = vtx.cast<LinkCellsVertex>()) {
+                // +1 so we leave level 1  for the new wrapper we'll make in a moment
+                AstNodeModule* const modp = vvertexp->modp();
+                modp->depth(vvertexp->rank() + 1);
+            }
+        }
         if (v3Global.opt.topModule() != "" && !m_topVertexp) {
             v3error("Specified --top-module '" << v3Global.opt.topModule()
                                                << "' was not found in design.");
@@ -462,10 +470,10 @@ class LinkCellsVisitor final : public VNVisitor {
                         if (pinStar) {
                             UINFO(9, "    need .* PORT  " << portp);
                             // Create any not already connected
-                            AstPin* const newp = new AstPin{
-                                nodep->fileline(), 0, portp->name(),
-                                new AstParseRef{nodep->fileline(), VParseRefExp::PX_TEXT,
-                                                portp->name(), nullptr, nullptr}};
+                            AstPin* const newp
+                                = new AstPin{nodep->fileline(), 0, portp->name(),
+                                             new AstParseRef{nodep->fileline(), portp->name(),
+                                                             nullptr, nullptr}};
                             newp->svDotName(true);
                             newp->svImplicit(true);
                             nodep->addPinsp(newp);

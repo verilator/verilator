@@ -2399,7 +2399,7 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
         case VLVT_UINT32:
         case VLVT_UINT64:
         case VLVT_WDATA: return status;
-        default: status = false;
+        default: status = false;  // LCOV_EXCL_LINE
         }
     } else if (valuep->format == vpiDecStrVal) {
         switch (varp->vltype()) {
@@ -2407,7 +2407,7 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
         case VLVT_UINT16:
         case VLVT_UINT32:
         case VLVT_UINT64: return status;
-        default: status = false;
+        default: status = false;  // LCOV_EXCL_LINE
         }
     } else if (valuep->format == vpiStringVal) {
         switch (varp->vltype()) {
@@ -2424,7 +2424,7 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
                 status = false;
                 break;
             }
-        default: status = false;
+        default: status = false;  // LCOV_EXCL_LINE
         }
     } else if (valuep->format == vpiIntVal) {
         switch (varp->vltype()) {
@@ -2433,12 +2433,12 @@ bool vl_check_format(const VerilatedVar* varp, const p_vpi_value valuep, const c
         case VLVT_UINT32:
         case VLVT_UINT64:
         case VLVT_WDATA: return status;
-        default: status = false;
+        default: status = false;  // LCOV_EXCL_LINE
         }
     } else if (valuep->format == vpiRealVal) {
         switch (varp->vltype()) {
         case VLVT_REAL: return status;
-        default: status = false;
+        default: status = false;  // LCOV_EXCL_LINE
         }
     } else if (valuep->format == vpiSuppressVal) {
         return status;
@@ -2919,14 +2919,14 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         case VLVT_UINT32:
         case VLVT_UINT64:
         case VLVT_WDATA: return true;
-        default:;
+        default:;  // LCOV_EXCL_LINE
         }
     } else if (arrayvalue_p->format == vpiIntVal) {
         switch (varp->vltype()) {
         case VLVT_UINT8:
         case VLVT_UINT16:
         case VLVT_UINT32: return true;
-        default:;
+        default:;  // LCOV_EXCL_LINE
         }
     } else if ((arrayvalue_p->format == vpiRawTwoStateVal)
                || (arrayvalue_p->format == vpiRawFourStateVal)) {
@@ -2936,13 +2936,13 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         case VLVT_UINT32:
         case VLVT_UINT64:
         case VLVT_WDATA: return true;
-        default:;
+        default:;  // LCOV_EXCL_LINE
         }
     } else if (arrayvalue_p->format == vpiShortIntVal) {
         switch (varp->vltype()) {
         case VLVT_UINT8:
         case VLVT_UINT16: return true;
-        default:;
+        default:;  // LCOV_EXCL_LINE
         }
     } else if (arrayvalue_p->format == vpiLongIntVal) {
         switch (varp->vltype()) {
@@ -2950,7 +2950,7 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
         case VLVT_UINT16:
         case VLVT_UINT32:
         case VLVT_UINT64: return true;
-        default:;
+        default:;  // LCOV_EXCL_LINE
         }
     }
 

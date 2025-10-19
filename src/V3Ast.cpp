@@ -49,6 +49,28 @@ bool VNUser4InUse::s_userBusy = false;
 
 int AstNodeDType::s_uniqueNum = 0;
 
+V3AST_VCMETHOD_ITEMDATA_DECL;
+
+//======================================================================
+// VCMethod information
+
+VCMethod VCMethod::arrayMethod(const string& name) {
+    for (auto& it : s_itemData)
+        if (it.m_name == name) return it.m_e;
+    v3fatalSrc("Not a method name known to VCMethod::s_itemData: '" << name << '\'');
+    return VCMethod{};
+}
+void VCMethod::selfTest() {
+    int i = 0;
+    for (auto& it : s_itemData) {
+        VCMethod exp{i};
+        UASSERT_STATIC(it.m_e == exp,
+                       "VCMethod::s_itemData table rows are out-of-order, starting at row "s
+                           + cvtToStr(i) + " '" + +it.m_name + '\'');
+        ++i;
+    }
+}
+
 //######################################################################
 // VNType
 
@@ -1078,11 +1100,9 @@ AstNode* AstNode::iterateSubtreeReturnEdits(VNVisitor& v) {
     } else if (!nodep->backp()) {
         // Calling on standalone tree; insert a shim node so we can keep
         // track, then delete it on completion
-        AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nodep};
-        {
-            VL_DO_DANGLING(tempp->stmtsp()->accept(v),
-                           nodep);  // nodep to null as may be replaced
-        }
+        AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nodep, false};
+        // nodep to null as may be replaced
+        VL_DO_DANGLING(tempp->stmtsp()->accept(v), nodep);
         nodep = tempp->stmtsp()->unlinkFrBackWithNext();
         VL_DO_DANGLING(tempp->deleteTree(), tempp);
     } else {
@@ -1261,7 +1281,7 @@ char* AstNode::dumpTreeJsonGdb(intptr_t nodep) {
     return dumpTreeJsonGdb(reinterpret_cast<const AstNode*>(nodep));
 }
 // cppcheck-suppress unusedFunction  // Debug only
-void AstNode::dumpGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_LINE
+void AstNode::dumpGdb(const AstNode* nodep) {  // For GDB only  // LCOV_EXCL_START
     if (!nodep) {
         cout << "<nullptr>" << endl;
         return;

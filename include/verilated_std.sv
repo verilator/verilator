@@ -132,10 +132,8 @@ package std;
       KILLED = 4
     } state;
 
-`ifdef VERILATOR_TIMING
     // Width visitor changes it to VlProcessRef
     protected chandle m_process;
-`endif
 
     static function process self();
       process p = new;
@@ -211,7 +209,7 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
 };
 `verilog
 `endif
-      // verilog_format: on
+    // verilog_format: on
 
     // When really implemented, srandom must operate on the process, but for
     // now rely on the srandom() that is automatically generated for all
@@ -220,22 +218,23 @@ inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc
     // function void srandom(int seed);
     // endfunction
 
-    // The methods below work only if set_randstate is never applied to
-    // a state string created before another such string. Full support
-    // could use VlRNG class to store the state per process in VlProcess
-    // objects.
+    // The methods below access the common RNG, full support
+    // of get_randstate/set_randstate requires accessing the RNG state
+    // of the specified process (see IEEE 1800-2023, 18.14.), but as for
+    // now processes do not have their own RNGs.
     function string get_randstate();
-      string s;
+      // Initialize with $c to ensure it won't be constified
+      string s = string'($c("0"));
 
-      s.itoa($random);  // Get a random number
-      set_randstate(s);  // Pretend it's the state of RNG
+      $c(s, " = ", m_process, "->randstate();");
       return s;
     endfunction
 
     function void set_randstate(string s);
-      $urandom(s.atoi());  // Set the seed using a string
+      $c(m_process, "->randstate(", s, ");");
     endfunction
   endclass
+
   function int randomize();
     randomize = 0;
   endfunction

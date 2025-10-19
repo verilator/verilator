@@ -158,8 +158,9 @@ public:
         }
     }
     void emitModCUse(const AstNodeModule* modp, VUseType useType);
-    void emitTextSection(const AstNodeModule* modp, VNType type);
-    static std::pair<string, FileLine*> textSection(const AstNodeModule* modp, VNType type);
+    void emitSystemCSection(const AstNodeModule* modp, VSystemCSectionType type);
+    static std::pair<string, FileLine*> scSection(const AstNodeModule* modp,
+                                                  VSystemCSectionType type);
 
     // CONSTRUCTORS
     EmitCBaseVisitorConst() = default;

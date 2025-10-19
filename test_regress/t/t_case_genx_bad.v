@@ -12,7 +12,7 @@ module t;
       case (P)
         32'b0:    initial begin end
         32'b1xxx: initial begin end
-        default:  initial begin end
+        default   initial begin end  // No ':' to cover parser
       endcase
    endgenerate
 

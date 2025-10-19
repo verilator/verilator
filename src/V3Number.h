@@ -69,9 +69,9 @@ private:
     // CONSTANTS
     // At least 2 words (64 fourstate bits). 4 words (128 fourstate bits) in most cases,
     // i.e. when std::string has 32 bytes.
-    static constexpr int INLINE_WORDS = vlstd::max(
-        static_cast<size_t>(2), vlstd::max(sizeof(std::string) / sizeof(ValueAndX),
-                                           sizeof(std::vector<ValueAndX>) / sizeof(ValueAndX)));
+    static constexpr int INLINE_WORDS = std::max(
+        static_cast<size_t>(2), std::max(sizeof(std::string) / sizeof(ValueAndX),
+                                         sizeof(std::vector<ValueAndX>) / sizeof(ValueAndX)));
     // When m_width > MAX_INLINE_WIDTH number is stored in m_dynamicNumber.
     // Otherwise number is stored in m_inlineNumber.
     static constexpr int MAX_INLINE_WIDTH = INLINE_WORDS * sizeof(ValueAndX) / 2 * 8;
@@ -488,28 +488,29 @@ public:
         opCleanThis();
     }
     // Create from a verilog 32'hxxxx number.
-    V3Number(AstNode* nodep, const char* sourcep) { create(nodep, sourcep); }
-    V3Number(FileLine* flp, const char* sourcep) { create(flp, sourcep); }
+    class VerilogNumberLiteral {};  // For creator type-overload selection
+    V3Number(AstNode* nodep, VerilogNumberLiteral, const char* sourcep) { create(nodep, sourcep); }
+    V3Number(FileLine* flp, VerilogNumberLiteral, const char* sourcep) { create(flp, sourcep); }
     class VerilogStringLiteral {};  // For creator type-overload selection
-    V3Number(VerilogStringLiteral, AstNode* nodep, const string& str);
+    V3Number(AstNode* nodep, VerilogStringLiteral, const string& str);
     class Double {};
-    V3Number(Double, AstNode* nodep, double value) {
+    V3Number(AstNode* nodep, Double, double value) {
         init(nodep, 64);
         setDouble(value);
     }
     class String {};
-    V3Number(String, AstNode* nodep, const string& value) {
+    V3Number(AstNode* nodep, String, const string& value) {
         init(nodep);
         setString(value);
         m_data.m_fromString = true;
     }
     class OneStep {};
-    V3Number(OneStep, AstNode* nodep) {
+    V3Number(AstNode* nodep, OneStep) {
         init(nodep, 64);
         m_data.m_is1Step = true;
     }
     class Null {};
-    V3Number(Null, AstNode* nodep) {
+    V3Number(AstNode* nodep, Null) {
         init(nodep);
         m_data.setLogic();
         m_data.m_isNull = true;
@@ -524,10 +525,6 @@ public:
         m_data.num()[0].m_value = value;
         opCleanThis();
         m_fileline = nump->fileline();
-    }
-    V3Number(AstNode* nodep, double value) {
-        init(nodep, 64);
-        setDouble(value);
     }
     V3Number(AstNode* nodep, const AstNodeDType* nodedtypep);
 
@@ -598,6 +595,7 @@ public:
     string displayed(const AstNode* nodep, const string& vformat) const VL_MT_STABLE;
     string displayed(FileLine* fl, const string& vformat) const VL_MT_STABLE;
     static bool displayedFmtLegal(char format, bool isScan);  // Is this a valid format letter?
+    string emitC() const VL_MT_STABLE;
     int width() const VL_MT_SAFE { return m_data.width(); }
     int widthToFit() const;  // Minimum width that can represent this number (~== log2(num)+1)
     bool sized() const VL_MT_SAFE { return m_data.m_sized; }

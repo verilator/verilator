@@ -1,3 +1,8 @@
+%Error-HIERPARAM: t/t_interface_param_another_bad.v:9:36: Parameter values cannot use hierarchical values (IEEE 1800-2023 6.20.2)
+                                                        : ... note: In instance 't'
+    9 |    simple_bus #(.PARAMETER(sb_intf.dummy)) simple();
+      |                                    ^~~~~
+                  ... For error description see https://verilator.org/warn/HIERPARAM?v=latest
 %Error: t/t_interface_param_another_bad.v:9:36: Expecting expression to be constant, but variable isn't const: 'dummy'
                                               : ... note: In instance 't'
     9 |    simple_bus #(.PARAMETER(sb_intf.dummy)) simple();

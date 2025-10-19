@@ -127,7 +127,7 @@ module t (/*AUTOARG*/
 
       { bins bts = ( 1, 2 ); }
       { wildcard bins wbts = ( 1, 2 ); }
-      { bins bts2 = ( 2, 3 ), ( [5:6] ) ; }
+      { bins bts2 = ( 2, 3 ), ( [5:6] ), ( [5 +/- 2] ), ( [ 5 +%- 20.0] ) ; }
 
       { bins bts2 = ( 1,5 => 6,7 ) ; }
       { bins bts2 = ( 3 [*5] ) ; }
@@ -179,11 +179,14 @@ module t (/*AUTOARG*/
       endgroup
    endclass
 
-   always @(posedge clk) begin
+   initial begin
       cg_empty cov1 = new;
 `ifndef T_COVERGROUP_UNSUP_IGN
       cgArgs cov2 = new(2);
 `endif
+   end
+
+   always @(posedge clk) begin
       if (cyc == 10) begin
          $write("*-* All Finished *-*\n");
          $finish;

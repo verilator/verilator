@@ -86,24 +86,20 @@ void V3ParseImp::parserClear() {
 
 AstArg* V3ParseGrammar::argWrapList(AstNodeExpr* nodep) {
     // Convert list of expressions to list of arguments
-    if (!nodep) return nullptr;
     AstArg* outp = nullptr;
-    AstBegin* const tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", nodep};
     while (nodep) {
         AstNodeExpr* const nextp = VN_AS(nodep->nextp(), NodeExpr);
-        AstNodeExpr* const exprp = nodep->unlinkFrBack();
+        if (nextp) nextp->unlinkFrBackWithNext();
+        outp = AstNode::addNext(outp, new AstArg{nodep->fileline(), "", nodep});
         nodep = nextp;
-        outp = AstNode::addNext(outp, new AstArg{exprp->fileline(), "", exprp});
     }
-    VL_DO_DANGLING(tempp->deleteTree(), tempp);
     return outp;
 }
 
-AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& name, int value) {
-    AstAssignW* assignp
-        = new AstAssignW{fileline, new AstParseRef{fileline, VParseRefExp::PX_TEXT, name},
-                         value ? new AstConst{fileline, AstConst::All1{}}
-                               : new AstConst{fileline, AstConst::All0{}}};
+AstAssignW* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& name, int value) {
+    AstAssignW* assignp = new AstAssignW{fileline, new AstParseRef{fileline, name},
+                                         value ? new AstConst{fileline, AstConst::All1{}}
+                                               : new AstConst{fileline, AstConst::All0{}}};
     AstStrengthSpec* strengthSpecp
         = new AstStrengthSpec{fileline, VStrength::SUPPLY, VStrength::SUPPLY};
     assignp->strengthSpecp(strengthSpecp);
@@ -257,12 +253,12 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     }
 
     if (GRAMMARP->m_varDecl == VVarType::SUPPLY0) {
-        AstNode::addNext<AstNode, AstNode>(
-            nodep, V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 0));
+        AstAssignW* const ap = V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 0);
+        AstNode::addNext<AstNode, AstNode>(nodep, new AstAlways{ap});
     }
     if (GRAMMARP->m_varDecl == VVarType::SUPPLY1) {
-        AstNode::addNext<AstNode, AstNode>(
-            nodep, V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 1));
+        AstAssignW* const ap = V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 1);
+        AstNode::addNext<AstNode, AstNode>(nodep, new AstAlways{ap});
     }
     if (VN_IS(dtypep, ParseTypeDType)) {
         // Parser needs to know what is a type

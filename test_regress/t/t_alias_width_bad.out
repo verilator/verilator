@@ -1,0 +1,6 @@
+%Error: t/t_alias_width_bad.v:18:13: Incompatible data types of nets used for net alias. First operand has the type 'logic[1:0]', other has 'logic[2:0]'
+                                   : ... note: In instance 't'
+   18 |   alias a = b;
+      |             ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

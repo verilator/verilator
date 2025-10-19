@@ -367,10 +367,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         if ((nodep->isSigUserRdPublic() || nodep->isSigUserRWPublic()) && !m_cfuncp)
             m_modVars.emplace_back(m_modp, nodep);
     }
-    void visit(AstVarScope* nodep) override {
-        iterateChildrenConst(nodep);
-        m_statVarScopeBytes += nodep->varp()->dtypep()->widthTotalBytes();
-    }
     void visit(AstNodeCoverDecl* nodep) override {
         // Assign numbers to all bins, so we know how big of an array to use
         if (!nodep->dataDeclNullp()) {  // else duplicate we don't need code for
@@ -416,7 +412,8 @@ void EmitCSyms::emitSymHdr() {
     ofp()->putsIntTopInclude();
     puts("#include \"verilated.h\"\n");
     if (v3Global.needTraceDumper()) {
-        puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
+        for (const string& base : v3Global.opt.traceSourceLangs())
+            puts("#include \"" + base + ".h\"\n");
     }
     if (v3Global.opt.usesProfiler()) puts("#include \"verilated_profiler.h\"\n");
 
@@ -446,7 +443,7 @@ void EmitCSyms::emitSymHdr() {
     }
 
     puts("\n// SYMS CLASS (contains all model state)\n");
-    puts("class alignas(VL_CACHE_LINE_BYTES)" + EmitCUtil::symClassName()
+    puts("class alignas(VL_CACHE_LINE_BYTES) " + EmitCUtil::symClassName()
          + " final : public VerilatedSyms {\n");
     ofp()->putsPrivate(false);  // public:
 
@@ -747,7 +744,7 @@ void EmitCSyms::emitSymImp() {
         puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
         puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
         puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
-        puts("std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
+        puts("const std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
         puts("__Vm_dumperp->open(dumpfile.c_str());\n");
         puts("__Vm_dumping = true;\n");
         puts("}\n");
@@ -824,11 +821,12 @@ void EmitCSyms::emitSymImp() {
     puts("{\n");
 
     {
-        puts("    // Check resources\n");
+        puts("// Check resources\n");
         uint64_t stackSize = V3StackCount::count(v3Global.rootp());
         if (v3Global.opt.debugStackCheck()) stackSize += 1024 * 1024 * 1024;
         V3Stats::addStat("Size prediction, Stack (bytes)", stackSize);
-        puts("    Verilated::stackCheck(" + cvtToStr(stackSize) + ");\n");
+        puts("Verilated::stackCheck(" + cvtToStr(stackSize) + ");\n");
+        // TODO: 'm_statVarScopeBytes' is always 0, AstVarScope doesn't reach here (V3Descope)
         V3Stats::addStat("Size prediction, Heap, from Var Scopes (bytes)", m_statVarScopeBytes);
         V3Stats::addStat(V3Stats::STAT_MODEL_SIZE, stackSize + m_statVarScopeBytes);
     }

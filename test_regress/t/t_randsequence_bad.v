@@ -18,6 +18,11 @@ module t;
          production_baa: {};
       endsequence
 
+      randsequence()
+         duplicated_bad: { $display("dup1"); };
+         duplicated_bad: { $display("dup2"); };  // Bad
+      endsequence
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

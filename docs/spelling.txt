@@ -218,6 +218,7 @@ Katzman
 Kelin
 Keren
 Keyi
+Keßler
 Kimmitt
 Kindgren
 Kirkham
@@ -361,6 +362,7 @@ Rolfe
 Rontionov
 Roodselaar
 Roshit
+Rufer
 Runtime
 Ruud
 Rystsov
@@ -747,7 +749,9 @@ fwrite
 gantt
 gcc
 gcda
+gcov
 gdb
+gdbinit
 genblk
 genvar
 genvars
@@ -765,8 +769,8 @@ hdr
 hdzhangdoc
 hh
 hier
-hierCMakeArgs
 hierMkArgs
+hierMkJsonArgs
 hierParameters
 hierVer
 html
@@ -846,6 +850,7 @@ miree
 mis
 misconnected
 misconversion
+misdetecting
 misoptimized
 missized
 mk

@@ -293,7 +293,7 @@ class HasherVisitor final : public VNVisitorConst {
     }
     void visit(AstCMethodHard* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
-            m_hash += nodep->name();
+            m_hash += nodep->method();
         });
     }
     void visit(AstCAwait* nodep) override {
@@ -359,8 +359,7 @@ class HasherVisitor final : public VNVisitorConst {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
     }
     void visit(AstParseRef* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {
-            m_hash += nodep->expect();
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //
             m_hash += nodep->name();
         });
     }

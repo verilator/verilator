@@ -5,8 +5,11 @@
 %Error-UNSUPPORTED: t/t_assert_always_unsup.v:25:7: Unsupported: s_always (in property expression)
    25 |       s_always [2:5] a;
       |       ^~~~~~~~
-%Error: t/t_assert_always_unsup.v:29:20: syntax error, unexpected ':', expecting ']'
+%Error-UNSUPPORTED: t/t_assert_always_unsup.v:29:7: Unsupported: eventually[] (in property expression)
    29 |       eventually [2:5] a;
+      |       ^~~~~~~~~~
+%Error: t/t_assert_always_unsup.v:33:20: syntax error, unexpected ']', expecting ':'
+   33 |       eventually [2] a;
       |                    ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Cannot continue

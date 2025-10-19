@@ -55,11 +55,14 @@
 #include "V3Hasher.h"
 #include "V3Os.h"
 #include "V3Parse.h"
+#include "V3Simulate.h"
+#include "V3Stats.h"
 #include "V3Unroll.h"
 #include "V3Width.h"
 
 #include <cctype>
 #include <deque>
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -136,7 +139,7 @@ public:
     }
     AstNodeModule* findByParams(const string& origName, AstPin* firstPinp,
                                 const AstNodeModule* modp) {
-        UASSERT(isHierBlock(origName), origName << " is not hierarchical block\n");
+        UASSERT(isHierBlock(origName), origName << " is not hierarchical block");
         // This module is a hierarchical block. Need to replace it by the --lib-create wrapper.
         const std::pair<HierMapIt, HierMapIt> candidates
             = m_hierBlockOptsByOrigName.equal_range(origName);
@@ -196,7 +199,7 @@ public:
             if (pinValuep->isDouble()) {
                 var = pinValuep->num().toDouble();
             } else {  // Cast from integer to real
-                V3Number varNum{pinValuep, 0.0};
+                V3Number varNum{pinValuep, V3Number::Double{}, 0.0};
                 varNum.opIToRD(pinValuep->num());
                 var = varNum.toDouble();
             }
@@ -265,7 +268,7 @@ class ParamProcessor final {
 
     // All module names that are loaded from source code
     // Generated modules by this visitor is not included
-    V3StringSet m_allModuleNames;
+    VStringSet m_allModuleNames;
 
     CloneMap m_originalParams;  // Map between parameters of copied parameteized classes and their
                                 // original nodes
@@ -1110,7 +1113,7 @@ class ParamProcessor final {
             UINFO(8, "     Done with " << modInfop->m_modp);
             newModp = modInfop->m_modp;
         }
-        if (defaultsResolved) { srcModp->user4p(newModp); }
+        if (defaultsResolved) srcModp->user4p(newModp);
 
         for (auto* stmtp = newModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* dtypep = VN_CAST(stmtp, ParamTypeDType)) {
@@ -1263,16 +1266,19 @@ public:
 class ParamVisitor final : public VNVisitor {
     // NODE STATE
     // AstNodeModule::user1 -> bool: already fixed level (temporary)
+    // AstNodeDType::user2  -> bool: already visited from typedef
 
     // STATE - across all visitors
     ParamState& m_state;  // Common state
     ParamProcessor m_processor;  // De-parameterize a cell, build modules
-    UnrollStateful m_unroller;  // Loop unroller
+    GenForUnroller m_unroller;  // Unroller for AstGenFor
 
     bool m_iterateModule = false;  // Iterating module body
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
     std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
     std::deque<std::string> m_strings;  // Allocator for temporary strings
+    std::map<const AstRefDType*, bool>
+        m_isCircular;  // Stores information whether `AstRefDType` is circular
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp;  // Module iterating
@@ -1357,6 +1363,21 @@ class ParamVisitor final : public VNVisitor {
         m_iterateModule = false;
     }
 
+    void checkParamNotHier(AstNode* valuep) {
+        if (!valuep) return;
+        valuep->foreachAndNext([&](const AstNodeExpr* exprp) {
+            if (const AstVarXRef* refp = VN_CAST(exprp, VarXRef)) {
+                refp->v3warn(HIERPARAM, "Parameter values cannot use hierarchical values"
+                                        " (IEEE 1800-2023 6.20.2)");
+            } else if (const AstNodeFTaskRef* refp = VN_CAST(exprp, NodeFTaskRef)) {
+                if (refp->dotted() != "") {
+                    refp->v3error("Parameter values cannot call hierarchical functions"
+                                  " (IEEE 1800-2023 6.20.2)");
+                }
+            }
+        });
+    }
+
     // A generic visitor for cells and class refs
     void visitCellOrClassRef(AstNode* nodep, bool isIface) {
         // Must do ifaces first, so push to list and do in proper order
@@ -1397,13 +1418,40 @@ class ParamVisitor final : public VNVisitor {
         }
     }
 
+    bool isCircularType(const AstRefDType* nodep) {
+        const auto iter = m_isCircular.emplace(nodep, true);
+        if (!iter.second) return iter.first->second;
+        if (const AstRefDType* const subDTypep = VN_CAST(nodep->subDTypep(), RefDType)) {
+            const bool ret = isCircularType(subDTypep);
+            iter.first->second = ret;
+            return ret;
+        }
+        iter.first->second = false;
+        return false;
+    }
+
+    void visit(AstRefDType* nodep) override {
+        if (isCircularType(nodep)) {
+            nodep->v3error("Typedef's type is circular: " << nodep->prettyName());
+        } else if (nodep->typedefp() && nodep->subDTypep()
+                   && (VN_IS(nodep->subDTypep()->skipRefOrNullp(), IfaceRefDType)
+                       || VN_IS(nodep->subDTypep()->skipRefOrNullp(), ClassRefDType))
+                   && !nodep->skipRefp()->user2SetOnce()) {
+            iterate(nodep->skipRefp());
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstCell* nodep) override {
+        checkParamNotHier(nodep->paramsp());
         visitCellOrClassRef(nodep, VN_IS(nodep->modp(), Iface));
     }
     void visit(AstIfaceRefDType* nodep) override {
         if (nodep->ifacep()) visitCellOrClassRef(nodep, true);
     }
-    void visit(AstClassRefDType* nodep) override { visitCellOrClassRef(nodep, false); }
+    void visit(AstClassRefDType* nodep) override {
+        checkParamNotHier(nodep->paramsp());
+        visitCellOrClassRef(nodep, false);
+    }
     void visit(AstClassOrPackageRef* nodep) override {
         // If it points to a typedef it is not really a class reference. That typedef will be
         // visited anyway (from its parent node), so even if it points to a parameterized class
@@ -1416,6 +1464,7 @@ class ParamVisitor final : public VNVisitor {
         if (nodep->user2SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isParam()) {
+            checkParamNotHier(nodep->valuep());
             if (!nodep->valuep() && !VN_IS(m_modp, Class)) {
                 nodep->v3error("Parameter without default value is never given value"
                                << " (IEEE 1800-2023 6.20.1): " << nodep->prettyNameQ());
@@ -1591,7 +1640,7 @@ class ParamVisitor final : public VNVisitor {
         }
     }
 
-    void visit(AstBegin* nodep) override {
+    void visit(AstGenBlock* nodep) override {
         // Parameter substitution for generated for loops.
         // TODO Unlike generated IF, we don't have to worry about short-circuiting the
         // conditional expression, since this is currently restricted to simple
@@ -1613,10 +1662,10 @@ class ParamVisitor final : public VNVisitor {
             // a BEGIN("zzz__BRA__{loop#}__KET__")
             const string beginName = nodep->name();
             // Leave the original Begin, as need a container for the (possible) GENVAR
-            // Note V3Unroll will replace some AstVarRef's to the loop variable with constants
+            // Note m_unroller will replace some AstVarRef's to the loop variable with constants
             // Don't remove any deleted nodes in m_unroller until whole process finishes,
-            // (are held in m_unroller), as some AstXRefs may still point to old nodes.
-            VL_DO_DANGLING(m_unroller.unrollGen(forp, beginName), forp);
+            // as some AstXRefs may still point to old nodes.
+            VL_DO_DANGLING(m_unroller.unroll(forp, beginName), forp);
             // Blocks were constructed under the special begin, move them up
             // Note forp is null, so grab statements again
             if (AstNode* const stmtsp = nodep->genforp()) {
@@ -1644,8 +1693,8 @@ class ParamVisitor final : public VNVisitor {
         V3Const::constifyParamsEdit(nodep->exprp());  // exprp may change
         const AstConst* const exprp = VN_AS(nodep->exprp(), Const);
         // Constify
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstGenCaseItem* itemp = nodep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), GenCaseItem)) {
             for (AstNode* ep = itemp->condsp(); ep;) {
                 AstNode* const nextp = ep->nextp();  // May edit list
                 iterateAndNextNull(ep);
@@ -1654,8 +1703,8 @@ class ParamVisitor final : public VNVisitor {
             }
         }
         // Item match
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstGenCaseItem* itemp = nodep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), GenCaseItem)) {
             if (!itemp->isDefault()) {
                 for (AstNode* ep = itemp->condsp(); ep; ep = ep->nextp()) {
                     if (const AstConst* const ccondp = VN_CAST(ep, Const)) {
@@ -1663,7 +1712,7 @@ class ParamVisitor final : public VNVisitor {
                         match.opEq(ccondp->num(), exprp->num());
                         if (!hit && match.isNeqZero()) {
                             hit = true;
-                            keepp = itemp->stmtsp();
+                            keepp = itemp->itemsp();
                         }
                     } else {
                         itemp->v3error("Generate Case item does not evaluate to constant");
@@ -1672,12 +1721,12 @@ class ParamVisitor final : public VNVisitor {
             }
         }
         // Else default match
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstGenCaseItem* itemp = nodep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), GenCaseItem)) {
             if (itemp->isDefault()) {
                 if (!hit) {
                     hit = true;
-                    keepp = itemp->stmtsp();
+                    keepp = itemp->itemsp();
                 }
             }
         }
@@ -1742,6 +1791,9 @@ class ParamTop final : VNDeleter {
             maxParentLevel = std::max(maxParentLevel, parentp->level());
         }
         if (modp->level() <= maxParentLevel) modp->level(maxParentLevel + 1);
+        // Not correct fixup of depth(), as it should be mininum.  But depth() is unused
+        // past V3LinkParse, so just do something sane in case this code doesn't get updated
+        modp->depth(modp->level());
     }
 
     void resortNetlistModules(AstNetlist* netlistp) {
@@ -1821,12 +1873,15 @@ public:
         resortNetlistModules(netlistp);
 
         // Remove defaulted classes
+        // Unlike modules, which we keep around and mark dead() for later V3Dead
+        std::unordered_set<AstClass*> removedClassps;
         for (AstClass* const classp : m_state.m_paramClasses) {
             if (!classp->user3p()) {
                 // If there was an error, don't remove classes as they might
                 // have remained referenced, and  will crash in V3Broken or
                 // other locations. This is fine, we will abort imminently.
                 if (V3Error::errorCount()) continue;
+                removedClassps.emplace(classp);
                 VL_DO_DANGLING(pushDeletep(classp->unlinkFrBack()), classp);
             } else {
                 // Referenced. classp became a specialized class with the default
@@ -1834,6 +1889,18 @@ public:
                 classp->hasGParam(false);
             }
         }
+        // Remove references to defaulted classes
+        // Reuse user3 to mark all nodes being deleted
+        AstNode::user3ClearTree();
+        for (AstClass* classp : removedClassps) {
+            classp->foreach([](AstNode* const nodep) { nodep->user3(true); });
+        }
+        // Set all links pointing to a user3 (deleting) node as null
+        netlistp->foreach([](AstNode* const nodep) {
+            nodep->foreachLink([](AstNode** const linkpp, const char*) {
+                if (*linkpp && (*linkpp)->user3()) *linkpp = nullptr;
+            });
+        });
     }
     ~ParamTop() = default;
     VL_UNCOPYABLE(ParamTop);

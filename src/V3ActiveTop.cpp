@@ -131,12 +131,6 @@ class ActiveTopVisitor final : public VNVisitor {
     void visit(AstNodeProcedure* nodep) override {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    void visit(AstAssignAlias* nodep) override {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc("Node should have been under ACTIVE");
-    }
-    void visit(AstAssignW* nodep) override {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc("Node should have been under ACTIVE");
-    }
     //--------------------
     void visit(AstNodeExpr*) override {}  // Accelerate
     void visit(AstVarScope*) override {}  // Accelerate

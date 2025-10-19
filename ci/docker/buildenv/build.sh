@@ -9,7 +9,6 @@
 
 : "${REPO:=https://github.com/verilator/verilator}"
 : "${REV:=master}"
-: "${CC:=gcc}"
 : "${CXX:=g++}"
 
 SRCS=$PWD/verilator

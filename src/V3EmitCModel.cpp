@@ -82,7 +82,7 @@ class EmitCModel final : public EmitCFunc {
         puts("\n");
         puts("class " + EmitCUtil::symClassName() + ";\n");
         puts("class " + EmitCUtil::prefixNameProtect(modp) + ";\n");  // For rootp pointer only
-        if (v3Global.opt.trace()) puts("class " + v3Global.opt.traceClassLang() + ";\n");
+        for (const string& base : v3Global.opt.traceClassLangs()) puts("class " + base + ";\n");
         emitModCUse(modp, VUseType::INT_FWD_CLASS);  // Note: This is needed for cell forwarding
 
         puts("\n");
@@ -131,7 +131,6 @@ class EmitCModel final : public EmitCFunc {
                 }
             }
         }
-        if (optSystemC() && v3Global.usesTiming()) puts("sc_core::sc_event trigger_eval;\n");
 
         // Cells instantiated by the top level (for access to /* verilator public */)
         puts("\n// CELLS\n"
@@ -183,7 +182,6 @@ class EmitCModel final : public EmitCFunc {
         }
         if (optSystemC() && v3Global.usesTiming()) {
             puts("void eval();\n");
-            puts("void eval_sens();\n");
         } else {
             puts("void eval() { eval_step(); " + callEvalEndStep + "}\n");
         }
@@ -326,10 +324,9 @@ class EmitCModel final : public EmitCFunc {
             // Create sensitivity list for when to evaluate the model.
             putsDecoration(nullptr, "// Sensitivities on all clocks and combinational inputs\n");
             puts("SC_METHOD(eval);\n");
-            if (v3Global.usesTiming()) puts("SC_METHOD(eval_sens);\n");
             for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
                 if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                    if (varp->isNonOutput() && (varp->isScSensitive() || varp->isUsedClock())) {
+                    if (varp->isNonOutput() && (varp->isScSensitive() || varp->isPrimaryClock())) {
                         int vects = 0;
                         // This isn't very robust and may need cleanup for other data types
                         for (AstUnpackArrayDType* arrayp
@@ -401,15 +398,8 @@ class EmitCModel final : public EmitCFunc {
             puts("if (eventsPending()) {\n");
             puts("sc_core::sc_time dt = sc_core::sc_time::from_value(nextTimeSlot() - "
                  "contextp()->time());\n");
-            puts("next_trigger(dt, trigger_eval);\n");
-            puts("} else {\n");
-            puts("next_trigger(trigger_eval);\n");
+            puts("next_trigger(dt);\n");
             puts("}\n");
-            puts("}\n");
-
-            // ::eval_sens
-            puts("\nvoid " + EmitCUtil::topClassName() + "::eval_sens() {\n");
-            puts("trigger_eval.notify();\n");
             puts("}\n");
         }
 
@@ -637,9 +627,8 @@ class EmitCModel final : public EmitCFunc {
 
         puts("\n");
         puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
-        if (v3Global.opt.trace()) {
-            puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
-        }
+        for (const string& base : v3Global.opt.traceSourceLangs())
+            puts("#include \"" + base + ".h\"\n");
 
         emitConstructorImplementation(modp);
         emitDestructorImplementation();

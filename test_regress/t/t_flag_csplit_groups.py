@@ -82,12 +82,13 @@ def check_gcc_flags(filename):
 if not test.make_version or float(test.make_version) < 4.1:
     test.skip("Test requires GNU Make version >= 4.1")
 
-test.compile(v_flags2=["--trace-vcd",
+test.compile(v_flags2=["--exe",
+                       "--trace-vcd",
                        "--output-split 1",
                        "--output-groups 2",
                        "--output-split-cfuncs 1",
-                       "--exe",
                        "--stats",
+                       "--dumpi-V3EmitMk 9",  # Dev coverage of the V3EmitMk debug printer
                        "../" + test.main_filename],
              verilator_make_gmake=False)  # yapf:disable
 

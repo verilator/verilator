@@ -137,18 +137,18 @@ public:
     // Returns a Packed type of the given width
     static const DfgDataType& packed(uint32_t width) {
         // Find or create the right sized packed type
-        const auto pair = s_packedTypes.emplace(width, nullptr);
-        if (pair.second) pair.first->second = new DfgDataType{width};
-        return *pair.first->second;
+        const DfgDataType*& entryr = s_packedTypes[width];
+        if (!entryr) entryr = new DfgDataType{width};
+        return *entryr;
     }
 
     // Returns an Array type of the given size with the given elements
     static const DfgDataType& array(const DfgDataType& elemType, uint32_t size) {
         UASSERT(elemType.isPacked(), "Cannot create multi-dimensional arrays yet");
         // Find or create the right sized array type with this as elements
-        const auto pair = elemType.m_arrayTypes.emplace(size, nullptr);
-        if (pair.second) pair.first->second = new DfgDataType{size, elemType};
-        return *pair.first->second;
+        const DfgDataType*& entryr = elemType.m_arrayTypes[size];
+        if (!entryr) entryr = new DfgDataType{size, elemType};
+        return *entryr;
     }
 
     // Returns the singleton Null type
@@ -168,9 +168,7 @@ public:
             UASSERT(lo + size - 1 < dtype.size(), "Out of range");
             return DfgDataType::array(dtype.elemDtype(), size);
         }
-        case Kind::Null: {
-            UASSERT(false, "Type cannot be selected from");
-        }
+        case Kind::Null: v3fatal("Type cannot be selected from");  // LCOV_EXCL_LINE
         }
         VL_UNREACHABLE;
     }

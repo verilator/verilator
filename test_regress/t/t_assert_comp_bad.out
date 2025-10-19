@@ -42,6 +42,10 @@
                     ... Use "/* verilator lint_off USERFATAL */" and lint_on around source to disable this message.
 %Warning-USERFATAL: t/t_assert_comp_bad.v:22:5: Elaboration system task message (IEEE 1800-2023 20.11)
                                               : ... note: In instance 't'
-   22 |     $fatal;
+   22 |     $fatal(0);
+      |     ^~~~~~
+%Warning-USERFATAL: t/t_assert_comp_bad.v:23:5: Elaboration system task message (IEEE 1800-2023 20.11)
+                                              : ... note: In instance 't'
+   23 |     $fatal;
       |     ^~~~~~
 %Error: Exiting due to

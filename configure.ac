@@ -59,19 +59,19 @@ AC_MSG_RESULT($CFG_ENABLE_PARTIAL_STATIC)
 
 # Flag to enable compiling with AddressSanitizer
 AC_MSG_CHECKING(whether to use AddressSanitizer)
-AC_ARG_ENABLE([asan],
-              [AS_HELP_STRING([--enable-asan],
+AC_ARG_ENABLE([dev-asan],
+              [AS_HELP_STRING([--enable-dev-asan],
                               [Enable compiling Verilator with ASAN
                                AddressSanitizer for memory error detection.
                                This disables tcmalloc.  Does not affect
                                Verilated models using ASAN.])],
               [case "${enableval}" in
-                yes) CFG_WITH_ASAN=yes ;;
-                no)  CFG_WITH_ASAN=no ;;
-                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-asan]) ;;
+                yes) CFG_WITH_DEV_ASAN=yes ;;
+                no)  CFG_WITH_DEV_ASAN=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-dev-asan]) ;;
                esac],
-               CFG_WITH_ASAN=no)
-AC_MSG_RESULT($CFG_WITH_ASAN)
+               CFG_WITH_DEV_ASAN=no)
+AC_MSG_RESULT($CFG_WITH_DEV_ASAN)
 
 # Flag to enable linking Verilator with tcmalloc if available
 AC_MSG_CHECKING(whether to use tcmalloc)
@@ -85,26 +85,27 @@ AC_ARG_ENABLE([tcmalloc],
                 *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-tcmalloc]) ;;
                esac],
               [CFG_WITH_TCMALLOC=check;])
-if test "$CFG_WITH_ASAN" = "yes"; then
+if test "$CFG_WITH_DEV_ASAN" = "yes"; then
   CFG_WITH_TCMALLOC=no
-  AC_MSG_RESULT("disabled by --enable-asan")
+  AC_MSG_RESULT("disabled by --enable-dev-asan")
 else
   AC_MSG_RESULT($CFG_WITH_TCMALLOC)
 fi
 
-# Flag to enable coverage build
-AC_MSG_CHECKING(whether to build for coverage collection)
-AC_ARG_ENABLE([coverage],
-              [AS_HELP_STRING([--enable-coverage],
-                              [Build Verilator for code coverage collection.
+# Flag to enable code coverage build with gcov
+AC_MSG_CHECKING(whether to build for gcov code coverage collection)
+AC_ARG_ENABLE([dev-gcov],
+              [AS_HELP_STRING([--enable-dev-gcov],
+                              [Build Verilator for code coverage collection with gcov.
                                For developers only.])],
               [case "${enableval}" in
-                yes) CFG_ENABLE_COVERAGE=yes ;;
-                no)  CFG_ENABLE_COVERAGE=no ;;
-                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-coverage]) ;;
+                yes) CFG_WITH_DEV_GCOV=yes ;;
+                no)  CFG_WITH_DEV_GCOV=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-dev-gcov]) ;;
                esac],
-               CFG_ENABLE_COVERAGE=no)
-AC_MSG_RESULT($CFG_ENABLE_COVERAGE)
+               CFG_WITH_DEV_GCOV=no)
+AC_SUBST(CFG_WITH_DEV_GCOV)
+AC_MSG_RESULT($CFG_WITH_DEV_GCOV)
 
 # Special Substitutions - CFG_WITH_DEFENV
 AC_MSG_CHECKING(whether to use hardcoded paths)
@@ -399,7 +400,7 @@ AC_DEFUN([_MY_LDLIBS_CHECK_OPT],
    ])
 
 # Add the coverage flags early as they influence later checks.
-if test "$CFG_ENABLE_COVERAGE" = "yes"; then
+if test "$CFG_WITH_DEV_GCOV" = "yes"; then
   _MY_CXX_CHECK_OPT(CXX,--coverage)
   # Otherwise inline may not show as uncovered
   #  If we use this then e.g. verilated.h functions properly show up
@@ -411,11 +412,19 @@ if test "$CFG_ENABLE_COVERAGE" = "yes"; then
   #  _MY_CXX_CHECK_OPT(CXX,-fkeep-inline-functions)
   # Otherwise static may not show as uncovered
   _MY_CXX_CHECK_OPT(CXX,-fkeep-static-functions)
-  # Exceptions can pollute the branch coverage data
-  _MY_CXX_CHECK_OPT(CXX,-fno-exceptions)
-  # Define-out some impossible stuff
+  # Similarly for inline functions. - This is too slow. See Makefile_obj instead.
+  #_MY_CXX_CHECK_OPT(CXX,-fkeep-inline-functions)
+  # Make sure profiling is thread-safe
+  _MY_CXX_CHECK_OPT(CXX,-fprofile-update=atomic)
+  # Ensure data files can be written from parallel runs
+  _MY_CXX_CHECK_OPT(CXX,-fprofile-reproducible=parallel-runs)
+  # Save source files as absolute paths in gcno files
+  _MY_CXX_CHECK_OPT(CXX,-fprofile-abs-path)
+  # Define so compiled code can know
   _MY_CXX_CHECK_OPT(CXX,-DVL_GCOV)
+  AC_DEFINE([HAVE_DEV_GCOV],[1],[Defined if compiled with code coverage collection for gcov])]
 fi
+AC_SUBST(HAVE_DEV_GCOV)
 
 # Compiler flags to enable profiling
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PROFILE,-pg)
@@ -453,14 +462,14 @@ AC_SUBST(CFG_CXXFLAGS_COROUTINES)
 AC_SUBST(HAVE_COROUTINES)
 
 # Flags for compiling Verilator internals including parser always
-if test "$CFG_WITH_ASAN" = "yes"; then
+if test "$CFG_WITH_DEV_ASAN" = "yes"; then
   _MY_CXX_CHECK_IFELSE(-fsanitize=address -DVL_ASAN,
     [CFG_CXXFLAGS_SRC="$CFG_CXXFLAGS_SRC -fsanitize=address -DVL_ASAN"
      CFG_LDFLAGS_SRC="$CFG_LDFLAGS_SRC -fsanitize=address"
-     AC_DEFINE([HAVE_ASAN],[1],[Defined if built with AddresSanitizer])]
+     AC_DEFINE([HAVE_DEV_ASAN],[1],[Defined if built with AddresSanitizer])]
   )
 fi
-AC_SUBST(HAVE_ASAN)
+AC_SUBST(HAVE_DEV_ASAN)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Qunused-arguments)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-shadow)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
@@ -476,16 +485,22 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-unused)
 AC_SUBST(CFG_CXXFLAGS_PARSER)
 
 # Flags for compiling the debug version of Verilator (in addition to above CFG_CXXFLAGS_SRC)
-if test "$CFG_ENABLE_COVERAGE" = "no"; then # Do not optimize for the coverage build
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-Og)
+if test "$CFG_WITH_DEV_GCOV" = "no"; then # Do not optimize for the coverage build
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-Og)
 fi
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-ggdb)
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DEBUG,-gz)
-AC_SUBST(CFG_CXXFLAGS_DEBUG)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-ggdb)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_DBG,-gz)
+AC_SUBST(CFG_CXXFLAGS_DBG)
 
 # Flags for linking the debug version of Verilator (in addition to above CFG_LDFLAGS_SRC)
-_MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_DEBUG,-gz)
-AC_SUBST(CFG_LDFLAGS_DEBUG)
+_MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_DBG,-gz)
+AC_SUBST(CFG_LDFLAGS_DBG)
+
+# Flags for compiling the optimized version of Verilator (in addition to above CFG_CXXFLAGS_SRC)
+if test "$CFG_WITH_DEV_GCOV" = "no"; then # Do not optimize for the coverage build
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_OPT,-O3)
+fi
+AC_SUBST(CFG_CXXFLAGS_OPT)
 
 # Flags for Verilated makefile
 # For example, -Wno-div-by-zero isn't in 4.1.2
@@ -590,18 +605,15 @@ AC_SUBST(CFG_LIBS)
 AC_DEFUN([_MY_CXX_CHECK_CXX_VER],
    [# _MY_CXX_CHECK_CXX_VER(flag) -- Check if compiler runs C++14
     # Set $_my_result
-    AC_LINK_IFELSE(
+    AC_RUN_IFELSE(
      [AC_LANG_PROGRAM([#include <thread>
 #if (__cplusplus < 201402L)
 # error "Too old"
 #endif
-    ], [[ ]])],
-     [_my_result=yes
-      if test -s conftest.err; then
-        if grep -e "$1" conftest.err >/dev/null; then
-          _my_result=no
-        fi
-      fi],
+    ], [[
+     ]])],
+     [_my_result=yes],
+     [_my_result=no],
      [_my_result=no])
    ])
 

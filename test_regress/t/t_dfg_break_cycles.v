@@ -249,4 +249,16 @@ module t (
   `signal(ARRAY_4, 32);
   assign ARRAY_4  = array_4[2];
 
+  logic [1:0] packed_0; // UNOPTFLAT
+  logic       packed_0_lsb;
+  always_comb begin
+   packed_0[1] = rand_b[1];
+   packed_0_lsb = packed_0[0];
+  end
+  always_comb packed_0[0] = rand_b[0];
+  assign PACKED_0 = packed_0;
+  `signal(PACKED_0, 2);
+  `signal(PACKED_0_LSB, 1);
+  assign PACKED_0_LSB = packed_0_lsb;
+
 endmodule

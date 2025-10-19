@@ -26,6 +26,8 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+// TODO: this file is completely uncovered by tests
+
 // ######################################################################
 //  Emit statements
 
@@ -177,30 +179,30 @@ class CMakeEmitter final {
 
         *of << "# User .cpp files (from .cpp's on Verilator command line)\n";
         cmake_set_raw(*of, name + "_USER_CLASSES", cmake_list(v3Global.opt.cppFiles()));
-        if (const V3HierBlockPlan* const planp = v3Global.hierPlanp()) {
+        if (const V3HierGraph* const graphp = v3Global.hierGraphp()) {
             *of << "# Verilate hierarchical blocks\n";
             // Sorted hierarchical blocks in order of leaf-first.
-            const V3HierBlockPlan::HierVector& hierBlocks = planp->hierBlocksSorted();
             *of << "get_target_property(TOP_TARGET_NAME \"${TARGET}\" NAME)\n";
-            for (V3HierBlockPlan::HierVector::const_iterator it = hierBlocks.begin();
-                 it != hierBlocks.end(); ++it) {
-                const V3HierBlock* hblockp = *it;
-                const V3HierBlock::HierBlockSet& children = hblockp->children();
+            for (const V3GraphVertex& vtx : vlstd::reverse_view(graphp->vertices())) {
+                const V3HierBlock* const hblockp = vtx.as<V3HierBlock>();
                 const string prefix = hblockp->hierPrefix();
                 *of << "add_library(" << prefix << " STATIC)\n";
                 *of << "target_link_libraries(${TOP_TARGET_NAME}  PRIVATE " << prefix << ")\n";
-                if (!children.empty()) {
+                if (!hblockp->outEmpty()) {
                     *of << "target_link_libraries(" << prefix << " INTERFACE";
-                    for (const V3HierBlock* const childp : children) {
-                        *of << " " << childp->hierPrefix();
+                    for (const V3GraphEdge& edge : hblockp->outEdges()) {
+                        const V3HierBlock* const dependencyp = edge.top()->as<V3HierBlock>();
+                        *of << " " << dependencyp->hierPrefix();
                     }
                     *of << ")\n";
                 }
                 *of << "verilate(" << prefix << " PREFIX " << prefix << " TOP_MODULE "
                     << hblockp->modp()->name() << " DIRECTORY "
                     << v3Global.opt.makeDir() + "/" + prefix << " SOURCES ";
-                for (const V3HierBlock* const childp : children) {
-                    *of << " " << v3Global.opt.makeDir() + "/" + childp->hierWrapperFilename(true);
+                for (const V3GraphEdge& edge : hblockp->outEdges()) {
+                    const V3HierBlock* const dependencyp = edge.top()->as<V3HierBlock>();
+                    *of << " "
+                        << v3Global.opt.makeDir() + "/" + dependencyp->hierWrapperFilename(true);
                 }
                 *of << " ";
                 const string vFile = hblockp->vFileIfNecessary();
@@ -217,12 +219,13 @@ class CMakeEmitter final {
             *of << "verilate(${TOP_TARGET_NAME} PREFIX " << v3Global.opt.prefix() << " TOP_MODULE "
                 << v3Global.rootp()->topModulep()->name() << " DIRECTORY "
                 << v3Global.opt.makeDir() << " SOURCES ";
-            for (const auto& itr : *planp) {
-                *of << " " << v3Global.opt.makeDir() + "/" + itr.second.hierWrapperFilename(true);
+            for (const V3GraphVertex& vtx : graphp->vertices()) {
+                const V3HierBlock* const hblockp = vtx.as<V3HierBlock>();
+                *of << " " << v3Global.opt.makeDir() + "/" + hblockp->hierWrapperFilename(true);
             }
             *of << " " << cmake_list(v3Global.opt.vFiles());
             *of << " VERILATOR_ARGS ";
-            *of << "-f " << planp->topCommandArgsFilename(true);
+            *of << "-f " << graphp->topCommandArgsFilename(true);
             *of << ")\n";
         }
     }

@@ -51,6 +51,7 @@ def read_data(filename):
         re_proc_dat = re.compile(r'VLPROFPROC ([a-z_ ]+)\s*:\s*(.*)$')
         cpu = None
         thread = 0
+        thread_last_ecpu = None
 
         global LongestVcdStrValueLength
         global ExecGraphTime
@@ -109,9 +110,13 @@ def read_data(filename):
                                                              tick)
                 elif kind == "THREAD_SCHEDULE_WAIT_BEGIN":
                     ecpu = int(re_payload_wait.match(payload).groups()[0])
+                    thread_last_ecpu = ecpu
                     ThreadScheduleWait[ecpu].append(tick)
                 elif kind == "THREAD_SCHEDULE_WAIT_END":
-                    ecpu = int(re_payload_wait.match(payload).groups()[0])
+                    # Might have ended on different CPU then we got THREAD_SCHEDULE_WAIT_BEGIN
+                    assert thread_last_ecpu is not None, "THREAD_SCHEDULE_WAIT_END without BEGIN"
+                    ecpu = thread_last_ecpu
+                    thread_last_ecpu = None
                     start = ThreadScheduleWait[ecpu].pop()
                     WaitingTime += tick - start
                     ThreadScheduleWaitIntervals.append((start, tick, ecpu))

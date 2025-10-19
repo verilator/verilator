@@ -225,8 +225,7 @@ private:
     // VISITORS
     void visit(AstNodeAssign* nodep) override {
         processAndIterate(nodep);
-        UASSERT_OBJ(!(v3Global.assertDTypesResolved() && nodep->brokeLhsMustBeLvalue()
-                      && VN_IS(nodep->lhsp(), NodeVarRef)
+        UASSERT_OBJ(!(v3Global.assertDTypesResolved() && VN_IS(nodep->lhsp(), NodeVarRef)
                       && !VN_AS(nodep->lhsp(), NodeVarRef)->access().isWriteOrRW()),
                     nodep, "Assignment LHS is not an lvalue");
     }
@@ -382,7 +381,7 @@ void V3Broken::allowMidvisitorCheck(bool flag) { s_brokenAllowMidvisitorCheck = 
 void V3Broken::selfTest() {
     // Exercise addNewed and deleted for coverage, as otherwise only used with VL_LEAK_CHECKS
     FileLine* const fl = new FileLine{FileLine::commandLineFilename()};
-    AstNode* const newp = new AstBegin{fl, "[EditWrapper]", nullptr};
+    AstNode* const newp = new AstBegin{fl, "[EditWrapper]", nullptr, false};
     // Don't actually do it with VL_LEAK_CHECKS, when new/delete calls these.
     // Otherwise you call addNewed twice on the same address, which is an error.
 #ifndef VL_LEAK_CHECKS

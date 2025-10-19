@@ -34,9 +34,6 @@ endclass
 
 module t;
 
-   automatic int rand_result, v1, v2;
-   automatic string s;
-
    initial begin
       Cls c;
       c = new;

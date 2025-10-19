@@ -102,11 +102,13 @@ class ReloopVisitor final : public VNVisitor {
                 AstNode* const incp = new AstAssign{
                     fl, new AstVarRef{fl, itp, VAccess::WRITE},
                     new AstAdd{fl, new AstConst{fl, 1}, new AstVarRef{fl, itp, VAccess::READ}}};
-                AstWhile* const whilep = new AstWhile{fl, condp, nullptr, incp};
-                initp->addNext(whilep);
+                AstLoop* const loopp = new AstLoop{fl};
+                loopp->addStmtsp(new AstLoopTest{fl, loopp, condp});
+                initp->addNext(loopp);
                 itp->AstNode::addNext(initp);
                 bodyp->replaceWith(itp);
-                whilep->addStmtsp(bodyp);
+                loopp->addStmtsp(bodyp);
+                loopp->addStmtsp(incp);
 
                 // Replace constant index with new loop index
                 AstNodeExpr* const offsetp
@@ -122,7 +124,7 @@ class ReloopVisitor final : public VNVisitor {
                     VL_DO_DANGLING(rbitp->deleteTree(), lbitp);
                 }
                 UINFOTREE(9, initp, "", "new");
-                UINFOTREE(9, whilep, "", "new");
+                UINFOTREE(9, loopp, "", "new");
 
                 // Remove remaining assigns
                 for (AstNodeAssign* assp : m_mgAssignps) {
