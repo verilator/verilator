@@ -52,12 +52,12 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Determines if a class is used with randomization
 
 enum ClassRandom : uint8_t {
-    NONE,  // randomize() is not called
-    IS_RANDOMIZED,  // randomize() is called
-    IS_RANDOMIZED_WITH_GLOBAL_CONSTRAINTS,  // randomize() is called with global constraints
-    IS_RANDOMIZED_INLINE,  // randomize() with args is called
-    IS_STD_RANDOMIZED,  // std::randomize() is called
-    IS_RANDOMIZED_INLINE_WITH_GLOBAL_CONSTRAINTS,  // randomize() with args and global constraints
+    NONE,                         // randomize() is not called
+    IS_RANDOMIZED,                // randomize() is called
+    IS_RANDOMIZED_INLINE,         // randomize() with args is called
+    IS_STD_RANDOMIZED,            // std::randomize() is called
+    IS_RANDOMIZED_GLOBAL,         // randomize() is called with global constraints
+    IS_RANDOMIZED_INLINE_GLOBAL,  // randomize() with args and global constraints
 };
 
 // ######################################################################
@@ -146,9 +146,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
     AstNodeModule* m_modp;  // Current module
     AstNodeStmt* m_stmtp = nullptr;  // Current statement
     std::set<AstNodeVarRef*> m_staticRefs;  // References to static variables under `with` clauses
-    bool m_globalConsProcessed = false;
-    AstWith* m_astWithp = nullptr;
-    std::vector<AstConstraint*> m_clonedConstraints;
+    bool m_globalConsProcessed = false;  // Flag to track if global constraints have been processed
+    AstWith* m_withp = nullptr;  // Current 'with' constraint node
+    std::vector<AstConstraint*> m_clonedConstraints;  // List of cloned global constraints
     std::unordered_set<const AstVar*> m_processedVars;  // Track by variable instance, not class
 
     // METHODS
@@ -177,7 +177,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     }
                     // If the class is randomized inline, all members use rand mode
                     if ((nodep->user1() == IS_RANDOMIZED_INLINE)
-                        || (nodep->user1() == IS_RANDOMIZED_INLINE_WITH_GLOBAL_CONSTRAINTS)) {
+                        || (nodep->user1() == IS_RANDOMIZED_INLINE_GLOBAL)) {
                         RandomizeMode randMode = {};
                         randMode.usesMode = true;
                         varp->user1(randMode.asInt);
@@ -214,10 +214,16 @@ class RandomizeMarkVisitor final : public VNVisitor {
         if (!nodep) return;
 
         if (VN_IS(nodep, VarRef)) {
-            VN_AS(nodep, VarRef)->varp()->setGlobalConstrained(true);
+            AstVar* const varp = VN_AS(nodep, VarRef)->varp();
+            if (varp->isGlobalConstrained()) return;
+            varp->setGlobalConstrained(true);
         } else if (VN_IS(nodep, MemberSel)) {
-            AstMemberSel* memberSelp = VN_AS(nodep, MemberSel);
-            if (memberSelp->varp()) memberSelp->varp()->setGlobalConstrained(true);
+            AstMemberSel* const memberSelp = VN_AS(nodep, MemberSel);
+            if (memberSelp->varp()) {
+                AstVar* const varp = memberSelp->varp();
+                if (varp->isGlobalConstrained()) return;
+                varp->setGlobalConstrained(true);
+            }
             markNestedGlobalConstrained(memberSelp->fromp());
         }
     }
@@ -235,7 +241,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     }
 
     // Clone constraints from nested rand class members
-    void cloneNestedConstraintsRecursive(AstVarRef* rootVarRefp, AstClass* classp,
+    void cloneNestedConstraintsRecurse(AstVarRef* rootVarRefp, AstClass* classp,
                                          const std::vector<AstVar*>& pathToClass) {
         if (!classp) return;
         for (AstNode* memberNodep = classp->membersp(); memberNodep;
@@ -264,7 +270,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
                             cloneConstrp->name(pathPrefix + GLOBAL_CONSTRAINT_SEPARATOR
                                                + cloneConstrp->name());
-
                             cloneConstrp->foreach([&](AstVarRef* varRefp) {
                                 if (!varRefp || !varRefp->varp()) return;
 
@@ -279,7 +284,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                             m_clonedConstraints.push_back(cloneConstrp);
                         });
 
-                        cloneNestedConstraintsRecursive(rootVarRefp, nestedClassp, newPath);
+                        cloneNestedConstraintsRecurse(rootVarRefp, nestedClassp, newPath);
                     }
                 }
             }
@@ -288,12 +293,11 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
     void cloneNestedConstraints(AstVarRef* rootVarRefp, AstClass* rootClass) {
         std::vector<AstVar*> emptyPath;
-        cloneNestedConstraintsRecursive(rootVarRefp, rootClass, emptyPath);
+        cloneNestedConstraintsRecurse(rootVarRefp, rootClass, emptyPath);
     }
 
     void nameManipulation(AstVarRef* fromp, AstConstraint* cloneCons) {
         if (!fromp || !cloneCons) return;
-        // Iterate through all variable references and replace them with member selections.
         cloneCons->name(fromp->name() + GLOBAL_CONSTRAINT_SEPARATOR + cloneCons->name());
         cloneCons->foreach([&](AstVarRef* varRefp) {
             if (!varRefp || !varRefp->varp()) return;
@@ -578,8 +582,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
         const bool randObject = nodep->fromp()->user1() || VN_IS(nodep->fromp(), LambdaArgRef);
         nodep->user1(randObject && nodep->varp()->rand().isRandomizable());
 
-        if (m_astWithp) {
-            AstNode* backp = m_astWithp;
+        if (m_withp) {
+            AstNode* backp = m_withp;
             while (backp->backp()) {
                 if (VN_IS(backp, MethodCall)) {
                     AstClassRefDType* classdtype = VN_CAST(
@@ -594,9 +598,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
         if (randObject && nodep->varp()
             && nodep->varp()->rand().isRandomizable()) {  // Process global constraints
             if (m_classp && m_classp->user1() == IS_RANDOMIZED)
-                m_classp->user1(IS_RANDOMIZED_WITH_GLOBAL_CONSTRAINTS);
+                m_classp->user1(IS_RANDOMIZED_GLOBAL);
             else if (m_classp && m_classp->user1() == IS_RANDOMIZED_INLINE)
-                m_classp->user1(IS_RANDOMIZED_INLINE_WITH_GLOBAL_CONSTRAINTS);
+                m_classp->user1(IS_RANDOMIZED_INLINE_GLOBAL);
             // Mark the entire nested chain as participating in global constraints
             // For foo.in.val, this marks: foo, foo.in, and foo.in.val
             if (VN_IS(nodep->fromp(), VarRef) || VN_IS(nodep->fromp(), MemberSel)) {
@@ -660,9 +664,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
         iterateChildrenConst(nodep);
     }
     void visit(AstWith* nodep) override {
-        m_astWithp = nodep;
+        m_withp = nodep;
         iterateChildrenConst(nodep);
-        m_astWithp = nullptr;
+        m_withp = nullptr;
     }
 
     void visit(AstNodeExpr* nodep) override {
@@ -920,7 +924,13 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstVarRef* const varRefp
                 = new AstVarRef{varp->fileline(), classp, varp, VAccess::WRITE};
             varRefp->classOrPackagep(classOrPackagep);
-            membersel ? methodp->addPinsp(membersel) : methodp->addPinsp(varRefp);
+            if (membersel) {
+                methodp->addPinsp(membersel);
+                // Delete the unused varRefp to avoid memory leak
+                VL_DO_DANGLING(varRefp->deleteTree(), varRefp);
+            } else {
+                methodp->addPinsp(varRefp);
+            }
             AstNodeDType* tmpDtypep = varp->dtypep();
             while (VN_IS(tmpDtypep, UnpackArrayDType) || VN_IS(tmpDtypep, DynArrayDType)
                    || VN_IS(tmpDtypep, QueueDType) || VN_IS(tmpDtypep, AssocArrayDType))
@@ -2357,8 +2367,8 @@ class RandomizeVisitor final : public VNVisitor {
         UINFO(9, "Define randomize() for " << nodep);
         nodep->baseMostClassp()->needRNG(true);
 
-        bool globalcons = nodep->user1() == IS_RANDOMIZED_INLINE_WITH_GLOBAL_CONSTRAINTS
-                          || nodep->user1() == IS_RANDOMIZED_WITH_GLOBAL_CONSTRAINTS;
+        bool globalConstrained = nodep->user1() == IS_RANDOMIZED_INLINE_GLOBAL
+                                 || nodep->user1() == IS_RANDOMIZED_GLOBAL;
         AstFunc* const randomizep = V3Randomize::newRandomizeFunc(m_memberMap, nodep);
         AstVar* const fvarp = VN_AS(randomizep->fvarp(), Var);
         addPrePostCall(nodep, randomizep, "pre_randomize");
@@ -2424,7 +2434,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstVarRef* const fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
 
         // For global constraints: call basic randomize first (without global constraints)
-        if (globalcons) {
+        if (globalConstrained) {
             AstFunc* const basicRandomizep
                 = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
             addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
@@ -2446,7 +2456,7 @@ class RandomizeVisitor final : public VNVisitor {
 
         // For global constraints: combine with solver result (beginValp)
         // For normal classes: call basic randomize after resize
-        if (globalcons) {
+        if (globalConstrained) {
             randomizep->addStmtsp(new AstAssign{fl, fvarRefp->cloneTree(false),
                                                 new AstAnd{fl, fvarRefReadp, beginValp}});
         } else {

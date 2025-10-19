@@ -1897,7 +1897,7 @@ class AstVar final : public AstNode {
     bool m_ignorePostWrite : 1;  // Ignore writes in 'Post' blocks during ordering
     bool m_ignoreSchedWrite : 1;  // Ignore writes in scheduling (for special optimizations)
     bool m_dfgMultidriven : 1;  // Singal is multidriven, used by DFG to avoid repeat processing
-    bool m_globalCons : 1;
+    bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
     void init() {
         m_ansi = false;
         m_declTyped = false;
@@ -1948,7 +1948,7 @@ class AstVar final : public AstNode {
         m_ignoreSchedWrite = false;
         m_dfgMultidriven = false;
         m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
-        m_globalCons = false;
+        m_globalConstrained = false;
     }
 
 public:
@@ -2115,7 +2115,7 @@ public:
     void setIgnoreSchedWrite() { m_ignoreSchedWrite = true; }
     bool dfgMultidriven() const { return m_dfgMultidriven; }
     void setDfgMultidriven() { m_dfgMultidriven = true; }
-    void setGlobalConstrained(bool flag) { m_globalCons = flag; }
+    void setGlobalConstrained(bool flag) { m_globalConstrained = flag; }
     // METHODS
     void name(const string& name) override { m_name = name; }
     void tag(const string& text) override { m_tag = text; }
@@ -2180,7 +2180,7 @@ public:
     bool isTrace() const { return m_trace; }
     bool isRand() const { return m_rand.isRand(); }
     bool isRandC() const { return m_rand.isRandC(); }
-    bool isGlobalConstrained() const { return m_globalCons; }
+    bool isGlobalConstrained() const { return m_globalConstrained; }
     bool isConst() const VL_MT_SAFE { return m_isConst; }
     bool isStatic() const VL_MT_SAFE { return m_isStatic; }
     bool isLatched() const { return m_isLatched; }
