@@ -117,7 +117,6 @@ public:
                     = new AstActive{flp, "force-update", new AstSenTree{flp, itemsp}};
                 activep->senTreeStorep(activep->sentreep());
 
-                AstNodeExpr* lhsp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
                 std::vector<AstVarScope*> loopVarScopes;
                 AstUnpackArrayDType* const unpackedp = VN_CAST(m_rdVscp->varp()->dtypep(), UnpackArrayDType);
                 if (unpackedp) {
@@ -129,30 +128,37 @@ public:
                         AstVarScope* const loopVarScopep = new AstVarScope{flp, m_rdVscp->scopep(), loopVarp};
                         m_rdVscp->addNext(loopVarScopep);
                         loopVarScopes.push_back(loopVarScopep);
-                        lhsp = new AstArraySel{flp, lhsp, new AstVarRef{flp, loopVarScopep, VAccess::READ}};
                     }
                 }
-                AstNodeExpr* const rhsp = forcedUpdate(vscp);
+                AstNodeExpr* const lhsp = applySelects(new AstVarRef{flp, m_rdVscp, VAccess::WRITE}, loopVarScopes);
+                AstNodeExpr* const rhsp = forcedUpdate(vscp, loopVarScopes);
 
                 activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr,
                                                  new AstAssign{flp, lhsp, rhsp}});
                 vscp->scopep()->addBlocksp(activep);
             }
         }
-        AstNodeExpr* forcedUpdate(AstVarScope* const vscp) const {
+        static AstNodeExpr* applySelects(AstNodeExpr* exprp, const std::vector<AstVarScope*>& selectVarScopes) {
+            for (AstVarScope* const vscp : selectVarScopes) {
+                exprp = new AstArraySel{exprp->fileline(), exprp, new AstVarRef{exprp->fileline(), vscp, VAccess::READ}};
+            }
+            return exprp;
+        }
+        AstNodeExpr* forcedUpdate(AstVarScope* const vscp, const std::vector<AstVarScope*>& selectVarScopes) const {
             FileLine* const flp = vscp->fileline();
-            AstVarRef* const origp = new AstVarRef{flp, vscp, VAccess::READ};
-            ForceState::markNonReplaceable(origp);
+            AstVarRef* origRefp = new AstVarRef{flp, vscp, VAccess::READ};
+            ForceState::markNonReplaceable(origRefp);
+            AstNodeExpr* const origp = applySelects(origRefp, selectVarScopes);
             if (ForceState::isRangedDType(vscp)) {
                 return new AstOr{
                     flp,
-                    new AstAnd{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
-                               new AstVarRef{flp, m_valVscp, VAccess::READ}},
-                    new AstAnd{flp, new AstNot{flp, new AstVarRef{flp, m_enVscp, VAccess::READ}},
+                    new AstAnd{flp, applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ}, selectVarScopes),
+                        applySelects(new AstVarRef{flp, m_valVscp, VAccess::READ}, selectVarScopes)},
+                    new AstAnd{flp, new AstNot{flp, applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ}, selectVarScopes)},
                                origp}};
             }
-            return new AstCond{flp, new AstVarRef{flp, m_enVscp, VAccess::READ},
-                               new AstVarRef{flp, m_valVscp, VAccess::READ}, origp};
+            return new AstCond{flp, applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ}, selectVarScopes),
+                applySelects(new AstVarRef{flp, m_valVscp, VAccess::READ}, selectVarScopes), origp};
         }
     };
 
@@ -343,7 +349,7 @@ class ForceConvertVisitor final : public VNVisitor {
                 refp->access(VAccess::READ);
                 ForceState::markNonReplaceable(refp);
             } else {
-                refp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp));
+                refp->replaceWith(m_state.getForceComponents(vscp).forcedUpdate(vscp, {}));
                 VL_DO_DANGLING(refp->deleteTree(), refp);
             }
         });
@@ -423,7 +429,7 @@ class ForceReplaceVisitor final : public VNVisitor {
                 = m_state.tryGetForceComponents(nodep)) {
                 FileLine* const flp = nodep->fileline();
                 AstVarRef* const lhsp = new AstVarRef{flp, fcp->m_rdVscp, VAccess::WRITE};
-                AstNodeExpr* const rhsp = fcp->forcedUpdate(nodep->varScopep());
+                AstNodeExpr* const rhsp = fcp->forcedUpdate(nodep->varScopep(), {});
                 m_stmtp->addNextHere(new AstAssign{flp, lhsp, rhsp});
             }
             // Emit valVscp update after each write to any VarRef on forced RHS.
