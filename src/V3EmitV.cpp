@@ -556,6 +556,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(";\n");
     }
     void visit(AstFinish* nodep) override { putfs(nodep, "$finish;\n"); }
+    void visit(AstFinishFork* nodep) override { putfs(nodep, "$finish;\n"); }
     void visit(AstStmtExpr* nodep) override {
         iterateConst(nodep->exprp());
         puts(";\n");

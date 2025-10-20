@@ -441,7 +441,10 @@ class LinkJumpVisitor final : public VNVisitor {
     void visit(AstFinish* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
-        if (m_loopp) {
+        if (m_inFork) {
+            nodep->replaceWith(new AstFinishFork{nodep->fileline()});
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else if (m_loopp) {
             // Jump to the end of the loop (post-finish)
             AstJumpBlock* const blockp = getJumpBlock(m_loopp, false);
             nodep->addNextHere(new AstJumpGo{nodep->fileline(), blockp});

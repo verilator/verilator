@@ -619,6 +619,20 @@ public:
     int instrCount() const override { return 0; }  // Rarely executes
     bool sameNode(const AstNode* samep) const override { return fileline() == samep->fileline(); }
 };
+class AstFinishFork final : public AstNodeStmt {
+    // $finish in fork
+public:
+    explicit AstFinishFork(FileLine* fl)
+        : ASTGEN_SUPER_FinishFork(fl) {}
+    ASTGEN_MEMBERS_AstFinishFork;
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() override { return false; }  // SPECIAL: $display has 'visual' ordering
+    bool isOutputter() override { return true; }  // SPECIAL: $display makes output
+    bool isUnlikely() const override { return true; }
+    int instrCount() const override { return 0; }  // Rarely executes
+    bool sameNode(const AstNode* samep) const override { return fileline() == samep->fileline(); }
+};
 class AstFireEvent final : public AstNodeStmt {
     // '-> _' and '->> _' event trigger statements
     // @astgen op1 := operandp : AstNodeExpr
