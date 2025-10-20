@@ -356,18 +356,22 @@ class HierBlockUsageCollectVisitor final : public VNVisitorConst {
         if (modp->hierBlock()) m_childrenp.emplace_back(m_mod2vtx.at(modp));
     }
     void visit(AstVar* nodep) override {
-        if (m_modp && m_modp->hierBlock() && nodep->isIfaceRef() && !nodep->isIfaceParent()) {
+        if (!m_modp) return;
+        if (!m_modp->hierBlock()) return;
+        // Can't handle interface port on hier block
+        if (nodep->isIfaceRef() && !nodep->isIfaceParent()) {
             nodep->v3error("Modport cannot be used at the hierarchical block boundary");
         }
-        // Record overridden value parameter
+        // Record overridden value parameter of this hier block
         if (nodep->isGParam() && nodep->overriddenParam()) {
             UASSERT_OBJ(m_modp, nodep, "Value parameter not under module");
             m_params.push_back(nodep);
         }
     }
     void visit(AstParamTypeDType* nodep) override {
-        // Record type parameter
         UASSERT_OBJ(m_modp, nodep, "Type parameter not under module");
+        if (!m_modp->hierBlock()) return;
+        // Record type parameter of this hier block
         m_typeParams.push_back(nodep);
     }
 
