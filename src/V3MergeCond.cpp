@@ -655,6 +655,9 @@ class MergeCondVisitor final : public VNVisitor {
             // Create equivalent 'if' statement and insert it before the first node
             AstIf* const resultp = new AstIf{m_mgCondp->fileline(), m_mgCondp};
             m_mgFirstp->addHereThisAsNext(resultp);
+            // Try to preserve branch prediction if we can
+            size_t nLikely = 0;
+            size_t nUnlikely = 0;
             // Unzip the list and insert under branches
             AstNode* nextp = m_mgFirstp;
             do {
@@ -691,10 +694,16 @@ class MergeCondVisitor final : public VNVisitor {
                     if (AstNode* const listp = ifp->elsesp()) {
                         resultp->addElsesp(listp->unlinkFrBackWithNext());
                     }
+                    // Record branch prediction
+                    if (ifp->branchPred().likely()) ++nLikely;
+                    if (ifp->branchPred().unlikely()) ++nUnlikely;
                     // Cleanup
                     VL_DO_DANGLING(ifp->deleteTree(), ifp);
                 }
             } while (nextp);
+            // If prediction is unanimous, assign it to the merged AstIf
+            if (nLikely && !nUnlikely) resultp->branchPred(VBranchPred::BP_LIKELY);
+            if (!nLikely && nUnlikely) resultp->branchPred(VBranchPred::BP_UNLIKELY);
             // Merge the branches of the resulting AstIf after re-analysis
             if (resultp->thensp()) m_workQueuep->push(resultp->thensp());
             if (resultp->elsesp()) m_workQueuep->push(resultp->elsesp());
