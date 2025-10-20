@@ -230,14 +230,14 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
     // Build MemberSel chain from variable path
     AstNodeExpr* buildMemberSelChain(AstVarRef* rootVarRefp, const std::vector<AstVar*>& path) {
-        AstNodeExpr* current = rootVarRefp->cloneTree(false);
+        AstNodeExpr* exprp = rootVarRefp->cloneTree(false);
         for (AstVar* memberVarp : path) {
-            AstMemberSel* memberSel
-                = new AstMemberSel{rootVarRefp->fileline(), current, memberVarp};
-            memberSel->user2p(m_classp);
-            current = memberSel;
+            AstMemberSel* memberSelp
+                = new AstMemberSel{rootVarRefp->fileline(), exprp, memberVarp};
+            memberSelp->user2p(m_classp);
+            exprp = memberSelp;
         }
-        return current;
+        return exprp;
     }
 
     // Clone constraints from nested rand class members
@@ -273,11 +273,11 @@ class RandomizeMarkVisitor final : public VNVisitor {
                             cloneConstrp->foreach([&](AstVarRef* varRefp) {
                                 if (!varRefp || !varRefp->varp()) return;
 
-                                AstNodeExpr* chain = buildMemberSelChain(rootVarRefp, newPath);
-                                AstMemberSel* finalSel = new AstMemberSel{varRefp->fileline(),
-                                                                          chain, varRefp->varp()};
-                                finalSel->user2p(m_classp);
-                                varRefp->replaceWith(finalSel);
+                                AstNodeExpr* const chainp = buildMemberSelChain(rootVarRefp, newPath);
+                                AstMemberSel* const finalSelp = new AstMemberSel(varRefp->fileline(),
+                                                                          chainp, varRefp->varp());
+                                finalSelp->user2p(m_classp);
+                                varRefp->replaceWith(finalSelp);
                                 VL_DO_DANGLING(varRefp->deleteTree(), varRefp);
                             });
 
@@ -301,9 +301,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
         cloneCons->name(fromp->name() + GLOBAL_CONSTRAINT_SEPARATOR + cloneCons->name());
         cloneCons->foreach([&](AstVarRef* varRefp) {
             if (!varRefp || !varRefp->varp()) return;
-            AstVarRef* clonedFromp = fromp->cloneTree(false);
+            AstVarRef* const clonedFromp = fromp->cloneTree(false);
             if (!clonedFromp) return;
-            AstMemberSel* varMemberp
+            AstMemberSel* const varMemberp
                 = new AstMemberSel{cloneCons->fileline(), clonedFromp, varRefp->varp()};
             varMemberp->user2p(m_classp);
             varRefp->replaceWith(varMemberp);
@@ -572,7 +572,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
         if (nodep->varp()->lifetime().isStatic()) m_staticRefs.emplace(nodep);
 
-        if (nodep->varp()->rand().isRandomizable()) { nodep->user1(true); }
+        if (nodep->varp()->rand().isRandomizable()) nodep->user1(true);
     }
     void visit(AstMemberSel* nodep) override {
         if (!m_constraintExprGenp) return;
@@ -710,10 +710,10 @@ class ConstraintExprVisitor final : public VNVisitor {
                                // (used to format "%@.%@" for struct arrays)
 
     // Build full path for a MemberSel chain (e.g., "obj.l2.l3.l4")
-    std::string buildMemberPath(AstMemberSel* memberSelp) {
+    std::string buildMemberPath(const AstMemberSel* memberSelp) {
         if (!memberSelp) return "";
 
-        AstNode* fromp = memberSelp->fromp();
+        const AstNode* fromp = memberSelp->fromp();
         if (VN_IS(fromp, VarRef)) {
             // Base case: reached root VarRef
             return VN_AS(fromp, VarRef)->name() + "." + memberSelp->name();
