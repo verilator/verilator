@@ -36,12 +36,15 @@ Verilator 5.041 devel
 * Support pure functions in sensitivity lists (#6393). [Krzysztof Bieganski, Antmicro Ltd.]
 * Support simple alias statements (#6339) (#6501). [Ryszard Rozak, Antmicro Ltd.]
 * Support simple cycle delay sequence expressions inside properties (#6508). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Support impure expressions in `inside` (#6562). [Igor Zaworski, Antmicro Ltd.]
+* Support `case` impure expressions (#6563). [Igor Zaworski, Antmicro Ltd.]
 * Improve `lint_off` to allow multiple messages and comments (#2755).
 * Improve automatic selection of logic for DFG synthesis (#6370). [Geza Lore]
 * Improve `covergroup with function sample` handling  (#6387). [Jakub Wasilewski]
 * Improve DFG type system (#6390). [Geza Lore]
 * Improve DFG variable removal and temporary insertion (#6401). [Geza Lore]
 * Improve memory usage of statistics (#6513). [Geza Lore]
+* Improve conditional merging to preserve branch prediction. [Geza Lore]
 * Optimize duplicate 'if' and '?:' conditions (#3807) (#6495)
 * Optimize dead functions in more cases (#6380) (#6430). [Artur Bieniek, Antmicro Ltd.]
 * Optimize constant folding in wide expression expansion (#6381). [Geza Lore]
@@ -50,6 +53,7 @@ Verilator 5.041 devel
 * Fix LATCH warning with CASEINCOMPLETE (#3301).
 * Fix unused parameterized class causing internal error (#4013). [Alberto Del Rio]
 * Fix false CONSTVAR error on initializers (#4992).
+* Fix hierarchical references with parameterized modules and interfaces (#5649) (#6566). [Ryszard Rozak, Antmicro Ltd.]
 * Fix interface exposure with `--public-depth` or `--trace-depth` (#5758).
 * Fix cell scoping performance (#6059). [Jerry Tianchen]
 * Fix hierarchical `--prof-pgo` (#6213). [Bartłomiej Chmiel, Antmicro Ltd.]
@@ -91,6 +95,7 @@ Verilator 5.041 devel
 * Fix false BLKSEQ on non-edged sensitivity list (#6492). [Oron Port]
 * Fix .vlt public_flat* and others to support long identifier names (#6516). [Szymon Gizler, Antmicro Ltd.]
 * Fix always_ff on constants (#6519). [Todd Strader]
+* Fix fault on operations on uninitialized strings (#6520). [Artur Bieniek, Antmicro Ltd.]
 * Fix find_index methods of associative arrays (#6525). [Ryszard Rozak, Antmicro Ltd.]
 * Fix parsing of `eventually[]` and property expression memory leaks (#6530). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix memory leak for unsupported `$past` (#6535). [Bartłomiej Chmiel, Antmicro Ltd.]
@@ -99,6 +104,12 @@ Verilator 5.041 devel
 * Fix passing typedef value as parameter (#6543) (#6547). [Igor Zaworski, Antmicro Ltd.]
 * Fix indent error on quoted strings (#6544).
 * Fix incorrect nested interface-class error (#6549). [Matthew Ballance]
+* Fix std::process::get_randstate to not affect random stability (#6550) (#6565). [Aleksander Kiryk]
+* Fix exit code signal number reporting (#6554). [Artur Bieniek, Antmicro Ltd.]
+* Fix `$finish` inside fork blocks (#6555). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix single element unpacked array DPI parameters. [Geza Lore]
+* Fix DFG synthesis non-determinism (#6557) (#6568). [Todd Strader]
+* Fix hierarchical with parameterized instances under hier block (#6572). [Geza Lore]
 
 
 Verilator 5.040 2025-08-30

@@ -138,7 +138,7 @@ Related Projects
 - `Icarus Verilog`_ - Icarus is a highly-featured interpreted Verilog
   simulator. If Verilator does not support your needs, perhaps Icarus may.
 
-_ `Surfer <https://surfer-project.org/>`_, Web or offline waveform viewer
+- `Surfer <https://surfer-project.org/>`_ - Web or offline waveform viewer
   for Verilator traces.
 
 
