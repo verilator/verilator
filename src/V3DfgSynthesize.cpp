@@ -531,7 +531,14 @@ class AstToDfgSynthesize final {
 
     // TYPES
     using Variable = std::conditional_t<T_Scoped, AstVarScope, AstVar>;
-    using SymTab = std::unordered_map<Variable*, DfgVertexVar*>;
+
+    // SymTab must be ordered in order to yield stable results
+    struct VariableComparator final {
+        bool operator()(const Variable* lhs, const Variable* rhs) const {
+            return lhs->name() < rhs->name();
+        }
+    };
+    using SymTab = std::map<Variable*, DfgVertexVar*, VariableComparator>;
 
     // Represents a [potentially partial] driver of a variable
     struct Driver final {
