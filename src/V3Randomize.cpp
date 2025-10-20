@@ -273,9 +273,10 @@ class RandomizeMarkVisitor final : public VNVisitor {
                             cloneConstrp->foreach([&](AstVarRef* varRefp) {
                                 if (!varRefp || !varRefp->varp()) return;
 
-                                AstNodeExpr* const chainp = buildMemberSelChain(rootVarRefp, newPath);
-                                AstMemberSel* const finalSelp = new AstMemberSel(varRefp->fileline(),
-                                                                          chainp, varRefp->varp());
+                                AstNodeExpr* const chainp
+                                    = buildMemberSelChain(rootVarRefp, newPath);
+                                AstMemberSel* const finalSelp = new AstMemberSel(
+                                    varRefp->fileline(), chainp, varRefp->varp());
                                 finalSelp->user2p(m_classp);
                                 varRefp->replaceWith(finalSelp);
                                 VL_DO_DANGLING(varRefp->deleteTree(), varRefp);
