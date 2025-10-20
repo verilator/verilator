@@ -102,9 +102,6 @@ public:
                 vscp->scopep()->addBlocksp(activep);
             }
             {  // Add the combinational override
-                AstVarRef* const lhsp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
-                AstNodeExpr* const rhsp = forcedUpdate(vscp);
-
                 // Explicitly list dependencies for update.
                 // Note: rdVscp is also needed to retrigger assignment for the first time.
                 AstSenItem* const itemsp = new AstSenItem{
@@ -119,6 +116,24 @@ public:
                 AstActive* const activep
                     = new AstActive{flp, "force-update", new AstSenTree{flp, itemsp}};
                 activep->senTreeStorep(activep->sentreep());
+
+                AstNodeExpr* lhsp = new AstVarRef{flp, m_rdVscp, VAccess::WRITE};
+                std::vector<AstVarScope*> loopVarScopes;
+                AstUnpackArrayDType* const unpackedp = VN_CAST(m_rdVscp->varp()->dtypep(), UnpackArrayDType);
+                if (unpackedp) {
+                    std::vector<AstUnpackArrayDType*> dims = unpackedp->unpackDimensions();
+                    loopVarScopes.reserve(dims.size());
+                    for (int i = dims.size() - 1; i != 0; i--) {
+                        AstVar* const loopVarp = new AstVar{flp, VVarType::MODULETEMP, m_rdVscp->varp()->name() + "__VwhileIter" + std::to_string(i), VFlagBitPacked{}, 32};
+                        m_rdVscp->varp()->addNext(loopVarp);
+                        AstVarScope* const loopVarScopep = new AstVarScope{flp, m_rdVscp->scopep(), loopVarp};
+                        m_rdVscp->addNext(loopVarScopep);
+                        loopVarScopes.push_back(loopVarScopep);
+                        lhsp = new AstArraySel{flp, lhsp, new AstVarRef{flp, loopVarScopep, VAccess::READ}};
+                    }
+                }
+                AstNodeExpr* const rhsp = forcedUpdate(vscp);
+
                 activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr,
                                                  new AstAssign{flp, lhsp, rhsp}});
                 vscp->scopep()->addBlocksp(activep);
