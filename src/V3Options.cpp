@@ -1237,6 +1237,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                 [this](const char* optp) { addLangExt(optp, V3LangCode::L1800_2023); });
 
     // Minus options
+    DECL_OPTION("-aslr", CbOnOff, [](bool) {});  // Processed only in bin/verilator shell
     DECL_OPTION("-assert", CbOnOff, [this](bool flag) {
         m_assert = flag;
         m_assertCase = flag;

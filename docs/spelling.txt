@@ -531,6 +531,7 @@ architected
 args
 arrarys
 asan
+aslr
 assertOn
 assertcontrol
 astgen

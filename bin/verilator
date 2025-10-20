@@ -28,6 +28,7 @@ autoflush STDOUT 1;
 autoflush STDERR 1;
 
 $Debug = 0;
+my $opt_aslr;
 my $opt_gdb;
 my $opt_rr;
 my $opt_gdbbt;
@@ -56,6 +57,7 @@ if (! GetOptions(
           "debug"            => \&debug,
           # "version!"       => \&version,   # Also passthru'ed
           # Switches
+          "aslr!"            => \$opt_aslr,
           "gdb!"             => \$opt_gdb,
           "gdbbt!"           => \$opt_gdbbt,
           "quiet!"           => \$opt_quiet_exit,  # As -quiet implies -quiet-exit
@@ -97,7 +99,7 @@ my @quoted_sw = map { sh_escape($_) } @Opt_Verilator_Sw;
 if ($opt_gdb) {
     # Generic GDB interactive
     run (ulimit_stack_unlimited()
-         . aslr_off()
+         . aslr(0)
          . ($ENV{VERILATOR_GDB} || "gdb")
          . " " . verilator_bin()
          # Note, uncomment to set breakpoints before running:
@@ -114,13 +116,13 @@ if ($opt_gdb) {
 } elsif ($opt_rr) {
     # Record with rr
     run (ulimit_stack_unlimited()
-         . aslr_off()
+         . aslr(0)
          . "rr record " . verilator_bin()
          . " " . join(' ', @quoted_sw));
 } elsif ($opt_gdbbt && $Debug) {
     # Run under GDB to get gdbbt
     run (ulimit_stack_unlimited()
-         . aslr_off()
+         . aslr(0)
          . "gdb"
          . " " . verilator_bin()
          . " --batch --quiet --return-child-result"
@@ -135,19 +137,19 @@ if ($opt_gdb) {
         );
 
     run (ulimit_stack_unlimited()
-         . aslr_off()
+         . aslr(0)
          . $valgrind_bin
          . " " . verilator_bin()
          . " " . join(' ', @quoted_sw));
 } elsif ($Debug) {
     # Debug
     run(ulimit_stack_unlimited()
-        . aslr_off()
+        . aslr(0)
         . verilator_bin()
         . " " . join(' ', @quoted_sw));
 } else {
     # Normal, non gdb
-    run(ulimit_stack_unlimited() . verilator_bin() . " " . join(' ', @quoted_sw));
+    run(ulimit_stack_unlimited() . aslr(1) . verilator_bin() . " " . join(' ', @quoted_sw));
 }
 
 #----------------------------------------------------------------------
@@ -192,13 +194,16 @@ sub gdb_works {
     return $status == 0;
 }
 
-sub aslr_off {
-    my $ok = `setarch --addr-no-randomize echo ok 2>/dev/null` || "";
-    if ($ok =~ /ok/) {
-        return "setarch --addr-no-randomize ";
-    } else {
-        return "";
+sub aslr {
+    my $want_on = shift;
+    $want_on = $opt_aslr if defined $opt_aslr;
+    if (!$want_on) {
+        my $ok = `setarch --addr-no-randomize echo ok 2>/dev/null` || "";
+        if ($ok =~ /ok/) {
+            return "setarch --addr-no-randomize ";
+        }
     }
+    return "";
 }
 
 sub ulimit_stack_unlimited {
@@ -325,6 +330,7 @@ detailed descriptions of these arguments.
      +1800-2012ext+<ext>        Use SystemVerilog 2012 with file extension <ext>
      +1800-2017ext+<ext>        Use SystemVerilog 2017 with file extension <ext>
      +1800-2023ext+<ext>        Use SystemVerilog 2023 with file extension <ext>
+    --no-aslr                   Disable address space layout randomization
     --no-assert                 Disable all assertions
     --no-assert-case            Disable unique/unique0/priority-case assertions
     --autoflush                 Flush streams after all $displays

@@ -88,12 +88,23 @@ Summary:
       grammar and other semantic extensions which might not be legal when
       set to an older standard.
 
+.. option:: --aslr
+
+.. option:: --no-aslr
+
+   Rarely needed - for developer use. With `--aslr`, do not change the
+   system default as to using Linux address space layout randomization
+   (ASLR).  With `--no-aslr` attempt to disable ASLR. If not specified,
+   ASLR will be disabled only when using :vlopt:`--debug` (or similar
+   debug-related options), so that pointers have more deterministic values,
+   aiding repeatability.
+
 .. option:: --no-assert
 
    Disable all assertions. Implies :vlopt:`--no-assert-case`.
 
-   In versions before 5.038, these were disabled by default, and `--assert`
-   was required to enable assertions.
+   In versions before 5.038, assertions were disabled by default, and
+   `--assert` was required to enable assertions.
 
 .. option:: --no-assert-case
 
