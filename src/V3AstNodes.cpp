@@ -3107,6 +3107,7 @@ void AstCMethodHard::setPurity() {
                                                           {"atWrite", true},
                                                           {"awaitingCurrentTime", true},
                                                           {"clear", false},
+                                                          {"clearAll", false},
                                                           {"clearFired", false},
                                                           {"commit", false},
                                                           {"delay", false},

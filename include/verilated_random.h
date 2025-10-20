@@ -574,6 +574,7 @@ public:
 
     void hard(std::string&& constraint);
     void clear();
+    void clearAll();  // Clear both constraints and variables
     void set_randmode(const VlQueue<CData>& randmode) { m_randmodep = &randmode; }
 #ifdef VL_DEBUG
     void dump() const;
