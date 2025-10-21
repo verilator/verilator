@@ -601,6 +601,37 @@ public:
     bool isTimingControl() const override { return true; }
     int instrCount() const override { return 0; }
 };
+class AstExecGraph final : public AstNodeStmt {
+    // For parallel execution, this node contains a dependency graph.  Each
+    // vertex in the graph is an ExecMTask, which contains a body for the
+    // mtask (an AstMTaskBody), which contains sequentially executed statements.
+    //
+    // The AstMTaskBody nodes are also children of this node, so we can visit
+    // them without traversing the graph.
+    //
+    // The location where AstExecGraph appears as a procedural statement is
+    // where the parallel graph will be executed. Execution proceeds after
+    // the AstExecGraph when all threads have joined.
+    //
+    // @astgen op1 := mTaskBodiesp : List[AstMTaskBody]
+    // In later phases, the statements that start the parallel execution
+    // @astgen op2 := stmtsp : List[AstNode]
+    V3Graph* const m_depGraphp;  // contains ExecMTask vertices
+    const string m_name;  // Name of this AstExecGraph (for uniqueness at code generation)
+
+public:
+    explicit AstExecGraph(FileLine* fl, const string& name) VL_MT_DISABLED;
+    ~AstExecGraph() override;
+    ASTGEN_MEMBERS_AstExecGraph;
+    void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
+    const char* broken() const override {
+        BROKEN_RTN(!m_depGraphp);
+        return nullptr;
+    }
+    string name() const override VL_MT_STABLE { return m_name; }
+    V3Graph* depGraphp() { return m_depGraphp; }
+    const V3Graph* depGraphp() const { return m_depGraphp; }
+};
 class AstFClose final : public AstNodeStmt {
     // Parents: stmtlist
     // @astgen op1 := filep : AstNodeExpr // file (must be a VarRef)
