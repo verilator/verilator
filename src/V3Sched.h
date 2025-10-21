@@ -146,6 +146,12 @@ public:
     // Creates a timing commit call (if needed, else returns null)
     AstCCall* createCommit(AstNetlist* const netlistp) VL_MT_DISABLED;
 
+    // Dispose of remaining AstActive blocks
+    void deleteActives()  {
+        for (const auto& pair: m_lbs) pair.second->stmtsp()->unlinkFrBackWithNext()->deleteTree();
+        m_lbs.deleteActives();
+    }
+
     TimingKit() = default;
     TimingKit(LogicByScope&& lbs, AstNodeStmt* postUpdates,
               std::map<const AstVarScope*, std::set<AstSenTree*>>&& externalDomains)

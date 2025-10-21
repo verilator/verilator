@@ -1512,6 +1512,9 @@ void schedule(AstNetlist* netlistp) {
     createEval(netlistp, icoLoopp, actKit, preTrigVscp, nbaKit, obsKit, reactKit, postponedFuncp,
                timingKit);
 
+    // Delete remains before 'transformForks', which calls V3Broken
+    timingKit.deleteActives();
+
     transformForks(netlistp);
 
     splitCheck(staticp);
