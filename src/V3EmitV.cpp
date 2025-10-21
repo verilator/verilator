@@ -352,6 +352,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstSFormat* nodep) override {
         visitNodeDisplay(nodep, nodep->lhsp(), nodep->fmtp()->text(), nodep->fmtp()->exprsp());
     }
+    void visit(AstToStringN* nodep) override { iterateConst(nodep->lhsp()); }
     void visit(AstSFormatF* nodep) override {
         visitNodeDisplay(nodep, nullptr, nodep->text(), nodep->exprsp());
     }

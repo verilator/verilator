@@ -73,6 +73,7 @@ module t (/*AUTOARG*/
    Iface the_ifaces [3:0] (.*);
 
    initial begin
+
       if ($test$plusargs("HELLO")) $display("Hello argument found.");
       if (Pkg::FOO == 0) $write("");
       if (ZERO == 0) $write("");
@@ -218,6 +219,7 @@ module t (/*AUTOARG*/
 
       str = $sformatf("cyc=%d", cyc);
       $display("str = %s", str);
+      $display("struct = %p", ps);
       $display("%% [%t] [%t] to=%o td=%d", $time, $realtime, $time, $time);
       $sscanf("foo=5", "foo=%d", i);
       $printtimescale;
