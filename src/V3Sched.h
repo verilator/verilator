@@ -147,8 +147,8 @@ public:
     AstCCall* createCommit(AstNetlist* const netlistp) VL_MT_DISABLED;
 
     // Dispose of remaining AstActive blocks
-    void deleteActives()  {
-        for (const auto& pair: m_lbs) pair.second->stmtsp()->unlinkFrBackWithNext()->deleteTree();
+    void deleteActives() {
+        for (const auto& pair : m_lbs) pair.second->stmtsp()->unlinkFrBackWithNext()->deleteTree();
         m_lbs.deleteActives();
     }
 
