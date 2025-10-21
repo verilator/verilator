@@ -26,13 +26,10 @@ module t (  /*AUTOARG*/
     end
   end
 
-`ifdef PARSING_TIME
-  assert property (@(e14) not (val[0] ##2 val[1]));
-  assert property (@(posedge clk) not (not ##2 val[0] && val[1]));
   assert property (@(posedge clk) not val ##2 val);
   assert property (@(posedge clk) not (val ##1 val));
   assert property (@(posedge clk) not ##1 val ##2 val);
-`else
+
   assert property (@(posedge clk) ##1 1 |-> 1) $display("[%0t] single delay with const implication stmt, fileline:%d", $time, `__LINE__);
 
   assert property (@(posedge clk) ##1 1 |-> not (val)) $display("[%0t] single delay implication with negated var stmt, fileline:%d", $time, `__LINE__);
@@ -54,7 +51,6 @@ module t (  /*AUTOARG*/
   assume property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, `__LINE__);
 
   cover property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, `__LINE__);
-`endif
 endmodule
 
 // Test parsing only

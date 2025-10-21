@@ -215,6 +215,7 @@ class WidthVisitor final : public VNVisitor {
     V3TaskConnectState m_taskConnectState;  // State to cache V3Task::taskConnects
     WidthVP* m_vup = nullptr;  // Current node state
     bool m_underFork = false;  // Visiting under a fork
+    bool m_underSExpr = false;  // Visiting under a sequence expression
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
     const AstEnumItem* m_enumItemp = nullptr;  // Current enum item
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
@@ -1556,8 +1557,12 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstSExpr* nodep) override {
+        VL_RESTORER(m_underSExpr);
+        m_underSExpr = true;
         if (m_vup->prelim()) {
-            if (nodep->preExprp()) iterateCheckBool(nodep, "preExprp", nodep->preExprp(), BOTH);
+            if (nodep->preExprp()) {
+                iterateCheckBool(nodep, "preExprp", nodep->preExprp(), BOTH);
+            }
             iterate(nodep->delayp());
             iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
             nodep->dtypeSetBit();
@@ -7005,6 +7010,13 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->op1p(), BOTH);
             nodep->dtypeSetBit();
+            if (m_underSExpr) {
+                nodep->v3error("Unexpected not in sequence expression context");
+                AstConst* const newp = new AstConst{nodep->fileline(), 0};
+                newp->dtypeFrom(nodep);
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            }
         }
     }
     void visit_log_and_or(AstNodeBiop* nodep) {

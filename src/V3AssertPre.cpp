@@ -630,6 +630,18 @@ private:
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
+    void visit(AstLogNot* nodep) override {
+        const AstSExpr* const sexprp = VN_CAST(nodep->op1p(), SExpr);
+        if (sexprp && (sexprp->preExprp() || VN_IS(sexprp->exprp(), SExpr))) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: not (in multi-expression property)");
+            AstConst* const newp = new AstConst{nodep->fileline(), 0};
+            newp->dtypeFrom(nodep);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else {
+            iterateChildren(nodep);
+        }
+    }
 
     void visit(AstPropSpec* nodep) override {
         nodep = substitutePropertyCall(nodep);

@@ -1,35 +1,47 @@
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:36:41: Unsupported: Implication with sequence expression
-   36 |   assert property (@(posedge clk) ##1 1 |-> 1) $display("[%0t] single delay with const implication stmt, fileline:%d", $time, 36);
-      |                                         ^~~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:29:35: Unsupported: not (in multi-expression property)
+                                                    : ... note: In instance 't'
+   29 |   assert property (@(posedge clk) not val ##2 val);
+      |                                   ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:38:41: Unsupported: Implication with sequence expression
-   38 |   assert property (@(posedge clk) ##1 1 |-> not (val)) $display("[%0t] single delay implication with negated var stmt, fileline:%d", $time, 38);
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:30:35: Unsupported: not (in multi-expression property)
+                                                    : ... note: In instance 't'
+   30 |   assert property (@(posedge clk) not (val ##1 val));
+      |                                   ^~~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:31:35: Unsupported: not (in multi-expression property)
+                                                    : ... note: In instance 't'
+   31 |   assert property (@(posedge clk) not ##1 val ##2 val);
+      |                                   ^~~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:33:41: Unsupported: Implication with sequence expression
+   33 |   assert property (@(posedge clk) ##1 1 |-> 1) $display("[%0t] single delay with const implication stmt, fileline:%d", $time, 33);
       |                                         ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:40:37: Unsupported: Implication with sequence expression
-   40 |   assert property (@(posedge clk) 1 |-> ##1 val) $display("[%0t] single delay implication with negated var stmt, fileline:%d", $time, 40);
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:35:41: Unsupported: Implication with sequence expression
+   35 |   assert property (@(posedge clk) ##1 1 |-> not (val)) $display("[%0t] single delay implication with negated var stmt, fileline:%d", $time, 35);
+      |                                         ^~~
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:37:37: Unsupported: Implication with sequence expression
+   37 |   assert property (@(posedge clk) 1 |-> ##1 val) $display("[%0t] single delay implication with negated var stmt, fileline:%d", $time, 37);
       |                                     ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:42:45: Unsupported: Implication with sequence expression
-   42 |   assert property (@(posedge clk) (##1 val) |-> (not val)) $display("[%0t] single delay with negated implication stmt, fileline:%d", $time, 42);
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:39:45: Unsupported: Implication with sequence expression
+   39 |   assert property (@(posedge clk) (##1 val) |-> (not val)) $display("[%0t] single delay with negated implication stmt, fileline:%d", $time, 39);
       |                                             ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:44:45: Unsupported: Implication with sequence expression
-   44 |   assert property (@(posedge clk) ##1 (val) |-> not (val)) $display("[%0t] single delay with negated implication brackets stmt, fileline:%d", $time, 44);
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:41:45: Unsupported: Implication with sequence expression
+   41 |   assert property (@(posedge clk) ##1 (val) |-> not (val)) $display("[%0t] single delay with negated implication brackets stmt, fileline:%d", $time, 41);
       |                                             ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:48:41: Unsupported: Implication with sequence expression
-   48 |   assert property (@(posedge clk) ##1 1 |-> 0) $display("[%0t] disable iff with cond implication stmt, fileline:%d", $time, 48);
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:45:41: Unsupported: Implication with sequence expression
+   45 |   assert property (@(posedge clk) ##1 1 |-> 0) $display("[%0t] disable iff with cond implication stmt, fileline:%d", $time, 45);
       |                                         ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:50:45: Unsupported: Implication with sequence expression
-   50 |   assert property (@(posedge clk) (##1 val) |-> (##1 val)) $display("[%0t] two delays implication stmt, fileline:%d", $time, 50);
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:47:45: Unsupported: Implication with sequence expression
+   47 |   assert property (@(posedge clk) (##1 val) |-> (##1 val)) $display("[%0t] two delays implication stmt, fileline:%d", $time, 47);
       |                                             ^~~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:52:52: Unsupported: Disable iff with sequence expression
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:49:52: Unsupported: Disable iff with sequence expression
                                                     : ... note: In instance 't'
-   52 |   assert property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, 52);
+   49 |   assert property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, 49);
       |                                                    ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:54:52: Unsupported: Disable iff with sequence expression
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:51:52: Unsupported: Disable iff with sequence expression
                                                     : ... note: In instance 't'
-   54 |   assume property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, 54);
+   51 |   assume property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, 51);
       |                                                    ^~
-%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:56:51: Unsupported: Disable iff with sequence expression
+%Error-UNSUPPORTED: t/t_property_sexpr_unsup.v:53:51: Unsupported: Disable iff with sequence expression
                                                     : ... note: In instance 't'
-   56 |   cover property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, 56);
+   53 |   cover property (@(posedge clk) disable iff (cyc != 5) ##1 0) $display("[%0t] disable iff stmt, fileline:%d", $time, 53);
       |                                                   ^~
 %Error: Exiting due to

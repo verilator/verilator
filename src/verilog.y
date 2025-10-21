@@ -6541,15 +6541,7 @@ pexpr<nodeExprp>:  // IEEE: property_expr  (The name pexpr is important as regex
         //                      // IEEE: '(' pexpr ')'
         //                      // Expanded below
         //
-                yNOT pexpr %prec prNEGATION
-                {
-                    $$ = new AstLogNot{$1, $2};
-                    if (const AstSExpr* const sexprp = VN_CAST($2, SExpr)) {
-                        if (sexprp->preExprp()) {
-                            BBUNSUP($2, "Unsupported: not (in multi-expression property)");
-                        }
-                    }
-                }
+                yNOT pexpr { $$ = new AstLogNot{$1, $2}; }
         |       ySTRONG '(' sexpr ')'
                         { $$ = $3; BBUNSUP($2, "Unsupported: strong (in property expression)"); }
         |       yWEAK '(' sexpr ')'
@@ -6643,10 +6635,8 @@ sexpr<nodeExprp>:  // ==IEEE: sequence_expr  (The name sexpr is important as reg
                             }
                         }
         |       ~p~sexpr cycle_delay_range sexpr %prec prPOUNDPOUND_MULTI
-                        { $$ = new AstSExpr{$<fl>2, $1, $2, $3};
-                            if (VN_IS($1, LogNot)) {
-                                BBUNSUP($1->fileline(), "Unsupported: not (in multi-delay sequence expression)");
-                            }
+                        {
+                            $$ = new AstSExpr{$<fl>2, $1, $2, $3};
                         }
         //
         //                      // IEEE: expression_or_dist [ boolean_abbrev ]

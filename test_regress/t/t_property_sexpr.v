@@ -131,6 +131,11 @@ module t (  /*AUTOARG*/
     $display("[%0t] single delay with nested not stmt, fileline:%0d", $time, `__LINE__);
   else $display("[%0t] single delay with nested not else, fileline:%0d", $time, `__LINE__);
 
+  assert property (@(e11) not (not ##2 val[0] && val[0]))
+    $display("[%0t] stmt, fileline:%d", $time, `__LINE__);
+  else
+    $display("[%0t] else, fileline:%d", $time, `__LINE__);
+
   restrict property (@(e11) ##1 val[0]);
 
   restrict property (@(e11) not ##1 val[0]);
