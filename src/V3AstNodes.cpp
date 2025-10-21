@@ -3073,7 +3073,16 @@ void AstTraceInc::dump(std::ostream& str) const {
 void AstTraceInc::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstText::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    str << " \"" << text() << "\"";
+    std::string txt = text();
+    if (txt.size() > 120) {
+        txt.resize(120);
+        txt += " ... omitted ...";
+    }
+    txt = VString::replaceSubstr(txt, "\\", "\\\\");
+    txt = VString::replaceSubstr(txt, "\"", "\\\"");
+    txt = VString::replaceSubstr(txt, "\n", "\\n");
+    txt = VString::replaceSubstr(txt, "\t", "\\t");
+    str << " \"" << txt << "\"";
 }
 void AstText::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, text);

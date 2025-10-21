@@ -1638,7 +1638,7 @@ public:
 class AstText final : public AstNode {
     // Represents a piece of text to be emitted into the output
     //
-    // Avoid using this directly, internally you almost always want
+    // Avoid using this directly, internally usually want
     // AstCStmt::add("text") or AstCExpr::add("text") instead
     //
     std::string m_text;  // The text to emit

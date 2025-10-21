@@ -4106,10 +4106,7 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
         |       yD_C '(' cStrList ')' {
                     AstCStmtUser* cstmtp = nullptr;
                     if (!v3Global.opt.ignc()) {
-                        cstmtp = new AstCStmtUser{$1};
-                        if (v3Global.opt.decoration() && !v3Global.opt.protectIds()) {
-                            cstmtp->add("// $c statement at " + $<fl>1->ascii() + "\n");
-                        }
+                        cstmtp = new AstCStmtUser{$1, true};
                         cstmtp->add($3);
                     }
                     $$ = cstmtp;
@@ -4277,9 +4274,6 @@ system_f_call<nodeExprp>:           // IEEE: system_tf_call (as func)
                     AstCExprUser* cexprp = nullptr;
                     if (!v3Global.opt.ignc()) {
                         cexprp = new AstCExprUser{$1};
-                        if (v3Global.opt.decoration() && !v3Global.opt.protectIds()) {
-                            cexprp->add("// $c expression at " + $<fl>1->ascii() + "\n");
-                        }
                         cexprp->add($3);
                     }
                     $$ = cexprp;

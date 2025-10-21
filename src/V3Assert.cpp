@@ -152,7 +152,8 @@ class AssertVisitor final : public VNVisitor {
         case VAssertDirectiveType::INTRINSIC: return new AstConst{fl, AstConst::BitTrue{}};
         case VAssertDirectiveType::VIOLATION_CASE: {
             if (v3Global.opt.assertCase()) {
-                return new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1, true};
+                return new AstCExpr{fl, AstCExpr::Pure{}, "vlSymsp->_vm_contextp__->assertOn()",
+                                    1};
             }
             // If assertions are off, have constant propagation rip them out later
             // This allows syntax errors and such to be detected normally.
@@ -162,10 +163,10 @@ class AssertVisitor final : public VNVisitor {
         case VAssertDirectiveType::COVER:
         case VAssertDirectiveType::ASSUME: {
             if (v3Global.opt.assertOn()) {
-                return new AstCExpr{fl,
+                return new AstCExpr{fl, AstCExpr::Pure{},
                                     "vlSymsp->_vm_contextp__->assertOnGet("s + std::to_string(type)
                                         + ", "s + std::to_string(directiveType) + ")"s,
-                                    1, true};
+                                    1};
             }
             return new AstConst{fl, AstConst::BitFalse{}};
         }
@@ -173,7 +174,8 @@ class AssertVisitor final : public VNVisitor {
         case VAssertDirectiveType::VIOLATION_IF:
         case VAssertDirectiveType::RESTRICT: {
             if (v3Global.opt.assertOn()) {
-                return new AstCExpr{fl, "vlSymsp->_vm_contextp__->assertOn()", 1, true};
+                return new AstCExpr{fl, AstCExpr::Pure{}, "vlSymsp->_vm_contextp__->assertOn()",
+                                    1};
             }
             return new AstConst{fl, AstConst::BitFalse{}};
         }

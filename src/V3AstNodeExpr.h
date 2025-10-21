@@ -566,16 +566,27 @@ class AstCExpr final : public AstNodeExpr {
     // C expression emitted into output, with some arbitrary nodes interspersed
     // @astgen op1 := nodesp : List[AstNode<AstNodeExpr|AstText>]
     const bool m_pure;  // Pure optimizable
-public:
-    AstCExpr(FileLine* fl, const string& text = "", int setwidth = 0, bool pure = false)
-        : ASTGEN_SUPER_CExpr(fl)
-        , m_pure{pure} {
+
+    void init(const string& text, int setwidth) {
         if (!text.empty()) add(text);
         if (setwidth) {
             dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
         } else {
             dtypeSetVoid();  // Caller to override if necessary
         }
+    }
+
+public:
+    class Pure {};
+    AstCExpr(FileLine* fl, const string& text = "", int setwidth = 0)
+        : ASTGEN_SUPER_CExpr(fl)
+        , m_pure{false} {
+        init(text, setwidth);
+    }
+    AstCExpr(FileLine* fl, Pure, const string& text = "", int setwidth = 0)
+        : ASTGEN_SUPER_CExpr(fl)
+        , m_pure{true} {
+        init(text, setwidth);
     }
     ASTGEN_MEMBERS_AstCExpr;
     // METHODS
@@ -592,9 +603,9 @@ public:
     void add(AstNode* nodep) { addNodesp(nodep); }
 };
 class AstCExprUser final : public AstNodeExpr {
-    // User '$c' statement - Like AstCStmt, with text tracking and optimizations disabled
+    // User '$c' statement - Like AstCStmt, with text tracking and optimizations disabled.
     //
-    // Use AstCExpr instead, unless the text is from user input
+    // Use AstCExpr instead, unless the text is from user input.
     //
     // @astgen op1 := nodesp : List[AstNode<AstNodeExpr|AstText>]
 public:
