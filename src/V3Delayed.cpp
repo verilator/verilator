@@ -1159,12 +1159,12 @@ class DelayedVisitor final : public VNVisitor {
         AstNodeExpr* const eventp = nodep->operandp()->unlinkFrBack();
 
         // Enqueue for clearing 'triggered' state on next eval
-        AstTextBlock* const blockp = new AstTextBlock{flp};
-        blockp->addText(flp, "vlSymsp->fireEvent(", true);
-        blockp->addNodesp(eventp);
-        blockp->addText(flp, ");", true);
+        AstCStmt* const cstmtp = new AstCStmt{flp};
+        cstmtp->add("vlSymsp->fireEvent(");
+        cstmtp->add(eventp);
+        cstmtp->add(");");
 
-        AstNode* newp = new AstCStmt{flp, blockp};
+        AstNode* newp = cstmtp;
         if (nodep->isDelayed()) {
             const AstVarRef* const vrefp = VN_AS(eventp, VarRef);
             const std::string newvarname = "__Vdly__" + vrefp->varp()->shortName();

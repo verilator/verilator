@@ -158,18 +158,16 @@ AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVa
     AstNodeExpr* const condp = new AstGt{flp, counterRefp, constp};
     AstIf* const ifp = new AstIf{flp, condp};
     ifp->branchPred(VBranchPred::BP_UNLIKELY);
-    AstTextBlock* const blockp = new AstTextBlock{flp};
-    ifp->addThensp(blockp);
+    AstCStmt* const stmtp = new AstCStmt{flp};
+    ifp->addThensp(stmtp);
     FileLine* const locp = netlistp->topModulep()->fileline();
-    const string& file = VIdProtect::protect(locp->filename());
-    const string& line = cvtToStr(locp->lineno());
-    const auto add = [&](const string& text) { blockp->addText(flp, text, true); };
-    add("#ifdef VL_DEBUG\n");
-    blockp->addNodesp(callVoidFunc(trigDumpp));
-    add("#endif\n");
-    add("VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line + ", \"\", ");
-    add("\"" + name + " region did not converge.\");\n");
-
+    const std::string& file = VIdProtect::protect(locp->filename());
+    const std::string& line = std::to_string(locp->lineno());
+    stmtp->add("#ifdef VL_DEBUG\n");
+    stmtp->add(callVoidFunc(trigDumpp));
+    stmtp->add("#endif\n");
+    stmtp->add("VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line
+               + ", \"\", \"" + name + " region did not converge.\");");
     return ifp;
 }
 
@@ -696,15 +694,14 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
     // Add a debug dumping statement for this trigger
     const auto addDebug = [&](uint32_t index, const string& text = "") {
         std::stringstream ss;
-        ss << "VL_DBG_MSGF(\"         '" << name << "' region trigger index " << cvtToStr(index)
-           << " is active";
+        ss << "VL_DBG_MSGF(\"         ";
+        ss << "'" << name << "' region trigger index " << std::to_string(index) << " is active";
         if (!text.empty()) ss << ": " << text;
-        ss << "\\n\");\n";
-        const string message{ss.str()};
+        ss << "\\n\");";
 
         AstIf* const ifp = new AstIf{flp, getTrig(index)};
         dumpp->addStmtsp(ifp);
-        ifp->addThensp(new AstText{flp, message, true});
+        ifp->addThensp(new AstCStmt{flp, ss.str()});
     };
 
     // Add a print for each of the extra triggers
@@ -832,14 +829,13 @@ const TriggerKit createTriggers(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
     // Add a call to the dumping function if debug is enabled
     {
-        AstTextBlock* const blockp = new AstTextBlock{flp};
-        funcp->addStmtsp(blockp);
-        const auto add = [&](const string& text) { blockp->addText(flp, text, true); };
-        add("#ifdef VL_DEBUG\n");
-        add("if (VL_UNLIKELY(vlSymsp->_vm_contextp__->debug())) {\n");
-        blockp->addNodesp(callVoidFunc(dumpp));
-        add("}\n");
-        add("#endif\n");
+        AstCStmt* const stmtp = new AstCStmt{flp};
+        funcp->addStmtsp(stmtp);
+        stmtp->add("#ifdef VL_DEBUG\n");
+        stmtp->add("if (VL_UNLIKELY(vlSymsp->_vm_contextp__->debug())) {\n");
+        stmtp->add(callVoidFunc(dumpp));
+        stmtp->add("}\n");
+        stmtp->add("#endif");
     }
 
     if (v3Global.opt.profExec()) funcp->addStmtsp(profExecSectionPop(flp));

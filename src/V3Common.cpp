@@ -58,7 +58,7 @@ static void makeVlToString(AstClass* nodep) {
     funcp->isStatic(false);
     funcp->protect(false);
     AstNodeExpr* const exprp
-        = new AstCExpr{nodep->fileline(), "obj ? obj->to_string() : \"null\"", 0};
+        = new AstCExpr{nodep->fileline(), "obj ? obj->to_string() : \"null\""};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtsp(funcp);
@@ -71,7 +71,7 @@ static void makeVlToString(AstIface* nodep) {
     funcp->isConst(false);
     funcp->isStatic(false);
     funcp->protect(false);
-    AstNodeExpr* const exprp = new AstCExpr{nodep->fileline(), "obj ? obj->name() : \"null\"", 0};
+    AstNodeExpr* const exprp = new AstCExpr{nodep->fileline(), "obj ? obj->name() : \"null\""};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtsp(funcp);
@@ -102,7 +102,7 @@ static void makeVlToString(AstNodeUOrStructDType* nodep) {
     }
     funcp->addStmtsp(new AstCStmt{nodep->fileline(), "out += \"}\";"});
 
-    AstCExpr* const exprp = new AstCExpr{nodep->fileline(), "out", 0};
+    AstCExpr* const exprp = new AstCExpr{nodep->fileline(), "out"};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
 
@@ -113,8 +113,7 @@ static void makeToString(AstClass* nodep) {
     funcp->isConst(true);
     funcp->isStatic(false);
     funcp->protect(false);
-    AstCExpr* const exprp
-        = new AstCExpr{nodep->fileline(), R"("'{"s + to_string_middle() + "}")", 0};
+    AstCExpr* const exprp = new AstCExpr{nodep->fileline(), R"("'{"s + to_string_middle() + "}")"};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
     nodep->addStmtsp(funcp);
@@ -155,7 +154,7 @@ static void makeToStringMiddle(AstClass* nodep) {
         funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
     }
 
-    AstCExpr* const exprp = new AstCExpr{nodep->fileline(), "out", 0};
+    AstCExpr* const exprp = new AstCExpr{nodep->fileline(), "out"};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
 

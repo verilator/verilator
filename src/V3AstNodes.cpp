@@ -3071,21 +3071,21 @@ void AstTraceInc::dump(std::ostream& str) const {
     }
 }
 void AstTraceInc::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
-string AstNodeText::shortText() const {
-    string out = text();
-    string::size_type pos;
-    if ((pos = out.find('\n')) != string::npos) {
-        out.erase(pos, out.length() - pos);
-        out += "...";
-    }
-    return out;
-}
-void AstNodeText::dump(std::ostream& str) const {
+void AstText::dump(std::ostream& str) const {
     this->AstNode::dump(str);
-    str << " \"" << shortText() << "\"";
+    std::string txt = text();
+    if (txt.size() > 120) {
+        txt.resize(120);
+        txt += " ... omitted ...";
+    }
+    txt = VString::replaceSubstr(txt, "\\", "\\\\");
+    txt = VString::replaceSubstr(txt, "\"", "\\\"");
+    txt = VString::replaceSubstr(txt, "\n", "\\n");
+    txt = VString::replaceSubstr(txt, "\t", "\\t");
+    str << " \"" << txt << "\"";
 }
-void AstNodeText::dumpJson(std::ostream& str) const {
-    dumpJsonStrFunc(str, shortText);
+void AstText::dumpJson(std::ostream& str) const {
+    dumpJsonStrFunc(str, text);
     dumpJsonGen(str);
 }
 

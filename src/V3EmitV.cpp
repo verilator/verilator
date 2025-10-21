@@ -30,7 +30,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     // STATE - across all visitors
-    const bool m_alwaysTrackText;  // Always track all NodeSimpleText
     const bool m_suppressUnknown;  // Do not error on unknown node
 
     // STATE - for current visit position (use VL_RESTORER)
@@ -70,6 +69,20 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             iterateConstNull(packedp->rangep());
         }
         m_packedps.clear();
+    }
+    void emitNodesWithText(AstNode* nodesp, bool tracking, const std::string& separator) {
+        for (AstNode* nodep = nodesp; nodep; nodep = nodep->nextp()) {
+            if (const AstText* const textp = VN_CAST(nodep, Text)) {
+                if (tracking) {
+                    puts(textp->text());
+                } else {
+                    putsNoTracking(textp->text());
+                }
+            } else {
+                iterateConst(nodep);
+            }
+            if (nodep->nextp()) puts(separator);
+        }
     }
 
     // VISITORS
@@ -561,43 +574,41 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateConst(nodep->exprp());
         puts(";\n");
     }
-    void visit(AstNodeSimpleText* nodep) override {
-        if (nodep->tracking() || m_alwaysTrackText) {
-            puts(nodep->text());
-        } else {
-            putsNoTracking(nodep->text());
-        }
+
+    // Nodes involing AstText
+    void visit(AstText* nodep) override {
+        // All Text should be under TextBlock/CStmt/CStmtUser/CExpr/CExprUser
+        nodep->v3fatalSrc("Text node in unexpected position");
     }
     void visit(AstTextBlock* nodep) override {
-        visit(static_cast<AstNodeSimpleText*>(nodep));
         VL_RESTORER(m_suppressVarSemi);
-        m_suppressVarSemi = nodep->commas();
-        for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
-            iterateConst(childp);
-            if (nodep->commas() && childp->nextp()) puts(", ");
-        }
+        m_suppressVarSemi = !nodep->separator().empty();
+        puts(nodep->prefix());
+        emitNodesWithText(nodep->nodesp(), true, nodep->separator());
+        puts(nodep->suffix());
     }
-    void visit(AstScopeName* nodep) override {}
     void visit(AstCStmt* nodep) override {
         putfs(nodep, "$_CSTMT(");
-        iterateAndCommaConstNull(nodep->exprsp());
+        emitNodesWithText(nodep->nodesp(), true, "");
         puts(");\n");
     }
     void visit(AstCExpr* nodep) override {
         putfs(nodep, "$_CEXPR(");
-        iterateAndCommaConstNull(nodep->exprsp());
+        emitNodesWithText(nodep->nodesp(), true, "");
         puts(")");
     }
-    void visit(AstUCStmt* nodep) override {
+    void visit(AstCStmtUser* nodep) override {
         putfs(nodep, "$c(");
-        iterateAndCommaConstNull(nodep->exprsp());
+        emitNodesWithText(nodep->nodesp(), false, "");
         puts(");\n");
     }
-    void visit(AstUCFunc* nodep) override {
+    void visit(AstCExprUser* nodep) override {
         putfs(nodep, "$c(");
-        iterateAndNextConstNull(nodep->exprsp());
+        emitNodesWithText(nodep->nodesp(), false, "");
         puts(")");
     }
+
+    void visit(AstScopeName* nodep) override {}
     void visit(AstExprStmt* nodep) override {
         putfs(nodep, "$_EXPRSTMT(\n");
         iterateAndNextConstNull(nodep->stmtsp());
@@ -1129,7 +1140,6 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateConst(methodp->pinsp());
     }
     void visit(AstParseRef* nodep) override { puts(nodep->prettyName()); }
-    void visit(AstNodeText*) override {}
     void visit(AstVarScope*) override {}
     void visit(AstTraceDecl*) override {}
     void visit(AstTraceInc*) override {}
@@ -1148,9 +1158,8 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
 
 public:
-    explicit EmitVBaseVisitorConst(bool alwaysTrackText, bool suppressUnknown)
-        : m_alwaysTrackText{alwaysTrackText}
-        , m_suppressUnknown{suppressUnknown} {}
+    explicit EmitVBaseVisitorConst(bool suppressUnknown)
+        : m_suppressUnknown{suppressUnknown} {}
     ~EmitVBaseVisitorConst() override = default;
 };
 
@@ -1168,8 +1177,8 @@ class EmitVFileVisitor final : public EmitVBaseVisitorConst {
     void putqs(AstNode*, const string& str) override { putbs(str); }
 
 public:
-    EmitVFileVisitor(AstNode* nodep, V3OutVFile& of, bool alwaysTrackText, bool suppressUnknown)
-        : EmitVBaseVisitorConst{alwaysTrackText, suppressUnknown}
+    EmitVFileVisitor(AstNode* nodep, V3OutVFile& of, bool suppressUnknown)
+        : EmitVBaseVisitorConst{suppressUnknown}
         , m_of{of} {
         iterateConst(nodep);
     }
@@ -1182,7 +1191,7 @@ public:
 class EmitVStreamVisitor final : public EmitVBaseVisitorConst {
     // STATE
     V3OutStream m_os;  // The output stream formatter
-    bool m_tracking;  // Use line tracking
+    const bool m_tracking;  // Use line tracking
     // METHODS
     void putsNoTracking(const string& str) override { m_os.putsNoTracking(str); }
     void puts(const string& str) override {
@@ -1196,7 +1205,7 @@ class EmitVStreamVisitor final : public EmitVBaseVisitorConst {
 
 public:
     EmitVStreamVisitor(const AstNode* nodep, std::ostream& os, bool tracking, bool suppressUnknown)
-        : EmitVBaseVisitorConst{false, suppressUnknown}
+        : EmitVBaseVisitorConst{suppressUnknown}
         , m_os{os, V3OutFormatter::LA_VERILOG}
         , m_tracking{tracking} {
         iterateConst(const_cast<AstNode*>(nodep));
@@ -1223,7 +1232,7 @@ void V3EmitV::emitvFiles() {
         if (vfilep && vfilep->tblockp()) {
             V3OutVFile of{vfilep->name()};
             of.puts("// DESCRIPTION: Verilator generated Verilog\n");
-            { EmitVFileVisitor{vfilep->tblockp(), of, true, false}; }
+            EmitVFileVisitor{vfilep->tblockp(), of, false};
         }
     }
 }
@@ -1231,5 +1240,5 @@ void V3EmitV::emitvFiles() {
 void V3EmitV::debugEmitV(const string& filename) {
     UINFO(2, __FUNCTION__ << ":");
     V3OutVFile of{filename};
-    { EmitVFileVisitor{v3Global.rootp(), of, true, true}; }
+    EmitVFileVisitor{v3Global.rootp(), of, true};
 }

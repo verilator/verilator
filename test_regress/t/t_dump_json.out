@@ -1678,18 +1678,18 @@
          "valuep": [
           {"type":"CVTPACKSTRING","name":"","addr":"(OZ)","loc":"d,227:18,227:24","dtypep":"(FG)",
            "lhsp": [
-            {"type":"UCFUNC","name":"","addr":"(PZ)","loc":"d,227:26,227:28","dtypep":"UNLINKED",
-             "exprsp": [
-              {"type":"TEXT","name":"","addr":"(QZ)","loc":"d,227:29,227:32","shortText":"0"}
+            {"type":"CEXPRUSER","name":"","addr":"(PZ)","loc":"d,227:26,227:28","dtypep":"UNLINKED",
+             "nodesp": [
+              {"type":"TEXT","name":"","addr":"(QZ)","loc":"d,227:29,227:32","text":"0"}
             ]}
           ]}
         ],"attrsp": []},
-        {"type":"UCSTMT","name":"","addr":"(RZ)","loc":"d,229:7,229:9",
-         "exprsp": [
+        {"type":"CSTMTUSER","name":"","addr":"(RZ)","loc":"d,229:7,229:9",
+         "nodesp": [
           {"type":"PARSEREF","name":"s","addr":"(SZ)","loc":"d,229:10,229:11","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []},
-          {"type":"TEXT","name":"","addr":"(TZ)","loc":"d,229:13,229:18","shortText":" = "},
+          {"type":"TEXT","name":"","addr":"(TZ)","loc":"d,229:13,229:18","text":" = "},
           {"type":"PARSEREF","name":"m_process","addr":"(UZ)","loc":"d,229:20,229:29","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []},
-          {"type":"TEXT","name":"","addr":"(VZ)","loc":"d,229:31,229:47","shortText":"->randstate();"}
+          {"type":"TEXT","name":"","addr":"(VZ)","loc":"d,229:31,229:47","text":"->randstate();"}
         ]},
         {"type":"RETURN","name":"","addr":"(WZ)","loc":"d,230:7,230:13",
          "lhsp": [
@@ -1702,12 +1702,12 @@
          "childDTypep": [
           {"type":"BASICDTYPE","name":"string","addr":"(AAB)","loc":"d,233:33,233:39","dtypep":"(AAB)","keyword":"string","generic":false,"rangep": []}
         ],"delayp": [],"valuep": [],"attrsp": []},
-        {"type":"UCSTMT","name":"","addr":"(BAB)","loc":"d,234:7,234:9",
-         "exprsp": [
+        {"type":"CSTMTUSER","name":"","addr":"(BAB)","loc":"d,234:7,234:9",
+         "nodesp": [
           {"type":"PARSEREF","name":"m_process","addr":"(CAB)","loc":"d,234:10,234:19","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []},
-          {"type":"TEXT","name":"","addr":"(DAB)","loc":"d,234:21,234:35","shortText":"->randstate("},
+          {"type":"TEXT","name":"","addr":"(DAB)","loc":"d,234:21,234:35","text":"->randstate("},
           {"type":"PARSEREF","name":"s","addr":"(EAB)","loc":"d,234:37,234:38","dtypep":"UNLINKED","lhsp": [],"ftaskrefp": []},
-          {"type":"TEXT","name":"","addr":"(FAB)","loc":"d,234:40,234:44","shortText":");"}
+          {"type":"TEXT","name":"","addr":"(FAB)","loc":"d,234:40,234:44","text":");"}
         ]}
       ],"scopeNamep": []}
     ],"extendsp": []},

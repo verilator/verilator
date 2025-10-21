@@ -1599,7 +1599,11 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetBit();
         }
     }
-    void visit(AstUCFunc* nodep) override {
+    void visit(AstCExpr* nodep) override {
+        // Inserted by V3Width only so we know has been resolved
+        userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
+    }
+    void visit(AstCExprUser* nodep) override {
         // Give it the size the user wants.
         if (m_vup && m_vup->prelim()) {
             nodep->dtypeSetLogicUnsized(32, 1, VSigning::UNSIGNED);  // We don't care
@@ -3502,10 +3506,6 @@ class WidthVisitor final : public VNVisitor {
         return false;
     }
 
-    void visit(AstCExpr* nodep) override {
-        // Inserted by V3Width only so we know has been resolved
-        userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
-    }
     void visit(AstCMethodHard* nodep) override {
         // Never created before V3Width, so no need to redo it
         UASSERT_OBJ(nodep->dtypep(), nodep, "CMETHODCALLs should have already been sized");
@@ -6060,7 +6060,7 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->suffixp()) iterateCheckString(nodep, "suffix", nodep->suffixp(), BOTH);
         if (nodep->widthp()) iterateCheckSigned32(nodep, "width", nodep->widthp(), BOTH);
     }
-    void visit(AstUCStmt* nodep) override {
+    void visit(AstCStmtUser* nodep) override {
         // Just let all arguments seek their natural sizes
         assertAtStatement(nodep);
         userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
@@ -6724,8 +6724,8 @@ class WidthVisitor final : public VNVisitor {
                 v3Global.useRandomizeMethods(true);
                 AstCExpr* const newp
                     = new AstCExpr{nodep->fileline(), "__Vm_rng.set_randstate(", 1};
-                newp->addExprsp(exprp->unlinkFrBack());
-                newp->addExprsp(new AstText{nodep->fileline(), ")", true});
+                newp->add(exprp->unlinkFrBack());
+                newp->add(")");
                 newp->dtypeSetString();
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);

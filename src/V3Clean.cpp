@@ -219,9 +219,6 @@ class CleanVisitor final : public VNVisitor {
         computeCppWidth(nodep);
         if (nodep->cleanRhs()) ensureClean(nodep->rhsp());
     }
-    void visit(AstText* nodep) override {  //
-        setClean(nodep, true);
-    }
     void visit(AstScopeName* nodep) override {  //
         setClean(nodep, true);
     }
@@ -238,13 +235,13 @@ class CleanVisitor final : public VNVisitor {
         operandBiop(nodep);
         setClean(nodep, nodep->cleanOut());
     }
-    void visit(AstUCFunc* nodep) override {
+    void visit(AstCExprUser* nodep) override {
         iterateChildren(nodep);
         computeCppWidth(nodep);
         setClean(nodep, false);
         // We always clean, as we don't trust those pesky users.
         if (!VN_IS(nodep->backp(), And)) insertClean(nodep);
-        for (AstNode* argp = nodep->exprsp(); argp; argp = argp->nextp()) {
+        for (AstNode* argp = nodep->nodesp(); argp; argp = argp->nextp()) {
             if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) ensureClean(exprp);
         }
     }
@@ -282,9 +279,9 @@ class CleanVisitor final : public VNVisitor {
         ensureCleanAndNext(nodep->exprsp());
         setClean(nodep, true);  // generates a string, so not relevant
     }
-    void visit(AstUCStmt* nodep) override {
+    void visit(AstCStmtUser* nodep) override {
         iterateChildren(nodep);
-        for (AstNode* argp = nodep->exprsp(); argp; argp = argp->nextp()) {
+        for (AstNode* argp = nodep->nodesp(); argp; argp = argp->nextp()) {
             if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) ensureClean(exprp);
         }
     }

@@ -947,28 +947,25 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Convert to plain foreach
         FileLine* const fl = nodep->fileline();
 
+        AstNode* const arrayp = nodep->arrayp()->unlinkFrBack();
         if (m_wantSingle) {
-            AstNode* const itemp = editSingle(fl, nodep->stmtsp());
-            AstNode* const cstmtp = new AstText{fl, "ret += \" \" + "};
-            cstmtp->addNext(itemp);
-            cstmtp->addNext(new AstText{fl, ";"});
-            AstNode* const exprsp = new AstText{fl, "([&]{ std::string ret;"};
-            exprsp->addNext(new AstBegin{
-                fl, "",
-                new AstForeach{fl, nodep->arrayp()->unlinkFrBack(), new AstCStmt{fl, cstmtp}},
-                true});
-            exprsp->addNext(
-                new AstText{fl, "return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";})()"});
-            AstNodeExpr* const newp = new AstCExpr{fl, exprsp};
-            newp->dtypeSetString();
-            nodep->replaceWith(new AstSFormatF{fl, "%@", false, newp});
+            AstNodeExpr* const itemp = editSingle(fl, nodep->stmtsp());
+            AstCStmt* const cstmtp = new AstCStmt{fl};
+            cstmtp->add("ret += \" \";\n");
+            cstmtp->add("ret += ");
+            cstmtp->add(itemp);
+            cstmtp->add(";");
+            AstCExpr* const cexprp = new AstCExpr{fl};
+            cexprp->dtypeSetString();
+            cexprp->add("([&]{\nstd::string ret;\n");
+            cexprp->add(new AstBegin{fl, "", new AstForeach{fl, arrayp, cstmtp}, true});
+            cexprp->add("return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";\n})()");
+            nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
         } else {
             iterateAndNextNull(nodep->stmtsp());
-            nodep->replaceWith(
-                new AstBegin{fl, "",
-                             new AstForeach{fl, nodep->arrayp()->unlinkFrBack(),
-                                            nodep->stmtsp()->unlinkFrBackWithNext()},
-                             true});
+            nodep->replaceWith(new AstBegin{
+                fl, "", new AstForeach{fl, arrayp, nodep->stmtsp()->unlinkFrBackWithNext()},
+                true});
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -1028,17 +1025,18 @@ class ConstraintExprVisitor final : public VNVisitor {
             selp->user1(randArr);
             AstNode* const itemp = new AstEq{fl, selp, nodep->pinsp()->unlinkFrBack()};
             itemp->user1(true);
-            AstNode* const cstmtp = new AstText{fl, "ret += \" \" + "};
-            cstmtp->addNext(iterateSubtreeReturnEdits(itemp));
-            cstmtp->addNext(new AstText{fl, ";"});
-            AstNode* const exprsp = new AstText{fl, "([&]{ std::string ret;"};
-            exprsp->addNext(
-                new AstBegin{fl, "", new AstForeach{fl, arrayp, new AstCStmt{fl, cstmtp}}, true});
-            exprsp->addNext(
-                new AstText{fl, "return ret.empty() ? \"#b0\" : \"(bvor\" + ret + \")\";})()"});
-            AstNodeExpr* const newp = new AstCExpr{fl, exprsp};
-            newp->dtypeSetString();
-            nodep->replaceWith(new AstSFormatF{fl, "%@", false, newp});
+
+            AstCStmt* const cstmtp = new AstCStmt{fl};
+            cstmtp->add("ret += \" \";\n");
+            cstmtp->add("ret += ");
+            cstmtp->add(iterateSubtreeReturnEdits(itemp));
+            cstmtp->add(";");
+            AstCExpr* const cexprp = new AstCExpr{fl};
+            cexprp->dtypeSetString();
+            cexprp->add("([&]{\nstd::string ret;\n");
+            cexprp->add(new AstBegin{fl, "", new AstForeach{fl, arrayp, cstmtp}, true});
+            cexprp->add("return ret.empty() ? \"#b0\" : \"(bvor\" + ret + \")\";\n})()");
+            nodep->replaceWith(new AstSFormatF{fl, "%@", false, cexprp});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
@@ -1772,14 +1770,14 @@ class RandomizeVisitor final : public VNVisitor {
     AstNodeExpr* newRandValue(FileLine* const fl, AstVar* const randcVarp,
                               AstNodeDType* const dtypep) {
         if (randcVarp) {
-            AstVarRef* const argsp = new AstVarRef{fl, randcVarp, VAccess::READWRITE};
-            argsp->AstNode::addNext(new AstText{fl, ".randomize(__Vm_rng)"});
-            AstCExpr* const newp = new AstCExpr{fl, argsp};
-            newp->dtypep(dtypep);
-            return newp;
-        } else {
-            return new AstRandRNG{fl, dtypep};
+            AstCExpr* const cexprp = new AstCExpr{fl};
+            cexprp->add(new AstVarRef{fl, randcVarp, VAccess::READWRITE});
+            cexprp->add(".randomize(__Vm_rng)");
+            cexprp->dtypep(dtypep);
+            return cexprp;
         }
+
+        return new AstRandRNG{fl, dtypep};
     }
     void addPrePostCall(AstClass* const classp, AstFunc* const funcp, const string& name) {
         if (AstTask* userFuncp = VN_CAST(m_memberMap.findMember(classp, name), Task)) {
@@ -2153,14 +2151,12 @@ class RandomizeVisitor final : public VNVisitor {
             randomizep->addStmtsp(setupTaskRefp->makeStmt());
 
             AstNodeModule* const genModp = VN_AS(genp->user2p(), NodeModule);
-            AstVarRef* const genRefp = new AstVarRef{fl, genModp, genp, VAccess::READWRITE};
-            AstNode* const argsp = genRefp;
-            argsp->addNext(new AstText{fl, ".next(__Vm_rng)"});
 
-            AstNodeExpr* const solverCallp = new AstCExpr{fl, argsp};
+            AstCExpr* const solverCallp = new AstCExpr{fl};
             solverCallp->dtypeSetBit();
+            solverCallp->add(new AstVarRef{fl, genModp, genp, VAccess::READWRITE});
+            solverCallp->add(".next(__Vm_rng)");
             beginValp = solverCallp;
-
             if (randModeVarp) {
                 AstNodeModule* const randModeClassp = VN_AS(randModeVarp->user2p(), Class);
                 AstNodeFTask* const newp
@@ -2434,11 +2430,10 @@ class RandomizeVisitor final : public VNVisitor {
         }
 
         // Call the solver and set return value
-        AstVarRef* const randNextp
-            = new AstVarRef{nodep->fileline(), localGenp, VAccess::READWRITE};
-        randNextp->AstNode::addNext(new AstText{nodep->fileline(), ".next(__Vm_rng)"});
-        AstNodeExpr* const solverCallp = new AstCExpr{nodep->fileline(), randNextp};
+        AstCExpr* const solverCallp = new AstCExpr{nodep->fileline()};
         solverCallp->dtypeSetBit();
+        solverCallp->add(new AstVarRef{nodep->fileline(), localGenp, VAccess::READWRITE});
+        solverCallp->add(".next(__Vm_rng)");
         randomizeFuncp->addStmtsp(new AstAssign{
             nodep->fileline(),
             new AstVarRef{nodep->fileline(), VN_AS(randomizeFuncp->fvarp(), Var), VAccess::WRITE},

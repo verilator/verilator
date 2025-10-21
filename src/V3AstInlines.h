@@ -154,18 +154,6 @@ AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr*
     m_displayType = dispType;
 }
 
-AstCStmt::AstCStmt(FileLine* fl, const string& textStmt)
-    : ASTGEN_SUPER_CStmt(fl) {
-    addExprsp(new AstText{fl, textStmt, true});
-}
-
-AstCExpr::AstCExpr(FileLine* fl, const string& textStmt, int setwidth)
-    : ASTGEN_SUPER_CExpr(fl)
-    , m_pure{true} {
-    addExprsp(new AstText{fl, textStmt, true});
-    if (setwidth) dtypeSetLogicSized(setwidth, VSigning::UNSIGNED);
-}
-
 bool AstVar::sameNode(const AstNode* samep) const {
     const AstVar* const asamep = VN_DBG_AS(samep, Var);
     return m_name == asamep->m_name && varType() == asamep->varType();

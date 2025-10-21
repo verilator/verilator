@@ -382,9 +382,18 @@ class SubstVisitor final : public VNVisitor {
         }
     }
 
+    // Do not optimzie across user $c input
+    void visit(AstCExprUser* nodep) override {
+        m_ops = SUBST_MAX_OPS_NA;
+        iterateChildren(nodep);
+    }
+    void visit(AstCStmtUser* nodep) override {
+        m_ops = SUBST_MAX_OPS_NA;
+        iterateChildren(nodep);
+    }
+
     void visit(AstNode* nodep) override {
         ++m_ops;
-        if (!nodep->isSubstOptimizable()) m_ops = SUBST_MAX_OPS_NA;
         iterateChildren(nodep);
     }
 

@@ -900,8 +900,6 @@ public:
     virtual bool isPure() { return true; }
     // Iff isPure on current node and any nextp()
     bool isPureAndNext() { return isPure() && (!nextp() || nextp()->isPure()); }
-    // Else a AstTime etc that can't be substituted out
-    virtual bool isSubstOptimizable() const { return true; }
     // An event control, delay, wait, etc.
     virtual bool isTimingControl() const { return false; }
     // isUnlikely handles $stop or similar statement which means an above IF
@@ -1556,11 +1554,13 @@ AstNode* VNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
 // For precise details please read the generated macros.
 #include "V3Ast__gen_macros.h"
 
-// AstNode subclasses
+// AstNode subclasses - dependency order matters, so fmt off
+// clang-format off
 #include "V3AstNodeDType.h"
-#include "V3AstNodeExpr.h"
 #include "V3AstNodeOther.h"
+#include "V3AstNodeExpr.h"
 #include "V3AstNodeStmt.h"
+// clang-format on
 
 // Inline function definitions need to go last
 #include "V3AstInlines.h"

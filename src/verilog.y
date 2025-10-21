@@ -4103,8 +4103,15 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
         |       yD_DUMPON parenE                        { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::ON}; }
         |       yD_DUMPON '(' expr ')'                  { $$ = new AstDumpCtl{$<fl>1, VDumpCtlType::ON}; DEL($3); }
         //
-        |       yD_C '(' cStrList ')'                   { $$ = (v3Global.opt.ignc() ? nullptr : new AstUCStmt{$1, $3}); }
-        |       yD_SDF_ANNOTATE '(' exprEListE ')'      { $$ = nullptr; $1->v3warn(SPECIFYIGN, "Ignoring unsupported: $sdf_annotate"); DEL($3); }
+        |       yD_C '(' cStrList ')' {
+                    AstCStmtUser* cstmtp = nullptr;
+                    if (!v3Global.opt.ignc()) {
+                        cstmtp = new AstCStmtUser{$1, true};
+                        cstmtp->add($3);
+                    }
+                    $$ = cstmtp;
+                }
+|       yD_SDF_ANNOTATE '(' exprEListE ')'      { $$ = nullptr; $1->v3warn(SPECIFYIGN, "Ignoring unsupported: $sdf_annotate"); DEL($3); }
         |       yD_STACKTRACE parenE                    { $$ = new AstStackTraceT{$1}; }
         |       yD_SYSTEM '(' expr ')'                  { $$ = new AstSystemT{$1, $3}; }
         //
@@ -4263,7 +4270,14 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
 system_f_call<nodeExprp>:           // IEEE: system_tf_call (as func)
                 yaD_PLI systemDpiArgsE                  { $$ = new AstFuncRef{$<fl>1, *$1, $2}; VN_CAST($$, FuncRef)->pli(true); }
         //
-        |       yD_C '(' cStrList ')'                   { $$ = (v3Global.opt.ignc() ? nullptr : new AstUCFunc{$1, $3}); }
+        |       yD_C '(' cStrList ')' {
+                    AstCExprUser* cexprp = nullptr;
+                    if (!v3Global.opt.ignc()) {
+                        cexprp = new AstCExprUser{$1};
+                        cexprp->add($3);
+                    }
+                    $$ = cexprp;
+                }
         |       yD_CAST '(' expr ',' expr ')'           { $$ = new AstCastDynamic{$1, $5, $3}; }
         |       yD_STACKTRACE parenE                    { $$ = new AstStackTraceF{$1}; }
         |       yD_SYSTEM  '(' expr ')'                 { $$ = new AstSystemF{$1, $3}; }
@@ -5192,7 +5206,7 @@ pexprScope<nodeExprp>:  // exprScope, For use by property_expr
 // For $c("foo","bar") we want "bar" as a string, not a Verilog integer.
 exprStrText<nodep>:
                 exprNoStr                               { $$ = $1; }
-        |       strAsText                               { $$ = $1; }
+        |       yaSTRING                                { $$ = new AstText{$<fl>1, GRAMMARP->textQuoted($<fl>1, *$1)}; }
         ;
 
 exprTypeCompare<nodeExprp>:
@@ -6078,10 +6092,6 @@ strAsInt<nodeExprp>:
 
 strAsIntIgnore<nodeExprp>:          // strAsInt, but never matches for when expr shouldn't parse strings
                 yaSTRING__IGNORE                        { $$ = nullptr; yyerror("Impossible token"); }
-        ;
-
-strAsText<nodep>:
-                yaSTRING                                { $$ = GRAMMARP->createTextQuoted($<fl>1, *$1); }
         ;
 
 endLabelE<strp>:

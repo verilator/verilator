@@ -275,11 +275,6 @@ class HasherVisitor final : public VNVisitorConst {
     void visit(AstNodeStmt* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, []() {});
     }
-    void visit(AstNodeText* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
-            m_hash += nodep->text();
-        });
-    }
     void visit(AstNodeCCall* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
             iterateConstNull(nodep->funcp());
@@ -534,6 +529,30 @@ class HasherVisitor final : public VNVisitorConst {
             m_hash += nodep->name();
             m_hash += nodep->pinNum();
         });
+    }
+    void visit(AstText* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
+            m_hash += nodep->text();
+        });
+    }
+    void visit(AstTextBlock* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
+            m_hash += nodep->prefix();
+            m_hash += nodep->separator();
+            m_hash += nodep->suffix();
+        });
+    }
+    void visit(AstCStmt* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, []() {});
+    }
+    void visit(AstCStmtUser* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, []() {});
+    }
+    void visit(AstCExpr* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
+    }
+    void visit(AstCExprUser* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
     }
 
 public:

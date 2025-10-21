@@ -672,15 +672,15 @@ class TaskVisitor final : public VNVisitor {
         if (needSyms) ccallp->argTypes("vlSymsp");
 
         if (refp->taskp()->dpiContext()) {
-            // __Vscopep
             AstScopeName* const snp = refp->scopeNamep()->unlinkFrBack();
             UASSERT_OBJ(snp, refp, "Missing scoping context");
+            FileLine* const flp = refp->fileline();
+            // __Vscopep
             ccallp->addArgsp(snp);
             // __Vfilenamep
-            ccallp->addArgsp(
-                new AstCExpr{refp->fileline(), "\"" + refp->fileline()->filenameEsc() + "\"", 64});
+            ccallp->addArgsp(new AstCExpr{flp, "\"" + flp->filenameEsc() + "\"", 64});
             // __Vlineno
-            ccallp->addArgsp(new AstConst(refp->fileline(), refp->fileline()->lineno()));
+            ccallp->addArgsp(new AstConst(flp, flp->lineno()));
         }
 
         // Create connections
@@ -802,11 +802,10 @@ class TaskVisitor final : public VNVisitor {
 
             // Extract a scalar from DPI temporary var that is scalar or 1D array
             if (useSvVec) {
-                const std::string offset = std::to_string(i * widthWords);
-                AstCStmt* const cstmtp = new AstCStmt{flp, nullptr};
-                cstmtp->addExprsp(new AstText{flp, cvt});
-                cstmtp->addExprsp(lhsp);
-                cstmtp->addExprsp(new AstText{flp, ", " + rhsName + " + " + offset + ");"});
+                AstCStmt* const cstmtp = new AstCStmt{flp};
+                cstmtp->add(cvt);
+                cstmtp->add(lhsp);
+                cstmtp->add(", " + rhsName + " + " + std::to_string(i * widthWords) + ");");
                 stmtsp = AstNode::addNext(stmtsp, cstmtp);
             } else {
                 const std::string elem = strides.empty() ? "" : "[" + std::to_string(i) + "]";
@@ -818,120 +817,97 @@ class TaskVisitor final : public VNVisitor {
         return stmtsp;
     }
 
-    AstCFunc* makeDpiExportDispatcher(AstNodeFTask* nodep, AstVar* rtnvarp) {
+    // Create dispatch wrapper
+    AstCFunc* makeDpiExportDispatcher(AstNodeFTask* const nodep, AstVar* const rtnvarp) {
         // Verilog name has __ conversion and other tricks, to match DPI C code, back that out
-        const string name = AstNode::prettyName(nodep->cname());
-        checkLegalCIdentifier(nodep, name);
+        FileLine* const flp = nodep->fileline();
+        const std::string cname = AstNode::prettyName(nodep->cname());
+        checkLegalCIdentifier(nodep, cname);
         const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
-        AstCFunc* const funcp = new AstCFunc{nodep->fileline(), name, m_scopep,
-                                             (rtnvarp ? rtnvarp->dpiArgType(true, true) : "")};
+        const std::string rtnType = rtnvarp ? rtnvarp->dpiArgType(true, true) : "";
+        // The function we are building
+        AstCFunc* const funcp = new AstCFunc{flp, cname, m_scopep, rtnType};
         funcp->dpiExportDispatcher(true);
         funcp->dpiContext(nodep->dpiContext());
         funcp->dontCombine(true);
         funcp->entryPoint(true);
         funcp->isStatic(true);
         funcp->protect(false);
-        funcp->cname(name);
+        funcp->cname(cname);
         // Add DPI Export to top, since it's a global function
         m_topScopep->scopep()->addBlocksp(funcp);
 
-        {  // Create dispatch wrapper
-            // Note this function may dispatch to myfunc on a different class.
-            // Thus we need to be careful not to assume a particular function layout.
-            //
-            // Func numbers must be the same for each function, even when there are
-            // completely different models with the same function name.
-            // Thus we can't just use a constant computed at Verilation time.
-            // We could use 64-bits of a MD5/SHA hash rather than a string here,
-            // but the compare is only done on first call then memoized, so
-            // it's not worth optimizing.
+        // Note this function may dispatch on a different class.
+        // Thus we need to be careful not to assume a particular function layout.
+        //
+        // Func numbers must be the same for each function, even when there are
+        // completely different models with the same function name.
+        // Thus we can't just use a constant computed at Verilation time.
+        // We could use 64-bits of a MD5/SHA hash rather than a string here,
+        // but the compare is only done on first call then memoized, so
+        // it's not worth optimizing.
 
-            // Static doesn't need save-restore as if below will re-fill proper value
-            funcp->addStmtsp(new AstCStmt{nodep->fileline(), "static int __Vfuncnum = -1;"});
-            // First time init (faster than what the compiler does if we did a singleton
-            funcp->addStmtsp(new AstCStmt{
-                nodep->fileline(),
-                "if (VL_UNLIKELY(__Vfuncnum == -1)) __Vfuncnum = Verilated::exportFuncNum(\""
-                    + nodep->cname() + "\");"});
-            // If the find fails, it will throw an error
-            funcp->addStmtsp(
-                new AstCStmt{nodep->fileline(),
-                             "const VerilatedScope* const __Vscopep = Verilated::dpiScope();"});
-            // If dpiScope is fails and is null; the exportFind function throws and error
-            // If __Vcb is null the exportFind function throws and error
-            const string cbtype
-                = VIdProtect::protect(v3Global.opt.prefix() + "__Vcb_" + nodep->cname() + "_t");
-            funcp->addStmtsp(
-                new AstCStmt{nodep->fileline(),
-                             cbtype + " __Vcb = (" + cbtype + ")("  // Can't use static_cast
-                                 + "VerilatedScope::exportFind(__Vscopep, __Vfuncnum));"});
-        }
+        // Peramble - fetch the exproted function from the scope table
+        AstCStmt* const prep = new AstCStmt{flp};
+        funcp->addStmtsp(prep);
+        // Static doesn't need save-restore as if below will re-fill proper value
+        prep->add("static int __Vfuncnum = -1;\n");
+        // First time init (faster than what the compiler does if we did a singleton
+        prep->add("if (VL_UNLIKELY(__Vfuncnum == -1)) {\n");
+        prep->add("__Vfuncnum = Verilated::exportFuncNum(\"" + nodep->cname() + "\");\n");
+        prep->add("}\n");
+        // If the find fails, it will throw an error
+        prep->add("const VerilatedScope* const __Vscopep = Verilated::dpiScope();\n");
+        // If 'dpiScope()' fails and '__Vscopep' is null; the exportFind function throws an error
+        // If __Vcb is null the exportFind function throws and error
+        const std::string cbtype
+            = VIdProtect::protect(v3Global.opt.prefix() + "__Vcb_" + nodep->cname() + "_t");
+        prep->add(cbtype + " __Vcb = reinterpret_cast<" + cbtype
+                  + ">(VerilatedScope::exportFind(__Vscopep, __Vfuncnum));");
 
-        // Convert input/inout DPI arguments to Internal types
-        string args;
-        args += ("(" + EmitCUtil::symClassName()
-                 + "*)(__Vscopep->symsp())");  // Upcast w/o overhead
-        AstNode* argnodesp = nullptr;
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
-                if (portp->isIO() && !portp->isFuncReturn() && portp != rtnvarp) {
-                    // No createDpiTemp; we make a real internal variable instead
-                    // SAME CODE BELOW
-                    args += ", ";
-                    if (args != "") {
-                        argnodesp = argnodesp->addNext(new AstText{portp->fileline(), args, true});
-                        args = "";
-                    }
-                    AstVarScope* const outvscp
-                        = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
-                    // No information exposure; is already visible in import/export func template
-                    outvscp->varp()->protect(false);
-                    portp->protect(false);
-                    AstVarRef* const refp
-                        = new AstVarRef{portp->fileline(), outvscp,
-                                        portp->isWritable() ? VAccess::WRITE : VAccess::READ};
-                    argnodesp = argnodesp->addNext(refp);
-
-                    if (portp->isNonOutput()) {
-                        std::string frName
-                            = portp->isInout() && portp->basicp()->isDpiPrimitive()
-                                      && portp->dtypep()->skipRefp()->dimensions(false).second == 0
-                                  ? "*"
-                                  : "";
-                        frName += portp->name();
-                        funcp->addStmtsp(createAssignDpiToInternal(outvscp, frName));
-                    }
-                }
-            }
-        }
-
-        if (rtnvarp) {
-            AstVar* const portp = rtnvarp;
-            // SAME CODE ABOVE
-            args += ", ";
-            if (args != "") {
-                argnodesp = argnodesp->addNext(new AstText{portp->fileline(), args, true});
-                args = "";
-            }
-            AstVarScope* const outvscp = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
+        // Convert input/inout DPI arguments to Internal types, and construct the call
+        AstCStmt* const callp = new AstCStmt{flp};
+        const auto addFuncArg = [&](AstVar* portp) -> AstVarScope* {
+            // No createDpiTemp; we make a real internal variable instead
+            AstVarScope* const vscp = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
             // No information exposure; is already visible in import/export func template
-            outvscp->varp()->protect(false);
-            AstVarRef* const refp = new AstVarRef{
-                portp->fileline(), outvscp, portp->isWritable() ? VAccess::WRITE : VAccess::READ};
-            argnodesp = argnodesp->addNext(refp);
+            vscp->varp()->protect(false);
+            portp->protect(false);
+            // Add argument to call
+            const VAccess access = portp->isWritable() ? VAccess::WRITE : VAccess::READ;
+            callp->add(", ");
+            callp->add(new AstVarRef{portp->fileline(), vscp, access});
+            return vscp;
+        };
+        // Call callback
+        callp->add("(*__Vcb)(");
+        // First argument is the Syms
+        callp->add("(" + EmitCUtil::symClassName() + "*)(__Vscopep->symsp())");
+        // Add function arguments
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            AstVar* const portp = VN_CAST(stmtp, Var);
+            if (!portp) continue;
+            if (!portp->isIO()) continue;
+            if (portp->isFuncReturn()) continue;
+            if (portp == rtnvarp) continue;  // Handled below
+            // Add argument to call
+            AstVarScope* const outvscp = addFuncArg(portp);
+            if (!portp->isNonOutput()) continue;
+            // Convert input/inout arguments to dpi type
+            const std::string deref
+                = portp->isInout()  //
+                          && portp->basicp()->isDpiPrimitive()  //
+                          && portp->dtypep()->skipRefp()->dimensions(false).second == 0
+                      ? "*"
+                      : "";
+            funcp->addStmtsp(createAssignDpiToInternal(outvscp, deref + portp->name()));
         }
-
-        {  // Call the user function
-            // Add the variables referenced as VarRef's so that lifetime analysis
-            // doesn't rip up the variables on us
-            args += ");\n";
-            AstCStmt* const newp = new AstCStmt{nodep->fileline(), "(*__Vcb)("};
-            newp->addExprsp(argnodesp);
-            VL_DANGLING(argnodesp);
-            newp->addExprsp(new AstText{nodep->fileline(), args, true});
-            funcp->addStmtsp(newp);
-        }
-
+        // Return value argument goes last
+        if (rtnvarp) addFuncArg(rtnvarp);
+        // Close statement
+        callp->add(");");
+        // Call the user function
+        funcp->addStmtsp(callp);
         // Convert output/inout arguments back to internal type
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
@@ -940,13 +916,12 @@ class TaskVisitor final : public VNVisitor {
                 }
             }
         }
-
+        // Convert return value
         if (rtnvarp) {
             funcp->addStmtsp(createDpiTemp(rtnvarp, ""));
             funcp->addStmtsp(createAssignInternalToDpi(rtnvarp, false, tmpSuffixp, ""));
-            string stmt = "return " + rtnvarp->name();  // TODO use AstCReturn?
-            stmt += rtnvarp->basicp()->isDpiPrimitive() ? ";"s : "[0];"s;
-            funcp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
+            const std::string index = rtnvarp->basicp()->isDpiPrimitive() ? "" : "[0]";
+            funcp->addStmtsp(new AstCStmt{flp, "return " + rtnvarp->name() + index + ";"});
         }
         if (!makePortList(nodep, funcp)) return nullptr;
         return funcp;
@@ -1114,17 +1089,23 @@ class TaskVisitor final : public VNVisitor {
         }
 
         {  // Call the imported function
-            if (rtnvscp) {  // isFunction will no longer work as we unlinked the return var
-                cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), tmpSuffixp));
-                string stmt = rtnvscp->varp()->name();
-                stmt += tmpSuffixp;
-                stmt += rtnvscp->varp()->basicp()->isDpiPrimitive() ? " = " : "[0] = ";
-                cfuncp->addStmtsp(new AstText{nodep->fileline(), stmt, /* tracking: */ true});
-            }
             AstCCall* const callp = new AstCCall{nodep->fileline(), dpiFuncp};
             callp->dtypeSetVoid();
             callp->argTypes(args);
-            cfuncp->addStmtsp(callp->makeStmt());
+            if (rtnvscp) {
+                // If it has a return value, capture it
+                cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), tmpSuffixp));
+                const std::string sel = rtnvscp->varp()->basicp()->isDpiPrimitive() ? "" : "[0]";
+                AstCStmt* const cstmtp = new AstCStmt{nodep->fileline()};
+                cstmtp->add(rtnvscp->varp()->name() + tmpSuffixp + sel);  // LHS
+                cstmtp->add(" = ");
+                cstmtp->add(callp);  // RHS
+                cstmtp->add(";");
+                cfuncp->addStmtsp(cstmtp);
+            } else {
+                // Othervise just call it
+                cfuncp->addStmtsp(callp->makeStmt());
+            }
         }
 
         // Convert output/inout arguments back to internal type
@@ -1515,8 +1496,8 @@ class TaskVisitor final : public VNVisitor {
                 lambdap->stmtsp()->addHereThisAsNext(newvarp);
                 lambdap->hasResult(false);
 
-                // Add return statement
-                AstCExpr* const exprp = new AstCExpr{nodep->fileline(), varp->name(), 0};
+                // Add return statement - TODO: Why not VarRef(outvscp)?
+                AstCExpr* const exprp = new AstCExpr{nodep->fileline(), varp->name()};
                 exprp->dtypeSetString();
                 lambdap->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
             }
