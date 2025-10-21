@@ -846,15 +846,6 @@ void AstNode::addHereThisAsNext(AstNode* newp) {
     debugTreeChange(this, "-addHereThisAsNext: ", __LINE__, true);
 }
 
-void AstNode::swapWith(AstNode* bp) {
-    VNRelinker aHandle;
-    VNRelinker bHandle;
-    this->unlinkFrBack(&aHandle);
-    bp->unlinkFrBack(&bHandle);
-    aHandle.relink(bp);
-    bHandle.relink(this);
-}
-
 //======================================================================
 // Clone
 

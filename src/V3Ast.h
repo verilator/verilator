@@ -822,7 +822,6 @@ public:
     AstNode* unlinkFrBack(VNRelinker* linkerp = nullptr);
     // Unlink this from whoever points to it, keep entire next list with unlinked node
     AstNode* unlinkFrBackWithNext(VNRelinker* linkerp = nullptr);
-    void swapWith(AstNode* bp);
     void relink(VNRelinker* linkerp);  // Generally use linker->relink() instead
     void cloneRelinkNode() { cloneRelink(); }
 
