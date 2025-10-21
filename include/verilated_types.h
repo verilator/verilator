@@ -1229,8 +1229,8 @@ public:
         return out;
     }
     template <typename T_Func>
-    T_Value r_or(T_Func with_func) const {
-        T_Value out = T_Value(0);
+    WithFuncReturnType<T_Func> r_or(T_Func with_func) const {
+        WithFuncReturnType<T_Func> out = WithFuncReturnType<T_Func>(0);
         for (const auto& i : m_map) out |= with_func(i.first, i.second);
         return out;
     }
@@ -1570,8 +1570,9 @@ public:
         return out;
     }
     template <typename T_Func>
-    T_Value r_sum(T_Func with_func) const {
-        T_Value out(0);  // Type must have assignment operator
+    WithFuncReturnType<T_Func> r_sum(T_Func with_func) const {
+        WithFuncReturnType<T_Func> out
+            = WithFuncReturnType<T_Func>(0);  // Type must have assignment operator
         for (const auto& i : m_storage) out += with_func(0, i);
         return out;
     }
@@ -1581,8 +1582,8 @@ public:
         return out;
     }
     template <typename T_Func>
-    T_Value r_product(T_Func with_func) const {
-        T_Value out = T_Value(1);
+    WithFuncReturnType<T_Func> r_product(T_Func with_func) const {
+        WithFuncReturnType<T_Func> out = WithFuncReturnType<T_Func>(1);
         for (const auto& i : m_storage) out *= with_func(0, i);
         return out;
     }
@@ -1593,8 +1594,8 @@ public:
         return out;
     }
     template <typename T_Func>
-    T_Value r_and(T_Func with_func) const {
-        T_Value out = ~T_Value(0);
+    WithFuncReturnType<T_Func> r_and(T_Func with_func) const {
+        WithFuncReturnType<T_Func> out = ~WithFuncReturnType<T_Func>(0);
         for (const auto& i : m_storage) out &= with_func(0, i);
         return out;
     }
@@ -1604,8 +1605,8 @@ public:
         return out;
     }
     template <typename T_Func>
-    T_Value r_or(T_Func with_func) const {
-        T_Value out = T_Value(0);
+    WithFuncReturnType<T_Func> r_or(T_Func with_func) const {
+        WithFuncReturnType<T_Func> out = WithFuncReturnType<T_Func>(0);
         for (const auto& i : m_storage) out |= with_func(0, i);
         return out;
     }
@@ -1615,8 +1616,8 @@ public:
         return out;
     }
     template <typename T_Func>
-    T_Value r_xor(T_Func with_func) const {
-        T_Value out = T_Value(0);
+    WithFuncReturnType<T_Func> r_xor(T_Func with_func) const {
+        WithFuncReturnType<T_Func> out = WithFuncReturnType<T_Func>(0);
         for (const auto& i : m_storage) out ^= with_func(0, i);
         return out;
     }

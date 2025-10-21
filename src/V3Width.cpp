@@ -3972,6 +3972,8 @@ class WidthVisitor final : public VNVisitor {
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
         } else if (const AstNodeSel* const ichildp = VN_CAST(childp, NodeSel)) {
             methodCallLValueRecurse(nodep, ichildp->fromp(), access);
+        } else if (VN_IS(childp, LambdaArgRef)) {
+            // NOP
         } else {
             UINFO(1, "    Related node: " << childp);
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Non-variable on LHS of built-in method '"

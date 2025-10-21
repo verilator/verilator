@@ -735,7 +735,9 @@ public:
         if (auto* const argrefp = nodep->valueArgRefp()) {
             putnbs(argrefp, argrefp->dtypep()->cType(argrefp->nameProtect(), false, false));
         }
-        puts(") {\n");
+        puts(") -> ");
+        putnbs(nodep, nodep->dtypep()->cType("", false, false));
+        puts(" {\n");
         VL_RESTORER(m_createdScopeHash);
         iterateAndNextConstNull(nodep->exprp());
         puts("}\n");

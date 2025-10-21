@@ -1013,7 +1013,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     }
     void visit(AstTypeTable*) override {}  // FindVisitor::
     void visit(AstConstPool*) override {}  // FindVisitor::
-    void visit(AstIfaceRefDType* nodep) override {
+    void visit(AstIfaceRefDType* nodep) override {  // FindVisitor::
         if (m_statep->forPrimary() && nodep->isVirtual() && nodep->ifacep()
             && !nodep->ifacep()->user3()) {
             m_virtIfaces.push_back(nodep->ifacep());
@@ -1872,18 +1872,16 @@ class LinkDotFindVisitor final : public VNVisitor {
         // Symbol table needs nodep->name() as the index variable's name
         // Iteration will pickup the AstVar we made under AstWith
         VL_RESTORER(m_curSymp);
-        {
-            ++m_modWithNum;
-            m_curSymp = m_statep->insertBlock(m_curSymp, "__Vwith" + cvtToStr(m_modWithNum), nodep,
-                                              m_classOrPackagep);
-            m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
-            UASSERT_OBJ(nodep->indexArgRefp(), nodep, "Missing lambda argref");
-            UASSERT_OBJ(nodep->valueArgRefp(), nodep, "Missing lambda argref");
-            // Insert argref's name into symbol table
-            m_statep->insertSym(m_curSymp, nodep->valueArgRefp()->name(), nodep->valueArgRefp(),
-                                nullptr);
-            iterateChildren(nodep);
-        }
+        ++m_modWithNum;
+        m_curSymp = m_statep->insertBlock(m_curSymp, "__Vwith" + cvtToStr(m_modWithNum), nodep,
+                                          m_classOrPackagep);
+        m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
+        UASSERT_OBJ(nodep->indexArgRefp(), nodep, "Missing lambda argref");
+        UASSERT_OBJ(nodep->valueArgRefp(), nodep, "Missing lambda argref");
+        // Insert argref's name into symbol table
+        m_statep->insertSym(m_curSymp, nodep->valueArgRefp()->name(), nodep->valueArgRefp(),
+                            nullptr);
+        iterateChildren(nodep);
     }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }  // FindVisitor::
@@ -1982,7 +1980,7 @@ class LinkDotFindIfaceVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
-    void visit(AstVar* nodep) override {  // FindVisitor::
+    void visit(AstVar* nodep) override {  // FindIfaceVisitor::
         VL_RESTORER(m_declp);
         m_declp = nodep;
         iterateChildren(nodep);
@@ -2304,7 +2302,7 @@ private:
     void visit(AstWith* nodep) override {  // ScopeVisitor::
         VSymEnt* const symp = m_statep->insertBlock(m_modSymp, nodep->name(), nodep, nullptr);
         symp->fallbackp(m_modSymp);
-        // No recursion, we don't want to pick up variables
+        iterateChildren(nodep);
     }
     void visit(AstAlias* nodep) override {  // ScopeVisitor::
         // Track aliases
@@ -2379,7 +2377,7 @@ private:
         // We have stored the link, we don't need these any more
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
-    void visit(AstNodeGen* nodep) override {  // LCOV_EXCL_LINE
+    void visit(AstNodeGen* nodep) override {  // ScopeVisitor::  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Generate constructs should have been reduced out");
     }
     // For speed, don't recurse things that can't have scope
