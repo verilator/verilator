@@ -80,9 +80,15 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
                 dlyShedActivep = activep;
                 continue;
             }
-            m_resumeFuncp->addStmtsp(activep);
+            AstIf* const ifp = V3Sched::createIfFromSenTree(activep->sentreep());
+            ifp->addThensp(activep->stmtsp()->cloneTree(true));
+            m_resumeFuncp->addStmtsp(ifp);
         }
-        if (dlyShedActivep) m_resumeFuncp->addStmtsp(dlyShedActivep);
+        if (dlyShedActivep) {
+            AstIf* const ifp = V3Sched::createIfFromSenTree(dlyShedActivep->sentreep());
+            ifp->addThensp(dlyShedActivep->stmtsp()->cloneTree(true));
+            m_resumeFuncp->addStmtsp(ifp);
+        }
     }
     AstCCall* const callp = new AstCCall{m_resumeFuncp->fileline(), m_resumeFuncp};
     callp->dtypeSetVoid();
@@ -115,22 +121,17 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
                 m_commitFuncp->declPrivate(true);
                 scopeTopp->addBlocksp(m_commitFuncp);
             }
-            AstSenTree* const sentreep = activep->sentreep();
-            FileLine* const flp = sentreep->fileline();
-            // Negate the sensitivity. We will commit only if the event wasn't triggered on the
-            // current iteration
-            auto* const negSentreep = sentreep->cloneTree(false);
-            negSentreep->sensesp()->sensp(
-                new AstLogNot{flp, negSentreep->sensesp()->sensp()->unlinkFrBack()});
-            sentreep->addNextHere(negSentreep);
-            auto* const newactp = new AstActive{flp, "", negSentreep};
             // Create the commit call and put it in the commit function
-            auto* const commitp = new AstCMethodHard{
-                flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, VCMethod::SCHED_COMMIT};
+            AstSenTree* const sentreep = activep->sentreep();
+            AstIf* const ifp = V3Sched::createIfFromSenTree(sentreep);
+            m_commitFuncp->addStmtsp(ifp);
+            FileLine* const flp = sentreep->fileline();
+            AstVarRef* const refp = new AstVarRef{flp, schedulerp, VAccess::READWRITE};
+            AstCMethodHard* const commitp = new AstCMethodHard{flp, refp, VCMethod::SCHED_COMMIT};
             if (resumep->pinsp()) commitp->addPinsp(resumep->pinsp()->cloneTree(false));
             commitp->dtypeSetVoid();
-            newactp->addStmtsp(commitp->makeStmt());
-            m_commitFuncp->addStmtsp(newactp);
+            // We will commit only if the event was *NOT* triggered on the current iteration
+            ifp->addElsesp(commitp->makeStmt());
         }
         // We still haven't created a commit function (no trigger schedulers), return null
         if (!m_commitFuncp) return nullptr;
@@ -200,7 +201,7 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
                 postp->method(VCMethod::SCHED_DO_POST_UPDATES);
                 m_postUpdatesr = AstNode::addNext(m_postUpdatesr, postp->makeStmt());
             }
-            // Put it in an active and put that in the global resume function
+            // Put it in an active
             auto* const activep = new AstActive{flp, "_timing", sentreep};
             activep->addStmtsp(resumep->makeStmt());
             m_lbs.emplace_back(m_scopeTopp, activep);
