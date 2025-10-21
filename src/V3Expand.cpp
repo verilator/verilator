@@ -159,7 +159,7 @@ class ExpandVisitor final : public VNVisitor {
         tmpp->isInternal(true);
         tmpp->noReset(true);
         tmpp->substConstOnly(true);
-        m_funcp->addInitsp(tmpp);
+        m_funcp->addVarsp(tmpp);
         insertBefore(placep, new AstAssign{flp, new AstVarRef{flp, tmpp, VAccess::WRITE}, valuep});
         return tmpp;
     }

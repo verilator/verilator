@@ -372,7 +372,7 @@ class TaskVisitor final : public VNVisitor {
     AstVarScope* createFuncVar(AstCFunc* funcp, const string& name, AstVar* examplep) {
         AstVar* const newvarp = new AstVar{funcp->fileline(), VVarType::BLOCKTEMP, name, examplep};
         newvarp->funcLocal(true);
-        funcp->addInitsp(newvarp);
+        funcp->addVarsp(newvarp);
         AstVarScope* const newvscp = new AstVarScope{funcp->fileline(), m_scopep, newvarp};
         m_scopep->addVarsp(newvscp);
         return newvscp;
@@ -1256,7 +1256,7 @@ class TaskVisitor final : public VNVisitor {
             // Need symbol table
             if (cfuncp->name() == "new") {
                 const string stmt = VIdProtect::protect("_ctor_var_reset") + "(vlSymsp);";
-                cfuncp->addInitsp(new AstCStmt{nodep->fileline(), stmt});
+                cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
             }
         }
         if (nodep->dpiContext()) {
@@ -1272,7 +1272,7 @@ class TaskVisitor final : public VNVisitor {
             // The AstScopeName is really a statement(ish) for tracking, not a function
             snp->dpiExport(true);
             snp->unlinkFrBack();
-            cfuncp->addInitsp(snp);
+            cfuncp->addStmtsp(snp);
         }
 
         // Create list of arguments and move to function
@@ -1332,7 +1332,7 @@ class TaskVisitor final : public VNVisitor {
 
         // Return statement
         if (rtnvscp && nodep->taskPublic()) {
-            cfuncp->addFinalsp(new AstCReturn{
+            cfuncp->addStmtsp(new AstCReturn{
                 rtnvscp->fileline(), new AstVarRef{rtnvscp->fileline(), rtnvscp, VAccess::READ}});
         }
         // Replace variable refs

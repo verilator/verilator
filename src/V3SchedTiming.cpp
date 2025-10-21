@@ -389,7 +389,7 @@ void transformForks(AstNetlist* const netlistp) {
                 nodep->replaceWith(callp->makeStmt());
                 // If we're in a class, add a vlSymsp arg
                 if (m_inClass) {
-                    newfuncp->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;"});
+                    newfuncp->addStmtsp(new AstCStmt{flp, "VL_KEEP_THIS;"});
                     newfuncp->argTypes(EmitCUtil::symClassVar());
                     callp->argTypes("vlSymsp");
                 }
@@ -398,11 +398,11 @@ void transformForks(AstNetlist* const netlistp) {
                 if (nodep->needProcess()) {
                     newfuncp->setNeedProcess();
                     newfuncp->addStmtsp(
-                        new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);"});
+                        new AstCStmt{flp, "vlProcess->state(VlProcess::FINISHED);"});
                 }
                 if (!m_beginHasAwaits) {
                     // co_return at the end (either that or a co_await is required in a coroutine
-                    newfuncp->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;"});
+                    newfuncp->addStmtsp(new AstCStmt{flp, "co_return;"});
                 } else {
                     m_awaitMoved = true;
                 }

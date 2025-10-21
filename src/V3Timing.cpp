@@ -836,7 +836,14 @@ class TimingControlVisitor final : public VNVisitor {
 
         nodep->rtnType("VlCoroutine");
         // If in a class, create a shared pointer to 'this'
-        if (m_classp) nodep->addInitsp(new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;"});
+        if (m_classp) {
+            AstCStmt* const cstmtp = new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;"};
+            if (AstNode* const stmtsp = nodep->stmtsp()) {
+                stmtsp->addHereThisAsNext(cstmtp);
+            } else {
+                nodep->addStmtsp(cstmtp);
+            }
+        }
         AstNode* firstCoStmtp = nullptr;  // First co_* statement in the function
         nodep->exists([&](AstCAwait* const awaitp) -> bool { return (firstCoStmtp = awaitp); });
         if (!firstCoStmtp) {

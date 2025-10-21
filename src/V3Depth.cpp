@@ -52,7 +52,7 @@ class DepthVisitor final : public VNVisitor {
         AstVar* const varp = new AstVar{nodep->fileline(), VVarType::STMTTEMP,
                                         m_tempNames.get(nodep), nodep->dtypep()};
         if (m_cfuncp) {
-            m_cfuncp->addInitsp(varp);
+            m_cfuncp->addVarsp(varp);
         } else if (m_mtaskbodyp) {
             m_mtaskbodyp->addStmtsFirstp(varp);
         } else {

@@ -164,11 +164,17 @@ class ClockVisitor final : public VNVisitor {
 
     //========== Move sampled assignments
     void visit(AstVarScope* nodep) override {
-        AstVar* varp = nodep->varp();
+        AstVar* const varp = nodep->varp();
         if (varp->valuep() && varp->name().substr(0, strlen("__Vsampled")) == "__Vsampled") {
-            m_evalp->addInitsp(new AstAssign{
-                nodep->fileline(), new AstVarRef{nodep->fileline(), nodep, VAccess::WRITE},
-                VN_AS(varp->valuep()->unlinkFrBack(), NodeExpr)});
+            FileLine* const flp = nodep->fileline();
+            AstNodeExpr* const rhsp = VN_AS(varp->valuep()->unlinkFrBack(), NodeExpr);
+            AstVarRef* const lhsp = new AstVarRef{flp, nodep, VAccess::WRITE};
+            AstAssign* const assignp = new AstAssign{flp, lhsp, rhsp};
+            if (AstNode* const stmtsp = m_evalp->stmtsp()) {
+                stmtsp->addHereThisAsNext(assignp);
+            } else {
+                m_evalp->addStmtsp(assignp);
+            }
             varp->direction(VDirection::NONE);  // Restore defaults
             varp->primaryIO(false);
         }

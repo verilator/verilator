@@ -459,10 +459,9 @@ class AstCFunc final : public AstNode {
     // C++ function
     // Parents:  MODULE/SCOPE
     // If adding node accessors, see below emptyBody
-    // @astgen op1 := argsp : List[AstNode]
-    // @astgen op2 := initsp : List[AstNode]
+    // @astgen op1 := argsp : List[AstVar]  // Argument (and return value) variables
+    // @astgen op2 := varsp : List[AstVar]  // Local variables
     // @astgen op3 := stmtsp : List[AstNode]
-    // @astgen op4 := finalsp : List[AstNode]
     //
     // @astgen ptr := m_scopep : Optional[AstScope]  // Scope that function is under
     string m_name;
@@ -599,9 +598,7 @@ public:
     bool recursive() const { return m_recursive; }
     void cost(int cost) { m_cost = cost; }
     // Special methods
-    bool emptyBody() const {
-        return !keepIfEmpty() && !argsp() && !initsp() && !stmtsp() && !finalsp();
-    }
+    bool emptyBody() const { return !keepIfEmpty() && !argsp() && !varsp() && !stmtsp(); }
 };
 class AstCLocalScope final : public AstNode {
     // Pack statements into an unnamed scope when generating C++
