@@ -50,15 +50,15 @@ void processDomains(AstNetlist* netlistp,  //
                     const std::string& tag,  //
                     const ExternalDomainsProvider& externalDomains);
 
-std::vector<AstActive*> createSerial(OrderGraph& orderGraph,  //
-                                     const std::string& tag,  //
-                                     const TrigToSenMap& trigToSenMap,  //
-                                     bool slow);
+AstNodeStmt* createSerial(OrderGraph& orderGraph,  //
+                          const std::string& tag,  //
+                          const TrigToSenMap& trigToSenMap,  //
+                          bool slow);
 
-AstExecGraph* createParallel(OrderGraph& orderGraph,  //
-                             const std::string& tag,  //
-                             const TrigToSenMap& trigToSenMap,  //
-                             bool slow);
+AstNodeStmt* createParallel(OrderGraph& orderGraph,  //
+                            const std::string& tag,  //
+                            const TrigToSenMap& trigToSenMap,  //
+                            bool slow);
 
 };  // namespace V3Order
 

@@ -461,7 +461,7 @@ static void process() {
             V3Sched::schedule(v3Global.rootp());
             V3Sched::transformForks(v3Global.rootp());
 
-            // Convert sense lists into IF statements.
+            // Post scheduling transformations - TODO: this should at least be renamed
             V3Clock::clockAll(v3Global.rootp());
 
             // Cleanup any dly vars or other temps that are simple assignments

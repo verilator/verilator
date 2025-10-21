@@ -213,6 +213,9 @@ public:
     VirtIfaceTriggers& operator=(VirtIfaceTriggers&&) = default;
 };
 
+// Create an AstIf conditional on the given AstSenTree being triggered
+AstIf* createIfFromSenTree(AstSenTree* senTreep);
+
 // Creates trigger vars for signals driven via virtual interfaces
 VirtIfaceTriggers makeVirtIfaceTriggers(AstNetlist* nodep) VL_MT_DISABLED;
 

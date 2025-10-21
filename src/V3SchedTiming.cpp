@@ -80,9 +80,18 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
                 dlyShedActivep = activep;
                 continue;
             }
-            m_resumeFuncp->addStmtsp(activep);
+            AstIf* const ifp = V3Sched::createIfFromSenTree(activep->sentreep());
+            ifp->addThensp(activep->stmtsp()->unlinkFrBackWithNext());
+            m_resumeFuncp->addStmtsp(ifp);
         }
-        if (dlyShedActivep) m_resumeFuncp->addStmtsp(dlyShedActivep);
+        if (dlyShedActivep) {
+            AstIf* const ifp = V3Sched::createIfFromSenTree(dlyShedActivep->sentreep());
+            ifp->addThensp(dlyShedActivep->stmtsp()->unlinkFrBackWithNext());
+            m_resumeFuncp->addStmtsp(ifp);
+        }
+
+        // These are now spent, oispose of now empty AstActive instances
+        m_lbs.deleteActives();
     }
     AstCCall* const callp = new AstCCall{m_resumeFuncp->fileline(), m_resumeFuncp};
     callp->dtypeSetVoid();
@@ -150,15 +159,7 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
             FileLine* const flp = senTreep->fileline();
 
             // Create an 'AstIf' sensitive to the suspending triggers
-            AstNodeExpr* senEqnp = nullptr;
-            for (AstSenItem* senp = senTreep->sensesp(); senp;
-                 senp = VN_AS(senp->nextp(), SenItem)) {
-                UASSERT_OBJ(senp->edgeType() == VEdgeType::ET_TRUE, senp,
-                            "Should have been lowered");
-                AstNodeExpr* const senOnep = senp->sensp()->cloneTree(false);
-                senEqnp = senEqnp ? new AstOr{senp->fileline(), senEqnp, senOnep} : senOnep;
-            }
-            AstIf* const ifp = new AstIf{flp, senEqnp};
+            AstIf* const ifp = V3Sched::createIfFromSenTree(senTreep);
             m_commitFuncp->addStmtsp(ifp);
 
             // Commit the processes suspended on this sensitivity expression
@@ -234,8 +235,8 @@ class AwaitVisitor final : public VNVisitor {
             postp->method(VCMethod::SCHED_DO_POST_UPDATES);
             m_postUpdatesr = AstNode::addNext(m_postUpdatesr, postp->makeStmt());
         }
-        // Put it in an active and put that in the global resume function
-        auto* const activep = new AstActive{flp, "_timing", sentreep};
+        // Put it in an active
+        AstActive* const activep = new AstActive{flp, "_timing", sentreep};
         activep->addStmtsp(resumep->makeStmt());
         m_lbs.emplace_back(m_scopeTopp, activep);
     }
