@@ -3597,10 +3597,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         m_ds.m_dotSymp = foundp;
                         m_ds.m_dotPos = DP_SCOPE;
                         UINFO(9, indent() << " cell -> iface varref " << foundp->nodep());
-                        AstNodeVarRef* newp;
+                        AstNodeExpr* newp;
                         if (m_ds.m_dotText != "") {
                             newp = new AstVarXRef{nodep->fileline(), ifaceRefVarp, m_ds.m_dotText,
                                                   VAccess::READ};
+                            if (m_ds.m_unresolvedCell && m_ds.m_unlinkedScopep) {
+                                newp = new AstUnlinkedRef{nodep->fileline(), newp, newp->name(),
+                                                          m_ds.m_unlinkedScopep->unlinkFrBack()};
+                                m_ds.m_unlinkedScopep = nullptr;
+                                m_ds.m_unresolvedCell = false;
+                                m_ds.m_dotText = "";
+                            }
                         } else {
                             newp = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
                         }
