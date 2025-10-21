@@ -121,7 +121,7 @@ public:
                 if (AstUnpackArrayDType* const unpackedp = VN_CAST(m_rdVscp->varp()->dtypep(), UnpackArrayDType)) {
                     std::vector<AstUnpackArrayDType*> dims = unpackedp->unpackDimensions();
                     loopVarScopes.reserve(dims.size());
-                    for (int i = dims.size() - 1; i != 0; i--) {
+                    for (int i = dims.size() - 1; i >= 0; i--) {
                         AstVar* const loopVarp = new AstVar{flp, VVarType::MODULETEMP, m_rdVscp->varp()->name() + "__VwhileIter" + std::to_string(i), VFlagBitPacked{}, 32};
                         m_rdVscp->varp()->addNext(loopVarp);
                         AstVarScope* const loopVarScopep = new AstVarScope{flp, m_rdVscp->scopep(), loopVarp};
