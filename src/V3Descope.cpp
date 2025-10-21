@@ -135,9 +135,8 @@ class DescopeVisitor final : public VNVisitor {
                 // Multiple functions under this name, need a wrapper function
                 UINFO(6, "  Wrapping " << name << " multifuncs");
                 AstCFunc* const newfuncp = topFuncp->cloneTree(false);
-                if (newfuncp->initsp()) newfuncp->initsp()->unlinkFrBackWithNext()->deleteTree();
+                if (newfuncp->varsp()) newfuncp->varsp()->unlinkFrBackWithNext()->deleteTree();
                 if (newfuncp->stmtsp()) newfuncp->stmtsp()->unlinkFrBackWithNext()->deleteTree();
-                if (newfuncp->finalsp()) newfuncp->finalsp()->unlinkFrBackWithNext()->deleteTree();
                 newfuncp->name(name);
                 newfuncp->isStatic(false);
                 topFuncp->addNextHere(newfuncp);

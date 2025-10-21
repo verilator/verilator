@@ -473,19 +473,14 @@ public:
             puts("auto& vlSelfRef = std::ref(*vlSelf).get();\n");
         }
 
-        if (nodep->initsp()) {
-            putsDecoration(nodep, "// Init\n");
-            iterateAndNextConstNull(nodep->initsp());
+        if (nodep->varsp()) {
+            putsDecoration(nodep, "// Locals\n");
+            iterateAndNextConstNull(nodep->varsp());
         }
 
         if (nodep->stmtsp()) {
             putsDecoration(nodep, "// Body\n");
             iterateAndNextConstNull(nodep->stmtsp());
-        }
-
-        if (nodep->finalsp()) {
-            putsDecoration(nodep, "// Final\n");
-            iterateAndNextConstNull(nodep->finalsp());
         }
 
         m_usevlSelfRef = false;

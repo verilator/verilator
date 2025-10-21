@@ -512,20 +512,18 @@ class TraceVisitor final : public VNVisitor {
         funcp->isStatic(isTopFunc);
         // Add it to top scope
         m_topScopep->addBlocksp(funcp);
-        const auto addInitStr = [funcp, flp](const string& str) -> void {
-            funcp->addInitsp(new AstCStmt{flp, str});
-        };
         const std::string bufArg
             = v3Global.opt.traceClassBase()
               + "::" + (v3Global.opt.useTraceOffload() ? "OffloadBuffer" : "Buffer") + "* bufp";
         if (isTopFunc) {
             // Top functions
             funcp->argTypes("void* voidSelf, " + bufArg);
-            addInitStr(EmitCUtil::voidSelfAssign(m_topModp));
-            addInitStr(EmitCUtil::symClassAssign());
+            funcp->addStmtsp(new AstCStmt{flp, EmitCUtil::voidSelfAssign(m_topModp)});
+            funcp->addStmtsp(new AstCStmt{flp, EmitCUtil::symClassAssign()});
             // Add global activity check to change dump functions
             if (traceType == VTraceType::CHANGE) {  //
-                addInitStr("if (VL_UNLIKELY(!vlSymsp->__Vm_activity)) return;\n");
+                funcp->addStmtsp(
+                    new AstCStmt{flp, "if (VL_UNLIKELY(!vlSymsp->__Vm_activity)) return;"});
             }
             // Register function
             AstCStmt* const cstmtp = new AstCStmt{flp};
@@ -550,19 +548,23 @@ class TraceVisitor final : public VNVisitor {
             // sub function, hence the VL_ATTR_UNUSED attributes.
             if (traceType != VTraceType::CHANGE) {
                 // Full dump sub function
-                addInitStr("uint32_t* const oldp VL_ATTR_UNUSED = "
-                           "bufp->oldp(vlSymsp->__Vm_baseCode);\n");
+                funcp->addStmtsp(new AstCStmt{flp,  //
+                                              "uint32_t* const oldp VL_ATTR_UNUSED = "
+                                              "bufp->oldp(vlSymsp->__Vm_baseCode);\n"});
             } else {
                 // Change dump sub function
                 if (v3Global.opt.useTraceOffload()) {
-                    addInitStr("const uint32_t base VL_ATTR_UNUSED = "
-                               "vlSymsp->__Vm_baseCode + "
-                               + cvtToStr(baseCode) + ";\n");
-                    addInitStr("(void)bufp;  // Prevent unused variable warning\n");
+                    funcp->addStmtsp(new AstCStmt{flp,  //
+                                                  "const uint32_t base VL_ATTR_UNUSED = "
+                                                  "vlSymsp->__Vm_baseCode + "
+                                                      + cvtToStr(baseCode) + ";\n"});
+                    funcp->addStmtsp(
+                        new AstCStmt{flp, "(void)bufp;  // Prevent unused variable warning\n"});
                 } else {
-                    addInitStr("uint32_t* const oldp VL_ATTR_UNUSED = "
-                               "bufp->oldp(vlSymsp->__Vm_baseCode + "
-                               + cvtToStr(baseCode) + ");\n");
+                    funcp->addStmtsp(new AstCStmt{flp,  //
+                                                  "uint32_t* const oldp VL_ATTR_UNUSED = "
+                                                  "bufp->oldp(vlSymsp->__Vm_baseCode + "
+                                                      + cvtToStr(baseCode) + ");\n"});
                 }
             }
             // Add call to top function
@@ -736,8 +738,8 @@ class TraceVisitor final : public VNVisitor {
         cleanupFuncp->isStatic(true);
         cleanupFuncp->isLoose(true);
         m_topScopep->addBlocksp(cleanupFuncp);
-        cleanupFuncp->addInitsp(new AstCStmt{fl, EmitCUtil::voidSelfAssign(m_topModp)});
-        cleanupFuncp->addInitsp(new AstCStmt{fl, EmitCUtil::symClassAssign()});
+        cleanupFuncp->addStmtsp(new AstCStmt{fl, EmitCUtil::voidSelfAssign(m_topModp)});
+        cleanupFuncp->addStmtsp(new AstCStmt{fl, EmitCUtil::symClassAssign()});
 
         // Register it
         {
