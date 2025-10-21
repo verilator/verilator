@@ -7,9 +7,9 @@
 module t (clk);
    input clk;
    always @(posedge clk) begin
-     $c("const CData xthis = this->clk;");
-     $c("const CData thisx = xthis;");
-     $c("const CData xthisx = thisx;");
+     $cpure("const CData xthis = this->clk;");
+     $cpure("const CData thisx = xthis;");
+     $cpure("const CData xthisx = thisx;");
      $c("this->clk = xthisx;");
    end
 endmodule
