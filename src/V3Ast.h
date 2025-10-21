@@ -825,9 +825,6 @@ public:
     void swapWith(AstNode* bp);
     void relink(VNRelinker* linkerp);  // Generally use linker->relink() instead
     void cloneRelinkNode() { cloneRelink(); }
-    // Iterate and insert - assumes tree format
-    virtual void addNextStmt(AstNode* newp,
-                             AstNode* belowp);  // When calling, "this" is second argument
 
     // METHODS - Iterate on a tree
     AstNode* cloneTree(bool cloneNextLink,

@@ -1529,20 +1529,6 @@ AstVarScope* AstConstPool::findConst(AstConst* initp, bool mergeDType) {
 }
 
 //======================================================================
-// Special walking tree inserters
-
-void AstNode::addNextStmt(AstNode* newp, AstNode*) {
-    UASSERT_OBJ(backp(), newp, "Can't find current statement to addNextStmt");
-    // Look up; virtual call will find where to put it
-    this->backp()->addNextStmt(newp, this);
-}
-
-void AstNodeStmt::addNextStmt(AstNode* newp, AstNode*) {
-    // Insert newp after current node
-    this->addNextHere(newp);
-}
-
-//======================================================================
 // Per-type Debugging
 
 void AstNode::dump(std::ostream& str) const {

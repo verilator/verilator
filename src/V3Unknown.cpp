@@ -114,7 +114,8 @@ class UnknownVisitor final : public VNVisitor {
             AstVar* const varp
                 = new AstVar{fl, VVarType::MODULETEMP, m_lvboundNames.get(prep), prep->dtypep()};
             m_modp->addStmtsp(varp);
-            AstNode* const abovep = prep->backp();  // Grab above point before we replace 'prep'
+            AstNode* stmtp = prep->backp();  // Grab above point before we replace 'prep'
+            while (!VN_IS(stmtp, NodeStmt)) stmtp = stmtp->backp();
 
             prep->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
             if (m_timingControlp) m_timingControlp->unlinkFrBack();
@@ -128,7 +129,7 @@ class UnknownVisitor final : public VNVisitor {
             newp->branchPred(VBranchPred::BP_LIKELY);
             newp->isBoundsCheck(true);
             UINFOTREE(9, newp, "", "_new");
-            abovep->addNextStmt(newp, abovep);
+            stmtp->addNextHere(newp);
             prep->user2p(newp);  // Save so we may LogAnd it next time
         }
     }

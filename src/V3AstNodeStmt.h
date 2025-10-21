@@ -38,8 +38,6 @@ protected:
 public:
     ASTGEN_MEMBERS_AstNodeStmt;
     // METHODS
-    void addNextStmt(AstNode* newp,
-                     AstNode* belowp) override;  // Stop statement searchback here
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
 };
