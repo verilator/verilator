@@ -73,7 +73,6 @@ module t (/*AUTOARG*/
    Iface the_ifaces [3:0] (.*);
 
    initial begin
-
       if ($test$plusargs("HELLO")) $display("Hello argument found.");
       if (Pkg::FOO == 0) $write("");
       if (ZERO == 0) $write("");
