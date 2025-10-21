@@ -197,9 +197,9 @@ or "`ifdef`"'s may break other tools.
    PLI function name for each different output width.
 
    Usage of $cpure is the same as $c. The only difference is the fact
-   that the first one is always treated, by Verilator, as pure and
+   that the first one is always treated by Verilator as pure and
    the other one as impure. It is user's responsibility to ensure that
-   the emitted C++ code is indeed pure.
+   the expression is indeed pure.
 
 .. option:: $display, $write, $fdisplay, $fwrite, $sformat, $swrite
 
