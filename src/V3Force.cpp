@@ -118,8 +118,7 @@ public:
                 activep->senTreeStorep(activep->sentreep());
 
                 std::vector<AstVarScope*> loopVarScopes;
-                AstUnpackArrayDType* const unpackedp = VN_CAST(m_rdVscp->varp()->dtypep(), UnpackArrayDType);
-                if (unpackedp) {
+                if (AstUnpackArrayDType* const unpackedp = VN_CAST(m_rdVscp->varp()->dtypep(), UnpackArrayDType)) {
                     std::vector<AstUnpackArrayDType*> dims = unpackedp->unpackDimensions();
                     loopVarScopes.reserve(dims.size());
                     for (int i = dims.size() - 1; i != 0; i--) {
@@ -132,9 +131,13 @@ public:
                 }
                 AstNodeExpr* const lhsp = applySelects(new AstVarRef{flp, m_rdVscp, VAccess::WRITE}, loopVarScopes);
                 AstNodeExpr* const rhsp = forcedUpdate(vscp, loopVarScopes);
+                AstNodeStmt* stmtp = new AstAssign{flp, lhsp, rhsp};
+                for (int i = loopVarScopes.size() - 1; i >= 0; i--) {
+                    
+                }
 
                 activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr,
-                                                 new AstAssign{flp, lhsp, rhsp}});
+                                                 stmtp});
                 vscp->scopep()->addBlocksp(activep);
             }
         }
