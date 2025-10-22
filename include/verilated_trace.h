@@ -77,6 +77,9 @@ enum class VerilatedTraceSigKind : uint8_t {
     TRI,
     TRI0,
     TRI1,
+    TRIAND,
+    TRIOR,
+    TRIREG,
     WIRE,
     VAR,
 };

@@ -38,7 +38,13 @@ module t (/*AUTOARG*/
    tri0            fst_tri0;
    tri1            fst_tri1;
    tri             fst_tri;
+   triand          fst_triand;
+   trior           fst_trior;
+   //trireg          fst_trireg; // Error-UNSUPPORTED
+   wand            fst_wand;
+   wor             fst_wor;
    wire            fst_wire;
+   uwire           fst_uwire;
    inout           fst_inout;
 
    Test test (/*AUTOINST*/
