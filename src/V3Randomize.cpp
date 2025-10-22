@@ -54,17 +54,17 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 enum ClassRandom : uint8_t {
     NONE,  // randomize() is not called
     IS_RANDOMIZED,  // randomize() is called
-    IS_RANDOMIZED_INLINE,  // randomize() with args is called
-    IS_STD_RANDOMIZED,  // std::randomize() is called
     IS_RANDOMIZED_GLOBAL,  // randomize() is called with global constraints
+    IS_RANDOMIZED_INLINE,  // randomize() with args is called
     IS_RANDOMIZED_INLINE_GLOBAL,  // randomize() with args and global constraints
+    IS_STD_RANDOMIZED,  // std::randomize() is called
 };
 
 // ######################################################################
 // Constants for global constraint processing
 
 static constexpr const char* GLOBAL_CONSTRAINT_SEPARATOR = "__DT__";
-static constexpr const char* BASIC_RANDOMIZE_FUNC_NAME = "__Vbasic_randomize";
+static constexpr const char* BASIC_RANDOMIZE_FUNC_NAME = "__VBasicRand";
 
 // ######################################################################
 // Establishes the target of a rand_mode() call
@@ -210,7 +210,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
         }
     }
     // Mark nested MemberSel chain variables as globally constrained
-    void markNestedGlobalConstrained(AstNode* nodep) {
+    void markNestedGlobalConstrainedRecurse(AstNode* nodep) {
         if (!nodep) return;
 
         if (VN_IS(nodep, VarRef)) {
@@ -224,7 +224,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 if (varp->isGlobalConstrained()) return;
                 varp->setGlobalConstrained(true);
             }
-            markNestedGlobalConstrained(memberSelp->fromp());
+            markNestedGlobalConstrainedRecurse(memberSelp->fromp());
         }
     }
 
@@ -238,6 +238,34 @@ class RandomizeMarkVisitor final : public VNVisitor {
             exprp = memberSelp;
         }
         return exprp;
+    }
+
+    // Process a single constraint during nested constraint cloning
+    void processNestedConstraint(AstConstraint* const constrp, AstVarRef* rootVarRefp,
+                                  const std::vector<AstVar*>& newPath) {
+        if (!constrp) return;
+
+        AstConstraint* cloneConstrp = constrp->cloneTree(false);
+        if (!cloneConstrp) return;
+
+        std::string pathPrefix = rootVarRefp->name();
+        for (AstVar* pathMemberVarp : newPath) {
+            pathPrefix += GLOBAL_CONSTRAINT_SEPARATOR + pathMemberVarp->name();
+        }
+
+        cloneConstrp->name(pathPrefix + GLOBAL_CONSTRAINT_SEPARATOR + cloneConstrp->name());
+        cloneConstrp->foreach([&](AstVarRef* varRefp) {
+            if (!varRefp || !varRefp->varp()) return;
+
+            AstNodeExpr* const chainp = buildMemberSelChain(rootVarRefp, newPath);
+            AstMemberSel* const finalSelp
+                = new AstMemberSel{varRefp->fileline(), chainp, varRefp->varp()};
+            finalSelp->user2p(m_classp);
+            varRefp->replaceWith(finalSelp);
+            VL_DO_DANGLING(varRefp->deleteTree(), varRefp);
+        });
+
+        m_clonedConstraints.push_back(cloneConstrp);
     }
 
     // Clone constraints from nested rand class members
@@ -255,34 +283,10 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
                         std::vector<AstVar*> newPath = pathToClass;
                         newPath.push_back(memberVarp);
-
+                        // Replace all variable references inside the cloned constraint with proper member selections
                         nestedClassp->foreachMember([&](AstClass* const containingClassp,
                                                         AstConstraint* const constrp) {
-                            if (!constrp) return;
-
-                            AstConstraint* cloneConstrp = constrp->cloneTree(false);
-                            if (!cloneConstrp) return;
-
-                            std::string pathPrefix = rootVarRefp->name();
-                            for (AstVar* pathMemberVarp : newPath) {
-                                pathPrefix += GLOBAL_CONSTRAINT_SEPARATOR + pathMemberVarp->name();
-                            }
-
-                            cloneConstrp->name(pathPrefix + GLOBAL_CONSTRAINT_SEPARATOR
-                                               + cloneConstrp->name());
-                            cloneConstrp->foreach([&](AstVarRef* varRefp) {
-                                if (!varRefp || !varRefp->varp()) return;
-
-                                AstNodeExpr* const chainp
-                                    = buildMemberSelChain(rootVarRefp, newPath);
-                                AstMemberSel* const finalSelp = new AstMemberSel(
-                                    varRefp->fileline(), chainp, varRefp->varp());
-                                finalSelp->user2p(m_classp);
-                                varRefp->replaceWith(finalSelp);
-                                VL_DO_DANGLING(varRefp->deleteTree(), varRefp);
-                            });
-
-                            m_clonedConstraints.push_back(cloneConstrp);
+                            processNestedConstraint(constrp, rootVarRefp, newPath);
                         });
 
                         cloneNestedConstraintsRecurse(rootVarRefp, nestedClassp, newPath);
@@ -606,7 +610,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             // Mark the entire nested chain as participating in global constraints
             // For foo.in.val, this marks: foo, foo.in, and foo.in.val
             if (VN_IS(nodep->fromp(), VarRef) || VN_IS(nodep->fromp(), MemberSel)) {
-                markNestedGlobalConstrained(nodep->fromp());
+                markNestedGlobalConstrainedRecurse(nodep->fromp());
             }
 
             // Global constraint processing algorithm:
@@ -666,9 +670,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
         iterateChildrenConst(nodep);
     }
     void visit(AstWith* nodep) override {
+        VL_RESTORER(m_withp);
         m_withp = nodep;
         iterateChildrenConst(nodep);
-        m_withp = nullptr;
     }
 
     void visit(AstNodeExpr* nodep) override {
@@ -1608,9 +1612,8 @@ class RandomizeVisitor final : public VNVisitor {
     std::map<std::string, AstCDType*> m_randcDtypes;  // RandC data type deduplication
     AstConstraint* m_constraintp = nullptr;  // Current constraint
 
-    std::map<AstClass*, AstStmtExpr*>
-        m_clonedConstraints;  // Map of the class to the cloned constraint from the instantiated
-                              // object
+    // Map of the class to the cloned constraint from the instantiated object
+    std::map<AstClass*, AstStmtExpr*> m_clonedConstraints;
 
     // METHODS
     void createRandomGenerator(AstClass* const classp) {
