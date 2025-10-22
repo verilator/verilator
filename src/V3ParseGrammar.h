@@ -310,7 +310,6 @@ public:
             AstVar* const varp = VN_CAST(stmtp, Var);
             if (!varp) break;
             varp->unlinkFrBack();
-            varp->funcLocal(true);
             forkp->addInitsp(varp);
         }
     }
