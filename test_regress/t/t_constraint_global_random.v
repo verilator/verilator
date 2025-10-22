@@ -46,6 +46,8 @@ module t_constraint_global_random;
 
     initial begin
         t = new();
+
+        // Test 1: Regular randomize() with global constraints
         success = t.randomize();
         if (success != 1) $stop;
 
@@ -58,6 +60,24 @@ module t_constraint_global_random;
         if (t.m1.inner.val + t.m2.inner.val >= 8) $stop;
         if (t.m1.inner.val < 1 || t.m1.inner.val > 5 ||
             t.m2.inner.val < 1 || t.m2.inner.val > 5) $stop;
+
+        // Test 2: randomize() with inline constraint on global-constrained members
+        success = 0;
+        success = t.randomize() with {
+            m1.inner.val == 2;
+            m2.inner.val == 5;
+        };
+        if (success != 1) $stop;
+
+        // Verify inline constraints
+        if (t.m1.inner.val != 2) $stop;
+        if (t.m2.inner.val != 5) $stop;
+
+        // Verify global constraints still hold
+        if (t.m1.x != 3 || t.m2.x != 5) $stop;
+        if (t.m1.inner.val >= t.m2.inner.val) $stop;
+        if (t.y <= t.m1.x || t.y >= t.m2.x) $stop;
+        if (t.m1.inner.val + t.m2.inner.val >= 8) $stop;
 
         $write("*-* All Finished *-*\n");
         $finish;
