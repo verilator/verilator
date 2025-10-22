@@ -137,17 +137,17 @@ public:
                         loopVarScopes.push_back(loopVarScopep);
                         AstNodeStmt* const currInitp = new AstAssign{
                             flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
-                            new AstConst{flp, AstConst::Signed32{}, dims[i]->lo()}};
+                            new AstConst{flp, static_cast<uint32_t>(dims[i]->lo())}};
                         AstLoop* const currWhilep = new AstLoop{flp};
                         currInitp->addNext(currWhilep);
                         currWhilep->addStmtsp(new AstLoopTest{
                             flp, currWhilep,
                             new AstNeq{flp, new AstVarRef{flp, loopVarScopep, VAccess::READ},
-                                       new AstConst{flp, AstConst::Signed32{}, dims[i]->hi()}}});
+                                       new AstConst{flp, static_cast<uint32_t>(dims[i]->hi())}}});
                         AstAssign* const currIncrp = new AstAssign{
                             flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
                             new AstAdd{flp, new AstVarRef{flp, loopVarScopep, VAccess::READ},
-                                       new AstConst{flp, AstConst::Signed32{}, 1}}};
+                                       new AstConst{flp, AstConst::OneStep{}}}};
                         currWhilep->addStmtsp(currIncrp);
                         if (whilep) {
                             whilep->addStmtsp(currInitp);
