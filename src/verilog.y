@@ -2621,10 +2621,10 @@ module_common_item<nodep>:      // ==IEEE: module_common_item
         ;
 
 always_construct<nodep>:        // IEEE: == always_construct
-                yALWAYS       stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS, nullptr, $2}; }
-        |       yALWAYS_FF    stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS_FF, nullptr, $2}; }
-        |       yALWAYS_LATCH stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS_LATCH, nullptr, $2}; }
-        |       yALWAYS_COMB  stmtBlock                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS_COMB, nullptr, $2}; }
+                yALWAYS       stmt                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS, nullptr, $2}; }
+        |       yALWAYS_FF    stmt                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS_FF, nullptr, $2}; }
+        |       yALWAYS_LATCH stmt                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS_LATCH, nullptr, $2}; }
+        |       yALWAYS_COMB  stmt                 { $$ = new AstAlways{$1, VAlwaysKwd::ALWAYS_COMB, nullptr, $2}; }
         ;
 
 continuous_assign<nodep>:       // IEEE: continuous_assign
@@ -2635,7 +2635,7 @@ continuous_assign<nodep>:       // IEEE: continuous_assign
         ;
 
 initial_construct<nodep>:       // IEEE: initial_construct
-                yINITIAL stmtBlock                      { $$ = new AstInitial{$1, $2}; }
+                yINITIAL stmt                      { $$ = new AstInitial{$1, $2}; }
         ;
 
 
@@ -2651,7 +2651,7 @@ aliasEqList<nodeExprp>:                    // IEEE: part of net_alias
         ;
 
 final_construct<nodep>:         // IEEE: final_construct
-                yFINAL stmtBlock                        { $$ = new AstFinal{$1, $2}; }
+                yFINAL stmt                        { $$ = new AstFinal{$1, $2}; }
         ;
 
 module_or_generate_item_declaration<nodep>:     // ==IEEE: module_or_generate_item_declaration
@@ -3357,11 +3357,7 @@ senitemEdge<senItemp>:          // IEEE: part of event_expression
 //************************************************
 // Statements
 
-stmtBlock<nodep>:               // IEEE: statement + seq_block + par_block
-                stmt                                    { $$ = $1; }
-        ;
-
-seq_block<nodep>:               // ==IEEE: seq_block
+seq_block<beginp>:               // ==IEEE: seq_block
         //                      // IEEE doesn't allow declarations in unnamed blocks, but several simulators do.
         //                      // So need AstBegin's even if unnamed to scope variables down
                 seq_blockFront blockDeclStmtListE yEND endLabelE
@@ -3369,7 +3365,7 @@ seq_block<nodep>:               // ==IEEE: seq_block
                           GRAMMARP->endLabel($<fl>4, $1, $4); }
         ;
 
-seq_blockPreId<nodep>:          // IEEE: seq_block, but called with leading ID
+seq_blockPreId<beginp>:          // IEEE: seq_block, but called with leading ID
                 seq_blockFrontPreId blockDeclStmtListE yEND endLabelE
                         { $$ = $1; $1->addStmtsp($2);
                           GRAMMARP->endLabel($<fl>4, $1, $4); }
@@ -3381,14 +3377,14 @@ par_blockJoin<joinType>:
         |       yJOIN_NONE  { $$ = VJoinType::JOIN_NONE; }
         ;
 
-par_block<nodep>:               // ==IEEE: par_block
+par_block<forkp>:               // ==IEEE: par_block
                 par_blockFront blockDeclStmtListE par_blockJoin endLabelE
                         { $$ = $1; $1->joinType($3);
                           V3ParseGrammar::addForkStmtsp($1, $2);
                           GRAMMARP->endLabel($<fl>4, $1, $4); }
         ;
 
-par_blockPreId<nodep>:          // ==IEEE: par_block but called with leading ID
+par_blockPreId<forkp>:          // ==IEEE: par_block but called with leading ID
                 par_blockFrontPreId blockDeclStmtListE par_blockJoin endLabelE
                         { $$ = $1; $1->joinType($3);
                           V3ParseGrammar::addForkStmtsp($1, $2);
@@ -3446,14 +3442,14 @@ block_item_declaration<nodep>:  // ==IEEE: block_item_declaration
         |       let_declaration                         { $$ = $1; }
         ;
 
-stmtList<nodep>:
-                stmtBlock                               { $$ = $1; }
-        |       stmtList stmtBlock                      { $$ = addNextNull($1, $2); }
+stmtList<nodeStmtp>:
+                stmt                               { $$ = $1; }
+        |       stmtList stmt                      { $$ = addNextNull($1, $2); }
         //
         |       stmtList error ';'                      { $$ = $1; }  // LCOV_EXCL_LINE
         ;
 
-stmt<nodep>:                    // IEEE: statement_or_null == function_statement_or_null
+stmt<nodeStmtp>:                    // IEEE: statement + seq_block + par_block
                 statement_item                          { $$ = $1; }
         //                      // S05 block creation rule
         |       id/*block_identifier*/ ':' statement_item       { $$ = new AstBegin{$<fl>1, *$1, $3, false}; }
@@ -3464,7 +3460,7 @@ stmt<nodep>:                    // IEEE: statement_or_null == function_statement
         |       par_blockPreId                          { $$ = $1; }
         ;
 
-statement_item<nodep>:          // IEEE: statement_item
+statement_item<nodeStmtp>:          // IEEE: statement_item
         //                      // IEEE: operator_assignment
                 foperator_assignment ';'                { $$ = $1; }
         //
@@ -3510,14 +3506,14 @@ statement_item<nodep>:          // IEEE: statement_item
                           if ($1 == uniq_PRIORITY) $2->priorityPragma(true); }
         //
         //                      // IEEE: conditional_statement
-        |       unique_priorityE yIF '(' expr ')' stmtBlock     %prec prLOWER_THAN_ELSE
+        |       unique_priorityE yIF '(' expr ')' stmt     %prec prLOWER_THAN_ELSE
                         { AstIf* const newp = new AstIf{$2, $4,
                               PARSEP->newBlock($2, $6)};
                           $$ = newp;
                           if ($1 == uniq_UNIQUE) newp->uniquePragma(true);
                           if ($1 == uniq_UNIQUE0) newp->unique0Pragma(true);
                           if ($1 == uniq_PRIORITY) newp->priorityPragma(true); }
-        |       unique_priorityE yIF '(' expr ')' stmtBlock yELSE stmtBlock
+        |       unique_priorityE yIF '(' expr ')' stmt yELSE stmt
                         { AstIf* const newp = new AstIf{$2, $4,
                               PARSEP->newBlock($2, $6),
                               PARSEP->newBlock($2, $8)};
@@ -3533,19 +3529,19 @@ statement_item<nodep>:          // IEEE: statement_item
         //                      // so parse as if task
         //                      // Alternative would be shim with new AstVoidStmt.
         |       yVOID yP_TICK '(' task_subroutine_callNoMethod ')' ';'
-                        { $$ = $4;
-                          AstNode* callp = $$;
+                        { AstNodeExpr* const exprp = $4;
+                          AstNode* callp = exprp;
                           while (AstDot* const dotp = VN_CAST(callp, Dot)) callp = dotp->rhsp();
                           FileLine* const newfl = new FileLine{callp->fileline()};
                           newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
                           callp->fileline(newfl);
-                          $$ = VN_AS($$, NodeExpr)->makeStmt(); }
+                          $$ = exprp->makeStmt(); }
         |       yVOID yP_TICK '(' expr '.' task_subroutine_callNoMethod ')' ';'
-                        { $$ = new AstDot{$5, false, $4, $6};
+                        { AstNodeExpr* const exprp = new AstDot{$5, false, $4, $6};
                           FileLine* const newfl = new FileLine{$6->fileline()};
                           newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
                           $6->fileline(newfl);
-                          $$ = VN_AS($$, NodeExpr)->makeStmt(); }
+                          $$ = exprp->makeStmt(); }
         |       yVOID yP_TICK '(' system_t_call ')' ';'
                         { $$ = $4;
                           FileLine* const newfl = new FileLine{$$->fileline()};
@@ -3569,12 +3565,12 @@ statement_item<nodep>:          // IEEE: statement_item
                         { $$ = new AstFireEvent{$1, $3, true}; }
         //
         // do/for/forever/while loops all modelled as AstLoop
-        |       yDO stmtBlock yWHILE '(' expr ')' ';'
+        |       yDO stmt yWHILE '(' expr ')' ';'
                         { AstLoop* const loopp = new AstLoop{$1};
                           loopp->addStmtsp($2);
                           loopp->addContsp(new AstLoopTest{$<fl>5, loopp, $5});
                           $$ = loopp; }
-        |       yFOR  '(' { VARRESET_NONLIST(UNKNOWN); } for_initializationE ';' exprE ';' for_stepE ')' stmtBlock
+        |       yFOR  '(' { VARRESET_NONLIST(UNKNOWN); } for_initializationE ';' exprE ';' for_stepE ')' stmt
                         { AstBegin* const blockp = new AstBegin{$1, "", $4, true};
                           AstLoop* const loopp = new AstLoop{$1};
                           if ($6) loopp->addStmtsp(new AstLoopTest{$<fl>6, loopp, $6});
@@ -3582,19 +3578,19 @@ statement_item<nodep>:          // IEEE: statement_item
                           loopp->addContsp($8);
                           blockp->addStmtsp(loopp);
                           $$ = blockp; }
-        |       yFOREVER stmtBlock
+        |       yFOREVER stmt
                         { AstLoop* const loopp = new AstLoop{$1};
                           loopp->addStmtsp($2);
                           $$ = loopp; }
-        |       yWHILE '(' expr ')' stmtBlock
+        |       yWHILE '(' expr ')' stmt
                         { AstLoop* const loopp = new AstLoop{$1};
                           loopp->addStmtsp(new AstLoopTest{$<fl>3, loopp, $3});
                           loopp->addStmtsp($5);
                           $$ = loopp; }
         // Other loop statements
-        |       yREPEAT '(' expr ')' stmtBlock          { $$ = new AstRepeat{$1, $3, $5}; }
+        |       yREPEAT '(' expr ')' stmt          { $$ = new AstRepeat{$1, $3, $5}; }
         //                      // IEEE says array_identifier here, but dotted accepted in VMM and 1800-2009
-        |       yFOREACH '(' idClassSelForeach ')' stmtBlock
+        |       yFOREACH '(' idClassSelForeach ')' stmt
                         { $$ = new AstBegin{$1, "", new AstForeach{$1, $3, $5}, true}; }
         //
         //                      // IEEE: jump_statement
@@ -3605,21 +3601,23 @@ statement_item<nodep>:          // IEEE: statement_item
         //
         |       par_block                               { $$ = $1; }
         //                      // IEEE: procedural_timing_control_statement + procedural_timing_control
-        |       delay_control stmtBlock                 { AstNode* nextp = nullptr;
-                                                          if ($2) {
-                                                              if ($2->nextp()) nextp = $2->nextp()->unlinkFrBackWithNext();
-                                                              $1->addStmtsp($2);
-                                                          }
-                                                          $$ = $1;
-                                                          addNextNull($$, nextp); }
-        |       event_control stmtBlock                 { AstNode* nextp = nullptr;
-                                                          if ($2 && $2->nextp()) nextp = $2->nextp()->unlinkFrBackWithNext();
-                                                          $$ = new AstEventControl{FILELINE_OR_CRE($1), $1, $2};
-                                                          addNextNull($$, nextp); }
-        |       cycle_delay stmtBlock
-                        { AstNode* nextp = nullptr;
+        |       delay_control stmt
+                        { AstNodeStmt* nextp = nullptr;
                           if ($2) {
-                              if ($2->nextp()) nextp = $2->nextp()->unlinkFrBackWithNext();
+                              if ($2->nextp()) nextp = VN_AS($2->nextp()->unlinkFrBackWithNext(), NodeStmt);
+                              $1->addStmtsp($2);
+                          }
+                          $$ = $1;
+                          addNextNull($$, nextp); }
+        |       event_control stmt
+                        { AstNodeStmt* nextp = nullptr;
+                          if ($2 && $2->nextp()) nextp = VN_AS($2->nextp()->unlinkFrBackWithNext(), NodeStmt);
+                          $$ = new AstEventControl{FILELINE_OR_CRE($1), $1, $2};
+                          addNextNull($$, nextp); }
+        |       cycle_delay stmt
+                        { AstNodeStmt* nextp = nullptr;
+                          if ($2) {
+                              if ($2->nextp()) nextp = VN_AS($2->nextp()->unlinkFrBackWithNext(), NodeStmt);
                               $1->addStmtsp($2);
                           }
                           $$ = $1;
@@ -3627,7 +3625,7 @@ statement_item<nodep>:          // IEEE: statement_item
         |       seq_block                               { $$ = $1; }
         //
         //                      // IEEE: wait_statement
-        |       yWAIT '(' expr ')' stmtBlock            { $$ = new AstWait{$1, $3, $5}; }
+        |       yWAIT '(' expr ')' stmt            { $$ = new AstWait{$1, $3, $5}; }
         |       yWAIT yFORK ';'                         { $$ = new AstWaitFork{$1}; }
         //                      // action_block expanded here
         |       yWAIT_ORDER '(' vrdList ')' stmt %prec prLOWER_THAN_ELSE
@@ -3664,7 +3662,7 @@ statementVerilatorPragmas<pragmap>:
                         { $$ = new AstPragma{$1, VPragmaType::UNROLL_FULL}; }
         ;
 
-foperator_assignment<nodep>:    // IEEE: operator_assignment (for first part of expression)
+foperator_assignment<nodeStmtp>:    // IEEE: operator_assignment (for first part of expression)
                 fexprLvalue '=' delay_or_event_controlE expr    { $$ = new AstAssign{$2, $1, $4, $3}; }
         //
         |       fexprLvalue yP_PLUSEQ    expr
@@ -3782,27 +3780,27 @@ caseAttrE:
         ;
 
 case_itemList<caseItemp>:       // IEEE: { case_item + ... }
-                caseCondList colon stmtBlock                    { $$ = new AstCaseItem{$2, $1, $3}; }
-        |       yDEFAULT colon stmtBlock                        { $$ = new AstCaseItem{$1, nullptr, $3}; }
-        |       yDEFAULT stmtBlock                              { $$ = new AstCaseItem{$1, nullptr, $2}; }
-        |       case_itemList caseCondList colon stmtBlock      { $$ = $1->addNext(new AstCaseItem{$3, $2, $4}); }
-        |       case_itemList yDEFAULT stmtBlock                { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $3}); }
-        |       case_itemList yDEFAULT colon stmtBlock          { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $4}); }
+                caseCondList colon stmt                    { $$ = new AstCaseItem{$2, $1, $3}; }
+        |       yDEFAULT colon stmt                        { $$ = new AstCaseItem{$1, nullptr, $3}; }
+        |       yDEFAULT stmt                              { $$ = new AstCaseItem{$1, nullptr, $2}; }
+        |       case_itemList caseCondList colon stmt      { $$ = $1->addNext(new AstCaseItem{$3, $2, $4}); }
+        |       case_itemList yDEFAULT stmt                { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $3}); }
+        |       case_itemList yDEFAULT colon stmt          { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $4}); }
         ;
 
 case_inside_itemList<caseItemp>:        // IEEE: { case_inside_item + range_list ... }
-                range_list colon stmtBlock                      { $$ = new AstCaseItem{$2, $1, $3}; }
-        |       yDEFAULT colon stmtBlock                        { $$ = new AstCaseItem{$1, nullptr, $3}; }
-        |       yDEFAULT stmtBlock                              { $$ = new AstCaseItem{$1, nullptr, $2}; }
-        |       case_inside_itemList range_list colon stmtBlock { $$ = $1->addNext(new AstCaseItem{$3, $2, $4}); }
-        |       case_inside_itemList yDEFAULT stmtBlock         { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $3}); }
-        |       case_inside_itemList yDEFAULT colon stmtBlock   { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $4}); }
+                range_list colon stmt                      { $$ = new AstCaseItem{$2, $1, $3}; }
+        |       yDEFAULT colon stmt                        { $$ = new AstCaseItem{$1, nullptr, $3}; }
+        |       yDEFAULT stmt                              { $$ = new AstCaseItem{$1, nullptr, $2}; }
+        |       case_inside_itemList range_list colon stmt { $$ = $1->addNext(new AstCaseItem{$3, $2, $4}); }
+        |       case_inside_itemList yDEFAULT stmt         { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $3}); }
+        |       case_inside_itemList yDEFAULT colon stmt   { $$ = $1->addNext(new AstCaseItem{$2, nullptr, $4}); }
         ;
 
 rand_case_itemList<caseItemp>:       // IEEE: { rand_case_item + ... }
         //                      // Randcase syntax doesn't have default, or expression lists
-                expr colon stmtBlock                            { $$ = new AstCaseItem{$2, $1, $3}; }
-        |       rand_case_itemList expr colon stmtBlock         { $$ = $1->addNext(new AstCaseItem{$3, $2, $4}); }
+                expr colon stmt                            { $$ = new AstCaseItem{$2, $1, $3}; }
+        |       rand_case_itemList expr colon stmt         { $$ = $1->addNext(new AstCaseItem{$3, $2, $4}); }
         ;
 
 range_list<nodeExprp>:     // ==IEEE: range_list/open_range_list + value_range/open_value_range
@@ -4022,7 +4020,7 @@ funcRef<nodeExprp>:             // IEEE: part of tf_call
         //UNSUP: idDottedSel is really just id to allow dotted method calls
         ;
 
-task_subroutine_callNoSemi<nodep>:  // similar to IEEE task_subroutine_call but without ';'
+task_subroutine_callNoSemi<nodeStmtp>:  // similar to IEEE task_subroutine_call but without ';'
         //                      // Expr included here to resolve our not knowing what is a method call
         //                      // Expr here must result in a subroutine_call
                 task_subroutine_callNoMethod            { $$ = $1->makeStmt(); }
@@ -6221,7 +6219,7 @@ deferred_immediate_assertion_item<nodep>:       // ==IEEE: deferred_immediate_as
                         { $$ = new AstBegin{$<fl>1, *$1, $3, true}; }
         ;
 
-procedural_assertion_statement<nodep>:  // ==IEEE: procedural_assertion_statement
+procedural_assertion_statement<nodeStmtp>:  // ==IEEE: procedural_assertion_statement
                 concurrent_assertion_statement          { $$ = $1; }
         |       immediate_assertion_statement           { $$ = $1; }
         //                      // IEEE: checker_instantiation
@@ -6229,18 +6227,18 @@ procedural_assertion_statement<nodep>:  // ==IEEE: procedural_assertion_statemen
         //UNSUP checker_instantiation                   { $$ = $1; }
         ;
 
-immediate_assertion_statement<nodep>:   // ==IEEE: immediate_assertion_statement
+immediate_assertion_statement<nodeStmtp>:   // ==IEEE: immediate_assertion_statement
                 simple_immediate_assertion_statement    { $$ = $1; }
         |       deferred_immediate_assertion_statement  { $$ = $1; }
         ;
 
-simple_immediate_assertion_statement<nodep>:    // ==IEEE: simple_immediate_assertion_statement
+simple_immediate_assertion_statement<nodeStmtp>:    // ==IEEE: simple_immediate_assertion_statement
         //                      // action_block expanded here, for compatibility with AstAssert
-                assertOrAssume '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE
+                assertOrAssume '(' expr ')' stmt %prec prLOWER_THAN_ELSE
                         { $$ = new AstAssert{$<fl>1, $3, $5, nullptr, VAssertType::SIMPLE_IMMEDIATE, $1}; }
-        |       assertOrAssume '(' expr ')'           yELSE stmtBlock
+        |       assertOrAssume '(' expr ')'           yELSE stmt
                         { $$ = new AstAssert{$<fl>1, $3, nullptr, $6, VAssertType::SIMPLE_IMMEDIATE, $1}; }
-        |       assertOrAssume '(' expr ')' stmtBlock yELSE stmtBlock
+        |       assertOrAssume '(' expr ')' stmt yELSE stmt
                         { $$ = new AstAssert{$<fl>1, $3, $5, $7, VAssertType::SIMPLE_IMMEDIATE, $1}; }
         //                      // IEEE: simple_immediate_cover_statement
         |       yCOVER '(' expr ')' stmt                { $$ = new AstCover{$1, $3, $5, VAssertType::SIMPLE_IMMEDIATE}; }
@@ -6259,13 +6257,13 @@ final_zero<asserttypeen>:                     // IEEE: part of deferred_immediat
         |       yFINAL                                                  { $$ = VAssertType::FINAL_DEFERRED_IMMEDIATE; }
         ;
 
-deferred_immediate_assertion_statement<nodep>:  // ==IEEE: deferred_immediate_assertion_statement
+deferred_immediate_assertion_statement<nodeStmtp>:  // ==IEEE: deferred_immediate_assertion_statement
         //                      // IEEE: deferred_immediate_assert_statement
-                assertOrAssume final_zero '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE
+                assertOrAssume final_zero '(' expr ')' stmt %prec prLOWER_THAN_ELSE
                         { $$ = new AstAssert{$<fl>1, $4, $6, nullptr, $2, $1}; }
-        |       assertOrAssume final_zero '(' expr ')'           yELSE stmtBlock
+        |       assertOrAssume final_zero '(' expr ')'           yELSE stmt
                         { $$ = new AstAssert{$<fl>1, $4, nullptr, $7, $2, $1}; }
-        |       assertOrAssume final_zero '(' expr ')' stmtBlock yELSE stmtBlock
+        |       assertOrAssume final_zero '(' expr ')' stmt yELSE stmt
                         { $$ = new AstAssert{$<fl>1, $4, $6, $8, $2, $1}; }
         //                      // IEEE: deferred_immediate_cover_statement
         |       yCOVER final_zero '(' expr ')' stmt     { $$ = new AstCover{$1, $4, $6, $2}; }
@@ -6279,7 +6277,7 @@ concurrent_assertion_item<nodep>:       // IEEE: concurrent_assertion_item
         //                      // identical to module_instantiation; see etcInst
         ;
 
-concurrent_assertion_statement<nodep>:  // ==IEEE: concurrent_assertion_statement
+concurrent_assertion_statement<nodeStmtp>:  // ==IEEE: concurrent_assertion_statement
         //                      // IEEE: assert_property_statement
         //                      // IEEE: assume_property_statement
         //                      // action_block expanded here
@@ -6290,7 +6288,7 @@ concurrent_assertion_statement<nodep>:  // ==IEEE: concurrent_assertion_statemen
         |       assertOrAssume yPROPERTY '(' property_spec ')' yELSE stmt
                         { $$ = new AstAssert{$<fl>1, new AstSampled{$<fl>1, $4}, nullptr, $7, VAssertType::CONCURRENT, $1}; }
         //                      // IEEE: cover_property_statement
-        |       yCOVER yPROPERTY '(' property_spec ')' stmtBlock
+        |       yCOVER yPROPERTY '(' property_spec ')' stmt
                         { $$ = new AstCover{$1, $4, $6, VAssertType::CONCURRENT}; }
         //                      // IEEE: cover_sequence_statement
         |       yCOVER ySEQUENCE '(' sexpr ')' stmt
@@ -7079,7 +7077,7 @@ hierarchical_btf_identifier<nodep>:  // ==IEEE: hierarchical_btf_identifier
 //**********************************************************************
 // Randsequence
 
-randsequence_statement<nodep>:  // ==IEEE: randsequence_statement
+randsequence_statement<nodeStmtp>:  // ==IEEE: randsequence_statement
                 yRANDSEQUENCE '(' ')' rs_productionList yENDSEQUENCE
                         { $$ = new AstRandSequence{$1, "", $4}; }
         |       yRANDSEQUENCE '(' idAny/*rs_production_identifier*/ ')' rs_productionList yENDSEQUENCE
