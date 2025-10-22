@@ -272,13 +272,13 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_TRACING_ON             "tracing_on"
 
 %token<fl>              yVLT_D_BLOCK    "--block"
+%token<fl>              yVLT_D_CALLBACK "--callback"
 %token<fl>              yVLT_D_CONTENTS "--contents"
 %token<fl>              yVLT_D_COST     "--cost"
 %token<fl>              yVLT_D_FILE     "--file"
 %token<fl>              yVLT_D_FUNCTION "--function"
 %token<fl>              yVLT_D_HIER_DPI "--hier-dpi"
 %token<fl>              yVLT_D_ID       "--id"
-%token<fl>              yVLT_D_INSTANCE "--instance"
 %token<fl>              yVLT_D_LEVELS   "--levels"
 %token<fl>              yVLT_D_LINES    "--lines"
 %token<fl>              yVLT_D_MATCH    "--match"
@@ -8013,7 +8013,7 @@ vltItem:
                         { /* Historical, now has no effect */ }
         |       vltInlineFront vltDModuleE vltDFTaskE
                         { V3Control::addInline($<fl>1, *$2, *$3, $1); }
-        |       yVLT_INSTRUMENT yVLT_D_MODEL yaSTRING yVLT_D_ID yaINTNUM yVLT_D_TARGET yaSTRING
+        |       yVLT_INSTRUMENT yVLT_D_CALLBACK yaSTRING yVLT_D_ID yaINTNUM yVLT_D_TARGET yaSTRING
                         { V3Control::addInstrumentCfg($<fl>1, *$3, $5->toSInt(), *$7); }
         |       yVLT_COVERAGE_BLOCK_OFF vltDFile
                         { V3Control::addCoverageBlockOff(*$2, 0); }
