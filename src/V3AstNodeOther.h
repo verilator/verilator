@@ -2122,7 +2122,8 @@ public:
     void setIgnoreSchedWrite() { m_ignoreSchedWrite = true; }
     bool dfgMultidriven() const { return m_dfgMultidriven; }
     void setDfgMultidriven() { m_dfgMultidriven = true; }
-    void setGlobalConstrained(bool flag) { m_globalConstrained = flag; }
+    void globalConstrained(bool flag) { m_globalConstrained = flag; }
+    bool globalConstrained() const { return m_globalConstrained; }
     // METHODS
     void name(const string& name) override { m_name = name; }
     void tag(const string& text) override { m_tag = text; }
@@ -2187,7 +2188,6 @@ public:
     bool isTrace() const { return m_trace; }
     bool isRand() const { return m_rand.isRand(); }
     bool isRandC() const { return m_rand.isRandC(); }
-    bool isGlobalConstrained() const { return m_globalConstrained; }
     bool isConst() const VL_MT_SAFE { return m_isConst; }
     bool isStatic() const VL_MT_SAFE { return m_isStatic; }
     bool isLatched() const { return m_isLatched; }
