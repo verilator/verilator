@@ -7,11 +7,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 function int func();
-  $cpure("const auto x = 13;");
-  $cpure("auto y = 4;");
-  $cpure("++y;");
-  $cpure("const auto res = x + y;");
-  return $cpure("res");
+  static int someVar = 12;
+  return $cpure(someVar, "+ 6");
 endfunction
 
 module t;

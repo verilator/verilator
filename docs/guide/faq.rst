@@ -372,7 +372,7 @@ chapter above).  There is also limited VPI access to public signals.
 If you want something more complex, since Verilator emits standard C++
 code, you can write C++ routines that can access and modify signal
 values without needing any PLI interface code, and call it with
-`$c("{any_c++_statement}")` or `$cpure("{any_c++_statement}")`.
+`$c("{any_c++_statement}")` or `$cpure("{any_c++_expression}")`.
 
 See the :ref:`Connecting` section.
 

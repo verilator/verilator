@@ -4112,14 +4112,6 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
                     }
                     $$ = cstmtp;
                 }
-        |       yD_CPURE '(' cStrList ')' {
-                    AstCStmtUser* cstmtp = nullptr;
-                    if (!v3Global.opt.ignc()) {
-                        cstmtp = new AstCStmtUser{$1, AstCStmtUser::Pure{}, true};
-                        cstmtp->add($3);
-                    }
-                    $$ = cstmtp;
-                }
         |       yD_SDF_ANNOTATE '(' exprEListE ')'      { $$ = nullptr; $1->v3warn(SPECIFYIGN, "Ignoring unsupported: $sdf_annotate"); DEL($3); }
         |       yD_STACKTRACE parenE                    { $$ = new AstStackTraceT{$1}; }
         |       yD_SYSTEM '(' expr ')'                  { $$ = new AstSystemT{$1, $3}; }

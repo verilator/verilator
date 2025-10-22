@@ -196,9 +196,10 @@ or "`ifdef`"'s may break other tools.
    compatibility with other simulators, which require a differently named
    PLI function name for each different output width.
 
-   `$cpure` is similar to `$c` however, indicates the statement
-   is optimized as pure, versus `$c` which is optimized as impure.
-   It is not for user use, might change arbitrarily in any version.
+   `$cpure` is similar to `$c` however, it can only be used as an expression
+   and indicates the expression is optimized as pure, versus `$c`
+   which is optimized as impure. It is not for user use, might change
+   arbitrarily in any version.
 
 .. option:: $display, $write, $fdisplay, $fwrite, $sformat, $swrite
 

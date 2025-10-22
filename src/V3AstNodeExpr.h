@@ -603,7 +603,7 @@ public:
     void add(AstNode* nodep) { addNodesp(nodep); }
 };
 class AstCExprUser final : public AstNodeExpr {
-    // User '$c' or '$cpure' statement - Like AstCStmt, with text tracking and optimizations
+    // User '$c' or '$cpure' expression - Like AstCStmt, with text tracking and optimizations
     // disabled.
     //
     // Use AstCExpr instead, unless the text is from user input.

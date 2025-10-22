@@ -1372,9 +1372,7 @@ public:
         putnbs(nodep, "");
         ofp()->putsNoTracking("\n");
         if (nodep->fromDollarC() && v3Global.opt.decoration() && !v3Global.opt.protectIds()) {
-            ofp()->putsNoTracking(
-                (nodep->isPure() ? "// $cpure statement at " : "// $c statement at ")
-                + nodep->fileline()->ascii() + "\n");
+            ofp()->putsNoTracking("// $c statement at " + nodep->fileline()->ascii() + "\n");
         }
         emitNodesWithText(nodep->nodesp(), m_useSelfForThis, false, "");
         puts("\n");

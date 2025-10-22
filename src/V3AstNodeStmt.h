@@ -307,7 +307,7 @@ public:
     void add(AstNode* nodep) { addNodesp(nodep); }
 };
 class AstCStmtUser final : public AstNodeStmt {
-    // User '$c' or '$cpure' statement, also used for handling some AstSystemCSection.
+    // User '$c' statement, also used for handling some AstSystemCSection.
     // Same as AstCStmt, with text tracking disabled.
     //
     // Note this cannot be modelled as AstStmtExpr(AstCExprUser) because the
@@ -316,24 +316,17 @@ class AstCStmtUser final : public AstNodeStmt {
     // Use AstCStmt instead, unless the text is from user input.
     //
     // @astgen op1 := nodesp : List[AstNode<AstNodeExpr|AstText>]
-    const bool m_fromDollarC;  // Is from source '$c' or '$cpure', emit decoration
-    const bool m_pure;  // Whether the statement is pure
+    const bool m_fromDollarC;  // Is from source '$c', emit decoration
 public:
-    class Pure {};
     AstCStmtUser(FileLine* fl, bool fromDollarC = false)
         : ASTGEN_SUPER_CStmtUser(fl)
-        , m_fromDollarC{fromDollarC}
-        , m_pure{false} {}
-    AstCStmtUser(FileLine* fl, Pure, bool fromDollarC = false)
-        : ASTGEN_SUPER_CStmtUser(fl)
-        , m_fromDollarC{fromDollarC}
-        , m_pure{true} {}
+        , m_fromDollarC{fromDollarC} {}
     ASTGEN_MEMBERS_AstCStmtUser;
     // METHODS
     bool isGateOptimizable() const override { return false; }
     bool isOutputter() override { return true; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() override { return m_pure; }
+    bool isPure() override { return false; }
     bool sameNode(const AstNode*) const override { return true; }
     bool fromDollarC() const { return m_fromDollarC; }
     // Add some text, or a node to this statement
