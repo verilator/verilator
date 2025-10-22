@@ -151,7 +151,7 @@ package std;
 
     function state status();
 `ifdef VERILATOR_TIMING
-      return state'($c(m_process, "->state()"));
+      return state'($cpure(m_process, "->state()"));
 `else
       return RUNNING;
 `endif
