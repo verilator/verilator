@@ -156,7 +156,7 @@ or "`ifdef`"'s may break other tools.
 
    .. t_dist_docs_style restart_sort
 
-.. option:: $c([string], ...);
+.. option:: $c([string], ...);, $cpure([string], ...);
 
    The string will be embedded directly in the output C++ code at the point
    where the surrounding Verilog code is compiled.  It may either be a
@@ -195,6 +195,11 @@ or "`ifdef`"'s may break other tools.
    the output, e.g., :code:`signal_32_bits = $c32("...");`.  This allows for
    compatibility with other simulators, which require a differently named
    PLI function name for each different output width.
+
+   `$cpure` is similar to `$c` except that it indicates the
+   expression is pure, versus `$c` which is assumed impure.
+   `$cpure` is for internal use only, and it might change
+   without notice in any future version or Verilator.
 
 .. option:: $display, $write, $fdisplay, $fwrite, $sformat, $swrite
 

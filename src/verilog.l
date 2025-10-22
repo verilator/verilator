@@ -174,7 +174,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   {ws}                  { FL_FWD; FL_BRK; }  /* otherwise ignore white-space */
   {crnl}                { FL_FWD; FL_BRK; }  /* Count line numbers */
   /*     Extensions to Verilog set, some specified by PSL */
-  "$c"[0-9]*            { FL; return yD_C; }  /*Verilator only*/
+  "$c"[0-9]*            { FL; return yD_C; }      /*Verilator only*/
+  "$cpure"[0-9]*        { FL; return yD_CPURE; }  /*Verilator only*/
   /*     System Tasks */
   "$acos"               { FL; return yD_ACOS; }
   "$acosh"              { FL; return yD_ACOSH; }

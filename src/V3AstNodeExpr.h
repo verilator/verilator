@@ -603,23 +603,30 @@ public:
     void add(AstNode* nodep) { addNodesp(nodep); }
 };
 class AstCExprUser final : public AstNodeExpr {
-    // User '$c' statement - Like AstCStmt, with text tracking and optimizations disabled.
+    // User '$c' or '$cpure' expression - Like AstCStmt, with text tracking and optimizations
+    // disabled.
     //
     // Use AstCExpr instead, unless the text is from user input.
     //
     // @astgen op1 := nodesp : List[AstNode<AstNodeExpr|AstText>]
+    const bool m_pure;  // Whether the function is pure
 public:
+    class Pure {};
     AstCExprUser(FileLine* fl)
-        : ASTGEN_SUPER_CExprUser(fl) {}
+        : ASTGEN_SUPER_CExprUser(fl)
+        , m_pure{false} {}
+    AstCExprUser(FileLine* fl, Pure)
+        : ASTGEN_SUPER_CExprUser(fl)
+        , m_pure{true} {}
     ASTGEN_MEMBERS_AstCExprUser;
     // METHODS
     bool cleanOut() const override { return false; }
     std::string emitC() override { V3ERROR_NA_RETURN(""); }
     std::string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    bool isGateOptimizable() const override { return false; }
+    bool isGateOptimizable() const override { return m_pure; }
     bool isOutputter() override { return true; }
-    bool isPredictOptimizable() const override { return false; }
-    bool isPure() override { return false; }
+    bool isPredictOptimizable() const override { return m_pure; }
+    bool isPure() override { return m_pure; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     // Add some text, or a node to this expression
     void add(const std::string& text) { addNodesp(new AstText{fileline(), text}); }
