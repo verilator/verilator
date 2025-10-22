@@ -6,4 +6,6 @@
 
 `verilator_config
 
-instrument -model "instrument_var" -id 0 -target "top_module.a1.b1.out"
+instrument -callback "instrument_var" -id 0 -target "top_module.a1.b1.out"
+
+instrument -callback "instrument_var" -id 1 -target "top_module.a2.out"

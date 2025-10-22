@@ -15,13 +15,11 @@ test.top_filename = "t/t_instrument.v"
 sim_filename = "t/" + test.name + ".cpp"
 dpi_filename = "t/t_instrumentDPI.cpp"
 vlt_filename = "t/" + test.name + ".vlt"
-log_filename = "obj_vlt/t_instrument/simulation_output.log"
 
-test.compile(make_top_shell=False,
-             make_main=False,
-             v_flags2=["--trace --exe --instrument", sim_filename, vlt_filename, dpi_filename])
-test.execute()
-
-test.files_identical(log_filename, test.golden_filename)
+test.compile(
+    make_top_shell=False,
+    make_main=False,
+    v_flags2=["--trace --timing --exe --instrument", sim_filename, vlt_filename, dpi_filename])
+test.execute(expect_filename=test.golden_filename)
 
 test.passes()
