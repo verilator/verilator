@@ -1388,12 +1388,16 @@ public:
     // other processing in verilator.
     AstPragma(FileLine* fl, VPragmaType pragType)
         : ASTGEN_SUPER_Pragma(fl)
-        , m_pragType{pragType} {}
-    AstPragma(FileLine* fl, VPragmaType pragType, const VTimescale& timescale)
+        , m_pragType{pragType} {
+        UASSERT_OBJ(pragType != VPragmaType::TIMEUNIT_SET, fl, "Should use other constructor");
+    }
+    AstPragma(FileLine* fl, const VTimescale& timescale)
         : ASTGEN_SUPER_Pragma(fl)
-        , m_pragType{pragType}
+        , m_pragType{VPragmaType::TIMEUNIT_SET}
         , m_timescale{timescale} {}
     ASTGEN_MEMBERS_AstPragma;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     VPragmaType pragType() const { return m_pragType; }  // *=type of the pragma
     bool isPredictOptimizable() const override { return false; }
     bool sameNode(const AstNode* samep) const override {

@@ -994,6 +994,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 //  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
+//  Blank lines for type insertion
 
 %start source_text
 
@@ -3553,7 +3554,7 @@ statement_item<nodep>:          // IEEE: statement_item
         //
         |       task_subroutine_callNoSemi ';'          { $$ = $1; }
         //
-        |       statementVerilatorPragmas               { $$ = $1; }
+        |       statementVerilatorPragmas               { $$ = new AstStmtPragma{$<fl>1, $1}; }
         //
         //                      // IEEE: disable_statement
         |       yDISABLE yFORK ';'                      { $$ = new AstDisableFork{$1}; }
@@ -3654,7 +3655,7 @@ statement_item<nodep>:          // IEEE: statement_item
                         { $$ = nullptr; BBUNSUP($1, "Unsupported: expect"); DEL($3, $6); }
         ;
 
-statementVerilatorPragmas<nodep>:
+statementVerilatorPragmas<pragmap>:
                 yVL_COVERAGE_BLOCK_OFF
                         { $$ = new AstPragma{$1, VPragmaType::COVERAGE_BLOCK_OFF}; }
         |       yVL_UNROLL_DISABLE

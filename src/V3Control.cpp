@@ -272,10 +272,11 @@ public:
 
     void applyBlock(AstNodeBlock* nodep) {
         const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
+        FileLine* const flp = nodep->fileline();
         if (!nodep->unnamed()) {
             for (const string& i : m_coverageOffBlocks) {
                 if (VString::wildmatch(nodep->prettyDehashOrigOrName(), i)) {
-                    nodep->addStmtsp(new AstPragma{nodep->fileline(), pragma});
+                    nodep->addStmtsp(new AstStmtPragma{flp, new AstPragma{flp, pragma}});
                 }
             }
         }
@@ -316,7 +317,7 @@ std::ostream& operator<<(std::ostream& os, const V3ControlIgnoresLine& rhs) {
 
 // Some attributes are attached to entities of the occur on a fileline
 // and multiple attributes can be attached to a line
-using V3ControlLineAttribute = std::bitset<VPragmaType::ENUM_SIZE>;
+using V3ControlLineAttribute = std::bitset<VPragmaType::_ENUM_SIZE>;
 
 class WaiverSetting final {
 public:
@@ -396,8 +397,9 @@ public:
     void applyBlock(AstNodeBlock* nodep) {
         // Apply to block at this line
         const VPragmaType pragma = VPragmaType::COVERAGE_BLOCK_OFF;
-        if (lineMatch(nodep->fileline()->lineno(), pragma)) {
-            nodep->addStmtsp(new AstPragma{nodep->fileline(), pragma});
+        FileLine* const flp = nodep->fileline();
+        if (lineMatch(flp->lineno(), pragma)) {
+            nodep->addStmtsp(new AstStmtPragma{flp, new AstPragma{flp, pragma}});
         }
     }
     void applyCase(AstCase* nodep) {

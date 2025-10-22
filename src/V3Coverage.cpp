@@ -710,8 +710,8 @@ class CoverageVisitor final : public VNVisitor {
         UINFO(4, "  STOP: " << nodep);
         m_state.m_on = false;
     }
-    void visit(AstPragma* nodep) override {
-        if (nodep->pragType() == VPragmaType::COVERAGE_BLOCK_OFF) {
+    void visit(AstStmtPragma* nodep) override {
+        if (nodep->pragp()->pragType() == VPragmaType::COVERAGE_BLOCK_OFF) {
             // Skip all NEXT nodes under this block, and skip this if/case branch
             UINFO(4, "  OFF: h" << m_state.m_handle << " " << nodep);
             m_state.m_on = false;

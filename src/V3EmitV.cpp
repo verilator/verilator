@@ -1145,6 +1145,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstTraceInc*) override {}
     // NOPs
     void visit(AstPragma*) override {}
+    void visit(AstStmtPragma*) override {}
     void visit(AstCell*) override {}  // Handled outside the Visit class
     // Default
     void visit(AstNode* nodep) override {

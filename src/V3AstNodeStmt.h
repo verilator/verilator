@@ -1097,6 +1097,16 @@ public:
     // cppcheck-suppress uselessOverride
     bool isPure() override { return exprp()->isPure(); }
 };
+class AstStmtPragma final : public AstNodeStmt {
+    // Pragma in statement position
+    // @astgen op1 := pragp : AstPragma
+public:
+    AstStmtPragma(FileLine* fl, AstPragma* pragp)
+        : ASTGEN_SUPER_StmtPragma(fl) {
+        this->pragp(pragp);
+    }
+    ASTGEN_MEMBERS_AstStmtPragma;
+};
 class AstStop final : public AstNodeStmt {
     const bool m_isFatal;  // $fatal not $stop
 public:

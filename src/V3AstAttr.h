@@ -1439,7 +1439,6 @@ inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) {
 class VPragmaType final {
 public:
     enum en : uint8_t {
-        ILLEGAL,
         COVERAGE_BLOCK_OFF,
         HIER_BLOCK,
         HIER_PARAMS,
@@ -1453,11 +1452,28 @@ public:
         UNROLL_FULL,
         FULL_CASE,
         PARALLEL_CASE,
-        ENUM_SIZE
+        _ENUM_SIZE
     };
     enum en m_e;
-    VPragmaType()
-        : m_e{ILLEGAL} {}
+    const char* ascii() const {
+        static const char* const names[] = {
+            "COVERAGE_BLOCK_OFF",  //
+            "HIER_BLOCK",  //
+            "HIER_PARAMS",  //
+            "INLINE_MODULE",  //
+            "NO_INLINE_MODULE",  //
+            "NO_INLINE_TASK",  //
+            "PUBLIC_MODULE",  //
+            "PUBLIC_TASK",  //
+            "TIMEUNIT_SET",  //
+            "UNROLL_DISABLE",  //
+            "UNROLL_FULL",  //
+            "FULL_CASE",  //
+            "PARALLEL_CASE",  //
+            "_ENUM_SIZE"  //
+        };
+        return names[m_e];
+    }
     // cppcheck-suppress noExplicitConstructor
     constexpr VPragmaType(en _e)
         : m_e{_e} {}
@@ -1470,6 +1486,9 @@ constexpr bool operator==(const VPragmaType& lhs, const VPragmaType& rhs) {
 }
 constexpr bool operator==(const VPragmaType& lhs, VPragmaType::en rhs) { return lhs.m_e == rhs; }
 constexpr bool operator==(VPragmaType::en lhs, const VPragmaType& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VPragmaType& rhs) {
+    return os << rhs.ascii();
+}
 
 // ######################################################################
 // Defines what kind of randomization is done on a variable

@@ -146,7 +146,7 @@ AstPragma* V3ParseImp::createTimescale(FileLine* fl, bool unitSet, double unitVa
         return nullptr;
     } else {
         unit = v3Global.opt.timeComputeUnit(unit);
-        return new AstPragma{fl, VPragmaType::TIMEUNIT_SET, unit};
+        return new AstPragma{fl, unit};
     }
 }
 

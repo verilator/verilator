@@ -267,11 +267,11 @@ class LinkJumpVisitor final : public VNVisitor {
         }
         m_blockStack.pop_back();
     }
-    void visit(AstPragma* nodep) override {
-        if (nodep->pragType() == VPragmaType::UNROLL_DISABLE) {
+    void visit(AstStmtPragma* nodep) override {
+        if (nodep->pragp()->pragType() == VPragmaType::UNROLL_DISABLE) {
             m_unrollFull = VOptionBool::OPT_FALSE;
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-        } else if (nodep->pragType() == VPragmaType::UNROLL_FULL) {
+        } else if (nodep->pragp()->pragType() == VPragmaType::UNROLL_FULL) {
             m_unrollFull = VOptionBool::OPT_TRUE;
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         } else {

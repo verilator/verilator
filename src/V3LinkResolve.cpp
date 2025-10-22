@@ -269,6 +269,17 @@ class LinkResolveVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
+    void visit(AstStmtPragma* nodep) override {
+        if (nodep->pragp()->pragType() == VPragmaType::COVERAGE_BLOCK_OFF) {
+            // Strip pragma if not needed, may optimize better without
+            if (!v3Global.opt.coverageLine()) {
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+        }
+        iterateChildren(nodep);
+    }
+
     void visit(AstPragma* nodep) override {
         if (nodep->pragType() == VPragmaType::HIER_BLOCK) {
             UASSERT_OBJ(m_modp, nodep, "HIER_BLOCK not under a module");
@@ -291,12 +302,6 @@ class LinkResolveVisitor final : public VNVisitor {
             m_modp->modPublic(true);  // Need to get to the task...
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (nodep->pragType() == VPragmaType::COVERAGE_BLOCK_OFF) {
-            if (!v3Global.opt.coverageLine()) {  // No need for block statements; may optimize
-                                                 // better without
-                nodep->unlinkFrBack();
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            }
         } else {
             iterateChildren(nodep);
         }
