@@ -1148,9 +1148,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
             // Traverse MemberSel chain to find the root variable reference
             AstNode* rootNode = nodep->fromp();
-            while (VN_IS(rootNode, MemberSel)) {
-                rootNode = VN_AS(rootNode, MemberSel)->fromp();
-            }
+            while (VN_IS(rootNode, MemberSel)) { rootNode = VN_AS(rootNode, MemberSel)->fromp(); }
 
             // Check if the root variable participates in global constraints
             AstVar* const constrainedVar
