@@ -56,7 +56,6 @@ enum ClassRandom : uint8_t {
     IS_RANDOMIZED,  // randomize() is called
     IS_RANDOMIZED_GLOBAL,  // randomize() is called with global constraints
     IS_RANDOMIZED_INLINE,  // randomize() with args is called
-    IS_RANDOMIZED_INLINE_GLOBAL,  // randomize() with args and global constraints
     IS_STD_RANDOMIZED,  // std::randomize() is called
 };
 
@@ -176,8 +175,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                         }
                     }
                     // If the class is randomized inline, all members use rand mode
-                    if ((nodep->user1() == IS_RANDOMIZED_INLINE)
-                        || (nodep->user1() == IS_RANDOMIZED_INLINE_GLOBAL)) {
+                    if (nodep->user1() == IS_RANDOMIZED_INLINE) {
                         RandomizeMode randMode = {};
                         randMode.usesMode = true;
                         varp->user1(randMode.asInt);
@@ -602,10 +600,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
             nodep->user2p(m_modp);
         if (randObject && nodep->varp()
             && nodep->varp()->rand().isRandomizable()) {  // Process global constraints
-            if (m_classp && m_classp->user1() == IS_RANDOMIZED)
+            if (m_classp && m_classp->user1() == IS_RANDOMIZED) {
                 m_classp->user1(IS_RANDOMIZED_GLOBAL);
-            else if (m_classp && m_classp->user1() == IS_RANDOMIZED_INLINE)
-                m_classp->user1(IS_RANDOMIZED_INLINE_GLOBAL);
+            }
             // Mark the entire nested chain as participating in global constraints
             // For foo.in.val, this marks: foo, foo.in, and foo.in.val
             if (VN_IS(nodep->fromp(), VarRef) || VN_IS(nodep->fromp(), MemberSel)) {
@@ -2370,8 +2367,7 @@ class RandomizeVisitor final : public VNVisitor {
         UINFO(9, "Define randomize() for " << nodep);
         nodep->baseMostClassp()->needRNG(true);
 
-        bool globalConstrained = nodep->user1() == IS_RANDOMIZED_INLINE_GLOBAL
-                                 || nodep->user1() == IS_RANDOMIZED_GLOBAL;
+        bool globalConstrained = nodep->user1() == IS_RANDOMIZED_GLOBAL;
         AstFunc* const randomizep = V3Randomize::newRandomizeFunc(m_memberMap, nodep);
         AstVar* const fvarp = VN_AS(randomizep->fvarp(), Var);
         addPrePostCall(nodep, randomizep, "pre_randomize");
