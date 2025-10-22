@@ -609,11 +609,15 @@ class AstCExprUser final : public AstNodeExpr {
     // Use AstCExpr instead, unless the text is from user input.
     //
     // @astgen op1 := nodesp : List[AstNode<AstNodeExpr|AstText>]
-    const bool m_purity;  // Whether the function is pure
+    const bool m_pure;  // Whether the function is pure
 public:
-    AstCExprUser(FileLine* fl, bool purity = false)
+    class Pure {};
+    AstCExprUser(FileLine* fl)
         : ASTGEN_SUPER_CExprUser(fl)
-        , m_purity{purity} {}
+        , m_pure{false} {}
+    AstCExprUser(FileLine* fl, Pure)
+        : ASTGEN_SUPER_CExprUser(fl)
+        , m_pure{true} {}
     ASTGEN_MEMBERS_AstCExprUser;
     // METHODS
     bool cleanOut() const override { return false; }
@@ -622,7 +626,7 @@ public:
     bool isGateOptimizable() const override { return false; }
     bool isOutputter() override { return true; }
     bool isPredictOptimizable() const override { return false; }
-    bool isPure() override { return m_purity; }
+    bool isPure() override { return m_pure; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     // Add some text, or a node to this expression
     void add(const std::string& text) { addNodesp(new AstText{fileline(), text}); }

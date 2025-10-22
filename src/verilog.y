@@ -4115,7 +4115,7 @@ system_t_call<nodeStmtp>:       // IEEE: system_tf_call (as task)
         |       yD_CPURE '(' cStrList ')' {
                     AstCStmtUser* cstmtp = nullptr;
                     if (!v3Global.opt.ignc()) {
-                        cstmtp = new AstCStmtUser{$1, true, true};
+                        cstmtp = new AstCStmtUser{$1, AstCStmtUser::Pure{}, true};
                         cstmtp->add($3);
                     }
                     $$ = cstmtp;
@@ -4290,7 +4290,7 @@ system_f_call<nodeExprp>:           // IEEE: system_tf_call (as func)
         |       yD_CPURE '(' cStrList ')' {
                     AstCExprUser* cexprp = nullptr;
                     if (!v3Global.opt.ignc()) {
-                        cexprp = new AstCExprUser{$1, true};
+                        cexprp = new AstCExprUser{$1, AstCExprUser::Pure{}};
                         cexprp->add($3);
                     }
                     $$ = cexprp;
