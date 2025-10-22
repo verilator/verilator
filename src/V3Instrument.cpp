@@ -137,9 +137,9 @@ class InstrumentTargetFndr final : public VNVisitor {
     }
     // Helper function for adding the parameters into the tree
     void addParam(AstModule* modp) {
-        AstVar* paramp = new AstVar(modp->fileline(), VVarType::GPARAM, "INSTRUMENT",
-                                    VFlagChildDType{}, nullptr);
-        paramp->valuep(new AstConst(modp->fileline(), AstConst::Signed32{}, 0));
+        AstVar* paramp = new AstVar{modp->fileline(), VVarType::GPARAM, "INSTRUMENT",
+                                    VFlagChildDType{}, nullptr};
+        paramp->valuep(new AstConst{modp->fileline(), AstConst::Signed32{}, 0});
         paramp->dtypep(paramp->valuep()->dtypep());
         paramp->ansi(true);
         modp->addStmtsp(paramp);
@@ -149,16 +149,16 @@ class InstrumentTargetFndr final : public VNVisitor {
         int pinnum = 0;
         if (isInstrumentPath) {
             for (AstNode* n = cellp->pinsp(); n; n = n->nextp()) { pinnum++; }
-            AstPin* pinp = new AstPin(cellp->fileline(), pinnum + 1, "INSTRUMENT",
+            AstPin* pinp = new AstPin{cellp->fileline(), pinnum + 1, "INSTRUMENT",
                                       // The pin is set to 1 to enable the instrumentation path
-                                      new AstConst(cellp->fileline(), AstConst::Signed32{}, 1));
+                                      new AstConst{cellp->fileline(), AstConst::Signed32{}, 1}};
             pinp->param(true);
             cellp->addParamsp(pinp);
         } else {
             for (AstNode* n = cellp->pinsp(); n; n = n->nextp()) { pinnum++; }
-            AstPin* pinp = new AstPin(
+            AstPin* pinp = new AstPin{
                 cellp->fileline(), pinnum + 1, "INSTRUMENT",
-                new AstParseRef(cellp->fileline(), VParseRefExp::PX_TEXT, "INSTRUMENT"));
+                new AstParseRef{cellp->fileline(), VParseRefExp::PX_TEXT, "INSTRUMENT"}};
             pinp->param(true);
             cellp->addParamsp(pinp);
         }
