@@ -22,6 +22,7 @@
 //=========================================================================
 
 #include "verilated_timing.h"
+#include "verilated_fiber.h"
 
 //======================================================================
 // VlCoroutineHandle:: Methods
@@ -358,6 +359,12 @@ std::suspend_never VlCoroutine::VlPromise::final_suspend() noexcept {
     if (m_continuation) {
         m_continuation();
         m_continuation = nullptr;
+    }
+    // If there is a fiber waiting, resume it (for DPI export timing support)
+    if (m_fiberp) {
+        VlFiber* const fiberp = m_fiberp;
+        m_fiberp = nullptr;
+        fiberp->resume();
     }
     return {};
 }
