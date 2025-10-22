@@ -507,6 +507,7 @@ class InstrumentFunc final : public VNVisitor {
     AstTask* m_taskp = nullptr;  // // Stores the created task node
     AstFunc* m_funcp = nullptr;  // Stores the created function node
     AstFuncRef* m_funcrefp = nullptr;  // Stores the created funcref node
+    AstLoop* m_loopp = nullptr;  // Stores the created loop pointer
     AstTaskRef* m_taskrefp = nullptr;  // Stores the created taskref node
     AstModule* m_current_module = nullptr;  // Stores the currenty visited module
     AstModule* m_current_module_cell_check
@@ -515,6 +516,9 @@ class InstrumentFunc final : public VNVisitor {
     AstVar* m_orig_varp = nullptr;  // Stores the original variable node
     AstVar* m_orig_varp_instMod
         = nullptr;  // Stores the original variable node in instrumented module node
+    AstVar* m_dpi_trigger
+        = nullptr;  // Stores the variable noded for the dpi-trigger, which ensures the changing of
+                    // a signal and the execution of the DPI function
     AstPort* m_orig_portp = nullptr;  // Stores the original port node
 
     // METHODS
@@ -766,7 +770,15 @@ class InstrumentFunc final : public VNVisitor {
                     m_tmp_varp->trace(true);
                 }
                 nodep->addStmtsp(m_tmp_varp);
-
+                m_dpi_trigger = new AstVar{
+                    nodep->fileline(), VVarType::VAR, "dpi_trigger", VFlagChildDType{},
+                    new AstBasicDType{nodep->fileline(), VBasicDTypeKwd::BIT, VSigning::NOSIGN}};
+                m_dpi_trigger->trace(false);
+                nodep->addStmtsp(m_dpi_trigger);
+                m_loopp = new AstLoop{nodep->fileline()};
+                AstInitial* initialp = new AstInitial{
+                    nodep->fileline(), new AstBegin{nodep->fileline(), "", m_loopp, false}};
+                nodep->addStmtsp(initialp);
                 if (m_taskp != nullptr) {
                     m_taskrefp = new AstTaskRef{
                         nodep->fileline(), m_task_name,
@@ -786,7 +798,6 @@ class InstrumentFunc final : public VNVisitor {
                                          m_funcrefp};
                     nodep->addStmtsp(m_assignwp);
                 }
-
                 if (m_targetIndex == entries.size() - 1) { setDone(nodep); }
                 for (AstNode* n = nodep->op2p(); n; n = n->nextp()) {
                     if (VN_IS(n, Port)) { m_pinnum = VN_CAST(n, Port)->pinNum(); }
@@ -827,6 +838,8 @@ class InstrumentFunc final : public VNVisitor {
             m_addedFunc = false;
             m_addedport = false;
             m_instGenBlock = nullptr;
+            m_dpi_trigger = nullptr;
+            m_loopp = nullptr;
         }
         m_targetIndex = 0;
     }
@@ -928,6 +941,7 @@ class InstrumentFunc final : public VNVisitor {
     void visit(AstFunc* nodep) {
         if (m_addedFunc == false && nodep == m_funcp && m_current_module != nullptr) {
             AstVar* instrID = nullptr;
+            AstVar* dpi_trigger = nullptr;
             AstVar* var_x_func = nullptr;
 
             instrID = new AstVar{nodep->fileline(), VVarType::PORT, "instrID", VFlagChildDType{},
@@ -938,9 +952,34 @@ class InstrumentFunc final : public VNVisitor {
             var_x_func = m_orig_varp->cloneTree(false);
             var_x_func->varType(VVarType::PORT);
             var_x_func->direction(VDirection::INPUT);
+            dpi_trigger = m_dpi_trigger->cloneTree(false);
+            dpi_trigger->varType(VVarType::PORT);
+            dpi_trigger->direction(VDirection::INPUT);
 
             nodep->addStmtsp(instrID);
+            nodep->addStmtsp(dpi_trigger);
             nodep->addStmtsp(var_x_func);
+        }
+    }
+
+    //ASTLOOP VISITOR FUNCTION:
+    //The function is used to add the logic for the dpi trigger, that triggers the DPI function at
+    //the smallest possible time intervals.
+    void visit(AstLoop* nodep) override {
+        if (nodep == m_loopp && m_current_module != nullptr) {
+            AstParseRef* initialParseRefrhsp
+                = new AstParseRef{nodep->fileline(), VParseRefExp::PX_TEXT, m_dpi_trigger->name()};
+            AstParseRef* initialParseReflhsp
+                = new AstParseRef{nodep->fileline(), VParseRefExp::PX_TEXT, m_dpi_trigger->name()};
+            AstBegin* initialBeginp = new AstBegin{
+                nodep->fileline(), "",
+                new AstAssign{nodep->fileline(), initialParseReflhsp,
+                              new AstLogNot{nodep->fileline(), initialParseRefrhsp}},
+                false};
+            initialBeginp->addStmtsp(
+                new AstDelay{nodep->fileline(),
+                             new AstConst{nodep->fileline(), AstConst::Unsized32{}, 1}, false});
+            nodep->addContsp(initialBeginp);
         }
     }
 
@@ -998,10 +1037,14 @@ class InstrumentFunc final : public VNVisitor {
                 nodep->fileline(), AstConst::Unsized32{},
                 static_cast<uint32_t>(getMapEntryFaultCase(m_targetKey, m_targetIndex))};
 
+            AstVarRef* added_triggerp
+                = new AstVarRef{nodep->fileline(), m_dpi_trigger, VAccess::READ};
+
             AstVarRef* added_varrefp
                 = new AstVarRef{nodep->fileline(), m_orig_varp_instMod, VAccess::READ};
 
             nodep->addPinsp(new AstArg{nodep->fileline(), "", constp_id});
+            nodep->addPinsp(new AstArg{nodep->fileline(), "", added_triggerp});
             nodep->addPinsp(new AstArg{nodep->fileline(), "", added_varrefp});
             m_orig_varp_instMod = nullptr;
         }
