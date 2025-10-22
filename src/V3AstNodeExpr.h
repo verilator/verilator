@@ -623,9 +623,9 @@ public:
     bool cleanOut() const override { return false; }
     std::string emitC() override { V3ERROR_NA_RETURN(""); }
     std::string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    bool isGateOptimizable() const override { return false; }
+    bool isGateOptimizable() const override { return m_pure; }
     bool isOutputter() override { return true; }
-    bool isPredictOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return m_pure; }
     bool isPure() override { return m_pure; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     // Add some text, or a node to this expression
