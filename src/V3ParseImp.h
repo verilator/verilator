@@ -128,6 +128,7 @@ struct V3ParseBisonYYSType final {
         VFwdType::en fwdtype;
         VLifetime::en lifetime;
         VStrength::en strength;
+        VJoinType::en joinType;
 
 #include "V3Ast__gen_yystype.h"
     };

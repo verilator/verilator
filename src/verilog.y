@@ -3373,32 +3373,22 @@ seq_blockPreId<nodep>:          // IEEE: seq_block, but called with leading ID
                           GRAMMARP->endLabel($<fl>4, $1, $4); }
         ;
 
+par_blockJoin<joinType>:
+                yJOIN       { $$ = VJoinType::JOIN; }
+        |       yJOIN_ANY   { $$ = VJoinType::JOIN_ANY; }
+        |       yJOIN_NONE  { $$ = VJoinType::JOIN_NONE; }
+        ;
+
 par_block<nodep>:               // ==IEEE: par_block
-                par_blockFront blockDeclStmtListE yJOIN endLabelE
-                        { $$ = $1; $1->joinType(VJoinType::JOIN);
-                          V3ParseGrammar::addForkStmtsp($1, $2);
-                          GRAMMARP->endLabel($<fl>4, $1, $4); }
-        |       par_blockFront blockDeclStmtListE yJOIN_ANY endLabelE
-                        { $$ = $1; $1->joinType(VJoinType::JOIN_ANY);
-                          V3ParseGrammar::addForkStmtsp($1, $2);
-                          GRAMMARP->endLabel($<fl>4, $1, $4); }
-        |       par_blockFront blockDeclStmtListE yJOIN_NONE endLabelE
-                        { $$ = $1; $1->joinType(VJoinType::JOIN_NONE);
+                par_blockFront blockDeclStmtListE par_blockJoin endLabelE
+                        { $$ = $1; $1->joinType($3);
                           V3ParseGrammar::addForkStmtsp($1, $2);
                           GRAMMARP->endLabel($<fl>4, $1, $4); }
         ;
 
 par_blockPreId<nodep>:          // ==IEEE: par_block but called with leading ID
-                par_blockFrontPreId blockDeclStmtListE yJOIN endLabelE
-                        { $$ = $1; $1->joinType(VJoinType::JOIN);
-                          V3ParseGrammar::addForkStmtsp($1, $2);
-                          GRAMMARP->endLabel($<fl>4, $1, $4); }
-        |       par_blockFrontPreId blockDeclStmtListE yJOIN_ANY endLabelE
-                        { $$ = $1; $1->joinType(VJoinType::JOIN_ANY);
-                          V3ParseGrammar::addForkStmtsp($1, $2);
-                          GRAMMARP->endLabel($<fl>4, $1, $4); }
-        |       par_blockFrontPreId blockDeclStmtListE yJOIN_NONE endLabelE
-                        { $$ = $1; $1->joinType(VJoinType::JOIN_NONE);
+                par_blockFrontPreId blockDeclStmtListE par_blockJoin endLabelE
+                        { $$ = $1; $1->joinType($3);
                           V3ParseGrammar::addForkStmtsp($1, $2);
                           GRAMMARP->endLabel($<fl>4, $1, $4); }
         ;
