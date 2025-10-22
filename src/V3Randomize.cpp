@@ -242,7 +242,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
     // Process a single constraint during nested constraint cloning
     void processNestedConstraint(AstConstraint* const constrp, AstVarRef* rootVarRefp,
-                                  const std::vector<AstVar*>& newPath) {
+                                 const std::vector<AstVar*>& newPath) {
         if (!constrp) return;
 
         AstConstraint* cloneConstrp = constrp->cloneTree(false);
@@ -283,11 +283,12 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
                         std::vector<AstVar*> newPath = pathToClass;
                         newPath.push_back(memberVarp);
-                        // Replace all variable references inside the cloned constraint with proper member selections
-                        nestedClassp->foreachMember([&](AstClass* const containingClassp,
-                                                        AstConstraint* const constrp) {
-                            processNestedConstraint(constrp, rootVarRefp, newPath);
-                        });
+                        // Replace all variable references inside the cloned constraint with proper
+                        // member selections
+                        nestedClassp->foreachMember(
+                            [&](AstClass* const containingClassp, AstConstraint* const constrp) {
+                                processNestedConstraint(constrp, rootVarRefp, newPath);
+                            });
 
                         cloneNestedConstraintsRecurse(rootVarRefp, nestedClassp, newPath);
                     }
