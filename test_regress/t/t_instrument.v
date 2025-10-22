@@ -5,17 +5,17 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module top_module(
-    output logic [7:0] outa,
-    output logic [7:0] outb
+    input   reg     [7:0] in1a,
+    input   reg     [7:0] in2a,
+    input   reg     [7:0] in1b,
+    input   reg     [7:0] in2b,
+    output  logic   [7:0] outa,
+    output  logic   [7:0] outb
 );
-    logic [7:0] in1a = 8'd5;
-    logic [7:0] in2a = 8'd10;
-
-    logic [7:0] in1b = 8'd20;
-    logic [7:0] in2b = 8'd30;
 
     module_a a1 (.in1(in1a), .in2(in2a), .out(outa));
     module_a a2 (.in1(in1b), .in2(in2b), .out(outb));
+
 endmodule
 
 module module_a(

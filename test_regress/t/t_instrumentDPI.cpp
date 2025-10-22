@@ -8,18 +8,23 @@
 
 #include <verilated.h>
 
-#include <iostream>
 #include <svdpi.h>
 
-extern "C" short instrument_var(int id, const svLogic* x) {
+extern "C" int instrument_var(int id, int trigger, const svLogic* x) {
     switch (id) {
-    case 0: return 0;
+    case 0:
+        if ((VL_TIME_Q() >= 10 && VL_TIME_Q() < 20) || VL_TIME_Q() >= 85) {
+            return 0;
+        } else {
+            return *x;
+        }
+        //return 0;
     case 1:
-        // Stuck at 1 Fault Injection
-        return 1;
-    case 2:
-        // Inverter/Bit flip Fault injection (provisional)
-        return !x;
+        if ((VL_TIME_Q() >= 0 && VL_TIME_Q() < 3) || (VL_TIME_Q() >= 32 && VL_TIME_Q() < 69)) {
+            return 1;
+        } else {
+            return *x;
+        }
     default: return *x;
     }
 }
