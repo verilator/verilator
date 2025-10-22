@@ -16,7 +16,9 @@ sim_filename = "t/t_instrument.cpp"
 dpi_filename = "t/t_instrumentDPI.cpp"
 vlt_filename = "t/" + test.name + ".vlt"
 
-test.compile(fails=True, make_top_shell=False,
+test.compile(
+    fails=True,
+    make_top_shell=False,
     make_main=False,
     v_flags2=["--trace --timing --exe --instrument", sim_filename, vlt_filename, dpi_filename],
     expect_filename=test.golden_filename)
