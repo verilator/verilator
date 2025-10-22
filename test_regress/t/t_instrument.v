@@ -31,6 +31,7 @@ module module_b (
     input logic [7:0] in2,
     output logic [7:0] out
 );
+    reg [127:0] bigRegister;
     always_comb begin
         out = in1 + in2;
     end

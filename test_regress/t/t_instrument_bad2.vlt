@@ -6,8 +6,6 @@
 
 `verilator_config
 
-instrument -callback "instrument_var" -id 0 -target "top_module.outa"
-
 instrument -callback "instrument_var" -id 0 -target "top.a1.b1.out"
 
 instrument -callback "instrument_var" -id 0 -target "top_module.a3.b1.out"
@@ -15,3 +13,5 @@ instrument -callback "instrument_var" -id 0 -target "top_module.a3.b1.out"
 instrument -callback "instrument_var" -id 0 -target "top_module.a1.b3.out"
 
 instrument -callback "instrument_var" -id 0 -target "top_module.a1.b1.clk"
+
+instrument -callback "instrument_var" -id 0 -target "top_module.a1.b1.bigRegister"
