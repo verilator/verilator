@@ -247,8 +247,8 @@ private:
                 // Create a fork so that this AlwaysObserved can be retriggered before the
                 // assignment happens. Also then it can be combo, avoiding the need for creating
                 // new triggers.
-                AstFork* const forkp = new AstFork{flp, "", ifp};
-                forkp->joinType(VJoinType::JOIN_NONE);
+                AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
+                forkp->addForksp(new AstBegin{flp, "", ifp, true});
                 // Use Observed for this to make sure we do not miss the event
                 m_clockingp->addNextHere(new AstAlwaysObserved{
                     flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, forkp});

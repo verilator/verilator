@@ -55,6 +55,7 @@ class LinkParseVisitor final : public VNVisitor {
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
     AstNodeFTask* m_ftaskp = nullptr;  // Current task
+    AstNodeBlock* m_blockp = nullptr;  // Current AstNodeBlock
     AstNodeDType* m_dtypep = nullptr;  // Current data type
     AstNodeExpr* m_defaultInSkewp = nullptr;  // Current default input skew
     AstNodeExpr* m_defaultOutSkewp = nullptr;  // Current default output skew
@@ -377,20 +378,27 @@ class LinkParseVisitor final : public VNVisitor {
         if (m_procedurep && VN_IS(m_procedurep, Always))
             nodep->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);
         if (nodep->valuep()) {
-            // A variable with an = value can be three things:
             FileLine* const fl = nodep->valuep()->fileline();
+            // A variable with an = value can be 4 things:
             if (nodep->isParam() || (m_ftaskp && nodep->isNonOutput())) {
                 // 1. Parameters and function inputs: It's a default to use if not overridden
             } else if (!m_ftaskp && !VN_IS(m_modp, Class) && nodep->isNonOutput()
                        && !nodep->isInput()) {
-                // Module inout/ref/constref: const default to use
+                // 2. Module inout/ref/constref: const default to use
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: Default value on module inout/ref/constref: "
                                   << nodep->prettyNameQ());
                 nodep->valuep()->unlinkFrBack()->deleteTree();
-            }  // 2. Under modules/class, it's an initial value to be loaded at time 0 via an
-               // AstInitial
-            else if (m_valueModp) {
+            } else if (m_blockp) {
+                // 3. Under blocks, it's an initial value to be under an assign
+                // TODO: This is wrong if it's a static variable right?
+                FileLine* const newfl = new FileLine{fl};
+                newfl->warnOff(V3ErrorCode::E_CONSTWRITTEN, true);
+                m_blockp->addStmtsp(
+                    new AstAssign{newfl, new AstVarRef{newfl, nodep, VAccess::WRITE},
+                                  VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)});
+            } else if (m_valueModp) {
+                // 4. Under modules/class, it's the time 0 initialziation value
                 // Making an AstAssign (vs AstAssignW) to a wire is an error, suppress it
                 FileLine* const newfl = new FileLine{fl};
                 newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
@@ -405,13 +413,8 @@ class LinkParseVisitor final : public VNVisitor {
                 } else {
                     nodep->addNextHere(new AstInitialStatic{newfl, assp});
                 }
-            }  // 4. Under blocks, it's an initial value to be under an assign
-            else {
-                FileLine* const newfl = new FileLine{fl};
-                newfl->warnOff(V3ErrorCode::E_CONSTWRITTEN, true);
-                nodep->addNextHere(
-                    new AstAssign{newfl, new AstVarRef{newfl, nodep, VAccess::WRITE},
-                                  VN_AS(nodep->valuep()->unlinkFrBack(), NodeExpr)});
+            } else {
+                nodep->v3fatalSrc("Variable with initializer in unexpected position");
             }
         }
     }
@@ -762,10 +765,23 @@ class LinkParseVisitor final : public VNVisitor {
         }
         iterateChildren(nodep);
     }
-    void visit(AstBegin* nodep) override {
-        V3Control::applyCoverageBlock(m_modp, nodep);
+    void visit(AstNodeBlock* nodep) override {
+        {
+            VL_RESTORER(m_blockp);
+            m_blockp = nodep;
+            // Temporarily unlink the statements so variable initializers can be inserted in order
+            AstNode* const stmtsp = nodep->stmtsp();
+            if (stmtsp) stmtsp->unlinkFrBackWithNext();
+            iterateAndNextNull(nodep->declsp());
+            nodep->addStmtsp(stmtsp);
+        }
+
+        if (AstBegin* const beginp = VN_CAST(nodep, Begin)) {
+            V3Control::applyCoverageBlock(m_modp, beginp);
+        }
         cleanFileline(nodep);
-        iterateChildren(nodep);
+        iterateAndNextNull(nodep->stmtsp());
+        if (AstFork* const forkp = VN_CAST(nodep, Fork)) iterateAndNextNull(forkp->forksp());
     }
     void visit(AstCase* nodep) override {
         V3Control::applyCase(nodep);

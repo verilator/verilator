@@ -298,10 +298,10 @@ class AssertVisitor final : public VNVisitor {
             AstNode* const precondps = pExpr->precondp();
             UASSERT_OBJ(precondps, pExpr, "Should have precondition");
             precondps->unlinkFrBackWithNext()->addNext(ifp);
-            AstNodeStmt* const assertOnp
-                = newIfAssertOn(precondps, nodep->directive(), nodep->type());
-            AstFork* const forkp = new AstFork{precondps->fileline(), "", assertOnp};
-            forkp->joinType(VJoinType::JOIN_NONE);
+            AstNodeStmt* const aonp = newIfAssertOn(precondps, nodep->directive(), nodep->type());
+            FileLine* const flp = precondps->fileline();
+            AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
+            forkp->addForksp(new AstBegin{flp, "", aonp, true});
             return forkp;
         }
 

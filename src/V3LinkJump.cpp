@@ -80,9 +80,11 @@ class LinkJumpVisitor final : public VNVisitor {
 
         AstNode* underp = nullptr;
         bool under_and_next = true;
-        if (AstNodeBlock* const blockp = VN_CAST(nodep, NodeBlock)) {
+        if (AstBegin* const blockp = VN_CAST(nodep, Begin)) {
+            UASSERT_OBJ(!endOfIter, nodep, "No endOfIter for Begin");
             underp = blockp->stmtsp();
         } else if (AstNodeFTask* const fTaskp = VN_CAST(nodep, NodeFTask)) {
+            UASSERT_OBJ(!endOfIter, nodep, "No endOfIter for FTask");
             underp = fTaskp->stmtsp();
         } else if (AstForeach* const foreachp = VN_CAST(nodep, Foreach)) {
             if (endOfIter) {
@@ -180,10 +182,10 @@ class LinkJumpVisitor final : public VNVisitor {
         // handle is pushed to the queue. `disable` statement is replaced with calling `kill()`
         // method on each element of the queue.
         FileLine* const fl = nodep->fileline();
-        const std::string targetName = nodep->targetp()->name();
+        AstNode* const targetp = nodep->targetp();
         if (m_ftaskp) {
-            if (!m_ftaskp->exists([targetp = nodep->targetp()](const AstNodeBlock* blockp)
-                                      -> bool { return blockp == targetp; })) {
+            if (!m_ftaskp->exists(
+                    [targetp](const AstNodeBlock* blockp) -> bool { return blockp == targetp; })) {
                 // Disabling a fork, which is within the same task, is not a problem
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling fork from task / function");
             }
@@ -193,7 +195,7 @@ class LinkJumpVisitor final : public VNVisitor {
             = VN_AS(getMemberp(v3Global.rootp()->stdPackagep(), "process"), Class);
         // Declare queue of processes (as a global variable for simplicity)
         AstVar* const processQueuep = new AstVar{
-            fl, VVarType::VAR, m_queueNames.get(targetName), VFlagChildDType{},
+            fl, VVarType::VAR, m_queueNames.get(targetp->name()), VFlagChildDType{},
             new AstQueueDType{fl, VFlagChildDType{},
                               new AstClassRefDType{fl, processClassp, nullptr}, nullptr}};
         processQueuep->lifetime(VLifetime::STATIC_EXPLICIT);
@@ -219,12 +221,21 @@ class LinkJumpVisitor final : public VNVisitor {
         killQueueCall->classOrPackagep(processClassp);
         AstStmtExpr* const killStmtp = new AstStmtExpr{fl, killQueueCall};
         nodep->addNextHere(killStmtp);
-        if (existsBlockAbove(targetName)) {
-            // process::kill doesn't kill the current process immediately, because it is in the
-            // running state. Since the current process has to be terminated immediately, we jump
-            // at the end of the fork that is being disabled
-            AstJumpBlock* const jumpBlockp = getJumpBlock(nodep->targetp(), false);
-            killStmtp->addNextHere(new AstJumpGo{fl, jumpBlockp});
+
+        // 'process::kill' does not immediately kill the current process
+        // executing the disable statement (because it's in the running state).
+        // If the disable statement is indeed executed by a process under the
+        // target AstFork, then jump to the end of that fork branch.
+        if (VN_IS(targetp, Fork)) {
+            AstNodeBlock* forkBranchp = nullptr;
+            for (AstNodeBlock* const blockp : vlstd::reverse_view(m_blockStack)) {
+                if (blockp == targetp) {
+                    AstJumpBlock* const jmpBlockp = getJumpBlock(VN_AS(forkBranchp, Begin), false);
+                    killStmtp->addNextHere(new AstJumpGo{fl, jmpBlockp});
+                    break;
+                }
+                forkBranchp = blockp;
+            }
         }
     }
     static bool directlyUnderFork(const AstNode* const nodep) {
@@ -392,44 +403,28 @@ class LinkJumpVisitor final : public VNVisitor {
     void visit(AstDisable* nodep) override {
         UINFO(8, "   DISABLE " << nodep);
         AstNode* const targetp = nodep->targetp();
-        FileLine* const fl = nodep->fileline();
         UASSERT_OBJ(targetp, nodep, "Unlinked disable statement");
         if (VN_IS(targetp, Task)) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling task by name");
         } else if (AstFork* const forkp = VN_CAST(targetp, Fork)) {
             std::vector<AstBegin*> forks;
-            for (AstNode* forkItemp = forkp->stmtsp(); forkItemp; forkItemp = forkItemp->nextp()) {
-                // Further handling of disable stmt requires all forks to be begin blocks
-                AstBegin* beginp = VN_CAST(forkItemp, Begin);
-                if (!beginp) {
-                    beginp = new AstBegin{fl, "", nullptr, false};
-                    forkItemp->replaceWith(beginp);
-                    beginp->addStmtsp(forkItemp);
-                    // In order to continue the iteration
-                    forkItemp = beginp;
-                }
-                forks.push_back(beginp);
+            for (AstBegin* itemp = forkp->forksp(); itemp; itemp = VN_AS(itemp->nextp(), Begin)) {
+                forks.push_back(itemp);
             }
             handleDisableOnFork(nodep, forks);
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
             if (directlyUnderFork(beginp)) {
                 std::vector<AstBegin*> forks{beginp};
                 handleDisableOnFork(nodep, forks);
+            } else if (!existsBlockAbove(beginp->name())) {
+                nodep->v3warn(E_UNSUPPORTED, "disable isn't underneath a begin with name: '"
+                                                 << beginp->name() << "'");
+            } else if (beginp->user3()) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling block that contains a fork");
             } else {
-                const std::string targetName = beginp->name();
-                if (existsBlockAbove(targetName)) {
-                    if (beginp->user3()) {
-                        nodep->v3warn(E_UNSUPPORTED,
-                                      "Unsupported: disabling block that contains a fork");
-                    } else {
-                        // Jump to the end of the named block
-                        AstJumpBlock* const blockp = getJumpBlock(beginp, false);
-                        nodep->addNextHere(new AstJumpGo{nodep->fileline(), blockp});
-                    }
-                } else {
-                    nodep->v3warn(E_UNSUPPORTED, "disable isn't underneath a begin with name: '"
-                                                     << targetName << "'");
-                }
+                // Jump to the end of the named block
+                AstJumpBlock* const blockp = getJumpBlock(beginp, false);
+                nodep->addNextHere(new AstJumpGo{nodep->fileline(), blockp});
             }
         } else {
             nodep->v3fatalSrc("Disable linked with node of unhandled type "

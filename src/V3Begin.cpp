@@ -80,32 +80,28 @@ class BeginVisitor final : public VNVisitor {
 
     string dot(const string& a, const string& b) { return VString::dot(a, "__DOT__", b); }
 
-    void dotNames(const std::string& name, FileLine* const flp, AstNode* stmtsp,
-                  const char* const blockName) {
+    void dotNames(const std::string& name, FileLine* const flp, const char* const blockName) {
         UINFO(8, "nname " << m_namedScope);
-        if (name != "") {  // Else unneeded unnamed block
-            // Create data for dotted variable resolution
-            string dottedname = name + "__DOT__";  // So always found
-            string::size_type pos;
-            while ((pos = dottedname.find("__DOT__")) != string::npos) {
-                const string ident = dottedname.substr(0, pos);
-                dottedname = dottedname.substr(pos + std::strlen("__DOT__"));
-                if (name != "") {
-                    m_displayScope = dot(m_displayScope, ident);
-                    m_namedScope = dot(m_namedScope, ident);
-                }
-                m_unnamedScope = dot(m_unnamedScope, ident);
-                // Create CellInline for dotted var resolution
-                if (!m_ftaskp) {
-                    AstCellInline* const inlinep
-                        = new AstCellInline{flp, m_unnamedScope, blockName};
-                    m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
-                }
+        // If unneeded unnamed block, whatever that means :)
+        if (name == "") return;
+
+        // Create data for dotted variable resolution
+        std::string dottedname = name + "__DOT__";  // So always found
+        std::string::size_type pos;
+        while ((pos = dottedname.find("__DOT__")) != std::string::npos) {
+            const std::string ident = dottedname.substr(0, pos);
+            dottedname = dottedname.substr(pos + std::strlen("__DOT__"));
+            if (name != "") {
+                m_displayScope = dot(m_displayScope, ident);
+                m_namedScope = dot(m_namedScope, ident);
+            }
+            m_unnamedScope = dot(m_unnamedScope, ident);
+            // Create CellInline for dotted var resolution
+            if (!m_ftaskp) {
+                AstCellInline* const inlinep = new AstCellInline{flp, m_unnamedScope, blockName};
+                m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
             }
         }
-
-        // Remap var names and replace lower Begins
-        iterateAndNextNull(stmtsp);
     }
 
     void liftNode(AstNode* nodep) {
@@ -125,21 +121,14 @@ class BeginVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstFork* nodep) override {
-        // Keep begins in forks to group their statements together
-        VL_RESTORER(m_keepBegins);
-        m_keepBegins = true;
-        // If a statement is not a begin, wrap it in a begin. This fixes an issue when the
-        // statement is a task call that gets inlined later (or any other statement that gets
-        // replaced with multiple statements)
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (!VN_IS(stmtp, Begin)) {
-                AstBegin* const beginp = new AstBegin{stmtp->fileline(), "", nullptr, false};
-                stmtp->replaceWith(beginp);
-                beginp->addStmtsp(stmtp);
-                stmtp = beginp;
-            }
+        dotNames(nodep->name(), nodep->fileline(), "__FORK__");
+        iterateAndNextNull(nodep->stmtsp());
+        {
+            // Keep begins in forks to group their statements together
+            VL_RESTORER(m_keepBegins);
+            m_keepBegins = true;
+            iterateAndNextNull(nodep->forksp());
         }
-        dotNames(nodep->name(), nodep->fileline(), nodep->stmtsp(), "__FORK__");
         nodep->name("");
     }
     void visit(AstForeach* nodep) override {
@@ -215,7 +204,8 @@ class BeginVisitor final : public VNVisitor {
         VL_RESTORER(m_namedScope);
         VL_RESTORER(m_unnamedScope);
         UASSERT_OBJ(!m_keepBegins, nodep, "Should be able to eliminate all AstGenBlock");
-        dotNames(nodep->name(), nodep->fileline(), nodep->itemsp(), "__BEGIN__");
+        dotNames(nodep->name(), nodep->fileline(), "__BEGIN__");
+        iterateAndNextNull(nodep->itemsp());
         // Repalce node with body then delete
         if (AstNode* const itemsp = nodep->itemsp()) {
             nodep->addNextHere(itemsp->unlinkFrBackWithNext());
@@ -231,7 +221,8 @@ class BeginVisitor final : public VNVisitor {
         {
             VL_RESTORER(m_keepBegins);
             m_keepBegins = false;
-            dotNames(nodep->name(), nodep->fileline(), nodep->stmtsp(), "__BEGIN__");
+            dotNames(nodep->name(), nodep->fileline(), "__BEGIN__");
+            iterateChildren(nodep);
         }
 
         // Cleanup
@@ -240,6 +231,10 @@ class BeginVisitor final : public VNVisitor {
             return;
         }
         AstNode* addsp = nullptr;
+        if (AstNode* const declsp = nodep->declsp()) {
+            declsp->unlinkFrBackWithNext();
+            addsp = AstNode::addNext(addsp, declsp);
+        }
         if (AstNode* const stmtsp = nodep->stmtsp()) {
             stmtsp->unlinkFrBackWithNext();
             addsp = AstNode::addNext(addsp, stmtsp);

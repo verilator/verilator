@@ -142,10 +142,11 @@ private:
     void visit(AstFork* nodep) override {
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
+        iterateAndNextConstNull(nodep->stmtsp());
         uint32_t totalCount = m_stackSize;
         VL_RESTORER(m_ignoreRemaining);
         // Sum counts in each statement
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* stmtp = nodep->forksp(); stmtp; stmtp = stmtp->nextp()) {
             reset();
             iterateConst(stmtp);
             totalCount += m_stackSize;

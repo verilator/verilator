@@ -1258,20 +1258,26 @@ class LinkDotFindVisitor final : public VNVisitor {
             // unnamed#'s would just confuse tracing variables in
             // places such as tasks, where "task ...; begin ... end"
             // are common.
-            for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                if (VN_IS(stmtp, Var) || VN_IS(stmtp, Foreach)) {
-                    std::string name;
-                    const std::string stepStr = m_statep->forPrimary()
-                                                    ? ""
-                                                    : std::to_string(m_statep->stepNumber()) + "_";
-                    do {
-                        ++m_modBlockNum;
-                        name = "unnamedblk" + stepStr + cvtToStr(m_modBlockNum);
-                        // Increment again if earlier pass of V3LinkDot claimed this name
-                    } while (m_curSymp->findIdFlat(name));
-                    nodep->name(name);
-                    break;
+            const auto containsDecl = [](const AstNode* nodesp) -> bool {
+                for (const AstNode* np = nodesp; np; np = np->nextp()) {
+                    if (VN_IS(np, Var) || VN_IS(np, Foreach)) return true;
                 }
+                return false;
+            };
+            bool needName = nodep->declsp() || containsDecl(nodep->stmtsp());
+            if (const AstFork* const forkp = VN_CAST(nodep, Fork)) {
+                needName = needName || containsDecl(forkp->forksp());
+            }
+            if (needName) {
+                const std::string stepStr
+                    = m_statep->forPrimary() ? "" : std::to_string(m_statep->stepNumber()) + "_";
+                std::string name;
+                do {
+                    ++m_modBlockNum;
+                    name = "unnamedblk" + stepStr + cvtToStr(m_modBlockNum);
+                    // Increment again if earlier pass of V3LinkDot claimed this name
+                } while (m_curSymp->findIdFlat(name));
+                nodep->name(name);
             }
         }
         if (nodep->name() == "") {

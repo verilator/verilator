@@ -3360,15 +3360,23 @@ senitemEdge<senItemp>:          // IEEE: part of event_expression
 seq_block<beginp>:               // ==IEEE: seq_block
         //                      // IEEE doesn't allow declarations in unnamed blocks, but several simulators do.
         //                      // So need AstBegin's even if unnamed to scope variables down
-                seq_blockFront blockDeclStmtListE yEND endLabelE
-                        { $$ = $1; $1->addStmtsp($2);
-                          GRAMMARP->endLabel($<fl>4, $1, $4); }
+                yBEGIN startLabelE blockDeclListE stmtListE yEND endLabelE
+                {
+                    $$ = new AstBegin{$1, $2 ? *$2 : "", nullptr, false};
+                    GRAMMARP->endLabel($<fl>6, $$, $6);
+                    $$->addDeclsp($3);
+                    $$->addStmtsp($4);
+                }
         ;
 
 seq_blockPreId<beginp>:          // IEEE: seq_block, but called with leading ID
-                seq_blockFrontPreId blockDeclStmtListE yEND endLabelE
-                        { $$ = $1; $1->addStmtsp($2);
-                          GRAMMARP->endLabel($<fl>4, $1, $4); }
+                id yP_COLON__BEGIN yBEGIN blockDeclListE stmtListE yEND endLabelE
+                {
+                    $$ = new AstBegin{$3, *$1, nullptr, false};
+                    GRAMMARP->endLabel($<fl>7, $$, $7);
+                    $$->addDeclsp($4);
+                    $$->addStmtsp($5);
+                }
         ;
 
 par_blockJoin<joinType>:
@@ -3378,68 +3386,36 @@ par_blockJoin<joinType>:
         ;
 
 par_block<forkp>:               // ==IEEE: par_block
-                par_blockFront blockDeclStmtListE par_blockJoin endLabelE
-                        { $$ = $1; $1->joinType($3);
-                          V3ParseGrammar::addForkStmtsp($1, $2);
-                          GRAMMARP->endLabel($<fl>4, $1, $4); }
+                yFORK startLabelE blockDeclListE stmtListE par_blockJoin endLabelE
+                {
+                    $$ = new AstFork{$1, $5, $2 ? *$2 : ""};
+                    GRAMMARP->endLabel($<fl>6, $$, $6);
+                    $$->addDeclsp($3);
+                    $$->addForksp(V3ParseGrammar::wrapInBegin($4));
+                }
         ;
 
 par_blockPreId<forkp>:          // ==IEEE: par_block but called with leading ID
-                par_blockFrontPreId blockDeclStmtListE par_blockJoin endLabelE
-                        { $$ = $1; $1->joinType($3);
-                          V3ParseGrammar::addForkStmtsp($1, $2);
-                          GRAMMARP->endLabel($<fl>4, $1, $4); }
+                id yP_COLON__FORK yFORK blockDeclListE stmtListE par_blockJoin endLabelE
+                {
+                    $$ = new AstFork{$3, $6, *$1};
+                    GRAMMARP->endLabel($<fl>7, $$, $7);
+                    $$->addDeclsp($4);
+                    $$->addForksp(V3ParseGrammar::wrapInBegin($5));
+                }
         ;
 
-seq_blockFront<beginp>:         // IEEE: part of seq_block
-                yBEGIN
-                        { $$ = new AstBegin{$1, "", nullptr, false}; }
-        |       yBEGIN ':' idAny/*new-block_identifier*/
-                        { $$ = new AstBegin{$<fl>3, *$3, nullptr, false}; }
+blockDeclListE<nodep>:      // IEEE: [ block_item_declaration ]
+                /*empty*/                                  { $$ = nullptr; }
+        |       blockDeclListE data_declaration            { $$ = addNextNull($1, $2); }
+        |       blockDeclListE parameter_declaration ';'   { $$ = addNextNull($1, $2); }
+        |       blockDeclListE let_declaration             { $$ = addNextNull($1, $2); }
+        |       error ';'                                  { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
-par_blockFront<forkp>:          // IEEE: part of par_block
-                yFORK
-                        { $$ = new AstFork{$1, "", nullptr}; }
-        |       yFORK ':' idAny/*new-block_identifier*/
-                        { $$ = new AstFork{$<fl>3, *$3, nullptr}; }
-        ;
-
-seq_blockFrontPreId<beginp>:    // IEEE: part of seq_block/stmt with leading id
-                id/*block_identifier*/ yP_COLON__BEGIN yBEGIN
-                        { $$ = new AstBegin{$3, *$1, nullptr, false}; }
-        ;
-
-par_blockFrontPreId<forkp>:     // IEEE: part of par_block/stmt with leading id
-                id/*block_identifier*/ yP_COLON__FORK yFORK
-                        { $$ = new AstFork{$3, *$1, nullptr}; }
-        ;
-
-
-blockDeclStmtList<nodep>:       // IEEE: { block_item_declaration } { statement or null }
-        //                      // The spec seems to suggest a empty declaration isn't ok, but most simulators take it
-                block_item_declarationList              { $$ = $1; }
-        |       block_item_declarationList stmtList     { $$ = addNextNull($1, $2); }
-        |       stmtList                                { $$ = $1; }
-        ;
-
-blockDeclStmtListE<nodep>:      // IEEE: [ { block_item_declaration } { statement or null } ]
+stmtListE<nodeStmtp>:
                 /*empty*/                               { $$ = nullptr; }
-        |       blockDeclStmtList                       { $$ = $1; }
-        ;
-
-block_item_declarationList<nodep>:      // IEEE: [ block_item_declaration ]
-                block_item_declaration                  { $$ = $1; }
-        |       block_item_declarationList block_item_declaration       { $$ = addNextNull($1, $2); }
-        //
-        |       block_item_declarationList error ';'    { $$ = $1; }  // LCOV_EXCL_LINE
-        |       error ';'                               { $$ = nullptr; }  // LCOV_EXCL_LINE
-        ;
-
-block_item_declaration<nodep>:  // ==IEEE: block_item_declaration
-                data_declaration                        { $$ = $1; }
-        |       parameter_declaration ';'               { $$ = $1; }
-        |       let_declaration                         { $$ = $1; }
+        |       stmtList                                { $$ = $1; }
         ;
 
 stmtList<nodeStmtp>:
@@ -4667,7 +4643,9 @@ tf_item_declarationList<nodep>:
         ;
 
 tf_item_declaration<nodep>:     // ==IEEE: tf_item_declaration
-                block_item_declaration                  { $$ = $1; }
+                data_declaration                        { $$ = $1; }
+        |       parameter_declaration ';'               { $$ = $1; }
+        |       let_declaration                         { $$ = $1; }
         |       tf_port_declaration                     { $$ = $1; }
         |       tf_item_declarationVerilator            { $$ = $1; }
         ;
@@ -6090,6 +6068,11 @@ strAsInt<nodeExprp>:
 
 strAsIntIgnore<nodeExprp>:          // strAsInt, but never matches for when expr shouldn't parse strings
                 yaSTRING__IGNORE                        { $$ = nullptr; yyerror("Impossible token"); }
+        ;
+
+startLabelE<strp>:
+                /* empty */                             { $$ = nullptr; $<fl>$ = nullptr; }
+        |       ':' idAny                               { $$ = $2; $<fl>$ = $<fl>2; }
         ;
 
 endLabelE<strp>:
