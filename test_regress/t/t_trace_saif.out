@@ -536,7 +536,12 @@
     (fst_tri0 (T0 1000) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
     (fst_tri1 (T0 0) (T1 1000) (TZ 0) (TX 0) (TB 0) (TC 1))
     (fst_tri (T0 1000) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+    (fst_triand (T0 1000) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+    (fst_trior (T0 1000) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+    (fst_wand (T0 1000) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+    (fst_wor (T0 1000) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
     (fst_wire (T0 1000) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
+    (fst_uwire (T0 1000) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
     (fst_inout (T0 1000) (T1 0) (TZ 0) (TX 0) (TB 0) (TC 0))
    )
    (INSTANCE test
