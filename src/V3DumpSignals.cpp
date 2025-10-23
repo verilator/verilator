@@ -39,7 +39,6 @@ class DumpSignals final : public VNVisitor {
     void processVar(AstVar* varp) {
         if (varp->basicp() && varp->basicp()->name() != "") {
             bool hasRangep = varp->basicp()->rangep() != nullptr;
-            bool isSized = varp->basicp()->widthSized();
             if (hasRangep) {
                 std::string varHier
                     = m_currHier + varp->name() + " : Type[" + varp->basicp()->name() + "] Width["
