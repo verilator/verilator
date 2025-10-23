@@ -1189,7 +1189,6 @@ class ConstVisitor final : public VNVisitor {
             replaceNum(nodep->condp(), 1);
             replaced = true;
             ++m_statIfCondExprRedundant;
-            VIsCached::clearCacheTree();
         }
         for (AstNodeExpr* condp : falsesp) {
             if (replaced) break;
@@ -1198,7 +1197,6 @@ class ConstVisitor final : public VNVisitor {
             replaceZero(nodep->condp());
             replaced = true;
             ++m_statIfCondExprRedundant;
-            VIsCached::clearCacheTree();
         }
         // We only check the first statement of parent IF is an If
         // So we don't need to check for effects in the executing thensp/elsesp
