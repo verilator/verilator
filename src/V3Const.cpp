@@ -3371,6 +3371,10 @@ class ConstVisitor final : public VNVisitor {
                     nodep->unlinkFrBack();
                 }
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
+
+                // Removed branch could contain only impurity within a function and the
+                // function could be purified
+                VIsCached::clearCacheTree();
             } else if (!AstNode::afterCommentp(nodep->thensp())
                        && !AstNode::afterCommentp(nodep->elsesp())) {
                 if (!nodep->condp()->isPure()) {

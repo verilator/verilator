@@ -2912,7 +2912,6 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (isStatic()) str << " [STATIC]";
     if (verilogTask()) str << " [VTASK]";
     if (verilogFunction()) str << " [VFUNC]";
-    // str << (getPurityRecurse() ? " [PURE]" : " [IMPURE]");
     if ((dpiImport() || dpiExport()) && cname() != name()) str << " [c=" << cname() << "]";
 }
 bool AstNodeFTask::isPure() {
@@ -2932,13 +2931,9 @@ bool AstNodeFTask::getPurityRecurse() const {
             if (varp->isInoutOrRef()) return false;
         }
         if (!stmtp->isPure()) return false;
-        if (stmtp->exists([](AstNode* const nodep) {
-                if (AstNodeVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
-                    return (!varrefp->varp()->isFuncLocal()
-                            || varrefp->varp()->lifetime().isStatic())
-                           && varrefp->access().isWriteOrRW();
-                }
-                return !nodep->isPure();
+        if (stmtp->exists([](const AstNodeVarRef* const varrefp) {
+                return (!varrefp->varp()->isFuncLocal() || varrefp->varp()->lifetime().isStatic())
+                       && varrefp->access().isWriteOrRW();
             }))
             return false;
     }
