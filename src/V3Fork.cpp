@@ -523,187 +523,152 @@ public:
 
 class ForkVisitor final : public VNVisitor {
     // NODE STATE
-    // AstNode::user1()         -> bool, 1 = Node was created as a call to an asynchronous task
     // AstVarRef::user2()       -> bool, 1 = Node is a class handle reference. The handle gets
     //                                       modified in the context of this reference.
-    const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 
-    // STATE
+    // STATE - for current AstNodeModule
     AstNodeModule* m_modp = nullptr;  // Class/module we are currently under
-    int m_forkDepth = 0;  // Nesting level of asynchronous forks
-    bool m_newProcess = false;  // True if we are directly under an asynchronous fork.
-    AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
+    AstTask* m_tasksp = nullptr;  // Tasks exrtracted under current module
+    size_t m_nForkTasks = 0;  // Sequence numbers for task names
+
+    // STATE - for current AstFork item
+    bool m_inFork = false;  // Traversal in an async fork
     std::set<AstVar*> m_forkLocalsp;  // Variables local to a given fork
-    AstArg* m_capturedVarRefsp = nullptr;  // References to captured variables (as args)
-    size_t m_id = 0;  // Unique ID for a task
+    AstVar* m_capturedVarsp = nullptr;  // Local copies of captured variables
+    AstArg* m_capturedArgsp = nullptr;  // References to captured variables (as args)
 
     // METHODS
-
-    AstVar* captureRef(AstVarRef* refp) {
+    AstVar* capture(AstVarRef* refp) {
         AstVar* varp = nullptr;
-        for (varp = m_capturedVarsp; varp; varp = VN_AS(varp->nextp(), Var))
+        for (varp = m_capturedVarsp; varp; varp = VN_AS(varp->nextp(), Var)) {
             if (varp->name() == refp->name()) break;
-        if (!varp) {
-            // Create a local copy for a capture
-            varp = new AstVar{refp->fileline(), VVarType::BLOCKTEMP, refp->name(), refp->dtypep()};
-            varp->direction(VDirection::INPUT);
-            varp->funcLocal(true);
-            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            UINFO(9, "new capture var " << varp);
-            m_capturedVarsp = AstNode::addNext(m_capturedVarsp, varp);
-            // Use the original ref as an argument for call
-            m_capturedVarRefsp
-                = AstNode::addNext(m_capturedVarRefsp, new AstArg{refp->fileline(), refp->name(),
-                                                                  refp->cloneTree(false)});
         }
+        if (varp) return varp;
+
+        // Create a local copy to capture
+        FileLine* const flp = refp->fileline();
+        varp = new AstVar{flp, VVarType::BLOCKTEMP, refp->name(), refp->dtypep()};
+        varp->direction(VDirection::INPUT);
+        varp->funcLocal(true);
+        varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        m_capturedVarsp = AstNode::addNext(m_capturedVarsp, varp);
+        // Pass variable as argument
+        AstArg* const argp = new AstArg{flp, refp->name(), refp->cloneTree(false)};
+        m_capturedArgsp = AstNode::addNext(m_capturedArgsp, argp);
         return varp;
     }
 
-    AstTask* makeTask(FileLine* fl, AstNode* stmtsp, const std::string& name) {
-        stmtsp = AstNode::addNext(static_cast<AstNode*>(m_capturedVarsp), stmtsp);
-        AstTask* const taskp = new AstTask{fl, name, stmtsp};
-        return taskp;
+    AstNodeStmt* taskify(AstNode* stmtp) {
+        // Visit statement to gather variables (And recursively process)
+        VL_RESTORER(m_forkLocalsp);
+        VL_RESTORER(m_capturedVarsp);
+        VL_RESTORER(m_capturedArgsp);
+        m_forkLocalsp.clear();
+        m_capturedVarsp = nullptr;
+        m_capturedArgsp = nullptr;
+        iterate(stmtp);
+
+        // No need to do it if no variabels are captured
+        if (m_forkLocalsp.empty() && !m_capturedVarsp && !v3Global.opt.fTaskifyAll()) {
+            return nullptr;
+        }
+
+        // Create task holding the statement and repalce statement with call to that task
+        FileLine* const flp = stmtp->fileline();
+        const std::string name = "__VforkTask_" + std::to_string(m_nForkTasks++);
+        AstTask* const taskp = new AstTask{flp, name, m_capturedVarsp};
+        m_tasksp = AstNode::addNext(m_tasksp, taskp);
+        AstTaskRef* const callp = new AstTaskRef{flp, taskp, m_capturedArgsp};
+        AstNodeStmt* const replacementp = callp->makeStmt();
+        stmtp->replaceWith(replacementp);
+        if (AstBegin* const beginp = VN_CAST(stmtp, Begin)) {
+            taskp->addStmtsp(beginp->stmtsp()->unlinkFrBackWithNext());
+            VL_DO_DANGLING(pushDeletep(beginp), beginp);
+        } else {
+            taskp->addStmtsp(stmtp);
+        }
+
+        // Variables were moved under the task, so make sure they are marked as funcLocal
+        for (AstVar* const localp : m_forkLocalsp) localp->funcLocal(true);
+
+        // Return the replacement
+        return replacementp;
     }
 
-    string generateTaskName(AstNode* fromp, const string& kind) {
-        return "__V" + kind + "_" + (!fromp->name().empty() ? (fromp->name() + "__") : "_")
-               + cvtToStr(m_id++);
+    // VISITORS
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_modp);
+        VL_RESTORER(m_nForkTasks);
+        VL_RESTORER(m_tasksp);
+        m_modp = nodep;
+        m_nForkTasks = 0;
+        m_tasksp = nullptr;
+        iterateChildren(nodep);
+        // Add extracted tasks, they don't need to be visited again
+        if (m_tasksp) nodep->addStmtsp(m_tasksp);
     }
 
-    void visitTaskifiable(AstNode* nodep) {
-        if (!m_newProcess || nodep->user1()) {
-            VL_RESTORER(m_forkDepth);
-            if (nodep->user1()) {
-                UASSERT_OBJ(m_forkDepth > 0, nodep, "Wrong fork depth");
-                --m_forkDepth;
-            }
+    void visit(AstFork* nodep) override {
+        if (nodep->joinType().join()) {
             iterateChildren(nodep);
             return;
         }
 
-        VL_RESTORER(m_capturedVarsp);
-        VL_RESTORER(m_capturedVarRefsp);
-        VL_RESTORER(m_newProcess);
-        VL_RESTORER(m_forkLocalsp);
-        m_capturedVarsp = nullptr;
-        m_capturedVarRefsp = nullptr;
-        m_newProcess = false;
-        m_forkLocalsp.clear();
-
-        iterateChildren(nodep);
-
-        // If there are no captures, there's no need to taskify
-        if (m_forkLocalsp.empty() && (m_capturedVarsp == nullptr) && !v3Global.opt.fTaskifyAll())
-            return;
-
-        VNRelinker handle;
-        AstTask* taskp = nullptr;
-
-        if (AstBegin* const beginp = VN_CAST(nodep, Begin)) {
-            UASSERT_OBJ(beginp->stmtsp(), beginp, "No stmtsp");
-            const string taskName = generateTaskName(beginp, "fork_begin");
-            taskp
-                = makeTask(beginp->fileline(), beginp->stmtsp()->unlinkFrBackWithNext(), taskName);
-            beginp->unlinkFrBack(&handle);
-            VL_DO_DANGLING(pushDeletep(beginp), beginp);
-        } else if (AstNodeStmt* const stmtp = VN_CAST(nodep, NodeStmt)) {
-            const string taskName = generateTaskName(stmtp, "fork_stmt");
-            taskp = makeTask(stmtp->fileline(), stmtp->unlinkFrBack(&handle), taskName);
-        } else if (AstFork* const forkp = VN_CAST(nodep, Fork)) {
-            const string taskName = generateTaskName(forkp, "fork_nested");
-            taskp = makeTask(forkp->fileline(), forkp->unlinkFrBack(&handle), taskName);
-        }
-
-        m_modp->addStmtsp(taskp);
-        UINFO(9, "new " << taskp);
-
-        // We created a task from fork, so make sure that all
-        // local (to this new task) variables are marked as funcLocal
-        for (AstVar* const localp : m_forkLocalsp) localp->funcLocal(true);
-
-        AstTaskRef* const taskrefp = new AstTaskRef{nodep->fileline(), taskp, m_capturedVarRefsp};
-        AstStmtExpr* const taskcallp = taskrefp->makeStmt();
-        // Replaced nodes will be revisited, so we don't need to "lift" the arguments
-        // as captures in case of nested forks.
-        handle.relink(taskcallp);
-        taskcallp->user1(true);
-    }
-
-    // VISITORS
-    void visit(AstFork* nodep) override {
-        bool nested = m_newProcess;
-
-        VL_RESTORER(m_forkLocalsp);
-        VL_RESTORER(m_newProcess);
-        VL_RESTORER(m_forkDepth);
-        if (!nodep->joinType().join()) {
-            ++m_forkDepth;
-            m_newProcess = true;
-            // Nested forks get moved into separate tasks
-            if (nested) {
-                visitTaskifiable(nodep);
-                return;
+        iterateAndNextNull(nodep->initsp());
+        std::vector<AstNodeStmt*> newps;
+        {
+            VL_RESTORER(m_inFork);
+            m_inFork = true;
+            for (AstNode *itemp = nodep->stmtsp(), *nextp; itemp; itemp = nextp) {
+                nextp = itemp->nextp();
+                AstNodeStmt* const stmtp = VN_CAST(itemp, NodeStmt);
+                if (!stmtp) continue;
+                AstNodeStmt* const newp = taskify(stmtp);
+                if (newp) newps.push_back(newp);
             }
-        } else {
-            m_newProcess = false;
         }
-        iterateChildren(nodep);
+        // Analyze replacements in context of enclosing fork
+        for (AstNodeStmt* const stmtp : newps) iterate(stmtp);
     }
-    void visit(AstBegin* nodep) override { visitTaskifiable(nodep); }
-    void visit(AstNodeStmt* nodep) override { visitTaskifiable(nodep); }
     void visit(AstVar* nodep) override {
-        if (m_forkDepth) m_forkLocalsp.insert(nodep);
+        if (m_inFork) m_forkLocalsp.insert(nodep);
     }
     void visit(AstVarRef* nodep) override {
+        if (!m_inFork) return;
+        AstVar* const varp = nodep->varp();
+        // Not sure why this is OK ...
+        if (!varp->isFuncLocal() && varp->isClassMember()) return;
+        // We must know the lifetime at this point, otherwise we can't decide if need to capture
+        UASSERT_OBJ(!varp->lifetime().isNone(), nodep, "Variable's lifetime is unknown");
+        // Static variables are fine, they are always availabel
+        if (varp->lifetime().isStatic()) return;
+        // If this ref is to a variable that will move into the task, then nothing to do
+        if (m_forkLocalsp.count(varp)) return;
 
-        // VL_KEEP_THIS ensures that we hold a handle to the class
-        if (m_forkDepth && !nodep->varp()->isFuncLocal() && nodep->varp()->isClassMember()) return;
-
-        if (m_forkDepth && (m_forkLocalsp.count(nodep->varp()) == 0)
-            && !nodep->varp()->lifetime().isStatic()) {  // Basically static, so it's safe
-            if (nodep->access().isWriteOrRW()
-                && (!nodep->isClassHandleValue() || nodep->user2())) {
-                nodep->v3warn(
-                    E_LIFETIME,
-                    "Invalid reference: Process might outlive variable `"
-                        << nodep->varp()->name() << "`.\n"
-                        << nodep->varp()->warnMore()
-                        << "... Suggest use it as read-only to initialize a local copy at the "
-                           "beginning of the process, or declare it as static. It is also "
-                           "possible to refer by reference to objects and their members.");
-                return;
-            }
-            UASSERT_OBJ(
-                !nodep->varp()->lifetime().isNone(), nodep,
-                "Variable's lifetime is unknown. Can't determine if a capture is necessary.");
-            if (m_forkLocalsp.count(nodep->varp()) == 0) {
-                AstVar* const varp = captureRef(nodep);
-                nodep->varp(varp);
-            }
+        if (nodep->access().isWriteOrRW() && (!nodep->isClassHandleValue() || nodep->user2())) {
+            nodep->v3warn(
+                E_LIFETIME,
+                "Invalid reference: Process might outlive variable `"
+                    << varp->name() << "`.\n"
+                    << varp->warnMore()
+                    << "... Suggest use it as read-only to initialize a local copy at the "
+                       "beginning of the process, or declare it as static. It is also "
+                       "possible to refer by reference to objects and their members.");
+            return;
         }
+
+        // Capture variable and redirect reference to the capturede copy
+        nodep->varp(capture(nodep));
     }
     void visit(AstAssign* nodep) override {
         if (VN_IS(nodep->lhsp(), VarRef) && nodep->lhsp()->isClassHandleValue()) {
             nodep->lhsp()->user2(true);
         }
-        visit(static_cast<AstNodeStmt*>(nodep));
-    }
-    void visit(AstThisRef* nodep) override { return; }
-    void visit(AstNodeModule* nodep) override {
-        VL_RESTORER(m_modp);
-        VL_RESTORER(m_id);
-        m_modp = nodep;
-        m_id = 0;
         iterateChildren(nodep);
     }
-    void visit(AstNode* nodep) override {
-        VL_RESTORER(m_newProcess);
-        VL_RESTORER(m_forkDepth);
-        if (nodep->user1()) --m_forkDepth;
-        m_newProcess = false;
-        iterateChildren(nodep);
-    }
+    void visit(AstThisRef* nodep) override {}
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -723,5 +688,5 @@ void V3Fork::makeDynamicScopes(AstNetlist* nodep) {
 void V3Fork::makeTasks(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { ForkVisitor{nodep}; }
-    V3Global::dumpCheckGlobalTree("fork", 0, dumpTreeEitherLevel() >= 3);
+    V3Global::dumpCheckGlobalTree("fork_tasks", 0, dumpTreeEitherLevel() >= 3);
 }
