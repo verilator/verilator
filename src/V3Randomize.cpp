@@ -268,7 +268,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     // Clone constraints from nested rand class members
     void cloneNestedConstraintsRecurse(AstVarRef* rootVarRefp, AstClass* classp,
                                        const std::vector<AstVar*>& pathToClass) {
-        if (!classp) return;
+        UASSERT(classp, "Class pointer should not be null");
         for (AstNode* memberNodep = classp->membersp(); memberNodep;
              memberNodep = memberNodep->nextp()) {
             AstVar* const memberVarp = VN_CAST(memberNodep, Var);
@@ -618,11 +618,12 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
             // Extract and validate components early to avoid repeated type checks
             AstVarRef* const varRefp = VN_CAST(nodep->fromp(), VarRef);
-            if (!varRefp || !varRefp->varp()) return;
+            UASSERT(varRefp && varRefp->varp(), "Global constraint path must have valid VarRef");
 
             const AstClassRefDType* const classRefp
                 = VN_CAST(varRefp->dtypep()->skipRefp(), ClassRefDType);
-            if (!classRefp || !classRefp->classp()) return;
+            UASSERT(classRefp && classRefp->classp(),
+                    "Global constraint variable must have valid class type");
 
             if (nodep->user1() && varRefp->varp()->globalConstrained()) {
                 AstClass* gConsClass = classRefp->classp();
@@ -635,7 +636,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     // Clone constraints from the top-level class (e.g., Level1 for obj_a)
                     gConsClass->foreachMember(
                         [&](AstClass* const classp, AstConstraint* const constrp) {
-                            if (!constrp) return;
+                            UASSERT(constrp, "foreachMember should only pass valid constraints");
                             AstConstraint* const cloneConstrp = constrp->cloneTree(false);
                             // Name manipulation
                             nameManipulation(varRefp, cloneConstrp);
@@ -710,8 +711,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                                // (used to format "%@.%@" for struct arrays)
 
     // Build full path for a MemberSel chain (e.g., "obj.l2.l3.l4")
-    std::string buildMemberPath(const AstMemberSel* memberSelp) {
-        if (!memberSelp) return "";
+    std::string buildMemberPath(const AstMemberSel* const memberSelp) {
+        UASSERT(memberSelp, "MemberSel pointer should not be null");
 
         const AstNode* fromp = memberSelp->fromp();
         if (VN_IS(fromp, VarRef)) {
@@ -1148,9 +1149,10 @@ class ConstraintExprVisitor final : public VNVisitor {
             while (VN_IS(rootNode, MemberSel)) { rootNode = VN_AS(rootNode, MemberSel)->fromp(); }
 
             // Check if the root variable participates in global constraints
-            AstVar* const constrainedVar
-                = VN_IS(rootNode, VarRef) ? VN_AS(rootNode, VarRef)->varp() : nullptr;
-            if (constrainedVar && constrainedVar->globalConstrained()) {
+            UASSERT(VN_IS(rootNode, VarRef), "MemberSel chain must end with VarRef");
+            AstVar* const constrainedVar = VN_AS(rootNode, VarRef)->varp();
+            UASSERT(constrainedVar, "VarRef must have valid variable pointer");
+            if (constrainedVar->globalConstrained()) {
                 // Global constraint - unwrap the MemberSel
                 iterateChildren(nodep);
                 nodep->replaceWith(nodep->fromp()->unlinkFrBack());
