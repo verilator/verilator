@@ -618,7 +618,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
             // Extract and validate components early to avoid repeated type checks
             AstVarRef* const varRefp = VN_CAST(nodep->fromp(), VarRef);
-            UASSERT(varRefp && varRefp->varp(), "Global constraint path must have valid VarRef");
+            if (!varRefp || !varRefp->varp()) return;
 
             const AstClassRefDType* const classRefp
                 = VN_CAST(varRefp->dtypep()->skipRefp(), ClassRefDType);
