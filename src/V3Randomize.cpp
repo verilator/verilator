@@ -207,7 +207,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
             staticRefp->classOrPackagep(VN_AS(staticRefp->varp()->user2p(), NodeModule));
         }
     }
-    // Mark nested MemberSel chain variables as globally constrained
     void markNestedGlobalConstrainedRecurse(AstNode* nodep) {
         UASSERT(nodep, "Node should not be null");
 
@@ -311,6 +310,28 @@ class RandomizeMarkVisitor final : public VNVisitor {
             VL_DO_DANGLING(varRefp->deleteTree(), varRefp);
         });
     }
+
+    // Process a globally constrained variable by cloning its constraints
+    void processGlobalConstraint(AstVarRef* varRefp, AstClass* gConsClass) {
+        AstVar* const objVar = varRefp->varp();
+
+        // Process per-variable (object instance), not per-class
+        // This allows multiple objects of the same class (e.g., obj1 and obj2 of type Sub)
+        if (m_processedVars.find(objVar) == m_processedVars.end()) {
+
+            // Clone constraints from the top-level class (e.g., Level1 for obj_a)
+            gConsClass->foreachMember([&](AstClass* const classp, AstConstraint* const constrp) {
+                UASSERT(constrp, "foreachMember should only pass valid constraints");
+                AstConstraint* const cloneConstrp = constrp->cloneTree(false);
+                nameManipulation(varRefp, cloneConstrp);
+                m_clonedConstraints.push_back(cloneConstrp);
+            });
+
+            cloneNestedConstraints(varRefp, gConsClass);
+            m_processedVars.insert(objVar);
+        }
+    }
+
     // VISITORS
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);
@@ -626,29 +647,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
                     "Global constraint variable must have valid class type");
 
             if (nodep->user1() && varRefp->varp()->globalConstrained()) {
-                AstClass* gConsClass = classRefp->classp();
-                AstVar* const objVar = varRefp->varp();  // The object variable (e.g., obj1, obj2)
-
-                // Process per-variable (object instance), not per-class
-                // This allows multiple objects of the same class (e.g., obj1 and obj2 of type Sub)
-                if (m_processedVars.find(objVar) == m_processedVars.end()) {
-
-                    // Clone constraints from the top-level class (e.g., Level1 for obj_a)
-                    gConsClass->foreachMember(
-                        [&](AstClass* const classp, AstConstraint* const constrp) {
-                            UASSERT(constrp, "foreachMember should only pass valid constraints");
-                            AstConstraint* const cloneConstrp = constrp->cloneTree(false);
-                            // Name manipulation
-                            nameManipulation(varRefp, cloneConstrp);
-                            m_clonedConstraints.push_back(cloneConstrp);
-                        });
-
-                    // Recursively clone constraints from nested members (e.g., l2, l3, l4)
-                    cloneNestedConstraints(varRefp, gConsClass);
-
-                    // Mark this variable (object instance) as processed
-                    m_processedVars.insert(objVar);
-                }
+                processGlobalConstraint(varRefp, classRefp->classp());
             }
         }
     }
@@ -1144,20 +1143,19 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstMemberSel* nodep) override {
         if (nodep->varp()->rand().isRandomizable() && nodep->fromp()) {
 
-            // Traverse MemberSel chain to find the root variable reference
             AstNode* rootNode = nodep->fromp();
             while (VN_IS(rootNode, MemberSel)) { rootNode = VN_AS(rootNode, MemberSel)->fromp(); }
 
             // Check if the root variable participates in global constraints
-            UASSERT(VN_IS(rootNode, VarRef), "MemberSel chain must end with VarRef");
-            AstVar* const constrainedVar = VN_AS(rootNode, VarRef)->varp();
-            UASSERT(constrainedVar, "VarRef must have valid variable pointer");
-            if (constrainedVar->globalConstrained()) {
-                // Global constraint - unwrap the MemberSel
-                iterateChildren(nodep);
-                nodep->replaceWith(nodep->fromp()->unlinkFrBack());
-                VL_DO_DANGLING(nodep->deleteTree(), nodep);
-                return;
+            if (VN_IS(rootNode, VarRef)) {
+                AstVar* const constrainedVar = VN_AS(rootNode, VarRef)->varp();
+                if (constrainedVar && constrainedVar->globalConstrained()) {
+                    // Global constraint - unwrap the MemberSel
+                    iterateChildren(nodep);
+                    nodep->replaceWith(nodep->fromp()->unlinkFrBack());
+                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    return;
+                }
             }
         }
         editFormat(nodep);
