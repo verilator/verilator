@@ -35,9 +35,9 @@
             localparam bit ZERO = 1'b0;
         
             function automatic bit invert(bit x);
- 000015         return ~x;
-+000012  point: comment=(x==0) => 1 hier=top.t
-+000015  point: comment=(x==1) => 0 hier=top.t
+%000005         return ~x;
+-000004  point: comment=(x==0) => 1 hier=top.t
+-000005  point: comment=(x==1) => 0 hier=top.t
             endfunction
         
             function automatic bit and_oper(bit a, bit b);
