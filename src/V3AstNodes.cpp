@@ -3039,7 +3039,7 @@ void AstCoverInc::dump(std::ostream& str) const {
 void AstCoverInc::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstFork::dump(std::ostream& str) const {
     this->AstNodeBlock::dump(str);
-    if (!joinType().join()) str << " [" << joinType() << "]";
+    str << " [" << joinType() << "]";
 }
 void AstFork::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "joinType", joinType().ascii());

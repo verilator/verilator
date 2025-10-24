@@ -741,16 +741,17 @@ class WidthVisitor final : public VNVisitor {
         }
         if (!nodep->fileline()->timingOn()
             // With no statements, begin is identical
-            || !nodep->stmtsp()
+            || !nodep->forksp()
             || (!v3Global.opt.timing().isSetTrue()  // If no --timing
                 && (v3Global.opt.bboxUnsup()
                     // With one statement and no timing, a begin block does as good as a
                     // fork/join or join_any
-                    || (!nodep->stmtsp()->nextp() && !nodep->joinType().joinNone())))) {
-            AstNode* stmtsp = nullptr;
-            if (nodep->stmtsp()) stmtsp = nodep->stmtsp()->unlinkFrBack();
-            AstBegin* const newp = new AstBegin{nodep->fileline(), nodep->name(), stmtsp, false};
+                    || (!nodep->forksp()->nextp() && !nodep->joinType().joinNone())))) {
+            AstBegin* const newp = new AstBegin{nodep->fileline(), nodep->name(), nullptr, false};
             nodep->replaceWith(newp);
+            if (nodep->declsp()) newp->addDeclsp(nodep->declsp()->unlinkFrBackWithNext());
+            if (nodep->stmtsp()) newp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
+            if (nodep->forksp()) newp->addStmtsp(nodep->forksp()->unlinkFrBackWithNext());
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else if (v3Global.opt.timing().isSetTrue()) {
             VL_RESTORER(m_underFork);

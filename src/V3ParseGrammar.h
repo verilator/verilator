@@ -304,16 +304,6 @@ public:
         return m_scopedSigAttr ? m_scopedSigAttr->cloneTree(true) : nullptr;
     }
 
-    static void addForkStmtsp(AstFork* forkp, AstNode* stmtsp) {
-        forkp->addStmtsp(stmtsp);
-        for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
-            AstVar* const varp = VN_CAST(stmtp, Var);
-            if (!varp) break;
-            varp->unlinkFrBack();
-            forkp->addInitsp(varp);
-        }
-    }
-
     void createGenericIface(AstNode* const nodep, AstNodeRange* const rangep,
                             AstNode* sigAttrListp, FileLine* const modportFileline = nullptr,
                             const string& modportstrp = "") {
@@ -333,5 +323,18 @@ public:
         AstNode::addNext(nodep,
                          createVariable(nodep->fileline(), nodep->name(), rangep, sigAttrListp));
         m_varDecl = VVarType::VAR;
+    }
+
+    // Wrap all statements in the given list in an AstBegin (except those already an AstBegin)
+    static AstBegin* wrapInBegin(AstNodeStmt* stmtsp) {
+        AstBegin* resp = nullptr;
+        for (AstNodeStmt *nodep = stmtsp, *nextp; nodep; nodep = nextp) {
+            nextp = VN_AS(nodep->nextp(), NodeStmt);
+            if (nextp) nextp->unlinkFrBackWithNext();
+            AstBegin* beginp = VN_CAST(nodep, Begin);
+            if (!beginp) beginp = new AstBegin{nodep->fileline(), "", nodep, true};
+            resp = AstNode::addNext(resp, beginp);
+        }
+        return resp;
     }
 };

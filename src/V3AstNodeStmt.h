@@ -69,17 +69,16 @@ public:
 };
 class AstNodeBlock VL_NOT_FINAL : public AstNodeStmt {
     // A Begin/fork block
-    // @astgen op2 := stmtsp : List[AstNode]
     // Parents: statement
+    // @astgen op1 := declsp : List[AstNode] // Declarations inside block
+    // @astgen op2 := stmtsp : List[AstNode] // Sequential statements inside block
     string m_name;  // Name of block
     bool m_unnamed;  // Originally unnamed (name change does not affect this)
 protected:
-    AstNodeBlock(VNType t, FileLine* fl, const string& name, AstNode* stmtsp)
+    AstNodeBlock(VNType t, FileLine* fl, const string& name)
         : AstNodeStmt{t, fl}
-        , m_name{name} {
-        addStmtsp(stmtsp);
-        m_unnamed = (name == "");
-    }
+        , m_name{name}
+        , m_unnamed{name == ""} {}
 
 public:
     ASTGEN_MEMBERS_AstNodeBlock;
@@ -1351,17 +1350,16 @@ public:
 
 // === AstNodeBlock ===
 class AstBegin final : public AstNodeBlock {
-    // A Begin/end named block, only exists shortly after parsing until linking
-    // Parents: statement
-
+    // A 'begin'/'end' named block.
     bool m_needProcess : 1;  // Uses VlProcess
     const bool m_implied : 1;  // Not inserted by user
 public:
-    // Node that puts name into the output stream
     AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool implied)
-        : ASTGEN_SUPER_Begin(fl, name, stmtsp)
+        : ASTGEN_SUPER_Begin(fl, name)
         , m_needProcess{false}
-        , m_implied{implied} {}
+        , m_implied{implied} {
+        addStmtsp(stmtsp);
+    }
     ASTGEN_MEMBERS_AstBegin;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1370,21 +1368,25 @@ public:
     bool implied() const { return m_implied; }
 };
 class AstFork final : public AstNodeBlock {
-    // A fork named block
-    // @astgen op1 := initsp : List[AstNode]
-    // Parents: statement
-    // Children: statements
-    VJoinType m_joinType;  // Join keyword type
+    // A 'fork'/'join*' named block. Note that this is a strict superset of
+    // AstBegin, and it does contain AstNodeBlock::stmtsp(), which are
+    // statements that execute sequentially before the parallel statements are
+    // spawned. This is necessary to implement things like local variable
+    // initializers properly. The parallel statements inside the fork must all
+    // be AstBegin, as lowering stages will introduce additional statements to
+    // be executed sequentially within eaach fork branch.
+    //
+    // @astgen op3 := forksp : List[AstBegin]
+    const VJoinType m_joinType;  // Join keyword type
 public:
-    // Node that puts name into the output stream
-    AstFork(FileLine* fl, const string& name, AstNode* stmtsp)
-        : ASTGEN_SUPER_Fork(fl, name, stmtsp) {}
+    AstFork(FileLine* fl, VJoinType joinType, const string& name = "")
+        : ASTGEN_SUPER_Fork(fl, name)
+        , m_joinType{joinType} {}
     ASTGEN_MEMBERS_AstFork;
     bool isTimingControl() const override { return !joinType().joinNone(); }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     VJoinType joinType() const { return m_joinType; }
-    void joinType(const VJoinType& flag) { m_joinType = flag; }
 };
 
 // === AstNodeCoverOrAssert ===

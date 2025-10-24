@@ -731,7 +731,7 @@ class TimingControlVisitor final : public VNVisitor {
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
         unsigned joinCount = 0;  // Needed for join counter
         // Add a <fork sync>.done() to each begin
-        for (AstNode* beginp = forkp->stmtsp(); beginp; beginp = beginp->nextp()) {
+        for (AstNode* beginp = forkp->forksp(); beginp; beginp = beginp->nextp()) {
             addForkDone(VN_AS(beginp, Begin), forkVscp);
             joinCount++;
         }
@@ -1025,10 +1025,7 @@ class TimingControlVisitor final : public VNVisitor {
             // Put it in a fork so it doesn't block
             // Could already be the only thing directly under a fork, reuse that if possible
             AstFork* forkp = !nodep->nextp() ? VN_CAST(nodep->firstAbovep(), Fork) : nullptr;
-            if (!forkp) {
-                forkp = new AstFork{flp, "", nullptr};
-                forkp->joinType(VJoinType::JOIN_NONE);
-            }
+            if (!forkp) forkp = new AstFork{flp, VJoinType::JOIN_NONE};
             if (!m_underProcedure) {
                 // If it's in a function, it won't be handled by V3Delayed
                 // Put it behind an additional named event that gets triggered in the NBA region
@@ -1043,7 +1040,7 @@ class TimingControlVisitor final : public VNVisitor {
             controlp->replaceWith(forkp);
             AstBegin* beginp = VN_CAST(controlp, Begin);
             if (!beginp) beginp = new AstBegin{nodep->fileline(), "", controlp, false};
-            forkp->addStmtsp(beginp);
+            forkp->addForksp(beginp);
             controlp = forkp;
         }
         UASSERT_OBJ(nodep, controlp, "Assignment should have timing control");
@@ -1115,11 +1112,11 @@ class TimingControlVisitor final : public VNVisitor {
         AstNode* const controlp = nodep->timingControlp()->unlinkFrBack();
         AstAssign* const assignp = new AstAssign{nodep->fileline(), lhs1p, rhs1p, controlp};
         // Put the assignment in a fork..join_none.
-        AstBegin* const beginp = new AstBegin{flp, "", assignp, false};
-        AstFork* const forkp = new AstFork{flp, "", beginp};
-        forkp->joinType(VJoinType::JOIN_NONE);
+        AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
         nodep->replaceWith(forkp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        AstBegin* const beginp = new AstBegin{flp, "", assignp, false};
+        forkp->addForksp(beginp);
         visit(forkp);  // Visit now as we need to do some post-processing
         // IEEE 1800-2023 10.3.3 - if the RHS value differs from the currently scheduled value to
         // be assigned, the currently scheduled assignment is descheduled. To keep track if an
@@ -1239,21 +1236,23 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstFork* nodep) override {
         if (nodep->user1SetOnce()) return;
         v3Global.setUsesTiming();
+
         // Create a unique name for this fork
-        nodep->name("__Vfork_" + cvtToStr(++m_forkCnt));
-        unsigned idx = 0;  // Index for naming begins
-        AstNode* stmtp = nodep->stmtsp();
-        // Put each statement in a begin
-        while (stmtp) {
-            UASSERT_OBJ(VN_IS(stmtp, Begin), nodep,
-                        "All statements under forks must be begins at this point");
-            AstBegin* const beginp = VN_AS(stmtp, Begin);
-            stmtp = beginp->nextp();
-            iterate(beginp);
-            // Even if we do not find any awaits, we cannot simply inline the process here, as new
-            // awaits could be added later.
+        nodep->name("__Vfork_" + std::to_string(++m_forkCnt));
+
+        // TODO: Should process nodep->stmtsp() in case an earlier pass
+        //       inserted something there, but as of today we don't need to.
+
+        // Process and name each fork
+        size_t idx = 0;  // Index for naming begins
+        for (AstBegin *itemp = nodep->forksp(), *nextp; itemp; itemp = nextp) {
+            nextp = VN_AS(itemp->nextp(), Begin);
+            iterate(itemp);
+            // Note: Even if we do not find any awaits, we cannot simply inline
+            // the process here, as new awaits could be added later.
+
             // Name the begin (later the name will be used for a new function)
-            beginp->name(nodep->name() + "__" + cvtToStr(idx++));
+            itemp->name(nodep->name() + "__" + std::to_string(idx++));
         }
         if (!nodep->joinType().joinNone()) makeForkJoin(nodep);
     }

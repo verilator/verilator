@@ -1,8 +1,8 @@
-%Error: t/t_lint_block_redecl_bad.v:17:34: Duplicate declaration of block: 'COMB'
+%Error: t/t_lint_block_redecl_bad.v:17:27: Duplicate declaration of block: 'COMB'
    17 |       for(i=0; i<9; i++ ) begin: COMB
-      |                                  ^~~~
-        t/t_lint_block_redecl_bad.v:14:35: ... Location of original declaration
+      |                           ^~~~~
+        t/t_lint_block_redecl_bad.v:14:28: ... Location of original declaration
    14 |       for(i=0; i<10; i++ ) begin: COMB
-      |                                   ^~~~
+      |                            ^~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to
