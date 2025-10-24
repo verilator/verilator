@@ -68,9 +68,6 @@ module t (/*AUTOARG*/
       ## [+] b;
    endsequence
 
-   sequence s_cycdelay_int;
-      a ## 1 b;
-   endsequence
    sequence s_cycdelay_id;
       a ## DELAY b;
    endsequence
