@@ -35,7 +35,6 @@
 
 #include "V3Global.h"
 #include "V3Stats.h"
-#include "V3ThreadPool.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -335,10 +334,9 @@ void V3FuncOpt::funcOptAll(AstNetlist* nodep) {
     {
         const VNUser1InUse user1InUse;
         FuncOptStats stats;
-        for (AstNodeModule *modp = nodep->modulesp(), *nextModp; modp; modp = nextModp) {
-            nextModp = VN_AS(modp->nextp(), NodeModule);
-            for (AstNode *stmtp = modp->stmtsp(), *nextStmtp; stmtp; stmtp = nextStmtp) {
-                nextStmtp = stmtp->nextp();
+        for (AstNodeModule* modp = nodep->modulesp(); modp;
+             modp = VN_AS(modp->nextp(), NodeModule)) {
+            for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                 if (AstCFunc* const cfuncp = VN_CAST(stmtp, CFunc)) {
                     FuncOptVisitor::apply(stats, cfuncp);
                 }
