@@ -29,6 +29,7 @@
 #include "V3Coverage.h"
 
 #include "V3EmitV.h"
+#include "V3UniqueNames.h"
 
 #include <list>
 #include <unordered_map>
@@ -74,7 +75,7 @@ class ExprCoverageEligibleVisitor final : public VNVisitorConst {
 
 public:
     // CONSTRUCTORS
-    explicit ExprCoverageEligibleVisitor(AstNode* nodep) { iterateChildrenConst(nodep); }
+    explicit ExprCoverageEligibleVisitor(AstNode* nodep) { iterateConst(nodep); }
     ~ExprCoverageEligibleVisitor() override = default;
 
     bool eligible() { return m_eligible; }
@@ -138,6 +139,9 @@ class CoverageVisitor final : public VNVisitor {
     //  AstIf/AstLoopTest::user2()      -> bool.  True indicates coverage-generated
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
+    V3UniqueNames m_exprTempNames;  // For generating unique temporary variable names used by
+                                    // expression coverage
+    std::unordered_map<VNRef<AstFuncRef>, AstVar* const> m_funcTemps;
 
     // STATE - across all visitors
     int m_nextHandle = 0;
@@ -145,6 +149,7 @@ class CoverageVisitor final : public VNVisitor {
     // STATE - for current visit position (use VL_RESTORER)
     CheckState m_state;  // State save-restored on each new coverage scope/block
     AstNodeModule* m_modp = nullptr;  // Current module to add statement to
+    AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNode* m_exprStmtsp = nullptr;  // Node to add expr coverage to
     bool m_then = false;  // Whether we're iterating the then or else branch
                           // when m_exprStmtps is an AstIf
@@ -271,6 +276,7 @@ class CoverageVisitor final : public VNVisitor {
         const AstNodeModule* const origModp = m_modp;
         VL_RESTORER(m_modp);
         VL_RESTORER(m_state);
+        VL_RESTORER(m_exprTempNames);
         createHandle(nodep);
         m_modp = nodep;
         m_state.m_inModOff
@@ -325,6 +331,9 @@ class CoverageVisitor final : public VNVisitor {
     }
 
     void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_ftaskp);
+        VL_RESTORER(m_exprTempNames);
+        m_ftaskp = nodep;
         if (!nodep->dpiImport()) iterateProcedure(nodep);
     }
 
@@ -774,8 +783,36 @@ class CoverageVisitor final : public VNVisitor {
             for (CoverTerm& term : expr) {
                 comment += (first ? "" : " && ") + term.m_emitV
                            + "==" + (term.m_objective ? "1" : "0");
-                AstNodeExpr* const clonep = term.m_exprp->cloneTree(false);
-                AstNodeExpr* const termp = term.m_objective ? clonep : new AstLogNot{fl, clonep};
+                AstNodeExpr* covExprp = nullptr;
+                if (AstFuncRef* const frefp = VN_CAST(term.m_exprp, FuncRef)) {
+                    AstNodeDType* const dtypep = frefp->taskp()->fvarp()->dtypep();
+                    const auto emplacedVarp = m_funcTemps.emplace(
+                        *frefp,
+                        new AstVar{fl, VVarType::XTEMP, m_exprTempNames.get(frefp), dtypep});
+                    AstVar* const varp = emplacedVarp.first->second;
+                    if (emplacedVarp.second) {
+                        if (m_ftaskp) {
+                            varp->funcLocal(true);
+                            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+                        } else {
+                            m_modp->stmtsp()->addHereThisAsNext(varp);
+                        }
+                        // NOCOMMIT --- can I avoid this dummy node?
+                        AstConst dummy{fl, 0};
+                        AstAssign* tempAssignp
+                            = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, &dummy};
+                        AstExprStmt* tempStmtp = new AstExprStmt{
+                            fl, tempAssignp, new AstVarRef{fl, varp, VAccess::READ}};
+                        frefp->replaceWith(tempStmtp);
+                        dummy.replaceWith(frefp);
+                    }
+                    covExprp = new AstVarRef{fl, varp, VAccess::READ};
+                } else {
+                    covExprp = term.m_exprp->cloneTree(false);
+                }
+                AstNodeExpr* const termp
+                    = term.m_objective ? covExprp : new AstLogNot{fl, covExprp};
                 if (condp) {
                     condp = new AstLogAnd{fl, condp, termp};
                 } else {
@@ -1060,7 +1097,10 @@ class CoverageVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit CoverageVisitor(AstNetlist* rootp) { iterateChildren(rootp); }
+    explicit CoverageVisitor(AstNetlist* rootp)
+        : m_exprTempNames{"__VExpr"} {
+        iterateChildren(rootp);
+    }
     ~CoverageVisitor() override = default;
 };
 
