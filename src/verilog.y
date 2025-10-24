@@ -3361,22 +3361,22 @@ seq_block<beginp>:               // ==IEEE: seq_block
         //                      // IEEE doesn't allow declarations in unnamed blocks, but several simulators do.
         //                      // So need AstBegin's even if unnamed to scope variables down
                 yBEGIN startLabelE blockDeclListE stmtListE yEND endLabelE
-                {
-                    $$ = new AstBegin{$1, $2 ? *$2 : "", nullptr, false};
-                    GRAMMARP->endLabel($<fl>6, $$, $6);
-                    $$->addDeclsp($3);
-                    $$->addStmtsp($4);
-                }
+                        {
+                            $$ = new AstBegin{$1, $2 ? *$2 : "", nullptr, false};
+                            GRAMMARP->endLabel($<fl>6, $$, $6);
+                            $$->addDeclsp($3);
+                            $$->addStmtsp($4);
+                        }
         ;
 
 seq_blockPreId<beginp>:          // IEEE: seq_block, but called with leading ID
                 id yP_COLON__BEGIN yBEGIN blockDeclListE stmtListE yEND endLabelE
-                {
-                    $$ = new AstBegin{$3, *$1, nullptr, false};
-                    GRAMMARP->endLabel($<fl>7, $$, $7);
-                    $$->addDeclsp($4);
-                    $$->addStmtsp($5);
-                }
+                        {
+                            $$ = new AstBegin{$3, *$1, nullptr, false};
+                            GRAMMARP->endLabel($<fl>7, $$, $7);
+                            $$->addDeclsp($4);
+                            $$->addStmtsp($5);
+                        }
         ;
 
 par_blockJoin<joinType>:
@@ -3387,30 +3387,34 @@ par_blockJoin<joinType>:
 
 par_block<forkp>:               // ==IEEE: par_block
                 yFORK startLabelE blockDeclListE stmtListE par_blockJoin endLabelE
-                {
-                    $$ = new AstFork{$1, $5, $2 ? *$2 : ""};
-                    GRAMMARP->endLabel($<fl>6, $$, $6);
-                    $$->addDeclsp($3);
-                    $$->addForksp(V3ParseGrammar::wrapInBegin($4));
-                }
+                        {
+                            $$ = new AstFork{$1, $5, $2 ? *$2 : ""};
+                            GRAMMARP->endLabel($<fl>6, $$, $6);
+                            $$->addDeclsp($3);
+                            $$->addForksp(V3ParseGrammar::wrapInBegin($4));
+                        }
         ;
 
 par_blockPreId<forkp>:          // ==IEEE: par_block but called with leading ID
                 id yP_COLON__FORK yFORK blockDeclListE stmtListE par_blockJoin endLabelE
-                {
-                    $$ = new AstFork{$3, $6, *$1};
-                    GRAMMARP->endLabel($<fl>7, $$, $7);
-                    $$->addDeclsp($4);
-                    $$->addForksp(V3ParseGrammar::wrapInBegin($5));
-                }
-        ;
+                        {
+                            $$ = new AstFork{$3, $6, *$1};
+                            GRAMMARP->endLabel($<fl>7, $$, $7);
+                            $$->addDeclsp($4);
+                            $$->addForksp(V3ParseGrammar::wrapInBegin($5));
+                        }
+            ;
 
 blockDeclListE<nodep>:      // IEEE: [ block_item_declaration ]
-                /*empty*/                                  { $$ = nullptr; }
-        |       blockDeclListE data_declaration            { $$ = addNextNull($1, $2); }
-        |       blockDeclListE parameter_declaration ';'   { $$ = addNextNull($1, $2); }
-        |       blockDeclListE let_declaration             { $$ = addNextNull($1, $2); }
-        |       error ';'                                  { $$ = nullptr; }  // LCOV_EXCL_LINE
+                /*empty*/                               { $$ = nullptr; }
+        |       blockDeclListE block_item_declaration   { $$ = addNextNull($1, $2); }
+        |       error ';'                               { $$ = nullptr; }  // LCOV_EXCL_LINE
+        ;
+
+block_item_declaration<nodep>:  // ==IEEE: block_item_declaration
+                data_declaration                        { $$ = $1; }
+        |       parameter_declaration ';'               { $$ = $1; }
+        |       let_declaration                         { $$ = $1; }
         ;
 
 stmtListE<nodeStmtp>:
@@ -4643,9 +4647,7 @@ tf_item_declarationList<nodep>:
         ;
 
 tf_item_declaration<nodep>:     // ==IEEE: tf_item_declaration
-                data_declaration                        { $$ = $1; }
-        |       parameter_declaration ';'               { $$ = $1; }
-        |       let_declaration                         { $$ = $1; }
+                block_item_declaration                  { $$ = $1; }
         |       tf_port_declaration                     { $$ = $1; }
         |       tf_item_declarationVerilator            { $$ = $1; }
         ;

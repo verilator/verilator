@@ -48,7 +48,7 @@ class LinkJumpVisitor final : public VNVisitor {
     //  AstBegin/etc::user1()  -> AstJumpBlock*, for body of this loop
     //  AstFinish::user1()     -> bool, processed
     //  AstNode::user2()       -> AstJumpBlock*, for this block
-    //  AstNodeBlock::user3()  -> bool, true if contains a fork
+    //  AstNodeBegin::user3()  -> bool, true if contains a fork
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
@@ -258,24 +258,24 @@ class LinkJumpVisitor final : public VNVisitor {
         m_ftaskp = nodep;
         iterateChildren(nodep);
     }
-    void visit(AstNodeBlock* nodep) override {
+    void visit(AstBegin* nodep) override {
         UINFO(8, "  " << nodep);
-        VL_RESTORER(m_inFork);
         VL_RESTORER(m_unrollFull);
         m_blockStack.push_back(nodep);
-        {
-            if (VN_IS(nodep, Fork)) {
-                m_inFork = true;  // And remains set for children
-                // Mark all upper blocks also, can stop once see
-                // one set to avoid O(n^2)
-                for (auto itr : vlstd::reverse_view(m_blockStack)) {
-                    if (itr->user3()) break;
-                    itr->user3(true);
-                }
-            }
-            nodep->user3(m_inFork);
-            iterateChildren(nodep);
+        iterateChildren(nodep);
+        m_blockStack.pop_back();
+    }
+    void visit(AstFork* nodep) override {
+        UINFO(8, "  " << nodep);
+        VL_RESTORER(m_unrollFull);
+        VL_RESTORER(m_inFork);
+        m_inFork = true;
+        // Mark all upper blocks, can stop once see one set to avoid O(n^2)
+        for (AstNodeBlock* const blockp : vlstd::reverse_view(m_blockStack)) {
+            if (blockp->user3SetOnce()) break;
         }
+        m_blockStack.push_back(nodep);
+        iterateChildren(nodep);
         m_blockStack.pop_back();
     }
     void visit(AstStmtPragma* nodep) override {
@@ -413,18 +413,23 @@ class LinkJumpVisitor final : public VNVisitor {
             }
             handleDisableOnFork(nodep, forks);
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
-            if (directlyUnderFork(beginp)) {
-                std::vector<AstBegin*> forks{beginp};
-                handleDisableOnFork(nodep, forks);
-            } else if (!existsBlockAbove(beginp->name())) {
-                nodep->v3warn(E_UNSUPPORTED, "disable isn't underneath a begin with name: '"
-                                                 << beginp->name() << "'");
-            } else if (beginp->user3()) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported: disabling block that contains a fork");
+            if (existsBlockAbove(beginp->name())) {
+                if (beginp->user3()) {
+                    nodep->v3warn(E_UNSUPPORTED,
+                                  "Unsupported: disabling block that contains a fork");
+                } else {
+                    // Jump to the end of the named block
+                    AstJumpBlock* const blockp = getJumpBlock(beginp, false);
+                    nodep->addNextHere(new AstJumpGo{nodep->fileline(), blockp});
+                }
             } else {
-                // Jump to the end of the named block
-                AstJumpBlock* const blockp = getJumpBlock(beginp, false);
-                nodep->addNextHere(new AstJumpGo{nodep->fileline(), blockp});
+                if (directlyUnderFork(beginp)) {
+                    std::vector<AstBegin*> forks{beginp};
+                    handleDisableOnFork(nodep, forks);
+                } else {
+                    nodep->v3warn(E_UNSUPPORTED, "disable isn't underneath a begin with name: '"
+                                                     << beginp->name() << "'");
+                }
             }
         } else {
             nodep->v3fatalSrc("Disable linked with node of unhandled type "
