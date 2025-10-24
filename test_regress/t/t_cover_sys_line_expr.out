@@ -1,0 +1,339 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: Verilog Test module
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain, for
+        // any use, without warranty, 2024 by Wilson Snyder.
+        // SPDX-License-Identifier: CC0-1.0
+        
+        module t (/*AUTOARG*/
+          // Inputs
+          clk
+          );
+        
+          input clk;
+        
+          int cyc, bump, result;
+          logic foo;
+%000001   initial begin
+-000001  point: comment=block hier=top.t
+%000001     cyc = 0;
+-000001  point: comment=block hier=top.t
+%000001     foo = '1;
+-000001  point: comment=block hier=top.t
+          end
+        
+        
+ 000010   always @(posedge clk) begin
++000010  point: comment=block hier=top.t
+~000010     if (($time != 0) && foo) bump <= bump + 1;
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($realtime != 0) && foo) bump <= bump + 1;
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($stime != 0) && foo) bump <= bump + 1;
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($bitstoreal(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($bitstoreal(64'h7b) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($bitstoreal(64'h7b) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($itor(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($itor($signed(32'sh7b)) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($itor($signed(32'sh7b)) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($signed(3) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=((32'sh3 != 32'sh0)==0) => 0 hier=top.t
++000010  point: comment=((32'sh3 != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($realtobits(1.23) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($realtobits(1.23) != 64'h0)==0) => 0 hier=top.t
++000010  point: comment=(($realtobits(1.23) != 64'h0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($rtoi(1.23) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($rtoi(1.23) != 32'sh0)==0) => 0 hier=top.t
++000010  point: comment=(($rtoi(1.23) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($unsigned(-3) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(((- 32'sh3) != 32'sh0)==0) => 0 hier=top.t
++000010  point: comment=(((- 32'sh3) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($clog2(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($clog2(32'sh7b) != 32'sh0)==0) => 0 hier=top.t
++000010  point: comment=(($clog2(32'sh7b) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($ln(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($ln($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($ln($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($log10(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($log10($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($log10($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($exp(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($exp($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($exp($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($sqrt(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($sqrt($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($sqrt($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($pow(123, 2) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=((($itor($signed(32'sh7b)) ** $itor($signed(32'sh2))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=((($itor($signed(32'sh7b)) ** $itor($signed(32'sh2))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($floor(1.23) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($floor(1.23) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($floor(1.23) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($ceil(1.23) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($ceil(1.23) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($ceil(1.23) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($sin(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($sin($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($sin($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($cos(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($cos($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($cos($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($tan(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($tan($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($tan($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($asin(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($asin($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($asin($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($acos(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($acos($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($acos($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($atan(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($atan($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($atan($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($atan2(123, 2) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($atan2($itor($signed(32'sh7b)),$itor($signed(32'sh2))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($atan2($itor($signed(32'sh7b)),$itor($signed(32'sh2))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($hypot(123, 2) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($hypot($itor($signed(32'sh7b)),$itor($signed(32'sh2))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($hypot($itor($signed(32'sh7b)),$itor($signed(32'sh2))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($sinh(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($sinh($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($sinh($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($cosh(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($cosh($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($cosh($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($tanh(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($tanh($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($tanh($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($asinh(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($asinh($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($asinh($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($acosh(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($acosh($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($acosh($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($atanh(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($atanh($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==0) => 0 hier=top.t
++000010  point: comment=(($atanh($itor($signed(32'sh7b))) != $itor($signed(32'sh0)))==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($countbits(123, 2) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($countbits(32'sh7b, 32'sh2, , 32'sh2) != 32'sh0)==0) => 0 hier=top.t
++000010  point: comment=(($countbits(32'sh7b, 32'sh2, , 32'sh2) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($onehot(123) != 0) && foo) bump <= bump + 1;
++000010  point: comment=(($onehot(32'sh7b) != 32'sh0)==0) => 0 hier=top.t
+-000000  point: comment=(($onehot(32'sh7b) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
+-000000  point: comment=if hier=top.t
++000010  point: comment=else hier=top.t
+~000010     if ($isunknown(foo) && foo) bump <= bump + 1;
++000010  point: comment=($isunknown(foo)==0) => 0 hier=top.t
+-000000  point: comment=($isunknown(foo)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
+-000000  point: comment=if hier=top.t
++000010  point: comment=else hier=top.t
+~000010     if (($countones(123) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($countones(32'sh7b) != 32'sh0)==0) => 0 hier=top.t
++000010  point: comment=(($countones(32'sh7b) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($onehot0(123) != 0) && foo) bump <= bump + 1;
++000010  point: comment=(($onehot0(32'sh7b) != 32'sh0)==0) => 0 hier=top.t
+-000000  point: comment=(($onehot0(32'sh7b) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
+-000000  point: comment=if hier=top.t
++000010  point: comment=else hier=top.t
+~000010     if (($sampled(foo) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($sampled(foo) != 32'sh0)==0) => 0 hier=top.t
++000010  point: comment=(($sampled(foo) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($fell(foo) != 0) && foo) bump <= bump + 1;
++000010  point: comment=(($fell(foo) != 32'sh0)==0) => 0 hier=top.t
+-000000  point: comment=(($fell(foo) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
+-000000  point: comment=if hier=top.t
++000010  point: comment=else hier=top.t
+%000009     if (($changed(foo) != 0) && foo) bump <= bump + 1;
+-000009  point: comment=(((! $stable(foo)) != 32'sh0)==0) => 0 hier=top.t
+-000001  point: comment=(((! $stable(foo)) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
+-000001  point: comment=if hier=top.t
+-000009  point: comment=else hier=top.t
+%000009     if (($rose(foo) != 0) && foo) bump <= bump + 1;
+-000009  point: comment=(($rose(foo) != 32'sh0)==0) => 0 hier=top.t
+-000001  point: comment=(($rose(foo) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
+-000001  point: comment=if hier=top.t
+-000009  point: comment=else hier=top.t
+%000009     if (($stable(foo) != 0) && foo) bump <= bump + 1;
+-000001  point: comment=(($stable(foo) != 32'sh0)==0) => 0 hier=top.t
+-000009  point: comment=(($stable(foo) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
+-000009  point: comment=if hier=top.t
+-000001  point: comment=else hier=top.t
+%000009     if (($past(foo) != 0) && foo) bump <= bump + 1;
+-000001  point: comment=(($past(foo) != 32'sh0)==0) => 0 hier=top.t
+-000009  point: comment=(($past(foo) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
+-000009  point: comment=if hier=top.t
+-000001  point: comment=else hier=top.t
+~000010     if (($random != 0) && foo) bump <= bump + 1;
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($dist_erlang(result, 2, 3) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($dist_erlang(result, 32'sh2, 32'sh3) != 32'sh0)==0) => 0 hier=top.t
++000010  point: comment=(($dist_erlang(result, 32'sh2, 32'sh3) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($dist_normal(result, 2, 3) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($dist_normal(result, 32'sh2, 32'sh3) != 32'sh0)==0) => 0 hier=top.t
++000010  point: comment=(($dist_normal(result, 32'sh2, 32'sh3) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($dist_t(result, 2) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($dist_t(result, 32'sh2) != 32'sh0)==0) => 0 hier=top.t
+-000000  point: comment=(($dist_t(result, 32'sh2) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
+-000000  point: comment=if hier=top.t
++000010  point: comment=else hier=top.t
+~000010     if (($dist_chi_square(result, 2) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($dist_chi_square(result, 32'sh2) != 32'sh0)==0) => 0 hier=top.t
++000010  point: comment=(($dist_chi_square(result, 32'sh2) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($dist_exponential(result, 2) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($dist_exponential(result, 32'sh2) != 32'sh0)==0) => 0 hier=top.t
+-000000  point: comment=(($dist_exponential(result, 32'sh2) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($dist_poisson(result, 2) != 0) && foo) bump <= bump + 1;
++000010  point: comment=(($dist_poisson(result, 32'sh2) != 32'sh0)==0) => 0 hier=top.t
++000010  point: comment=(($dist_poisson(result, 32'sh2) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($dist_uniform(result, 2, 3) != 0) && foo) bump <= bump + 1;
+-000000  point: comment=(($dist_uniform(result, 32'sh2, 32'sh3) != 32'sh0)==0) => 0 hier=top.t
++000010  point: comment=(($dist_uniform(result, 32'sh2, 32'sh3) != 32'sh0)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+~000010     if (($sformatf("abc") != "abc") && foo) bump <= bump + 1;
++000010  point: comment=(($sformatf(%22abc%22);%0A != %22abc%22)==0) => 0 hier=top.t
+-000000  point: comment=(($sformatf(%22abc%22);%0A != %22abc%22)==1 && foo==1) => 1 hier=top.t
+-000000  point: comment=(foo==0) => 0 hier=top.t
+-000000  point: comment=if hier=top.t
++000010  point: comment=else hier=top.t
+~000010     if (foo && foo) bump <= bump + 1;
+-000000  point: comment=(foo==0) => 0 hier=top.t
++000010  point: comment=(foo==1) => 1 hier=top.t
++000010  point: comment=if hier=top.t
+-000000  point: comment=else hier=top.t
+ 000010     cyc <= cyc + 1;
++000010  point: comment=block hier=top.t
+%000009     if (cyc==9) begin
+-000001  point: comment=if hier=top.t
+-000009  point: comment=else hier=top.t
+%000001       $write("*-* All Finished *-*\n");
+-000001  point: comment=if hier=top.t
+%000001       $finish;
+-000001  point: comment=if hier=top.t
+            end
+           end
+        endmodule
+        
