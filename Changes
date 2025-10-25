@@ -32,6 +32,7 @@ Verilator 5.041 devel
 * Deprecate '--make cmake' option (#6540). [Geza Lore]
 * Change default `--expand-limit` to 256 (#3419).
 * Change developer coverage flow and add configure `--enable-dev-gcov` (#6526). [Geza Lore]
+* Change `verilator_difftree` to return exit code 1 on mismatch, 2 on error.
 * Support modports referencing clocking blocks (#4555) (#6436). [Ryszard Rozak, Antmicro Ltd.]
 * Support class package reference on pattern keys (#5653). [Todd Strader]
 * Support digits in `$sscanf` field width formats (#6083). [Iztok Jeras]
@@ -112,9 +113,9 @@ Verilator 5.041 devel
 * Fix single element unpacked array DPI parameters. [Geza Lore]
 * Fix DFG synthesis non-determinism (#6557) (#6568). [Todd Strader]
 * Fix hierarchical with parameterized instances under hier block (#6572). [Geza Lore]
+* Fix segfault on type casts (#6574). [David Moberg]
 * Fix references to interfaces containing generate blocks (#6579). [Ryszard Rozak, Antmicro Ltd.]
 * Fix missing net type mappings in FST traces (#6582) (#6583). [Matt Stroud]
-* Fix segfault on type casts (#6574). [David Moberg]
 
 
 Verilator 5.040 2025-08-30

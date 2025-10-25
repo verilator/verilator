@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=C0103,C0114,C0116,C0209
+# pylint: disable=C0103,C0114,C0116,C0209,W0603
 ######################################################################
 
 import argparse
@@ -9,20 +9,24 @@ import os.path
 import re
 import sys
 
+exit_code = 0
+
 
 def diff(a, b):
-
     if not os.path.exists(a):
-        sys.exit("%Error: No old diff filename found: " + a)
+        sys.stderr.write("%Error: No old diff filename found: " + a + "\n")
+        sys.exit(2)
     if not os.path.exists(b):
-        sys.exit("%Error: No new diff filename found: " + b)
+        sys.stderr.write("%Error: No new diff filename found: " + b + "\n")
+        sys.exit(2)
 
     if os.path.isdir(a) and os.path.isdir(b):
         diff_dir(a, b)
     elif os.path.isfile(a) and os.path.isfile(b):
         diff_file(a, b)
     else:
-        sys.exit("%Error: Mix of files and dirs")
+        sys.stderr.write("%Error: Mix of files and dirs")
+        sys.exit(2)
 
 
 def diff_dir(a, b):
@@ -51,6 +55,8 @@ def diff_dir(a, b):
 
 
 def diff_file(a, b):
+    global exit_code
+
     # Compare the two tree files
     short_a = re.sub(r'[^a-zA-Z0-9.]+', '_', a)
     short_b = re.sub(r'[^a-zA-Z0-9.]+', '_', b)
@@ -65,9 +71,15 @@ def diff_file(a, b):
 
     filterf(a, tmp_a)
     filterf(b, tmp_b)
-    os.system("diff -u " + tmp_a + " " + tmp_b)
+    status = os.system("diff -u " + tmp_a + " " + tmp_b)
     os.unlink(tmp_a)
     os.unlink(tmp_b)
+
+    status_exit_code = status >> 8
+    if status_exit_code == 1:
+        exit_code = 1
+    elif status_exit_code:
+        exit_code = 2
 
 
 def version_from(filename):
@@ -107,7 +119,9 @@ parser = argparse.ArgumentParser(
 
 Verilator_difftree is used for debugging Verilator tree output files.
 It performs a diff between two files, or all files common between two
-directories, ignoring irrelevant pointer differences.""",
+directories, ignoring irrelevant pointer differences.
+
+Exit status is 0 if inputs are the same, 1 if different, 2 if trouble.""",
     epilog="""Copyright 2005-2025 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
@@ -124,6 +138,7 @@ parser.add_argument('fileb', help='input file b to diff')
 
 Args = parser.parse_args()
 diff(Args.filea, Args.fileb)
+sys.exit(exit_code)
 
 ######################################################################
 # Local Variables:
