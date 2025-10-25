@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.top_filename = "t/t_balance_cats.v"
+test.top_filename = "t/t_opt_balance_cats.v"
 
 test.compile(verilator_flags2=[
     "--stats", "--build", "--gate-stmts", "10000", "--expand-limit", "128", "--sc"

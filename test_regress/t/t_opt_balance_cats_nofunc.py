@@ -9,15 +9,15 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
 
-test.compile(verilator_flags2=["--stats"])
+test.top_filename = "t/t_opt_balance_cats.v"
 
-if test.vlt_all:
-    test.file_grep(test.stats, r'Optimizations, Lifetime assign deletions\s+(\d+)', 4)
-    test.file_grep(test.stats, r'Optimizations, Lifetime creset deletions\s+(\d+)', 1)
-    test.file_grep(test.stats, r'Optimizations, Lifetime constant prop\s+(\d+)', 5)
+test.compile(verilator_flags2=[
+    "--stats", "-fno-func-opt", "-fno-func-opt-balance-cat", "-fno-func-opt-split-cat"
+])
 
-test.execute()
+test.file_grep_not(test.stats, r'Optimizations, FuncOpt concat trees balances')
+test.file_grep_not(test.stats, r'Optimizations, FuncOpt concat splits')
 
 test.passes()
