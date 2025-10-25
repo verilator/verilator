@@ -1214,6 +1214,7 @@ public:
         return subDTypep() ? subDTypep()->basicp() : nullptr;
     }
     AstNodeDType* subDTypep() const override VL_MT_STABLE;
+    AstNodeDType* getChildDTypep() const override { return VN_CAST(typeofp(), NodeDType); }
     int widthAlignBytes() const override { return dtypeSkipRefp()->widthAlignBytes(); }
     int widthTotalBytes() const override { return dtypeSkipRefp()->widthTotalBytes(); }
     void name(const string& flag) override { m_name = flag; }

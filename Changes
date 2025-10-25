@@ -114,6 +114,7 @@ Verilator 5.041 devel
 * Fix hierarchical with parameterized instances under hier block (#6572). [Geza Lore]
 * Fix references to interfaces containing generate blocks (#6579). [Ryszard Rozak, Antmicro Ltd.]
 * Fix missing net type mappings in FST traces (#6582) (#6583). [Matt Stroud]
+* Fix segfault on type casts (#6574). [David Moberg]
 
 
 Verilator 5.040 2025-08-30
