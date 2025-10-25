@@ -170,12 +170,7 @@ class TraceDriver final : public DfgVisitor {
         DfgVertex*& cachedRespr = cachePair.first->second;
 
         // Trace the vertex
-        if (!cachePair.second) {
-            // If already traced this vtxp/msb/lsb, just use the result.
-            // This is important to avoid combinatorial explosion when the
-            // same sub-expression is needed multiple times.
-            resp = cachedRespr;
-        } else if (wasOnStack) {
+        if (wasOnStack) {
             // If it was already on the stack, then this is a true
             // combinational cycles, terminate the trace.
             // Note: could issue a "proper combinational cycle" error here,
@@ -186,6 +181,11 @@ class TraceDriver final : public DfgVisitor {
             // be an UNOPTFLAT issued during scheduling anyway, and the true
             // cycle might still settle at run-time.
             resp = nullptr;
+        } else if (!cachePair.second) {
+            // If already traced this vtxp/msb/lsb, just use the result.
+            // This is important to avoid combinatorial explosion when the
+            // same sub-expression is needed multiple times.
+            resp = cachedRespr;
         } else if (m_vtx2Scc[vtxp] != m_component) {
             // If the currently traced vertex is in a different component,
             // then we found what we were looking for.
