@@ -81,6 +81,7 @@ public:
     void addSuggestionCandidate(const string& s) VL_MT_DISABLED;
     // Call this function after all options are registered.
     void finalize() VL_MT_DISABLED;
+    void dumpOptions() VL_MT_DISABLED;
 
     // CONSTRUCTORS
     V3OptionParser() VL_MT_DISABLED;

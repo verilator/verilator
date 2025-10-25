@@ -239,6 +239,7 @@ private:
     bool m_debugExitUvm23 = false;  // main switch: --debug-exit-uvm23
     bool m_debugLeak = true;        // main switch: --debug-leak
     bool m_debugNondeterminism = false;  // main switch: --debug-nondeterminism
+    bool m_debugOptions = false;    // main switch: --debug-options
     bool m_debugPartition = false;  // main switch: --debug-partition
     bool m_debugPreprocPassthru = false;  // main switch: --debug-preproc-passthru
     bool m_debugProtect = false;    // main switch: --debug-protect

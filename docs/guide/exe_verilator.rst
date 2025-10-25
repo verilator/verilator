@@ -623,6 +623,10 @@ Summary:
 
 .. option:: -fno-const-eager
 
+.. option:: -fno-dead-assigns
+
+.. option:: -fno-dead-cells
+
 .. option:: -fno-dedup
 
 .. option:: -fno-dfg
@@ -812,6 +816,14 @@ Summary:
    :option:`/*verilator&32;hier_block*/` metacomment is ignored.  See
    :ref:`Hierarchical Verilation`.
 
+.. option:: --hierarchical-block <block>
+
+   Internal use only, for :vlopt:`--hierarchical`.
+
+.. option:: --hierarchical-child <block>
+
+   Internal use only, for :vlopt:`--hierarchical`.
+
 .. option:: --hierarchical-params-file <filename>
 
    Rarely needed - internal use. Internal flag inserted used during
@@ -964,6 +976,10 @@ Summary:
    "+libext+" is relatively standard across Verilog tools.  Defaults to
    ".v+.sv".
 
+.. option:: +librescan
+
+   Ignored for compatibility with other simulators.
+
 .. option:: --lint-only
 
    Check the files for lint violations only, do not create any other
@@ -1071,6 +1087,15 @@ Summary:
 .. option:: -O0
 
    Disables optimization of the model.
+
+.. option:: -O1
+
+   Enables default optimization of the model.  This is the default
+   optimization level.
+
+.. option:: -O2
+
+   Enables stronger than default optimization of the model.
 
 .. option:: -O3
 

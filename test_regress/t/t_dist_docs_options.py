@@ -11,22 +11,63 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-Waivers = [
+Doc_Waivers = [
     '+verilator+prof+threads+file+',  # Deprecated
     '+verilator+prof+threads+start+',  # Deprecated
     '+verilator+prof+threads+window+',  # Deprecated
     '-clk',  # Deprecated
-    '-fdfg-synthesize-all',  # Mostly used for testing
-    '-fno-',  # Documented differently
-    '-no-clk',  # Deprecated
-    '-no-lineno',  # Deprecated
-    '-no-order-clock-delay',  # Deprecated
+    '-lineno',  # Deprecated
+    '-order-clock-delay',  # Deprecated
     '-prof-threads',  # Deprecated
 ]
 
+Test_Waivers = [
+    # Covered:
+    '-G',  # Covered; other text fallows option letter
+    '-O',  # Covered; other text fallows option letter
+    '-U',  # Covered; other text fallows option letter
+    '-gdb',  # Covered: no way to test, part of --gdbbt
+    '-rr',  # Not testing; not requiring rr installation
+    # Need testing:
+    '-Wno-lint',
+    '-Wno-style',
+    '-Wwarn-lint',
+    '-annotate-all',
+    '-annotate-min',
+    '-converge-limit',
+    '-coverage-underscore',
+    '-default-language',
+    '-dump-graph',
+    '-dumpi-tree-json',
+    '-facyc-simp',  # Need test of -fno-...
+    '-fassemble',  # Need test of -fno-...
+    '-fcase',  # Need test of -fno-...
+    '-fcombine',  # Need test of -fno-...
+    '-fconst',  # Need test of -fno-...
+    '-fdedup',  # Need test of -fno-...
+    '-fdfg-peephole',  # Need test of -fno-...
+    '-fdfg-peephole-',  # Need test of -fno-...
+    '-ffunc-opt-balance-cat',  # Need test of -fno-...
+    '-ffunc-opt-split-cat',  # Need test of -fno-...
+    '-flife',  # Need test of -fno-...
+    '-flife-post',  # Need test of -fno-...
+    '-fmerge-cond',  # Need test of -fno-...
+    '-freloop',  # Need test of -fno-...
+    '-fsubst',  # Need test of -fno-...
+    '-fsubst-const',  # Need test of -fno-...
+    '-ftable',  # Need test of -fno-...
+    '-json-ids',  # Need test of -no-json-ids
+    '-private',
+    '-trace-depth',
+]
 
-def get_summary_opts():
-    args = {}
+Sums = {}
+Docs = {}
+Srcs = {}
+Tests = {}
+
+
+def read_sums():
     for filename in test.glob_some(test.root + "/bin/*"):
         with open(filename, "r", encoding="latin-1") as fh:
             on = False
@@ -42,19 +83,19 @@ def get_summary_opts():
                     on = False
                 elif on and m1:
                     opt = opt_clean(m1.group(1))
+                    key = opt_key(opt)
                     if test.verbose:
-                        print("S '" + opt + "' " + line)
-                    args[opt] = filename + ":" + str(lineno)
+                        print("A '" + opt + "' " + line)
+                    Sums[key] = filename + ":" + str(lineno) + ": " + opt
                 elif m2:
                     opt = opt_clean(m2.group(1))
+                    key = opt_key(opt)
                     if test.verbose:
-                        print("S '" + opt + "' " + line)
-                    args[opt] = filename + ":" + str(lineno)
-    return args
+                        print("A '" + opt + "' " + line)
+                    Sums[key] = filename + ":" + str(lineno) + ": " + opt
 
 
-def get_docs_opts():
-    args = {}
+def read_docs():
     for filename in test.glob_some(test.root + "/docs/guide/*.rst"):
         with open(filename, "r", encoding="latin-1") as fh:
             lineno = 0
@@ -68,10 +109,60 @@ def get_docs_opts():
                     m = re.search(r':vlopt:`((-|\+)+[^ `]+)', line)
                 if m:
                     opt = opt_clean(m.group(1))
+                    key = opt_key(opt)
                     if test.verbose:
                         print("D '" + opt + "' " + line)
-                    args[opt] = filename + ":" + str(lineno)
-    return args
+                    Docs[key] = filename + ":" + str(lineno) + ": " + opt
+
+
+def read_srcs():
+    filename = "bin/verilator --debug-options"
+    opts = test.run_capture("perl " + os.environ["VERILATOR_ROOT"] + "/bin/verilator" +
+                            " --debug-options 2>&1")
+    lineno = 0
+    for line in opts.split("\n"):
+        lineno += 1
+        m1 = re.search(r'OPTION: "([^"]+)"', line)
+        if m1:
+            opt = opt_clean(m1.group(1))
+            key = opt_key(opt)
+            if re.match(r'-Werror-[A-Z ]', opt):
+                continue
+            if re.match(r'-Wno-[A-Z ]', opt):
+                continue
+            if re.match(r'-Wwarn-[A-Z ]', opt):
+                continue
+            if test.verbose:
+                print("S '" + opt + "' " + line)
+            Srcs[key] = filename + ":" + str(lineno) + ": " + opt
+    if len(Srcs) < 5:
+        test.error("Didn't parse any options")
+    return Srcs
+
+
+def read_tests():
+    filename = "test_regress/t/*.py"
+    for filename in (test.glob_some(test.root + "/test_regress/t/*.py")):
+        if "t_dist_docs_options" in filename:  # Avoid our own suppressions
+            continue
+        with open(filename, 'r', encoding="latin-1") as fh:
+            lineno = 0
+            for line in fh:
+                lineno += 1
+                line = line.lstrip().rstrip()
+                for opt in re.findall(r'[-+]+[-+a-zA-Z0-9]+', line):
+                    opt = opt_clean(opt)
+                    key = opt_key(opt)
+                    if test.verbose:
+                        print("T '" + opt + "' " + line)
+                    Tests[key] = filename + ":" + str(lineno) + ": " + opt
+                    # For e.g. +verilator+seed+<something> and -dumpi-<#>
+                    pos = max(opt.rfind('+'), opt.rfind('-'))
+                    if pos > 1:
+                        subkey = opt[:pos + 1]
+                        if test.verbose:
+                            print("t '" + subkey + "' " + line)
+                        Tests[subkey] = filename + ":" + str(lineno) + ": " + opt
 
 
 def opt_clean(opt):
@@ -81,53 +172,68 @@ def opt_clean(opt):
     return opt
 
 
-def alt_names(opt):
-    opts = [opt]
-    if re.search(r'^-', opt):
-        opts.append("-no" + opt)
-    m = re.search(r'^-no(-.*)', opt)
-    if m:
-        opts.append(m.group(1))
-    return opts
+def opt_key(opt):
+    opt = opt_clean(opt)
+    opt = re.sub(r'^-fno-', '-f', opt)
+    opt = re.sub(r'^-no-', '-', opt)
+    return opt
 
 
 if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
-sums = get_summary_opts()
-docs = get_docs_opts()
+read_sums()
+read_docs()
+read_srcs()
+read_tests()
 
 both = {}
-both.update(sums)
-both.update(docs)
+both.update(Sums)
+both.update(Docs)
+both.update(Srcs)
 
-waiver = {k: 1 for k in Waivers}
+doc_waiver = {k: 1 for k in Doc_Waivers}
 
 for opt in sorted(both.keys()):
-    if opt in waiver:
+    if opt in doc_waiver:
         continue
-    sum_ok = False
-    docs_ok = False
-    for alt in alt_names(opt):
-        if alt in sums:
-            sum_ok = True
-        if test.verbose:
-            print(str(sum_ok) + " SAC '" + opt + "' -> '" + alt + "'")
-    if re.search(r'-fno-', opt):  # Minimal-documented optimization option
-        sum_ok = True
-    for alt in alt_names(opt):
-        if alt in docs:
-            docs_ok = True
-        if test.verbose:
-            print(str(docs_ok) + " DAC '" + opt + "' -> '" + alt + "'")
 
-    if not sum_ok:
-        test.error(docs[opt] + ": Option documented in docs/guide '" + opt +
-                   "' not found in bin/* ARGUMENT SUMMARY documentation")
-    elif not docs_ok:
-        test.error(sums[opt] + ": Option documented in bin/ ARGUMENT SUMMARY '" + opt +
-                   "' not found in docs/guide documentation")
-    elif test.verbose:
-        print(": ok '" + opt)
+    is_in = []
+    not_in = []
+    summ = None
+    if opt in Sums:
+        summ = Sums[opt]
+        is_in.append("summary " + summ)
+    else:
+        if not re.match(r'-f', opt):
+            not_in.append("ARGUMENT SUMMARY in bin/verilator or bin/verilator_coverage")
+
+    doc = None
+    if opt in Docs:
+        doc = Docs[opt]
+        is_in.append("documentation " + doc)
+    else:
+        not_in.append("documentation in docs/guide/exe_*.rst")
+
+    src = None
+    if opt in Srcs:
+        src = Srcs[opt]
+        is_in.append("sources " + src)
+    # Ok if not in sources
+
+    if opt in Tests:
+        if opt in Test_Waivers:
+            print("Unnecessary Test_Waiver for option: '" + opt + "'")
+
+    else:
+        if opt in Test_Waivers:
+            is_in.append("Test_Waiver for test_regress/t/*.py")
+        else:
+            not_in.append("uncovered in test_regress/t/*.py")
+
+    if not_in:
+        test.error_keep_going("Option '" + opt + "' has inconsistent references\n" +
+                              "  Missing in " + "\n  Missing in ".join(not_in) + "\n  Found in " +
+                              "\n  Found in ".join(is_in))
 
 test.passes()

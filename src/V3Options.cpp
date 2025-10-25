@@ -1335,9 +1335,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         v3fatalSrc("--debug-fatal-src");
     }).undocumented();  // See also --debug-abort
     DECL_OPTION("-debug-leak", OnOff, &m_debugLeak);
-    DECL_OPTION("-debug-nondeterminism", OnOff, &m_debugNondeterminism);
+    DECL_OPTION("-debug-nondeterminism", OnOff, &m_debugNondeterminism).undocumented();
+    DECL_OPTION("-debug-options", OnOff, &m_debugOptions).undocumented();
     DECL_OPTION("-debug-partition", OnOff, &m_debugPartition).undocumented();
-    DECL_OPTION("-debug-preproc-passthru", OnOff, &m_debugPreprocPassthru);
+    DECL_OPTION("-debug-preproc-passthru", OnOff, &m_debugPreprocPassthru).undocumented();
     DECL_OPTION("-debug-protect", OnOff, &m_debugProtect).undocumented();
     DECL_OPTION("-debug-self-test", OnOff, &m_debugSelfTest).undocumented();
     DECL_OPTION("-debug-sigsegv", CbCall, throwSigsegv).undocumented();  // See also --debug-abort
@@ -1466,7 +1467,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-I", CbPartialMatch,
                 [this, &optdir](const char* optp) { addIncDirUser(parseFileArg(optdir, optp)); });
     DECL_OPTION("-if-depth", Set, &m_ifDepth);
-    DECL_OPTION("-ignc", OnOff, &m_ignc);
+    DECL_OPTION("-ignc", OnOff, &m_ignc).undocumented();
     DECL_OPTION("-inline-mult", Set, &m_inlineMult);
     DECL_OPTION("-instr-count-dpi", CbVal, [this, fl](int val) {
         m_instrCountDpi = val;
@@ -1546,7 +1547,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-o", Set, &m_exeName);
     DECL_OPTION("-order-clock-delay", CbOnOff, [fl](bool /*flag*/) {
         fl->v3warn(DEPRECATED, "Option order-clock-delay is deprecated and has no effect.");
-    });
+    }).undocumented();
     DECL_OPTION("-output-groups", CbVal, [this, fl](const char* valp) {
         m_outputGroups = std::atoi(valp);
         if (m_outputGroups < -1) fl->v3error("--output-groups must be >= -1: " << valp);
@@ -1599,8 +1600,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-prof-cfuncs", CbCall, [this]() { m_profC = m_profCFuncs = true; });
     DECL_OPTION("-prof-exec", OnOff, &m_profExec);
     DECL_OPTION("-prof-pgo", OnOff, &m_profPgo);
-    DECL_OPTION("-profile-cfuncs", CbCall,
-                [this]() { m_profC = m_profCFuncs = true; });  // Renamed
+    DECL_OPTION("-profile-cfuncs", CbCall, [this]() {
+        m_profC = m_profCFuncs = true;
+    }).undocumented();  // Renamed
     DECL_OPTION("-protect-ids", OnOff, &m_protectIds);
     DECL_OPTION("-protect-key", Set, &m_protectKey);
     DECL_OPTION("-protect-lib", CbVal, [this, fl](const char* valp) {
@@ -1741,7 +1743,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         fl->v3warn(DEPRECATED, "Option --trace-fst-thread is deprecated. "
                                "Use --trace-fst with --trace-threads > 0.");
         if (m_traceThreads == 0) m_traceThreads = 1;
-    });
+    }).undocumented();
     DECL_OPTION("-trace-max-array", Set, &m_traceMaxArray);
     DECL_OPTION("-trace-max-width", Set, &m_traceMaxWidth);
     DECL_OPTION("-trace-params", OnOff, &m_traceParams);
@@ -1756,7 +1758,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-trace-vcd", CbCall, [this]() { m_traceEnabledVcd = true; });
 
     DECL_OPTION("-U", CbPartialMatch, &V3PreShell::undef);
-    DECL_OPTION("-underline-zero", OnOff, &m_underlineZero);  // Deprecated
+    DECL_OPTION("-underline-zero", OnOff, &m_underlineZero).undocumented();  // Deprecated
     DECL_OPTION("-no-unlimited-stack", CbCall, []() {});  // Processed only in bin/verilator shell
     DECL_OPTION("-unroll-count", Set, &m_unrollCount).undocumented();  // Optimization tweak
     DECL_OPTION("-unroll-stmts", Set, &m_unrollStmts).undocumented();  // Optimization tweak
@@ -1967,6 +1969,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             }
             ++i;
         }
+    }
+
+    if (m_debugOptions) {
+        parser.dumpOptions();
+        v3Global.vlExit(0);
     }
 }
 

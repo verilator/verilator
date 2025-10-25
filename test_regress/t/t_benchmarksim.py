@@ -15,10 +15,10 @@ test.top_filename = "t/t_gen_alw.v"  # Use any top file
 test.init_benchmarksim()
 
 # As an example, compile and simulate the top file with varying optimization level
-l_opts = [1, 2, 3]
+l_opts = ['-O0', '-O1', '-O2', '-O3']
 
 for l_opt in l_opts:
-    test.compile(benchmarksim=1, v_flags2=["-O" + str(l_opt)])
+    test.compile(benchmarksim=1, v_flags2=[l_opt])
 
     test.execute()
 

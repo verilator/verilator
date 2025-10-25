@@ -262,6 +262,7 @@ public:
         }
     }
     static void selfTest();
+    const std::vector<std::string> candidates() const { return m_candidates; }
 
 private:
     static EditDistance editDistance(const string& s, const string& t);

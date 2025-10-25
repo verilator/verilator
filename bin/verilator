@@ -400,7 +400,9 @@ detailed descriptions of these arguments.
     --getenv <var>              Get environment variable with defaults
     --help                      Show this help
     --hierarchical              Enable hierarchical Verilation
-    --hierarchical-params-file <name> Internal option that specifies parameters file for hier blocks
+    --hierarchical-block <block>  Internal use only for --hierarchical
+    --hierarchical-child <block>  Internal use only for --hierarchical
+    --hierarchical-params-file <name>  Internal option that specifies parameters file for hier blocks
     --hierarchical-threads <threads>  Number of threads for hierarchical scheduling
      -I<dir>                    Directory to search for includes
     --if-depth <value>          Tune IFDEPTH warning
@@ -418,6 +420,7 @@ detailed descriptions of these arguments.
      -LDFLAGS <flags>           Linker pre-object arguments for makefile
     --lib-create <name>         Create a DPI library
      +libext+<ext>+[ext]...     Extensions for finding modules
+     +librescan                 Ignored for compatibility
     --lint-only                 Lint, but do not make output
     --localize-max-size <value>  Tune localize optimization variable size
     --main                      Generate C++ main() file
@@ -432,6 +435,8 @@ detailed descriptions of these arguments.
      +notimingchecks            Ignored
      -o <executable>            Name of final executable
      -O0                        Disable optimizations
+     -O1                        Default optimizations
+     -O2                        Stronger optimizations
      -O3                        High-performance optimizations
      -O<optimization-letter>    Selectable optimizations
     --output-groups <numfiles>  Group .cpp files into larger ones
