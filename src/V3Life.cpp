@@ -278,6 +278,7 @@ public:
 class LifeVisitor final : public VNVisitor {
     // STATE
     LifeState* const m_statep;  // Current state
+    bool m_containsTiming = false; // Statement contains timing control
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
     bool m_noopt = false;  // Disable optimization of variables in this block
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
@@ -308,6 +309,7 @@ class LifeVisitor final : public VNVisitor {
         if (nodep->isTimingControl() || VN_IS(nodep, AssignForce)) {
             // V3Life doesn't understand time sense nor force assigns - don't optimize
             setNoopt();
+            if (nodep->isTimingControl()) m_containsTiming = true;
             iterateChildren(nodep);
             return;
         }
@@ -345,6 +347,7 @@ class LifeVisitor final : public VNVisitor {
         if (nodep->isTimingControl()) {
             // Don't optimize
             setNoopt();
+            m_containsTiming = true;
         }
         // Don't treat as normal assign
         iterateChildren(nodep);
@@ -379,37 +382,37 @@ class LifeVisitor final : public VNVisitor {
     void visit(AstLoop* nodep) override {
         // Similar problem to AstJumpBlock, don't optimize loop bodies - most are unrolled
         UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
-        LifeBlock* const prevLifep = m_lifep;
-        LifeBlock* const bodyLifep = new LifeBlock{prevLifep, m_statep};
+        VL_RESTORER(m_containsTiming);
         {
             VL_RESTORER(m_noopt);
-            m_lifep = bodyLifep;
+            VL_RESTORER(m_lifep);
+            m_lifep = new LifeBlock{m_lifep, m_statep};
             setNoopt();
             iterateAndNextNull(nodep->stmtsp());
-            m_lifep = prevLifep;
+            UINFO(4, "   joinloop");
+            // For the next assignments, clear any variables that were read or written in the block
+            m_lifep->lifeToAbove();
+            VL_DO_DANGLING(delete m_lifep, m_lifep);
         }
-        UINFO(4, "   joinloop");
-        // For the next assignments, clear any variables that were read or written in the block
-        bodyLifep->lifeToAbove();
-        VL_DO_DANGLING(delete bodyLifep, bodyLifep);
+        if (m_containsTiming) setNoopt();
     }
     void visit(AstJumpBlock* nodep) override {
         // As with Loop's we can't predict if a JumpGo will kill us or not
         // It's worse though as an IF(..., JUMPGO) may change the control flow.
         // Just don't optimize blocks with labels; they're rare - so far.
-        LifeBlock* const prevLifep = m_lifep;
-        LifeBlock* const bodyLifep = new LifeBlock{prevLifep, m_statep};
+        VL_RESTORER(m_containsTiming);
         {
             VL_RESTORER(m_noopt);
-            m_lifep = bodyLifep;
+            VL_RESTORER(m_lifep);
+            m_lifep = new LifeBlock{m_lifep, m_statep};
             setNoopt();
             iterateAndNextNull(nodep->stmtsp());
-            m_lifep = prevLifep;
+            UINFO(4, "   joinjump");
+            // For the next assignments, clear any variables that were read or written in the block
+            m_lifep->lifeToAbove();
+            VL_DO_DANGLING(delete m_lifep, m_lifep);
         }
-        UINFO(4, "   joinjump");
-        // For the next assignments, clear any variables that were read or written in the block
-        bodyLifep->lifeToAbove();
-        VL_DO_DANGLING(delete bodyLifep, bodyLifep);
+        if (m_containsTiming) setNoopt();
     }
     void visit(AstNodeCCall* nodep) override {
         // UINFO(4, "  CCALL " << nodep);
@@ -447,6 +450,7 @@ class LifeVisitor final : public VNVisitor {
         if (nodep->isTimingControl()) {
             // V3Life doesn't understand time sense - don't optimize
             setNoopt();
+            m_containsTiming = true;
         }
         iterateChildren(nodep);
     }
