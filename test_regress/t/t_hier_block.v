@@ -55,7 +55,9 @@ module t (/*AUTOARG*/
 
    always_ff @(posedge clk) begin
       if (out3 != out3_2) $stop;
-      $display("%d out0:%d %d %d %d %d", count, out0, out1, out2, out3, out5, out6);
+      $display("%d %m out0:%d %d %d %d %d", count, out0, out1, out2, out3, out5, out6);
+      $display("%d %m child input  ports: %d %d %d", count, i_sub1.in, i_sub2.in, i_sub3.in);
+      $display("%d %m child output ports: %d %d %d", count, i_sub1.out, i_sub2.out, i_sub3.out);
       if (count == 16) begin
          if (out6 == 19) begin
              $write("*-* All Finished *-*\n");
@@ -194,6 +196,11 @@ module sub3 #(
    sub4 #(.P0(1.6), .P1(3.1), .P3(4.1)) i_sub4_0(.clk(clk), .in(ff), .out(out4));  // incr 2
    sub4 #(.P0(2.4), .P1(3.1), .P3(5)) i_sub4_1(.clk(clk), .in(ff), .out(out4_2));
    /* verilator lint_on REALCVT */
+
+   always @(posedge clk) begin
+     $display("%d %m child input  ports: %d %d", $time, i_sub4_0.in, i_sub4_1.in);
+     $display("%d %m child output ports: %d %d", $time, i_sub4_0.out, i_sub4_1.out);
+   end
 endmodule
 
 module sub4 #(
@@ -246,6 +253,10 @@ module sub4 #(
                  automatic byte exp = !count[0] ? 8'(3 * (1 - i) + (2- j) + 1) : 8'b0;
                 if (sub5_out[i][j] != exp) begin
                    $display("in[%d][%d] act:%d exp:%d", i, j, sub5_out[i][j], exp);
+                   $stop;
+                end
+                if (i_sub5.out[i][j] != exp) begin
+                   $display("in[%d][%d] act:%d exp:%d", i, j, i_sub5.out[i][j], exp);
                    $stop;
                 end
             end
