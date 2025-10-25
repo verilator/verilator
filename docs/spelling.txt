@@ -615,6 +615,7 @@ covergroup
 cpp
 cppstyle
 cpu
+cpure
 ctor
 ctrace
 cutable

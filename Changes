@@ -26,6 +26,7 @@ Verilator 5.041 devel
 * Add error on ranges with tristate values (#6534). [Alex Solomatnikov]
 * Add NORETURN warning on functions without return values (#6534). [Alex Solomatnikov]
 * Add `--aslr` and `--no-aslr` options.
+* Add `$cpure` (#6580). [Igor Zaworski, Antmicro Ltd.]
 * Deprecate sensitivity list on public_flat_rw attributes (#6443). [Geza Lore]
 * Deprecate clocker attribute and --clk option (#6463). [Geza Lore]
 * Deprecate '--make cmake' option (#6540). [Geza Lore]
@@ -111,6 +112,8 @@ Verilator 5.041 devel
 * Fix single element unpacked array DPI parameters. [Geza Lore]
 * Fix DFG synthesis non-determinism (#6557) (#6568). [Todd Strader]
 * Fix hierarchical with parameterized instances under hier block (#6572). [Geza Lore]
+* Fix references to interfaces containing generate blocks (#6579). [Ryszard Rozak, Antmicro Ltd.]
+* Fix missing net type mappings in FST traces (#6582) (#6583). [Matt Stroud]
 
 
 Verilator 5.040 2025-08-30
