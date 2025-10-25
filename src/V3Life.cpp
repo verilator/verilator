@@ -278,7 +278,7 @@ public:
 class LifeVisitor final : public VNVisitor {
     // STATE
     LifeState* const m_statep;  // Current state
-    bool m_containsTiming = false; // Statement contains timing control
+    bool m_containsTiming = false;  // Statement contains timing control
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
     bool m_noopt = false;  // Disable optimization of variables in this block
     bool m_tracingCall = false;  // Iterating into a CCall to a CFunc
