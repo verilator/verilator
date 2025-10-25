@@ -73,6 +73,8 @@ class TraceDriver final : public DfgVisitor {
     uint32_t m_lsb = 0;  // LSB to extract from the currently visited Vertex
     uint32_t m_msb = 0;  // MSB to extract from the currently visited Vertex
     DfgVertex* m_defaultp = nullptr;  // When tracing a variable, this is its 'defaultp', if any
+    // Result cache for reusing already traced vertices
+    std::unordered_map<Visited, DfgVertex*, Visited::Hash, Visited::Equal> m_cache;
     // Result of tracing the currently visited Vertex. Use SET_RESULT below!
     DfgVertex* m_resp = nullptr;
     std::vector<DfgVertex*> m_newVtxps;  // New vertices created during the traversal
@@ -155,12 +157,22 @@ class TraceDriver final : public DfgVisitor {
         // Push to stack
         m_stack.emplace_back(vtxp, msb, lsb);
         bool& onStackr = m_visited[m_stack.back()];
+        // Save onStack before updating
+        const bool wasOnStack = onStackr;
+        // We are tracing the vertex now
+        onStackr = true;
 
-        // Check for true combinational cycles
-        if (onStackr) {
-            // Pop from stack
-            m_stack.pop_back();
+        // The resulting driver that is not part of m_component
+        DfgVertex* resp = nullptr;
 
+        // Retrieve cache entry
+        const auto& cachePair = m_cache.emplace(m_stack.back(), nullptr);
+        DfgVertex*& cachedRespr = cachePair.first->second;
+
+        // Trace the vertex
+        if (wasOnStack) {
+            // If it was already on the stack, then this is a true
+            // combinational cycles, terminate the trace.
             // Note: could issue a "proper combinational cycle" error here,
             // but constructing a legible error message is hard as the Vertex
             // Filelines can be very rough after optimizations (could consider
@@ -168,20 +180,15 @@ class TraceDriver final : public DfgVisitor {
             // run mulitple times and report the same error again. There will
             // be an UNOPTFLAT issued during scheduling anyway, and the true
             // cycle might still settle at run-time.
-
-            // Stop trace
-            return nullptr;
-        }
-
-        // Trace the vertex
-        onStackr = true;
-
-        // The resulting driver that is not part of m_component
-        DfgVertex* resp = nullptr;
-
-        // If the currently traced vertex is in a different component,
-        // then we found what we were looking for.
-        if (m_vtx2Scc[vtxp] != m_component) {
+            resp = nullptr;
+        } else if (!cachePair.second) {
+            // If already traced this vtxp/msb/lsb, just use the result.
+            // This is important to avoid combinatorial explosion when the
+            // same sub-expression is needed multiple times.
+            resp = cachedRespr;
+        } else if (m_vtx2Scc[vtxp] != m_component) {
+            // If the currently traced vertex is in a different component,
+            // then we found what we were looking for.
             resp = vtxp;
             // If the result is a splice, we need to insert a temporary for it
             // as a splice cannot be fed into arbitray logic
@@ -212,14 +219,15 @@ class TraceDriver final : public DfgVisitor {
         }
         UASSERT_OBJ(!resp || resp->width() == (msb - lsb + 1), vtxp, "Wrong result width");
 
+        // Save to cache
+        cachedRespr = resp;
+
         // Pop from stack
         onStackr = false;
         m_stack.pop_back();
 
         // Done
-        if (!resp) {
-            UINFO(9, "TraceDriver - Failed to trace vertex of type: " << vtxp->typeName());
-        }
+        if (!resp) UINFO(9, "TraceDriver - Failed to trace vertex of type: " << vtxp->typeName());
         return resp;
     }
 
