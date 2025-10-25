@@ -194,8 +194,11 @@ module sub3 #(
    assign out = out4;
    /* verilator lint_off REALCVT */
    sub4 #(.P0(1.6), .P1(3.1), .P3(4.1)) i_sub4_0(.clk(clk), .in(ff), .out(out4));  // incr 2
-   sub4 #(.P0(2.4), .P1(3.1), .P3(5)) i_sub4_1(.clk(clk), .in(ff), .out(out4_2));
+   sub4 #(.P0(2.4), .P1(3.1), .P3(5)) i_sub4_1(.clk(clk), .in(), .out(out4_2));
    /* verilator lint_on REALCVT */
+   /* verilator lint_off ASSIGNIN */
+   assign i_sub4_1.in = ff;  // Hierarchical reference to port of hier_block is OK
+   /* verilator lint_off ASSIGNIN */
 
    always @(posedge clk) begin
      $display("%d %m child input  ports: %d %d", $time, i_sub4_0.in, i_sub4_1.in);
