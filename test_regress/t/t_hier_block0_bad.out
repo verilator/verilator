@@ -3,7 +3,15 @@
    21 |    sub0 #(UNPACKED) i_sub0(.clk(clk), .in(8'(count)), .out(out0));
       |           ^~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_hier_block0_bad.v:26:42: Cannot access inside hierarchical block
-   26 |       $display("%d %d %d", count, i_sub0.ff, out1);
-      |                                          ^~
+%Error: t/t_hier_block0_bad.v:62:41: Cannot access non-port symbols inside hierarchical block
+                                   : ... note: In instance 't.i_sub0'
+   62 |       $display("%m: i_sub.x: %d", i_sub.x);
+      |                                         ^
+%Error: t/t_hier_block0_bad.v:26:50: Cannot access non-port symbols inside hierarchical block
+                                   : ... note: In instance 't'
+   26 |       $display("%d i_sub0.ff: %d", count, i_sub0.ff);
+      |                                                  ^~
+%Error: t/t_hier_block0_bad.v:27:63: Cannot access scope inside hierarchical block
+   27 |       $display("%d i_sub0.i_sub.out: %d", count, i_sub0.i_sub.out);
+      |                                                               ^~~
 %Error: Exiting due to

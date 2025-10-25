@@ -729,8 +729,8 @@ public:
             if (lookupSymp) {
                 if (const AstCell* const cellp = VN_CAST(lookupSymp->nodep(), Cell)) {
                     if (const AstNodeModule* const modp = cellp->modp()) {
-                        if (modp->hierBlock()) {
-                            refLocationp->v3error("Cannot access inside hierarchical block");
+                        if (modp->hierBlock() && !leftname.empty()) {
+                            refLocationp->v3error("Cannot access scope inside hierarchical block");
                         } else if (VN_IS(modp, NotFoundModule)) {
                             refLocationp->v3error("Dotted reference to instance that refers to "
                                                   "missing module/interface: "
@@ -3004,6 +3004,22 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
     }
 
+    // Returns true and issues error iff 'varp' cannot be accesed with a VarXRef
+    // in a hier_block given by 'scopeSymp'
+    bool errorHierNonPort(AstVarXRef* refp, AstVar* varp, VSymEnt* scopeSymp) {
+        // OK to access ports on hier_block
+        if (varp->isIO()) return false;
+        // OK if not an instance
+        const AstCell* const cellp = VN_CAST(scopeSymp->nodep(), Cell);
+        if (!cellp) return false;
+        // Ok if not a hier_block
+        const AstNodeModule* const modp = cellp->modp();
+        if (!modp->hierBlock()) return false;
+        // Bad
+        refp->v3error("Cannot access non-port symbols inside hierarchical block");
+        return true;
+    }
+
 #define LINKDOT_VISIT_START() \
     VL_RESTORER(m_indent); \
     ++m_indent;
@@ -4104,6 +4120,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->varp(varp);
                 updateVarUse(nodep->varp());
                 UINFO(7, indent() << "Resolved " << nodep);  // Also prints varp
+                // If found, check if it's ok to access in case it's in a hier_block
+                if (nodep->varp() && errorHierNonPort(nodep, nodep->varp(), dotSymp)) return;
                 if (!nodep->varp()) {
                     nodep->v3error("Can't find definition of "
                                    << AstNode::prettyNameQ(baddot) << " in dotted signal: '"
@@ -4130,6 +4148,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 VSymEnt* const foundp
                     = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
                 AstVarScope* vscp = foundp ? VN_AS(foundp->nodep(), VarScope) : nullptr;
+                // If found, check if it's ok to access in case it's in a hier_block
+                if (vscp && errorHierNonPort(nodep, vscp->varp(), dotSymp)) return;
                 if (!vscp) {
                     nodep->v3error("Can't find varpin scope of "
                                    << AstNode::prettyNameQ(baddot) << " in dotted signal: '"

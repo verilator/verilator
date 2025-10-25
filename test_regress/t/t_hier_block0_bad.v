@@ -22,8 +22,12 @@ module t (/*AUTOARG*/
    sub1 #(.T(logic[7:0])) i_sub1(.in(out0), .out(out1));
 
    always_ff @(posedge clk) begin
-      // dotted access under hierarchical block is not allowed
-      $display("%d %d %d", count, i_sub0.ff, out1);
+      // dotted access under hierarchical block is not allowed ...
+      $display("%d i_sub0.ff: %d", count, i_sub0.ff);
+      $display("%d i_sub0.i_sub.out: %d", count, i_sub0.i_sub.out);
+      // ... Except for ports on a dierct hierarchical child
+      $display("%d i_sub0.out: %d", count, i_sub0.out);
+      $display("%d out1: %d", count, out1);
       if (count == 16) begin
          if (out1 == 15) begin
              $write("*-* All Finished *-*\n");
@@ -49,6 +53,16 @@ module sub0 #(
 
    always_ff @(posedge clk) ff <= in;
    assign out = ff;
+
+   logic [7:0] gg;
+   sub0_sub0 i_sub(.in(ff), .out(gg));
+
+   always_ff @(posedge clk) begin
+      // dotted access under hierarchical block is not allowed ...
+      $display("%m: i_sub.x: %d", i_sub.x);
+      // ... Except for ports on a direct hierarchical child
+      $display("%m: i_sub.out: %d", i_sub.out);
+   end
 endmodule
 
 module sub1 #(
@@ -56,4 +70,15 @@ module sub1 #(
    ) (
     input wire T in, output wire T out); `HIER_BLOCK
    assign out = in;
+
+   sub1_sub #(T) sub(in, out);
+endmodule
+
+module sub0_sub0 (
+  input  wire [7:0] in,
+  output wire [7:0] out
+);
+  `HIER_BLOCK
+  wire [7:0] x = in + 1;
+  assign out = x;
 endmodule

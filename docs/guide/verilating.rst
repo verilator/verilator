@@ -143,8 +143,11 @@ Limitations
 
 Hierarchy blocks have some limitations, including:
 
-* The hierarchy block cannot be accessed using dot (.) from the upper
-  module(s) or other hierarchy blocks.
+* Internals of the hierarchy block cannot be accessed using dot (.) from
+  the upper module(s) or other hierarchy blocks, except that ports of a
+  hierarchy block instance can be accessed from the directly enclosing
+  nested hierarchy block, or from the top level non-hierarchical portions
+  of the design if not a nested hierarchy block.
 
 * Modport cannot be used at the hierarchical block boundary.
 
