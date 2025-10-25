@@ -31,8 +31,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // OrderSerial class
 
-std::vector<AstActive*> V3Order::createSerial(OrderGraph& graph, const std::string& tag,
-                                              const TrigToSenMap& trigToSen, bool slow) {
+AstNodeStmt* V3Order::createSerial(OrderGraph& graph, const std::string& tag,
+                                   const TrigToSenMap& trigToSen, bool slow) {
 
     UINFO(2, "  Constructing serial code for '" + tag + "'");
 
@@ -76,5 +76,5 @@ std::vector<AstActive*> V3Order::createSerial(OrderGraph& graph, const std::stri
     UASSERT(moveGraphp->empty(), "Waiting vertices remain, but none are ready");
     OrderMoveDomScope::clear();
 
-    return emitter.getAndClearActiveps();
+    return emitter.getStmts();
 }

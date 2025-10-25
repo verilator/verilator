@@ -137,15 +137,13 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
     processDomains(netlistp, *graph, tag, externalDomains);
 
     if (parallel) {
-        // Construct the parallel ExecGraph
-        AstExecGraph* const execGraphp = createParallel(*graph, tag, trigToSen, slow);
-        // Add the ExecGraph to the result function.
-        funcp->addStmtsp(execGraphp);
+        // Construct the parallel code
+        AstNodeStmt* const stmtsp = createParallel(*graph, tag, trigToSen, slow);
+        funcp->addStmtsp(stmtsp);
     } else {
         // Construct the serial code
-        const std::vector<AstActive*> activeps = createSerial(*graph, tag, trigToSen, slow);
-        // Add the resulting Active blocks to the result function
-        for (AstNode* const nodep : activeps) funcp->addStmtsp(nodep);
+        AstNodeStmt* const stmtsp = createSerial(*graph, tag, trigToSen, slow);
+        funcp->addStmtsp(stmtsp);
     }
 
     // Dump data

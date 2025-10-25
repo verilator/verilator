@@ -2395,8 +2395,8 @@ struct MTaskVxIdLessThan final {
     }
 };
 
-AstExecGraph* V3Order::createParallel(OrderGraph& orderGraph, const std::string& tag,
-                                      const TrigToSenMap& trigToSen, bool slow) {
+AstNodeStmt* V3Order::createParallel(OrderGraph& orderGraph, const std::string& tag,
+                                     const TrigToSenMap& trigToSen, bool slow) {
     UINFO(2, "  Constructing parallel code for '" + tag + "'");
 
     // For nondeterminism debug:
@@ -2481,7 +2481,7 @@ AstExecGraph* V3Order::createParallel(OrderGraph& orderGraph, const std::string&
         // Construct the actual MTaskBody
         AstMTaskBody* const bodyp = new AstMTaskBody{rootFlp};
         execGraphp->addMTaskBodiesp(bodyp);
-        for (AstActive* const activep : emitter.getAndClearActiveps()) bodyp->addStmtsp(activep);
+        bodyp->addStmtsp(emitter.getStmts());
         UASSERT_OBJ(bodyp->stmtsp(), bodyp, "Should not try to create empty MTask");
 
         // Create the ExecMTask
