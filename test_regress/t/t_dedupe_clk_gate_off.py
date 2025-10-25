@@ -9,13 +9,12 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
-test.top_filename = "t/t_unopt_converge.v"
+test.scenarios('simulator_st')
+test.top_filename = "t/t_dedupe_clk_gate.v"
 
-test.compile(
-    v_flags2=['+define+ALLOW_UNOPT', '--output-split 0', '-fno-dfg', '--converge-limit 5'])
+test.compile(verilator_flags2=["--stats", "-fno-dedup"])
 
 if test.vlt_all:
-    test.execute(fails=True, expect_filename=test.golden_filename)
+    test.file_grep_not(test.stats, r'Optimizations, Gate sigs deduped\s+(\d+)')
 
 test.passes()

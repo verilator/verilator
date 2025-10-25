@@ -10,12 +10,12 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_unopt_converge.v"
+test.top_filename = 't/t_cover_toggle.v'
 
-test.compile(
-    v_flags2=['+define+ALLOW_UNOPT', '--output-split 0', '-fno-dfg', '--converge-limit 5'])
+test.compile(verilator_flags2=['--cc --coverage-toggle --coverage-underscore'])
 
-if test.vlt_all:
-    test.execute(fails=True, expect_filename=test.golden_filename)
+test.execute()
+
+test.file_grep(test.obj_dir + "/coverage.dat", "_under_toggle")
 
 test.passes()

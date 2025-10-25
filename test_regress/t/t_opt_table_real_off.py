@@ -9,13 +9,15 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
-test.top_filename = "t/t_unopt_converge.v"
+test.scenarios('simulator_st')
+test.top_filename = 't/t_opt_table_real.v'
+test.golden_filename = 't/t_opt_table_real.out'
 
-test.compile(
-    v_flags2=['+define+ALLOW_UNOPT', '--output-split 0', '-fno-dfg', '--converge-limit 5'])
+test.compile(verilator_flags2=["--stats -fno-table"])
 
 if test.vlt_all:
-    test.execute(fails=True, expect_filename=test.golden_filename)
+    test.file_grep_not(test.stats, r'Optimizations, Tables created\s+(\d+)')
+
+test.execute(expect_filename=test.golden_filename)
 
 test.passes()

@@ -9,13 +9,13 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
-test.top_filename = "t/t_unopt_converge.v"
+test.scenarios('vlt_all')
 
-test.compile(
-    v_flags2=['+define+ALLOW_UNOPT', '--output-split 0', '-fno-dfg', '--converge-limit 5'])
+test.compile(v_flags2=["--trace-vcd --trace-depth 1"])
 
-if test.vlt_all:
-    test.execute(fails=True, expect_filename=test.golden_filename)
+test.execute()
+
+test.file_grep(test.trace_filename, r'value_at_top')
+test.file_grep_not(test.trace_filename, r' value_in_sub')
 
 test.passes()

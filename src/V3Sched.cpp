@@ -167,7 +167,8 @@ AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVa
     stmtp->add(callVoidFunc(trigDumpp));
     stmtp->add("#endif\n");
     stmtp->add("VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line
-               + ", \"\", \"" + name + " region did not converge.\");");
+               + ", \"\", \"" + name + " region did not converge after " + std::to_string(limit)
+               + " tries\");");
     return ifp;
 }
 

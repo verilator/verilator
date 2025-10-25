@@ -2548,7 +2548,7 @@
               {"type":"CCALL","name":"","addr":"(BLB)","loc":"a,0:0,0:0","dtypep":"(CB)","funcName":"_dump_triggers__nba","funcp":"(SO)","argsp": []}
             ]},
             {"type":"TEXT","name":"","addr":"(CLB)","loc":"a,0:0,0:0","text":"#endif\n"},
-            {"type":"TEXT","name":"","addr":"(DLB)","loc":"a,0:0,0:0","text":"VL_FATAL_MT(\"t/t_enum_type_methods.v\", 11, \"\", \"NBA region did not converge.\");"}
+            {"type":"TEXT","name":"","addr":"(DLB)","loc":"a,0:0,0:0","text":"VL_FATAL_MT(\"t/t_enum_type_methods.v\", 11, \"\", \"NBA region did not converge after 100 tries\");"}
           ]}
         ],"elsesp": []},
         {"type":"ASSIGN","name":"","addr":"(ELB)","loc":"d,11:8,11:9","dtypep":"(T)",
@@ -2613,7 +2613,7 @@
                 {"type":"CCALL","name":"","addr":"(DMB)","loc":"a,0:0,0:0","dtypep":"(CB)","funcName":"_dump_triggers__act","funcp":"(XN)","argsp": []}
               ]},
               {"type":"TEXT","name":"","addr":"(EMB)","loc":"a,0:0,0:0","text":"#endif\n"},
-              {"type":"TEXT","name":"","addr":"(FMB)","loc":"a,0:0,0:0","text":"VL_FATAL_MT(\"t/t_enum_type_methods.v\", 11, \"\", \"Active region did not converge.\");"}
+              {"type":"TEXT","name":"","addr":"(FMB)","loc":"a,0:0,0:0","text":"VL_FATAL_MT(\"t/t_enum_type_methods.v\", 11, \"\", \"Active region did not converge after 100 tries\");"}
             ]}
           ],"elsesp": []},
           {"type":"ASSIGN","name":"","addr":"(GMB)","loc":"d,11:8,11:9","dtypep":"(T)",

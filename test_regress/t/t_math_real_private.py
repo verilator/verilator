@@ -10,12 +10,13 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_unopt_converge.v"
+test.top_filename = 't/t_math_real_public.v'
 
-test.compile(
-    v_flags2=['+define+ALLOW_UNOPT', '--output-split 0', '-fno-dfg', '--converge-limit 5'])
+# Test that --private overrides --public
+test.compile(verilator_flags2=['--cc --public --private'])
 
-if test.vlt_all:
-    test.execute(fails=True, expect_filename=test.golden_filename)
+test.execute()
+
+test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "___024root.h", r'REAL_PARAM')
 
 test.passes()

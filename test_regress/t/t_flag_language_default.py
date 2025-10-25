@@ -9,13 +9,11 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
-test.top_filename = "t/t_unopt_converge.v"
+test.scenarios('vlt')
+test.top_filename = 't/t_flag_language.v'
 
-test.compile(
-    v_flags2=['+define+ALLOW_UNOPT', '--output-split 0', '-fno-dfg', '--converge-limit 5'])
+test.compile(verilator_flags2=['--default-language 1364-2001'])
 
-if test.vlt_all:
-    test.execute(fails=True, expect_filename=test.golden_filename)
+test.execute()
 
 test.passes()

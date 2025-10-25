@@ -5,14 +5,14 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-   sub #(.REAL(2.0)) sub();
+   sub #(.REAL_PARAM(2.0)) sub();
 endmodule
 
 module sub ();
-   parameter REAL = 0.0;
+   parameter REAL_PARAM = 0.0;  // Magic name grepped for in .py file
 
    initial begin
-      $display("REAL %g", REAL);
+      $display("REAL_PARAM=%g", REAL_PARAM);
       $write("*-* All Finished *-*\n");
       $finish;
    end
