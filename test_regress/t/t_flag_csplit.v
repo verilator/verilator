@@ -29,7 +29,7 @@ module t (/*AUTOARG*/
       cyc <= cyc + 1;
       if (cyc==0) begin
          // Setup
-         w0 = 32'h1234;
+         w0 <= 32'h1234;
       end
       else if (cyc<90) begin
       end
