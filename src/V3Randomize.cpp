@@ -615,8 +615,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 markNestedGlobalConstrainedRecurse(nodep->fromp());
             } else if (VN_IS(nodep->fromp(), ArraySel)) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported in global constraint");
-            } else {
-                nodep->v3error("Unexpected in global constraints");
             }
             // Global constraint processing algorithm:
             // 1. Detect globally constrained object variables in randomized classes
