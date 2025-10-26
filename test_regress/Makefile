@@ -107,8 +107,8 @@ TEST_SNAP_IGNORE := \
   *.out *.fst *.fst.vcd *.tree *.tree*.json *.dot *.csv *.xml *.hash \
   *.cmake gmon.out.* CMakeFiles profile_exec.vcd *line-coverage*.txt \
   profile.vlt *linkdot.txt *linkcells.txt *.log.sort *.vpp *.sarif \
-  t_flag_decorations_node t_flag_runtime_debug t_mod_empty t_pgo_threads \
-  t_pgo_threads_hier t_trace_ub_misaligned_address \
+  t_flag_debugi9 t_flag_decorations_node t_flag_runtime_debug t_mod_empty \
+  t_pgo_threads t_pgo_threads_hier t_trace_ub_misaligned_address \
 
 define TEST_SNAP_template
 mkdir -p $(TEST_SNAP_DIR)
