@@ -807,7 +807,6 @@ public:
         SCHED_RESUME,
         SCHED_RESUMPTION,
         SCHED_TRIGGER,
-        SCHED_TRIGGERED,
         TRIGGER_AND_NOT,
         TRIGGER_ANY,
         TRIGGER_CLEAR,
@@ -943,7 +942,6 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {SCHED_RESUME, "resume", false}, \
            {SCHED_RESUMPTION, "resumption", false}, \
            {SCHED_TRIGGER, "trigger", false}, \
-           {SCHED_TRIGGERED, "triggered", false}, \
            {TRIGGER_AND_NOT, "andNot", false}, \
            {TRIGGER_ANY, "any", true}, \
            {TRIGGER_CLEAR, "clear", false}, \
