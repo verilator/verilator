@@ -115,22 +115,59 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
                 m_commitFuncp->declPrivate(true);
                 scopeTopp->addBlocksp(m_commitFuncp);
             }
-            AstSenTree* const sentreep = activep->sentreep();
-            FileLine* const flp = sentreep->fileline();
-            // Negate the sensitivity. We will commit only if the event wasn't triggered on the
-            // current iteration
-            auto* const negSentreep = sentreep->cloneTree(false);
-            negSentreep->sensesp()->sensp(
-                new AstLogNot{flp, negSentreep->sensesp()->sensp()->unlinkFrBack()});
-            sentreep->addNextHere(negSentreep);
-            auto* const newactp = new AstActive{flp, "", negSentreep};
-            // Create the commit call and put it in the commit function
-            auto* const commitp = new AstCMethodHard{
-                flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, VCMethod::SCHED_COMMIT};
-            if (resumep->pinsp()) commitp->addPinsp(resumep->pinsp()->cloneTree(false));
-            commitp->dtypeSetVoid();
-            newactp->addStmtsp(commitp->makeStmt());
-            m_commitFuncp->addStmtsp(newactp);
+
+            // There is a somewhat complicate dance here. Given a suspendable
+            // process of the form:
+            //    ->evntA;
+            //    $display("Fired evntA");
+            //    @(evntA or evntB);
+            // The firing of the event cannot trigger the event control
+            // following it, as the process is not yet sensitive to the event
+            // when it fires (same applies for change detects). The way the
+            // scheduling works, the @evnt will suspend the process before
+            // the firing of the event is recognized on the next iteration of
+            // the 'act' loop, and hence could incorrectly resume the @evnt
+            // statement. To make this work, whenever a process suspends, it
+            // goes into an "uncommitted" state, so it cannot be resumed
+            // immediately on the next iteration of the 'act' loop, which is
+            // what we want. The question then is, when should the suspended
+            // process be "committed" and hence possible to be resumed. This is
+            // done when it is know for sure the suspending expression was not
+            // triggered on the current iteration of the 'act' loop. With
+            // multiple events in the suspending expression, all events need
+            // to be not triggered to safely commit the suspended process.
+            //
+            // This is is consistent with IEEE scheduling semantics, and
+            // behaves as if the above was executed as:
+            //    ->evntA;
+            //    $display("Fired evnt");
+            //    ... all other statements in the 'act' loop that might fire evntA or evntB ...
+            //    @(evntA or evntB);
+            // which is a valid execution. Race conditions be fun to debug,
+            // but they are a responsibility of the user.
+
+            AstSenTree* const senTreep = activep->sentreep();
+            FileLine* const flp = senTreep->fileline();
+
+            // Create an 'AstIf' sensitive to the suspending triggers
+            AstNodeExpr* senEqnp = nullptr;
+            for (AstSenItem* senp = senTreep->sensesp(); senp;
+                 senp = VN_AS(senp->nextp(), SenItem)) {
+                UASSERT_OBJ(senp->edgeType() == VEdgeType::ET_TRUE, senp,
+                            "Should have been lowered");
+                AstNodeExpr* const senOnep = senp->sensp()->cloneTree(false);
+                senEqnp = senEqnp ? new AstOr{senp->fileline(), senEqnp, senOnep} : senOnep;
+            }
+            AstIf* const ifp = new AstIf{flp, senEqnp};
+            m_commitFuncp->addStmtsp(ifp);
+
+            // Commit the processes suspended on this sensitivity expression
+            //  in the **else** branch, when the event is known to be not fired.
+            AstVarRef* const refp = new AstVarRef{flp, schedulerp, VAccess::READWRITE};
+            AstCMethodHard* const callp = new AstCMethodHard{flp, refp, VCMethod::SCHED_COMMIT};
+            callp->dtypeSetVoid();
+            if (resumep->pinsp()) callp->addPinsp(resumep->pinsp()->cloneTree(false));
+            ifp->addElsesp(callp->makeStmt());
         }
         // We still haven't created a commit function (no trigger schedulers), return null
         if (!m_commitFuncp) return nullptr;
