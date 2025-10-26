@@ -116,8 +116,8 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
                 scopeTopp->addBlocksp(m_commitFuncp);
             }
 
-            // There is a somewhat complicate dance here. If we have a
-            // suspendable process of the form:
+            // There is a somewhat complicate dance here. Given a suspendable
+            // process of the form:
             //    ->evntA;
             //    $display("Fired evntA");
             //    @(evntA or evntB);
@@ -128,13 +128,13 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
             // the firing of the event is recognized on the next iteration of
             // the 'act' loop, and hence could incorrectly resume the @evnt
             // statement. To make this work, whenever a process suspends, it
-            // goes into an "uncommtied" state, so it cannot be resumed
+            // goes into an "uncommitted" state, so it cannot be resumed
             // immediately on the next iteration of the 'act' loop, which is
-            // what we want. The question then is, when do we "commit" the
-            // suspended process and hence enable it to be resumed. We do so
-            // when we know for sure the suspending expression was not
-            // triggered on the current iteration of the 'act' loop. Wwith
-            // multiple events in the suspending expressoin, we need all events
+            // what we want. The question then is, when should the suspended
+            // process be "committed" and hence possible to be resumed. This is
+            // done when it is know for sure the suspending expression was not
+            // triggered on the current iteration of the 'act' loop. With
+            // multiple events in the suspending expression, all events need
             // to be not triggered to safely commit the suspended process.
             //
             // This is is consistent with IEEE scheduling semantics, and
