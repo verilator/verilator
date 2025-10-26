@@ -1126,7 +1126,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (nodep->varp()->rand().isRandomizable() && nodep->fromp()) {
 
             AstNode* rootNode = nodep->fromp();
-            while (const AstMemberSel* const selp = VN_CAST(rootNode, MemberSel)) rootNode = selp->fromp();
+            while (const AstMemberSel* const selp = VN_CAST(rootNode, MemberSel))
+                rootNode = selp->fromp();
 
             // Check if the root variable participates in global constraints
             if (const AstVarRef* const varRefp = VN_CAST(rootNode, VarRef)) {
