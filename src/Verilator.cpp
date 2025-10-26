@@ -459,6 +459,7 @@ static void process() {
 
             // Schedule the logic
             V3Sched::schedule(v3Global.rootp());
+            V3Sched::transformForks(v3Global.rootp());
 
             // Convert sense lists into IF statements.
             V3Clock::clockAll(v3Global.rootp());

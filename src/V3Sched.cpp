@@ -1306,6 +1306,7 @@ void schedule(AstNetlist* netlistp) {
 
     // Step 8: Create the pre/act/nba triggers
     AstVarScope* const dpiExportTriggerVscp = netlistp->dpiExportTriggerp();
+    netlistp->dpiExportTriggerp(nullptr);  // Finished with this here
 
     // We may have an extra trigger for variable updated in DPI exports
     ExtraTriggers extraTriggers;
@@ -1493,12 +1494,10 @@ void schedule(AstNetlist* netlistp) {
     createEval(netlistp, icoLoopp, actKit, preTrigVscp, nbaKit, obsKit, reactKit, postponedFuncp,
                timingKit);
 
-    transformForks(netlistp);
-
+    // Haven't split static initializer yet
     splitCheck(staticp);
 
-    netlistp->dpiExportTriggerp(nullptr);
-
+    // Dump
     V3Global::dumpCheckGlobalTree("sched", 0, dumpTreeEitherLevel() >= 3);
 }
 

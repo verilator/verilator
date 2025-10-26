@@ -143,124 +143,124 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
 //============================================================================
 // Creates the timing kit and marks variables written by suspendables
 
-TimingKit prepareTiming(AstNetlist* const netlistp) {
-    if (!v3Global.usesTiming()) return {};
-    class AwaitVisitor final : public VNVisitor {
-        // NODE STATE
-        //  AstSenTree::user1()  -> bool.  Set true if the sentree has been visited.
-        const VNUser1InUse m_inuser1;
+class AwaitVisitor final : public VNVisitor {
+    // NODE STATE
+    //  AstSenTree::user1()  -> bool.  Set true if the sentree has been visited.
+    const VNUser1InUse m_inuser1;
 
-        // STATE
-        bool m_inProcess = false;  // Are we in a process?
-        bool m_gatherVars = false;  // Should we gather vars in m_writtenBySuspendable?
-        AstScope* const m_scopeTopp;  // Scope at the top
-        LogicByScope& m_lbs;  // Timing resume actives
-        AstNodeStmt*& m_postUpdatesr;  // Post updates for the trigger eval function
-        // Additional var sensitivities
-        std::map<const AstVarScope*, std::set<AstSenTree*>>& m_externalDomains;
-        std::set<AstSenTree*> m_processDomains;  // Sentrees from the current process
-        // Variables written by suspendable processes
-        std::vector<AstVarScope*> m_writtenBySuspendable;
+    // STATE
+    bool m_inProcess = false;  // Are we in a process?
+    bool m_gatherVars = false;  // Should we gather vars in m_writtenBySuspendable?
+    AstScope* const m_scopeTopp;  // Scope at the top
+    LogicByScope& m_lbs;  // Timing resume actives
+    AstNodeStmt*& m_postUpdatesr;  // Post updates for the trigger eval function
+    // Additional var sensitivities
+    std::map<const AstVarScope*, std::set<AstSenTree*>>& m_externalDomains;
+    std::set<AstSenTree*> m_processDomains;  // Sentrees from the current process
+    // Variables written by suspendable processes
+    std::vector<AstVarScope*> m_writtenBySuspendable;
 
-        // METHODS
-        // Add arguments to a resume() call based on arguments in the suspending call
-        void addResumePins(AstCMethodHard* const resumep, AstNodeExpr* pinsp) {
-            AstCExpr* const exprp = VN_CAST(pinsp, CExpr);
-            AstText* const textp = VN_CAST(exprp->nodesp(), Text);
-            if (textp) {
-                // The first argument, vlProcess, isn't used by any of resume() methods, skip it
-                if ((pinsp = VN_CAST(pinsp->nextp(), NodeExpr))) {
-                    resumep->addPinsp(pinsp->cloneTree(false));
-                }
-            } else {
+    // METHODS
+    // Add arguments to a resume() call based on arguments in the suspending call
+    void addResumePins(AstCMethodHard* const resumep, AstNodeExpr* pinsp) {
+        AstCExpr* const exprp = VN_CAST(pinsp, CExpr);
+        AstText* const textp = VN_CAST(exprp->nodesp(), Text);
+        if (textp) {
+            // The first argument, vlProcess, isn't used by any of resume() methods, skip it
+            if ((pinsp = VN_CAST(pinsp->nextp(), NodeExpr))) {
                 resumep->addPinsp(pinsp->cloneTree(false));
             }
+        } else {
+            resumep->addPinsp(pinsp->cloneTree(false));
         }
-        // Create an active with a timing scheduler resume() call
-        void createResumeActive(AstCAwait* const awaitp) {
-            auto* const methodp = VN_AS(awaitp->exprp(), CMethodHard);
-            AstVarScope* const schedulerp = VN_AS(methodp->fromp(), VarRef)->varScopep();
-            AstSenTree* const sentreep = awaitp->sentreep();
-            FileLine* const flp = sentreep->fileline();
-            // Create a resume() call on the timing scheduler
-            auto* const resumep = new AstCMethodHard{
-                flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, VCMethod::SCHED_RESUME};
-            resumep->dtypeSetVoid();
-            if (schedulerp->dtypep()->basicp()->isTriggerScheduler()) {
-                UASSERT_OBJ(methodp->pinsp(), methodp,
-                            "Trigger method should have pins from V3Timing");
-                // The first pin is the commit boolean, the rest (if any) should be debug info
-                // See V3Timing for details
-                if (AstNode* const dbginfop = methodp->pinsp()->nextp()) {
-                    if (methodp->pinsp())
-                        addResumePins(resumep, static_cast<AstNodeExpr*>(dbginfop));
-                }
-            } else if (schedulerp->dtypep()->basicp()->isDynamicTriggerScheduler()) {
-                auto* const postp = resumep->cloneTree(false);
-                postp->method(VCMethod::SCHED_DO_POST_UPDATES);
-                m_postUpdatesr = AstNode::addNext(m_postUpdatesr, postp->makeStmt());
+    }
+    // Create an active with a timing scheduler resume() call
+    void createResumeActive(AstCAwait* const awaitp) {
+        auto* const methodp = VN_AS(awaitp->exprp(), CMethodHard);
+        AstVarScope* const schedulerp = VN_AS(methodp->fromp(), VarRef)->varScopep();
+        AstSenTree* const sentreep = awaitp->sentreep();
+        FileLine* const flp = sentreep->fileline();
+        // Create a resume() call on the timing scheduler
+        auto* const resumep = new AstCMethodHard{
+            flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, VCMethod::SCHED_RESUME};
+        resumep->dtypeSetVoid();
+        if (schedulerp->dtypep()->basicp()->isTriggerScheduler()) {
+            UASSERT_OBJ(methodp->pinsp(), methodp,
+                        "Trigger method should have pins from V3Timing");
+            // The first pin is the commit boolean, the rest (if any) should be debug info
+            // See V3Timing for details
+            if (AstNode* const dbginfop = methodp->pinsp()->nextp()) {
+                if (methodp->pinsp()) addResumePins(resumep, static_cast<AstNodeExpr*>(dbginfop));
             }
-            // Put it in an active and put that in the global resume function
-            auto* const activep = new AstActive{flp, "_timing", sentreep};
-            activep->addStmtsp(resumep->makeStmt());
-            m_lbs.emplace_back(m_scopeTopp, activep);
+        } else if (schedulerp->dtypep()->basicp()->isDynamicTriggerScheduler()) {
+            auto* const postp = resumep->cloneTree(false);
+            postp->method(VCMethod::SCHED_DO_POST_UPDATES);
+            m_postUpdatesr = AstNode::addNext(m_postUpdatesr, postp->makeStmt());
         }
+        // Put it in an active and put that in the global resume function
+        auto* const activep = new AstActive{flp, "_timing", sentreep};
+        activep->addStmtsp(resumep->makeStmt());
+        m_lbs.emplace_back(m_scopeTopp, activep);
+    }
 
-        // VISITORS
-        void visit(AstNodeProcedure* const nodep) override {
-            UASSERT_OBJ(!m_inProcess && !m_gatherVars && m_processDomains.empty()
-                            && m_writtenBySuspendable.empty(),
-                        nodep, "Process in process?");
-            m_inProcess = true;
-            m_gatherVars = nodep->isSuspendable();  // Only gather vars in a suspendable
-            const VNUser2InUse user2InUse;  // AstVarScope -> bool: Set true if var has been added
-                                            // to m_writtenBySuspendable
-            iterateChildren(nodep);
-            for (AstVarScope* const vscp : m_writtenBySuspendable) {
-                m_externalDomains[vscp].insert(m_processDomains.begin(), m_processDomains.end());
-                vscp->varp()->setWrittenBySuspendable();
-            }
-            m_processDomains.clear();
-            m_writtenBySuspendable.clear();
-            m_inProcess = false;
-            m_gatherVars = false;
+    // VISITORS
+    void visit(AstNodeProcedure* const nodep) override {
+        UASSERT_OBJ(!m_inProcess && !m_gatherVars && m_processDomains.empty()
+                        && m_writtenBySuspendable.empty(),
+                    nodep, "Process in process?");
+        m_inProcess = true;
+        m_gatherVars = nodep->isSuspendable();  // Only gather vars in a suspendable
+        const VNUser2InUse user2InUse;  // AstVarScope -> bool: Set true if var has been added
+                                        // to m_writtenBySuspendable
+        iterateChildren(nodep);
+        for (AstVarScope* const vscp : m_writtenBySuspendable) {
+            m_externalDomains[vscp].insert(m_processDomains.begin(), m_processDomains.end());
+            vscp->varp()->setWrittenBySuspendable();
         }
-        void visit(AstFork* nodep) override {
-            VL_RESTORER(m_gatherVars);
-            if (m_inProcess) m_gatherVars = true;
-            // If not in a process, we don't need to gather variables or domains
-            iterateChildren(nodep);
+        m_processDomains.clear();
+        m_writtenBySuspendable.clear();
+        m_inProcess = false;
+        m_gatherVars = false;
+    }
+    void visit(AstFork* nodep) override {
+        VL_RESTORER(m_gatherVars);
+        if (m_inProcess) m_gatherVars = true;
+        // If not in a process, we don't need to gather variables or domains
+        iterateChildren(nodep);
+    }
+    void visit(AstCAwait* nodep) override {
+        if (AstSenTree* const sentreep = nodep->sentreep()) {
+            if (!sentreep->user1SetOnce()) createResumeActive(nodep);
+            nodep->clearSentreep();  // Clear as these sentrees will get deleted later
+            if (m_inProcess) m_processDomains.insert(sentreep);
         }
-        void visit(AstCAwait* nodep) override {
-            if (AstSenTree* const sentreep = nodep->sentreep()) {
-                if (!sentreep->user1SetOnce()) createResumeActive(nodep);
-                nodep->clearSentreep();  // Clear as these sentrees will get deleted later
-                if (m_inProcess) m_processDomains.insert(sentreep);
-            }
+    }
+    void visit(AstNodeVarRef* nodep) override {
+        if (m_gatherVars && nodep->access().isWriteOrRW() && !nodep->varp()->ignoreSchedWrite()
+            && !nodep->varScopep()->user2SetOnce()) {
+            m_writtenBySuspendable.push_back(nodep->varScopep());
         }
-        void visit(AstNodeVarRef* nodep) override {
-            if (m_gatherVars && nodep->access().isWriteOrRW() && !nodep->varp()->ignoreSchedWrite()
-                && !nodep->varScopep()->user2SetOnce()) {
-                m_writtenBySuspendable.push_back(nodep->varScopep());
-            }
-        }
-        void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
+    }
+    void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
 
-        //--------------------
-        void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    //--------------------
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
-    public:
-        // CONSTRUCTORS
-        explicit AwaitVisitor(AstNetlist* nodep, LogicByScope& lbs, AstNodeStmt*& postUpdatesr,
-                              std::map<const AstVarScope*, std::set<AstSenTree*>>& externalDomains)
-            : m_scopeTopp{nodep->topScopep()->scopep()}
-            , m_lbs{lbs}
-            , m_postUpdatesr{postUpdatesr}
-            , m_externalDomains{externalDomains} {
-            iterate(nodep);
-        }
-        ~AwaitVisitor() override = default;
-    };
+public:
+    // CONSTRUCTORS
+    explicit AwaitVisitor(AstNetlist* nodep, LogicByScope& lbs, AstNodeStmt*& postUpdatesr,
+                          std::map<const AstVarScope*, std::set<AstSenTree*>>& externalDomains)
+        : m_scopeTopp{nodep->topScopep()->scopep()}
+        , m_lbs{lbs}
+        , m_postUpdatesr{postUpdatesr}
+        , m_externalDomains{externalDomains} {
+        iterate(nodep);
+    }
+    ~AwaitVisitor() override = default;
+};
+
+TimingKit prepareTiming(AstNetlist* const netlistp) {
+    if (!v3Global.usesTiming()) return {};
     LogicByScope lbs;
     AstNodeStmt* postUpdates = nullptr;
     std::map<const AstVarScope*, std::set<AstSenTree*>> externalDomains;
@@ -271,185 +271,184 @@ TimingKit prepareTiming(AstNetlist* const netlistp) {
 //============================================================================
 // Visits all forks and transforms their sub-statements into separate functions.
 
-void transformForks(AstNetlist* const netlistp) {
-    if (!v3Global.usesTiming()) return;
-    // Transform all forked processes into functions
-    class ForkVisitor final : public VNVisitor {
-        // NODE STATE
-        //  AstVar::user1()  -> bool.  Set true if the variable was declared before the current
-        //                             fork.
-        const VNUser1InUse m_inuser1;
+// Transform all forked processes into functions
+class TransformForksVisitor final : public VNVisitor {
+    // NODE STATE
+    //  AstVar::user1()  -> bool.  Set true if the variable was declared before the current fork.
+    const VNUser1InUse m_inuser1;
 
-        // STATE
-        bool m_inClass = false;  // Are we in a class?
-        bool m_beginHasAwaits = false;  // Does the current begin have awaits?
-        bool m_awaitMoved = false;  // Has the current function lost awaits?
-        AstFork* m_forkp = nullptr;  // Current fork
-        AstCFunc* m_funcp = nullptr;  // Current function
+    // STATE
+    bool m_inClass = false;  // Are we in a class?
+    bool m_beginHasAwaits = false;  // Does the current begin have awaits?
+    bool m_awaitMoved = false;  // Has the current function lost awaits?
+    AstFork* m_forkp = nullptr;  // Current fork
+    AstCFunc* m_funcp = nullptr;  // Current function
 
-        // METHODS
-        // Remap local vars referenced by the given fork function
-        // TODO: We should only pass variables to the fork that are
-        // live in the fork body, but for that we need a proper data
-        // flow analysis framework which we don't have at the moment
-        void remapLocals(AstCFunc* const funcp, AstCCall* const callp) {
-            const VNUser2InUse user2InUse;  // AstVarScope -> AstVarScope: var to remap to
-            funcp->foreach([&](AstNodeVarRef* refp) {
-                AstVar* const varp = refp->varp();
-                AstBasicDType* const dtypep = varp->dtypep()->basicp();
-                // If not a fork..join, copy. All write refs should've been handled by V3Fork
-                bool passByValue = !m_forkp->joinType().join();
-                if (!varp->isFuncLocal()) {
-                    // Not func local. Its lifetime is longer than the forked process. Skip
-                    return;
-                } else if (!varp->user1()) {
-                    // Not declared before the fork. It cannot outlive the forked process
-                    return;
-                } else if (dtypep && dtypep->isForkSync()) {
-                    // We can just pass it by value to the new function
-                    passByValue = true;
-                }
-                // Remap the reference
-                AstVarScope* const vscp = refp->varScopep();
-                if (!vscp->user2p()) {
-                    // Clone the var to the new function
-                    AstVar* const newvarp
-                        = new AstVar{varp->fileline(), VVarType::BLOCKTEMP, varp->name(), varp};
-                    newvarp->funcLocal(true);
-                    newvarp->direction(passByValue ? VDirection::INPUT : VDirection::REF);
-                    funcp->addArgsp(newvarp);
-                    AstVarScope* const newvscp
-                        = new AstVarScope{newvarp->fileline(), funcp->scopep(), newvarp};
-                    funcp->scopep()->addVarsp(newvscp);
-                    vscp->user2p(newvscp);
-                    callp->addArgsp(new AstVarRef{
-                        refp->fileline(), vscp, passByValue ? VAccess::READ : VAccess::READWRITE});
-                }
-                AstVarScope* const newvscp = VN_AS(vscp->user2p(), VarScope);
-                refp->varScopep(newvscp);
-                refp->varp(newvscp->varp());
-            });
-        }
-
-        // VISITORS
-        void visit(AstNodeModule* nodep) override {
-            VL_RESTORER(m_inClass);
-            m_inClass = VN_IS(nodep, Class);
-            iterateChildren(nodep);
-        }
-        void visit(AstCFunc* nodep) override {
-            VL_RESTORER(m_funcp);
-            m_funcp = nodep;
-            m_awaitMoved = false;
-            iterateChildren(nodep);
-            // cppcheck-suppress knownConditionTrueFalse
-            if (nodep->isCoroutine() && m_awaitMoved
-                && !nodep->stmtsp()->exists([](AstCAwait*) { return true; })) {
-                // co_return at the end (either that or a co_await is required in a coroutine
-                nodep->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;"});
+    // METHODS
+    // Remap local vars referenced by the given fork function
+    // TODO: We should only pass variables to the fork that are
+    // live in the fork body, but for that we need a proper data
+    // flow analysis framework which we don't have at the moment
+    void remapLocals(AstCFunc* const funcp, AstCCall* const callp) {
+        const VNUser2InUse user2InUse;  // AstVarScope -> AstVarScope: var to remap to
+        funcp->foreach([&](AstNodeVarRef* refp) {
+            AstVar* const varp = refp->varp();
+            AstBasicDType* const dtypep = varp->dtypep()->basicp();
+            // If not a fork..join, copy. All write refs should've been handled by V3Fork
+            bool passByValue = !m_forkp->joinType().join();
+            if (!varp->isFuncLocal()) {
+                // Not func local. Its lifetime is longer than the forked process. Skip
+                return;
+            } else if (!varp->user1()) {
+                // Not declared before the fork. It cannot outlive the forked process
+                return;
+            } else if (dtypep && dtypep->isForkSync()) {
+                // We can just pass it by value to the new function
+                passByValue = true;
             }
+            // Remap the reference
+            AstVarScope* const vscp = refp->varScopep();
+            if (!vscp->user2p()) {
+                // Clone the var to the new function
+                AstVar* const newvarp
+                    = new AstVar{varp->fileline(), VVarType::BLOCKTEMP, varp->name(), varp};
+                newvarp->funcLocal(true);
+                newvarp->direction(passByValue ? VDirection::INPUT : VDirection::REF);
+                funcp->addArgsp(newvarp);
+                AstVarScope* const newvscp
+                    = new AstVarScope{newvarp->fileline(), funcp->scopep(), newvarp};
+                funcp->scopep()->addVarsp(newvscp);
+                vscp->user2p(newvscp);
+                callp->addArgsp(new AstVarRef{refp->fileline(), vscp,
+                                              passByValue ? VAccess::READ : VAccess::READWRITE});
+            }
+            AstVarScope* const newvscp = VN_AS(vscp->user2p(), VarScope);
+            refp->varScopep(newvscp);
+            refp->varp(newvscp->varp());
+        });
+    }
+
+    // VISITORS
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_inClass);
+        m_inClass = VN_IS(nodep, Class);
+        iterateChildren(nodep);
+    }
+    void visit(AstCFunc* nodep) override {
+        VL_RESTORER(m_funcp);
+        m_funcp = nodep;
+        m_awaitMoved = false;
+        iterateChildren(nodep);
+        // cppcheck-suppress knownConditionTrueFalse
+        if (nodep->isCoroutine() && m_awaitMoved
+            && !nodep->stmtsp()->exists([](AstCAwait*) { return true; })) {
+            // co_return at the end (either that or a co_await is required in a coroutine
+            nodep->addStmtsp(new AstCStmt{nodep->fileline(), "co_return;"});
         }
-        void visit(AstVar* nodep) override {
-            if (!m_forkp) nodep->user1(true);
+    }
+    void visit(AstVar* nodep) override {
+        if (!m_forkp) nodep->user1(true);
+    }
+    void visit(AstFork* nodep) override {
+        if (m_forkp) return;  // Handle forks in forks after moving them to new functions
+        VL_RESTORER(m_forkp);
+        m_forkp = nodep;
+        iterateChildrenConst(nodep);  // Const, so we don't iterate the calls twice
+        // Replace self with the function calls (no co_await, as we don't want the main
+        // process to suspend whenever any of the children do)
+        // V3Dead could have removed all statements from the fork, so guard against it
+        // Inline begins now that they are not needed
+        AstNode* resp = nullptr;
+        if (AstNode* const declsp = nodep->declsp()) {
+            resp = AstNode::addNext(resp, declsp->unlinkFrBackWithNext());
         }
-        void visit(AstFork* nodep) override {
-            if (m_forkp) return;  // Handle forks in forks after moving them to new functions
-            VL_RESTORER(m_forkp);
-            m_forkp = nodep;
-            iterateChildrenConst(nodep);  // Const, so we don't iterate the calls twice
-            // Replace self with the function calls (no co_await, as we don't want the main
-            // process to suspend whenever any of the children do)
-            // V3Dead could have removed all statements from the fork, so guard against it
-            // Inline begins now that they are not needed
-            AstNode* resp = nullptr;
-            if (AstNode* const declsp = nodep->declsp()) {
+        if (AstNode* const stmtsp = nodep->stmtsp()) {
+            resp = AstNode::addNext(resp, stmtsp->unlinkFrBackWithNext());
+        }
+        while (AstBegin* const beginp = nodep->forksp()) {
+            if (AstNode* const declsp = beginp->declsp()) {
                 resp = AstNode::addNext(resp, declsp->unlinkFrBackWithNext());
             }
-            if (AstNode* const stmtsp = nodep->stmtsp()) {
+            if (AstNode* const stmtsp = beginp->stmtsp()) {
                 resp = AstNode::addNext(resp, stmtsp->unlinkFrBackWithNext());
             }
-            while (AstBegin* const beginp = nodep->forksp()) {
-                if (AstNode* const declsp = beginp->declsp()) {
-                    resp = AstNode::addNext(resp, declsp->unlinkFrBackWithNext());
-                }
-                if (AstNode* const stmtsp = beginp->stmtsp()) {
-                    resp = AstNode::addNext(resp, stmtsp->unlinkFrBackWithNext());
-                }
-                VL_DO_DANGLING(pushDeletep(beginp->unlinkFrBack()), beginp);
-            }
-            if (resp) {
-                nodep->replaceWith(resp);
-            } else {
-                nodep->unlinkFrBack();
-            }
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            VL_DO_DANGLING(pushDeletep(beginp->unlinkFrBack()), beginp);
         }
-        void visit(AstBegin* nodep) override {
-            UASSERT_OBJ(m_forkp, nodep, "Begin outside of a fork");
-            // Start with children, so later we only find awaits that are actually in this begin
-            m_beginHasAwaits = false;
-            iterateChildrenConst(nodep);
-            if (!nodep->stmtsp()) return;
-            if (!m_beginHasAwaits && !nodep->needProcess()) return;
-
-            UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
-            // Create a function to put this begin's statements in
-            FileLine* const flp = nodep->fileline();
-            AstCFunc* const newfuncp = new AstCFunc{flp, m_funcp->name() + "__" + nodep->name(),
-                                                    m_funcp->scopep(), "VlCoroutine"};
-
-            m_funcp->addNextHere(newfuncp);
-            newfuncp->isLoose(m_funcp->isLoose());
-            newfuncp->slow(m_funcp->slow());
-            newfuncp->isConst(m_funcp->isConst());
-            newfuncp->declPrivate(true);
-            // Create the call to the function
-            AstCCall* const callp = new AstCCall{flp, newfuncp};
-            callp->dtypeSetVoid();
-            // If we're in a class, add a vlSymsp arg
-            if (m_inClass) {
-                newfuncp->addStmtsp(new AstCStmt{flp, "VL_KEEP_THIS;"});
-                newfuncp->argTypes(EmitCUtil::symClassVar());
-                callp->argTypes("vlSymsp");
-            }
-            // Put the begin's statements in the function
-            if (AstNode* const declsp = nodep->declsp()) {
-                newfuncp->addStmtsp(declsp->unlinkFrBackWithNext());
-            }
-            if (AstNode* const stmtsp = nodep->stmtsp()) {
-                newfuncp->addStmtsp(stmtsp->unlinkFrBackWithNext());
-            }
-            // Replace the body of the begin with a call to the newly created function
-            nodep->addStmtsp(callp->makeStmt());
-            // Propagate if needs process
-            if (nodep->needProcess()) {
-                newfuncp->setNeedProcess();
-                newfuncp->addStmtsp(new AstCStmt{flp, "vlProcess->state(VlProcess::FINISHED);"});
-            }
-            if (!m_beginHasAwaits) {
-                // co_return at the end (either that or a co_await is required in a coroutine
-                newfuncp->addStmtsp(new AstCStmt{flp, "co_return;"});
-            } else {
-                m_awaitMoved = true;
-            }
-            remapLocals(newfuncp, callp);
+        if (resp) {
+            nodep->replaceWith(resp);
+        } else {
+            nodep->unlinkFrBack();
         }
-        void visit(AstCAwait* nodep) override {
-            m_beginHasAwaits = true;
-            iterateChildrenConst(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void visit(AstBegin* nodep) override {
+        UASSERT_OBJ(m_forkp, nodep, "Begin outside of a fork");
+        // Start with children, so later we only find awaits that are actually in this begin
+        m_beginHasAwaits = false;
+        iterateChildrenConst(nodep);
+        if (!nodep->stmtsp()) return;
+        if (!m_beginHasAwaits && !nodep->needProcess()) return;
+
+        UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
+        // Create a function to put this begin's statements in
+        FileLine* const flp = nodep->fileline();
+        AstCFunc* const newfuncp = new AstCFunc{flp, m_funcp->name() + "__" + nodep->name(),
+                                                m_funcp->scopep(), "VlCoroutine"};
+
+        m_funcp->addNextHere(newfuncp);
+        newfuncp->isLoose(m_funcp->isLoose());
+        newfuncp->slow(m_funcp->slow());
+        newfuncp->isConst(m_funcp->isConst());
+        newfuncp->declPrivate(true);
+        // Create the call to the function
+        AstCCall* const callp = new AstCCall{flp, newfuncp};
+        callp->dtypeSetVoid();
+        // If we're in a class, add a vlSymsp arg
+        if (m_inClass) {
+            newfuncp->addStmtsp(new AstCStmt{flp, "VL_KEEP_THIS;"});
+            newfuncp->argTypes(EmitCUtil::symClassVar());
+            callp->argTypes("vlSymsp");
         }
-        void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
+        // Put the begin's statements in the function
+        if (AstNode* const declsp = nodep->declsp()) {
+            newfuncp->addStmtsp(declsp->unlinkFrBackWithNext());
+        }
+        if (AstNode* const stmtsp = nodep->stmtsp()) {
+            newfuncp->addStmtsp(stmtsp->unlinkFrBackWithNext());
+        }
+        // Replace the body of the begin with a call to the newly created function
+        nodep->addStmtsp(callp->makeStmt());
+        // Propagate if needs process
+        if (nodep->needProcess()) {
+            newfuncp->setNeedProcess();
+            newfuncp->addStmtsp(new AstCStmt{flp, "vlProcess->state(VlProcess::FINISHED);"});
+        }
+        if (!m_beginHasAwaits) {
+            // co_return at the end (either that or a co_await is required in a coroutine
+            newfuncp->addStmtsp(new AstCStmt{flp, "co_return;"});
+        } else {
+            m_awaitMoved = true;
+        }
+        remapLocals(newfuncp, callp);
+    }
+    void visit(AstCAwait* nodep) override {
+        m_beginHasAwaits = true;
+        iterateChildrenConst(nodep);
+    }
 
-        //--------------------
-        void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    //--------------------
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
-    public:
-        // CONSTRUCTORS
-        explicit ForkVisitor(AstNetlist* nodep) { iterate(nodep); }
-        ~ForkVisitor() override = default;
-    };
-    ForkVisitor{netlistp};
-    V3Global::dumpCheckGlobalTree("sched_forks", 0, dumpTreeEitherLevel() >= 6);
+public:
+    // CONSTRUCTORS
+    explicit TransformForksVisitor(AstNetlist* nodep) { iterate(nodep); }
+    ~TransformForksVisitor() override = default;
+};
+
+void transformForks(AstNetlist* const netlistp) {
+    if (!v3Global.usesTiming()) return;
+    TransformForksVisitor{netlistp};
+    V3Global::dumpCheckGlobalTree("transform_forks", 0, dumpTreeEitherLevel() >= 3);
 }
 
 }  // namespace V3Sched
