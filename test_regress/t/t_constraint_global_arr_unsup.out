@@ -1,0 +1,26 @@
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:41:20: Unsupported in global constraint
+                                                           : ... note: In instance 't_constraint_global_arr_unsup'
+   41 |         mid.arr[0].x == 200;
+      |                    ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:42:20: Unsupported in global constraint
+                                                           : ... note: In instance 't_constraint_global_arr_unsup'
+   42 |         mid.arr[0].y == 201;
+      |                    ^
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:47:20: Unsupported in global constraint
+                                                           : ... note: In instance 't_constraint_global_arr_unsup'
+   47 |         mid_arr[0].obj.x == 300;
+      |                    ^~~
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:48:20: Unsupported in global constraint
+                                                           : ... note: In instance 't_constraint_global_arr_unsup'
+   48 |         mid_arr[0].obj.y == 301;
+      |                    ^~~
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:53:20: Unsupported in global constraint
+                                                           : ... note: In instance 't_constraint_global_arr_unsup'
+   53 |         mid_arr[1].arr[2].y == 400;
+      |                    ^~~
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:53:27: Unsupported in global constraint
+                                                           : ... note: In instance 't_constraint_global_arr_unsup'
+   53 |         mid_arr[1].arr[2].y == 400;
+      |                           ^
+%Error: Exiting due to

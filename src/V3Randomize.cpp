@@ -208,8 +208,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
         }
     }
     void markNestedGlobalConstrainedRecurse(AstNode* nodep) {
-        UASSERT(nodep, "Node should not be null");
-
         if (VN_IS(nodep, VarRef)) {
             AstVar* const varp = VN_AS(nodep, VarRef)->varp();
             if (varp->globalConstrained()) return;
@@ -625,11 +623,13 @@ class RandomizeMarkVisitor final : public VNVisitor {
                 m_classp->user1(IS_RANDOMIZED_GLOBAL);
             }
             // Mark the entire nested chain as participating in global constraints
-            // For foo.in.val, this marks: foo, foo.in, and foo.in.val
             if (VN_IS(nodep->fromp(), VarRef) || VN_IS(nodep->fromp(), MemberSel)) {
                 markNestedGlobalConstrainedRecurse(nodep->fromp());
+            } else if (VN_IS(nodep->fromp(), ArraySel)) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported in global constraint");
+            } else {
+                nodep->v3error("Unexpected in global constraints");
             }
-
             // Global constraint processing algorithm:
             // 1. Detect globally constrained object variables in randomized classes
             // 2. Clone constraint trees from the constrained object's class
@@ -711,15 +711,13 @@ class ConstraintExprVisitor final : public VNVisitor {
 
     // Build full path for a MemberSel chain (e.g., "obj.l2.l3.l4")
     std::string buildMemberPath(const AstMemberSel* const memberSelp) {
-        UASSERT(memberSelp, "MemberSel pointer should not be null");
-
         const AstNode* fromp = memberSelp->fromp();
-        if (VN_IS(fromp, VarRef)) {
+        if (const AstVarRef* const refp = VN_CAST(fromp, VarRef)) {
             // Base case: reached root VarRef
-            return VN_AS(fromp, VarRef)->name() + "." + memberSelp->name();
-        } else if (VN_IS(fromp, MemberSel)) {
+            return refp->name() + "." + memberSelp->name();
+        } else if (const AstMemberSel* const selp = VN_CAST(fromp, MemberSel)) {
             // Recursive case: build path from outer levels
-            return buildMemberPath(VN_AS(fromp, MemberSel)) + "." + memberSelp->name();
+            return buildMemberPath(selp) + "." + memberSelp->name();
         }
         memberSelp->v3fatalSrc("Unexpected node type in MemberSel chain");
         return "";
@@ -849,7 +847,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
 
         // Check if this variable is marked as globally constrained
-        bool isGlobalConstrained = nodep->varp()->globalConstrained();
+        const bool isGlobalConstrained = nodep->varp()->globalConstrained();
 
         AstMemberSel* membersel = nullptr;
         std::string smtName;
