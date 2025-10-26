@@ -69,26 +69,24 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
         scopeTopp->addBlocksp(m_resumeFuncp);
 
         // Put all the timing actives in the resume function
-        AstActive* dlyShedActivep = nullptr;
+        AstIf* dlyShedIfp = nullptr;
         for (auto& p : m_lbs) {
             AstActive* const activep = p.second;
             // Hack to ensure that #0 delays will be executed after any other `act` events.
             // Just handle delayed coroutines last.
             AstVarRef* const schedrefp = VN_AS(
                 VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
-            if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
-                dlyShedActivep = activep;
-                continue;
-            }
+
             AstIf* const ifp = V3Sched::createIfFromSenTree(activep->sentreep());
             ifp->addThensp(activep->stmtsp()->unlinkFrBackWithNext());
-            m_resumeFuncp->addStmtsp(ifp);
+
+            if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
+                dlyShedIfp = ifp;
+            } else {
+                m_resumeFuncp->addStmtsp(ifp);
+            }
         }
-        if (dlyShedActivep) {
-            AstIf* const ifp = V3Sched::createIfFromSenTree(dlyShedActivep->sentreep());
-            ifp->addThensp(dlyShedActivep->stmtsp()->unlinkFrBackWithNext());
-            m_resumeFuncp->addStmtsp(ifp);
-        }
+        if (dlyShedIfp) m_resumeFuncp->addStmtsp(dlyShedIfp);
 
         // These are now spent, oispose of now empty AstActive instances
         m_lbs.deleteActives();
