@@ -360,59 +360,79 @@ void transformForks(AstNetlist* const netlistp) {
             // Replace self with the function calls (no co_await, as we don't want the main
             // process to suspend whenever any of the children do)
             // V3Dead could have removed all statements from the fork, so guard against it
-            if (nodep->forksp()) nodep->addNextHere(nodep->forksp()->unlinkFrBackWithNext());
-            if (nodep->stmtsp()) nodep->addNextHere(nodep->stmtsp()->unlinkFrBackWithNext());
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+            // Inline begins now that they are not needed
+            AstNode* resp = nullptr;
+            if (AstNode* const declsp = nodep->declsp()) {
+                resp = AstNode::addNext(resp, declsp->unlinkFrBackWithNext());
+            }
+            if (AstNode* const stmtsp = nodep->stmtsp()) {
+                resp = AstNode::addNext(resp, stmtsp->unlinkFrBackWithNext());
+            }
+            while (AstBegin* const beginp = nodep->forksp()) {
+                if (AstNode* const declsp = beginp->declsp()) {
+                    resp = AstNode::addNext(resp, declsp->unlinkFrBackWithNext());
+                }
+                if (AstNode* const stmtsp = beginp->stmtsp()) {
+                    resp = AstNode::addNext(resp, stmtsp->unlinkFrBackWithNext());
+                }
+                VL_DO_DANGLING(pushDeletep(beginp->unlinkFrBack()), beginp);
+            }
+            if (resp) {
+                nodep->replaceWith(resp);
+            } else {
+                nodep->unlinkFrBack();
+            }
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         void visit(AstBegin* nodep) override {
             UASSERT_OBJ(m_forkp, nodep, "Begin outside of a fork");
             // Start with children, so later we only find awaits that are actually in this begin
             m_beginHasAwaits = false;
             iterateChildrenConst(nodep);
-            if (!nodep->stmtsp()) {
-                nodep->unlinkFrBack();
-            } else if (m_beginHasAwaits || nodep->needProcess()) {
-                UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
-                // Create a function to put this begin's statements in
-                FileLine* const flp = nodep->fileline();
-                AstCFunc* const newfuncp = new AstCFunc{
-                    flp, m_funcp->name() + "__" + nodep->name(), m_funcp->scopep(), "VlCoroutine"};
+            if (!nodep->stmtsp()) return;
+            if (!m_beginHasAwaits && !nodep->needProcess()) return;
 
-                m_funcp->addNextHere(newfuncp);
-                newfuncp->isLoose(m_funcp->isLoose());
-                newfuncp->slow(m_funcp->slow());
-                newfuncp->isConst(m_funcp->isConst());
-                newfuncp->declPrivate(true);
-                // Replace the begin with a call to the newly created function
-                AstCCall* const callp = new AstCCall{flp, newfuncp};
-                callp->dtypeSetVoid();
-                nodep->replaceWith(callp->makeStmt());
-                // If we're in a class, add a vlSymsp arg
-                if (m_inClass) {
-                    newfuncp->addStmtsp(new AstCStmt{flp, "VL_KEEP_THIS;"});
-                    newfuncp->argTypes(EmitCUtil::symClassVar());
-                    callp->argTypes("vlSymsp");
-                }
-                // Put the begin's statements in the function, delete the begin
-                newfuncp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
-                if (nodep->needProcess()) {
-                    newfuncp->setNeedProcess();
-                    newfuncp->addStmtsp(
-                        new AstCStmt{flp, "vlProcess->state(VlProcess::FINISHED);"});
-                }
-                if (!m_beginHasAwaits) {
-                    // co_return at the end (either that or a co_await is required in a coroutine
-                    newfuncp->addStmtsp(new AstCStmt{flp, "co_return;"});
-                } else {
-                    m_awaitMoved = true;
-                }
-                remapLocals(newfuncp, callp);
-            } else {
-                // The begin has neither awaits nor a process::self call, just inline the
-                // statements
-                nodep->replaceWith(nodep->stmtsp()->unlinkFrBackWithNext());
+            UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
+            // Create a function to put this begin's statements in
+            FileLine* const flp = nodep->fileline();
+            AstCFunc* const newfuncp = new AstCFunc{flp, m_funcp->name() + "__" + nodep->name(),
+                                                    m_funcp->scopep(), "VlCoroutine"};
+
+            m_funcp->addNextHere(newfuncp);
+            newfuncp->isLoose(m_funcp->isLoose());
+            newfuncp->slow(m_funcp->slow());
+            newfuncp->isConst(m_funcp->isConst());
+            newfuncp->declPrivate(true);
+            // Create the call to the function
+            AstCCall* const callp = new AstCCall{flp, newfuncp};
+            callp->dtypeSetVoid();
+            // If we're in a class, add a vlSymsp arg
+            if (m_inClass) {
+                newfuncp->addStmtsp(new AstCStmt{flp, "VL_KEEP_THIS;"});
+                newfuncp->argTypes(EmitCUtil::symClassVar());
+                callp->argTypes("vlSymsp");
             }
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            // Put the begin's statements in the function
+            if (AstNode* const declsp = nodep->declsp()) {
+                newfuncp->addStmtsp(declsp->unlinkFrBackWithNext());
+            }
+            if (AstNode* const stmtsp = nodep->stmtsp()) {
+                newfuncp->addStmtsp(stmtsp->unlinkFrBackWithNext());
+            }
+            // Replace the body of the begin with a call to the newly created function
+            nodep->addStmtsp(callp->makeStmt());
+            // Propagate if needs process
+            if (nodep->needProcess()) {
+                newfuncp->setNeedProcess();
+                newfuncp->addStmtsp(new AstCStmt{flp, "vlProcess->state(VlProcess::FINISHED);"});
+            }
+            if (!m_beginHasAwaits) {
+                // co_return at the end (either that or a co_await is required in a coroutine
+                newfuncp->addStmtsp(new AstCStmt{flp, "co_return;"});
+            } else {
+                m_awaitMoved = true;
+            }
+            remapLocals(newfuncp, callp);
         }
         void visit(AstCAwait* nodep) override {
             m_beginHasAwaits = true;
