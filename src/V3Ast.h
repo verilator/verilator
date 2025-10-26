@@ -82,7 +82,7 @@ class ExecMTask;
 // child getters (the strongly-typed functions that wrap op*p pointers). This is because the op*p
 // pointers are usually populated by code that already asserts the correct type. Having fewer type
 // assertions yields better performance in release builds.
-#ifdef VL_DEBUG
+#if defined(VL_DEBUG) || defined(VL_ASAN)
 #define VN_DBG_AS(nodep, nodetypename) VN_AS(nodep, nodetypename)
 #else
 #define VN_DBG_AS(nodep, nodetypename) (AstNode::unsafePrivateAs<Ast##nodetypename>(nodep))
