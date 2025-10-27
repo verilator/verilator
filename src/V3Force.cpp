@@ -92,13 +92,21 @@ public:
                 V3Number zero{m_enVscp, m_enVscp->width()};
                 zero.setAllBits0();
                 AstNodeExpr* const rhsp = new AstConst{flp, zero};
-                AstAssign* const assignp = new AstAssign{flp, lhsp, rhsp};
+                AstNodeStmt* set0p;
+                if (VN_IS(lhsp->dtypep()->skipRefp(), UnpackArrayDType)) {
+                    AstCMethodHard* const fillMethodp
+                        = new AstCMethodHard{flp, lhsp, VCMethod::UNPACKED_FILL, rhsp};
+                    fillMethodp->dtypeSetVoid();
+                    set0p = fillMethodp->makeStmt();
+                } else {
+                    set0p = new AstAssign{flp, lhsp, rhsp};
+                }
                 AstActive* const activep = new AstActive{
                     flp, "force-init",
                     new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Static{}}}};
                 activep->senTreeStorep(activep->sentreep());
 
-                activep->addStmtsp(new AstInitial{flp, assignp});
+                activep->addStmtsp(new AstInitial{flp, set0p});
                 vscp->scopep()->addBlocksp(activep);
             }
             {  // Add the combinational override
