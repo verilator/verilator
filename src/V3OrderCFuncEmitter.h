@@ -27,6 +27,7 @@
 #include "V3Ast.h"
 #include "V3Graph.h"
 #include "V3OrderGraph.h"
+#include "V3Sched.h"
 
 #include <limits>
 #include <map>
@@ -53,8 +54,8 @@ class V3OrderCFuncEmitter final {
     AstCFunc* m_funcp = nullptr;
     // Function ordinals to ensure unique names
     std::map<std::pair<AstNodeModule*, std::string>, unsigned> m_funcNums;
-    // The result Active blocks that must be invoked to run the code in the order it was emitted
-    std::vector<AstActive*> m_activeps;
+    // The resulting ordered CFuncs with the trigger conditions needed to call them
+    std::vector<std::pair<AstCFunc*, AstSenTree*>> m_result;
 
     // Create a unique name for a new function
     std::string cfuncName(FileLine* flp, AstScope* scopep, AstNodeModule* modp,
@@ -81,10 +82,34 @@ public:
         m_funcp = nullptr;
     }
 
-    // Retrieve Active block, which when executed will call the constructed functions
-    std::vector<AstActive*> getAndClearActiveps() {
+    // Retrieve list of statements which when executed will call the constructed functions
+    AstNodeStmt* getStmts() {
+        // The resulting list of statements we are constructing here
+        AstNodeStmt* stmtsp = nullptr;
+        // Current AstIf
+        AstIf* ifp = nullptr;
+        // Trigger conditoin of 'ifp'
+        AstSenTree* pervSenTreep = nullptr;
+        // Call each function under an AstIf that checks for the trigger condition
+        for (const auto& pair : m_result) {
+            AstCFunc* const cfuncp = pair.first;
+            AstSenTree* senTreep = pair.second;
+            // Create a new AstIf if the trigger is different
+            if (senTreep != pervSenTreep) {
+                pervSenTreep = senTreep;
+                ifp = V3Sched::createIfFromSenTree(senTreep);
+                stmtsp = AstNode::addNext(stmtsp, ifp);
+            }
+            // Call function when triggered
+            AstCCall* const callp = new AstCCall{cfuncp->fileline(), cfuncp};
+            callp->dtypeSetVoid();
+            ifp->addThensp(callp->makeStmt());
+        }
+        // Result is now spent, reset the emitter state
+        m_result.clear();
         forceNewFunction();
-        return std::move(m_activeps);
+        // Return the list of statement
+        return stmtsp;
     }
 
     // Emit one logic vertex
@@ -109,7 +134,7 @@ public:
         // When profCFuncs, create a new function for each logic vertex
         if (v3Global.opt.profCFuncs()) forceNewFunction();
         // If the new domain is different, force a new function as it needs to be called separately
-        if (!m_activeps.empty() && m_activeps.back()->sentreep() != domainp) forceNewFunction();
+        if (!m_result.empty() && m_result.back().second != domainp) forceNewFunction();
 
         // Process procedures per statement, so we can split CFuncs within procedures.
         // Everything else is handled as a unit.
@@ -143,14 +168,8 @@ public:
                 m_funcp->isLoose(true);
                 m_funcp->slow(slow);
                 scopep->addBlocksp(m_funcp);
-                // Create call to the new functino
-                AstCCall* const callp = new AstCCall{flp, m_funcp};
-                callp->dtypeSetVoid();
-                // Call it under an AstActive with the same sensitivity
-                if (m_activeps.empty() || m_activeps.back()->sentreep() != domainp) {
-                    m_activeps.emplace_back(new AstActive{flp, name, domainp});
-                }
-                m_activeps.back()->addStmtsp(callp->makeStmt());
+                // Record function and sensitivity to call it with
+                m_result.emplace_back(m_funcp, domainp);
             }
             // Add the code to the current function
             m_funcp->addStmtsp(currp);

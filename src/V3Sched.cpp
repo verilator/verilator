@@ -39,6 +39,7 @@
 
 #include "V3Sched.h"
 
+#include "V3Const.h"
 #include "V3EmitCBase.h"
 #include "V3EmitV.h"
 #include "V3Order.h"
@@ -1050,6 +1051,10 @@ void createEval(AstNetlist* netlistp,  //
 ) {
     FileLine* const flp = netlistp->fileline();
 
+    // 'createResume' consumes the contents that 'createCommit' needs, so do the right order
+    AstCCall* const timingCommitp = timingKit.createCommit(netlistp);
+    AstCCall* const timingResumep = timingKit.createResume(netlistp);
+
     // Create the active eval loop
     const EvalLoop actLoop = createEvalLoop(  //
         netlistp, "act", "Active", /* slow: */ false, actKit.m_vscp, actKit.m_dumpp,
@@ -1060,9 +1065,7 @@ void createEval(AstNetlist* netlistp,  //
             // Compute the current 'act' triggers
             AstNodeStmt* const stmtsp = callVoidFunc(actKit.m_triggerComputep);
             // Commit trigger awaits from the previous iteration
-            if (AstCCall* const commitp = timingKit.createCommit(netlistp)) {
-                stmtsp->addNext(commitp->makeStmt());
-            }
+            if (timingCommitp) stmtsp->addNext(timingCommitp->makeStmt());
             //
             return stmtsp;
         }(),
@@ -1074,9 +1077,7 @@ void createEval(AstNetlist* netlistp,  //
             // Latch the 'act' triggers under the 'nba' triggers
             workp->addNext(createTriggerSetCall(flp, nbaKit.m_vscp, actKit.m_vscp));
             // Resume triggered timing schedulers
-            if (AstCCall* const resumep = timingKit.createResume(netlistp)) {
-                workp->addNext(resumep->makeStmt());
-            }
+            if (timingResumep) workp->addNext(timingResumep->makeStmt());
             // Invoke the 'act' function
             workp->addNext(callVoidFunc(actKit.m_funcp));
             //
@@ -1214,6 +1215,25 @@ VirtIfaceTriggers::makeMemberToSensMap(AstNetlist* const netlistp, size_t vifTri
         ++vifTriggerIndex;
     }
     return memberToSensMap;
+}
+
+//============================================================================
+// Helper to build an AstIf conditional on the given SenTree being triggered
+
+AstIf* createIfFromSenTree(AstSenTree* senTreep) {
+    senTreep = VN_AS(V3Const::constifyExpensiveEdit(senTreep), SenTree);
+    UASSERT_OBJ(senTreep->sensesp(), senTreep, "No sensitivity list during scheduling");
+    // Convert the SenTree to a boolean expression that is true when triggered
+    AstNodeExpr* senEqnp = nullptr;
+    for (AstSenItem *senp = senTreep->sensesp(), *nextp; senp; senp = nextp) {
+        nextp = VN_AS(senp->nextp(), SenItem);
+        // They should all be ET_TRUE, as set up by V3Sched
+        UASSERT_OBJ(senp->edgeType() == VEdgeType::ET_TRUE, senp, "Bad scheduling trigger type");
+        AstNodeExpr* const senOnep = senp->sensp()->cloneTree(false);
+        senEqnp = senEqnp ? new AstOr{senp->fileline(), senEqnp, senOnep} : senOnep;
+    }
+    // Create the if statement conditional on the triggers
+    return new AstIf{senTreep->fileline(), senEqnp};
 }
 
 //============================================================================
