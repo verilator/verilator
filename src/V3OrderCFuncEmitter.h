@@ -97,7 +97,7 @@ public:
             // Create a new AstIf if the trigger is different
             if (senTreep != pervSenTreep) {
                 pervSenTreep = senTreep;
-                ifp = V3Sched::createIfFromSenTree(senTreep);
+                ifp = V3Sched::util::createIfFromSenTree(senTreep);
                 stmtsp = AstNode::addNext(stmtsp, ifp);
             }
             // Call function when triggered

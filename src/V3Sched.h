@@ -27,6 +27,8 @@
 #include <utility>
 #include <vector>
 
+class SenExprBuilder;
+
 //============================================================================
 
 namespace V3Sched {
@@ -126,6 +128,50 @@ struct LogicReplicas final {
     LogicReplicas& operator=(LogicReplicas&&) = default;
 };
 
+// Utility for extra trigger allocation
+class ExtraTriggers final {
+    std::vector<string> m_descriptions;  // Human readable description of extra triggers
+
+public:
+    ExtraTriggers() = default;
+    ~ExtraTriggers() = default;
+
+    size_t allocate(const string& description) {
+        m_descriptions.push_back(description);
+        return m_descriptions.size() - 1;
+    }
+    size_t size() const { return m_descriptions.size(); }
+    const string& description(size_t index) const { return m_descriptions[index]; }
+};
+
+// A TriggerKit holds all the components related to a TRIGGERVEC variable
+struct TriggerKit final {
+    // The TRIGGERVEC AstVarScope representing these trigger flags
+    AstVarScope* const m_vscp;
+    // The AstCFunc that computes the current active triggers
+    AstCFunc* const m_funcp;
+    // The AstCFunc that dumps the current active triggers
+    AstCFunc* const m_dumpp;
+    // The map from input sensitivity list to trigger sensitivity list
+    const std::unordered_map<const AstSenTree*, AstSenTree*> m_map;
+
+    // No VL_UNCOPYABLE(TriggerKit) as causes C++20 errors on MSVC
+
+    // Assigns the given index trigger to fire when the given variable is zero
+    void addFirstIterationTriggerAssignment(AstVarScope* flagp, uint32_t index) const;
+    // Set then clear an extra trigger
+    void addExtraTriggerAssignment(AstVarScope* extraTriggerVscp, uint32_t index) const;
+
+    // Create a TriggerKit for the given AstSenTree vector
+    static const TriggerKit create(AstNetlist* netlistp,  //
+                                   AstCFunc* const initFuncp,  //
+                                   SenExprBuilder& senExprBuilder,  //
+                                   const std::vector<const AstSenTree*>& senTreeps,  //
+                                   const string& name,  //
+                                   const ExtraTriggers& extraTriggers,  //
+                                   bool slow);
+};
+
 // Everything needed for combining timing with static scheduling.
 class TimingKit final {
     AstCFunc* m_resumeFuncp = nullptr;  // Global timing resume function
@@ -213,9 +259,6 @@ public:
     VirtIfaceTriggers& operator=(VirtIfaceTriggers&&) = default;
 };
 
-// Create an AstIf conditional on the given AstSenTree being triggered
-AstIf* createIfFromSenTree(AstSenTree* senTreep);
-
 // Creates trigger vars for signals driven via virtual interfaces
 VirtIfaceTriggers makeVirtIfaceTriggers(AstNetlist* nodep) VL_MT_DISABLED;
 
@@ -234,6 +277,31 @@ LogicByScope breakCycles(AstNetlist* netlistp,
 LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLogic,
                        LogicByScope& hybridLogic) VL_MT_DISABLED;
 LogicReplicas replicateLogic(LogicRegions&) VL_MT_DISABLED;
+
+// Utility functions used by various steps in scheduling
+namespace util {
+// Create a new top level entry point
+AstCFunc* makeTopFunction(AstNetlist* netlistp, const string& name, bool slow);
+// Create a new sub function (not an entry point)
+AstCFunc* makeSubFunction(AstNetlist* netlistp, const string& name, bool slow);
+// Create statement that sets the given 'vscp' to 'val'
+AstNodeStmt* setVar(AstVarScope* vscp, uint32_t val);
+// Create statement that increments the given 'vscp' by one
+AstNodeStmt* incrementVar(AstVarScope* vscp);
+// Create statement that calls the given 'void' returning function
+AstNodeStmt* callVoidFunc(AstCFunc* funcp);
+// Create statement that checks counterp' to see if the eval loop iteration limit is reached
+AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVarScope* counterp,
+                                 AstCFunc* trigDumpp);
+// Create statement that pushed a --prof-exec section
+AstNodeStmt* profExecSectionPush(FileLine* flp, const string& section);
+// Create statement that pops a --prof-exec section
+AstNodeStmt* profExecSectionPop(FileLine* flp);
+// Split large function according to --output-split-cfuncs
+void splitCheck(AstCFunc* ofuncp);
+// Build an AstIf conditional on the given SenTree being triggered
+AstIf* createIfFromSenTree(AstSenTree* senTreep);
+}  // namespace util
 
 }  // namespace V3Sched
 

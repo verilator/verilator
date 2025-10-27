@@ -325,6 +325,8 @@ set(COMMON_SOURCES
     V3SchedPartition.cpp
     V3SchedReplicate.cpp
     V3SchedTiming.cpp
+    V3SchedTrigger.cpp
+    V3SchedUtil.cpp
     V3SchedVirtIface.cpp
     V3Scope.cpp
     V3Scoreboard.cpp

@@ -77,7 +77,7 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
             AstVarRef* const schedrefp = VN_AS(
                 VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
 
-            AstIf* const ifp = V3Sched::createIfFromSenTree(activep->sentreep());
+            AstIf* const ifp = V3Sched::util::createIfFromSenTree(activep->sentreep());
             ifp->addThensp(activep->stmtsp()->unlinkFrBackWithNext());
 
             if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
@@ -157,7 +157,7 @@ AstCCall* TimingKit::createCommit(AstNetlist* const netlistp) {
             FileLine* const flp = senTreep->fileline();
 
             // Create an 'AstIf' sensitive to the suspending triggers
-            AstIf* const ifp = V3Sched::createIfFromSenTree(senTreep);
+            AstIf* const ifp = V3Sched::util::createIfFromSenTree(senTreep);
             m_commitFuncp->addStmtsp(ifp);
 
             // Commit the processes suspended on this sensitivity expression
