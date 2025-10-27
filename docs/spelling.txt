@@ -650,6 +650,7 @@ detections
 dev
 devcontainer
 devel
+difftree
 dir
 disambiguates
 displayb

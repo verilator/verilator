@@ -41,6 +41,7 @@ Verilator 5.041 devel
 * Support simple cycle delay sequence expressions inside properties (#6508). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Support impure expressions in `inside` (#6562). [Igor Zaworski, Antmicro Ltd.]
 * Support `case` impure expressions (#6563). [Igor Zaworski, Antmicro Ltd.]
+* Support dotted access to ports of a direct hier_block instance. (#6595). [Geza Lore]
 * Improve `lint_off` to allow multiple messages and comments (#2755).
 * Improve automatic selection of logic for DFG synthesis (#6370). [Geza Lore]
 * Improve `covergroup with function sample` handling  (#6387). [Jakub Wasilewski]
@@ -112,10 +113,13 @@ Verilator 5.041 devel
 * Fix `$finish` inside fork blocks (#6555). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix single element unpacked array DPI parameters. [Geza Lore]
 * Fix DFG synthesis non-determinism (#6557) (#6568). [Todd Strader]
+* Fix excessive logic replication in DFG circular driver tracing (#6561) (#6594). [Geza Lore]
 * Fix hierarchical with parameterized instances under hier block (#6572). [Geza Lore]
 * Fix segfault on type casts (#6574). [David Moberg]
 * Fix references to interfaces containing generate blocks (#6579). [Ryszard Rozak, Antmicro Ltd.]
 * Fix missing net type mappings in FST traces (#6582) (#6583). [Matt Stroud]
+* Fix V3Life eliminating assignments across timing controls (#6593) (#6596). [Geza Lore]
+* Fix incorrectly resuming process waiting on multiple events (#6597). [Geza Lore]
 
 
 Verilator 5.040 2025-08-30
