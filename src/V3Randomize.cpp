@@ -323,7 +323,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);
         VL_RESTORER(m_modp);
-        VL_RESTORER(m_clonedConstraints);
         m_modp = m_classp = nodep;
         iterateChildrenConst(nodep);
         if (nodep->extendsp()) {
