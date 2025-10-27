@@ -162,7 +162,7 @@ jobs:
         working-directory: rtlmeter
         run: make venv
       - name: Download all results
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: rtlmeter-results-${{ matrix.tag }}-*
           path: all-results-${{ matrix.tag }}
@@ -191,7 +191,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download combined results
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: all-results-*
           path: results
@@ -253,7 +253,7 @@ jobs:
         working-directory: rtlmeter
         run: make venv
       - name: Download combined results
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: all-results-*
           path: all-results
@@ -272,7 +272,7 @@ jobs:
           DATE=$(gh run --repo ${{ github.repository }} view $ID --json createdAt --jq ".createdAt")
           echo "date=$DATE" >> $GITHUB_OUTPUT
       - name: Download scheduled run results
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: published-results
           path: nightly-results
