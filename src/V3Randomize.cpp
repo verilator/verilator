@@ -321,22 +321,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstClass* nodep) override {
-        // Debug: check for nested class
-        std::cout << "[DEBUG] Entering visit(AstClass): " << nodep->name()
-                  << ", m_classp=" << (m_classp ? m_classp->name() : "null")
-                  << ", m_processedVars.size()=" << m_processedVars.size()
-                  << ", m_clonedConstraints.size()=" << m_clonedConstraints.size()
-                  << std::endl;
-
         VL_RESTORER(m_classp);
         VL_RESTORER(m_modp);
-        VL_RESTORER(m_processedVars);
         VL_RESTORER(m_clonedConstraints);
-        std::cout << "[DEBUG] Entering visit(AstClass): " << nodep->name()
-                  << ", m_classp=" << (m_classp ? m_classp->name() : "null")
-                  << ", m_processedVars.size()=" << m_processedVars.size()
-                  << ", m_clonedConstraints.size()=" << m_clonedConstraints.size()
-                  << std::endl;
         m_modp = m_classp = nodep;
         iterateChildrenConst(nodep);
         if (nodep->extendsp()) {
@@ -345,19 +332,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
             m_baseToDerivedMap[basep].insert(nodep);
         }
         for (AstConstraint* const constrp : m_clonedConstraints) m_classp->addStmtsp(constrp);
-        std::cout << "[DEBUG2] Entering visit(AstClass): " << nodep->name()
-                  << ", m_classp=" << (m_classp ? m_classp->name() : "null")
-                  << ", m_processedVars.size()=" << m_processedVars.size()
-                  << ", m_clonedConstraints.size()=" << m_clonedConstraints.size()
-                  << std::endl;
-        m_clonedConstraints.clear();
-        m_processedVars.clear();
-        std::cout << "[DEBUG3] Entering visit(AstClass): " << nodep->name()
-                  << ", m_classp=" << (m_classp ? m_classp->name() : "null")
-                  << ", m_processedVars.size()=" << m_processedVars.size()
-                  << ", m_clonedConstraints.size()=" << m_clonedConstraints.size()
-                  << std::endl;
-        std::cout << "[DEBUG] Exiting visit(AstClass): " << nodep->name() << std::endl;
     }
     void visit(AstNodeStmt* nodep) override {
         VL_RESTORER(m_stmtp);
