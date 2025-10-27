@@ -172,7 +172,7 @@ jobs:
         run: |
           ./rtlmeter collate ../all-results-${{ matrix.tag }}/*.json > ../all-results-${{ matrix.tag }}.json
       - name: Upload combined results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           path: all-results-${{ matrix.tag }}.json
           name: all-results-${{ matrix.tag }}
@@ -197,7 +197,7 @@ jobs:
           path: results
           merge-multiple: true
       - name: Upload published results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           path: results/*.json
           name: published-results
@@ -332,14 +332,14 @@ jobs:
           done
           cat report.txt
       - name: Upload report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           path: report.txt
           name: rtlmeter-pr-results
       - name: Save PR number
         run: echo ${{ github.event.number }} > pr-number.txt
       - name: Upload PR number
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           path: pr-number.txt
           name: pr-number

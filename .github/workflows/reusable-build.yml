@@ -93,7 +93,7 @@ jobs:
           echo "archive=$ARCHIVE" >> "$GITHUB_OUTPUT"
 
       - name: Upload repository archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           path: ${{ github.workspace }}/${{ steps.create-archive.outputs.archive }}
           name: ${{ steps.create-archive.outputs.archive }}

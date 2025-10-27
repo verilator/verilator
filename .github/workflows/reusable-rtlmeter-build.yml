@@ -68,7 +68,7 @@ jobs:
         run: tar --posix -c -z -f verilator-rtlmeter.tar.gz install
 
       - name: Upload Verilator installation archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           path: verilator-rtlmeter.tar.gz
           name: verilator-rtlmeter-${{ inputs.runs-on }}-${{ inputs.cc }}
