@@ -9,12 +9,14 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator_st')
-test.top_filename = "t/t_opt_life.v"
+test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--stats', '-fno-subst', '-fno-subst-const'])
+test.compile(v_flags2=["--stats -fno-dfg"])
+
+test.execute()
 
 if test.vlt_all:
-    test.file_grep_not(test.stats, r'Optimizations, Substituted temps\s+(\d+)')
+    test.file_grep(test.stats, r'Optimizations, Gate assign merged\s+(\d+)', 28)
+    test.file_grep(test.stats, r'Optimizations, Concat merges\s+(\d+)', 42)
 
 test.passes()

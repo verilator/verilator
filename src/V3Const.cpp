@@ -934,6 +934,7 @@ class ConstVisitor final : public VNVisitor {
     const AstNode* m_scopep = nullptr;  // Current scope
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
     VDouble0 m_statBitOpReduction;  // Ops reduced in ConstBitOpTreeVisitor
+    VDouble0 m_statConcatMerge;  // Concat merges
     VDouble0 m_statCondExprRedundant;  // Conditional repeated expressions
     VDouble0 m_statIfCondExprRedundant;  // Conditional repeated expressions
     const bool m_globalPass;  // ConstVisitor invoked as a global pass
@@ -1625,9 +1626,9 @@ class ConstVisitor final : public VNVisitor {
         return (rend == lstart->toSInt());
     }
     bool ifMergeAdjacent(const AstNodeExpr* lhsp, const AstNodeExpr* rhsp) {
-        // called by concatmergeable to determine if {lhsp, rhsp} make sense
+        // Called by concatmergeable to determine if {lhsp, rhsp} make sense
         if (!v3Global.opt.fAssemble()) return false;  // opt disabled
-        // two same varref
+        // Two same varref
         if (operandsSame(lhsp, rhsp)) return true;
         const AstSel* const lselp = VN_CAST(lhsp, Sel);
         const AstSel* const rselp = VN_CAST(rhsp, Sel);
@@ -1660,7 +1661,7 @@ class ConstVisitor final : public VNVisitor {
         return false;
     }
     bool concatMergeable(const AstNodeExpr* lhsp, const AstNodeExpr* rhsp, unsigned depth) {
-        // determine if {a OP b, c OP d} => {a, c} OP {b, d} is advantageous
+        // Determine if {a OP b, c OP d} => {a, c} OP {b, d} is advantageous
         if (!v3Global.opt.fAssemble()) return false;  // opt disabled
         if (lhsp->type() != rhsp->type()) return false;
         if (!ifConcatMergeableBiop(lhsp)) return false;
@@ -1967,6 +1968,7 @@ class ConstVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(lrp), lrp);
             lp->dtypeChgWidthSigned(newlp->width(), newlp->width(), VSigning::UNSIGNED);
             UINFO(5, "merged " << nodep);
+            ++m_statConcatMerge;
             VL_DO_DANGLING(pushDeletep(rp->unlinkFrBack()), rp);
             nodep->replaceWithKeepDType(lp->unlinkFrBack());
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -4135,6 +4137,7 @@ public:
         V3Stats::addStatSum("Optimizations, Cond redundant expressions", m_statCondExprRedundant);
         V3Stats::addStatSum("Optimizations, If cond redundant expressions",
                             m_statIfCondExprRedundant);
+        V3Stats::addStatSum("Optimizations, Concat merges", m_statConcatMerge);
     }
 
     AstNode* mainAcceptEdit(AstNode* nodep) {

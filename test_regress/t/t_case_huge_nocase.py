@@ -9,13 +9,13 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('simulator_st')
+test.top_filename = 't/t_case_huge.v'
 
-test.compile(v_flags2=["--stats -fno-dfg"])
+test.compile(verilator_flags2=["--stats -fno-case"])
 
 test.execute()
 
-if test.vlt_all:
-    test.file_grep(test.stats, r'Optimizations, Gate assign merged\s+(\d+)', 28)
+test.file_grep(test.stats, r'Optimizations, Cases parallelized\s+(\d+)', 0)
 
 test.passes()

@@ -12,9 +12,8 @@ import vltest_bootstrap
 test.scenarios('simulator_st')
 test.top_filename = "t/t_opt_life.v"
 
-test.compile(verilator_flags2=['--stats', '-fno-subst', '-fno-subst-const'])
+test.compile(verilator_flags2=['--stats', '-fno-assemble'])
 
-if test.vlt_all:
-    test.file_grep_not(test.stats, r'Optimizations, Substituted temps\s+(\d+)')
+test.file_grep_not(test.stats, r'Optimizations, Concat merges\s+(\d+)')
 
 test.passes()

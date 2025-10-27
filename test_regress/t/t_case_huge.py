@@ -13,13 +13,14 @@ test.scenarios('simulator')
 
 test.compile(verilator_flags2=["--stats"])
 
-if test.vlt:
-    test.file_grep(test.stats, r'Optimizations, Tables created\s+(\d+)', 10)
-    test.file_grep(test.stats, r'Optimizations, Combined CFuncs\s+(\d+)', 8)
-elif test.vltmt:
-    test.file_grep(test.stats, r'Optimizations, Tables created\s+(\d+)', 10)
-    test.file_grep(test.stats, r'Optimizations, Combined CFuncs\s+(\d+)', 9)
-
 test.execute()
+
+if test.vlt:
+    test.file_grep(test.stats, r'Optimizations, Cases parallelized\s+(\d+)', 11)
+    test.file_grep(test.stats, r'Optimizations, Combined CFuncs\s+(\d+)', 8)
+    test.file_grep(test.stats, r'Optimizations, Tables created\s+(\d+)', 10)
+elif test.vltmt:
+    test.file_grep(test.stats, r'Optimizations, Combined CFuncs\s+(\d+)', 9)
+    test.file_grep(test.stats, r'Optimizations, Tables created\s+(\d+)', 10)
 
 test.passes()
