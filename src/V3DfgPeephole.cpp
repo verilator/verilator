@@ -373,7 +373,11 @@ class V3DfgPeephole final : public DfgVisitor {
                 replace(vtxp, rootp);
                 changed = true;
                 vtxp = rootp;
+                continue;
             }
+
+            // If we didn't apply the change (pattern was disabled), break the loop
+            break;
         }
 
         return changed;

@@ -30,8 +30,6 @@ Test_Waivers = [
     '-rr',  # Not testing; not requiring rr installation
     # Need testing:
     '-fconst',  # TODO breaks due to some needed V3Const steps
-    '-fdfg-peephole',  # Need test of -fno-...
-    '-fdfg-peephole-',  # Need test of -fno-...
 ]
 
 Sums = {}
