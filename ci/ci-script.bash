@@ -27,6 +27,8 @@ if [ "$CI_OS_NAME" = "linux" ]; then
 elif [ "$CI_OS_NAME" = "osx" ]; then
   export MAKE=make
   NPROC=$(sysctl -n hw.logicalcpu)
+  # Disable ccache, doesn't always work in GitHub Actions
+  export OBJCACHE=
 elif [ "$CI_OS_NAME" = "freebsd" ]; then
   export MAKE=gmake
   NPROC=$(sysctl -n hw.ncpu)
