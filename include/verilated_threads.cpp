@@ -162,7 +162,7 @@ std::string VlThreadPool::numaAssign() {
         while (!is.eof()) {
             std::string line;
             std::getline(is, line);
-            static std::string::size_type pos = line.find(":");
+            std::string::size_type pos = line.find(":");
             int number = -1;
             if (pos != std::string::npos) number = atoi(line.c_str() + pos + 1);
             if (line.compare(0, std::strlen("processor"), "processor") == 0) {
