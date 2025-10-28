@@ -786,11 +786,13 @@ class CoverageVisitor final : public VNVisitor {
                 AstNodeExpr* covExprp = nullptr;
                 if (AstFuncRef* const frefp = VN_CAST(term.m_exprp, FuncRef)) {
                     AstNodeDType* const dtypep = frefp->taskp()->fvarp()->dtypep();
-                    const auto emplacedVarp = m_funcTemps.emplace(
-                        *frefp,
-                        new AstVar{fl, VVarType::XTEMP, m_exprTempNames.get(frefp), dtypep});
-                    AstVar* const varp = emplacedVarp.first->second;
-                    if (emplacedVarp.second) {
+                    const auto tempIt = m_funcTemps.find(*frefp);
+                    AstVar* varp = nullptr;
+                    if (tempIt == m_funcTemps.end()) {
+                        auto emplacedVarp = m_funcTemps.emplace(
+                            *frefp, new AstVar{fl, VVarType::MODULETEMP,
+                                               m_exprTempNames.get(frefp), dtypep});
+                        varp = emplacedVarp.first->second;
                         if (m_ftaskp) {
                             varp->funcLocal(true);
                             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
@@ -803,6 +805,9 @@ class CoverageVisitor final : public VNVisitor {
                         relinkHandle.relink(new AstExprStmt{
                             fl, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, frefp},
                             new AstVarRef{fl, varp, VAccess::READ}});
+
+                    } else {
+                        varp = tempIt->second;
                     }
                     covExprp = new AstVarRef{fl, varp, VAccess::READ};
                 } else {
