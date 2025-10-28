@@ -241,8 +241,6 @@ public:
 private:
     VL_UNCOPYABLE(VlThreadPool);
 
-    // cppcheck-suppress unusedPrivateFunction
-    static bool isNumactlRunning();
     std::string numaAssign();
 };
 
