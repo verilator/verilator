@@ -2763,7 +2763,7 @@ def _calc_hashset() -> list:
 
 @lru_cache(maxsize=1)
 def max_procs() -> int:
-    procs = multiprocessing.cpu_count()
+    procs = len(os.sched_getaffinity(0))
     if procs < 2:
         print("driver.py: Python didn't find at least two CPUs")
     return procs

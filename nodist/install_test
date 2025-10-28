@@ -3,7 +3,6 @@
 ######################################################################
 
 import argparse
-import multiprocessing
 import os
 import shutil
 import subprocess
@@ -93,7 +92,7 @@ def cleanenv():
 
 
 def calc_jobs():
-    return multiprocessing.cpu_count() + 1
+    return len(os.sched_getaffinity(0)) + 1
 
 
 def run(command):

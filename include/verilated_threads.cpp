@@ -118,30 +118,18 @@ VlThreadPool::~VlThreadPool() {
     for (auto& i : m_workers) delete i;
 }
 
-bool VlThreadPool::isNumactlRunning() {
-    // We assume if current thread is CPU-masked, then under numactl, otherwise not.
-    // This shows that numactl is visible through the affinity mask
-#if defined(__linux) || defined(CPU_ZERO)  // Linux-like; assume we have pthreads etc
-    const unsigned num_cpus = std::thread::hardware_concurrency();
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    const int rc = pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
-    if (rc != 0) return true;  // Error; assuming returning true is the least-damage option
-    for (unsigned c = 0; c < std::min(num_cpus, static_cast<unsigned>(CPU_SETSIZE)); ++c) {
-        if (!CPU_ISSET(c, &cpuset)) return true;
-    }
-#endif
-    return false;
-}
-
 std::string VlThreadPool::numaAssign() {
 #if defined(__linux) || defined(CPU_ZERO) || defined(VL_CPPCHECK)  // Linux-like pthreads
-    // If not under numactl, make a reasonable processor affinity selection
-    if (isNumactlRunning()) return "running under numactl";  // User presumably set affinity
+    // Get number of processor available to the current process
+    const unsigned num_proc = VlOs::getProcessAvailableParallelism();
+    if (!num_proc) return "Can't determine number of available threads";
+    // If fewer than hardware threads in the host, user presumably set affinity
+    if (num_proc < std::thread::hardware_concurrency()) return "processor affinity already set";
+
+    // Make a reasonable processor affinity selection
     const int num_threads = static_cast<int>(m_workers.size());
-    const int num_proc = static_cast<int>(std::thread::hardware_concurrency());
     if (num_threads < 2) return "too few threads";
-    if (num_threads > num_proc) return "too many threads";
+    if (static_cast<unsigned>(num_threads) > num_proc) return "too many threads";
 
     // Read CPU info.
     // Uncertain if any modern system has gaps in the processor id (Solaris

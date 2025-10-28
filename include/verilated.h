@@ -451,7 +451,7 @@ protected:
     // Implementation details
     const std::unique_ptr<VerilatedContextImpData> m_impdatap;
     // Number of threads to use for simulation (size of m_threadPool + 1 for main thread)
-    unsigned m_threads = std::thread::hardware_concurrency();
+    unsigned m_threads = VlOs::getProcessDefaultParallelism();
     // Number of threads in added models
     unsigned m_threadsInModels = 0;
     // The thread pool shared by all models added to this context

@@ -1267,7 +1267,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                                                                               << "' was passed");
             val = 1;
         } else if (val == 0) {
-            val = std::thread::hardware_concurrency();
+            val = VlOs::getProcessDefaultParallelism();
         }
         m_buildJobs = val;
     });
@@ -1781,7 +1781,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
                         << valp << "' was passed");
             val = 1;
         } else if (val == 0) {
-            val = std::thread::hardware_concurrency();
+            val = VlOs::getProcessDefaultParallelism();
         }
         m_verilateJobs = val;
     });
@@ -1932,7 +1932,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
             int val = 0;
             if (i < argc && std::isdigit(argv[i][0])) {
                 val = std::atoi(argv[i]);  // Can't be negative due to isdigit above
-                if (val == 0) val = std::thread::hardware_concurrency();
+                if (val == 0) val = VlOs::getProcessDefaultParallelism();
                 ++i;
             }
             if (m_buildJobs == -1) m_buildJobs = val;
