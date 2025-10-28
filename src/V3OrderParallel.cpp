@@ -209,9 +209,9 @@ class MergeCandidate VL_NOT_FINAL : public MergeCandidateScoreboard::Node {
 
     // CONSTRUCTORS
     explicit MergeCandidate(bool isSiblingMC) {
-        static uint64_t serial = 0;
-        serial += ID_INCREMENT;  // +ID_INCREMENT so doesn't set the special bottom bits
-        m_key.m_id = serial | (isSiblingMC * IS_SIBLING_MASK);
+        static uint64_t s_serial = 0;
+        s_serial += ID_INCREMENT;  // +ID_INCREMENT so doesn't set the special bottom bits
+        m_key.m_id = s_serial | (isSiblingMC * IS_SIBLING_MASK);
     }
     ~MergeCandidate() = default;
 

@@ -634,15 +634,15 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
 }
 
 string V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
-    static bool shown_notfound_msg = false;
+    static bool s_shown_notfound_msg = false;
     std::ostringstream ss;
     if (modname.find("__Vhsh") != string::npos) {
         ss << V3Error::warnMore() << "... Note: Name is longer than 127 characters; automatic"
            << " file lookup may have failed due to OS filename length limits.\n";
         ss << V3Error::warnMore() << "... Suggest putting filename with this module/package"
            << " onto command line instead.\n";
-    } else if (!shown_notfound_msg) {
-        shown_notfound_msg = true;
+    } else if (!s_shown_notfound_msg) {
+        s_shown_notfound_msg = true;
         if (m_impp->m_incDirUsers.empty()) {
             ss << V3Error::warnMore()
                << "... This may be because there's no search path specified with -I<dir>.\n";
@@ -1044,8 +1044,8 @@ string V3Options::version() VL_PURE {
 }
 
 string V3Options::protectKeyDefaulted() VL_MT_SAFE {
-    static V3Mutex mutex;
-    const V3LockGuard lock{mutex};
+    static V3Mutex s_mutex;
+    const V3LockGuard lock{s_mutex};
     if (m_protectKey.empty()) {
         // Create a key with a human-readable symbol-like name.
         // This conversion drops ~2 bits of entropy out of 256, shouldn't matter.
@@ -2235,13 +2235,13 @@ unsigned V3Options::dumpSrcLevel(const string& srcfile_path) const VL_MT_SAFE {
 }
 
 bool V3Options::dumpTreeAddrids() const VL_MT_SAFE {
-    static int level = -1;
-    if (VL_UNLIKELY(level < 0)) {
+    static int s_level = -1;
+    if (VL_UNLIKELY(s_level < 0)) {
         const unsigned value = dumpLevel("tree-addrids");
         if (!available()) return value > 0;
-        level = static_cast<unsigned>(value);
+        s_level = static_cast<unsigned>(value);
     }
-    return level > 0;
+    return s_level > 0;
 }
 
 void V3Options::optimize(int level) {

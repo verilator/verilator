@@ -1299,9 +1299,9 @@ class ConstVisitor final : public VNVisitor {
 
         string debugPrefix;
         if (debug() >= 9) {  // LCOV_EXCL_START
-            static int c = 0;
+            static int s_c = 0;
             debugPrefix = "-  matchBitOpTree[";
-            debugPrefix += cvtToStr(++c);
+            debugPrefix += cvtToStr(++s_c);
             debugPrefix += "] ";
             nodep->dumpTree(debugPrefix + "INPUT: ");
         }  // LCOV_EXCL_STOP

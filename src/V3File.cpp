@@ -92,9 +92,9 @@ class V3FileDependImp final {
         time_t mstime() const { return m_stat.st_mtime; }  // Seconds
         time_t mnstime() const { return VL_STAT_MTIME_NSEC(m_stat); }  // Nanoseconds
         string hashDigestSymbol() {
-            static VHashSha256 emptyHash;
-            return m_hash.digestSymbol() != emptyHash.digestSymbol() ? m_hash.digestSymbol()
-                                                                     : "unhashed";
+            static VHashSha256 s_emptyHash;
+            return m_hash.digestSymbol() != s_emptyHash.digestSymbol() ? m_hash.digestSymbol()
+                                                                       : "unhashed";
         }
         void loadStats() {
             if (!m_stat.st_mtime) {
@@ -345,9 +345,9 @@ void V3File::createMakeDirFor(const string& filename) {
     }
 }
 void V3File::createMakeDir() {
-    static bool created = false;
-    if (!created) {
-        created = true;
+    static bool s_created = false;
+    if (!s_created) {
+        s_created = true;
         V3Os::createDir(v3Global.opt.makeDir());
         if (v3Global.opt.hierTop()) V3Os::createDir(v3Global.opt.hierTopDataDir());
     }

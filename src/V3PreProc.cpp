@@ -961,13 +961,13 @@ int V3PreProcImp::getRawToken() {
         }
         if (m_lineCmt != "") {
             // We have some `line directive or other processed data to return to the user.
-            static string rtncmt;  // Keep the c string till next call
-            rtncmt = m_lineCmt;
+            static string s_rtncmt;  // Keep the c string till next call
+            s_rtncmt = m_lineCmt;
             if (m_lineCmtNl) {
-                if (!m_rawAtBol) rtncmt.insert(0, "\n");
+                if (!m_rawAtBol) s_rtncmt.insert(0, "\n");
                 m_lineCmtNl = false;
             }
-            yyourtext(rtncmt.c_str(), rtncmt.length());
+            yyourtext(s_rtncmt.c_str(), s_rtncmt.length());
             m_lineCmt = "";
             if (yyourleng()) m_rawAtBol = (yyourtext()[yyourleng() - 1] == '\n');
             if (state() == ps_DEFVALUE) {
@@ -1298,8 +1298,8 @@ int V3PreProcImp::getStateToken() {
             }
         }
         case ps_DEFVALUE: {
-            static string newlines;
-            newlines = "\n";  // Always start with trailing return
+            static string s_newlines;
+            s_newlines = "\n";  // Always start with trailing return
             if (tok == VP_DEFVALUE) {
                 if (debug() >= 5) {  // LCOV_EXCL_START
                     cout << "DefValue='" << V3PreLex::cleanDbgStrg(m_lexp->m_defValue)
@@ -1315,10 +1315,10 @@ int V3PreProcImp::getStateToken() {
                 //    This is very difficult in the presence of `", so we
                 //    keep the \ before the newline.
                 for (size_t i = 0; i < formals.length(); i++) {
-                    if (formals[i] == '\n') newlines += "\n";
+                    if (formals[i] == '\n') s_newlines += "\n";
                 }
                 for (size_t i = 0; i < value.length(); i++) {
-                    if (value[i] == '\n') newlines += "\n";
+                    if (value[i] == '\n') s_newlines += "\n";
                 }
                 if (!m_off) {
                     // Remove leading and trailing whitespace
@@ -1334,7 +1334,7 @@ int V3PreProcImp::getStateToken() {
             statePop();
             // DEFVALUE is terminated by a return, but lex can't return both tokens.
             // Thus, we emit a return here.
-            yyourtext(newlines.c_str(), newlines.length());
+            yyourtext(s_newlines.c_str(), s_newlines.length());
             return (VP_WHITE);
         }
         case ps_DEFPAREN: {

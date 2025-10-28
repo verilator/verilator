@@ -142,14 +142,14 @@ const VBasicDTypeKwd LOGIC_IMPLICIT = VBasicDTypeKwd::LOGIC_IMPLICIT;
     }
 
 static void ERRSVKWD(FileLine* fileline, const string& tokname) {
-    static int toldonce = 0;
+    static int s_toldonce = 0;
     fileline->v3error(
         "Unexpected '"s + tokname + "': '" + tokname
         + "' is a SystemVerilog keyword misused as an identifier."
-        + (!toldonce++ ? "\n" + fileline->warnMore()
-                             + "... Suggest modify the Verilog-2001 code to avoid SV keywords,"
-                             + " or use `begin_keywords or --language."
-                       : ""));
+        + (!s_toldonce++ ? "\n" + fileline->warnMore()
+                               + "... Suggest modify the Verilog-2001 code to avoid SV keywords,"
+                               + " or use `begin_keywords or --language."
+                         : ""));
 }
 
 static void ASSIGNEQEXPR(FileLine* fileline) {

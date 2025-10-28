@@ -322,12 +322,12 @@ FileLine* FileLine::copyOrSameFileLine() {
     // Return this, or a copy of this
     // There are often more than one token per line, thus we use the
     // same pointer as long as we're on the same line, file & warn state.
-    static FileLine* lastNewp = nullptr;
-    if (lastNewp && *lastNewp == *this) {  // Compares lineno, filename, etc
-        return lastNewp;
+    static FileLine* s_lastNewp = nullptr;
+    if (s_lastNewp && *s_lastNewp == *this) {  // Compares lineno, filename, etc
+        return s_lastNewp;
     }
     FileLine* const newp = new FileLine{this};
-    lastNewp = newp;
+    s_lastNewp = newp;
     return newp;
 }
 

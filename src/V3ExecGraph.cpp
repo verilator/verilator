@@ -82,14 +82,14 @@ public:
     // MEMBERS
     // Allocation of sequence of MTasks to threads. Can be considered a map from thread ID to
     // the sequence of MTasks to be executed by that thread.
-    std::vector<std::vector<const ExecMTask*>> threads;
+    std::vector<std::vector<const ExecMTask*>> m_threads;
 
     // Global state for each mtask.
-    static std::unordered_map<const ExecMTask*, MTaskState> mtaskState;
+    static std::unordered_map<const ExecMTask*, MTaskState> s_mtaskState;
 
     explicit ThreadSchedule(uint32_t nThreads)
         : m_id{s_nextId++}
-        , threads{nThreads} {}
+        , m_threads{nThreads} {}
     ThreadSchedule(ThreadSchedule&&) = default;
     ThreadSchedule& operator=(ThreadSchedule&&) = default;
 
@@ -133,7 +133,7 @@ private:
         *logp << "\n  // MTasks\n";
 
         uint32_t maxCost = 0;
-        for (const auto& state : ThreadSchedule::mtaskState) {
+        for (const auto& state : ThreadSchedule::s_mtaskState) {
             const ExecMTask* const mtaskp = state.first;
             maxCost = std::max(maxCost, mtaskp->cost());
         }
@@ -196,7 +196,7 @@ private:
             // Emit MTask dependency edges
             *logp << "\n  // MTask dependencies\n";
 
-            for (const std::vector<const ExecMTask*>& thread : schedule.threads) {
+            for (const std::vector<const ExecMTask*>& thread : schedule.m_threads) {
                 if (thread.empty()) break;  // No more threads
 
                 // Show that schedule ends when all tasks are finished
@@ -245,7 +245,7 @@ private:
             const double width
                 = std::max(s_threadBoxWidth,
                            s_threadBoxWidth * static_cast<double>(mtaskp->cost()) / segmentCost);
-            const uint32_t mtaskThreadId = threadId(mtaskp) + i * schedule.threads.size();
+            const uint32_t mtaskThreadId = threadId(mtaskp) + i * schedule.m_threads.size();
             const double xPos = width / 2 + offsets[mtaskThreadId];
             offsets[mtaskThreadId] += width + s_horizontalGap;
             const double yPos = -s_threadBoxHeight * static_cast<double>(mtaskThreadId);
@@ -268,14 +268,14 @@ private:
 
 public:
     static uint32_t threadId(const ExecMTask* mtaskp) {
-        const auto& it = mtaskState.find(mtaskp);
-        return it != mtaskState.end() ? it->second.threadId : UNASSIGNED;
+        const auto& it = s_mtaskState.find(mtaskp);
+        return it != s_mtaskState.end() ? it->second.threadId : UNASSIGNED;
     }
     static uint32_t startTime(const ExecMTask* mtaskp) {
-        return mtaskState.at(mtaskp).completionTime - mtaskp->cost();
+        return s_mtaskState.at(mtaskp).completionTime - mtaskp->cost();
     }
     static uint32_t endTime(const ExecMTask* mtaskp) {
-        return mtaskState.at(mtaskp).completionTime;
+        return s_mtaskState.at(mtaskp).completionTime;
     }
 
     // Returns the number of cross-thread dependencies of the given MTask. If > 0, the MTask must
@@ -295,12 +295,12 @@ public:
         mtasks.emplace(mtaskp);
         const uint32_t bestEndTime = mtaskp->predictStart() + mtaskp->cost();
         m_endTime = std::max(m_endTime, bestEndTime);
-        mtaskState[mtaskp].completionTime = bestEndTime;
-        mtaskState[mtaskp].threadId = bestThreadId;
+        s_mtaskState[mtaskp].completionTime = bestEndTime;
+        s_mtaskState[mtaskp].threadId = bestThreadId;
 
         // Reference to thread in schedule we are assigning this MTask to.
-        std::vector<const ExecMTask*>& bestThread = threads[bestThreadId];
-        if (!bestThread.empty()) mtaskState[bestThread.back()].nextp = mtaskp;
+        std::vector<const ExecMTask*>& bestThread = m_threads[bestThreadId];
+        if (!bestThread.empty()) s_mtaskState[bestThread.back()].nextp = mtaskp;
 
         // Add the MTask to the schedule
         bestThread.push_back(mtaskp);
@@ -311,7 +311,7 @@ public:
 };
 
 uint32_t ThreadSchedule::s_nextId = 0;
-std::unordered_map<const ExecMTask*, ThreadSchedule::MTaskState> ThreadSchedule::mtaskState{};
+std::unordered_map<const ExecMTask*, ThreadSchedule::MTaskState> ThreadSchedule::s_mtaskState{};
 constexpr double V3ExecGraph::ThreadSchedule::s_threadBoxWidth;
 
 //######################################################################
@@ -362,7 +362,7 @@ class PackThreads final {
                             uint32_t threadId) {
         // Ignore tasks that were scheduled on a different schedule
         if (!schedule.contains(mtaskp)) return 0;
-        const ThreadSchedule::MTaskState& state = schedule.mtaskState.at(mtaskp);
+        const ThreadSchedule::MTaskState& state = schedule.s_mtaskState.at(mtaskp);
         UASSERT(state.threadId != ThreadSchedule::UNASSIGNED, "Mtask should have assigned thread");
         if (threadId == state.threadId) {
             // No overhead on same thread
@@ -445,7 +445,7 @@ class PackThreads final {
             uint32_t bestThreadId = 0;
             ExecMTask* bestMtaskp = nullptr;  // Todo: const ExecMTask*
             ThreadSchedule& schedule = result.back();
-            for (uint32_t threadId = 0; threadId < schedule.threads.size(); ++threadId) {
+            for (uint32_t threadId = 0; threadId < schedule.m_threads.size(); ++threadId) {
                 for (ExecMTask* const mtaskp : readyMTasks) {
                     if (mode != SchedulingMode::WIDE_TASK_SCHEDULING && mtaskp->threads() > 1) {
                         mode = SchedulingMode::WIDE_TASK_DISCOVERED;
@@ -486,7 +486,7 @@ class PackThreads final {
                 const uint32_t size = m_nHierThreads / maxThreadWorkers;
                 UASSERT(size, "Thread pool size should be bigger than 0");
                 // If no tasks were added to the normal thread schedule, clear it.
-                if (schedule.mtaskState.empty()) result.clear();
+                if (schedule.s_mtaskState.empty()) result.clear();
                 result.emplace_back(ThreadSchedule{size});
                 std::fill(busyUntil.begin(), busyUntil.end(), endTime);
                 continue;
@@ -494,7 +494,7 @@ class PackThreads final {
 
             if (!bestMtaskp && mode == SchedulingMode::WIDE_TASK_SCHEDULING) {
                 mode = SchedulingMode::SCHEDULING;
-                UASSERT(!schedule.mtaskState.empty(), "Mtask should be added");
+                UASSERT(!schedule.s_mtaskState.empty(), "Mtask should be added");
                 result.emplace_back(ThreadSchedule{m_nThreads});
                 std::fill(busyUntil.begin(), busyUntil.end(), endTime);
                 continue;
@@ -596,24 +596,24 @@ public:
 
         const std::vector<ThreadSchedule> scheduled = packer.pack(graph);
         UASSERT_SELFTEST(size_t, scheduled.size(), 3);
-        UASSERT_SELFTEST(size_t, scheduled[0].threads.size(), threads);
-        UASSERT_SELFTEST(size_t, scheduled[0].threads[0].size(), 2);
-        for (size_t i = 1; i < scheduled[0].threads.size(); ++i)
-            UASSERT_SELFTEST(size_t, scheduled[0].threads[i].size(), 0);
+        UASSERT_SELFTEST(size_t, scheduled[0].m_threads.size(), threads);
+        UASSERT_SELFTEST(size_t, scheduled[0].m_threads[0].size(), 2);
+        for (size_t i = 1; i < scheduled[0].m_threads.size(); ++i)
+            UASSERT_SELFTEST(size_t, scheduled[0].m_threads[i].size(), 0);
 
-        UASSERT_SELFTEST(const ExecMTask*, scheduled[0].threads[0][0], t0);
-        UASSERT_SELFTEST(const ExecMTask*, scheduled[0].threads[0][1], t1);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[0].m_threads[0][0], t0);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[0].m_threads[0][1], t1);
 
-        UASSERT_SELFTEST(size_t, scheduled[1].threads.size(), hierThreads / 3);
-        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].threads[0][0], t2);
-        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].threads[0][1], t3);
-        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].threads[1][0], t4);
+        UASSERT_SELFTEST(size_t, scheduled[1].m_threads.size(), hierThreads / 3);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].m_threads[0][0], t2);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].m_threads[0][1], t3);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].m_threads[1][0], t4);
 
-        UASSERT_SELFTEST(size_t, scheduled[2].threads.size(), threads);
-        UASSERT_SELFTEST(const ExecMTask*, scheduled[2].threads[0][0], t5);
-        UASSERT_SELFTEST(const ExecMTask*, scheduled[2].threads[1][0], t6);
+        UASSERT_SELFTEST(size_t, scheduled[2].m_threads.size(), threads);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[2].m_threads[0][0], t5);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[2].m_threads[1][0], t6);
 
-        UASSERT_SELFTEST(size_t, ThreadSchedule::mtaskState.size(), 7);
+        UASSERT_SELFTEST(size_t, ThreadSchedule::s_mtaskState.size(), 7);
 
         UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t0), 0);
         UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t1), 0);
@@ -667,7 +667,7 @@ public:
         UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t4, 5), 1360);
 
         for (AstNode* const nodep : mTaskBodyps) nodep->deleteTree();
-        ThreadSchedule::mtaskState.clear();
+        ThreadSchedule::s_mtaskState.clear();
     }
     static void selfTestHierFirst() {
         V3Graph graph;
@@ -702,20 +702,20 @@ public:
 
         const std::vector<ThreadSchedule> scheduled = packer.pack(graph);
         UASSERT_SELFTEST(size_t, scheduled.size(), 2);
-        UASSERT_SELFTEST(size_t, scheduled[0].threads.size(), hierThreads / 2);
-        UASSERT_SELFTEST(size_t, scheduled[0].threads[0].size(), 1);
-        for (size_t i = 1; i < scheduled[0].threads.size(); ++i)
-            UASSERT_SELFTEST(size_t, scheduled[0].threads[i].size(), 0);
+        UASSERT_SELFTEST(size_t, scheduled[0].m_threads.size(), hierThreads / 2);
+        UASSERT_SELFTEST(size_t, scheduled[0].m_threads[0].size(), 1);
+        for (size_t i = 1; i < scheduled[0].m_threads.size(); ++i)
+            UASSERT_SELFTEST(size_t, scheduled[0].m_threads[i].size(), 0);
 
-        UASSERT_SELFTEST(const ExecMTask*, scheduled[0].threads[0][0], t0);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[0].m_threads[0][0], t0);
 
-        UASSERT_SELFTEST(size_t, scheduled[1].threads.size(), threads);
-        UASSERT_SELFTEST(size_t, scheduled[1].threads[0].size(), 1);
-        for (size_t i = 1; i < scheduled[1].threads.size(); ++i)
-            UASSERT_SELFTEST(size_t, scheduled[1].threads[i].size(), 0);
-        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].threads[0][0], t1);
+        UASSERT_SELFTEST(size_t, scheduled[1].m_threads.size(), threads);
+        UASSERT_SELFTEST(size_t, scheduled[1].m_threads[0].size(), 1);
+        for (size_t i = 1; i < scheduled[1].m_threads.size(); ++i)
+            UASSERT_SELFTEST(size_t, scheduled[1].m_threads[i].size(), 0);
+        UASSERT_SELFTEST(const ExecMTask*, scheduled[1].m_threads[0][0], t1);
 
-        UASSERT_SELFTEST(size_t, ThreadSchedule::mtaskState.size(), 2);
+        UASSERT_SELFTEST(size_t, ThreadSchedule::s_mtaskState.size(), 2);
 
         UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t0), 0);
         UASSERT_SELFTEST(uint32_t, ThreadSchedule::threadId(t1), 0);
@@ -726,7 +726,7 @@ public:
         UASSERT_SELFTEST(uint32_t, packer.completionTime(scheduled[1], t1, 1), 1130);
 
         for (AstNode* const nodep : mTaskBodyps) nodep->deleteTree();
-        ThreadSchedule::mtaskState.clear();
+        ThreadSchedule::s_mtaskState.clear();
     }
 
     static std::vector<ThreadSchedule> apply(V3Graph& mtaskGraph) {
@@ -919,9 +919,9 @@ void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId,
         // This mtask has dependencies executed on another thread, so it may block. Create the task
         // state variable and wait to be notified.
         const string name = "__Vm_mtaskstate_" + cvtToStr(mtaskp->id());
-        AstBasicDType* const mtaskStateDtypep
+        AstBasicDType* const s_mtaskStateDtypep
             = v3Global.rootp()->typeTablep()->findBasicDType(fl, VBasicDTypeKwd::MTASKSTATE);
-        AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, name, mtaskStateDtypep};
+        AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, name, s_mtaskStateDtypep};
         varp->valuep(new AstConst{fl, nDependencies});
         varp->protect(false);  // Do not protect as we have references in text
         modp->addStmtsp(varp);
@@ -966,7 +966,7 @@ const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& schedul
     std::vector<AstCFunc*> funcps;
 
     // For each thread, create a function representing its entry point
-    for (const std::vector<const ExecMTask*>& thread : schedule.threads) {
+    for (const std::vector<const ExecMTask*>& thread : schedule.m_threads) {
         if (thread.empty()) continue;
         const uint32_t threadId = schedule.threadId(thread.front());
         const string name{"__Vthread__" + tag + "__s" + cvtToStr(schedule.id()) + "__t"
@@ -995,11 +995,11 @@ const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& schedul
     }
 
     // Create the fake "final" mtask state variable
-    AstBasicDType* const mtaskStateDtypep
+    AstBasicDType* const s_mtaskStateDtypep
         = v3Global.rootp()->typeTablep()->findBasicDType(fl, VBasicDTypeKwd::MTASKSTATE);
-    AstVar* const varp
-        = new AstVar{fl, VVarType::MODULETEMP,
-                     "__Vm_mtaskstate_final__" + cvtToStr(schedule.id()) + tag, mtaskStateDtypep};
+    AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP,
+                                    "__Vm_mtaskstate_final__" + cvtToStr(schedule.id()) + tag,
+                                    s_mtaskStateDtypep};
     varp->valuep(new AstConst(fl, funcps.size()));
     varp->protect(false);  // Do not protect as we have references in text
     modp->addStmtsp(varp);

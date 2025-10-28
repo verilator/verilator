@@ -262,10 +262,10 @@ void V3ErrorGuarded::v3errorEndGuts(const std::ostringstream& sstr, const string
             incWarnings();
         }
         if (m_message.code().severityFatal()) {
-            static bool inFatal = false;
+            static bool s_inFatal = false;
             // cppcheck-suppress duplicateConditionalAssign // Used by VlcMain.cpp
-            if (!inFatal) {
-                inFatal = true;
+            if (!s_inFatal) {
+                s_inFatal = true;
 #ifndef V3ERROR_NO_GLOBAL_
                 if (dumpTreeLevel() || dumpTreeJsonLevel() || debug()) {
                     V3Broken::allowMidvisitorCheck(true);

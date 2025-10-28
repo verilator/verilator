@@ -357,16 +357,16 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
 void V3ParseImp::dumpInputsFile() {
     // Create output file with joined preprocessor output we buffered up,
     // Useful for debug to feed back into Verilator
-    static bool append = false;
+    static bool s_append = false;
     const string vppfilename
         = v3Global.opt.hierTopDataDir() + "/" + v3Global.opt.prefix() + "__inputs.vpp";
-    std::ofstream* ofp = V3File::new_ofstream(vppfilename, append);
+    std::ofstream* ofp = V3File::new_ofstream(vppfilename, s_append);
     if (ofp->fail()) {
         v3error("Can't write file: " + vppfilename);
         return;
     }
-    if (!append) {
-        append = true;
+    if (!s_append) {
+        s_append = true;
         UINFO(1, "Writing all preprocessed output to " << vppfilename);
         *ofp << "// Dump of all post-preprocessor input\n";
         *ofp << "// Blank lines and `line directives have been removed\n";

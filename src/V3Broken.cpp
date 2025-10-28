@@ -341,12 +341,12 @@ public:
 
 void V3Broken::brokenAll(AstNetlist* nodep) {
     // UINFO(9, __FUNCTION__ << ": ");
-    static bool inBroken = false;
-    if (VL_UNCOVERABLE(inBroken)) {
+    static bool s_inBroken = false;
+    if (VL_UNCOVERABLE(s_inBroken)) {
         // A error called by broken can recurse back into broken; avoid this
         UINFO(1, "Broken called under broken, skipping recursion.");  // LCOV_EXCL_LINE
     } else {
-        inBroken = true;
+        s_inBroken = true;
 
         V3LockGuard lock{s_allocTable.m_mutex};
 
@@ -369,7 +369,7 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
         s_allocTable.checkForLeaks();
         s_linkableTable.clear();
         s_brokenCntGlobal.inc();
-        inBroken = false;
+        s_inBroken = false;
     }
 }
 

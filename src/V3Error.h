@@ -729,17 +729,17 @@ void v3errorEndFatal(std::ostringstream& sstr)
     VL_ATTR_UNUSED static int debug##__VA_ARGS__() VL_MT_SAFE { \
         /* Don't complain this function is unused */ \
         (void)&debug##__VA_ARGS__; \
-        static int level = -1; \
-        if (VL_UNLIKELY(level < 0)) { \
+        static int s_level = -1; \
+        if (VL_UNLIKELY(s_level < 0)) { \
             std::string tag{VL_STRINGIFY(__VA_ARGS__)}; \
             if (!tag.empty()) tag[0] = std::tolower(tag[0]); \
             const unsigned debugTag = v3Global.opt.debugLevel(tag); \
             const unsigned debugSrc = v3Global.opt.debugSrcLevel(__FILE__); \
             const unsigned debugLevel = debugTag >= debugSrc ? debugTag : debugSrc; \
             if (!v3Global.opt.available()) return static_cast<int>(debugLevel); \
-            level = static_cast<int>(debugLevel); \
+            s_level = static_cast<int>(debugLevel); \
         } \
-        return level; \
+        return s_level; \
     } \
     static_assert(true, "")
 
@@ -748,15 +748,15 @@ void v3errorEndFatal(std::ostringstream& sstr)
     VL_ATTR_UNUSED static int dump##func() VL_MT_SAFE { \
         /* Don't complain this function is unused */ \
         (void)&dump##func; \
-        static int level = -1; \
-        if (VL_UNLIKELY(level < 0)) { \
+        static int s_level = -1; \
+        if (VL_UNLIKELY(s_level < 0)) { \
             const unsigned dumpTag = v3Global.opt.dumpLevel(tag); \
             const unsigned dumpSrc = v3Global.opt.dumpSrcLevel(__FILE__); \
             const unsigned dumpLevel = dumpTag >= dumpSrc ? dumpTag : dumpSrc; \
             if (!v3Global.opt.available()) return static_cast<int>(dumpLevel); \
-            level = static_cast<int>(dumpLevel); \
+            s_level = static_cast<int>(dumpLevel); \
         } \
-        return level; \
+        return s_level; \
     } \
     static_assert(true, "")
 

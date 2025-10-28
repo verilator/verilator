@@ -197,9 +197,9 @@ public:
         if (s_errorThisp) s_errorThisp->preErrorDump();
     }
     void preErrorDump() {
-        static bool diddump = false;
-        if (!diddump && dumpTreeLevel()) {
-            diddump = true;
+        static bool s_diddump = false;
+        if (!s_diddump && dumpTreeLevel()) {
+            s_diddump = true;
             dumpSelf("linkdot-preerr", true);
             v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("linkdot-preerr.tree"));
         }
@@ -1546,8 +1546,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                     if (ansiBad || nansiBad) {
                         bool ansiWarn = ansiBad && !nansiBad;
                         if (ansiWarn) {
-                            static int didAnsiWarn = false;
-                            if (didAnsiWarn++) ansiWarn = false;
+                            static int s_didAnsiWarn = false;
+                            if (s_didAnsiWarn++) ansiWarn = false;
                         }
                         nodep->v3error("Duplicate declaration of signal: "
                                        << nodep->prettyNameQ() << '\n'

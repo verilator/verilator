@@ -240,14 +240,14 @@ bom             [\357\273\277]
                           BEGIN(INITIAL);
                           return VP_TEXT; }
 <INITIAL,STRIFY>"`__FILE__"     { FL_FWDC;
-                          static string rtnfile;
-                          rtnfile = '"'; rtnfile += LEXP->curFilelinep()->filenameEsc();
-                          rtnfile += '"'; yytext = (char*)rtnfile.c_str(); yyleng = rtnfile.length();
+                          static string s_rtnfile;
+                          s_rtnfile = '"'; s_rtnfile += LEXP->curFilelinep()->filenameEsc();
+                          s_rtnfile += '"'; yytext = (char*)s_rtnfile.c_str(); yyleng = s_rtnfile.length();
                           return VP_STRING; }
 <INITIAL,STRIFY>"`__LINE__"     { FL_FWDC;
-                          static char buf[25];
-                          VL_SNPRINTF(buf, 25, "%d", LEXP->curFilelinep()->lastLineno());
-                          yytext = buf; yyleng = std::strlen(yytext);
+                          static char s_buf[25];
+                          VL_SNPRINTF(s_buf, 25, "%d", LEXP->curFilelinep()->lastLineno());
+                          yytext = s_buf; yyleng = std::strlen(yytext);
                           return VP_TEXT; }
 
         /* Pass-through strings */

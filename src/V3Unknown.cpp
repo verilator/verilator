@@ -48,7 +48,7 @@ class UnknownVisitor final : public VNVisitor {
     //  AstNode::user2p()       -> AstIf* Inserted if assignment for conditional
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
-    static const std::string m_xrandPrefix;
+    static const std::string s_xrandPrefix;
 
     // STATE - across all visitors
     VDouble0 m_statUnkVars;  // Statistic tracking
@@ -180,7 +180,7 @@ class UnknownVisitor final : public VNVisitor {
         VL_RESTORER(m_modp);
         VL_RESTORER(m_constXCvt);
         VL_RESTORER(m_allowXUnique);
-        auto xrandNames = std::make_unique<V3UniqueNames>(m_xrandPrefix);
+        auto xrandNames = std::make_unique<V3UniqueNames>(s_xrandPrefix);
         {
             m_modp = nodep;
             m_constXCvt = true;
@@ -567,7 +567,7 @@ public:
     // CONSTRUCTORS
     explicit UnknownVisitor(AstNetlist* nodep)
         : m_lvboundNames{"__Vlvbound"}
-        , m_xrandNames{std::make_unique<V3UniqueNames>(m_xrandPrefix)} {
+        , m_xrandNames{std::make_unique<V3UniqueNames>(s_xrandPrefix)} {
         iterate(nodep);
     }
     ~UnknownVisitor() override {  //
@@ -575,7 +575,7 @@ public:
     }
 };
 
-const std::string UnknownVisitor::m_xrandPrefix = "__Vxrand";
+const std::string UnknownVisitor::s_xrandPrefix = "__Vxrand";
 
 //######################################################################
 // Unknown class functions

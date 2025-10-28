@@ -113,8 +113,8 @@ AstNodeStmt* profExecSectionPop(FileLine* flp) {
 }
 
 static AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
-    static std::map<AstCFunc*, uint32_t> funcNums;  // What split number to attach to a function
-    const uint32_t funcNum = funcNums[ofuncp]++;
+    static std::map<AstCFunc*, uint32_t> s_funcNums;  // What split number to attach to a function
+    const uint32_t funcNum = s_funcNums[ofuncp]++;
     const std::string name = ofuncp->name() + "__" + cvtToStr(funcNum);
     AstCFunc* const subFuncp = new AstCFunc{ofuncp->fileline(), name, ofuncp->scopep()};
     subFuncp->dontCombine(true);

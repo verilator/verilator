@@ -53,10 +53,10 @@ const char* V3ParseImp::tokenName(int token) {
     if (token >= 255) {
         return nameTablep[token - 255];
     } else {
-        static char ch[2];
-        ch[0] = token;
-        ch[1] = '\0';
-        return ch;
+        static char s_ch[2];
+        s_ch[0] = token;
+        s_ch[1] = '\0';
+        return s_ch;
     }
 #else
     return "";

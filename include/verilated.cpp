@@ -256,8 +256,8 @@ std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
 }
 
 uint64_t _vl_dbg_sequence_number() VL_MT_SAFE {
-    static std::atomic<uint64_t> sequence;
-    return ++sequence;
+    static std::atomic<uint64_t> s_sequence;
+    return ++s_sequence;
 }
 
 uint32_t VL_THREAD_ID() VL_MT_SAFE {
@@ -2503,11 +2503,11 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
 // Timescale conversion
 
 static const char* vl_time_str(int scale) VL_PURE {
-    static const char* const names[]
+    static const char* const s_names[]
         = {"100s",  "10s",  "1s",  "100ms", "10ms", "1ms", "100us", "10us", "1us",
            "100ns", "10ns", "1ns", "100ps", "10ps", "1ps", "100fs", "10fs", "1fs"};
     if (VL_UNLIKELY(scale > 2 || scale < -15)) scale = 0;
-    return names[2 - scale];
+    return s_names[2 - scale];
 }
 double vl_time_multiplier(int scale) VL_PURE {
     // Return timescale multiplier -18 to +18
