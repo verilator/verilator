@@ -169,10 +169,10 @@ Summary:
 .. option:: --build-jobs <value>
 
    Specify the level of parallelism for :vlopt:`--build`.  If zero, uses the
-   number of threads available to the process (the number of threads assigned
-   by processor affinity, or the number of threads in the host hardware if
-   unspecified).  Otherwise, the <value> must be a positive integer specifying
-   the maximum number of parallel build jobs.
+   number of threads available to the process, which is the number of threads
+   assigned by processor affinity (e.g. using `numactl`), or the number of
+   threads in the host hardware if unspecified.  Otherwise, the <value> must be
+   a positive integer specifying the maximum number of parallel build jobs.
 
    If not provided, and :vlopt:`-j` is provided, the :vlopt:`-j` value is
    used.
@@ -882,10 +882,10 @@ Summary:
    of Verilator if :vlopt:`--verilate-jobs` isn't provided. Also sets
    :vlopt:`--output-groups` if isn't provided.
 
-   If zero, uses the number of threads available to the process (the number of
-   threads assigned by processor affinity, or the number of threads in the host
-   hardware if unspecified).  Otherwise, must be a positive integer specifying
-   the maximum number of parallel build jobs.
+   If zero, uses the number of threads available to the process, which is the
+   number of threads assigned by processor affinity (e.g. using `numactl`), or
+   the number of threads in the host hardware if unspecified.  Otherwise, must
+   be a positive integer specifying the maximum number of parallel build jobs.
 
 .. option:: --no-json-edit-nums
 
@@ -1833,10 +1833,11 @@ Summary:
 .. option:: --verilate-jobs <value>
 
    Specify the level of parallelism for the internal compilation steps of
-   Verilator.  If zero, uses the number of threads available to the process
-   (the number of threads assigned by processor affinity, or the number of
-   threads in the host hardware if unspecified).  Otherwise, must be a positive
-   integer specifying the maximum number of parallel build jobs.
+   Verilator.  If zero, uses the number of threads available to the process,
+   which is the number of threads assigned by processor affinity (e.g. using
+   `numactl`), or the number of threads in the host hardware if unspecified.
+   Otherwise, must be a positive integer specifying the maximum number of
+   parallel build jobs.
 
    If not provided, and :vlopt:`-j` is provided, the :vlopt:`-j` value is
    used.

@@ -121,7 +121,7 @@ VlThreadPool::~VlThreadPool() {
 std::string VlThreadPool::numaAssign() {
 #if defined(__linux) || defined(CPU_ZERO) || defined(VL_CPPCHECK)  // Linux-like pthreads
     // Get number of processor available to the current process
-    const unsigned num_proc = VlOs::getNumberOfAvailableCpus();
+    const unsigned num_proc = VlOs::getProcessAvailableParallelism();
     if (!num_proc) return "Can't determine number of available threads";
     // If fewer than hardware threads in the host, user presumably set affinity
     if (num_proc < std::thread::hardware_concurrency()) return "processor affinity already set";

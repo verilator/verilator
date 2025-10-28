@@ -2807,7 +2807,7 @@ void VerilatedContext::threads(unsigned n) {
 
     if (m_threads == n) return;  // To avoid unnecessary warnings
     m_threads = n;
-    const unsigned threadsAvailableToProcess = VlOs::getNumberOfAvailableCpusOrHardwareThreads();
+    const unsigned threadsAvailableToProcess = VlOs::getProcessDefaultParallelism();
     if (m_threads > threadsAvailableToProcess) {
         VL_PRINTF_MT("%%Warning: Process has %u hardware threads available, but simulation thread "
                      "count set to %u. This will likely cause significant slowdown.\n",

@@ -105,9 +105,9 @@ uint16_t getcpu() VL_MT_SAFE {
 }
 
 //=============================================================================
-// Vlos::getNumberOfAvailableCpus implementation
+// Vlos::getProcessAvailableParallelism implementation
 
-unsigned getNumberOfAvailableCpus() VL_MT_SAFE {
+unsigned getProcessAvailableParallelism() VL_MT_SAFE {
 #if defined(__linux) || defined(CPU_ZERO)  // Linux-like; assume we have pthreads etc
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
@@ -125,10 +125,10 @@ unsigned getNumberOfAvailableCpus() VL_MT_SAFE {
 }
 
 //=============================================================================
-// Vlos::getNumberOfAvailableCpusOrHardwareThreads implementation
+// Vlos::getProcessDefaultParallelism implementation
 
-unsigned getNumberOfAvailableCpusOrHardwareThreads() VL_MT_SAFE {
-    const unsigned n = getNumberOfAvailableCpus();
+unsigned getProcessDefaultParallelism() VL_MT_SAFE {
+    const unsigned n = getProcessAvailableParallelism();
     return n ? n : std::thread::hardware_concurrency();
 }
 

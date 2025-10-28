@@ -647,11 +647,11 @@ extern uint16_t getcpu() VL_MT_SAFE;
 /// less than the number of logical processors in the machine, if a processor
 /// affinity mask was used, e.g. via 'numactl -C 0-3'. Returns 0 if cannot
 /// be determiend.
-extern unsigned getNumberOfAvailableCpus() VL_MT_SAFE;
+extern unsigned getProcessAvailableParallelism() VL_MT_SAFE;
 
-/// Return getNumberOfAvailableCpus if non-zero, otherwise the number of
+/// Return getProcessAvailableParallelism if non-zero, otherwise the number of
 /// hardware threads in the host machine.
-extern unsigned getNumberOfAvailableCpusOrHardwareThreads() VL_MT_SAFE;
+extern unsigned getProcessDefaultParallelism() VL_MT_SAFE;
 
 /// Return memory usage in bytes, or 0 if unknown
 extern void memUsageBytes(uint64_t& peakr, uint64_t& currentr) VL_MT_SAFE;
