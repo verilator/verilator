@@ -15,16 +15,10 @@ test.top_filename = "t/t_hier_block.v"
 # stats will be deleted but generation will be skipped if libs of hierarchical blocks exist.
 test.clean_objs()
 
-# CI environment offers 2 VCPUs, 2 thread setting causes the following warning.
-# %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
-# So use 6 threads here though it's not optimal in performance, but ok.
-
-test.compile(v_flags2=['t/t_hier_block.cpp'],
-             verilator_flags2=[
-                 '--stats', '--hierarchical', '--Wno-TIMESCALEMOD', '--CFLAGS',
-                 '"-pipe -DCPP_MACRO=cplusplus"', '--binary'
-             ],
-             threads=(6 if test.vltmt else 1))
+test.compile(verilator_flags2=[
+    't/t_hier_block.cpp', '--stats', '--hierarchical', '--Wno-TIMESCALEMOD', '--CFLAGS',
+    '"-pipe -DCPP_MACRO=cplusplus"', '--binary'
+])
 
 test.execute()
 
