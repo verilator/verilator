@@ -141,9 +141,34 @@ jobs:
           - "XuanTie-C906:*"
           - "XuanTie-C910:*"
 
+  run-gcc-hier:
+    name: Run GCC hier | ${{ matrix.cases }}
+    needs: build-gcc
+    uses: ./.github/workflows/reusable-rtlmeter-run.yml
+    with:
+      tag: gcc-hier
+      runs-on: ubuntu-24.04
+      cc: gcc
+      cases: ${{ matrix.cases }}
+      run-name: "gcc --hierarchical"
+      compileArgs: "--hierarchical"
+      executeArgs: ""
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ github.event == 'schedule' && 2 || 7 }}
+      matrix:
+        cases:
+          - "NVDLA:* !-hier"
+          - "OpenPiton:1x1:* !-hier"
+          - "OpenPiton:2x2:* !-hier"
+          - "OpenPiton:4x4:* !-hier"
+          - "OpenPiton:8x8:* !-hier"
+          - "OpenPiton:16x16:dhry !-hier"
+          - "XuanTie-C910:* !-hier"
+
   combine-results:
     name: Combine results
-    needs: [run-gcc, run-clang]
+    needs: [run-gcc, run-clang, run-gcc-hier]
     # Run if any of the dependencies have run, even if failed.
     # That is: do not run if all skipped, or the workflow was cancelled.
     if: ${{ (contains(needs.*.result, 'success') || contains(needs.*.result, 'failure')) && !cancelled() }}
@@ -151,7 +176,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tag: [gcc, clang]
+        tag: [gcc, clang, gcc-hier]
     steps:
       - name: Checkout RTLMeter
         uses: actions/checkout@v5
@@ -164,7 +189,7 @@ jobs:
       - name: Download all results
         uses: actions/download-artifact@v6
         with:
-          pattern: rtlmeter-results-${{ matrix.tag }}-*
+          pattern: rtlmeter-${{ matrix.tag }}-results-*
           path: all-results-${{ matrix.tag }}
           merge-multiple: true
       - name: Combine results
@@ -281,9 +306,15 @@ jobs:
       - name: Compare results
         working-directory: rtlmeter
         run: |
-          for tag in gcc clang; do
+          for tag in gcc clang gcc-hier; do
             ADATA=../nightly-results/all-results-${tag}.json
             BDATA=../all-results/all-results-${tag}.json
+            touch ../verilate-${tag}.txt
+            touch ../execute-${tag}.txt
+            touch ../cppbuild-${tag}.txt
+            if [[ ! -e $ADATA ]]; then
+              continue
+            fi
             ./rtlmeter compare --cases '* !Example:* !*:hello' --steps "verilate" --metrics "elapsed memory"              $ADATA $BDATA > ../verilate-${tag}.txt
             cat ../verilate-${tag}.txt
             ./rtlmeter compare --cases '* !Example:* !*:hello' --steps "execute"  --metrics "speed memory elapsed"        $ADATA $BDATA > ../execute-${tag}.txt
@@ -301,7 +332,7 @@ jobs:
           echo -n "Performance metrics for PR workflow [#$NUM]($URL) (B) compared to scheduled run" > report.txt
           echo -n " [#${{ steps.scheduled-info.outputs.num }}](${{ steps.scheduled-info.outputs.url }}) (A)" >> report.txt
           echo    " from ${{ steps.scheduled-info.outputs.date }}" >> report.txt
-          for tag in gcc clang; do
+          for tag in gcc clang gcc-hier; do
             echo "" >> report.txt
             if [[ $tag == "gcc" ]]; then
               echo "<details open>" >> report.txt
@@ -311,11 +342,11 @@ jobs:
             echo -n "<summary><strong><em>" >> report.txt
             jq -rj ".[0].runName" all-results/all-results-${tag}.json >> report.txt
             echo "</em></strong></summary>" >> report.txt
-            awk -v RS= -v tag=${tag} '{print > sprintf("verilate-%s-%02d.txt",tag,NR)}' verilate-${tag}.txt
-            awk -v RS= -v tag=${tag} '{print > sprintf( "execute-%s-%02d.txt",tag,NR)}'  execute-${tag}.txt
-            awk -v RS= -v tag=${tag} '{print > sprintf("cppbuild-%s-%02d.txt",tag,NR)}' cppbuild-${tag}.txt
-            for f in $(ls -1 verilate-${tag}-*.txt | sort) $(ls -1 execute-${tag}-*.txt | sort) $(ls -1 cppbuild-${tag}-*.txt | sort); do
-              if [[ $f == verilate-${tag}-01.txt || $f == execute-${tag}-01.txt ]]; then
+            awk -v RS= -v tag=${tag} '{print > sprintf("frag-%02d-verilate-%s.txt",NR,tag)}' verilate-${tag}.txt
+            awk -v RS= -v tag=${tag} '{print > sprintf("frag-%02d-execute-%s.txt" ,NR,tag)}'  execute-${tag}.txt
+            awk -v RS= -v tag=${tag} '{print > sprintf("frag-$02d-cppbuild-%s.txt",NR,tag)}' cppbuild-${tag}.txt
+            for f in $(ls -1 frag-*-verilate-${tag}.txt | sort) $(ls -1 frag-*-execute-${tag}.txt | sort) $(ls -1 frag-*-cppbuild-${tag}.txt | sort); do
+              if [[ $f == frag-01-verilate-${tag}.txt || $f == frag-01-execute-${tag}.txt ]]; then
                 echo "<details open>" >> report.txt
               else
                 echo "<details>" >> report.txt

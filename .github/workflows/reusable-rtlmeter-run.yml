@@ -118,7 +118,7 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           path: results-${{ steps.results.outputs.hash }}.json
-          name: rtlmeter-results-${{ inputs.tag }}-${{ steps.results.outputs.hash }}
+          name: rtlmeter-${{ inputs.tag }}-results-${{ steps.results.outputs.hash }}
           overwrite: true
           retention-days: 2
 
