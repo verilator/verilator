@@ -798,14 +798,11 @@ class CoverageVisitor final : public VNVisitor {
                         } else {
                             m_modp->stmtsp()->addHereThisAsNext(varp);
                         }
-                        // NOCOMMIT --- can I avoid this dummy node?
-                        AstConst dummy{fl, 0};
-                        AstAssign* tempAssignp
-                            = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, &dummy};
-                        AstExprStmt* tempStmtp = new AstExprStmt{
-                            fl, tempAssignp, new AstVarRef{fl, varp, VAccess::READ}};
-                        frefp->replaceWith(tempStmtp);
-                        dummy.replaceWith(frefp);
+                        VNRelinker relinkHandle;
+                        frefp->unlinkFrBack(&relinkHandle);
+                        relinkHandle.relink(new AstExprStmt{
+                            fl, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, frefp},
+                            new AstVarRef{fl, varp, VAccess::READ}});
                     }
                     covExprp = new AstVarRef{fl, varp, VAccess::READ};
                 } else {
