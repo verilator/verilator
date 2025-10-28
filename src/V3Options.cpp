@@ -587,7 +587,8 @@ int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
         || opt == "top-module") {
         return 2;
     }
-    if (opt == "build" || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc"))
+    if (opt == "build"
+        || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc" || opt == "binary"))
         || opt == "hierarchical" || (opt.length() > 2 && opt.substr(0, 2) == "G=")) {
         return 1;
     }
