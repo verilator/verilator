@@ -820,7 +820,10 @@ class VlTest:
         self.compile_log_filename = self.obj_dir + "/vlt_compile.log"
         self.run_log_filename = self.obj_dir + "/vlt_sim.log"
         self.stats = self.obj_dir + "/V" + self.name + "__stats.txt"
-        self.top_filename = re.sub(r'\.py$', '', self.py_filename) + '.' + self.v_suffix
+        if Args.top_filename:
+            self.top_filename = Args.top_filename
+        else:
+            self.top_filename = re.sub(r'\.py$', '', self.py_filename) + '.' + self.v_suffix
         self.pli_filename = re.sub(r'\.py$', '', self.py_filename) + '.cpp'
         self.top_shell_filename = self.obj_dir + "/" + self.vm_prefix + "__top.v"
 
@@ -2912,6 +2915,7 @@ if __name__ == '__main__':
                         action='store_true',
                         help='include VERILATOR_TEST_SITE test list')
     parser.add_argument('--stop', action='store_true', help='stop on the first error')
+    parser.add_argument("--top-filename", help="override the default Verilog file name")
     parser.add_argument('--trace', action='store_true', help='enable simulator waveform tracing')
     parser.add_argument('--verbose',
                         action='store_true',
