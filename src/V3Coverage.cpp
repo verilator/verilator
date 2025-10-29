@@ -141,7 +141,7 @@ class CoverageVisitor final : public VNVisitor {
     const VNUser2InUse m_inuser2;
     V3UniqueNames m_exprTempNames;  // For generating unique temporary variable names used by
                                     // expression coverage
-    std::unordered_map<VNRef<AstFuncRef>, AstVar* const> m_funcTemps;
+    std::unordered_map<VNRef<AstFuncRef>, AstVar*> m_funcTemps;
 
     // STATE - across all visitors
     int m_nextHandle = 0;
@@ -786,13 +786,12 @@ class CoverageVisitor final : public VNVisitor {
                 AstNodeExpr* covExprp = nullptr;
                 if (AstFuncRef* const frefp = VN_CAST(term.m_exprp, FuncRef)) {
                     AstNodeDType* const dtypep = frefp->taskp()->fvarp()->dtypep();
-                    const auto tempIt = m_funcTemps.find(*frefp);
-                    AstVar* varp = nullptr;
-                    if (tempIt == m_funcTemps.end()) {
-                        auto emplacedVarp = m_funcTemps.emplace(
-                            *frefp, new AstVar{fl, VVarType::MODULETEMP,
-                                               m_exprTempNames.get(frefp), dtypep});
-                        varp = emplacedVarp.first->second;
+                    const auto pair = m_funcTemps.emplace(*frefp, nullptr);
+                    AstVar* varp = pair.first->second;
+                    if (pair.second) {
+                        varp = new AstVar{fl, VVarType::MODULETEMP, m_exprTempNames.get(frefp),
+                                          dtypep};
+                        pair.first->second = varp;
                         if (m_ftaskp) {
                             varp->funcLocal(true);
                             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
@@ -805,9 +804,6 @@ class CoverageVisitor final : public VNVisitor {
                         relinkHandle.relink(new AstExprStmt{
                             fl, new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, frefp},
                             new AstVarRef{fl, varp, VAccess::READ}});
-
-                    } else {
-                        varp = tempIt->second;
                     }
                     covExprp = new AstVarRef{fl, varp, VAccess::READ};
                 } else {
