@@ -117,7 +117,7 @@ private:
             AstScope* const scopeTopp = m_netlistp->topScopep()->scopep();
             AstVarScope* const vscp = scopeTopp->createTemp(m_vifTriggerNames.get(ifacep), 1);
             ifacep->user1p(vscp);
-            m_triggers.emplace_back(std::make_pair(ifacep, vscp));
+            m_triggers.addIfaceTrigger(ifacep, vscp);
         }
         return new AstVarRef{flp, VN_AS(ifacep->user1p(), VarScope), VAccess::WRITE};
     }
