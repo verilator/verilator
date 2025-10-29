@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.skip("Test is broken, see #____")
+test.skip("Test is broken, see #6613")
 
 test.scenarios('simulator')
 
