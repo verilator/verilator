@@ -307,7 +307,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
         // Process per-variable (object instance), not per-class
         // This allows multiple objects of the same class (e.g., obj1 and obj2 of type Sub)
         if (m_processedVars.insert(objVar).second) {
-
             // Clone constraints from the top-level class (e.g., Level1 for obj_a)
             gConsClass->foreachMember([&](AstClass* const classp, AstConstraint* const constrp) {
                 AstConstraint* const cloneConstrp = constrp->cloneTree(false);
@@ -611,7 +610,8 @@ class RandomizeMarkVisitor final : public VNVisitor {
             if (VN_IS(nodep->fromp(), VarRef) || VN_IS(nodep->fromp(), MemberSel)) {
                 markNestedGlobalConstrainedRecurse(nodep->fromp());
             } else if (VN_IS(nodep->fromp(), ArraySel)) {
-                nodep->v3warn(E_UNSUPPORTED, "Unsupported in global constraint");
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << nodep->prettyTypeName()
+                                                             << " within a global constraint");
             }
             // Global constraint processing algorithm:
             // 1. Detect globally constrained object variables in randomized classes
@@ -832,7 +832,6 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         AstMemberSel* membersel = nullptr;
         std::string smtName;
-
         if (isGlobalConstrained && VN_IS(nodep->backp(), MemberSel)) {
             // For global constraints: build complete path from topmost MemberSel
             AstNode* topMemberSel = nodep->backp();
@@ -1119,11 +1118,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     void visit(AstMemberSel* nodep) override {
         if (nodep->varp()->rand().isRandomizable() && nodep->fromp()) {
-
             AstNode* rootNode = nodep->fromp();
             while (const AstMemberSel* const selp = VN_CAST(rootNode, MemberSel))
                 rootNode = selp->fromp();
-
             // Check if the root variable participates in global constraints
             if (const AstVarRef* const varRefp = VN_CAST(rootNode, VarRef)) {
                 AstVar* const constrainedVar = varRefp->varp();

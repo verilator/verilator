@@ -1,26 +1,26 @@
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:41:20: Unsupported in global constraint
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:41:20: Unsupported: MEMBERSEL 'm_x' within a global constraint
                                                            : ... note: In instance 't_constraint_global_arr_unsup'
-   41 |         mid.arr[0].x == 200;
-      |                    ^
+   41 |     m_mid.m_arr[0].m_x == 200;
+      |                    ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:42:20: Unsupported in global constraint
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:42:20: Unsupported: MEMBERSEL 'm_y' within a global constraint
                                                            : ... note: In instance 't_constraint_global_arr_unsup'
-   42 |         mid.arr[0].y == 201;
-      |                    ^
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:47:20: Unsupported in global constraint
-                                                           : ... note: In instance 't_constraint_global_arr_unsup'
-   47 |         mid_arr[0].obj.x == 300;
+   42 |     m_mid.m_arr[0].m_y == 201;
       |                    ^~~
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:48:20: Unsupported in global constraint
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:47:18: Unsupported: MEMBERSEL 'm_obj' within a global constraint
                                                            : ... note: In instance 't_constraint_global_arr_unsup'
-   48 |         mid_arr[0].obj.y == 301;
-      |                    ^~~
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:53:20: Unsupported in global constraint
+   47 |     m_mid_arr[0].m_obj.m_x == 300;
+      |                  ^~~~~
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:48:18: Unsupported: MEMBERSEL 'm_obj' within a global constraint
                                                            : ... note: In instance 't_constraint_global_arr_unsup'
-   53 |         mid_arr[1].arr[2].y == 400;
-      |                    ^~~
-%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:53:27: Unsupported in global constraint
+   48 |     m_mid_arr[0].m_obj.m_y == 301;
+      |                  ^~~~~
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:53:18: Unsupported: MEMBERSEL 'm_arr' within a global constraint
                                                            : ... note: In instance 't_constraint_global_arr_unsup'
-   53 |         mid_arr[1].arr[2].y == 400;
-      |                           ^
+   53 |     m_mid_arr[1].m_arr[2].m_y == 400;
+      |                  ^~~~~
+%Error-UNSUPPORTED: t/t_constraint_global_arr_unsup.v:53:27: Unsupported: MEMBERSEL 'm_y' within a global constraint
+                                                           : ... note: In instance 't_constraint_global_arr_unsup'
+   53 |     m_mid_arr[1].m_arr[2].m_y == 400;
+      |                           ^~~
 %Error: Exiting due to
