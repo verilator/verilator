@@ -1877,6 +1877,7 @@ class AstVar final : public AstNode {
     bool m_isPullup : 1;  // Tri1
     bool m_isIfaceParent : 1;  // dtype is reference to interface present in this module
     bool m_isInternal : 1;  // Internal state, don't add to method pinter
+    bool m_isIfaceParam : 1;  // Parameter belongs to an interface/modport
     bool m_isDpiOpenArray : 1;  // DPI import open array
     bool m_isHideLocal : 1;  // Verilog local
     bool m_isHideProtected : 1;  // Verilog protected
@@ -1926,6 +1927,7 @@ class AstVar final : public AstNode {
         m_isPullup = false;
         m_isIfaceParent = false;
         m_isInternal = false;
+        m_isIfaceParam = false;
         m_isDpiOpenArray = false;
         m_isHideLocal = false;
         m_isHideProtected = false;
@@ -2065,6 +2067,7 @@ public:
     void isStatic(bool flag) { m_isStatic = flag; }
     void isIfaceParent(bool flag) { m_isIfaceParent = flag; }
     void isInternal(bool flag) { m_isInternal = flag; }
+    void isIfaceParam(bool flag) { m_isIfaceParam = flag; }
     void funcLocal(bool flag) {
         m_funcLocal = flag;
         if (flag) m_funcLocalSticky = true;
@@ -2134,6 +2137,7 @@ public:
     }
     bool isIfaceParent() const { return m_isIfaceParent; }
     bool isInternal() const { return m_isInternal; }
+    bool isIfaceParam() const { return m_isIfaceParam; }
     bool isSignal() const { return varType().isSignal(); }
     bool isNet() const { return varType().isNet(); }
     bool isWor() const { return varType().isWor(); }

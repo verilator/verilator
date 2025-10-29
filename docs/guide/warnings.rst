@@ -933,6 +933,9 @@ List Of Warnings
    reference the parameter of a lower module in a way that affects determining the parameters
    that elaborate that lower module.
 
+   An exception is made for IEEE 1800-2023 25.10 for interfaces/modports which appear in a module's
+   port list, since these are references to interfaces/modports declared at a higher level and are
+   already specialized. These types of accesses do not require waiving HIERPARAM.
 
 .. option:: IFDEPTH
 

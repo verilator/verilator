@@ -1282,6 +1282,7 @@ class ParamVisitor final : public VNVisitor {
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp;  // Module iterating
+    std::unordered_set<std::string> m_ifacePortNames;  // Interface port names in current module
     string m_generateHierName;  // Generate portion of hierarchy name
 
     // METHODS
@@ -1312,7 +1313,9 @@ class ParamVisitor final : public VNVisitor {
                 // Iterate the body
                 {
                     VL_RESTORER(m_modp);
+                    VL_RESTORER(m_ifacePortNames);
                     m_modp = modp;
+                    m_ifacePortNames.clear();
                     iterateChildren(modp);
                 }
             }
@@ -1366,9 +1369,23 @@ class ParamVisitor final : public VNVisitor {
     void checkParamNotHier(AstNode* valuep) {
         if (!valuep) return;
         valuep->foreachAndNext([&](const AstNodeExpr* exprp) {
-            if (const AstVarXRef* refp = VN_CAST(exprp, VarXRef)) {
-                refp->v3warn(HIERPARAM, "Parameter values cannot use hierarchical values"
-                                        " (IEEE 1800-2023 6.20.2)");
+            if (const AstVarXRef* const refp = VN_CAST(exprp, VarXRef)) {
+                // Allow hierarchical ref to interface params through interface/modport ports
+                // (always), and also allow to locally declared interfaces if the user has
+                // waived HIERPARAM.
+                bool isIfacePortRef = false;
+                if (refp->varp() && refp->varp()->isIfaceParam()) {
+                    const string dotted = refp->dotted();
+                    if (!dotted.empty()) {
+                        const string refname = dotted.substr(0, dotted.find('.'));
+                        isIfacePortRef = m_ifacePortNames.count(refname);
+                    }
+                }
+
+                if (!isIfacePortRef) {
+                    refp->v3warn(HIERPARAM, "Parameter values cannot use hierarchical values"
+                                            " (IEEE 1800-2023 6.20.2)");
+                }
             } else if (const AstNodeFTaskRef* refp = VN_CAST(exprp, NodeFTaskRef)) {
                 if (refp->dotted() != "") {
                     refp->v3error("Parameter values cannot call hierarchical functions"
@@ -1383,6 +1400,14 @@ class ParamVisitor final : public VNVisitor {
         // Must do ifaces first, so push to list and do in proper order
         m_strings.emplace_back(m_generateHierName);
         nodep->user2p(&m_strings.back());
+
+        // For interface cells with parameters, specialize first before processing children
+        if (isIface && VN_CAST(nodep, Cell) && VN_CAST(nodep, Cell)->paramsp()) {
+            AstCell* const cellp = VN_CAST(nodep, Cell);
+            AstNodeModule* const srcModp = cellp->modp();
+            m_processor.nodeDeparam(cellp, srcModp, m_modp, m_modp->someInstanceName());
+        }
+
         // Visit parameters in the instantiation.
         iterateChildren(nodep);
         m_cellps.emplace(!isIface, nodep);
@@ -1462,6 +1487,8 @@ class ParamVisitor final : public VNVisitor {
     // Make sure all parameters are constantified
     void visit(AstVar* nodep) override {
         if (nodep->user2SetOnce()) return;  // Process once
+        // Build cache of interface port names as we encounter them
+        if (nodep->isIfaceRef()) { m_ifacePortNames.insert(nodep->name()); }
         iterateChildren(nodep);
         if (nodep->isParam()) {
             checkParamNotHier(nodep->valuep());
@@ -1548,7 +1575,7 @@ class ParamVisitor final : public VNVisitor {
                     else if (const AstCell* const cellp = ifacerefp->cellp()) {
                         if (dotted == cellp->name()) {
                             UINFO(9, "Iface matching scope:  " << cellp);
-                            if (ifaceParamReplace(nodep, cellp->paramsp())) {  //
+                            if (ifaceParamReplace(nodep, cellp->modp()->stmtsp())) {  //
                                 return;
                             }
                         }
