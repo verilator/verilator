@@ -2248,6 +2248,9 @@ driver.py Non-Scenario Arguments
 --stop
   Stop on the first error.
 
+--top-filename <file>
+  Override the default Verilog file name.
+
 --trace
   Set the simulator-specific flags to request waveform tracing.
 
