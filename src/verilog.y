@@ -895,6 +895,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %left           yOR
 %left           yAND
 %nonassoc       yNOT yNEXTTIME yS_NEXTTIME
+%left           yWITH__PAREN
 %left           yINTERSECT
 %left           yWITHIN
 %right          yTHROUGHOUT
@@ -6862,11 +6863,11 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
         //                      // Can't use wildcardE as results in conflicts
         |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
                         { $$ = nullptr; BBCOVERIGN($<fl>4, "Ignoring unsupported: cover bin specification"); DEL($3, $6, $8); }
-        |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__CUR '{' cgexpr '}' iffE
+        |       bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
                         { $$ = nullptr; BBCOVERIGN($<fl>8, "Ignoring unsupported: cover bin 'with' specification"); DEL($3, $6, $10, $12); }
         |       yWILDCARD bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
                         { $$ = nullptr; BBCOVERIGN($<fl>5, "Ignoring unsupported: cover bin 'wildcard' specification"); DEL($4, $7, $9); }
-        |       yWILDCARD bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__CUR '{' cgexpr '}' iffE
+        |       yWILDCARD bins_keyword idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
                         { $$ = nullptr; BBCOVERIGN($<fl>9, "Ignoring unsupported: cover bin 'wildcard' 'with' specification"); DEL($4, $7, $11, $13); }
         //
         //                      // cgexpr part of trans_list
@@ -7003,6 +7004,8 @@ select_expression<nodep>:  // ==IEEE: select_expression
                         { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression '&&'"); DEL($1, $3); }
         |       select_expression yP_OROR   select_expression
                         { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression '||'"); DEL($1, $3); }
+        |       select_expression yWITH__PAREN '(' cgexpr ')'
+                        { $$ = nullptr; BBCOVERIGN($2, "Ignoring unsupported: coverage select expression with"); DEL($1, $4); }
         //                      // IEEE-2012: cross_identifier
         //                      // Part of covergroup_expression - generic identifier
         //                      // IEEE-2012: Need clarification as to precedence
