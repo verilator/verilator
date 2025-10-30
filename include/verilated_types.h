@@ -172,7 +172,7 @@ class VlTriggerVec final {
     // TODO: static assert N_Size > 0, and don't generate when empty
 
     // MEMBERS
-    alignas(16) std::array<uint64_t, roundUpToMultipleOf<64>(N_Size) / 64> m_flags;  // The flags
+    alignas(16) std::array<uint64_t, vlstd::roundUpToMultipleOf<64>(N_Size) / 64> m_flags;
 
 public:
     // CONSTRUCTOR

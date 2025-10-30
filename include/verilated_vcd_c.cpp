@@ -264,7 +264,7 @@ void VerilatedVcd::bufferResize(size_t minsize) {
     // writing when we are 3/4 full (with thus 2*minsize remaining free)
     if (VL_UNLIKELY(minsize > m_wrChunkSize)) {
         const char* oldbufp = m_wrBufp;
-        m_wrChunkSize = roundUpToMultipleOf<1024>(minsize * 2);
+        m_wrChunkSize = vlstd::roundUpToMultipleOf<1024>(minsize * 2);
         m_wrBufp = new char[m_wrChunkSize * 8];
         std::memcpy(m_wrBufp, oldbufp, m_writep - oldbufp);
         m_writep = m_wrBufp + (m_writep - oldbufp);
@@ -493,7 +493,7 @@ VerilatedVcd::Buffer* VerilatedVcd::getTraceBuffer(uint32_t fidx) {
             // cppcheck-suppress unreadVariable  // cppcheck bug, used below
             constexpr size_t pageSize = 4096;
             // 4 * m_maxSignalBytes, so we can reserve 2 * m_maxSignalBytes at the end for safety
-            size_t startingSize = roundUpToMultipleOf<pageSize>(4 * m_maxSignalBytes);
+            size_t startingSize = vlstd::roundUpToMultipleOf<pageSize>(4 * m_maxSignalBytes);
             m_freeBuffers.emplace_back(new char[startingSize], startingSize);
             ++m_numBuffers;
         }

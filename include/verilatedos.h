@@ -729,6 +729,13 @@ T const& as_const(T& v) VL_MT_SAFE {
     return v;
 }
 
+// Utility function
+template <size_t N>
+inline constexpr size_t roundUpToMultipleOf(size_t value) {
+    static_assert((N & (N - 1)) == 0, "'N' must be a power of 2");
+    return (value + N - 1) & ~(N - 1);
+}
+
 };  // namespace vlstd
 
 //=========================================================================
