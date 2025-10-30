@@ -352,13 +352,13 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
     m_dumpp->ifdef("VL_DEBUG");
 }
 
-const TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
-                                    AstCFunc* const initFuncp,  //
-                                    SenExprBuilder& senExprBuilder,  //
-                                    const std::vector<const AstSenTree*>& senTreeps,  //
-                                    const string& name,  //
-                                    const ExtraTriggers& extraTriggers,  //
-                                    bool slow) {
+TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
+                              AstCFunc* const initFuncp,  //
+                              SenExprBuilder& senExprBuilder,  //
+                              const std::vector<const AstSenTree*>& senTreeps,  //
+                              const string& name,  //
+                              const ExtraTriggers& extraTriggers,  //
+                              bool slow) {
     FileLine* const flp = netlistp->topScopep()->fileline();
 
     // Number of extra triggers, rounded up to a full word. These occupy the lowest words.

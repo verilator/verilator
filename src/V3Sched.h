@@ -170,11 +170,11 @@ class TriggerKit final {
 
     TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords, uint32_t nExtraWords);
     VL_UNCOPYABLE(TriggerKit);
-    // Movable
-    TriggerKit(TriggerKit&&) = default;
     TriggerKit& operator=(TriggerKit&&) = delete;
 
 public:
+    // Move constructible
+    TriggerKit(TriggerKit&&) = default;
     ~TriggerKit() = default;
 
     // Utility for extra trigger allocation
@@ -194,13 +194,13 @@ public:
     };
 
     // Create a TriggerKit for the given AstSenTree vector
-    static const TriggerKit create(AstNetlist* netlistp,  //
-                                   AstCFunc* const initFuncp,  //
-                                   SenExprBuilder& senExprBuilder,  //
-                                   const std::vector<const AstSenTree*>& senTreeps,  //
-                                   const string& name,  //
-                                   const ExtraTriggers& extraTriggers,  //
-                                   bool slow);
+    static TriggerKit create(AstNetlist* netlistp,  //
+                             AstCFunc* const initFuncp,  //
+                             SenExprBuilder& senExprBuilder,  //
+                             const std::vector<const AstSenTree*>& senTreeps,  //
+                             const string& name,  //
+                             const ExtraTriggers& extraTriggers,  //
+                             bool slow);
 
     // ACCESSORS
     AstVarScope* vscp() const { return m_vscp; }
