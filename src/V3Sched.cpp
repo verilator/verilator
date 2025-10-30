@@ -833,7 +833,7 @@ void schedule(AstNetlist* netlistp) {
     const TriggerKit trigKit = TriggerKit::create(netlistp, staticp, senExprBuilder, senTreeps,
                                                   "act", extraTriggers, false);
 
-    // Add post updates from the timing kit - FIXME what is this?
+    // Add post updates from the timing kit
     if (timingKit.m_postUpdates) trigKit.compp()->addStmtsp(timingKit.m_postUpdates);
 
     if (dpiExportTriggerVscp) {
