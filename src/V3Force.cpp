@@ -125,14 +125,14 @@ public:
                     = new AstActive{flp, "force-update", new AstSenTree{flp, itemsp}};
                 activep->senTreeStorep(activep->sentreep());
 
-                std::vector<AstVarScope*> loopVarScopes;
+                std::vector<AstNodeExpr*> loopVarRefs;
 
                 AstLoop* whilep = nullptr;
                 AstNodeStmt* outerStmtp = nullptr;
                 if (AstUnpackArrayDType* const unpackedp
                     = VN_CAST(m_rdVscp->varp()->dtypep(), UnpackArrayDType)) {
                     std::vector<AstUnpackArrayDType*> dims = unpackedp->unpackDimensions();
-                    loopVarScopes.reserve(dims.size());
+                    loopVarRefs.reserve(dims.size());
                     for (int i = dims.size() - 1; i >= 0; i--) {
                         AstVar* const loopVarp = new AstVar{
                             flp, VVarType::MODULETEMP,
@@ -142,7 +142,9 @@ public:
                         AstVarScope* const loopVarScopep
                             = new AstVarScope{flp, m_rdVscp->scopep(), loopVarp};
                         m_rdVscp->addNext(loopVarScopep);
-                        loopVarScopes.push_back(loopVarScopep);
+                        AstVarRef* const readRefp
+                            = new AstVarRef{flp, loopVarScopep, VAccess::READ};
+                        loopVarRefs.push_back(readRefp);
                         AstNodeStmt* const currInitp = new AstAssign{
                             flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
                             new AstConst{flp, static_cast<uint32_t>(dims[i]->lo())}};
@@ -150,12 +152,12 @@ public:
                         currInitp->addNext(currWhilep);
                         currWhilep->addStmtsp(new AstLoopTest{
                             flp, currWhilep,
-                            new AstNeq{flp, new AstVarRef{flp, loopVarScopep, VAccess::READ},
+                            new AstNeq{flp, readRefp,
                                        new AstConst{flp, static_cast<uint32_t>(dims[i]->hi())}}});
-                        AstAssign* const currIncrp = new AstAssign{
-                            flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
-                            new AstAdd{flp, new AstVarRef{flp, loopVarScopep, VAccess::READ},
-                                       new AstConst{flp, AstConst::OneStep{}}}};
+                        AstAssign* const currIncrp
+                            = new AstAssign{flp, new AstVarRef{flp, loopVarScopep, VAccess::WRITE},
+                                            new AstAdd{flp, readRefp->cloneTree(false),
+                                                       new AstConst{flp, AstConst::OneStep{}}}};
                         currWhilep->addStmtsp(currIncrp);
                         if (whilep) {
                             whilep->addStmtsp(currInitp);
@@ -166,8 +168,8 @@ public:
                     }
                 }
                 AstNodeExpr* const lhsp
-                    = applySelects(new AstVarRef{flp, m_rdVscp, VAccess::WRITE}, loopVarScopes);
-                AstNodeExpr* const rhsp = forcedUpdate(vscp, loopVarScopes);
+                    = applySelects(new AstVarRef{flp, m_rdVscp, VAccess::WRITE}, loopVarRefs);
+                AstNodeExpr* const rhsp = forcedUpdate(vscp, loopVarRefs);
                 AstNodeStmt* stmtp = new AstAssign{flp, lhsp, rhsp};
                 if (whilep) {
                     whilep->addStmtsp(stmtp);
@@ -179,37 +181,34 @@ public:
             }
         }
         static AstNodeExpr* applySelects(AstNodeExpr* exprp,
-                                         const std::vector<AstVarScope*>& selectVarScopes) {
-            for (AstVarScope* const vscp : selectVarScopes) {
-                exprp = new AstArraySel{exprp->fileline(), exprp,
-                                        new AstVarRef{exprp->fileline(), vscp, VAccess::READ}};
+                                         const std::vector<AstNodeExpr*>& selectExprs) {
+            for (AstNodeExpr* const sp : selectExprs) {
+                exprp = new AstArraySel{exprp->fileline(), exprp, sp->cloneTreePure(false)};
             }
             return exprp;
         }
         AstNodeExpr* forcedUpdate(AstVarScope* const vscp,
-                                  const std::vector<AstVarScope*>& selectVarScopes) const {
+                                  const std::vector<AstNodeExpr*>& selectExprs) const {
             FileLine* const flp = vscp->fileline();
             AstVarRef* origRefp = new AstVarRef{flp, vscp, VAccess::READ};
             ForceState::markNonReplaceable(origRefp);
-            AstNodeExpr* const origp = applySelects(origRefp, selectVarScopes);
+            AstNodeExpr* const origp = applySelects(origRefp, selectExprs);
             if (ForceState::isRangedDType(vscp)) {
                 return new AstOr{
                     flp,
                     new AstAnd{
                         flp,
-                        applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ}, selectVarScopes),
-                        applySelects(new AstVarRef{flp, m_valVscp, VAccess::READ},
-                                     selectVarScopes)},
+                        applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ}, selectExprs),
+                        applySelects(new AstVarRef{flp, m_valVscp, VAccess::READ}, selectExprs)},
                     new AstAnd{
                         flp,
                         new AstNot{flp, applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ},
-                                                     selectVarScopes)},
+                                                     selectExprs)},
                         origp}};
             }
             return new AstCond{
-                flp, applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ}, selectVarScopes),
-                applySelects(new AstVarRef{flp, m_valVscp, VAccess::READ}, selectVarScopes),
-                origp};
+                flp, applySelects(new AstVarRef{flp, m_enVscp, VAccess::READ}, selectExprs),
+                applySelects(new AstVarRef{flp, m_valVscp, VAccess::READ}, selectExprs), origp};
         }
     };
 
