@@ -150,6 +150,8 @@ public:
     explicit DepthVisitor(AstNetlist* nodep)
         : m_tempNames{"__Vdeeptemp"} {
         iterate(nodep);
+        // Extracting expressions can effect purity
+        VIsCached::clearCacheTree();
     }
     ~DepthVisitor() override = default;
 };
