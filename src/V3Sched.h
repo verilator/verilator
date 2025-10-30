@@ -136,9 +136,7 @@ class TriggerKit final {
 
     const std::string m_name;  // TriggerKit name
     const bool m_slow;  // TriggerKit is for schedulign 'slow' code
-    const uint32_t m_nSenseWords;  // Number of trigger words for SenItems
-    const uint32_t m_nExtraWords;  // Number of trigger words for additonal triggers
-    const uint32_t m_nTotalWords = m_nExtraWords + m_nSenseWords;  // Total words
+    const uint32_t m_nWords;  // Number of word in trigger vector
 
     // Data type of a single trigger word
     AstNodeDType* m_wordDTypep;
@@ -168,7 +166,7 @@ class TriggerKit final {
     AstCFunc* createClearFunc() const;
     AstCFunc* createOrIntoFunc() const;
 
-    TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords, uint32_t nExtraWords);
+    TriggerKit(const std::string& name, bool slow, uint32_t nWords);
     VL_UNCOPYABLE(TriggerKit);
     TriggerKit& operator=(TriggerKit&&) = delete;
 

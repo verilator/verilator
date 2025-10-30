@@ -65,10 +65,8 @@ AstCFunc* TriggerKit::createAndNotFunc() const {
     FileLine* const flp = netlistp->topScopep()->fileline();
 
     // Create the function
-    AstCFunc* const funcp = util::makeSubFunction(netlistp, "_trigger_andNot__" + m_name, false);
-    funcp->slow(m_slow);
+    AstCFunc* const funcp = util::makeSubFunction(netlistp, "_trigger_andNot__" + m_name, m_slow);
     funcp->isStatic(true);
-    funcp->rtnType("bool");
 
     // Add arguments
     AstVarScope* const oVscp = newArgument(funcp, m_trigDTypep, "out", VDirection::OUTPUT);
@@ -88,14 +86,13 @@ AstCFunc* TriggerKit::createAndNotFunc() const {
     AstLoop* const loopp = new AstLoop{flp};
     funcp->addStmtsp(util::setVar(nVscp, 0));
     funcp->addStmtsp(loopp);
-    funcp->addStmtsp(new AstCReturn{flp, new AstConst{flp, AstConst::BitFalse{}}});
 
     // Loop body
     AstNodeExpr* const lhsp = new AstArraySel{flp, wr(oVscp), rd(nVscp)};
     AstNodeExpr* const aWordp = new AstArraySel{flp, rd(aVscp), rd(nVscp)};
     AstNodeExpr* const bWordp = new AstArraySel{flp, rd(bVscp), rd(nVscp)};
     AstNodeExpr* const rhsp = new AstAnd{flp, aWordp, new AstNot{flp, bWordp}};
-    AstNodeExpr* const limp = new AstConst{flp, AstConst::WidthedValue{}, 32, m_nTotalWords};
+    AstNodeExpr* const limp = new AstConst{flp, AstConst::WidthedValue{}, 32, m_nWords};
     loopp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
     loopp->addStmtsp(util::incrementVar(nVscp));
     loopp->addStmtsp(new AstLoopTest{flp, loopp, new AstLt{flp, rd(nVscp), limp}});
@@ -108,8 +105,7 @@ AstCFunc* TriggerKit::createAnySetFunc() const {
     FileLine* const flp = netlistp->topScopep()->fileline();
 
     // Create function
-    AstCFunc* const funcp = util::makeSubFunction(netlistp, "_trigger_anySet__" + m_name, false);
-    funcp->slow(m_slow);
+    AstCFunc* const funcp = util::makeSubFunction(netlistp, "_trigger_anySet__" + m_name, m_slow);
     funcp->isStatic(true);
     funcp->rtnType("bool");
 
@@ -133,7 +129,7 @@ AstCFunc* TriggerKit::createAnySetFunc() const {
     // Loop body
     AstNodeExpr* const condp = new AstArraySel{flp, rd(iVscp), rd(nVscp)};
     AstNodeStmt* const thenp = new AstCReturn{flp, new AstConst{flp, AstConst::BitTrue{}}};
-    AstNodeExpr* const limp = new AstConst{flp, AstConst::WidthedValue{}, 32, m_nTotalWords};
+    AstNodeExpr* const limp = new AstConst{flp, AstConst::WidthedValue{}, 32, m_nWords};
     loopp->addStmtsp(new AstIf{flp, condp, thenp});
     loopp->addStmtsp(util::incrementVar(nVscp));
     loopp->addStmtsp(new AstLoopTest{flp, loopp, new AstLt{flp, rd(nVscp), limp}});
@@ -146,10 +142,8 @@ AstCFunc* TriggerKit::createClearFunc() const {
     FileLine* const flp = netlistp->topScopep()->fileline();
 
     // Create function
-    AstCFunc* const funcp = util::makeSubFunction(netlistp, "_trigger_clear__" + m_name, false);
-    funcp->slow(m_slow);
+    AstCFunc* const funcp = util::makeSubFunction(netlistp, "_trigger_clear__" + m_name, m_slow);
     funcp->isStatic(true);
-    funcp->rtnType("bool");
 
     // Add arguments
     AstVarScope* const oVscp = newArgument(funcp, m_trigDTypep, "out", VDirection::OUTPUT);
@@ -167,12 +161,11 @@ AstCFunc* TriggerKit::createClearFunc() const {
     AstLoop* const loopp = new AstLoop{flp};
     funcp->addStmtsp(util::setVar(nVscp, 0));
     funcp->addStmtsp(loopp);
-    funcp->addStmtsp(new AstCReturn{flp, new AstConst{flp, AstConst::BitFalse{}}});
 
     // Loop body
     AstNodeExpr* const lhsp = new AstArraySel{flp, wr(oVscp), rd(nVscp)};
     AstNodeExpr* const rhsp = new AstConst{flp, AstConst::DTyped{}, m_wordDTypep};
-    AstNodeExpr* const limp = new AstConst{flp, AstConst::WidthedValue{}, 32, m_nTotalWords};
+    AstNodeExpr* const limp = new AstConst{flp, AstConst::WidthedValue{}, 32, m_nWords};
     loopp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
     loopp->addStmtsp(util::incrementVar(nVscp));
     loopp->addStmtsp(new AstLoopTest{flp, loopp, new AstLt{flp, rd(nVscp), limp}});
@@ -185,10 +178,8 @@ AstCFunc* TriggerKit::createOrIntoFunc() const {
     FileLine* const flp = netlistp->topScopep()->fileline();
 
     // Create function
-    AstCFunc* const funcp = util::makeSubFunction(netlistp, "_trigger_orInto__" + m_name, false);
-    funcp->slow(m_slow);
+    AstCFunc* const funcp = util::makeSubFunction(netlistp, "_trigger_orInto__" + m_name, m_slow);
     funcp->isStatic(true);
-    funcp->rtnType("bool");
 
     // Add arguments
     AstVarScope* const oVscp = newArgument(funcp, m_trigDTypep, "out", VDirection::INOUT);
@@ -207,14 +198,13 @@ AstCFunc* TriggerKit::createOrIntoFunc() const {
     AstLoop* const loopp = new AstLoop{flp};
     funcp->addStmtsp(util::setVar(nVscp, 0));
     funcp->addStmtsp(loopp);
-    funcp->addStmtsp(new AstCReturn{flp, new AstConst{flp, AstConst::BitFalse{}}});
 
     // Loop body
     AstNodeExpr* const lhsp = new AstArraySel{flp, wr(oVscp), rd(nVscp)};
     AstNodeExpr* const oWordp = new AstArraySel{flp, rd(oVscp), rd(nVscp)};
     AstNodeExpr* const iWordp = new AstArraySel{flp, rd(iVscp), rd(nVscp)};
     AstNodeExpr* const rhsp = new AstOr{flp, oWordp, iWordp};
-    AstNodeExpr* const limp = new AstConst{flp, AstConst::WidthedValue{}, 32, m_nTotalWords};
+    AstNodeExpr* const limp = new AstConst{flp, AstConst::WidthedValue{}, 32, m_nWords};
     loopp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
     loopp->addStmtsp(util::incrementVar(nVscp));
     loopp->addStmtsp(new AstLoopTest{flp, loopp, new AstLt{flp, rd(nVscp), limp}});
@@ -292,7 +282,7 @@ AstSenTree* TriggerKit::newTriggerSenTree(AstVarScope* const vscp,
     AstSenTree* const senTreep = new AstSenTree{flp, nullptr};
     topScopep->addSenTreesp(senTreep);
     for (const uint32_t index : indices) {
-        UASSERT(index <= m_nTotalWords * WORD_SIZE, "Invalid trigger index");
+        UASSERT(index <= m_nWords * WORD_SIZE, "Invalid trigger index");
         const uint32_t wordIndex = index / WORD_SIZE;
         const uint32_t bitIndex = index % WORD_SIZE;
         AstVarRef* const refp = new AstVarRef{flp, vscp, VAccess::READ};
@@ -326,19 +316,17 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) co
     m_compp->stmtsp()->addHereThisAsNext(setp);
 }
 
-TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
-                       uint32_t nExtraWords)
+TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nWords)
     : m_name{name}
     , m_slow{slow}
-    , m_nSenseWords{nSenseWords}
-    , m_nExtraWords{nExtraWords} {
+    , m_nWords{nWords} {
     AstNetlist* const netlistp = v3Global.rootp();
     AstScope* const scopep = netlistp->topScopep()->scopep();
     FileLine* const flp = scopep->fileline();
     // Data type of a single trigger word
     m_wordDTypep = netlistp->findBitDType(WORD_SIZE, WORD_SIZE, VSigning::UNSIGNED);
     // Data type of a trigger vector
-    AstRange* const rangep = new AstRange{flp, static_cast<int>(m_nTotalWords - 1), 0};
+    AstRange* const rangep = new AstRange{flp, static_cast<int>(m_nWords - 1), 0};
     m_trigDTypep = new AstUnpackArrayDType{flp, m_wordDTypep, rangep};
     netlistp->typeTablep()->addTypesp(m_trigDTypep);
     // The AstVarScope representing the trigger vector
@@ -391,7 +379,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     senItemps.resize(nSenseTriggers);
 
     // We can now construct the trigger kit - this construct all items that will be kept
-    TriggerKit kit{name, slow, nSenseWords, nExtraWords};
+    TriggerKit kit{name, slow, nSenseWords + nExtraWords};
 
     // Construct the comp and dump functions
 

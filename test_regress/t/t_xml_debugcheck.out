@@ -1539,9 +1539,6 @@
             </looptest>
           </begin>
         </loop>
-        <creturn loc="d,11,8,11,9">
-          <const loc="d,11,8,11,9" name="1&apos;h0" dtype_id="7"/>
-        </creturn>
       </cfunc>
       <cfunc loc="a,0,0,0,0" name="_trigger_orInto__act">
         <var loc="a,0,0,0,0" name="out" dtype_id="5" dir="inout" vartype="unknown" origName="out"/>
@@ -1592,9 +1589,6 @@
             </looptest>
           </begin>
         </loop>
-        <creturn loc="d,11,8,11,9">
-          <const loc="d,11,8,11,9" name="1&apos;h0" dtype_id="7"/>
-        </creturn>
       </cfunc>
       <cfunc loc="a,0,0,0,0" name="_eval_phase__act">
         <var loc="d,11,8,11,9" name="__VpreTriggered" dtype_id="5" vartype="" origName="__VpreTriggered"/>
@@ -1672,9 +1666,6 @@
             </looptest>
           </begin>
         </loop>
-        <creturn loc="d,11,8,11,9">
-          <const loc="d,11,8,11,9" name="1&apos;h0" dtype_id="7"/>
-        </creturn>
       </cfunc>
       <cfunc loc="a,0,0,0,0" name="_eval_phase__nba">
         <var loc="d,11,8,11,9" name="__VnbaExecute" dtype_id="18" vartype="bit" origName="__VnbaExecute"/>
