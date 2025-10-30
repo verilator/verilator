@@ -143,18 +143,19 @@ class WildcardContents final {
         clearCacheImp();
     }
 
-    bool resolveUncachedImp(const string& name) {
+    bool resolveUncachedImp(const string& contentsRegexp) {
         for (const string& i : m_lines) {
-            if (VString::wildmatch(i, name)) return true;
+            if (VString::wildmatch(i, contentsRegexp)) return true;
         }
         return false;
     }
-    bool resolveCachedImp(const string& name) {
+    bool resolveCachedImp(const string& contentsRegexp) {
         // Lookup if it was resolved before, typically is
-        const auto pair = m_mapPatterns.emplace(name, false);
+        if (contentsRegexp.empty()) return true;
+        const auto pair = m_mapPatterns.emplace(contentsRegexp, false);
         bool& entryr = pair.first->second;
         // Resolve entry when first requested, cache the result
-        if (pair.second) entryr = resolveUncachedImp(name);
+        if (pair.second) entryr = resolveUncachedImp(contentsRegexp);
         return entryr;
     }
 
@@ -163,8 +164,10 @@ public:
         m_lines.emplace_back("");  // start with no leftover
     }
     ~WildcardContents() = default;
-    // Return true iff name in parsed contents
-    static bool resolve(const string& name) { return s().resolveCachedImp(name); }
+    // Return true iff contentsRegexp in parsed contents
+    static bool resolve(const string& contentsRegexp) {
+        return s().resolveCachedImp(contentsRegexp);
+    }
     // Add arbitrary text (need not be line-by-line)
     static void pushText(const string& text) { s().pushTextImp(text); }
 };
@@ -427,11 +430,12 @@ public:
             m_lastIgnore.lineno = filelinep->lastLineno();
         }
     }
-    bool waive(V3ErrorCode code, const string& match) {
+    bool waive(V3ErrorCode code, const string& message) {
         if (code.hardError()) return false;
         for (const auto& itr : m_waivers) {
+            if ((code.isUnder(itr.m_code) || (itr.m_code == V3ErrorCode::I_LINT)))
             if ((code.isUnder(itr.m_code) || (itr.m_code == V3ErrorCode::I_LINT))
-                && VString::wildmatch(match, itr.m_match)
+                && VString::wildmatch(message, itr.m_match)
                 && WildcardContents::resolve(itr.m_contents)) {
                 return true;
             }

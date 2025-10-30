@@ -127,6 +127,7 @@ Verilator 5.041 devel
 * Fix mis-ignoring virtual interface member triggers (#5116 reopened) (#6613). [Geza Lore]
 * Fix ENUMVALUE warning when overriding parameter using `-G/-pvalue` options. [Geza Lore]
 * Fix `-G` and `-pvalue` with `--hierarchical`. [Geza Lore]
+* Fix waiving messages with empty contents (#6610). [Yoshitomo KANEDA]
 
 
 Verilator 5.040 2025-08-30

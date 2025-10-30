@@ -6,4 +6,4 @@
 
 `verilator_config
 
-lint_off -rule EOFNEWLINE --file "*.v"
+lint_off -rule EOFNEWLINE --file "*.v" -match "Missing newline at end of file*"
