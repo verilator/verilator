@@ -19,7 +19,7 @@ def check_evals():
         if re.search(r'__eval_nba__[0-9]+\(.*\)\s*{', wholefile):
             got += 1
 
-    if got < 3:
+    if got < 2:
         test.error("Too few _eval functions found: " + str(got))
 
 

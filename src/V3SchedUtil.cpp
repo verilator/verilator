@@ -77,7 +77,7 @@ AstNodeStmt* callVoidFunc(AstCFunc* funcp) {
 }
 
 AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVarScope* counterp,
-                                 AstCFunc* trigDumpp) {
+                                 AstNodeStmt* dumpCallp) {
     FileLine* const flp = netlistp->fileline();
 
     // If we exceeded the iteration limit, die
@@ -88,14 +88,12 @@ AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVa
     AstNodeExpr* const condp = new AstGt{flp, counterRefp, constp};
     AstIf* const ifp = new AstIf{flp, condp};
     ifp->branchPred(VBranchPred::BP_UNLIKELY);
+    ifp->addThensp(dumpCallp);
     AstCStmt* const stmtp = new AstCStmt{flp};
     ifp->addThensp(stmtp);
     FileLine* const locp = netlistp->topModulep()->fileline();
     const std::string& file = VIdProtect::protect(locp->filename());
     const std::string& line = std::to_string(locp->lineno());
-    stmtp->add("#ifdef VL_DEBUG\n");
-    stmtp->add(callVoidFunc(trigDumpp));
-    stmtp->add("#endif\n");
     stmtp->add("VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line
                + ", \"\", \"" + name + " region did not converge after " + std::to_string(limit)
                + " tries\");");
@@ -116,64 +114,104 @@ static AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
     static std::map<AstCFunc*, uint32_t> s_funcNums;  // What split number to attach to a function
     const uint32_t funcNum = s_funcNums[ofuncp]++;
     const std::string name = ofuncp->name() + "__" + cvtToStr(funcNum);
-    AstCFunc* const subFuncp = new AstCFunc{ofuncp->fileline(), name, ofuncp->scopep()};
+    AstScope* const scopep = ofuncp->scopep();
+    AstCFunc* const subFuncp = new AstCFunc{ofuncp->fileline(), name, scopep};
+    scopep->addBlocksp(subFuncp);
     subFuncp->dontCombine(true);
-    subFuncp->isStatic(false);
+    subFuncp->isStatic(ofuncp->isStatic());
     subFuncp->isLoose(true);
     subFuncp->slow(ofuncp->slow());
     subFuncp->declPrivate(ofuncp->declPrivate());
     if (ofuncp->needProcess()) subFuncp->setNeedProcess();
+    for (AstVar* argp = ofuncp->argsp(); argp; argp = VN_AS(argp->nextp(), Var)) {
+        AstVar* const clonep = argp->cloneTree(false);
+        subFuncp->addArgsp(clonep);
+        AstVarScope* const vscp = new AstVarScope{clonep->fileline(), scopep, clonep};
+        scopep->addVarsp(vscp);
+        argp->user3p(vscp);
+    }
     return subFuncp;
 };
 
+void splitCheckFinishSubFunc(AstCFunc* ofuncp, AstCFunc* subFuncp,
+                             const std::unordered_map<const AstVar*, AstVarScope*>& argVscps) {
+    FileLine* const flp = subFuncp->fileline();
+    AstCCall* const callp = new AstCCall{subFuncp->fileline(), subFuncp};
+    callp->dtypeSetVoid();
+    // Pass arguments through to subfunction
+    for (AstVar* argp = ofuncp->argsp(); argp; argp = VN_AS(argp->nextp(), Var)) {
+        UASSERT_OBJ(argp->direction() == VDirection::CONSTREF, argp, "Unexpected direction");
+        callp->addArgsp(new AstVarRef{flp, argVscps.at(argp), VAccess::READ});
+    }
+
+    bool containsAwait = false;
+    subFuncp->foreach([&](AstNodeExpr* exprp) {
+        // Record if it has a CAwait
+        if (VN_IS(exprp, CAwait)) containsAwait = true;
+        // Redirect references to arguments to the clone in the sub-function
+        if (AstVarRef* const refp = VN_CAST(exprp, VarRef)) {
+            if (AstVarScope* const vscp = VN_AS(refp->varp()->user3p(), VarScope)) {
+                refp->varp(vscp->varp());
+                refp->varScopep(vscp);
+            }
+        }
+    });
+
+    if (ofuncp->isCoroutine() && containsAwait) {  // Wrap call with co_await
+        subFuncp->rtnType("VlCoroutine");
+        AstCAwait* const awaitp = new AstCAwait{flp, callp};
+        awaitp->dtypeSetVoid();
+        ofuncp->addStmtsp(awaitp->makeStmt());
+    } else {
+        ofuncp->addStmtsp(callp->makeStmt());
+    }
+}
+
 // Split large function according to --output-split-cfuncs
-void splitCheck(AstCFunc* ofuncp) {
+void splitCheck(AstCFunc* const ofuncp) {
+    UASSERT_OBJ(!ofuncp->varsp(), ofuncp, "Can't split function with local variables");
     if (!v3Global.opt.outputSplitCFuncs() || !ofuncp->stmtsp()) return;
     if (ofuncp->nodeCount() < v3Global.opt.outputSplitCFuncs()) return;
 
-    int func_stmts = 0;
-    const bool is_ofuncp_coroutine = ofuncp->isCoroutine();
-    AstCFunc* funcp = nullptr;
-
-    const auto finishSubFuncp = [&](AstCFunc* subFuncp) {
-        ofuncp->scopep()->addBlocksp(subFuncp);
-        AstCCall* const callp = new AstCCall{subFuncp->fileline(), subFuncp};
-        callp->dtypeSetVoid();
-
-        if (is_ofuncp_coroutine && subFuncp->exists([](const AstCAwait*) {
-                return true;
-            })) {  // Wrap call with co_await
-            subFuncp->rtnType("VlCoroutine");
-
-            AstCAwait* const awaitp = new AstCAwait{subFuncp->fileline(), callp};
-            awaitp->dtypeSetVoid();
-            ofuncp->addStmtsp(awaitp->makeStmt());
-        } else {
-            ofuncp->addStmtsp(callp->makeStmt());
+    // Need to find the AstVarScopes for the function arguments. They should be in the same Scope.
+    std::unordered_map<const AstVar*, AstVarScope*> argVscps;
+    for (AstVar* argp = ofuncp->argsp(); argp; argp = VN_AS(argp->nextp(), Var)) {
+        UASSERT_OBJ(argVscps.size() < 2, argp, "There should be at most 2 arguments, or O(n^2)");
+        bool found = false;
+        for (AstVarScope *vscp = ofuncp->scopep()->varsp(), *nextp; vscp; vscp = nextp) {
+            nextp = VN_AS(vscp->nextp(), VarScope);
+            if (vscp->varp() != argp) continue;
+            argVscps[argp] = vscp;
+            found = true;
+            break;
         }
-    };
-
-    funcp = splitCheckCreateNewSubFunc(ofuncp);
-    func_stmts = 0;
-
-    // Unlink all statements, then add item by item to new sub-functions
-    AstBegin* const tempp = new AstBegin{ofuncp->fileline(), "[EditWrapper]",
-                                         ofuncp->stmtsp()->unlinkFrBackWithNext(), false};
-    while (tempp->stmtsp()) {
-        AstNode* const itemp = tempp->stmtsp()->unlinkFrBack();
-        const int stmts = itemp->nodeCount();
-
-        if ((func_stmts + stmts) > v3Global.opt.outputSplitCFuncs()) {
-            finishSubFuncp(funcp);
-            funcp = splitCheckCreateNewSubFunc(ofuncp);
-            func_stmts = 0;
-        }
-
-        funcp->addStmtsp(itemp);
-        func_stmts += stmts;
+        UASSERT_OBJ(found, argp, "Can't find VarScope for function argument");
     }
-    finishSubFuncp(funcp);
-    VL_DO_DANGLING(tempp->deleteTree(), tempp);
+
+    // AstVar::user3p(): AstVarScope for function argument in clone
+    const VNUser3InUse user3InUse;
+
+    size_t size = 0;
+    AstCFunc* subFuncp = nullptr;
+
+    // Move statements one by one to the new sub-functions
+    AstNode* stmtsp = ofuncp->stmtsp()->unlinkFrBackWithNext();
+    while (AstNode* const itemp = stmtsp) {
+        stmtsp = stmtsp->nextp();
+        if (stmtsp) stmtsp->unlinkFrBackWithNext();
+        const size_t itemSize = static_cast<size_t>(itemp->nodeCount());
+        size += itemSize;
+
+        if (size > static_cast<size_t>(v3Global.opt.outputSplitCFuncs())) {
+            if (subFuncp) splitCheckFinishSubFunc(ofuncp, subFuncp, argVscps);
+            subFuncp = nullptr;
+            size = itemSize;
+        }
+
+        if (!subFuncp) subFuncp = splitCheckCreateNewSubFunc(ofuncp);
+        subFuncp->addStmtsp(itemp);
+    }
+    if (subFuncp) splitCheckFinishSubFunc(ofuncp, subFuncp, argVscps);
 }
 
 // Build an AstIf conditional on the given SenTree being triggered

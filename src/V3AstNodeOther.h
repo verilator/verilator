@@ -1615,7 +1615,7 @@ class AstText final : public AstNode {
     // Avoid using this directly, internally usually want
     // AstCStmt::add("text") or AstCExpr::add("text") instead
     //
-    std::string m_text;  // The text to emit
+    const std::string m_text;  // The text to emit
 public:
     AstText(FileLine* fl, const std::string& text)
         : ASTGEN_SUPER_Text(fl)
@@ -1627,7 +1627,6 @@ public:
         return text() == VN_DBG_AS(samep, Text)->text();
     }
     const std::string& text() const VL_MT_SAFE { return m_text; }
-    void text(const string& value) { m_text = value; }
 };
 class AstTextBlock final : public AstNode {
     // Text block emitted into output, with some arbitrary nodes interspersed
@@ -2215,7 +2214,7 @@ public:
     }
     bool needsCReset() const {
         return !isIfaceParent() && !isIfaceRef() && !noReset() && !isParam() && !isStatementTemp()
-               && !(basicp() && (basicp()->isEvent() || basicp()->isTriggerVec()));
+               && !(basicp() && basicp()->isEvent());
     }
     static AstVar* scVarRecurse(AstNode* nodep);
 };

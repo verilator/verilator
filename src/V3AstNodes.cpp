@@ -1027,8 +1027,6 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "std::string";
         } else if (bdtypep->keyword().isMTaskState()) {
             info.m_type = "VlMTaskVertex";
-        } else if (bdtypep->isTriggerVec()) {
-            info.m_type = "VlTriggerVec<" + cvtToStr(dtypep->width()) + ">";
         } else if (bdtypep->isDelayScheduler()) {
             info.m_type = "VlDelayScheduler";
         } else if (bdtypep->isTriggerScheduler()) {
@@ -3149,13 +3147,6 @@ void AstCAwait::dump(std::ostream& str) const {
 }
 void AstCAwait::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 int AstCMethodHard::instrCount() const {
-    if (const AstBasicDType* const basicp = fromp()->dtypep()->basicp()) {
-        if (basicp->isTriggerVec() && m_method == VCMethod::TRIGGER_WORD) {
-            // This is an important special case for scheduling so we compute it precisely,
-            // it is simply a load.
-            return INSTR_COUNT_LD;
-        }
-    }
     return 0;  // TODO
 }
 void AstCMethodHard::setPurity() {

@@ -128,39 +128,70 @@ struct LogicReplicas final {
     LogicReplicas& operator=(LogicReplicas&&) = default;
 };
 
-// Utility for extra trigger allocation
-class ExtraTriggers final {
-    std::vector<string> m_descriptions;  // Human readable description of extra triggers
+// A TriggerKit holds all the components related to a trigger vector
+class TriggerKit final {
+    // Triggers are storead as an UnpackedArray with a fixed word size
+    static constexpr uint32_t WORD_SIZE_LOG2 = 6;  // 64-bits / VL_QUADSIZE
+    static constexpr uint32_t WORD_SIZE = 1 << WORD_SIZE_LOG2;
+
+    const std::string m_name;  // TriggerKit name
+    const bool m_slow;  // TriggerKit is for schedulign 'slow' code
+    const uint32_t m_nSenseWords;  // Number of trigger words for SenItems
+    const uint32_t m_nExtraWords;  // Number of trigger words for additonal triggers
+    const uint32_t m_nTotalWords = m_nExtraWords + m_nSenseWords;  // Total words
+
+    // Data type of a single trigger word
+    AstNodeDType* m_wordDTypep;
+    // Data type of a trigger vector
+    AstNodeDType* m_trigDTypep;
+    // The AstVarScope representing the trigger vector
+    AstVarScope* m_vscp;
+    // The AstCFunc that computes the current active triggers
+    AstCFunc* m_compp;
+    // The AstCFunc that dumps the current active triggers
+    AstCFunc* m_dumpp;
+    // The AstCFunc testing if a trigger vector has any bits set - create lazily
+    mutable AstCFunc* m_anySetp = nullptr;
+    // The AstCFunc setting a tigger vector to (_ & ~_) of 2 other trigger vectors - create lazily
+    mutable AstCFunc* m_andNotp = nullptr;
+    // The AstCFunc setting bits in a trigger vector that are set in another - create lazily
+    mutable AstCFunc* m_orIntop = nullptr;
+    // The AstCFunc setting a trigger vector to all zeroes - create lazily
+    mutable AstCFunc* m_clearp = nullptr;
+
+    // The map from input sensitivity list to trigger sensitivity list
+    std::unordered_map<const AstSenTree*, AstSenTree*> m_map;
+
+    // Methods to lazy construct functions processing trigger vectors
+    AstCFunc* createAndNotFunc() const;
+    AstCFunc* createAnySetFunc() const;
+    AstCFunc* createClearFunc() const;
+    AstCFunc* createOrIntoFunc() const;
+
+    TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords, uint32_t nExtraWords);
+    VL_UNCOPYABLE(TriggerKit);
+    // Movable
+    TriggerKit(TriggerKit&&) = default;
+    TriggerKit& operator=(TriggerKit&&) = delete;
 
 public:
-    ExtraTriggers() = default;
-    ~ExtraTriggers() = default;
+    ~TriggerKit() = default;
 
-    size_t allocate(const string& description) {
-        m_descriptions.push_back(description);
-        return m_descriptions.size() - 1;
-    }
-    size_t size() const { return m_descriptions.size(); }
-    const string& description(size_t index) const { return m_descriptions[index]; }
-};
+    // Utility for extra trigger allocation
+    class ExtraTriggers final {
+        friend class TriggerKit;
+        std::vector<string> m_descriptions;  // Human readable description of extra triggers
 
-// A TriggerKit holds all the components related to a TRIGGERVEC variable
-struct TriggerKit final {
-    // The TRIGGERVEC AstVarScope representing these trigger flags
-    AstVarScope* const m_vscp;
-    // The AstCFunc that computes the current active triggers
-    AstCFunc* const m_funcp;
-    // The AstCFunc that dumps the current active triggers
-    AstCFunc* const m_dumpp;
-    // The map from input sensitivity list to trigger sensitivity list
-    const std::unordered_map<const AstSenTree*, AstSenTree*> m_map;
+    public:
+        ExtraTriggers() = default;
+        ~ExtraTriggers() = default;
 
-    // No VL_UNCOPYABLE(TriggerKit) as causes C++20 errors on MSVC
-
-    // Assigns the given index trigger to fire when the given variable is zero
-    void addFirstIterationTriggerAssignment(AstVarScope* flagp, uint32_t index) const;
-    // Set then clear an extra trigger
-    void addExtraTriggerAssignment(AstVarScope* extraTriggerVscp, uint32_t index) const;
+        uint32_t allocate(const string& description) {
+            m_descriptions.push_back(description);
+            return m_descriptions.size() - 1;
+        }
+        uint32_t size() const { return m_descriptions.size(); }
+    };
 
     // Create a TriggerKit for the given AstSenTree vector
     static const TriggerKit create(AstNetlist* netlistp,  //
@@ -170,6 +201,27 @@ struct TriggerKit final {
                                    const string& name,  //
                                    const ExtraTriggers& extraTriggers,  //
                                    bool slow);
+
+    // ACCESSORS
+    AstVarScope* vscp() const { return m_vscp; }
+    AstCFunc* compp() const { return m_compp; }
+    AstCFunc* dumpp() const { return m_dumpp; }
+    const std::unordered_map<const AstSenTree*, AstSenTree*>& map() const { return m_map; }
+
+    // Helpers for code generation - lazy construct relevant functions
+    AstNodeStmt* newAndNotCall(AstVarScope* op, AstVarScope* ap, AstVarScope* bp) const;
+    AstNodeExpr* newAnySetCall(AstVarScope* vscp) const;
+    AstNodeStmt* newClearCall(AstVarScope* vscp) const;
+    AstNodeStmt* newOrIntoCall(AstVarScope* op, AstVarScope* ip) const;
+    // Helpers for code generation
+    AstNodeStmt* newCompCall() const;
+    AstNodeStmt* newDumpCall(AstVarScope* vscp, const std::string& tag, bool debugOnly) const;
+
+    // Create an AstSenTree that is sensitive to the given trigger indices
+    AstSenTree* newTriggerSenTree(AstVarScope* vscp, const std::vector<uint32_t>& indices) const;
+
+    // Set then extra trigger bit at 'index' to the value of 'vscp', then set 'vscp' to 0
+    void addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const;
 };
 
 // Everything needed for combining timing with static scheduling.
@@ -238,10 +290,10 @@ public:
         return nullptr;
     }
 
-    IfaceMemberSensMap makeMemberToSensMap(AstNetlist* netlistp, size_t vifTriggerIndex,
+    IfaceMemberSensMap makeMemberToSensMap(const TriggerKit& trigKit, uint32_t vifTriggerIndex,
                                            AstVarScope* trigVscp) const;
 
-    IfaceSensMap makeIfaceToSensMap(AstNetlist* netlistp, size_t vifTriggerIndex,
+    IfaceSensMap makeIfaceToSensMap(const TriggerKit& trigKit, uint32_t vifTriggerIndex,
                                     AstVarScope* trigVscp) const;
 
     VL_UNCOPYABLE(VirtIfaceTriggers);
@@ -283,7 +335,7 @@ AstNodeStmt* incrementVar(AstVarScope* vscp);
 AstNodeStmt* callVoidFunc(AstCFunc* funcp);
 // Create statement that checks counterp' to see if the eval loop iteration limit is reached
 AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVarScope* counterp,
-                                 AstCFunc* trigDumpp);
+                                 AstNodeStmt* dumpCallp);
 // Create statement that pushed a --prof-exec section
 AstNodeStmt* profExecSectionPush(FileLine* flp, const string& section);
 // Create statement that pops a --prof-exec section

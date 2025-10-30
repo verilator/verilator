@@ -136,7 +136,7 @@ class OrderGraphBuilder final : public VNVisitor {
         VL_RESTORER(m_hybridp);
         VL_RESTORER(m_inClocked);
 
-        // This is the original sensitivity of the block (i.e.: not the ref into the TRIGGERVEC)
+        // This is the original sensitivity of the block (i.e.: not the ref into the trigger vec)
 
         const AstSenTree* const senTreep = nodep->sentreep()->hasCombo()
                                                ? nodep->sentreep()

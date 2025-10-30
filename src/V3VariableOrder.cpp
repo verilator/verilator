@@ -63,9 +63,6 @@ class GatherMTaskAffinity final : VNVisitorConst {
         // Cheaper than relying on emplace().second
         if (nodep->user1SetOnce()) return;
         AstVar* const varp = nodep->varp();
-        // Ignore TriggerVec. They are big and read-only in the MTask bodies
-        AstBasicDType* const basicp = varp->dtypep()->basicp();
-        if (basicp && basicp->isTriggerVec()) return;
         // Set affinity bit
         MTaskIdVec& affinity = m_results
                                    .emplace(std::piecewise_construct,  //
@@ -277,7 +274,7 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
         for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
              modp = VN_AS(modp->nextp(), NodeModule)) {
             std::vector<AstVar*>& varps = sortedVars[modp];
-            threadScope.enqueue([modp, mTaskAffinity, &varps]() {
+            threadScope.enqueue([modp, &mTaskAffinity, &varps]() {
                 VariableOrder::processModule(modp, mTaskAffinity, varps);
             });
         }

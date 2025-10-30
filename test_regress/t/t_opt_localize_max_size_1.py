@@ -17,6 +17,6 @@ test.compile(verilator_flags2=["--stats --localize-max-size 1"])
 test.execute()
 
 # Value must differ from that in t_opt_localize_max_size.py
-test.file_grep(test.stats, r'Optimizations, Vars localized\s+(\d+)', 4)
+test.file_grep(test.stats, r'Optimizations, Vars localized\s+(\d+)', 2)
 
 test.passes()
