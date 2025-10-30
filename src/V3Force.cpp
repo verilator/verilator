@@ -433,6 +433,7 @@ class ForceReplaceVisitor final : public VNVisitor {
     const ForceState& m_state;
     AstNodeStmt* m_stmtp = nullptr;
     bool m_inLogic = false;
+    std::vector<AstNodeExpr*> m_selIndices;  // Indices of select expressions above
 
     // METHODS
     void iterateLogic(AstNode* logicp) {
@@ -460,6 +461,11 @@ class ForceReplaceVisitor final : public VNVisitor {
         iterateLogic(nodep);
     }
     void visit(AstSenItem* nodep) override { iterateLogic(nodep); }
+    void visit(AstSel* nodep) override {
+        m_selIndices.push_back(nodep->lsbp());
+        iterateChildren(nodep);
+        m_selIndices.pop_back();
+    }
     void visit(AstVarRef* nodep) override {
         if (ForceState::isNotReplaceable(nodep)) return;
 
