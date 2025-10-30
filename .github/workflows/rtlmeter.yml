@@ -74,6 +74,9 @@ jobs:
       max-parallel: ${{ github.event == 'schedule' && 2 || 7 }}
       matrix:
         cases:
+          - "BlackParrot:1x1:*"
+          - "BlackParrot:2x2:*"
+          - "BlackParrot:4x4:*"
           - "NVDLA:*"
           - "OpenPiton:1x1:*"
           - "OpenPiton:2x2:*"
@@ -116,6 +119,9 @@ jobs:
       max-parallel: ${{ github.event == 'schedule' && 2 || 7 }}
       matrix:
         cases:
+          - "BlackParrot:1x1:*"
+          - "BlackParrot:2x2:*"
+          - "BlackParrot:4x4:*"
           - "NVDLA:*"
           - "OpenPiton:1x1:*"
           - "OpenPiton:2x2:*"
@@ -158,6 +164,9 @@ jobs:
       max-parallel: ${{ github.event == 'schedule' && 2 || 7 }}
       matrix:
         cases:
+          - "BlackParrot:1x1:* !-hier"
+          - "BlackParrot:2x2:* !-hier"
+          - "BlackParrot:4x4:* !-hier"
           - "NVDLA:* !-hier"
           - "OpenPiton:1x1:* !-hier"
           - "OpenPiton:2x2:* !-hier"
