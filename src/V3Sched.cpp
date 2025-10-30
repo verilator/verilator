@@ -392,19 +392,19 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
 
     // Gather the relevant sensitivity expressions and create the trigger kit
     const auto& senTreeps = getSenTreesUsedBy({&comb, &hybrid});
-    const TriggerKit trigKit = TriggerKit::create(netlistp, initFuncp, senExprBulider, senTreeps,
-                                                  "stl", extraTriggers, true);
+    const TriggerKit trigKit = TriggerKit::create(netlistp, initFuncp, senExprBulider, {},
+                                                  senTreeps, "stl", extraTriggers, true);
 
     // Remap sensitivities (comb has none, so only do the hybrid)
-    remapSensitivities(hybrid, trigKit.map());
+    remapSensitivities(hybrid, trigKit.mapVec());
 
     // Create the inverse map from trigger ref AstSenTree to original AstSenTree
     V3Order::TrigToSenMap trigToSen;
-    invertAndMergeSenTreeMap(trigToSen, trigKit.map());
+    invertAndMergeSenTreeMap(trigToSen, trigKit.mapVec());
 
     // First trigger is for pure combinational triggers (first iteration)
     AstSenTree* const inputChanged
-        = trigKit.newTriggerSenTree(trigKit.vscp(), {firstIterationTrigger});
+        = trigKit.newExtraTriggerSenTree(trigKit.vscp(), firstIterationTrigger);
 
     // Create and the body function
     AstCFunc* const stlFuncp = V3Order::order(
@@ -473,8 +473,8 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
 
     // Gather the relevant sensitivity expressions and create the trigger kit
     const auto& senTreeps = getSenTreesUsedBy({&logic});
-    const TriggerKit trigKit = TriggerKit::create(netlistp, initFuncp, senExprBuilder, senTreeps,
-                                                  "ico", extraTriggers, false);
+    const TriggerKit trigKit = TriggerKit::create(netlistp, initFuncp, senExprBuilder, {},
+                                                  senTreeps, "ico", extraTriggers, false);
 
     if (dpiExportTriggerVscp) {
         trigKit.addExtraTriggerAssignment(dpiExportTriggerVscp, dpiExportTriggerIndex);
@@ -483,20 +483,21 @@ AstNode* createInputCombLoop(AstNetlist* netlistp, AstCFunc* const initFuncp,
                                    firstVifMemberTriggerIndex, trigKit);
 
     // Remap sensitivities
-    remapSensitivities(logic, trigKit.map());
+    remapSensitivities(logic, trigKit.mapVec());
 
     // Create the inverse map from trigger ref AstSenTree to original AstSenTree
     V3Order::TrigToSenMap trigToSen;
-    invertAndMergeSenTreeMap(trigToSen, trigKit.map());
+    invertAndMergeSenTreeMap(trigToSen, trigKit.mapVec());
 
     // The trigger top level inputs (first iteration)
     AstSenTree* const inputChanged
-        = trigKit.newTriggerSenTree(trigKit.vscp(), {firstIterationTrigger});
+        = trigKit.newExtraTriggerSenTree(trigKit.vscp(), firstIterationTrigger);
 
     // The DPI Export trigger
     AstSenTree* const dpiExportTriggered
-        = dpiExportTriggerVscp ? trigKit.newTriggerSenTree(trigKit.vscp(), {dpiExportTriggerIndex})
-                               : nullptr;
+        = dpiExportTriggerVscp
+              ? trigKit.newExtraTriggerSenTree(trigKit.vscp(), dpiExportTriggerIndex)
+              : nullptr;
     const auto& vifTriggeredIco
         = virtIfaceTriggers.makeIfaceToSensMap(trigKit, firstVifTriggerIndex, trigKit.vscp());
     const auto& vifMemberTriggeredIco = virtIfaceTriggers.makeMemberToSensMap(
@@ -554,7 +555,6 @@ void createEval(AstNetlist* netlistp,  //
                 AstNode* icoLoop,  //
                 const TriggerKit& trigKit,  //
                 const EvalKit& actKit,  //
-                AstVarScope* preTrigsp,  //
                 const EvalKit& nbaKit,  //
                 const EvalKit& obsKit,  //
                 const EvalKit& reactKit,  //
@@ -574,13 +574,10 @@ void createEval(AstNetlist* netlistp,  //
         nullptr,
         // Prep statements
         [&]() {
-            // Compute the current 'act' triggers
-            AstNodeStmt* stmtsp = trigKit.newCompCall();
+            // Compute the current 'act' triggers - the NBA triggers are the latched value
+            AstNodeStmt* stmtsp = trigKit.newCompCall(nbaKit.m_vscp);
             // Commit trigger awaits from the previous iteration
             if (timingCommitp) stmtsp = AstNode::addNext(stmtsp, timingCommitp->makeStmt());
-            // Compute the 'pre' triggers
-            stmtsp = AstNode::addNext(
-                stmtsp, trigKit.newAndNotCall(preTrigsp, actKit.m_vscp, nbaKit.m_vscp));
             // Latch the 'act' triggers under the 'nba' triggers
             stmtsp = AstNode::addNext(stmtsp, trigKit.newOrIntoCall(nbaKit.m_vscp, actKit.m_vscp));
             //
@@ -711,7 +708,7 @@ VirtIfaceTriggers::makeIfaceToSensMap(const TriggerKit& trigKit, uint32_t vifTri
                                       AstVarScope* trigVscp) const {
     std::map<const AstIface*, AstSenTree*> map;
     for (const auto& p : m_ifaceTriggers) {
-        map.emplace(p.first, trigKit.newTriggerSenTree(trigVscp, {vifTriggerIndex}));
+        map.emplace(p.first, trigKit.newExtraTriggerSenTree(trigVscp, vifTriggerIndex));
         ++vifTriggerIndex;
     }
     return map;
@@ -722,10 +719,29 @@ VirtIfaceTriggers::makeMemberToSensMap(const TriggerKit& trigKit, uint32_t vifTr
                                        AstVarScope* trigVscp) const {
     IfaceMemberSensMap map;
     for (const auto& p : m_memberTriggers) {
-        map.emplace(p.first, trigKit.newTriggerSenTree(trigVscp, {vifTriggerIndex}));
+        map.emplace(p.first, trigKit.newExtraTriggerSenTree(trigVscp, vifTriggerIndex));
         ++vifTriggerIndex;
     }
     return map;
+}
+
+std::unordered_map<const AstSenTree*, AstSenTree*>
+cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, AstSenTree*>& map,
+                                 AstVarScope* vscp) {
+    AstTopScope* const topScopep = v3Global.rootp()->topScopep();
+    // Copy map
+    std::unordered_map<const AstSenTree*, AstSenTree*> newMap{map};
+    // Replace references in each mapped value with a reference to the given vscp
+    for (auto& pair : newMap) {
+        pair.second = pair.second->cloneTree(false);
+        pair.second->foreach([&](AstVarRef* refp) {
+            UASSERT_OBJ(refp->access() == VAccess::READ, refp, "Should be read ref");
+            refp->replaceWith(new AstVarRef{refp->fileline(), vscp, VAccess::READ});
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+        });
+        topScopep->addSenTreesp(pair.second);
+    }
+    return newMap;
 }
 
 //============================================================================
@@ -816,7 +832,7 @@ void schedule(AstNetlist* netlistp) {
                                                   logicReplicas.m_ico, virtIfaceTriggers);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-ico");
 
-    // Step 8: Create the pre/act/nba triggers
+    // Step 8: Create the triggers
     AstVarScope* const dpiExportTriggerVscp = netlistp->dpiExportTriggerp();
     netlistp->dpiExportTriggerp(nullptr);  // Finished with this here
 
@@ -836,14 +852,14 @@ void schedule(AstNetlist* netlistp) {
                                + item.m_memberp->name());
     }
 
-    const auto& senTreeps = getSenTreesUsedBy({&logicRegions.m_pre,  //
-                                               &logicRegions.m_act,  //
+    const auto& preTreeps = getSenTreesUsedBy({&logicRegions.m_pre});
+    const auto& senTreeps = getSenTreesUsedBy({&logicRegions.m_act,  //
                                                &logicRegions.m_nba,  //
                                                &logicRegions.m_obs,  //
                                                &logicRegions.m_react,  //
                                                &timingKit.m_lbs});
-    const TriggerKit trigKit = TriggerKit::create(netlistp, staticp, senExprBuilder, senTreeps,
-                                                  "act", extraTriggers, false);
+    const TriggerKit trigKit = TriggerKit::create(netlistp, staticp, senExprBuilder, preTreeps,
+                                                  senTreeps, "act", extraTriggers, false);
 
     // Add post updates from the timing kit
     if (timingKit.m_postUpdates) trigKit.compp()->addStmtsp(timingKit.m_postUpdates);
@@ -853,30 +869,6 @@ void schedule(AstNetlist* netlistp) {
     }
     addVirtIfaceTriggerAssignments(virtIfaceTriggers, firstVifTriggerIndex,
                                    firstVifMemberTriggerIndex, trigKit);
-
-    AstVarScope* const actTrigVscp = trigKit.vscp();
-    AstVarScope* const preTrigVscp = trigKit.newTrigVec("pre");
-
-    const auto cloneMapWithNewTriggerReferences
-        = [=](const std::unordered_map<const AstSenTree*, AstSenTree*>& map, AstVarScope* vscp) {
-              // Copy map
-              auto newMap{map};
-              // Replace references in each mapped value with a reference to the given vscp
-              for (auto& pair : newMap) {
-                  pair.second = pair.second->cloneTree(false);
-                  pair.second->foreach([&](AstVarRef* refp) {
-                      UASSERT_OBJ(refp->varScopep() == actTrigVscp, refp, "Unexpected reference");
-                      UASSERT_OBJ(refp->access() == VAccess::READ, refp, "Should be read ref");
-                      refp->replaceWith(new AstVarRef{refp->fileline(), vscp, VAccess::READ});
-                      VL_DO_DANGLING(refp->deleteTree(), refp);
-                  });
-                  topScopep->addSenTreesp(pair.second);
-              }
-              return newMap;
-          };
-
-    const auto& actTrigMap = trigKit.map();
-    const auto preTrigMap = cloneMapWithNewTriggerReferences(actTrigMap, preTrigVscp);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-triggers");
 
     // Note: Experiments so far show that running the Act (or Ico) regions on
@@ -887,21 +879,23 @@ void schedule(AstNetlist* netlistp) {
     // Step 9: Create the 'act' region evaluation function
 
     // Remap sensitivities of the input logic to the triggers
-    remapSensitivities(logicRegions.m_pre, preTrigMap);
-    remapSensitivities(logicRegions.m_act, actTrigMap);
-    remapSensitivities(logicReplicas.m_act, actTrigMap);
-    remapSensitivities(timingKit.m_lbs, actTrigMap);
-    const auto& actTimingDomains = timingKit.remapDomains(actTrigMap);
+    remapSensitivities(logicRegions.m_pre, trigKit.mapPre());
+    remapSensitivities(logicRegions.m_act, trigKit.mapVec());
+    remapSensitivities(logicReplicas.m_act, trigKit.mapVec());
+    remapSensitivities(timingKit.m_lbs, trigKit.mapVec());
+    const std::map<const AstVarScope*, std::vector<AstSenTree*>> actTimingDomains
+        = timingKit.remapDomains(trigKit.mapVec());
 
     // Create the inverse map from trigger ref AstSenTree to original AstSenTree
     V3Order::TrigToSenMap trigToSenAct;
-    invertAndMergeSenTreeMap(trigToSenAct, preTrigMap);
-    invertAndMergeSenTreeMap(trigToSenAct, actTrigMap);
+    invertAndMergeSenTreeMap(trigToSenAct, trigKit.mapPre());
+    invertAndMergeSenTreeMap(trigToSenAct, trigKit.mapVec());
 
     // The DPI Export trigger AstSenTree
     AstSenTree* const dpiExportTriggeredAct
-        = dpiExportTriggerVscp ? trigKit.newTriggerSenTree(trigKit.vscp(), {dpiExportTriggerIndex})
-                               : nullptr;
+        = dpiExportTriggerVscp
+              ? trigKit.newExtraTriggerSenTree(trigKit.vscp(), dpiExportTriggerIndex)
+              : nullptr;
 
     const auto& vifTriggeredAct
         = virtIfaceTriggers.makeIfaceToSensMap(trigKit, firstVifTriggerIndex, trigKit.vscp());
@@ -930,7 +924,7 @@ void schedule(AstNetlist* netlistp) {
                            const std::vector<V3Sched::LogicByScope*>& logic) -> EvalKit {
         UINFO(2, "Scheduling " << name << " #logic = " << logic.size());
         AstVarScope* const trigVscp = trigKit.newTrigVec(name);
-        const auto trigMap = cloneMapWithNewTriggerReferences(actTrigMap, trigVscp);
+        const auto trigMap = cloneMapWithNewTriggerReferences(trigKit.mapVec(), trigVscp);
         // Remap sensitivities of the input logic to the triggers
         for (LogicByScope* lbs : logic) remapSensitivities(*lbs, trigMap);
 
@@ -939,8 +933,9 @@ void schedule(AstNetlist* netlistp) {
         invertAndMergeSenTreeMap(trigToSen, trigMap);
 
         AstSenTree* const dpiExportTriggered
-            = dpiExportTriggerVscp ? trigKit.newTriggerSenTree(trigVscp, {dpiExportTriggerIndex})
-                                   : nullptr;
+            = dpiExportTriggerVscp
+                  ? trigKit.newExtraTriggerSenTree(trigVscp, dpiExportTriggerIndex)
+                  : nullptr;
         const auto& vifTriggered
             = virtIfaceTriggers.makeIfaceToSensMap(trigKit, firstVifTriggerIndex, trigVscp);
         const auto& vifMemberTriggered
@@ -991,8 +986,8 @@ void schedule(AstNetlist* netlistp) {
     auto* const postponedFuncp = createPostponed(netlistp, logicClasses);
 
     // Step 14: Bolt it all together to create the '_eval' function
-    createEval(netlistp, icoLoopp, trigKit, actKit, preTrigVscp, nbaKit, obsKit, reactKit,
-               postponedFuncp, timingKit);
+    createEval(netlistp, icoLoopp, trigKit, actKit, nbaKit, obsKit, reactKit, postponedFuncp,
+               timingKit);
 
     // Haven't split static initializer yet
     util::splitCheck(staticp);

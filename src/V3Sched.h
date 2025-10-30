@@ -128,7 +128,61 @@ struct LogicReplicas final {
     LogicReplicas& operator=(LogicReplicas&&) = default;
 };
 
-// A TriggerKit holds all the components related to a trigger vector
+// A TriggerKit holds all the components related to a scheduling region triggers
+//
+// Each piece of code is executed when some trigger bits are set. There is no
+// code after scheduling which is not conditional on at least one trigger bit.
+//
+// There are 3 different kinds of triggers
+// 1. "Sense" triggers, which correspond to a unique SenItem in the design
+// 2. "Extra" triggers, which represent non SenItem based conditions
+// 3. "Pre" triggers, which are only used in the 'act' region. These are a copy
+//    of some of the "Sense" triggers but only ever fire during one evaluation
+//    of the 'act' loop. They are used for executing AlwaysPre block that
+//    reside in the 'act' region. (AlwaysPre in 'nba' use the "Sense" triggers.)
+//
+// All trigger bits are stored in an unpacked array of fixed sized words, which
+// is informally referred to in various places as the "trigger vector".
+// There is only one trigger vector for each eval loop (~scheduling region).
+//
+// The organization of the trigger vector (array) is shown here, LSB on the
+// right, MSB on the left. There are 4 main sections:
+//
+// | <- bit N-1                                                                         bit 0 -> |
+// +--------------------+----------------+----------------------------------+--------------------+
+// | Pre triggers       | Extra triggers | Sense triggers                   | Pre Sense triggers |
+// +--------------------+----------------+----------------------------------+--------------------+
+// |        'pre'       |                                 'vec'                                  |
+//
+// The section labelled "Pre Sense triggers" contains regular "Sense" triggers
+// that are also duplicated in the "Pre triggers" section the first time they
+// fire.
+//
+// The "Sense triggers" section contains the rest of the "Sense" triggers that
+// do not need a copy in "Pre triggers".
+//
+// The "Sense triggers" and "Pre Sense triggers" together contain all "Sense"
+// triggers described in point 1 above. "Extra triggers" contains the
+// non-SenItem based additional conditions described in point 2, and the
+// "Per triggers" section contains the "Pre" triggers described in point 3.
+//
+// All 4 sections in the trigger vector are padded to contain a whole word
+// worth of bits (padding bits are always zero). Any one of the 4 sections
+// can be empty, but "Pre triggers" and "Pre Sense triggers" are always the
+// same size.
+//
+// The portion holding the Sense triggers and Extra triggers is referred to
+// in various places as the 'vec' part, and is also informally referred to as
+// the trigger vector.
+//
+// The portion holding the Pre trigger is named 'pre'
+//
+// The combination of 'pre' + 'vec' is the "extended trigger vector" referred
+// to as 'ext' in various places.
+//
+// In realistic designs therr are often no "Pre" triggers, and only a few
+// "Extra" triggers, with "Sense" triggers taking up the bulk of the bits.
+//
 class TriggerKit final {
     // Triggers are storead as an UnpackedArray with a fixed word size
     static constexpr uint32_t WORD_SIZE_LOG2 = 6;  // 64-bits / VL_QUADSIZE
@@ -136,37 +190,51 @@ class TriggerKit final {
 
     const std::string m_name;  // TriggerKit name
     const bool m_slow;  // TriggerKit is for schedulign 'slow' code
-    const uint32_t m_nWords;  // Number of word in trigger vector
+    const uint32_t m_nSenseWords;  // Number of words for Sense triggers
+    const uint32_t m_nExtraWords;  // Number of words for Extra triggers
+    const uint32_t m_nPreWords;  // Number of words for 'pre' part
+    const uint32_t m_nVecWords = m_nSenseWords + m_nExtraWords;  // Number of words in 'vec' part
 
     // Data type of a single trigger word
     AstNodeDType* m_wordDTypep = nullptr;
-    // Data type of a trigger vector
-    AstNodeDType* m_trigDTypep = nullptr;
-    // The AstVarScope representing the trigger vector
+    // Data type of a trigger vector holding one copy of all triggers
+    AstUnpackArrayDType* m_trigVecDTypep = nullptr;
+    // Data type of an extended trigger vector holding one copy of all triggers
+    // + additional copy of 'pre' triggers
+    AstUnpackArrayDType* m_trigExtDTypep = nullptr;
+    // The AstVarScope representing the extended trigger vector
     AstVarScope* m_vscp = nullptr;
     // The AstCFunc that computes the current active triggers
     AstCFunc* m_compp = nullptr;
-    // The AstCFunc that dumps the current active triggers
+    // The AstCFunc that dumps a trigger vector
     AstCFunc* m_dumpp = nullptr;
+    // The AstCFunc that dumps an exended trigger vector - create lazily
+    mutable AstCFunc* m_dumpExtp = nullptr;
     // The AstCFunc testing if a trigger vector has any bits set - create lazily
-    mutable AstCFunc* m_anySetp = nullptr;
-    // The AstCFunc setting a tigger vector to (_ & ~_) of 2 other trigger vectors - create lazily
-    mutable AstCFunc* m_andNotp = nullptr;
+    mutable AstCFunc* m_anySetVecp = nullptr;
+    mutable AstCFunc* m_anySetExtp = nullptr;
     // The AstCFunc setting bits in a trigger vector that are set in another - create lazily
-    mutable AstCFunc* m_orIntop = nullptr;
+    mutable AstCFunc* m_orIntoVecp = nullptr;
+    mutable AstCFunc* m_orIntoExtp = nullptr;
     // The AstCFunc setting a trigger vector to all zeroes - create lazily
     mutable AstCFunc* m_clearp = nullptr;
 
-    // The map from input sensitivity list to trigger sensitivity list
-    std::unordered_map<const AstSenTree*, AstSenTree*> m_map;
+    // The map from 'pre' input SenTree to trigger SenTree
+    std::unordered_map<const AstSenTree*, AstSenTree*> m_mapPre;
+    // The map from other input SenTree to trigger SenTree
+    std::unordered_map<const AstSenTree*, AstSenTree*> m_mapVec;
 
     // Methods to lazy construct functions processing trigger vectors
-    AstCFunc* createAndNotFunc() const;
-    AstCFunc* createAnySetFunc() const;
+    AstCFunc* createDumpExtFunc() const;
+    AstCFunc* createAnySetFunc(AstUnpackArrayDType* const dtypep) const;
     AstCFunc* createClearFunc() const;
-    AstCFunc* createOrIntoFunc() const;
+    AstCFunc* createOrIntoFunc(AstUnpackArrayDType* const iDtypep) const;
 
-    TriggerKit(const std::string& name, bool slow, uint32_t nWords);
+    // Create an AstSenTree that is sensitive to the given trigger indices
+    AstSenTree* newTriggerSenTree(AstVarScope* vscp, const std::vector<uint32_t>& indices) const;
+
+    TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords, uint32_t nExtraWords,
+               uint32_t nPreWords);
     VL_UNCOPYABLE(TriggerKit);
     TriggerKit& operator=(TriggerKit&&) = delete;
 
@@ -195,6 +263,7 @@ public:
     static TriggerKit create(AstNetlist* netlistp,  //
                              AstCFunc* const initFuncp,  //
                              SenExprBuilder& senExprBuilder,  //
+                             const std::vector<const AstSenTree*>& preTreeps,  //
                              const std::vector<const AstSenTree*>& senTreeps,  //
                              const string& name,  //
                              const ExtraTriggers& extraTriggers,  //
@@ -203,7 +272,8 @@ public:
     // ACCESSORS
     AstVarScope* vscp() const { return m_vscp; }
     AstCFunc* compp() const { return m_compp; }
-    const std::unordered_map<const AstSenTree*, AstSenTree*>& map() const { return m_map; }
+    const std::unordered_map<const AstSenTree*, AstSenTree*>& mapPre() const { return m_mapPre; }
+    const std::unordered_map<const AstSenTree*, AstSenTree*>& mapVec() const { return m_mapVec; }
 
     // Helpers for code generation - lazy construct relevant functions
     AstNodeStmt* newAndNotCall(AstVarScope* op, AstVarScope* ap, AstVarScope* bp) const;
@@ -211,13 +281,13 @@ public:
     AstNodeStmt* newClearCall(AstVarScope* vscp) const;
     AstNodeStmt* newOrIntoCall(AstVarScope* op, AstVarScope* ip) const;
     // Helpers for code generation
-    AstNodeStmt* newCompCall() const;
+    AstNodeStmt* newCompCall(AstVarScope* vscp = nullptr) const;
     AstNodeStmt* newDumpCall(AstVarScope* vscp, const std::string& tag, bool debugOnly) const;
-    // Create a new trigger vector - might return nullptr if there are no triggers
+    // Create a new (non-extended) trigger vector - might return nullptr if there are no triggers
     AstVarScope* newTrigVec(const std::string& name) const;
 
-    // Create an AstSenTree that is sensitive to the given trigger indices
-    AstSenTree* newTriggerSenTree(AstVarScope* vscp, const std::vector<uint32_t>& indices) const;
+    // Create an AstSenTree that is sensitive to the given Extra trigger
+    AstSenTree* newExtraTriggerSenTree(AstVarScope* vscp, uint32_t index) const;
 
     // Set then extra trigger bit at 'index' to the value of 'vscp', then set 'vscp' to 0
     void addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const;
