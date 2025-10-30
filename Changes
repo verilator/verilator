@@ -33,6 +33,7 @@ Verilator 5.041 devel
 * Change default `--expand-limit` to 256 (#3419).
 * Change developer coverage flow and add configure `--enable-dev-gcov` (#6526). [Geza Lore]
 * Change `verilator_difftree` to return exit code 1 on mismatch, 2 on error.
+* Change default thread pool sizes to respect processor affinity (#6604). [Geza Lore]
 * Support modports referencing clocking blocks (#4555) (#6436). [Ryszard Rozak, Antmicro Ltd.]
 * Support class package reference on pattern keys (#5653). [Todd Strader]
 * Support digits in `$sscanf` field width formats (#6083). [Iztok Jeras]
@@ -113,13 +114,19 @@ Verilator 5.041 devel
 * Fix `$finish` inside fork blocks (#6555). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Fix single element unpacked array DPI parameters. [Geza Lore]
 * Fix DFG synthesis non-determinism (#6557) (#6568). [Todd Strader]
+* Fix side effects for improved function/task/process purity (#6559). [Igor Zaworski, Antmicro Ltd.]
 * Fix excessive logic replication in DFG circular driver tracing (#6561) (#6594). [Geza Lore]
 * Fix hierarchical with parameterized instances under hier block (#6572). [Geza Lore]
 * Fix segfault on type casts (#6574). [David Moberg]
 * Fix references to interfaces containing generate blocks (#6579). [Ryszard Rozak, Antmicro Ltd.]
 * Fix missing net type mappings in FST traces (#6582) (#6583). [Matt Stroud]
+* Fix function call expression coverage (#6589). [Todd Strader]
 * Fix V3Life eliminating assignments across timing controls (#6593) (#6596). [Geza Lore]
 * Fix incorrectly resuming process waiting on multiple events (#6597). [Geza Lore]
+* Fix `--hierarchical` with `--binary` (#6602). [Geza Lore]
+* Fix mis-ignoring virtual interface member triggers (#5116 reopened) (#6613). [Geza Lore]
+* Fix ENUMVALUE warning when overriding parameter using `-G/-pvalue` options. [Geza Lore]
+* Fix `-G` and `-pvalue` with `--hierarchical`. [Geza Lore]
 
 
 Verilator 5.040 2025-08-30
