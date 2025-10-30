@@ -580,18 +580,44 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
 // 2: Delete the option and its argument
 // 3: Delete the option and its argument if it is a number
 int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
-    if (opt == "j") return 3;
-    if (opt == "Mdir" || opt == "clk" || opt == "lib-create" || opt == "f" || opt == "F"
-        || opt == "v" || opt == "l2-name" || opt == "mod-prefix" || opt == "prefix"
-        || opt == "protect-lib" || opt == "protect-key" || opt == "threads"
-        || opt == "top-module") {
-        return 2;
+    // Options to strip for both the top wrapper, and hier blocks
+    static const std::unordered_map<std::string, int> commonOpts{
+        //
+        {"j", 3},
+        //
+        {"Mdir", 2},
+        {"clk", 2},
+        {"lib-create", 2},
+        {"f", 2},
+        {"F", 2},
+        {"v", 2},
+        {"l2-name", 2},
+        {"mod-prefix", 2},
+        {"prefix", 2},
+        {"protect-lib", 2},
+        {"protect-key", 2},
+        {"threads", 2},
+        {"top-module", 2},
+        //
+        {"build", 1},
+        {"hierarchical", 1},
+    };
+    if (commonOpts.count(opt)) return commonOpts.at(opt);
+
+    // Options to strip only for hier blocks
+    if (!forTop) {
+        static const std::unordered_map<std::string, int> subOpts{
+            {"cc", 1},
+            {"exe", 1},
+            {"sc", 1},
+            {"binary", 1},
+        };
+        if (subOpts.count(opt)) return subOpts.at(opt);
+        if (VString::startsWith(opt, "G")) return 1;
+        if (VString::startsWith(opt, "pvalue")) return 1;
     }
-    if (opt == "build"
-        || (!forTop && (opt == "cc" || opt == "exe" || opt == "sc" || opt == "binary"))
-        || opt == "hierarchical" || (opt.length() > 2 && opt.substr(0, 2) == "G=")) {
-        return 1;
-    }
+
+    // Do not strip
     return 0;
 }
 

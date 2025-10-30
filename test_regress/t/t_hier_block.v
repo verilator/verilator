@@ -25,7 +25,10 @@ module secret (
    clk
    );
 `else
-module t (/*AUTOARG*/
+module t #(
+  parameter int PARAM_A = 33,
+  parameter int PARAM_B = 44
+) (/*AUTOARG*/
    // Inputs
    clk
    );
@@ -55,6 +58,15 @@ module t (/*AUTOARG*/
 
    always_ff @(posedge clk) begin
       if (out3 != out3_2) $stop;
+`ifndef AS_PROT_LIB
+`ifdef PARAM_OVERRIDE
+      if (PARAM_A != 100) $stop;
+      if (PARAM_B != 200) $stop;
+`else
+      if (PARAM_A != 33) $stop;
+      if (PARAM_B != 44) $stop;
+`endif
+`endif
       $display("%d %m out0:%d %d %d %d %d", count, out0, out1, out2, out3, out5, out6);
       $display("%d %m child input  ports: %d %d %d", count, i_sub1.in, i_sub2.in, i_sub3.in);
       $display("%d %m child output ports: %d %d %d", count, i_sub1.out, i_sub2.out, i_sub3.out);
