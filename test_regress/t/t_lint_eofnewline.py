@@ -10,7 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = test.obj_dir + "/t_lint_eofline_bad.v"
+test.top_filename = test.obj_dir + "/t_lint_eofnewline_bad.v"
 
 
 def gen(filename):
