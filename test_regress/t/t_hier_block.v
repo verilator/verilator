@@ -20,6 +20,13 @@ interface byte_ifs(input clk);
    modport receiver(input clk, input data);
 endinterface;
 
+typedef enum logic [1:0] {
+  enum_val_0 = 2'd0,
+  enum_val_1 = 2'd1,
+  enum_val_2 = 2'd2,
+  enum_val_3 = 2'd3
+} enum_t;
+
 `ifdef AS_PROT_LIB
 module secret (
    clk
@@ -176,9 +183,9 @@ module non_hier_sub3(
    assign in_wire = in.data;
    localparam string sparam = "single quote escape comma:'\\,";
    // Parameter appears in the different order from module declaration
-   sub3 #(.STR(sparam), .UNUSED(-16'sd3), .P0(8'd3)) i_sub3(.clk(in.clk), .in(in.data), .out(out_1));
+   sub3 #(.STR(sparam), .UNUSED(-16'sd3), .P0(8'd3), .ENUM(enum_val_3)) i_sub3(.clk(in.clk), .in(in.data), .out(out_1));
    // Instantiate again, should use the same wrapper
-   sub3 #(.STR(sparam), .UNUSED(-16'sd3), .P0(8'd3)) i_sub3_2(.clk(in.clk), .in(in.data), .out(out_2));
+   sub3 #(.STR(sparam), .UNUSED(-16'sd3), .P0(8'd3), .ENUM(enum_val_3)) i_sub3_2(.clk(in.clk), .in(in.data), .out(out_2));
    always @(posedge in.clk)
       if (out_1 != out_2) $stop;
 
@@ -190,12 +197,13 @@ module sub3 #(
    type TYPE = logic,
    parameter int UNPACKED_ARRAY[2] = '{0, 1},
    parameter logic signed [15:0] UNUSED = -3,
-   parameter string STR = "str") (
+   parameter string STR = "str",
+   parameter enum_t ENUM = enum_val_0) (
    input wire clk,
    input wire [7:0] in,
    output wire [7:0] out); `HIER_BLOCK
 
-   initial $display("P0:%d UNUSED:%d %s", P0, UNUSED, STR);
+   initial $display("P0:%d UNUSED:%d %s %d", P0, UNUSED, STR, ENUM);
 
    TYPE [7:0] ff;
    always_ff @(posedge clk) ff <= in + P0;

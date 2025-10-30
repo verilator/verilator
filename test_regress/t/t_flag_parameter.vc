@@ -36,3 +36,7 @@
 -pvalue+bit0to1=1
 -Gbit1to0=0
 -pvalue+bit1to0=0
+-Genum11=2'd2
+-pvalue+enum12=2'd2
+-Genum21=2'd3
+-pvalue+enum22=2'd3

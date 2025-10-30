@@ -1627,6 +1627,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                             UINFO(9, "       with " << valuep);
                             if (nodep->valuep()) pushDeletep(nodep->valuep()->unlinkFrBack());
                             nodep->valuep(valuep);
+                            // Do not warn ENUMVALUE when overriding an enum param from the cli.
+                            nodep->fileline()->warnOff(V3ErrorCode::ENUMVALUE, true);
                         }
                     }
                 }
