@@ -434,11 +434,11 @@ public:
         if (code.hardError()) return false;
         for (const auto& itr : m_waivers) {
             if ((code.isUnder(itr.m_code) || (itr.m_code == V3ErrorCode::I_LINT)))
-            if ((code.isUnder(itr.m_code) || (itr.m_code == V3ErrorCode::I_LINT))
-                && VString::wildmatch(message, itr.m_match)
-                && WildcardContents::resolve(itr.m_contents)) {
-                return true;
-            }
+                if ((code.isUnder(itr.m_code) || (itr.m_code == V3ErrorCode::I_LINT))
+                    && VString::wildmatch(message, itr.m_match)
+                    && WildcardContents::resolve(itr.m_contents)) {
+                    return true;
+                }
         }
         return false;
     }
