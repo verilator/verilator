@@ -128,6 +128,7 @@ Verilator 5.041 devel
 * Fix ENUMVALUE warning when overriding parameter using `-G/-pvalue` options. [Geza Lore]
 * Fix `-G` and `-pvalue` with `--hierarchical`. [Geza Lore]
 * Fix waiving messages with empty contents (#6610). [Yoshitomo KANEDA]
+* Fix constant-arrayed instance parameters (#6614). [Alex Solomatnikov]
 
 
 Verilator 5.040 2025-08-30

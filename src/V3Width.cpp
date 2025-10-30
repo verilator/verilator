@@ -2954,9 +2954,12 @@ class WidthVisitor final : public VNVisitor {
         // InitArray has type of the array; children are array values
         if (m_vup->prelim()) {  // First stage evaluation
             AstNodeDType* const vdtypep = m_vup->dtypeNullp();
-            UASSERT_OBJ(vdtypep, nodep, "InitArray type not assigned by AstPattern/Var visitor");
-            nodep->dtypep(vdtypep);
-            const AstNodeDType* const arrayp = vdtypep->skipRefp();
+            if (!nodep->dtypep() || vdtypep) {
+                UASSERT_OBJ(vdtypep, nodep,
+                            "InitArray type not assigned by AstPattern/Var visitor");
+                nodep->dtypep(vdtypep);
+            }
+            const AstNodeDType* const arrayp = nodep->dtypep()->skipRefp();
             if (VN_IS(arrayp, NodeArrayDType) || VN_IS(arrayp, AssocArrayDType)) {
                 userIterateChildren(nodep, WidthVP{arrayp->subDTypep(), BOTH}.p());
             } else {
