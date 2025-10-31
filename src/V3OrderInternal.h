@@ -22,6 +22,7 @@
 
 #include "V3Order.h"
 #include "V3OrderGraph.h"
+#include "V3OrderMoveGraph.h"
 
 #include <string>
 #include <unordered_map>
@@ -50,14 +51,13 @@ void processDomains(AstNetlist* netlistp,  //
                     const std::string& tag,  //
                     const ExternalDomainsProvider& externalDomains);
 
-AstNodeStmt* createSerial(OrderGraph& orderGraph,  //
+AstNodeStmt* createSerial(OrderMoveGraph& moveGraph,  //
                           const std::string& tag,  //
-                          const TrigToSenMap& trigToSenMap,  //
                           bool slow);
 
 AstNodeStmt* createParallel(OrderGraph& orderGraph,  //
+                            OrderMoveGraph& moveGraph,  //
                             const std::string& tag,  //
-                            const TrigToSenMap& trigToSenMap,  //
                             bool slow);
 
 };  // namespace V3Order

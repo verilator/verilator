@@ -427,7 +427,6 @@ public:
         SCOPEPTR,
         CHARPTR,
         MTASKSTATE,
-        TRIGGERVEC,
         DELAY_SCHEDULER,
         TRIGGER_SCHEDULER,
         DYNAMIC_TRIGGER_SCHEDULER,
@@ -462,7 +461,6 @@ public:
                                             "VerilatedScope*",
                                             "char*",
                                             "VlMTaskState",
-                                            "VlTriggerVec",
                                             "VlDelayScheduler",
                                             "VlTriggerScheduler",
                                             "VlDynamicTriggerScheduler",
@@ -477,16 +475,13 @@ public:
         return names[m_e];
     }
     const char* dpiType() const {
-        static const char* const names[] = {"%E-unk",          "svBit",         "char",
-                                            "void*",           "char",          "int",
-                                            "%E-integer",      "svLogic",       "long long",
-                                            "double",          "short",         "%E-time",
-                                            "const char*",     "%E-untyped",    "dpiScope",
-                                            "const char*",     "%E-mtaskstate", "%E-triggervec",
-                                            "%E-dly-sched",    "%E-trig-sched", "%E-dyn-sched",
-                                            "%E-fork",         "%E-proc-ref",   "%E-rand-gen",
-                                            "%E-stdrand-gen",  "IData",         "QData",
-                                            "%E-logic-implct", " MAX"};
+        static const char* const names[]
+            = {"%E-unk",      "svBit",           "char",         "void*",          "char",
+               "int",         "%E-integer",      "svLogic",      "long long",      "double",
+               "short",       "%E-time",         "const char*",  "%E-untyped",     "dpiScope",
+               "const char*", "%E-mtaskstate",   "%E-dly-sched", "%E-trig-sched",  "%E-dyn-sched",
+               "%E-fork",     "%E-proc-ref",     "%E-rand-gen",  "%E-stdrand-gen", "IData",
+               "QData",       "%E-logic-implct", " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -520,7 +515,6 @@ public:
         case SCOPEPTR: return 0;  // opaque
         case CHARPTR: return 0;  // opaque
         case MTASKSTATE: return 0;  // opaque
-        case TRIGGERVEC: return 0;  // opaque
         case DELAY_SCHEDULER: return 0;  // opaque
         case TRIGGER_SCHEDULER: return 0;  // opaque
         case DYNAMIC_TRIGGER_SCHEDULER: return 0;  // opaque
@@ -565,10 +559,10 @@ public:
     }
     bool isOpaque() const VL_MT_SAFE {  // IE not a simple number we can bit optimize
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
-                || m_e == MTASKSTATE || m_e == TRIGGERVEC || m_e == DELAY_SCHEDULER
-                || m_e == TRIGGER_SCHEDULER || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC
-                || m_e == PROCESS_REFERENCE || m_e == RANDOM_GENERATOR
-                || m_e == RANDOM_STDGENERATOR || m_e == DOUBLE || m_e == UNTYPED);
+                || m_e == MTASKSTATE || m_e == DELAY_SCHEDULER || m_e == TRIGGER_SCHEDULER
+                || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC || m_e == PROCESS_REFERENCE
+                || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR || m_e == DOUBLE
+                || m_e == UNTYPED);
     }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
     bool isEvent() const { return m_e == EVENT; }
@@ -614,7 +608,6 @@ public:
             /* SCOPEPTR:                  */ "",  // Should not be traced
             /* CHARPTR:                   */ "",  // Should not be traced
             /* MTASKSTATE:                */ "",  // Should not be traced
-            /* TRIGGERVEC:                */ "",  // Should not be traced
             /* DELAY_SCHEDULER:           */ "",  // Should not be traced
             /* TRIGGER_SCHEDULER:         */ "",  // Should not be traced
             /* DYNAMIC_TRIGGER_SCHEDULER: */ "",  // Should not be traced
@@ -807,13 +800,6 @@ public:
         SCHED_RESUME,
         SCHED_RESUMPTION,
         SCHED_TRIGGER,
-        TRIGGER_AND_NOT,
-        TRIGGER_ANY,
-        TRIGGER_CLEAR,
-        TRIGGER_SET_BIT,
-        TRIGGER_SET_WORD,
-        TRIGGER_THIS_OR,
-        TRIGGER_WORD,
         UNPACKED_ASSIGN,
         UNPACKED_FILL,
         UNPACKED_NEQ,
@@ -942,13 +928,6 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
            {SCHED_RESUME, "resume", false}, \
            {SCHED_RESUMPTION, "resumption", false}, \
            {SCHED_TRIGGER, "trigger", false}, \
-           {TRIGGER_AND_NOT, "andNot", false}, \
-           {TRIGGER_ANY, "any", true}, \
-           {TRIGGER_CLEAR, "clear", false}, \
-           {TRIGGER_SET_BIT, "setBit", false}, \
-           {TRIGGER_SET_WORD, "setWord", false}, \
-           {TRIGGER_THIS_OR, "thisOr", false}, \
-           {TRIGGER_WORD, "word", true}, \
            {UNPACKED_ASSIGN, "assign", false}, \
            {UNPACKED_FILL, "fill", false}, \
            {UNPACKED_NEQ, "neq", true}, \

@@ -18,8 +18,12 @@ internalsDump:
 -V{t#,#}+    Vt_verilated_debug___024root___eval_phase__act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_triggers__act
 -V{t#,#}+    Vt_verilated_debug___024root___dump_triggers__act
--V{t#,#}         No triggers active
+-V{t#,#}+    Vt_verilated_debug___024root___trigger_anySet__act
+-V{t#,#}         No 'act' region triggers active
+-V{t#,#}+    Vt_verilated_debug___024root___trigger_andNot__act
+-V{t#,#}+    Vt_verilated_debug___024root___trigger_orInto__act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_phase__nba
+-V{t#,#}+    Vt_verilated_debug___024root___trigger_anySet__act
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+++++TOP Evaluate Vt_verilated_debug::eval_step
 -V{t#,#}+    Vt_verilated_debug___024root___eval_debug_assertions
@@ -28,20 +32,24 @@ internalsDump:
 -V{t#,#}+    Vt_verilated_debug___024root___eval_phase__act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_triggers__act
 -V{t#,#}+    Vt_verilated_debug___024root___dump_triggers__act
+-V{t#,#}+    Vt_verilated_debug___024root___trigger_anySet__act
 -V{t#,#}         'act' region trigger index 0 is active: @(posedge clk)
--V{t#,#}+    Vt_verilated_debug___024root___eval_act
--V{t#,#}+    Vt_verilated_debug___024root___eval_phase__act
--V{t#,#}+    Vt_verilated_debug___024root___eval_triggers__act
--V{t#,#}+    Vt_verilated_debug___024root___dump_triggers__act
--V{t#,#}         No triggers active
+-V{t#,#}+    Vt_verilated_debug___024root___trigger_andNot__act
+-V{t#,#}+    Vt_verilated_debug___024root___trigger_orInto__act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_phase__nba
+-V{t#,#}+    Vt_verilated_debug___024root___trigger_anySet__act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_nba
 -V{t#,#}+    Vt_verilated_debug___024root___nba_sequent__TOP__0
 *-* All Finished *-*
+-V{t#,#}+    Vt_verilated_debug___024root___trigger_clear__act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_phase__act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_triggers__act
 -V{t#,#}+    Vt_verilated_debug___024root___dump_triggers__act
--V{t#,#}         No triggers active
+-V{t#,#}+    Vt_verilated_debug___024root___trigger_anySet__act
+-V{t#,#}         No 'act' region triggers active
+-V{t#,#}+    Vt_verilated_debug___024root___trigger_andNot__act
+-V{t#,#}+    Vt_verilated_debug___024root___trigger_orInto__act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_phase__nba
+-V{t#,#}+    Vt_verilated_debug___024root___trigger_anySet__act
 -V{t#,#}End-of-eval cleanup
 -V{t#,#}+    Vt_verilated_debug___024root___eval_final
