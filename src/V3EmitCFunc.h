@@ -1251,6 +1251,8 @@ public:
         puts(");\n");
     }
     void visit(AstFinish* nodep) override {
+        // Disable all the forks so they don't operate after simulation is finished.
+        if (m_cfuncp && m_cfuncp->needProcess()) putns(nodep, "vlProcess->disableFork();\n");
         putns(nodep, "VL_FINISH_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");
@@ -1258,6 +1260,8 @@ public:
         puts(", \"\");\n");
     }
     void visit(AstFinishFork* nodep) override {
+        // Disable all the forks so they don't operate after simulation is finished.
+        if (m_cfuncp && m_cfuncp->needProcess()) putns(nodep, "vlProcess->disableFork();\n");
         putns(nodep, "VL_FINISH_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");

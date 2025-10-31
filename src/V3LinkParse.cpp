@@ -23,6 +23,7 @@
 #include "V3LinkParse.h"
 
 #include "V3Control.h"
+#include "V3MemberMap.h"
 #include "V3Stats.h"
 
 #include <set>
@@ -46,6 +47,7 @@ class LinkParseVisitor final : public VNVisitor {
 
     // STATE - across all visitors
     std::unordered_set<FileLine*> m_filelines;  // Filelines that have been seen
+    VMemberMap m_memberMap;  // for lookup of process class methods
 
     // STATE - for current visit position (use VL_RESTORER)
     // If set, move AstVar->valuep() initial values to this module
@@ -71,6 +73,9 @@ class LinkParseVisitor final : public VNVisitor {
 
     // STATE - Statistic tracking
     VDouble0 m_statModules;  // Number of modules seen
+
+    bool m_unprotectedStdProcess
+        = false;  // Set when std::process internals were unprotected, we only need to do this once
 
     // METHODS
     void cleanFileline(AstNode* nodep) {
@@ -103,6 +108,21 @@ class LinkParseVisitor final : public VNVisitor {
             return above + typedefp->name();
         }
         return "";
+    }
+
+    void unprotectStdProcessHandle() {
+        if (m_unprotectedStdProcess) return;
+        m_unprotectedStdProcess = true;
+        if (!v3Global.opt.protectIds()) return;
+        if (AstPackage* const stdp = v3Global.rootp()->stdPackagep()) {
+            if (AstClass* const processp
+                = VN_CAST(m_memberMap.findMember(stdp, "process"), Class)) {
+                if (AstVar* const handlep
+                    = VN_CAST(m_memberMap.findMember(processp, "m_process"), Var)) {
+                    handlep->protect(false);
+                }
+            }
+        }
     }
 
     void visitIterateNodeDType(AstNodeDType* nodep) {
@@ -178,6 +198,38 @@ class LinkParseVisitor final : public VNVisitor {
                           << nodep->warnOther()
                           << "... Expected indentation matching this earlier statement's line:\n"
                           << nodep->warnContextSecondary());
+    }
+
+    void addForkParentProcess(AstFork* forkp) {
+        FileLine* const fl = forkp->fileline();
+
+        const std::string parentName = "__VforkParent";
+        AstRefDType* const dtypep = new AstRefDType{fl, "process"};
+        AstVar* const parentVar
+            = new AstVar{fl, VVarType::BLOCKTEMP, parentName, VFlagChildDType{}, dtypep};
+        parentVar->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+
+        AstParseRef* const lhsp = new AstParseRef{fl, parentName, nullptr, nullptr};
+        AstClassOrPackageRef* const processRefp
+            = new AstClassOrPackageRef{fl, "process", nullptr, nullptr};
+        AstParseRef* const selfRefp = new AstParseRef{fl, "self", nullptr, nullptr};
+        AstDot* const processSelfp = new AstDot{fl, true, processRefp, selfRefp};
+        AstMethodCall* const callp = new AstMethodCall{fl, processSelfp, "self", nullptr};
+        AstAssign* const initp = new AstAssign{fl, lhsp, callp};
+
+        AstVarRef* const parentRefp = new AstVarRef{fl, parentVar, VAccess::READ};
+        forkp->parentProcessp(parentRefp);
+
+        VNRelinker relinker;
+        forkp->unlinkFrBack(&relinker);
+
+        parentVar->addNextHere(initp);
+        initp->addNextHere(forkp);
+
+        AstBegin* const beginp = new AstBegin{
+            fl, forkp->name() == "" ? "" : forkp->name() + "__VgetForkParent", parentVar, true};
+
+        relinker.relink(beginp);
     }
 
     // VISITORS
@@ -791,7 +843,11 @@ class LinkParseVisitor final : public VNVisitor {
         }
         cleanFileline(nodep);
         iterateAndNextNull(nodep->stmtsp());
-        if (AstFork* const forkp = VN_CAST(nodep, Fork)) iterateAndNextNull(forkp->forksp());
+        if (AstFork* const forkp = VN_CAST(nodep, Fork)) {
+            iterateAndNextNull(forkp->forksp());
+            if (!forkp->parentProcessp() && forkp->joinType().joinNone() && forkp->forksp())
+                addForkParentProcess(forkp);
+        }
     }
     void visit(AstCase* nodep) override {
         V3Control::applyCase(nodep);
@@ -954,7 +1010,10 @@ class LinkParseVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit LinkParseVisitor(AstNetlist* rootp) { iterate(rootp); }
+    explicit LinkParseVisitor(AstNetlist* rootp) {
+        unprotectStdProcessHandle();
+        iterate(rootp);
+    }
     ~LinkParseVisitor() override {
         V3Stats::addStatSum(V3Stats::STAT_SOURCE_MODULES, m_statModules);
     }

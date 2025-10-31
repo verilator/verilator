@@ -28,6 +28,7 @@ class Cls;
         y = 2;
       end
     join_none
+    #1;
   endtask
 endclass
 

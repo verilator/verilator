@@ -20,9 +20,10 @@ module t;
     fork
       p = 1;
     join_none
+    #0;
   endtask
 
   task t2(output q);
-    q <= 1;
+    q = 1;
   endtask
 endmodule

@@ -1416,9 +1416,10 @@ class AstFork final : public AstNodeBlock {
     // spawned. This is necessary to implement things like local variable
     // initializers properly. The parallel statements inside the fork must all
     // be AstBegin, as lowering stages will introduce additional statements to
-    // be executed sequentially within eaach fork branch.
+    // be executed sequentially within each fork branch.
     //
     // @astgen op3 := forksp : List[AstBegin]
+    // @astgen op4 := parentProcessp : Optional[AstVarRef]
     const VJoinType m_joinType;  // Join keyword type
 public:
     AstFork(FileLine* fl, VJoinType joinType, const string& name = "")
