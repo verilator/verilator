@@ -330,6 +330,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             m_baseToDerivedMap[basep].insert(nodep);
         }
         for (AstConstraint* const constrp : m_clonedConstraints) m_classp->addStmtsp(constrp);
+        m_clonedConstraints.clear();
     }
     void visit(AstNodeStmt* nodep) override {
         VL_RESTORER(m_stmtp);
@@ -1571,9 +1572,6 @@ class RandomizeVisitor final : public VNVisitor {
     int m_randCaseNum = 0;  // Randcase number within a module for var naming
     std::map<std::string, AstCDType*> m_randcDtypes;  // RandC data type deduplication
     AstConstraint* m_constraintp = nullptr;  // Current constraint
-
-    // Map of the class to the cloned constraint from the instantiated object
-    std::map<AstClass*, AstStmtExpr*> m_clonedConstraints;
 
     // METHODS
     void createRandomGenerator(AstClass* const classp) {
