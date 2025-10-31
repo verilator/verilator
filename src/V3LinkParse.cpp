@@ -53,6 +53,7 @@ class LinkParseVisitor final : public VNVisitor {
     AstVar* m_varp = nullptr;  // Variable we're under
     AstNodeModule* m_valueModp = nullptr;
     AstNodeModule* m_modp = nullptr;  // Current module
+    bool m_inInterface = false;  // True when inside interface declaration
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
     AstNodeFTask* m_ftaskp = nullptr;  // Current task
     AstNodeBlock* m_blockp = nullptr;  // Current AstNodeBlock
@@ -328,6 +329,9 @@ class LinkParseVisitor final : public VNVisitor {
             nodep->v3warn(NEWERSTD,
                           "Parameter requires default value, or use IEEE 1800-2009 or later.");
         }
+
+        // Mark parameters declared inside interfaces
+        if (nodep->isParam() && m_inInterface) { nodep->isIfaceParam(true); }
         if (AstParseTypeDType* const ptypep = VN_CAST(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
             AstNode* dtypep = nodep->valuep();
@@ -632,6 +636,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         VL_RESTORER(m_modp);
+        VL_RESTORER(m_inInterface);
         VL_RESTORER(m_anonUdpId);
         VL_RESTORER(m_genblkAbove);
         VL_RESTORER(m_genblkNum);
@@ -647,6 +652,7 @@ class LinkParseVisitor final : public VNVisitor {
         // Classes inherit from upper package
         if (m_modp && nodep->timeunit().isNone()) nodep->timeunit(m_modp->timeunit());
         m_modp = nodep;
+        if (VN_IS(nodep, Iface)) m_inInterface = true;  // Start or stay within interface
         m_anonUdpId = 0;
         m_genblkAbove = 0;
         m_genblkNum = 0;
